@@ -1,20 +1,13 @@
 {
   "compilerOptions": {
-    // Target and Module
     "target": "ES2020",
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    
-    // Module Resolution
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
-    
-    // Emit
     "noEmit": true,
     "isolatedModules": true,
-    
-    // Type Checking
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -26,21 +19,13 @@
     "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
-    
-    // Interop
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    
-    // JSX
     "jsx": "react-jsx",
     "jsxImportSource": "@emotion/react",
-    
-    // Advanced
     "skipLibCheck": true,
     "useDefineForClassFields": true,
-    
-    // Path Mapping
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
