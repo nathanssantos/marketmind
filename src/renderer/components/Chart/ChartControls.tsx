@@ -17,12 +17,14 @@ import type { MovingAverageConfig } from './useMovingAverageRenderer';
 export interface ChartControlsProps {
   showVolume: boolean;
   showGrid: boolean;
+  showCurrentPriceLine: boolean;
   chartType: 'candlestick' | 'line';
   movingAverages: MovingAverageConfig[];
   advancedConfig?: AdvancedControlsConfig;
   timeframe: Timeframe;
   onShowVolumeChange: (show: boolean) => void;
   onShowGridChange: (show: boolean) => void;
+  onShowCurrentPriceLineChange: (show: boolean) => void;
   onChartTypeChange: (type: 'candlestick' | 'line') => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onAdvancedConfigChange?: (config: AdvancedControlsConfig) => void;
@@ -32,12 +34,14 @@ export interface ChartControlsProps {
 export const ChartControls = ({
   showVolume,
   showGrid,
+  showCurrentPriceLine,
   chartType,
   movingAverages,
   advancedConfig,
   timeframe,
   onShowVolumeChange,
   onShowGridChange,
+  onShowCurrentPriceLineChange,
   onChartTypeChange,
   onMovingAveragesChange,
   onAdvancedConfigChange,
@@ -153,6 +157,23 @@ export const ChartControls = ({
                 size="sm"
                 checked={showGrid}
                 onCheckedChange={(e) => onShowGridChange(e.checked)}
+                colorPalette="blue"
+              >
+                <ChakraSwitch.HiddenInput />
+                <ChakraSwitch.Control>
+                  <ChakraSwitch.Thumb />
+                </ChakraSwitch.Control>
+              </ChakraSwitch.Root>
+            </HStack>
+            <HStack justify="space-between" gap={3}>
+              <HStack gap={2}>
+                <HiOutlineTrendingUp size={14} color="var(--chakra-colors-gray-300)" />
+                <Text fontSize="xs" color="gray.300">Current Price</Text>
+              </HStack>
+              <ChakraSwitch.Root
+                size="sm"
+                checked={showCurrentPriceLine}
+                onCheckedChange={(e) => onShowCurrentPriceLineChange(e.checked)}
                 colorPalette="blue"
               >
                 <ChakraSwitch.HiddenInput />

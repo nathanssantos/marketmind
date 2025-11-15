@@ -1,5 +1,6 @@
 import { Field } from '@/renderer/components/ui/field';
 import { NumberInput } from '@/renderer/components/ui/number-input';
+import { Select } from '@/renderer/components/ui/select';
 import { Box, Stack, Text } from '@chakra-ui/react';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 
@@ -16,6 +17,13 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
     onConfigChange({
       ...config,
       [key]: numValue,
+    });
+  };
+
+  const handleStyleChange = (value: string) => {
+    onConfigChange({
+      ...config,
+      currentPriceLineStyle: value as 'solid' | 'dashed' | 'dotted',
     });
   };
 
@@ -87,6 +95,35 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
             max={5}
           />
         </Field>
+      </Box>
+
+      {/* Current Price Line Settings */}
+      <Box>
+        <Text fontSize="sm" fontWeight="bold" mb={4}>
+          Current Price Line
+        </Text>
+        <Stack gap={4}>
+          <Field label="Line Width" helperText="Thickness of the current price line">
+            <NumberInput
+              value={config.currentPriceLineWidth}
+              onChange={(e) => handleChange('currentPriceLineWidth', e.target.value)}
+              min={1}
+              max={5}
+            />
+          </Field>
+
+          <Field label="Line Style" helperText="Style of the current price line">
+            <Select
+              value={config.currentPriceLineStyle}
+              onChange={handleStyleChange}
+              options={[
+                { value: 'solid', label: 'Solid' },
+                { value: 'dashed', label: 'Dashed' },
+                { value: 'dotted', label: 'Dotted' },
+              ]}
+            />
+          </Field>
+        </Stack>
       </Box>
 
       {/* Padding */}

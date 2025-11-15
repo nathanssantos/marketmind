@@ -7,6 +7,7 @@ import type { AdvancedControlsConfig } from './AdvancedControls';
 import { ChartTooltip } from './ChartTooltip';
 import { useCandlestickRenderer } from './useCandlestickRenderer';
 import { useChartCanvas } from './useChartCanvas';
+import { useCurrentPriceLineRenderer } from './useCurrentPriceLineRenderer';
 import { useGridRenderer } from './useGridRenderer';
 import { useLineChartRenderer } from './useLineChartRenderer';
 import { useMovingAverageRenderer, type MovingAverageConfig } from './useMovingAverageRenderer';
@@ -21,6 +22,7 @@ export interface ChartCanvasProps {
   colors?: ChartColors;
   showGrid?: boolean;
   showVolume?: boolean;
+  showCurrentPriceLine?: boolean;
   movingAverages?: MovingAverageConfig[];
   chartType?: 'candlestick' | 'line';
   advancedConfig?: AdvancedControlsConfig;
@@ -35,6 +37,7 @@ export const ChartCanvas = ({
   colors = CHART_COLORS_DARK,
   showGrid = true,
   showVolume = true,
+  showCurrentPriceLine = true,
   movingAverages = [],
   chartType = 'candlestick',
   advancedConfig,
@@ -101,6 +104,15 @@ export const ChartCanvas = ({
   const { render: renderMovingAverages } = useMovingAverageRenderer({
     manager,
     movingAverages,
+    ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
+  });
+
+  const { render: renderCurrentPriceLine } = useCurrentPriceLineRenderer({
+    manager,
+    colors,
+    enabled: showCurrentPriceLine,
+    ...(advancedConfig?.currentPriceLineWidth !== undefined && { lineWidth: advancedConfig.currentPriceLineWidth }),
+    ...(advancedConfig?.currentPriceLineStyle !== undefined && { lineStyle: advancedConfig.currentPriceLineStyle }),
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
   });
 
@@ -211,6 +223,7 @@ export const ChartCanvas = ({
         renderLineChart();
       }
       renderMovingAverages();
+      renderCurrentPriceLine();
     };
 
     // Register render callback with manager (will trigger initial render)
@@ -219,7 +232,7 @@ export const ChartCanvas = ({
     return () => {
       manager.setRenderCallback(null);
     };
-  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, chartType]);
+  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine, chartType]);
 
   return (
     <Box

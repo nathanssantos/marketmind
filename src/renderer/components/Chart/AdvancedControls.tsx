@@ -15,6 +15,10 @@ export interface AdvancedControlsConfig {
   // Grid Settings
   gridLineWidth: number;
   
+  // Current Price Line
+  currentPriceLineWidth: number;
+  currentPriceLineStyle: 'solid' | 'dashed' | 'dotted';
+  
   // Padding
   paddingTop: number;
   paddingBottom: number;

@@ -83,6 +83,7 @@ function AppContent(): ReactElement {
   const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
+  const [showCurrentPriceLine, setShowCurrentPriceLine] = useLocalStorage('marketmind:showCurrentPriceLine', true);
   const [chartType, setChartType] = useLocalStorage<'candlestick' | 'line'>('marketmind:chartType', 'candlestick');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
   const [showOnboarding, setShowOnboarding] = useLocalStorage('marketmind:showOnboarding', true);
@@ -96,6 +97,8 @@ function AppContent(): ReactElement {
     candleSpacing: CHART_CONFIG.CANDLE_SPACING,
     candleWickWidth: CHART_CONFIG.CANDLE_WICK_WIDTH,
     gridLineWidth: CHART_CONFIG.GRID_LINE_WIDTH,
+    currentPriceLineWidth: CHART_CONFIG.CURRENT_PRICE_LINE_WIDTH,
+    currentPriceLineStyle: CHART_CONFIG.CURRENT_PRICE_LINE_STYLE,
     paddingTop: CHART_CONFIG.CANVAS_PADDING_TOP,
     paddingBottom: CHART_CONFIG.CANVAS_PADDING_BOTTOM,
     paddingLeft: CHART_CONFIG.CANVAS_PADDING_LEFT,
@@ -238,12 +241,14 @@ function AppContent(): ReactElement {
             <ChartControls
               showVolume={showVolume}
               showGrid={showGrid}
+              showCurrentPriceLine={showCurrentPriceLine}
               chartType={chartType}
               movingAverages={movingAverages}
               advancedConfig={advancedConfig}
               timeframe={timeframe}
               onShowVolumeChange={setShowVolume}
               onShowGridChange={setShowGrid}
+              onShowCurrentPriceLineChange={setShowCurrentPriceLine}
               onChartTypeChange={setChartType}
               onMovingAveragesChange={setMovingAverages}
               onAdvancedConfigChange={setAdvancedConfig}
@@ -270,6 +275,7 @@ function AppContent(): ReactElement {
               height="100%"
               showVolume={showVolume}
               showGrid={showGrid}
+              showCurrentPriceLine={showCurrentPriceLine}
               chartType={chartType}
               movingAverages={movingAverages}
               advancedConfig={debouncedAdvancedConfig}
