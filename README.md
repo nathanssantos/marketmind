@@ -111,6 +111,29 @@ ALPHA_VANTAGE_API_KEY=your_key_here
 npm run dev
 ```
 
+## 🧪 Testing
+
+The project has comprehensive unit tests with 97.26% coverage:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:ui
+
+# Run with coverage report
+npm run test:coverage
+```
+
+**Test Coverage:** ✅
+- **150 tests** passing
+- **97.26%** overall coverage
+- **69 tests** for utility functions
+- **81 tests** for React hooks
+
+See [Testing Documentation](./docs/IMPLEMENTATION_PLAN.md#phase-11-testing--quality-assurance-) for details.
+
 ## 📦 Production Build
 
 See [docs/BUILD.md](docs/BUILD.md) for detailed build instructions.
