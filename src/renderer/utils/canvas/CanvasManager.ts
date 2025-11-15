@@ -21,19 +21,16 @@ export class CanvasManager {
   private bounds: Bounds | null = null;
   private dimensions: Dimensions | null = null;
   private padding: number;
-  private volumeHeightRatio: number;
   private renderCallback: (() => void) | null = null;
 
   constructor(
     canvas: HTMLCanvasElement,
     viewport: Viewport,
     padding: number = 40,
-    volumeHeightRatio: number = 0.25,
   ) {
     this.canvas = canvas;
     this.viewport = viewport;
     this.padding = padding;
-    this.volumeHeightRatio = volumeHeightRatio;
     this.initialize();
   }
 
@@ -59,15 +56,14 @@ export class CanvasManager {
 
   private updateDimensions(): void {
     const rect = this.canvas.getBoundingClientRect();
-    const volumeHeight = rect.height * this.volumeHeightRatio;
-    const chartHeight = rect.height - volumeHeight;
+    const chartHeight = rect.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
     const chartWidth = rect.width - CHART_CONFIG.CANVAS_PADDING_RIGHT;
 
     this.dimensions = {
       width: rect.width,
       height: rect.height,
       chartHeight,
-      volumeHeight,
+      volumeHeight: 0, // Volume is now rendered as overlay within chart area
       chartWidth,
     };
   }

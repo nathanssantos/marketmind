@@ -33,7 +33,25 @@ export const useChartCanvas = ({
 }: UseChartCanvasProps): UseChartCanvasReturn => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const managerRef = useRef<CanvasManager | null>(null);
-  const [viewport, setViewport] = useState<Viewport>(initialViewport);
+  const [manager, setManager] = useState<CanvasManager | null>(null);
+  
+  // Initialize viewport to show last candles if no custom viewport provided
+  const [viewport, setViewport] = useState<Viewport>(() => {
+    if (initialViewport !== DEFAULT_VIEWPORT) {
+      return initialViewport;
+    }
+    
+    // Show last 100 candles (or all if less than 100)
+    const candleCount = candles.length;
+    const visibleCount = Math.min(100, candleCount);
+    
+    return {
+      ...DEFAULT_VIEWPORT,
+      start: Math.max(0, candleCount - visibleCount),
+      end: candleCount,
+    };
+  });
+  
   const [isPanning, setIsPanning] = useState(false);
   const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -41,14 +59,14 @@ export const useChartCanvas = ({
     if (!canvasRef.current) return;
 
     if (!managerRef.current) {
-      const manager = new CanvasManager(
+      const newManager = new CanvasManager(
         canvasRef.current,
         viewport,
         CHART_CONFIG.CANVAS_PADDING,
-        CHART_CONFIG.VOLUME_HEIGHT_RATIO,
       );
-      manager.setCandles(candles);
-      managerRef.current = manager;
+      newManager.setCandles(candles);
+      managerRef.current = newManager;
+      setManager(newManager);
     } else {
       managerRef.current.setCandles(candles);
       managerRef.current.setViewport(viewport);
@@ -142,7 +160,7 @@ export const useChartCanvas = ({
 
   return {
     canvasRef,
-    manager: managerRef.current,
+    manager,
     viewport,
     handleMouseDown,
     handleMouseMove,

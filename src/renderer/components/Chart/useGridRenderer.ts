@@ -99,7 +99,7 @@ export const useGridRenderer = ({
             ctx,
             timeLabel,
             x,
-            chartHeight + 10,
+            chartHeight + 8,
             labelColor,
             CHART_CONFIG.AXIS_LABEL_FONT,
             'center',
