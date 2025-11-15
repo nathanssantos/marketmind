@@ -1,8 +1,9 @@
+import { Button } from '@/renderer/components/ui/button';
 import { useColorMode } from '@/renderer/components/ui/color-mode';
 import { Field } from '@/renderer/components/ui/field';
 import { Select } from '@/renderer/components/ui/select';
 import { useAIStore } from '@/renderer/store';
-import { Box, Button, Flex, Separator, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Separator, Stack, Text } from '@chakra-ui/react';
 import { HiArrowDownTray, HiArrowUpTray, HiTrash } from 'react-icons/hi2';
 
 export const GeneralTab = () => {

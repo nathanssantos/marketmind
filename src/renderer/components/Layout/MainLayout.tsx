@@ -3,7 +3,7 @@ import { Box, Flex, IconButton } from '@chakra-ui/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { HiChevronLeft } from 'react-icons/hi2';
 import { ChatSidebar } from '../Chat/ChatSidebar';
-import { SettingsModal } from '../Settings/SettingsModal';
+import { SettingsDialog } from '../Settings/SettingsDialog';
 import { Header } from './Header';
 
 interface MainLayoutProps {
@@ -118,7 +118,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
         )}
       </Flex>
 
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </Box>
   );
 };

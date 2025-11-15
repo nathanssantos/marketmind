@@ -14,7 +14,7 @@ export interface SelectOption {
   description?: string;
 }
 
-interface SelectProps {
+export interface SelectProps {
   value: string;
   options: SelectOption[];
   onChange: (value: string) => void;

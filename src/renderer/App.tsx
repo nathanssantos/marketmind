@@ -1,4 +1,5 @@
-import { Box, Button, ChakraProvider, Stack, Text } from '@chakra-ui/react';
+import { Button } from '@/renderer/components/ui/button';
+import { Box, ChakraProvider, Stack, Text } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { Candle } from '@shared/types';
 import { useCallback, useMemo, useState, type ReactElement } from 'react';

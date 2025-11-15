@@ -1,6 +1,6 @@
 import { createSystem, defaultConfig, defineConfig } from '@chakra-ui/react';
 
-const config = defineConfig({
+const customConfig = defineConfig({
   theme: {
     semanticTokens: {
       colors: {
@@ -49,10 +49,7 @@ const config = defineConfig({
       color: 'fg',
       userSelect: 'none',
     },
-    'input, textarea': {
-      px: 3,
-    },
   },
 });
 
-export const system = createSystem(defaultConfig, config);
+export const system = createSystem(defaultConfig, customConfig);
