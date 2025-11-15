@@ -1,8 +1,6 @@
-import { useCallback } from 'react';
-import type { Candle, Viewport } from '@shared/types';
-import type { Bounds, Dimensions } from '@/renderer/utils/canvas/coordinateSystem';
-import { priceToY } from '@/renderer/utils/canvas/coordinateSystem';
+import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { calculateMovingAverage } from '@/renderer/utils/movingAverages';
+import { useCallback } from 'react';
 
 export interface MovingAverageConfig {
   period: number;
@@ -12,28 +10,41 @@ export interface MovingAverageConfig {
   visible?: boolean;
 }
 
-interface MovingAverageRendererConfig {
-  candles: Candle[];
-  viewport: Viewport;
-  canvas: HTMLCanvasElement;
-  bounds: Bounds;
-  dimensions: Dimensions;
-  movingAverages: MovingAverageConfig[];
+export interface UseMovingAverageRendererProps {
+  manager: CanvasManager | null;
+  movingAverages?: MovingAverageConfig[];
 }
 
-export const useMovingAverageRenderer = () => {
-  const renderMovingAverages = useCallback((config: MovingAverageRendererConfig) => {
-    const { candles, viewport, canvas, bounds, dimensions, movingAverages } = config;
+export interface UseMovingAverageRendererReturn {
+  render: () => void;
+}
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+export const useMovingAverageRenderer = ({
+  manager,
+  movingAverages = [],
+}: UseMovingAverageRendererProps): UseMovingAverageRendererReturn => {
+  const render = useCallback((): void => {
+    if (!manager || movingAverages.length === 0) return;
 
-    const candleWidth = dimensions.width / (viewport.end - viewport.start);
+    const ctx = manager.getContext();
+    const dimensions = manager.getDimensions();
+    const viewport = manager.getViewport();
+    const bounds = manager.getBounds();
+    const candles = manager.getCandles();
+
+    if (!ctx || !dimensions || !bounds || !candles) return;
+
+    const { chartWidth, chartHeight } = dimensions;
     const startIndex = Math.max(0, Math.floor(viewport.start));
     const endIndex = Math.min(candles.length, Math.ceil(viewport.end));
 
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
+
     movingAverages.forEach((ma) => {
-      if (!ma.visible) return;
+      if (ma.visible === false) return;
 
       const values = calculateMovingAverage(candles, ma.period, ma.type);
 
@@ -50,8 +61,10 @@ export const useMovingAverageRenderer = () => {
         const value = values[i];
         if (value === null || value === undefined) continue;
 
-        const x = (i - viewport.start) * candleWidth + candleWidth / 2;
-        const y = priceToY(value, bounds, dimensions, 10, 10);
+        const x = manager.indexToX(i);
+        const y = manager.priceToY(value);
+
+        if (x < 0 || x > chartWidth) continue;
 
         if (!hasMovedTo) {
           ctx.moveTo(x, y);
@@ -63,7 +76,9 @@ export const useMovingAverageRenderer = () => {
 
       ctx.stroke();
     });
-  }, []);
 
-  return { renderMovingAverages };
+    ctx.restore();
+  }, [manager, movingAverages]);
+
+  return { render };
 };

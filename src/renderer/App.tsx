@@ -1,8 +1,19 @@
 import { Box, ChakraProvider, Text, VStack } from '@chakra-ui/react';
 import type { ReactElement } from 'react';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
+import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { system } from './theme';
 import { SAMPLE_CANDLES } from './utils/sampleData';
+
+const MOVING_AVERAGES: MovingAverageConfig[] = [
+  {
+    period: 9,
+    type: 'EMA',
+    color: '#ff9800',
+    lineWidth: 2,
+    visible: true,
+  },
+];
 
 function App(): ReactElement {
   return (
@@ -18,7 +29,11 @@ function App(): ReactElement {
             </Text>
           </Box>
 
-          <ChartCanvas candles={SAMPLE_CANDLES} height="700px" />
+          <ChartCanvas 
+            candles={SAMPLE_CANDLES} 
+            height="700px"
+            movingAverages={MOVING_AVERAGES}
+          />
         </VStack>
       </Box>
     </ChakraProvider>

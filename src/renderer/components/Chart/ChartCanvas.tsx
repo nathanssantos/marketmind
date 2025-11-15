@@ -7,6 +7,7 @@ import { useCandlestickRenderer } from './useCandlestickRenderer';
 import { useChartCanvas } from './useChartCanvas';
 import { useGridRenderer } from './useGridRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
+import { useMovingAverageRenderer, type MovingAverageConfig } from './useMovingAverageRenderer';
 
 export interface ChartCanvasProps {
   candles: Candle[];
@@ -17,6 +18,7 @@ export interface ChartCanvasProps {
   colors?: ChartColors;
   showGrid?: boolean;
   showVolume?: boolean;
+  movingAverages?: MovingAverageConfig[];
 }
 
 export const ChartCanvas = ({
@@ -28,6 +30,7 @@ export const ChartCanvas = ({
   colors = CHART_COLORS_DARK,
   showGrid = true,
   showVolume = true,
+  movingAverages = [],
 }: ChartCanvasProps): ReactElement => {
   const {
     canvasRef,
@@ -59,6 +62,11 @@ export const ChartCanvas = ({
     enabled: showVolume,
   });
 
+  const { render: renderMovingAverages } = useMovingAverageRenderer({
+    manager,
+    movingAverages,
+  });
+
   // Setup render callback and initial render
   useEffect(() => {
     if (!manager) return;
@@ -68,6 +76,7 @@ export const ChartCanvas = ({
       renderGrid();
       renderVolume();
       renderCandles();
+      renderMovingAverages();
     };
 
     // Register render callback with manager (will trigger initial render)
@@ -76,7 +85,7 @@ export const ChartCanvas = ({
     return () => {
       manager.setRenderCallback(null);
     };
-  }, [manager, renderGrid, renderVolume, renderCandles]);
+  }, [manager, renderGrid, renderVolume, renderCandles, renderMovingAverages]);
 
   return (
     <Box
