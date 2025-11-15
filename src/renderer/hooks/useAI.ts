@@ -14,6 +14,44 @@ const getDefaultAIService = (config: AIServiceConfig): AIService => {
   return defaultAIServiceInstance;
 };
 
+const formatAIError = (error: Error, provider?: string): string => {
+  let errorMessage = error.message;
+  
+  const providerName = provider === 'anthropic' ? 'Claude' : 
+                      provider === 'openai' ? 'OpenAI' : 
+                      provider === 'gemini' ? 'Gemini' : 'AI';
+  
+  if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests') || errorMessage.includes('quota')) {
+    if (provider === 'gemini') {
+      const waitTime = errorMessage.match(/retry in (\d+)/i)?.[1] || '60';
+      if (errorMessage.includes('limit: 0') || errorMessage.includes('Quota exceeded')) {
+        return `⚠️ **Cota do Gemini 2.0 Flash Exp esgotada**\n\n` +
+          `O tier gratuito tem limite de **10 requisições por minuto**.\n\n` +
+          `**Soluções:**\n` +
+          `• Aguarde ${waitTime} segundos e tente novamente\n` +
+          `• Ou vá em Settings > AI Configuration e troque para **Gemini 1.5 Flash** (mais rápido e barato)\n` +
+          `• Ou use outro provedor (OpenAI/Claude)`;
+      } else {
+        return `⚠️ Limite de requisições do Gemini excedido (10 req/min). Aguarde ${waitTime}s ou troque de modelo nas configurações.`;
+      }
+    } else {
+      return `⚠️ Limite de requisições excedido no ${providerName}. Aguarde alguns minutos e tente novamente.`;
+    }
+  } else if (errorMessage.includes('rate limit')) {
+    return `⚠️ Taxa de requisições excedida no ${providerName}. Aguarde alguns minutos.`;
+  } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized') || errorMessage.includes('invalid') || errorMessage.includes('API key')) {
+    return `🔑 Chave API inválida para ${providerName}. Verifique sua configuração.`;
+  } else if (errorMessage.includes('timeout')) {
+    return '⏱️ Tempo limite excedido. Tente novamente.';
+  } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+    return '🌐 Erro de conexão. Verifique sua internet.';
+  } else if (errorMessage.includes('context_length') || errorMessage.includes('too long')) {
+    return '📏 Mensagem muito longa. Reduza o tamanho ou limpe o histórico.';
+  }
+  
+  return errorMessage;
+};
+
 export interface UseAIOptions {
   service?: AIService;
 }
@@ -111,33 +149,9 @@ export const useAI = (options?: UseAIOptions) => {
 
         return response;
       } catch (error) {
-        let errorMessage = 'Unknown error';
-        
-        if (error instanceof Error) {
-          errorMessage = error.message;
-          
-          const providerName = settings?.provider === 'anthropic' ? 'Claude' : 
-                              settings?.provider === 'openai' ? 'OpenAI' : 
-                              settings?.provider === 'gemini' ? 'Gemini' : 'AI';
-          
-          if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests')) {
-            if (settings?.provider === 'gemini') {
-              errorMessage = '⚠️ Limite de requisições do Gemini excedido (10 req/min no tier gratuito). Aguarde 1 minuto.';
-            } else {
-              errorMessage = `⚠️ Limite de requisições excedido no ${providerName}. Aguarde alguns minutos.`;
-            }
-          } else if (errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
-            errorMessage = `⚠️ Cota excedida no ${providerName}. Verifique seu plano.`;
-          } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized') || errorMessage.includes('invalid') || errorMessage.includes('API key')) {
-            errorMessage = `🔑 Chave API inválida para ${providerName}. Verifique sua configuração.`;
-          } else if (errorMessage.includes('timeout')) {
-            errorMessage = '⏱️ Tempo limite excedido. Tente novamente.';
-          } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-            errorMessage = '🌐 Erro de conexão. Verifique sua internet.';
-          } else if (errorMessage.includes('context_length') || errorMessage.includes('too long')) {
-            errorMessage = '📏 Mensagem muito longa. Reduza o tamanho ou limpe o histórico.';
-          }
-        }
+        const errorMessage = error instanceof Error 
+          ? formatAIError(error, settings?.provider)
+          : 'Unknown error';
         
         setError(errorMessage);
         return null;
@@ -183,33 +197,9 @@ export const useAI = (options?: UseAIOptions) => {
 
         return response;
       } catch (error) {
-        let errorMessage = 'Unknown error';
-        
-        if (error instanceof Error) {
-          errorMessage = error.message;
-          
-          const providerName = settings?.provider === 'anthropic' ? 'Claude' : 
-                              settings?.provider === 'openai' ? 'OpenAI' : 
-                              settings?.provider === 'gemini' ? 'Gemini' : 'AI';
-          
-          if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests')) {
-            if (settings?.provider === 'gemini') {
-              errorMessage = '⚠️ Limite de requisições do Gemini excedido (10 req/min no tier gratuito). Aguarde 1 minuto.';
-            } else {
-              errorMessage = `⚠️ Limite de requisições excedido no ${providerName}. Aguarde alguns minutos.`;
-            }
-          } else if (errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
-            errorMessage = `⚠️ Cota excedida no ${providerName}. Verifique seu plano.`;
-          } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized') || errorMessage.includes('invalid') || errorMessage.includes('API key')) {
-            errorMessage = `🔑 Chave API inválida para ${providerName}. Verifique sua configuração.`;
-          } else if (errorMessage.includes('timeout')) {
-            errorMessage = '⏱️ Tempo limite excedido. Tente novamente.';
-          } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-            errorMessage = '🌐 Erro de conexão. Verifique sua internet.';
-          } else if (errorMessage.includes('context_length') || errorMessage.includes('too long')) {
-            errorMessage = '📏 Mensagem muito longa. Reduza o tamanho ou limpe o histórico.';
-          }
-        }
+        const errorMessage = error instanceof Error 
+          ? formatAIError(error, settings?.provider)
+          : 'Unknown error';
         
         setError(errorMessage);
         return null;
@@ -235,33 +225,9 @@ export const useAI = (options?: UseAIOptions) => {
         setLastAnalysis(response);
         return response;
       } catch (error) {
-        let errorMessage = 'Unknown error';
-        
-        if (error instanceof Error) {
-          errorMessage = error.message;
-          
-          const providerName = settings?.provider === 'anthropic' ? 'Claude' : 
-                              settings?.provider === 'openai' ? 'OpenAI' : 
-                              settings?.provider === 'gemini' ? 'Gemini' : 'AI';
-          
-          if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests')) {
-            if (settings?.provider === 'gemini') {
-              errorMessage = '⚠️ Limite de requisições do Gemini excedido (10 req/min no tier gratuito). Aguarde 1 minuto.';
-            } else {
-              errorMessage = `⚠️ Limite de requisições excedido no ${providerName}. Aguarde alguns minutos.`;
-            }
-          } else if (errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
-            errorMessage = `⚠️ Cota excedida no ${providerName}. Verifique seu plano.`;
-          } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized') || errorMessage.includes('invalid') || errorMessage.includes('API key')) {
-            errorMessage = `🔑 Chave API inválida para ${providerName}. Verifique sua configuração.`;
-          } else if (errorMessage.includes('timeout')) {
-            errorMessage = '⏱️ Tempo limite excedido. Tente novamente.';
-          } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-            errorMessage = '🌐 Erro de conexão. Verifique sua internet.';
-          } else if (errorMessage.includes('context_length') || errorMessage.includes('too long')) {
-            errorMessage = '📏 Mensagem muito longa. Reduza o tamanho ou limpe o histórico.';
-          }
-        }
+        const errorMessage = error instanceof Error 
+          ? formatAIError(error, settings?.provider)
+          : 'Unknown error';
         
         setError(errorMessage);
         return null;
