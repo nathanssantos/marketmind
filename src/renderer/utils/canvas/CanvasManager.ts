@@ -39,6 +39,10 @@ export class CanvasManager {
 
   public setRenderCallback(callback: (() => void) | null): void {
     this.renderCallback = callback;
+    // Trigger render immediately when callback is set
+    if (callback) {
+      this.triggerRender();
+    }
   }
 
   private triggerRender(): void {

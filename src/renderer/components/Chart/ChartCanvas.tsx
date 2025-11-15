@@ -70,11 +70,8 @@ export const ChartCanvas = ({
       renderCandles();
     };
 
-    // Register render callback with manager
+    // Register render callback with manager (will trigger initial render)
     manager.setRenderCallback(render);
-
-    // Initial render
-    render();
 
     return () => {
       manager.setRenderCallback(null);
