@@ -1,6 +1,9 @@
 import { useColorMode } from '@/renderer/components/ui/color-mode';
 import { Box, Flex, IconButton, Text } from '@chakra-ui/react';
-import { HiCog6Tooth, HiMoon, HiSparkles, HiSun } from 'react-icons/hi2';
+import { useState } from 'react';
+import { HiCog6Tooth, HiMoon, HiQuestionMarkCircle, HiSparkles, HiSun } from 'react-icons/hi2';
+import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
+import { TooltipWrapper } from '../ui/Tooltip';
 import { AISelector } from './AISelector';
 
 interface HeaderProps {
@@ -9,6 +12,7 @@ interface HeaderProps {
 
 export const Header = ({ onSettingsClick }: HeaderProps) => {
   const { colorMode, toggleColorMode } = useColorMode();
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   return (
     <Flex
@@ -37,23 +41,42 @@ export const Header = ({ onSettingsClick }: HeaderProps) => {
 
       <Flex align="center" gap={3}>
         <AISelector />
-        <IconButton
-          aria-label="Toggle color mode"
-          onClick={toggleColorMode}
-          variant="ghost"
-          size="sm"
-        >
-          {colorMode === 'dark' ? <HiSun /> : <HiMoon />}
-        </IconButton>
-        <IconButton
-          aria-label="Settings"
-          onClick={onSettingsClick}
-          variant="ghost"
-          size="sm"
-        >
-          <HiCog6Tooth />
-        </IconButton>
+        <TooltipWrapper label={`Theme: ${colorMode === 'dark' ? 'Dark' : 'Light'}`}>
+          <IconButton
+            aria-label="Toggle color mode"
+            onClick={toggleColorMode}
+            variant="ghost"
+            size="sm"
+          >
+            {colorMode === 'dark' ? <HiSun /> : <HiMoon />}
+          </IconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label="Keyboard Shortcuts">
+          <IconButton
+            aria-label="Show keyboard shortcuts"
+            onClick={() => setShowShortcuts(true)}
+            variant="ghost"
+            size="sm"
+          >
+            <HiQuestionMarkCircle />
+          </IconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label="Settings">
+          <IconButton
+            aria-label="Settings"
+            onClick={onSettingsClick}
+            variant="ghost"
+            size="sm"
+          >
+            <HiCog6Tooth />
+          </IconButton>
+        </TooltipWrapper>
       </Flex>
+      
+      <KeyboardShortcutsDialog 
+        isOpen={showShortcuts} 
+        onClose={() => setShowShortcuts(false)} 
+      />
     </Flex>
   );
 };

@@ -1,4 +1,4 @@
-import { Box, ChakraProvider, Stack, Text } from '@chakra-ui/react';
+import { Box, ChakraProvider, Stack } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { Candle } from '@shared/types';
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
@@ -9,7 +9,10 @@ import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext
 import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { MainLayout } from './components/Layout/MainLayout';
+import { OnboardingDialog } from './components/Onboarding/OnboardingDialog';
 import { SymbolSelector } from './components/SymbolSelector';
+import { ErrorMessage } from './components/ui/ErrorMessage';
+import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
 import { ChartProvider } from './context/ChartContext';
 import { useChartData } from './hooks/useChartData';
@@ -80,6 +83,7 @@ function AppContent(): ReactElement {
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
   const [chartType, setChartType] = useLocalStorage<'candlestick' | 'line'>('marketmind:chartType', 'candlestick');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
+  const [showOnboarding, setShowOnboarding] = useLocalStorage('marketmind:showOnboarding', true);
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
     'marketmind:movingAverages',
     DEFAULT_MOVING_AVERAGES
@@ -234,31 +238,15 @@ function AppContent(): ReactElement {
           </Stack>
           
           {loading && (
-            <Box 
-              position="absolute" 
-              top="50%" 
-              left="50%" 
-              transform="translate(-50%, -50%)"
-              color="fg"
-              fontSize="xl"
-            >
-              <Text>Loading market data...</Text>
-            </Box>
+            <LoadingSpinner message="Loading market data..." />
           )}
 
           {error && (
-            <Box 
-              position="absolute" 
-              top="50%" 
-              left="50%" 
-              transform="translate(-50%, -50%)"
-              color="red.500"
-              fontSize="xl"
-              textAlign="center"
-              maxW="500px"
-            >
-              <Text>Error loading data: {error.message}</Text>
-            </Box>
+            <ErrorMessage 
+              title="Failed to Load Market Data"
+              message={error.message}
+              onRetry={() => window.location.reload()}
+            />
           )}
 
           {marketData && (
@@ -276,6 +264,11 @@ function AppContent(): ReactElement {
         </MainLayout>
 
         <UpdateNotification />
+        
+        <OnboardingDialog 
+          isOpen={showOnboarding} 
+          onClose={() => setShowOnboarding(false)} 
+        />
       </>
   );
 }

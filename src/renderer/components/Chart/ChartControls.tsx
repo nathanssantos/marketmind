@@ -12,6 +12,7 @@ import { usePinnedControls } from './PinnedControlsContext';
 import { PinnableControl } from './PinnableControl';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import { TimeframeSelector, type Timeframe } from './TimeframeSelector';
+import { TooltipWrapper } from '../ui/Tooltip';
 
 export interface ChartControlsProps {
   showVolume: boolean;
@@ -93,26 +94,30 @@ export const ChartControls = ({
           Chart Type
         </Text>
         <HStack gap={2}>
-          <IconButton
-            size="sm"
-            aria-label="Candlestick chart"
-            onClick={() => onChartTypeChange('candlestick')}
-            colorPalette={chartType === 'candlestick' ? 'blue' : 'gray'}
-            variant={chartType === 'candlestick' ? 'solid' : 'outline'}
-            color={chartType === 'candlestick' ? undefined : 'gray.400'}
-          >
-            <HiOutlineChartBar />
-          </IconButton>
-          <IconButton
-            size="sm"
-            aria-label="Line chart"
-            onClick={() => onChartTypeChange('line')}
-            colorPalette={chartType === 'line' ? 'blue' : 'gray'}
-            variant={chartType === 'line' ? 'solid' : 'outline'}
-            color={chartType === 'line' ? undefined : 'gray.400'}
-          >
-            <HiOutlinePresentationChartLine />
-          </IconButton>
+          <TooltipWrapper label="Candlestick Chart">
+            <IconButton
+              size="sm"
+              aria-label="Candlestick chart"
+              onClick={() => onChartTypeChange('candlestick')}
+              colorPalette={chartType === 'candlestick' ? 'blue' : 'gray'}
+              variant={chartType === 'candlestick' ? 'solid' : 'outline'}
+              color={chartType === 'candlestick' ? undefined : 'gray.400'}
+            >
+              <HiOutlineChartBar />
+            </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label="Line Chart">
+            <IconButton
+              size="sm"
+              aria-label="Line chart"
+              onClick={() => onChartTypeChange('line')}
+              colorPalette={chartType === 'line' ? 'blue' : 'gray'}
+              variant={chartType === 'line' ? 'solid' : 'outline'}
+              color={chartType === 'line' ? undefined : 'gray.400'}
+            >
+              <HiOutlinePresentationChartLine />
+            </IconButton>
+          </TooltipWrapper>
         </HStack>
       </Box>
 
