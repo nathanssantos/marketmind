@@ -1,5 +1,9 @@
 import { app, BrowserWindow } from 'electron';
-import { join } from 'path';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const WINDOW_CONFIG = {
   WIDTH: 1280,
@@ -18,7 +22,7 @@ const createWindow = (): void => {
     minHeight: WINDOW_CONFIG.MIN_HEIGHT,
     show: false,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/preload.mjs'),
       nodeIntegration: false,
       contextIsolation: true,
     },

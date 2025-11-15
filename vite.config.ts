@@ -9,11 +9,24 @@ export default defineConfig({
     electron({
       main: {
         entry: 'src/main/index.ts',
+        vite: {
+          build: {
+            outDir: 'dist-electron/main',
+            rollupOptions: {
+              external: ['electron'],
+            },
+          },
+        },
       },
       preload: {
         input: 'src/main/preload.ts',
+        vite: {
+          build: {
+            outDir: 'dist-electron/preload',
+          },
+        },
       },
-      renderer: {},
+      renderer: process.env.NODE_ENV === 'test' ? undefined : {},
     }),
   ],
   resolve: {

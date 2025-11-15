@@ -1,6 +1,3 @@
-/**
- * @see https://www.electron.build/configuration/configuration
- */
 export default {
   appId: 'com.marketmind.app',
   productName: 'MarketMind',
