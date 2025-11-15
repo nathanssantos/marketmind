@@ -2,7 +2,6 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { storageService } from './services/StorageService';
-import { MigrationService } from './services/MigrationService';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -97,13 +96,7 @@ const setupIpcHandlers = (): void => {
   });
 };
 
-app.whenReady().then(async () => {
-  try {
-    await MigrationService.runMigrations();
-  } catch (error) {
-    console.error('Migration failed:', error);
-  }
-
+app.whenReady().then(() => {
   setupIpcHandlers();
   createWindow();
 
