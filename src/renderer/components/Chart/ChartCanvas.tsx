@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { useCandlestickRenderer } from './useCandlestickRenderer';
 import { useChartCanvas } from './useChartCanvas';
 import { useGridRenderer } from './useGridRenderer';
+import { useLineChartRenderer } from './useLineChartRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
 import { useMovingAverageRenderer, type MovingAverageConfig } from './useMovingAverageRenderer';
 
@@ -19,6 +20,7 @@ export interface ChartCanvasProps {
   showGrid?: boolean;
   showVolume?: boolean;
   movingAverages?: MovingAverageConfig[];
+  chartType?: 'candlestick' | 'line';
 }
 
 export const ChartCanvas = ({
@@ -31,6 +33,7 @@ export const ChartCanvas = ({
   showGrid = true,
   showVolume = true,
   movingAverages = [],
+  chartType = 'candlestick',
 }: ChartCanvasProps): ReactElement => {
   const {
     canvasRef,
@@ -54,6 +57,13 @@ export const ChartCanvas = ({
   const { render: renderCandles } = useCandlestickRenderer({
     manager,
     colors,
+    enabled: chartType === 'candlestick',
+  });
+
+  const { render: renderLineChart } = useLineChartRenderer({
+    manager,
+    colors,
+    enabled: chartType === 'line',
   });
 
   const { render: renderVolume } = useVolumeRenderer({
@@ -75,7 +85,11 @@ export const ChartCanvas = ({
       manager.clear();
       renderGrid();
       renderVolume();
-      renderCandles();
+      if (chartType === 'candlestick') {
+        renderCandles();
+      } else {
+        renderLineChart();
+      }
       renderMovingAverages();
     };
 
@@ -85,7 +99,7 @@ export const ChartCanvas = ({
     return () => {
       manager.setRenderCallback(null);
     };
-  }, [manager, renderGrid, renderVolume, renderCandles, renderMovingAverages]);
+  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, chartType]);
 
   return (
     <Box
