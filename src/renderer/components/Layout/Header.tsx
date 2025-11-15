@@ -1,14 +1,18 @@
 import { useColorMode } from '@/renderer/components/ui/color-mode';
-import { Box, Flex, IconButton, Text } from '@chakra-ui/react';
-import { HiCog6Tooth, HiMoon, HiSparkles, HiSun } from 'react-icons/hi2';
-import { AISelector } from './AISelector';
+import { Logo } from '@/renderer/components/ui/logo';
+import { Flex, IconButton, Text } from '@chakra-ui/react';
+import { memo, useState } from 'react';
+import { HiCog6Tooth, HiCommandLine, HiMoon, HiSun } from 'react-icons/hi2';
+import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
+import { TooltipWrapper } from '../ui/Tooltip';
 
 interface HeaderProps {
   onSettingsClick?: () => void;
 }
 
-export const Header = ({ onSettingsClick }: HeaderProps) => {
+export const Header = memo(({ onSettingsClick }: HeaderProps) => {
   const { colorMode, toggleColorMode } = useColorMode();
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   return (
     <Flex
@@ -26,34 +30,52 @@ export const Header = ({ onSettingsClick }: HeaderProps) => {
       borderColor="border"
       zIndex={100}
     >
-      <Flex align="center" gap={3}>
-        <Box color="blue.500">
-          <HiSparkles size={24} />
-        </Box>
+      <Flex align="center" gap={2}>
+        <Logo size={24} />
         <Text fontSize="xl" fontWeight="bold">
           MarketMind
         </Text>
       </Flex>
 
       <Flex align="center" gap={3}>
-        <AISelector />
-        <IconButton
-          aria-label="Toggle color mode"
-          onClick={toggleColorMode}
-          variant="ghost"
-          size="sm"
-        >
-          {colorMode === 'dark' ? <HiSun /> : <HiMoon />}
-        </IconButton>
-        <IconButton
-          aria-label="Settings"
-          onClick={onSettingsClick}
-          variant="ghost"
-          size="sm"
-        >
-          <HiCog6Tooth />
-        </IconButton>
+        <TooltipWrapper label={`Theme: ${colorMode === 'dark' ? 'Dark' : 'Light'}`} placement="bottom" showArrow>
+          <IconButton
+            aria-label="Toggle color mode"
+            onClick={toggleColorMode}
+            variant="ghost"
+            size="sm"
+          >
+            {colorMode === 'dark' ? <HiSun /> : <HiMoon />}
+          </IconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label="Keyboard Shortcuts" placement="bottom" showArrow>
+          <IconButton
+            aria-label="Show keyboard shortcuts"
+            onClick={() => setShowShortcuts(true)}
+            variant="ghost"
+            size="sm"
+          >
+            <HiCommandLine />
+          </IconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label="Settings" placement="bottom" showArrow>
+          <IconButton
+            aria-label="Settings"
+            onClick={onSettingsClick}
+            variant="ghost"
+            size="sm"
+          >
+            <HiCog6Tooth />
+          </IconButton>
+        </TooltipWrapper>
       </Flex>
+      
+      <KeyboardShortcutsDialog 
+        isOpen={showShortcuts} 
+        onClose={() => setShowShortcuts(false)} 
+      />
     </Flex>
   );
-};
+});
+
+Header.displayName = 'Header';

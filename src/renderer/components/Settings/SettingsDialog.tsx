@@ -1,10 +1,12 @@
 import { Button } from '@/renderer/components/ui/button';
 import { Dialog } from '@/renderer/components/ui/dialog';
 import { Tabs } from '@/renderer/components/ui/tabs';
-import { Box } from '@chakra-ui/react';
+import { Box, CloseButton } from '@chakra-ui/react';
 import { useState } from 'react';
+import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import { AboutTab } from './AboutTab';
 import { AIConfigTab } from './AIConfigTab';
+import { ChartSettingsTab } from './ChartSettingsTab';
 import { GeneralTab } from './GeneralTab';
 import { NewsConfigTab } from './NewsConfigTab';
 import { useSettingsDialog } from './useSettingsDialog';
@@ -12,9 +14,11 @@ import { useSettingsDialog } from './useSettingsDialog';
 interface SettingsDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  advancedConfig: AdvancedControlsConfig;
+  onAdvancedConfigChange: (config: AdvancedControlsConfig) => void;
 }
 
-export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
+export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConfigChange }: SettingsDialogProps) => {
   const [activeTab, setActiveTab] = useState<string>('general');
   const { isDirty, handleSave, handleClose } = useSettingsDialog(onClose);
 
@@ -23,15 +27,22 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
       <Dialog.Backdrop />
       <Dialog.Positioner>
         <Dialog.Content maxH="85vh">
+          <CloseButton
+            position="absolute"
+            top={4}
+            right={4}
+            onClick={handleClose}
+            size="sm"
+          />
           <Dialog.Header borderBottom="1px solid" borderColor="border">
             <Dialog.Title>Settings</Dialog.Title>
           </Dialog.Header>
-          <Dialog.CloseTrigger />
 
           <Dialog.Body overflowY="auto">
             <Tabs.Root value={activeTab} onValueChange={(e) => setActiveTab(e.value)} variant="enclosed">
               <Tabs.List>
                 <Tabs.Trigger value="general">General</Tabs.Trigger>
+                <Tabs.Trigger value="chart">Chart</Tabs.Trigger>
                 <Tabs.Trigger value="ai">AI Configuration</Tabs.Trigger>
                 <Tabs.Trigger value="news">News</Tabs.Trigger>
                 <Tabs.Trigger value="about">About</Tabs.Trigger>
@@ -40,6 +51,13 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
               <Box mt={4}>
                 <Tabs.Content value="general">
                   <GeneralTab />
+                </Tabs.Content>
+
+                <Tabs.Content value="chart">
+                  <ChartSettingsTab 
+                    config={advancedConfig}
+                    onConfigChange={onAdvancedConfigChange}
+                  />
                 </Tabs.Content>
 
                 <Tabs.Content value="ai">

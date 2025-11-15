@@ -1,19 +1,24 @@
-import { Box, ChakraProvider, Stack, Text } from '@chakra-ui/react';
+import { Box, ChakraProvider, Stack } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { Candle } from '@shared/types';
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { AdvancedControls, type AdvancedControlsConfig } from './components/Chart/AdvancedControls';
+import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
 import { ChartControls } from './components/Chart/ChartControls';
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
 import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { MainLayout } from './components/Layout/MainLayout';
+import { OnboardingDialog } from './components/Onboarding/OnboardingDialog';
 import { SymbolSelector } from './components/SymbolSelector';
+import { ErrorMessage } from './components/ui/ErrorMessage';
+import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
 import { ChartProvider } from './context/ChartContext';
+import { useGlobalActions } from './context/GlobalActionsContext';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
+import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useMarketData } from './hooks/useMarketData';
 import { useNews } from './hooks/useNews';
@@ -78,8 +83,10 @@ function AppContent(): ReactElement {
   const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
+  const [showCurrentPriceLine, setShowCurrentPriceLine] = useLocalStorage('marketmind:showCurrentPriceLine', true);
   const [chartType, setChartType] = useLocalStorage<'candlestick' | 'line'>('marketmind:chartType', 'candlestick');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
+  const [showOnboarding, setShowOnboarding] = useLocalStorage('marketmind:showOnboarding', true);
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
     'marketmind:movingAverages',
     DEFAULT_MOVING_AVERAGES
@@ -90,6 +97,8 @@ function AppContent(): ReactElement {
     candleSpacing: CHART_CONFIG.CANDLE_SPACING,
     candleWickWidth: CHART_CONFIG.CANDLE_WICK_WIDTH,
     gridLineWidth: CHART_CONFIG.GRID_LINE_WIDTH,
+    currentPriceLineWidth: CHART_CONFIG.CURRENT_PRICE_LINE_WIDTH,
+    currentPriceLineStyle: CHART_CONFIG.CURRENT_PRICE_LINE_STYLE,
     paddingTop: CHART_CONFIG.CANVAS_PADDING_TOP,
     paddingBottom: CHART_CONFIG.CANVAS_PADDING_BOTTOM,
     paddingLeft: CHART_CONFIG.CANVAS_PADDING_LEFT,
@@ -195,7 +204,23 @@ function AppContent(): ReactElement {
 
   return (
     <>
-      <MainLayout>
+      <MainLayout 
+        onOpenSymbolSelector={() => {}}
+        advancedConfig={advancedConfig}
+        onAdvancedConfigChange={setAdvancedConfig}
+      >
+        <AppContentWithKeyboardShortcuts
+          showVolume={showVolume}
+          setShowVolume={setShowVolume}
+          showGrid={showGrid}
+          setShowGrid={setShowGrid}
+          chartType={chartType}
+          setChartType={setChartType}
+          movingAverages={movingAverages}
+          setMovingAverages={setMovingAverages}
+          advancedConfig={advancedConfig}
+          setAdvancedConfig={setAdvancedConfig}
+        />
         <Box position="absolute" top={4} right={4} zIndex={10}>
         <SymbolSelector
           marketService={marketService}
@@ -216,49 +241,31 @@ function AppContent(): ReactElement {
             <ChartControls
               showVolume={showVolume}
               showGrid={showGrid}
+              showCurrentPriceLine={showCurrentPriceLine}
               chartType={chartType}
               movingAverages={movingAverages}
               advancedConfig={advancedConfig}
               timeframe={timeframe}
               onShowVolumeChange={setShowVolume}
               onShowGridChange={setShowGrid}
+              onShowCurrentPriceLineChange={setShowCurrentPriceLine}
               onChartTypeChange={setChartType}
               onMovingAveragesChange={setMovingAverages}
               onAdvancedConfigChange={setAdvancedConfig}
               onTimeframeChange={setTimeframe}
             />
-            <AdvancedControls
-              config={advancedConfig}
-              onConfigChange={setAdvancedConfig}
-            />
           </Stack>
           
           {loading && (
-            <Box 
-              position="absolute" 
-              top="50%" 
-              left="50%" 
-              transform="translate(-50%, -50%)"
-              color="fg"
-              fontSize="xl"
-            >
-              <Text>Loading market data...</Text>
-            </Box>
+            <LoadingSpinner message="Loading market data..." />
           )}
 
           {error && (
-            <Box 
-              position="absolute" 
-              top="50%" 
-              left="50%" 
-              transform="translate(-50%, -50%)"
-              color="red.500"
-              fontSize="xl"
-              textAlign="center"
-              maxW="500px"
-            >
-              <Text>Error loading data: {error.message}</Text>
-            </Box>
+            <ErrorMessage 
+              title="Failed to Load Market Data"
+              message={error.message}
+              onRetry={() => window.location.reload()}
+            />
           )}
 
           {marketData && (
@@ -268,6 +275,7 @@ function AppContent(): ReactElement {
               height="100%"
               showVolume={showVolume}
               showGrid={showGrid}
+              showCurrentPriceLine={showCurrentPriceLine}
               chartType={chartType}
               movingAverages={movingAverages}
               advancedConfig={debouncedAdvancedConfig}
@@ -276,8 +284,80 @@ function AppContent(): ReactElement {
         </MainLayout>
 
         <UpdateNotification />
+        
+        <OnboardingDialog 
+          isOpen={showOnboarding} 
+          onClose={() => setShowOnboarding(false)} 
+        />
       </>
   );
+}
+
+interface KeyboardShortcutsWrapperProps {
+  showVolume: boolean;
+  setShowVolume: (value: boolean | ((prev: boolean) => boolean)) => void;
+  showGrid: boolean;
+  setShowGrid: (value: boolean | ((prev: boolean) => boolean)) => void;
+  chartType: 'candlestick' | 'line';
+  setChartType: (value: 'candlestick' | 'line' | ((prev: 'candlestick' | 'line') => 'candlestick' | 'line')) => void;
+  movingAverages: MovingAverageConfig[];
+  setMovingAverages: (value: MovingAverageConfig[] | ((prev: MovingAverageConfig[]) => MovingAverageConfig[])) => void;
+  advancedConfig: AdvancedControlsConfig;
+  setAdvancedConfig: (value: AdvancedControlsConfig | ((prev: AdvancedControlsConfig) => AdvancedControlsConfig)) => void;
+}
+
+function AppContentWithKeyboardShortcuts({
+  setShowVolume,
+  setShowGrid,
+  setChartType,
+  setMovingAverages,
+  setAdvancedConfig,
+}: KeyboardShortcutsWrapperProps) {
+  const globalActions = useGlobalActions();
+
+  useGlobalKeyboardShortcuts({
+    onToggleVolume: () => setShowVolume(prev => !prev),
+    onToggleGrid: () => setShowGrid(prev => !prev),
+    onToggleChartType: () => setChartType(prev => prev === 'candlestick' ? 'line' : 'candlestick'),
+    onToggleMA: (index) => {
+      setMovingAverages(prev => {
+        if (index < 0 || index >= prev.length) return prev;
+        const newMAs = [...prev];
+        const current = newMAs[index];
+        if (current) {
+          newMAs[index] = { ...current, visible: !current.visible };
+        }
+        return newMAs;
+      });
+    },
+    onZoomIn: () => {
+      setAdvancedConfig(prev => ({
+        ...prev,
+        candleSpacing: Math.min(prev.candleSpacing + 1, 30),
+      }));
+    },
+    onZoomOut: () => {
+      setAdvancedConfig(prev => ({
+        ...prev,
+        candleSpacing: Math.max(prev.candleSpacing - 1, 2),
+      }));
+    },
+    onResetZoom: () => {
+      setAdvancedConfig(prev => ({
+        ...prev,
+        candleSpacing: CHART_CONFIG.CANDLE_SPACING,
+      }));
+    },
+    onPanLeft: () => {}, 
+    onPanRight: () => {},
+    onOpenSettings: globalActions.openSettings,
+    onToggleChatSidebar: globalActions.toggleChatSidebar,
+    onFocusChatInput: globalActions.focusChatInput,
+    onShowShortcuts: globalActions.showKeyboardShortcuts,
+    onOpenSymbolSelector: () => {},
+  });
+
+  return null;
 }
 
 export default App;

@@ -7,17 +7,18 @@ export const useMessageInput = () => {
   const { chartData } = useChartContext();
   
   const sendMessage = useAIStore((state) => state.sendMessage);
-  const provider = useAIStore((state) => state.provider);
-  const model = useAIStore((state) => state.model);
+  const settings = useAIStore((state) => state.settings);
+  const isLoading = useAIStore((state) => state.isLoading);
 
-  const canSend = message.trim().length > 0 && provider && model;
+  const canSend = message.trim().length > 0 && settings?.provider && settings?.model && !isLoading;
 
   const handleSend = useCallback(async () => {
     if (!canSend) return;
 
-    await sendMessage(message.trim(), chartData || undefined);
+    const messageToSend = message.trim();
+    setMessage(''); // Clear immediately
     
-    setMessage('');
+    await sendMessage(messageToSend, chartData || undefined);
   }, [canSend, message, chartData, sendMessage]);
 
   const handleKeyDown = useCallback(

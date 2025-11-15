@@ -56,22 +56,18 @@ export const useChartCanvas = ({
   const [isPanningOnScale, setIsPanningOnScale] = useState(false);
   const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
 
+  // Initialize canvas manager only once
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || managerRef.current) return;
 
-    if (!managerRef.current) {
-      const newManager = new CanvasManager(
-        canvasRef.current,
-        viewport,
-        CHART_CONFIG.CANVAS_PADDING,
-      );
-      newManager.setCandles(candles);
-      managerRef.current = newManager;
-      setManager(newManager);
-    } else {
-      managerRef.current.setCandles(candles);
-      managerRef.current.setViewport(viewport);
-    }
+    const newManager = new CanvasManager(
+      canvasRef.current,
+      viewport,
+      CHART_CONFIG.CANVAS_PADDING,
+    );
+    newManager.setCandles(candles);
+    managerRef.current = newManager;
+    setManager(newManager);
 
     const handleResize = (): void => {
       if (managerRef.current) {
@@ -98,7 +94,51 @@ export const useChartCanvas = ({
         setManager(null);
       }
     };
-  }, [candles, viewport]);
+  }, []);
+
+  // Track previous candle count to detect timeframe changes
+  const prevCandleCountRef = useRef<number>(candles.length);
+
+  // Update candles when they change
+  useEffect(() => {
+    if (managerRef.current) {
+      const prevCount = prevCandleCountRef.current;
+      const currentCount = candles.length;
+      
+      managerRef.current.setCandles(candles);
+      
+      // Only reset viewport if candle count changed significantly (>10% difference)
+      // This indicates a timeframe change, not just a realtime update
+      const countDiffPercentage = Math.abs(currentCount - prevCount) / Math.max(prevCount, 1);
+      const isSignificantChange = countDiffPercentage > 0.1;
+      
+      if (initialViewport === DEFAULT_VIEWPORT && isSignificantChange) {
+        const visibleCount = Math.min(100, currentCount);
+        
+        const newViewport = {
+          ...DEFAULT_VIEWPORT,
+          start: Math.max(0, currentCount - visibleCount),
+          end: currentCount,
+        };
+        
+        setViewport(newViewport);
+        managerRef.current.setViewport(newViewport);
+        onViewportChange?.(newViewport);
+        
+        // Reset vertical zoom to center the chart
+        managerRef.current.resetVerticalZoom();
+      }
+      
+      prevCandleCountRef.current = currentCount;
+    }
+  }, [candles]);
+
+  // Update viewport when it changes
+  useEffect(() => {
+    if (managerRef.current) {
+      managerRef.current.setViewport(viewport);
+    }
+  }, [viewport]);
 
   const updateViewport = useCallback(
     (newViewport: Viewport): void => {

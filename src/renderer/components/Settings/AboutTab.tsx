@@ -1,15 +1,19 @@
-import { Box, Link, Separator, Stack, Text } from '@chakra-ui/react';
+import { Logo } from '@/renderer/components/ui/logo';
+import { Box, Flex, Link, Separator, Stack, Text } from '@chakra-ui/react';
 import { HiArrowTopRightOnSquare } from 'react-icons/hi2';
 
 export const AboutTab = () => {
   return (
     <Stack gap={6}>
       <Box>
-        <Text fontSize="2xl" fontWeight="bold" mb={2}>
-          MarketMind
-        </Text>
+        <Flex align="center" gap={2} mb={2}>
+          <Logo size={32} />
+          <Text fontSize="2xl" fontWeight="bold">
+            MarketMind
+          </Text>
+        </Flex>
         <Text fontSize="md" color="fg.muted" mb={4}>
-          Version 0.6.0
+          Version 0.12.0
         </Text>
         <Text fontSize="sm" color="fg.muted">
           An AI-powered trading assistant that combines advanced financial chart visualization 
@@ -25,9 +29,13 @@ export const AboutTab = () => {
         </Text>
         <Stack gap={2} fontSize="sm" color="fg.muted">
           <Text>• Real-time cryptocurrency market data (Binance)</Text>
-          <Text>• Advanced candlestick charts with 5 moving averages</Text>
-          <Text>• AI analysis with OpenAI, Claude, and Gemini</Text>
+          <Text>• Advanced candlestick charts with moving averages</Text>
+          <Text>• AI analysis with OpenAI GPT-4o, Claude 4.5, and Gemini 2.0</Text>
+          <Text>• Financial news integration (NewsAPI & CryptoPanic)</Text>
           <Text>• Interactive chat interface with conversation history</Text>
+          <Text>• Secure API key storage with OS-level encryption</Text>
+          <Text>• Auto-update system with GitHub releases</Text>
+          <Text>• Keyboard shortcuts for productivity</Text>
           <Text>• Light and dark themes</Text>
           <Text>• WebSocket live updates</Text>
         </Stack>

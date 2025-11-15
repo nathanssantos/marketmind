@@ -68,7 +68,7 @@ export const useCandlestickRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, colors, enabled, rightMargin, candleWickWidth]);
+  }, [manager, colors, enabled, rightMargin, candleWickWidth, manager?.getCandles()]);
 
   useEffect(() => {
     render();

@@ -1,27 +1,30 @@
-import { Box, HStack, IconButton, Stack, Text, Switch as ChakraSwitch } from '@chakra-ui/react';
-import { 
-  HiOutlineChartBar, 
-  HiOutlinePresentationChartLine, 
-  HiOutlineViewGrid,
-  HiOutlineTrendingUp 
-} from 'react-icons/hi';
+import { Box, Switch as ChakraSwitch, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
 import type { ReactElement } from 'react';
-import type { MovingAverageConfig } from './useMovingAverageRenderer';
-import { ControlPanel } from './ControlPanel';
-import { usePinnedControls } from './PinnedControlsContext';
-import { PinnableControl } from './PinnableControl';
+import {
+    HiOutlineChartBar,
+    HiOutlineTrendingUp,
+    HiOutlineViewGrid
+} from 'react-icons/hi';
+import { MdCandlestickChart, MdShowChart } from 'react-icons/md';
+import { TooltipWrapper } from '../ui/Tooltip';
 import type { AdvancedControlsConfig } from './AdvancedControls';
+import { ControlPanel } from './ControlPanel';
+import { PinnableControl } from './PinnableControl';
+import { usePinnedControls } from './PinnedControlsContext';
 import { TimeframeSelector, type Timeframe } from './TimeframeSelector';
+import type { MovingAverageConfig } from './useMovingAverageRenderer';
 
 export interface ChartControlsProps {
   showVolume: boolean;
   showGrid: boolean;
+  showCurrentPriceLine: boolean;
   chartType: 'candlestick' | 'line';
   movingAverages: MovingAverageConfig[];
   advancedConfig?: AdvancedControlsConfig;
   timeframe: Timeframe;
   onShowVolumeChange: (show: boolean) => void;
   onShowGridChange: (show: boolean) => void;
+  onShowCurrentPriceLineChange: (show: boolean) => void;
   onChartTypeChange: (type: 'candlestick' | 'line') => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onAdvancedConfigChange?: (config: AdvancedControlsConfig) => void;
@@ -31,12 +34,14 @@ export interface ChartControlsProps {
 export const ChartControls = ({
   showVolume,
   showGrid,
+  showCurrentPriceLine,
   chartType,
   movingAverages,
   advancedConfig,
   timeframe,
   onShowVolumeChange,
   onShowGridChange,
+  onShowCurrentPriceLineChange,
   onChartTypeChange,
   onMovingAveragesChange,
   onAdvancedConfigChange,
@@ -93,26 +98,30 @@ export const ChartControls = ({
           Chart Type
         </Text>
         <HStack gap={2}>
-          <IconButton
-            size="sm"
-            aria-label="Candlestick chart"
-            onClick={() => onChartTypeChange('candlestick')}
-            colorPalette={chartType === 'candlestick' ? 'blue' : 'gray'}
-            variant={chartType === 'candlestick' ? 'solid' : 'outline'}
-            color={chartType === 'candlestick' ? undefined : 'gray.400'}
-          >
-            <HiOutlineChartBar />
-          </IconButton>
-          <IconButton
-            size="sm"
-            aria-label="Line chart"
-            onClick={() => onChartTypeChange('line')}
-            colorPalette={chartType === 'line' ? 'blue' : 'gray'}
-            variant={chartType === 'line' ? 'solid' : 'outline'}
-            color={chartType === 'line' ? undefined : 'gray.400'}
-          >
-            <HiOutlinePresentationChartLine />
-          </IconButton>
+          <TooltipWrapper label="Candlestick Chart">
+            <IconButton
+              size="sm"
+              aria-label="Candlestick chart"
+              onClick={() => onChartTypeChange('candlestick')}
+              colorPalette={chartType === 'candlestick' ? 'blue' : 'gray'}
+              variant={chartType === 'candlestick' ? 'solid' : 'outline'}
+              color={chartType === 'candlestick' ? undefined : 'gray.400'}
+            >
+              <MdCandlestickChart />
+            </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label="Line Chart">
+            <IconButton
+              size="sm"
+              aria-label="Line chart"
+              onClick={() => onChartTypeChange('line')}
+              colorPalette={chartType === 'line' ? 'blue' : 'gray'}
+              variant={chartType === 'line' ? 'solid' : 'outline'}
+              color={chartType === 'line' ? undefined : 'gray.400'}
+            >
+              <MdShowChart />
+            </IconButton>
+          </TooltipWrapper>
         </HStack>
       </Box>
 
@@ -148,6 +157,23 @@ export const ChartControls = ({
                 size="sm"
                 checked={showGrid}
                 onCheckedChange={(e) => onShowGridChange(e.checked)}
+                colorPalette="blue"
+              >
+                <ChakraSwitch.HiddenInput />
+                <ChakraSwitch.Control>
+                  <ChakraSwitch.Thumb />
+                </ChakraSwitch.Control>
+              </ChakraSwitch.Root>
+            </HStack>
+            <HStack justify="space-between" gap={3}>
+              <HStack gap={2}>
+                <HiOutlineTrendingUp size={14} color="var(--chakra-colors-gray-300)" />
+                <Text fontSize="xs" color="gray.300">Current Price</Text>
+              </HStack>
+              <ChakraSwitch.Root
+                size="sm"
+                checked={showCurrentPriceLine}
+                onCheckedChange={(e) => onShowCurrentPriceLineChange(e.checked)}
                 colorPalette="blue"
               >
                 <ChakraSwitch.HiddenInput />

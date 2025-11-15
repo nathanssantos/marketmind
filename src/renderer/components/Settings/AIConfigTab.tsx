@@ -1,17 +1,17 @@
 import { Button } from '@/renderer/components/ui/button';
 import { Field } from '@/renderer/components/ui/field';
-import { Input } from '@/renderer/components/ui/input';
+import { PasswordInput } from '@/renderer/components/ui/password-input';
 import { Select } from '@/renderer/components/ui/select';
 import { Slider } from '@/renderer/components/ui/slider';
 import { useSecureStorage } from '@/renderer/hooks/useSecureStorage';
 import { useAIStore } from '@/renderer/store';
 import {
-    Box,
-    Flex,
-    Separator,
-    Spinner,
-    Stack,
-    Text,
+  Box,
+  Flex,
+  Separator,
+  Spinner,
+  Stack,
+  Text,
 } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
 import { useEffect, useState } from 'react';
@@ -152,8 +152,7 @@ export const AIConfigTab = () => {
             </Flex>
           ) : (
             <Flex gap={2}>
-              <Input
-                type="password"
+              <PasswordInput
                 value={apiKeys[provider]}
                 onChange={(e) => handleApiKeyChange(provider, e.target.value)}
                 placeholder={envKey || `Enter your ${label} API key`}
@@ -175,6 +174,26 @@ export const AIConfigTab = () => {
 
   return (
     <Stack gap={6}>
+      <Box 
+        bg="blue.500/10" 
+        p={4} 
+        borderRadius="md"
+        borderLeft="4px solid"
+        borderColor="blue.500"
+      >
+        <Text fontSize="sm" fontWeight="semibold" mb={2}>
+          💡 Quick Tips
+        </Text>
+        <Stack gap={1} fontSize="sm" color="fg.muted">
+          <Text>• API keys are encrypted and stored securely using OS-level encryption</Text>
+          <Text>• Lower temperature (0-0.5) for technical analysis</Text>
+          <Text>• Higher temperature (0.7-1.5) for creative insights</Text>
+          <Text>• Gemini 2.0 Flash Exp is FREE with no API key required</Text>
+        </Stack>
+      </Box>
+
+      <Separator />
+
       <Box>
         <Field label="AI Provider" required>
           <Select
@@ -253,19 +272,6 @@ export const AIConfigTab = () => {
             width="full"
           />
         </Field>
-      </Box>
-
-      <Box bg="bg.muted" p={4} borderRadius="md">
-        <Text fontSize="sm" fontWeight="medium" mb={2}>
-          Quick Tips
-        </Text>
-        <Stack gap={2} fontSize="sm" color="fg.muted">
-          <Text>• API keys are encrypted and stored securely</Text>
-          <Text>• Lower temperature (0-0.5) for technical analysis</Text>
-          <Text>• Higher temperature (0.7-1.5) for creative insights</Text>
-          <Text>• Gemini 2.0 Flash Exp is FREE with no API key required</Text>
-          <Text>• Store API keys in .env file for development</Text>
-        </Stack>
       </Box>
     </Stack>
   );

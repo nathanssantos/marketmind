@@ -1,7 +1,7 @@
-import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { calculateMovingAverage } from '@/renderer/utils/movingAverages';
-import { useCallback } from 'react';
+import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
+import { useCallback } from 'react';
 
 export interface MovingAverageConfig {
   period: number;
@@ -82,7 +82,7 @@ export const useMovingAverageRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, movingAverages, rightMargin]);
+  }, [manager, movingAverages, rightMargin, manager?.getCandles()]);
 
   return { render };
 };
