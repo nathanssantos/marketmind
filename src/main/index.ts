@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { storageService } from './services/StorageService';
+import { UpdateManager } from './services/UpdateManager';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,6 +15,7 @@ const WINDOW_CONFIG = {
 } as const;
 
 let mainWindow: BrowserWindow | null = null;
+let updateManager: UpdateManager | null = null;
 
 const createWindow = (): void => {
   mainWindow = new BrowserWindow({
@@ -44,7 +46,11 @@ const createWindow = (): void => {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+    updateManager?.stopAutoCheckInterval();
+    updateManager = null;
   });
+  
+  updateManager = new UpdateManager(mainWindow);
 };
 
 const setupIpcHandlers = (): void => {
@@ -125,6 +131,93 @@ const setupIpcHandlers = (): void => {
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  });
+  
+  ipcMain.handle('update:check', async () => {
+    try {
+      if (!updateManager) {
+        throw new Error('UpdateManager not initialized');
+      }
+      await updateManager.checkForUpdates();
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to check for updates:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  });
+
+  ipcMain.handle('update:download', async () => {
+    try {
+      if (!updateManager) {
+        throw new Error('UpdateManager not initialized');
+      }
+      await updateManager.downloadUpdate();
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to download update:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  });
+
+  ipcMain.handle('update:install', () => {
+    try {
+      if (!updateManager) {
+        throw new Error('UpdateManager not initialized');
+      }
+      updateManager.quitAndInstall();
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to install update:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  });
+
+  ipcMain.handle('update:getInfo', () => {
+    if (!updateManager) {
+      throw new Error('UpdateManager not initialized');
+    }
+    return updateManager.getUpdateInfo();
+  });
+
+  ipcMain.handle('update:startAutoCheck', (_event, intervalHours: number) => {
+    try {
+      if (!updateManager) {
+        throw new Error('UpdateManager not initialized');
+      }
+      updateManager.startAutoCheckInterval(intervalHours);
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to start auto check:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  });
+
+  ipcMain.handle('update:stopAutoCheck', () => {
+    try {
+      if (!updateManager) {
+        throw new Error('UpdateManager not initialized');
+      }
+      updateManager.stopAutoCheckInterval();
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to stop auto check:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   });

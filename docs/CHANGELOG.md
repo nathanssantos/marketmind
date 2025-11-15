@@ -8,14 +8,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- **Phase 10: Auto-Update System** - Automatic update distribution
 - Conversation export/import functionality
 - Unit tests for all components and hooks
 - Additional chart indicators (RSI, MACD, Bollinger Bands)
 - News sentiment analysis integration
 - Professional app icons and branding
 
-## [0.10.0] - 2025-11-15
+## [0.11.0] - 2024-12-19
+
+### Added
+- **Auto-Update System**: Automatic update distribution via GitHub releases
+  - UpdateManager service with electron-updater integration
+  - Automatic background update checks with configurable interval (1-168 hours)
+  - Download progress tracking with speed and size indicators
+  - Silent update installation with user confirmation
+  - 6 IPC handlers for update operations (check, download, install, getInfo, startAutoCheck, stopAutoCheck)
+  - UpdateAPI exposure in preload script for secure renderer communication
+  - useAutoUpdate React hook for update state management
+  - UpdateNotification component with real-time status display
+  - Update settings in General tab (auto-check, interval, auto-download)
+  - electron-log integration for update activity tracking
+  - GitHub releases as update provider
+  - Support for manual and automatic update workflows
+- **UI Components**: New reusable components
+  - Switch component for toggle inputs (Chakra UI v3 based)
+  - Enhanced Slider component integration
+- **Documentation**: Comprehensive auto-update guides
+  - docs/AUTO_UPDATE.md - Complete auto-update system documentation
+  - Architecture overview and component descriptions
+  - GitHub releases publishing workflow
+  - Development and testing procedures
+  - Security considerations (code signing, notarization)
+  - Troubleshooting guide and best practices
+  - API reference for UpdateManager and useAutoUpdate
+
+### Changed
+- GeneralTab now includes auto-update configuration section
+- App.tsx includes UpdateNotification component for global visibility
+- UI components exported via index.ts for cleaner imports
+
+## [0.10.0] - 2024-12-18
 
 ### Added
 - **Build & Deploy System**: Complete production build configuration

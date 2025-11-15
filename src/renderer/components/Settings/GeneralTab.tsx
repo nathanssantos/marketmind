@@ -2,13 +2,23 @@ import { Button } from '@/renderer/components/ui/button';
 import { useColorMode } from '@/renderer/components/ui/color-mode';
 import { Field } from '@/renderer/components/ui/field';
 import { Select } from '@/renderer/components/ui/select';
+import { Switch } from '@/renderer/components/ui/switch';
+import { Slider } from '@/renderer/components/ui/slider';
 import { useAIStore } from '@/renderer/store';
+import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
+import { useAutoUpdate } from '@/renderer/hooks/useAutoUpdate';
 import { Box, Flex, Separator, Stack, Text } from '@chakra-ui/react';
-import { HiArrowDownTray, HiArrowUpTray, HiTrash } from 'react-icons/hi2';
+import { HiArrowDownTray, HiArrowUpTray, HiTrash, HiArrowPath } from 'react-icons/hi2';
 
 export const GeneralTab = () => {
   const { colorMode, setColorMode } = useColorMode();
   const { conversations, importConversation, clearAll } = useAIStore();
+  
+  const [autoCheckUpdates, setAutoCheckUpdates] = useLocalStorage('autoCheckUpdates', true);
+  const [autoDownloadUpdates, setAutoDownloadUpdates] = useLocalStorage('autoDownloadUpdates', true);
+  const [updateCheckInterval, setUpdateCheckInterval] = useLocalStorage('updateCheckInterval', 24);
+  
+  const { status, checkForUpdates, startAutoCheck, stopAutoCheck } = useAutoUpdate();
 
   const handleThemeChange = (newTheme: 'light' | 'dark') => {
     setColorMode(newTheme);
@@ -63,6 +73,32 @@ export const GeneralTab = () => {
     }
   };
 
+  const handleAutoCheckChange = (checked: boolean) => {
+    setAutoCheckUpdates(checked);
+    if (checked) {
+      startAutoCheck(updateCheckInterval);
+    } else {
+      stopAutoCheck();
+    }
+  };
+
+  const handleAutoDownloadChange = (checked: boolean) => {
+    setAutoDownloadUpdates(checked);
+  };
+
+  const handleIntervalChange = (value: number[]) => {
+    const interval = value[0] ?? 24;
+    setUpdateCheckInterval(interval);
+    if (autoCheckUpdates) {
+      stopAutoCheck();
+      startAutoCheck(interval);
+    }
+  };
+
+  const handleCheckNow = () => {
+    checkForUpdates();
+  };
+
   return (
     <Stack gap={6}>
       <Box>
@@ -76,6 +112,63 @@ export const GeneralTab = () => {
             ]}
           />
         </Field>
+      </Box>
+
+      <Separator />
+
+      <Box>
+        <Text fontSize="md" fontWeight="medium" mb={3}>
+          Auto-Update Settings
+        </Text>
+        <Stack gap={4}>
+          <Box>
+            <Switch 
+              checked={autoCheckUpdates} 
+              onCheckedChange={handleAutoCheckChange}
+            >
+              Check for updates automatically
+            </Switch>
+            <Text fontSize="sm" color="fg.muted" mt={1} ml={8}>
+              Automatically check for new versions in the background
+            </Text>
+          </Box>
+
+          {autoCheckUpdates && (
+            <Box>
+              <Text fontSize="sm" mb={2}>
+                Check interval: {updateCheckInterval} hours
+              </Text>
+              <Slider 
+                value={[updateCheckInterval]}
+                onValueChange={handleIntervalChange}
+                min={1}
+                max={168}
+                step={1}
+              />
+            </Box>
+          )}
+
+          <Box>
+            <Switch 
+              checked={autoDownloadUpdates} 
+              onCheckedChange={handleAutoDownloadChange}
+            >
+              Download updates automatically
+            </Switch>
+            <Text fontSize="sm" color="fg.muted" mt={1} ml={8}>
+              Automatically download new versions when available
+            </Text>
+          </Box>
+
+          <Button 
+            variant="outline" 
+            onClick={handleCheckNow}
+            disabled={status === 'checking'}
+          >
+            <HiArrowPath />
+            Check for Updates Now
+          </Button>
+        </Stack>
       </Box>
 
       <Separator />

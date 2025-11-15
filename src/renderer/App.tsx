@@ -10,6 +10,7 @@ import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { MainLayout } from './components/Layout/MainLayout';
 import { SymbolSelector } from './components/SymbolSelector';
+import { UpdateNotification } from './components/Update/UpdateNotification';
 import { ChartProvider } from './context/ChartContext';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
@@ -193,8 +194,9 @@ function AppContent(): ReactElement {
   });
 
   return (
-    <MainLayout>
-      <Box position="absolute" top={4} right={4} zIndex={10}>
+    <>
+      <MainLayout>
+        <Box position="absolute" top={4} right={4} zIndex={10}>
         <SymbolSelector
           marketService={marketService}
           value={symbol}
@@ -272,6 +274,9 @@ function AppContent(): ReactElement {
             />
           )}
         </MainLayout>
+
+        <UpdateNotification />
+      </>
   );
 }
 
