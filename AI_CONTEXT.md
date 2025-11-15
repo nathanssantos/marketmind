@@ -22,9 +22,23 @@
 
 ## 🎯 Development Guidelines
 
+### Dependencies and Libraries
+
+#### 1. **Always Use Latest Versions**
+- ✅ Keep all dependencies updated to their latest stable/LTS versions
+- ✅ Run `yarn upgrade --latest` regularly
+- ✅ Check for major version updates and breaking changes
+- ✅ Consult official documentation for migration guides
+
+#### 2. **Consult Official Documentation**
+- ✅ Always check official docs before implementing features
+- ✅ Follow best practices recommended by library maintainers
+- ✅ Use recommended patterns and APIs
+- ✅ Stay updated with deprecation notices
+
 ### Code Quality Standards
 
-#### 1. **No Comments in Code**
+#### 3. **No Comments in Code**
 - ❌ Don't add inline comments
 - ✅ Create and update README files in feature folders
 - ✅ Use self-documenting code (clear variable/function names)
@@ -41,7 +55,7 @@ const calculateSimpleMovingAverage = (candles: Candle[]): number => {
 };
 ```
 
-#### 2. **Magic Numbers & Constants**
+#### 4. **Magic Numbers & Constants**
 - ❌ Never hardcode values in logic
 - ✅ Always extract to separate configuration files
 
@@ -64,7 +78,7 @@ if (volume > CHART_CONFIG.VOLUME_THRESHOLD) {
 }
 ```
 
-#### 3. **TypeScript - No `any`**
+#### 5. **TypeScript - No `any`**
 - ❌ Never use `any`
 - ✅ Use proper types, `unknown`, or generics
 
@@ -86,7 +100,7 @@ const parseData = (data: unknown): CandleData => {
 }
 ```
 
-#### 4. **Global Types**
+#### 6. **Global Types**
 - ✅ Use shared types from `src/shared/types/`
 - ✅ Export and reuse types across main and renderer processes
 
@@ -105,7 +119,7 @@ export interface Candle {
 import type { Candle } from '@shared/types';
 ```
 
-#### 5. **Simplified Conditionals**
+#### 7. **Simplified Conditionals**
 - ✅ One-line ifs when possible
 - ✅ Use ternary operators for simple conditions
 
@@ -124,7 +138,7 @@ const backgroundColor = isDarkMode ? '#1e222d' : '#ffffff';
 if (candles.length === 0) return null;
 ```
 
-#### 6. **Early Returns**
+#### 8. **Early Returns**
 - ✅ Always prefer early returns over nested ifs
 - ✅ Reduce indentation and improve readability
 
@@ -151,7 +165,7 @@ const processCandle = (candle: Candle | null): string => {
 }
 ```
 
-#### 7. **Responsive Design**
+#### 9. **Responsive Design**
 - ✅ Always consider responsiveness
 - ✅ Use Chakra UI responsive props
 - ✅ Canvas should adapt to window resize
@@ -283,6 +297,18 @@ When starting a new chat due to context limits, provide:
 
 ```
 I'm working on MarketMind following AI_CONTEXT.md guidelines.
+
+Key Guidelines:
+- Always use latest versions of libraries
+- Consult official documentation for best practices
+- No comments in code (use READMEs)
+- No magic numbers (extract to constants)
+- No `any` types
+- Early returns over nested ifs
+- One-line conditionals when possible
+- Responsive design
+- Commits in English
+- Documentation in English
 
 Current Status:
 - Phase: 3 (Chart Rendering System)
@@ -553,6 +579,8 @@ export const Chart = (props: ChartProps) => {
 ## 🔄 Workflow Checklist
 
 Before committing:
+- [ ] Using latest library versions
+- [ ] Consulted official documentation
 - [ ] No `any` types used
 - [ ] No magic numbers (extracted to constants)
 - [ ] No inline comments (updated README instead)
