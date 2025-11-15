@@ -22,7 +22,9 @@ Phase 9: Build & Deploy         ░░░░░░░░░░░░░░░░
 Phase 10: Auto-Update           ░░░░░░░░░░░░░░░░░░░░   0% ⏳
 ```
 
-**Overall Project Completion:** ~40%
+**Overall Project Completion:** ~45%
+
+**Note:** WebSocket real-time updates implemented - charts now update live!
 
 ---
 
@@ -247,12 +249,15 @@ src/renderer/
 #### Providers
 - ✅ **BinanceProvider** - Primary cryptocurrency data source
   - REST API integration (`/api/v3/klines`, `/api/v3/exchangeInfo`)
+  - **WebSocket integration** (`wss://stream.binance.com:9443/ws`)
+  - Real-time candle updates via WebSocket streams
   - No API key required for public data
   - Rate limiting (20 req/s)
   - Symbol search and normalization
   - Complete OHLCV candlestick data
   - Supports all timeframes (1m to 1M)
   - Exchange info caching (5min)
+  - **Live updates with sub-second latency**
   
 - ✅ **CoinGeckoProvider** - Fallback cryptocurrency source
   - REST API integration (`/coins/{id}/market_chart`)
@@ -270,6 +275,9 @@ src/renderer/
   - Cache key generation
   - Provider switching
   - Error aggregation and logging
+  - **WebSocket subscription management**
+  - **Multiple simultaneous subscriptions**
+  - **Automatic cleanup and unsubscribe**
 
 #### React Integration
 - ✅ **useMarketData Hook** - Data fetching for components
@@ -277,10 +285,18 @@ src/renderer/
   - Automatic refetch on dependency change
   - Manual refetch function
   - Enable/disable functionality
+
+- ✅ **useRealtimeCandle Hook** - WebSocket subscriptions
+  - Real-time candle updates
+  - Automatic subscription/unsubscription
+  - isFinal flag for closed candles
+  - Callback-based update handling
   
 - ✅ **App.tsx Integration**
   - MarketDataService instantiation
   - Real-time data fetching
+  - **Live candle updates via WebSocket**
+  - **Smart merging of historical + live data**
   - Loading state display
   - Error message display
   - Replaced sample data with real API data
