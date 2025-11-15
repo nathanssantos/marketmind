@@ -1,0 +1,287 @@
+# 🚀 Scripts do MarketMind
+
+Scripts úteis para gerenciamento do repositório e desenvolvimento.
+
+## 📜 Scripts Disponíveis
+
+### `setup-github.sh`
+
+Script automatizado para configurar o repositório no GitHub.
+
+**O que faz:**
+- ✅ Verifica instalação do GitHub CLI
+- ✅ Verifica autenticação
+- ✅ Cria repositório no GitHub (público ou privado)
+- ✅ Envia código inicial
+- ✅ Cria e configura branch `develop`
+- ✅ Adiciona tópicos relevantes ao repositório
+- ✅ Opção para configurar proteção de branches
+
+**Uso:**
+
+```bash
+./scripts/setup-github.sh
+```
+
+**Pré-requisitos:**
+- GitHub CLI instalado (`brew install gh`)
+- Autenticação configurada (`gh auth login`)
+
+---
+
+## 🛠 Instalação do GitHub CLI
+
+### macOS
+```bash
+brew install gh
+```
+
+### Windows
+```bash
+winget install GitHub.cli
+```
+
+Ou baixe em: https://cli.github.com/
+
+### Autenticação
+```bash
+gh auth login
+```
+
+Escolha:
+1. GitHub.com
+2. HTTPS
+3. Login via browser
+
+---
+
+## 📚 Comandos Úteis do GitHub CLI
+
+### Repositório
+```bash
+# Ver informações do repo
+gh repo view
+
+# Abrir repo no navegador
+gh repo view --web
+
+# Clonar repo
+gh repo clone USUARIO/REPO
+```
+
+### Issues
+```bash
+# Listar issues
+gh issue list
+
+# Criar issue
+gh issue create
+
+# Ver issue específica
+gh issue view NUMERO
+```
+
+### Pull Requests
+```bash
+# Criar PR
+gh pr create
+
+# Listar PRs
+gh pr list
+
+# Ver PR específico
+gh pr view NUMERO
+
+# Fazer checkout de PR
+gh pr checkout NUMERO
+
+# Merge de PR
+gh pr merge NUMERO
+```
+
+### Releases
+```bash
+# Listar releases
+gh release list
+
+# Criar release
+gh release create v1.0.0
+
+# Upload de assets
+gh release upload v1.0.0 dist/*.dmg dist/*.exe
+```
+
+### Workflows (Actions)
+```bash
+# Listar workflows
+gh workflow list
+
+# Ver runs de um workflow
+gh run list
+
+# Ver detalhes de um run
+gh run view RUN_ID
+```
+
+---
+
+## 🔄 Fluxo de Trabalho Recomendado
+
+### 1. Criar uma nova feature
+
+```bash
+# Atualizar develop
+git checkout develop
+git pull origin develop
+
+# Criar branch da feature
+git checkout -b feature/minha-feature
+
+# Desenvolver...
+git add .
+git commit -m "feat: adiciona minha feature"
+
+# Enviar para GitHub
+git push -u origin feature/minha-feature
+
+# Criar PR
+gh pr create --base develop --title "Adiciona minha feature" --body "Descrição..."
+```
+
+### 2. Revisar e fazer merge
+
+```bash
+# Ver PR
+gh pr view
+
+# Fazer checkout para testar
+gh pr checkout NUMERO
+
+# Aprovar e fazer merge
+gh pr merge NUMERO --merge
+```
+
+### 3. Criar release
+
+```bash
+# Atualizar main com develop
+git checkout main
+git merge develop
+git push origin main
+
+# Criar tag
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+
+# Criar release no GitHub
+gh release create v1.0.0 \
+  --title "v1.0.0 - Nome da Release" \
+  --notes "Changelog aqui..." \
+  dist/*.dmg dist/*.exe
+```
+
+---
+
+## 🎯 Commits Semânticos
+
+Use prefixos nos commits para melhor organização:
+
+- `feat:` - Nova funcionalidade
+- `fix:` - Correção de bug
+- `docs:` - Documentação
+- `style:` - Formatação, ponto e vírgula, etc
+- `refactor:` - Refatoração de código
+- `perf:` - Melhorias de performance
+- `test:` - Adição de testes
+- `chore:` - Tarefas de manutenção
+- `ci:` - Mudanças no CI/CD
+- `build:` - Mudanças no sistema de build
+
+**Exemplos:**
+```bash
+git commit -m "feat: adiciona renderização de candlestick"
+git commit -m "fix: corrige cálculo de média móvel"
+git commit -m "docs: atualiza README com instruções"
+git commit -m "perf: otimiza renderização de canvas"
+```
+
+---
+
+## 🌿 Estratégia de Branches
+
+```
+main (produção - sempre estável)
+  ← develop (integração)
+      ← feature/nome-da-feature
+      ← feature/outra-feature
+      ← bugfix/nome-do-bug
+```
+
+**Regras:**
+- `main` - Código de produção, apenas via PR
+- `develop` - Branch de desenvolvimento principal
+- `feature/*` - Novas funcionalidades
+- `bugfix/*` - Correções de bugs
+- `hotfix/*` - Correções urgentes em produção
+
+---
+
+## 📦 Publicação de Releases
+
+### Automático (via GitHub Actions)
+
+Ao criar uma tag, o CI/CD automaticamente:
+1. Faz build para macOS e Windows
+2. Assina os binários
+3. Cria release no GitHub
+4. Faz upload dos instaladores
+5. Atualiza `latest.yml` para auto-update
+
+### Manual
+
+```bash
+# Build local
+npm run build:all
+
+# Criar release
+gh release create v1.0.0 \
+  --title "v1.0.0 - Initial Release" \
+  --notes-file CHANGELOG.md \
+  dist-electron/*.dmg \
+  dist-electron/*.exe \
+  dist-electron/latest-mac.yml \
+  dist-electron/latest.yml
+```
+
+---
+
+## 🔧 Troubleshooting
+
+### GitHub CLI não encontrado
+```bash
+# Verificar instalação
+which gh
+
+# Reinstalar
+brew reinstall gh
+```
+
+### Não autenticado
+```bash
+# Re-autenticar
+gh auth logout
+gh auth login
+```
+
+### Erro ao criar repositório
+```bash
+# Verificar se já existe
+gh repo view USUARIO/REPO
+
+# Verificar permissões
+gh auth status
+```
+
+---
+
+Voltar para [README principal](../README.md)
