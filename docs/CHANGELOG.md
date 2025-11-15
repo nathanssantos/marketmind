@@ -7,19 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### In Progress
+- Line chart renderer implementation
+- Moving average calculations and rendering
+- Chart controls UI
+- Unit tests for hooks and utilities
+- Time labels on X axis
+- Tooltip on hover functionality
+
+## [0.2.0] - 2025-11-14
+
 ### Added
-- Initial project setup with TypeScript, Electron, React 19, and Vite 7
-- Chakra UI v3 integration with theme system
-- Project structure with main process, renderer process, and shared code
-- Type system for candles, charts, and AI
-- Constants for chart configuration (colors, dimensions)
-- Electron preload script with IPC bridge
-- Git hooks for branch protection
-- ESLint and Prettier configuration with strict rules
-- Comprehensive documentation (AI_CONTEXT.md, IMPLEMENTATION_PLAN.md)
-- GitHub repository setup scripts
-- Automated dependency updates
-- Canvas rendering system with CanvasManager
+- Complete canvas rendering system with CanvasManager
 - Coordinate system utilities (price to Y, X to index conversions)
 - Drawing utilities (rectangles, lines, text, candles, grid)
 - ChartCanvas component with zoom and pan support
@@ -30,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Working chart visualization with candlesticks, grid, and volume
 - Horizontal (time) and vertical (price) scales with formatting
 - ResizeObserver for responsive canvas
+- Hook-based architecture for all chart components
+- Viewport culling for optimized rendering
+- Mouse wheel zoom functionality
+- Mouse drag pan functionality
+- Price formatters with K/M/B notation
+- AI types for future integration (AIProvider, AIMessage, AIAnalysisRequest)
 
 ### Fixed
 - Canvas now fully responsive to container resize
@@ -37,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Time scale labels now display correctly
 - Manager instance reuse to prevent unnecessary re-renders
 - Optimized render cycle for smooth interactions
+- Proper device pixel ratio handling for crisp rendering
 
 ### Configuration
 - Vite 7.2.2 for build tooling
