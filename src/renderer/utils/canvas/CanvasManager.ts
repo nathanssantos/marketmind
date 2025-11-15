@@ -50,6 +50,7 @@ export class CanvasManager {
   private initialize(): void {
     this.ctx = setupCanvas(this.canvas);
     this.updateDimensions();
+    this.updateCandleWidth();
   }
 
   private updateDimensions(): void {
@@ -180,6 +181,10 @@ export class CanvasManager {
     }
 
     this.viewport = clampViewport(this.viewport, this.candles.length);
+    
+    // Calculate dynamic candle width based on visible range
+    this.updateCandleWidth();
+    
     this.updateBounds();
     this.triggerRender();
   }
@@ -196,6 +201,25 @@ export class CanvasManager {
     this.viewport = clampViewport(this.viewport, this.candles.length);
     this.updateBounds();
     this.triggerRender();
+  }
+
+  private updateCandleWidth(): void {
+    if (!this.dimensions) return;
+
+    const visibleRange = this.viewport.end - this.viewport.start;
+    const availableWidth = this.dimensions.chartWidth;
+    
+    // Calculate width per candle including spacing
+    const widthPerCandle = availableWidth / visibleRange;
+    
+    // Subtract spacing to get actual candle width
+    const calculatedWidth = widthPerCandle - this.viewport.candleSpacing;
+    
+    // Clamp between min and max values
+    this.viewport.candleWidth = Math.max(
+      CHART_CONFIG.MIN_CANDLE_WIDTH,
+      Math.min(CHART_CONFIG.MAX_CANDLE_WIDTH, calculatedWidth)
+    );
   }
 
   public getCandleAtX(x: number): Candle | null {
