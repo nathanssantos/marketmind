@@ -1,13 +1,13 @@
 import { CHART_CONFIG } from '@shared/constants';
 import type { Candle, Viewport } from '@shared/types';
 import {
-    calculateBounds,
-    clampViewport,
-    priceToY,
-    volumeToHeight,
-    yToPrice,
-    type Bounds,
-    type Dimensions,
+  calculateBounds,
+  clampViewport,
+  priceToY,
+  volumeToHeight,
+  yToPrice,
+  type Bounds,
+  type Dimensions,
 } from './coordinateSystem';
 import { clearCanvas, setupCanvas } from './drawingUtils';
 
@@ -20,9 +20,11 @@ export class CanvasManager {
   private dimensions: Dimensions | null = null;
   private padding: number;
   private renderCallback: (() => void) | null = null;
-  private priceOffset: number = 0; // Offset for vertical panning
-  private priceScale: number = 1; // Scale for vertical zooming
+  private priceOffset: number = 0;
+  private priceScale: number = 1;
   private rightMargin: number = CHART_CONFIG.CHART_RIGHT_MARGIN;
+  private animationFrameId: number | null = null;
+  private isAnimating: boolean = false;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -37,16 +39,26 @@ export class CanvasManager {
 
   public setRenderCallback(callback: (() => void) | null): void {
     this.renderCallback = callback;
-    // Trigger render immediately when callback is set
     if (callback) {
-      this.triggerRender();
+      this.scheduleRender();
     }
   }
 
+  private scheduleRender(): void {
+    if (this.isAnimating) return;
+    
+    this.isAnimating = true;
+    this.animationFrameId = requestAnimationFrame(() => {
+      if (this.renderCallback) {
+        this.renderCallback();
+      }
+      this.isAnimating = false;
+      this.animationFrameId = null;
+    });
+  }
+
   private triggerRender(): void {
-    if (this.renderCallback) {
-      this.renderCallback();
-    }
+    this.scheduleRender();
   }
 
   private initialize(): void {
@@ -64,7 +76,7 @@ export class CanvasManager {
       width: rect.width,
       height: rect.height,
       chartHeight,
-      volumeHeight: 0, // Volume is now rendered as overlay within chart area
+      volumeHeight: 0,
       chartWidth,
     };
   }
@@ -95,7 +107,6 @@ export class CanvasManager {
 
     const baseBounds = calculateBounds(this.candles, this.viewport);
     
-    // Apply price offset and scale
     const center = (baseBounds.minPrice + baseBounds.maxPrice) / 2;
     const range = (baseBounds.maxPrice - baseBounds.minPrice) * this.priceScale;
     
@@ -204,7 +215,6 @@ export class CanvasManager {
 
     this.viewport = clampViewport(this.viewport, this.candles.length);
     
-    // Calculate dynamic candle width based on visible range
     this.updateCandleWidth();
     
     this.updateBounds();
@@ -228,17 +238,14 @@ export class CanvasManager {
   public panVertical(deltaY: number): void {
     if (!this.dimensions) return;
 
-    // Get base bounds without offset/scale to calculate proper delta
     const baseBounds = this.candles.length > 0 ? calculateBounds(this.candles, this.viewport) : null;
     if (!baseBounds) return;
 
     const baseRange = baseBounds.maxPrice - baseBounds.minPrice;
     const chartHeight = this.dimensions.chartHeight;
     
-    // Convert pixel delta to price delta (normal direction: drag down = move down)
     const priceDelta = (deltaY / chartHeight) * baseRange;
     
-    // Update price offset
     this.priceOffset += priceDelta;
     
     this.updateBounds();
@@ -251,7 +258,6 @@ export class CanvasManager {
     const zoomFactor = 1 + (deltaY / this.dimensions.chartHeight) * 2;
     this.priceScale *= zoomFactor;
     
-    // Clamp scale to reasonable values
     this.priceScale = Math.max(0.1, Math.min(10, this.priceScale));
     
     this.updateBounds();
@@ -264,13 +270,10 @@ export class CanvasManager {
     const visibleRange = this.viewport.end - this.viewport.start;
     const availableWidth = this.dimensions.chartWidth;
     
-    // Calculate width per candle including spacing
     const widthPerCandle = availableWidth / visibleRange;
     
-    // Subtract spacing to get actual candle width
     const calculatedWidth = widthPerCandle - this.viewport.candleSpacing;
     
-    // Clamp between min and max values
     this.viewport.candleWidth = Math.max(
       CHART_CONFIG.MIN_CANDLE_WIDTH,
       Math.min(CHART_CONFIG.MAX_CANDLE_WIDTH, calculatedWidth)
@@ -284,5 +287,15 @@ export class CanvasManager {
 
   public getPadding(): number {
     return this.padding;
+  }
+
+  public destroy(): void {
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+    this.isAnimating = false;
+    this.renderCallback = null;
+    this.ctx = null;
   }
 }

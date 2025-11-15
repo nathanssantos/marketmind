@@ -92,6 +92,11 @@ export const useChartCanvas = ({
     return () => {
       resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
+      if (managerRef.current) {
+        managerRef.current.destroy();
+        managerRef.current = null;
+        setManager(null);
+      }
     };
   }, [candles, viewport]);
 

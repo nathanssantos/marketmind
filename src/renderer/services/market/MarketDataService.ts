@@ -7,6 +7,7 @@ import type {
   WebSocketSubscription,
 } from '@shared/types';
 import type { CandleData } from '@shared/types';
+import { indexedDBCache } from '../cache/IndexedDBCache';
 
 export interface MarketDataServiceConfig {
   primaryProvider: BaseMarketProvider;
@@ -39,7 +40,7 @@ export class MarketDataService {
     const cacheKey = this.getCacheKey(options);
 
     if (this.enableCache) {
-      const cached = this.getFromCache(cacheKey);
+      const cached = await this.getFromCache(cacheKey);
       if (cached) return cached;
     }
 
@@ -54,7 +55,7 @@ export class MarketDataService {
         const data = await provider.fetchCandles(options);
         
         if (this.enableCache) {
-          this.setCache(cacheKey, data);
+          await this.setCache(cacheKey, data);
         }
 
         return data;
@@ -112,6 +113,9 @@ export class MarketDataService {
 
   clearCache(): void {
     this.cache.clear();
+    indexedDBCache.clear().catch(error => {
+      console.error('Failed to clear IndexedDB cache:', error);
+    });
   }
 
   setPrimaryProvider(provider: BaseMarketProvider): void {
@@ -166,24 +170,38 @@ export class MarketDataService {
     }`;
   }
 
-  private getFromCache(key: string): CandleData | null {
-    const entry = this.cache.get(key);
-    
-    if (!entry) return null;
+  private async getFromCache(key: string): Promise<CandleData | null> {
+    try {
+      const memCached = this.cache.get(key);
+      if (memCached && Date.now() - memCached.timestamp <= this.cacheDuration) {
+        return memCached.data;
+      }
 
-    const now = Date.now();
-    if (now - entry.timestamp > this.cacheDuration) {
-      this.cache.delete(key);
-      return null;
+      const dbCached = await indexedDBCache.get<CandleData>(key);
+      if (dbCached) {
+        this.cache.set(key, {
+          data: dbCached,
+          timestamp: Date.now(),
+        });
+        return dbCached;
+      }
+    } catch (error) {
+      console.warn('Cache read error:', error);
     }
 
-    return entry.data;
+    return null;
   }
 
-  private setCache(key: string, data: CandleData): void {
+  private async setCache(key: string, data: CandleData): Promise<void> {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
     });
+
+    try {
+      await indexedDBCache.set(key, data, this.cacheDuration);
+    } catch (error) {
+      console.warn('Cache write error:', error);
+    }
   }
 }

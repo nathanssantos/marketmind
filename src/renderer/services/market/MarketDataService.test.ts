@@ -173,6 +173,7 @@ describe('MarketDataService', () => {
       };
 
       const result = await service.fetchCandles(options);
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       expect(result).toEqual(mockCandles);
       expect(primaryProvider.fetchCandles).toHaveBeenCalled();

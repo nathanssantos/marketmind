@@ -11,6 +11,9 @@ const DEFAULT_MODELS: Record<AIProviderType, string> = {
   gemini: 'gemini-2.0-flash-exp',
 };
 
+const MAX_MESSAGES_PER_CONVERSATION = 100;
+const MAX_STORED_CONVERSATIONS = 50;
+
 export interface ChartData {
   candles: Candle[];
   symbol: string;
@@ -258,7 +261,11 @@ export const useAIStore = create<AIState>()(
             timestamp: Date.now(),
           };
 
-          const updatedMessages = [...c.messages, newMessage];
+          let updatedMessages = [...c.messages, newMessage];
+          
+          if (updatedMessages.length > MAX_MESSAGES_PER_CONVERSATION) {
+            updatedMessages = updatedMessages.slice(-MAX_MESSAGES_PER_CONVERSATION);
+          }
           
           const title = c.title === 'New Conversation' 
             ? generateTitle(updatedMessages)
@@ -272,7 +279,14 @@ export const useAIStore = create<AIState>()(
           };
         });
 
-        return { conversations };
+        let limitedConversations = conversations;
+        if (limitedConversations.length > MAX_STORED_CONVERSATIONS) {
+          limitedConversations = limitedConversations
+            .sort((a, b) => b.updatedAt - a.updatedAt)
+            .slice(0, MAX_STORED_CONVERSATIONS);
+        }
+
+        return { conversations: limitedConversations };
       }),
 
       updateMessage: (conversationId, messageId, content) => set((state) => ({

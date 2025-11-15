@@ -236,14 +236,16 @@ describe('CanvasManager', () => {
       expect(newWidth).toBeLessThanOrEqual(CHART_CONFIG.MAX_CANDLE_WIDTH);
     });
 
-    it('should trigger render callback on zoom', () => {
+    it('should trigger render callback on zoom', async () => {
       const callback = vi.fn();
       manager.setRenderCallback(callback);
       callback.mockClear();
       
       manager.zoom(1);
       
-      expect(callback).toHaveBeenCalled();
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalled();
+      });
     });
   });
 
@@ -276,14 +278,16 @@ describe('CanvasManager', () => {
       expect(manager.getViewport().start).toBeGreaterThanOrEqual(0);
     });
 
-    it('should trigger render callback on pan', () => {
+    it('should trigger render callback on pan', async () => {
       const callback = vi.fn();
       manager.setRenderCallback(callback);
       callback.mockClear();
       
       manager.pan(50);
       
-      expect(callback).toHaveBeenCalled();
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalled();
+      });
     });
   });
 
@@ -313,24 +317,28 @@ describe('CanvasManager', () => {
       expect(manager.getBounds()).not.toBeNull();
     });
 
-    it('should trigger render on vertical pan', () => {
+    it('should trigger render on vertical pan', async () => {
       const callback = vi.fn();
       manager.setRenderCallback(callback);
       callback.mockClear();
       
       manager.panVertical(50);
       
-      expect(callback).toHaveBeenCalled();
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalled();
+      });
     });
 
-    it('should trigger render on vertical zoom', () => {
+    it('should trigger render on vertical zoom', async () => {
       const callback = vi.fn();
       manager.setRenderCallback(callback);
       callback.mockClear();
       
       manager.zoomVertical(10);
       
-      expect(callback).toHaveBeenCalled();
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalled();
+      });
     });
   });
 
@@ -353,14 +361,16 @@ describe('CanvasManager', () => {
   });
 
   describe('right margin', () => {
-    it('should set right margin', () => {
+    it('should set right margin', async () => {
       const callback = vi.fn();
       manager.setRenderCallback(callback);
       callback.mockClear();
       
       manager.setRightMargin(100);
       
-      expect(callback).toHaveBeenCalled();
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalled();
+      });
     });
   });
 
@@ -371,24 +381,28 @@ describe('CanvasManager', () => {
       expect(true).toBe(true);
     });
 
-    it('should resize canvas', () => {
+    it('should resize canvas', async () => {
       const callback = vi.fn();
       manager.setRenderCallback(callback);
       callback.mockClear();
       
       manager.resize();
       
-      expect(callback).toHaveBeenCalled();
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalled();
+      });
     });
   });
 
   describe('render callback', () => {
-    it('should set and trigger render callback', () => {
+    it('should set and trigger render callback', async () => {
       const callback = vi.fn();
       
       manager.setRenderCallback(callback);
       
-      expect(callback).toHaveBeenCalled();
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalled();
+      });
     });
 
     it('should clear render callback', () => {

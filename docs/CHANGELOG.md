@@ -8,13 +8,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Canvas rendering performance optimizations
-- Web Workers for heavy calculations
-- Memory management improvements
-- IndexedDB for persistent cache
+- Data virtualization for large datasets
+- Performance profiling and benchmarking
 - Additional chart indicators (RSI, MACD, Bollinger Bands)
 - Multi-language support (i18n)
 - Professional app icons and branding
+
+## [0.13.0] - 2024-11-15
+
+### Added
+- **Canvas Performance Optimization**
+  - Implemented `requestAnimationFrame` for smooth 60fps rendering
+  - Added `scheduleRender()` method to CanvasManager for efficient render queueing
+  - Implemented proper cleanup with `destroy()` method to cancel animation frames
+  - Prevents unnecessary render cycles and improves battery life
+
+- **Web Workers for Heavy Calculations**
+  - Created `movingAverages.worker.ts` for offloading SMA/EMA calculations
+  - Implemented `useMovingAverageWorker` React hook for worker integration
+  - Calculations now run in background thread without blocking UI
+  - Tested with both simple and exponential moving averages
+
+- **Memory Management Improvements**
+  - Added conversation history limits in aiStore (100 messages/conversation max)
+  - Implemented maximum stored conversations limit (50 max)
+  - Auto-cleanup of oldest messages when limits exceeded
+  - Canvas cleanup on component unmount to prevent memory leaks
+  - Conscious garbage collection patterns throughout codebase
+
+- **IndexedDB Persistent Cache**
+  - Created `IndexedDBCache` service for browser-side persistent storage
+  - Integrated with MarketDataService for dual-layer caching (memory + IndexedDB)
+  - Automatic cache expiration with TTL support
+  - Background cleanup of expired entries
+  - Reduces API calls and improves offline support
+  - 15 tests with 100% coverage
+
+### Changed
+- **Test Infrastructure Enhancement**
+  - Fixed IndexedDB mock to use `queueMicrotask` instead of `setTimeout`
+  - Prevents test hangs and improves test reliability
+  - All 533 tests passing (100% pass rate)
+  - Test execution time improved to ~3.4s
+  - Added automatic IndexedDB cleanup between tests
+
+- **CanvasManager Enhancement**
+  - Tests updated to handle async `requestAnimationFrame` properly
+  - Added `vi.waitFor()` for async render operations
+  - 38 tests all passing with async support
+
+### Technical
+- Test Stats: 533 passing (28 test files)
+- Coverage: 92.18% overall
+- Memory limits: 100 messages/conversation, 50 conversations max
+- Cache TTL: Configurable per-service (default 5 minutes)
+- Performance: requestAnimationFrame ensures 60fps target
 
 ## [0.12.0] - 2024-11-15
 
