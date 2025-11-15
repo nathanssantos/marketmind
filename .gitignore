@@ -1,0 +1,191 @@
+# MarketMind - Git Ignore
+
+# ===========================
+# Node.js & NPM
+# ===========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ===========================
+# Build & Distribution
+# ===========================
+dist/
+dist-electron/
+out/
+build/
+*.app
+*.dmg
+*.pkg
+*.exe
+*.msi
+*.zip
+*.tar.gz
+release/
+
+# ===========================
+# Electron specific
+# ===========================
+.webpack/
+.vite/
+
+# ===========================
+# Environment & Secrets
+# ===========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.key
+*.pem
+*.p12
+*.provisionprofile
+
+# Sensitive config files
+config/secrets.json
+config/api-keys.json
+user-data/
+app-data/
+
+# ===========================
+# TypeScript
+# ===========================
+*.tsbuildinfo
+*.js.map
+*.d.ts.map
+
+# ===========================
+# IDE & Editors
+# ===========================
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains IDEs (WebStorm, IntelliJ)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# ===========================
+# macOS
+# ===========================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# ===========================
+# Windows
+# ===========================
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# ===========================
+# Linux
+# ===========================
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===========================
+# Testing
+# ===========================
+coverage/
+*.lcov
+.nyc_output
+test-results/
+playwright-report/
+
+# ===========================
+# Logs
+# ===========================
+logs/
+*.log
+log.txt
+
+# ===========================
+# Cache
+# ===========================
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+
+# ===========================
+# Temporary files
+# ===========================
+*.tmp
+*.temp
+tmp/
+temp/
+
+# ===========================
+# Application specific
+# ===========================
+# User settings (não committar)
+user-settings.json
+user-preferences.json
+
+# API keys config (criar exemplo sem keys)
+# config/api-keys.json - use api-keys.example.json
+
+# Chart data cache
+chart-cache/
+market-data-cache/
+
+# AI conversation history (privacidade do usuário)
+conversation-history/
+
+# Update files
+updates/
+*.asar
+*.blockmap
+latest*.yml
