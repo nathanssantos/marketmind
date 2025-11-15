@@ -1,6 +1,7 @@
 import { Box, Button, Input, Stack, Text, VStack, Heading } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAI } from '../hooks/useAI';
+import type { AIProviderType } from '@shared/types';
 
 export const AITest = () => {
   const {
@@ -13,18 +14,31 @@ export const AITest = () => {
     createConversation,
   } = useAI();
 
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState(import.meta.env.VITE_ANTHROPIC_API_KEY || '');
   const [message, setMessage] = useState('');
+  const [provider, setProvider] = useState<AIProviderType>('anthropic');
+  const [temperature, setTemperature] = useState(0.7);
+  const [maxTokens, setMaxTokens] = useState(4096);
+
+  useEffect(() => {
+    const key = provider === 'anthropic' 
+      ? import.meta.env.VITE_ANTHROPIC_API_KEY 
+      : import.meta.env.VITE_OPENAI_API_KEY;
+    
+    setApiKey(key || '');
+  }, [provider]);
 
   const handleConfigure = () => {
     if (!apiKey.trim()) return;
 
+    const model = provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-5-20250929';
+
     configure({
-      provider: 'openai',
+      provider,
       apiKey: apiKey.trim(),
-      model: 'gpt-4o',
-      temperature: 0.7,
-      maxTokens: 4096,
+      model,
+      temperature,
+      maxTokens,
     });
 
     createConversation();
@@ -43,7 +57,7 @@ export const AITest = () => {
         <Box>
           <Heading size="lg" mb={2} color="white">🤖 AI Integration Test</Heading>
           <Text fontSize="sm" color="gray.300">
-            Test the OpenAI integration before building the full chat interface
+            Test the AI integration with OpenAI or Claude (Anthropic)
           </Text>
         </Box>
 
@@ -52,24 +66,54 @@ export const AITest = () => {
             <Box p={4} bg="blue.900" borderRadius="md" borderLeft="4px solid" borderColor="blue.500">
               <Text fontWeight="bold" mb={2} color="blue.100">📝 Instructions:</Text>
               <Text fontSize="sm" mb={2} color="blue.50">
-                1. Get your API key from{' '}
-                <Text as="span" color="blue.200" textDecoration="underline">
-                  platform.openai.com/api-keys
-                </Text>
+                1. Choose your AI provider (Claude or OpenAI)
               </Text>
               <Text fontSize="sm" mb={2} color="blue.50">
-                2. Paste it below (it will be stored in localStorage)
+                2. Get your API key from:
+              </Text>
+              <Text fontSize="sm" ml={4} mb={1} color="blue.200">
+                • Claude: <Text as="span" textDecoration="underline">console.anthropic.com</Text>
+              </Text>
+              <Text fontSize="sm" ml={4} mb={2} color="blue.200">
+                • OpenAI: <Text as="span" textDecoration="underline">platform.openai.com/api-keys</Text>
+              </Text>
+              <Text fontSize="sm" mb={2} color="blue.50">
+                3. Paste it below (stored in localStorage)
               </Text>
               <Text fontSize="sm" color="blue.50">
-                3. Click "Configure AI" to start testing
+                4. Click "Configure AI" to start testing
               </Text>
             </Box>
             
             <Box>
-              <Text fontWeight="bold" mb={2} color="white">OpenAI API Key:</Text>
+              <Text fontWeight="bold" mb={2} color="white">AI Provider:</Text>
+              <select
+                value={provider}
+                onChange={(e) => setProvider(e.target.value as AIProviderType)}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 0.75rem',
+                  backgroundColor: '#1a202c',
+                  color: 'white',
+                  border: '1px solid #4a5568',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="anthropic" style={{ background: '#1a202c' }}>
+                  Claude 4.5 Sonnet (Anthropic)
+                </option>
+                <option value="openai" style={{ background: '#1a202c' }}>
+                  GPT-4o (OpenAI)
+                </option>
+              </select>
+            </Box>
+
+            <Box>
+              <Text fontWeight="bold" mb={2} color="white">API Key:</Text>
               <Input
                 type="password"
-                placeholder="sk-proj-..."
+                placeholder={provider === 'anthropic' ? 'sk-ant-...' : 'sk-proj-...'}
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 bg="gray.800"
@@ -79,9 +123,51 @@ export const AITest = () => {
                 color="white"
               />
               <Text fontSize="xs" color="gray.400" mt={1}>
-                Your API key is stored locally and never sent anywhere except OpenAI
+                Your API key is stored locally and never sent anywhere except {provider === 'anthropic' ? 'Anthropic' : 'OpenAI'}
               </Text>
             </Box>
+
+            <Stack direction={{ base: 'column', md: 'row' }} gap={4}>
+              <Box flex={1}>
+                <Text fontWeight="bold" mb={2} color="white">Temperature:</Text>
+                <Input
+                  type="number"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  value={temperature}
+                  onChange={(e) => setTemperature(parseFloat(e.target.value) || 0.7)}
+                  bg="gray.800"
+                  borderColor="gray.700"
+                  _hover={{ borderColor: 'gray.600' }}
+                  _focus={{ borderColor: 'blue.500' }}
+                  color="white"
+                />
+                <Text fontSize="xs" color="gray.400" mt={1}>
+                  Controls randomness (0 = focused, 2 = creative)
+                </Text>
+              </Box>
+
+              <Box flex={1}>
+                <Text fontWeight="bold" mb={2} color="white">Max Tokens:</Text>
+                <Input
+                  type="number"
+                  min="256"
+                  max="64000"
+                  step="256"
+                  value={maxTokens}
+                  onChange={(e) => setMaxTokens(parseInt(e.target.value) || 4096)}
+                  bg="gray.800"
+                  borderColor="gray.700"
+                  _hover={{ borderColor: 'gray.600' }}
+                  _focus={{ borderColor: 'blue.500' }}
+                  color="white"
+                />
+                <Text fontSize="xs" color="gray.400" mt={1}>
+                  Maximum response length
+                </Text>
+              </Box>
+            </Stack>
             
             <Button 
               onClick={handleConfigure} 
@@ -97,7 +183,9 @@ export const AITest = () => {
             <Box p={3} bg="green.900" borderRadius="md" borderLeft="4px solid" borderColor="green.500">
               <Text fontWeight="bold" color="green.100">✓ AI Configured Successfully</Text>
               <Text fontSize="sm" color="green.50" mt={1}>
-                Model: GPT-4o • Temperature: 0.7 • Max Tokens: 4096
+                Provider: {provider === 'anthropic' ? 'Claude (Anthropic)' : 'OpenAI'} • 
+                Model: {provider === 'anthropic' ? 'Claude Sonnet 4.5' : 'GPT-4o'} • 
+                Temperature: {temperature} • Max Tokens: {maxTokens.toLocaleString()}
               </Text>
             </Box>
 

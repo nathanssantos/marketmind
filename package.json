@@ -24,6 +24,7 @@
     "postinstall": "./scripts/install-hooks.sh"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.69.0",
     "@chakra-ui/react": "^3.29.0",
     "@emotion/react": "^11.14.0",
     "axios": "^1.13.2",

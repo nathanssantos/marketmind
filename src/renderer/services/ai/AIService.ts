@@ -1,6 +1,7 @@
 import type { AIMessage, AIAnalysisRequest, AIAnalysisResponse, AIProviderType } from '@shared/types';
 import type { BaseAIProvider, AIProviderConfig } from './types';
 import { OpenAIProvider } from './providers/OpenAIProvider';
+import { ClaudeProvider } from './providers/ClaudeProvider';
 import prompts from './prompts.json';
 
 export interface AIServiceConfig {
@@ -35,7 +36,8 @@ export class AIService {
         this.provider = new OpenAIProvider(providerConfig);
         break;
       case 'anthropic':
-        throw new Error('Anthropic provider not yet implemented');
+        this.provider = new ClaudeProvider(providerConfig);
+        break;
       case 'gemini':
         throw new Error('Gemini provider not yet implemented');
       default:

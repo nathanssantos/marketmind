@@ -76,20 +76,26 @@ npm install
 
 ### 3. Configure environment variables
 
-Create a `.env` file in the project root:
+Create a `.env` file from the template:
 
-```env
-# Market APIs (optional - can be configured via interface)
-BINANCE_API_KEY=your_key_here
-ALPHA_VANTAGE_API_KEY=your_key_here
-
-# AI APIs (optional - can be configured via interface)
-OPENAI_API_KEY=your_key_here
-ANTHROPIC_API_KEY=your_key_here
-GOOGLE_API_KEY=your_key_here
+```bash
+cp .env.example .env
 ```
 
-> ⚠️ **Note**: API keys can also be configured directly through the application interface.
+Then add your API keys:
+
+```env
+# AI Providers (Vite requires VITE_ prefix)
+VITE_ANTHROPIC_API_KEY=sk-ant-...
+VITE_OPENAI_API_KEY=sk-proj-...
+
+# Market APIs (optional)
+BINANCE_API_KEY=your_key_here
+ALPHA_VANTAGE_API_KEY=your_key_here
+```
+
+> 🔒 **Security**: The `.env` file is automatically ignored by Git and will never be committed.  
+> 📖 See [docs/API_KEYS_SECURITY.md](docs/API_KEYS_SECURITY.md) for detailed security information.
 
 ### 4. Run in development mode
 

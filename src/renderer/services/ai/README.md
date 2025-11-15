@@ -17,7 +17,7 @@ ai/
 ├── README.md                # This file
 └── providers/
     ├── OpenAIProvider.ts    # OpenAI GPT-4o implementation
-    ├── AnthropicProvider.ts # (TODO) Claude implementation
+    ├── ClaudeProvider.ts    # Claude (Anthropic) implementation
     ├── GeminiProvider.ts    # (TODO) Gemini implementation
     └── index.ts             # Provider exports
 ```
@@ -31,13 +31,22 @@ ai/
 ```typescript
 import { AIService } from '@renderer/services/ai';
 
-// Initialize service
+// Initialize with OpenAI
 const aiService = new AIService({
   provider: 'openai',
-  apiKey: 'sk-...',
+  apiKey: 'sk-proj-...',
   model: 'gpt-4o',        // optional, defaults to provider's default
   temperature: 0.7,        // optional, defaults to 0.7
   maxTokens: 4096,         // optional, defaults to 4096
+});
+
+// Or use Claude (Anthropic)
+const aiService = new AIService({
+  provider: 'anthropic',
+  apiKey: 'sk-ant-...',
+  model: 'claude-sonnet-4-5-20250929', // optional
+  temperature: 0.7,
+  maxTokens: 4096,
 });
 
 // Simple chat message
@@ -219,30 +228,54 @@ All prompts are centralized in `prompts.json`:
 
 ---
 
+## 🔌 Supported Providers
+
+### OpenAI (GPT-4o)
+- **Model**: `gpt-4o` (default)
+- **Strengths**: Excellent general knowledge, vision capabilities
+- **Cost**: Pay-per-use
+- **API Key**: [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+
+### Anthropic (Claude)
+- **Model**: `claude-sonnet-4-5-20250929` (default - Claude 4.5)
+  - Also available: `claude-haiku-4-5-20251001` (fastest), `claude-opus-4-1-20250805` (specialized reasoning)
+- **Strengths**: Advanced reasoning, code analysis, safety, 200K context window
+- **Cost**: Paid plans starting at $20/month
+- **API Key**: [console.anthropic.com](https://console.anthropic.com)
+- **Why Claude 4.5?**
+  - State-of-the-art performance in coding and agentic tasks
+  - Exceptional reasoning capabilities
+  - Extended thinking support
+  - Better at following complex instructions
+  - 1M token context window (beta)
+
+### Coming Soon
+- **Google Gemini**: Competitive pricing, multimodal capabilities
+
+---
+
 ## 🔌 Adding New Providers
 
-To add a new AI provider (e.g., Anthropic Claude):
+To add a new AI provider (e.g., Google Gemini):
 
 ### 1. Create Provider Class
 
 ```typescript
-// providers/AnthropicProvider.ts
-import Anthropic from '@anthropic-ai/sdk';
+// providers/GeminiProvider.ts
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { BaseAIProvider, type AIProviderConfig } from '../types';
 import type { AIMessage, AIAnalysisRequest, AIAnalysisResponse } from '@shared/types';
 
-export class AnthropicProvider extends BaseAIProvider {
-  private client: Anthropic;
+export class GeminiProvider extends BaseAIProvider {
+  private client: GoogleGenerativeAI;
 
   constructor(config: AIProviderConfig) {
     super(config);
-    this.client = new Anthropic({
-      apiKey: this.apiKey,
-    });
+    this.client = new GoogleGenerativeAI(this.apiKey);
   }
 
   protected getDefaultModel(): string {
-    return 'claude-3-5-sonnet-20241022';
+    return 'gemini-1.5-pro';
   }
 
   async sendMessage(
@@ -264,11 +297,11 @@ export class AnthropicProvider extends BaseAIProvider {
 
 ```typescript
 // AIService.ts
-import { AnthropicProvider } from './providers/AnthropicProvider';
+import { GeminiProvider } from './providers/GeminiProvider';
 
 // In initializeProvider() method:
-case 'anthropic':
-  this.provider = new AnthropicProvider(providerConfig);
+case 'gemini':
+  this.provider = new GeminiProvider(providerConfig);
   break;
 ```
 
@@ -276,7 +309,7 @@ case 'anthropic':
 
 ```typescript
 // providers/index.ts
-export { AnthropicProvider } from './AnthropicProvider';
+export { GeminiProvider } from './GeminiProvider';
 ```
 
 ---
@@ -490,7 +523,7 @@ if (analysis.signals && analysis.signals[0]) {
 ## 🚧 Future Enhancements
 
 - [ ] Streaming responses for real-time output
-- [ ] Anthropic Claude provider
+- [x] Anthropic Claude provider (✅ COMPLETED)
 - [ ] Google Gemini provider
 - [ ] Response caching layer
 - [ ] Rate limiting and retry logic
@@ -505,10 +538,11 @@ if (analysis.signals && analysis.signals[0]) {
 ## 📚 References
 
 - [OpenAI API Documentation](https://platform.openai.com/docs)
+- [Anthropic Claude Documentation](https://docs.anthropic.com/claude/reference/getting-started-with-the-api)
 - [GPT-4 Vision Guide](https://platform.openai.com/docs/guides/vision)
 - [Best Practices for Prompt Engineering](https://platform.openai.com/docs/guides/prompt-engineering)
 
 ---
 
 **Last Updated:** November 15, 2025  
-**Version:** 1.0.0
+**Version:** 1.1.0
