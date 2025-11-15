@@ -16,7 +16,7 @@ export const AITest = () => {
   } = useAI();
 
   const [apiKey, setApiKey] = useState(import.meta.env.VITE_ANTHROPIC_API_KEY || '');
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState('What are the most reliable classic buy signals in technical analysis?');
   const [provider, setProvider] = useState<AIProviderType>('anthropic');
   const [model, setModel] = useState('claude-sonnet-4-5-20250929');
   const [temperature, setTemperature] = useState(0.7);
@@ -331,14 +331,23 @@ export const AITest = () => {
         ) : (
           <VStack gap={4} align="stretch">
             <Box p={3} bg="green.900" borderRadius="md" borderLeft="4px solid" borderColor="green.500">
-              <Stack direction="row" justify="space-between" align="center">
+              <Stack direction="row" justify="space-between" align="start">
                 <Box flex={1}>
-                  <Text fontWeight="bold" color="green.100">✓ AI Configured Successfully</Text>
-                  <Text fontSize="sm" color="green.50" mt={1}>
-                    Provider: {providerDisplayName} • 
-                    Model: {model} • 
-                    Temperature: {temperature} • Max Tokens: {maxTokens.toLocaleString()}
-                  </Text>
+                  <Text fontWeight="bold" color="green.100" mb={2}>✓ AI Configured Successfully</Text>
+                  <VStack align="start" gap={1}>
+                    <Text fontSize="sm" color="green.50">
+                      <Text as="span" fontWeight="semibold">Provider:</Text> {providerDisplayName}
+                    </Text>
+                    <Text fontSize="sm" color="green.50">
+                      <Text as="span" fontWeight="semibold">Model:</Text> {model}
+                    </Text>
+                    <Text fontSize="sm" color="green.50">
+                      <Text as="span" fontWeight="semibold">Temperature:</Text> {temperature}
+                    </Text>
+                    <Text fontSize="sm" color="green.50">
+                      <Text as="span" fontWeight="semibold">Max Tokens:</Text> {maxTokens.toLocaleString()}
+                    </Text>
+                  </VStack>
                 </Box>
                 <Button 
                   onClick={() => setShowSettings(true)}
