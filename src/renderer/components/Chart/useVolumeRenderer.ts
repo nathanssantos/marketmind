@@ -35,13 +35,14 @@ export const useVolumeRenderer = ({
     const { chartHeight, chartWidth } = dimensions;
     const { candleWidth } = viewport;
 
+    // Render volume within the main chart area (bottom 25%)
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, chartWidth, chartHeight);
     ctx.clip();
 
-    const volumeAreaHeight = chartHeight * CHART_CONFIG.VOLUME_HEIGHT_RATIO;
-    const volumeBaseY = chartHeight - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
+    const volumeOverlayHeight = chartHeight * CHART_CONFIG.VOLUME_HEIGHT_RATIO;
+    const volumeBaseY = chartHeight;
 
     visibleCandles.forEach((candle, index) => {
       const actualIndex = Math.floor(viewport.start) + index;
@@ -50,7 +51,7 @@ export const useVolumeRenderer = ({
       if (x < 0 || x > chartWidth) return;
 
       const volumeRatio = candle.volume / bounds.maxVolume;
-      const volumeHeight = volumeRatio * volumeAreaHeight;
+      const barHeight = volumeRatio * volumeOverlayHeight;
 
       const isBullish = candle.close >= candle.open;
       const baseColor = isBullish ? colors.bullish : colors.bearish;
@@ -60,7 +61,7 @@ export const useVolumeRenderer = ({
         ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${opacity})`
         : `rgba(120, 120, 120, ${opacity})`;
 
-      drawRect(ctx, x, volumeBaseY - volumeHeight, candleWidth, volumeHeight, color);
+      drawRect(ctx, x, volumeBaseY - barHeight, candleWidth, barHeight, color);
     });
 
     ctx.restore();
