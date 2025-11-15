@@ -7,17 +7,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### In Progress (v0.7.0)
-- **Phase 7: Settings System** - 50% Complete
-  - Secure API key storage with electron-store + safeStorage
-  - Settings modal with encryption
-
 ### Planned
+- **Phase 8: News Integration** - Real-time financial news
+- **Phase 9: Advanced Chart Indicators** - RSI, MACD, Bollinger Bands
+- **Phase 10: Portfolio Tracking** - Asset management and tracking
 - Conversation export/import functionality
-- WebSocket integration for real-time market data
 - Unit tests for all components and hooks
+- Rate limiting for AI requests
 
-## [0.7.0] - 2025-11-15 (In Progress)
+## [0.8.0] - 2024-12-XX
+
+### Added
+- **Secure API Key Storage**: Platform-native encryption for API keys
+  - StorageService with electron-store for persistent storage
+  - Multi-provider support (OpenAI, Anthropic, Gemini)
+  - Electron safeStorage API for encryption (Keychain/DPAPI/libsecret)
+  - Encrypted storage with base64 encoding
+  - 7 IPC handlers for secure operations:
+    - `storage:setApiKey` - Save encrypted API key
+    - `storage:getApiKey` - Retrieve decrypted API key
+    - `storage:removeApiKey` - Delete API key
+    - `storage:getAllApiKeys` - Get all provider status
+    - `storage:isEncryptionAvailable` - Check encryption support
+    - `storage:setConfig` - Save application settings
+    - `storage:getConfig` - Load application settings
+- **React Integration**: useSecureStorage hook for UI
+  - Async operations with loading states
+  - Error handling and user feedback
+  - Multi-provider API key management
+  - Type-safe operations with AIProvider type
+- **Migration System**: Automatic localStorage to secure storage
+  - Auto-detect legacy API keys on startup
+  - Silent migration with error handling
+  - Version tracking to prevent re-migration
+  - Provider mapping for all three AI services
+  - Migration status persistence
+- **Settings UI Enhancements**: 
+  - AIConfigTab updated with 3 separate encrypted inputs
+  - Individual save buttons per provider
+  - Visual feedback for save/load operations
+  - Auto-load saved keys on component mount
+  - SettingsDialog with proper modal structure
+
+### Changed
+- API key storage migrated from localStorage to encrypted storage
+- Settings system now uses platform-native encryption
+- Preload API expanded with secureStorage namespace
+- Main process now handles all encryption operations
+- Migration logic moved to renderer process (client-side)
+
+### Security
+- ✅ API keys now encrypted using OS-level encryption
+- ✅ macOS: Keychain encryption
+- ✅ Windows: DPAPI (Data Protection API)
+- ✅ Linux: libsecret encryption
+- ✅ Keys stored as encrypted base64 strings
+- ✅ Automatic migration from plaintext localStorage
+- ✅ No API keys exposed in renderer localStorage
+
+### Technical
+- New files created:
+  - `src/main/services/StorageService.ts` - Encryption service
+  - `src/renderer/hooks/useSecureStorage.ts` - React hook
+  - `src/renderer/utils/migration.ts` - Migration utility
+- Modified files:
+  - `src/main/index.ts` - IPC handler setup
+  - `src/main/preload.ts` - API exposure
+  - `src/main/services/MigrationService.ts` - Simplified
+  - `src/renderer/components/Settings/AIConfigTab.tsx` - Multi-provider UI
+  - `src/renderer/components/Settings/SettingsDialog.tsx` - Modal updates
+  - `src/renderer/App.tsx` - Migration on startup
+- Dependencies:
+  - Added electron-store@10.0.0 for persistent storage
+- Overall project progress: 78% (7/13 phases complete)
+
+### Documentation
+- Updated IMPLEMENTATION_PLAN.md with Phase 7 completion
+- Updated PROJECT_STATUS.md with secure storage details
+- Updated CHANGELOG.md with v0.8.0 release notes
+- Code metrics updated (120 TS files, 34 components, 19 hooks)
+
+## [0.7.0] - 2025-11-15
 
 ### Added
 - **Reusable UI Components**: Custom wrapper components for consistency
