@@ -4,6 +4,7 @@ import type {
   Symbol,
   SymbolInfo,
   MarketDataError,
+  WebSocketSubscription,
 } from '@shared/types';
 import type { CandleData } from '@shared/types';
 
@@ -25,6 +26,7 @@ export class MarketDataService {
   private cache: Map<string, CacheEntry<CandleData>> = new Map();
   private cacheDuration: number;
   private enableCache: boolean;
+  private wsUnsubscribe: Map<string, () => void> = new Map();
 
   constructor(config: MarketDataServiceConfig) {
     this.primaryProvider = config.primaryProvider;
@@ -125,6 +127,37 @@ export class MarketDataService {
     this.fallbackProviders = this.fallbackProviders.filter(
       p => p.name !== providerName
     );
+  }
+
+  subscribeToUpdates(subscription: WebSocketSubscription): () => void {
+    const provider = this.primaryProvider.supportsWebSocket?.() 
+      ? this.primaryProvider 
+      : this.fallbackProviders.find(p => p.supportsWebSocket?.());
+
+    if (!provider?.subscribeToUpdates) {
+      console.warn('No provider supports WebSocket subscriptions');
+      return () => {};
+    }
+
+    const key = `${subscription.symbol}_${subscription.interval}`;
+    
+    const existingUnsubscribe = this.wsUnsubscribe.get(key);
+    if (existingUnsubscribe) {
+      existingUnsubscribe();
+    }
+
+    const unsubscribe = provider.subscribeToUpdates(subscription);
+    this.wsUnsubscribe.set(key, unsubscribe);
+
+    return () => {
+      unsubscribe();
+      this.wsUnsubscribe.delete(key);
+    };
+  }
+
+  unsubscribeAll(): void {
+    this.wsUnsubscribe.forEach(unsubscribe => unsubscribe());
+    this.wsUnsubscribe.clear();
   }
 
   private getCacheKey(options: FetchCandlesOptions): string {

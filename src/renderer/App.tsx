@@ -1,5 +1,5 @@
 import { Box, ChakraProvider, Stack, Text } from '@chakra-ui/react';
-import { useMemo, type ReactElement } from 'react';
+import { useMemo, useState, useCallback, type ReactElement } from 'react';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
 import { ChartControls } from './components/Chart/ChartControls';
 import { AdvancedControls, type AdvancedControlsConfig } from './components/Chart/AdvancedControls';
@@ -10,11 +10,13 @@ import { SymbolSelector } from './components/SymbolSelector';
 import { useDebounce } from './hooks/useDebounce';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useMarketData } from './hooks/useMarketData';
+import { useRealtimeCandle } from './hooks/useRealtimeCandle';
 import { system } from './theme';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { MarketDataService } from './services/market/MarketDataService';
 import { BinanceProvider } from './services/market/providers/BinanceProvider';
 import { CoinGeckoProvider } from './services/market/providers/CoinGeckoProvider';
+import type { Candle } from '@shared/types';
 
 const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
   {
@@ -95,6 +97,48 @@ function App(): ReactElement {
     enabled: true,
   });
 
+  const [liveCandles, setLiveCandles] = useState<Candle[]>([]);
+
+  const handleRealtimeUpdate = useCallback((candle: Candle, isFinal: boolean) => {
+    setLiveCandles(prev => {
+      if (prev.length === 0) return [candle];
+
+      const lastCandle = prev[prev.length - 1];
+      
+      if (lastCandle && candle.timestamp === lastCandle.timestamp) {
+        return [...prev.slice(0, -1), candle];
+      }
+      
+      if (isFinal) {
+        return [...prev, candle];
+      }
+      
+      return [...prev.slice(0, -1), candle];
+    });
+  }, []);
+
+  useRealtimeCandle(marketService, {
+    symbol,
+    interval: timeframe,
+    enabled: !!marketData,
+    onUpdate: handleRealtimeUpdate,
+  });
+
+  const displayCandles = useMemo(() => {
+    if (!marketData?.candles) return [];
+    if (liveCandles.length === 0) return marketData.candles;
+
+    const baseCandles = [...marketData.candles];
+    const lastBaseCandle = baseCandles[baseCandles.length - 1];
+    const firstLiveCandle = liveCandles[0];
+
+    if (lastBaseCandle && firstLiveCandle && firstLiveCandle.timestamp === lastBaseCandle.timestamp) {
+      return [...baseCandles.slice(0, -1), ...liveCandles];
+    }
+
+    return [...baseCandles, ...liveCandles];
+  }, [marketData, liveCandles]);
+
   const debouncedAdvancedConfig = useDebounce(advancedConfig, 300);
 
   return (
@@ -168,7 +212,7 @@ function App(): ReactElement {
 
           {marketData && (
             <ChartCanvas 
-              candles={marketData.candles} 
+              candles={displayCandles} 
               width="100%"
               height="100%"
               showVolume={showVolume}

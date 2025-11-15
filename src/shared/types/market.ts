@@ -44,6 +44,21 @@ export interface MarketDataError {
   statusCode?: number;
 }
 
+export interface WebSocketUpdate {
+  symbol: string;
+  interval: TimeInterval;
+  candle: import('./candle').Candle;
+  isFinal: boolean;
+}
+
+export type WebSocketCallback = (update: WebSocketUpdate) => void;
+
+export interface WebSocketSubscription {
+  symbol: string;
+  interval: TimeInterval;
+  callback: WebSocketCallback;
+}
+
 export abstract class BaseMarketProvider {
   protected config: MarketProviderConfig;
   protected lastRequestTime = 0;
@@ -57,6 +72,9 @@ export abstract class BaseMarketProvider {
   abstract searchSymbols(query: string): Promise<Symbol[]>;
   abstract getSymbolInfo(symbol: string): Promise<SymbolInfo>;
   abstract normalizeSymbol(symbol: string): string;
+
+  subscribeToUpdates?(subscription: WebSocketSubscription): () => void;
+  supportsWebSocket?(): boolean;
 
   protected async rateLimitedFetch<T>(
     fetcher: () => Promise<T>

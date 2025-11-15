@@ -260,20 +260,161 @@ Individual provider errors are logged but don't stop execution:
 - Cache is automatically cleared when changing providers
 - Symbol formats are normalized per provider
 
-## 🔄 WebSocket Support (Planned)
+## 🔄 WebSocket Real-Time Updates
 
-Future update will add real-time WebSocket connections:
+### Overview
+MarketMind now supports **real-time candle updates** via WebSocket connections. The chart automatically updates as new market data arrives, providing a live trading experience.
+
+### How It Works
+
+1. **WebSocket Connection**: Binance WebSocket stream provides real-time kline (candlestick) data
+2. **Automatic Updates**: New candles are merged with historical data seamlessly
+3. **State Management**: React hooks manage subscription lifecycle and data updates
+
+### Using WebSocket
+
+#### With React Hook
 
 ```typescript
-// Planned API
-marketService.subscribeToUpdates({
+import { useRealtimeCandle } from '@/hooks/useRealtimeCandle';
+import { MarketDataService } from '@/services/market';
+
+function MyComponent() {
+  const marketService = new MarketDataService({
+    primaryProvider: new BinanceProvider(),
+  });
+
+  const [candles, setCandles] = useState<Candle[]>([]);
+
+  useRealtimeCandle(marketService, {
+    symbol: 'BTCUSDT',
+    interval: '1m',
+    enabled: true,
+    onUpdate: (candle, isFinal) => {
+      setCandles(prev => {
+        // Update last candle or add new one
+        if (isFinal) {
+          return [...prev, candle];
+        }
+        return [...prev.slice(0, -1), candle];
+      });
+    },
+  });
+}
+```
+
+#### Manual Subscription
+
+```typescript
+const marketService = new MarketDataService({
+  primaryProvider: new BinanceProvider(),
+});
+
+const unsubscribe = marketService.subscribeToUpdates({
   symbol: 'BTCUSDT',
   interval: '1m',
-  onUpdate: (candle) => {
-    // Handle real-time update
+  callback: (update) => {
+    console.log('New candle:', update.candle);
+    console.log('Is final?', update.isFinal);
   },
 });
+
+// Cleanup
+unsubscribe();
 ```
+
+### WebSocket Update Interface
+
+```typescript
+interface WebSocketUpdate {
+  symbol: string;        // "BTCUSDT"
+  interval: TimeInterval; // "1m", "1h", etc.
+  candle: Candle;        // Current candle data
+  isFinal: boolean;      // true when candle closes
+}
+```
+
+### Features
+
+- **Real-Time**: Updates arrive as they happen on the exchange
+- **Smart Merging**: New data intelligently merged with historical candles
+- **Automatic Reconnection**: WebSocket reconnects on connection loss
+- **Multiple Subscriptions**: Subscribe to multiple symbols/intervals simultaneously
+- **Cleanup**: Automatic cleanup when component unmounts
+
+### Connection Details
+
+- **Binance WebSocket**: `wss://stream.binance.com:9443/ws`
+- **Stream Format**: `{symbol}@kline_{interval}` (e.g., `btcusdt@kline_1m`)
+- **Update Frequency**: Real-time (sub-second latency)
+- **Data Quality**: Full OHLCV with volume
+
+### Best Practices
+
+1. **Enable Only When Needed**: Set `enabled: false` when not actively viewing charts
+2. **Cleanup**: Always unsubscribe when component unmounts
+3. **Handle Disconnects**: WebSocket auto-reconnects, but have fallback logic
+4. **Limit Subscriptions**: Don't subscribe to too many streams simultaneously
+
+### Example: Full Integration
+
+```typescript
+function TradingChart() {
+  const marketService = useMemo(() => new MarketDataService({
+    primaryProvider: new BinanceProvider(),
+  }), []);
+
+  // Load historical data
+  const { data, loading } = useMarketData(marketService, {
+    symbol: 'BTCUSDT',
+    interval: '1m',
+    limit: 500,
+  });
+
+  const [liveCandles, setLiveCandles] = useState<Candle[]>([]);
+
+  // Subscribe to real-time updates
+  useRealtimeCandle(marketService, {
+    symbol: 'BTCUSDT',
+    interval: '1m',
+    enabled: !!data,
+    onUpdate: (candle, isFinal) => {
+      setLiveCandles(prev => {
+        const last = prev[prev.length - 1];
+        if (last?.timestamp === candle.timestamp) {
+          return [...prev.slice(0, -1), candle];
+        }
+        return [...prev, candle];
+      });
+    },
+  });
+
+  // Merge historical + live data
+  const displayCandles = useMemo(() => {
+    if (!data) return [];
+    return [...data.candles, ...liveCandles];
+  }, [data, liveCandles]);
+
+  return <ChartCanvas candles={displayCandles} />;
+}
+```
+
+### Troubleshooting
+
+**No updates arriving?**
+- Check browser console for WebSocket errors
+- Verify symbol format (uppercase, no slashes)
+- Ensure Binance WebSocket endpoint is accessible
+
+**Updates too slow?**
+- WebSocket should have sub-second latency
+- Check network connection
+- Verify no rate limiting from Binance
+
+**Memory leaks?**
+- Ensure proper cleanup with `unsubscribe()`
+- Use `useEffect` cleanup function in React
+- Check for multiple redundant subscriptions
 
 ---
 
