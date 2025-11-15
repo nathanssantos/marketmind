@@ -27,6 +27,7 @@
     "@anthropic-ai/sdk": "^0.69.0",
     "@chakra-ui/react": "^3.29.0",
     "@emotion/react": "^11.14.0",
+    "@google/generative-ai": "^0.24.1",
     "axios": "^1.13.2",
     "date-fns": "^4.1.0",
     "electron-updater": "^6.6.2",

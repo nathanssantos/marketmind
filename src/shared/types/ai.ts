@@ -14,6 +14,7 @@ export interface AIMessage {
   content: string;
   images?: string[];
   timestamp: number;
+  model?: string;
 }
 
 export interface NewsArticle {

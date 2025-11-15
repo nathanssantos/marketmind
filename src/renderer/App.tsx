@@ -1,7 +1,8 @@
-import { Box, ChakraProvider, Stack, Text, Button } from '@chakra-ui/react';
+import { Box, Button, ChakraProvider, Stack, Text } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { Candle } from '@shared/types';
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { AITest } from './components/AITest';
 import { AdvancedControls, type AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
 import { ChartControls } from './components/Chart/ChartControls';
@@ -9,7 +10,6 @@ import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext
 import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { SymbolSelector } from './components/SymbolSelector';
-import { AITest } from './components/AITest';
 import { useDebounce } from './hooks/useDebounce';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useMarketData } from './hooks/useMarketData';
@@ -266,7 +266,7 @@ function App(): ReactElement {
                   colorScheme="red"
                   onClick={() => setShowAITest(false)}
                 >
-                  ✕ Close
+                  ✕
                 </Button>
                 <AITest />
               </Box>

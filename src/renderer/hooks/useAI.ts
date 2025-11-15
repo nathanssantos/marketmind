@@ -80,10 +80,16 @@ export const useAI = () => {
 
         const response = await aiService.sendMessage(conversation.messages, images);
 
-        addMessage(activeConversationId, {
+        const assistantMessage: Parameters<typeof addMessage>[1] = {
           role: 'assistant',
           content: response.text,
-        });
+        };
+
+        if (settings?.model) {
+          assistantMessage.model = settings.model;
+        }
+
+        addMessage(activeConversationId, assistantMessage);
 
         return response;
       } catch (error) {
@@ -134,10 +140,16 @@ export const useAI = () => {
             images: [request.chartImage],
           });
 
-          addMessage(activeConversationId, {
+          const assistantMessage: Parameters<typeof addMessage>[1] = {
             role: 'assistant',
             content: response.text,
-          });
+          };
+
+          if (settings?.model) {
+            assistantMessage.model = settings.model;
+          }
+
+          addMessage(activeConversationId, assistantMessage);
         }
 
         return response;
