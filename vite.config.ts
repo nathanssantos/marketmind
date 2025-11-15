@@ -13,7 +13,12 @@ export default defineConfig({
           build: {
             outDir: 'dist-electron/main',
             rollupOptions: {
-              external: ['electron'],
+              external: [
+                'electron',
+                'electron-updater',
+                'electron-log',
+                'electron-store',
+              ],
             },
           },
         },
@@ -26,7 +31,7 @@ export default defineConfig({
           },
         },
       },
-      renderer: process.env.NODE_ENV === 'test' ? undefined : {},
+      renderer: {},
     }),
   ],
   resolve: {

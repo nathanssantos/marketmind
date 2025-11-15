@@ -1,5 +1,7 @@
-import { safeStorage } from 'electron';
-import Store from 'electron-store';
+import * as electron from 'electron';
+import ElectronStore from 'electron-store';
+
+const { safeStorage } = electron;
 
 interface SecureStoreSchema {
   apiKeys?: {
@@ -18,10 +20,10 @@ interface SecureStoreSchema {
 }
 
 export class StorageService {
-  private store: Store<SecureStoreSchema>;
+  private store: ElectronStore<SecureStoreSchema>;
 
   constructor() {
-    this.store = new Store<SecureStoreSchema>({
+    this.store = new ElectronStore<SecureStoreSchema>({
       name: 'marketmind-secure',
       defaults: {
         version: '1.0.0',

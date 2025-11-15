@@ -1,15 +1,27 @@
-import { BrowserWindow, app } from 'electron';
-import { autoUpdater, UpdateInfo } from 'electron-updater';
+import type { BrowserWindow as BrowserWindowType } from 'electron';
+import * as electron from 'electron';
 import log from 'electron-log';
+import type { UpdateInfo } from 'electron-updater';
+import * as electronUpdater from 'electron-updater';
+
+const { app } = electron;
+const { autoUpdater } = electronUpdater;
 
 export class UpdateManager {
-  private window: BrowserWindow;
+  private window: BrowserWindowType;
   private updateCheckInterval: NodeJS.Timeout | null = null;
+  private isDevelopment: boolean;
 
-  constructor(window: BrowserWindow) {
+  constructor(window: BrowserWindowType) {
     this.window = window;
-    this.setupAutoUpdater();
-    this.setupEventHandlers();
+    this.isDevelopment = process.env['NODE_ENV'] === 'development';
+    
+    if (!this.isDevelopment) {
+      this.setupAutoUpdater();
+      this.setupEventHandlers();
+    } else {
+      log.info('UpdateManager: Running in development mode, auto-updater disabled');
+    }
   }
 
   private setupAutoUpdater(): void {
@@ -74,12 +86,12 @@ export class UpdateManager {
   }
 
   async checkForUpdates(): Promise<void> {
-    try {
-      if (process.env['NODE_ENV'] === 'development') {
-        log.info('Skipping update check in development mode');
-        return;
-      }
+    if (this.isDevelopment) {
+      log.info('UpdateManager: Skipping update check in development mode');
+      return;
+    }
 
+    try {
       await autoUpdater.checkForUpdates();
     } catch (error) {
       log.error('Error checking for updates:', error);
@@ -88,6 +100,11 @@ export class UpdateManager {
   }
 
   async downloadUpdate(): Promise<void> {
+    if (this.isDevelopment) {
+      log.info('UpdateManager: Skipping download in development mode');
+      return;
+    }
+
     try {
       await autoUpdater.downloadUpdate();
     } catch (error) {
@@ -97,6 +114,11 @@ export class UpdateManager {
   }
 
   quitAndInstall(): void {
+    if (this.isDevelopment) {
+      log.info('UpdateManager: Skipping install in development mode');
+      return;
+    }
+
     try {
       autoUpdater.quitAndInstall(false, true);
     } catch (error) {
@@ -106,6 +128,11 @@ export class UpdateManager {
   }
 
   startAutoCheckInterval(intervalHours: number = 6): void {
+    if (this.isDevelopment) {
+      log.info('UpdateManager: Skipping auto-check in development mode');
+      return;
+    }
+
     if (this.updateCheckInterval) {
       clearInterval(this.updateCheckInterval);
     }
