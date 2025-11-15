@@ -13,7 +13,6 @@ export interface UseChartCanvasReturn {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   manager: CanvasManager | null;
   viewport: Viewport;
-  handleWheel: (event: React.WheelEvent<HTMLCanvasElement>) => void;
   handleMouseDown: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   handleMouseMove: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   handleMouseUp: () => void;
@@ -85,13 +84,17 @@ export const useChartCanvas = ({
     [onViewportChange],
   );
 
-  const handleWheel = useCallback(
-    (event: React.WheelEvent<HTMLCanvasElement>): void => {
+  // Handle wheel events with native addEventListener to prevent passive listener issues
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleWheel = (event: WheelEvent): void => {
       event.preventDefault();
 
       if (!managerRef.current) return;
 
-      const rect = canvasRef.current?.getBoundingClientRect();
+      const rect = canvas.getBoundingClientRect();
       if (!rect) return;
 
       const mouseX = event.clientX - rect.left;
@@ -99,9 +102,14 @@ export const useChartCanvas = ({
 
       managerRef.current.zoom(delta, mouseX);
       updateViewport(managerRef.current.getViewport());
-    },
-    [updateViewport],
-  );
+    };
+
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      canvas.removeEventListener('wheel', handleWheel);
+    };
+  }, [updateViewport]);
 
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>): void => {
     setIsPanning(true);
@@ -136,7 +144,6 @@ export const useChartCanvas = ({
     canvasRef,
     manager: managerRef.current,
     viewport,
-    handleWheel,
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,

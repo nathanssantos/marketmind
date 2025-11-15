@@ -32,7 +32,6 @@ export const ChartCanvas = ({
   const {
     canvasRef,
     manager,
-    handleWheel,
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
@@ -84,7 +83,6 @@ export const ChartCanvas = ({
     >
       <canvas
         ref={canvasRef}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
