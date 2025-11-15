@@ -87,7 +87,23 @@ export const useAI = () => {
 
         return response;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        let errorMessage = 'Unknown error';
+        
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          
+          // Mensagens mais amigáveis para erros comuns
+          if (errorMessage.includes('429') || errorMessage.includes('quota')) {
+            errorMessage = '⚠️ Você excedeu a cota da API OpenAI. Verifique seu plano em https://platform.openai.com/account/billing';
+          } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized')) {
+            errorMessage = '🔑 Chave API inválida. Verifique sua API key em https://platform.openai.com/api-keys';
+          } else if (errorMessage.includes('timeout')) {
+            errorMessage = '⏱️ Tempo limite excedido. Tente novamente.';
+          } else if (errorMessage.includes('network')) {
+            errorMessage = '🌐 Erro de conexão. Verifique sua internet.';
+          }
+        }
+        
         setError(errorMessage);
         return null;
       } finally {
@@ -126,7 +142,23 @@ export const useAI = () => {
 
         return response;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        let errorMessage = 'Unknown error';
+        
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          
+          // Mensagens mais amigáveis para erros comuns
+          if (errorMessage.includes('429') || errorMessage.includes('quota')) {
+            errorMessage = '⚠️ Você excedeu a cota da API OpenAI. Verifique seu plano em https://platform.openai.com/account/billing';
+          } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized')) {
+            errorMessage = '🔑 Chave API inválida. Verifique sua API key em https://platform.openai.com/api-keys';
+          } else if (errorMessage.includes('timeout')) {
+            errorMessage = '⏱️ Tempo limite excedido. Tente novamente.';
+          } else if (errorMessage.includes('network')) {
+            errorMessage = '🌐 Erro de conexão. Verifique sua internet.';
+          }
+        }
+        
         setError(errorMessage);
         return null;
       } finally {
@@ -151,7 +183,23 @@ export const useAI = () => {
         setLastAnalysis(response);
         return response;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        let errorMessage = 'Unknown error';
+        
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          
+          // Mensagens mais amigáveis para erros comuns
+          if (errorMessage.includes('429') || errorMessage.includes('quota')) {
+            errorMessage = '⚠️ Você excedeu a cota da API OpenAI. Verifique seu plano em https://platform.openai.com/account/billing';
+          } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized')) {
+            errorMessage = '🔑 Chave API inválida. Verifique sua API key em https://platform.openai.com/api-keys';
+          } else if (errorMessage.includes('timeout')) {
+            errorMessage = '⏱️ Tempo limite excedido. Tente novamente.';
+          } else if (errorMessage.includes('network')) {
+            errorMessage = '🌐 Erro de conexão. Verifique sua internet.';
+          }
+        }
+        
         setError(errorMessage);
         return null;
       } finally {

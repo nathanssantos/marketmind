@@ -248,7 +248,6 @@ function App(): ReactElement {
               display="flex"
               alignItems="center"
               justifyContent="center"
-              onClick={() => setShowAITest(false)}
             >
               <Box
                 bg="gray.900"
@@ -257,8 +256,18 @@ function App(): ReactElement {
                 maxW="900px"
                 maxH="90vh"
                 overflow="auto"
-                onClick={(e) => e.stopPropagation()}
+                position="relative"
               >
+                <Button
+                  position="absolute"
+                  top={4}
+                  right={4}
+                  size="sm"
+                  colorScheme="red"
+                  onClick={() => setShowAITest(false)}
+                >
+                  ✕ Close
+                </Button>
                 <AITest />
               </Box>
             </Box>

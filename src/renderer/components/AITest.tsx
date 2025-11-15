@@ -38,7 +38,7 @@ export const AITest = () => {
   };
 
   return (
-    <Box p={8} maxW="800px" mx="auto">
+    <Box p={8} maxW="800px" mx="auto" userSelect="text">
       <VStack gap={6} align="stretch">
         <Box>
           <Heading size="lg" mb={2} color="white">🤖 AI Integration Test</Heading>
