@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { AIMessage, AIAnalysisRequest, AIAnalysisResponse } from '@shared/types';
+import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage } from '@shared/types';
 import { BaseAIProvider, type AIProviderConfig } from '../types';
 
 export class GeminiProvider extends BaseAIProvider {
