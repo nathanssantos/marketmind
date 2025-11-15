@@ -14,13 +14,8 @@ mkdir -p .git/hooks
 
 # Copiar pre-push hook
 if [ -f ".git/hooks/pre-push" ]; then
-    echo "⚠️  Hook pre-push já existe"
-    read -p "Sobrescrever? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "❌ Instalação cancelada"
-        exit 1
-    fi
+    echo "✅ Hook pre-push já instalado"
+    exit 0
 fi
 
 cat > .git/hooks/pre-push << 'EOF'
