@@ -2,7 +2,7 @@ import { Select as CustomSelect, type SelectOption } from '@/renderer/components
 import { useAIStore } from '@/renderer/store/aiStore';
 import { Badge, Flex } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
-import { useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 
 const PROVIDER_OPTIONS: SelectOption[] = [
   { value: 'openai', label: 'OpenAI' },
@@ -28,7 +28,7 @@ const MODEL_OPTIONS: Record<AIProviderType, SelectOption[]> = {
   ],
 };
 
-export const AISelector = () => {
+export const AISelector = memo(() => {
   const settings = useAIStore((state) => state.settings);
   const provider = settings?.provider;
   const model = settings?.model;
@@ -41,7 +41,7 @@ export const AISelector = () => {
 
   const isConfigured = provider && model;
 
-  const handleProviderChange = (value: string) => {
+  const handleProviderChange = useCallback((value: string) => {
     const newProvider = value as AIProviderType;
     const defaultModel = MODEL_OPTIONS[newProvider]?.[0]?.value;
     
@@ -51,13 +51,13 @@ export const AISelector = () => {
         model: defaultModel,
       });
     }
-  };
+  }, [updateSettings]);
 
-  const handleModelChange = (value: string) => {
+  const handleModelChange = useCallback((value: string) => {
     if (value) {
       updateSettings({ model: value });
     }
-  };
+  }, [updateSettings]);
 
   return (
     <Flex align="center" gap={2}>
@@ -90,4 +90,6 @@ export const AISelector = () => {
       )}
     </Flex>
   );
-};
+});
+
+AISelector.displayName = 'AISelector';

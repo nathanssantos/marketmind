@@ -1,21 +1,18 @@
 import { Button } from '@/renderer/components/ui/button';
 import { Field } from '@/renderer/components/ui/field';
-import { Input } from '@/renderer/components/ui/input';
-import { Box, Checkbox, Link, Separator, Stack, Text, VStack } from '@chakra-ui/react';
+import { NumberInput } from '@/renderer/components/ui/number-input';
+import { PasswordInput } from '@/renderer/components/ui/password-input';
+import { Box, Checkbox, Flex, Link, Separator, Stack, Text, VStack } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-import { HiEye, HiEyeSlash } from 'react-icons/hi2';
 
 export const NewsConfigTab = () => {
   const [enabled, setEnabled] = useState(false);
   const [newsApiKey, setNewsApiKey] = useState('');
   const [cryptoPanicApiKey, setCryptoPanicApiKey] = useState('');
-  const [showNewsApiKey, setShowNewsApiKey] = useState(false);
-  const [showCryptoPanicKey, setShowCryptoPanicKey] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState(5);
   const [maxArticles, setMaxArticles] = useState(10);
   const [testMessage, setTestMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   // Load settings on mount
   useEffect(() => {
@@ -49,6 +46,31 @@ export const NewsConfigTab = () => {
     }
   };
 
+  const handleSaveNewsApiKey = async () => {
+    if (!newsApiKey.trim()) return;
+
+    try {
+      await window.electron.secureStorage.setApiKey('newsapi', newsApiKey.trim());
+      setTestMessage('✅ NewsAPI key saved successfully!');
+      setTimeout(() => setTestMessage(''), 3000);
+    } catch (error) {
+      console.error('Failed to save NewsAPI key:', error);
+      setTestMessage('❌ Failed to save NewsAPI key');
+    }
+  };
+
+  const handleSaveCryptoPanicKey = async () => {
+    if (!cryptoPanicApiKey.trim()) return;
+
+    try {
+      await window.electron.secureStorage.setApiKey('cryptopanic', cryptoPanicApiKey.trim());
+      alert('CryptoPanic API key saved successfully!');
+    } catch (error) {
+      console.error('Failed to save CryptoPanic key:', error);
+      alert('Failed to save CryptoPanic API key');
+    }
+  };
+
   const handleTestNewsAPI = async () => {
     if (!newsApiKey.trim()) {
       setTestMessage('⚠️ Please enter a NewsAPI key first');
@@ -73,33 +95,6 @@ export const NewsConfigTab = () => {
     }
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      // Save API keys to secure storage
-      await Promise.all([
-        newsApiKey.trim() 
-          ? window.electron.secureStorage.setApiKey('newsapi', newsApiKey.trim())
-          : window.electron.secureStorage.deleteApiKey('newsapi'),
-        cryptoPanicApiKey.trim() 
-          ? window.electron.secureStorage.setApiKey('cryptopanic', cryptoPanicApiKey.trim())
-          : window.electron.secureStorage.deleteApiKey('cryptopanic'),
-        window.electron.secureStorage.setNewsSettings({
-          enabled,
-          refreshInterval,
-          maxArticles,
-        }),
-      ]);
-
-      alert('Settings saved successfully! Please restart the app for changes to take effect.');
-    } catch (error) {
-      console.error('Failed to save news settings:', error);
-      alert('Failed to save settings. Please try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   return (
     <VStack align="stretch" gap={6}>
       {loading && (
@@ -107,6 +102,25 @@ export const NewsConfigTab = () => {
           <Text color="fg.muted">Loading settings...</Text>
         </Box>
       )}
+
+      <Box
+        bg="orange.500/10"
+        p={4}
+        borderRadius="md"
+        borderLeft="4px solid"
+        borderColor="orange.500"
+      >
+        <Text fontSize="sm" fontWeight="semibold" mb={2}>
+          ⚠️ Important Notes
+        </Text>
+        <VStack align="start" gap={1} fontSize="sm" color="fg.muted">
+          <Text>• API keys are encrypted and stored securely using OS-level encryption</Text>
+          <Text>• Free tier limits: NewsAPI (100 req/day), CryptoPanic (varies)</Text>
+          <Text>• Restart app after changing settings for full effect</Text>
+        </VStack>
+      </Box>
+
+      <Separator />
 
       <Box>
         <Checkbox.Root checked={enabled} onCheckedChange={(e) => setEnabled(!!e.checked)}>
@@ -133,37 +147,29 @@ export const NewsConfigTab = () => {
         
         <Stack gap={4}>
           <Field label="API Key" required>
-            <Stack gap={2}>
-              <Box position="relative">
-                <Input
-                  type={showNewsApiKey ? 'text' : 'password'}
-                  value={newsApiKey}
-                  onChange={(e) => setNewsApiKey(e.target.value)}
-                  placeholder="Enter your NewsAPI key"
-                  disabled={!enabled}
-                  pr="40px"
-                />
-                <Button
-                  position="absolute"
-                  right="4px"
-                  top="50%"
-                  transform="translateY(-50%)"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setShowNewsApiKey(!showNewsApiKey)}
-                  disabled={!enabled}
-                >
-                  {showNewsApiKey ? <HiEyeSlash /> : <HiEye />}
-                </Button>
-              </Box>
-              <Text fontSize="sm" color="fg.muted">
-                Get your free API key at{' '}
-                <Link href="https://newsapi.org/" target="_blank" rel="noopener noreferrer" color="blue.500">
-                  newsapi.org
-                </Link>
-                {' '}(Free tier: 100 requests/day)
-              </Text>
-            </Stack>
+            <Flex gap={2}>
+              <PasswordInput
+                value={newsApiKey}
+                onChange={(e) => setNewsApiKey(e.target.value)}
+                placeholder="Enter your NewsAPI key"
+                disabled={!enabled}
+                flex={1}
+              />
+              <Button
+                onClick={handleSaveNewsApiKey}
+                disabled={!newsApiKey.trim() || !enabled}
+                size="sm"
+              >
+                Save
+              </Button>
+            </Flex>
+            <Text fontSize="sm" color="fg.muted" mt={2}>
+              Get your free API key at{' '}
+              <Link href="https://newsapi.org/" target="_blank" rel="noopener noreferrer" color="blue.500">
+                newsapi.org
+              </Link>
+              {' '}(Free tier: 100 requests/day)
+            </Text>
           </Field>
 
           <Stack direction="row" gap={2}>
@@ -193,37 +199,29 @@ export const NewsConfigTab = () => {
         </Text>
         
         <Field label="API Key">
-          <Stack gap={2}>
-            <Box position="relative">
-              <Input
-                type={showCryptoPanicKey ? 'text' : 'password'}
-                value={cryptoPanicApiKey}
-                onChange={(e) => setCryptoPanicApiKey(e.target.value)}
-                placeholder="Enter CryptoPanic API key or use 'free'"
-                disabled={!enabled}
-                pr="40px"
-              />
-              <Button
-                position="absolute"
-                right="4px"
-                top="50%"
-                transform="translateY(-50%)"
-                size="sm"
-                variant="ghost"
-                onClick={() => setShowCryptoPanicKey(!showCryptoPanicKey)}
-                disabled={!enabled}
-              >
-                {showCryptoPanicKey ? <HiEyeSlash /> : <HiEye />}
-              </Button>
-            </Box>
-            <Text fontSize="sm" color="fg.muted">
-              Get API key at{' '}
-              <Link href="https://cryptopanic.com/developers/api/" target="_blank" rel="noopener noreferrer" color="blue.500">
-                cryptopanic.com/developers
-              </Link>
-              {' '}or use "free" for public endpoint
-            </Text>
-          </Stack>
+          <Flex gap={2}>
+            <PasswordInput
+              value={cryptoPanicApiKey}
+              onChange={(e) => setCryptoPanicApiKey(e.target.value)}
+              placeholder="Enter CryptoPanic API key or use 'free'"
+              disabled={!enabled}
+              flex={1}
+            />
+            <Button
+              onClick={handleSaveCryptoPanicKey}
+              disabled={!cryptoPanicApiKey.trim() || !enabled}
+              size="sm"
+            >
+              Save
+            </Button>
+          </Flex>
+          <Text fontSize="sm" color="fg.muted" mt={2}>
+            Get API key at{' '}
+            <Link href="https://cryptopanic.com/developers/api/" target="_blank" rel="noopener noreferrer" color="blue.500">
+              cryptopanic.com/developers
+            </Link>
+            {' '}or use "free" for public endpoint
+          </Text>
         </Field>
       </Box>
 
@@ -237,8 +235,7 @@ export const NewsConfigTab = () => {
         
         <Stack gap={4}>
           <Field label="Refresh Interval (minutes)">
-            <Input
-              type="number"
+            <NumberInput
               min={1}
               max={60}
               value={refreshInterval}
@@ -251,8 +248,7 @@ export const NewsConfigTab = () => {
           </Field>
 
           <Field label="Maximum Articles">
-            <Input
-              type="number"
+            <NumberInput
               min={5}
               max={50}
               value={maxArticles}
@@ -264,42 +260,6 @@ export const NewsConfigTab = () => {
             </Text>
           </Field>
         </Stack>
-      </Box>
-
-      <Separator />
-
-      {/* Important Notes */}
-      <Box
-        bg="orange.500/10"
-        p={4}
-        borderRadius="md"
-        borderLeft="4px solid"
-        borderColor="orange.500"
-      >
-        <Text fontSize="sm" fontWeight="semibold" mb={2}>
-          ⚠️ Important Notes
-        </Text>
-        <VStack align="start" gap={1} fontSize="sm" color="fg.muted">
-          <Text>• API keys are encrypted and stored securely using OS-level encryption</Text>
-          <Text>• Free tier limits: NewsAPI (100 req/day), CryptoPanic (varies)</Text>
-          <Text>• CryptoPanic may have CORS issues in browser (working on solution)</Text>
-          <Text>• NewsAPI free tier only works from localhost in development</Text>
-          <Text>• Restart app after changing settings</Text>
-        </VStack>
-      </Box>
-
-      {/* Save Button */}
-      <Box>
-        <Button
-          colorPalette="blue"
-          onClick={handleSave}
-          width="full"
-          size="lg"
-          loading={saving}
-          disabled={loading}
-        >
-          {saving ? 'Saving...' : 'Save Configuration'}
-        </Button>
       </Box>
     </VStack>
   );

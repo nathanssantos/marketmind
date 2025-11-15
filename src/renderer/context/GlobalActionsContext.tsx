@@ -1,0 +1,30 @@
+import { createContext, useContext, type ReactNode } from 'react';
+
+interface GlobalActionsContextType {
+  openSettings: () => void;
+  toggleChatSidebar: () => void;
+  focusChatInput: () => void;
+  showKeyboardShortcuts: () => void;
+  openSymbolSelector: () => void;
+}
+
+const GlobalActionsContext = createContext<GlobalActionsContextType | null>(null);
+
+export const useGlobalActions = () => {
+  const context = useContext(GlobalActionsContext);
+  if (!context) {
+    throw new Error('useGlobalActions must be used within GlobalActionsProvider');
+  }
+  return context;
+};
+
+interface GlobalActionsProviderProps {
+  children: ReactNode;
+  actions: GlobalActionsContextType;
+}
+
+export const GlobalActionsProvider = ({ children, actions }: GlobalActionsProviderProps) => (
+  <GlobalActionsContext.Provider value={actions}>
+    {children}
+  </GlobalActionsContext.Provider>
+);

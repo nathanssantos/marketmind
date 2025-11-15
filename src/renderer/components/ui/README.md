@@ -17,24 +17,19 @@ Botão com suporte a loading, variantes e tamanhos.
 ```tsx
 import { Button } from '@/components/ui';
 
-// Básico
 <Button>Click me</Button>
 
-// Com loading
 <Button loading loadingText="Salvando...">Save</Button>
 
-// Variantes
 <Button variant="outline">Outline</Button>
 <Button variant="ghost">Ghost</Button>
 <Button variant="subtle">Subtle</Button>
 
-// Tamanhos
 <Button size="xs">Extra Small</Button>
 <Button size="sm">Small</Button>
 <Button size="md">Medium</Button>
 <Button size="lg">Large</Button>
 
-// Cores
 <Button colorPalette="blue">Blue</Button>
 <Button colorPalette="green">Green</Button>
 <Button colorPalette="red">Red</Button>
@@ -42,34 +37,86 @@ import { Button } from '@/components/ui';
 
 ### Input
 
-Campo de entrada de texto com variantes e tamanhos.
+Campo de entrada de texto com padding padrão (px={3}).
 
 **Props padrão:**
 - `size`: `md`
 - `variant`: `outline`
+- `px`: `3`
 
 **Uso:**
 ```tsx
 import { Input } from '@/components/ui';
 
-// Básico
 <Input placeholder="Digite algo..." />
 
-// Variantes
 <Input variant="outline" />
 <Input variant="subtle" />
 <Input variant="flushed" />
 
-// Tamanhos
 <Input size="xs" />
 <Input size="sm" />
 <Input size="md" />
 <Input size="lg" />
 
-// Com Field (label e helper text)
 <Field label="Email" helperText="Nunca compartilharemos seu email">
   <Input type="email" placeholder="email@example.com" />
 </Field>
+```
+
+### PasswordInput
+
+Campo de entrada de senha com botão de mostrar/ocultar.
+
+**Props padrão:**
+- Mesmos do Input
+- Botão de toggle automático
+
+**Uso:**
+```tsx
+import { PasswordInput } from '@/components/ui';
+
+<PasswordInput placeholder="Digite sua senha" />
+
+<Field label="Senha" required>
+  <PasswordInput placeholder="Digite sua senha" />
+</Field>
+
+<PasswordInput 
+  disabled={!enabled} 
+  placeholder="API Key"
+/>
+```
+
+### NumberInput
+
+Campo de entrada numérica com validação min/max/step.
+
+**Props padrão:**
+- Mesmos do Input
+- type="number"
+
+**Uso:**
+```tsx
+import { NumberInput } from '@/components/ui';
+
+<NumberInput 
+  min={0} 
+  max={100} 
+  value={value}
+  onChange={(e) => setValue(e.target.value)}
+/>
+
+<Field label="Idade">
+  <NumberInput min={18} max={120} step={1} />
+</Field>
+
+<NumberInput 
+  min={0} 
+  max={1} 
+  step={0.05}
+  value={ratio}
+/>
 ```
 
 ### Tabs
@@ -165,7 +212,7 @@ import { Field, Input } from '@/components/ui';
 </Field>
 
 <Field label="Senha" errorText="Senha muito curta" invalid>
-  <Input type="password" />
+  <PasswordInput />
 </Field>
 ```
 

@@ -29,6 +29,7 @@ export interface SelectProps {
   minWidth?: string;
   sectionLabel?: string | undefined;
   noWrap?: boolean;
+  openUpwards?: boolean;
 }
 
 export const Select = ({
@@ -46,6 +47,7 @@ export const Select = ({
   minWidth,
   sectionLabel,
   noWrap = false,
+  openUpwards = false,
 }: SelectProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -128,10 +130,12 @@ export const Select = ({
       {isOpen && (
         <Box
           position="absolute"
-          top="100%"
+          {...(openUpwards 
+            ? { bottom: '100%', mb: 2 } 
+            : { top: '100%', mt: 2 }
+          )}
           left={0}
           right={0}
-          mt={2}
           bg="bg.panel"
           border="1px solid"
           borderColor="border"

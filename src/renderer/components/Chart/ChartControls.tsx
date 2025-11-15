@@ -1,18 +1,18 @@
-import { Box, HStack, IconButton, Stack, Text, Switch as ChakraSwitch } from '@chakra-ui/react';
-import { 
-  HiOutlineChartBar, 
-  HiOutlinePresentationChartLine, 
-  HiOutlineViewGrid,
-  HiOutlineTrendingUp 
-} from 'react-icons/hi';
+import { Box, Switch as ChakraSwitch, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
 import type { ReactElement } from 'react';
-import type { MovingAverageConfig } from './useMovingAverageRenderer';
-import { ControlPanel } from './ControlPanel';
-import { usePinnedControls } from './PinnedControlsContext';
-import { PinnableControl } from './PinnableControl';
-import type { AdvancedControlsConfig } from './AdvancedControls';
-import { TimeframeSelector, type Timeframe } from './TimeframeSelector';
+import {
+    HiOutlineChartBar,
+    HiOutlinePresentationChartLine,
+    HiOutlineTrendingUp,
+    HiOutlineViewGrid
+} from 'react-icons/hi';
 import { TooltipWrapper } from '../ui/Tooltip';
+import type { AdvancedControlsConfig } from './AdvancedControls';
+import { ControlPanel } from './ControlPanel';
+import { PinnableControl } from './PinnableControl';
+import { usePinnedControls } from './PinnedControlsContext';
+import { TimeframeSelector, type Timeframe } from './TimeframeSelector';
+import type { MovingAverageConfig } from './useMovingAverageRenderer';
 
 export interface ChartControlsProps {
   showVolume: boolean;

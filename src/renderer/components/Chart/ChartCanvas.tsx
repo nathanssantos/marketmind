@@ -219,7 +219,7 @@ export const ChartCanvas = ({
     return () => {
       manager.setRenderCallback(null);
     };
-  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, chartType, advancedConfig]);
+  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, chartType]);
 
   return (
     <Box

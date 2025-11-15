@@ -56,22 +56,18 @@ export const useChartCanvas = ({
   const [isPanningOnScale, setIsPanningOnScale] = useState(false);
   const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
 
+  // Initialize canvas manager only once
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || managerRef.current) return;
 
-    if (!managerRef.current) {
-      const newManager = new CanvasManager(
-        canvasRef.current,
-        viewport,
-        CHART_CONFIG.CANVAS_PADDING,
-      );
-      newManager.setCandles(candles);
-      managerRef.current = newManager;
-      setManager(newManager);
-    } else {
-      managerRef.current.setCandles(candles);
-      managerRef.current.setViewport(viewport);
-    }
+    const newManager = new CanvasManager(
+      canvasRef.current,
+      viewport,
+      CHART_CONFIG.CANVAS_PADDING,
+    );
+    newManager.setCandles(candles);
+    managerRef.current = newManager;
+    setManager(newManager);
 
     const handleResize = (): void => {
       if (managerRef.current) {
@@ -98,7 +94,21 @@ export const useChartCanvas = ({
         setManager(null);
       }
     };
-  }, [candles, viewport]);
+  }, []);
+
+  // Update candles when they change
+  useEffect(() => {
+    if (managerRef.current) {
+      managerRef.current.setCandles(candles);
+    }
+  }, [candles]);
+
+  // Update viewport when it changes
+  useEffect(() => {
+    if (managerRef.current) {
+      managerRef.current.setViewport(viewport);
+    }
+  }, [viewport]);
 
   const updateViewport = useCallback(
     (newViewport: Viewport): void => {

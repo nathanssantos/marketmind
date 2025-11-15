@@ -1,30 +1,52 @@
+import { GlobalActionsProvider } from '@/renderer/context/GlobalActionsContext';
 import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
 import { Box, Flex, IconButton } from '@chakra-ui/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HiChevronLeft } from 'react-icons/hi2';
+import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import { ChatSidebar } from '../Chat/ChatSidebar';
+import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { Header } from './Header';
 
 interface MainLayoutProps {
   children: React.ReactNode;
+  onOpenSymbolSelector?: () => void;
+  advancedConfig: AdvancedControlsConfig;
+  onAdvancedConfigChange: (config: AdvancedControlsConfig) => void;
 }
 
 const MIN_CHAT_WIDTH = 300;
 const MAX_CHAT_WIDTH = 800;
 const DEFAULT_CHAT_WIDTH = 400;
 
-export const MainLayout = ({ children }: MainLayoutProps) => {
+export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onAdvancedConfigChange }: MainLayoutProps) => {
   const [isChatOpen, setIsChatOpen] = useLocalStorage('chat-sidebar-open', true);
   const [chatWidth, setChatWidth] = useLocalStorage('chat-sidebar-width', DEFAULT_CHAT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
 
   const toggleChat = useCallback(() => {
     setIsChatOpen((prev) => !prev);
   }, [setIsChatOpen]);
+
+  const handleSettingsClick = useCallback(() => {
+    setIsSettingsOpen(true);
+  }, []);
+
+  const globalActions = useMemo(() => ({
+    openSettings: () => setIsSettingsOpen(true),
+    toggleChatSidebar: toggleChat,
+    focusChatInput: () => {
+      if (!isChatOpen) setIsChatOpen(true);
+      // The ChatSidebar will auto-focus the input when opened
+    },
+    showKeyboardShortcuts: () => setShowKeyboardShortcuts(true),
+    openSymbolSelector: () => onOpenSymbolSelector?.(),
+  }), [toggleChat, isChatOpen, setIsChatOpen, onOpenSymbolSelector]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -61,8 +83,9 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
   return (
-    <Box width="100vw" height="100vh" overflow="hidden">
-      <Header onSettingsClick={() => setIsSettingsOpen(true)} />
+    <GlobalActionsProvider actions={globalActions}>
+      <Box width="100vw" height="100vh" overflow="hidden">
+        <Header onSettingsClick={handleSettingsClick} />
       
       <Flex
         position="fixed"
@@ -118,7 +141,14 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
         )}
       </Flex>
 
-      <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <SettingsDialog 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)}
+        advancedConfig={advancedConfig}
+        onAdvancedConfigChange={onAdvancedConfigChange}
+      />
+      <KeyboardShortcutsDialog isOpen={showKeyboardShortcuts} onClose={() => setShowKeyboardShortcuts(false)} />
     </Box>
+    </GlobalActionsProvider>
   );
 };

@@ -1,17 +1,13 @@
 import { Button } from '@/renderer/components/ui/button';
-import { useColorMode } from '@/renderer/components/ui/color-mode';
-import { Field } from '@/renderer/components/ui/field';
-import { Select } from '@/renderer/components/ui/select';
-import { Switch } from '@/renderer/components/ui/switch';
 import { Slider } from '@/renderer/components/ui/slider';
-import { useAIStore } from '@/renderer/store';
-import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
+import { Switch } from '@/renderer/components/ui/switch';
 import { useAutoUpdate } from '@/renderer/hooks/useAutoUpdate';
+import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
+import { useAIStore } from '@/renderer/store';
 import { Box, Flex, Separator, Stack, Text } from '@chakra-ui/react';
-import { HiArrowDownTray, HiArrowUpTray, HiTrash, HiArrowPath } from 'react-icons/hi2';
+import { HiArrowDownTray, HiArrowPath, HiArrowUpTray, HiTrash } from 'react-icons/hi2';
 
 export const GeneralTab = () => {
-  const { colorMode, setColorMode } = useColorMode();
   const { conversations, importConversation, clearAll } = useAIStore();
   
   const [autoCheckUpdates, setAutoCheckUpdates] = useLocalStorage('autoCheckUpdates', true);
@@ -19,10 +15,6 @@ export const GeneralTab = () => {
   const [updateCheckInterval, setUpdateCheckInterval] = useLocalStorage('updateCheckInterval', 24);
   
   const { status, checkForUpdates, startAutoCheck, stopAutoCheck } = useAutoUpdate();
-
-  const handleThemeChange = (newTheme: 'light' | 'dark') => {
-    setColorMode(newTheme);
-  };
 
   const handleExportAll = () => {
     const data = {
@@ -101,17 +93,22 @@ export const GeneralTab = () => {
 
   return (
     <Stack gap={6}>
-      <Box>
-        <Field label="Theme">
-          <Select
-            value={colorMode}
-            onChange={(value) => handleThemeChange(value as 'light' | 'dark')}
-            options={[
-              { value: 'light', label: 'Light' },
-              { value: 'dark', label: 'Dark' },
-            ]}
-          />
-        </Field>
+      <Box 
+        bg="blue.500/10" 
+        p={4} 
+        borderRadius="md"
+        borderLeft="4px solid"
+        borderColor="blue.500"
+      >
+        <Text fontSize="sm" fontWeight="semibold" mb={2}>
+          💡 Data Management
+        </Text>
+        <Stack gap={1} fontSize="sm" color="fg.muted">
+          <Text>• Export: Save all conversations as JSON file for backup</Text>
+          <Text>• Import: Load a previously exported conversation</Text>
+          <Text>• Clear: Remove all conversations and chat history</Text>
+          <Text>• Total Conversations: {conversations.length}</Text>
+        </Stack>
       </Box>
 
       <Separator />
@@ -128,7 +125,7 @@ export const GeneralTab = () => {
             >
               Check for updates automatically
             </Switch>
-            <Text fontSize="sm" color="fg.muted" mt={1} ml={8}>
+            <Text fontSize="sm" color="fg.muted" mt={1}>
               Automatically check for new versions in the background
             </Text>
           </Box>
@@ -155,7 +152,7 @@ export const GeneralTab = () => {
             >
               Download updates automatically
             </Switch>
-            <Text fontSize="sm" color="fg.muted" mt={1} ml={8}>
+            <Text fontSize="sm" color="fg.muted" mt={1}>
               Automatically download new versions when available
             </Text>
           </Box>
@@ -177,34 +174,20 @@ export const GeneralTab = () => {
         <Text fontSize="md" fontWeight="medium" mb={3}>
           Data Management
         </Text>
-        <Stack gap={3}>
-          <Flex gap={2}>
-            <Button flex={1} variant="outline" onClick={handleExportAll} disabled={conversations.length === 0}>
-              <HiArrowDownTray />
-              Export All Conversations
-            </Button>
-            <Button flex={1} variant="outline" onClick={handleImport}>
-              <HiArrowUpTray />
-              Import Conversation
-            </Button>
-          </Flex>
-          <Button colorPalette="red" variant="outline" onClick={handleClearAll} disabled={conversations.length === 0}>
+        <Flex gap={2}>
+          <Button flex={1} variant="outline" onClick={handleExportAll} disabled={conversations.length === 0}>
+            <HiArrowDownTray />
+            Export All Conversations
+          </Button>
+          <Button flex={1} variant="outline" onClick={handleImport}>
+            <HiArrowUpTray />
+            Import Conversation
+          </Button>
+          <Button flex={1} colorPalette="red" variant="outline" onClick={handleClearAll} disabled={conversations.length === 0}>
             <HiTrash />
             Clear All Data
           </Button>
-        </Stack>
-      </Box>
-
-      <Box bg="bg.muted" p={4} borderRadius="md">
-        <Text fontSize="sm" fontWeight="medium" mb={2}>
-          About Data Management
-        </Text>
-        <Stack gap={2} fontSize="sm" color="fg.muted">
-          <Text>• Export: Save all your conversations as a JSON file</Text>
-          <Text>• Import: Load a previously exported conversation</Text>
-          <Text>• Clear: Remove all conversations and reset the app</Text>
-          <Text>• Total Conversations: {conversations.length}</Text>
-        </Stack>
+        </Flex>
       </Box>
     </Stack>
   );
