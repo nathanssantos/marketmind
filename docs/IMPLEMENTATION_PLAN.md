@@ -937,17 +937,18 @@ export class UpdateManager {
 
 ### **PHASE 11: Testing & Quality Assurance** 🚧
 *Estimated duration: 2-3 days*
-*Status: IN PROGRESS (60% Complete)*
+*Status: IN PROGRESS (72% Complete)*
 *Started: December 15, 2024*
 
-#### 11.1 Unit Testing ✅ (60%)
-**Status:** 150 tests passing, 97.26% overall coverage
+#### 11.1 Unit Testing ✅ (72%)
+**Status:** 181 tests passing, 97.5% overall coverage
 
 **Test Infrastructure:** ✅
 - [x] Vitest 4.0.9 + React Testing Library configured
 - [x] Coverage reporting with @vitest/coverage-v8
 - [x] jsdom environment setup
 - [x] Global test configuration
+- [x] Dependency injection patterns for testability
 
 **Completed Tests:** ✅
 - [x] Utility functions (69 tests, 95.97% coverage)
@@ -955,7 +956,7 @@ export class UpdateManager {
   - movingAverages.test.ts (22 tests) - 88.23% coverage
   - coordinateSystem.test.ts (19 tests) - 98.36% coverage
   
-- [x] React hooks (81 tests, 98.58% coverage)
+- [x] React hooks (112 tests, 98.75% coverage)
   - useDebounce.test.ts (6 tests) - 100% coverage
   - useLocalStorage.test.ts (13 tests) - 100% coverage
   - useChartData.test.ts (10 tests) - 100% coverage
@@ -963,6 +964,13 @@ export class UpdateManager {
   - useSymbolSearch.test.ts (11 tests) - 100% coverage
   - useRealtimeCandle.test.ts (11 tests) - 100% coverage
   - useAutoUpdate.test.ts (18 tests) - 96.15% coverage
+  - useNews.test.ts (15 tests) - 100% coverage ✨
+  - useAI.test.ts (16 tests) - 98.5% coverage ✨
+
+**Refactored for Testability:** ✅
+- [x] useNews - Dependency injection pattern with optional NewsService parameter
+- [x] useAI - Dependency injection pattern with optional AIService parameter
+- [x] Singleton factories for backward compatibility (getDefaultNewsService, getDefaultAIService)
 
 **Pending Tests:** ⏳
 - [ ] Service layer (MarketDataService, NewsService, AIService)
@@ -971,9 +979,9 @@ export class UpdateManager {
 - [ ] StorageService encryption/decryption
 - [ ] UpdateManager state management
 
-**Skipped (Complex Dependencies):**
-- ⏸️ useNews hook (singleton service instance)
-- ⏸️ useAI hook (complex store dependencies)
+**Previously Skipped (Now Complete):**
+- [x] useNews hook (refactored with dependency injection) ✅
+- [x] useAI hook (refactored with dependency injection) ✅
 
 #### 11.2 Integration Testing
 - [ ] Test Electron IPC communication flow
