@@ -1,12 +1,26 @@
 import { Avatar, Box, Flex, Spinner, Text } from '@chakra-ui/react';
 import type { AIMessage } from '@shared/types';
+import { useEffect, useRef } from 'react';
 import { HiSparkles, HiUser } from 'react-icons/hi2';
 import ReactMarkdown from 'react-markdown';
+import { useToast } from '../../hooks/useToast';
 import '../../markdown.css';
 import { useMessageList } from './useMessageList';
 
 export const MessageList = () => {
-  const { messages, loading, messagesEndRef } = useMessageList();
+  const { messages, loading, error, messagesEndRef, clearError } = useMessageList();
+  const toast = useToast();
+  const lastErrorRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (error && error !== lastErrorRef.current) {
+      lastErrorRef.current = error;
+      toast.error('Erro', error);
+      queueMicrotask(() => {
+        clearError();
+      });
+    }
+  }, [error, toast, clearError]);
 
   return (
     <Flex
@@ -17,7 +31,7 @@ export const MessageList = () => {
       py={4}
       gap={4}
     >
-      {messages.length === 0 && !loading ? (
+      {messages.length === 0 && !loading && !error ? (
         <Flex
           direction="column"
           align="center"
