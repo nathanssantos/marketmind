@@ -3,7 +3,22 @@ import { useCallback, useMemo } from 'react';
 import { AIService, type AIServiceConfig } from '../services/ai';
 import { useAIStore } from '../store/aiStore';
 
-export const useAI = () => {
+let defaultAIServiceInstance: AIService | null = null;
+
+const getDefaultAIService = (config: AIServiceConfig): AIService => {
+  if (!defaultAIServiceInstance || 
+      defaultAIServiceInstance.getConfig().provider !== config.provider ||
+      defaultAIServiceInstance.getConfig().model !== config.model) {
+    defaultAIServiceInstance = new AIService(config);
+  }
+  return defaultAIServiceInstance;
+};
+
+export interface UseAIOptions {
+  service?: AIService;
+}
+
+export const useAI = (options?: UseAIOptions) => {
   const {
     conversations,
     activeConversationId,
@@ -28,6 +43,10 @@ export const useAI = () => {
   } = useAIStore();
 
   const aiService = useMemo(() => {
+    if (options?.service) {
+      return options.service;
+    }
+
     if (!settings) return null;
 
     try {
@@ -39,12 +58,12 @@ export const useAI = () => {
       if (settings.temperature !== undefined) config.temperature = settings.temperature;
       if (settings.maxTokens !== undefined) config.maxTokens = settings.maxTokens;
 
-      return new AIService(config);
+      return getDefaultAIService(config);
     } catch (error) {
       console.error('Failed to initialize AI service:', error);
       return null;
     }
-  }, [settings]);
+  }, [settings, options?.service]);
 
   const isConfigured = useMemo(() => {
     return settings !== null;
