@@ -14,6 +14,7 @@ export interface MovingAverageConfig {
 export interface UseMovingAverageRendererProps {
   manager: CanvasManager | null;
   movingAverages?: MovingAverageConfig[];
+  rightMargin?: number;
 }
 
 export interface UseMovingAverageRendererReturn {
@@ -23,6 +24,7 @@ export interface UseMovingAverageRendererReturn {
 export const useMovingAverageRenderer = ({
   manager,
   movingAverages = [],
+  rightMargin,
 }: UseMovingAverageRendererProps): UseMovingAverageRendererReturn => {
   const render = useCallback((): void => {
     if (!manager || movingAverages.length === 0) return;
@@ -38,7 +40,7 @@ export const useMovingAverageRenderer = ({
     const { chartWidth, chartHeight } = dimensions;
     const startIndex = Math.max(0, Math.floor(viewport.start));
     const endIndex = Math.min(candles.length, Math.ceil(viewport.end));
-    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
+    const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
 
     ctx.save();
     ctx.beginPath();
@@ -80,7 +82,7 @@ export const useMovingAverageRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, movingAverages]);
+  }, [manager, movingAverages, rightMargin]);
 
   return { render };
 };

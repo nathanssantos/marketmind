@@ -7,6 +7,7 @@ export interface UseLineChartRendererProps {
   manager: CanvasManager | null;
   colors: ChartColors;
   enabled?: boolean;
+  rightMargin?: number;
 }
 
 export interface UseLineChartRendererReturn {
@@ -17,6 +18,7 @@ export const useLineChartRenderer = ({
   manager,
   colors,
   enabled = true,
+  rightMargin,
 }: UseLineChartRendererProps): UseLineChartRendererReturn => {
   const render = useCallback((): void => {
     if (!manager || !enabled) return;
@@ -29,7 +31,7 @@ export const useLineChartRenderer = ({
 
     const visibleCandles = manager.getVisibleCandles();
     const { chartWidth, chartHeight } = dimensions;
-    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
+    const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
 
     if (visibleCandles.length === 0) return;
 
@@ -76,7 +78,7 @@ export const useLineChartRenderer = ({
     }
 
     ctx.restore();
-  }, [manager, colors, enabled]);
+  }, [manager, colors, enabled, rightMargin]);
 
   useEffect(() => {
     render();

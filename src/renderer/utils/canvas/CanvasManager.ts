@@ -3,10 +3,8 @@ import type { Candle, Viewport } from '@shared/types';
 import {
     calculateBounds,
     clampViewport,
-    indexToX,
     priceToY,
     volumeToHeight,
-    xToIndex,
     yToPrice,
     type Bounds,
     type Dimensions,
@@ -24,6 +22,7 @@ export class CanvasManager {
   private renderCallback: (() => void) | null = null;
   private priceOffset: number = 0; // Offset for vertical panning
   private priceScale: number = 1; // Scale for vertical zooming
+  private rightMargin: number = CHART_CONFIG.CHART_RIGHT_MARGIN;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -119,6 +118,11 @@ export class CanvasManager {
     return this.ctx;
   }
 
+  public setRightMargin(margin: number): void {
+    this.rightMargin = margin;
+    this.triggerRender();
+  }
+
   public clear(): void {
     if (!this.ctx || !this.dimensions) return;
     clearCanvas(this.ctx, this.dimensions.width, this.dimensions.height);
@@ -159,12 +163,18 @@ export class CanvasManager {
 
   public indexToX(index: number): number {
     if (!this.dimensions) return 0;
-    return indexToX(index, this.viewport, this.dimensions.chartWidth);
+    const effectiveWidth = this.dimensions.chartWidth - this.rightMargin;
+    const visibleRange = this.viewport.end - this.viewport.start;
+    const ratio = (index - this.viewport.start) / visibleRange;
+    return ratio * effectiveWidth;
   }
 
   public xToIndex(x: number): number {
     if (!this.dimensions) return 0;
-    return xToIndex(x, this.viewport, this.dimensions.chartWidth);
+    const effectiveWidth = this.dimensions.chartWidth - this.rightMargin;
+    const visibleRange = this.viewport.end - this.viewport.start;
+    const ratio = x / effectiveWidth;
+    return this.viewport.start + ratio * visibleRange;
   }
 
   public getVisibleCandles(): Candle[] {

@@ -11,6 +11,9 @@ export interface UseGridRendererProps {
   enabled?: boolean;
   horizontalLines?: number;
   verticalLines?: number;
+  gridLineWidth?: number;
+  paddingRight?: number;
+  rightMargin?: number;
 }
 
 export interface UseGridRendererReturn {
@@ -23,6 +26,9 @@ export const useGridRenderer = ({
   enabled = true,
   horizontalLines = 5,
   verticalLines = 10,
+  gridLineWidth,
+  paddingRight,
+  rightMargin,
 }: UseGridRendererProps): UseGridRendererReturn => {
   const render = useCallback((): void => {
     if (!manager || !enabled) return;
@@ -45,7 +51,7 @@ export const useGridRenderer = ({
       horizontalLines,
       verticalLines,
       colors.grid,
-      CHART_CONFIG.GRID_LINE_WIDTH,
+      gridLineWidth ?? CHART_CONFIG.GRID_LINE_WIDTH,
     );
 
     const labelColor = CHART_CONFIG.AXIS_LABEL_COLOR_DARK;
@@ -58,10 +64,11 @@ export const useGridRenderer = ({
       const y = manager.priceToY(price);
 
       if (y >= 0 && y <= chartHeight) {
+        const effectivePaddingRight = paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT;
         drawText(
           ctx,
           formatPrice(price),
-          width - CHART_CONFIG.CANVAS_PADDING_RIGHT + 10,
+          width - effectivePaddingRight + 10,
           y - 6,
           labelColor,
           CHART_CONFIG.AXIS_LABEL_FONT,
@@ -71,9 +78,9 @@ export const useGridRenderer = ({
 
         drawLine(
           ctx,
-          width - CHART_CONFIG.CANVAS_PADDING_RIGHT,
+          width - effectivePaddingRight,
           y,
-          width - CHART_CONFIG.CANVAS_PADDING_RIGHT + 5,
+          width - effectivePaddingRight + 5,
           y,
           labelColor,
           1,
@@ -91,9 +98,9 @@ export const useGridRenderer = ({
 
         const index = Math.floor(viewport.start) + i;
         const x = manager.indexToX(index);
-        const chartRightBoundary = width - CHART_CONFIG.CANVAS_PADDING_RIGHT;
+        const chartRightBoundary = width - (paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
 
-        if (x >= 0 && x <= chartRightBoundary - CHART_CONFIG.CHART_RIGHT_MARGIN) {
+        if (x >= 0 && x <= chartRightBoundary - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN)) {
           const timeLabel = formatTimestamp(candle.timestamp);
           
           drawText(
@@ -120,7 +127,7 @@ export const useGridRenderer = ({
       }
     }
 
-    const chartRightBoundary = width - CHART_CONFIG.CANVAS_PADDING_RIGHT;
+    const chartRightBoundary = width - (paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
 
     drawLine(
       ctx,
@@ -141,7 +148,7 @@ export const useGridRenderer = ({
       labelColor,
       2,
     );
-  }, [manager, colors, enabled, horizontalLines, verticalLines]);
+  }, [manager, colors, enabled, horizontalLines, verticalLines, gridLineWidth, paddingRight, rightMargin]);
 
   useEffect(() => {
     render();

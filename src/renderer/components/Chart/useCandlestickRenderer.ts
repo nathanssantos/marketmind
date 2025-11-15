@@ -8,6 +8,8 @@ export interface UseCandlestickRendererProps {
   manager: CanvasManager | null;
   colors: ChartColors;
   enabled?: boolean;
+  rightMargin?: number;
+  candleWickWidth?: number;
 }
 
 export interface UseCandlestickRendererReturn {
@@ -18,6 +20,8 @@ export const useCandlestickRenderer = ({
   manager,
   colors,
   enabled = true,
+  rightMargin,
+  candleWickWidth,
 }: UseCandlestickRendererProps): UseCandlestickRendererReturn => {
   const render = useCallback((): void => {
     if (!manager || !enabled) return;
@@ -31,7 +35,7 @@ export const useCandlestickRenderer = ({
     const visibleCandles = manager.getVisibleCandles();
     const { candleWidth } = viewport;
     const { chartWidth, chartHeight } = dimensions;
-    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
+    const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
 
     ctx.save();
     ctx.beginPath();
@@ -57,14 +61,14 @@ export const useCandlestickRenderer = ({
         highY,
         lowY,
         candleWidth,
-        CHART_CONFIG.CANDLE_WICK_WIDTH,
+        candleWickWidth ?? CHART_CONFIG.CANDLE_WICK_WIDTH,
         colors.bullish,
         colors.bearish,
       );
     });
 
     ctx.restore();
-  }, [manager, colors, enabled]);
+  }, [manager, colors, enabled, rightMargin, candleWickWidth]);
 
   useEffect(() => {
     render();

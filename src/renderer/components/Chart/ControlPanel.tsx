@@ -7,30 +7,20 @@ export interface ControlPanelProps {
   title: string;
   children: ReactNode;
   defaultExpanded?: boolean;
-  position?: {
-    top?: number | string;
-    right?: number | string;
-    bottom?: number | string;
-    left?: number | string;
-  };
 }
 
 export const ControlPanel = ({
   title,
   children,
   defaultExpanded = true,
-  position = { top: 4, left: 4 },
 }: ControlPanelProps): ReactElement => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
     <Box
-      position="absolute"
-      {...position}
       bg="gray.800"
       borderRadius="md"
       boxShadow="lg"
-      zIndex={10}
       opacity={0.95}
       minWidth="200px"
     >

@@ -8,16 +8,21 @@ import {
 import type { ReactElement } from 'react';
 import type { MovingAverageConfig } from './useMovingAverageRenderer';
 import { ControlPanel } from './ControlPanel';
+import { usePinnedControls } from './PinnedControlsContext';
+import { PinnableControl } from './PinnableControl';
+import type { AdvancedControlsConfig } from './AdvancedControls';
 
 export interface ChartControlsProps {
   showVolume: boolean;
   showGrid: boolean;
   chartType: 'candlestick' | 'line';
   movingAverages: MovingAverageConfig[];
+  advancedConfig?: AdvancedControlsConfig;
   onShowVolumeChange: (show: boolean) => void;
   onShowGridChange: (show: boolean) => void;
   onChartTypeChange: (type: 'candlestick' | 'line') => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
+  onAdvancedConfigChange?: (config: AdvancedControlsConfig) => void;
 }
 
 export const ChartControls = ({
@@ -25,11 +30,15 @@ export const ChartControls = ({
   showGrid,
   chartType,
   movingAverages,
+  advancedConfig,
   onShowVolumeChange,
   onShowGridChange,
   onChartTypeChange,
   onMovingAveragesChange,
+  onAdvancedConfigChange,
 }: ChartControlsProps): ReactElement => {
+  const { pinnedControls } = usePinnedControls();
+  
   const toggleMA = (index: number): void => {
     const updated = movingAverages.map((ma, i) => 
       i === index 
@@ -37,6 +46,27 @@ export const ChartControls = ({
         : ma
     );
     onMovingAveragesChange(updated);
+  };
+
+  const handleAdvancedChange = (key: keyof AdvancedControlsConfig, value: number): void => {
+    if (advancedConfig && onAdvancedConfigChange) {
+      onAdvancedConfigChange({
+        ...advancedConfig,
+        [key]: value,
+      });
+    }
+  };
+
+  const controlLabels: Record<string, string> = {
+    rightMargin: 'Right Margin',
+    volumeHeightRatio: 'Volume Height %',
+    candleSpacing: 'Candle Spacing',
+    candleWickWidth: 'Wick Width',
+    gridLineWidth: 'Grid Line Width',
+    paddingTop: 'Padding Top',
+    paddingBottom: 'Padding Bottom',
+    paddingLeft: 'Padding Left',
+    paddingRight: 'Padding Right',
   };
 
   return (
@@ -140,6 +170,29 @@ export const ChartControls = ({
                     </ChakraSwitch.Control>
                   </ChakraSwitch.Root>
                 </HStack>
+              ))}
+            </Stack>
+          </Box>
+        )}
+
+        {/* Pinned Advanced Controls */}
+        {pinnedControls.size > 0 && advancedConfig && (
+          <Box>
+            <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
+              Quick Settings
+            </Text>
+            <Stack gap={2}>
+              {Array.from(pinnedControls).map((controlKey) => (
+                <PinnableControl
+                  key={controlKey}
+                  label={controlLabels[controlKey] || controlKey}
+                  value={advancedConfig[controlKey]}
+                  onChange={(value) => handleAdvancedChange(controlKey, value)}
+                  controlKey={controlKey}
+                  step={controlKey === 'volumeHeightRatio' ? '0.05' : undefined}
+                  min={controlKey === 'volumeHeightRatio' ? '0' : undefined}
+                  max={controlKey === 'volumeHeightRatio' ? '1' : undefined}
+                />
               ))}
             </Stack>
           </Box>
