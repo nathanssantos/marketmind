@@ -1,11 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+type AIProvider = 'openai' | 'anthropic' | 'gemini';
+
 interface SecureStorageAPI {
   isEncryptionAvailable: () => Promise<boolean>;
-  setApiKey: (apiKey: string) => Promise<{ success: boolean; error?: string }>;
-  getApiKey: () => Promise<{ success: boolean; apiKey?: string | null; error?: string }>;
-  deleteApiKey: () => Promise<{ success: boolean; error?: string }>;
-  hasApiKey: () => Promise<boolean>;
+  setApiKey: (provider: AIProvider, apiKey: string) => Promise<{ success: boolean; error?: string }>;
+  getApiKey: (provider: AIProvider) => Promise<{ success: boolean; apiKey?: string | null; error?: string }>;
+  deleteApiKey: (provider: AIProvider) => Promise<{ success: boolean; error?: string }>;
+  hasApiKey: (provider: AIProvider) => Promise<boolean>;
+  getAllApiKeys: () => Promise<Record<string, boolean>>;
+  clearAllApiKeys: () => Promise<{ success: boolean; error?: string }>;
 }
 
 const API = {
@@ -26,20 +30,28 @@ const API = {
       return await ipcRenderer.invoke('storage:isEncryptionAvailable');
     },
     
-    setApiKey: async (apiKey: string) => {
-      return await ipcRenderer.invoke('storage:setApiKey', apiKey);
+    setApiKey: async (provider: AIProvider, apiKey: string) => {
+      return await ipcRenderer.invoke('storage:setApiKey', provider, apiKey);
     },
     
-    getApiKey: async () => {
-      return await ipcRenderer.invoke('storage:getApiKey');
+    getApiKey: async (provider: AIProvider) => {
+      return await ipcRenderer.invoke('storage:getApiKey', provider);
     },
     
-    deleteApiKey: async () => {
-      return await ipcRenderer.invoke('storage:deleteApiKey');
+    deleteApiKey: async (provider: AIProvider) => {
+      return await ipcRenderer.invoke('storage:deleteApiKey', provider);
     },
     
-    hasApiKey: async () => {
-      return await ipcRenderer.invoke('storage:hasApiKey');
+    hasApiKey: async (provider: AIProvider) => {
+      return await ipcRenderer.invoke('storage:hasApiKey', provider);
+    },
+
+    getAllApiKeys: async () => {
+      return await ipcRenderer.invoke('storage:getAllApiKeys');
+    },
+
+    clearAllApiKeys: async () => {
+      return await ipcRenderer.invoke('storage:clearAllApiKeys');
     },
   } as SecureStorageAPI,
 } as const;

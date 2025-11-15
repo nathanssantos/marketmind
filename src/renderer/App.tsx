@@ -2,7 +2,7 @@ import { Button } from '@/renderer/components/ui/button';
 import { Box, ChakraProvider, Stack, Text } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { Candle } from '@shared/types';
-import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { AITest } from './components/AITest';
 import { AdvancedControls, type AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
@@ -22,6 +22,7 @@ import { MarketDataService } from './services/market/MarketDataService';
 import { BinanceProvider } from './services/market/providers/BinanceProvider';
 import { CoinGeckoProvider } from './services/market/providers/CoinGeckoProvider';
 import { system } from './theme';
+import { runMigrations } from './utils/migration';
 
 const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
   {
@@ -95,6 +96,12 @@ function AppContent(): ReactElement {
     paddingLeft: CHART_CONFIG.CANVAS_PADDING_LEFT,
     paddingRight: CHART_CONFIG.CANVAS_PADDING_RIGHT,
   });
+
+  useEffect(() => {
+    runMigrations().catch((error) => {
+      console.error('Migration failed:', error);
+    });
+  }, []);
 
   const marketService = useMemo(() => {
     const binance = new BinanceProvider();

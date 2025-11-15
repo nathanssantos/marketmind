@@ -2,7 +2,11 @@ import Store from 'electron-store';
 import { safeStorage } from 'electron';
 
 interface SecureStoreSchema {
-  encryptedApiKey?: string;
+  apiKeys?: {
+    openai?: string;
+    anthropic?: string;
+    gemini?: string;
+  };
   version: string;
 }
 
@@ -14,6 +18,7 @@ export class StorageService {
       name: 'marketmind-secure',
       defaults: {
         version: '1.0.0',
+        apiKeys: {},
       },
     });
   }
@@ -22,7 +27,7 @@ export class StorageService {
     return safeStorage.isEncryptionAvailable();
   }
 
-  setApiKey(apiKey: string): void {
+  setApiKey(provider: 'openai' | 'anthropic' | 'gemini', apiKey: string): void {
     if (!this.isEncryptionAvailable()) {
       throw new Error('Encryption is not available on this platform');
     }
@@ -34,20 +39,26 @@ export class StorageService {
     try {
       const buffer = safeStorage.encryptString(apiKey);
       const encrypted = buffer.toString('base64');
-      this.store.set('encryptedApiKey', encrypted);
+      
+      const apiKeys = this.store.get('apiKeys', {});
+      this.store.set('apiKeys', {
+        ...apiKeys,
+        [provider]: encrypted,
+      });
     } catch (error) {
-      console.error('Failed to encrypt API key:', error);
-      throw new Error('Failed to encrypt API key');
+      console.error(`Failed to encrypt ${provider} API key:`, error);
+      throw new Error(`Failed to encrypt ${provider} API key`);
     }
   }
 
-  getApiKey(): string | null {
+  getApiKey(provider: 'openai' | 'anthropic' | 'gemini'): string | null {
     if (!this.isEncryptionAvailable()) {
       console.warn('Encryption is not available on this platform');
       return null;
     }
 
-    const encrypted = this.store.get('encryptedApiKey');
+    const apiKeys = this.store.get('apiKeys', {});
+    const encrypted = apiKeys[provider];
     
     if (!encrypted) {
       return null;
@@ -58,17 +69,33 @@ export class StorageService {
       const decrypted = safeStorage.decryptString(buffer);
       return decrypted;
     } catch (error) {
-      console.error('Failed to decrypt API key:', error);
+      console.error(`Failed to decrypt ${provider} API key:`, error);
       return null;
     }
   }
 
-  deleteApiKey(): void {
-    this.store.delete('encryptedApiKey');
+  deleteApiKey(provider: 'openai' | 'anthropic' | 'gemini'): void {
+    const apiKeys = this.store.get('apiKeys', {});
+    delete apiKeys[provider];
+    this.store.set('apiKeys', apiKeys);
   }
 
-  hasApiKey(): boolean {
-    return this.store.has('encryptedApiKey');
+  hasApiKey(provider: 'openai' | 'anthropic' | 'gemini'): boolean {
+    const apiKeys = this.store.get('apiKeys', {});
+    return !!apiKeys[provider];
+  }
+
+  getAllApiKeys(): Record<string, boolean> {
+    const apiKeys = this.store.get('apiKeys', {});
+    return {
+      openai: !!apiKeys.openai,
+      anthropic: !!apiKeys.anthropic,
+      gemini: !!apiKeys.gemini,
+    };
+  }
+
+  clearAllApiKeys(): void {
+    this.store.set('apiKeys', {});
   }
 
   getVersion(): string {

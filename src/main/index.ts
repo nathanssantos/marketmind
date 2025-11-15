@@ -52,12 +52,12 @@ const setupIpcHandlers = (): void => {
     return storageService.isEncryptionAvailable();
   });
 
-  ipcMain.handle('storage:setApiKey', async (_event, apiKey: string) => {
+  ipcMain.handle('storage:setApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini', apiKey: string) => {
     try {
-      storageService.setApiKey(apiKey);
+      storageService.setApiKey(provider, apiKey);
       return { success: true };
     } catch (error) {
-      console.error('Failed to set API key:', error);
+      console.error(`Failed to set ${provider} API key:`, error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -65,12 +65,12 @@ const setupIpcHandlers = (): void => {
     }
   });
 
-  ipcMain.handle('storage:getApiKey', async () => {
+  ipcMain.handle('storage:getApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini') => {
     try {
-      const apiKey = storageService.getApiKey();
+      const apiKey = storageService.getApiKey(provider);
       return { success: true, apiKey };
     } catch (error) {
-      console.error('Failed to get API key:', error);
+      console.error(`Failed to get ${provider} API key:`, error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -78,12 +78,12 @@ const setupIpcHandlers = (): void => {
     }
   });
 
-  ipcMain.handle('storage:deleteApiKey', async () => {
+  ipcMain.handle('storage:deleteApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini') => {
     try {
-      storageService.deleteApiKey();
+      storageService.deleteApiKey(provider);
       return { success: true };
     } catch (error) {
-      console.error('Failed to delete API key:', error);
+      console.error(`Failed to delete ${provider} API key:`, error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -91,8 +91,25 @@ const setupIpcHandlers = (): void => {
     }
   });
 
-  ipcMain.handle('storage:hasApiKey', async () => {
-    return storageService.hasApiKey();
+  ipcMain.handle('storage:hasApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini') => {
+    return storageService.hasApiKey(provider);
+  });
+
+  ipcMain.handle('storage:getAllApiKeys', async () => {
+    return storageService.getAllApiKeys();
+  });
+
+  ipcMain.handle('storage:clearAllApiKeys', async () => {
+    try {
+      storageService.clearAllApiKeys();
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to clear API keys:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
   });
 };
 

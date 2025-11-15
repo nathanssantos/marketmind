@@ -1,117 +1,154 @@
 import { useState, useEffect, useCallback } from 'react';
 
+type AIProvider = 'openai' | 'anthropic' | 'gemini';
+
 interface UseSecureStorageResult {
-  apiKey: string | null;
-  isLoading: boolean;
-  error: string | null;
   isEncryptionAvailable: boolean;
-  setApiKey: (key: string) => Promise<void>;
-  deleteApiKey: () => Promise<void>;
-  refreshApiKey: () => Promise<void>;
+  loading: boolean;
+  error: string | null;
+  setApiKey: (provider: AIProvider, key: string) => Promise<boolean>;
+  getApiKey: (provider: AIProvider) => Promise<string | null>;
+  deleteApiKey: (provider: AIProvider) => Promise<boolean>;
+  hasApiKey: (provider: AIProvider) => Promise<boolean>;
+  getAllApiKeys: () => Promise<Record<string, boolean>>;
+  clearAllApiKeys: () => Promise<boolean>;
 }
 
 export const useSecureStorage = (): UseSecureStorageResult => {
-  const [apiKey, setApiKeyState] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isEncryptionAvailable, setIsEncryptionAvailable] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadApiKey = async () => {
+    const checkEncryption = async () => {
       try {
-        setIsLoading(true);
-        setError(null);
-
-        const encryptionAvailable = await window.electron.secureStorage.isEncryptionAvailable();
-        setIsEncryptionAvailable(encryptionAvailable);
-
-        if (!encryptionAvailable) {
-          setError('Encryption is not available on this platform');
-          return;
-        }
-
-        const result = await window.electron.secureStorage.getApiKey();
-        
-        if (result.success) {
-          setApiKeyState(result.apiKey || null);
-        } else {
-          setError(result.error || 'Failed to load API key');
-        }
+        const available = await window.electron.secureStorage.isEncryptionAvailable();
+        setIsEncryptionAvailable(available);
       } catch (err) {
-        console.error('Failed to load API key:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setIsLoading(false);
+        console.error('Failed to check encryption availability:', err);
+        setIsEncryptionAvailable(false);
       }
     };
 
-    loadApiKey();
+    checkEncryption();
   }, []);
 
-  const setApiKey = useCallback(async (key: string) => {
+  const setApiKey = useCallback(async (provider: AIProvider, key: string): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+
     try {
-      setError(null);
+      const result = await window.electron.secureStorage.setApiKey(provider, key);
       
-      const result = await window.electron.secureStorage.setApiKey(key);
-      
-      if (result.success) {
-        setApiKeyState(key);
-      } else {
-        throw new Error(result.error || 'Failed to save API key');
+      if (!result.success) {
+        setError(result.error || 'Failed to save API key');
+        return false;
       }
+
+      return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
-      throw err;
-    }
-  }, []);
-
-  const deleteApiKey = useCallback(async () => {
-    try {
-      setError(null);
-      
-      const result = await window.electron.secureStorage.deleteApiKey();
-      
-      if (result.success) {
-        setApiKeyState(null);
-      } else {
-        throw new Error(result.error || 'Failed to delete API key');
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(errorMessage);
-      throw err;
-    }
-  }, []);
-
-  const refreshApiKey = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const result = await window.electron.secureStorage.getApiKey();
-      
-      if (result.success) {
-        setApiKeyState(result.apiKey || null);
-      } else {
-        throw new Error(result.error || 'Failed to refresh API key');
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(errorMessage);
-      throw err;
+      return false;
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+    }
+  }, []);
+
+  const getApiKey = useCallback(async (provider: AIProvider): Promise<string | null> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await window.electron.secureStorage.getApiKey(provider);
+      
+      if (!result.success) {
+        setError(result.error || 'Failed to retrieve API key');
+        return null;
+      }
+
+      return result.apiKey || null;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(errorMessage);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const deleteApiKey = useCallback(async (provider: AIProvider): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await window.electron.secureStorage.deleteApiKey(provider);
+      
+      if (!result.success) {
+        setError(result.error || 'Failed to delete API key');
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(errorMessage);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const hasApiKey = useCallback(async (provider: AIProvider): Promise<boolean> => {
+    try {
+      return await window.electron.secureStorage.hasApiKey(provider);
+    } catch (err) {
+      console.error(`Failed to check if ${provider} API key exists:`, err);
+      return false;
+    }
+  }, []);
+
+  const getAllApiKeys = useCallback(async (): Promise<Record<string, boolean>> => {
+    try {
+      return await window.electron.secureStorage.getAllApiKeys();
+    } catch (err) {
+      console.error('Failed to get all API keys:', err);
+      return { openai: false, anthropic: false, gemini: false };
+    }
+  }, []);
+
+  const clearAllApiKeys = useCallback(async (): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await window.electron.secureStorage.clearAllApiKeys();
+      
+      if (!result.success) {
+        setError(result.error || 'Failed to clear API keys');
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(errorMessage);
+      return false;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   return {
-    apiKey,
-    isLoading,
-    error,
     isEncryptionAvailable,
+    loading,
+    error,
     setApiKey,
+    getApiKey,
     deleteApiKey,
-    refreshApiKey,
+    hasApiKey,
+    getAllApiKeys,
+    clearAllApiKeys,
   };
 };
+
