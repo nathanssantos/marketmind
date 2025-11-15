@@ -95,6 +95,44 @@ const generateTitle = (messages: AIMessage[]): string => {
     : preview;
 };
 
+const formatAIError = (error: Error, provider?: AIProviderType): string => {
+  let errorMessage = error.message;
+  
+  const providerName = provider === 'anthropic' ? 'Claude' : 
+                      provider === 'openai' ? 'OpenAI' : 
+                      provider === 'gemini' ? 'Gemini' : 'AI';
+  
+  if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests') || errorMessage.includes('quota')) {
+    if (provider === 'gemini') {
+      const waitTime = errorMessage.match(/retry in (\d+)/i)?.[1] || '60';
+      if (errorMessage.includes('limit: 0') || errorMessage.includes('Quota exceeded')) {
+        return `⚠️ **Cota do Gemini 2.0 Flash Exp esgotada**\n\n` +
+          `O tier gratuito tem limite de **10 requisições por minuto**.\n\n` +
+          `**Soluções:**\n` +
+          `• Aguarde ${waitTime} segundos e tente novamente\n` +
+          `• Ou vá em Settings > AI Configuration e troque para **Gemini 1.5 Flash** (mais rápido e barato)\n` +
+          `• Ou use outro provedor (OpenAI/Claude)`;
+      } else {
+        return `⚠️ Limite de requisições do Gemini excedido (10 req/min). Aguarde ${waitTime}s ou troque de modelo nas configurações.`;
+      }
+    } else {
+      return `⚠️ Limite de requisições excedido no ${providerName}. Aguarde alguns minutos e tente novamente.`;
+    }
+  } else if (errorMessage.includes('rate limit')) {
+    return `⚠️ Taxa de requisições excedida no ${providerName}. Aguarde alguns minutos.`;
+  } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized') || errorMessage.includes('invalid') || errorMessage.includes('API key')) {
+    return `🔑 Chave API inválida para ${providerName}. Verifique sua configuração.`;
+  } else if (errorMessage.includes('timeout')) {
+    return '⏱️ Tempo limite excedido. Tente novamente.';
+  } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+    return '🌐 Erro de conexão. Verifique sua internet.';
+  } else if (errorMessage.includes('context_length') || errorMessage.includes('too long')) {
+    return '📏 Mensagem muito longa. Reduza o tamanho ou limpe o histórico.';
+  }
+  
+  return errorMessage;
+};
+
 const formatChartDataContext = (chartData: ChartData): string => {
   const recentCandles = chartData.candles.slice(-100); // Last 100 candles
   const lastCandle = recentCandles[recentCandles.length - 1];
@@ -441,7 +479,10 @@ export const useAIStore = create<AIState>()(
             lastAnalysis: response,
           });
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+          const errorMessage = error instanceof Error 
+            ? formatAIError(error, settings.provider)
+            : 'Failed to send message';
+          
           set({ 
             isLoading: false,
             error: errorMessage,
