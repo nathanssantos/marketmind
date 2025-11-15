@@ -20,12 +20,17 @@ export interface AIMessage {
 export interface NewsArticle {
   id: string;
   title: string;
-  summary: string;
+  description: string;
+  content?: string | undefined;
   url: string;
   source: string;
+  author?: string | undefined;
   publishedAt: number;
+  imageUrl?: string | undefined;
   sentiment?: 'positive' | 'negative' | 'neutral';
   relevance?: number;
+  categories?: string[] | undefined;
+  symbols?: string[] | undefined;
 }
 
 export interface AIAnalysisRequest {

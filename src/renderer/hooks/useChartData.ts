@@ -1,4 +1,4 @@
-import type { Candle } from '@shared/types';
+import type { Candle, NewsArticle } from '@shared/types';
 import { useEffect } from 'react';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
@@ -11,6 +11,7 @@ interface UseChartDataParams {
   chartType: 'candlestick' | 'line';
   showVolume: boolean;
   movingAverages: MovingAverageConfig[];
+  news?: NewsArticle[] | undefined;
 }
 
 export const useChartData = (params: UseChartDataParams) => {
@@ -18,5 +19,5 @@ export const useChartData = (params: UseChartDataParams) => {
 
   useEffect(() => {
     setChartData(params);
-  }, [params.candles, params.symbol, params.timeframe, params.chartType, params.showVolume, params.movingAverages, setChartData]);
+  }, [params.candles, params.symbol, params.timeframe, params.chartType, params.showVolume, params.movingAverages, params.news, setChartData]);
 };

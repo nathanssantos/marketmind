@@ -17,6 +17,7 @@ import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useMarketData } from './hooks/useMarketData';
+import { useNews } from './hooks/useNews';
 import { useRealtimeCandle } from './hooks/useRealtimeCandle';
 import { MarketDataService } from './services/market/MarketDataService';
 import { BinanceProvider } from './services/market/providers/BinanceProvider';
@@ -166,7 +167,24 @@ function AppContent(): ReactElement {
 
   const debouncedAdvancedConfig = useDebounce(advancedConfig, 300);
 
-  // Provide chart data to context for AI analysis
+  const extractSymbolCode = (fullSymbol: string): string => {
+    if (fullSymbol.endsWith('USDT')) {
+      return fullSymbol.replace('USDT', '');
+    }
+    if (fullSymbol.endsWith('USD')) {
+      return fullSymbol.replace('USD', '');
+    }
+    return fullSymbol;
+  };
+
+  // News integration disabled until API keys are configured
+  const { articles: newsArticles } = useNews({
+    symbols: [extractSymbolCode(symbol)],
+    limit: 10,
+    enabled: false, // Enable this when you add API keys to .env
+    refetchInterval: 5 * 60 * 1000,
+  });
+
   useChartData({
     candles: displayCandles,
     symbol,
@@ -174,6 +192,7 @@ function AppContent(): ReactElement {
     chartType,
     showVolume,
     movingAverages,
+    news: newsArticles,
   });
 
   return (

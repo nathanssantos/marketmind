@@ -1,4 +1,4 @@
-import type { Candle } from '@shared/types';
+import type { Candle, NewsArticle } from '@shared/types';
 import React, { createContext, useContext, type ReactNode } from 'react';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
@@ -10,6 +10,7 @@ export interface ChartContextData {
   chartType: 'candlestick' | 'line';
   showVolume: boolean;
   movingAverages: MovingAverageConfig[];
+  news?: NewsArticle[] | undefined;
 }
 
 interface ChartContextType {

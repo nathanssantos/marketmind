@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { AboutTab } from './AboutTab';
 import { AIConfigTab } from './AIConfigTab';
 import { GeneralTab } from './GeneralTab';
+import { NewsConfigTab } from './NewsConfigTab';
 import { useSettingsDialog } from './useSettingsDialog';
 
 interface SettingsDialogProps {
@@ -32,6 +33,7 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
               <Tabs.List>
                 <Tabs.Trigger value="general">General</Tabs.Trigger>
                 <Tabs.Trigger value="ai">AI Configuration</Tabs.Trigger>
+                <Tabs.Trigger value="news">News</Tabs.Trigger>
                 <Tabs.Trigger value="about">About</Tabs.Trigger>
               </Tabs.List>
 
@@ -42,6 +44,10 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
 
                 <Tabs.Content value="ai">
                   <AIConfigTab />
+                </Tabs.Content>
+
+                <Tabs.Content value="news">
+                  <NewsConfigTab />
                 </Tabs.Content>
 
                 <Tabs.Content value="about">
