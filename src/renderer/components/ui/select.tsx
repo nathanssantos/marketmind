@@ -156,6 +156,7 @@ export const Select = ({
                 borderColor="border"
                 _focus={{ borderColor: 'blue.500' }}
                 autoFocus
+                px={3}
               />
             </Box>
           )}

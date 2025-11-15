@@ -96,10 +96,40 @@ export const useChartCanvas = ({
     };
   }, []);
 
+  // Track previous candle count to detect timeframe changes
+  const prevCandleCountRef = useRef<number>(candles.length);
+
   // Update candles when they change
   useEffect(() => {
     if (managerRef.current) {
+      const prevCount = prevCandleCountRef.current;
+      const currentCount = candles.length;
+      
       managerRef.current.setCandles(candles);
+      
+      // Only reset viewport if candle count changed significantly (>10% difference)
+      // This indicates a timeframe change, not just a realtime update
+      const countDiffPercentage = Math.abs(currentCount - prevCount) / Math.max(prevCount, 1);
+      const isSignificantChange = countDiffPercentage > 0.1;
+      
+      if (initialViewport === DEFAULT_VIEWPORT && isSignificantChange) {
+        const visibleCount = Math.min(100, currentCount);
+        
+        const newViewport = {
+          ...DEFAULT_VIEWPORT,
+          start: Math.max(0, currentCount - visibleCount),
+          end: currentCount,
+        };
+        
+        setViewport(newViewport);
+        managerRef.current.setViewport(newViewport);
+        onViewportChange?.(newViewport);
+        
+        // Reset vertical zoom to center the chart
+        managerRef.current.resetVerticalZoom();
+      }
+      
+      prevCandleCountRef.current = currentCount;
     }
   }, [candles]);
 

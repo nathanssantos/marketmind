@@ -1,7 +1,7 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { ChartColors } from '@shared/types';
 import { useCallback, useEffect } from 'react';
-import { CHART_CONFIG } from '@shared/constants/chartConfig';
 
 export interface UseLineChartRendererProps {
   manager: CanvasManager | null;
@@ -78,7 +78,7 @@ export const useLineChartRenderer = ({
     }
 
     ctx.restore();
-  }, [manager, colors, enabled, rightMargin]);
+  }, [manager, colors, enabled, rightMargin, manager?.getCandles()]);
 
   useEffect(() => {
     render();

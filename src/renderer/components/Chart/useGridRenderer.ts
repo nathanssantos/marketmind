@@ -148,7 +148,7 @@ export const useGridRenderer = ({
       labelColor,
       2,
     );
-  }, [manager, colors, enabled, horizontalLines, verticalLines, gridLineWidth, paddingRight, rightMargin]);
+  }, [manager, colors, enabled, horizontalLines, verticalLines, gridLineWidth, paddingRight, rightMargin, manager?.getCandles()]);
 
   useEffect(() => {
     render();

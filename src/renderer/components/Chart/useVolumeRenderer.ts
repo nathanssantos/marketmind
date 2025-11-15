@@ -70,7 +70,7 @@ export const useVolumeRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, colors, enabled, opacity, rightMargin, volumeHeightRatio]);
+  }, [manager, colors, enabled, opacity, rightMargin, volumeHeightRatio, manager?.getCandles()]);
 
   useEffect(() => {
     render();

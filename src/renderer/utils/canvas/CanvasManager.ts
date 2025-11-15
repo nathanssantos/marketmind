@@ -1,13 +1,13 @@
 import { CHART_CONFIG } from '@shared/constants';
 import type { Candle, Viewport } from '@shared/types';
 import {
-  calculateBounds,
-  clampViewport,
-  priceToY,
-  volumeToHeight,
-  yToPrice,
-  type Bounds,
-  type Dimensions,
+    calculateBounds,
+    clampViewport,
+    priceToY,
+    volumeToHeight,
+    yToPrice,
+    type Bounds,
+    type Dimensions,
 } from './coordinateSystem';
 import { clearCanvas, setupCanvas } from './drawingUtils';
 
@@ -260,6 +260,13 @@ export class CanvasManager {
     
     this.priceScale = Math.max(0.1, Math.min(10, this.priceScale));
     
+    this.updateBounds();
+    this.triggerRender();
+  }
+
+  public resetVerticalZoom(): void {
+    this.priceOffset = 0;
+    this.priceScale = 1;
     this.updateBounds();
     this.triggerRender();
   }

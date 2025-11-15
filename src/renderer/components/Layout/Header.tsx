@@ -2,7 +2,7 @@ import { useColorMode } from '@/renderer/components/ui/color-mode';
 import { Logo } from '@/renderer/components/ui/logo';
 import { Flex, IconButton, Text } from '@chakra-ui/react';
 import { memo, useState } from 'react';
-import { HiCog6Tooth, HiMoon, HiQuestionMarkCircle, HiSun } from 'react-icons/hi2';
+import { HiCog6Tooth, HiCommandLine, HiMoon, HiSun } from 'react-icons/hi2';
 import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
 import { TooltipWrapper } from '../ui/Tooltip';
 
@@ -55,7 +55,7 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
             variant="ghost"
             size="sm"
           >
-            <HiQuestionMarkCircle />
+            <HiCommandLine />
           </IconButton>
         </TooltipWrapper>
         <TooltipWrapper label="Settings" placement="bottom" showArrow>

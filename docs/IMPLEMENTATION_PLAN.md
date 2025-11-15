@@ -1576,7 +1576,7 @@ Next step: implement the CandlestickRenderer.
 **Last Updated:** November 15, 2025  
 **Current Branch:** `feature/phase-13-final-polish`  
 **Current Phase:** All Phases Complete! 🎉
-**Project Version:** 0.12.0
+**Project Version:** 0.12.1
 
 ### ✅ Completed (13/13 Phases - 100%)
 - **Phase 1:** Initial Project Setup (100%)
@@ -1703,7 +1703,7 @@ Next step: implement the CandlestickRenderer.
 ### 🚀 Next Steps (Post-MVP)
 1. **Immediate**: Merge feature/phase-13-final-polish to develop
 2. **Testing**: Cross-platform testing (macOS, Windows, Linux)
-3. **Release**: Create v0.12.0 release on GitHub
+3. **Release**: Create v0.12.1 release on GitHub
 4. **Future v1.0+**:
    - Integration and E2E tests
    - Additional technical indicators (RSI, MACD, Bollinger Bands)

@@ -7,14 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned
-- Integration and E2E tests
+### In Progress
 - Cross-platform testing (macOS, Windows, Linux)
 - Performance profiling and benchmarking
+
+### Planned
+- Integration and E2E tests
 - Additional chart indicators (RSI, MACD, Bollinger Bands)
 - Multi-language support (i18n)
 - Professional app icons and branding
 - News sentiment analysis
+
+## [0.12.1] - 2024-11-15
+
+### Fixed
+- **Chart Rendering Issues**
+  - Fixed chart not updating when changing timeframe or symbol
+  - Fixed chart not responding to realtime updates
+  - Added `manager?.getCandles()` dependency to all renderer hooks
+  - Chart now re-renders correctly when candles data changes
+  
+- **Viewport Management**
+  - Fixed viewport resetting on every candle update
+  - Implemented smart detection (>10% change = timeframe switch, <10% = realtime update)
+  - Viewport now only resets on significant changes (timeframe/symbol)
+  - Preserves zoom and pan during realtime updates
+  - Added vertical zoom reset on timeframe/symbol change for better centering
+  
+- **Current Price Line**
+  - Fixed `useCurrentPriceLineRenderer` callback structure
+  - Changed from nested callback to direct `useCallback` return
+  - Current price line now displays correctly
+  
+- **Chat UX Issues**
+  - Fixed message input not clearing after send
+  - Changed to clear input immediately before API call
+  - Fixed send button getting stuck/disabled
+  - Using `settings` object instead of separate `provider`/`model` for consistent state
+  - Added `isLoading` check to prevent double-sending
+  
+- **UI Polish**
+  - Changed help icon (?) to keyboard icon (⌨️) in header
+  - Better represents keyboard shortcuts functionality
+  - Added `px={3}` padding to search inputs in selects
+
+### Changed
+- Updated `useCandlestickRenderer`, `useVolumeRenderer`, `useGridRenderer`, `useMovingAverageRenderer`, `useLineChartRenderer` hooks
+- Updated `useCurrentPriceLineRenderer` to use `useCallback` instead of `useMemo`
+- Updated `useChartCanvas` with smart viewport reset logic
+- Added `resetVerticalZoom()` method to `CanvasManager`
+- Updated `useMessageInput` hook for better UX
+- Updated Header component with keyboard icon
+- Updated Select component with input padding
+
+### Technical Details
+- **Files Modified**:
+  - `src/renderer/components/Chart/useCandlestickRenderer.ts`
+  - `src/renderer/components/Chart/useVolumeRenderer.ts`
+  - `src/renderer/components/Chart/useGridRenderer.ts`
+  - `src/renderer/components/Chart/useMovingAverageRenderer.ts`
+  - `src/renderer/components/Chart/useLineChartRenderer.ts`
+  - `src/renderer/components/Chart/useCurrentPriceLineRenderer.ts`
+  - `src/renderer/components/Chart/useChartCanvas.ts`
+  - `src/renderer/utils/canvas/CanvasManager.ts`
+  - `src/renderer/components/Chat/useMessageInput.ts`
+  - `src/renderer/components/Layout/Header.tsx`
+  - `src/renderer/components/ui/select.tsx`
 
 ## [0.12.0] - 2024-11-15
 

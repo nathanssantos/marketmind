@@ -1,6 +1,6 @@
 {
   "name": "marketmind",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "AI-powered consultant for technical analysis of financial charts",
   "main": "dist-electron/main/index.js",
   "author": "Nathan Santos",

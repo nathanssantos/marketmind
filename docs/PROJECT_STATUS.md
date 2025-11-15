@@ -1,7 +1,7 @@
 # 📊 MarketMind - Project Status
 
 > **Last Updated:** November 15, 2025  
-> **Current Version:** 0.12.0 (Released)  
+> **Current Version:** 0.12.1 (Released)  
 > **Current Branch:** `feature/phase-13-final-polish`  
 > **Current Phase:** All Phases Complete! 🎉
 
@@ -1677,6 +1677,38 @@ package.json                                  ✅ (version 0.12.0)
 ---
 
 ## 🔄 Recent Changes
+
+### November 15, 2025 - v0.12.1 Bug Fixes & Polish 🐛
+- 🐛 **Critical Bug Fixes**
+  - Fixed chart not updating when changing timeframe or symbol
+  - Fixed viewport resetting during realtime updates
+  - Fixed current price line not displaying
+  - Fixed message input not clearing after send
+  - Fixed chat send button getting stuck
+  
+- ✨ **Chart Rendering Improvements**
+  - Added `manager?.getCandles()` dependency to all renderer hooks
+  - Chart now responds correctly to candle data changes
+  - Smart viewport management (10% threshold for reset detection)
+  - Vertical zoom reset on timeframe/symbol change
+  - Preserves user's zoom/pan during realtime updates
+  
+- 🎨 **UI/UX Polish**
+  - Changed help icon to keyboard icon in header
+  - Added padding to search inputs in selects
+  - Better visual representation of keyboard shortcuts
+  
+- 🔧 **Technical Improvements**
+  - Fixed `useCurrentPriceLineRenderer` callback structure
+  - Improved state management in `useMessageInput`
+  - Added `resetVerticalZoom()` method to CanvasManager
+  - Smart candle count comparison for viewport logic
+  
+- 📝 **Files Modified**
+  - 11 renderer hooks and components updated
+  - CanvasManager enhanced with new methods
+  - Chat UX components improved
+  - Header and Select components polished
 
 ### November 15, 2025 - Phase 13 Complete ✅
 - ✅ **Phase 13: Final Polish - COMPLETED (100%)**
