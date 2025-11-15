@@ -14,6 +14,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - News sentiment analysis integration
 - Professional app icons and branding
 
+## [0.11.1] - 2024-12-19
+
+### Fixed
+- **Critical Bug**: Resolved ESM/CommonJS module compatibility issue preventing Electron app launch
+  - Changed imports from named to namespace pattern for CommonJS modules (`electron`, `electron-updater`)
+  - Applied `import * as` pattern with destructuring for compatibility
+  - Kept direct ESM imports for `electron-store` and `electron-log`
+  - Configured Vite to externalize all Electron dependencies
+  - App now launches correctly in development mode
+  - Hot reload functionality working as expected
+- **UpdateManager**: Added development mode detection to disable auto-updater in dev
+- **Code Organization**: Reorganized IPC handler setup for better modularity
+
+### Changed
+- Main process imports refactored for ESM/CommonJS compatibility
+- StorageService imports updated with mixed ESM/CommonJS pattern
+- UpdateManager imports updated with proper module handling
+- vite.config.ts now externalizes: electron, electron-updater, electron-log, electron-store
+
 ## [0.11.0] - 2024-12-19
 
 ### Added

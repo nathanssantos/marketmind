@@ -915,81 +915,110 @@ export class UpdateManager {
   - Troubleshooting and best practices
   - API reference
 
+#### 10.7 Critical Fixes ✅
+- ✅ **ESM/CommonJS Compatibility**: Resolved module system incompatibility
+  - Issue: App built successfully but Electron window wouldn't open
+  - Root cause: `electron-store` requires ESM (`"type": "module"`), but `electron` and `electron-updater` are CommonJS
+  - Solution: Changed imports from named to namespace pattern (`import * as electron from 'electron'`)
+  - Applied to: `index.ts`, `StorageService.ts`, `UpdateManager.ts`
+  - Configured Vite to externalize all Electron dependencies
+  - Added development mode detection to UpdateManager
+  - Result: App launches correctly, hot reload working ✅
+
+**Lessons Learned:**
+- electron-store is ESM-only and requires `"type": "module"` in package.json
+- electron and electron-updater are CommonJS modules
+- Named imports from CommonJS modules fail in ESM context
+- Solution: Use `import * as` for CommonJS modules, destructure after import
+- Always externalize Electron modules in Vite configuration
+- Development mode detection prevents auto-updater from running in dev
+
 ---
 
-### **PHASE 11: Optimizations and Performance** ⏳
+### **PHASE 11: Testing & Quality Assurance** ⏳
 *Estimated duration: 2-3 days*
+*Status: NOT STARTED*
 
-#### 11.1 Canvas Performance
+#### 11.1 Unit Testing
+- [ ] Test utilities (formatters, movingAverages, etc.)
+- [ ] Test chart renderers (candlestick, line, volume, MA, grid)
+- [ ] Test hooks (useChartData, useMarketData, useAI, useNews)
+- [ ] Test IPC handlers (storage, update operations)
+- [ ] Test StorageService encryption/decryption
+- [ ] Test UpdateManager state management
+- [ ] Vitest configuration with coverage reporting
+
+#### 11.2 Integration Testing
+- [ ] Test Electron IPC communication flow
+- [ ] Test chart rendering with real data
+- [ ] Test AI integration with mock responses
+- [ ] Test news feed integration
+- [ ] Test auto-update flow (with mock GitHub release)
+- [ ] Test settings persistence
+
+#### 11.3 Performance Testing
+- [ ] Benchmark canvas rendering with large datasets (1000+ candles)
+- [ ] Test memory usage during extended sessions
+- [ ] Test CPU usage during chart interactions (zoom, pan, scroll)
+- [ ] Profile chart renderer performance
+- [ ] Test app startup time
+
+#### 11.4 Cross-Platform Testing
+- [ ] Test on macOS (x64 and arm64)
+- [ ] Test on Windows 10/11
+- [ ] Test on Linux (Ubuntu/Debian)
+- [ ] Verify all features work on each platform
+- [ ] Test auto-update on each platform
+
+---
+
+### **PHASE 12: Optimizations and Performance** ⏳
+*Estimated duration: 2-3 days*
+*Status: NOT STARTED*
+
+#### 12.1 Canvas Performance
 - [ ] Render only visible area (viewport culling)
 - [ ] Debounce on zoom/pan
 - [ ] RequestAnimationFrame for animations
 - [ ] Web Workers for heavy calculations (MAs, indicators)
 - [ ] OffscreenCanvas (if needed)
 
-#### 11.2 Data Management
+#### 12.2 Data Management
 - [ ] Large dataset virtualization
 - [ ] Lazy loading of historical candles
 - [ ] IndexedDB for persistent cache
 - [ ] Data compression
 
-#### 11.3 Memory Management
+#### 12.3 Memory Management
 - [ ] Cleanup unused canvas
 - [ ] Conscious garbage collection
 - [ ] Chat history limit
 
 ---
 
-### **PHASE 12: Testing and Quality**
-*Estimated duration: 3-4 days*
+### **PHASE 13: Final Polish** ⏳
+*Estimated duration: 2-3 days*
+*Status: NOT STARTED*
 
-#### 12.1 Testing Setup
-```bash
-npm install -D vitest @testing-library/react @testing-library/jest-dom
-npm install -D playwright # for E2E tests
-```
-
-#### 12.2 Unit Tests
-- [ ] Canvas utilities
-- [ ] Indicator calculations (SMA, EMA)
-- [ ] Coordinate conversion
-- [ ] Formatters and validators
-
-#### 12.3 Integration Tests
-- [ ] Complete data loading flow
-- [ ] AI interaction
-- [ ] Update system
-
-#### 12.4 E2E Tests
-- [ ] App opening flow
-- [ ] Load chart
-- [ ] Chat with AI
-- [ ] Configure settings
-
----
-
-### **PHASE 13: Documentation and Polish**
-*Estimated duration: 2 days*
-
-#### 13.1 Documentation
-- [ ] Complete README
-- [ ] Installation guide
-- [ ] Development guide
-- [ ] API documentation
-- [ ] Troubleshooting
-
-#### 13.2 UI/UX Polish
+#### 13.1 UI/UX Polish
 - [ ] Smooth animations
 - [ ] Loading states
 - [ ] Visual error handling
 - [ ] First-time onboarding
 - [ ] Tooltips and hints
 
-#### 13.3 Accessibility
+#### 13.2 Accessibility
 - [ ] Keyboard support
 - [ ] ARIA labels
 - [ ] Adequate contrast
 - [ ] Interface zoom
+
+#### 13.3 Documentation
+- [ ] Complete README
+- [ ] Installation guide
+- [ ] Development guide
+- [ ] API documentation
+- [ ] Troubleshooting
 
 ---
 
