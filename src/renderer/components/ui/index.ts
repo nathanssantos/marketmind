@@ -8,6 +8,7 @@ export { Field } from './field';
 export { Input } from './input';
 export { Select } from './select';
 export { Slider } from './slider';
+export { Switch } from './switch';
 export { Tabs } from './tabs';
 
 export type { SelectOption, SelectProps } from './select';

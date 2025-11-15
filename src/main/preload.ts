@@ -15,6 +15,39 @@ interface SecureStorageAPI {
   setNewsSettings: (settings: { enabled: boolean; refreshInterval: number; maxArticles: number }) => Promise<{ success: boolean; error?: string }>;
 }
 
+interface UpdateInfo {
+  version: string;
+  releaseNotes?: string;
+  releaseDate?: string;
+}
+
+interface UpdateProgress {
+  percent: number;
+  transferred: number;
+  total: number;
+  bytesPerSecond: number;
+}
+
+interface UpdateError {
+  message: string;
+  stack?: string;
+}
+
+interface UpdateAPI {
+  checkForUpdates: () => Promise<{ success: boolean; error?: string }>;
+  downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
+  installUpdate: () => Promise<{ success: boolean; error?: string }>;
+  getInfo: () => Promise<{ currentVersion: string; platform: string }>;
+  startAutoCheck: (intervalHours: number) => Promise<{ success: boolean; error?: string }>;
+  stopAutoCheck: () => Promise<{ success: boolean; error?: string }>;
+  onChecking: (callback: () => void) => void;
+  onAvailable: (callback: (info: UpdateInfo) => void) => void;
+  onNotAvailable: (callback: (info: UpdateInfo) => void) => void;
+  onDownloadProgress: (callback: (progress: UpdateProgress) => void) => void;
+  onDownloaded: (callback: (info: UpdateInfo) => void) => void;
+  onError: (callback: (error: UpdateError) => void) => void;
+}
+
 const API = {
   send: (channel: string, data: unknown) => {
     ipcRenderer.send(channel, data);
@@ -65,6 +98,56 @@ const API = {
       return await ipcRenderer.invoke('storage:setNewsSettings', settings);
     },
   } as SecureStorageAPI,
+
+  update: {
+    checkForUpdates: async () => {
+      return await ipcRenderer.invoke('update:check');
+    },
+
+    downloadUpdate: async () => {
+      return await ipcRenderer.invoke('update:download');
+    },
+
+    installUpdate: async () => {
+      return await ipcRenderer.invoke('update:install');
+    },
+
+    getInfo: async () => {
+      return await ipcRenderer.invoke('update:getInfo');
+    },
+
+    startAutoCheck: async (intervalHours: number) => {
+      return await ipcRenderer.invoke('update:startAutoCheck', intervalHours);
+    },
+
+    stopAutoCheck: async () => {
+      return await ipcRenderer.invoke('update:stopAutoCheck');
+    },
+
+    onChecking: (callback: () => void) => {
+      ipcRenderer.on('update:checking', () => callback());
+    },
+
+    onAvailable: (callback: (info: UpdateInfo) => void) => {
+      ipcRenderer.on('update:available', (_event, info) => callback(info));
+    },
+
+    onNotAvailable: (callback: (info: UpdateInfo) => void) => {
+      ipcRenderer.on('update:not-available', (_event, info) => callback(info));
+    },
+
+    onDownloadProgress: (callback: (progress: UpdateProgress) => void) => {
+      ipcRenderer.on('update:download-progress', (_event, progress) => callback(progress));
+    },
+
+    onDownloaded: (callback: (info: UpdateInfo) => void) => {
+      ipcRenderer.on('update:downloaded', (_event, info) => callback(info));
+    },
+
+    onError: (callback: (error: UpdateError) => void) => {
+      ipcRenderer.on('update:error', (_event, error) => callback(error));
+    },
+  } as UpdateAPI,
 } as const;
 
 contextBridge.exposeInMainWorld('electron', API);

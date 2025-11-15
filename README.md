@@ -4,7 +4,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.10.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.11.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 
@@ -34,21 +34,22 @@
 - 📊 **Symbol Selector**: Search and select from 8 popular cryptocurrencies or search entire catalog
 - 🔄 **API Fallback**: Automatic failover to CoinGecko if primary provider fails
 - 💾 **Data Caching**: Smart caching system to reduce API calls
-
-**Recently Added (v0.6.0):**
 - 🤖 **AI Chat Interface**: Full chat system with 10 AI models (OpenAI, Claude, Gemini)
 - 💬 **Interactive Sidebar**: Resizable chat sidebar (300-800px) with markdown rendering
 - 📊 **Chart Data Integration**: Sends structured data (100 candles + statistics) instead of images
 - 🎨 **Theme System**: Enhanced dark mode with semantic tokens
 - ⚙️ **AI Selector**: Provider and model selection with pricing info
 - 📝 **Message History**: Clean UI with auto-scroll and loading states
+- 🔐 **Secure Storage**: Platform-native encryption for API keys (Keychain/DPAPI/libsecret)
+- ⚙️ **Settings System**: Comprehensive settings with AI, news, and general configuration
+- 📰 **News Integration**: Multi-provider news aggregation (NewsAPI, CryptoPanic, Finnhub)
+- 🔄 **Auto-Update System**: Automatic updates via GitHub releases with progress tracking
 
 **Planned:**
-- 📰 **News Analysis**: Cross-analysis of technical analysis with news sentiment
+- 📰 **News Sentiment Analysis**: AI-powered sentiment analysis of financial news
 - 📊 **Technical Indicators**: RSI, MACD, Bollinger Bands, and more
-- 🔄 **Auto-Update**: Automatic update system
 - 📡 **WebSocket**: Real-time candle updates via WebSocket
-- ⚙️ **Settings Modal**: API key encryption and conversation export/import
+- 🧪 **Testing**: Comprehensive unit and integration tests
 
 ## 🛠 Technology Stack
 
