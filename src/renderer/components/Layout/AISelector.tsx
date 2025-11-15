@@ -1,20 +1,16 @@
+import { Select as CustomSelect, type SelectOption } from '@/renderer/components/ui/select';
 import { useAIStore } from '@/renderer/store/aiStore';
-import { Badge, createListCollection, Flex, Select } from '@chakra-ui/react';
+import { Badge, Flex } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
 import { useMemo } from 'react';
 
-interface ModelOption {
-  value: string;
-  label: string;
-}
-
-const PROVIDER_OPTIONS: Array<{ value: AIProviderType; label: string }> = [
+const PROVIDER_OPTIONS: SelectOption[] = [
   { value: 'openai', label: 'OpenAI' },
   { value: 'anthropic', label: 'Claude' },
   { value: 'gemini', label: 'Gemini' },
 ];
 
-const MODEL_OPTIONS: Record<AIProviderType, ModelOption[]> = {
+const MODEL_OPTIONS: Record<AIProviderType, SelectOption[]> = {
   openai: [
     { value: 'gpt-4o', label: 'GPT-4o' },
     { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
@@ -45,18 +41,8 @@ export const AISelector = () => {
 
   const isConfigured = provider && model;
 
-  const providerCollection = useMemo(
-    () => createListCollection({ items: PROVIDER_OPTIONS }),
-    []
-  );
-
-  const modelCollection = useMemo(
-    () => createListCollection({ items: modelOptions }),
-    [modelOptions]
-  );
-
-  const handleProviderChange = (details: { value: string[] }) => {
-    const newProvider = details.value[0] as AIProviderType;
+  const handleProviderChange = (value: string) => {
+    const newProvider = value as AIProviderType;
     const defaultModel = MODEL_OPTIONS[newProvider]?.[0]?.value;
     
     if (defaultModel) {
@@ -67,69 +53,30 @@ export const AISelector = () => {
     }
   };
 
-  const handleModelChange = (details: { value: string[] }) => {
-    const newModel = details.value[0];
-    if (newModel) {
-      updateSettings({ model: newModel });
+  const handleModelChange = (value: string) => {
+    if (value) {
+      updateSettings({ model: value });
     }
   };
 
   return (
     <Flex align="center" gap={2}>
-      <Select.Root
-        collection={providerCollection}
-        value={provider ? [provider] : []}
-        onValueChange={handleProviderChange}
-        size="sm"
-        width="140px"
-        positioning={{ 
-          sameWidth: true,
-          placement: 'bottom-start',
-        }}
-      >
-        <Select.Trigger>
-          <Select.ValueText placeholder="Select AI" />
-          <Select.Indicator />
-        </Select.Trigger>
-        <Select.Positioner>
-          <Select.Content>
-            {PROVIDER_OPTIONS.map((option) => (
-              <Select.Item key={option.value} item={option.value}>
-                <Select.ItemText>{option.label}</Select.ItemText>
-                <Select.ItemIndicator>✓</Select.ItemIndicator>
-              </Select.Item>
-            ))}
-          </Select.Content>
-        </Select.Positioner>
-      </Select.Root>
+      <CustomSelect
+        value={provider || ''}
+        onChange={handleProviderChange}
+        options={PROVIDER_OPTIONS}
+        placeholder="Select AI"
+      />
 
       {provider && (
-        <Select.Root
-          collection={modelCollection}
-          value={model ? [model] : []}
-          onValueChange={handleModelChange}
-          size="sm"
-          width="200px"
-          positioning={{ 
-            sameWidth: true,
-            placement: 'bottom-start',
-          }}
-        >
-          <Select.Trigger>
-            <Select.ValueText placeholder="Select Model" />
-            <Select.Indicator />
-          </Select.Trigger>
-          <Select.Positioner>
-            <Select.Content>
-              {modelOptions.map((option) => (
-                <Select.Item key={option.value} item={option.value}>
-                  <Select.ItemText>{option.label}</Select.ItemText>
-                  <Select.ItemIndicator>✓</Select.ItemIndicator>
-                </Select.Item>
-              ))}
-            </Select.Content>
-          </Select.Positioner>
-        </Select.Root>
+        <CustomSelect
+          value={model || ''}
+          onChange={handleModelChange}
+          options={modelOptions}
+          placeholder="Select Model"
+          enableSearch
+          noWrap
+        />
       )}
 
       {isConfigured ? (

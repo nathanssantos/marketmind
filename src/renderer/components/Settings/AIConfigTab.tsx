@@ -1,4 +1,5 @@
 import { Field } from '@/renderer/components/ui/field';
+import { Select } from '@/renderer/components/ui/select';
 import { Slider } from '@/renderer/components/ui/slider';
 import { useSecureStorage } from '@/renderer/hooks/useSecureStorage';
 import { useAIStore } from '@/renderer/store';
@@ -6,8 +7,6 @@ import {
     Box,
     Flex,
     Input,
-    NativeSelectField,
-    NativeSelectRoot,
     Separator,
     Spinner,
     Stack,
@@ -15,7 +14,6 @@ import {
 } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
 import { useEffect, useMemo, useState } from 'react';
-import { HiInformationCircle } from 'react-icons/hi2';
 
 const PROVIDER_MODELS: Record<AIProviderType, Array<{ value: string; label: string; pricing: string }>> = {
   openai: [
@@ -78,7 +76,6 @@ export const AIConfigTab = () => {
   }, [apiKeyEnvVar]);
 
   const modelOptions = PROVIDER_MODELS[provider];
-  const selectedModel = modelOptions.find((m) => m.value === model);
 
   const handleProviderChange = (newProvider: AIProviderType) => {
     updateSettings({
@@ -117,39 +114,31 @@ export const AIConfigTab = () => {
     <Stack gap={6}>
       <Box>
         <Field label="AI Provider" required>
-          <NativeSelectRoot>
-            <NativeSelectField
-              value={provider}
-              onChange={(e) => handleProviderChange(e.target.value as AIProviderType)}
-            >
-              <option value="openai">OpenAI</option>
-              <option value="anthropic">Anthropic (Claude)</option>
-              <option value="gemini">Google Gemini</option>
-            </NativeSelectField>
-          </NativeSelectRoot>
+          <Select
+            value={provider}
+            onChange={(value) => handleProviderChange(value as AIProviderType)}
+            options={[
+              { value: 'openai', label: 'OpenAI' },
+              { value: 'anthropic', label: 'Anthropic (Claude)' },
+              { value: 'gemini', label: 'Google Gemini' },
+            ]}
+          />
         </Field>
       </Box>
 
       <Box>
         <Field label="Model" required>
-          <NativeSelectRoot>
-            <NativeSelectField value={model} onChange={(e) => handleModelChange(e.target.value)}>
-              {modelOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </NativeSelectField>
-          </NativeSelectRoot>
+          <Select
+            value={model}
+            onChange={handleModelChange}
+            options={modelOptions.map((option) => ({
+              value: option.value,
+              label: option.label,
+              description: option.pricing,
+            }))}
+            enableSearch
+          />
         </Field>
-        {selectedModel && (
-          <Flex align="center" gap={2} mt={2}>
-            <HiInformationCircle size={16} />
-            <Text fontSize="sm" color="fg.muted">
-              {selectedModel.pricing}
-            </Text>
-          </Flex>
-        )}
       </Box>
 
       <Box>
