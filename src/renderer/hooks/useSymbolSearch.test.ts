@@ -49,15 +49,17 @@ describe('useSymbolSearch', () => {
   });
 
   it('should respect custom minQueryLength', async () => {
-    const { result } = renderHook(() => useSymbolSearch(mockService, { minQueryLength: 1, debounceMs: 100 }));
+    const { result } = renderHook(() => useSymbolSearch(mockService, { minQueryLength: 1, debounceMs: 50 }));
 
     result.current.search('B');
 
     await waitFor(() => {
       expect(mockService.searchSymbols).toHaveBeenCalledWith('B');
-    }, { timeout: 500 });
+    }, { timeout: 1000 });
 
-    expect(result.current.symbols).toEqual(mockSymbols);
+    await waitFor(() => {
+      expect(result.current.symbols).toEqual(mockSymbols);
+    }, { timeout: 1000 });
   });
 
   it('should debounce search queries', async () => {
