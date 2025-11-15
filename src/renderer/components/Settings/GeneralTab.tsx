@@ -1,7 +1,9 @@
+import { Button } from '@/renderer/components/ui/button';
 import { useColorMode } from '@/renderer/components/ui/color-mode';
 import { Field } from '@/renderer/components/ui/field';
+import { Select } from '@/renderer/components/ui/select';
 import { useAIStore } from '@/renderer/store';
-import { Box, Button, Flex, NativeSelectField, NativeSelectRoot, Separator, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Separator, Stack, Text } from '@chakra-ui/react';
 import { HiArrowDownTray, HiArrowUpTray, HiTrash } from 'react-icons/hi2';
 
 export const GeneralTab = () => {
@@ -65,12 +67,14 @@ export const GeneralTab = () => {
     <Stack gap={6}>
       <Box>
         <Field label="Theme">
-          <NativeSelectRoot>
-            <NativeSelectField value={colorMode} onChange={(e) => handleThemeChange(e.target.value as 'light' | 'dark')}>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </NativeSelectField>
-          </NativeSelectRoot>
+          <Select
+            value={colorMode}
+            onChange={(value) => handleThemeChange(value as 'light' | 'dark')}
+            options={[
+              { value: 'light', label: 'Light' },
+              { value: 'dark', label: 'Dark' },
+            ]}
+          />
         </Field>
       </Box>
 

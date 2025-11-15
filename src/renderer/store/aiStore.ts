@@ -30,7 +30,6 @@ export interface Conversation {
 
 export interface AISettings {
   provider: AIProviderType;
-  apiKey: string;
   model?: string;
   temperature?: number;
   maxTokens?: number;
@@ -366,11 +365,12 @@ export const useAIStore = create<AIState>()(
         const state = get();
         const { settings } = state;
 
-        if (!settings || !settings.provider || !settings.apiKey) {
+        if (!settings || !settings.provider) {
           set({ error: 'Please configure AI settings first' });
           return;
         }
 
+        // API key will be retrieved from secure storage by AIService
         let conversationId = state.activeConversationId;
         
         if (!conversationId) {

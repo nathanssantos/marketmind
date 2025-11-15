@@ -5,7 +5,7 @@ import type { AIProviderConfig, BaseAIProvider } from './types';
 
 export interface AIServiceConfig {
   provider: AIProviderType;
-  apiKey: string;
+  apiKey?: string;
   model?: string;
   temperature?: number;
   maxTokens?: number;
@@ -15,16 +15,37 @@ export class AIService {
   private provider: BaseAIProvider | null = null;
   private providerType: AIProviderType;
   private config: AIServiceConfig;
+  private apiKey: string | null = null;
 
   constructor(config: AIServiceConfig) {
     this.config = config;
     this.providerType = config.provider;
-    this.initializeProvider();
   }
 
-  private initializeProvider(): void {
+  private async getApiKey(): Promise<string> {
+    if (this.config.apiKey) {
+      return this.config.apiKey;
+    }
+
+    if (this.apiKey) {
+      return this.apiKey;
+    }
+
+    const result = await window.electron.secureStorage.getApiKey();
+    
+    if (!result.success || !result.apiKey) {
+      throw new Error('API key not configured. Please set your API key in Settings.');
+    }
+
+    this.apiKey = result.apiKey;
+    return this.apiKey;
+  }
+
+  private async initializeProvider(): Promise<void> {
+    const apiKey = await this.getApiKey();
+
     const providerConfig: AIProviderConfig = {
-      apiKey: this.config.apiKey,
+      apiKey,
       ...(this.config.model && { model: this.config.model }),
       ...(this.config.temperature !== undefined && { temperature: this.config.temperature }),
       ...(this.config.maxTokens !== undefined && { maxTokens: this.config.maxTokens }),
@@ -50,6 +71,10 @@ export class AIService {
     images?: string[]
   ): Promise<AIAnalysisResponse> {
     if (!this.provider) {
+      await this.initializeProvider();
+    }
+
+    if (!this.provider) {
       throw new Error('AI provider not initialized');
     }
 
@@ -58,21 +83,29 @@ export class AIService {
 
   async analyzeChart(request: AIAnalysisRequest): Promise<AIAnalysisResponse> {
     if (!this.provider) {
+      await this.initializeProvider();
+    }
+
+    if (!this.provider) {
       throw new Error('AI provider not initialized');
     }
 
     return this.provider.analyzeChart(request);
   }
 
-  switchProvider(newConfig: AIServiceConfig): void {
+  async switchProvider(newConfig: AIServiceConfig): Promise<void> {
     this.config = newConfig;
     this.providerType = newConfig.provider;
-    this.initializeProvider();
+    this.apiKey = null;
+    await this.initializeProvider();
   }
 
-  updateConfig(partialConfig: Partial<AIServiceConfig>): void {
+  async updateConfig(partialConfig: Partial<AIServiceConfig>): Promise<void> {
     this.config = { ...this.config, ...partialConfig };
-    this.initializeProvider();
+    if (partialConfig.provider) {
+      this.apiKey = null;
+    }
+    await this.initializeProvider();
   }
 
   getProviderType(): AIProviderType {

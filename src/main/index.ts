@@ -1,6 +1,8 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { storageService } from './services/StorageService';
+import { MigrationService } from './services/MigrationService';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -46,7 +48,63 @@ const createWindow = (): void => {
   });
 };
 
-app.whenReady().then(() => {
+const setupIpcHandlers = (): void => {
+  ipcMain.handle('storage:isEncryptionAvailable', () => {
+    return storageService.isEncryptionAvailable();
+  });
+
+  ipcMain.handle('storage:setApiKey', async (_event, apiKey: string) => {
+    try {
+      storageService.setApiKey(apiKey);
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to set API key:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  });
+
+  ipcMain.handle('storage:getApiKey', async () => {
+    try {
+      const apiKey = storageService.getApiKey();
+      return { success: true, apiKey };
+    } catch (error) {
+      console.error('Failed to get API key:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  });
+
+  ipcMain.handle('storage:deleteApiKey', async () => {
+    try {
+      storageService.deleteApiKey();
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to delete API key:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  });
+
+  ipcMain.handle('storage:hasApiKey', async () => {
+    return storageService.hasApiKey();
+  });
+};
+
+app.whenReady().then(async () => {
+  try {
+    await MigrationService.runMigrations();
+  } catch (error) {
+    console.error('Migration failed:', error);
+  }
+
+  setupIpcHandlers();
   createWindow();
 
   app.on('activate', () => {

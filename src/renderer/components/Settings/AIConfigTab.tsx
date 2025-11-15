@@ -1,19 +1,19 @@
 import { Field } from '@/renderer/components/ui/field';
+import { Select } from '@/renderer/components/ui/select';
 import { Slider } from '@/renderer/components/ui/slider';
+import { useSecureStorage } from '@/renderer/hooks/useSecureStorage';
 import { useAIStore } from '@/renderer/store';
 import {
     Box,
     Flex,
     Input,
-    NativeSelectField,
-    NativeSelectRoot,
     Separator,
+    Spinner,
     Stack,
     Text,
 } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
-import { useMemo } from 'react';
-import { HiInformationCircle } from 'react-icons/hi2';
+import { useEffect, useMemo, useState } from 'react';
 
 const PROVIDER_MODELS: Record<AIProviderType, Array<{ value: string; label: string; pricing: string }>> = {
   openai: [
@@ -41,12 +41,26 @@ const DEFAULT_MODELS: Record<AIProviderType, string> = {
 
 export const AIConfigTab = () => {
   const { settings, updateSettings } = useAIStore();
+  const { 
+    apiKey, 
+    isLoading: isLoadingApiKey, 
+    error: apiKeyError,
+    isEncryptionAvailable,
+    setApiKey: setSecureApiKey,
+  } = useSecureStorage();
+
+  const [localApiKey, setLocalApiKey] = useState('');
 
   const provider = settings?.provider || 'gemini';
-  const apiKey = settings?.apiKey || '';
   const model = settings?.model || DEFAULT_MODELS[provider];
   const temperature = settings?.temperature ?? 0.7;
   const maxTokens = settings?.maxTokens ?? 4096;
+
+  useEffect(() => {
+    if (apiKey && !isLoadingApiKey) {
+      setLocalApiKey(apiKey);
+    }
+  }, [apiKey, isLoadingApiKey]);
 
   const apiKeyEnvVar = useMemo(() => {
     const envVars: Record<AIProviderType, string> = {
@@ -62,13 +76,11 @@ export const AIConfigTab = () => {
   }, [apiKeyEnvVar]);
 
   const modelOptions = PROVIDER_MODELS[provider];
-  const selectedModel = modelOptions.find((m) => m.value === model);
 
   const handleProviderChange = (newProvider: AIProviderType) => {
     updateSettings({
       provider: newProvider,
       model: DEFAULT_MODELS[newProvider],
-      apiKey: import.meta.env[`VITE_${newProvider.toUpperCase()}_API_KEY`] as string | undefined || apiKey,
     });
   };
 
@@ -76,8 +88,14 @@ export const AIConfigTab = () => {
     updateSettings({ model: newModel });
   };
 
-  const handleApiKeyChange = (newApiKey: string) => {
-    updateSettings({ apiKey: newApiKey });
+  const handleApiKeyChange = async (newApiKey: string) => {
+    setLocalApiKey(newApiKey);
+    
+    try {
+      await setSecureApiKey(newApiKey);
+    } catch (error) {
+      console.error('Failed to save API key:', error);
+    }
   };
 
   const handleTemperatureChange = (value: number[]) => {
@@ -96,50 +114,59 @@ export const AIConfigTab = () => {
     <Stack gap={6}>
       <Box>
         <Field label="AI Provider" required>
-          <NativeSelectRoot>
-            <NativeSelectField
-              value={provider}
-              onChange={(e) => handleProviderChange(e.target.value as AIProviderType)}
-            >
-              <option value="openai">OpenAI</option>
-              <option value="anthropic">Anthropic (Claude)</option>
-              <option value="gemini">Google Gemini</option>
-            </NativeSelectField>
-          </NativeSelectRoot>
+          <Select
+            value={provider}
+            onChange={(value) => handleProviderChange(value as AIProviderType)}
+            options={[
+              { value: 'openai', label: 'OpenAI' },
+              { value: 'anthropic', label: 'Anthropic (Claude)' },
+              { value: 'gemini', label: 'Google Gemini' },
+            ]}
+          />
         </Field>
       </Box>
 
       <Box>
         <Field label="Model" required>
-          <NativeSelectRoot>
-            <NativeSelectField value={model} onChange={(e) => handleModelChange(e.target.value)}>
-              {modelOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </NativeSelectField>
-          </NativeSelectRoot>
+          <Select
+            value={model}
+            onChange={handleModelChange}
+            options={modelOptions.map((option) => ({
+              value: option.value,
+              label: option.label,
+              description: option.pricing,
+            }))}
+            enableSearch
+          />
         </Field>
-        {selectedModel && (
-          <Flex align="center" gap={2} mt={2}>
-            <HiInformationCircle size={16} />
-            <Text fontSize="sm" color="fg.muted">
-              {selectedModel.pricing}
-            </Text>
-          </Flex>
-        )}
       </Box>
 
       <Box>
         <Field label="API Key" required helperText={envApiKey ? `Using ${apiKeyEnvVar} from .env` : undefined}>
-          <Input
-            type="password"
-            value={apiKey}
-            onChange={(e) => handleApiKeyChange(e.target.value)}
-            placeholder={envApiKey || `Enter your ${provider} API key`}
-          />
+          {isLoadingApiKey ? (
+            <Flex align="center" gap={2} p={2}>
+              <Spinner size="sm" />
+              <Text fontSize="sm" color="fg.muted">Loading API key...</Text>
+            </Flex>
+          ) : (
+            <Input
+              type="password"
+              value={localApiKey}
+              onChange={(e) => handleApiKeyChange(e.target.value)}
+              placeholder={envApiKey || `Enter your ${provider} API key`}
+            />
+          )}
         </Field>
+        {apiKeyError && (
+          <Text fontSize="sm" color="red.500" mt={2}>
+            {apiKeyError}
+          </Text>
+        )}
+        {!isEncryptionAvailable && (
+          <Text fontSize="sm" color="orange.500" mt={2}>
+            Warning: Encryption not available on this platform
+          </Text>
+        )}
       </Box>
 
       <Separator />

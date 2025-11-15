@@ -1,7 +1,7 @@
 import { useAIStore } from '@/renderer/store';
 import { useState } from 'react';
 
-export const useSettingsModal = (onClose: () => void) => {
+export const useSettingsDialog = (onClose: () => void) => {
   const [isDirty, setIsDirty] = useState(false);
   const settings = useAIStore((state) => state.settings);
 

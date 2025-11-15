@@ -1,4 +1,5 @@
-import { Box, Button, Heading, Input, Stack, Text, VStack } from '@chakra-ui/react';
+import { Button } from '@/renderer/components/ui/button';
+import { Box, Heading, Input, Stack, Text, VStack } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
 import { useEffect, useMemo, useState } from 'react';
 import { useAI } from '../hooks/useAI';
@@ -126,7 +127,6 @@ export const AITest = () => {
 
     configure({
       provider,
-      apiKey: apiKey.trim(),
       model,
       temperature,
       maxTokens,
@@ -141,7 +141,6 @@ export const AITest = () => {
 
     updateConfig({
       provider,
-      apiKey: apiKey.trim(),
       model,
       temperature,
       maxTokens,

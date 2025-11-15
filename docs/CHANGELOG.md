@@ -7,11 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### In Progress (v0.7.0)
+- **Phase 7: Settings System** - 50% Complete
+  - Secure API key storage with electron-store + safeStorage
+  - Settings modal with encryption
+
 ### Planned
-- Settings modal with API key encryption
 - Conversation export/import functionality
 - WebSocket integration for real-time market data
 - Unit tests for all components and hooks
+
+## [0.7.0] - 2025-11-15 (In Progress)
+
+### Added
+- **Reusable UI Components**: Custom wrapper components for consistency
+  - `Button` component with default `px-4` padding
+  - `Input` component wrapper
+  - `Select` component (already existed with search/loading/dynamic options)
+  - `Tabs` component with default `px-4, py-2` padding on triggers
+  - `Dialog` component with full structure:
+    - Dialog.Root with `placement="center"` default
+    - Dialog.Backdrop for overlay
+    - Dialog.Positioner for proper centering
+    - Dialog.Content, Header, Title, Body, Footer
+    - Dialog.CloseTrigger and ActionTrigger
+    - Default padding: Header/Body/Footer have `px={6}, py={4}`
+  - All components exported from `src/renderer/components/ui/index.ts`
+  - Comprehensive README with usage examples and defaults
+
+### Changed
+- **Theme Configuration**: Fixed Chakra UI v3 setup
+  - Corrected theme merge: `createSystem(defaultConfig, customConfig)`
+  - Removed unnecessary `globalCss` for inputs (Chakra defaults work)
+  - Confirmed buttons, inputs, tabs have proper padding from `defaultConfig`
+  - Theme now only adds semantic tokens and body styles
+- **Component Naming**: Renamed SettingsModal to SettingsDialog
+  - Follows Chakra UI v3 naming convention
+  - Updated all imports and references
+  - Removed old SettingsModal.tsx file
+- **Button Usage**: Replaced all Chakra Button with custom Button
+  - Updated: GeneralTab, AITest, App, TimeframeSelector, SettingsDialog
+  - Consistent `px-4` padding across all buttons
+- **Dialog Structure**: Updated SettingsDialog with proper composition
+  - Added Dialog.Backdrop and Dialog.Positioner
+  - Now properly centered with overlay
+  - Uses all custom Dialog components
+
+### Fixed
+- Dialog not centering properly (missing Positioner)
+- Button and input padding inconsistencies
+- Theme configuration not merging with Chakra defaults
+- Cancel and Save buttons in SettingsDialog had no padding
+
+### Technical
+- Created `src/renderer/components/ui/` directory for reusable components
+- Added `@ts-expect-error` annotations for Chakra/Emotion type conflicts
+- Component documentation in `src/renderer/components/ui/README.md`
+- All UI components follow Chakra UI v3 API
 
 ## [0.6.0] - 2025-11-15
 
