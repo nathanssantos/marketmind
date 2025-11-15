@@ -1,7 +1,7 @@
-import { Box, Button, Input, Stack, Text, VStack, Heading } from '@chakra-ui/react';
-import { useState, useEffect, useMemo } from 'react';
-import { useAI } from '../hooks/useAI';
+import { Box, Button, Heading, Input, Stack, Text, VStack } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
+import { useEffect, useMemo, useState } from 'react';
+import { useAI } from '../hooks/useAI';
 
 export const AITest = () => {
   const {

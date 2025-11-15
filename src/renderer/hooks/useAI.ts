@@ -1,5 +1,5 @@
-import { useCallback, useMemo } from 'react';
 import type { AIAnalysisRequest } from '@shared/types';
+import { useCallback, useMemo } from 'react';
 import { AIService, type AIServiceConfig } from '../services/ai';
 import { useAIStore } from '../store/aiStore';
 

@@ -1,7 +1,7 @@
-import type { AIMessage, AIAnalysisRequest, AIAnalysisResponse, AIProviderType } from '@shared/types';
-import type { BaseAIProvider, AIProviderConfig } from './types';
-import { OpenAIProvider, ClaudeProvider, GeminiProvider } from './providers';
+import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage, AIProviderType } from '@shared/types';
 import prompts from './prompts.json';
+import { ClaudeProvider, GeminiProvider, OpenAIProvider } from './providers';
+import type { AIProviderConfig, BaseAIProvider } from './types';
 
 export interface AIServiceConfig {
   provider: AIProviderType;

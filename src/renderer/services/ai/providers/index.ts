@@ -1,4 +1,5 @@
 export { BaseAIProvider } from '../types';
-export { OpenAIProvider } from './OpenAIProvider';
 export { ClaudeProvider } from './ClaudeProvider';
 export { GeminiProvider } from './GeminiProvider';
+export { OpenAIProvider } from './OpenAIProvider';
+
