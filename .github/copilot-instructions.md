@@ -353,7 +353,7 @@ Track progress in `IMPLEMENTATION_PLAN.md`. Update this section when starting ne
 
 ---
 
-## � Security Best Practices
+## 🔒 Security Best Practices
 
 ### API Key Management
 ```typescript
@@ -484,7 +484,7 @@ useEffect(() => {
 
 ---
 
-## �💡 Quick Reference
+## 💡 Quick Reference
 
 ### File Naming
 - Components: PascalCase (`ChartCanvas.tsx`)
