@@ -1,5 +1,5 @@
-import Store from 'electron-store';
 import { safeStorage } from 'electron';
+import Store from 'electron-store';
 
 interface SecureStoreSchema {
   apiKeys?: {

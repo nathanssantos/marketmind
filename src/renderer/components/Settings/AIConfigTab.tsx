@@ -1,7 +1,7 @@
+import { Button } from '@/renderer/components/ui/button';
 import { Field } from '@/renderer/components/ui/field';
 import { Select } from '@/renderer/components/ui/select';
 import { Slider } from '@/renderer/components/ui/slider';
-import { Button } from '@/renderer/components/ui/button';
 import { useSecureStorage } from '@/renderer/hooks/useSecureStorage';
 import { useAIStore } from '@/renderer/store';
 import {
