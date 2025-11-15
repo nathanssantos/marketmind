@@ -8,12 +8,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- **Phase 9: Build & Deploy** - Production installers for Mac and Windows
 - **Phase 10: Auto-Update System** - Automatic update distribution
 - Conversation export/import functionality
 - Unit tests for all components and hooks
 - Additional chart indicators (RSI, MACD, Bollinger Bands)
 - News sentiment analysis integration
+- Professional app icons and branding
+
+## [0.10.0] - 2025-11-15
+
+### Added
+- **Build & Deploy System**: Complete production build configuration
+  - electron-builder configuration for macOS (DMG) and Windows (NSIS)
+  - Simplified build config for faster compilation
+  - Output directory: `dist/` for all build artifacts
+  - Cross-platform build support (build:mac, build:win, build:all)
+  - macOS target: DMG installer for both x64 and arm64
+  - Windows target: NSIS installer with custom options
+  - Linux target: AppImage for portability
+- **Build Assets**: Icon generation system
+  - Placeholder icon generation script (create-simple-icons.sh)
+  - icon.icns for macOS (all required sizes)
+  - icon-256.png for Windows
+  - icon.png for Linux
+  - background.png for DMG installer
+  - SVG-based icon source with "MM" branding
+- **Code Signing Preparation**: Infrastructure for signing
+  - macOS entitlements.mac.plist configuration
+  - Network client/server permissions
+  - File access permissions (user-selected, downloads)
+  - Windows NSIS customization script (installer.nsh)
+  - Notarization script template (scripts/notarize.js)
+  - Environment variable documentation for signing
+- **Build Scripts**: npm scripts for all platforms
+  - `npm run build` - Build for current platform
+  - `npm run build:mac` - macOS only (DMG)
+  - `npm run build:win` - Windows only (NSIS)
+  - `npm run build:all` - All platforms
+  - Integrated TypeScript compilation and Vite build
+- **Documentation**: Comprehensive build guides
+  - docs/BUILD.md - Complete building instructions
+  - build/README.md - Icon generation and asset management
+  - Code signing setup for macOS and Windows
+  - Troubleshooting common build issues
+  - CI/CD integration notes
+
+### Changed
+- Package version bumped to 0.10.0
+- electron-builder output directory changed to `dist/`
+- Simplified electron-builder.config.js for reliability
+- Removed complex packaging rules for initial release
+- Removed afterSign hook (notarization optional for now)
+
+### Technical
+- Build configuration supports universal macOS binaries (x64 + arm64)
+- Windows builds support both x64 and ia32 architectures
+- Compression set to "maximum" for smaller installers
+- DMG window size: 540x380 for optimal user experience
+- NSIS installer with installation directory selection
+- Desktop and Start Menu shortcut creation
+
+### Files Created
+- `electron-builder.config.js` - Updated with production config
+- `build/entitlements.mac.plist` - macOS entitlements
+- `build/installer.nsh` - Windows NSIS customization
+- `build/create-simple-icons.sh` - Icon generation script
+- `scripts/notarize.js` - macOS notarization template
+- `docs/BUILD.md` - Build documentation
+- `build/README.md` - Asset management guide
 
 ## [0.9.0] - 2025-11-15
 
