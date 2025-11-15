@@ -1,6 +1,7 @@
 import { Field } from '@/renderer/components/ui/field';
 import { Select } from '@/renderer/components/ui/select';
 import { Slider } from '@/renderer/components/ui/slider';
+import { Button } from '@/renderer/components/ui/button';
 import { useSecureStorage } from '@/renderer/hooks/useSecureStorage';
 import { useAIStore } from '@/renderer/store';
 import {
@@ -13,7 +14,9 @@ import {
     Text,
 } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+
+type AIProvider = 'openai' | 'anthropic' | 'gemini';
 
 const PROVIDER_MODELS: Record<AIProviderType, Array<{ value: string; label: string; pricing: string }>> = {
   openai: [
@@ -42,14 +45,19 @@ const DEFAULT_MODELS: Record<AIProviderType, string> = {
 export const AIConfigTab = () => {
   const { settings, updateSettings } = useAIStore();
   const { 
-    apiKey, 
-    isLoading: isLoadingApiKey, 
-    error: apiKeyError,
+    loading: isLoadingSecureStorage,
+    error: secureStorageError,
     isEncryptionAvailable,
     setApiKey: setSecureApiKey,
+    getApiKey,
   } = useSecureStorage();
 
-  const [localApiKey, setLocalApiKey] = useState('');
+  const [apiKeys, setApiKeys] = useState<Record<AIProvider, string>>({
+    openai: '',
+    anthropic: '',
+    gemini: '',
+  });
+  const [isLoadingKeys, setIsLoadingKeys] = useState(true);
 
   const provider = settings?.provider || 'gemini';
   const model = settings?.model || DEFAULT_MODELS[provider];
@@ -57,23 +65,29 @@ export const AIConfigTab = () => {
   const maxTokens = settings?.maxTokens ?? 4096;
 
   useEffect(() => {
-    if (apiKey && !isLoadingApiKey) {
-      setLocalApiKey(apiKey);
-    }
-  }, [apiKey, isLoadingApiKey]);
+    const loadApiKeys = async () => {
+      setIsLoadingKeys(true);
+      try {
+        const [openaiKey, anthropicKey, geminiKey] = await Promise.all([
+          getApiKey('openai'),
+          getApiKey('anthropic'),
+          getApiKey('gemini'),
+        ]);
 
-  const apiKeyEnvVar = useMemo(() => {
-    const envVars: Record<AIProviderType, string> = {
-      openai: 'VITE_OPENAI_API_KEY',
-      anthropic: 'VITE_ANTHROPIC_API_KEY',
-      gemini: 'VITE_GEMINI_API_KEY',
+        setApiKeys({
+          openai: openaiKey || '',
+          anthropic: anthropicKey || '',
+          gemini: geminiKey || '',
+        });
+      } catch (error) {
+        console.error('Failed to load API keys:', error);
+      } finally {
+        setIsLoadingKeys(false);
+      }
     };
-    return envVars[provider];
-  }, [provider]);
 
-  const envApiKey = useMemo(() => {
-    return import.meta.env[apiKeyEnvVar] as string | undefined;
-  }, [apiKeyEnvVar]);
+    loadApiKeys();
+  }, [getApiKey]);
 
   const modelOptions = PROVIDER_MODELS[provider];
 
@@ -88,13 +102,24 @@ export const AIConfigTab = () => {
     updateSettings({ model: newModel });
   };
 
-  const handleApiKeyChange = async (newApiKey: string) => {
-    setLocalApiKey(newApiKey);
-    
+  const handleApiKeyChange = (provider: AIProvider, value: string) => {
+    setApiKeys((prev) => ({
+      ...prev,
+      [provider]: value,
+    }));
+  };
+
+  const handleSaveApiKey = async (provider: AIProvider) => {
+    const key = apiKeys[provider];
+    if (!key) return;
+
     try {
-      await setSecureApiKey(newApiKey);
+      const success = await setSecureApiKey(provider, key);
+      if (success) {
+        console.log(`${provider} API key saved successfully`);
+      }
     } catch (error) {
-      console.error('Failed to save API key:', error);
+      console.error(`Failed to save ${provider} API key:`, error);
     }
   };
 
@@ -108,6 +133,44 @@ export const AIConfigTab = () => {
     if (value[0] !== undefined) {
       updateSettings({ maxTokens: value[0] });
     }
+  };
+
+  const renderApiKeyInput = (provider: AIProvider, label: string) => {
+    const envVar = `VITE_${provider.toUpperCase()}_API_KEY`;
+    const envKey = import.meta.env[envVar] as string | undefined;
+
+    return (
+      <Box key={provider}>
+        <Field 
+          label={`${label} API Key`} 
+          helperText={envKey ? `Using ${envVar} from .env` : undefined}
+        >
+          {isLoadingKeys ? (
+            <Flex align="center" gap={2} p={2}>
+              <Spinner size="sm" />
+              <Text fontSize="sm" color="fg.muted">Loading...</Text>
+            </Flex>
+          ) : (
+            <Flex gap={2}>
+              <Input
+                type="password"
+                value={apiKeys[provider]}
+                onChange={(e) => handleApiKeyChange(provider, e.target.value)}
+                placeholder={envKey || `Enter your ${label} API key`}
+                flex={1}
+              />
+              <Button
+                onClick={() => handleSaveApiKey(provider)}
+                disabled={!apiKeys[provider] || isLoadingSecureStorage}
+                size="sm"
+              >
+                Save
+              </Button>
+            </Flex>
+          )}
+        </Field>
+      </Box>
+    );
   };
 
   return (
@@ -141,33 +204,28 @@ export const AIConfigTab = () => {
         </Field>
       </Box>
 
-      <Box>
-        <Field label="API Key" required helperText={envApiKey ? `Using ${apiKeyEnvVar} from .env` : undefined}>
-          {isLoadingApiKey ? (
-            <Flex align="center" gap={2} p={2}>
-              <Spinner size="sm" />
-              <Text fontSize="sm" color="fg.muted">Loading API key...</Text>
-            </Flex>
-          ) : (
-            <Input
-              type="password"
-              value={localApiKey}
-              onChange={(e) => handleApiKeyChange(e.target.value)}
-              placeholder={envApiKey || `Enter your ${provider} API key`}
-            />
-          )}
-        </Field>
-        {apiKeyError && (
-          <Text fontSize="sm" color="red.500" mt={2}>
-            {apiKeyError}
+      <Separator />
+
+      <Stack gap={4}>
+        <Text fontWeight="medium" fontSize="sm">
+          API Keys (Encrypted)
+        </Text>
+        
+        {renderApiKeyInput('openai', 'OpenAI')}
+        {renderApiKeyInput('anthropic', 'Anthropic')}
+        {renderApiKeyInput('gemini', 'Google Gemini')}
+
+        {secureStorageError && (
+          <Text fontSize="sm" color="red.500">
+            {secureStorageError}
           </Text>
         )}
         {!isEncryptionAvailable && (
-          <Text fontSize="sm" color="orange.500" mt={2}>
+          <Text fontSize="sm" color="orange.500">
             Warning: Encryption not available on this platform
           </Text>
         )}
-      </Box>
+      </Stack>
 
       <Separator />
 
@@ -202,10 +260,11 @@ export const AIConfigTab = () => {
           Quick Tips
         </Text>
         <Stack gap={2} fontSize="sm" color="fg.muted">
+          <Text>• API keys are encrypted and stored securely</Text>
           <Text>• Lower temperature (0-0.5) for technical analysis</Text>
           <Text>• Higher temperature (0.7-1.5) for creative insights</Text>
           <Text>• Gemini 2.0 Flash Exp is FREE with no API key required</Text>
-          <Text>• Store API keys in .env file for security</Text>
+          <Text>• Store API keys in .env file for development</Text>
         </Stack>
       </Box>
     </Stack>
