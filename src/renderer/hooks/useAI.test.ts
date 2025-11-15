@@ -1,9 +1,9 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useAI } from './useAI';
-import { useAIStore, type AISettings, type Conversation } from '../store/aiStore';
+import type { AIAnalysisResponse, AIMessage, AIProviderType } from '@shared/types';
+import { act, renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AIService } from '../services/ai';
-import type { AIMessage, AIProviderType, AIAnalysisResponse } from '@shared/types';
+import { useAIStore, type AISettings, type Conversation } from '../store/aiStore';
+import { useAI } from './useAI';
 
 vi.mock('../store/aiStore');
 
@@ -320,5 +320,273 @@ describe('useAI', () => {
     const { result } = renderHook(() => useAI({ service: mockAIService }));
 
     expect(result.current.isConfigured).toBe(true);
+  });
+
+  it('should handle 429 rate limit error for Gemini', async () => {
+    mockStore.settings = {
+      provider: 'gemini' as AIProviderType,
+      model: 'gemini-2.0-flash-exp',
+    };
+
+    const geminiService = {
+      ...mockAIService,
+      sendMessage: vi.fn().mockRejectedValue(new Error('429 Too Many Requests')),
+    } as unknown as AIService;
+
+    const { result } = renderHook(() => useAI({ service: geminiService }));
+
+    await act(async () => {
+      await result.current.sendMessage('Test');
+    });
+
+    expect(mockStore.setError).toHaveBeenCalledWith(
+      '⚠️ Limite de requisições do Gemini excedido (10 req/min no tier gratuito). Aguarde 1 minuto.'
+    );
+  });
+
+  it('should handle 429 rate limit error for other providers', async () => {
+    const errorService = {
+      ...mockAIService,
+      sendMessage: vi.fn().mockRejectedValue(new Error('rate limit exceeded')),
+    } as unknown as AIService;
+
+    const { result } = renderHook(() => useAI({ service: errorService }));
+
+    await act(async () => {
+      await result.current.sendMessage('Test');
+    });
+
+    expect(mockStore.setError).toHaveBeenCalledWith(
+      '⚠️ Cota excedida no OpenAI. Verifique seu plano.'
+    );
+  });
+
+  it('should handle quota exceeded error', async () => {
+    const errorService = {
+      ...mockAIService,
+      sendMessage: vi.fn().mockRejectedValue(new Error('quota exceeded')),
+    } as unknown as AIService;
+
+    const { result } = renderHook(() => useAI({ service: errorService }));
+
+    await act(async () => {
+      await result.current.sendMessage('Test');
+    });
+
+    expect(mockStore.setError).toHaveBeenCalledWith(
+      '⚠️ Cota excedida no OpenAI. Verifique seu plano.'
+    );
+  });
+
+  it('should handle unauthorized error', async () => {
+    const errorService = {
+      ...mockAIService,
+      sendMessage: vi.fn().mockRejectedValue(new Error('401 unauthorized')),
+    } as unknown as AIService;
+
+    const { result } = renderHook(() => useAI({ service: errorService }));
+
+    await act(async () => {
+      await result.current.sendMessage('Test');
+    });
+
+    expect(mockStore.setError).toHaveBeenCalledWith(
+      '🔑 Chave API inválida para OpenAI. Verifique sua configuração.'
+    );
+  });
+
+  it('should handle timeout error', async () => {
+    const errorService = {
+      ...mockAIService,
+      sendMessage: vi.fn().mockRejectedValue(new Error('timeout')),
+    } as unknown as AIService;
+
+    const { result } = renderHook(() => useAI({ service: errorService }));
+
+    await act(async () => {
+      await result.current.sendMessage('Test');
+    });
+
+    expect(mockStore.setError).toHaveBeenCalledWith('⏱️ Tempo limite excedido. Tente novamente.');
+  });
+
+  it('should handle network error', async () => {
+    const errorService = {
+      ...mockAIService,
+      sendMessage: vi.fn().mockRejectedValue(new Error('network error')),
+    } as unknown as AIService;
+
+    const { result } = renderHook(() => useAI({ service: errorService }));
+
+    await act(async () => {
+      await result.current.sendMessage('Test');
+    });
+
+    expect(mockStore.setError).toHaveBeenCalledWith('🌐 Erro de conexão. Verifique sua internet.');
+  });
+
+  it('should handle context length error', async () => {
+    const errorService = {
+      ...mockAIService,
+      sendMessage: vi.fn().mockRejectedValue(new Error('context_length exceeded')),
+    } as unknown as AIService;
+
+    const { result } = renderHook(() => useAI({ service: errorService }));
+
+    await act(async () => {
+      await result.current.sendMessage('Test');
+    });
+
+    expect(mockStore.setError).toHaveBeenCalledWith(
+      '📏 Mensagem muito longa. Reduza o tamanho ou limpe o histórico.'
+    );
+  });
+
+  it('should handle missing active conversation error', async () => {
+    mockStore.getActiveConversation = vi.fn().mockReturnValue(null);
+
+    const { result } = renderHook(() => useAI({ service: mockAIService }));
+
+    await act(async () => {
+      await result.current.sendMessage('Test');
+    });
+
+    expect(mockStore.setError).toHaveBeenCalled();
+  });
+
+  it('should handle analyzeChart error when no service', async () => {
+    mockStore.settings = null;
+    const { result } = renderHook(() => useAI());
+
+    await act(async () => {
+      const response = await result.current.analyzeChart({
+        chartImage: 'data:image/png;base64,chart',
+        candles: [],
+      });
+      expect(response).toBe(null);
+    });
+
+    expect(mockStore.setError).toHaveBeenCalledWith('AI service not configured');
+  });
+
+  it('should handle analyzeChart 429 error for Gemini', async () => {
+    mockStore.settings = {
+      provider: 'gemini' as AIProviderType,
+      model: 'gemini-2.0-flash-exp',
+    };
+
+    const errorService = {
+      ...mockAIService,
+      analyzeChart: vi.fn().mockRejectedValue(new Error('429 Too Many Requests')),
+    } as unknown as AIService;
+
+    const { result } = renderHook(() => useAI({ service: errorService }));
+
+    await act(async () => {
+      await result.current.analyzeChart({
+        chartImage: 'data:image/png;base64,chart',
+        candles: [],
+      });
+    });
+
+    expect(mockStore.setError).toHaveBeenCalledWith(
+      '⚠️ Limite de requisições do Gemini excedido (10 req/min no tier gratuito). Aguarde 1 minuto.'
+    );
+  });
+
+  it('should handle analyzeChartSilent error', async () => {
+    const errorService = {
+      ...mockAIService,
+      analyzeChart: vi.fn().mockRejectedValue(new Error('API error')),
+    } as unknown as AIService;
+
+    const { result } = renderHook(() => useAI({ service: errorService }));
+
+    await act(async () => {
+      const response = await result.current.analyzeChartSilent({
+        chartImage: 'data:image/png;base64,chart',
+        candles: [],
+      });
+      expect(response).toBe(null);
+    });
+
+    expect(mockStore.setError).toHaveBeenCalled();
+    expect(mockStore.setLoading).toHaveBeenCalledWith(false);
+  });
+
+  it('should handle Claude provider in error messages', async () => {
+    mockStore.settings = {
+      provider: 'anthropic' as AIProviderType,
+      model: 'claude-sonnet-4-5-20250514',
+    };
+
+    const errorService = {
+      ...mockAIService,
+      sendMessage: vi.fn().mockRejectedValue(new Error('401 unauthorized')),
+    } as unknown as AIService;
+
+    const { result } = renderHook(() => useAI({ service: errorService }));
+
+    await act(async () => {
+      await result.current.sendMessage('Test');
+    });
+
+    expect(mockStore.setError).toHaveBeenCalledWith(
+      '🔑 Chave API inválida para Claude. Verifique sua configuração.'
+    );
+  });
+
+  it('should update conversation title', () => {
+    const { result } = renderHook(() => useAI({ service: mockAIService }));
+
+    act(() => {
+      result.current.updateConversationTitle(mockConversationId, 'New Title');
+    });
+
+    expect(mockStore.updateConversationTitle).toHaveBeenCalledWith(mockConversationId, 'New Title');
+  });
+
+  it('should export conversation', () => {
+    const { result } = renderHook(() => useAI({ service: mockAIService }));
+
+    act(() => {
+      result.current.exportConversation(mockConversationId);
+    });
+
+    expect(mockStore.exportConversation).toHaveBeenCalledWith(mockConversationId);
+  });
+
+  it('should import conversation', () => {
+    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const conversationData = JSON.stringify({
+      id: 'imported',
+      title: 'Imported',
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    act(() => {
+      result.current.importConversation(conversationData);
+    });
+
+    expect(mockStore.importConversation).toHaveBeenCalledWith(conversationData);
+  });
+
+  it('should get active conversation', () => {
+    const { result } = renderHook(() => useAI({ service: mockAIService }));
+
+    expect(result.current.activeConversation).toBeDefined();
+    expect(result.current.activeConversation?.id).toBe(mockConversationId);
+  });
+
+  it('should set active conversation', () => {
+    const { result } = renderHook(() => useAI({ service: mockAIService }));
+
+    act(() => {
+      result.current.setActiveConversation('new-conv');
+    });
+
+    expect(mockStore.setActiveConversation).toHaveBeenCalledWith('new-conv');
   });
 });

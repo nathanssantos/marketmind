@@ -103,6 +103,7 @@ export class AIService {
   async updateConfig(partialConfig: Partial<AIServiceConfig>): Promise<void> {
     this.config = { ...this.config, ...partialConfig };
     if (partialConfig.provider) {
+      this.providerType = partialConfig.provider;
       this.apiKey = null;
     }
     await this.initializeProvider();
