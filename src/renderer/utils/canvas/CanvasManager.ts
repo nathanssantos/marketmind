@@ -22,6 +22,8 @@ export class CanvasManager {
   private dimensions: Dimensions | null = null;
   private padding: number;
   private renderCallback: (() => void) | null = null;
+  private priceOffset: number = 0; // Offset for vertical panning
+  private priceScale: number = 1; // Scale for vertical zooming
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -92,7 +94,17 @@ export class CanvasManager {
       return;
     }
 
-    this.bounds = calculateBounds(this.candles, this.viewport);
+    const baseBounds = calculateBounds(this.candles, this.viewport);
+    
+    // Apply price offset and scale
+    const center = (baseBounds.minPrice + baseBounds.maxPrice) / 2;
+    const range = (baseBounds.maxPrice - baseBounds.minPrice) * this.priceScale;
+    
+    this.bounds = {
+      ...baseBounds,
+      minPrice: center - range / 2 + this.priceOffset,
+      maxPrice: center + range / 2 + this.priceOffset,
+    };
   }
 
   public getBounds(): Bounds | null {
@@ -199,6 +211,39 @@ export class CanvasManager {
     this.viewport.end -= indexDelta;
 
     this.viewport = clampViewport(this.viewport, this.candles.length);
+    this.updateBounds();
+    this.triggerRender();
+  }
+
+  public panVertical(deltaY: number): void {
+    if (!this.dimensions) return;
+
+    // Get base bounds without offset/scale to calculate proper delta
+    const baseBounds = this.candles.length > 0 ? calculateBounds(this.candles, this.viewport) : null;
+    if (!baseBounds) return;
+
+    const baseRange = baseBounds.maxPrice - baseBounds.minPrice;
+    const chartHeight = this.dimensions.chartHeight;
+    
+    // Convert pixel delta to price delta (normal direction: drag down = move down)
+    const priceDelta = (deltaY / chartHeight) * baseRange;
+    
+    // Update price offset
+    this.priceOffset += priceDelta;
+    
+    this.updateBounds();
+    this.triggerRender();
+  }
+
+  public zoomVertical(deltaY: number): void {
+    if (!this.bounds || !this.dimensions) return;
+
+    const zoomFactor = 1 + (deltaY / this.dimensions.chartHeight) * 2;
+    this.priceScale *= zoomFactor;
+    
+    // Clamp scale to reasonable values
+    this.priceScale = Math.max(0.1, Math.min(10, this.priceScale));
+    
     this.updateBounds();
     this.triggerRender();
   }

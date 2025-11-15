@@ -1,6 +1,7 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { ChartColors } from '@shared/types';
 import { useCallback, useEffect } from 'react';
+import { CHART_CONFIG } from '@shared/constants/chartConfig';
 
 export interface UseLineChartRendererProps {
   manager: CanvasManager | null;
@@ -28,12 +29,13 @@ export const useLineChartRenderer = ({
 
     const visibleCandles = manager.getVisibleCandles();
     const { chartWidth, chartHeight } = dimensions;
+    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
 
     if (visibleCandles.length === 0) return;
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.rect(0, 0, effectiveWidth, chartHeight);
     ctx.clip();
 
     ctx.strokeStyle = colors.bullish;
@@ -48,7 +50,7 @@ export const useLineChartRenderer = ({
       const x = manager.indexToX(actualIndex);
       const y = manager.priceToY(candle.close);
 
-      if (x < 0 || x > chartWidth) return;
+      if (x < 0 || x > effectiveWidth) return;
 
       if (index === 0) {
         ctx.moveTo(x, y);

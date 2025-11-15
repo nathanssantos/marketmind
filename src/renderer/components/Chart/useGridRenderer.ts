@@ -91,8 +91,9 @@ export const useGridRenderer = ({
 
         const index = Math.floor(viewport.start) + i;
         const x = manager.indexToX(index);
+        const chartRightBoundary = width - CHART_CONFIG.CANVAS_PADDING_RIGHT;
 
-        if (x >= 0 && x <= width - CHART_CONFIG.CANVAS_PADDING_RIGHT) {
+        if (x >= 0 && x <= chartRightBoundary - CHART_CONFIG.CHART_RIGHT_MARGIN) {
           const timeLabel = formatTimestamp(candle.timestamp);
           
           drawText(
@@ -119,11 +120,13 @@ export const useGridRenderer = ({
       }
     }
 
+    const chartRightBoundary = width - CHART_CONFIG.CANVAS_PADDING_RIGHT;
+
     drawLine(
       ctx,
-      width - CHART_CONFIG.CANVAS_PADDING_RIGHT,
+      chartRightBoundary,
       0,
-      width - CHART_CONFIG.CANVAS_PADDING_RIGHT,
+      chartRightBoundary,
       chartHeight,
       labelColor,
       2,
@@ -133,7 +136,7 @@ export const useGridRenderer = ({
       ctx,
       0,
       chartHeight,
-      width - CHART_CONFIG.CANVAS_PADDING_RIGHT,
+      chartRightBoundary,
       chartHeight,
       labelColor,
       2,

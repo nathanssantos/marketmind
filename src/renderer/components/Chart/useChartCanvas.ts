@@ -53,6 +53,7 @@ export const useChartCanvas = ({
   });
   
   const [isPanning, setIsPanning] = useState(false);
+  const [isPanningOnScale, setIsPanningOnScale] = useState(false);
   const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -130,6 +131,20 @@ export const useChartCanvas = ({
   }, [updateViewport]);
 
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>): void => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const dimensions = managerRef.current?.getDimensions();
+    
+    if (dimensions) {
+      const priceScaleLeft = dimensions.width - CHART_CONFIG.CANVAS_PADDING_RIGHT;
+      const isOverPriceScale = mouseX >= priceScaleLeft;
+      
+      setIsPanningOnScale(isOverPriceScale);
+    }
+    
     setIsPanning(true);
     lastMousePosRef.current = { x: event.clientX, y: event.clientY };
   }, []);
@@ -139,22 +154,36 @@ export const useChartCanvas = ({
       if (!isPanning || !lastMousePosRef.current || !managerRef.current) return;
 
       const deltaX = event.clientX - lastMousePosRef.current.x;
-      
-      managerRef.current.pan(deltaX);
-      updateViewport(managerRef.current.getViewport());
+      const deltaY = event.clientY - lastMousePosRef.current.y;
+
+      if (isPanningOnScale) {
+        // Zoom vertical when dragging on price scale
+        managerRef.current.zoomVertical(deltaY);
+      } else {
+        // Pan horizontal and vertical on chart area
+        if (deltaX !== 0) {
+          managerRef.current.pan(deltaX);
+          updateViewport(managerRef.current.getViewport());
+        }
+        if (deltaY !== 0) {
+          managerRef.current.panVertical(deltaY);
+        }
+      }
       
       lastMousePosRef.current = { x: event.clientX, y: event.clientY };
     },
-    [isPanning, updateViewport],
+    [isPanning, isPanningOnScale, updateViewport],
   );
 
   const handleMouseUp = useCallback((): void => {
     setIsPanning(false);
+    setIsPanningOnScale(false);
     lastMousePosRef.current = null;
   }, []);
 
   const handleMouseLeave = useCallback((): void => {
     setIsPanning(false);
+    setIsPanningOnScale(false);
     lastMousePosRef.current = null;
   }, []);
 

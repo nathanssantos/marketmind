@@ -1,6 +1,7 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { calculateMovingAverage } from '@/renderer/utils/movingAverages';
 import { useCallback } from 'react';
+import { CHART_CONFIG } from '@shared/constants/chartConfig';
 
 export interface MovingAverageConfig {
   period: number;
@@ -37,10 +38,11 @@ export const useMovingAverageRenderer = ({
     const { chartWidth, chartHeight } = dimensions;
     const startIndex = Math.max(0, Math.floor(viewport.start));
     const endIndex = Math.min(candles.length, Math.ceil(viewport.end));
+    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.rect(0, 0, effectiveWidth, chartHeight);
     ctx.clip();
 
     movingAverages.forEach((ma) => {
@@ -64,7 +66,7 @@ export const useMovingAverageRenderer = ({
         const x = manager.indexToX(i);
         const y = manager.priceToY(value);
 
-        if (x < 0 || x > chartWidth) continue;
+        if (x < 0 || x > effectiveWidth) continue;
 
         if (!hasMovedTo) {
           ctx.moveTo(x, y);

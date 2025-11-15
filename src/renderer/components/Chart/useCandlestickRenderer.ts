@@ -30,18 +30,19 @@ export const useCandlestickRenderer = ({
 
     const visibleCandles = manager.getVisibleCandles();
     const { candleWidth } = viewport;
-    const { chartWidth } = dimensions;
+    const { chartWidth, chartHeight } = dimensions;
+    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, chartWidth, dimensions.chartHeight);
+    ctx.rect(0, 0, effectiveWidth, chartHeight);
     ctx.clip();
 
     visibleCandles.forEach((candle, index) => {
       const actualIndex = Math.floor(viewport.start) + index;
       const x = manager.indexToX(actualIndex);
 
-      if (x < 0 || x > chartWidth) return;
+      if (x < 0 || x > effectiveWidth) return;
 
       const openY = manager.priceToY(candle.open);
       const closeY = manager.priceToY(candle.close);
