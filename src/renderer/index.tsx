@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { ColorModeProvider } from './components/ui/color-mode';
 import './global.d.ts';
 
 const rootElement = document.getElementById('root');
@@ -13,6 +14,8 @@ const root = createRoot(rootElement);
 
 root.render(
   <StrictMode>
-    <App />
+    <ColorModeProvider>
+      <App />
+    </ColorModeProvider>
   </StrictMode>
 );

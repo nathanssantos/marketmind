@@ -80,11 +80,11 @@ export function SymbolSelector({ marketService, value, onChange }: SymbolSelecto
       >
         <HStack justify="space-between">
           <VStack align="start" gap={0}>
-            <Text fontSize="sm" fontWeight="medium" color="white">
-              {selectedSymbol?.baseAsset || value}/{selectedSymbol?.quoteAsset || 'USDT'}
+            <Text fontSize="xs" color="gray.500">
+              Binance
             </Text>
-            <Text fontSize="xs" color="gray.400">
-              {value}
+            <Text fontSize="sm" fontWeight="medium" color="white">
+              {selectedSymbol?.displayName || value}
             </Text>
           </VStack>
           <Text fontSize="xs" color="gray.500">▼</Text>
@@ -156,16 +156,14 @@ export function SymbolSelector({ marketService, value, onChange }: SymbolSelecto
                     borderBottomWidth="1px"
                     borderColor="gray.700"
                   >
-                    <HStack justify="space-between">
-                      <VStack align="start" gap={0}>
-                        <Text fontWeight="medium" fontSize="sm" color="white">
-                          {symbol.baseAsset}/{symbol.quoteAsset}
-                        </Text>
-                        <Text fontSize="xs" color="gray.400">
-                          {symbol.symbol}
-                        </Text>
-                      </VStack>
-                    </HStack>
+                    <VStack align="start" gap={0}>
+                      <Text fontWeight="medium" fontSize="sm" color="white">
+                        {symbol.displayName}
+                      </Text>
+                      <Text fontSize="xs" color="gray.400">
+                        {symbol.symbol}
+                      </Text>
+                    </VStack>
                   </Box>
                 ))}
               </VStack>

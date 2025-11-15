@@ -1,7 +1,7 @@
 import { Box, Button, ChakraProvider, Stack, Text } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { Candle } from '@shared/types';
-import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { AITest } from './components/AITest';
 import { AdvancedControls, type AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
@@ -9,11 +9,14 @@ import { ChartControls } from './components/Chart/ChartControls';
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
 import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
+import { MainLayout } from './components/Layout/MainLayout';
 import { SymbolSelector } from './components/SymbolSelector';
+import { ChartProvider } from './context/ChartContext';
 import { useDebounce } from './hooks/useDebounce';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useMarketData } from './hooks/useMarketData';
 import { useRealtimeCandle } from './hooks/useRealtimeCandle';
+import { useChartData } from './hooks/useChartData';
 import { MarketDataService } from './services/market/MarketDataService';
 import { BinanceProvider } from './services/market/providers/BinanceProvider';
 import { CoinGeckoProvider } from './services/market/providers/CoinGeckoProvider';
@@ -58,6 +61,18 @@ const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
 ];
 
 function App(): ReactElement {
+  return (
+    <ChakraProvider value={system}>
+      <ChartProvider>
+        <PinnedControlsProvider>
+          <AppContent />
+        </PinnedControlsProvider>
+      </ChartProvider>
+    </ChakraProvider>
+  );
+}
+
+function AppContent(): ReactElement {
   const [showAITest, setShowAITest] = useState(false);
   const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
@@ -143,30 +158,28 @@ function App(): ReactElement {
 
   const debouncedAdvancedConfig = useDebounce(advancedConfig, 300);
 
+  // Provide chart data to context for AI analysis
+  useChartData({
+    candles: displayCandles,
+    symbol,
+    timeframe,
+    chartType,
+    showVolume,
+    movingAverages,
+  });
+
   return (
-    <ChakraProvider value={system}>
-      <PinnedControlsProvider>
-        <Box w="100vw" h="100vh" bg="gray.900" position="relative">
-          {/* AI Test Button */}
-          <Box position="absolute" top={4} right={4} zIndex={10} display="flex" gap={2}>
-            <Button
-              colorScheme="purple"
-              size="sm"
-              onClick={() => setShowAITest(!showAITest)}
-            >
-              {showAITest ? 'Hide AI Test' : '🤖 Test AI'}
-            </Button>
-            
-            <SymbolSelector
-              marketService={marketService}
-              value={symbol}
-              onChange={setSymbol}
-            />
-          </Box>
+    <MainLayout onSettingsClick={() => setShowAITest(!showAITest)}>
+      {/* Symbol Selector - Top Right */}
+      <Box position="absolute" top={4} right={4} zIndex={10}>
+        <SymbolSelector
+          marketService={marketService}
+          value={symbol}
+          onChange={setSymbol}
+        />
+      </Box>
 
-          {/* Symbol Selector removed from here */}
-
-          {/* Controls Container */}
+          {/* Controls Container - Top Left */}
           <Stack 
             position="absolute" 
             top={4} 
@@ -200,7 +213,7 @@ function App(): ReactElement {
               top="50%" 
               left="50%" 
               transform="translate(-50%, -50%)"
-              color="white"
+              color="fg"
               fontSize="xl"
             >
               <Text>Loading market data...</Text>
@@ -213,7 +226,7 @@ function App(): ReactElement {
               top="50%" 
               left="50%" 
               transform="translate(-50%, -50%)"
-              color="red.400"
+              color="red.500"
               fontSize="xl"
               textAlign="center"
               maxW="500px"
@@ -250,7 +263,7 @@ function App(): ReactElement {
               justifyContent="center"
             >
               <Box
-                bg="gray.900"
+                bg="bg.panel"
                 borderRadius="lg"
                 p={8}
                 maxW="900px"
@@ -263,7 +276,7 @@ function App(): ReactElement {
                   top={4}
                   right={4}
                   size="sm"
-                  colorScheme="red"
+                  colorPalette="red"
                   onClick={() => setShowAITest(false)}
                 >
                   ✕
@@ -272,9 +285,7 @@ function App(): ReactElement {
               </Box>
             </Box>
           )}
-        </Box>
-      </PinnedControlsProvider>
-    </ChakraProvider>
+        </MainLayout>
   );
 }
 

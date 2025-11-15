@@ -4,13 +4,13 @@ import type { Candle, ChartColors, Viewport } from '@shared/types';
 import type { ReactElement } from 'react';
 import { useEffect, useState } from 'react';
 import type { AdvancedControlsConfig } from './AdvancedControls';
+import { ChartTooltip } from './ChartTooltip';
 import { useCandlestickRenderer } from './useCandlestickRenderer';
 import { useChartCanvas } from './useChartCanvas';
 import { useGridRenderer } from './useGridRenderer';
 import { useLineChartRenderer } from './useLineChartRenderer';
-import { useVolumeRenderer } from './useVolumeRenderer';
 import { useMovingAverageRenderer, type MovingAverageConfig } from './useMovingAverageRenderer';
-import { ChartTooltip } from './ChartTooltip';
+import { useVolumeRenderer } from './useVolumeRenderer';
 
 export interface ChartCanvasProps {
   candles: Candle[];
