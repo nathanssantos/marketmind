@@ -1,10 +1,9 @@
-import { Box, Flex, Text, Spinner } from '@chakra-ui/react';
-import { Avatar } from '@chakra-ui/react';
-import { HiUser, HiSparkles } from 'react-icons/hi2';
-import { useMessageList } from './useMessageList';
-import ReactMarkdown from 'react-markdown';
+import { Avatar, Box, Flex, Spinner, Text } from '@chakra-ui/react';
 import type { AIMessage } from '@shared/types';
+import { HiSparkles, HiUser } from 'react-icons/hi2';
+import ReactMarkdown from 'react-markdown';
 import '../../markdown.css';
+import { useMessageList } from './useMessageList';
 
 export const MessageList = () => {
   const { messages, loading, messagesEndRef } = useMessageList();

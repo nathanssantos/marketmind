@@ -1,8 +1,7 @@
-import { useMemo } from 'react';
-import { Flex, Badge, Select } from '@chakra-ui/react';
-import { createListCollection } from '@chakra-ui/react';
 import { useAIStore } from '@/renderer/store/aiStore';
+import { Badge, createListCollection, Flex, Select } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
+import { useMemo } from 'react';
 
 interface ModelOption {
   value: string;

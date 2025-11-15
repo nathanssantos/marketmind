@@ -1,7 +1,7 @@
-import { Flex, Box, Text, IconButton } from '@chakra-ui/react';
-import { HiCog6Tooth, HiSparkles, HiMoon, HiSun } from 'react-icons/hi2';
-import { AISelector } from './AISelector';
 import { useColorMode } from '@/renderer/components/ui/color-mode';
+import { Box, Flex, IconButton, Text } from '@chakra-ui/react';
+import { HiCog6Tooth, HiMoon, HiSparkles, HiSun } from 'react-icons/hi2';
+import { AISelector } from './AISelector';
 
 interface HeaderProps {
   onSettingsClick?: () => void;

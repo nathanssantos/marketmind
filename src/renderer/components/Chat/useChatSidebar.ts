@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const MIN_WIDTH = 300;
 const MAX_WIDTH = 800;

@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
-import { useAIStore } from '@/renderer/store/aiStore';
 import { useChartContext } from '@/renderer/context/ChartContext';
+import { useAIStore } from '@/renderer/store/aiStore';
+import { useCallback, useState } from 'react';
 
 export const useMessageInput = () => {
   const [message, setMessage] = useState('');

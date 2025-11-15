@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
 import { useAIStore } from '@/renderer/store/aiStore';
+import { useEffect, useRef } from 'react';
 
 export const useMessageList = () => {
   const messages = useAIStore((state) => state.messages);

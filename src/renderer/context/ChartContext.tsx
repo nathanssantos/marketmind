@@ -1,7 +1,7 @@
-import React, { createContext, useContext, type ReactNode } from 'react';
 import type { Candle } from '@shared/types';
-import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
+import React, { createContext, useContext, type ReactNode } from 'react';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
+import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
 
 export interface ChartContextData {
   candles: Candle[];

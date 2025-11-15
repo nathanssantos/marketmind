@@ -1,7 +1,7 @@
 import { Flex, IconButton, Text } from '@chakra-ui/react';
 import { HiChevronRight } from 'react-icons/hi2';
-import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
+import { MessageList } from './MessageList';
 
 interface ChatSidebarProps {
   width: number;

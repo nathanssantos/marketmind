@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
 import type { Candle } from '@shared/types';
-import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
+import { useEffect } from 'react';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
+import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
 import { useChartContext } from '../context/ChartContext';
 
 interface UseChartDataParams {

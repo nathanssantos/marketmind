@@ -1,9 +1,9 @@
-import { Box, Flex, IconButton } from '@chakra-ui/react';
-import { HiChevronLeft } from 'react-icons/hi2';
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { Header } from './Header';
-import { ChatSidebar } from '../Chat/ChatSidebar';
 import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
+import { Box, Flex, IconButton } from '@chakra-ui/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { HiChevronLeft } from 'react-icons/hi2';
+import { ChatSidebar } from '../Chat/ChatSidebar';
+import { Header } from './Header';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -60,7 +60,7 @@ export const MainLayout = ({ children, onSettingsClick }: MainLayoutProps) => {
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
   return (
-    <Box width="100vw" height="100vh" overflow="hidden" bg="bg.panel">
+    <Box width="100vw" height="100vh" overflow="hidden">
       <Header onSettingsClick={onSettingsClick || undefined} />
       
       <Flex

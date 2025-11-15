@@ -1,7 +1,7 @@
 import { Box, Button, ChakraProvider, Stack, Text } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { Candle } from '@shared/types';
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import { AITest } from './components/AITest';
 import { AdvancedControls, type AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
@@ -12,11 +12,11 @@ import type { MovingAverageConfig } from './components/Chart/useMovingAverageRen
 import { MainLayout } from './components/Layout/MainLayout';
 import { SymbolSelector } from './components/SymbolSelector';
 import { ChartProvider } from './context/ChartContext';
+import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useMarketData } from './hooks/useMarketData';
 import { useRealtimeCandle } from './hooks/useRealtimeCandle';
-import { useChartData } from './hooks/useChartData';
 import { MarketDataService } from './services/market/MarketDataService';
 import { BinanceProvider } from './services/market/providers/BinanceProvider';
 import { CoinGeckoProvider } from './services/market/providers/CoinGeckoProvider';

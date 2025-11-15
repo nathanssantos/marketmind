@@ -1,9 +1,9 @@
+import type { Timeframe } from '@/renderer/components/Chart/TimeframeSelector';
+import type { MovingAverageConfig } from '@/renderer/components/Chart/useMovingAverageRenderer';
+import { AIService } from '@/renderer/services/ai';
+import type { AIAnalysisResponse, AIMessage, AIProviderType, Candle } from '@shared/types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AIMessage, AIProviderType, AIAnalysisResponse, Candle } from '@shared/types';
-import { AIService } from '@/renderer/services/ai';
-import type { MovingAverageConfig } from '@/renderer/components/Chart/useMovingAverageRenderer';
-import type { Timeframe } from '@/renderer/components/Chart/TimeframeSelector';
 
 const DEFAULT_MODELS: Record<AIProviderType, string> = {
   openai: 'gpt-4o',

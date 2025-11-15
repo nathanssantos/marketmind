@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useState } from 'react';
 import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 type ColorMode = 'light' | 'dark';
 
