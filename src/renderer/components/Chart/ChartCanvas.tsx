@@ -94,7 +94,6 @@ export const ChartCanvas = ({
       height={height}
       overflow="hidden"
       bg="gray.900"
-      borderRadius="md"
     >
       <canvas
         ref={canvasRef}
