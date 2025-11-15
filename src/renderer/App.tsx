@@ -1,6 +1,5 @@
+import { Box, ChakraProvider, Text } from '@chakra-ui/react';
 import type { ReactElement } from 'react';
-import { ChakraProvider } from '@chakra-ui/react';
-import { Box, Text } from '@chakra-ui/react';
 import { system } from './theme';
 
 function App(): ReactElement {
