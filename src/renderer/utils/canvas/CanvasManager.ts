@@ -3,10 +3,8 @@ import type { Candle, Viewport } from '@shared/types';
 import {
     calculateBounds,
     clampViewport,
-    indexToX,
     priceToY,
     volumeToHeight,
-    xToIndex,
     yToPrice,
     type Bounds,
     type Dimensions,
@@ -22,6 +20,9 @@ export class CanvasManager {
   private dimensions: Dimensions | null = null;
   private padding: number;
   private renderCallback: (() => void) | null = null;
+  private priceOffset: number = 0; // Offset for vertical panning
+  private priceScale: number = 1; // Scale for vertical zooming
+  private rightMargin: number = CHART_CONFIG.CHART_RIGHT_MARGIN;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -92,7 +93,17 @@ export class CanvasManager {
       return;
     }
 
-    this.bounds = calculateBounds(this.candles, this.viewport);
+    const baseBounds = calculateBounds(this.candles, this.viewport);
+    
+    // Apply price offset and scale
+    const center = (baseBounds.minPrice + baseBounds.maxPrice) / 2;
+    const range = (baseBounds.maxPrice - baseBounds.minPrice) * this.priceScale;
+    
+    this.bounds = {
+      ...baseBounds,
+      minPrice: center - range / 2 + this.priceOffset,
+      maxPrice: center + range / 2 + this.priceOffset,
+    };
   }
 
   public getBounds(): Bounds | null {
@@ -105,6 +116,11 @@ export class CanvasManager {
 
   public getContext(): CanvasRenderingContext2D | null {
     return this.ctx;
+  }
+
+  public setRightMargin(margin: number): void {
+    this.rightMargin = margin;
+    this.triggerRender();
   }
 
   public clear(): void {
@@ -147,12 +163,18 @@ export class CanvasManager {
 
   public indexToX(index: number): number {
     if (!this.dimensions) return 0;
-    return indexToX(index, this.viewport, this.dimensions.chartWidth);
+    const effectiveWidth = this.dimensions.chartWidth - this.rightMargin;
+    const visibleRange = this.viewport.end - this.viewport.start;
+    const ratio = (index - this.viewport.start) / visibleRange;
+    return ratio * effectiveWidth;
   }
 
   public xToIndex(x: number): number {
     if (!this.dimensions) return 0;
-    return xToIndex(x, this.viewport, this.dimensions.chartWidth);
+    const effectiveWidth = this.dimensions.chartWidth - this.rightMargin;
+    const visibleRange = this.viewport.end - this.viewport.start;
+    const ratio = x / effectiveWidth;
+    return this.viewport.start + ratio * visibleRange;
   }
 
   public getVisibleCandles(): Candle[] {
@@ -199,6 +221,39 @@ export class CanvasManager {
     this.viewport.end -= indexDelta;
 
     this.viewport = clampViewport(this.viewport, this.candles.length);
+    this.updateBounds();
+    this.triggerRender();
+  }
+
+  public panVertical(deltaY: number): void {
+    if (!this.dimensions) return;
+
+    // Get base bounds without offset/scale to calculate proper delta
+    const baseBounds = this.candles.length > 0 ? calculateBounds(this.candles, this.viewport) : null;
+    if (!baseBounds) return;
+
+    const baseRange = baseBounds.maxPrice - baseBounds.minPrice;
+    const chartHeight = this.dimensions.chartHeight;
+    
+    // Convert pixel delta to price delta (normal direction: drag down = move down)
+    const priceDelta = (deltaY / chartHeight) * baseRange;
+    
+    // Update price offset
+    this.priceOffset += priceDelta;
+    
+    this.updateBounds();
+    this.triggerRender();
+  }
+
+  public zoomVertical(deltaY: number): void {
+    if (!this.bounds || !this.dimensions) return;
+
+    const zoomFactor = 1 + (deltaY / this.dimensions.chartHeight) * 2;
+    this.priceScale *= zoomFactor;
+    
+    // Clamp scale to reasonable values
+    this.priceScale = Math.max(0.1, Math.min(10, this.priceScale));
+    
     this.updateBounds();
     this.triggerRender();
   }

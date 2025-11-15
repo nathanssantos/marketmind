@@ -9,6 +9,8 @@ export interface UseVolumeRendererProps {
   colors: ChartColors;
   enabled?: boolean;
   opacity?: number;
+  rightMargin?: number;
+  volumeHeightRatio?: number;
 }
 
 export interface UseVolumeRendererReturn {
@@ -20,6 +22,8 @@ export const useVolumeRenderer = ({
   colors,
   enabled = true,
   opacity = 0.2,
+  rightMargin,
+  volumeHeightRatio,
 }: UseVolumeRendererProps): UseVolumeRendererReturn => {
   const render = useCallback((): void => {
     if (!manager || !enabled) return;
@@ -34,21 +38,22 @@ export const useVolumeRenderer = ({
     const visibleCandles = manager.getVisibleCandles();
     const { chartHeight, chartWidth } = dimensions;
     const { candleWidth } = viewport;
+    const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
 
     // Render volume within the main chart area (bottom 25%)
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.rect(0, 0, effectiveWidth, chartHeight);
     ctx.clip();
 
-    const volumeOverlayHeight = chartHeight * CHART_CONFIG.VOLUME_HEIGHT_RATIO;
+    const volumeOverlayHeight = chartHeight * (volumeHeightRatio ?? CHART_CONFIG.VOLUME_HEIGHT_RATIO);
     const volumeBaseY = chartHeight;
 
     visibleCandles.forEach((candle, index) => {
       const actualIndex = Math.floor(viewport.start) + index;
       const x = manager.indexToX(actualIndex);
 
-      if (x < 0 || x > chartWidth) return;
+      if (x < 0 || x > effectiveWidth) return;
 
       const volumeRatio = candle.volume / bounds.maxVolume;
       const barHeight = volumeRatio * volumeOverlayHeight;
@@ -65,7 +70,7 @@ export const useVolumeRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, colors, enabled, opacity]);
+  }, [manager, colors, enabled, opacity, rightMargin, volumeHeightRatio]);
 
   useEffect(() => {
     render();

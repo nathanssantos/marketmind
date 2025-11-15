@@ -8,12 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### In Progress
-- Line chart renderer implementation
-- Moving average calculations and rendering
-- Chart controls UI
 - Unit tests for hooks and utilities
 - Time labels on X axis
 - Tooltip on hover functionality
+
+## [0.3.0] - 2025-11-14
+
+### Added
+- LineRenderer for line chart visualization
+- Line chart with area fill below the line
+- Moving average calculations (SMA and EMA)
+- MovingAverageRenderer for displaying moving averages on chart
+- ChartControls component with interactive toggles
+- Support for switching between candlestick and line chart types
+- Configurable moving averages (EMA-9, SMA-20, SMA-50)
+- Toggle controls for volume, grid, and indicators
+- Full-screen chart mode
+- useLineChartRenderer hook with area fill
+- useMovingAverageRenderer hook using manager coordinate methods
+- State management for chart display options
+
+### Fixed
+- Moving average rendering now uses manager coordinate methods (indexToX, priceToY)
+- Moving averages now maintain correct position during pan and zoom
+- Moving averages extend to the full width of visible candles
+- Chart controls positioned with proper z-index
+
+### Changed
+- Removed app branding (MarketMind title and slogan) for cleaner interface
+- Chart now occupies full viewport (100vw x 100vh)
+- ChartCanvas border radius removed for edge-to-edge display
 
 ## [0.2.0] - 2025-11-14
 

@@ -1,4 +1,5 @@
 import type { Candle, Viewport } from '@shared/types';
+import { CHART_CONFIG } from '@shared/constants';
 
 export interface Bounds {
   minPrice: number;
@@ -94,9 +95,10 @@ export const indexToX = (
   viewport: Viewport,
   chartWidth: number,
 ): number => {
+  const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
   const visibleRange = viewport.end - viewport.start;
   const ratio = (index - viewport.start) / visibleRange;
-  return ratio * chartWidth;
+  return ratio * effectiveWidth;
 };
 
 export const xToIndex = (
@@ -104,8 +106,9 @@ export const xToIndex = (
   viewport: Viewport,
   chartWidth: number,
 ): number => {
+  const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
   const visibleRange = viewport.end - viewport.start;
-  const ratio = x / chartWidth;
+  const ratio = x / effectiveWidth;
   return viewport.start + ratio * visibleRange;
 };
 
