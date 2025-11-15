@@ -92,7 +92,7 @@ export const AISelector = () => {
           <Select.Indicator />
         </Select.Trigger>
         <Select.Positioner>
-          <Select.Content bg="bg.panel" borderColor="border">
+          <Select.Content>
             {PROVIDER_OPTIONS.map((option) => (
               <Select.Item key={option.value} item={option.value}>
                 <Select.ItemText>{option.label}</Select.ItemText>
@@ -120,7 +120,7 @@ export const AISelector = () => {
             <Select.Indicator />
           </Select.Trigger>
           <Select.Positioner>
-            <Select.Content bg="bg.panel" borderColor="border">
+            <Select.Content>
               {modelOptions.map((option) => (
                 <Select.Item key={option.value} item={option.value}>
                   <Select.ItemText>{option.label}</Select.ItemText>

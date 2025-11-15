@@ -2,81 +2,55 @@ import { createSystem, defaultConfig, defineConfig } from '@chakra-ui/react';
 
 const config = defineConfig({
   theme: {
-    tokens: {
-      colors: {
-        brand: {
-          50: { value: '#e3f2fd' },
-          100: { value: '#bbdefb' },
-          200: { value: '#90caf9' },
-          300: { value: '#64b5f6' },
-          400: { value: '#42a5f5' },
-          500: { value: '#2196f3' },
-          600: { value: '#1e88e5' },
-          700: { value: '#1976d2' },
-          800: { value: '#1565c0' },
-          900: { value: '#0d47a1' },
-        },
-      },
-    },
     semanticTokens: {
       colors: {
         'bg.panel': {
           value: {
-            _light: 'white',
-            _dark: 'gray.950',
+            base: '#ffffff',
+            _dark: '#1a202c',
           },
         },
         'bg.surface': {
           value: {
-            _light: 'gray.50',
-            _dark: 'gray.900',
+            base: '#f7fafc',
+            _dark: '#2d3748',
           },
         },
         'bg.muted': {
           value: {
-            _light: 'gray.100',
-            _dark: 'gray.800',
+            base: '#edf2f7',
+            _dark: '#4a5568',
           },
         },
         border: {
           value: {
-            _light: 'gray.200',
-            _dark: '#2d3548',
+            base: '#e2e8f0',
+            _dark: '#4a5568',
           },
         },
         fg: {
           value: {
-            _light: 'gray.900',
-            _dark: '#e4e7eb',
+            base: '#1a202c',
+            _dark: '#f7fafc',
           },
         },
         'fg.muted': {
           value: {
-            _light: 'gray.600',
-            _dark: '#9ca3af',
+            base: '#718096',
+            _dark: '#a0aec0',
           },
         },
       },
     },
   },
   globalCss: {
-    'input, textarea': {
-      px: '3!',
-    },
-    '[data-scope="select"][data-part="trigger"]': {
-      px: '3!',
-    },
-    '[data-scope="select"][data-part="content"]': {
-      bg: 'bg.panel!',
-    },
-    '[data-scope="badge"]': {
-      px: '2!',
-    },
     body: {
-      userSelect: 'none',
-      WebkitUserSelect: 'none',
       bg: 'bg.panel',
       color: 'fg',
+      userSelect: 'none',
+    },
+    'input, textarea': {
+      px: 3,
     },
   },
 });

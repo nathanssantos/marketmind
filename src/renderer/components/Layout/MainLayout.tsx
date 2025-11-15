@@ -3,21 +3,22 @@ import { Box, Flex, IconButton } from '@chakra-ui/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { HiChevronLeft } from 'react-icons/hi2';
 import { ChatSidebar } from '../Chat/ChatSidebar';
+import { SettingsModal } from '../Settings/SettingsModal';
 import { Header } from './Header';
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  onSettingsClick?: () => void;
 }
 
 const MIN_CHAT_WIDTH = 300;
 const MAX_CHAT_WIDTH = 800;
 const DEFAULT_CHAT_WIDTH = 400;
 
-export const MainLayout = ({ children, onSettingsClick }: MainLayoutProps) => {
+export const MainLayout = ({ children }: MainLayoutProps) => {
   const [isChatOpen, setIsChatOpen] = useLocalStorage('chat-sidebar-open', true);
   const [chatWidth, setChatWidth] = useLocalStorage('chat-sidebar-width', DEFAULT_CHAT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
 
@@ -61,7 +62,7 @@ export const MainLayout = ({ children, onSettingsClick }: MainLayoutProps) => {
 
   return (
     <Box width="100vw" height="100vh" overflow="hidden">
-      <Header onSettingsClick={onSettingsClick || undefined} />
+      <Header onSettingsClick={() => setIsSettingsOpen(true)} />
       
       <Flex
         position="fixed"
@@ -116,6 +117,8 @@ export const MainLayout = ({ children, onSettingsClick }: MainLayoutProps) => {
           </IconButton>
         )}
       </Flex>
+
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </Box>
   );
 };
