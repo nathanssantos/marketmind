@@ -30,10 +30,18 @@ export const useCandlestickRenderer = ({
 
     const visibleCandles = manager.getVisibleCandles();
     const { candleWidth } = viewport;
+    const { chartWidth } = dimensions;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, dimensions.chartHeight);
+    ctx.clip();
 
     visibleCandles.forEach((candle, index) => {
       const actualIndex = Math.floor(viewport.start) + index;
       const x = manager.indexToX(actualIndex);
+
+      if (x < 0 || x > chartWidth) return;
 
       const openY = manager.priceToY(candle.open);
       const closeY = manager.priceToY(candle.close);
@@ -53,6 +61,8 @@ export const useCandlestickRenderer = ({
         colors.bearish,
       );
     });
+
+    ctx.restore();
   }, [manager, colors, enabled]);
 
   useEffect(() => {
