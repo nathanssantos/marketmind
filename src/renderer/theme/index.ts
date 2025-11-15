@@ -19,4 +19,10 @@ export const system = createSystem(defaultConfig, {
       },
     },
   },
+  globalCss: {
+    body: {
+      userSelect: 'none',
+      WebkitUserSelect: 'none',
+    },
+  },
 });

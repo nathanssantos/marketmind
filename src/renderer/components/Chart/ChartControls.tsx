@@ -1,6 +1,13 @@
-import { Box, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Box, HStack, IconButton, Stack, Text, Switch as ChakraSwitch } from '@chakra-ui/react';
+import { 
+  HiOutlineChartBar, 
+  HiOutlinePresentationChartLine, 
+  HiOutlineViewGrid,
+  HiOutlineTrendingUp 
+} from 'react-icons/hi';
 import type { ReactElement } from 'react';
 import type { MovingAverageConfig } from './useMovingAverageRenderer';
+import { ControlPanel } from './ControlPanel';
 
 export interface ChartControlsProps {
   showVolume: boolean;
@@ -33,78 +40,75 @@ export const ChartControls = ({
   };
 
   return (
-    <Box
-      position="absolute"
-      top={4}
-      left={4}
-      bg="gray.800"
-      p={3}
-      borderRadius="md"
-      boxShadow="lg"
-      zIndex={10}
-      opacity={0.95}
-    >
-      <Stack gap={3}>
-        {/* Chart Type */}
-        <Box>
-          <Text fontSize="xs" color="gray.400" mb={1} fontWeight="semibold">
-            Chart Type
-          </Text>
-          <HStack gap={2}>
-            <IconButton
-              size="sm"
-              aria-label="Candlestick chart"
-              onClick={() => onChartTypeChange('candlestick')}
-              colorPalette={chartType === 'candlestick' ? 'blue' : 'gray'}
-              variant={chartType === 'candlestick' ? 'solid' : 'outline'}
-            >
-              📊
-            </IconButton>
-            <IconButton
-              size="sm"
-              aria-label="Line chart"
-              onClick={() => onChartTypeChange('line')}
-              colorPalette={chartType === 'line' ? 'blue' : 'gray'}
-              variant={chartType === 'line' ? 'solid' : 'outline'}
-            >
-              📈
-            </IconButton>
-          </HStack>
-        </Box>
+    <ControlPanel title="Chart Controls">
+      {/* Chart Type */}
+      <Box>
+        <Text fontSize="xs" color="gray.400" mb={1} fontWeight="semibold">
+          Chart Type
+        </Text>
+        <HStack gap={2}>
+          <IconButton
+            size="sm"
+            aria-label="Candlestick chart"
+            onClick={() => onChartTypeChange('candlestick')}
+            colorPalette={chartType === 'candlestick' ? 'blue' : 'gray'}
+            variant={chartType === 'candlestick' ? 'solid' : 'outline'}
+            color={chartType === 'candlestick' ? undefined : 'gray.400'}
+          >
+            <HiOutlineChartBar />
+          </IconButton>
+          <IconButton
+            size="sm"
+            aria-label="Line chart"
+            onClick={() => onChartTypeChange('line')}
+            colorPalette={chartType === 'line' ? 'blue' : 'gray'}
+            variant={chartType === 'line' ? 'solid' : 'outline'}
+            color={chartType === 'line' ? undefined : 'gray.400'}
+          >
+            <HiOutlinePresentationChartLine />
+          </IconButton>
+        </HStack>
+      </Box>
 
         {/* Display Options */}
         <Box>
-          <Text fontSize="xs" color="gray.400" mb={1} fontWeight="semibold">
+          <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
             Display
           </Text>
-          <Stack gap={1}>
-            <HStack gap={2}>
-              <IconButton
+          <Stack gap={2}>
+            <HStack justify="space-between" gap={3}>
+              <HStack gap={2}>
+                <HiOutlineChartBar size={14} color="var(--chakra-colors-gray-300)" />
+                <Text fontSize="xs" color="gray.300">Volume</Text>
+              </HStack>
+              <ChakraSwitch.Root
                 size="sm"
-                aria-label="Toggle volume"
-                onClick={() => onShowVolumeChange(!showVolume)}
-                colorPalette={showVolume ? 'blue' : 'gray'}
-                variant={showVolume ? 'solid' : 'outline'}
+                checked={showVolume}
+                onCheckedChange={(e) => onShowVolumeChange(e.checked)}
+                colorPalette="blue"
               >
-                📊
-              </IconButton>
-              <Text fontSize="xs" color="gray.300">
-                Volume
-              </Text>
+                <ChakraSwitch.HiddenInput />
+                <ChakraSwitch.Control>
+                  <ChakraSwitch.Thumb />
+                </ChakraSwitch.Control>
+              </ChakraSwitch.Root>
             </HStack>
-            <HStack gap={2}>
-              <IconButton
+            <HStack justify="space-between" gap={3}>
+              <HStack gap={2}>
+                <HiOutlineViewGrid size={14} color="var(--chakra-colors-gray-300)" />
+                <Text fontSize="xs" color="gray.300">Grid</Text>
+              </HStack>
+              <ChakraSwitch.Root
                 size="sm"
-                aria-label="Toggle grid"
-                onClick={() => onShowGridChange(!showGrid)}
-                colorPalette={showGrid ? 'blue' : 'gray'}
-                variant={showGrid ? 'solid' : 'outline'}
+                checked={showGrid}
+                onCheckedChange={(e) => onShowGridChange(e.checked)}
+                colorPalette="blue"
               >
-                ⊞
-              </IconButton>
-              <Text fontSize="xs" color="gray.300">
-                Grid
-              </Text>
+                <ChakraSwitch.HiddenInput />
+                <ChakraSwitch.Control>
+                  <ChakraSwitch.Thumb />
+                </ChakraSwitch.Control>
+              </ChakraSwitch.Root>
             </HStack>
           </Stack>
         </Box>
@@ -112,39 +116,34 @@ export const ChartControls = ({
         {/* Moving Averages */}
         {movingAverages.length > 0 && (
           <Box>
-            <Text fontSize="xs" color="gray.400" mb={1} fontWeight="semibold">
+            <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
               Indicators
             </Text>
-            <Stack gap={1}>
+            <Stack gap={2}>
               {movingAverages.map((ma, index) => (
-                <HStack key={index} gap={2}>
-                  <IconButton
-                    size="sm"
-                    aria-label={`Toggle ${ma.type}${ma.period}`}
-                    onClick={() => toggleMA(index)}
-                    colorPalette={ma.visible !== false ? 'blue' : 'gray'}
-                    variant={ma.visible !== false ? 'solid' : 'outline'}
-                  >
-                    ～
-                  </IconButton>
-                  <HStack gap={1}>
-                    <Box
-                      w={3}
-                      h={3}
-                      bg={ma.color}
-                      borderRadius="sm"
-                      opacity={ma.visible !== false ? 1 : 0.3}
-                    />
+                <HStack key={index} justify="space-between" gap={3}>
+                  <HStack gap={2}>
+                    <HiOutlineTrendingUp size={14} color={ma.color} style={{ opacity: ma.visible !== false ? 1 : 0.3 }} />
                     <Text fontSize="xs" color="gray.300">
                       {ma.type}{ma.period}
                     </Text>
                   </HStack>
+                  <ChakraSwitch.Root
+                    size="sm"
+                    checked={ma.visible !== false}
+                    onCheckedChange={() => toggleMA(index)}
+                    colorPalette="blue"
+                  >
+                    <ChakraSwitch.HiddenInput />
+                    <ChakraSwitch.Control>
+                      <ChakraSwitch.Thumb />
+                    </ChakraSwitch.Control>
+                  </ChakraSwitch.Root>
                 </HStack>
               ))}
             </Stack>
           </Box>
         )}
-      </Stack>
-    </Box>
+    </ControlPanel>
   );
 };
