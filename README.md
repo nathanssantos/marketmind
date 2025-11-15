@@ -16,12 +16,18 @@
 
 ### Key Features
 
-- 📈 **High-Performance Charts**: Canvas rendering with support for candlesticks and line charts
+**Currently Implemented:**
+- 📈 **Candlestick Charts**: High-performance Canvas rendering with zoom and pan
+- 📊 **Volume Visualization**: Volume bars synchronized with candlesticks
+- 🎨 **Grid System**: Dynamic grid with price labels
+- 🖱️ **Interactive**: Mouse wheel zoom and drag to pan
+- 🌓 **Dark/Light Themes**: Full Chakra UI theme support
+
+**Planned:**
 - 🤖 **AI Analysis**: Integration with multiple AI providers (OpenAI, Anthropic, Google Gemini)
 - 📰 **News Analysis**: Cross-analysis of technical analysis with news sentiment
 - 💬 **Interactive Chat**: Chat with AI about charts in real-time
-- 📊 **Technical Indicators**: Moving averages (SMA/EMA), volume, and more
-- 🌓 **Themes**: Full support for light and dark mode
+- 📊 **Technical Indicators**: Moving averages (SMA/EMA), RSI, MACD, and more
 - 🔄 **Auto-Update**: Automatic update system
 
 ## 🛠 Technology Stack
@@ -136,17 +142,49 @@ This project is in active development. Contributions are welcome!
 
 See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the detailed project roadmap.
 
-### MVP (v1.0)
-- [x] Implementation plan
-- [ ] Project setup
-- [ ] Candlestick chart rendering
-- [ ] Market API integration
-- [ ] AI chat
-- [ ] Build system and installers
-- [ ] Auto-update
+### Current Status (v0.1.0)
+
+**Phase 1: Initial Setup** ✅ COMPLETED
+- [x] Vite + Electron + React + TypeScript configuration
+- [x] Chakra UI with light/dark theme
+- [x] Project structure and TypeScript paths
+- [x] ESLint and Prettier setup
+
+**Phase 2: Type System** ✅ COMPLETED
+- [x] Candle data types
+- [x] Chart configuration types
+- [x] AI integration types
+
+**Phase 3: Chart Rendering** 🚧 IN PROGRESS (60%)
+- [x] CanvasManager with zoom/pan system
+- [x] Coordinate system utilities
+- [x] Candlestick renderer
+- [x] Grid renderer with price labels
+- [x] Volume renderer
+- [ ] Line chart renderer
+- [ ] Moving averages (SMA/EMA)
+- [ ] Chart controls UI
+- [ ] Unit tests
+
+### MVP (v1.0) - Target Q1 2026
+- [x] Candlestick chart rendering
+- [ ] Line chart rendering
+- [x] Volume chart
+- [x] Grid and labels (partial)
+- [ ] At least 2 moving averages (SMA)
+- [ ] Market API integration (Binance)
+- [ ] AI integration (OpenAI GPT-4 Vision)
+- [ ] Functional AI chat
+- [ ] Basic settings
+- [x] Light and Dark mode
+- [ ] Installers (Mac/Windows)
+- [ ] Auto-update system
 
 ### Future (v1.1+)
 - [ ] More technical indicators (RSI, MACD, Bollinger Bands)
+- [ ] Multiple market APIs
+- [ ] Multiple AI providers
+- [ ] News integration
 - [ ] Price alerts
 - [ ] Asset watchlist
 - [ ] Chart export
