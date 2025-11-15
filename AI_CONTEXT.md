@@ -36,9 +36,16 @@
 - ✅ Use recommended patterns and APIs
 - ✅ Stay updated with deprecation notices
 
+#### 3. **Maintain Changelog**
+- ✅ Update CHANGELOG.md with every significant change
+- ✅ Follow Keep a Changelog format
+- ✅ Categorize changes: Added, Changed, Deprecated, Removed, Fixed, Security
+- ✅ Document breaking changes clearly
+- ✅ Update version numbers following Semantic Versioning
+
 ### Code Quality Standards
 
-#### 3. **No Comments in Code**
+#### 4. **No Comments in Code**
 - ❌ Don't add inline comments
 - ✅ Create and update README files in feature folders
 - ✅ Use self-documenting code (clear variable/function names)
@@ -55,7 +62,7 @@ const calculateSimpleMovingAverage = (candles: Candle[]): number => {
 };
 ```
 
-#### 4. **Magic Numbers & Constants**
+#### 5. **Magic Numbers & Constants**
 - ❌ Never hardcode values in logic
 - ✅ Always extract to separate configuration files
 
@@ -78,7 +85,7 @@ if (volume > CHART_CONFIG.VOLUME_THRESHOLD) {
 }
 ```
 
-#### 5. **TypeScript - No `any`**
+#### 6. **TypeScript - No `any`**
 - ❌ Never use `any`
 - ✅ Use proper types, `unknown`, or generics
 
@@ -100,7 +107,7 @@ const parseData = (data: unknown): CandleData => {
 }
 ```
 
-#### 6. **Global Types**
+#### 7. **Global Types**
 - ✅ Use shared types from `src/shared/types/`
 - ✅ Export and reuse types across main and renderer processes
 
@@ -119,7 +126,7 @@ export interface Candle {
 import type { Candle } from '@shared/types';
 ```
 
-#### 7. **Simplified Conditionals**
+#### 8. **Simplified Conditionals**
 - ✅ One-line ifs when possible
 - ✅ Use ternary operators for simple conditions
 
@@ -138,7 +145,7 @@ const backgroundColor = isDarkMode ? '#1e222d' : '#ffffff';
 if (candles.length === 0) return null;
 ```
 
-#### 8. **Early Returns**
+#### 9. **Early Returns**
 - ✅ Always prefer early returns over nested ifs
 - ✅ Reduce indentation and improve readability
 
@@ -165,7 +172,7 @@ const processCandle = (candle: Candle | null): string => {
 }
 ```
 
-#### 9. **Responsive Design**
+#### 10. **Responsive Design**
 - ✅ Always consider responsiveness
 - ✅ Use Chakra UI responsive props
 - ✅ Canvas should adapt to window resize
@@ -301,6 +308,7 @@ I'm working on MarketMind following AI_CONTEXT.md guidelines.
 Key Guidelines:
 - Always use latest versions of libraries
 - Consult official documentation for best practices
+- Update CHANGELOG.md with every significant change
 - No comments in code (use READMEs)
 - No magic numbers (extract to constants)
 - No `any` types
@@ -581,6 +589,7 @@ export const Chart = (props: ChartProps) => {
 Before committing:
 - [ ] Using latest library versions
 - [ ] Consulted official documentation
+- [ ] Updated CHANGELOG.md with changes
 - [ ] No `any` types used
 - [ ] No magic numbers (extracted to constants)
 - [ ] No inline comments (updated README instead)
