@@ -1,0 +1,1174 @@
+# MarketMind - Implementation Plan
+
+## 📋 Project Overview
+
+**MarketMind** is a desktop application developed in Electron that combines advanced financial chart visualization (candlesticks) with artificial intelligence analysis to provide insights on cryptocurrencies, stocks, and other tradable assets.
+
+### Main Objective
+Create an "AI consultant" that assists traders and investors in technical chart analysis and news interpretation for buy/sell decision making on assets.
+
+---
+
+## 🛠 Technology Stack
+
+### Core
+- **TypeScript** (end-to-end with unified typing)
+- **Electron** (latest stable version)
+- **React 18+** (UI Framework)
+
+### UI/UX
+- **Chakra UI** (components with light/dark mode support)
+- **Canvas API** with helper library (e.g., Konva, PixiJS or custom wrapper)
+
+### Build & Deploy
+- **electron-builder** (installer generation)
+- **electron-updater** (auto-update system)
+
+### Management
+- **Vite** (optimized build tool)
+- **pnpm/npm** (package manager)
+
+---
+
+## 📁 Project Structure
+
+```
+marketmind/
+├── src/
+│   ├── main/                      # Electron main process
+│   │   ├── index.ts               # Entry point
+│   │   ├── window.ts              # Window management
+│   │   ├── updater.ts             # Auto-update system
+│   │   ├── ipc/                   # IPC handlers
+│   │   └── preload.ts             # Preload script
+│   │
+│   ├── renderer/                  # Rendering process (React)
+│   │   ├── App.tsx                # Root component
+│   │   ├── index.tsx              # Entry point
+│   │   ├── theme/                 # Chakra UI configuration
+│   │   │   ├── index.ts
+│   │   │   ├── colors.ts
+│   │   │   └── components.ts
+│   │   │
+│   │   ├── components/            # React components
+│   │   │   ├── Chart/             # Chart system
+│   │   │   │   ├── ChartCanvas.tsx
+│   │   │   │   ├── useChartCanvas.ts
+│   │   │   │   ├── useChartCanvas.test.ts
+│   │   │   │   ├── CandlestickRenderer.tsx
+│   │   │   │   ├── useCandlestickRenderer.ts
+│   │   │   │   ├── useCandlestickRenderer.test.ts
+│   │   │   │   ├── LineRenderer.tsx
+│   │   │   │   ├── useLineRenderer.ts
+│   │   │   │   ├── useLineRenderer.test.ts
+│   │   │   │   ├── GridRenderer.tsx
+│   │   │   │   ├── useGridRenderer.ts
+│   │   │   │   ├── useGridRenderer.test.ts
+│   │   │   │   ├── VolumeRenderer.tsx
+│   │   │   │   ├── useVolumeRenderer.ts
+│   │   │   │   ├── useVolumeRenderer.test.ts
+│   │   │   │   ├── MovingAverageRenderer.tsx
+│   │   │   │   ├── useMovingAverageRenderer.ts
+│   │   │   │   ├── useMovingAverageRenderer.test.ts
+│   │   │   │   ├── ChartControls.tsx
+│   │   │   │   ├── useChartControls.ts
+│   │   │   │   └── useChartControls.test.ts
+│   │   │   │
+│   │   │   ├── Sidebar/           # AI Chat
+│   │   │   │   ├── ChatSidebar.tsx
+│   │   │   │   ├── useChatSidebar.ts
+│   │   │   │   ├── useChatSidebar.test.ts
+│   │   │   │   ├── MessageList.tsx
+│   │   │   │   ├── useMessageList.ts
+│   │   │   │   ├── useMessageList.test.ts
+│   │   │   │   ├── MessageInput.tsx
+│   │   │   │   ├── useMessageInput.ts
+│   │   │   │   ├── useMessageInput.test.ts
+│   │   │   │   ├── AISelector.tsx
+│   │   │   │   ├── useAISelector.ts
+│   │   │   │   ├── useAISelector.test.ts
+│   │   │   │   ├── ImageRenderer.tsx
+│   │   │   │   ├── useImageRenderer.ts
+│   │   │   │   └── useImageRenderer.test.ts
+│   │   │   │
+│   │   │   ├── Settings/          # Settings
+│   │   │   │   ├── SettingsModal.tsx
+│   │   │   │   ├── useSettingsModal.ts
+│   │   │   │   ├── useSettingsModal.test.ts
+│   │   │   │   ├── AIConfig.tsx
+│   │   │   │   ├── useAIConfig.ts
+│   │   │   │   ├── useAIConfig.test.ts
+│   │   │   │   ├── GeneralSettings.tsx
+│   │   │   │   ├── useGeneralSettings.ts
+│   │   │   │   └── useGeneralSettings.test.ts
+│   │   │   │
+│   │   │   └── Layout/            # Layout components
+│   │   │       ├── Header.tsx
+│   │   │       ├── useHeader.ts
+│   │   │       ├── useHeader.test.ts
+│   │   │       ├── Toolbar.tsx
+│   │   │       ├── useToolbar.ts
+│   │   │       ├── useToolbar.test.ts
+│   │   │       ├── MainLayout.tsx
+│   │   │       ├── useMainLayout.ts
+│   │   │       └── useMainLayout.test.ts
+│   │   │
+│   │   ├── services/              # Services
+│   │   │   ├── ai/                # AI connectors
+│   │   │   │   ├── AIService.ts
+│   │   │   │   ├── AIService.test.ts
+│   │   │   │   ├── providers/
+│   │   │   │   │   ├── OpenAIProvider.ts
+│   │   │   │   │   ├── OpenAIProvider.test.ts
+│   │   │   │   │   ├── AnthropicProvider.ts
+│   │   │   │   │   ├── AnthropicProvider.test.ts
+│   │   │   │   │   ├── GeminiProvider.ts
+│   │   │   │   │   ├── GeminiProvider.test.ts
+│   │   │   │   │   ├── BaseProvider.ts
+│   │   │   │   │   └── BaseProvider.test.ts
+│   │   │   │   └── types.ts
+│   │   │   │
+│   │   │   ├── market/            # Market APIs
+│   │   │   │   ├── MarketDataService.ts
+│   │   │   │   ├── MarketDataService.test.ts
+│   │   │   │   ├── providers/
+│   │   │   │   │   ├── BinanceProvider.ts
+│   │   │   │   │   ├── BinanceProvider.test.ts
+│   │   │   │   │   ├── AlphaVantageProvider.ts
+│   │   │   │   │   ├── AlphaVantageProvider.test.ts
+│   │   │   │   │   ├── BaseMarketProvider.ts
+│   │   │   │   │   └── BaseMarketProvider.test.ts
+│   │   │   │   └── types.ts
+│   │   │   │
+│   │   │   └── news/              # News APIs
+│   │   │       ├── NewsService.ts
+│   │   │       ├── NewsService.test.ts
+│   │   │       └── types.ts
+│   │   │
+│   │   ├── hooks/                 # Custom React hooks
+│   │   │   ├── useChart.ts
+│   │   │   ├── useChart.test.ts
+│   │   │   ├── useAI.ts
+│   │   │   ├── useAI.test.ts
+│   │   │   ├── useMarketData.ts
+│   │   │   ├── useMarketData.test.ts
+│   │   │   ├── useSettings.ts
+│   │   │   └── useSettings.test.ts
+│   │   │
+│   │   ├── store/                 # State management
+│   │   │   ├── chartStore.ts
+│   │   │   ├── chartStore.test.ts
+│   │   │   ├── aiStore.ts
+│   │   │   ├── aiStore.test.ts
+│   │   │   ├── settingsStore.ts
+│   │   │   ├── settingsStore.test.ts
+│   │   │   └── index.ts
+│   │   │
+│   │   └── utils/                 # Utilities
+│   │       ├── canvas/
+│   │       │   ├── CanvasManager.ts
+│   │       │   ├── CanvasManager.test.ts
+│   │       │   ├── drawingUtils.ts
+│   │       │   ├── drawingUtils.test.ts
+│   │       │   ├── coordinateSystem.ts
+│   │       │   └── coordinateSystem.test.ts
+│   │       ├── formatters.ts
+│   │       ├── formatters.test.ts
+│   │       ├── validators.ts
+│   │       └── validators.test.ts
+│   │
+│   └── shared/                    # Shared code
+│       ├── types/                 # TypeScript types
+│       │   ├── candle.ts
+│       │   ├── chart.ts
+│       │   ├── ai.ts
+│       │   └── index.ts
+│       │
+│       └── constants/
+│           ├── chartConfig.ts
+│           └── appConfig.ts
+│
+├── docs/                          # Documentation
+│   ├── IMPLEMENTATION_PLAN.md     # This file
+│   ├── PLANO_IMPLEMENTACAO.md     # Portuguese version
+│   ├── CHANGELOG.md               # Version history
+│   ├── AI_CONTEXT.md              # AI development context
+│   ├── ESLINT.md                  # ESLint configuration guide
+│   └── GIT_COMMANDS.md            # Git workflow guide
+│
+├── scripts/                       # Utility scripts
+│   ├── install-hooks.sh
+│   ├── setup-github.sh
+│   └── README.md
+│
+├── electron-builder.config.js     # Builder configuration
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+├── vitest.config.ts              # Vitest configuration
+└── README.md
+```
+
+---
+
+## 🎯 Implementation Phases
+
+### **PHASE 1: Initial Project Setup** 
+*Estimated duration: 1 day*
+
+#### 1.1 Initialization
+- [ ] Create project with Vite + Electron + React + TypeScript
+- [ ] Configure Electron with main and renderer process
+- [ ] Configure hot-reload for development
+- [ ] Basic Chakra UI setup with light/dark theme
+
+#### 1.2 Base Structure
+- [ ] Create folder structure
+- [ ] Configure TypeScript paths
+- [ ] Setup ESLint and Prettier
+- [ ] Configure IPC between main and renderer
+
+**Initial commands:**
+```bash
+npm init vite@latest marketmind -- --template react-ts
+cd marketmind
+npm install
+npm install electron electron-builder electron-updater
+npm install @chakra-ui/react @emotion/react @emotion/styled framer-motion
+npm install -D vite-plugin-electron concurrently
+```
+
+---
+
+### **PHASE 2: Unified Type System**
+*Estimated duration: 1 day*
+
+#### 2.1 Candle Data Types
+```typescript
+// shared/types/candle.ts
+export interface Candle {
+  timestamp: number;        // Unix timestamp in ms
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface CandleData {
+  symbol: string;           // Ex: "BTCUSDT", "AAPL"
+  interval: TimeInterval;   // Ex: "1m", "5m", "1h", "1d"
+  candles: Candle[];
+}
+
+export type TimeInterval = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1w' | '1M';
+```
+
+#### 2.2 Chart Types
+```typescript
+// shared/types/chart.ts
+export type ChartType = 'candlestick' | 'line';
+
+export interface MovingAverage {
+  period: number;           // Ex: 20, 50, 200
+  type: 'SMA' | 'EMA';     // Simple or Exponential
+  color: string;
+  visible: boolean;
+}
+
+export interface ChartConfig {
+  type: ChartType;
+  showVolume: boolean;
+  showGrid: boolean;
+  movingAverages: MovingAverage[];
+  colors: {
+    bullish: string;
+    bearish: string;
+    volume: string;
+    grid: string;
+    background: string;
+  };
+}
+```
+
+#### 2.3 AI Types
+```typescript
+// shared/types/ai.ts
+export interface AIProvider {
+  id: string;
+  name: string;
+  apiKey: string;
+  model: string;
+  enabled: boolean;
+}
+
+export interface AIMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  images?: string[];        // URLs or base64
+  timestamp: number;
+}
+
+export interface AIAnalysisRequest {
+  chartImage: string;       // base64
+  candles: Candle[];
+  news?: NewsArticle[];
+  context?: string;
+}
+
+export interface AIAnalysisResponse {
+  text: string;
+  confidence?: number;
+  signals?: TradingSignal[];
+}
+
+export type TradingSignal = 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell';
+```
+
+---
+
+### **PHASE 3: Chart Rendering System**
+*Estimated duration: 4-5 days*
+
+#### 3.1 Base Canvas Manager
+- [ ] Create `CanvasManager` class to manage 2D context
+- [ ] Coordinate system (data ↔ pixels conversion)
+- [ ] Zoom and pan system
+- [ ] Event detection (hover, click)
+
+#### 3.2 Grid Renderer
+- [ ] Render background grid
+- [ ] Price labels (Y axis)
+- [ ] Time labels (X axis)
+- [ ] Support lines responsive to zoom
+
+#### 3.3 Candlestick Renderer
+- [ ] Draw candles (rectangles + lines)
+- [ ] Dynamic colors (bullish/bearish)
+- [ ] Optimization for large datasets
+- [ ] Tooltip with candle information
+
+#### 3.4 Line Chart Renderer
+- [ ] Render line chart
+- [ ] Line smoothing (optional)
+- [ ] Fill below line (area)
+
+#### 3.5 Volume Renderer
+- [ ] Volume bars at the bottom
+- [ ] Colors based on candle direction
+- [ ] Independent price scale
+
+#### 3.6 Moving Averages
+- [ ] Calculate SMA (Simple Moving Average)
+- [ ] Calculate EMA (Exponential Moving Average)
+- [ ] Render multiple MAs
+- [ ] Visual configuration (color, thickness)
+
+#### 3.7 Chart Controls
+- [ ] Chart type selector
+- [ ] Volume toggle
+- [ ] Grid toggle
+- [ ] MA configuration
+- [ ] Time interval selector
+
+**Recommended Canvas libraries:**
+- **Option 1:** Pure Canvas API (maximum control)
+- **Option 2:** Konva.js (facilitates 2D object management)
+- **Option 3:** PixiJS (high performance, but more complex)
+
+**Recommendation:** Start with pure Canvas API + custom helper class for maximum control and performance.
+
+---
+
+## 🏗️ Component Architecture Guidelines
+
+### Component Logic Separation
+- **Always separate component logic into custom hooks** located in the same folder as the component
+- Each component should have a corresponding hook file (e.g., `ChartCanvas.tsx` → `useChartCanvas.ts`)
+- Hooks should contain all business logic, state management, and side effects
+- Components should focus only on rendering and UI concerns
+
+### Testing Requirements
+- **Always create unit tests for custom hooks** in the same folder
+- Test files should follow the naming convention: `useHookName.test.ts`
+- All hook logic must be covered by unit tests before component integration
+- Use `@testing-library/react-hooks` for testing custom hooks in isolation
+
+### Folder Structure Example
+```
+components/
+  Chart/
+    ChartCanvas.tsx          # Component (UI only)
+    useChartCanvas.ts        # Hook (logic)
+    useChartCanvas.test.ts   # Hook tests
+    ChartControls.tsx
+    useChartControls.ts
+    useChartControls.test.ts
+```
+
+### Benefits
+- **Testability**: Logic separated from UI is easier to test
+- **Reusability**: Hooks can be shared across components
+- **Maintainability**: Clear separation of concerns
+- **Type Safety**: Better TypeScript inference and autocomplete
+
+---
+
+### **PHASE 4: Market API Integration**
+*Estimated duration: 2-3 days*
+
+#### 4.1 Base Provider
+```typescript
+// services/market/providers/BaseMarketProvider.ts
+export abstract class BaseMarketProvider {
+  abstract fetchCandles(
+    symbol: string,
+    interval: TimeInterval,
+    limit?: number
+  ): Promise<CandleData>;
+  
+  abstract searchSymbols(query: string): Promise<Symbol[]>;
+  
+  abstract getSymbolInfo(symbol: string): Promise<SymbolInfo>;
+}
+```
+
+#### 4.2 Implement Providers
+- [ ] **Binance API** (crypto)
+  - WebSocket for real-time data
+  - REST for historical data
+- [ ] **Alpha Vantage** (stocks)
+  - Historical data
+  - Fundamental information
+- [ ] Local cache system
+
+#### 4.3 Market Data Service
+- [ ] Multiple provider manager
+- [ ] Fallback system
+- [ ] Rate limiting
+- [ ] Data cache
+
+---
+
+### **PHASE 5: AI System**
+*Estimated duration: 3-4 days*
+
+#### 5.1 Base AI Provider
+```typescript
+// services/ai/providers/BaseProvider.ts
+export abstract class BaseAIProvider {
+  protected apiKey: string;
+  protected model: string;
+  
+  abstract sendMessage(
+    messages: AIMessage[],
+    images?: string[]
+  ): Promise<AIAnalysisResponse>;
+  
+  abstract analyzeChart(
+    request: AIAnalysisRequest
+  ): Promise<AIAnalysisResponse>;
+}
+```
+
+#### 5.2 Implement Providers
+- [ ] **OpenAI (GPT-4 Vision)**
+  - Chart image analysis
+  - Conversation context
+- [ ] **Anthropic (Claude 3)**
+  - Multimodal analysis
+  - Data reasoning
+- [ ] **Google Gemini**
+  - Alternative with vision
+
+#### 5.3 AI Service Manager
+- [ ] Active provider selector
+- [ ] API key management
+- [ ] Conversation history
+- [ ] Optimized prompt system
+
+#### 5.4 Prompts Engineering
+```typescript
+const CHART_ANALYSIS_PROMPT = `
+You are an experienced technical analyst. Analyze the provided chart and:
+1. Identify candlestick patterns (doji, hammer, engulfing, etc)
+2. Evaluate trends (bullish, bearish, sideways)
+3. Identify supports and resistances
+4. Analyze indicators (moving averages, volume)
+5. Provide a trading signal: strong_buy, buy, hold, sell, strong_sell
+6. Justify your analysis based on technical analysis
+`;
+```
+
+---
+
+### **PHASE 6: AI Chat Interface**
+*Estimated duration: 2-3 days*
+
+#### 6.1 Chat Components
+- [ ] Responsive sidebar (collapsible)
+- [ ] Message list with auto-scroll
+- [ ] Markdown rendering
+- [ ] Inline image display
+- [ ] "Typing..." indicator
+- [ ] Messages with timestamp
+
+#### 6.2 AI Selector
+- [ ] Dropdown with available providers
+- [ ] Visual indicator of active provider
+- [ ] Quick settings (gear icon)
+
+#### 6.3 Message Input
+- [ ] Textarea with auto-resize
+- [ ] Send button
+- [ ] Keyboard shortcut (Enter)
+- [ ] Attach current chart screenshot
+- [ ] Quick analysis suggestions
+
+#### 6.4 Advanced Features
+- [ ] Export conversation
+- [ ] Clear history
+- [ ] Save favorite analyses
+
+---
+
+### **PHASE 7: Settings System**
+*Estimated duration: 2 days*
+
+#### 7.1 AI Settings
+- [ ] API key management
+- [ ] Model selection
+- [ ] Generation parameters (temperature, max tokens)
+- [ ] Connection test
+
+#### 7.2 Chart Settings
+- [ ] Color themes
+- [ ] Default MA settings
+- [ ] Display preferences
+
+#### 7.3 General Settings
+- [ ] Light/dark theme
+- [ ] Language (prepare i18n)
+- [ ] Cache preferences
+- [ ] Update settings
+
+#### 7.4 Persistence
+- [ ] Save configs to local file
+- [ ] API key encryption
+- [ ] Import/Export settings
+
+---
+
+### **PHASE 8: News Integration**
+*Estimated duration: 2 days*
+
+#### 8.1 News Service
+```typescript
+export interface NewsArticle {
+  id: string;
+  title: string;
+  summary: string;
+  url: string;
+  source: string;
+  publishedAt: number;
+  sentiment?: 'positive' | 'negative' | 'neutral';
+  relevance?: number;
+}
+```
+
+#### 8.2 News Providers
+- [ ] **NewsAPI** (general news)
+- [ ] **CryptoPanic** (crypto news)
+- [ ] **Finnhub** (stock news)
+- [ ] Filter by symbol/keyword
+
+#### 8.3 News Display
+- [ ] Recent news panel
+- [ ] Filter by relevance
+- [ ] Link to original article
+- [ ] Sentiment analysis (via AI)
+
+---
+
+### **PHASE 9: Build and Deploy System**
+*Estimated duration: 2-3 days*
+
+#### 9.1 Electron Builder Config
+```javascript
+// electron-builder.config.js
+module.exports = {
+  appId: 'com.marketmind.app',
+  productName: 'MarketMind',
+  directories: {
+    output: 'dist-electron',
+  },
+  files: [
+    'dist/**/*',
+    'node_modules/**/*',
+    'package.json',
+  ],
+  mac: {
+    target: ['dmg', 'zip'],
+    category: 'public.app-category.finance',
+    icon: 'build/icon.icns',
+    hardenedRuntime: true,
+    gatekeeperAssess: false,
+    entitlements: 'build/entitlements.mac.plist',
+  },
+  win: {
+    target: ['nsis', 'portable'],
+    icon: 'build/icon.ico',
+  },
+  nsis: {
+    oneClick: false,
+    allowToChangeInstallationDirectory: true,
+  },
+};
+```
+
+#### 9.2 Code Signing
+- [ ] Certificate for macOS (Apple Developer)
+- [ ] Certificate for Windows (Sectigo, DigiCert)
+- [ ] Configure automatic signing
+
+#### 9.3 Build Scripts
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:all": "electron-builder --mac --win",
+    "release": "npm run build:all"
+  }
+}
+```
+
+---
+
+### **PHASE 10: Auto-Update System**
+*Estimated duration: 2-3 days*
+
+#### 10.1 Electron Updater Setup
+```typescript
+// main/updater.ts
+import { autoUpdater } from 'electron-updater';
+import { app, dialog } from 'electron';
+
+export class UpdateManager {
+  private window: BrowserWindow;
+  
+  constructor(window: BrowserWindow) {
+    this.window = window;
+    this.setupAutoUpdater();
+  }
+  
+  private setupAutoUpdater() {
+    autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = true;
+    
+    autoUpdater.on('update-available', (info) => {
+      this.window.webContents.send('update-available', info);
+    });
+    
+    autoUpdater.on('update-downloaded', (info) => {
+      this.window.webContents.send('update-downloaded', info);
+    });
+  }
+  
+  checkForUpdates() {
+    autoUpdater.checkForUpdates();
+  }
+  
+  downloadUpdate() {
+    autoUpdater.downloadUpdate();
+  }
+  
+  installUpdate() {
+    autoUpdater.quitAndInstall();
+  }
+}
+```
+
+#### 10.2 Update Server
+**Options:**
+- [ ] **GitHub Releases** (free, simple)
+- [ ] **S3 + CloudFront** (full control)
+- [ ] **Vercel/Netlify** (for metadata)
+
+#### 10.3 Update Flow
+1. App opens → checks for updates automatically
+2. Update available → notifies user
+3. User accepts → download in background
+4. Download complete → requests restart
+5. App restarts → installs update
+
+#### 10.4 Update UI
+- [ ] Update available notification
+- [ ] Download progress bar
+- [ ] "Restart and Update" button
+- [ ] Option to postpone update
+- [ ] Release notes
+
+---
+
+### **PHASE 11: Optimizations and Performance**
+*Estimated duration: 2-3 days*
+
+#### 11.1 Canvas Performance
+- [ ] Render only visible area (viewport culling)
+- [ ] Debounce on zoom/pan
+- [ ] RequestAnimationFrame for animations
+- [ ] Web Workers for heavy calculations (MAs, indicators)
+- [ ] OffscreenCanvas (if needed)
+
+#### 11.2 Data Management
+- [ ] Large dataset virtualization
+- [ ] Lazy loading of historical candles
+- [ ] IndexedDB for persistent cache
+- [ ] Data compression
+
+#### 11.3 Memory Management
+- [ ] Cleanup unused canvas
+- [ ] Conscious garbage collection
+- [ ] Chat history limit
+
+---
+
+### **PHASE 12: Testing and Quality**
+*Estimated duration: 3-4 days*
+
+#### 12.1 Testing Setup
+```bash
+npm install -D vitest @testing-library/react @testing-library/jest-dom
+npm install -D playwright # for E2E tests
+```
+
+#### 12.2 Unit Tests
+- [ ] Canvas utilities
+- [ ] Indicator calculations (SMA, EMA)
+- [ ] Coordinate conversion
+- [ ] Formatters and validators
+
+#### 12.3 Integration Tests
+- [ ] Complete data loading flow
+- [ ] AI interaction
+- [ ] Update system
+
+#### 12.4 E2E Tests
+- [ ] App opening flow
+- [ ] Load chart
+- [ ] Chat with AI
+- [ ] Configure settings
+
+---
+
+### **PHASE 13: Documentation and Polish**
+*Estimated duration: 2 days*
+
+#### 13.1 Documentation
+- [ ] Complete README
+- [ ] Installation guide
+- [ ] Development guide
+- [ ] API documentation
+- [ ] Troubleshooting
+
+#### 13.2 UI/UX Polish
+- [ ] Smooth animations
+- [ ] Loading states
+- [ ] Visual error handling
+- [ ] First-time onboarding
+- [ ] Tooltips and hints
+
+#### 13.3 Accessibility
+- [ ] Keyboard support
+- [ ] ARIA labels
+- [ ] Adequate contrast
+- [ ] Interface zoom
+
+---
+
+## 🔧 Important Configurations
+
+### TypeScript Config (tsconfig.json)
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@renderer/*": ["./src/renderer/*"],
+      "@main/*": ["./src/main/*"]
+    }
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+```
+
+### Vite Config
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import electron from 'vite-plugin-electron';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    electron([
+      {
+        entry: 'src/main/index.ts',
+        onstart(options) {
+          options.startup();
+        },
+        vite: {
+          build: {
+            outDir: 'dist-electron/main',
+          },
+        },
+      },
+      {
+        entry: 'src/main/preload.ts',
+        onstart(options) {
+          options.reload();
+        },
+        vite: {
+          build: {
+            outDir: 'dist-electron/preload',
+          },
+        },
+      },
+    ]),
+  ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@shared': path.resolve(__dirname, './src/shared'),
+      '@renderer': path.resolve(__dirname, './src/renderer'),
+      '@main': path.resolve(__dirname, './src/main'),
+    },
+  },
+});
+```
+
+---
+
+## 📦 Main Dependencies
+
+### Production
+```json
+{
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "@chakra-ui/react": "^3.29.0",
+    "@emotion/react": "^11.14.0",
+    "electron-updater": "^6.6.2",
+    "zustand": "^5.0.8",
+    "axios": "^1.13.2",
+    "date-fns": "^4.1.0",
+    "konva": "^9.3.6",
+    "react-konva": "^18.2.10"
+  }
+}
+```
+
+### Development
+```json
+{
+  "devDependencies": {
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@types/node": "^24.10.1",
+    "@vitejs/plugin-react": "^5.1.1",
+    "electron": "^39.2.0",
+    "electron-builder": "^26.0.12",
+    "vite": "^7.2.2",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@vitest/ui": "^3.0.0",
+    "jsdom": "^25.0.1",
+    "eslint": "^9.39.1",
+    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/parser": "^8.46.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "prettier": "^3.6.2"
+  }
+}
+```
+
+---
+
+## 🎨 Design System (Chakra UI)
+
+### Base Theme
+```typescript
+// renderer/theme/index.ts
+import { extendTheme, type ThemeConfig } from '@chakra-ui/react';
+
+const config: ThemeConfig = {
+  initialColorMode: 'dark',
+  useSystemColorMode: true,
+};
+
+const colors = {
+  brand: {
+    50: '#e3f2fd',
+    100: '#bbdefb',
+    500: '#2196f3',
+    900: '#0d47a1',
+  },
+  chart: {
+    bullish: '#26a69a',
+    bearish: '#ef5350',
+    grid: '#2a2e39',
+    background: '#1e222d',
+  },
+};
+
+export const theme = extendTheme({ config, colors });
+```
+
+---
+
+## 🚀 Estimated Timeline
+
+| Phase | Description | Duration | Priority |
+|------|-----------|---------|------------|
+| 1 | Initial Setup | 1 day | 🔴 Critical |
+| 2 | Type System | 1 day | 🔴 Critical |
+| 3 | Chart Rendering | 4-5 days | 🔴 Critical |
+| 4 | Market API Integration | 2-3 days | 🔴 Critical |
+| 5 | AI System | 3-4 days | 🔴 Critical |
+| 6 | Chat Interface | 2-3 days | 🟡 High |
+| 7 | Settings System | 2 days | 🟡 High |
+| 8 | News Integration | 2 days | 🟢 Medium |
+| 9 | Build and Deploy | 2-3 days | 🔴 Critical |
+| 10 | Auto-Update | 2-3 days | 🟡 High |
+| 11 | Optimizations | 2-3 days | 🟡 High |
+| 12 | Testing | 3-4 days | 🟡 High |
+| 13 | Documentation and Polish | 2 days | 🟢 Medium |
+
+**Total estimated: 26-35 days** (assuming full-time work)
+
+---
+
+## 📝 MVP Checklist (Minimum Viable Product)
+
+### Essential for v1.0 Launch
+- [ ] Candlestick chart rendering
+- [ ] Line chart rendering
+- [ ] Volume chart
+- [ ] Grid and labels
+- [ ] At least 2 moving averages (SMA)
+- [ ] Integration with 1 market API (Binance for crypto)
+- [ ] Integration with 1 AI (OpenAI GPT-4 Vision)
+- [ ] Functional AI chat
+- [ ] AI selector
+- [ ] Basic settings (API keys)
+- [ ] Light and Dark mode
+- [ ] Installer for Mac and Windows
+- [ ] Working auto-update system
+
+### Nice to Have (v1.1+)
+- [ ] Multiple market APIs
+- [ ] Multiple AI providers
+- [ ] News integration
+- [ ] News sentiment analysis
+- [ ] EMA (Exponential Moving Average)
+- [ ] More technical indicators (RSI, MACD, Bollinger Bands)
+- [ ] Price alerts
+- [ ] Asset watchlist
+- [ ] Export charts as images
+- [ ] Custom themes
+
+---
+
+## 🔐 Security
+
+### API Keys
+- Store encrypted keys using Electron's `safeStorage`
+- Never expose keys in renderer process
+- Validate keys before saving
+
+### Updates
+- Verify package signatures
+- Mandatory HTTPS for update server
+- Checksum validation
+
+### Network
+- Rate limiting on API calls
+- Adequate request timeout
+- Retry with exponential backoff
+
+---
+
+## 🐛 Debug and Logging
+
+### Development
+```typescript
+// Activate DevTools
+if (process.env.NODE_ENV === 'development') {
+  mainWindow.webContents.openDevTools();
+}
+```
+
+### Logging
+```typescript
+// Use electron-log
+import log from 'electron-log';
+
+log.info('App started');
+log.error('Error loading data', error);
+```
+
+### Crash Reporting
+- Consider Sentry for production
+- Local logs for debugging
+
+---
+
+## 📊 Performance Metrics
+
+### Targets
+- **Initial load time:** < 2s
+- **Rendering 1000 candles:** < 100ms
+- **FPS during pan/zoom:** > 30fps
+- **AI response time:** < 10s
+- **Installer size:** < 150MB
+
+---
+
+## 🔄 Development Workflow
+
+### Branch Strategy
+```
+main (production)
+├── develop (development)
+    ├── feature/chart-rendering
+    ├── feature/ai-integration
+    └── feature/auto-update
+```
+
+### Semantic Commits
+```
+feat: add candlestick rendering
+fix: correct SMA calculation
+docs: update README with instructions
+perf: optimize canvas rendering
+```
+
+---
+
+## 📚 Resources and References
+
+### Market APIs
+- [Binance API Docs](https://binance-docs.github.io/apidocs/spot/en/)
+- [Alpha Vantage API](https://www.alphavantage.co/documentation/)
+- [Yahoo Finance API](https://www.yahoofinanceapi.com/)
+
+### AI Providers
+- [OpenAI Platform](https://platform.openai.com/docs)
+- [Anthropic Claude](https://docs.anthropic.com/)
+- [Google Gemini](https://ai.google.dev/)
+
+### Electron
+- [Electron Docs](https://www.electronjs.org/docs/latest)
+- [Electron Builder](https://www.electron.build/)
+- [Electron Updater](https://www.electron.build/auto-update)
+
+### Canvas/Charts
+- [HTML5 Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
+- [Konva.js](https://konvajs.org/)
+- [TradingView Charting Library](https://www.tradingview.com/charting-library/) (paid, but reference)
+
+---
+
+## 🎯 Immediate Next Steps
+
+### To start NOW:
+1. **Create project structure** (Phase 1)
+   ```bash
+   npm create vite@latest marketmind -- --template react-ts
+   cd marketmind
+   npm install
+   ```
+
+2. **Install core dependencies**
+   ```bash
+   npm install electron electron-builder electron-updater
+   npm install @chakra-ui/react @emotion/react @emotion/styled framer-motion
+   npm install -D vite-plugin-electron concurrently
+   ```
+
+3. **Create folder structure** as specified
+
+4. **Configure basic Electron** with main process and renderer
+
+5. **Setup Chakra UI** with light/dark theme
+
+6. **Create base types** (Phase 2)
+
+---
+
+## 💬 Instructions for New Chats
+
+When starting a new chat due to large context, provide:
+
+1. **This document** (IMPLEMENTATION_PLAN.md)
+2. **Current phase** you're working on
+3. **Files already created** (list the main ones)
+4. **Problems encountered** (if any)
+5. **Next desired task**
+
+### Example prompt:
+```
+I'm developing MarketMind according to IMPLEMENTATION_PLAN.md.
+Currently in PHASE 3 (Chart Rendering).
+Already implemented: [list files/features]
+Next step: implement the CandlestickRenderer.
+```
+
+---
+
+## ✅ Conclusion
+
+This plan provides a complete roadmap to develop MarketMind from scratch to launch. The project is ambitious but totally viable with the chosen technologies.
+
+**Recommendation:** Follow the phases sequentially, ensuring each phase is solid before moving forward. Prioritize the MVP before adding "nice to have" features.
+
+Good luck with development! 🚀
+
+---
+
+**Document Version:** 1.0  
+**Date:** November 2025  
+**Author:** Initial planning for MarketMind development
+

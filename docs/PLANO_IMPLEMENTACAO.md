@@ -53,71 +53,129 @@ marketmind/
 │   │   ├── components/            # Componentes React
 │   │   │   ├── Chart/             # Sistema de gráficos
 │   │   │   │   ├── ChartCanvas.tsx
+│   │   │   │   ├── useChartCanvas.ts
+│   │   │   │   ├── useChartCanvas.test.ts
 │   │   │   │   ├── CandlestickRenderer.tsx
+│   │   │   │   ├── useCandlestickRenderer.ts
+│   │   │   │   ├── useCandlestickRenderer.test.ts
 │   │   │   │   ├── LineRenderer.tsx
+│   │   │   │   ├── useLineRenderer.ts
+│   │   │   │   ├── useLineRenderer.test.ts
 │   │   │   │   ├── GridRenderer.tsx
+│   │   │   │   ├── useGridRenderer.ts
+│   │   │   │   ├── useGridRenderer.test.ts
 │   │   │   │   ├── VolumeRenderer.tsx
+│   │   │   │   ├── useVolumeRenderer.ts
+│   │   │   │   ├── useVolumeRenderer.test.ts
 │   │   │   │   ├── MovingAverageRenderer.tsx
-│   │   │   │   └── ChartControls.tsx
+│   │   │   │   ├── useMovingAverageRenderer.ts
+│   │   │   │   ├── useMovingAverageRenderer.test.ts
+│   │   │   │   ├── ChartControls.tsx
+│   │   │   │   ├── useChartControls.ts
+│   │   │   │   └── useChartControls.test.ts
 │   │   │   │
 │   │   │   ├── Sidebar/           # Chat com AI
 │   │   │   │   ├── ChatSidebar.tsx
+│   │   │   │   ├── useChatSidebar.ts
+│   │   │   │   ├── useChatSidebar.test.ts
 │   │   │   │   ├── MessageList.tsx
+│   │   │   │   ├── useMessageList.ts
+│   │   │   │   ├── useMessageList.test.ts
 │   │   │   │   ├── MessageInput.tsx
+│   │   │   │   ├── useMessageInput.ts
+│   │   │   │   ├── useMessageInput.test.ts
 │   │   │   │   ├── AISelector.tsx
-│   │   │   │   └── ImageRenderer.tsx
+│   │   │   │   ├── useAISelector.ts
+│   │   │   │   ├── useAISelector.test.ts
+│   │   │   │   ├── ImageRenderer.tsx
+│   │   │   │   ├── useImageRenderer.ts
+│   │   │   │   └── useImageRenderer.test.ts
 │   │   │   │
 │   │   │   ├── Settings/          # Configurações
 │   │   │   │   ├── SettingsModal.tsx
+│   │   │   │   ├── useSettingsModal.ts
+│   │   │   │   ├── useSettingsModal.test.ts
 │   │   │   │   ├── AIConfig.tsx
-│   │   │   │   └── GeneralSettings.tsx
+│   │   │   │   ├── useAIConfig.ts
+│   │   │   │   ├── useAIConfig.test.ts
+│   │   │   │   ├── GeneralSettings.tsx
+│   │   │   │   ├── useGeneralSettings.ts
+│   │   │   │   └── useGeneralSettings.test.ts
 │   │   │   │
 │   │   │   └── Layout/            # Layout components
 │   │   │       ├── Header.tsx
+│   │   │       ├── useHeader.ts
+│   │   │       ├── useHeader.test.ts
 │   │   │       ├── Toolbar.tsx
-│   │   │       └── MainLayout.tsx
+│   │   │       ├── useToolbar.ts
+│   │   │       ├── useToolbar.test.ts
+│   │   │       ├── MainLayout.tsx
+│   │   │       ├── useMainLayout.ts
+│   │   │       └── useMainLayout.test.ts
 │   │   │
 │   │   ├── services/              # Serviços
 │   │   │   ├── ai/                # Conectores de AI
 │   │   │   │   ├── AIService.ts
+│   │   │   │   ├── AIService.test.ts
 │   │   │   │   ├── providers/
 │   │   │   │   │   ├── OpenAIProvider.ts
+│   │   │   │   │   ├── OpenAIProvider.test.ts
 │   │   │   │   │   ├── AnthropicProvider.ts
+│   │   │   │   │   ├── AnthropicProvider.test.ts
 │   │   │   │   │   ├── GeminiProvider.ts
-│   │   │   │   │   └── BaseProvider.ts
+│   │   │   │   │   ├── GeminiProvider.test.ts
+│   │   │   │   │   ├── BaseProvider.ts
+│   │   │   │   │   └── BaseProvider.test.ts
 │   │   │   │   └── types.ts
 │   │   │   │
 │   │   │   ├── market/            # APIs de mercado
 │   │   │   │   ├── MarketDataService.ts
+│   │   │   │   ├── MarketDataService.test.ts
 │   │   │   │   ├── providers/
 │   │   │   │   │   ├── BinanceProvider.ts
+│   │   │   │   │   ├── BinanceProvider.test.ts
 │   │   │   │   │   ├── AlphaVantageProvider.ts
-│   │   │   │   │   └── BaseMarketProvider.ts
+│   │   │   │   │   ├── AlphaVantageProvider.test.ts
+│   │   │   │   │   ├── BaseMarketProvider.ts
+│   │   │   │   │   └── BaseMarketProvider.test.ts
 │   │   │   │   └── types.ts
 │   │   │   │
 │   │   │   └── news/              # APIs de notícias
 │   │   │       ├── NewsService.ts
+│   │   │       ├── NewsService.test.ts
 │   │   │       └── types.ts
 │   │   │
 │   │   ├── hooks/                 # Custom React hooks
 │   │   │   ├── useChart.ts
+│   │   │   ├── useChart.test.ts
 │   │   │   ├── useAI.ts
+│   │   │   ├── useAI.test.ts
 │   │   │   ├── useMarketData.ts
-│   │   │   └── useSettings.ts
+│   │   │   ├── useMarketData.test.ts
+│   │   │   ├── useSettings.ts
+│   │   │   └── useSettings.test.ts
 │   │   │
 │   │   ├── store/                 # State management
 │   │   │   ├── chartStore.ts
+│   │   │   ├── chartStore.test.ts
 │   │   │   ├── aiStore.ts
+│   │   │   ├── aiStore.test.ts
 │   │   │   ├── settingsStore.ts
+│   │   │   ├── settingsStore.test.ts
 │   │   │   └── index.ts
 │   │   │
 │   │   └── utils/                 # Utilitários
 │   │       ├── canvas/
 │   │       │   ├── CanvasManager.ts
+│   │       │   ├── CanvasManager.test.ts
 │   │       │   ├── drawingUtils.ts
-│   │       │   └── coordinateSystem.ts
+│   │       │   ├── drawingUtils.test.ts
+│   │       │   ├── coordinateSystem.ts
+│   │       │   └── coordinateSystem.test.ts
 │   │       ├── formatters.ts
-│   │       └── validators.ts
+│   │       ├── formatters.test.ts
+│   │       ├── validators.ts
+│   │       └── validators.test.ts
 │   │
 │   └── shared/                    # Código compartilhado
 │       ├── types/                 # Tipos TypeScript
@@ -130,9 +188,26 @@ marketmind/
 │           ├── chartConfig.ts
 │           └── appConfig.ts
 │
+├── docs/                          # Documentação
+│   ├── IMPLEMENTATION_PLAN.md     # Plano em inglês
+│   ├── PLANO_IMPLEMENTACAO.md     # Este arquivo
+│   ├── CHANGELOG.md               # Histórico de versões
+│   ├── AI_CONTEXT.md              # Contexto para desenvolvimento com AI
+│   ├── ESLINT.md                  # Guia de configuração ESLint
+│   └── GIT_COMMANDS.md            # Guia de workflow Git
+│
+├── scripts/                       # Scripts utilitários
+│   ├── install-hooks.sh
+│   ├── setup-github.sh
+│   └── README.md
+│
 ├── electron-builder.config.js     # Configuração do builder
 ├── package.json
 ├── tsconfig.json
+├── vite.config.ts
+├── vitest.config.ts              # Configuração do Vitest
+└── README.md
+```
 ├── vite.config.ts
 └── README.md
 ```
@@ -306,6 +381,40 @@ export type TradingSignal = 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sel
 - **Opção 3:** PixiJS (alta performance, mas mais complexo)
 
 **Recomendação:** Começar com Canvas API puro + classe helper customizada para máximo controle e performance.
+
+---
+
+## 🏗️ Diretrizes de Arquitetura de Componentes
+
+### Separação da Lógica de Componentes
+- **Sempre separe a lógica dos componentes em hooks customizados** localizados na mesma pasta do componente
+- Cada componente deve ter um arquivo de hook correspondente (ex: `ChartCanvas.tsx` → `useChartCanvas.ts`)
+- Hooks devem conter toda a lógica de negócio, gerenciamento de estado e efeitos colaterais
+- Componentes devem focar apenas em renderização e questões de UI
+
+### Requisitos de Testes
+- **Sempre crie testes unitários para hooks customizados** na mesma pasta
+- Arquivos de teste devem seguir a convenção: `useHookName.test.ts`
+- Toda a lógica dos hooks deve ser coberta por testes unitários antes da integração com componentes
+- Use `@testing-library/react-hooks` para testar hooks customizados de forma isolada
+
+### Exemplo de Estrutura de Pastas
+```
+components/
+  Chart/
+    ChartCanvas.tsx          # Componente (apenas UI)
+    useChartCanvas.ts        # Hook (lógica)
+    useChartCanvas.test.ts   # Testes do hook
+    ChartControls.tsx
+    useChartControls.ts
+    useChartControls.test.ts
+```
+
+### Benefícios
+- **Testabilidade**: Lógica separada da UI é mais fácil de testar
+- **Reusabilidade**: Hooks podem ser compartilhados entre componentes
+- **Manutenibilidade**: Separação clara de responsabilidades
+- **Type Safety**: Melhor inferência TypeScript e autocomplete
 
 ---
 
@@ -773,16 +882,14 @@ export default defineConfig({
 ```json
 {
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "@chakra-ui/react": "^2.8.2",
-    "@emotion/react": "^11.11.4",
-    "@emotion/styled": "^11.11.5",
-    "framer-motion": "^11.3.0",
-    "electron-updater": "^6.2.1",
-    "zustand": "^4.5.2",
-    "axios": "^1.7.2",
-    "date-fns": "^3.6.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "@chakra-ui/react": "^3.29.0",
+    "@emotion/react": "^11.14.0",
+    "electron-updater": "^6.6.2",
+    "zustand": "^5.0.8",
+    "axios": "^1.13.2",
+    "date-fns": "^4.1.0",
     "konva": "^9.3.6",
     "react-konva": "^18.2.10"
   }
@@ -793,19 +900,29 @@ export default defineConfig({
 ```json
 {
   "devDependencies": {
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@types/node": "^20.14.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "electron": "^31.0.0",
-    "electron-builder": "^24.13.3",
-    "vite": "^5.3.1",
-    "vite-plugin-electron": "^0.28.7",
-    "typescript": "^5.5.2",
-    "vitest": "^1.6.0",
-    "@testing-library/react": "^16.0.0",
-    "eslint": "^8.57.0",
-    "prettier": "^3.3.2"
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@types/node": "^24.10.1",
+    "@vitejs/plugin-react": "^5.1.1",
+    "electron": "^39.2.0",
+    "electron-builder": "^26.0.12",
+    "vite": "^7.2.2",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@vitest/ui": "^3.0.0",
+    "jsdom": "^25.0.1",
+    "eslint": "^9.39.1",
+    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/parser": "^8.46.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "prettier": "^3.6.2"
   }
 }
 ```
