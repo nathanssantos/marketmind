@@ -37,6 +37,7 @@ export const useChartCanvas = ({
   const [viewport, setViewport] = useState<Viewport>(initialViewport);
   const [isPanning, setIsPanning] = useState(false);
   const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
+  const [, forceUpdate] = useState({});
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -53,11 +54,21 @@ export const useChartCanvas = ({
 
     const handleResize = (): void => {
       manager.resize();
+      forceUpdate({});
     };
+
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+
+    if (canvasRef.current.parentElement) {
+      resizeObserver.observe(canvasRef.current.parentElement);
+    }
 
     window.addEventListener('resize', handleResize);
 
     return () => {
+      resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
     };
   }, [candles, viewport]);

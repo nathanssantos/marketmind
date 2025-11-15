@@ -63,11 +63,27 @@ export const ChartCanvas = ({
   useEffect(() => {
     if (!manager) return;
 
-    manager.clear();
-    renderGrid();
-    renderVolume();
-    renderCandles();
-  }, [manager, renderGrid, renderVolume, renderCandles]);
+    const render = (): void => {
+      manager.clear();
+      renderGrid();
+      renderVolume();
+      renderCandles();
+    };
+
+    render();
+
+    const resizeObserver = new ResizeObserver(() => {
+      render();
+    });
+
+    if (canvasRef.current?.parentElement) {
+      resizeObserver.observe(canvasRef.current.parentElement);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [manager, renderGrid, renderVolume, renderCandles, canvasRef]);
 
   return (
     <Box

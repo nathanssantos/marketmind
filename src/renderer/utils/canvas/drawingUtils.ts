@@ -92,13 +92,16 @@ export const setupCanvas = (
   
   if (!ctx) return null;
 
-  const rect = canvas.getBoundingClientRect();
+  const parent = canvas.parentElement;
+  if (!parent) return ctx;
+
+  const parentRect = parent.getBoundingClientRect();
   
-  canvas.width = rect.width * devicePixelRatio;
-  canvas.height = rect.height * devicePixelRatio;
+  canvas.width = parentRect.width * devicePixelRatio;
+  canvas.height = parentRect.height * devicePixelRatio;
   
-  canvas.style.width = `${rect.width}px`;
-  canvas.style.height = `${rect.height}px`;
+  canvas.style.width = `${parentRect.width}px`;
+  canvas.style.height = `${parentRect.height}px`;
   
   ctx.scale(devicePixelRatio, devicePixelRatio);
   
