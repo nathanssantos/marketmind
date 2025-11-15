@@ -34,7 +34,7 @@ export const useGridRenderer = ({
 
     if (!ctx || !dimensions || !bounds) return;
 
-    const { width, chartHeight, height } = dimensions;
+    const { width, chartHeight } = dimensions;
     const { minPrice, maxPrice } = bounds;
     const candles = manager.getVisibleCandles();
 
@@ -99,7 +99,7 @@ export const useGridRenderer = ({
             ctx,
             timeLabel,
             x,
-            height - CHART_CONFIG.CANVAS_PADDING_BOTTOM + 15,
+            chartHeight + 10,
             labelColor,
             CHART_CONFIG.AXIS_LABEL_FONT,
             'center',

@@ -28,6 +28,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VolumeRenderer for rendering volume bars
 - Sample data generator for testing
 - Working chart visualization with candlesticks, grid, and volume
+- Horizontal (time) and vertical (price) scales with formatting
+- ResizeObserver for responsive canvas
+
+### Fixed
+- Canvas now fully responsive to container resize
+- Eliminated flickering during chart interactions
+- Time scale labels now display correctly
+- Manager instance reuse to prevent unnecessary re-renders
+- Optimized render cycle for smooth interactions
 
 ### Configuration
 - Vite 7.2.2 for build tooling

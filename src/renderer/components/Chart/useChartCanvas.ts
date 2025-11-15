@@ -37,24 +37,28 @@ export const useChartCanvas = ({
   const [viewport, setViewport] = useState<Viewport>(initialViewport);
   const [isPanning, setIsPanning] = useState(false);
   const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
-  const [, forceUpdate] = useState({});
 
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    const manager = new CanvasManager(
-      canvasRef.current,
-      viewport,
-      CHART_CONFIG.CANVAS_PADDING,
-      CHART_CONFIG.VOLUME_HEIGHT_RATIO,
-    );
-
-    manager.setCandles(candles);
-    managerRef.current = manager;
+    if (!managerRef.current) {
+      const manager = new CanvasManager(
+        canvasRef.current,
+        viewport,
+        CHART_CONFIG.CANVAS_PADDING,
+        CHART_CONFIG.VOLUME_HEIGHT_RATIO,
+      );
+      manager.setCandles(candles);
+      managerRef.current = manager;
+    } else {
+      managerRef.current.setCandles(candles);
+      managerRef.current.setViewport(viewport);
+    }
 
     const handleResize = (): void => {
-      manager.resize();
-      forceUpdate({});
+      if (managerRef.current) {
+        managerRef.current.resize();
+      }
     };
 
     const resizeObserver = new ResizeObserver(() => {

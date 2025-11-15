@@ -71,19 +71,7 @@ export const ChartCanvas = ({
     };
 
     render();
-
-    const resizeObserver = new ResizeObserver(() => {
-      render();
-    });
-
-    if (canvasRef.current?.parentElement) {
-      resizeObserver.observe(canvasRef.current.parentElement);
-    }
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [manager, renderGrid, renderVolume, renderCandles, canvasRef]);
+  }, [manager, renderGrid, renderVolume, renderCandles]);
 
   return (
     <Box
