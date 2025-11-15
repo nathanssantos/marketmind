@@ -8,6 +8,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **OpenAI Models Documentation**: Complete guide for GPT-4o and GPT-4o Mini
+  - OPENAI_MODELS.md with specifications and pricing
+  - Best practices and optimization tips
+  - Code examples and configuration guide
+  - Comparison with other providers
+  - Common issues and troubleshooting
+- **Google Gemini Integration**: Full support for Google's Gemini AI models
+  - GeminiProvider with 4 models:
+    - Gemini 2.0 Flash Exp (FREE) - Experimental model
+    - Gemini 1.5 Pro ($1.25/$5) - Best quality, 2M context window
+    - Gemini 1.5 Flash ($0.075/$0.30) - Fast and balanced
+    - Gemini 1.5 Flash-8B ($0.0375/$0.15) - Cheapest paid option
+  - Vision API with inline data support
+  - Chat history management
+  - Multimodal capabilities (text, images, video)
+  - Complete documentation in GEMINI_MODELS.md
+  - FREE tier available with Gemini 2.0 Flash Exp
+  - SDK: @google/generative-ai
+- **AI System Integration**: Multi-provider AI architecture (95% complete)
+  - BaseAIProvider abstract class with centralized prompt management
+  - OpenAIProvider with GPT-4o and GPT-4o Mini models
+  - ClaudeProvider with 6 models:
+    - Claude 4.5 Sonnet ($3/$15) - Best balance
+    - Claude 4.5 Haiku ($1/$5) - Fastest
+    - Claude 4.1 Opus ($15/$75) - Most capable
+    - Claude 3.7 Sonnet ($3/$15)
+    - Claude 3.5 Sonnet ($3/$15)
+    - Claude 3.5 Haiku ($0.80/$4) - Cheapest option
+  - AIService with provider factory pattern
+  - aiStore (Zustand) for conversation and settings management
+  - useAI hook with message tracking and model versioning
+  - AITest component with full configuration UI
+  - Environment variable support (.env with VITE_ prefix)
+  - API key auto-fill from environment variables
+  - Model selector with pricing information
+  - Configurable temperature (0-2) and max tokens (256-64000)
+  - "Change Settings" without clearing chat history
+  - Model tracking in conversation messages
+  - Successfully tested with Claude 4.5 Sonnet API
+  - Comprehensive documentation (CLAUDE_MODELS.md, API_KEYS_SECURITY.md)
+  - Secure API key handling with .gitignore protection
+  - System prompt management via prompts.json
+  - Signal parsing for trading signals (STRONG_BUY/BUY/HOLD/SELL/STRONG_SELL)
+
+### Changed
+- **Code Refactoring**: AITest component optimization
+  - Replaced all nested ternary operators with useMemo
+  - Computed values: apiKeyEnvVar, defaultModel, apiKeyPlaceholder, providerDisplayName, pricingInfo, modelOptions
+  - Cleaner, more maintainable code structure
+  - Better performance with memoized values
+  - Removed all code comments for cleaner codebase
+- **AI Provider Support**: Expanded from 2 to 3 providers
+  - Total of 12 AI models now available
+  - 2 GPT models (OpenAI)
+  - 6 Claude models (Anthropic)
+  - 4 Gemini models (Google)
+- **Environment Variables**: Added VITE_GEMINI_API_KEY
+  - Updated .env.example with Gemini instructions
+  - Auto-fill support for all three providers
+
+### Dependencies
+- Added @google/generative-ai for Gemini integration
+
 - **WebSocket Real-Time Updates**: Live candle updates via Binance WebSocket
   - subscribeToUpdates method in MarketDataService
   - useRealtimeCandle hook for React integration
@@ -47,8 +110,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added error message display on API failures
 
 ### In Progress
-- AI integration (OpenAI GPT-4 Vision)
-- Unit tests for hooks and utilities
+- AI chat interface sidebar
+- Chart analysis integration with AI
+- Full conversation UI
+
+### Dependencies
+- Added @anthropic-ai/sdk v0.69.0 for Claude integration
+- Added @google/generative-ai for Gemini integration
 
 ## [0.5.0] - 2025-11-15
 

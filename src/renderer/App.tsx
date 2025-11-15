@@ -1,7 +1,8 @@
-import { Box, ChakraProvider, Stack, Text } from '@chakra-ui/react';
+import { Box, Button, ChakraProvider, Stack, Text } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { Candle } from '@shared/types';
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { AITest } from './components/AITest';
 import { AdvancedControls, type AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
 import { ChartControls } from './components/Chart/ChartControls';
@@ -57,6 +58,7 @@ const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
 ];
 
 function App(): ReactElement {
+  const [showAITest, setShowAITest] = useState(false);
   const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
@@ -145,14 +147,24 @@ function App(): ReactElement {
     <ChakraProvider value={system}>
       <PinnedControlsProvider>
         <Box w="100vw" h="100vh" bg="gray.900" position="relative">
-          {/* Symbol Selector */}
-          <Box position="absolute" top={4} right={4} zIndex={10}>
+          {/* AI Test Button */}
+          <Box position="absolute" top={4} right={4} zIndex={10} display="flex" gap={2}>
+            <Button
+              colorScheme="purple"
+              size="sm"
+              onClick={() => setShowAITest(!showAITest)}
+            >
+              {showAITest ? 'Hide AI Test' : '🤖 Test AI'}
+            </Button>
+            
             <SymbolSelector
               marketService={marketService}
               value={symbol}
               onChange={setSymbol}
             />
           </Box>
+
+          {/* Symbol Selector removed from here */}
 
           {/* Controls Container */}
           <Stack 
@@ -221,6 +233,44 @@ function App(): ReactElement {
               movingAverages={movingAverages}
               advancedConfig={debouncedAdvancedConfig}
             />
+          )}
+
+          {/* AI Test Modal */}
+          {showAITest && (
+            <Box
+              position="fixed"
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
+              bg="blackAlpha.800"
+              zIndex={1000}
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Box
+                bg="gray.900"
+                borderRadius="lg"
+                p={8}
+                maxW="900px"
+                maxH="90vh"
+                overflow="auto"
+                position="relative"
+              >
+                <Button
+                  position="absolute"
+                  top={4}
+                  right={4}
+                  size="sm"
+                  colorScheme="red"
+                  onClick={() => setShowAITest(false)}
+                >
+                  ✕
+                </Button>
+                <AITest />
+              </Box>
+            </Box>
           )}
         </Box>
       </PinnedControlsProvider>
