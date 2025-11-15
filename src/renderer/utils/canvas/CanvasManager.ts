@@ -1,0 +1,180 @@
+import type { Candle, Viewport } from '@shared/types';
+import {
+  calculateBounds,
+  clampViewport,
+  indexToX,
+  priceToY,
+  volumeToHeight,
+  xToIndex,
+  yToPrice,
+  type Bounds,
+  type Dimensions,
+} from './coordinateSystem';
+import { clearCanvas, setupCanvas } from './drawingUtils';
+
+export class CanvasManager {
+  private canvas: HTMLCanvasElement;
+  private ctx: CanvasRenderingContext2D | null = null;
+  private candles: Candle[] = [];
+  private viewport: Viewport;
+  private bounds: Bounds | null = null;
+  private dimensions: Dimensions | null = null;
+  private padding: number;
+  private volumeHeightRatio: number;
+
+  constructor(
+    canvas: HTMLCanvasElement,
+    viewport: Viewport,
+    padding: number = 40,
+    volumeHeightRatio: number = 0.25,
+  ) {
+    this.canvas = canvas;
+    this.viewport = viewport;
+    this.padding = padding;
+    this.volumeHeightRatio = volumeHeightRatio;
+    this.initialize();
+  }
+
+  private initialize(): void {
+    this.ctx = setupCanvas(this.canvas);
+    this.updateDimensions();
+  }
+
+  private updateDimensions(): void {
+    const rect = this.canvas.getBoundingClientRect();
+    const volumeHeight = rect.height * this.volumeHeightRatio;
+    const chartHeight = rect.height - volumeHeight;
+
+    this.dimensions = {
+      width: rect.width,
+      height: rect.height,
+      chartHeight,
+      volumeHeight,
+    };
+  }
+
+  public setCandles(candles: Candle[]): void {
+    this.candles = candles;
+    this.updateBounds();
+  }
+
+  public getCandles(): Candle[] {
+    return this.candles;
+  }
+
+  public setViewport(viewport: Viewport): void {
+    this.viewport = clampViewport(viewport, this.candles.length);
+    this.updateBounds();
+  }
+
+  public getViewport(): Viewport {
+    return this.viewport;
+  }
+
+  private updateBounds(): void {
+    if (this.candles.length === 0) {
+      this.bounds = null;
+      return;
+    }
+
+    this.bounds = calculateBounds(this.candles, this.viewport);
+  }
+
+  public getBounds(): Bounds | null {
+    return this.bounds;
+  }
+
+  public getDimensions(): Dimensions | null {
+    return this.dimensions;
+  }
+
+  public getContext(): CanvasRenderingContext2D | null {
+    return this.ctx;
+  }
+
+  public clear(): void {
+    if (!this.ctx || !this.dimensions) return;
+    clearCanvas(this.ctx, this.dimensions.width, this.dimensions.height);
+  }
+
+  public resize(): void {
+    this.initialize();
+    this.updateBounds();
+  }
+
+  public priceToY(price: number): number {
+    if (!this.bounds || !this.dimensions) return 0;
+    return priceToY(price, this.bounds, this.dimensions, this.padding);
+  }
+
+  public yToPrice(y: number): number {
+    if (!this.bounds || !this.dimensions) return 0;
+    return yToPrice(y, this.bounds, this.dimensions, this.padding);
+  }
+
+  public volumeToHeight(volume: number): number {
+    if (!this.bounds || !this.dimensions) return 0;
+    return volumeToHeight(volume, this.bounds, this.dimensions);
+  }
+
+  public indexToX(index: number): number {
+    if (!this.dimensions) return 0;
+    return indexToX(index, this.viewport, this.dimensions.width);
+  }
+
+  public xToIndex(x: number): number {
+    if (!this.dimensions) return 0;
+    return xToIndex(x, this.viewport, this.dimensions.width);
+  }
+
+  public getVisibleCandles(): Candle[] {
+    const start = Math.floor(this.viewport.start);
+    const end = Math.min(Math.ceil(this.viewport.end), this.candles.length);
+    return this.candles.slice(start, end);
+  }
+
+  public zoom(delta: number, centerX?: number): void {
+    if (!this.dimensions) return;
+
+    const zoomFactor = 1 + delta * 0.1;
+    const range = this.viewport.end - this.viewport.start;
+    const newRange = range / zoomFactor;
+
+    if (centerX !== undefined) {
+      const centerIndex = this.xToIndex(centerX);
+      const centerRatio = (centerIndex - this.viewport.start) / range;
+
+      this.viewport.start = centerIndex - newRange * centerRatio;
+      this.viewport.end = centerIndex + newRange * (1 - centerRatio);
+    } else {
+      const center = (this.viewport.start + this.viewport.end) / 2;
+      this.viewport.start = center - newRange / 2;
+      this.viewport.end = center + newRange / 2;
+    }
+
+    this.viewport = clampViewport(this.viewport, this.candles.length);
+    this.updateBounds();
+  }
+
+  public pan(deltaX: number): void {
+    if (!this.dimensions) return;
+
+    const range = this.viewport.end - this.viewport.start;
+    const indexDelta = (deltaX / this.dimensions.width) * range;
+
+    this.viewport.start -= indexDelta;
+    this.viewport.end -= indexDelta;
+
+    this.viewport = clampViewport(this.viewport, this.candles.length);
+    this.updateBounds();
+  }
+
+  public getCandleAtX(x: number): Candle | null {
+    const index = Math.floor(this.xToIndex(x));
+    return this.candles[index] ?? null;
+  }
+
+  public getPadding(): number {
+    return this.padding;
+  }
+}

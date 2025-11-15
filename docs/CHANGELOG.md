@@ -11,14 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial project setup with TypeScript, Electron, React 19, and Vite 7
 - Chakra UI v3 integration with theme system
 - Project structure with main process, renderer process, and shared code
-- Type system for candles and chart configurations
+- Type system for candles, charts, and AI
 - Constants for chart configuration (colors, dimensions)
 - Electron preload script with IPC bridge
 - Git hooks for branch protection
 - ESLint and Prettier configuration with strict rules
-- Comprehensive documentation (AI_CONTEXT.md, PLANO_IMPLEMENTACAO.md)
+- Comprehensive documentation (AI_CONTEXT.md, IMPLEMENTATION_PLAN.md)
 - GitHub repository setup scripts
 - Automated dependency updates
+- Canvas rendering system with CanvasManager
+- Coordinate system utilities (price to Y, X to index conversions)
+- Drawing utilities (rectangles, lines, text, candles, grid)
+- ChartCanvas component with zoom and pan support
+- CandlestickRenderer for rendering candlestick charts
+- GridRenderer for rendering grid and price labels
+- VolumeRenderer for rendering volume bars
+- Sample data generator for testing
+- Working chart visualization with candlesticks, grid, and volume
 
 ### Configuration
 - Vite 7.2.2 for build tooling
