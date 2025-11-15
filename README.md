@@ -4,7 +4,9 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.11.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.11.1-blue.svg)
+![Tests](https://img.shields.io/badge/tests-181%20passing-brightgreen.svg)
+![Coverage](https://img.shields.io/badge/coverage-47.92%25-yellow.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 
@@ -113,7 +115,7 @@ npm run dev
 
 ## 🧪 Testing
 
-The project has comprehensive unit tests with 97.26% coverage:
+The project has a comprehensive test infrastructure with 181 passing tests:
 
 ```bash
 # Run all tests
@@ -126,11 +128,26 @@ npm run test:ui
 npm run test:coverage
 ```
 
-**Test Coverage:** ✅
-- **150 tests** passing
-- **97.26%** overall coverage
-- **69 tests** for utility functions
-- **81 tests** for React hooks
+**Test Coverage:** 🚧 In Progress (Phase 11 - 72% complete)
+- **181 tests** passing
+- **47.92%** overall coverage (target: 80%+)
+- **69 tests** for utility functions (95.97% coverage ✅)
+- **112 tests** for React hooks (74.24% coverage ✅)
+- **0 tests** for services (pending)
+- **0 tests** for components (pending)
+
+**Completed:**
+- ✅ Test infrastructure (Vitest 4.0.9 + React Testing Library)
+- ✅ Utility tests (formatters, moving averages, coordinate system)
+- ✅ Hook tests (useDebounce, useLocalStorage, useChartData, useMarketData, useSymbolSearch, useRealtimeCandle, useAutoUpdate, useNews, useAI)
+- ✅ Dependency injection refactoring for testability
+
+**Pending:**
+- ⏳ Service layer tests (AIService, NewsService, MarketDataService)
+- ⏳ Component tests (Chart, Settings, Chat)
+- ⏳ IPC handler tests
+- ⏳ Integration tests
+- ⏳ Performance tests
 
 See [Testing Documentation](./docs/IMPLEMENTATION_PLAN.md#phase-11-testing--quality-assurance-) for details.
 
@@ -213,7 +230,7 @@ This project is in active development. Contributions are welcome!
 
 See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the detailed project roadmap.
 
-### Current Status (v0.10.0)
+### Current Status (v0.11.1)
 
 **Phase 1: Initial Setup** ✅ COMPLETED (100%)
 - [x] Vite + Electron + React + TypeScript configuration
@@ -309,7 +326,27 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] Build scripts (build:mac, build:win, build:all)
 - [x] Complete build documentation
 
-### MVP (v1.0) - Target Q1 2026
+**Phase 10: Auto-Update System** ✅ COMPLETED (100%)
+- [x] UpdateManager service
+- [x] GitHub releases integration
+- [x] UpdateNotification component
+- [x] Download progress tracking
+- [x] Settings integration
+- [x] IPC communication
+- [x] Complete documentation (AUTO_UPDATE.md)
+- [x] ESM/CommonJS compatibility fixes
+
+**Phase 11: Testing & Quality Assurance** 🚧 IN PROGRESS (72%)
+- [x] Test infrastructure setup (Vitest 4.0.9)
+- [x] Utility function tests (69 tests, 95.97% coverage)
+- [x] React hook tests (112 tests, 74.24% coverage)
+- [x] Dependency injection refactoring
+- [ ] Service layer tests (pending)
+- [ ] Component tests (pending)
+- [ ] Integration tests (pending)
+- [ ] Performance tests (pending)
+
+### MVP (v1.0) - Target Q1 2025
 - [x] Candlestick chart rendering
 - [x] Line chart rendering
 - [x] Volume chart
@@ -327,9 +364,10 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] Light and Dark mode
 - [x] News integration
 - [x] Build system (macOS and Windows installers)
-- [ ] Auto-update system
+- [x] Auto-update system
+- [ ] Test coverage 80%+ (current: 47.92%)
 
-**MVP Progress:** ~95% Complete
+**MVP Progress:** ~92% Complete (waiting for test coverage target)
 
 ### Future (v1.1+)
 - [ ] Settings modal with API key encryption
