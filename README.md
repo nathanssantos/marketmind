@@ -4,7 +4,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 
@@ -35,13 +35,20 @@
 - 🔄 **API Fallback**: Automatic failover to CoinGecko if primary provider fails
 - 💾 **Data Caching**: Smart caching system to reduce API calls
 
+**Recently Added (v0.6.0):**
+- 🤖 **AI Chat Interface**: Full chat system with 10 AI models (OpenAI, Claude, Gemini)
+- 💬 **Interactive Sidebar**: Resizable chat sidebar (300-800px) with markdown rendering
+- 📊 **Chart Data Integration**: Sends structured data (100 candles + statistics) instead of images
+- 🎨 **Theme System**: Enhanced dark mode with semantic tokens
+- ⚙️ **AI Selector**: Provider and model selection with pricing info
+- 📝 **Message History**: Clean UI with auto-scroll and loading states
+
 **Planned:**
-- 🤖 **AI Analysis**: Integration with multiple AI providers (OpenAI, Anthropic, Google Gemini)
 - 📰 **News Analysis**: Cross-analysis of technical analysis with news sentiment
-- 💬 **Interactive Chat**: Chat with AI about charts in real-time
 - 📊 **Technical Indicators**: RSI, MACD, Bollinger Bands, and more
 - 🔄 **Auto-Update**: Automatic update system
 - 📡 **WebSocket**: Real-time candle updates via WebSocket
+- ⚙️ **Settings Modal**: API key encryption and conversation export/import
 
 ## 🛠 Technology Stack
 
@@ -162,15 +169,15 @@ This project is in active development. Contributions are welcome!
 
 See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the detailed project roadmap.
 
-### Current Status (v0.5.0)
+### Current Status (v0.6.0)
 
-**Phase 1: Initial Setup** ✅ COMPLETED
+**Phase 1: Initial Setup** ✅ COMPLETED (100%)
 - [x] Vite + Electron + React + TypeScript configuration
 - [x] Chakra UI with light/dark theme
 - [x] Project structure and TypeScript paths
 - [x] ESLint and Prettier setup
 
-**Phase 2: Type System** ✅ COMPLETED
+**Phase 2: Type System** ✅ COMPLETED (100%)
 - [x] Candle data types
 - [x] Chart configuration types
 - [x] AI integration types
@@ -204,6 +211,32 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] 8 popular symbols pre-loaded (BTCUSDT default)
 - [x] Loading and error states
 
+**Phase 5: AI System** ✅ COMPLETED (100%)
+- [x] BaseAIProvider abstract class
+- [x] OpenAIProvider (2 models: GPT-4o, GPT-4o Mini)
+- [x] ClaudeProvider (3 models: Sonnet 4.5, Haiku 4.5, Opus 4.1)
+- [x] GeminiProvider (4 models: 2.0 Flash Exp FREE, 1.5 Pro/Flash/Flash-8B)
+- [x] AIService with provider factory
+- [x] aiStore with Zustand
+- [x] useAI hook with model tracking
+- [x] Environment variable management
+- [x] Complete documentation (3 model guides)
+- [x] 10 total AI models available
+- [x] FREE tier option (Gemini)
+
+**Phase 6: AI Chat Interface** ✅ COMPLETED (100%)
+- [x] MainLayout with resizable sidebar (300-800px)
+- [x] Header with AI selector, theme toggle, settings
+- [x] ChatSidebar with open/close functionality
+- [x] MessageList with markdown rendering
+- [x] MessageInput with chart data integration
+- [x] ChartContext for data sharing
+- [x] Chart data formatting (100 candles + statistics)
+- [x] Theme system with semantic tokens
+- [x] UI polish (padding, colors, backgrounds)
+- [x] Correct Claude API model IDs
+- [x] Clean separation (data in API calls only)
+
 ### MVP (v1.0) - Target Q1 2026
 - [x] Candlestick chart rendering
 - [x] Line chart rendering
@@ -215,26 +248,29 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] Tooltip system
 - [x] Market API integration (Binance)
 - [x] Symbol selector
-- [ ] AI integration (OpenAI GPT-4 Vision)
-- [ ] Functional AI chat
-- [ ] Basic settings panel
+- [x] AI integration (10 models: OpenAI, Claude, Gemini)
+- [x] Functional AI chat with markdown
+- [x] Chart data integration with AI
+- [ ] Settings modal with API key encryption
 - [x] Light and Dark mode
 - [ ] Installers (Mac/Windows)
 - [ ] Auto-update system
 
-**MVP Progress:** ~60% Complete
+**MVP Progress:** ~88% Complete
 
 ### Future (v1.1+)
+- [ ] Settings modal with API key encryption
+- [ ] Conversation export/import
 - [ ] WebSocket for real-time updates
 - [ ] More technical indicators (RSI, MACD, Bollinger Bands)
 - [ ] Additional market APIs (stocks via Alpha Vantage)
-- [ ] Multiple AI providers
 - [ ] News integration
 - [ ] Price alerts
 - [ ] Asset watchlist
 - [ ] Symbol favorites and recents
-- [ ] Chart export
+- [ ] Chart export as images
 - [ ] Multi-language support
+- [ ] Unit tests for all components
 
 ## 📄 License
 

@@ -7,6 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+- Settings modal with API key encryption
+- Conversation export/import functionality
+- WebSocket integration for real-time market data
+- Unit tests for all components and hooks
+
+## [0.6.0] - 2025-11-15
+
+### Added
+- **AI Chat Interface**: Complete chat system with AI integration
+  - MainLayout component with fixed header (60px) and resizable sidebar (300-800px)
+  - Header with AI selector, theme toggle, and settings icon
+  - ChatSidebar component with open/close functionality
+  - MessageList with auto-scroll, markdown rendering (react-markdown)
+  - MessageInput with textarea and send button
+  - Avatar.Root for user/assistant message icons
+  - Loading spinner and empty state UI
+  - Floating open button when sidebar is closed
+- **Chart Data Integration**: Structured data instead of images
+  - ChartContext for sharing chart data across components
+  - useChartData hook to update context
+  - formatChartDataContext function with 100 candles
+  - Detailed statistics (highs, lows, price range, volume metrics)
+  - Price action analysis (bullish/bearish counts, strong moves)
+  - Trend detection
+  - Clean separation: data sent to API but not displayed in messages
+- **AI Provider Management**: 10 models accessible
+  - Provider selector with 3 options (OpenAI, Anthropic, Google)
+  - Model selector with pricing information
+  - Status badge showing active configuration
+  - Settings management without clearing history
+  - Model tracking in conversation messages
+  - Removed 3 older Claude models (kept 3 latest: 4.5 Sonnet, 4.5 Haiku, 4.1 Opus)
+- **Theme System**: Enhanced dark mode with semantic tokens
+  - Semantic tokens (bg.panel: gray.950, bg.surface: gray.900, bg.muted: gray.800)
+  - Global CSS for default padding (px: 3 for inputs, px: 2 for badges)
+  - Select dropdown background fix (bg="bg.panel")
+  - Vertical padding for chat textarea (py={2})
+  - Light/dark mode toggle in header
+- **Context API**: Global state management
+  - ChartContext provider wrapping entire app
+  - PinnedControlsProvider for control panel state
+  - useChartContext hook for accessing chart data
+  - ColorModeContext for theme management
+
+### Changed
+- **App Structure**: Restructured with proper provider nesting
+  - App wrapper component with ChartProvider
+  - AppContent component inside providers (fixes React context error)
+  - useChartData hook call moved inside provider scope
+- **Claude API Integration**: Fixed model identifiers
+  - Updated from aliases to full version strings with dates
+  - claude-sonnet-4-5-20250929 (instead of claude-4-5-sonnet-20250929)
+  - claude-haiku-4-5-20251001 (instead of claude-4-5-haiku-20251001)
+  - claude-opus-4-1-20250805 (instead of claude-4-1-opus-20250805)
+- **AI Message Handling**: Clean UI implementation
+  - Messages stored without chart data context
+  - Chart data added only to API calls
+  - User sees clean message history
+  - AI receives full context (100 candles + statistics)
+- **Layout**: Removed AITest component
+  - Replaced with production chat interface
+  - SymbolSelector moved to Header
+  - Chart area now integrated with sidebar
+
+### Fixed
+- React context error when calling hooks outside provider
+- Select dropdown transparency issue in dark mode
+- Input/select padding consistency
+- Claude API authentication with correct model IDs
+
+### Dependencies
+- Added react-markdown@10.1.0 for message rendering
+- Updated Chakra UI components to use v3 API (Select.Positioner, Avatar.Root)
+
+### Technical
+- ChartData interface with Candle[], MovingAverageConfig[], timeframe, symbol
+- formatChartDataContext returns structured analysis text
+- DEFAULT_MODELS map for automatic model selection
+- localStorage persistence for sidebar width
+- Mouse drag handlers for sidebar resize
+
+## [0.5.1] - 2025-11-15
+
 ### Added
 - **OpenAI Models Documentation**: Complete guide for GPT-4o and GPT-4o Mini
   - OPENAI_MODELS.md with specifications and pricing
