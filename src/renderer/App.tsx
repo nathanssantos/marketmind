@@ -1,22 +1,22 @@
 import { Box, ChakraProvider, Stack, Text } from '@chakra-ui/react';
-import { useMemo, useState, useCallback, type ReactElement } from 'react';
+import { CHART_CONFIG } from '@shared/constants/chartConfig';
+import type { Candle } from '@shared/types';
+import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { AdvancedControls, type AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
 import { ChartControls } from './components/Chart/ChartControls';
-import { AdvancedControls, type AdvancedControlsConfig } from './components/Chart/AdvancedControls';
-import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
 import type { Timeframe } from './components/Chart/TimeframeSelector';
+import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { SymbolSelector } from './components/SymbolSelector';
 import { useDebounce } from './hooks/useDebounce';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useMarketData } from './hooks/useMarketData';
 import { useRealtimeCandle } from './hooks/useRealtimeCandle';
-import { system } from './theme';
-import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { MarketDataService } from './services/market/MarketDataService';
 import { BinanceProvider } from './services/market/providers/BinanceProvider';
 import { CoinGeckoProvider } from './services/market/providers/CoinGeckoProvider';
-import type { Candle } from '@shared/types';
+import { system } from './theme';
 
 const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
   {

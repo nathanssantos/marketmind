@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
 import type { Symbol } from '@shared/types';
+import { useCallback, useEffect, useState } from 'react';
 import { MarketDataService } from '../services/market/MarketDataService';
 
 interface UseSymbolSearchOptions {

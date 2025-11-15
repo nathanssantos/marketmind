@@ -1,12 +1,12 @@
-import axios, { AxiosInstance } from 'axios';
+import type { Candle, CandleData, TimeInterval } from '@shared/types';
 import {
-  BaseMarketProvider,
-  type MarketProviderConfig,
-  type FetchCandlesOptions,
-  type Symbol,
-  type SymbolInfo,
+    BaseMarketProvider,
+    type FetchCandlesOptions,
+    type MarketProviderConfig,
+    type Symbol,
+    type SymbolInfo,
 } from '@shared/types';
-import type { CandleData, Candle, TimeInterval } from '@shared/types';
+import axios, { AxiosInstance } from 'axios';
 
 interface CoinGeckoMarketChart {
   prices: number[][];

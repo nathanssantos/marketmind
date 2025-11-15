@@ -1,12 +1,12 @@
 import {
-  Box,
-  Input,
-  Text,
-  Spinner,
-  HStack,
-  VStack,
+    Box,
+    HStack,
+    Input,
+    Spinner,
+    Text,
+    VStack,
 } from '@chakra-ui/react';
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSymbolSearch } from '../hooks/useSymbolSearch';
 import type { MarketDataService } from '../services/market/MarketDataService';
 
