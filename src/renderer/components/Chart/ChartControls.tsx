@@ -2,10 +2,10 @@ import { Box, Switch as ChakraSwitch, HStack, IconButton, Stack, Text } from '@c
 import type { ReactElement } from 'react';
 import {
     HiOutlineChartBar,
-    HiOutlinePresentationChartLine,
     HiOutlineTrendingUp,
     HiOutlineViewGrid
 } from 'react-icons/hi';
+import { MdCandlestickChart, MdShowChart } from 'react-icons/md';
 import { TooltipWrapper } from '../ui/Tooltip';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import { ControlPanel } from './ControlPanel';
@@ -107,7 +107,7 @@ export const ChartControls = ({
               variant={chartType === 'candlestick' ? 'solid' : 'outline'}
               color={chartType === 'candlestick' ? undefined : 'gray.400'}
             >
-              <HiOutlineChartBar />
+              <MdCandlestickChart />
             </IconButton>
           </TooltipWrapper>
           <TooltipWrapper label="Line Chart">
@@ -119,7 +119,7 @@ export const ChartControls = ({
               variant={chartType === 'line' ? 'solid' : 'outline'}
               color={chartType === 'line' ? undefined : 'gray.400'}
             >
-              <HiOutlinePresentationChartLine />
+              <MdShowChart />
             </IconButton>
           </TooltipWrapper>
         </HStack>
