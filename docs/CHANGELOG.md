@@ -8,9 +8,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### In Progress
+- Market API integration (Binance)
+- AI integration (OpenAI GPT-4 Vision)
 - Unit tests for hooks and utilities
-- Time labels on X axis
-- Tooltip on hover functionality
+
+## [0.4.0] - 2025-11-15
+
+### Added
+- **Advanced Controls Panel**: 9 configurable chart settings
+  - Right margin adjustment
+  - Volume height ratio
+  - Candle spacing and wick width
+  - Grid line width
+  - Padding controls (top, bottom, left, right)
+- **Pin Functionality**: Pin favorite controls for quick access
+- **Quick Settings Section**: Dynamic section showing pinned controls
+- **Settings Persistence**: All configurations saved with localStorage
+- **TimeframeSelector Component**: 9 timeframe options (1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w, 1M)
+- **Enhanced Moving Averages**: Added MA-100 and MA-200 (total: 5 MAs)
+- **Smart Tooltip**: OHLCV data on hover with intelligent positioning
+  - Hides when hovering over price/time scales
+  - Auto-positions to stay within chart bounds
+- **Dynamic Cursors**: Context-aware cursor feedback
+  - `ns-resize` cursor on price scale for vertical pan/zoom
+  - `crosshair` cursor on chart area
+- **Reusable Components**:
+  - `ControlPanel`: Collapsible panel container
+  - `PinnableControl`: Control with hover-activated pin button
+  - `ControlPanelGroup`: Stack container for multiple panels
+- **Custom Hooks**:
+  - `useDebounce`: Generic debounce hook (300ms delay)
+  - `useLocalStorage`: localStorage wrapper matching useState API
+- **Context API**: `PinnedControlsContext` for global pin state management
+
+### Changed
+- Chart controls now use switches instead of icon buttons
+- All icons replaced with HeroIcons from react-icons
+- Text selection disabled globally for better UX
+- Panel layout changed to vertical stack (flex column)
+- CanvasManager enhanced with dynamic rightMargin support
+- All chart renderers now accept optional advanced config props
+
+### Fixed
+- Right margin now properly pushes candles left instead of hiding them
+- Moving averages rendering optimized with debounced inputs
+- Tooltip positioning improved to prevent overflow
+- Performance optimizations with debounced state updates
+
+### Technical
+- Global CSS: `userSelect: 'none'` for all text
+- Stack layout for control panels
+- Advanced configuration passed to all renderers
+- Debouncing prevents excessive re-renders on input changes
 
 ## [0.3.0] - 2025-11-14
 

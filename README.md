@@ -4,7 +4,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 
@@ -18,9 +18,17 @@
 
 **Currently Implemented:**
 - 📈 **Candlestick Charts**: High-performance Canvas rendering with zoom and pan
+- 📊 **Line Charts**: Alternative visualization with area fill
 - 📊 **Volume Visualization**: Volume bars synchronized with candlesticks
-- 🎨 **Grid System**: Dynamic grid with price labels
-- 🖱️ **Interactive**: Mouse wheel zoom and drag to pan
+- 📉 **Moving Averages**: MA-9, MA-20, MA-50, MA-100, MA-200 (configurable)
+- 🎨 **Grid System**: Dynamic grid with price and time labels
+- 🖱️ **Interactive Controls**: Advanced chart settings panel with pin functionality
+- ⚙️ **Advanced Settings**: 9 configurable parameters (margins, spacing, grid, etc.)
+- 💾 **Persistent Settings**: All configurations saved with localStorage
+- 🎯 **Smart Tooltip**: Hover to see OHLCV data with intelligent positioning
+- ⏱️ **Timeframe Selector**: 9 timeframes from 1 minute to 1 month
+- 🖱️ **Pan & Zoom**: Mouse wheel zoom, drag to pan (horizontal and vertical)
+- 🎨 **Dynamic Cursors**: Context-aware cursor feedback
 - 🌓 **Dark/Light Themes**: Full Chakra UI theme support
 
 **Planned:**
@@ -33,11 +41,12 @@
 ## 🛠 Technology Stack
 
 - **TypeScript** - End-to-end typing
-- **Electron** - Cross-platform desktop framework
+- **Electron 39** - Cross-platform desktop framework
 - **React 19** - User interface
-- **Chakra UI** - Components and design system
+- **Chakra UI v3** - Components and design system
 - **Canvas API** - High-performance chart rendering
-- **Vite** - Optimized build tool
+- **react-icons** - HeroIcons for UI elements
+- **Vite 7** - Optimized build tool
 
 ## 📋 Prerequisites
 
@@ -142,7 +151,7 @@ This project is in active development. Contributions are welcome!
 
 See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the detailed project roadmap.
 
-### Current Status (v0.1.0)
+### Current Status (v0.4.0)
 
 **Phase 1: Initial Setup** ✅ COMPLETED
 - [x] Vite + Electron + React + TypeScript configuration
@@ -155,30 +164,41 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] Chart configuration types
 - [x] AI integration types
 
-**Phase 3: Chart Rendering** 🚧 IN PROGRESS (60%)
+**Phase 3: Chart Rendering** ✅ COMPLETED (100%)
 - [x] CanvasManager with zoom/pan system
 - [x] Coordinate system utilities
 - [x] Candlestick renderer
-- [x] Grid renderer with price labels
+- [x] Grid renderer with price and time labels
 - [x] Volume renderer
-- [ ] Line chart renderer
-- [ ] Moving averages (SMA/EMA)
-- [ ] Chart controls UI
-- [ ] Unit tests
+- [x] Line chart renderer
+- [x] Moving averages (MA-9, MA-20, MA-50, MA-100, MA-200)
+- [x] Chart controls UI with switches
+- [x] Advanced settings panel
+- [x] Pin functionality for quick access
+- [x] Settings persistence (localStorage)
+- [x] Tooltip with OHLCV data
+- [x] Timeframe selector
+- [x] Dynamic cursors and UX improvements
+- [x] Debounced inputs for performance
 
 ### MVP (v1.0) - Target Q1 2026
 - [x] Candlestick chart rendering
-- [ ] Line chart rendering
+- [x] Line chart rendering
 - [x] Volume chart
-- [x] Grid and labels (partial)
-- [ ] At least 2 moving averages (SMA)
+- [x] Grid and labels
+- [x] 5 moving averages (MA-9, MA-20, MA-50, MA-100, MA-200)
+- [x] Advanced chart controls
+- [x] Settings persistence
+- [x] Tooltip system
 - [ ] Market API integration (Binance)
 - [ ] AI integration (OpenAI GPT-4 Vision)
 - [ ] Functional AI chat
-- [ ] Basic settings
+- [ ] Basic settings panel
 - [x] Light and Dark mode
 - [ ] Installers (Mac/Windows)
 - [ ] Auto-update system
+
+**MVP Progress:** ~55% Complete
 
 ### Future (v1.1+)
 - [ ] More technical indicators (RSI, MACD, Bollinger Bands)
