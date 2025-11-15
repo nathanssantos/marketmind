@@ -101,4 +101,5 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
   self.postMessage(response);
 };
 
-export {};
+export { };
+

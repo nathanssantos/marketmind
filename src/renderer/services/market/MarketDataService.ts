@@ -1,12 +1,12 @@
 import type {
-  BaseMarketProvider,
-  FetchCandlesOptions,
-  Symbol,
-  SymbolInfo,
-  MarketDataError,
-  WebSocketSubscription,
+    BaseMarketProvider,
+    CandleData,
+    FetchCandlesOptions,
+    MarketDataError,
+    Symbol,
+    SymbolInfo,
+    WebSocketSubscription,
 } from '@shared/types';
-import type { CandleData } from '@shared/types';
 import { indexedDBCache } from '../cache/IndexedDBCache';
 
 export interface MarketDataServiceConfig {
