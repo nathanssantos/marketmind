@@ -33,7 +33,6 @@ export const useAI = () => {
     try {
       const config: AIServiceConfig = {
         provider: settings.provider,
-        apiKey: settings.apiKey,
       };
 
       if (settings.model) config.model = settings.model;
@@ -48,7 +47,7 @@ export const useAI = () => {
   }, [settings]);
 
   const isConfigured = useMemo(() => {
-    return settings !== null && settings.apiKey.length > 0;
+    return settings !== null;
   }, [settings]);
 
   const sendMessage = useCallback(

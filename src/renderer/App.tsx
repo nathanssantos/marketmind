@@ -169,8 +169,7 @@ function AppContent(): ReactElement {
   });
 
   return (
-    <MainLayout onSettingsClick={() => setShowAITest(!showAITest)}>
-      {/* Symbol Selector - Top Right */}
+    <MainLayout>
       <Box position="absolute" top={4} right={4} zIndex={10}>
         <SymbolSelector
           marketService={marketService}

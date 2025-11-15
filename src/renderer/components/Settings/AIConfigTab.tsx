@@ -1,5 +1,6 @@
 import { Field } from '@/renderer/components/ui/field';
 import { Slider } from '@/renderer/components/ui/slider';
+import { useSecureStorage } from '@/renderer/hooks/useSecureStorage';
 import { useAIStore } from '@/renderer/store';
 import {
     Box,
@@ -8,11 +9,12 @@ import {
     NativeSelectField,
     NativeSelectRoot,
     Separator,
+    Spinner,
     Stack,
     Text,
 } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { HiInformationCircle } from 'react-icons/hi2';
 
 const PROVIDER_MODELS: Record<AIProviderType, Array<{ value: string; label: string; pricing: string }>> = {
@@ -41,12 +43,26 @@ const DEFAULT_MODELS: Record<AIProviderType, string> = {
 
 export const AIConfigTab = () => {
   const { settings, updateSettings } = useAIStore();
+  const { 
+    apiKey, 
+    isLoading: isLoadingApiKey, 
+    error: apiKeyError,
+    isEncryptionAvailable,
+    setApiKey: setSecureApiKey,
+  } = useSecureStorage();
+
+  const [localApiKey, setLocalApiKey] = useState('');
 
   const provider = settings?.provider || 'gemini';
-  const apiKey = settings?.apiKey || '';
   const model = settings?.model || DEFAULT_MODELS[provider];
   const temperature = settings?.temperature ?? 0.7;
   const maxTokens = settings?.maxTokens ?? 4096;
+
+  useEffect(() => {
+    if (apiKey && !isLoadingApiKey) {
+      setLocalApiKey(apiKey);
+    }
+  }, [apiKey, isLoadingApiKey]);
 
   const apiKeyEnvVar = useMemo(() => {
     const envVars: Record<AIProviderType, string> = {
@@ -68,7 +84,6 @@ export const AIConfigTab = () => {
     updateSettings({
       provider: newProvider,
       model: DEFAULT_MODELS[newProvider],
-      apiKey: import.meta.env[`VITE_${newProvider.toUpperCase()}_API_KEY`] as string | undefined || apiKey,
     });
   };
 
@@ -76,8 +91,14 @@ export const AIConfigTab = () => {
     updateSettings({ model: newModel });
   };
 
-  const handleApiKeyChange = (newApiKey: string) => {
-    updateSettings({ apiKey: newApiKey });
+  const handleApiKeyChange = async (newApiKey: string) => {
+    setLocalApiKey(newApiKey);
+    
+    try {
+      await setSecureApiKey(newApiKey);
+    } catch (error) {
+      console.error('Failed to save API key:', error);
+    }
   };
 
   const handleTemperatureChange = (value: number[]) => {
@@ -133,13 +154,30 @@ export const AIConfigTab = () => {
 
       <Box>
         <Field label="API Key" required helperText={envApiKey ? `Using ${apiKeyEnvVar} from .env` : undefined}>
-          <Input
-            type="password"
-            value={apiKey}
-            onChange={(e) => handleApiKeyChange(e.target.value)}
-            placeholder={envApiKey || `Enter your ${provider} API key`}
-          />
+          {isLoadingApiKey ? (
+            <Flex align="center" gap={2} p={2}>
+              <Spinner size="sm" />
+              <Text fontSize="sm" color="fg.muted">Loading API key...</Text>
+            </Flex>
+          ) : (
+            <Input
+              type="password"
+              value={localApiKey}
+              onChange={(e) => handleApiKeyChange(e.target.value)}
+              placeholder={envApiKey || `Enter your ${provider} API key`}
+            />
+          )}
         </Field>
+        {apiKeyError && (
+          <Text fontSize="sm" color="red.500" mt={2}>
+            {apiKeyError}
+          </Text>
+        )}
+        {!isEncryptionAvailable && (
+          <Text fontSize="sm" color="orange.500" mt={2}>
+            Warning: Encryption not available on this platform
+          </Text>
+        )}
       </Box>
 
       <Separator />

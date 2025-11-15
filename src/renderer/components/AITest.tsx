@@ -126,7 +126,6 @@ export const AITest = () => {
 
     configure({
       provider,
-      apiKey: apiKey.trim(),
       model,
       temperature,
       maxTokens,
@@ -141,7 +140,6 @@ export const AITest = () => {
 
     updateConfig({
       provider,
-      apiKey: apiKey.trim(),
       model,
       temperature,
       maxTokens,
