@@ -1,16 +1,20 @@
-import { Box, ChakraProvider, Stack } from '@chakra-ui/react';
-import type { ReactElement } from 'react';
+import { Box, ChakraProvider, Stack, Text } from '@chakra-ui/react';
+import { useMemo, type ReactElement } from 'react';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
 import { ChartControls } from './components/Chart/ChartControls';
 import { AdvancedControls, type AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
 import type { Timeframe } from './components/Chart/TimeframeSelector';
+import { SymbolSelector } from './components/SymbolSelector';
 import { useDebounce } from './hooks/useDebounce';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { useMarketData } from './hooks/useMarketData';
 import { system } from './theme';
-import { SAMPLE_CANDLES } from './utils/sampleData';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
+import { MarketDataService } from './services/market/MarketDataService';
+import { BinanceProvider } from './services/market/providers/BinanceProvider';
+import { CoinGeckoProvider } from './services/market/providers/CoinGeckoProvider';
 
 const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
   {
@@ -51,6 +55,7 @@ const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
 ];
 
 function App(): ReactElement {
+  const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
   const [chartType, setChartType] = useLocalStorage<'candlestick' | 'line'>('marketmind:chartType', 'candlestick');
@@ -71,13 +76,40 @@ function App(): ReactElement {
     paddingRight: CHART_CONFIG.CANVAS_PADDING_RIGHT,
   });
 
-  // Debounce advanced config changes to avoid excessive re-renders
+  const marketService = useMemo(() => {
+    const binance = new BinanceProvider();
+    const coingecko = new CoinGeckoProvider();
+    
+    return new MarketDataService({
+      primaryProvider: binance,
+      fallbackProviders: [coingecko],
+      enableCache: true,
+      cacheDuration: 60 * 1000,
+    });
+  }, []);
+
+  const { data: marketData, loading, error } = useMarketData(marketService, {
+    symbol,
+    interval: timeframe,
+    limit: 500,
+    enabled: true,
+  });
+
   const debouncedAdvancedConfig = useDebounce(advancedConfig, 300);
 
   return (
     <ChakraProvider value={system}>
       <PinnedControlsProvider>
         <Box w="100vw" h="100vh" bg="gray.900" position="relative">
+          {/* Symbol Selector */}
+          <Box position="absolute" top={4} right={4} zIndex={10}>
+            <SymbolSelector
+              marketService={marketService}
+              value={symbol}
+              onChange={setSymbol}
+            />
+          </Box>
+
           {/* Controls Container */}
           <Stack 
             position="absolute" 
@@ -106,16 +138,46 @@ function App(): ReactElement {
             />
           </Stack>
           
-          <ChartCanvas 
-            candles={SAMPLE_CANDLES} 
-            width="100%"
-            height="100%"
-            showVolume={showVolume}
-            showGrid={showGrid}
-            chartType={chartType}
-            movingAverages={movingAverages}
-            advancedConfig={debouncedAdvancedConfig}
-          />
+          {loading && (
+            <Box 
+              position="absolute" 
+              top="50%" 
+              left="50%" 
+              transform="translate(-50%, -50%)"
+              color="white"
+              fontSize="xl"
+            >
+              <Text>Loading market data...</Text>
+            </Box>
+          )}
+
+          {error && (
+            <Box 
+              position="absolute" 
+              top="50%" 
+              left="50%" 
+              transform="translate(-50%, -50%)"
+              color="red.400"
+              fontSize="xl"
+              textAlign="center"
+              maxW="500px"
+            >
+              <Text>Error loading data: {error.message}</Text>
+            </Box>
+          )}
+
+          {marketData && (
+            <ChartCanvas 
+              candles={marketData.candles} 
+              width="100%"
+              height="100%"
+              showVolume={showVolume}
+              showGrid={showGrid}
+              chartType={chartType}
+              movingAverages={movingAverages}
+              advancedConfig={debouncedAdvancedConfig}
+            />
+          )}
         </Box>
       </PinnedControlsProvider>
     </ChakraProvider>

@@ -7,8 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Market Data API Integration**: Generic provider architecture
+  - BaseMarketProvider abstract class for extensibility
+  - BinanceProvider for real cryptocurrency data (free, no API key)
+  - CoinGeckoProvider as fallback (free, no API key)
+  - MarketDataService with automatic fallback and caching
+  - useMarketData hook for React components
+  - Real-time candlestick data from Binance API
+  - Support for all timeframes (1m to 1M)
+  - Error handling with automatic provider fallback
+  - Response caching (60s duration)
+  - Loading and error states in UI
+  - Documentation in services/market/README.md
+- **Symbol Selector**: Asset selection component
+  - SymbolSelector component with search functionality
+  - useSymbolSearch hook with debouncing
+  - 8 popular cryptocurrencies pre-loaded (BTC, ETH, BNB, SOL, ADA, XRP, DOGE, DOT)
+  - BTCUSDT as default symbol
+  - Real-time symbol search via Binance API
+  - Dropdown with click-outside detection
+  - Symbol persistence in localStorage
+  - Clean UI with Chakra components
+
+### Changed
+- Chart now displays real market data instead of sample data
+- App.tsx integrated with MarketDataService
+- Symbol can be changed via SymbolSelector in top-right corner
+- Added loading spinner during data fetch
+- Added error message display on API failures
+
 ### In Progress
-- Market API integration (Binance)
+- WebSocket integration for real-time updates
 - AI integration (OpenAI GPT-4 Vision)
 - Unit tests for hooks and utilities
 
