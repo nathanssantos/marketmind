@@ -38,7 +38,7 @@ This project uses ESLint, Prettier, and TypeScript to maintain code quality and 
 - **Early returns**: Prefer over nested ifs
 
 ### React
-- **No React in scope**: Not needed in React 18+
+- **No React in scope**: Not needed in React 19
 - **Hooks rules**: Follow hooks conventions
 - **Component exports**: Warn about non-component exports
 

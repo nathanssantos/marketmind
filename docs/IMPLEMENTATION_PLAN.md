@@ -14,7 +14,7 @@ Create an "AI consultant" that assists traders and investors in technical chart 
 ### Core
 - **TypeScript** (end-to-end with unified typing)
 - **Electron** (latest stable version)
-- **React 18+** (UI Framework)
+- **React 19** (UI Framework)
 
 ### UI/UX
 - **Chakra UI** (components with light/dark mode support)

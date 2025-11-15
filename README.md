@@ -1,6 +1,6 @@
 # 📊 MarketMind
 
-> Um consultor de IA para análise técnica de gráficos financeiros
+> An AI consultant for technical analysis of financial charts
 
 <div align="center">
 
@@ -10,82 +10,82 @@
 
 </div>
 
-## 🎯 Sobre o Projeto
+## 🎯 About the Project
 
-**MarketMind** é uma aplicação desktop desenvolvida em Electron que combina visualização avançada de gráficos financeiros (candlesticks) com análise de inteligência artificial. O objetivo é fornecer insights sobre criptomoedas, ações e outros ativos negociáveis, auxiliando traders e investidores na tomada de decisão.
+**MarketMind** is a desktop application developed in Electron that combines advanced financial chart visualization (candlesticks) with artificial intelligence analysis. The goal is to provide insights on cryptocurrencies, stocks, and other tradable assets, assisting traders and investors in decision-making.
 
-### Principais Funcionalidades
+### Key Features
 
-- 📈 **Gráficos de Alta Performance**: Renderização em Canvas com suporte a candlesticks e gráficos de linha
-- 🤖 **Análise com IA**: Integração com múltiplos provedores de IA (OpenAI, Anthropic, Google Gemini)
-- 📰 **Análise de Notícias**: Cruzamento de análise técnica com sentimento de notícias
-- 💬 **Chat Interativo**: Converse com a IA sobre os gráficos em tempo real
-- 📊 **Indicadores Técnicos**: Médias móveis (SMA/EMA), volume e muito mais
-- 🌓 **Temas**: Suporte completo a modo claro e escuro
-- 🔄 **Auto-Update**: Sistema automático de atualizações
+- 📈 **High-Performance Charts**: Canvas rendering with support for candlesticks and line charts
+- 🤖 **AI Analysis**: Integration with multiple AI providers (OpenAI, Anthropic, Google Gemini)
+- 📰 **News Analysis**: Cross-analysis of technical analysis with news sentiment
+- 💬 **Interactive Chat**: Chat with AI about charts in real-time
+- 📊 **Technical Indicators**: Moving averages (SMA/EMA), volume, and more
+- 🌓 **Themes**: Full support for light and dark mode
+- 🔄 **Auto-Update**: Automatic update system
 
-## 🛠 Stack Tecnológica
+## 🛠 Technology Stack
 
-- **TypeScript** - Tipagem end-to-end
-- **Electron** - Framework desktop multiplataforma
-- **React 18** - Interface do usuário
-- **Chakra UI** - Componentes e sistema de design
-- **Canvas API** - Renderização de gráficos de alta performance
-- **Vite** - Build tool otimizado
+- **TypeScript** - End-to-end typing
+- **Electron** - Cross-platform desktop framework
+- **React 19** - User interface
+- **Chakra UI** - Components and design system
+- **Canvas API** - High-performance chart rendering
+- **Vite** - Optimized build tool
 
-## 📋 Pré-requisitos
+## 📋 Prerequisites
 
 - Node.js >= 18.x
-- npm >= 9.x (ou pnpm/yarn)
-- macOS 10.15+ ou Windows 10+
+- npm >= 9.x (or pnpm/yarn)
+- macOS 10.15+ or Windows 10+
 
-## 🚀 Instalação para Desenvolvimento
+## 🚀 Development Setup
 
-### 1. Clone o repositório
+### 1. Clone the repository
 
 ```bash
-git clone https://github.com/SEU_USUARIO/marketmind.git
+git clone https://github.com/YOUR_USERNAME/marketmind.git
 cd marketmind
 ```
 
-### 2. Instale as dependências
+### 2. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Configure as variáveis de ambiente
+### 3. Configure environment variables
 
-Crie um arquivo `.env` na raiz do projeto:
+Create a `.env` file in the project root:
 
 ```env
-# APIs de Mercado (opcional - pode configurar via interface)
-BINANCE_API_KEY=sua_key_aqui
-ALPHA_VANTAGE_API_KEY=sua_key_aqui
+# Market APIs (optional - can be configured via interface)
+BINANCE_API_KEY=your_key_here
+ALPHA_VANTAGE_API_KEY=your_key_here
 
-# APIs de IA (opcional - pode configurar via interface)
-OPENAI_API_KEY=sua_key_aqui
-ANTHROPIC_API_KEY=sua_key_aqui
-GOOGLE_API_KEY=sua_key_aqui
+# AI APIs (optional - can be configured via interface)
+OPENAI_API_KEY=your_key_here
+ANTHROPIC_API_KEY=your_key_here
+GOOGLE_API_KEY=your_key_here
 ```
 
-> ⚠️ **Nota**: As API keys também podem ser configuradas diretamente pela interface do aplicativo.
+> ⚠️ **Note**: API keys can also be configured directly through the application interface.
 
-### 4. Execute em modo desenvolvimento
+### 4. Run in development mode
 
 ```bash
 npm run dev
 ```
 
-## 📦 Build para Produção
+## 📦 Production Build
 
-### Build para sua plataforma atual
+### Build for your current platform
 
 ```bash
 npm run build
 ```
 
-### Build específico por plataforma
+### Platform-specific builds
 
 ```bash
 # macOS
@@ -94,85 +94,86 @@ npm run build:mac
 # Windows
 npm run build:win
 
-# Ambos
+# Both
 npm run build:all
 ```
 
-Os instaladores estarão em `dist-electron/`.
+Installers will be in `dist-electron/`.
 
-## 🗂 Estrutura do Projeto
+## 🗂 Project Structure
 
 ```
 marketmind/
 ├── src/
-│   ├── main/              # Processo principal do Electron
-│   ├── renderer/          # Interface React
-│   │   ├── components/    # Componentes React
-│   │   ├── services/      # Serviços (AI, APIs de mercado)
+│   ├── main/              # Electron main process
+│   ├── renderer/          # React interface
+│   │   ├── components/    # React components
+│   │   ├── services/      # Services (AI, market APIs)
 │   │   ├── hooks/         # Custom hooks
-│   │   └── theme/         # Configuração Chakra UI
-│   └── shared/            # Tipos e código compartilhado
-├── PLANO_IMPLEMENTACAO.md # Plano detalhado de desenvolvimento
+│   │   └── theme/         # Chakra UI configuration
+│   └── shared/            # Shared types and code
+├── docs/                  # Documentation
+│   ├── IMPLEMENTATION_PLAN.md  # Detailed development plan
+│   └── ...
 └── package.json
 ```
 
-## 🎨 Capturas de Tela
+## 🎨 Screenshots
 
-> Em breve...
+> Coming soon...
 
-## 🤝 Contribuindo
+## 🤝 Contributing
 
-Este projeto está em desenvolvimento ativo. Contribuições são bem-vindas!
+This project is in active development. Contributions are welcome!
 
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'Adiciona MinhaFeature'`)
-4. Push para a branch (`git push origin feature/MinhaFeature`)
-5. Abra um Pull Request
+1. Fork the project
+2. Create a feature branch (`git checkout -b feature/MyFeature`)
+3. Commit your changes (`git commit -m 'Add MyFeature'`)
+4. Push to the branch (`git push origin feature/MyFeature`)
+5. Open a Pull Request
 
 ## 📝 Roadmap
 
-Veja o arquivo [PLANO_IMPLEMENTACAO.md](./PLANO_IMPLEMENTACAO.md) para o roadmap detalhado do projeto.
+See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the detailed project roadmap.
 
 ### MVP (v1.0)
-- [x] Plano de implementação
-- [ ] Setup do projeto
-- [ ] Renderização de gráficos candlestick
-- [ ] Integração com API de mercado
-- [ ] Chat com IA
-- [ ] Sistema de build e instaladores
+- [x] Implementation plan
+- [ ] Project setup
+- [ ] Candlestick chart rendering
+- [ ] Market API integration
+- [ ] AI chat
+- [ ] Build system and installers
 - [ ] Auto-update
 
-### Futuro (v1.1+)
-- [ ] Mais indicadores técnicos (RSI, MACD, Bollinger Bands)
-- [ ] Alertas de preço
-- [ ] Watchlist de ativos
-- [ ] Export de gráficos
-- [ ] Suporte a múltiplos idiomas
+### Future (v1.1+)
+- [ ] More technical indicators (RSI, MACD, Bollinger Bands)
+- [ ] Price alerts
+- [ ] Asset watchlist
+- [ ] Chart export
+- [ ] Multi-language support
 
-## 📄 Licença
+## 📄 License
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## 👥 Autores
+## 👥 Authors
 
-- **Seu Nome** - *Desenvolvimento inicial* - [seu-github](https://github.com/SEU_USUARIO)
+- **Nathan Santos** - *Initial development* - [nathanssantos](https://github.com/nathanssantos)
 
-## 🙏 Agradecimentos
+## 🙏 Acknowledgments
 
-- Comunidade Electron
-- Equipe do React e Chakra UI
-- Provedores de APIs de mercado e IA
+- Electron community
+- React and Chakra UI teams
+- Market and AI API providers
 
 ---
 
 <div align="center">
 
-**[Website](https://seusite.com)** • 
-**[Documentação](./PLANO_IMPLEMENTACAO.md)** • 
-**[Report Bug](https://github.com/SEU_USUARIO/marketmind/issues)** • 
-**[Request Feature](https://github.com/SEU_USUARIO/marketmind/issues)**
+**[Documentation](./docs/IMPLEMENTATION_PLAN.md)** • 
+**[Report Bug](https://github.com/nathanssantos/marketmind/issues)** • 
+**[Request Feature](https://github.com/nathanssantos/marketmind/issues)**
 
-Feito com ❤️ para traders e investidores
+Made with ❤️ for traders and investors
 
 </div>
