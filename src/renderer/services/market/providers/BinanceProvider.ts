@@ -5,6 +5,8 @@ import {
   type FetchCandlesOptions,
   type Symbol,
   type SymbolInfo,
+  type WebSocketSubscription,
+  type WebSocketUpdate,
 } from '@shared/types';
 import type { CandleData, Candle, TimeInterval } from '@shared/types';
 
@@ -43,6 +45,31 @@ interface BinanceExchangeInfo {
   symbols: BinanceSymbol[];
 }
 
+interface BinanceWSKline {
+  e: string;
+  E: number;
+  s: string;
+  k: {
+    t: number;
+    T: number;
+    s: string;
+    i: string;
+    f: number;
+    L: number;
+    o: string;
+    c: string;
+    h: string;
+    l: string;
+    v: string;
+    n: number;
+    x: boolean;
+    q: string;
+    V: string;
+    Q: string;
+    B: string;
+  };
+}
+
 const BINANCE_INTERVAL_MAP: Record<TimeInterval, string> = {
   '1m': '1m',
   '5m': '5m',
@@ -60,6 +87,8 @@ export class BinanceProvider extends BaseMarketProvider {
   private symbolsCache: BinanceSymbol[] | null = null;
   private symbolsCacheTime = 0;
   private readonly CACHE_DURATION = 5 * 60 * 1000;
+  private wsConnections: Map<string, WebSocket> = new Map();
+  private wsBaseUrl = 'wss://stream.binance.com:9443/ws';
 
   constructor(config?: Partial<MarketProviderConfig>) {
     const defaultConfig: MarketProviderConfig = {
@@ -174,6 +203,69 @@ export class BinanceProvider extends BaseMarketProvider {
 
   normalizeSymbol(symbol: string): string {
     return symbol.replace(/[/-]/g, '').toUpperCase();
+  }
+
+  override supportsWebSocket(): boolean {
+    return true;
+  }
+
+  override subscribeToUpdates(subscription: WebSocketSubscription): () => void {
+    const { symbol, interval, callback } = subscription;
+    const normalizedSymbol = this.normalizeSymbol(symbol).toLowerCase();
+    const streamName = `${normalizedSymbol}@kline_${BINANCE_INTERVAL_MAP[interval]}`;
+    const wsUrl = `${this.wsBaseUrl}/${streamName}`;
+
+    const ws = new WebSocket(wsUrl);
+    this.wsConnections.set(streamName, ws);
+
+    ws.onopen = () => {
+      console.log(`[Binance WS] Connected to ${streamName}`);
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data: BinanceWSKline = JSON.parse(event.data);
+        
+        if (data.e === 'kline' && data.k) {
+          const kline = data.k;
+          const candle: Candle = {
+            timestamp: kline.t,
+            open: parseFloat(kline.o),
+            high: parseFloat(kline.h),
+            low: parseFloat(kline.l),
+            close: parseFloat(kline.c),
+            volume: parseFloat(kline.v),
+          };
+
+          const update: WebSocketUpdate = {
+            symbol,
+            interval,
+            candle,
+            isFinal: kline.x,
+          };
+
+          callback(update);
+        }
+      } catch (error) {
+        console.error('[Binance WS] Error parsing message:', error);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error(`[Binance WS] Error on ${streamName}:`, error);
+    };
+
+    ws.onclose = () => {
+      console.log(`[Binance WS] Disconnected from ${streamName}`);
+      this.wsConnections.delete(streamName);
+    };
+
+    return () => {
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        ws.close();
+      }
+      this.wsConnections.delete(streamName);
+    };
   }
 
   private async ensureSymbolsCache(): Promise<void> {

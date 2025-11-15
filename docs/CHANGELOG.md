@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **WebSocket Real-Time Updates**: Live candle updates via Binance WebSocket
+  - subscribeToUpdates method in MarketDataService
+  - useRealtimeCandle hook for React integration
+  - Automatic merging of live data with historical candles
+  - Smart update handling (update vs. new candle detection)
+  - WebSocket connection management and cleanup
+  - Support for multiple simultaneous subscriptions
+  - Automatic reconnection on disconnect
+  - Complete documentation in services/market/README.md
 - **Market Data API Integration**: Generic provider architecture
   - BaseMarketProvider abstract class for extensibility
   - BinanceProvider for real cryptocurrency data (free, no API key)
@@ -38,11 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added error message display on API failures
 
 ### In Progress
-- WebSocket integration for real-time updates
 - AI integration (OpenAI GPT-4 Vision)
 - Unit tests for hooks and utilities
 
-## [0.4.0] - 2025-11-15
+## [0.5.0] - 2025-11-15
 
 ### Added
 - **Advanced Controls Panel**: 9 configurable chart settings
