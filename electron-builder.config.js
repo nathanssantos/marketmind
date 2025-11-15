@@ -1,38 +1,52 @@
 export default {
-    appId: 'com.marketmind.app',
+    appId: 'com.nathanssantos.marketmind',
     productName: 'MarketMind',
+    copyright: 'Copyright © 2025 Nathan Santos',
+    
     directories: {
-        output: 'dist-electron',
+        output: 'dist',
         buildResources: 'build',
     },
-    files: ['dist/**/*', 'dist-electron/**/*', 'package.json'],
+    
+    files: [
+        'dist/**/*',
+        'dist-electron/**/*',
+        'package.json',
+    ],
+    
+    extraMetadata: {
+        main: 'dist-electron/main/index.js',
+    },
+    
     mac: {
-        target: ['dmg', 'zip'],
+        target: ['dmg'],
         category: 'public.app-category.finance',
         icon: 'build/icon.icns',
-        hardenedRuntime: true,
-        gatekeeperAssess: false,
-        entitlements: 'build/entitlements.mac.plist',
-        entitlementsInherit: 'build/entitlements.mac.plist',
     },
+    
+    dmg: {
+        title: '${productName} ${version}',
+        window: {
+            width: 540,
+            height: 380,
+        },
+    },
+    
     win: {
-        target: ['nsis', 'portable'],
-        icon: 'build/icon.ico',
+        target: ['nsis'],
+        icon: 'build/icon-256.png',
     },
+    
     nsis: {
         oneClick: false,
         allowToChangeInstallationDirectory: true,
         createDesktopShortcut: true,
         createStartMenuShortcut: true,
     },
+    
     linux: {
-        target: ['AppImage', 'deb'],
+        target: ['AppImage'],
         category: 'Finance',
         icon: 'build/icon.png',
-    },
-    publish: {
-        provider: 'github',
-        owner: 'nathanssantos',
-        repo: 'marketmind',
     },
 };

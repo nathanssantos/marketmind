@@ -4,7 +4,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.10.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 
@@ -112,26 +112,46 @@ npm run dev
 
 ## 📦 Production Build
 
-### Build for your current platform
+See [docs/BUILD.md](docs/BUILD.md) for detailed build instructions.
+
+### Quick Start
 
 ```bash
+# Build for current platform
 npm run build
-```
 
-### Platform-specific builds
-
-```bash
-# macOS
+# macOS only (DMG)
 npm run build:mac
 
-# Windows
+# Windows only (NSIS installer)
 npm run build:win
 
-# Both
+# All platforms
 npm run build:all
 ```
 
-Installers will be in `dist-electron/`.
+Installers will be created in `dist/`:
+- **macOS**: `MarketMind-{version}.dmg`
+- **Windows**: `MarketMind-Setup-{version}.exe`
+
+### Code Signing (Optional)
+
+For signed installers, set environment variables:
+
+**macOS:**
+```bash
+export APPLE_ID="your-apple-id@email.com"
+export APPLE_ID_PASSWORD="app-specific-password"
+export APPLE_TEAM_ID="your-team-id"
+```
+
+**Windows:**
+```bash
+export CSC_LINK="path/to/certificate.pfx"
+export CSC_KEY_PASSWORD="certificate-password"
+```
+
+See [docs/BUILD.md](docs/BUILD.md) for complete signing instructions.
 
 ## 🗂 Project Structure
 
@@ -169,7 +189,7 @@ This project is in active development. Contributions are welcome!
 
 See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the detailed project roadmap.
 
-### Current Status (v0.6.0)
+### Current Status (v0.10.0)
 
 **Phase 1: Initial Setup** ✅ COMPLETED (100%)
 - [x] Vite + Electron + React + TypeScript configuration
@@ -237,6 +257,34 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] Correct Claude API model IDs
 - [x] Clean separation (data in API calls only)
 
+**Phase 7: Settings System** ✅ COMPLETED (100%)
+- [x] electron-store integration
+- [x] Platform-native encryption (Keychain/DPAPI/libsecret)
+- [x] Multi-provider support (OpenAI, Anthropic, Gemini)
+- [x] Automatic migration from localStorage
+- [x] 7 IPC handlers for secure operations
+- [x] useSecureStorage React hook
+- [x] Updated AIConfigTab with encrypted inputs
+
+**Phase 8: News Integration** ✅ COMPLETED (100%)
+- [x] Multi-provider news system (NewsAPI, CryptoPanic)
+- [x] NewsService with caching and fallback
+- [x] useNews hook for React integration
+- [x] NewsPanel component with sentiment badges
+- [x] NewsConfigTab settings interface
+- [x] Secure storage for news API keys
+- [x] Migration from localStorage
+- [x] AI integration with news context
+
+**Phase 9: Build & Deploy System** ✅ COMPLETED (100%)
+- [x] electron-builder configuration
+- [x] macOS build (DMG installer)
+- [x] Windows build (NSIS installer)
+- [x] Placeholder icon generation
+- [x] Code signing preparation
+- [x] Build scripts (build:mac, build:win, build:all)
+- [x] Complete build documentation
+
 ### MVP (v1.0) - Target Q1 2026
 - [x] Candlestick chart rendering
 - [x] Line chart rendering
@@ -251,12 +299,13 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] AI integration (10 models: OpenAI, Claude, Gemini)
 - [x] Functional AI chat with markdown
 - [x] Chart data integration with AI
-- [ ] Settings modal with API key encryption
+- [x] Settings modal with API key encryption
 - [x] Light and Dark mode
-- [ ] Installers (Mac/Windows)
+- [x] News integration
+- [x] Build system (macOS and Windows installers)
 - [ ] Auto-update system
 
-**MVP Progress:** ~88% Complete
+**MVP Progress:** ~95% Complete
 
 ### Future (v1.1+)
 - [ ] Settings modal with API key encryption
