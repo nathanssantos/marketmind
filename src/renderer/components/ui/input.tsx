@@ -6,7 +6,7 @@ export interface InputProps extends ChakraInputProps {}
 
 export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
   // @ts-expect-error
-  return <ChakraInput ref={ref} {...props} />;
+  return <ChakraInput ref={ref} px={3} {...props} />;
 });
 
 Input.displayName = 'Input';

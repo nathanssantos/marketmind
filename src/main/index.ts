@@ -52,7 +52,7 @@ const setupIpcHandlers = (): void => {
     return storageService.isEncryptionAvailable();
   });
 
-  ipcMain.handle('storage:setApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini', apiKey: string) => {
+  ipcMain.handle('storage:setApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic', apiKey: string) => {
     try {
       storageService.setApiKey(provider, apiKey);
       return { success: true };
@@ -65,7 +65,7 @@ const setupIpcHandlers = (): void => {
     }
   });
 
-  ipcMain.handle('storage:getApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini') => {
+  ipcMain.handle('storage:getApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic') => {
     try {
       const apiKey = storageService.getApiKey(provider);
       return { success: true, apiKey };
@@ -78,7 +78,7 @@ const setupIpcHandlers = (): void => {
     }
   });
 
-  ipcMain.handle('storage:deleteApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini') => {
+  ipcMain.handle('storage:deleteApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic') => {
     try {
       storageService.deleteApiKey(provider);
       return { success: true };
@@ -91,7 +91,7 @@ const setupIpcHandlers = (): void => {
     }
   });
 
-  ipcMain.handle('storage:hasApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini') => {
+  ipcMain.handle('storage:hasApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic') => {
     return storageService.hasApiKey(provider);
   });
 
@@ -105,6 +105,23 @@ const setupIpcHandlers = (): void => {
       return { success: true };
     } catch (error) {
       console.error('Failed to clear API keys:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  });
+  
+  ipcMain.handle('storage:getNewsSettings', async () => {
+    return storageService.getNewsSettings();
+  });
+
+  ipcMain.handle('storage:setNewsSettings', async (_event, settings: { enabled: boolean; refreshInterval: number; maxArticles: number }) => {
+    try {
+      storageService.setNewsSettings(settings);
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to set news settings:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 

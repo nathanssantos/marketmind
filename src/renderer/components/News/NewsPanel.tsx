@@ -105,7 +105,7 @@ export const NewsPanel = ({
   refetchInterval,
 }: NewsPanelProps) => {
   const { articles, loading, error } = useNews({
-    symbols,
+    symbols: symbols || [],
     limit,
     enabled: true,
     refetchInterval,

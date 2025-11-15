@@ -2,7 +2,7 @@ import { Button } from '@/renderer/components/ui/button';
 import { Field } from '@/renderer/components/ui/field';
 import { Input } from '@/renderer/components/ui/input';
 import { Box, Checkbox, Link, Separator, Stack, Text, VStack } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { HiEye, HiEyeSlash } from 'react-icons/hi2';
 
 export const NewsConfigTab = () => {
@@ -14,6 +14,40 @@ export const NewsConfigTab = () => {
   const [refreshInterval, setRefreshInterval] = useState(5);
   const [maxArticles, setMaxArticles] = useState(10);
   const [testMessage, setTestMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Load settings on mount
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    setLoading(true);
+    try {
+      // Load API keys from secure storage
+      const [newsKeyResult, cryptoKeyResult, settings] = await Promise.all([
+        window.electron.secureStorage.getApiKey('newsapi'),
+        window.electron.secureStorage.getApiKey('cryptopanic'),
+        window.electron.secureStorage.getNewsSettings(),
+      ]);
+
+      if (newsKeyResult.success && newsKeyResult.apiKey) {
+        setNewsApiKey(newsKeyResult.apiKey);
+      }
+      if (cryptoKeyResult.success && cryptoKeyResult.apiKey) {
+        setCryptoPanicApiKey(cryptoKeyResult.apiKey);
+      }
+
+      setEnabled(settings.enabled);
+      setRefreshInterval(settings.refreshInterval);
+      setMaxArticles(settings.maxArticles);
+    } catch (error) {
+      console.error('Failed to load news settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleTestNewsAPI = async () => {
     if (!newsApiKey.trim()) {
@@ -39,35 +73,40 @@ export const NewsConfigTab = () => {
     }
   };
 
-  const handleSave = () => {
-    // Save to localStorage for now (will be migrated to electron-store + safeStorage)
-    localStorage.setItem('news_enabled', enabled.toString());
-    localStorage.setItem('news_api_key', newsApiKey);
-    localStorage.setItem('cryptopanic_api_key', cryptoPanicApiKey);
-    localStorage.setItem('news_refresh_interval', refreshInterval.toString());
-    localStorage.setItem('news_max_articles', maxArticles.toString());
-    
-    alert('Settings saved! Please restart the app for changes to take effect.');
-  };
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // Save API keys to secure storage
+      await Promise.all([
+        newsApiKey.trim() 
+          ? window.electron.secureStorage.setApiKey('newsapi', newsApiKey.trim())
+          : window.electron.secureStorage.deleteApiKey('newsapi'),
+        cryptoPanicApiKey.trim() 
+          ? window.electron.secureStorage.setApiKey('cryptopanic', cryptoPanicApiKey.trim())
+          : window.electron.secureStorage.deleteApiKey('cryptopanic'),
+        window.electron.secureStorage.setNewsSettings({
+          enabled,
+          refreshInterval,
+          maxArticles,
+        }),
+      ]);
 
-  const handleLoadSettings = () => {
-    setEnabled(localStorage.getItem('news_enabled') === 'true');
-    setNewsApiKey(localStorage.getItem('news_api_key') || '');
-    setCryptoPanicApiKey(localStorage.getItem('cryptopanic_api_key') || '');
-    setRefreshInterval(parseInt(localStorage.getItem('news_refresh_interval') || '5', 10));
-    setMaxArticles(parseInt(localStorage.getItem('news_max_articles') || '10', 10));
+      alert('Settings saved successfully! Please restart the app for changes to take effect.');
+    } catch (error) {
+      console.error('Failed to save news settings:', error);
+      alert('Failed to save settings. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <VStack align="stretch" gap={6} maxW="700px">
-      {/* Load Settings Button */}
-      <Box>
-        <Button size="sm" variant="outline" onClick={handleLoadSettings}>
-          Load Saved Settings
-        </Button>
-      </Box>
-
-      <Separator />
+    <VStack align="stretch" gap={6}>
+      {loading && (
+        <Box textAlign="center" py={4}>
+          <Text color="fg.muted">Loading settings...</Text>
+        </Box>
+      )}
 
       <Box>
         <Checkbox.Root checked={enabled} onCheckedChange={(e) => setEnabled(!!e.checked)}>
@@ -241,25 +280,12 @@ export const NewsConfigTab = () => {
           ⚠️ Important Notes
         </Text>
         <VStack align="start" gap={1} fontSize="sm" color="fg.muted">
-          <Text>• API keys are currently stored in localStorage (will be encrypted in future)</Text>
+          <Text>• API keys are encrypted and stored securely using OS-level encryption</Text>
           <Text>• Free tier limits: NewsAPI (100 req/day), CryptoPanic (varies)</Text>
           <Text>• CryptoPanic may have CORS issues in browser (working on solution)</Text>
           <Text>• NewsAPI free tier only works from localhost in development</Text>
           <Text>• Restart app after changing settings</Text>
         </VStack>
-      </Box>
-
-      {/* Documentation Link */}
-      <Box bg="blue.500/10" p={4} borderRadius="md">
-        <Text fontSize="sm" fontWeight="semibold" mb={2}>
-          📚 Documentation
-        </Text>
-        <Text fontSize="sm" color="fg.muted">
-          For more information about storage solutions and security, see{' '}
-          <Text as="span" fontWeight="medium" color="blue.500">
-            docs/STORAGE_GUIDE.md
-          </Text>
-        </Text>
       </Box>
 
       {/* Save Button */}
@@ -269,8 +295,10 @@ export const NewsConfigTab = () => {
           onClick={handleSave}
           width="full"
           size="lg"
+          loading={saving}
+          disabled={loading}
         >
-          Save Configuration
+          {saving ? 'Saving...' : 'Save Configuration'}
         </Button>
       </Box>
     </VStack>

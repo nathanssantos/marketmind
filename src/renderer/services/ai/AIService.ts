@@ -31,7 +31,7 @@ export class AIService {
       return this.apiKey;
     }
 
-    const result = await window.electron.secureStorage.getApiKey();
+    const result = await window.electron.secureStorage.getApiKey(this.providerType);
     
     if (!result.success || !result.apiKey) {
       throw new Error('API key not configured. Please set your API key in Settings.');

@@ -1,5 +1,6 @@
 import { Button } from '@/renderer/components/ui/button';
-import { Box, Heading, Input, Stack, Text, VStack } from '@chakra-ui/react';
+import { Input } from '@/renderer/components/ui/input';
+import { Box, Heading, Stack, Text, VStack } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
 import { useEffect, useMemo, useState } from 'react';
 import { useAI } from '../hooks/useAI';

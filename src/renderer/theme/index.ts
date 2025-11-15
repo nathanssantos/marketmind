@@ -47,7 +47,7 @@ const customConfig = defineConfig({
     body: {
       bg: 'bg.panel',
       color: 'fg',
-      userSelect: 'none',
+      userSelect: 'text',
     },
   },
 });

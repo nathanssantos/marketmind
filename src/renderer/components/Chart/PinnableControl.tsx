@@ -1,4 +1,5 @@
-import { HStack, IconButton, Input, Text, Box } from '@chakra-ui/react';
+import { Input } from '@/renderer/components/ui/input';
+import { HStack, IconButton, Text, Box } from '@chakra-ui/react';
 import { HiOutlineStar, HiStar } from 'react-icons/hi2';
 import type { ReactElement } from 'react';
 import { useState } from 'react';

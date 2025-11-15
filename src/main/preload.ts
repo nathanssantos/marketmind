@@ -1,15 +1,18 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 type AIProvider = 'openai' | 'anthropic' | 'gemini';
+type NewsProvider = 'newsapi' | 'cryptopanic';
 
 interface SecureStorageAPI {
   isEncryptionAvailable: () => Promise<boolean>;
-  setApiKey: (provider: AIProvider, apiKey: string) => Promise<{ success: boolean; error?: string }>;
-  getApiKey: (provider: AIProvider) => Promise<{ success: boolean; apiKey?: string | null; error?: string }>;
-  deleteApiKey: (provider: AIProvider) => Promise<{ success: boolean; error?: string }>;
-  hasApiKey: (provider: AIProvider) => Promise<boolean>;
+  setApiKey: (provider: AIProvider | NewsProvider, apiKey: string) => Promise<{ success: boolean; error?: string }>;
+  getApiKey: (provider: AIProvider | NewsProvider) => Promise<{ success: boolean; apiKey?: string | null; error?: string }>;
+  deleteApiKey: (provider: AIProvider | NewsProvider) => Promise<{ success: boolean; error?: string }>;
+  hasApiKey: (provider: AIProvider | NewsProvider) => Promise<boolean>;
   getAllApiKeys: () => Promise<Record<string, boolean>>;
   clearAllApiKeys: () => Promise<{ success: boolean; error?: string }>;
+  getNewsSettings: () => Promise<{ enabled: boolean; refreshInterval: number; maxArticles: number }>;
+  setNewsSettings: (settings: { enabled: boolean; refreshInterval: number; maxArticles: number }) => Promise<{ success: boolean; error?: string }>;
 }
 
 const API = {
@@ -30,19 +33,19 @@ const API = {
       return await ipcRenderer.invoke('storage:isEncryptionAvailable');
     },
     
-    setApiKey: async (provider: AIProvider, apiKey: string) => {
+    setApiKey: async (provider: AIProvider | NewsProvider, apiKey: string) => {
       return await ipcRenderer.invoke('storage:setApiKey', provider, apiKey);
     },
     
-    getApiKey: async (provider: AIProvider) => {
+    getApiKey: async (provider: AIProvider | NewsProvider) => {
       return await ipcRenderer.invoke('storage:getApiKey', provider);
     },
     
-    deleteApiKey: async (provider: AIProvider) => {
+    deleteApiKey: async (provider: AIProvider | NewsProvider) => {
       return await ipcRenderer.invoke('storage:deleteApiKey', provider);
     },
     
-    hasApiKey: async (provider: AIProvider) => {
+    hasApiKey: async (provider: AIProvider | NewsProvider) => {
       return await ipcRenderer.invoke('storage:hasApiKey', provider);
     },
 
@@ -52,6 +55,14 @@ const API = {
 
     clearAllApiKeys: async () => {
       return await ipcRenderer.invoke('storage:clearAllApiKeys');
+    },
+    
+    getNewsSettings: async () => {
+      return await ipcRenderer.invoke('storage:getNewsSettings');
+    },
+
+    setNewsSettings: async (settings: { enabled: boolean; refreshInterval: number; maxArticles: number }) => {
+      return await ipcRenderer.invoke('storage:setNewsSettings', settings);
     },
   } as SecureStorageAPI,
 } as const;

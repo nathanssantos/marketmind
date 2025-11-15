@@ -5,6 +5,7 @@ const LEGACY_AI_STORE_KEY = 'marketmind-ai-storage';
 
 interface MigrationStatus {
   apiKeysMigrated: boolean;
+  newsSettingsMigrated: boolean;
   version: string;
 }
 
@@ -16,9 +17,9 @@ interface LegacyAISettings {
 const getMigrationStatus = (): MigrationStatus => {
   try {
     const stored = localStorage.getItem(MIGRATION_KEY);
-    return stored ? JSON.parse(stored) : { apiKeysMigrated: false, version: '0.0.0' };
+    return stored ? JSON.parse(stored) : { apiKeysMigrated: false, newsSettingsMigrated: false, version: '0.0.0' };
   } catch {
-    return { apiKeysMigrated: false, version: '0.0.0' };
+    return { apiKeysMigrated: false, newsSettingsMigrated: false, version: '0.0.0' };
   }
 };
 
@@ -76,7 +77,8 @@ export const migrateApiKeys = async (): Promise<boolean> => {
     
     if (!legacySettings || !legacySettings.apiKey) {
       console.log('No legacy API key found');
-      setMigrationStatus({ apiKeysMigrated: true, version: '1.0.0' });
+      const currentStatus = getMigrationStatus();
+      setMigrationStatus({ ...currentStatus, apiKeysMigrated: true });
       return true;
     }
 
@@ -84,7 +86,8 @@ export const migrateApiKeys = async (): Promise<boolean> => {
     
     if (!provider) {
       console.warn('Unknown provider in legacy settings:', legacySettings.provider);
-      setMigrationStatus({ apiKeysMigrated: true, version: '1.0.0' });
+      const currentStatus = getMigrationStatus();
+      setMigrationStatus({ ...currentStatus, apiKeysMigrated: true });
       return true;
     }
 
@@ -107,7 +110,8 @@ export const migrateApiKeys = async (): Promise<boolean> => {
         console.error('Failed to cleanup legacy storage:', error);
       }
       
-      setMigrationStatus({ apiKeysMigrated: true, version: '1.0.0' });
+      const currentStatus = getMigrationStatus();
+      setMigrationStatus({ ...currentStatus, apiKeysMigrated: true });
       return true;
     } else {
       console.error('Failed to migrate API key:', result.error);
@@ -119,10 +123,88 @@ export const migrateApiKeys = async (): Promise<boolean> => {
   }
 };
 
+export const migrateNewsSettings = async (): Promise<boolean> => {
+  const status = getMigrationStatus();
+  
+  if (status.newsSettingsMigrated) {
+    console.log('News settings already migrated');
+    return true;
+  }
+
+  console.log('Starting news settings migration...');
+
+  try {
+    const encryptionAvailable = await window.electron.secureStorage.isEncryptionAvailable();
+    
+    if (!encryptionAvailable) {
+      console.warn('Encryption not available, skipping news migration');
+      return false;
+    }
+
+    // Check for legacy localStorage keys
+    const legacyNewsApiKey = localStorage.getItem('news_api_key');
+    const legacyCryptoPanicKey = localStorage.getItem('cryptopanic_api_key');
+    const legacyEnabled = localStorage.getItem('news_enabled');
+    const legacyRefreshInterval = localStorage.getItem('news_refresh_interval');
+    const legacyMaxArticles = localStorage.getItem('news_max_articles');
+
+    let migrated = false;
+
+    // Migrate API keys if they exist
+    if (legacyNewsApiKey && legacyNewsApiKey.trim()) {
+      const result = await window.electron.secureStorage.setApiKey('newsapi', legacyNewsApiKey.trim());
+      if (result.success) {
+        console.log('Migrated NewsAPI key to secure storage');
+        migrated = true;
+      }
+    }
+
+    if (legacyCryptoPanicKey && legacyCryptoPanicKey.trim()) {
+      const result = await window.electron.secureStorage.setApiKey('cryptopanic', legacyCryptoPanicKey.trim());
+      if (result.success) {
+        console.log('Migrated CryptoPanic key to secure storage');
+        migrated = true;
+      }
+    }
+
+    // Migrate settings if they exist
+    if (legacyEnabled !== null || legacyRefreshInterval !== null || legacyMaxArticles !== null) {
+      await window.electron.secureStorage.setNewsSettings({
+        enabled: legacyEnabled === 'true',
+        refreshInterval: parseInt(legacyRefreshInterval || '5', 10),
+        maxArticles: parseInt(legacyMaxArticles || '10', 10),
+      });
+      console.log('Migrated news settings to secure storage');
+      migrated = true;
+    }
+
+    // Clean up old localStorage keys
+    if (migrated) {
+      localStorage.removeItem('news_api_key');
+      localStorage.removeItem('cryptopanic_api_key');
+      localStorage.removeItem('news_enabled');
+      localStorage.removeItem('news_refresh_interval');
+      localStorage.removeItem('news_max_articles');
+      console.log('Cleaned up legacy news settings from localStorage');
+    }
+
+    // Mark migration as complete
+    const currentStatus = getMigrationStatus();
+    setMigrationStatus({ ...currentStatus, newsSettingsMigrated: true });
+    
+    console.log('News settings migration completed successfully');
+    return true;
+  } catch (error) {
+    console.error('News settings migration failed:', error);
+    return false;
+  }
+};
+
 export const runMigrations = async (): Promise<void> => {
   console.log('Running migrations...');
   
   await migrateApiKeys();
+  await migrateNewsSettings();
   
   console.log('Migrations completed');
 };

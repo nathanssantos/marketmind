@@ -6,6 +6,13 @@ interface SecureStoreSchema {
     openai?: string;
     anthropic?: string;
     gemini?: string;
+    newsapi?: string;
+    cryptopanic?: string;
+  };
+  newsSettings?: {
+    enabled: boolean;
+    refreshInterval: number;
+    maxArticles: number;
   };
   version: string;
 }
@@ -27,7 +34,7 @@ export class StorageService {
     return safeStorage.isEncryptionAvailable();
   }
 
-  setApiKey(provider: 'openai' | 'anthropic' | 'gemini', apiKey: string): void {
+  setApiKey(provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic', apiKey: string): void {
     if (!this.isEncryptionAvailable()) {
       throw new Error('Encryption is not available on this platform');
     }
@@ -51,7 +58,7 @@ export class StorageService {
     }
   }
 
-  getApiKey(provider: 'openai' | 'anthropic' | 'gemini'): string | null {
+  getApiKey(provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic'): string | null {
     if (!this.isEncryptionAvailable()) {
       console.warn('Encryption is not available on this platform');
       return null;
@@ -74,13 +81,13 @@ export class StorageService {
     }
   }
 
-  deleteApiKey(provider: 'openai' | 'anthropic' | 'gemini'): void {
+  deleteApiKey(provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic'): void {
     const apiKeys = this.store.get('apiKeys', {});
     delete apiKeys[provider];
     this.store.set('apiKeys', apiKeys);
   }
 
-  hasApiKey(provider: 'openai' | 'anthropic' | 'gemini'): boolean {
+  hasApiKey(provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic'): boolean {
     const apiKeys = this.store.get('apiKeys', {});
     return !!apiKeys[provider];
   }
@@ -91,11 +98,25 @@ export class StorageService {
       openai: !!apiKeys.openai,
       anthropic: !!apiKeys.anthropic,
       gemini: !!apiKeys.gemini,
+      newsapi: !!apiKeys.newsapi,
+      cryptopanic: !!apiKeys.cryptopanic,
     };
   }
 
   clearAllApiKeys(): void {
     this.store.set('apiKeys', {});
+  }
+
+  getNewsSettings(): { enabled: boolean; refreshInterval: number; maxArticles: number } {
+    return this.store.get('newsSettings', {
+      enabled: false,
+      refreshInterval: 5,
+      maxArticles: 10,
+    });
+  }
+
+  setNewsSettings(settings: { enabled: boolean; refreshInterval: number; maxArticles: number }): void {
+    this.store.set('newsSettings', settings);
   }
 
   getVersion(): string {

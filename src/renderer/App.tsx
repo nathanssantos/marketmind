@@ -212,6 +212,7 @@ function AppContent(): ReactElement {
             left={4} 
             gap={4} 
             zIndex={10}
+            userSelect="none"
           >
             <ChartControls
               showVolume={showVolume}
