@@ -1,4 +1,5 @@
 import type { Candle, Viewport } from '@shared/types';
+import { CHART_CONFIG } from '@shared/constants';
 import {
   calculateBounds,
   clampViewport,
@@ -44,12 +45,14 @@ export class CanvasManager {
     const rect = this.canvas.getBoundingClientRect();
     const volumeHeight = rect.height * this.volumeHeightRatio;
     const chartHeight = rect.height - volumeHeight;
+    const chartWidth = rect.width - CHART_CONFIG.CANVAS_PADDING_RIGHT;
 
     this.dimensions = {
       width: rect.width,
       height: rect.height,
       chartHeight,
       volumeHeight,
+      chartWidth,
     };
   }
 
@@ -104,12 +107,24 @@ export class CanvasManager {
 
   public priceToY(price: number): number {
     if (!this.bounds || !this.dimensions) return 0;
-    return priceToY(price, this.bounds, this.dimensions, this.padding);
+    return priceToY(
+      price,
+      this.bounds,
+      this.dimensions,
+      CHART_CONFIG.CANVAS_PADDING_TOP,
+      CHART_CONFIG.CANVAS_PADDING_BOTTOM,
+    );
   }
 
   public yToPrice(y: number): number {
     if (!this.bounds || !this.dimensions) return 0;
-    return yToPrice(y, this.bounds, this.dimensions, this.padding);
+    return yToPrice(
+      y,
+      this.bounds,
+      this.dimensions,
+      CHART_CONFIG.CANVAS_PADDING_TOP,
+      CHART_CONFIG.CANVAS_PADDING_BOTTOM,
+    );
   }
 
   public volumeToHeight(volume: number): number {
@@ -119,12 +134,12 @@ export class CanvasManager {
 
   public indexToX(index: number): number {
     if (!this.dimensions) return 0;
-    return indexToX(index, this.viewport, this.dimensions.width);
+    return indexToX(index, this.viewport, this.dimensions.chartWidth);
   }
 
   public xToIndex(x: number): number {
     if (!this.dimensions) return 0;
-    return xToIndex(x, this.viewport, this.dimensions.width);
+    return xToIndex(x, this.viewport, this.dimensions.chartWidth);
   }
 
   public getVisibleCandles(): Candle[] {
@@ -160,7 +175,7 @@ export class CanvasManager {
     if (!this.dimensions) return;
 
     const range = this.viewport.end - this.viewport.start;
-    const indexDelta = (deltaX / this.dimensions.width) * range;
+    const indexDelta = (deltaX / this.dimensions.chartWidth) * range;
 
     this.viewport.start -= indexDelta;
     this.viewport.end -= indexDelta;

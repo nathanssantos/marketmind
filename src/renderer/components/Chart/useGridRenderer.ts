@@ -2,7 +2,8 @@ import type { ChartColors } from '@shared/types';
 import { CHART_CONFIG } from '@shared/constants';
 import { useCallback, useEffect } from 'react';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { drawGrid, drawText } from '@renderer/utils/canvas/drawingUtils';
+import { drawGrid, drawLine, drawText } from '@renderer/utils/canvas/drawingUtils';
+import { formatPrice, formatTimestamp } from '@renderer/utils/formatters';
 
 export interface UseGridRendererProps {
   manager: CanvasManager | null;
@@ -29,11 +30,13 @@ export const useGridRenderer = ({
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
     const bounds = manager.getBounds();
+    const viewport = manager.getViewport();
 
     if (!ctx || !dimensions || !bounds) return;
 
-    const { width, chartHeight } = dimensions;
+    const { width, chartHeight, height } = dimensions;
     const { minPrice, maxPrice } = bounds;
+    const candles = manager.getVisibleCandles();
 
     drawGrid(
       ctx,
@@ -45,26 +48,96 @@ export const useGridRenderer = ({
       CHART_CONFIG.GRID_LINE_WIDTH,
     );
 
-    const padding = manager.getPadding();
-    const spacing = chartHeight / (horizontalLines + 1);
+    const labelColor = CHART_CONFIG.AXIS_LABEL_COLOR_DARK;
+
+    const priceRange = maxPrice - minPrice;
+    const priceStep = priceRange / (horizontalLines + 1);
 
     for (let i = 0; i <= horizontalLines + 1; i++) {
-      const y = i * spacing;
-      const price = manager.yToPrice(y);
+      const price = minPrice + i * priceStep;
+      const y = manager.priceToY(price);
 
-      if (price >= minPrice && price <= maxPrice) {
+      if (y >= 0 && y <= chartHeight) {
         drawText(
           ctx,
-          price.toFixed(2),
-          width - padding + 5,
+          formatPrice(price),
+          width - CHART_CONFIG.CANVAS_PADDING_RIGHT + 10,
           y - 6,
-          colors.grid,
-          '11px monospace',
+          labelColor,
+          CHART_CONFIG.AXIS_LABEL_FONT,
           'left',
           'top',
         );
+
+        drawLine(
+          ctx,
+          width - CHART_CONFIG.CANVAS_PADDING_RIGHT,
+          y,
+          width - CHART_CONFIG.CANVAS_PADDING_RIGHT + 5,
+          y,
+          labelColor,
+          1,
+        );
       }
     }
+
+    if (candles.length > 0) {
+      const visibleIndices = Math.floor(viewport.end - viewport.start);
+      const step = Math.max(1, Math.floor(visibleIndices / verticalLines));
+
+      for (let i = 0; i < candles.length; i += step) {
+        const candle = candles[i];
+        if (!candle) continue;
+
+        const index = Math.floor(viewport.start) + i;
+        const x = manager.indexToX(index);
+
+        if (x >= 0 && x <= width - CHART_CONFIG.CANVAS_PADDING_RIGHT) {
+          const timeLabel = formatTimestamp(candle.timestamp);
+          
+          drawText(
+            ctx,
+            timeLabel,
+            x,
+            height - CHART_CONFIG.CANVAS_PADDING_BOTTOM + 15,
+            labelColor,
+            CHART_CONFIG.AXIS_LABEL_FONT,
+            'center',
+            'top',
+          );
+
+          drawLine(
+            ctx,
+            x,
+            chartHeight,
+            x,
+            chartHeight + 5,
+            labelColor,
+            1,
+          );
+        }
+      }
+    }
+
+    drawLine(
+      ctx,
+      width - CHART_CONFIG.CANVAS_PADDING_RIGHT,
+      0,
+      width - CHART_CONFIG.CANVAS_PADDING_RIGHT,
+      chartHeight,
+      labelColor,
+      2,
+    );
+
+    drawLine(
+      ctx,
+      0,
+      chartHeight,
+      width - CHART_CONFIG.CANVAS_PADDING_RIGHT,
+      chartHeight,
+      labelColor,
+      2,
+    );
   }, [manager, colors, enabled, horizontalLines, verticalLines]);
 
   useEffect(() => {

@@ -12,6 +12,7 @@ export interface Dimensions {
   height: number;
   chartHeight: number;
   volumeHeight: number;
+  chartWidth: number;
 }
 
 export const calculateBounds = (candles: Candle[], viewport: Viewport): Bounds => {
@@ -43,23 +44,26 @@ export const priceToY = (
   price: number,
   bounds: Bounds,
   dimensions: Dimensions,
-  padding: number,
+  paddingTop: number,
+  paddingBottom: number,
 ): number => {
   const { minPrice, maxPrice } = bounds;
   const { chartHeight } = dimensions;
   const priceRange = maxPrice - minPrice;
 
-  if (priceRange === 0) return chartHeight / 2 + padding;
+  if (priceRange === 0) return chartHeight / 2;
 
+  const availableHeight = chartHeight - paddingTop - paddingBottom;
   const ratio = (price - minPrice) / priceRange;
-  return chartHeight - ratio * (chartHeight - padding * 2) + padding;
+  return chartHeight - paddingBottom - ratio * availableHeight;
 };
 
 export const yToPrice = (
   y: number,
   bounds: Bounds,
   dimensions: Dimensions,
-  padding: number,
+  paddingTop: number,
+  paddingBottom: number,
 ): number => {
   const { minPrice, maxPrice } = bounds;
   const { chartHeight } = dimensions;
@@ -67,7 +71,8 @@ export const yToPrice = (
 
   if (priceRange === 0) return minPrice;
 
-  const ratio = (chartHeight - y + padding) / (chartHeight - padding * 2);
+  const availableHeight = chartHeight - paddingTop - paddingBottom;
+  const ratio = (chartHeight - paddingBottom - y) / availableHeight;
   return minPrice + ratio * priceRange;
 };
 
@@ -87,20 +92,20 @@ export const volumeToHeight = (
 export const indexToX = (
   index: number,
   viewport: Viewport,
-  canvasWidth: number,
+  chartWidth: number,
 ): number => {
   const visibleRange = viewport.end - viewport.start;
   const ratio = (index - viewport.start) / visibleRange;
-  return ratio * canvasWidth;
+  return ratio * chartWidth;
 };
 
 export const xToIndex = (
   x: number,
   viewport: Viewport,
-  canvasWidth: number,
+  chartWidth: number,
 ): number => {
   const visibleRange = viewport.end - viewport.start;
-  const ratio = x / canvasWidth;
+  const ratio = x / chartWidth;
   return viewport.start + ratio * visibleRange;
 };
 
