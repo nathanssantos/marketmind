@@ -5,6 +5,7 @@ import { ChartControls } from './components/Chart/ChartControls';
 import { AdvancedControls, type AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
+import type { Timeframe } from './components/Chart/TimeframeSelector';
 import { useDebounce } from './hooks/useDebounce';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { system } from './theme';
@@ -53,6 +54,7 @@ function App(): ReactElement {
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
   const [chartType, setChartType] = useLocalStorage<'candlestick' | 'line'>('marketmind:chartType', 'candlestick');
+  const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
     'marketmind:movingAverages',
     DEFAULT_MOVING_AVERAGES
@@ -90,11 +92,13 @@ function App(): ReactElement {
               chartType={chartType}
               movingAverages={movingAverages}
               advancedConfig={advancedConfig}
+              timeframe={timeframe}
               onShowVolumeChange={setShowVolume}
               onShowGridChange={setShowGrid}
               onChartTypeChange={setChartType}
               onMovingAveragesChange={setMovingAverages}
               onAdvancedConfigChange={setAdvancedConfig}
+              onTimeframeChange={setTimeframe}
             />
             <AdvancedControls
               config={advancedConfig}

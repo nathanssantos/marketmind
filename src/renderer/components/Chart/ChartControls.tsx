@@ -11,6 +11,7 @@ import { ControlPanel } from './ControlPanel';
 import { usePinnedControls } from './PinnedControlsContext';
 import { PinnableControl } from './PinnableControl';
 import type { AdvancedControlsConfig } from './AdvancedControls';
+import { TimeframeSelector, type Timeframe } from './TimeframeSelector';
 
 export interface ChartControlsProps {
   showVolume: boolean;
@@ -18,11 +19,13 @@ export interface ChartControlsProps {
   chartType: 'candlestick' | 'line';
   movingAverages: MovingAverageConfig[];
   advancedConfig?: AdvancedControlsConfig;
+  timeframe: Timeframe;
   onShowVolumeChange: (show: boolean) => void;
   onShowGridChange: (show: boolean) => void;
   onChartTypeChange: (type: 'candlestick' | 'line') => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onAdvancedConfigChange?: (config: AdvancedControlsConfig) => void;
+  onTimeframeChange: (timeframe: Timeframe) => void;
 }
 
 export const ChartControls = ({
@@ -31,11 +34,13 @@ export const ChartControls = ({
   chartType,
   movingAverages,
   advancedConfig,
+  timeframe,
   onShowVolumeChange,
   onShowGridChange,
   onChartTypeChange,
   onMovingAveragesChange,
   onAdvancedConfigChange,
+  onTimeframeChange,
 }: ChartControlsProps): ReactElement => {
   const { pinnedControls } = usePinnedControls();
   
@@ -71,6 +76,17 @@ export const ChartControls = ({
 
   return (
     <ControlPanel title="Chart Controls">
+      {/* Timeframe Selector */}
+      <Box>
+        <Text fontSize="xs" color="gray.400" mb={1} fontWeight="semibold">
+          Timeframe
+        </Text>
+        <TimeframeSelector
+          selectedTimeframe={timeframe}
+          onTimeframeChange={onTimeframeChange}
+        />
+      </Box>
+
       {/* Chart Type */}
       <Box>
         <Text fontSize="xs" color="gray.400" mb={1} fontWeight="semibold">
