@@ -1,7 +1,7 @@
-import type { Candle, Viewport } from '@shared/types';
-import { CHART_CONFIG } from '@shared/constants';
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { CHART_CONFIG } from '@shared/constants';
+import type { Candle, Viewport } from '@shared/types';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface UseChartCanvasProps {
   candles: Candle[];

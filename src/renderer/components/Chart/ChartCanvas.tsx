@@ -1,10 +1,10 @@
 import { Box } from '@chakra-ui/react';
-import type { Candle, ChartColors, Viewport } from '@shared/types';
 import { CHART_COLORS_DARK } from '@shared/constants';
+import type { Candle, ChartColors, Viewport } from '@shared/types';
 import type { ReactElement } from 'react';
 import { useEffect } from 'react';
-import { useChartCanvas } from './useChartCanvas';
 import { useCandlestickRenderer } from './useCandlestickRenderer';
+import { useChartCanvas } from './useChartCanvas';
 import { useGridRenderer } from './useGridRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
 

@@ -1,15 +1,15 @@
-import type { Candle, Viewport } from '@shared/types';
 import { CHART_CONFIG } from '@shared/constants';
+import type { Candle, Viewport } from '@shared/types';
 import {
-  calculateBounds,
-  clampViewport,
-  indexToX,
-  priceToY,
-  volumeToHeight,
-  xToIndex,
-  yToPrice,
-  type Bounds,
-  type Dimensions,
+    calculateBounds,
+    clampViewport,
+    indexToX,
+    priceToY,
+    volumeToHeight,
+    xToIndex,
+    yToPrice,
+    type Bounds,
+    type Dimensions,
 } from './coordinateSystem';
 import { clearCanvas, setupCanvas } from './drawingUtils';
 

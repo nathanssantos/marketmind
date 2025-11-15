@@ -1,9 +1,9 @@
-import type { ChartColors } from '@shared/types';
-import { CHART_CONFIG } from '@shared/constants';
-import { useCallback, useEffect } from 'react';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawGrid, drawLine, drawText } from '@renderer/utils/canvas/drawingUtils';
 import { formatPrice, formatTimestamp } from '@renderer/utils/formatters';
+import { CHART_CONFIG } from '@shared/constants';
+import type { ChartColors } from '@shared/types';
+import { useCallback, useEffect } from 'react';
 
 export interface UseGridRendererProps {
   manager: CanvasManager | null;
