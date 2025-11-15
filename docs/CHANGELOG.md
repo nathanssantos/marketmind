@@ -18,6 +18,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Professional app icons and branding
 - News sentiment analysis
 
+## [0.12.2] - 2024-11-15
+
+### Added
+- **Toast Notification System**
+  - Global toast system using Chakra UI v3 toaster
+  - Custom toast renderer with close button
+  - Toast utility functions (success, error, warning, info)
+  - `useToast` hook for easy toast creation
+  - Color-coded toasts (red for errors, green for success, orange for warnings, blue for info)
+  
+- **AI Error Notifications**
+  - Toast notifications for AI API errors
+  - Formatted error messages for Gemini rate limits (429 errors)
+  - Wait time extraction and display
+  - Alternative model suggestions in error messages
+  - Automatic error clearing after toast display
+  - Duplicate toast prevention using ref tracking
+
+### Changed
+- **Error Display UX**
+  - Replaced inline error display with toast notifications
+  - Better visibility with top-right toast placement
+  - User-dismissible errors with X button
+  - Auto-dismiss after 8 seconds for error toasts
+
+### Fixed
+- **Toast Rendering Issues**
+  - Fixed Toaster children function returning null
+  - Fixed Text component name conflict with DOM API (renamed to ChakraText)
+  - Fixed duplicate toast creation by adding ref tracking
+  - Fixed missing close button on toast notifications
+
 ## [0.12.1] - 2024-11-15
 
 ### Fixed

@@ -1,4 +1,4 @@
-import { Box, ChakraProvider, Stack } from '@chakra-ui/react';
+import { Box, ChakraProvider, IconButton, Stack, Text as ChakraText, Toaster } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { Candle } from '@shared/types';
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
@@ -6,6 +6,7 @@ import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls
 import { ChartCanvas } from './components/Chart/ChartCanvas';
 import { ChartControls } from './components/Chart/ChartControls';
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
+import { HiX } from 'react-icons/hi';
 import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { MainLayout } from './components/Layout/MainLayout';
@@ -28,6 +29,7 @@ import { BinanceProvider } from './services/market/providers/BinanceProvider';
 import { CoinGeckoProvider } from './services/market/providers/CoinGeckoProvider';
 import { system } from './theme';
 import { runMigrations } from './utils/migration';
+import { toaster } from './utils/toaster';
 
 const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
   {
@@ -70,6 +72,48 @@ const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
 function App(): ReactElement {
   return (
     <ChakraProvider value={system}>
+      <Toaster toaster={toaster}>
+        {(toast) => (
+          <Box
+            key={toast.id}
+            p={4}
+            bg={
+              toast.type === 'error'
+                ? 'red.500'
+                : toast.type === 'success'
+                  ? 'green.500'
+                  : toast.type === 'warning'
+                    ? 'orange.500'
+                    : 'blue.500'
+            }
+            color="white"
+            borderRadius="md"
+            boxShadow="lg"
+            maxW="400px"
+            position="relative"
+          >
+            <IconButton
+              aria-label="Close"
+              size="xs"
+              position="absolute"
+              top={2}
+              right={2}
+              onClick={() => toaster.dismiss(toast.id)}
+              variant="ghost"
+              color="white"
+              _hover={{ bg: 'whiteAlpha.200' }}
+            >
+              <HiX />
+            </IconButton>
+            <ChakraText fontWeight="bold" mb={1} pr={6}>
+              {toast.title}
+            </ChakraText>
+            {toast.description && (
+              <ChakraText fontSize="sm">{toast.description}</ChakraText>
+            )}
+          </Box>
+        )}
+      </Toaster>
       <ChartProvider>
         <PinnedControlsProvider>
           <AppContent />

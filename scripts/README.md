@@ -12,6 +12,30 @@ Script automatizado para configurar o repositório no GitHub.
 
 Script para instalar Git Hooks de proteção local.
 
+### `test-gemini.mjs`
+
+Script para testar conexão e funcionalidade da API do Google Gemini.
+
+**O que faz:**
+- ✅ Testa múltiplos modelos Gemini (2.0 Flash Exp, 1.5 Flash, 1.5 Pro)
+- ✅ Verifica se a API key é válida
+- ✅ Testa funcionalidade de chat
+- ✅ Identifica problemas comuns (rate limit, modelo indisponível, etc)
+
+**Uso:**
+
+```bash
+# Com variável de ambiente
+GEMINI_API_KEY=your_key node scripts/test-gemini.mjs
+
+# Ou passando como argumento
+node scripts/test-gemini.mjs your_key
+```
+
+### `test-ai.mjs`
+
+Script para testar todos os provedores de AI (OpenAI, Claude, Gemini).
+
 **O que faz:**
 - ✅ Verifica instalação do GitHub CLI
 - ✅ Verifica autenticação
