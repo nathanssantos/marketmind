@@ -59,6 +59,7 @@ export const ChartCanvas = ({
     enabled: showVolume,
   });
 
+  // Setup render callback and initial render
   useEffect(() => {
     if (!manager) return;
 
@@ -69,7 +70,15 @@ export const ChartCanvas = ({
       renderCandles();
     };
 
+    // Register render callback with manager
+    manager.setRenderCallback(render);
+
+    // Initial render
     render();
+
+    return () => {
+      manager.setRenderCallback(null);
+    };
   }, [manager, renderGrid, renderVolume, renderCandles]);
 
   return (

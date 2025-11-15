@@ -22,6 +22,7 @@ export class CanvasManager {
   private dimensions: Dimensions | null = null;
   private padding: number;
   private volumeHeightRatio: number;
+  private renderCallback: (() => void) | null = null;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -34,6 +35,16 @@ export class CanvasManager {
     this.padding = padding;
     this.volumeHeightRatio = volumeHeightRatio;
     this.initialize();
+  }
+
+  public setRenderCallback(callback: (() => void) | null): void {
+    this.renderCallback = callback;
+  }
+
+  private triggerRender(): void {
+    if (this.renderCallback) {
+      this.renderCallback();
+    }
   }
 
   private initialize(): void {
@@ -103,6 +114,7 @@ export class CanvasManager {
   public resize(): void {
     this.initialize();
     this.updateBounds();
+    this.triggerRender();
   }
 
   public priceToY(price: number): number {
@@ -169,6 +181,7 @@ export class CanvasManager {
 
     this.viewport = clampViewport(this.viewport, this.candles.length);
     this.updateBounds();
+    this.triggerRender();
   }
 
   public pan(deltaX: number): void {
@@ -182,6 +195,7 @@ export class CanvasManager {
 
     this.viewport = clampViewport(this.viewport, this.candles.length);
     this.updateBounds();
+    this.triggerRender();
   }
 
   public getCandleAtX(x: number): Candle | null {
