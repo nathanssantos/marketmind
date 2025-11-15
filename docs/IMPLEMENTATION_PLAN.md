@@ -652,10 +652,11 @@ You are an experienced technical analyst. Analyze the provided chart and:
 
 ---
 
-### **PHASE 8: News Integration**
-*Estimated duration: 2 days*
+### **PHASE 8: News Integration** ✅ **COMPLETED**
+*Duration: 1 day*  
+*Completed: November 15, 2025*
 
-#### 8.1 News Service
+#### 8.1 News Service ✅
 ```typescript
 export interface NewsArticle {
   id: string;
@@ -666,20 +667,72 @@ export interface NewsArticle {
   publishedAt: number;
   sentiment?: 'positive' | 'negative' | 'neutral';
   relevance?: number;
+  imageUrl?: string;
+  author?: string;
+}
+
+export interface NewsProvider {
+  name: string;
+  fetchNews(options: NewsOptions): Promise<NewsArticle[]>;
 }
 ```
 
-#### 8.2 News Providers
-- [ ] **NewsAPI** (general news)
-- [ ] **CryptoPanic** (crypto news)
-- [ ] **Finnhub** (stock news)
-- [ ] Filter by symbol/keyword
+#### 8.2 News Providers ✅
+- ✅ **BaseNewsProvider** - Abstract base class
+- ✅ **NewsAPIProvider** - General financial news (newsapi.org)
+  - 100 requests/day free tier
+  - Symbol-based filtering
+  - Article deduplication
+- ✅ **CryptoPanicProvider** - Crypto-specific news (cryptopanic.com)
+  - Public and authenticated endpoints
+  - Vote-based sorting
+  - Currency filtering
+- ✅ **NewsService** - Multi-provider aggregation
+  - Response caching (5-minute default)
+  - Automatic fallback on provider failure
+  - Rate limiting per provider
 
-#### 8.3 News Display
-- [ ] Recent news panel
-- [ ] Filter by relevance
-- [ ] Link to original article
-- [ ] Sentiment analysis (via AI)
+#### 8.3 News Display ✅
+- ✅ **NewsPanel** component
+  - Article list with images
+  - Sentiment badges (positive/negative/neutral)
+  - Source and publication date
+  - Click to open in browser
+  - Loading states and error handling
+- ✅ **NewsConfigTab** settings
+  - Enable/disable toggle
+  - API key management (encrypted)
+  - Refresh interval (1-60 minutes)
+  - Max articles (5-50)
+  - Test connection button
+- ✅ **useNews** hook
+  - Symbol-based filtering
+  - Auto-refresh functionality
+  - Loading and error states
+  - Dependency optimization
+
+#### 8.4 AI Integration ✅
+- ✅ News context in chart analysis
+- ✅ Recent news included in AI prompts
+- ✅ formatChartDataContext extended with news
+
+#### 8.5 Secure Storage ✅
+- ✅ Extended StorageService for news API keys
+- ✅ newsapi and cryptopanic provider support
+- ✅ newsSettings (enabled, refreshInterval, maxArticles)
+- ✅ IPC handlers for news storage
+- ✅ Automatic migration from localStorage
+
+#### Files Created
+- `docs/NEWS.md` - Complete integration guide
+- `docs/STORAGE_GUIDE.md` - Storage best practices
+- `src/shared/types/news.ts` - News type definitions
+- `src/renderer/services/news/NewsService.ts`
+- `src/renderer/services/news/providers/NewsAPIProvider.ts`
+- `src/renderer/services/news/providers/CryptoPanicProvider.ts`
+- `src/renderer/hooks/useNews.ts`
+- `src/renderer/components/News/NewsPanel.tsx`
+- `src/renderer/components/Settings/NewsConfigTab.tsx`
 
 ---
 

@@ -8,14 +8,135 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- **Phase 8: News Integration** - Real-time financial news
-- **Phase 9: Advanced Chart Indicators** - RSI, MACD, Bollinger Bands
-- **Phase 10: Portfolio Tracking** - Asset management and tracking
+- **Phase 9: Build & Deploy** - Production installers for Mac and Windows
+- **Phase 10: Auto-Update System** - Automatic update distribution
 - Conversation export/import functionality
 - Unit tests for all components and hooks
-- Rate limiting for AI requests
+- Additional chart indicators (RSI, MACD, Bollinger Bands)
+- News sentiment analysis integration
 
-## [0.8.0] - 2024-12-XX
+## [0.9.0] - 2025-11-15
+
+### Added
+- **News Integration System**: Multi-provider news aggregation
+  - BaseNewsProvider abstract class for extensibility
+  - NewsAPIProvider for general financial news (100 req/day free tier)
+  - CryptoPanicProvider for crypto-specific news
+  - NewsService with caching (5-minute default) and fallback
+  - Article deduplication across providers
+  - Rate limiting per provider
+  - Symbol-based news filtering
+- **News React Integration**: useNews hook and NewsPanel component
+  - useNews hook with loading/error states
+  - Auto-refresh with configurable interval
+  - Dependency optimization (JSON.stringify pattern)
+  - Silent error handling
+  - Disabled by default for performance
+  - NewsPanel component with:
+    - Article list with images
+    - Sentiment badges (positive/negative/neutral)
+    - Source and publication date
+    - Click to open in browser
+    - Loading spinner and error states
+    - Empty state message
+- **Secure News Storage**: Extended storage system for news API keys
+  - StorageService extended to support 'newsapi' and 'cryptopanic' providers
+  - newsSettings object (enabled, refreshInterval, maxArticles)
+  - getNewsSettings() and setNewsSettings() methods
+  - IPC handlers for news storage operations
+  - Preload API with NewsProvider type
+  - OS-level encryption for news API keys (Keychain/DPAPI/libsecret)
+- **News Settings UI**: NewsConfigTab component
+  - Enable/disable news integration toggle
+  - NewsAPI key input with show/hide
+  - CryptoPanic key input with show/hide
+  - Test connection button for NewsAPI
+  - Refresh interval setting (1-60 minutes)
+  - Max articles setting (5-50 articles)
+  - Important notes section
+  - Save button with loading state
+  - Auto-load settings on mount
+  - Full-width layout in settings dialog
+- **AI Integration**: News context in chart analysis
+  - ChartContext extended with news field
+  - formatChartDataContext includes recent news
+  - News sent to AI for enhanced market insights
+  - Title, source, sentiment, date included
+  - Clean text formatting for AI consumption
+- **News Migration**: Automatic localStorage migration
+  - migrateNewsSettings() function
+  - Migrate newsapi and cryptopanic API keys
+  - Migrate enabled, refreshInterval, maxArticles settings
+  - Clean up legacy localStorage keys
+  - Run automatically on app startup
+  - Version tracking in migration status
+  - Silent error handling
+- **UI Component Improvements**: Input standardization
+  - Input component with px={3} default padding
+  - Migrated all components to use custom Input:
+    - AITest.tsx
+    - AIConfigTab.tsx
+    - PinnableControl.tsx
+    - NewsConfigTab.tsx
+  - Consistent padding across application
+- **UX Improvements**: Text selection behavior
+  - Global userSelect: 'text' (enabled by default)
+  - ChartCanvas userSelect: 'none' (prevent selection on chart)
+  - Controls container userSelect: 'none'
+  - Removed internal documentation link from NewsConfigTab
+
+### Changed
+- StorageService now supports 5 providers (openai, anthropic, gemini, newsapi, cryptopanic)
+- IPC handlers accept AIProvider | NewsProvider union type
+- Migration utility extended with news settings migration
+- SettingsDialog now has 4 tabs (added News tab)
+- All Input components standardized to use custom wrapper
+- .env.example updated with news API keys
+
+### Fixed
+- NewsPanel symbols prop type compatibility (undefined handling)
+- AIService provider-specific API key retrieval
+
+### Security
+- News API keys encrypted using OS-level encryption
+- Secure storage via electron-store
+- Platform-native encryption (Keychain, DPAPI, libsecret)
+- Automatic migration from plaintext localStorage
+
+### Documentation
+- Added NEWS.md - Comprehensive news integration guide
+- Added STORAGE_GUIDE.md - Storage solutions and best practices
+- Updated PROJECT_STATUS.md - Phase 8 completion (87% overall)
+- Updated IMPLEMENTATION_PLAN.md - News integration details
+- Updated .env.example - News API key examples
+
+### Technical
+- New files created:
+  - `docs/NEWS.md` - News system documentation
+  - `docs/STORAGE_GUIDE.md` - Storage decision guide
+  - `src/shared/types/news.ts` - News type definitions
+  - `src/renderer/services/news/NewsService.ts` - News aggregation
+  - `src/renderer/services/news/providers/NewsAPIProvider.ts`
+  - `src/renderer/services/news/providers/CryptoPanicProvider.ts`
+  - `src/renderer/hooks/useNews.ts` - News data hook
+  - `src/renderer/components/News/NewsPanel.tsx` - News UI
+  - `src/renderer/components/Settings/NewsConfigTab.tsx` - Settings UI
+- Modified files:
+  - `src/main/services/StorageService.ts` - News provider support
+  - `src/main/index.ts` - News IPC handlers
+  - `src/main/preload.ts` - NewsProvider type
+  - `src/renderer/utils/migration.ts` - News migration
+  - `src/renderer/context/ChartContext.tsx` - News field
+  - `src/renderer/utils/formatters.ts` - News formatting
+  - `src/renderer/components/ui/input.tsx` - Default padding
+  - `src/renderer/components/Settings/SettingsDialog.tsx` - News tab
+  - `.env.example` - News API keys
+- Dependencies:
+  - No new dependencies (uses existing fetch API)
+- Overall project progress: 87% (8/13 phases complete)
+- MVP completion: 95%
+
+## [0.8.0] - 2025-11-15
 
 ### Added
 - **Secure API Key Storage**: Platform-native encryption for API keys
