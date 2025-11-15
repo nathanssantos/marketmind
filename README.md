@@ -4,7 +4,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 
@@ -30,13 +30,18 @@
 - 🖱️ **Pan & Zoom**: Mouse wheel zoom, drag to pan (horizontal and vertical)
 - 🎨 **Dynamic Cursors**: Context-aware cursor feedback
 - 🌓 **Dark/Light Themes**: Full Chakra UI theme support
+- 🔌 **Real Market Data**: Integration with Binance API for live cryptocurrency data
+- 📊 **Symbol Selector**: Search and select from 8 popular cryptocurrencies or search entire catalog
+- 🔄 **API Fallback**: Automatic failover to CoinGecko if primary provider fails
+- 💾 **Data Caching**: Smart caching system to reduce API calls
 
 **Planned:**
 - 🤖 **AI Analysis**: Integration with multiple AI providers (OpenAI, Anthropic, Google Gemini)
 - 📰 **News Analysis**: Cross-analysis of technical analysis with news sentiment
 - 💬 **Interactive Chat**: Chat with AI about charts in real-time
-- 📊 **Technical Indicators**: Moving averages (SMA/EMA), RSI, MACD, and more
+- 📊 **Technical Indicators**: RSI, MACD, Bollinger Bands, and more
 - 🔄 **Auto-Update**: Automatic update system
+- 📡 **WebSocket**: Real-time candle updates via WebSocket
 
 ## 🛠 Technology Stack
 
@@ -151,7 +156,7 @@ This project is in active development. Contributions are welcome!
 
 See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the detailed project roadmap.
 
-### Current Status (v0.4.0)
+### Current Status (v0.5.0)
 
 **Phase 1: Initial Setup** ✅ COMPLETED
 - [x] Vite + Electron + React + TypeScript configuration
@@ -163,6 +168,7 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] Candle data types
 - [x] Chart configuration types
 - [x] AI integration types
+- [x] Market provider types
 
 **Phase 3: Chart Rendering** ✅ COMPLETED (100%)
 - [x] CanvasManager with zoom/pan system
@@ -181,6 +187,17 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] Dynamic cursors and UX improvements
 - [x] Debounced inputs for performance
 
+**Phase 4: Market API Integration** ✅ COMPLETED (100%)
+- [x] Generic provider architecture (BaseMarketProvider)
+- [x] Binance API integration (free, no API key)
+- [x] CoinGecko fallback provider (free, no API key)
+- [x] MarketDataService with caching and failover
+- [x] useMarketData React hook
+- [x] Real-time market data display
+- [x] Symbol selector with search
+- [x] 8 popular symbols pre-loaded (BTCUSDT default)
+- [x] Loading and error states
+
 ### MVP (v1.0) - Target Q1 2026
 - [x] Candlestick chart rendering
 - [x] Line chart rendering
@@ -190,7 +207,8 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] Advanced chart controls
 - [x] Settings persistence
 - [x] Tooltip system
-- [ ] Market API integration (Binance)
+- [x] Market API integration (Binance)
+- [x] Symbol selector
 - [ ] AI integration (OpenAI GPT-4 Vision)
 - [ ] Functional AI chat
 - [ ] Basic settings panel
@@ -198,15 +216,17 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [ ] Installers (Mac/Windows)
 - [ ] Auto-update system
 
-**MVP Progress:** ~55% Complete
+**MVP Progress:** ~60% Complete
 
 ### Future (v1.1+)
+- [ ] WebSocket for real-time updates
 - [ ] More technical indicators (RSI, MACD, Bollinger Bands)
-- [ ] Multiple market APIs
+- [ ] Additional market APIs (stocks via Alpha Vantage)
 - [ ] Multiple AI providers
 - [ ] News integration
 - [ ] Price alerts
 - [ ] Asset watchlist
+- [ ] Symbol favorites and recents
 - [ ] Chart export
 - [ ] Multi-language support
 
