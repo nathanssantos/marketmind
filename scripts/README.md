@@ -8,6 +8,10 @@ Scripts úteis para gerenciamento do repositório e desenvolvimento.
 
 Script automatizado para configurar o repositório no GitHub.
 
+### `install-hooks.sh`
+
+Script para instalar Git Hooks de proteção local.
+
 **O que faz:**
 - ✅ Verifica instalação do GitHub CLI
 - ✅ Verifica autenticação
@@ -26,6 +30,21 @@ Script automatizado para configurar o repositório no GitHub.
 **Pré-requisitos:**
 - GitHub CLI instalado (`brew install gh`)
 - Autenticação configurada (`gh auth login`)
+
+### `install-hooks.sh`
+
+**O que faz:**
+- ✅ Instala Git Hook pre-push
+- ✅ Protege branch `main` contra pushes diretos localmente
+- ✅ Força uso de Pull Requests
+
+**Uso:**
+
+```bash
+./scripts/install-hooks.sh
+```
+
+**Nota:** Como o repositório é privado, proteção de branches via GitHub requer GitHub Pro. Este hook fornece proteção local.
 
 ---
 

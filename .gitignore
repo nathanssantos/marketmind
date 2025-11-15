@@ -20,7 +20,7 @@ pnpm-lock.yaml
 dist/
 dist-electron/
 out/
-build/
+# build/ - Commented out: build/ contains assets needed for electron-builder
 *.app
 *.dmg
 *.pkg

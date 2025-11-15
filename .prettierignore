@@ -1,0 +1,26 @@
+# Prettier ignore patterns
+
+# Dependencies
+node_modules
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist
+dist-electron
+build
+out
+*.tsbuildinfo
+
+# Generated files
+coverage
+.nyc_output
+
+# Config files that shouldn't be formatted
+*.min.js
+*.min.css
+
+# Documentation (keep original formatting)
+CHANGELOG.md
+LICENSE

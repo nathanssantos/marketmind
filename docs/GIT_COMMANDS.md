@@ -1,45 +1,45 @@
-# 📝 Comandos Git & GitHub - Guia Rápido
+# 📝 Git & GitHub Commands - Quick Guide
 
-## 🚀 Setup Inicial do Repositório
+## 🚀 Initial Repository Setup
 
-### Opção 1: Script Automatizado (Recomendado)
+### Option 1: Automated Script (Recommended)
 ```bash
 ./scripts/setup-github.sh
 ```
 
-### Opção 2: Comandos Manuais
+### Option 2: Manual Commands
 
-#### 1. Criar repositório no GitHub
+#### 1. Create repository on GitHub
 ```bash
-# Repositório público
+# Public repository
 gh repo create marketmind \
   --public \
-  --description "Consultor de IA para análise técnica de gráficos financeiros" \
+  --description "AI consultant for technical analysis of financial charts" \
   --source=. \
   --remote=origin \
   --push
 
-# OU repositório privado
+# OR private repository
 gh repo create marketmind \
   --private \
-  --description "Consultor de IA para análise técnica de gráficos financeiros" \
+  --description "AI consultant for technical analysis of financial charts" \
   --source=. \
   --remote=origin \
   --push
 ```
 
-#### 2. Criar branch develop
+#### 2. Create develop branch
 ```bash
 git checkout -b develop
 git push -u origin develop
 ```
 
-#### 3. Definir develop como branch padrão (opcional)
+#### 3. Set develop as default branch (optional)
 ```bash
 gh repo edit --default-branch develop
 ```
 
-#### 4. Adicionar tópicos
+#### 4. Add topics
 ```bash
 gh repo edit --add-topic electron
 gh repo edit --add-topic react
@@ -54,74 +54,74 @@ gh repo edit --add-topic stock-market
 
 ---
 
-## 🔄 Workflow Diário
+## 🔄 Daily Workflow
 
-### Começar nova feature
+### Start new feature
 ```bash
-# 1. Atualizar develop
+# 1. Update develop
 git checkout develop
 git pull origin develop
 
-# 2. Criar branch da feature
+# 2. Create feature branch
 git checkout -b feature/chart-rendering
 
-# 3. Fazer mudanças...
-# (código)
+# 3. Make changes...
+# (code)
 
 # 4. Commit
 git add .
-git commit -m "feat: adiciona renderização de candlestick"
+git commit -m "feat: add candlestick rendering"
 
 # 5. Push
 git push -u origin feature/chart-rendering
 
-# 6. Criar Pull Request
+# 6. Create Pull Request
 gh pr create \
   --base develop \
-  --title "Adiciona renderização de candlestick" \
-  --body "Implementa renderização de gráficos candlestick com Canvas API"
+  --title "Add candlestick rendering" \
+  --body "Implements candlestick chart rendering with Canvas API"
 ```
 
-### Revisar Pull Request
+### Review Pull Request
 ```bash
-# Listar PRs abertas
+# List open PRs
 gh pr list
 
-# Ver detalhes de uma PR
+# View PR details
 gh pr view 1
 
-# Fazer checkout da PR para testar
+# Checkout PR to test
 gh pr checkout 1
 
-# Adicionar review
+# Add review
 gh pr review 1 --approve
-gh pr review 1 --comment --body "Ótimo trabalho!"
-gh pr review 1 --request-changes --body "Precisa de ajustes"
+gh pr review 1 --comment --body "Great work!"
+gh pr review 1 --request-changes --body "Needs adjustments"
 
-# Fazer merge da PR
+# Merge PR
 gh pr merge 1 --merge  # merge commit
 gh pr merge 1 --squash # squash commits
 gh pr merge 1 --rebase # rebase
 ```
 
-### Commits frequentes
+### Frequent commits
 ```bash
-# Adicionar arquivos específicos
+# Add specific files
 git add src/renderer/components/Chart/ChartCanvas.tsx
 
-# Adicionar todos
+# Add all
 git add .
 
-# Commit com mensagem
-git commit -m "feat: adiciona zoom no gráfico"
+# Commit with message
+git commit -m "feat: add chart zoom"
 
-# Amend (corrigir último commit)
-git commit --amend -m "feat: adiciona zoom e pan no gráfico"
+# Amend (fix last commit)
+git commit --amend -m "feat: add zoom and pan to chart"
 
 # Push
 git push
 
-# Force push (cuidado! use apenas em branches próprias)
+# Force push (careful! use only on your own branches)
 git push --force-with-lease
 ```
 
@@ -129,31 +129,31 @@ git push --force-with-lease
 
 ## 📦 Releases
 
-### Criar Release
+### Create Release
 ```bash
-# 1. Atualizar main com develop
+# 1. Update main with develop
 git checkout main
 git pull origin main
 git merge develop
 git push origin main
 
-# 2. Criar tag
+# 2. Create tag
 git tag -a v1.0.0 -m "Release v1.0.0 - Initial Release"
 git push origin v1.0.0
 
-# 3. Build dos instaladores
+# 3. Build installers
 npm run build:all
 
-# 4. Criar release no GitHub
+# 4. Create release on GitHub
 gh release create v1.0.0 \
   --title "v1.0.0 - Initial Release" \
   --notes "
 ## 🎉 First Release
 
 ### Features
-- ✅ Renderização de gráficos candlestick
-- ✅ Integração com AI
-- ✅ Chat interativo
+- ✅ Candlestick chart rendering
+- ✅ AI integration
+- ✅ Interactive chat
 - ✅ Auto-update
 
 ### Download
@@ -166,161 +166,161 @@ gh release create v1.0.0 \
   dist-electron/latest.yml
 ```
 
-### Release Pre-release (beta)
+### Pre-release (beta)
 ```bash
 gh release create v1.0.0-beta.1 \
   --title "v1.0.0-beta.1" \
-  --notes "Beta release para testes" \
+  --notes "Beta release for testing" \
   --prerelease \
   dist-electron/*.dmg \
   dist-electron/*.exe
 ```
 
-### Listar releases
+### List releases
 ```bash
 gh release list
 ```
 
-### Deletar release
+### Delete release
 ```bash
 gh release delete v1.0.0 --yes
-git push --delete origin v1.0.0  # deletar tag também
+git push --delete origin v1.0.0  # delete tag too
 ```
 
 ---
 
-## 🌿 Gerenciamento de Branches
+## 🌿 Branch Management
 
-### Criar branch
+### Create branch
 ```bash
 git checkout -b feature/ai-integration
 git push -u origin feature/ai-integration
 ```
 
-### Mudar de branch
+### Switch branch
 ```bash
 git checkout develop
 git checkout main
 git checkout feature/chart-rendering
 ```
 
-### Listar branches
+### List branches
 ```bash
-# Locais
+# Local
 git branch
 
-# Remotas
+# Remote
 git branch -r
 
-# Todas
+# All
 git branch -a
 ```
 
-### Deletar branch
+### Delete branch
 ```bash
 # Local
 git branch -d feature/old-feature
 
-# Remota
+# Remote
 git push origin --delete feature/old-feature
 ```
 
-### Atualizar branch com develop
+### Update branch with develop
 ```bash
-# Opção 1: Merge
-git checkout feature/minha-feature
+# Option 1: Merge
+git checkout feature/my-feature
 git merge develop
 
-# Opção 2: Rebase (mantém histórico linear)
-git checkout feature/minha-feature
+# Option 2: Rebase (keeps linear history)
+git checkout feature/my-feature
 git rebase develop
 ```
 
 ---
 
-## 🔍 Visualização e Histórico
+## 🔍 Viewing and History
 
-### Ver status
+### View status
 ```bash
 git status
-git status -s  # formato curto
+git status -s  # short format
 ```
 
-### Ver diferenças
+### View differences
 ```bash
-# Mudanças não staged
+# Unstaged changes
 git diff
 
-# Mudanças staged
+# Staged changes
 git diff --staged
 
-# Diferença entre branches
+# Difference between branches
 git diff main develop
 
-# Diferença de arquivo específico
+# Difference in specific file
 git diff src/main/index.ts
 ```
 
-### Ver histórico
+### View history
 ```bash
-# Log completo
+# Full log
 git log
 
-# Log resumido
+# Summary log
 git log --oneline
 
-# Log com gráfico
+# Log with graph
 git log --oneline --graph --all
 
-# Log de um arquivo
+# Log of a file
 git log -- src/main/index.ts
 
-# Log com filtro
+# Filtered log
 git log --author="Nathan"
 git log --since="2025-01-01"
 git log --grep="feat"
 ```
 
-### Ver autores
+### View authors
 ```bash
 git shortlog -s -n
 ```
 
 ---
 
-## 🔧 Desfazer Mudanças
+## 🔧 Undoing Changes
 
-### Descartar mudanças locais
+### Discard local changes
 ```bash
-# Arquivo específico
+# Specific file
 git checkout -- src/main/index.ts
 
-# Todos os arquivos
+# All files
 git checkout -- .
 
-# Remover arquivos não rastreados
+# Remove untracked files
 git clean -fd
 ```
 
-### Desfazer commit (mantendo mudanças)
+### Undo commit (keeping changes)
 ```bash
 git reset --soft HEAD~1
 ```
 
-### Desfazer commit (descartando mudanças)
+### Undo commit (discarding changes)
 ```bash
 git reset --hard HEAD~1
 ```
 
-### Reverter commit (cria novo commit)
+### Revert commit (creates new commit)
 ```bash
 git revert HEAD
-git revert abc123  # reverter commit específico
+git revert abc123  # revert specific commit
 ```
 
-### Desfazer push (CUIDADO!)
+### Undo push (CAREFUL!)
 ```bash
-# Apenas se ninguém mais deu pull
+# Only if nobody else has pulled
 git reset --hard HEAD~1
 git push --force-with-lease
 ```
@@ -329,70 +329,70 @@ git push --force-with-lease
 
 ## 🏷️ Tags
 
-### Criar tag
+### Create tag
 ```bash
-# Tag anotada (recomendado)
+# Annotated tag (recommended)
 git tag -a v1.0.0 -m "Version 1.0.0"
 
-# Tag simples
+# Simple tag
 git tag v1.0.0
 
-# Tag em commit específico
+# Tag on specific commit
 git tag -a v1.0.0 abc123 -m "Version 1.0.0"
 ```
 
-### Listar tags
+### List tags
 ```bash
 git tag
-git tag -l "v1.*"  # filtrar
+git tag -l "v1.*"  # filter
 ```
 
-### Push de tags
+### Push tags
 ```bash
-# Tag específica
+# Specific tag
 git push origin v1.0.0
 
-# Todas as tags
+# All tags
 git push origin --tags
 ```
 
-### Deletar tag
+### Delete tag
 ```bash
 # Local
 git tag -d v1.0.0
 
-# Remota
+# Remote
 git push origin --delete v1.0.0
 ```
 
 ---
 
-## 🔄 Sincronização
+## 🔄 Synchronization
 
-### Atualizar repositório local
+### Update local repository
 ```bash
-# Fetch (buscar mudanças sem merge)
+# Fetch (get changes without merge)
 git fetch origin
 
 # Pull (fetch + merge)
 git pull origin develop
 
-# Pull com rebase
+# Pull with rebase
 git pull --rebase origin develop
 ```
 
 ### Push
 ```bash
-# Push da branch atual
+# Push current branch
 git push
 
-# Push com upstream
-git push -u origin feature/nova-feature
+# Push with upstream
+git push -u origin feature/new-feature
 
-# Push de todas as branches
+# Push all branches
 git push --all
 
-# Push forçado (CUIDADO!)
+# Forced push (CAREFUL!)
 git push --force-with-lease
 ```
 
@@ -400,115 +400,115 @@ git push --force-with-lease
 
 ## 🐛 Issues
 
-### Criar issue
+### Create issue
 ```bash
 gh issue create \
-  --title "Bug: Gráfico não renderiza em dark mode" \
-  --body "Descrição do problema..." \
+  --title "Bug: Chart not rendering in dark mode" \
+  --body "Problem description..." \
   --label "bug" \
   --assignee "@me"
 ```
 
-### Listar issues
+### List issues
 ```bash
-# Todas abertas
+# All open
 gh issue list
 
-# Filtrar por label
+# Filter by label
 gh issue list --label "bug"
 
-# Filtrar por assignee
+# Filter by assignee
 gh issue list --assignee "@me"
 
-# Incluir fechadas
+# Include closed
 gh issue list --state all
 ```
 
-### Ver issue
+### View issue
 ```bash
 gh issue view 1
-gh issue view 1 --web  # abrir no browser
+gh issue view 1 --web  # open in browser
 ```
 
-### Fechar issue
+### Close issue
 ```bash
-gh issue close 1 --comment "Corrigido na v1.0.1"
+gh issue close 1 --comment "Fixed in v1.0.1"
 ```
 
-### Reabrir issue
+### Reopen issue
 ```bash
 gh issue reopen 1
 ```
 
 ---
 
-## 👥 Colaboração
+## 👥 Collaboration
 
-### Clonar repositório
+### Clone repository
 ```bash
-gh repo clone USUARIO/marketmind
-# ou
-git clone https://github.com/USUARIO/marketmind.git
+gh repo clone USER/marketmind
+# or
+git clone https://github.com/USER/marketmind.git
 ```
 
 ### Fork
 ```bash
-gh repo fork USUARIO/marketmind --clone
+gh repo fork USER/marketmind --clone
 ```
 
-### Adicionar colaborador
+### Add collaborator
 ```bash
 gh repo edit --enable-issues
 gh repo edit --enable-wiki
 ```
 
-### Ver colaboradores
+### View collaborators
 ```bash
 gh api repos/:owner/:repo/contributors
 ```
 
 ---
 
-## 📊 Estatísticas
+## 📊 Statistics
 
-### Ver contribuições
+### View contributions
 ```bash
-# Por arquivo
+# By file
 git log --pretty=format: --name-only | sort | uniq -c | sort -rg | head -10
 
-# Por autor
+# By author
 git shortlog -s -n
 
-# Linhas adicionadas/removidas
+# Lines added/removed
 git log --shortstat --author="Nathan"
 ```
 
-### Ver tamanho do repositório
+### View repository size
 ```bash
 git count-objects -vH
 ```
 
 ---
 
-## 🔐 Configuração
+## 🔐 Configuration
 
-### Configurar usuário
+### Configure user
 ```bash
 # Global
-git config --global user.name "Seu Nome"
-git config --global user.email "seu@email.com"
+git config --global user.name "Your Name"
+git config --global user.email "your@email.com"
 
-# Local (apenas neste repo)
-git config user.name "Seu Nome"
-git config user.email "seu@email.com"
+# Local (only this repo)
+git config user.name "Your Name"
+git config user.email "your@email.com"
 ```
 
-### Configurar editor
+### Configure editor
 ```bash
 git config --global core.editor "code --wait"
 ```
 
-### Configurar aliases
+### Configure aliases
 ```bash
 git config --global alias.st status
 git config --global alias.co checkout
@@ -519,7 +519,7 @@ git config --global alias.last 'log -1 HEAD'
 git config --global alias.lg "log --oneline --graph --all"
 ```
 
-### Ver configurações
+### View settings
 ```bash
 git config --list
 git config --global --list
@@ -529,62 +529,62 @@ git config --global --list
 
 ## 🚨 Troubleshooting
 
-### Conflitos de merge
+### Merge conflicts
 ```bash
-# Ver arquivos em conflito
+# View conflicted files
 git status
 
-# Após resolver conflitos
+# After resolving conflicts
 git add .
-git commit -m "merge: resolve conflitos"
+git commit -m "merge: resolve conflicts"
 
-# Abortar merge
+# Abort merge
 git merge --abort
 ```
 
-### Recuperar arquivo deletado
+### Recover deleted file
 ```bash
-git checkout HEAD -- arquivo.txt
+git checkout HEAD -- file.txt
 ```
 
-### Recuperar commit deletado
+### Recover deleted commit
 ```bash
-# Ver histórico completo (incluindo commits deletados)
+# View complete history (including deleted commits)
 git reflog
 
-# Recuperar
+# Recover
 git checkout abc123
 ```
 
-### Limpar cache do Git
+### Clear Git cache
 ```bash
 git rm -r --cached .
 git add .
-git commit -m "chore: limpa cache do git"
+git commit -m "chore: clear git cache"
 ```
 
 ---
 
-## 📚 Recursos Úteis
+## 📚 Useful Resources
 
-### Documentação
+### Documentation
 - [Git Docs](https://git-scm.com/doc)
 - [GitHub CLI Docs](https://cli.github.com/manual/)
 - [Conventional Commits](https://www.conventionalcommits.org/)
 
-### Ferramentas
-- **GitHub Desktop** - GUI para Git
-- **GitKraken** - Cliente Git visual
-- **SourceTree** - Gerenciador Git gratuito
+### Tools
+- **GitHub Desktop** - Git GUI
+- **GitKraken** - Visual Git client
+- **SourceTree** - Free Git manager
 
-### Extensões VS Code
+### VS Code Extensions
 - GitLens
 - Git Graph
 - GitHub Pull Requests
 
 ---
 
-**Dica:** Adicione estes aliases ao seu `.zshrc` ou `.bashrc`:
+**Tip:** Add these aliases to your `.zshrc` or `.bashrc`:
 
 ```bash
 # Git aliases
@@ -605,8 +605,8 @@ alias ghprl='gh pr list'
 alias ghil='gh issue list'
 ```
 
-Recarregue o terminal: `source ~/.zshrc`
+Reload terminal: `source ~/.zshrc`
 
 ---
 
-Voltar para [README principal](../README.md) | [Scripts](./README.md)
+Back to [main README](../README.md) | [Scripts](./README.md)

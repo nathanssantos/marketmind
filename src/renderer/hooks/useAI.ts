@@ -1,0 +1,337 @@
+import type { AIAnalysisRequest } from '@shared/types';
+import { useCallback, useMemo } from 'react';
+import { AIService, type AIServiceConfig } from '../services/ai';
+import { useAIStore } from '../store/aiStore';
+
+let defaultAIServiceInstance: AIService | null = null;
+
+const getDefaultAIService = (config: AIServiceConfig): AIService => {
+  if (!defaultAIServiceInstance || 
+      defaultAIServiceInstance.getConfig().provider !== config.provider ||
+      defaultAIServiceInstance.getConfig().model !== config.model) {
+    defaultAIServiceInstance = new AIService(config);
+  }
+  return defaultAIServiceInstance;
+};
+
+export interface UseAIOptions {
+  service?: AIService;
+}
+
+export const useAI = (options?: UseAIOptions) => {
+  const {
+    conversations,
+    activeConversationId,
+    settings,
+    isLoading,
+    error,
+    lastAnalysis,
+    setSettings,
+    updateSettings,
+    createConversation,
+    deleteConversation,
+    setActiveConversation,
+    updateConversationTitle,
+    addMessage,
+    clearMessages,
+    setLoading,
+    setError,
+    setLastAnalysis,
+    getActiveConversation,
+    exportConversation,
+    importConversation,
+  } = useAIStore();
+
+  const aiService = useMemo(() => {
+    if (options?.service) {
+      return options.service;
+    }
+
+    if (!settings) return null;
+
+    try {
+      const config: AIServiceConfig = {
+        provider: settings.provider,
+      };
+
+      if (settings.model) config.model = settings.model;
+      if (settings.temperature !== undefined) config.temperature = settings.temperature;
+      if (settings.maxTokens !== undefined) config.maxTokens = settings.maxTokens;
+
+      return getDefaultAIService(config);
+    } catch (error) {
+      console.error('Failed to initialize AI service:', error);
+      return null;
+    }
+  }, [settings, options?.service]);
+
+  const isConfigured = useMemo(() => {
+    return settings !== null;
+  }, [settings]);
+
+  const sendMessage = useCallback(
+    async (content: string, images?: string[]) => {
+      if (!aiService || !activeConversationId) {
+        setError('AI service not configured or no active conversation');
+        return null;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const messageData: Parameters<typeof addMessage>[1] = {
+          role: 'user',
+          content,
+        };
+
+        if (images && images.length > 0) {
+          messageData.images = images;
+        }
+
+        addMessage(activeConversationId, messageData);
+
+        const conversation = getActiveConversation();
+        if (!conversation) {
+          throw new Error('Active conversation not found');
+        }
+
+        const response = await aiService.sendMessage(conversation.messages, images);
+
+        const assistantMessage: Parameters<typeof addMessage>[1] = {
+          role: 'assistant',
+          content: response.text,
+        };
+
+        if (settings?.model) {
+          assistantMessage.model = settings.model;
+        }
+
+        addMessage(activeConversationId, assistantMessage);
+
+        return response;
+      } catch (error) {
+        let errorMessage = 'Unknown error';
+        
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          
+          const providerName = settings?.provider === 'anthropic' ? 'Claude' : 
+                              settings?.provider === 'openai' ? 'OpenAI' : 
+                              settings?.provider === 'gemini' ? 'Gemini' : 'AI';
+          
+          if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests')) {
+            if (settings?.provider === 'gemini') {
+              errorMessage = '⚠️ Limite de requisições do Gemini excedido (10 req/min no tier gratuito). Aguarde 1 minuto.';
+            } else {
+              errorMessage = `⚠️ Limite de requisições excedido no ${providerName}. Aguarde alguns minutos.`;
+            }
+          } else if (errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
+            errorMessage = `⚠️ Cota excedida no ${providerName}. Verifique seu plano.`;
+          } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized') || errorMessage.includes('invalid') || errorMessage.includes('API key')) {
+            errorMessage = `🔑 Chave API inválida para ${providerName}. Verifique sua configuração.`;
+          } else if (errorMessage.includes('timeout')) {
+            errorMessage = '⏱️ Tempo limite excedido. Tente novamente.';
+          } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+            errorMessage = '🌐 Erro de conexão. Verifique sua internet.';
+          } else if (errorMessage.includes('context_length') || errorMessage.includes('too long')) {
+            errorMessage = '📏 Mensagem muito longa. Reduza o tamanho ou limpe o histórico.';
+          }
+        }
+        
+        setError(errorMessage);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [aiService, activeConversationId, addMessage, getActiveConversation, setError, setLoading, settings]
+  );
+
+  const analyzeChart = useCallback(
+    async (request: AIAnalysisRequest) => {
+      if (!aiService) {
+        setError('AI service not configured');
+        return null;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await aiService.analyzeChart(request);
+        setLastAnalysis(response);
+
+        if (activeConversationId) {
+          addMessage(activeConversationId, {
+            role: 'user',
+            content: `[Chart Analysis Request] ${request.context || 'Analyzing chart...'}`,
+            images: [request.chartImage],
+          });
+
+          const assistantMessage: Parameters<typeof addMessage>[1] = {
+            role: 'assistant',
+            content: response.text,
+          };
+
+          if (settings?.model) {
+            assistantMessage.model = settings.model;
+          }
+
+          addMessage(activeConversationId, assistantMessage);
+        }
+
+        return response;
+      } catch (error) {
+        let errorMessage = 'Unknown error';
+        
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          
+          const providerName = settings?.provider === 'anthropic' ? 'Claude' : 
+                              settings?.provider === 'openai' ? 'OpenAI' : 
+                              settings?.provider === 'gemini' ? 'Gemini' : 'AI';
+          
+          if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests')) {
+            if (settings?.provider === 'gemini') {
+              errorMessage = '⚠️ Limite de requisições do Gemini excedido (10 req/min no tier gratuito). Aguarde 1 minuto.';
+            } else {
+              errorMessage = `⚠️ Limite de requisições excedido no ${providerName}. Aguarde alguns minutos.`;
+            }
+          } else if (errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
+            errorMessage = `⚠️ Cota excedida no ${providerName}. Verifique seu plano.`;
+          } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized') || errorMessage.includes('invalid') || errorMessage.includes('API key')) {
+            errorMessage = `🔑 Chave API inválida para ${providerName}. Verifique sua configuração.`;
+          } else if (errorMessage.includes('timeout')) {
+            errorMessage = '⏱️ Tempo limite excedido. Tente novamente.';
+          } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+            errorMessage = '🌐 Erro de conexão. Verifique sua internet.';
+          } else if (errorMessage.includes('context_length') || errorMessage.includes('too long')) {
+            errorMessage = '📏 Mensagem muito longa. Reduza o tamanho ou limpe o histórico.';
+          }
+        }
+        
+        setError(errorMessage);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [aiService, activeConversationId, addMessage, setError, setLoading, setLastAnalysis, settings]
+  );
+
+  const analyzeChartSilent = useCallback(
+    async (request: AIAnalysisRequest) => {
+      if (!aiService) {
+        setError('AI service not configured');
+        return null;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await aiService.analyzeChart(request);
+        setLastAnalysis(response);
+        return response;
+      } catch (error) {
+        let errorMessage = 'Unknown error';
+        
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          
+          const providerName = settings?.provider === 'anthropic' ? 'Claude' : 
+                              settings?.provider === 'openai' ? 'OpenAI' : 
+                              settings?.provider === 'gemini' ? 'Gemini' : 'AI';
+          
+          if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests')) {
+            if (settings?.provider === 'gemini') {
+              errorMessage = '⚠️ Limite de requisições do Gemini excedido (10 req/min no tier gratuito). Aguarde 1 minuto.';
+            } else {
+              errorMessage = `⚠️ Limite de requisições excedido no ${providerName}. Aguarde alguns minutos.`;
+            }
+          } else if (errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
+            errorMessage = `⚠️ Cota excedida no ${providerName}. Verifique seu plano.`;
+          } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized') || errorMessage.includes('invalid') || errorMessage.includes('API key')) {
+            errorMessage = `🔑 Chave API inválida para ${providerName}. Verifique sua configuração.`;
+          } else if (errorMessage.includes('timeout')) {
+            errorMessage = '⏱️ Tempo limite excedido. Tente novamente.';
+          } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+            errorMessage = '🌐 Erro de conexão. Verifique sua internet.';
+          } else if (errorMessage.includes('context_length') || errorMessage.includes('too long')) {
+            errorMessage = '📏 Mensagem muito longa. Reduza o tamanho ou limpe o histórico.';
+          }
+        }
+        
+        setError(errorMessage);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [aiService, setError, setLoading, setLastAnalysis, settings]
+  );
+
+  const quickAnalyze = useCallback(
+    async (chartImage: string, context?: string) => {
+      const request: AIAnalysisRequest = {
+        chartImage,
+        candles: [],
+      };
+
+      if (context) {
+        request.context = context;
+      }
+
+      return analyzeChart(request);
+    },
+    [analyzeChart]
+  );
+
+  const startNewConversation = useCallback(() => {
+    const id = createConversation();
+    setActiveConversation(id);
+    return id;
+  }, [createConversation, setActiveConversation]);
+
+  const configure = useCallback(
+    (newSettings: Parameters<typeof setSettings>[0]) => {
+      setSettings(newSettings);
+    },
+    [setSettings]
+  );
+
+  const updateConfig = useCallback(
+    (partialSettings: Parameters<typeof updateSettings>[0]) => {
+      updateSettings(partialSettings);
+    },
+    [updateSettings]
+  );
+
+  return {
+    conversations,
+    activeConversationId,
+    activeConversation: getActiveConversation(),
+    settings,
+    isConfigured,
+    isLoading,
+    error,
+    lastAnalysis,
+
+    configure,
+    updateConfig,
+    
+    sendMessage,
+    analyzeChart,
+    analyzeChartSilent,
+    quickAnalyze,
+
+    createConversation: startNewConversation,
+    deleteConversation,
+    setActiveConversation,
+    updateConversationTitle,
+    clearMessages,
+    exportConversation,
+    importConversation,
+  };
+};
