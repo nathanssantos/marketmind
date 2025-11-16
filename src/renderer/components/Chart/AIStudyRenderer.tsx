@@ -1,4 +1,5 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { CHART_CONFIG } from '@shared/constants';
 import type { AIStudy, AIStudyLine, AIStudyZone, Candle } from '@shared/types';
 import { AI_STUDY_COLORS } from '@shared/types';
 import { useEffect, useRef, useState } from 'react';
@@ -12,6 +13,12 @@ interface AIStudyRendererProps {
   height: number;
   mousePosition: { x: number; y: number } | null;
   onStudyHover: (study: AIStudy | null) => void;
+  advancedConfig?: {
+    paddingLeft?: number;
+    paddingRight?: number;
+    paddingTop?: number;
+    paddingBottom?: number;
+  } | undefined;
 }
 
 const AI_ICON_SIZE = 16;
@@ -25,6 +32,7 @@ export const AIStudyRenderer = ({
   height,
   mousePosition,
   onStudyHover,
+  advancedConfig,
 }: AIStudyRendererProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredStudy, setHoveredStudy] = useState<AIStudy | null>(null);
@@ -106,7 +114,7 @@ export const AIStudyRenderer = ({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !canvasManager || candles.length === 0 || studies.length === 0) {
+    if (!canvas || !canvasManager || candles.length === 0) {
       return;
     }
 
@@ -114,6 +122,27 @@ export const AIStudyRenderer = ({
     if (!ctx) return;
 
     ctx.clearRect(0, 0, width, height);
+
+    if (studies.length === 0) {
+      return;
+    }
+
+    const paddingLeft = advancedConfig?.paddingLeft ?? CHART_CONFIG.CANVAS_PADDING_LEFT;
+    const paddingRight = advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT;
+    const paddingTop = advancedConfig?.paddingTop ?? CHART_CONFIG.CANVAS_PADDING_TOP;
+    const paddingBottom = advancedConfig?.paddingBottom ?? CHART_CONFIG.CANVAS_PADDING_BOTTOM;
+
+    const chartArea = {
+      left: paddingLeft,
+      right: width - paddingRight,
+      top: paddingTop,
+      bottom: height - paddingBottom,
+    };
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
+    ctx.clip();
 
     studies.forEach((study, index) => {
       if (study.visible === false) return;
@@ -127,7 +156,9 @@ export const AIStudyRenderer = ({
         drawZone(ctx, study as AIStudyZone, canvasManager, candles, isHovered, studyNumber);
       }
     });
-  }, [canvasManager, candles, studies, width, height, hoveredStudy]);
+
+    ctx.restore();
+  }, [canvasManager, candles, studies, width, height, hoveredStudy, advancedConfig]);
 
   useEffect(() => {
     onStudyHover(hoveredStudy);
@@ -246,7 +277,7 @@ export const AIStudyRenderer = ({
         top: 0,
         left: 0,
         pointerEvents: 'none',
-        zIndex: 2,
+        zIndex: 1,
       }}
     />
   );

@@ -8,17 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **AI Study Identification System**
-  - Sequential numbering for AI-generated studies (starting from #1)
-  - Numbers displayed next to AI icon on chart for each study
-  - AI prompted to reference studies by number in analysis text
-  - Interactive study references in chat messages
-  - Bidirectional hover highlighting between chat and chart
-  - Hover over "Study #1" in chat highlights corresponding drawing on chart
-  - Hover over drawing on chart highlights its number
-  - Visual feedback with colored, underlined study references in chat
+- **AI Studies Per-Conversation Isolation**
+  - Studies are now isolated per conversation instead of per symbol
+  - Each conversation maintains its own set of AI-generated studies
+  - Switching conversations correctly loads/clears studies
+  - studyDataId tracking in conversation metadata
 
 ### Fixed
+- **AI Studies Rendering and Synchronization**
+  - Fixed canvas clearing logic - canvas now clears before checking if studies exist
+  - Studies now properly appear when switching between conversations
+  - Newly created studies appear immediately on chart after AI response
+  - Fixed study ID sequencing to maintain sequential numbering when adding new studies
+  - Implemented canvas clipping area to prevent studies from overlapping with price/time scales
+  - Reduced z-index from 2 to 1 to prevent overlap with UI elements
+  - Bidirectional hover now works correctly across multiple study additions
 - TypeScript compilation error in migration.ts
 - Password input type compatibility with Chakra UI
 
