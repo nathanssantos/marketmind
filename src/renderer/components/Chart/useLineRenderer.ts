@@ -3,6 +3,8 @@ import type { Candle, Viewport } from '@shared/types';
 import type { Bounds, Dimensions } from '@/renderer/utils/canvas/coordinateSystem';
 import { priceToY } from '@/renderer/utils/canvas/coordinateSystem';
 
+const DEFAULT_LINE_COLOR = '#2196f3';
+
 interface LineRendererConfig {
   candles: Candle[];
   viewport: Viewport;
@@ -22,7 +24,7 @@ export const useLineRenderer = () => {
       canvas,
       bounds,
       dimensions,
-      color = '#2196f3',
+      color = DEFAULT_LINE_COLOR,
       lineWidth = 2,
       showArea = true,
     } = config;

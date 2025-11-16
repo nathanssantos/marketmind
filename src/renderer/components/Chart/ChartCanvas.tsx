@@ -1,8 +1,9 @@
 import { Box } from '@chakra-ui/react';
-import { CHART_COLORS_DARK, CHART_CONFIG } from '@shared/constants';
-import type { AIStudy, Candle, ChartColors, Viewport } from '@shared/types';
+import { CHART_CONFIG } from '@shared/constants';
+import type { AIStudy, Candle, Viewport } from '@shared/types';
 import type { ReactElement } from 'react';
 import { useEffect, useState } from 'react';
+import { useChartColors } from '@renderer/hooks/useChartColors';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import { AIStudyRenderer } from './AIStudyRenderer';
 import { ChartContextMenu } from './ChartContextMenu';
@@ -21,7 +22,6 @@ export interface ChartCanvasProps {
   height?: string | number;
   initialViewport?: Viewport;
   onViewportChange?: (viewport: Viewport) => void;
-  colors?: ChartColors;
   showGrid?: boolean;
   showVolume?: boolean;
   showCurrentPriceLine?: boolean;
@@ -40,7 +40,6 @@ export const ChartCanvas = ({
   height = '600px',
   initialViewport,
   onViewportChange,
-  colors = CHART_COLORS_DARK,
   showGrid = true,
   showVolume = true,
   showCurrentPriceLine = true,
@@ -52,6 +51,7 @@ export const ChartCanvas = ({
   onToggleAIStudiesVisibility,
   aiStudiesVisible = true,
 }: ChartCanvasProps): ReactElement => {
+  const colors = useChartColors();
   const [tooltipData, setTooltipData] = useState<{
     candle: Candle | null;
     x: number;
@@ -344,7 +344,7 @@ export const ChartCanvas = ({
       width={width}
       height={height}
       overflow="hidden"
-      bg="gray.900"
+      bg={colors.background}
       userSelect="none"
     >
       <canvas

@@ -18,24 +18,26 @@ export const ControlPanel = ({
 
   return (
     <Box
-      bg="gray.800"
+      bg="bg.muted"
       borderRadius="md"
       boxShadow="lg"
       opacity={0.95}
       minWidth="200px"
+      borderWidth={1}
+      borderColor="border"
     >
       <HStack
         justify="space-between"
         px={3}
         py={2}
         borderBottom={isExpanded ? '1px solid' : 'none'}
-        borderColor="gray.700"
+        borderColor="border"
         cursor="pointer"
         onClick={() => setIsExpanded(!isExpanded)}
-        _hover={{ bg: 'gray.750' }}
+        _hover={{ bg: 'bg.surface' }}
         borderTopRadius="md"
       >
-        <Text fontSize="sm" fontWeight="semibold" color="gray.200">
+        <Text fontSize="sm" fontWeight="semibold" color="fg">
           {title}
         </Text>
         <IconButton
@@ -43,7 +45,7 @@ export const ControlPanel = ({
           aria-label={isExpanded ? 'Collapse panel' : 'Expand panel'}
           variant="ghost"
           colorPalette="gray"
-          color="gray.400"
+          color="fg.muted"
         >
           {isExpanded ? <HiOutlineChevronUp size={14} /> : <HiOutlineChevronDown size={14} />}
         </IconButton>

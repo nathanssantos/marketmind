@@ -38,6 +38,7 @@ export const ColorModeProvider = ({ children }: ColorModeProviderProps) => {
     root.classList.remove('light', 'dark');
     root.classList.add(colorMode);
     root.style.colorScheme = colorMode;
+    root.setAttribute('data-theme', colorMode);
   }, [colorMode, mounted]);
 
   const toggleColorMode = () => {

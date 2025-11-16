@@ -1,10 +1,10 @@
 import type { CanvasManager } from '@/renderer/utils/canvas/CanvasManager';
-import type { ChartColors } from '@shared/types';
+import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { useCallback } from 'react';
 
 interface UseCurrentPriceLineRendererProps {
   manager: CanvasManager | null;
-  colors: ChartColors;
+  colors: ChartThemeColors;
   enabled?: boolean;
   lineWidth?: number;
   lineStyle?: 'solid' | 'dashed' | 'dotted';
@@ -75,10 +75,10 @@ export const useCurrentPriceLineRenderer = ({
     const labelWidth = textMetrics.width + labelPadding * 2;
     const labelHeight = 16;
     
-    ctx.fillStyle = colors.bullish;
+    ctx.fillStyle = colors.currentPriceLabel.bg;
     ctx.fillRect(labelX, y - labelHeight / 2, labelWidth, labelHeight);
     
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = colors.currentPriceLabel.text;
     ctx.fillText(priceText, labelX + labelPadding, y);
 
     ctx.restore();

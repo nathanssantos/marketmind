@@ -1,12 +1,12 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawCandle } from '@renderer/utils/canvas/drawingUtils';
 import { CHART_CONFIG } from '@shared/constants';
-import type { ChartColors } from '@shared/types';
+import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { useCallback, useEffect } from 'react';
 
 export interface UseCandlestickRendererProps {
   manager: CanvasManager | null;
-  colors: ChartColors;
+  colors: ChartThemeColors;
   enabled?: boolean;
   rightMargin?: number;
   candleWickWidth?: number;
