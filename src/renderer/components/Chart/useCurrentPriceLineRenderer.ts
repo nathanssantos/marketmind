@@ -39,17 +39,14 @@ export const useCurrentPriceLineRenderer = ({
     const currentPrice = lastCandle.close;
     const { width } = dimensions;
 
-    // Calculate Y position for current price
     const y = manager.priceToY(currentPrice);
 
     ctx.save();
     
-    // Set line style
     ctx.strokeStyle = colors.bullish;
     ctx.lineWidth = lineWidth;
     ctx.globalAlpha = 0.8;
     
-    // Apply dash pattern based on style
     if (lineStyle === 'dashed') {
       ctx.setLineDash([8, 4]);
     } else if (lineStyle === 'dotted') {
@@ -58,24 +55,20 @@ export const useCurrentPriceLineRenderer = ({
       ctx.setLineDash([]);
     }
 
-    // Draw the line across the entire chart width (excluding right margin)
     const lineEndX = width - rightMargin;
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(lineEndX, y);
     ctx.stroke();
 
-    // Reset line dash for label
     ctx.setLineDash([]);
     ctx.globalAlpha = 1.0;
 
-    // Draw price label on the right
     const priceText = currentPrice.toFixed(2);
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     
-    // Background for label
     const labelPadding = 4;
     const textMetrics = ctx.measureText(priceText);
     const labelX = lineEndX + 4;
@@ -85,7 +78,6 @@ export const useCurrentPriceLineRenderer = ({
     ctx.fillStyle = colors.bullish;
     ctx.fillRect(labelX, y - labelHeight / 2, labelWidth, labelHeight);
     
-    // Price text
     ctx.fillStyle = '#ffffff';
     ctx.fillText(priceText, labelX + labelPadding, y);
 

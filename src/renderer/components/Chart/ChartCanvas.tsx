@@ -159,21 +159,16 @@ export const ChartCanvas = ({
 
     if (!dimensions) return;
 
-    // Calculate scale boundaries
     const priceScaleLeft = dimensions.width - (advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
     const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
     const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
 
-    // Check if mouse is over price scale (right side)
     const isOnPriceScale = mouseX >= priceScaleLeft && mouseY < timeScaleTop;
     
-    // Check if mouse is over time scale (bottom)
     const isOnTimeScale = mouseY >= timeScaleTop;
     
-    // Check if mouse is in chart area
     const isInChartArea = mouseX < chartAreaRight && mouseY < timeScaleTop;
 
-    // Update cursor based on position
     if (isOnPriceScale) {
       setCursor('ns-resize');
     } else if (isOnTimeScale) {
@@ -304,7 +299,6 @@ export const ChartCanvas = ({
     endInteraction();
   };
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (interactionTimeout) {
@@ -313,7 +307,6 @@ export const ChartCanvas = ({
     };
   }, [interactionTimeout]);
 
-  // Update manager settings when advancedConfig changes
   useEffect(() => {
     if (!manager || !advancedConfig) return;
     
@@ -322,7 +315,6 @@ export const ChartCanvas = ({
     }
   }, [manager, advancedConfig]);
 
-  // Setup render callback and initial render
   useEffect(() => {
     if (!manager) return;
 
@@ -339,7 +331,6 @@ export const ChartCanvas = ({
       renderCurrentPriceLine();
     };
 
-    // Register render callback with manager (will trigger initial render)
     manager.setRenderCallback(render);
 
     return () => {

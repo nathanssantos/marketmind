@@ -42,7 +42,6 @@ export const useVolumeRenderer = ({
     const { candleWidth } = viewport;
     const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
 
-    // Render volume within the main chart area (bottom 25%)
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, effectiveWidth, chartHeight);

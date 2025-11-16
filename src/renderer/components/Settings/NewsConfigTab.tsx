@@ -14,7 +14,6 @@ export const NewsConfigTab = () => {
   const [testMessage, setTestMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Load settings on mount
   useEffect(() => {
     loadSettings();
   }, []);
@@ -22,7 +21,6 @@ export const NewsConfigTab = () => {
   const loadSettings = async () => {
     setLoading(true);
     try {
-      // Load API keys from secure storage
       const [newsKeyResult, cryptoKeyResult, settings] = await Promise.all([
         window.electron.secureStorage.getApiKey('newsapi'),
         window.electron.secureStorage.getApiKey('cryptopanic'),

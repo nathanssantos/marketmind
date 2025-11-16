@@ -35,13 +35,11 @@ export const useChartCanvas = ({
   const managerRef = useRef<CanvasManager | null>(null);
   const [manager, setManager] = useState<CanvasManager | null>(null);
   
-  // Initialize viewport to show last candles if no custom viewport provided
   const [viewport, setViewport] = useState<Viewport>(() => {
     if (initialViewport !== DEFAULT_VIEWPORT) {
       return initialViewport;
     }
     
-    // Show last 100 candles (or all if less than 100)
     const candleCount = candles.length;
     const visibleCount = Math.min(100, candleCount);
     
@@ -56,7 +54,6 @@ export const useChartCanvas = ({
   const [isPanningOnScale, setIsPanningOnScale] = useState(false);
   const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Initialize canvas manager only once
   useEffect(() => {
     if (!canvasRef.current || managerRef.current) return;
 
@@ -96,10 +93,8 @@ export const useChartCanvas = ({
     };
   }, []);
 
-  // Track previous candle count to detect timeframe changes
   const prevCandleCountRef = useRef<number>(candles.length);
 
-  // Update candles when they change
   useEffect(() => {
     if (managerRef.current) {
       const prevCount = prevCandleCountRef.current;
@@ -107,8 +102,6 @@ export const useChartCanvas = ({
       
       managerRef.current.setCandles(candles);
       
-      // Only reset viewport if candle count changed significantly (>10% difference)
-      // This indicates a timeframe change, not just a realtime update
       const countDiffPercentage = Math.abs(currentCount - prevCount) / Math.max(prevCount, 1);
       const isSignificantChange = countDiffPercentage > 0.1;
       
@@ -125,7 +118,6 @@ export const useChartCanvas = ({
         managerRef.current.setViewport(newViewport);
         onViewportChange?.(newViewport);
         
-        // Reset vertical zoom to center the chart
         managerRef.current.resetVerticalZoom();
       }
       
@@ -133,7 +125,6 @@ export const useChartCanvas = ({
     }
   }, [candles]);
 
-  // Update viewport when it changes
   useEffect(() => {
     if (managerRef.current) {
       managerRef.current.setViewport(viewport);
@@ -148,7 +139,6 @@ export const useChartCanvas = ({
     [onViewportChange],
   );
 
-  // Handle wheel events with native addEventListener to prevent passive listener issues
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -202,10 +192,8 @@ export const useChartCanvas = ({
       const deltaY = event.clientY - lastMousePosRef.current.y;
 
       if (isPanningOnScale) {
-        // Zoom vertical when dragging on price scale
         managerRef.current.zoomVertical(deltaY);
       } else {
-        // Pan horizontal and vertical on chart area
         if (deltaX !== 0) {
           managerRef.current.pan(deltaX);
           updateViewport(managerRef.current.getViewport());

@@ -137,14 +137,13 @@ const formatAIError = (error: Error, provider?: AIProviderType): string => {
 };
 
 const formatChartDataContext = (chartData: ChartData): string => {
-  const recentCandles = chartData.candles.slice(-100); // Last 100 candles
+  const recentCandles = chartData.candles.slice(-100);
   const lastCandle = recentCandles[recentCandles.length - 1];
   
   if (!lastCandle) return '';
 
   const visibleMAs = chartData.movingAverages.filter(ma => ma.visible);
   
-  // Calculate price statistics
   const highs = recentCandles.map(c => c.high);
   const lows = recentCandles.map(c => c.low);
   const volumes = recentCandles.map(c => c.volume);
@@ -154,12 +153,10 @@ const formatChartDataContext = (chartData: ChartData): string => {
   const avgVolume = volumes.reduce((a, b) => a + b, 0) / volumes.length;
   const priceRange = ((highestPrice - lowestPrice) / lowestPrice * 100).toFixed(2);
   
-  // Calculate trend
   const first = recentCandles[0];
   const last = recentCandles[recentCandles.length - 1];
   const overallChange = first && last ? ((last.close - first.close) / first.close * 100).toFixed(2) : '0';
   
-  // Count bullish/bearish candles
   const bullishCount = recentCandles.filter(c => c.close > c.open).length;
   const bearishCount = recentCandles.length - bullishCount;
   
@@ -239,11 +236,9 @@ export const useAIStore = create<AIState>()(
       }),
       
       updateSettings: (partialSettings) => set((state) => {
-        // If provider is changing and no model specified, use default model
         const newProvider = partialSettings.provider || state.settings?.provider;
         let newModel = partialSettings.model || state.settings?.model;
         
-        // Use default model if provider changed and no model specified
         if (partialSettings.provider && newProvider && !partialSettings.model) {
           newModel = DEFAULT_MODELS[newProvider];
         }
@@ -435,14 +430,12 @@ export const useAIStore = create<AIState>()(
           return;
         }
 
-        // API key will be retrieved from secure storage by AIService
         let conversationId = state.activeConversationId;
         
         if (!conversationId) {
           conversationId = get().createConversation();
         }
 
-        // Store only the user's message (without chart data) in conversation history
         const userMessage: Partial<AIMessage> = {
           role: 'user',
           content,
@@ -463,13 +456,12 @@ export const useAIStore = create<AIState>()(
         try {
           const aiService = new AIService(settings);
           
-          // Add chart data context only for the API call, not stored in conversation
           const messagesForAPI = chartData 
             ? [
-                ...conversation.messages.slice(0, -1), // All previous messages
+                ...conversation.messages.slice(0, -1),
                 { 
                   ...conversation.messages[conversation.messages.length - 1]!,
-                  content: content + formatChartDataContext(chartData) // Last message with chart data
+                  content: content + formatChartDataContext(chartData)
                 }
               ]
             : conversation.messages;
