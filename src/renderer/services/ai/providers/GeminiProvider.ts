@@ -19,12 +19,15 @@ export class GeminiProvider extends BaseAIProvider {
     images?: string[]
   ): Promise<AIAnalysisResponse> {
     try {
+      const systemPrompt = this.getSystemPrompt();
+      
       const model = this.client.getGenerativeModel({ 
         model: this.model,
         generationConfig: {
           temperature: this.temperature,
           maxOutputTokens: this.maxTokens,
-        }
+        },
+        systemInstruction: systemPrompt,
       });
 
       const history: Array<{

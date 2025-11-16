@@ -10,6 +10,7 @@ export interface UseCandlestickRendererProps {
   enabled?: boolean;
   rightMargin?: number;
   candleWickWidth?: number;
+  hoveredCandleIndex?: number;
 }
 
 export interface UseCandlestickRendererReturn {
@@ -22,6 +23,7 @@ export const useCandlestickRenderer = ({
   enabled = true,
   rightMargin,
   candleWickWidth,
+  hoveredCandleIndex,
 }: UseCandlestickRendererProps): UseCandlestickRendererReturn => {
   const render = useCallback((): void => {
     if (!manager || !enabled) return;
@@ -53,6 +55,8 @@ export const useCandlestickRenderer = ({
       const highY = manager.priceToY(candle.high);
       const lowY = manager.priceToY(candle.low);
 
+      const isHovered = hoveredCandleIndex === actualIndex;
+
       drawCandle(
         ctx,
         x,
@@ -64,11 +68,12 @@ export const useCandlestickRenderer = ({
         candleWickWidth ?? CHART_CONFIG.CANDLE_WICK_WIDTH,
         colors.bullish,
         colors.bearish,
+        isHovered,
       );
     });
 
     ctx.restore();
-  }, [manager, colors, enabled, rightMargin, candleWickWidth, manager?.getCandles()]);
+  }, [manager, colors, enabled, rightMargin, candleWickWidth, hoveredCandleIndex, manager?.getCandles()]);
 
   useEffect(() => {
     render();

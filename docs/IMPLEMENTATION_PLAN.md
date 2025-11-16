@@ -1686,6 +1686,11 @@ Next step: implement the CandlestickRenderer.
   - ✅ Accessibility (ARIA labels, keyboard navigation)
   - ✅ Complete documentation updates
   - ✅ Version 0.12.0 released
+  - ✅ AI Study tooltips with hover-only display
+  - ✅ Unified tooltip system (candles + AI studies)
+  - ✅ Price formatting with K/M notation
+  - ✅ English UI translations
+  - ✅ Removed debug logs from production code
 
 ### 🎯 Project Status
 **All 13 Phases Complete! Production Ready! 🚀**
