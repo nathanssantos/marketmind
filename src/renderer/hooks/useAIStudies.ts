@@ -3,45 +3,57 @@ import { useCallback, useEffect, useState } from 'react';
 import { parseAIResponse } from '../services/ai/AIResponseParser';
 import { aiStudyStorage } from '../services/ai/AIStudyStorage';
 
-export const useAIStudies = (symbol: string) => {
+interface UseAIStudiesOptions {
+  symbol: string;
+  conversationId?: string | null;
+}
+
+export const useAIStudies = ({ symbol, conversationId }: UseAIStudiesOptions) => {
   const [studies, setStudies] = useState<AIStudy[]>([]);
   const [hasStudies, setHasStudies] = useState(false);
+  const [currentStudyDataId, setCurrentStudyDataId] = useState<string | null>(null);
+
+  const storageKey = conversationId || symbol;
 
   const loadStudies = useCallback(() => {
-    const data = aiStudyStorage.getStudiesForSymbol(symbol);
+    const data = aiStudyStorage.getStudiesForSymbol(storageKey);
     if (data) {
       setStudies(data.studies);
       setHasStudies(true);
+      setCurrentStudyDataId(data.id);
     } else {
       setStudies([]);
       setHasStudies(false);
+      setCurrentStudyDataId(null);
     }
-  }, [symbol]);
+  }, [storageKey]);
 
   useEffect(() => {
     loadStudies();
-  }, [loadStudies]);
+  }, [storageKey, loadStudies]);
 
   const saveStudies = useCallback(
     (newStudies: AIStudy[]) => {
       const data: AIStudyData = {
-        id: `${symbol}-${Date.now()}`,
+        id: currentStudyDataId || `${storageKey}-${Date.now()}`,
         symbol,
-        createdAt: Date.now(),
+        createdAt: currentStudyDataId ? Date.now() : Date.now(),
         studies: newStudies,
       };
-      aiStudyStorage.saveStudiesForSymbol(symbol, data);
+      aiStudyStorage.saveStudiesForSymbol(storageKey, data);
       setStudies(newStudies);
       setHasStudies(true);
+      setCurrentStudyDataId(data.id);
     },
-    [symbol]
+    [storageKey, symbol, currentStudyDataId]
   );
 
   const deleteStudies = useCallback(() => {
-    aiStudyStorage.deleteStudiesForSymbol(symbol);
+    aiStudyStorage.deleteStudiesForSymbol(storageKey);
     setStudies([]);
     setHasStudies(false);
-  }, [symbol]);
+    setCurrentStudyDataId(null);
+  }, [storageKey]);
 
   const toggleStudiesVisibility = useCallback(() => {
     setStudies((prevStudies) =>
@@ -54,25 +66,33 @@ export const useAIStudies = (symbol: string) => {
 
   const processAIResponse = useCallback(
     (response: string) => {
-      if (hasStudies) {
-        return response;
-      }
-
       const parsed = parseAIResponse(response);
       
       if (parsed.studies && parsed.studies.length > 0) {
-        saveStudies(parsed.studies);
+        const existingStudies = hasStudies ? studies : [];
+        const maxId = existingStudies.length > 0 
+          ? Math.max(...existingStudies.map(s => s.id || 0))
+          : 0;
+        
+        const newStudiesWithIds = parsed.studies.map((study, index) => ({
+          ...study,
+          id: maxId + index + 1,
+        }));
+        
+        const allStudies = [...existingStudies, ...newStudiesWithIds];
+        saveStudies(allStudies);
       }
 
       return parsed.analysis;
     },
-    [hasStudies, saveStudies]
+    [hasStudies, studies, saveStudies]
   );
 
   return {
     studies,
     hasStudies,
     studiesVisible: studies.length > 0 && studies.some((s) => s.visible !== false),
+    studyDataId: currentStudyDataId,
     loadStudies,
     saveStudies,
     deleteStudies,

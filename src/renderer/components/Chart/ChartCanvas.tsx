@@ -371,6 +371,7 @@ export const ChartCanvas = ({
           height={canvasRef.current?.height ?? 0}
           mousePosition={mousePosition}
           onStudyHover={handleAIStudyHover}
+          advancedConfig={advancedConfig}
         />
       )}
       <ChartTooltip
