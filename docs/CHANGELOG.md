@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **AI Study Tooltips**
+  - Unified tooltip system for both candles and AI studies
+  - Hover-only display for AI study information
+  - Price formatting with K/M notation (e.g., 1.5K, 2.3M)
+  - Study type, label, and price information in tooltip
+  - Visual hover effects (thicker lines, more opaque zones)
+  - Intelligent hover detection for lines and zones
+  - Study labels removed from canvas for cleaner visualization
+
+### Changed
+- **AI Study Display**
+  - All study information now shown in tooltip instead of canvas labels
+  - Simplified rendering (70% less code, better performance)
+  - English translations for all UI elements (formerly Portuguese)
+  - Context menu items: "Hide AI Studies", "Show AI Studies", "Delete AI Studies"
+
+### Removed
+- Debug console.log statements from useAIStudies hook
+- Debug console.log statements from AIResponseParser
+- Canvas label rendering for AI studies
+
 ### In Progress
 - Cross-platform testing (macOS, Windows, Linux)
 - Performance profiling and benchmarking

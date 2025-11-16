@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { AIMessage, AIAnalysisRequest, AIAnalysisResponse } from '@shared/types';
+import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage } from '@shared/types';
 import { BaseAIProvider, type AIProviderConfig } from '../types';
 
 export class ClaudeProvider extends BaseAIProvider {
@@ -22,7 +22,7 @@ export class ClaudeProvider extends BaseAIProvider {
     images?: string[]
   ): Promise<AIAnalysisResponse> {
     try {
-      const systemContent = messages.find(m => m.role === 'user')?.content;
+      const systemPrompt = this.getSystemPrompt();
       const userMessages = messages.filter(m => m.role === 'user' || m.role === 'assistant');
 
       const claudeMessages = userMessages.map(msg => {
@@ -55,11 +55,8 @@ export class ClaudeProvider extends BaseAIProvider {
         max_tokens: this.maxTokens,
         temperature: this.temperature,
         messages: claudeMessages as Anthropic.MessageParam[],
+        system: systemPrompt,
       };
-
-      if (systemContent) {
-        params.system = systemContent;
-      }
 
       const response = await this.client.messages.create(params);
 
