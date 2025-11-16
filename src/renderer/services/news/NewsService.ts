@@ -110,8 +110,6 @@ export class NewsService {
 
         return response;
       } catch (error) {
-        // Silent error - don't spam console logs
-        // Only throw if this was the last provider
         if (provider === providers[providers.length - 1]) {
           throw error;
         }

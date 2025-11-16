@@ -42,7 +42,6 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
     toggleChatSidebar: toggleChat,
     focusChatInput: () => {
       if (!isChatOpen) setIsChatOpen(true);
-      // The ChatSidebar will auto-focus the input when opened
     },
     showKeyboardShortcuts: () => setShowKeyboardShortcuts(true),
     openSymbolSelector: () => onOpenSymbolSelector?.(),
