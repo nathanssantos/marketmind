@@ -5,16 +5,13 @@ import type { AIProviderType } from '@shared/types';
 import { memo, useCallback, useMemo } from 'react';
 
 const AI_MODEL_OPTIONS: SelectOption[] = [
-  // OpenAI
   { value: 'openai:gpt-4o', label: 'OpenAI - GPT-4o' },
   { value: 'openai:gpt-4o-mini', label: 'OpenAI - GPT-4o Mini' },
   
-  // Anthropic
   { value: 'anthropic:claude-sonnet-4-5-20250929', label: 'Claude - 4.5 Sonnet' },
   { value: 'anthropic:claude-haiku-4-5-20251001', label: 'Claude - 4.5 Haiku' },
   { value: 'anthropic:claude-opus-4-1-20250805', label: 'Claude - 4.1 Opus' },
   
-  // Gemini
   { value: 'gemini:gemini-2.0-flash-exp', label: 'Gemini - 2.0 Flash Exp (FREE)' },
   { value: 'gemini:gemini-1.5-pro', label: 'Gemini - 1.5 Pro' },
   { value: 'gemini:gemini-1.5-flash', label: 'Gemini - 1.5 Flash' },

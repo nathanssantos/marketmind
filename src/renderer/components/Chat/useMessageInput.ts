@@ -16,7 +16,7 @@ export const useMessageInput = () => {
     if (!canSend) return;
 
     const messageToSend = message.trim();
-    setMessage(''); // Clear immediately
+    setMessage('');
     
     await sendMessage(messageToSend, chartData || undefined);
   }, [canSend, message, chartData, sendMessage]);

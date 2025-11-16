@@ -244,11 +244,10 @@ function AppContent(): ReactElement {
     return () => setResponseProcessor(null);
   }, [processAIResponse, setResponseProcessor]);
 
-  // News integration disabled until API keys are configured
   const { articles: newsArticles } = useNews({
     symbols: [extractSymbolCode(symbol)],
     limit: 10,
-    enabled: false, // Enable this when you add API keys to .env
+    enabled: false,
     refetchInterval: 5 * 60 * 1000,
   });
 

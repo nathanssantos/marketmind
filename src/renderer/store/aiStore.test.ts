@@ -184,7 +184,7 @@ describe('aiStore', () => {
       });
 
       const state = useAIStore.getState();
-      expect(state.conversations[0]?.title).toHaveLength(53); // 50 chars + "..."
+      expect(state.conversations[0]?.title).toHaveLength(53);
       expect(state.conversations[0]?.title).toContain('...');
     });
 

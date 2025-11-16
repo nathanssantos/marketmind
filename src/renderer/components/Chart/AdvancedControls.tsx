@@ -4,22 +4,17 @@ import { ControlPanel } from './ControlPanel';
 import { PinnableControl } from './PinnableControl';
 
 export interface AdvancedControlsConfig {
-  // Chart Dimensions
   rightMargin: number;
   volumeHeightRatio: number;
   
-  // Candle Settings
   candleSpacing: number;
   candleWickWidth: number;
   
-  // Grid Settings
   gridLineWidth: number;
   
-  // Current Price Line
   currentPriceLineWidth: number;
   currentPriceLineStyle: 'solid' | 'dashed' | 'dotted';
   
-  // Padding
   paddingTop: number;
   paddingBottom: number;
   paddingLeft: number;
