@@ -29,6 +29,7 @@ export interface Conversation {
   messages: AIMessage[];
   createdAt: number;
   updatedAt: number;
+  symbol?: string;
 }
 
 export interface AISettings {
@@ -56,9 +57,11 @@ interface AIState {
   updateSettings: (partialSettings: Partial<AISettings>) => void;
   clearSettings: () => void;
 
-  createConversation: (title?: string) => string;
+  createConversation: (title?: string, symbol?: string) => string;
+  startNewConversation: (symbol?: string) => string;
   deleteConversation: (id: string) => void;
   setActiveConversation: (id: string | null) => void;
+  setActiveConversationBySymbol: (symbol: string) => void;
   updateConversationTitle: (id: string, title: string) => void;
 
   addMessage: (conversationId: string, message: Omit<AIMessage, 'id' | 'timestamp'>) => void;
@@ -72,6 +75,7 @@ interface AIState {
 
   getActiveConversation: () => Conversation | null;
   getConversationMessages: (id: string) => AIMessage[];
+  getConversationsBySymbol: (symbol: string) => Conversation[];
 
   exportConversation: (id: string) => string;
   importConversation: (data: string) => void;
@@ -262,7 +266,7 @@ export const useAIStore = create<AIState>()(
 
       setResponseProcessor: (processor) => set({ responseProcessor: processor }),
 
-      createConversation: (title) => {
+      createConversation: (title, symbol) => {
         const id = generateId();
         const now = Date.now();
         
@@ -272,6 +276,7 @@ export const useAIStore = create<AIState>()(
           messages: [],
           createdAt: now,
           updatedAt: now,
+          ...(symbol ? { symbol } : {}),
         };
 
         set((state) => ({
@@ -282,6 +287,12 @@ export const useAIStore = create<AIState>()(
         return id;
       },
 
+      startNewConversation: (symbol) => {
+        const newId = get().createConversation(undefined, symbol);
+        set({ activeConversationId: newId });
+        return newId;
+      },
+
       deleteConversation: (id) => set((state) => ({
         conversations: state.conversations.filter(c => c.id !== id),
         activeConversationId: state.activeConversationId === id 
@@ -290,6 +301,20 @@ export const useAIStore = create<AIState>()(
       })),
 
       setActiveConversation: (id) => set({ activeConversationId: id }),
+
+      setActiveConversationBySymbol: (symbol) => {
+        const state = get();
+        const conversationForSymbol = state.conversations
+          .filter(c => c.symbol === symbol)
+          .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+        
+        if (conversationForSymbol) {
+          set({ activeConversationId: conversationForSymbol.id });
+        } else {
+          const newId = get().createConversation(undefined, symbol);
+          set({ activeConversationId: newId });
+        }
+      },
 
       updateConversationTitle: (id, title) => set((state) => ({
         conversations: state.conversations.map(c =>
@@ -392,6 +417,12 @@ export const useAIStore = create<AIState>()(
         return conversation?.messages || [];
       },
 
+      getConversationsBySymbol: (symbol) => {
+        return get().conversations
+          .filter(c => c.symbol === symbol)
+          .sort((a, b) => b.updatedAt - a.updatedAt);
+      },
+
       exportConversation: (id) => {
         const conversation = get().conversations.find(c => c.id === id);
         if (!conversation) throw new Error('Conversation not found');
@@ -431,9 +462,15 @@ export const useAIStore = create<AIState>()(
         }
 
         let conversationId = state.activeConversationId;
+        const currentSymbol = chartData?.symbol;
         
         if (!conversationId) {
-          conversationId = get().createConversation();
+          conversationId = get().createConversation(undefined, currentSymbol);
+        } else {
+          const activeConversation = get().getActiveConversation();
+          if (activeConversation && currentSymbol && activeConversation.symbol !== currentSymbol) {
+            conversationId = get().createConversation(undefined, currentSymbol);
+          }
         }
 
         const userMessage: Partial<AIMessage> = {

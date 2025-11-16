@@ -157,6 +157,12 @@ function AppContent(): ReactElement {
     });
   }, []);
 
+  const setActiveConversationBySymbol = useAIStore((state) => state.setActiveConversationBySymbol);
+
+  useEffect(() => {
+    setActiveConversationBySymbol(symbol);
+  }, [symbol, setActiveConversationBySymbol]);
+
   const marketService = useMemo(() => {
     const binance = new BinanceProvider();
     const coingecko = new CoinGeckoProvider();
