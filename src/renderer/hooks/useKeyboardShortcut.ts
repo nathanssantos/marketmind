@@ -22,7 +22,6 @@ export const useKeyboardShortcut = (shortcuts: KeyboardShortcut[]) => {
         const metaKey = shortcut.meta && event.metaKey;
         const shiftKey = shortcut.shift ? event.shiftKey : !event.shiftKey;
         const altKey = shortcut.alt ? event.altKey : !event.altKey;
-        const modKey = isMac ? metaKey : ctrlKey;
 
         const keyMatches = event.key.toLowerCase() === shortcut.key.toLowerCase();
         
