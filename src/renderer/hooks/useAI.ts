@@ -25,28 +25,28 @@ const formatAIError = (error: Error, provider?: string): string => {
     if (provider === 'gemini') {
       const waitTime = errorMessage.match(/retry in (\d+)/i)?.[1] || '60';
       if (errorMessage.includes('limit: 0') || errorMessage.includes('Quota exceeded')) {
-        return `⚠️ **Cota do Gemini 2.0 Flash Exp esgotada**\n\n` +
-          `O tier gratuito tem limite de **10 requisições por minuto**.\n\n` +
-          `**Soluções:**\n` +
-          `• Aguarde ${waitTime} segundos e tente novamente\n` +
-          `• Ou vá em Settings > AI Configuration e troque para **Gemini 1.5 Flash** (mais rápido e barato)\n` +
-          `• Ou use outro provedor (OpenAI/Claude)`;
+        return `⚠️ **Gemini 2.0 Flash Exp quota exhausted**\n\n` +
+          `The free tier has a limit of **10 requests per minute**.\n\n` +
+          `**Solutions:**\n` +
+          `• Wait ${waitTime} seconds and try again\n` +
+          `• Or go to Settings > AI Configuration and switch to **Gemini 1.5 Flash** (faster and cheaper)\n` +
+          `• Or use another provider (OpenAI/Claude)`;
       } else {
-        return `⚠️ Limite de requisições do Gemini excedido (10 req/min). Aguarde ${waitTime}s ou troque de modelo nas configurações.`;
+        return `⚠️ Gemini request limit exceeded (10 req/min). Wait ${waitTime}s or switch model in settings.`;
       }
     } else {
-      return `⚠️ Limite de requisições excedido no ${providerName}. Aguarde alguns minutos e tente novamente.`;
+      return `⚠️ Request limit exceeded on ${providerName}. Wait a few minutes and try again.`;
     }
   } else if (errorMessage.includes('rate limit')) {
-    return `⚠️ Taxa de requisições excedida no ${providerName}. Aguarde alguns minutos.`;
+    return `⚠️ Rate limit exceeded on ${providerName}. Wait a few minutes.`;
   } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized') || errorMessage.includes('invalid') || errorMessage.includes('API key')) {
-    return `🔑 Chave API inválida para ${providerName}. Verifique sua configuração.`;
+    return `🔑 Invalid API key for ${providerName}. Check your settings.`;
   } else if (errorMessage.includes('timeout')) {
-    return '⏱️ Tempo limite excedido. Tente novamente.';
+    return '⏱️ Request timeout. Try again.';
   } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-    return '🌐 Erro de conexão. Verifique sua internet.';
+    return '🌐 Connection error. Check your internet.';
   } else if (errorMessage.includes('context_length') || errorMessage.includes('too long')) {
-    return '📏 Mensagem muito longa. Reduza o tamanho ou limpe o histórico.';
+    return '📏 Message too long. Reduce size or clear history.';
   }
   
   return errorMessage;
