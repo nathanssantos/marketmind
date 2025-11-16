@@ -8,14 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **AI Study Tooltips**
-  - Unified tooltip system for both candles and AI studies
-  - Hover-only display for AI study information
-  - Price formatting with K/M notation (e.g., 1.5K, 2.3M)
-  - Study type, label, and price information in tooltip
-  - Visual hover effects (thicker lines, more opaque zones)
-  - Intelligent hover detection for lines and zones
-  - Study labels removed from canvas for cleaner visualization
+- **Test Coverage Expansion**
+  - Added comprehensive tests for aiStore (Zustand store) covering all state management
+  - Added tests for GlobalActionsContext
+  - Added tests for ChartContext
+  - Added basic smoke tests for App.tsx component
+  - Achieved 92%+ total code coverage across the codebase
 
 ### Changed
 - **AI Study Display**
@@ -28,6 +26,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Debug console.log statements from useAIStudies hook
 - Debug console.log statements from AIResponseParser
 - Canvas label rendering for AI studies
+
+## [0.8.0] - 2024-12-XX
+
+### Added
+- **AI Study Tooltips**
+  - Unified tooltip system for both candles and AI studies
+  - Hover-only display for AI study information
+  - Price formatting with K/M notation (e.g., 1.5K, 2.3M)
+  - Study type, label, and price information in tooltip
+  - Visual hover effects (thicker lines, more opaque zones)
+  - Intelligent hover detection for lines and zones
+  - Study labels removed from canvas for cleaner visualization
 
 ### In Progress
 - Cross-platform testing (macOS, Windows, Linux)
