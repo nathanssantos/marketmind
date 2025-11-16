@@ -5,7 +5,7 @@
 <div align="center">
 
 ![Version](https://img.shields.io/badge/version-0.14.0-blue.svg)
-![Tests](https://img.shields.io/badge/tests-581%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-592%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-90.62%25-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
@@ -126,7 +126,7 @@ npm run dev
 
 ## 🧪 Testing
 
-The project has a comprehensive test infrastructure with 581 passing tests:
+The project has a comprehensive test infrastructure with 592 passing tests:
 
 ```bash
 # Run all tests
@@ -140,12 +140,12 @@ npm run test:coverage
 ```
 
 **Test Coverage:** ✅ EXCELLENT (Phase 11 - 100% complete)
-- **581 tests** passing (100% pass rate)
+- **592 tests** passing (100% pass rate)
 - **90.62%** overall coverage (exceeded 80% target! 🎉)
 - **69 tests** for utility functions (96.3% coverage ✅)
 - **161 tests** for React hooks (87.27% coverage ✅)
 - **277 tests** for service layer (91.3% coverage ✅)
-- **74 tests** for components (100% coverage ✅)
+- **85 tests** for components (100% coverage ✅)
 
 **All Critical Paths Tested:**
 - ✅ Test infrastructure (Vitest 4.0.9 + React Testing Library)
