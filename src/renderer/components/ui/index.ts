@@ -9,6 +9,7 @@ export { Input } from './input';
 export { Logo } from './logo';
 export { NumberInput } from './number-input';
 export { PasswordInput } from './password-input';
+export { Popover } from './popover';
 export { Select } from './select';
 export { Slider } from './slider';
 export { Switch } from './switch';

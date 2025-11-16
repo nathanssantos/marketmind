@@ -58,6 +58,7 @@ interface AIState {
   clearSettings: () => void;
 
   createConversation: (title?: string, symbol?: string) => string;
+  startNewConversation: (symbol?: string) => string;
   deleteConversation: (id: string) => void;
   setActiveConversation: (id: string | null) => void;
   setActiveConversationBySymbol: (symbol: string) => void;
@@ -284,6 +285,12 @@ export const useAIStore = create<AIState>()(
         }));
 
         return id;
+      },
+
+      startNewConversation: (symbol) => {
+        const newId = get().createConversation(undefined, symbol);
+        set({ activeConversationId: newId });
+        return newId;
       },
 
       deleteConversation: (id) => set((state) => ({
