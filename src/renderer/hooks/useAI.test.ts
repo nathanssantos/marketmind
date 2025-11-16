@@ -340,11 +340,16 @@ describe('useAI', () => {
     });
 
     expect(mockStore.setError).toHaveBeenCalledWith(
-      '⚠️ Limite de requisições do Gemini excedido (10 req/min no tier gratuito). Aguarde 1 minuto.'
+      '⚠️ Limite de requisições do Gemini excedido (10 req/min). Aguarde 60s ou troque de modelo nas configurações.'
     );
   });
 
   it('should handle 429 rate limit error for other providers', async () => {
+    mockStore.settings = {
+      provider: 'openai' as AIProviderType,
+      model: 'gpt-4o',
+    };
+
     const errorService = {
       ...mockAIService,
       sendMessage: vi.fn().mockRejectedValue(new Error('rate limit exceeded')),
@@ -357,11 +362,16 @@ describe('useAI', () => {
     });
 
     expect(mockStore.setError).toHaveBeenCalledWith(
-      '⚠️ Cota excedida no OpenAI. Verifique seu plano.'
+      '⚠️ Taxa de requisições excedida no OpenAI. Aguarde alguns minutos.'
     );
   });
 
   it('should handle quota exceeded error', async () => {
+    mockStore.settings = {
+      provider: 'openai' as AIProviderType,
+      model: 'gpt-4o',
+    };
+
     const errorService = {
       ...mockAIService,
       sendMessage: vi.fn().mockRejectedValue(new Error('quota exceeded')),
@@ -374,7 +384,7 @@ describe('useAI', () => {
     });
 
     expect(mockStore.setError).toHaveBeenCalledWith(
-      '⚠️ Cota excedida no OpenAI. Verifique seu plano.'
+      '⚠️ Limite de requisições excedido no OpenAI. Aguarde alguns minutos e tente novamente.'
     );
   });
 
@@ -490,7 +500,7 @@ describe('useAI', () => {
     });
 
     expect(mockStore.setError).toHaveBeenCalledWith(
-      '⚠️ Limite de requisições do Gemini excedido (10 req/min no tier gratuito). Aguarde 1 minuto.'
+      '⚠️ Limite de requisições do Gemini excedido (10 req/min). Aguarde 60s ou troque de modelo nas configurações.'
     );
   });
 

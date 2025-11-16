@@ -63,7 +63,6 @@ export const useLineChartRenderer = ({
 
     ctx.stroke();
 
-    // Optional: Fill area below line
     if (visibleCandles.length > 0) {
       const firstIndex = Math.floor(viewport.start);
       const lastIndex = firstIndex + visibleCandles.length - 1;

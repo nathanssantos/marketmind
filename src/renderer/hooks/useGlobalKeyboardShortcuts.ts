@@ -25,15 +25,12 @@ export const useGlobalKeyboardShortcuts = (props: GlobalKeyboardShortcutsProps) 
       const { key, ctrlKey, metaKey } = event;
       const modKey = isMac ? metaKey : ctrlKey;
 
-      // Ignore if user is typing in an input field
       const target = event.target as HTMLElement;
       const isInput = target.tagName === 'INPUT' || 
                      target.tagName === 'TEXTAREA' || 
                      target.isContentEditable;
 
-      // Global shortcuts (work even in input fields)
       if (key === 'Escape') {
-        // ESC is handled by Dialog components
         return;
       }
 
@@ -67,7 +64,6 @@ export const useGlobalKeyboardShortcuts = (props: GlobalKeyboardShortcutsProps) 
         return;
       }
 
-      // Chart shortcuts (don't work in input fields)
       if (isInput) return;
 
       switch (key.toLowerCase()) {

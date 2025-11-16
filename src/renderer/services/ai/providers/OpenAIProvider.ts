@@ -1,5 +1,5 @@
+import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage } from '@shared/types';
 import OpenAI from 'openai';
-import type { AIMessage, AIAnalysisRequest, AIAnalysisResponse } from '@shared/types';
 import { BaseAIProvider, type AIProviderConfig } from '../types';
 
 export class OpenAIProvider extends BaseAIProvider {
@@ -22,10 +22,18 @@ export class OpenAIProvider extends BaseAIProvider {
     images?: string[]
   ): Promise<AIAnalysisResponse> {
     try {
-      const chatMessages = messages.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-      }));
+      const systemPrompt = this.getSystemPrompt();
+      
+      const chatMessages: OpenAI.ChatCompletionMessageParam[] = [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+        ...messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        })) as OpenAI.ChatCompletionMessageParam[],
+      ];
 
       if (images && images.length > 0) {
         const lastMessage = chatMessages[chatMessages.length - 1];
@@ -34,7 +42,7 @@ export class OpenAIProvider extends BaseAIProvider {
             ? lastMessage.content 
             : '';
 
-          const content: unknown[] = [
+          const content: OpenAI.ChatCompletionContentPart[] = [
             { type: 'text', text: textContent },
           ];
 
@@ -48,7 +56,7 @@ export class OpenAIProvider extends BaseAIProvider {
             });
           });
 
-          lastMessage.content = content as unknown as string;
+          lastMessage.content = content;
         }
       }
 

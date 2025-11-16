@@ -11,6 +11,7 @@ export interface UseVolumeRendererProps {
   opacity?: number;
   rightMargin?: number;
   volumeHeightRatio?: number;
+  hoveredCandleIndex?: number;
 }
 
 export interface UseVolumeRendererReturn {
@@ -24,6 +25,7 @@ export const useVolumeRenderer = ({
   opacity = 0.2,
   rightMargin,
   volumeHeightRatio,
+  hoveredCandleIndex,
 }: UseVolumeRendererProps): UseVolumeRendererReturn => {
   const render = useCallback((): void => {
     if (!manager || !enabled) return;
@@ -40,7 +42,6 @@ export const useVolumeRenderer = ({
     const { candleWidth } = viewport;
     const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
 
-    // Render volume within the main chart area (bottom 25%)
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, effectiveWidth, chartHeight);
@@ -60,17 +61,29 @@ export const useVolumeRenderer = ({
 
       const isBullish = candle.close >= candle.open;
       const baseColor = isBullish ? colors.bullish : colors.bearish;
+      const isHovered = hoveredCandleIndex === actualIndex;
       
       const rgbMatch = baseColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+      const volumeOpacity = isHovered ? opacity * 2.5 : opacity;
       const color = rgbMatch && rgbMatch[1] && rgbMatch[2] && rgbMatch[3]
-        ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${opacity})`
-        : `rgba(120, 120, 120, ${opacity})`;
+        ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${volumeOpacity})`
+        : `rgba(120, 120, 120, ${volumeOpacity})`;
+
+      if (isHovered) {
+        ctx.save();
+        ctx.shadowColor = baseColor;
+        ctx.shadowBlur = 6;
+      }
 
       drawRect(ctx, x, volumeBaseY - barHeight, candleWidth, barHeight, color);
+
+      if (isHovered) {
+        ctx.restore();
+      }
     });
 
     ctx.restore();
-  }, [manager, colors, enabled, opacity, rightMargin, volumeHeightRatio, manager?.getCandles()]);
+  }, [manager, colors, enabled, opacity, rightMargin, volumeHeightRatio, hoveredCandleIndex, manager?.getCandles()]);
 
   useEffect(() => {
     render();

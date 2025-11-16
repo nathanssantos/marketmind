@@ -37,9 +37,9 @@ describe('movingAverages', () => {
       
       expect(result[0]).toBeNull();
       expect(result[1]).toBeNull();
-      expect(result[2]).toBe((11 + 12 + 13) / 3); // 12
-      expect(result[3]).toBe((12 + 13 + 14) / 3); // 13
-      expect(result[4]).toBe((13 + 14 + 15) / 3); // 14
+      expect(result[2]).toBe((11 + 12 + 13) / 3);
+      expect(result[3]).toBe((12 + 13 + 14) / 3);
+      expect(result[4]).toBe((13 + 14 + 15) / 3);
     });
 
     it('should calculate SMA correctly for period 5', () => {
@@ -49,8 +49,8 @@ describe('movingAverages', () => {
       expect(result[1]).toBeNull();
       expect(result[2]).toBeNull();
       expect(result[3]).toBeNull();
-      expect(result[4]).toBe((11 + 12 + 13 + 14 + 15) / 5); // 13
-      expect(result[5]).toBe((12 + 13 + 14 + 15 + 16) / 5); // 14
+      expect(result[4]).toBe((11 + 12 + 13 + 14 + 15) / 5);
+      expect(result[5]).toBe((12 + 13 + 14 + 15 + 16) / 5);
     });
 
     it('should handle period equal to candles length', () => {
@@ -97,12 +97,12 @@ describe('movingAverages', () => {
 
     it('should calculate EMA correctly for period 3', () => {
       const result = calculateEMA(mockCandles, 3);
-      const multiplier = 2 / (3 + 1); // 0.5
+      const multiplier = 2 / (3 + 1);
       
       expect(result[0]).toBeNull();
       expect(result[1]).toBeNull();
       
-      const firstEMA = (11 + 12 + 13) / 3; // 12
+      const firstEMA = (11 + 12 + 13) / 3;
       expect(result[2]).toBe(firstEMA);
       
       const secondEMA = (14 - firstEMA) * multiplier + firstEMA;
@@ -114,13 +114,13 @@ describe('movingAverages', () => {
 
     it('should calculate EMA correctly for period 5', () => {
       const result = calculateEMA(mockCandles, 5);
-      const multiplier = 2 / (5 + 1); // 0.333...
+      const multiplier = 2 / (5 + 1);
       
       for (let i = 0; i < 4; i++) {
         expect(result[i]).toBeNull();
       }
       
-      const firstEMA = (11 + 12 + 13 + 14 + 15) / 5; // 13
+      const firstEMA = (11 + 12 + 13 + 14 + 15) / 5;
       expect(result[4]).toBe(firstEMA);
       
       const secondEMA = (16 - firstEMA) * multiplier + firstEMA;

@@ -141,7 +141,6 @@ export const migrateNewsSettings = async (): Promise<boolean> => {
       return false;
     }
 
-    // Check for legacy localStorage keys
     const legacyNewsApiKey = localStorage.getItem('news_api_key');
     const legacyCryptoPanicKey = localStorage.getItem('cryptopanic_api_key');
     const legacyEnabled = localStorage.getItem('news_enabled');
@@ -150,7 +149,6 @@ export const migrateNewsSettings = async (): Promise<boolean> => {
 
     let migrated = false;
 
-    // Migrate API keys if they exist
     if (legacyNewsApiKey && legacyNewsApiKey.trim()) {
       const result = await window.electron.secureStorage.setApiKey('newsapi', legacyNewsApiKey.trim());
       if (result.success) {
@@ -167,7 +165,6 @@ export const migrateNewsSettings = async (): Promise<boolean> => {
       }
     }
 
-    // Migrate settings if they exist
     if (legacyEnabled !== null || legacyRefreshInterval !== null || legacyMaxArticles !== null) {
       await window.electron.secureStorage.setNewsSettings({
         enabled: legacyEnabled === 'true',
@@ -178,7 +175,6 @@ export const migrateNewsSettings = async (): Promise<boolean> => {
       migrated = true;
     }
 
-    // Clean up old localStorage keys
     if (migrated) {
       localStorage.removeItem('news_api_key');
       localStorage.removeItem('cryptopanic_api_key');
@@ -188,7 +184,6 @@ export const migrateNewsSettings = async (): Promise<boolean> => {
       console.log('Cleaned up legacy news settings from localStorage');
     }
 
-    // Mark migration as complete
     const currentStatus = getMigrationStatus();
     setMigrationStatus({ ...currentStatus, newsSettingsMigrated: true });
     

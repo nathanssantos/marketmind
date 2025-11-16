@@ -49,6 +49,8 @@ interface AIState {
   messages: AIMessage[];
   provider: AIProviderType | null;
   model: string | null;
+  
+  responseProcessor: ((response: string) => string) | null;
 
   setSettings: (settings: AISettings) => void;
   updateSettings: (partialSettings: Partial<AISettings>) => void;
@@ -75,6 +77,7 @@ interface AIState {
   importConversation: (data: string) => void;
 
   sendMessage: (content: string, chartData?: ChartData) => Promise<void>;
+  setResponseProcessor: (processor: ((response: string) => string) | null) => void;
 
   clearAll: () => void;
 }
@@ -134,14 +137,13 @@ const formatAIError = (error: Error, provider?: AIProviderType): string => {
 };
 
 const formatChartDataContext = (chartData: ChartData): string => {
-  const recentCandles = chartData.candles.slice(-100); // Last 100 candles
+  const recentCandles = chartData.candles.slice(-100);
   const lastCandle = recentCandles[recentCandles.length - 1];
   
   if (!lastCandle) return '';
 
   const visibleMAs = chartData.movingAverages.filter(ma => ma.visible);
   
-  // Calculate price statistics
   const highs = recentCandles.map(c => c.high);
   const lows = recentCandles.map(c => c.low);
   const volumes = recentCandles.map(c => c.volume);
@@ -151,12 +153,10 @@ const formatChartDataContext = (chartData: ChartData): string => {
   const avgVolume = volumes.reduce((a, b) => a + b, 0) / volumes.length;
   const priceRange = ((highestPrice - lowestPrice) / lowestPrice * 100).toFixed(2);
   
-  // Calculate trend
   const first = recentCandles[0];
   const last = recentCandles[recentCandles.length - 1];
   const overallChange = first && last ? ((last.close - first.close) / first.close * 100).toFixed(2) : '0';
   
-  // Count bullish/bearish candles
   const bullishCount = recentCandles.filter(c => c.close > c.open).length;
   const bearishCount = recentCandles.length - bullishCount;
   
@@ -181,6 +181,13 @@ const formatChartDataContext = (chartData: ChartData): string => {
   context += `Average Volume: ${avgVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })}\n`;
   context += `Bullish Candles: ${bullishCount} (${(bullishCount / recentCandles.length * 100).toFixed(1)}%)\n`;
   context += `Bearish Candles: ${bearishCount} (${(bearishCount / recentCandles.length * 100).toFixed(1)}%)\n`;
+  
+  context += `\n=== TIMESTAMP INFORMATION FOR DRAWING STUDIES ===\n`;
+  context += `⚠️ IMPORTANT: When creating studies (support, resistance, zones), use these timestamps:\n`;
+  context += `First Candle Timestamp: ${recentCandles[0]?.timestamp} (${new Date(recentCandles[0]?.timestamp || 0).toISOString()})\n`;
+  context += `Last Candle Timestamp: ${lastCandle.timestamp} (${new Date(lastCandle.timestamp).toISOString()})\n`;
+  context += `Timeframe: ${chartData.timeframe} (use appropriate timestamps based on this interval)\n`;
+  context += `Total Visible Candles: ${chartData.candles.length}\n`;
   
   if (visibleMAs.length > 0) {
     context += `\n=== ACTIVE INDICATORS ===\n`;
@@ -220,6 +227,7 @@ export const useAIStore = create<AIState>()(
       messages: [],
       provider: null,
       model: null,
+      responseProcessor: null,
 
       setSettings: (settings) => set({ 
         settings,
@@ -228,11 +236,9 @@ export const useAIStore = create<AIState>()(
       }),
       
       updateSettings: (partialSettings) => set((state) => {
-        // If provider is changing and no model specified, use default model
         const newProvider = partialSettings.provider || state.settings?.provider;
         let newModel = partialSettings.model || state.settings?.model;
         
-        // Use default model if provider changed and no model specified
         if (partialSettings.provider && newProvider && !partialSettings.model) {
           newModel = DEFAULT_MODELS[newProvider];
         }
@@ -253,6 +259,8 @@ export const useAIStore = create<AIState>()(
         provider: null,
         model: null,
       }),
+
+      setResponseProcessor: (processor) => set({ responseProcessor: processor }),
 
       createConversation: (title) => {
         const id = generateId();
@@ -422,14 +430,12 @@ export const useAIStore = create<AIState>()(
           return;
         }
 
-        // API key will be retrieved from secure storage by AIService
         let conversationId = state.activeConversationId;
         
         if (!conversationId) {
           conversationId = get().createConversation();
         }
 
-        // Store only the user's message (without chart data) in conversation history
         const userMessage: Partial<AIMessage> = {
           role: 'user',
           content,
@@ -450,22 +456,26 @@ export const useAIStore = create<AIState>()(
         try {
           const aiService = new AIService(settings);
           
-          // Add chart data context only for the API call, not stored in conversation
           const messagesForAPI = chartData 
             ? [
-                ...conversation.messages.slice(0, -1), // All previous messages
+                ...conversation.messages.slice(0, -1),
                 { 
                   ...conversation.messages[conversation.messages.length - 1]!,
-                  content: content + formatChartDataContext(chartData) // Last message with chart data
+                  content: content + formatChartDataContext(chartData)
                 }
               ]
             : conversation.messages;
           
           const response = await aiService.sendMessage(messagesForAPI);
 
+          let processedContent = response.text;
+          if (state.responseProcessor) {
+            processedContent = state.responseProcessor(response.text);
+          }
+
           const assistantMessage: Partial<AIMessage> = {
             role: 'assistant',
-            content: response.text,
+            content: processedContent,
           };
           if (settings.model) assistantMessage.model = settings.model;
           
