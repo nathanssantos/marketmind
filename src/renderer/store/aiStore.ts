@@ -128,13 +128,13 @@ const formatAIError = (error: Error, provider?: AIProviderType): string => {
   } else if (errorMessage.includes('rate limit')) {
     return `⚠️ Taxa de requisições excedida no ${providerName}. Aguarde alguns minutos.`;
   } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized') || errorMessage.includes('invalid') || errorMessage.includes('API key')) {
-    return `🔑 Chave API inválida para ${providerName}. Verifique sua configuração.`;
+    return `🔑 Invalid API key for ${providerName}. Check your settings.`;
   } else if (errorMessage.includes('timeout')) {
-    return '⏱️ Tempo limite excedido. Tente novamente.';
+    return '⏱️ Request timeout. Try again.';
   } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-    return '🌐 Erro de conexão. Verifique sua internet.';
+    return '🌐 Connection error. Check your internet.';
   } else if (errorMessage.includes('context_length') || errorMessage.includes('too long')) {
-    return '📏 Mensagem muito longa. Reduza o tamanho ou limpe o histórico.';
+    return '📏 Message too long. Reduce size or clear history.';
   }
   
   return errorMessage;
