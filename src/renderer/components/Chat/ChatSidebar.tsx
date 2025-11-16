@@ -1,5 +1,6 @@
 import { Flex, IconButton, Text } from '@chakra-ui/react';
 import { HiChevronRight } from 'react-icons/hi2';
+import { useChartContext } from '../../context/ChartContext';
 import { MessageInput } from './MessageInput';
 import { MessageList } from './MessageList';
 
@@ -10,6 +11,8 @@ interface ChatSidebarProps {
 }
 
 export const ChatSidebar = ({ width, isOpen, onToggle }: ChatSidebarProps) => {
+  const { chartData } = useChartContext();
+
   if (!isOpen) {
     return null;
   }
@@ -32,9 +35,16 @@ export const ChatSidebar = ({ width, isOpen, onToggle }: ChatSidebarProps) => {
         borderBottom="1px solid"
         borderColor="border"
       >
-        <Text fontSize="lg" fontWeight="semibold">
-          AI Assistant
-        </Text>
+        <Flex direction="column" gap={0}>
+          <Text fontSize="lg" fontWeight="semibold">
+            AI Assistant
+          </Text>
+          {chartData?.symbol && (
+            <Text fontSize="xs" color="fg.muted">
+              {chartData.symbol}
+            </Text>
+          )}
+        </Flex>
         <IconButton
           aria-label="Close chat"
           onClick={onToggle}
