@@ -1,11 +1,13 @@
 import { Box, Flex, IconButton, Text } from '@chakra-ui/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { HiClock, HiTrash } from 'react-icons/hi2';
 import { useChartContext } from '../../context/ChartContext';
 import { useAIStore } from '../../store/aiStore';
 import { Popover } from '../ui/popover';
 
 export const ConversationHistory = () => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { chartData } = useChartContext();
   const activeConversationId = useAIStore((state) => state.activeConversationId);
@@ -53,7 +55,7 @@ export const ConversationHistory = () => {
       showArrow={false}
       trigger={
         <IconButton
-          aria-label="Conversation history"
+          aria-label={t('common.conversationHistory')}
           size="sm"
           variant="ghost"
         >
@@ -118,7 +120,7 @@ export const ConversationHistory = () => {
                   </Text>
                 </Flex>
                 <IconButton
-                  aria-label="Delete conversation"
+                  aria-label={t('common.deleteConversation')}
                   onClick={(e) => handleDeleteConversation(conversation.id, e)}
                   size="xs"
                   variant="ghost"

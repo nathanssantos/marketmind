@@ -11,12 +11,32 @@
     "success": "Éxito",
     "search": "Buscar",
     "noResults": "No se encontraron resultados",
-    "typeToSearch": "Escriba para buscar..."
+    "typeToSearch": "Escriba para buscar...",
+    "dismiss": "Descartar",
+    "skip": "Omitir",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "selectAiModel": "Seleccionar Modelo de IA",
+    "selectAi": "Seleccionar IA",
+    "selectModel": "Seleccionar Modelo",
+    "openChat": "Abrir chat",
+    "deleteConversation": "Eliminar conversación",
+    "conversationHistory": "Historial de conversaciones"
   },
   "app": {
+    "title": "MarketMind",
     "loadingMarketData": "Cargando datos de mercado...",
     "failedToLoadMarketData": "Error al Cargar Datos de Mercado",
     "retry": "Reintentar"
+  },
+  "header": {
+    "theme": "Tema",
+    "themeDark": "Oscuro",
+    "themeLight": "Claro",
+    "keyboardShortcuts": "Atajos de Teclado",
+    "settings": "Configuración",
+    "toggleColorMode": "Alternar modo de color",
+    "showKeyboardShortcuts": "Mostrar atajos de teclado"
   },
   "symbolSelector": {
     "label": "Binance",
@@ -40,26 +60,84 @@
       "english": "English",
       "portuguese": "Português",
       "spanish": "Español"
+    },
+    "chart": {
+      "chartDimensions": "Dimensiones del Gráfico",
+      "rightMargin": "Margen Derecho",
+      "rightMarginHelper": "Espacio reservado en el lado derecho del gráfico",
+      "volumeHeightRatio": "Proporción de Altura del Volumen",
+      "volumeHeightRatioHelper": "Altura de las barras de volumen relativa al gráfico (0-1)",
+      "candleSettings": "Configuración de Velas",
+      "candleSpacing": "Espaciado de Velas",
+      "candleSpacingHelper": "Espacio entre velas",
+      "wickWidth": "Ancho de Mecha",
+      "wickWidthHelper": "Ancho de las mechas de las velas",
+      "gridSettings": "Configuración de Cuadrícula",
+      "gridLineWidth": "Ancho de Línea de Cuadrícula",
+      "gridLineWidthHelper": "Grosor de las líneas de cuadrícula",
+      "currentPriceLine": "Línea de Precio Actual",
+      "lineWidth": "Ancho de Línea",
+      "lineWidthHelper": "Grosor de la línea de precio actual",
+      "lineStyle": "Estilo de Línea",
+      "lineStyleHelper": "Estilo de la línea de precio actual",
+      "solid": "Sólida",
+      "dashed": "Discontinua",
+      "dotted": "Punteada",
+      "chartPadding": "Relleno del Gráfico",
+      "topPadding": "Relleno Superior",
+      "bottomPadding": "Relleno Inferior",
+      "leftPadding": "Relleno Izquierdo",
+      "rightPadding": "Relleno Derecho"
+    },
+    "news": {
+      "newsApiKey": "Clave de API",
+      "newsApiKeyPlaceholder": "Ingrese su clave de NewsAPI",
+      "newsApiKeyRequired": "Requerido",
+      "cryptoPanicApiKey": "Clave de API",
+      "cryptoPanicApiKeyPlaceholder": "Ingrese la clave de API de CryptoPanic o use 'free'",
+      "refreshInterval": "Intervalo de Actualización (minutos)",
+      "maxArticles": "Máximo de Artículos"
     }
   },
   "chat": {
     "title": "Asistente IA",
     "newConversation": "Nueva conversación",
     "closeChat": "Cerrar chat",
-    "inputPlaceholder": "Pregúntame cualquier cosa sobre el gráfico...",
+    "inputPlaceholder": "Pregunta sobre el gráfico...",
+    "sendMessage": "Enviar mensaje",
     "send": "Enviar",
     "noMessages": "Aún no hay mensajes",
     "startConversation": "Inicia una conversación para obtener información sobre el gráfico"
   },
   "chart": {
     "controls": {
+      "title": "Controles del Gráfico",
+      "timeframe": "Marco Temporal",
+      "chartType": "Tipo de Gráfico",
+      "candlestickChart": "Gráfico de Velas",
+      "lineChart": "Gráfico de Línea",
+      "display": "Visualización",
       "volume": "Volumen",
       "grid": "Cuadrícula",
-      "currentPriceLine": "Línea de Precio Actual",
-      "candlestick": "Velas",
-      "line": "Línea",
-      "movingAverages": "Medias Móviles",
-      "timeframe": "Marco Temporal"
+      "currentPrice": "Precio Actual",
+      "indicators": "Indicadores",
+      "quickSettings": "Configuración Rápida"
+    },
+    "advanced": {
+      "title": "Configuración Avanzada",
+      "chartDimensions": "Dimensiones del Gráfico",
+      "rightMargin": "Margen Derecho",
+      "volumeHeight": "Altura del Volumen %",
+      "candleSettings": "Configuración de Velas",
+      "spacing": "Espaciado",
+      "wickWidth": "Ancho de Mecha",
+      "gridSettings": "Configuración de Cuadrícula",
+      "lineWidth": "Ancho de Línea",
+      "padding": "Relleno",
+      "top": "Superior",
+      "bottom": "Inferior",
+      "left": "Izquierda",
+      "right": "Derecha"
     },
     "timeframes": {
       "1m": "1 Minuto",
@@ -90,27 +168,159 @@
     }
   },
   "onboarding": {
-    "welcome": "Bienvenido a MarketMind",
+    "title": "Primeros Pasos",
     "skip": "Omitir",
     "next": "Siguiente",
     "previous": "Anterior",
-    "finish": "Comenzar"
+    "getStarted": "Comenzar",
+    "steps": {
+      "welcome": {
+        "title": "Bienvenido a MarketMind",
+        "description": "Tu asistente de análisis de gráficos financieros con IA. MarketMind combina gráficos avanzados con análisis de IA para ayudarte a tomar decisiones de trading informadas."
+      },
+      "aiProvider": {
+        "title": "Elige tu Proveedor de IA",
+        "description": "MarketMind soporta múltiples proveedores de IA: OpenAI (GPT-4), Anthropic (Claude) y Google (Gemini). Configura tus claves de API en la configuración para comenzar."
+      },
+      "analyze": {
+        "title": "Analiza Datos de Mercado",
+        "description": "Visualiza gráficos de velas en tiempo real, indicadores de volumen y medias móviles. Usa los controles para personalizar la vista del gráfico y seleccionar diferentes marcos temporales."
+      },
+      "chat": {
+        "title": "Chatea con IA",
+        "description": "Haz preguntas sobre patrones de gráficos, tendencias y señales de trading. La IA tiene acceso a los datos de tu gráfico y puede proporcionar análisis técnico e información."
+      },
+      "ready": {
+        "title": "Listo para Comenzar",
+        "description": "Abre la configuración (esquina superior derecha) para configurar tu proveedor de IA y claves de API. ¡Luego comienza a analizar gráficos y chatear con tu asistente de IA!"
+      }
+    }
   },
   "update": {
     "available": "Actualización Disponible",
-    "downloading": "Descargando actualización...",
-    "readyToInstall": "Actualización lista para instalar",
-    "installNow": "Instalar Ahora",
-    "installOnQuit": "Instalar al Salir",
-    "later": "Más Tarde"
+    "downloading": "Descargando Actualización",
+    "ready": "Actualización Lista",
+    "error": "Error de Actualización",
+    "version": "La versión {{version}} está disponible",
+    "currentVersion": "Versión actual: {{version}}",
+    "downloadedVersion": "La versión {{version}} ha sido descargada",
+    "downloadUpdate": "Descargar Actualización",
+    "restartAndInstall": "Reiniciar e Instalar",
+    "later": "Más Tarde",
+    "percent": "{{percent}}%",
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "keyboardShortcuts": {
     "title": "Atajos de Teclado",
-    "categories": {
-      "general": "General",
-      "chart": "Gráfico",
-      "navigation": "Navegación",
-      "chat": "Chat"
+    "global": "Global",
+    "chartControls": "Controles del Gráfico",
+    "chatInterface": "Interfaz de Chat",
+    "symbolSelector": "Selector de Símbolos",
+    "shortcuts": {
+      "openSettings": "Abrir Configuración",
+      "focusChatInput": "Enfocar Entrada de Chat",
+      "toggleChatSidebar": "Alternar Barra Lateral del Chat",
+      "showKeyboardShortcuts": "Mostrar Atajos de Teclado",
+      "closeDialogs": "Cerrar Diálogos",
+      "toggleVolume": "Alternar Visualización de Volumen",
+      "toggleGrid": "Alternar Visualización de Cuadrícula",
+      "switchChartType": "Cambiar Tipo de Gráfico",
+      "toggleMovingAverages": "Alternar Medias Móviles",
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar",
+      "resetZoom": "Restablecer Zoom",
+      "panLeftRight": "Desplazar Izquierda/Derecha",
+      "panChart": "Desplazar Gráfico",
+      "sendMessage": "Enviar Mensaje",
+      "newLine": "Nueva Línea",
+      "editLastMessage": "Editar Último Mensaje",
+      "clearChatHistory": "Limpiar Historial de Chat",
+      "openSymbolSelector": "Abrir Selector de Símbolos",
+      "navigateSymbolList": "Navegar Lista de Símbolos",
+      "selectSymbol": "Seleccionar Símbolo",
+      "closeSelector": "Cerrar Selector"
     }
+  },
+  "aiConfig": {
+    "title": "Configuración de IA",
+    "quickTips": "💡 Consejos Rápidos",
+    "tips": {
+      "encryption": "Las claves de API están cifradas y almacenadas de forma segura utilizando cifrado a nivel del sistema operativo",
+      "temperatureLow": "Temperatura más baja (0-0.5) para análisis técnico",
+      "temperatureHigh": "Temperatura más alta (0.7-1.5) para insights creativos",
+      "geminiFree": "Gemini 2.0 Flash Exp es GRATIS sin necesidad de clave de API"
+    },
+    "provider": "Proveedor de IA",
+    "providerRequired": "Requerido",
+    "model": "Modelo",
+    "apiKeys": "Claves de API (Cifradas)",
+    "apiKey": "Clave de API de {{provider}}",
+    "apiKeyPlaceholder": "Ingrese su clave de API de {{provider}}",
+    "apiKeyHelper": "Usando {{envVar}} de .env",
+    "temperature": "Temperatura: {{value}}",
+    "temperatureHelper": "Controla la aleatoriedad (0 = enfocado, 2 = creativo)",
+    "maxTokens": "Tokens Máximos: {{value}}",
+    "maxTokensHelper": "Longitud máxima de respuesta",
+    "encryptionNotAvailable": "Advertencia: Cifrado no disponible en esta plataforma",
+    "providers": {
+      "openai": "OpenAI",
+      "anthropic": "Anthropic (Claude)",
+      "gemini": "Google Gemini"
+    },
+    "models": {
+      "gpt4o": "GPT-4o",
+      "gpt4oMini": "GPT-4o Mini",
+      "claudeSonnet": "Claude 4.5 Sonnet",
+      "claudeHaiku": "Claude 4.5 Haiku",
+      "claudeOpus": "Claude 4.1 Opus",
+      "gemini2Flash": "Gemini 2.0 Flash Exp",
+      "gemini15Pro": "Gemini 1.5 Pro",
+      "gemini15Flash": "Gemini 1.5 Flash",
+      "gemini15Flash8b": "Gemini 1.5 Flash-8B"
+    },
+    "pricing": {
+      "gpt4o": "$2.50/$10 por 1M tokens",
+      "gpt4oMini": "$0.15/$0.60 por 1M tokens",
+      "claudeSonnet": "$3/$15 por 1M tokens",
+      "claudeHaiku": "$1/$5 por 1M tokens",
+      "claudeOpus": "$15/$75 por 1M tokens",
+      "gemini2Flash": "GRATIS",
+      "gemini15Pro": "$1.25/$5 por 1M tokens",
+      "gemini15Flash": "$0.075/$0.30 por 1M tokens",
+      "gemini15Flash8b": "$0.0375/$0.15 por 1M tokens"
+    }
+  },
+  "about": {
+    "version": "Versión {{version}}",
+    "description": "Un asistente de trading con IA que combina visualización avanzada de gráficos financieros con inteligencia artificial para proporcionar información sobre criptomonedas, acciones y otros activos negociables.",
+    "features": "Características",
+    "featuresList": {
+      "marketData": "Datos de mercado de criptomonedas en tiempo real (Binance)",
+      "charts": "Gráficos de velas avanzados con medias móviles",
+      "aiAnalysis": "Análisis de IA con OpenAI GPT-4o, Claude 4.5 y Gemini 2.0",
+      "news": "Integración de noticias financieras (NewsAPI y CryptoPanic)",
+      "chat": "Interfaz de chat interactiva con historial de conversaciones",
+      "security": "Almacenamiento seguro de claves de API con cifrado a nivel del SO",
+      "autoUpdate": "Sistema de actualización automática con versiones de GitHub",
+      "shortcuts": "Atajos de teclado para productividad",
+      "themes": "Temas claro y oscuro",
+      "websocket": "Actualizaciones en vivo vía WebSocket"
+    },
+    "techStack": "Stack Tecnológico",
+    "techStackList": {
+      "electron": "Electron {{version}} - Framework de escritorio",
+      "react": "React {{version}} - Framework de UI",
+      "typescript": "TypeScript {{version}} - Tipado seguro",
+      "chakra": "Chakra UI {{version}} - Biblioteca de componentes",
+      "vite": "Vite {{version}} - Herramienta de build",
+      "zustand": "Zustand {{version}} - Gestión de estado"
+    },
+    "resources": "Recursos",
+    "resourcesList": {
+      "github": "Repositorio GitHub",
+      "documentation": "Documentación",
+      "changelog": "Registro de Cambios"
+    },
+    "copyright": "© 2025 MarketMind. Hecho con ❤️ para traders e inversores."
   }
 }

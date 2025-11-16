@@ -3,6 +3,7 @@ import { useAIStore } from '@/renderer/store/aiStore';
 import { Badge, Flex } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const PROVIDER_OPTIONS: SelectOption[] = [
   { value: 'openai', label: 'OpenAI' },
@@ -29,6 +30,7 @@ const MODEL_OPTIONS: Record<AIProviderType, SelectOption[]> = {
 };
 
 export const AISelector = memo(() => {
+  const { t } = useTranslation();
   const settings = useAIStore((state) => state.settings);
   const provider = settings?.provider;
   const model = settings?.model;
@@ -65,7 +67,7 @@ export const AISelector = memo(() => {
         value={provider || ''}
         onChange={handleProviderChange}
         options={PROVIDER_OPTIONS}
-        placeholder="Select AI"
+        placeholder={t('common.selectAi')}
       />
 
       {provider && (
@@ -73,7 +75,7 @@ export const AISelector = memo(() => {
           value={model || ''}
           onChange={handleModelChange}
           options={modelOptions}
-          placeholder="Select Model"
+          placeholder={t('common.selectModel')}
           enableSearch
           noWrap
         />

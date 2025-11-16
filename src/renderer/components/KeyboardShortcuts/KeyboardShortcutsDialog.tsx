@@ -1,6 +1,7 @@
 import { Dialog } from '@/renderer/components/ui/dialog';
 import { getModifierKey } from '@/renderer/hooks/useKeyboardShortcut';
 import { Box, CloseButton, Stack, Text } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 
 interface KeyboardShortcutsDialogProps {
   isOpen: boolean;
@@ -8,117 +9,121 @@ interface KeyboardShortcutsDialogProps {
 }
 
 interface ShortcutSection {
-  title: string;
+  titleKey: string;
   shortcuts: Array<{
     keys: string;
-    description: string;
+    descriptionKey: string;
   }>;
 }
 
 const modKey = getModifierKey();
 
-const sections: ShortcutSection[] = [
-  {
-    title: 'Global',
-    shortcuts: [
-      { keys: `${modKey} + ,`, description: 'Open Settings' },
-      { keys: `${modKey} + K`, description: 'Focus Chat Input' },
-      { keys: `${modKey} + B`, description: 'Toggle Chat Sidebar' },
-      { keys: `${modKey} + /`, description: 'Show Keyboard Shortcuts' },
-      { keys: 'Esc', description: 'Close Dialogs' },
-    ],
-  },
-  {
-    title: 'Chart Controls',
-    shortcuts: [
-      { keys: 'M', description: 'Toggle Volume Display' },
-      { keys: 'G', description: 'Toggle Grid Display' },
-      { keys: 'T', description: 'Switch Chart Type' },
-      { keys: '1-5', description: 'Toggle Moving Averages' },
-      { keys: '+', description: 'Zoom In' },
-      { keys: '-', description: 'Zoom Out' },
-      { keys: '0', description: 'Reset Zoom' },
-      { keys: '← →', description: 'Pan Left/Right' },
-      { keys: 'Space + Drag', description: 'Pan Chart' },
-    ],
-  },
-  {
-    title: 'Chat Interface',
-    shortcuts: [
-      { keys: 'Enter', description: 'Send Message' },
-      { keys: 'Shift + Enter', description: 'New Line' },
-      { keys: '↑', description: 'Edit Last Message' },
-      { keys: `${modKey} + L`, description: 'Clear Chat History' },
-    ],
-  },
-  {
-    title: 'Symbol Selector',
-    shortcuts: [
-      { keys: `${modKey} + P`, description: 'Open Symbol Selector' },
-      { keys: '↑ ↓', description: 'Navigate Symbol List' },
-      { keys: 'Enter', description: 'Select Symbol' },
-      { keys: 'Esc', description: 'Close Selector' },
-    ],
-  },
-];
-
-export const KeyboardShortcutsDialog = ({ isOpen, onClose }: KeyboardShortcutsDialogProps) => (
-  <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="lg">
-    <Dialog.Backdrop />
-    <Dialog.Positioner>
-      <Dialog.Content maxH="85vh">
-        <CloseButton
-          position="absolute"
-          top={4}
-          right={4}
-          onClick={onClose}
-          size="sm"
-        />
-        <Dialog.Header>
-          <Dialog.Title>Keyboard Shortcuts</Dialog.Title>
-        </Dialog.Header>
-      
-        <Dialog.Body overflowY="auto">
-          <Stack gap={6} py={2}>
-            {sections.map((section) => (
-              <Box key={section.title}>
-                <Text fontSize="sm" fontWeight="bold" color="fg.muted" mb={3}>
-                  {section.title}
-                </Text>
-                <Stack gap={2}>
-                  {section.shortcuts.map((shortcut, index) => (
-                    <Box
-                      key={index}
-                      display="flex"
-                      justifyContent="space-between"
-                      alignItems="center"
-                      p={2}
-                      borderRadius="md"
-                      _hover={{ bg: 'bg.muted' }}
-                    >
-                      <Text fontSize="sm" color="fg">
-                        {shortcut.description}
-                      </Text>
+export const KeyboardShortcutsDialog = ({ isOpen, onClose }: KeyboardShortcutsDialogProps) => {
+  const { t } = useTranslation();
+  
+  const sections: ShortcutSection[] = [
+    {
+      titleKey: 'keyboardShortcuts.global',
+      shortcuts: [
+        { keys: `${modKey} + ,`, descriptionKey: 'keyboardShortcuts.shortcuts.openSettings' },
+        { keys: `${modKey} + K`, descriptionKey: 'keyboardShortcuts.shortcuts.focusChatInput' },
+        { keys: `${modKey} + B`, descriptionKey: 'keyboardShortcuts.shortcuts.toggleChatSidebar' },
+        { keys: `${modKey} + /`, descriptionKey: 'keyboardShortcuts.shortcuts.showKeyboardShortcuts' },
+        { keys: 'Esc', descriptionKey: 'keyboardShortcuts.shortcuts.closeDialogs' },
+      ],
+    },
+    {
+      titleKey: 'keyboardShortcuts.chartControls',
+      shortcuts: [
+        { keys: 'M', descriptionKey: 'keyboardShortcuts.shortcuts.toggleVolume' },
+        { keys: 'G', descriptionKey: 'keyboardShortcuts.shortcuts.toggleGrid' },
+        { keys: 'T', descriptionKey: 'keyboardShortcuts.shortcuts.switchChartType' },
+        { keys: '1-5', descriptionKey: 'keyboardShortcuts.shortcuts.toggleMovingAverages' },
+        { keys: '+', descriptionKey: 'keyboardShortcuts.shortcuts.zoomIn' },
+        { keys: '-', descriptionKey: 'keyboardShortcuts.shortcuts.zoomOut' },
+        { keys: '0', descriptionKey: 'keyboardShortcuts.shortcuts.resetZoom' },
+        { keys: '← →', descriptionKey: 'keyboardShortcuts.shortcuts.panLeftRight' },
+        { keys: 'Space + Drag', descriptionKey: 'keyboardShortcuts.shortcuts.panChart' },
+      ],
+    },
+    {
+      titleKey: 'keyboardShortcuts.chatInterface',
+      shortcuts: [
+        { keys: 'Enter', descriptionKey: 'keyboardShortcuts.shortcuts.sendMessage' },
+        { keys: 'Shift + Enter', descriptionKey: 'keyboardShortcuts.shortcuts.newLine' },
+        { keys: '↑', descriptionKey: 'keyboardShortcuts.shortcuts.editLastMessage' },
+        { keys: `${modKey} + L`, descriptionKey: 'keyboardShortcuts.shortcuts.clearChatHistory' },
+      ],
+    },
+    {
+      titleKey: 'keyboardShortcuts.symbolSelector',
+      shortcuts: [
+        { keys: `${modKey} + P`, descriptionKey: 'keyboardShortcuts.shortcuts.openSymbolSelector' },
+        { keys: '↑ ↓', descriptionKey: 'keyboardShortcuts.shortcuts.navigateSymbolList' },
+        { keys: 'Enter', descriptionKey: 'keyboardShortcuts.shortcuts.selectSymbol' },
+        { keys: 'Esc', descriptionKey: 'keyboardShortcuts.shortcuts.closeSelector' },
+      ],
+    },
+  ];
+  
+  return (
+    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="lg">
+      <Dialog.Backdrop />
+      <Dialog.Positioner>
+        <Dialog.Content maxH="85vh">
+          <CloseButton
+            position="absolute"
+            top={4}
+            right={4}
+            onClick={onClose}
+            size="sm"
+          />
+          <Dialog.Header>
+            <Dialog.Title>{t('keyboardShortcuts.title')}</Dialog.Title>
+          </Dialog.Header>
+        
+          <Dialog.Body overflowY="auto">
+            <Stack gap={6} py={2}>
+              {sections.map((section) => (
+                <Box key={section.titleKey}>
+                  <Text fontSize="sm" fontWeight="bold" color="fg.muted" mb={3}>
+                    {t(section.titleKey)}
+                  </Text>
+                  <Stack gap={2}>
+                    {section.shortcuts.map((shortcut, index) => (
                       <Box
-                        px={3}
-                        py={1}
-                        bg="bg.muted"
+                        key={index}
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        p={2}
                         borderRadius="md"
-                        borderWidth="1px"
-                        borderColor="border"
+                        _hover={{ bg: 'bg.muted' }}
                       >
-                        <Text fontSize="xs" fontFamily="mono" color="fg.muted" fontWeight="medium">
-                          {shortcut.keys}
+                        <Text fontSize="sm" color="fg">
+                          {t(shortcut.descriptionKey)}
                         </Text>
+                        <Box
+                          px={3}
+                          py={1}
+                          bg="bg.muted"
+                          borderRadius="md"
+                          borderWidth="1px"
+                          borderColor="border"
+                        >
+                          <Text fontSize="xs" fontFamily="mono" color="fg.muted" fontWeight="medium">
+                            {shortcut.keys}
+                          </Text>
+                        </Box>
                       </Box>
-                    </Box>
-                  ))}
-                </Stack>
-              </Box>
-            ))}
-          </Stack>
-        </Dialog.Body>
-      </Dialog.Content>
-    </Dialog.Positioner>
-  </Dialog.Root>
-);
+                    ))}
+                  </Stack>
+                </Box>
+              ))}
+            </Stack>
+          </Dialog.Body>
+        </Dialog.Content>
+      </Dialog.Positioner>
+    </Dialog.Root>
+  );
+};

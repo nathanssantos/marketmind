@@ -96,7 +96,7 @@ function App(): ReactElement {
             position="relative"
           >
             <IconButton
-              aria-label="Close"
+              aria-label={t('common.close')}
               size="xs"
               position="absolute"
               top={2}

@@ -6,15 +6,16 @@ import { Slider } from '@/renderer/components/ui/slider';
 import { useSecureStorage } from '@/renderer/hooks/useSecureStorage';
 import { useAIStore } from '@/renderer/store';
 import {
-  Box,
-  Flex,
-  Separator,
-  Spinner,
-  Stack,
-  Text,
+    Box,
+    Flex,
+    Separator,
+    Spinner,
+    Stack,
+    Text,
 } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type AIProvider = 'openai' | 'anthropic' | 'gemini';
 
@@ -43,6 +44,7 @@ const DEFAULT_MODELS: Record<AIProviderType, string> = {
 };
 
 export const AIConfigTab = () => {
+  const { t } = useTranslation();
   const { settings, updateSettings } = useAIStore();
   const { 
     loading: isLoadingSecureStorage,
@@ -195,21 +197,21 @@ export const AIConfigTab = () => {
       <Separator />
 
       <Box>
-        <Field label="AI Provider" required>
+        <Field label={t('aiConfig.provider')} required>
           <Select
             value={provider}
             onChange={(value) => handleProviderChange(value as AIProviderType)}
             options={[
-              { value: 'openai', label: 'OpenAI' },
-              { value: 'anthropic', label: 'Anthropic (Claude)' },
-              { value: 'gemini', label: 'Google Gemini' },
+              { value: 'openai', label: t('aiConfig.providers.openai') },
+              { value: 'anthropic', label: t('aiConfig.providers.anthropic') },
+              { value: 'gemini', label: t('aiConfig.providers.gemini') },
             ]}
           />
         </Field>
       </Box>
 
       <Box>
-        <Field label="Model" required>
+        <Field label={t('aiConfig.model')} required>
           <Select
             value={model}
             onChange={handleModelChange}
