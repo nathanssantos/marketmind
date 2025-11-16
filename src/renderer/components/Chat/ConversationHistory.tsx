@@ -34,12 +34,12 @@ export const ConversationHistory = () => {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Agora';
-    if (diffMins < 60) return `${diffMins}m atrás`;
-    if (diffHours < 24) return `${diffHours}h atrás`;
-    if (diffDays < 7) return `${diffDays}d atrás`;
+    if (diffMins < 1) return 'Now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
     
-    return date.toLocaleDateString('pt-BR', { 
+    return date.toLocaleDateString('en-US', { 
       day: '2-digit', 
       month: '2-digit',
       year: '2-digit'
@@ -71,7 +71,7 @@ export const ConversationHistory = () => {
           borderColor="border"
         >
           <Text fontSize="sm" fontWeight="semibold">
-            Conversas - {symbol}
+            Conversations - {symbol}
           </Text>
         </Flex>
 
@@ -85,7 +85,7 @@ export const ConversationHistory = () => {
               color="fg.muted"
             >
               <Text fontSize="sm" textAlign="center">
-                Nenhuma conversa ainda
+                No conversations yet
               </Text>
             </Flex>
           ) : (
@@ -114,7 +114,7 @@ export const ConversationHistory = () => {
                     {conversation.title}
                   </Text>
                   <Text fontSize="xs" color="fg.muted">
-                    {conversation.messages.length} {conversation.messages.length === 1 ? 'mensagem' : 'mensagens'} · {formatDate(conversation.updatedAt)}
+                    {conversation.messages.length} {conversation.messages.length === 1 ? 'message' : 'messages'} · {formatDate(conversation.updatedAt)}
                   </Text>
                 </Flex>
                 <IconButton
