@@ -20,31 +20,36 @@ const DEFAULT_STATE: WindowState = {
 
 export class WindowStateManager {
   private store: Store;
-  private state: WindowState;
+  private state: WindowState | null = null;
   private window: BrowserWindow | null = null;
 
   constructor() {
     this.store = new Store({
       name: 'window-state',
     });
-
-    this.state = this.loadState();
   }
 
   private loadState(): WindowState {
+    if (this.state) {
+      return this.state;
+    }
+
     const savedState = this.store.get('windowState') as WindowState | undefined;
     
     if (!savedState) {
-      return DEFAULT_STATE;
+      this.state = DEFAULT_STATE;
+      return this.state;
     }
 
     const isWithinBounds = this.isStateWithinDisplayBounds(savedState);
     
     if (!isWithinBounds) {
-      return DEFAULT_STATE;
+      this.state = DEFAULT_STATE;
+      return this.state;
     }
 
-    return savedState;
+    this.state = savedState;
+    return this.state;
   }
 
   private isStateWithinDisplayBounds(state: WindowState): boolean {
@@ -67,12 +72,14 @@ export class WindowStateManager {
 
   public manage(window: BrowserWindow): void {
     this.window = window;
+    
+    const state = this.loadState();
 
-    if (this.state.isMaximized) {
+    if (state.isMaximized) {
       window.maximize();
     }
 
-    if (this.state.isFullScreen) {
+    if (state.isFullScreen) {
       window.setFullScreen(true);
     }
 
@@ -106,11 +113,16 @@ export class WindowStateManager {
         isFullScreen,
       };
     } else {
-      this.state = {
-        ...this.state,
+      const currentState = this.state ?? DEFAULT_STATE;
+      const newState: WindowState = {
+        width: currentState.width,
+        height: currentState.height,
         isMaximized,
         isFullScreen,
       };
+      if (currentState.x !== undefined) newState.x = currentState.x;
+      if (currentState.y !== undefined) newState.y = currentState.y;
+      this.state = newState;
     }
 
     this.store.set('windowState', this.state);
@@ -131,7 +143,7 @@ export class WindowStateManager {
   }
 
   public getState(): WindowState {
-    return this.state;
+    return this.loadState();
   }
 
   public resetState(): void {
