@@ -67,9 +67,20 @@ export const drawCandle = (
   wickWidth: number,
   bullishColor: string,
   bearishColor: string,
+  isHighlighted: boolean = false,
 ): void => {
   const isBullish = closeY < openY;
-  const color = isBullish ? bullishColor : bearishColor;
+  let color = isBullish ? bullishColor : bearishColor;
+
+  if (isHighlighted) {
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+  } else {
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+  }
 
   const bodyTop = Math.min(openY, closeY);
   const bodyBottom = Math.max(openY, closeY);
@@ -82,6 +93,8 @@ export const drawCandle = (
   } else {
     drawLine(ctx, x, openY, x + width, openY, color, wickWidth);
   }
+
+  ctx.restore();
 };
 
 export const setupCanvas = (

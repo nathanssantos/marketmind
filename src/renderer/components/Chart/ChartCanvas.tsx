@@ -1,9 +1,11 @@
 import { Box } from '@chakra-ui/react';
 import { CHART_COLORS_DARK, CHART_CONFIG } from '@shared/constants';
-import type { Candle, ChartColors, Viewport } from '@shared/types';
+import type { AIStudy, Candle, ChartColors, Viewport } from '@shared/types';
 import type { ReactElement } from 'react';
 import { useEffect, useState } from 'react';
 import type { AdvancedControlsConfig } from './AdvancedControls';
+import { AIStudyRenderer } from './AIStudyRenderer';
+import { ChartContextMenu } from './ChartContextMenu';
 import { ChartTooltip } from './ChartTooltip';
 import { useCandlestickRenderer } from './useCandlestickRenderer';
 import { useChartCanvas } from './useChartCanvas';
@@ -26,6 +28,10 @@ export interface ChartCanvasProps {
   movingAverages?: MovingAverageConfig[];
   chartType?: 'candlestick' | 'line';
   advancedConfig?: AdvancedControlsConfig;
+  aiStudies?: AIStudy[];
+  onDeleteAIStudies?: () => void;
+  onToggleAIStudiesVisibility?: () => void;
+  aiStudiesVisible?: boolean;
 }
 
 export const ChartCanvas = ({
@@ -41,6 +47,10 @@ export const ChartCanvas = ({
   movingAverages = [],
   chartType = 'candlestick',
   advancedConfig,
+  aiStudies = [],
+  onDeleteAIStudies,
+  onToggleAIStudiesVisibility,
+  aiStudiesVisible = true,
 }: ChartCanvasProps): ReactElement => {
   const [tooltipData, setTooltipData] = useState<{
     candle: Candle | null;
@@ -49,11 +59,26 @@ export const ChartCanvas = ({
     visible: boolean;
     containerWidth?: number;
     containerHeight?: number;
+    candleIndex?: number;
+    aiStudy?: AIStudy;
   }>({
     candle: null,
     x: 0,
     y: 0,
     visible: false,
+  });
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredAIStudy, setHoveredAIStudy] = useState<AIStudy | null>(null);
+  const [isInteracting, setIsInteracting] = useState(false);
+  const [interactionTimeout, setInteractionTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    x: number;
+    y: number;
+  }>({
+    isOpen: false,
+    x: 0,
+    y: 0,
   });
   const [cursor, setCursor] = useState<'crosshair' | 'ns-resize' | 'grab' | 'grabbing'>('crosshair');
   const {
@@ -84,6 +109,7 @@ export const ChartCanvas = ({
     enabled: chartType === 'candlestick',
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
     ...(advancedConfig?.candleWickWidth !== undefined && { candleWickWidth: advancedConfig.candleWickWidth }),
+    ...(tooltipData.candleIndex !== undefined && { hoveredCandleIndex: tooltipData.candleIndex }),
   });
 
   const { render: renderLineChart } = useLineChartRenderer({
@@ -99,6 +125,7 @@ export const ChartCanvas = ({
     enabled: showVolume,
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
     ...(advancedConfig?.volumeHeightRatio !== undefined && { volumeHeightRatio: advancedConfig.volumeHeightRatio }),
+    ...(tooltipData.candleIndex !== undefined && { hoveredCandleIndex: tooltipData.candleIndex }),
   });
 
   const { render: renderMovingAverages } = useMovingAverageRenderer({
@@ -124,6 +151,8 @@ export const ChartCanvas = ({
     const rect = canvasRef.current.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
+
+    setMousePosition({ x: mouseX, y: mouseY });
 
     const viewport = manager.getViewport();
     const dimensions = manager.getDimensions();
@@ -153,7 +182,6 @@ export const ChartCanvas = ({
       setCursor('crosshair');
     }
 
-    // Only show tooltip if in chart area (not on scales)
     if (!isInChartArea || isOnPriceScale || isOnTimeScale) {
       setTooltipData({
         candle: null,
@@ -164,8 +192,21 @@ export const ChartCanvas = ({
       return;
     }
 
-    const candleWidth = dimensions.width / (viewport.end - viewport.start);
-    const hoveredIndex = Math.floor(viewport.start + mouseX / candleWidth);
+    if (hoveredAIStudy) {
+      setTooltipData({
+        candle: null,
+        x: mouseX,
+        y: mouseY,
+        visible: true,
+        containerWidth: rect.width,
+        containerHeight: rect.height,
+        aiStudy: hoveredAIStudy,
+      });
+      return;
+    }
+
+    const effectiveChartWidth = chartAreaRight;
+    const hoveredIndex = Math.floor(viewport.start + (mouseX / effectiveChartWidth) * (viewport.end - viewport.start));
 
     if (hoveredIndex >= 0 && hoveredIndex < candles.length) {
       const candle = candles[hoveredIndex];
@@ -177,6 +218,7 @@ export const ChartCanvas = ({
           visible: true,
           containerWidth: rect.width,
           containerHeight: rect.height,
+          candleIndex: hoveredIndex,
         });
         return;
       }
@@ -192,6 +234,8 @@ export const ChartCanvas = ({
 
   const handleCanvasMouseLeave = (): void => {
     handleMouseLeave();
+    setMousePosition(null);
+    setHoveredAIStudy(null);
     setTooltipData({
       candle: null,
       x: 0,
@@ -199,6 +243,75 @@ export const ChartCanvas = ({
       visible: false,
     });
   };
+
+  const handleAIStudyHover = (study: AIStudy | null): void => {
+    setHoveredAIStudy(study);
+  };
+
+  const handleContextMenu = (event: React.MouseEvent<HTMLCanvasElement>): void => {
+    event.preventDefault();
+    setContextMenu({
+      isOpen: true,
+      x: event.clientX,
+      y: event.clientY,
+    });
+  };
+
+  const handleCloseContextMenu = (): void => {
+    setContextMenu({
+      isOpen: false,
+      x: 0,
+      y: 0,
+    });
+  };
+
+  const handleDeleteStudies = (): void => {
+    onDeleteAIStudies?.();
+    handleCloseContextMenu();
+  };
+
+  const handleToggleStudiesVisibility = (): void => {
+    onToggleAIStudiesVisibility?.();
+    handleCloseContextMenu();
+  };
+
+  const startInteraction = (): void => {
+    setIsInteracting(true);
+    if (interactionTimeout) {
+      clearTimeout(interactionTimeout);
+    }
+  };
+
+  const endInteraction = (): void => {
+    const timeout = setTimeout(() => {
+      setIsInteracting(false);
+    }, 300);
+    setInteractionTimeout(timeout);
+  };
+
+  const handleCanvasMouseDown = (event: React.MouseEvent<HTMLCanvasElement>): void => {
+    handleMouseDown(event);
+    startInteraction();
+  };
+
+  const handleCanvasMouseUp = (): void => {
+    handleMouseUp();
+    endInteraction();
+  };
+
+  const handleWheel = (): void => {
+    startInteraction();
+    endInteraction();
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (interactionTimeout) {
+        clearTimeout(interactionTimeout);
+      }
+    };
+  }, [interactionTimeout]);
 
   // Update manager settings when advancedConfig changes
   useEffect(() => {
@@ -245,10 +358,12 @@ export const ChartCanvas = ({
     >
       <canvas
         ref={canvasRef}
-        onMouseDown={handleMouseDown}
+        onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleCanvasMouseMove}
-        onMouseUp={handleMouseUp}
+        onMouseUp={handleCanvasMouseUp}
         onMouseLeave={handleCanvasMouseLeave}
+        onContextMenu={handleContextMenu}
+        onWheel={handleWheel}
         style={{
           width: '100%',
           height: '100%',
@@ -256,6 +371,17 @@ export const ChartCanvas = ({
           display: 'block',
         }}
       />
+      {manager && !isInteracting && (
+        <AIStudyRenderer
+          canvasManager={manager}
+          candles={candles}
+          studies={aiStudies}
+          width={canvasRef.current?.width ?? 0}
+          height={canvasRef.current?.height ?? 0}
+          mousePosition={mousePosition}
+          onStudyHover={handleAIStudyHover}
+        />
+      )}
       <ChartTooltip
         candle={tooltipData.candle}
         x={tooltipData.x}
@@ -263,6 +389,16 @@ export const ChartCanvas = ({
         visible={tooltipData.visible}
         containerWidth={tooltipData.containerWidth ?? window.innerWidth}
         containerHeight={tooltipData.containerHeight ?? window.innerHeight}
+        aiStudy={tooltipData.aiStudy}
+      />
+      <ChartContextMenu
+        isOpen={contextMenu.isOpen}
+        position={{ x: contextMenu.x, y: contextMenu.y }}
+        onClose={handleCloseContextMenu}
+        onDeleteStudies={handleDeleteStudies}
+        onToggleStudiesVisibility={handleToggleStudiesVisibility}
+        hasStudies={aiStudies.length > 0}
+        studiesVisible={aiStudiesVisible}
       />
     </Box>
   );

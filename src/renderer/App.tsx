@@ -1,12 +1,12 @@
-import { Box, ChakraProvider, IconButton, Stack, Text as ChakraText, Toaster } from '@chakra-ui/react';
+import { Box, ChakraProvider, Text as ChakraText, IconButton, Stack, Toaster } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { Candle } from '@shared/types';
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { HiX } from 'react-icons/hi';
 import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
 import { ChartControls } from './components/Chart/ChartControls';
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
-import { HiX } from 'react-icons/hi';
 import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { MainLayout } from './components/Layout/MainLayout';
@@ -17,6 +17,7 @@ import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
 import { ChartProvider } from './context/ChartContext';
 import { useGlobalActions } from './context/GlobalActionsContext';
+import { useAIStudies } from './hooks/useAIStudies';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
 import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
@@ -27,6 +28,7 @@ import { useRealtimeCandle } from './hooks/useRealtimeCandle';
 import { MarketDataService } from './services/market/MarketDataService';
 import { BinanceProvider } from './services/market/providers/BinanceProvider';
 import { CoinGeckoProvider } from './services/market/providers/CoinGeckoProvider';
+import { useAIStore } from './store/aiStore';
 import { system } from './theme';
 import { runMigrations } from './utils/migration';
 import { toaster } from './utils/toaster';
@@ -228,6 +230,20 @@ function AppContent(): ReactElement {
     return fullSymbol;
   };
 
+  const { 
+    studies: aiStudies, 
+    studiesVisible, 
+    deleteStudies, 
+    toggleStudiesVisibility, 
+    processAIResponse 
+  } = useAIStudies(symbol);
+  const setResponseProcessor = useAIStore(state => state.setResponseProcessor);
+
+  useEffect(() => {
+    setResponseProcessor(processAIResponse);
+    return () => setResponseProcessor(null);
+  }, [processAIResponse, setResponseProcessor]);
+
   // News integration disabled until API keys are configured
   const { articles: newsArticles } = useNews({
     symbols: [extractSymbolCode(symbol)],
@@ -323,6 +339,10 @@ function AppContent(): ReactElement {
               chartType={chartType}
               movingAverages={movingAverages}
               advancedConfig={debouncedAdvancedConfig}
+              aiStudies={aiStudies}
+              onDeleteAIStudies={deleteStudies}
+              onToggleAIStudiesVisibility={toggleStudiesVisibility}
+              aiStudiesVisible={studiesVisible}
             />
           )}
         </MainLayout>

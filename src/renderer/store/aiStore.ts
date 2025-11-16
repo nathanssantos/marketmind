@@ -49,6 +49,8 @@ interface AIState {
   messages: AIMessage[];
   provider: AIProviderType | null;
   model: string | null;
+  
+  responseProcessor: ((response: string) => string) | null;
 
   setSettings: (settings: AISettings) => void;
   updateSettings: (partialSettings: Partial<AISettings>) => void;
@@ -75,6 +77,7 @@ interface AIState {
   importConversation: (data: string) => void;
 
   sendMessage: (content: string, chartData?: ChartData) => Promise<void>;
+  setResponseProcessor: (processor: ((response: string) => string) | null) => void;
 
   clearAll: () => void;
 }
@@ -182,6 +185,13 @@ const formatChartDataContext = (chartData: ChartData): string => {
   context += `Bullish Candles: ${bullishCount} (${(bullishCount / recentCandles.length * 100).toFixed(1)}%)\n`;
   context += `Bearish Candles: ${bearishCount} (${(bearishCount / recentCandles.length * 100).toFixed(1)}%)\n`;
   
+  context += `\n=== TIMESTAMP INFORMATION FOR DRAWING STUDIES ===\n`;
+  context += `⚠️ IMPORTANT: When creating studies (support, resistance, zones), use these timestamps:\n`;
+  context += `First Candle Timestamp: ${recentCandles[0]?.timestamp} (${new Date(recentCandles[0]?.timestamp || 0).toISOString()})\n`;
+  context += `Last Candle Timestamp: ${lastCandle.timestamp} (${new Date(lastCandle.timestamp).toISOString()})\n`;
+  context += `Timeframe: ${chartData.timeframe} (use appropriate timestamps based on this interval)\n`;
+  context += `Total Visible Candles: ${chartData.candles.length}\n`;
+  
   if (visibleMAs.length > 0) {
     context += `\n=== ACTIVE INDICATORS ===\n`;
     visibleMAs.forEach(ma => {
@@ -220,6 +230,7 @@ export const useAIStore = create<AIState>()(
       messages: [],
       provider: null,
       model: null,
+      responseProcessor: null,
 
       setSettings: (settings) => set({ 
         settings,
@@ -253,6 +264,8 @@ export const useAIStore = create<AIState>()(
         provider: null,
         model: null,
       }),
+
+      setResponseProcessor: (processor) => set({ responseProcessor: processor }),
 
       createConversation: (title) => {
         const id = generateId();
@@ -463,9 +476,14 @@ export const useAIStore = create<AIState>()(
           
           const response = await aiService.sendMessage(messagesForAPI);
 
+          let processedContent = response.text;
+          if (state.responseProcessor) {
+            processedContent = state.responseProcessor(response.text);
+          }
+
           const assistantMessage: Partial<AIMessage> = {
             role: 'assistant',
-            content: response.text,
+            content: processedContent,
           };
           if (settings.model) assistantMessage.model = settings.model;
           

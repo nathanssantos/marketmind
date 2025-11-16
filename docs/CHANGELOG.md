@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **AI Study Tooltips**
+  - Unified tooltip system for both candles and AI studies
+  - Hover-only display for AI study information
+  - Price formatting with K/M notation (e.g., 1.5K, 2.3M)
+  - Study type, label, and price information in tooltip
+  - Visual hover effects (thicker lines, more opaque zones)
+  - Intelligent hover detection for lines and zones
+  - Study labels removed from canvas for cleaner visualization
+
+### Changed
+- **AI Study Display**
+  - All study information now shown in tooltip instead of canvas labels
+  - Simplified rendering (70% less code, better performance)
+  - English translations for all UI elements (formerly Portuguese)
+  - Context menu items: "Hide AI Studies", "Show AI Studies", "Delete AI Studies"
+
+### Removed
+- Debug console.log statements from useAIStudies hook
+- Debug console.log statements from AIResponseParser
+- Canvas label rendering for AI studies
+
 ### In Progress
 - Cross-platform testing (macOS, Windows, Linux)
 - Performance profiling and benchmarking
@@ -18,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Professional app icons and branding
 - News sentiment analysis
 
-## [0.12.2] - 2024-11-15
+## [0.12.2] - 2025-11-15
 
 ### Added
 - **Toast Notification System**
@@ -50,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed duplicate toast creation by adding ref tracking
   - Fixed missing close button on toast notifications
 
-## [0.12.1] - 2024-11-15
+## [0.12.1] - 2025-11-15
 
 ### Fixed
 - **Chart Rendering Issues**
@@ -106,7 +128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/renderer/components/Layout/Header.tsx`
   - `src/renderer/components/ui/select.tsx`
 
-## [0.12.0] - 2024-11-15
+## [0.12.0] - 2025-11-15
 
 ### Added - Phase 13: Final Polish
 - **UI/UX Enhancements**
@@ -167,7 +189,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Test Status**: 533 tests passing, 90.59% overall coverage
 - **Production Ready**: All MVP features complete and tested
 
-## [0.13.0] - 2024-11-15
+## [0.13.0] - 2025-11-15
 
 ### Added
 - **Canvas Performance Optimization**
@@ -217,7 +239,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cache TTL: Configurable per-service (default 5 minutes)
 - Performance: requestAnimationFrame ensures 60fps target
 
-## [0.12.0] - 2024-11-15
+## [0.12.0] - 2025-11-15
 
 ### Added
 - **Comprehensive Test Suite**: Complete testing infrastructure
