@@ -71,8 +71,8 @@ export const ChartTooltip = ({
         position="absolute"
         left={`${leftPos}px`}
         top={`${topPos}px`}
-        bg="gray.800"
-        color="white"
+        bg="bg.muted"
+        color="fg"
         p={3}
         borderRadius="md"
         boxShadow="lg"
@@ -81,25 +81,27 @@ export const ChartTooltip = ({
         pointerEvents="none"
         opacity={0.95}
         minW={`${tooltipWidth}px`}
+        borderWidth={1}
+        borderColor="border"
       >
         <Stack gap={1.5}>
-          <Text fontWeight="semibold" color="blue.400">
+          <Text fontWeight="semibold" color="blue.500">
             🤖 {studyTypeLabel}
           </Text>
-          <Text color="gray.300">{aiStudy.label}</Text>
+          <Text color="fg.muted">{aiStudy.label}</Text>
           {isLine && priceValue !== undefined ? (
-            <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="gray.700">
-              <Text color="gray.400">Price:</Text>
+            <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+              <Text color="fg.muted">Price:</Text>
               <Text fontWeight="medium">{formatPrice(priceValue)}</Text>
             </HStack>
           ) : topPriceValue !== undefined && bottomPriceValue !== undefined ? (
             <>
-              <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="gray.700">
-                <Text color="gray.400">Top:</Text>
+              <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+                <Text color="fg.muted">Top:</Text>
                 <Text fontWeight="medium">{formatPrice(topPriceValue)}</Text>
               </HStack>
               <HStack justify="space-between">
-                <Text color="gray.400">Bottom:</Text>
+                <Text color="fg.muted">Bottom:</Text>
                 <Text fontWeight="medium">{formatPrice(bottomPriceValue)}</Text>
               </HStack>
             </>
@@ -114,8 +116,8 @@ export const ChartTooltip = ({
       position="absolute"
       left={`${leftPos}px`}
       top={`${topPos}px`}
-      bg="gray.800"
-      color="white"
+      bg="bg.muted"
+      color="fg"
       p={3}
       borderRadius="md"
       boxShadow="lg"
@@ -124,32 +126,34 @@ export const ChartTooltip = ({
       pointerEvents="none"
       opacity={0.95}
       minW={`${tooltipWidth}px`}
+      borderWidth={1}
+      borderColor="border"
     >
       <Stack gap={1.5}>
-        <Text fontWeight="semibold" color="gray.300">
+        <Text fontWeight="semibold" color="fg.muted">
           {candle ? formatTimestamp(candle.timestamp) : ''}
         </Text>
 
         {candle && (
           <Stack gap={0.5}>
             <HStack justify="space-between">
-              <Text color="gray.400">Open:</Text>
+              <Text color="fg.muted">Open:</Text>
               <Text fontWeight="medium">{formatPrice(candle.open)}</Text>
             </HStack>
             <HStack justify="space-between">
-              <Text color="gray.400">High:</Text>
-              <Text fontWeight="medium" color="green.400">
+              <Text color="fg.muted">High:</Text>
+              <Text fontWeight="medium" color="green.500">
                 {formatPrice(candle.high)}
               </Text>
             </HStack>
             <HStack justify="space-between">
-              <Text color="gray.400">Low:</Text>
-              <Text fontWeight="medium" color="red.400">
+              <Text color="fg.muted">Low:</Text>
+              <Text fontWeight="medium" color="red.500">
                 {formatPrice(candle.low)}
               </Text>
             </HStack>
             <HStack justify="space-between">
-              <Text color="gray.400">Close:</Text>
+              <Text color="fg.muted">Close:</Text>
               <Text fontWeight="medium">{formatPrice(candle.close)}</Text>
             </HStack>
           </Stack>
@@ -157,11 +161,11 @@ export const ChartTooltip = ({
 
         {candle && (
           <>
-            <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="gray.700">
-              <Text color="gray.400">Change:</Text>
+            <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+              <Text color="fg.muted">Change:</Text>
               <Text
                 fontWeight="semibold"
-                color={isBullish ? 'green.400' : 'red.400'}
+                color={isBullish ? 'green.500' : 'red.500'}
               >
                 {isBullish ? '+' : ''}
                 {formatPrice(change)} ({changePercent}%)
@@ -169,7 +173,7 @@ export const ChartTooltip = ({
             </HStack>
 
             <HStack justify="space-between">
-              <Text color="gray.400">Volume:</Text>
+              <Text color="fg.muted">Volume:</Text>
               <Text fontWeight="medium">{candle.volume.toLocaleString()}</Text>
             </HStack>
           </>

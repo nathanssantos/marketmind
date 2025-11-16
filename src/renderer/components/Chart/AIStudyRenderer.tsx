@@ -1,9 +1,9 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants';
 import type { AIStudy, AIStudyLine, AIStudyZone, Candle } from '@shared/types';
-import { AI_STUDY_COLORS } from '@shared/types';
 import { useEffect, useRef, useState } from 'react';
 import { useAIStudyHover } from '../../context/AIStudyHoverContext';
+import { useChartColors } from '@renderer/hooks/useChartColors';
 
 interface AIStudyRendererProps {
   canvasManager: CanvasManager | null;
@@ -37,6 +37,22 @@ export const AIStudyRenderer = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredStudy, setHoveredStudy] = useState<AIStudy | null>(null);
   const { hoveredStudyId, setHoveredStudyId } = useAIStudyHover();
+  const colors = useChartColors();
+
+  const getStudyColor = (type: AIStudy['type']): string => {
+    const { aiStudy } = colors;
+    const colorMap: Record<AIStudy['type'], string> = {
+      'support': aiStudy.support,
+      'resistance': aiStudy.resistance,
+      'trendline-bullish': aiStudy.trendlineBullish,
+      'trendline-bearish': aiStudy.trendlineBearish,
+      'liquidity-zone': aiStudy.liquidityZone,
+      'sell-zone': aiStudy.sellZone,
+      'buy-zone': aiStudy.buyZone,
+      'accumulation-zone': aiStudy.accumulationZone,
+    };
+    return colorMap[type];
+  };
 
   useEffect(() => {
     if (!canvasManager || candles.length === 0 || !mousePosition) {
@@ -185,7 +201,7 @@ export const AIStudyRenderer = ({
     const y2 = manager.priceToY(point2.price);
 
     ctx.save();
-    ctx.strokeStyle = AI_STUDY_COLORS[study.type];
+    ctx.strokeStyle = getStudyColor(study.type);
     ctx.lineWidth = isHovered ? 3 : 2;
     ctx.setLineDash([5, 5]);
 
@@ -220,13 +236,32 @@ export const AIStudyRenderer = ({
     const y1 = manager.priceToY(study.topPrice);
     const y2 = manager.priceToY(study.bottomPrice);
 
-    const opacity = isHovered ? '0.3' : '0.2';
+    const baseColor = getStudyColor(study.type);
+    const rgbaMatch = baseColor.match(/rgba?\(([^)]+)\)/);
+    
+    let fillColor: string;
+    let strokeColor: string;
+    
+    if (rgbaMatch && rgbaMatch[1]) {
+      const parts = rgbaMatch[1].split(',').map(p => p.trim());
+      if (parts.length === 4) {
+        const opacity = isHovered ? '0.3' : parts[3];
+        fillColor = `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${opacity})`;
+        strokeColor = `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, 1)`;
+      } else {
+        fillColor = baseColor;
+        strokeColor = baseColor;
+      }
+    } else {
+      fillColor = baseColor;
+      strokeColor = baseColor;
+    }
     
     ctx.save();
-    ctx.fillStyle = AI_STUDY_COLORS[study.type].replace('0.2', opacity);
+    ctx.fillStyle = fillColor;
     ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
 
-    ctx.strokeStyle = AI_STUDY_COLORS[study.type].replace('0.2', '1');
+    ctx.strokeStyle = strokeColor;
     ctx.lineWidth = isHovered ? 2 : 1;
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
     ctx.restore();
@@ -237,12 +272,12 @@ export const AIStudyRenderer = ({
   const drawAIIcon = (ctx: CanvasRenderingContext2D, x: number, y: number, studyNumber: number) => {
     ctx.save();
     
-    ctx.fillStyle = 'rgba(138, 43, 226, 0.9)';
+    ctx.fillStyle = colors.aiStudy.tooltip.bg;
     ctx.beginPath();
     ctx.arc(x + AI_ICON_SIZE / 2, y + AI_ICON_SIZE / 2, AI_ICON_SIZE / 2, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = colors.aiStudy.tooltip.text;
     ctx.font = 'bold 10px system-ui';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -251,14 +286,14 @@ export const AIStudyRenderer = ({
     ctx.restore();
 
     ctx.save();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.fillStyle = colors.aiStudy.tooltip.text;
     ctx.fillRect(x + AI_ICON_SIZE + 2, y, 18, AI_ICON_SIZE);
     
-    ctx.strokeStyle = 'rgba(138, 43, 226, 0.9)';
+    ctx.strokeStyle = colors.aiStudy.tooltip.border;
     ctx.lineWidth = 1;
     ctx.strokeRect(x + AI_ICON_SIZE + 2, y, 18, AI_ICON_SIZE);
 
-    ctx.fillStyle = 'rgba(138, 43, 226, 0.9)';
+    ctx.fillStyle = colors.aiStudy.tooltip.bg;
     ctx.font = 'bold 11px system-ui';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';

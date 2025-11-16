@@ -84,7 +84,7 @@ export const ChartControls = ({
   return (
     <ControlPanel title={t('chart.controls.title')}>
       <Box>
-        <Text fontSize="xs" color="gray.400" mb={1} fontWeight="semibold">
+        <Text fontSize="xs" color="fg.muted" mb={1} fontWeight="semibold">
           {t('chart.controls.timeframe')}
         </Text>
         <TimeframeSelector
@@ -94,7 +94,7 @@ export const ChartControls = ({
       </Box>
 
       <Box>
-        <Text fontSize="xs" color="gray.400" mb={1} fontWeight="semibold">
+        <Text fontSize="xs" color="fg.muted" mb={1} fontWeight="semibold">
           {t('chart.controls.chartType')}
         </Text>
         <HStack gap={2}>
@@ -126,14 +126,14 @@ export const ChartControls = ({
       </Box>
 
         <Box>
-          <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
+          <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="semibold">
             {t('chart.controls.display')}
           </Text>
           <Stack gap={2}>
             <HStack justify="space-between" gap={3}>
               <HStack gap={2}>
-                <HiOutlineChartBar size={14} color="var(--chakra-colors-gray-300)" />
-                <Text fontSize="xs" color="gray.300">{t('chart.controls.volume')}</Text>
+                <HiOutlineChartBar size={14} color="currentColor" />
+                <Text fontSize="xs" color="fg">{t('chart.controls.volume')}</Text>
               </HStack>
               <ChakraSwitch.Root
                 size="sm"
@@ -149,8 +149,8 @@ export const ChartControls = ({
             </HStack>
             <HStack justify="space-between" gap={3}>
               <HStack gap={2}>
-                <HiOutlineViewGrid size={14} color="var(--chakra-colors-gray-300)" />
-                <Text fontSize="xs" color="gray.300">{t('chart.controls.grid')}</Text>
+                <HiOutlineViewGrid size={14} color="currentColor" />
+                <Text fontSize="xs" color="fg">{t('chart.controls.grid')}</Text>
               </HStack>
               <ChakraSwitch.Root
                 size="sm"
@@ -166,8 +166,8 @@ export const ChartControls = ({
             </HStack>
             <HStack justify="space-between" gap={3}>
               <HStack gap={2}>
-                <HiOutlineTrendingUp size={14} color="var(--chakra-colors-gray-300)" />
-                <Text fontSize="xs" color="gray.300">{t('chart.controls.currentPrice')}</Text>
+                <HiOutlineTrendingUp size={14} color="currentColor" />
+                <Text fontSize="xs" color="fg">{t('chart.controls.currentPrice')}</Text>
               </HStack>
               <ChakraSwitch.Root
                 size="sm"
@@ -186,7 +186,7 @@ export const ChartControls = ({
 
         {movingAverages.length > 0 && (
           <Box>
-            <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
+            <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="semibold">
               {t('chart.controls.indicators')}
             </Text>
             <Stack gap={2}>
@@ -194,7 +194,7 @@ export const ChartControls = ({
                 <HStack key={index} justify="space-between" gap={3}>
                   <HStack gap={2}>
                     <HiOutlineTrendingUp size={14} color={ma.color} style={{ opacity: ma.visible !== false ? 1 : 0.3 }} />
-                    <Text fontSize="xs" color="gray.300">
+                    <Text fontSize="xs" color="fg">
                       {ma.type === 'EMA' ? 'EMA' : 'SMA'}{ma.period}
                     </Text>
                   </HStack>
@@ -217,7 +217,7 @@ export const ChartControls = ({
 
         {pinnedControls.size > 0 && advancedConfig && (
           <Box>
-            <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
+            <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="semibold">
               {t('chart.controls.quickSettings')}
             </Text>
             <Stack gap={2}>

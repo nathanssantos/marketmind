@@ -2,12 +2,12 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawGrid, drawLine, drawText } from '@renderer/utils/canvas/drawingUtils';
 import { formatPrice, formatTimestamp } from '@renderer/utils/formatters';
 import { CHART_CONFIG } from '@shared/constants';
-import type { ChartColors } from '@shared/types';
+import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { useCallback, useEffect } from 'react';
 
 export interface UseGridRendererProps {
   manager: CanvasManager | null;
-  colors: ChartColors;
+  colors: ChartThemeColors;
   enabled?: boolean;
   horizontalLines?: number;
   verticalLines?: number;
@@ -54,7 +54,7 @@ export const useGridRenderer = ({
       gridLineWidth ?? CHART_CONFIG.GRID_LINE_WIDTH,
     );
 
-    const labelColor = CHART_CONFIG.AXIS_LABEL_COLOR_DARK;
+    const labelColor = colors.axisLabel;
 
     const priceRange = maxPrice - minPrice;
     const priceStep = priceRange / (horizontalLines + 1);
@@ -82,7 +82,7 @@ export const useGridRenderer = ({
           y,
           width - effectivePaddingRight + 5,
           y,
-          labelColor,
+          colors.axisLine,
           1,
         );
       }
@@ -120,7 +120,7 @@ export const useGridRenderer = ({
             chartHeight,
             x,
             chartHeight + 5,
-            labelColor,
+            colors.axisLine,
             1,
           );
         }
@@ -135,7 +135,7 @@ export const useGridRenderer = ({
       0,
       chartRightBoundary,
       chartHeight,
-      labelColor,
+      colors.axisLine,
       2,
     );
 
@@ -145,7 +145,7 @@ export const useGridRenderer = ({
       chartHeight,
       chartRightBoundary,
       chartHeight,
-      labelColor,
+      colors.axisLine,
       2,
     );
   }, [manager, colors, enabled, horizontalLines, verticalLines, gridLineWidth, paddingRight, rightMargin, manager?.getCandles()]);
