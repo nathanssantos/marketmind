@@ -1,8 +1,9 @@
-import { Box, Flex, IconButton, PopoverArrow, PopoverBody, PopoverContent, PopoverRoot, PopoverTrigger, Text } from '@chakra-ui/react';
+import { Box, Flex, IconButton, Text } from '@chakra-ui/react';
 import { useState } from 'react';
-import { HiClock, HiPlus, HiTrash } from 'react-icons/hi2';
+import { HiClock, HiTrash } from 'react-icons/hi2';
 import { useChartContext } from '../../context/ChartContext';
 import { useAIStore } from '../../store/aiStore';
+import { Popover } from '../ui/popover';
 
 export const ConversationHistory = () => {
   const [open, setOpen] = useState(false);
@@ -10,16 +11,10 @@ export const ConversationHistory = () => {
   const activeConversationId = useAIStore((state) => state.activeConversationId);
   const getConversationsBySymbol = useAIStore((state) => state.getConversationsBySymbol);
   const setActiveConversation = useAIStore((state) => state.setActiveConversation);
-  const startNewConversation = useAIStore((state) => state.startNewConversation);
   const deleteConversation = useAIStore((state) => state.deleteConversation);
 
   const symbol = chartData?.symbol || '';
   const conversations = symbol ? getConversationsBySymbol(symbol) : [];
-
-  const handleNewConversation = () => {
-    startNewConversation(symbol);
-    setOpen(false);
-  };
 
   const handleSelectConversation = (id: string) => {
     setActiveConversation(id);
@@ -52,8 +47,10 @@ export const ConversationHistory = () => {
   };
 
   return (
-    <PopoverRoot open={open} onOpenChange={(e) => setOpen(e.open)}>
-      <PopoverTrigger asChild>
+    <Popover
+      open={open}
+      onOpenChange={(e) => setOpen(e.open)}
+      trigger={
         <IconButton
           aria-label="Conversation history"
           size="sm"
@@ -61,90 +58,78 @@ export const ConversationHistory = () => {
         >
           <HiClock />
         </IconButton>
-      </PopoverTrigger>
-      <PopoverContent width="320px">
-        <PopoverArrow />
-        <PopoverBody p={0}>
-          <Flex direction="column" maxHeight="400px">
+      }
+    >
+      <Flex direction="column" maxHeight="400px">
+        <Flex
+          align="center"
+          justify="space-between"
+          px={3}
+          py={2}
+          borderBottom="1px solid"
+          borderColor="border"
+        >
+          <Text fontSize="sm" fontWeight="semibold">
+            Conversas - {symbol}
+          </Text>
+        </Flex>
+
+        <Box overflowY="auto" maxHeight="350px">
+          {conversations.length === 0 ? (
             <Flex
               align="center"
-              justify="space-between"
-              px={3}
-              py={2}
-              borderBottom="1px solid"
-              borderColor="border"
+              justify="center"
+              py={8}
+              px={4}
+              color="fg.muted"
             >
-              <Text fontSize="sm" fontWeight="semibold">
-                Conversas - {symbol}
+              <Text fontSize="sm" textAlign="center">
+                Nenhuma conversa ainda
               </Text>
-              <IconButton
-                aria-label="New conversation"
-                onClick={handleNewConversation}
-                size="xs"
-                variant="ghost"
-              >
-                <HiPlus />
-              </IconButton>
             </Flex>
-
-            <Box overflowY="auto" maxHeight="350px">
-              {conversations.length === 0 ? (
-                <Flex
-                  align="center"
-                  justify="center"
-                  py={8}
-                  px={4}
-                  color="fg.muted"
-                >
-                  <Text fontSize="sm" textAlign="center">
-                    Nenhuma conversa ainda
+          ) : (
+            conversations.map((conversation) => (
+              <Flex
+                key={conversation.id}
+                align="center"
+                gap={2}
+                px={3}
+                py={2}
+                cursor="pointer"
+                bg={conversation.id === activeConversationId ? 'bg.muted' : 'transparent'}
+                _hover={{ bg: 'bg.muted' }}
+                onClick={() => handleSelectConversation(conversation.id)}
+                borderBottom="1px solid"
+                borderColor="border"
+              >
+                <Flex direction="column" flex={1} minWidth={0}>
+                  <Text
+                    fontSize="sm"
+                    fontWeight={conversation.id === activeConversationId ? 'semibold' : 'normal'}
+                    overflow="hidden"
+                    textOverflow="ellipsis"
+                    whiteSpace="nowrap"
+                  >
+                    {conversation.title}
+                  </Text>
+                  <Text fontSize="xs" color="fg.muted">
+                    {conversation.messages.length} {conversation.messages.length === 1 ? 'mensagem' : 'mensagens'} · {formatDate(conversation.updatedAt)}
                   </Text>
                 </Flex>
-              ) : (
-                conversations.map((conversation) => (
-                  <Flex
-                    key={conversation.id}
-                    align="center"
-                    gap={2}
-                    px={3}
-                    py={2}
-                    cursor="pointer"
-                    bg={conversation.id === activeConversationId ? 'bg.muted' : 'transparent'}
-                    _hover={{ bg: 'bg.muted' }}
-                    onClick={() => handleSelectConversation(conversation.id)}
-                    borderBottom="1px solid"
-                    borderColor="border"
-                  >
-                    <Flex direction="column" flex={1} minWidth={0}>
-                      <Text
-                        fontSize="sm"
-                        fontWeight={conversation.id === activeConversationId ? 'semibold' : 'normal'}
-                        overflow="hidden"
-                        textOverflow="ellipsis"
-                        whiteSpace="nowrap"
-                      >
-                        {conversation.title}
-                      </Text>
-                      <Text fontSize="xs" color="fg.muted">
-                        {conversation.messages.length} {conversation.messages.length === 1 ? 'mensagem' : 'mensagens'} · {formatDate(conversation.updatedAt)}
-                      </Text>
-                    </Flex>
-                    <IconButton
-                      aria-label="Delete conversation"
-                      onClick={(e) => handleDeleteConversation(conversation.id, e)}
-                      size="xs"
-                      variant="ghost"
-                      colorScheme="red"
-                    >
-                      <HiTrash />
-                    </IconButton>
-                  </Flex>
-                ))
-              )}
-            </Box>
-          </Flex>
-        </PopoverBody>
-      </PopoverContent>
-    </PopoverRoot>
+                <IconButton
+                  aria-label="Delete conversation"
+                  onClick={(e) => handleDeleteConversation(conversation.id, e)}
+                  size="xs"
+                  variant="ghost"
+                  colorScheme="red"
+                >
+                  <HiTrash />
+                </IconButton>
+              </Flex>
+            ))
+          )}
+        </Box>
+      </Flex>
+    </Popover>
   );
 };
