@@ -429,8 +429,10 @@ describe('migration', () => {
 
       await runMigrations();
 
-      const status = localStorage.getItem('marketmind-migrations-completed');
-      expect(status).toBeNull();
+      const status = JSON.parse(localStorage.getItem('marketmind-migrations-completed') || '{}');
+      expect(status.apiKeysMigrated).toBe(false);
+      expect(status.newsSettingsMigrated).toBe(false);
+      expect(status.movingAveragesMigrated).toBe(true);
     });
   });
 });

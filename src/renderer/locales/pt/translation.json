@@ -59,7 +59,35 @@
       "description": "Selecione o idioma da interface",
       "english": "English",
       "portuguese": "Português",
-      "spanish": "Español"
+      "spanish": "Español",
+      "french": "Français"
+    },
+    "dataManagement": {
+      "title": "Gerenciamento de Dados",
+      "tipTitle": "💡 Gerenciamento de Dados",
+      "export": "Exportar",
+      "exportDescription": "Salvar todas as conversas como arquivo JSON para backup",
+      "import": "Importar",
+      "importDescription": "Carregar uma conversa exportada anteriormente",
+      "clear": "Limpar",
+      "clearDescription": "Remover todas as conversas e histórico de chat",
+      "totalConversations": "Total de Conversas: {{count}}",
+      "exportAll": "Exportar Todas as Conversas",
+      "importConversation": "Importar Conversa",
+      "clearAll": "Limpar Todos os Dados",
+      "confirmClear": "Tem certeza de que deseja excluir todas as conversas? Esta ação não pode ser desfeita.",
+      "importSuccess": "Conversa importada com sucesso!",
+      "importError": "Falha ao importar conversa. Verifique o formato do arquivo.",
+      "clearSuccess": "Todas as conversas foram limpas."
+    },
+    "autoUpdate": {
+      "title": "Configurações de Atualização Automática",
+      "checkAutomatically": "Verificar atualizações automaticamente",
+      "checkAutomaticallyDescription": "Verificar automaticamente novas versões em segundo plano",
+      "checkInterval": "Intervalo de verificação: {{hours}} horas",
+      "downloadAutomatically": "Baixar atualizações automaticamente",
+      "downloadAutomaticallyDescription": "Baixar automaticamente novas versões quando disponíveis",
+      "checkNow": "Verificar Atualizações Agora"
     },
     "chart": {
       "chartDimensions": "Dimensões do Gráfico",
@@ -107,7 +135,9 @@
     "sendMessage": "Enviar mensagem",
     "send": "Enviar",
     "noMessages": "Nenhuma mensagem ainda",
-    "startConversation": "Inicie uma conversa para obter insights sobre o gráfico"
+    "startConversation": "Inicie uma conversa para obter insights sobre o gráfico",
+    "emptyStateTitle": "Inicie uma conversa",
+    "emptyStateDescription": "Peça para eu analisar o gráfico, explicar padrões ou fornecer insights de trading"
   },
   "chart": {
     "controls": {

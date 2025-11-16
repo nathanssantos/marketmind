@@ -59,7 +59,35 @@
       "description": "Seleccione el idioma de la interfaz",
       "english": "English",
       "portuguese": "Português",
-      "spanish": "Español"
+      "spanish": "Español",
+      "french": "Français"
+    },
+    "dataManagement": {
+      "title": "Gestión de Datos",
+      "tipTitle": "💡 Gestión de Datos",
+      "export": "Exportar",
+      "exportDescription": "Guardar todas las conversaciones como archivo JSON para respaldo",
+      "import": "Importar",
+      "importDescription": "Cargar una conversación exportada previamente",
+      "clear": "Limpiar",
+      "clearDescription": "Eliminar todas las conversaciones e historial de chat",
+      "totalConversations": "Total de Conversaciones: {{count}}",
+      "exportAll": "Exportar Todas las Conversaciones",
+      "importConversation": "Importar Conversación",
+      "clearAll": "Borrar Todos los Datos",
+      "confirmClear": "¿Está seguro de que desea eliminar todas las conversaciones? Esta acción no se puede deshacer.",
+      "importSuccess": "¡Conversación importada exitosamente!",
+      "importError": "Error al importar conversación. Verifique el formato del archivo.",
+      "clearSuccess": "Todas las conversaciones han sido eliminadas."
+    },
+    "autoUpdate": {
+      "title": "Configuración de Actualización Automática",
+      "checkAutomatically": "Buscar actualizaciones automáticamente",
+      "checkAutomaticallyDescription": "Buscar automáticamente nuevas versiones en segundo plano",
+      "checkInterval": "Intervalo de verificación: {{hours}} horas",
+      "downloadAutomatically": "Descargar actualizaciones automáticamente",
+      "downloadAutomaticallyDescription": "Descargar automáticamente nuevas versiones cuando estén disponibles",
+      "checkNow": "Buscar Actualizaciones Ahora"
     },
     "chart": {
       "chartDimensions": "Dimensiones del Gráfico",
@@ -107,7 +135,9 @@
     "sendMessage": "Enviar mensaje",
     "send": "Enviar",
     "noMessages": "Aún no hay mensajes",
-    "startConversation": "Inicia una conversación para obtener información sobre el gráfico"
+    "startConversation": "Inicia una conversación para obtener información sobre el gráfico",
+    "emptyStateTitle": "Iniciar una conversación",
+    "emptyStateDescription": "Pídeme que analice el gráfico, explique patrones o proporcione insights de trading"
   },
   "chart": {
     "controls": {

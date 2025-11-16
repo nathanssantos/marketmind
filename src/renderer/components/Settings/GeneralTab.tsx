@@ -5,10 +5,12 @@ import { useAutoUpdate } from '@/renderer/hooks/useAutoUpdate';
 import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
 import { useAIStore } from '@/renderer/store';
 import { Box, Flex, Separator, Stack, Text } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { HiArrowDownTray, HiArrowPath, HiArrowUpTray, HiTrash } from 'react-icons/hi2';
 import { LanguageSelector } from './LanguageSelector';
 
 export const GeneralTab = () => {
+  const { t } = useTranslation();
   const { conversations, importConversation, clearAll } = useAIStore();
   
   const [autoCheckUpdates, setAutoCheckUpdates] = useLocalStorage('autoCheckUpdates', true);
@@ -46,9 +48,9 @@ export const GeneralTab = () => {
         try {
           const content = event.target?.result as string;
           importConversation(content);
-          alert('Conversation imported successfully!');
+          alert(t('settings.dataManagement.importSuccess'));
         } catch (error) {
-          alert('Failed to import conversation. Please check the file format.');
+          alert(t('settings.dataManagement.importError'));
         }
       };
       reader.readAsText(file);
@@ -57,12 +59,10 @@ export const GeneralTab = () => {
   };
 
   const handleClearAll = () => {
-    const confirm = window.confirm(
-      'Are you sure you want to delete all conversations? This action cannot be undone.'
-    );
+    const confirm = window.confirm(t('settings.dataManagement.confirmClear'));
     if (confirm) {
       clearAll();
-      alert('All conversations cleared.');
+      alert(t('settings.dataManagement.clearSuccess'));
     }
   };
 
@@ -106,13 +106,13 @@ export const GeneralTab = () => {
         borderColor="blue.500"
       >
         <Text fontSize="sm" fontWeight="semibold" mb={2}>
-          💡 Data Management
+          {t('settings.dataManagement.tipTitle')}
         </Text>
         <Stack gap={1} fontSize="sm" color="fg.muted">
-          <Text>• Export: Save all conversations as JSON file for backup</Text>
-          <Text>• Import: Load a previously exported conversation</Text>
-          <Text>• Clear: Remove all conversations and chat history</Text>
-          <Text>• Total Conversations: {conversations.length}</Text>
+          <Text>• {t('settings.dataManagement.export')}: {t('settings.dataManagement.exportDescription')}</Text>
+          <Text>• {t('settings.dataManagement.import')}: {t('settings.dataManagement.importDescription')}</Text>
+          <Text>• {t('settings.dataManagement.clear')}: {t('settings.dataManagement.clearDescription')}</Text>
+          <Text>{t('settings.dataManagement.totalConversations', { count: conversations.length })}</Text>
         </Stack>
       </Box>
 
@@ -120,7 +120,7 @@ export const GeneralTab = () => {
 
       <Box>
         <Text fontSize="md" fontWeight="medium" mb={3}>
-          Auto-Update Settings
+          {t('settings.autoUpdate.title')}
         </Text>
         <Stack gap={4}>
           <Box>
@@ -128,17 +128,17 @@ export const GeneralTab = () => {
               checked={autoCheckUpdates} 
               onCheckedChange={handleAutoCheckChange}
             >
-              Check for updates automatically
+              {t('settings.autoUpdate.checkAutomatically')}
             </Switch>
             <Text fontSize="sm" color="fg.muted" mt={1}>
-              Automatically check for new versions in the background
+              {t('settings.autoUpdate.checkAutomaticallyDescription')}
             </Text>
           </Box>
 
           {autoCheckUpdates && (
             <Box>
               <Text fontSize="sm" mb={2}>
-                Check interval: {updateCheckInterval} hours
+                {t('settings.autoUpdate.checkInterval', { hours: updateCheckInterval })}
               </Text>
               <Slider 
                 value={[updateCheckInterval]}
@@ -155,10 +155,10 @@ export const GeneralTab = () => {
               checked={autoDownloadUpdates} 
               onCheckedChange={handleAutoDownloadChange}
             >
-              Download updates automatically
+              {t('settings.autoUpdate.downloadAutomatically')}
             </Switch>
             <Text fontSize="sm" color="fg.muted" mt={1}>
-              Automatically download new versions when available
+              {t('settings.autoUpdate.downloadAutomaticallyDescription')}
             </Text>
           </Box>
 
@@ -168,7 +168,7 @@ export const GeneralTab = () => {
             disabled={status === 'checking'}
           >
             <HiArrowPath />
-            Check for Updates Now
+            {t('settings.autoUpdate.checkNow')}
           </Button>
         </Stack>
       </Box>
@@ -177,20 +177,20 @@ export const GeneralTab = () => {
 
       <Box>
         <Text fontSize="md" fontWeight="medium" mb={3}>
-          Data Management
+          {t('settings.dataManagement.title')}
         </Text>
         <Flex gap={2}>
           <Button flex={1} variant="outline" onClick={handleExportAll} disabled={conversations.length === 0}>
             <HiArrowDownTray />
-            Export All Conversations
+            {t('settings.dataManagement.exportAll')}
           </Button>
           <Button flex={1} variant="outline" onClick={handleImport}>
             <HiArrowUpTray />
-            Import Conversation
+            {t('settings.dataManagement.importConversation')}
           </Button>
           <Button flex={1} colorPalette="red" variant="outline" onClick={handleClearAll} disabled={conversations.length === 0}>
             <HiTrash />
-            Clear All Data
+            {t('settings.dataManagement.clearAll')}
           </Button>
         </Flex>
       </Box>

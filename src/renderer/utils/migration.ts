@@ -6,6 +6,7 @@ const LEGACY_AI_STORE_KEY = 'marketmind-ai-storage';
 interface MigrationStatus {
   apiKeysMigrated: boolean;
   newsSettingsMigrated: boolean;
+  movingAveragesMigrated: boolean;
   version: string;
 }
 
@@ -17,9 +18,19 @@ interface LegacyAISettings {
 const getMigrationStatus = (): MigrationStatus => {
   try {
     const stored = localStorage.getItem(MIGRATION_KEY);
-    return stored ? JSON.parse(stored) : { apiKeysMigrated: false, newsSettingsMigrated: false, version: '0.0.0' };
+    return stored ? JSON.parse(stored) : { 
+      apiKeysMigrated: false, 
+      newsSettingsMigrated: false, 
+      movingAveragesMigrated: false,
+      version: '0.0.0' 
+    };
   } catch {
-    return { apiKeysMigrated: false, newsSettingsMigrated: false, version: '0.0.0' };
+    return { 
+      apiKeysMigrated: false, 
+      newsSettingsMigrated: false, 
+      movingAveragesMigrated: false,
+      version: '0.0.0' 
+    };
   }
 };
 
@@ -195,11 +206,68 @@ export const migrateNewsSettings = async (): Promise<boolean> => {
   }
 };
 
-export const runMigrations = async (): Promise<void> => {
+export const migrateMovingAverages = async (): Promise<boolean> => {
+  const status = getMigrationStatus();
+  
+  if (status.movingAveragesMigrated) {
+    console.log('Moving averages already migrated');
+    return true;
+  }
+
+  console.log('Starting moving averages migration...');
+
+  try {
+    const maKey = 'marketmind:movingAverages';
+    const stored = localStorage.getItem(maKey);
+    
+    if (!stored) {
+      console.log('No moving averages found in localStorage');
+      const currentStatus = getMigrationStatus();
+      setMigrationStatus({ ...currentStatus, movingAveragesMigrated: true });
+      return true;
+    }
+
+    const movingAverages = JSON.parse(stored);
+    
+    if (!Array.isArray(movingAverages)) {
+      console.warn('Invalid moving averages format');
+      const currentStatus = getMigrationStatus();
+      setMigrationStatus({ ...currentStatus, movingAveragesMigrated: true });
+      return true;
+    }
+
+    let migrated = false;
+    const updatedMAs = movingAverages.map((ma: any) => {
+      if (ma.type === 'SMA') {
+        console.log(`Converting ${ma.type}${ma.period} to EMA${ma.period}`);
+        migrated = true;
+        return { ...ma, type: 'EMA' };
+      }
+      return ma;
+    });
+
+    if (migrated) {
+      localStorage.setItem(maKey, JSON.stringify(updatedMAs));
+      console.log('Successfully migrated SMAs to EMAs in localStorage');
+    }
+
+    const currentStatus = getMigrationStatus();
+    setMigrationStatus({ ...currentStatus, movingAveragesMigrated: true });
+    
+    console.log('Moving averages migration completed');
+    return true;
+  } catch (error) {
+    console.error('Moving averages migration failed:', error);
+    return false;
+  }
+};
+
+export const runMigrations = async () => {
   console.log('Running migrations...');
   
   await migrateApiKeys();
   await migrateNewsSettings();
+  await migrateMovingAverages();
   
   console.log('Migrations completed');
 };

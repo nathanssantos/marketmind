@@ -54,6 +54,41 @@
       "news": "News",
       "about": "About"
     },
+    "language": {
+      "title": "Language",
+      "description": "Select the interface language",
+      "english": "English",
+      "portuguese": "Português",
+      "spanish": "Español",
+      "french": "Français"
+    },
+    "dataManagement": {
+      "title": "Data Management",
+      "tipTitle": "💡 Data Management",
+      "export": "Export",
+      "exportDescription": "Save all conversations as JSON file for backup",
+      "import": "Import",
+      "importDescription": "Load a previously exported conversation",
+      "clear": "Clear",
+      "clearDescription": "Remove all conversations and chat history",
+      "totalConversations": "Total Conversations: {{count}}",
+      "exportAll": "Export All Conversations",
+      "importConversation": "Import Conversation",
+      "clearAll": "Clear All Data",
+      "confirmClear": "Are you sure you want to delete all conversations? This action cannot be undone.",
+      "importSuccess": "Conversation imported successfully!",
+      "importError": "Failed to import conversation. Please check the file format.",
+      "clearSuccess": "All conversations cleared."
+    },
+    "autoUpdate": {
+      "title": "Auto-Update Settings",
+      "checkAutomatically": "Check for updates automatically",
+      "checkAutomaticallyDescription": "Automatically check for new versions in the background",
+      "checkInterval": "Check interval: {{hours}} hours",
+      "downloadAutomatically": "Download updates automatically",
+      "downloadAutomaticallyDescription": "Automatically download new versions when available",
+      "checkNow": "Check for Updates Now"
+    },
     "chart": {
       "chartDimensions": "Chart Dimensions",
       "rightMargin": "Right Margin",
@@ -100,7 +135,9 @@
     "sendMessage": "Send message",
     "send": "Send",
     "noMessages": "No messages yet",
-    "startConversation": "Start a conversation to get insights about the chart"
+    "startConversation": "Start a conversation to get insights about the chart",
+    "emptyStateTitle": "Start a conversation",
+    "emptyStateDescription": "Ask me to analyze the chart, explain patterns, or provide trading insights"
   },
   "chart": {
     "controls": {

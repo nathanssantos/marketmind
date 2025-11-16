@@ -14,6 +14,7 @@ export interface AIStudyPoint {
 }
 
 export interface AIStudyLine {
+  id?: number;
   type: 'support' | 'resistance' | 'trendline-bullish' | 'trendline-bearish';
   points: [AIStudyPoint, AIStudyPoint];
   label?: string;
@@ -22,6 +23,7 @@ export interface AIStudyLine {
 }
 
 export interface AIStudyZone {
+  id?: number;
   type: 'liquidity-zone' | 'sell-zone' | 'buy-zone' | 'accumulation-zone';
   topPrice: number;
   bottomPrice: number;
