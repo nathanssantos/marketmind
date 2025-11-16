@@ -139,7 +139,6 @@ export const NewsConfigTab = () => {
 
       <Separator />
 
-      {/* NewsAPI */}
       <Box>
         <Text fontSize="lg" fontWeight="semibold" mb={4}>
           NewsAPI Configuration
@@ -192,7 +191,6 @@ export const NewsConfigTab = () => {
 
       <Separator />
 
-      {/* CryptoPanic */}
       <Box>
         <Text fontSize="lg" fontWeight="semibold" mb={4}>
           CryptoPanic Configuration
@@ -227,7 +225,6 @@ export const NewsConfigTab = () => {
 
       <Separator />
 
-      {/* Advanced Settings */}
       <Box>
         <Text fontSize="lg" fontWeight="semibold" mb={4}>
           Advanced Settings

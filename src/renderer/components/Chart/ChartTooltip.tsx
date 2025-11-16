@@ -126,12 +126,10 @@ export const ChartTooltip = ({
       minW={`${tooltipWidth}px`}
     >
       <Stack gap={1.5}>
-        {/* Time */}
         <Text fontWeight="semibold" color="gray.300">
           {candle ? formatTimestamp(candle.timestamp) : ''}
         </Text>
 
-        {/* OHLC */}
         {candle && (
           <Stack gap={0.5}>
             <HStack justify="space-between">
@@ -157,7 +155,6 @@ export const ChartTooltip = ({
           </Stack>
         )}
 
-        {/* Change */}
         {candle && (
           <>
             <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="gray.700">
@@ -171,7 +168,6 @@ export const ChartTooltip = ({
               </Text>
             </HStack>
 
-            {/* Volume */}
             <HStack justify="space-between">
               <Text color="gray.400">Volume:</Text>
               <Text fontWeight="medium">{candle.volume.toLocaleString()}</Text>

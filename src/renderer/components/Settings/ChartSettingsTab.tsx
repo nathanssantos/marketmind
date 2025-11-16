@@ -32,7 +32,6 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
 
   return (
     <Stack gap={6}>
-      {/* Chart Dimensions */}
       <Box>
         <Text fontSize="sm" fontWeight="bold" mb={4}>
           {t('settings.chart.chartDimensions')}
@@ -59,7 +58,6 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
         </Stack>
       </Box>
 
-      {/* Candle Settings */}
       <Box>
         <Text fontSize="sm" fontWeight="bold" mb={4}>
           {t('settings.chart.candleSettings')}
@@ -85,7 +83,6 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
         </Stack>
       </Box>
 
-      {/* Grid Settings */}
       <Box>
         <Text fontSize="sm" fontWeight="bold" mb={4}>
           {t('settings.chart.gridSettings')}
@@ -100,7 +97,6 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
         </Field>
       </Box>
 
-      {/* Current Price Line Settings */}
       <Box>
         <Text fontSize="sm" fontWeight="bold" mb={4}>
           {t('settings.chart.currentPriceLine')}
@@ -129,7 +125,6 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
         </Stack>
       </Box>
 
-      {/* Padding */}
       <Box>
         <Text fontSize="sm" fontWeight="bold" mb={4}>
           {t('settings.chart.chartPadding')}

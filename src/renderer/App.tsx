@@ -296,7 +296,6 @@ function AppContent(): ReactElement {
         />
       </Box>
 
-          {/* Controls Container - Top Left */}
           <Stack 
             position="absolute" 
             top={4} 

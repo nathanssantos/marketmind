@@ -45,7 +45,6 @@ export const AdvancedControls = ({
       title={t('chart.advanced.title')} 
       defaultExpanded={false}
     >
-      {/* Chart Dimensions */}
       <Box>
         <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
           {t('chart.advanced.chartDimensions')}
@@ -71,7 +70,6 @@ export const AdvancedControls = ({
         </Box>
       </Box>
 
-      {/* Candle Settings */}
       <Box>
         <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
           {t('chart.advanced.candleSettings')}
@@ -94,7 +92,6 @@ export const AdvancedControls = ({
         </Box>
       </Box>
 
-      {/* Grid Settings */}
       <Box>
         <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
           {t('chart.advanced.gridSettings')}
@@ -107,7 +104,6 @@ export const AdvancedControls = ({
         />
       </Box>
 
-      {/* Padding */}
       <Box>
         <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
           {t('chart.advanced.padding')}

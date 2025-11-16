@@ -24,7 +24,6 @@ export const ControlPanel = ({
       opacity={0.95}
       minWidth="200px"
     >
-      {/* Header */}
       <HStack
         justify="space-between"
         px={3}
@@ -50,7 +49,6 @@ export const ControlPanel = ({
         </IconButton>
       </HStack>
 
-      {/* Content */}
       {isExpanded && (
         <Box p={3}>
           <Stack gap={3}>

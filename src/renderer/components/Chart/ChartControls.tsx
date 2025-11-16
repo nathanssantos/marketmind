@@ -83,7 +83,6 @@ export const ChartControls = ({
 
   return (
     <ControlPanel title={t('chart.controls.title')}>
-      {/* Timeframe Selector */}
       <Box>
         <Text fontSize="xs" color="gray.400" mb={1} fontWeight="semibold">
           {t('chart.controls.timeframe')}
@@ -94,7 +93,6 @@ export const ChartControls = ({
         />
       </Box>
 
-      {/* Chart Type */}
       <Box>
         <Text fontSize="xs" color="gray.400" mb={1} fontWeight="semibold">
           {t('chart.controls.chartType')}
@@ -127,7 +125,6 @@ export const ChartControls = ({
         </HStack>
       </Box>
 
-        {/* Display Options */}
         <Box>
           <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
             {t('chart.controls.display')}
@@ -187,7 +184,6 @@ export const ChartControls = ({
           </Stack>
         </Box>
 
-        {/* Moving Averages */}
         {movingAverages.length > 0 && (
           <Box>
             <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
@@ -219,7 +215,6 @@ export const ChartControls = ({
           </Box>
         )}
 
-        {/* Pinned Advanced Controls */}
         {pinnedControls.size > 0 && advancedConfig && (
           <Box>
             <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
