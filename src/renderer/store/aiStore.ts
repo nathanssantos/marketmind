@@ -30,6 +30,7 @@ export interface Conversation {
   createdAt: number;
   updatedAt: number;
   symbol?: string;
+  studyDataId?: string;
 }
 
 export interface AISettings {
@@ -62,7 +63,9 @@ interface AIState {
   deleteConversation: (id: string) => void;
   setActiveConversation: (id: string | null) => void;
   setActiveConversationBySymbol: (symbol: string) => void;
+  restoreActiveConversation: () => void;
   updateConversationTitle: (id: string, title: string) => void;
+  updateConversationStudyDataId: (id: string, studyDataId: string | undefined) => void;
 
   addMessage: (conversationId: string, message: Omit<AIMessage, 'id' | 'timestamp'>) => void;
   updateMessage: (conversationId: string, messageId: string, content: string) => void;
@@ -289,18 +292,30 @@ export const useAIStore = create<AIState>()(
 
       startNewConversation: (symbol) => {
         const newId = get().createConversation(undefined, symbol);
-        set({ activeConversationId: newId });
+        set({ 
+          activeConversationId: newId,
+          messages: [],
+        });
         return newId;
       },
 
-      deleteConversation: (id) => set((state) => ({
-        conversations: state.conversations.filter(c => c.id !== id),
-        activeConversationId: state.activeConversationId === id 
-          ? null 
-          : state.activeConversationId,
-      })),
+      deleteConversation: (id) => set((state) => {
+        const wasActive = state.activeConversationId === id;
+        return {
+          conversations: state.conversations.filter(c => c.id !== id),
+          activeConversationId: wasActive ? null : state.activeConversationId,
+          messages: wasActive ? [] : state.messages,
+        };
+      }),
 
-      setActiveConversation: (id) => set({ activeConversationId: id }),
+      setActiveConversation: (id) => {
+        const state = get();
+        const conversation = state.conversations.find(c => c.id === id);
+        set({ 
+          activeConversationId: id,
+          messages: conversation?.messages || [],
+        });
+      },
 
       setActiveConversationBySymbol: (symbol) => {
         const state = get();
@@ -309,10 +324,26 @@ export const useAIStore = create<AIState>()(
           .sort((a, b) => b.updatedAt - a.updatedAt)[0];
         
         if (conversationForSymbol) {
-          set({ activeConversationId: conversationForSymbol.id });
+          set({ 
+            activeConversationId: conversationForSymbol.id,
+            messages: conversationForSymbol.messages,
+          });
         } else {
           const newId = get().createConversation(undefined, symbol);
-          set({ activeConversationId: newId });
+          set({ 
+            activeConversationId: newId,
+            messages: [],
+          });
+        }
+      },
+
+      restoreActiveConversation: () => {
+        const state = get();
+        if (!state.activeConversationId) return;
+        
+        const conversation = state.conversations.find(c => c.id === state.activeConversationId);
+        if (conversation) {
+          set({ messages: conversation.messages });
         }
       },
 
@@ -320,6 +351,19 @@ export const useAIStore = create<AIState>()(
         conversations: state.conversations.map(c =>
           c.id === id ? { ...c, title, updatedAt: Date.now() } : c
         ),
+      })),
+
+      updateConversationStudyDataId: (id, studyDataId) => set((state) => ({
+        conversations: state.conversations.map(c => {
+          if (c.id !== id) return c;
+          const updated: Conversation = { ...c, updatedAt: Date.now() };
+          if (studyDataId !== undefined) {
+            updated.studyDataId = studyDataId;
+          } else {
+            delete updated.studyDataId;
+          }
+          return updated;
+        }),
       })),
 
       addMessage: (conversationId, message) => set((state) => {

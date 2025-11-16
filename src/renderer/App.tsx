@@ -165,11 +165,20 @@ function AppContent(): ReactElement {
     });
   }, []);
 
+  const restoreActiveConversation = useAIStore((state) => state.restoreActiveConversation);
   const setActiveConversationBySymbol = useAIStore((state) => state.setActiveConversationBySymbol);
+  const getActiveConversation = useAIStore((state) => state.getActiveConversation);
 
   useEffect(() => {
-    setActiveConversationBySymbol(symbol);
-  }, [symbol, setActiveConversationBySymbol]);
+    restoreActiveConversation();
+  }, [restoreActiveConversation]);
+
+  useEffect(() => {
+    const activeConv = getActiveConversation();
+    if (!activeConv || activeConv.symbol !== symbol) {
+      setActiveConversationBySymbol(symbol);
+    }
+  }, [symbol, setActiveConversationBySymbol, getActiveConversation]);
 
   const marketService = useMemo(() => {
     const binance = new BinanceProvider();
@@ -244,19 +253,29 @@ function AppContent(): ReactElement {
     return fullSymbol;
   };
 
+  const updateConversationStudyDataId = useAIStore(state => state.updateConversationStudyDataId);
+  const activeConversationId = useAIStore(state => state.activeConversationId);
+
   const { 
     studies: aiStudies, 
-    studiesVisible, 
+    studiesVisible,
+    studyDataId,
     deleteStudies, 
     toggleStudiesVisibility, 
     processAIResponse 
-  } = useAIStudies(symbol);
+  } = useAIStudies({ symbol, conversationId: activeConversationId });
   const setResponseProcessor = useAIStore(state => state.setResponseProcessor);
 
   useEffect(() => {
     setResponseProcessor(processAIResponse);
     return () => setResponseProcessor(null);
   }, [processAIResponse, setResponseProcessor]);
+
+  useEffect(() => {
+    if (activeConversationId && studyDataId) {
+      updateConversationStudyDataId(activeConversationId, studyDataId);
+    }
+  }, [activeConversationId, studyDataId, updateConversationStudyDataId]);
 
   const { articles: newsArticles } = useNews({
     symbols: [extractSymbolCode(symbol)],
