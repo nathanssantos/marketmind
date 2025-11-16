@@ -1,6 +1,9 @@
 import type { AIAnalysisRequest, AIMessage } from '@shared/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GeminiProvider } from './GeminiProvider';
+import prompts from '../prompts.json';
+
+const SYSTEM_PROMPT = prompts.chartAnalysis.system;
 
 const mockSendMessage = vi.fn();
 const mockStartChat = vi.fn();
@@ -85,6 +88,7 @@ describe('GeminiProvider', () => {
           temperature: 0.7,
           maxOutputTokens: 4096,
         },
+        systemInstruction: SYSTEM_PROMPT,
       });
 
       expect(mockStartChat).toHaveBeenCalledWith({ history: [] });
@@ -260,6 +264,7 @@ describe('GeminiProvider', () => {
           temperature: 0.5,
           maxOutputTokens: 2000,
         },
+        systemInstruction: SYSTEM_PROMPT,
       });
     });
 
