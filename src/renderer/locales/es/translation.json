@@ -1,0 +1,116 @@
+{
+  "common": {
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saveChanges": "Guardar Cambios",
+    "close": "Cerrar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "search": "Buscar",
+    "noResults": "No se encontraron resultados",
+    "typeToSearch": "Escriba para buscar..."
+  },
+  "app": {
+    "loadingMarketData": "Cargando datos de mercado...",
+    "failedToLoadMarketData": "Error al Cargar Datos de Mercado",
+    "retry": "Reintentar"
+  },
+  "symbolSelector": {
+    "label": "Binance",
+    "placeholder": "Seleccionar símbolo",
+    "searchPlaceholder": "Buscar símbolos... (ej: BTC, ETH)",
+    "popularSymbols": "SÍMBOLOS POPULARES",
+    "noSymbolsFound": "No se encontraron símbolos"
+  },
+  "settings": {
+    "title": "Configuración",
+    "tabs": {
+      "general": "General",
+      "chart": "Gráfico",
+      "ai": "Configuración de IA",
+      "news": "Noticias",
+      "about": "Acerca de"
+    },
+    "language": {
+      "title": "Idioma",
+      "description": "Seleccione el idioma de la interfaz",
+      "english": "English",
+      "portuguese": "Português",
+      "spanish": "Español"
+    }
+  },
+  "chat": {
+    "title": "Asistente IA",
+    "newConversation": "Nueva conversación",
+    "closeChat": "Cerrar chat",
+    "inputPlaceholder": "Pregúntame cualquier cosa sobre el gráfico...",
+    "send": "Enviar",
+    "noMessages": "Aún no hay mensajes",
+    "startConversation": "Inicia una conversación para obtener información sobre el gráfico"
+  },
+  "chart": {
+    "controls": {
+      "volume": "Volumen",
+      "grid": "Cuadrícula",
+      "currentPriceLine": "Línea de Precio Actual",
+      "candlestick": "Velas",
+      "line": "Línea",
+      "movingAverages": "Medias Móviles",
+      "timeframe": "Marco Temporal"
+    },
+    "timeframes": {
+      "1m": "1 Minuto",
+      "3m": "3 Minutos",
+      "5m": "5 Minutos",
+      "15m": "15 Minutos",
+      "30m": "30 Minutos",
+      "1h": "1 Hora",
+      "2h": "2 Horas",
+      "4h": "4 Horas",
+      "6h": "6 Horas",
+      "8h": "8 Horas",
+      "12h": "12 Horas",
+      "1d": "1 Día",
+      "3d": "3 Días",
+      "1w": "1 Semana",
+      "1M": "1 Mes"
+    }
+  },
+  "news": {
+    "title": "Noticias",
+    "failedToLoad": "Error al cargar noticias",
+    "noArticles": "No se encontraron noticias",
+    "sentiment": {
+      "positive": "Positivo",
+      "negative": "Negativo",
+      "neutral": "Neutral"
+    }
+  },
+  "onboarding": {
+    "welcome": "Bienvenido a MarketMind",
+    "skip": "Omitir",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "finish": "Comenzar"
+  },
+  "update": {
+    "available": "Actualización Disponible",
+    "downloading": "Descargando actualización...",
+    "readyToInstall": "Actualización lista para instalar",
+    "installNow": "Instalar Ahora",
+    "installOnQuit": "Instalar al Salir",
+    "later": "Más Tarde"
+  },
+  "keyboardShortcuts": {
+    "title": "Atajos de Teclado",
+    "categories": {
+      "general": "General",
+      "chart": "Gráfico",
+      "navigation": "Navegación",
+      "chat": "Chat"
+    }
+  }
+}

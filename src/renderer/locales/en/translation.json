@@ -1,0 +1,109 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "saveChanges": "Save Changes",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "search": "Search",
+    "noResults": "No results found",
+    "typeToSearch": "Type to search..."
+  },
+  "app": {
+    "loadingMarketData": "Loading market data...",
+    "failedToLoadMarketData": "Failed to Load Market Data",
+    "retry": "Retry"
+  },
+  "symbolSelector": {
+    "label": "Binance",
+    "placeholder": "Select symbol",
+    "searchPlaceholder": "Search symbols... (e.g., BTC, ETH)",
+    "popularSymbols": "POPULAR SYMBOLS",
+    "noSymbolsFound": "No symbols found"
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "general": "General",
+      "chart": "Chart",
+      "ai": "AI Configuration",
+      "news": "News",
+      "about": "About"
+    }
+  },
+  "chat": {
+    "title": "AI Assistant",
+    "newConversation": "New conversation",
+    "closeChat": "Close chat",
+    "inputPlaceholder": "Ask me anything about the chart...",
+    "send": "Send",
+    "noMessages": "No messages yet",
+    "startConversation": "Start a conversation to get insights about the chart"
+  },
+  "chart": {
+    "controls": {
+      "volume": "Volume",
+      "grid": "Grid",
+      "currentPriceLine": "Current Price Line",
+      "candlestick": "Candlestick",
+      "line": "Line",
+      "movingAverages": "Moving Averages",
+      "timeframe": "Timeframe"
+    },
+    "timeframes": {
+      "1m": "1 Minute",
+      "3m": "3 Minutes",
+      "5m": "5 Minutes",
+      "15m": "15 Minutes",
+      "30m": "30 Minutes",
+      "1h": "1 Hour",
+      "2h": "2 Hours",
+      "4h": "4 Hours",
+      "6h": "6 Hours",
+      "8h": "8 Hours",
+      "12h": "12 Hours",
+      "1d": "1 Day",
+      "3d": "3 Days",
+      "1w": "1 Week",
+      "1M": "1 Month"
+    }
+  },
+  "news": {
+    "title": "News",
+    "failedToLoad": "Failed to load news",
+    "noArticles": "No news articles found",
+    "sentiment": {
+      "positive": "Positive",
+      "negative": "Negative",
+      "neutral": "Neutral"
+    }
+  },
+  "onboarding": {
+    "welcome": "Welcome to MarketMind",
+    "skip": "Skip",
+    "next": "Next",
+    "previous": "Previous",
+    "finish": "Get Started"
+  },
+  "update": {
+    "available": "Update Available",
+    "downloading": "Downloading update...",
+    "readyToInstall": "Update ready to install",
+    "installNow": "Install Now",
+    "installOnQuit": "Install on Quit",
+    "later": "Later"
+  },
+  "keyboardShortcuts": {
+    "title": "Keyboard Shortcuts",
+    "categories": {
+      "general": "General",
+      "chart": "Chart",
+      "navigation": "Navigation",
+      "chat": "Chat"
+    }
+  }
+}

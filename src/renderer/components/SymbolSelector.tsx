@@ -1,5 +1,6 @@
 import { Select, type SelectOption } from '@/renderer/components/ui/select';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSymbolSearch } from '../hooks/useSymbolSearch';
 import type { MarketDataService } from '../services/market/MarketDataService';
 
@@ -21,6 +22,7 @@ const POPULAR_SYMBOLS = [
 ];
 
 export function SymbolSelector({ marketService, value, onChange }: SymbolSelectorProps) {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   
   const { symbols, loading } = useSymbolSearch(marketService, {
@@ -47,12 +49,12 @@ export function SymbolSelector({ marketService, value, onChange }: SymbolSelecto
       options={options}
       placeholder={selectedSymbol?.displayName || value}
       enableSearch
-      label="Binance"
+      label={t('symbolSelector.label')}
       onSearchChange={setSearchQuery}
-      searchPlaceholder="Search symbols... (e.g., BTC, ETH)"
+      searchPlaceholder={t('symbolSelector.searchPlaceholder')}
       isLoading={loading}
-      emptyMessage={searchQuery.length >= 2 ? "No symbols found" : "Type to search..."}
-      sectionLabel={searchQuery.length < 2 ? "POPULAR SYMBOLS" : undefined}
+      emptyMessage={searchQuery.length >= 2 ? t('symbolSelector.noSymbolsFound') : t('common.typeToSearch')}
+      sectionLabel={searchQuery.length < 2 ? t('symbolSelector.popularSymbols') : undefined}
       minWidth="280px"
     />
   );

@@ -4,11 +4,12 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.12.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.13.0-blue.svg)
 ![Tests](https://img.shields.io/badge/tests-533%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-90.59%25-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
+![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES-success.svg)
 
 </div>
 
@@ -52,12 +53,16 @@
 - 🔍 **Tooltips**: Contextual help and information throughout the interface
 - ♿ **Accessibility**: ARIA labels, keyboard support, and screen reader compatibility
 - 🎯 **Performance**: Web Workers for heavy calculations, IndexedDB caching
+- 🌍 **Internationalization**: Multi-language support (English, Portuguese, Spanish)
+- 🔄 **Language Detection**: Automatic language detection from browser/system
+- ⚙️ **Language Selector**: Manual language switching in settings
 
 **Planned:**
 - 📰 **News Sentiment Analysis**: AI-powered sentiment analysis of financial news
 - 📊 **Technical Indicators**: RSI, MACD, Bollinger Bands, and more
 - 📡 **WebSocket**: Real-time candle updates via WebSocket
 - 🧪 **Testing**: Comprehensive unit and integration tests
+- 🌐 **More Languages**: French, German, Japanese, Chinese support
 
 ## 🛠 Technology Stack
 
@@ -375,6 +380,14 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
   - [x] Updated README with all features
   - [x] Test coverage documentation
 
+**Phase 14: Internationalization** ✅ COMPLETED (100%)
+- [x] i18next integration
+- [x] Multi-language support (English, Portuguese, Spanish)
+- [x] Automatic language detection
+- [x] Language selector in settings
+- [x] All UI components translated
+- [x] Persistent language preference
+
 ### MVP (v1.0) - Target Q1 2025
 - [x] Candlestick chart rendering
 - [x] Line chart rendering
@@ -399,22 +412,20 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] Onboarding for first-time users
 - [x] Keyboard shortcuts system
 - [x] Accessibility features
+- [x] Multi-language support (EN, PT, ES)
 
-**MVP Progress:** ~98% Complete (production ready! 🚀)
+**MVP Progress:** ~100% Complete (production ready! 🚀)
 
 ### Future (v1.1+)
-- [ ] Settings modal with API key encryption
-- [ ] Conversation export/import
 - [ ] WebSocket for real-time updates
 - [ ] More technical indicators (RSI, MACD, Bollinger Bands)
 - [ ] Additional market APIs (stocks via Alpha Vantage)
-- [ ] News integration
 - [ ] Price alerts
 - [ ] Asset watchlist
 - [ ] Symbol favorites and recents
 - [ ] Chart export as images
-- [ ] Multi-language support
-- [ ] Unit tests for all components
+- [ ] More languages (FR, DE, JP, CN)
+- [ ] Integration and E2E tests
 
 ## 📄 License
 
