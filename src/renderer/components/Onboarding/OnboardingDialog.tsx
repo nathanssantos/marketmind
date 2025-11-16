@@ -1,5 +1,6 @@
 import { Box, Button, DialogBackdrop, DialogBody, DialogCloseTrigger, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTitle, HStack, Stack, Text } from '@chakra-ui/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { HiChartBar, HiChatBubbleLeftRight, HiCog, HiSparkles } from 'react-icons/hi2';
 
 interface OnboardingDialogProps {
@@ -7,36 +8,37 @@ interface OnboardingDialogProps {
   onClose: () => void;
 }
 
-const steps = [
-  {
-    icon: HiChartBar,
-    title: 'Welcome to MarketMind',
-    description: 'Your AI-powered financial chart analysis assistant. MarketMind combines advanced charting with AI analysis to help you make informed trading decisions.',
-  },
-  {
-    icon: HiSparkles,
-    title: 'Choose Your AI Provider',
-    description: 'MarketMind supports multiple AI providers: OpenAI (GPT-4), Anthropic (Claude), and Google (Gemini). Configure your API keys in the settings to get started.',
-  },
-  {
-    icon: HiChartBar,
-    title: 'Analyze Market Data',
-    description: 'View real-time candlestick charts, volume indicators, and moving averages. Use the controls to customize your chart view and select different timeframes.',
-  },
-  {
-    icon: HiChatBubbleLeftRight,
-    title: 'Chat with AI',
-    description: 'Ask questions about chart patterns, trends, and trading signals. The AI has access to your chart data and can provide technical analysis and insights.',
-  },
-  {
-    icon: HiCog,
-    title: 'Ready to Start',
-    description: 'Open the settings (top right) to configure your AI provider and API keys. Then start analyzing charts and chatting with your AI assistant!',
-  },
-];
-
 export const OnboardingDialog = ({ isOpen, onClose }: OnboardingDialogProps) => {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
+
+  const steps = [
+    {
+      icon: HiChartBar,
+      titleKey: 'onboarding.steps.welcome.title',
+      descriptionKey: 'onboarding.steps.welcome.description',
+    },
+    {
+      icon: HiSparkles,
+      titleKey: 'onboarding.steps.aiProvider.title',
+      descriptionKey: 'onboarding.steps.aiProvider.description',
+    },
+    {
+      icon: HiChartBar,
+      titleKey: 'onboarding.steps.analyze.title',
+      descriptionKey: 'onboarding.steps.analyze.description',
+    },
+    {
+      icon: HiChatBubbleLeftRight,
+      titleKey: 'onboarding.steps.chat.title',
+      descriptionKey: 'onboarding.steps.chat.description',
+    },
+    {
+      icon: HiCog,
+      titleKey: 'onboarding.steps.ready.title',
+      descriptionKey: 'onboarding.steps.ready.description',
+    },
+  ];
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
@@ -69,7 +71,7 @@ export const OnboardingDialog = ({ isOpen, onClose }: OnboardingDialogProps) => 
       <DialogBackdrop />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Getting Started</DialogTitle>
+          <DialogTitle>{t('onboarding.title')}</DialogTitle>
         </DialogHeader>
         <DialogCloseTrigger />
         
@@ -87,10 +89,10 @@ export const OnboardingDialog = ({ isOpen, onClose }: OnboardingDialogProps) => 
 
             <Stack gap={3}>
               <Text fontSize="xl" fontWeight="bold" textAlign="center">
-                {step.title}
+                {t(step.titleKey)}
               </Text>
               <Text color="fg.muted" textAlign="center" lineHeight="tall">
-                {step.description}
+                {t(step.descriptionKey)}
               </Text>
             </Stack>
 
@@ -116,7 +118,7 @@ export const OnboardingDialog = ({ isOpen, onClose }: OnboardingDialogProps) => 
               onClick={handleSkip}
               size="sm"
             >
-              Skip
+              {t('onboarding.skip')}
             </Button>
 
             <HStack gap={2}>
@@ -126,14 +128,14 @@ export const OnboardingDialog = ({ isOpen, onClose }: OnboardingDialogProps) => 
                 disabled={currentStep === 0}
                 size="sm"
               >
-                Previous
+                {t('onboarding.previous')}
               </Button>
               <Button
                 onClick={handleNext}
                 colorPalette="blue"
                 size="sm"
               >
-                {currentStep === steps.length - 1 ? 'Get Started' : 'Next'}
+                {currentStep === steps.length - 1 ? t('onboarding.getStarted') : t('onboarding.next')}
               </Button>
             </HStack>
           </HStack>

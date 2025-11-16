@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2025-11-16
+
+### Added
+- **Complete Internationalization Coverage**
+  - ChartSettingsTab fully internationalized (all labels, helpers, options)
+  - NewsConfigTab fully internationalized (placeholders, labels)
+  - AIConfigTab fully internationalized (provider, model labels)
+  - All AI selectors internationalized (AISelector, AIModelSelector, UnifiedAISelector)
+  - All aria-labels internationalized for accessibility
+  - Header component fully internationalized (theme toggle, shortcuts, settings tooltips)
+  - MessageInput with translated placeholders and aria-labels
+  - ChartControls with all labels and tooltips translated
+  - AdvancedControls with complete translations for all settings
+  - OnboardingDialog with all steps and buttons translated
+  - KeyboardShortcutsDialog with sections and shortcuts described
+  - UpdateNotification with status messages and download progress
+  - AboutTab with features, tech stack, and resources translated
+
+### Changed
+- **Translation Files Enhanced**
+  - Expanded EN/PT/ES translation files with 250+ keys
+  - Added nested translation structures for complex components
+  - Organized translations by feature area (settings, chart, common, etc.)
+  - Added interpolation support for dynamic values (versions, percentages)
+  - All hardcoded strings eliminated from codebase
+
+### Fixed
+- **Code Quality**
+  - Removed all JSX comments from source files
+  - Updated test suite for English error messages
+  - Fixed all test assertions to expect English messages
+  - 581 tests passing with 90.62% coverage
+
 ## [0.13.0] - 2025-11-16
 
 ### Added

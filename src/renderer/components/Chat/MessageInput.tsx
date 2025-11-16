@@ -1,9 +1,11 @@
 import { Box, Flex, IconButton, Textarea } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { HiPaperAirplane } from 'react-icons/hi2';
 import { UnifiedAISelector } from '../Layout/UnifiedAISelector';
 import { useMessageInput } from './useMessageInput';
 
 export const MessageInput = () => {
+  const { t } = useTranslation();
   const {
     message,
     setMessage,
@@ -27,7 +29,7 @@ export const MessageInput = () => {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about the chart..."
+          placeholder={t('chat.inputPlaceholder')}
           resize="none"
           rows={3}
           maxLength={2000}
@@ -35,7 +37,7 @@ export const MessageInput = () => {
           py={2}
         />
         <IconButton
-          aria-label="Send message"
+          aria-label={t('chat.sendMessage')}
           onClick={handleSend}
           disabled={!canSend}
           colorPalette="blue"

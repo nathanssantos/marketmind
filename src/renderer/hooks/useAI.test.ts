@@ -340,7 +340,7 @@ describe('useAI', () => {
     });
 
     expect(mockStore.setError).toHaveBeenCalledWith(
-      '⚠️ Limite de requisições do Gemini excedido (10 req/min). Aguarde 60s ou troque de modelo nas configurações.'
+      '⚠️ Gemini request limit exceeded (10 req/min). Wait 60s or switch model in settings.'
     );
   });
 
@@ -362,7 +362,7 @@ describe('useAI', () => {
     });
 
     expect(mockStore.setError).toHaveBeenCalledWith(
-      '⚠️ Taxa de requisições excedida no OpenAI. Aguarde alguns minutos.'
+      '⚠️ Rate limit exceeded on OpenAI. Wait a few minutes.'
     );
   });
 
@@ -384,7 +384,7 @@ describe('useAI', () => {
     });
 
     expect(mockStore.setError).toHaveBeenCalledWith(
-      '⚠️ Limite de requisições excedido no OpenAI. Aguarde alguns minutos e tente novamente.'
+      '⚠️ Request limit exceeded on OpenAI. Wait a few minutes and try again.'
     );
   });
 
@@ -401,7 +401,7 @@ describe('useAI', () => {
     });
 
     expect(mockStore.setError).toHaveBeenCalledWith(
-      '🔑 Chave API inválida para OpenAI. Verifique sua configuração.'
+      '🔑 Invalid API key for OpenAI. Check your settings.'
     );
   });
 
@@ -417,7 +417,7 @@ describe('useAI', () => {
       await result.current.sendMessage('Test');
     });
 
-    expect(mockStore.setError).toHaveBeenCalledWith('⏱️ Tempo limite excedido. Tente novamente.');
+    expect(mockStore.setError).toHaveBeenCalledWith('⏱️ Request timeout. Try again.');
   });
 
   it('should handle network error', async () => {
@@ -432,7 +432,7 @@ describe('useAI', () => {
       await result.current.sendMessage('Test');
     });
 
-    expect(mockStore.setError).toHaveBeenCalledWith('🌐 Erro de conexão. Verifique sua internet.');
+    expect(mockStore.setError).toHaveBeenCalledWith('🌐 Connection error. Check your internet.');
   });
 
   it('should handle context length error', async () => {
@@ -448,7 +448,7 @@ describe('useAI', () => {
     });
 
     expect(mockStore.setError).toHaveBeenCalledWith(
-      '📏 Mensagem muito longa. Reduza o tamanho ou limpe o histórico.'
+      '📏 Message too long. Reduce size or clear history.'
     );
   });
 
@@ -500,7 +500,7 @@ describe('useAI', () => {
     });
 
     expect(mockStore.setError).toHaveBeenCalledWith(
-      '⚠️ Limite de requisições do Gemini excedido (10 req/min). Aguarde 60s ou troque de modelo nas configurações.'
+      '⚠️ Gemini request limit exceeded (10 req/min). Wait 60s or switch model in settings.'
     );
   });
 
@@ -542,7 +542,7 @@ describe('useAI', () => {
     });
 
     expect(mockStore.setError).toHaveBeenCalledWith(
-      '🔑 Chave API inválida para Claude. Verifique sua configuração.'
+      '🔑 Invalid API key for Claude. Check your settings.'
     );
   });
 

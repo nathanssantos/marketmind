@@ -3,6 +3,7 @@ import { useAIStore } from '@/renderer/store/aiStore';
 import { Badge, Flex } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const AI_MODEL_OPTIONS: SelectOption[] = [
   { value: 'openai:gpt-4o', label: 'OpenAI - GPT-4o' },
@@ -24,6 +25,7 @@ interface UnifiedAISelectorProps {
 }
 
 export const UnifiedAISelector = memo(({ showBadge = true, openUpwards = false }: UnifiedAISelectorProps) => {
+  const { t } = useTranslation();
   const settings = useAIStore((state) => state.settings);
   const provider = settings?.provider;
   const model = settings?.model;
@@ -54,7 +56,7 @@ export const UnifiedAISelector = memo(({ showBadge = true, openUpwards = false }
         value={currentValue}
         onChange={handleChange}
         options={AI_MODEL_OPTIONS}
-        placeholder="Select AI Model"
+        placeholder={t('common.selectAiModel')}
         enableSearch
         noWrap
         openUpwards={openUpwards}

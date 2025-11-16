@@ -32,7 +32,6 @@ export const ControlPanelGroup = ({
       zIndex={10}
     >
       <Stack gap={2}>
-        {/* Main Panel */}
         <Box
           bg="gray.800"
           borderRadius="md"
@@ -40,7 +39,6 @@ export const ControlPanelGroup = ({
           opacity={0.95}
           minWidth="200px"
         >
-          {/* Header */}
           <HStack
             justify="space-between"
             px={3}
@@ -66,7 +64,6 @@ export const ControlPanelGroup = ({
             </IconButton>
           </HStack>
 
-          {/* Content */}
           {isExpanded && (
             <Box p={3}>
               <Stack gap={3}>
@@ -76,7 +73,6 @@ export const ControlPanelGroup = ({
           )}
         </Box>
 
-        {/* Secondary Panel - only shown when main is expanded */}
         {isExpanded && secondaryPanel && secondaryPanel}
       </Stack>
     </Box>

@@ -2,6 +2,7 @@ import { GlobalActionsProvider } from '@/renderer/context/GlobalActionsContext';
 import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
 import { Box, Flex, IconButton } from '@chakra-ui/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { HiChevronLeft } from 'react-icons/hi2';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import { ChatSidebar } from '../Chat/ChatSidebar';
@@ -21,6 +22,7 @@ const MAX_CHAT_WIDTH = 800;
 const DEFAULT_CHAT_WIDTH = 400;
 
 export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onAdvancedConfigChange }: MainLayoutProps) => {
+  const { t } = useTranslation();
   const [isChatOpen, setIsChatOpen] = useLocalStorage('chat-sidebar-open', true);
   const [chatWidth, setChatWidth] = useLocalStorage('chat-sidebar-width', DEFAULT_CHAT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
@@ -125,7 +127,7 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
 
         {!isChatOpen && (
           <IconButton
-            aria-label="Open chat"
+            aria-label={t('common.openChat')}
             onClick={toggleChat}
             position="fixed"
             right={4}

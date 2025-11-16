@@ -1,5 +1,6 @@
 import { Box, Text } from '@chakra-ui/react';
 import type { ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ControlPanel } from './ControlPanel';
 import { PinnableControl } from './PinnableControl';
 
@@ -30,6 +31,8 @@ export const AdvancedControls = ({
   config,
   onConfigChange,
 }: AdvancedControlsProps): ReactElement => {
+  const { t } = useTranslation();
+
   const handleChange = (key: keyof AdvancedControlsConfig, value: number): void => {
     onConfigChange({
       ...config,
@@ -39,24 +42,23 @@ export const AdvancedControls = ({
 
   return (
     <ControlPanel 
-      title="Advanced Settings" 
+      title={t('chart.advanced.title')} 
       defaultExpanded={false}
     >
-      {/* Chart Dimensions */}
       <Box>
         <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
-          Chart Dimensions
+          {t('chart.advanced.chartDimensions')}
         </Text>
         <Box>
           <PinnableControl
-            label="Right Margin"
+            label={t('chart.advanced.rightMargin')}
             value={config.rightMargin}
             onChange={(value) => handleChange('rightMargin', value)}
             controlKey="rightMargin"
           />
           <Box mt={2}>
             <PinnableControl
-              label="Volume Height %"
+              label={t('chart.advanced.volumeHeight')}
               value={config.volumeHeightRatio}
               onChange={(value) => handleChange('volumeHeightRatio', value)}
               controlKey="volumeHeightRatio"
@@ -68,21 +70,20 @@ export const AdvancedControls = ({
         </Box>
       </Box>
 
-      {/* Candle Settings */}
       <Box>
         <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
-          Candle Settings
+          {t('chart.advanced.candleSettings')}
         </Text>
         <Box>
           <PinnableControl
-            label="Spacing"
+            label={t('chart.advanced.spacing')}
             value={config.candleSpacing}
             onChange={(value) => handleChange('candleSpacing', value)}
             controlKey="candleSpacing"
           />
           <Box mt={2}>
             <PinnableControl
-              label="Wick Width"
+              label={t('chart.advanced.wickWidth')}
               value={config.candleWickWidth}
               onChange={(value) => handleChange('candleWickWidth', value)}
               controlKey="candleWickWidth"
@@ -91,34 +92,32 @@ export const AdvancedControls = ({
         </Box>
       </Box>
 
-      {/* Grid Settings */}
       <Box>
         <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
-          Grid Settings
+          {t('chart.advanced.gridSettings')}
         </Text>
         <PinnableControl
-          label="Line Width"
+          label={t('chart.advanced.lineWidth')}
           value={config.gridLineWidth}
           onChange={(value) => handleChange('gridLineWidth', value)}
           controlKey="gridLineWidth"
         />
       </Box>
 
-      {/* Padding */}
       <Box>
         <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
-          Padding
+          {t('chart.advanced.padding')}
         </Text>
         <Box>
           <PinnableControl
-            label="Top"
+            label={t('chart.advanced.top')}
             value={config.paddingTop}
             onChange={(value) => handleChange('paddingTop', value)}
             controlKey="paddingTop"
           />
           <Box mt={2}>
             <PinnableControl
-              label="Bottom"
+              label={t('chart.advanced.bottom')}
               value={config.paddingBottom}
               onChange={(value) => handleChange('paddingBottom', value)}
               controlKey="paddingBottom"
@@ -126,7 +125,7 @@ export const AdvancedControls = ({
           </Box>
           <Box mt={2}>
             <PinnableControl
-              label="Left"
+              label={t('chart.advanced.left')}
               value={config.paddingLeft}
               onChange={(value) => handleChange('paddingLeft', value)}
               controlKey="paddingLeft"
@@ -134,7 +133,7 @@ export const AdvancedControls = ({
           </Box>
           <Box mt={2}>
             <PinnableControl
-              label="Right"
+              label={t('chart.advanced.right')}
               value={config.paddingRight}
               onChange={(value) => handleChange('paddingRight', value)}
               controlKey="paddingRight"
