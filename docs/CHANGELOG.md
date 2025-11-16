@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Professional app icons and branding
 - News sentiment analysis
 
-## [0.12.2] - 2024-11-15
+## [0.12.2] - 2025-11-15
 
 ### Added
 - **Toast Notification System**
@@ -72,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed duplicate toast creation by adding ref tracking
   - Fixed missing close button on toast notifications
 
-## [0.12.1] - 2024-11-15
+## [0.12.1] - 2025-11-15
 
 ### Fixed
 - **Chart Rendering Issues**
@@ -128,7 +128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/renderer/components/Layout/Header.tsx`
   - `src/renderer/components/ui/select.tsx`
 
-## [0.12.0] - 2024-11-15
+## [0.12.0] - 2025-11-15
 
 ### Added - Phase 13: Final Polish
 - **UI/UX Enhancements**
@@ -189,7 +189,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Test Status**: 533 tests passing, 90.59% overall coverage
 - **Production Ready**: All MVP features complete and tested
 
-## [0.13.0] - 2024-11-15
+## [0.13.0] - 2025-11-15
 
 ### Added
 - **Canvas Performance Optimization**
@@ -239,7 +239,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cache TTL: Configurable per-service (default 5 minutes)
 - Performance: requestAnimationFrame ensures 60fps target
 
-## [0.12.0] - 2024-11-15
+## [0.12.0] - 2025-11-15
 
 ### Added
 - **Comprehensive Test Suite**: Complete testing infrastructure
