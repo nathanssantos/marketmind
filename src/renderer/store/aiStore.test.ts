@@ -143,6 +143,48 @@ describe('aiStore', () => {
 
       expect(conversation).toBeNull();
     });
+
+    it('should create conversation with symbol', () => {
+      useAIStore.getState().createConversation('BTC Analysis', 'BTCUSDT');
+
+      const state = useAIStore.getState();
+      expect(state.conversations[0]?.symbol).toBe('BTCUSDT');
+      expect(state.conversations[0]?.title).toBe('BTC Analysis');
+    });
+
+    it('should get conversations by symbol', () => {
+      useAIStore.getState().createConversation('BTC Chat 1', 'BTCUSDT');
+      useAIStore.getState().createConversation('ETH Chat', 'ETHUSDT');
+      useAIStore.getState().createConversation('BTC Chat 2', 'BTCUSDT');
+
+      const btcConversations = useAIStore.getState().getConversationsBySymbol('BTCUSDT');
+      const ethConversations = useAIStore.getState().getConversationsBySymbol('ETHUSDT');
+
+      expect(btcConversations).toHaveLength(2);
+      expect(ethConversations).toHaveLength(1);
+      expect(btcConversations[0]?.title).toBe('BTC Chat 1');
+      expect(btcConversations[1]?.title).toBe('BTC Chat 2');
+    });
+
+    it('should set active conversation by symbol - existing conversation', () => {
+      const id1 = useAIStore.getState().createConversation('BTC Chat 1', 'BTCUSDT');
+      const id2 = useAIStore.getState().createConversation('BTC Chat 2', 'BTCUSDT');
+
+      useAIStore.getState().setActiveConversation(null);
+      useAIStore.getState().setActiveConversationBySymbol('BTCUSDT');
+
+      const state = useAIStore.getState();
+      expect([id1, id2]).toContain(state.activeConversationId);
+    });
+
+    it('should set active conversation by symbol - create new if none exists', () => {
+      useAIStore.getState().setActiveConversationBySymbol('BTCUSDT');
+
+      const state = useAIStore.getState();
+      expect(state.conversations).toHaveLength(1);
+      expect(state.conversations[0]?.symbol).toBe('BTCUSDT');
+      expect(state.activeConversationId).toBe(state.conversations[0]?.id);
+    });
   });
 
   describe('Message Management', () => {
