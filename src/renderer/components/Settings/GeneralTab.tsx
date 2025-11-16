@@ -6,6 +6,7 @@ import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
 import { useAIStore } from '@/renderer/store';
 import { Box, Flex, Separator, Stack, Text } from '@chakra-ui/react';
 import { HiArrowDownTray, HiArrowPath, HiArrowUpTray, HiTrash } from 'react-icons/hi2';
+import { LanguageSelector } from './LanguageSelector';
 
 export const GeneralTab = () => {
   const { conversations, importConversation, clearAll } = useAIStore();
@@ -93,6 +94,10 @@ export const GeneralTab = () => {
 
   return (
     <Stack gap={6}>
+      <LanguageSelector />
+
+      <Separator />
+
       <Box 
         bg="blue.500/10" 
         p={4} 

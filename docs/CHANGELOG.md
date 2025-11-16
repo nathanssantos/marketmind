@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2025-11-16
+
+### Added
+- **Internationalization (i18n)**
+  - Multi-language support using react-i18next
+  - 3 languages available: English (default), Portuguese (Brazil), Spanish
+  - Automatic language detection from browser/system settings
+  - Manual language selector in Settings → General tab
+  - Persistent language preference in localStorage
+  - Comprehensive translations for all UI elements:
+    - Settings dialog (tabs, buttons, labels)
+    - Chat interface (titles, placeholders, buttons)
+    - Chart controls (labels, timeframes)
+    - News panel (sentiments, states)
+    - Symbol selector (search, labels)
+    - Loading and error messages
+    - Common UI elements (buttons, actions)
+  
+- **LanguageSelector Component**
+  - Dropdown selector with language options
+  - Displays native language names (English, Português, Español)
+  - Integrated in Settings → General tab
+  - Immediate language switching
+  - Visual feedback on language change
+
+### Changed
+- **UI Components**
+  - All hardcoded strings replaced with translation keys
+  - LoadingSpinner now uses i18n for messages
+  - ErrorMessage now uses i18n for error text
+  - SettingsDialog fully translated
+  - ChatSidebar fully translated
+  - NewsPanel with translated sentiments
+  - SymbolSelector with translated placeholders
+
+### Technical
+- **Dependencies Added**
+  - `i18next` - Core internationalization framework
+  - `react-i18next` - React bindings for i18next
+  - `i18next-browser-languagedetector` - Automatic language detection
+
+### Files Created
+- `src/renderer/i18n.ts` - i18next configuration
+- `src/renderer/locales/en/translation.json` - English translations
+- `src/renderer/locales/pt/translation.json` - Portuguese translations
+- `src/renderer/locales/es/translation.json` - Spanish translations
+- `src/renderer/components/Settings/LanguageSelector.tsx` - Language selector
+
+### Files Modified
+- `src/renderer/index.tsx` - Added i18n import
+- `src/renderer/App.tsx` - Translated loading/error states
+- `src/renderer/components/Settings/SettingsDialog.tsx` - Full translation
+- `src/renderer/components/Settings/GeneralTab.tsx` - Added LanguageSelector
+- `src/renderer/components/SymbolSelector.tsx` - Full translation
+- `src/renderer/components/Chat/ChatSidebar.tsx` - Full translation
+- `src/renderer/components/News/NewsPanel.tsx` - Full translation
+- `src/renderer/components/ui/LoadingSpinner.tsx` - i18n support
+- `src/renderer/components/ui/ErrorMessage.tsx` - i18n support
+- `package.json` - Added i18n dependencies
+
 ### Added
 - **Test Coverage Expansion**
   - Added comprehensive tests for aiStore (Zustand store) covering all state management

@@ -1,8 +1,9 @@
-import { Box, Stack, Text, Link, Badge, Spinner, HStack, VStack } from '@chakra-ui/react';
-import { FiExternalLink, FiTrendingUp, FiTrendingDown, FiMinus } from 'react-icons/fi';
+import { Badge, Box, HStack, Link, Spinner, Stack, Text, VStack } from '@chakra-ui/react';
 import type { NewsArticle } from '@shared/types';
-import { useNews } from '../../hooks/useNews';
 import { formatDistanceToNow } from 'date-fns';
+import { useTranslation } from 'react-i18next';
+import { FiExternalLink, FiMinus, FiTrendingDown, FiTrendingUp } from 'react-icons/fi';
+import { useNews } from '../../hooks/useNews';
 
 interface NewsPanelProps {
   symbols?: string[];
@@ -12,12 +13,14 @@ interface NewsPanelProps {
 }
 
 const SentimentBadge = ({ sentiment }: { sentiment?: NewsArticle['sentiment'] }) => {
+  const { t } = useTranslation();
+  
   if (!sentiment) return null;
 
   const config = {
-    positive: { colorPalette: 'green', icon: FiTrendingUp, label: 'Positive' },
-    negative: { colorPalette: 'red', icon: FiTrendingDown, label: 'Negative' },
-    neutral: { colorPalette: 'gray', icon: FiMinus, label: 'Neutral' },
+    positive: { colorPalette: 'green', icon: FiTrendingUp, label: t('news.sentiment.positive') },
+    negative: { colorPalette: 'red', icon: FiTrendingDown, label: t('news.sentiment.negative') },
+    neutral: { colorPalette: 'gray', icon: FiMinus, label: t('news.sentiment.neutral') },
   };
 
   const { colorPalette, icon: Icon, label } = config[sentiment];
@@ -104,6 +107,7 @@ export const NewsPanel = ({
   showSentiment = true,
   refetchInterval,
 }: NewsPanelProps) => {
+  const { t } = useTranslation();
   const { articles, loading, error } = useNews({
     symbols: symbols || [],
     limit,
@@ -123,7 +127,7 @@ export const NewsPanel = ({
     return (
       <Box p={4} bg="red.50" borderRadius="md">
         <Text color="red.700" fontSize="sm">
-          Failed to load news: {error.message}
+          {t('news.failedToLoad')}: {error.message}
         </Text>
       </Box>
     );
@@ -133,7 +137,7 @@ export const NewsPanel = ({
     return (
       <Box p={8} textAlign="center">
         <Text color="fg.muted" fontSize="sm">
-          No news articles found
+          {t('news.noArticles')}
         </Text>
       </Box>
     );
