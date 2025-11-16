@@ -1,4 +1,4 @@
-import type { AIAnalysisResponse, AIMessage, AIProviderType } from '@shared/types';
+import type { AIAnalysisResponse, AIMessage, AIProviderType, Candle } from '@shared/types';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AIService } from '../services/ai';
@@ -50,7 +50,7 @@ describe('useAI', () => {
     const sendMessageMock = vi.fn<(messages: AIMessage[], images?: string[]) => Promise<AIAnalysisResponse>>()
       .mockResolvedValue({ text: 'AI response' });
     
-    const analyzeChartMock = vi.fn<Parameters<AIService['analyzeChart']>, ReturnType<AIService['analyzeChart']>>()
+    const analyzeChartMock = vi.fn<(candles: Candle[], symbol?: string) => Promise<AIAnalysisResponse>>()
       .mockResolvedValue({ text: 'Chart analysis' });
 
     mockAIService = {

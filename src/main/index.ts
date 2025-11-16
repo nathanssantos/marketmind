@@ -4,6 +4,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { storageService } from './services/StorageService';
 import { UpdateManager } from './services/UpdateManager';
+import { windowStateManager } from './services/WindowStateManager';
 
 const { app, BrowserWindow, ipcMain } = electron;
 
@@ -22,9 +23,12 @@ let updateManager: UpdateManager | null = null;
 
 const createWindow = (): void => {
   console.log('Creating main window...');
-  mainWindow = new BrowserWindow({
-    width: WINDOW_CONFIG.WIDTH,
-    height: WINDOW_CONFIG.HEIGHT,
+  
+  const windowState = windowStateManager.getState();
+  
+  const windowOptions: electron.BrowserWindowConstructorOptions = {
+    width: windowState.width,
+    height: windowState.height,
     minWidth: WINDOW_CONFIG.MIN_WIDTH,
     minHeight: WINDOW_CONFIG.MIN_HEIGHT,
     show: false,
@@ -33,8 +37,15 @@ const createWindow = (): void => {
       nodeIntegration: false,
       contextIsolation: true,
     },
-  });
+  };
+
+  if (windowState.x !== undefined) windowOptions.x = windowState.x;
+  if (windowState.y !== undefined) windowOptions.y = windowState.y;
+  
+  mainWindow = new BrowserWindow(windowOptions);
   console.log('BrowserWindow created');
+
+  windowStateManager.manage(mainWindow);
 
   mainWindow.once('ready-to-show', () => {
     console.log('Window ready to show');

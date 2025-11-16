@@ -95,7 +95,7 @@ describe('aiStore', () => {
     });
 
     it('should create conversation with default title', () => {
-      const id = useAIStore.getState().createConversation();
+      useAIStore.getState().createConversation();
 
       const state = useAIStore.getState();
       expect(state.conversations[0]?.title).toBe('New Conversation');
