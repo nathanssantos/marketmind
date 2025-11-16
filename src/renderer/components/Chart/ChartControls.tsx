@@ -195,7 +195,7 @@ export const ChartControls = ({
                   <HStack gap={2}>
                     <HiOutlineTrendingUp size={14} color={ma.color} style={{ opacity: ma.visible !== false ? 1 : 0.3 }} />
                     <Text fontSize="xs" color="gray.300">
-                      {ma.type}{ma.period}
+                      {ma.type === 'EMA' ? 'EMA' : 'SMA'}{ma.period}
                     </Text>
                   </HStack>
                   <ChakraSwitch.Root

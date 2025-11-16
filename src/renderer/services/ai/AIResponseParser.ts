@@ -18,9 +18,14 @@ export const parseAIResponse = (response: string): AIAnalysisWithStudies => {
 
     const validStudies = studies.filter(validateAIStudy);
 
+    const studiesWithIds = validStudies.map((study, index) => ({
+      ...study,
+      id: index + 1,
+    }));
+
     return {
       analysis,
-      studies: validStudies,
+      studies: studiesWithIds,
     };
   } catch (error) {
     console.error('[AIResponseParser] Error parsing AI studies JSON:', error);

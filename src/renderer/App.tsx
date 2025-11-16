@@ -16,6 +16,7 @@ import { SymbolSelector } from './components/SymbolSelector';
 import { ErrorMessage } from './components/ui/ErrorMessage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
+import { AIStudyHoverProvider } from './context/AIStudyHoverContext';
 import { ChartProvider } from './context/ChartContext';
 import { useGlobalActions } from './context/GlobalActionsContext';
 import { useAIStudies } from './hooks/useAIStudies';
@@ -76,52 +77,57 @@ function App(): ReactElement {
   return (
     <ChakraProvider value={system}>
       <Toaster toaster={toaster}>
-        {(toast) => (
-          <Box
-            key={toast.id}
-            p={4}
-            bg={
-              toast.type === 'error'
-                ? 'red.500'
-                : toast.type === 'success'
-                  ? 'green.500'
-                  : toast.type === 'warning'
-                    ? 'orange.500'
-                    : 'blue.500'
-            }
-            color="white"
-            borderRadius="md"
-            boxShadow="lg"
-            maxW="400px"
-            position="relative"
-          >
-            <IconButton
-              aria-label={t('common.close')}
-              size="xs"
-              position="absolute"
-              top={2}
-              right={2}
-              onClick={() => toaster.dismiss(toast.id)}
-              variant="ghost"
+        {(toast) => {
+          const { t } = useTranslation();
+          return (
+            <Box
+              key={toast.id}
+              p={4}
+              bg={
+                toast.type === 'error'
+                  ? 'red.500'
+                  : toast.type === 'success'
+                    ? 'green.500'
+                    : toast.type === 'warning'
+                      ? 'orange.500'
+                      : 'blue.500'
+              }
               color="white"
-              _hover={{ bg: 'whiteAlpha.200' }}
+              borderRadius="md"
+              boxShadow="lg"
+              maxW="400px"
+              position="relative"
             >
-              <HiX />
-            </IconButton>
-            <ChakraText fontWeight="bold" mb={1} pr={6}>
-              {toast.title}
-            </ChakraText>
-            {toast.description && (
-              <ChakraText fontSize="sm">{toast.description}</ChakraText>
-            )}
-          </Box>
-        )}
+              <IconButton
+                aria-label={t('common.close')}
+                size="xs"
+                position="absolute"
+                top={2}
+                right={2}
+                onClick={() => toaster.dismiss(toast.id)}
+                variant="ghost"
+                color="white"
+                _hover={{ bg: 'whiteAlpha.200' }}
+              >
+                <HiX />
+              </IconButton>
+              <ChakraText fontWeight="bold" mb={1} pr={6}>
+                {toast.title}
+              </ChakraText>
+              {toast.description && (
+                <ChakraText fontSize="sm">{toast.description}</ChakraText>
+              )}
+            </Box>
+          );
+        }}
       </Toaster>
-      <ChartProvider>
-        <PinnedControlsProvider>
-          <AppContent />
-        </PinnedControlsProvider>
-      </ChartProvider>
+      <AIStudyHoverProvider>
+        <ChartProvider>
+          <PinnedControlsProvider>
+            <AppContent />
+          </PinnedControlsProvider>
+        </ChartProvider>
+      </AIStudyHoverProvider>
     </ChakraProvider>
   );
 }

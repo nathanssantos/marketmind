@@ -4,9 +4,9 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.13.0-blue.svg)
-![Tests](https://img.shields.io/badge/tests-533%20passing-brightgreen.svg)
-![Coverage](https://img.shields.io/badge/coverage-90.59%25-brightgreen.svg)
+![Version](https://img.shields.io/badge/version-0.14.0-blue.svg)
+![Tests](https://img.shields.io/badge/tests-581%20passing-brightgreen.svg)
+![Coverage](https://img.shields.io/badge/coverage-90.62%25-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 ![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES-success.svg)
@@ -53,7 +53,7 @@
 - 🔍 **Tooltips**: Contextual help and information throughout the interface
 - ♿ **Accessibility**: ARIA labels, keyboard support, and screen reader compatibility
 - 🎯 **Performance**: Web Workers for heavy calculations, IndexedDB caching
-- 🌍 **Internationalization**: Multi-language support (English, Portuguese, Spanish)
+- 🌍 **Internationalization**: Multi-language support (English, Portuguese, Spanish, French)
 - 🔄 **Language Detection**: Automatic language detection from browser/system
 - ⚙️ **Language Selector**: Manual language switching in settings
 
@@ -62,7 +62,7 @@
 - 📊 **Technical Indicators**: RSI, MACD, Bollinger Bands, and more
 - 📡 **WebSocket**: Real-time candle updates via WebSocket
 - 🧪 **Testing**: Comprehensive unit and integration tests
-- 🌐 **More Languages**: French, German, Japanese, Chinese support
+- 🌐 **More Languages**: German, Japanese, Chinese support
 
 ## 🛠 Technology Stack
 
@@ -126,7 +126,7 @@ npm run dev
 
 ## 🧪 Testing
 
-The project has a comprehensive test infrastructure with 533 passing tests:
+The project has a comprehensive test infrastructure with 581 passing tests:
 
 ```bash
 # Run all tests
@@ -140,13 +140,12 @@ npm run test:coverage
 ```
 
 **Test Coverage:** ✅ EXCELLENT (Phase 11 - 100% complete)
-- **533 tests** passing (100% pass rate)
-- **90.59%** overall coverage (exceeded 80% target! 🎉)
+- **581 tests** passing (100% pass rate)
+- **90.62%** overall coverage (exceeded 80% target! 🎉)
 - **69 tests** for utility functions (96.3% coverage ✅)
 - **161 tests** for React hooks (87.27% coverage ✅)
-- **262 tests** for service layer (91.3% coverage ✅)
-- **26 tests** for components (100% coverage ✅)
-- **15 tests** for caching system (100% coverage ✅)
+- **277 tests** for service layer (91.3% coverage ✅)
+- **74 tests** for components (100% coverage ✅)
 
 **All Critical Paths Tested:**
 - ✅ Test infrastructure (Vitest 4.0.9 + React Testing Library)
@@ -239,7 +238,7 @@ This project is in active development. Contributions are welcome!
 
 See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the detailed project roadmap.
 
-### Current Status (v0.12.0)
+### Current Status (v0.14.0)
 
 **Phase 1: Initial Setup** ✅ COMPLETED (100%)
 - [x] Vite + Electron + React + TypeScript configuration
@@ -349,11 +348,11 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] Test infrastructure setup (Vitest 4.0.9)
 - [x] Utility function tests (69 tests, 96.3% coverage)
 - [x] React hook tests (161 tests, 87.27% coverage)
-- [x] Service layer tests (262 tests, 91.3% coverage)
-- [x] Component tests (26 tests, 100% coverage)
-- [x] Cache system tests (15 tests, 100% coverage)
+- [x] Service layer tests (277 tests, 91.3% coverage)
+- [x] Component tests (74 tests, 100% coverage)
 - [x] Dependency injection refactoring
-- [x] Overall coverage: 90.59% (exceeded 80% target!)
+- [x] Overall coverage: 90.62% (exceeded 80% target!)
+- [x] 581 tests passing with 100% pass rate
 
 **Phase 12: Optimizations & Performance** ✅ COMPLETED (100%)
 - [x] Canvas performance (requestAnimationFrame)
@@ -381,12 +380,15 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
   - [x] Test coverage documentation
 
 **Phase 14: Internationalization** ✅ COMPLETED (100%)
-- [x] i18next integration
-- [x] Multi-language support (English, Portuguese, Spanish)
-- [x] Automatic language detection
-- [x] Language selector in settings
-- [x] All UI components translated
-- [x] Persistent language preference
+- [x] i18next + react-i18next integration
+- [x] Multi-language support (English, Portuguese, Spanish, French)
+- [x] 250+ translation keys covering all components
+- [x] Automatic language detection from browser/system
+- [x] Language selector in Settings → General
+- [x] All UI components fully translated
+- [x] Persistent language preference in localStorage
+- [x] All JSX comments removed for cleaner code
+- [x] Test suite updated for English error messages
 
 ### MVP (v1.0) - Target Q1 2025
 - [x] Candlestick chart rendering
@@ -407,14 +409,14 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] News integration
 - [x] Build system (macOS and Windows installers)
 - [x] Auto-update system
-- [x] Test coverage 90.59% (exceeded 80% target! ✅)
+- [x] Test coverage 90.62% (exceeded 80% target! ✅)
 - [x] UI/UX polish with smooth animations
 - [x] Onboarding for first-time users
 - [x] Keyboard shortcuts system
 - [x] Accessibility features
-- [x] Multi-language support (EN, PT, ES)
+- [x] Multi-language support (EN, PT, ES, FR with 255+ keys)
 
-**MVP Progress:** ~100% Complete (production ready! 🚀)
+**MVP Progress:** 100% Complete (production ready! 🚀)
 
 ### Future (v1.1+)
 - [ ] WebSocket for real-time updates
@@ -424,7 +426,7 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [ ] Asset watchlist
 - [ ] Symbol favorites and recents
 - [ ] Chart export as images
-- [ ] More languages (FR, DE, JP, CN)
+- [ ] More languages (DE, JP, CN)
 - [ ] Integration and E2E tests
 
 ## 📄 License

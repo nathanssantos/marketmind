@@ -1219,20 +1219,21 @@ export class UpdateManager {
   - Created i18n.ts with configuration
   - Language detection from localStorage and browser
   - Fallback to English
-  - Support for 3 languages: English, Portuguese, Spanish
+  - Support for 4 languages: English, Portuguese, Spanish, French
   
 - [x] **Translation Files**
   - Created src/renderer/locales/en/translation.json (English)
   - Created src/renderer/locales/pt/translation.json (Portuguese)
   - Created src/renderer/locales/es/translation.json (Spanish)
-  - Comprehensive translations for all UI sections
+  - Created src/renderer/locales/fr/translation.json (French)
+  - Comprehensive translations for all UI sections (255 keys)
 
 #### 14.2 Component Internationalization ✅
 - [x] **Settings**
   - SettingsDialog with translated tabs and buttons
   - Created LanguageSelector component
   - Integrated language selector in GeneralTab
-  - Language options: English, Português, Español
+  - Language options: English, Português, Español, Français
   
 - [x] **Core Components**
   - SymbolSelector with translated labels and placeholders

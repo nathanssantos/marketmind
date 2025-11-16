@@ -1,14 +1,19 @@
 import { Avatar, Box, Flex, Spinner, Text } from '@chakra-ui/react';
 import type { AIMessage } from '@shared/types';
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { HiSparkles, HiUser } from 'react-icons/hi2';
 import ReactMarkdown from 'react-markdown';
+import { useAIStudyHover } from '../../context/AIStudyHoverContext';
 import { useToast } from '../../hooks/useToast';
 import '../../markdown.css';
+import { MarkdownWithStudyRefs } from './MarkdownWithStudyRefs';
 import { useMessageList } from './useMessageList';
 
 export const MessageList = () => {
+  const { t } = useTranslation();
   const { messages, loading, error, messagesEndRef, clearError } = useMessageList();
+  const { setHoveredStudyId } = useAIStudyHover();
   const toast = useToast();
   const lastErrorRef = useRef<string | null>(null);
 
@@ -42,10 +47,10 @@ export const MessageList = () => {
         >
           <HiSparkles size={48} />
           <Text fontSize="lg" fontWeight="medium">
-            Start a conversation
+            {t('chat.emptyStateTitle')}
           </Text>
           <Text fontSize="sm" textAlign="center" maxWidth="300px">
-            Ask me to analyze the chart, explain patterns, or provide trading insights
+            {t('chat.emptyStateDescription')}
           </Text>
         </Flex>
       ) : (
@@ -87,9 +92,16 @@ export const MessageList = () => {
                   alignSelf={message.role === 'user' ? 'flex-end' : 'flex-start'}
                   className="markdown"
                 >
-                  <ReactMarkdown>
-                    {message.content}
-                  </ReactMarkdown>
+                  {message.role === 'assistant' ? (
+                    <MarkdownWithStudyRefs 
+                      content={message.content}
+                      onStudyHover={setHoveredStudyId}
+                    />
+                  ) : (
+                    <ReactMarkdown>
+                      {message.content}
+                    </ReactMarkdown>
+                  )}
                 </Box>
               </Flex>
             </Flex>

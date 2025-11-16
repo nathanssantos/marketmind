@@ -7,11 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.13.1] - 2025-11-16
+### Added
+- **AI Study Identification System**
+  - Sequential numbering for AI-generated studies (starting from #1)
+  - Numbers displayed next to AI icon on chart for each study
+  - AI prompted to reference studies by number in analysis text
+  - Interactive study references in chat messages
+  - Bidirectional hover highlighting between chat and chart
+  - Hover over "Study #1" in chat highlights corresponding drawing on chart
+  - Hover over drawing on chart highlights its number
+  - Visual feedback with colored, underlined study references in chat
+
+### Fixed
+- TypeScript compilation error in migration.ts
+- Password input type compatibility with Chakra UI
+
+## [0.14.1] - 2025-11-16
 
 ### Added
-- **Complete i18n Coverage**
-  - Translated all remaining UI components
+- **Moving Averages Data Migration**
+  - Automatic migration of legacy SMA to EMA configurations
+  - migrateMovingAverages() function in migration system
+  - Converts `type: 'SMA'` to `type: 'EMA'` in localStorage
+  - One-time migration with status tracking
+  - Fixes incorrect "SMA20, SMA50" labels showing as "SMA" instead of "EMA"
+
+### Fixed
+- TypeScript compilation error in migration.ts (simplified function signature)
+- Password input type assertion for Chakra UI compatibility
+- Migration test to account for moving averages migration running independently
+
+### Changed
+- Updated migration test expectations for partial failures
+- Password input component now uses type assertion for props spreading
+
+## [0.14.0] - 2025-11-16
+
+### Added
+- **Complete Internationalization Coverage**
+  - ChartSettingsTab fully internationalized (all labels, helpers, options)
+  - NewsConfigTab fully internationalized (placeholders, labels)
+  - AIConfigTab fully internationalized (provider, model labels)
+  - All AI selectors internationalized (AISelector, AIModelSelector, UnifiedAISelector)
+  - All aria-labels internationalized for accessibility
   - Header component fully internationalized (theme toggle, shortcuts, settings tooltips)
   - MessageInput with translated placeholders and aria-labels
   - ChartControls with all labels and tooltips translated
@@ -23,16 +61,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Translation Files Enhanced**
-  - Expanded EN/PT/ES translation files with 200+ new keys
+  - Expanded EN/PT/ES translation files with 250+ keys
   - Added nested translation structures for complex components
-  - Organized translations by feature area (header, chart, onboarding, etc.)
+  - Organized translations by feature area (settings, chart, common, etc.)
   - Added interpolation support for dynamic values (versions, percentages)
+  - All hardcoded strings eliminated from codebase
 
 ### Fixed
-- **i18n Coverage**
-  - Eliminated hardcoded strings across all major components
-  - Ensured consistent translation key naming
-  - Fixed missing aria-labels and accessibility strings
+- **Code Quality**
+  - Removed all JSX comments from source files
+  - Updated test suite for English error messages
+  - Fixed all test assertions to expect English messages
+  - 581 tests passing with 90.62% coverage
 
 ## [0.13.0] - 2025-11-16
 
