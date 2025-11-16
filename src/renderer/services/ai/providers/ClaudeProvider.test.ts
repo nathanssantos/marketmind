@@ -1,6 +1,9 @@
 import type { AIAnalysisRequest, AIMessage } from '@shared/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ClaudeProvider } from './ClaudeProvider';
+import prompts from '../prompts.json';
+
+const SYSTEM_PROMPT = prompts.chartAnalysis.system;
 
 const mockCreate = vi.fn();
 
@@ -84,7 +87,7 @@ describe('ClaudeProvider', () => {
             content: 'What is a hammer candlestick?',
           },
         ],
-        system: 'What is a hammer candlestick?',
+        system: SYSTEM_PROMPT,
       });
     });
 
