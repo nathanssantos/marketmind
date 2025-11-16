@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { ColorModeProvider } from './components/ui/color-mode';
 import './global.d.ts';
+import './i18n';
 
 const rootElement = document.getElementById('root');
 

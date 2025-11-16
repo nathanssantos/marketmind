@@ -2,6 +2,7 @@ import { Box, ChakraProvider, Text as ChakraText, IconButton, Stack, Toaster } f
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { Candle } from '@shared/types';
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 import { HiX } from 'react-icons/hi';
 import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
@@ -126,6 +127,7 @@ function App(): ReactElement {
 }
 
 function AppContent(): ReactElement {
+  const { t } = useTranslation();
   const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
@@ -322,12 +324,12 @@ function AppContent(): ReactElement {
           </Stack>
           
           {loading && (
-            <LoadingSpinner message="Loading market data..." />
+            <LoadingSpinner message={t('app.loadingMarketData')} />
           )}
 
           {error && (
             <ErrorMessage 
-              title="Failed to Load Market Data"
+              title={t('app.failedToLoadMarketData')}
               message={error.message}
               onRetry={() => window.location.reload()}
             />

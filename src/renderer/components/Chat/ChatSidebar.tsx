@@ -1,4 +1,5 @@
 import { Flex, IconButton, Text } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { HiChevronRight, HiPlus } from 'react-icons/hi2';
 import { useChartContext } from '../../context/ChartContext';
 import { useAIStore } from '../../store/aiStore';
@@ -13,6 +14,7 @@ interface ChatSidebarProps {
 }
 
 export const ChatSidebar = ({ width, isOpen, onToggle }: ChatSidebarProps) => {
+  const { t } = useTranslation();
   const { chartData } = useChartContext();
   const startNewConversation = useAIStore((state) => state.startNewConversation);
 
@@ -46,7 +48,7 @@ export const ChatSidebar = ({ width, isOpen, onToggle }: ChatSidebarProps) => {
       >
         <Flex direction="column" gap={0}>
           <Text fontSize="lg" fontWeight="semibold">
-            AI Assistant
+            {t('chat.title')}
           </Text>
           {chartData?.symbol && (
             <Text fontSize="xs" color="fg.muted">
@@ -56,7 +58,7 @@ export const ChatSidebar = ({ width, isOpen, onToggle }: ChatSidebarProps) => {
         </Flex>
         <Flex align="center" gap={1}>
           <IconButton
-            aria-label="New conversation"
+            aria-label={t('chat.newConversation')}
             onClick={handleNewConversation}
             size="sm"
             variant="ghost"
@@ -65,7 +67,7 @@ export const ChatSidebar = ({ width, isOpen, onToggle }: ChatSidebarProps) => {
           </IconButton>
           <ConversationHistory />
           <IconButton
-            aria-label="Close chat"
+            aria-label={t('chat.closeChat')}
             onClick={onToggle}
             size="sm"
             variant="ghost"
