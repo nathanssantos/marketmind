@@ -1,6 +1,7 @@
 import { Flex, IconButton, Text } from '@chakra-ui/react';
 import { HiChevronRight } from 'react-icons/hi2';
 import { useChartContext } from '../../context/ChartContext';
+import { ConversationHistory } from './ConversationHistory';
 import { MessageInput } from './MessageInput';
 import { MessageList } from './MessageList';
 
@@ -45,14 +46,17 @@ export const ChatSidebar = ({ width, isOpen, onToggle }: ChatSidebarProps) => {
             </Text>
           )}
         </Flex>
-        <IconButton
-          aria-label="Close chat"
-          onClick={onToggle}
-          size="sm"
-          variant="ghost"
-        >
-          <HiChevronRight />
-        </IconButton>
+        <Flex align="center" gap={1}>
+          <ConversationHistory />
+          <IconButton
+            aria-label="Close chat"
+            onClick={onToggle}
+            size="sm"
+            variant="ghost"
+          >
+            <HiChevronRight />
+          </IconButton>
+        </Flex>
       </Flex>
 
       <MessageList />

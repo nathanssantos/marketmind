@@ -185,6 +185,19 @@ describe('aiStore', () => {
       expect(state.conversations[0]?.symbol).toBe('BTCUSDT');
       expect(state.activeConversationId).toBe(state.conversations[0]?.id);
     });
+
+    it('should start new conversation with symbol', () => {
+      const id1 = useAIStore.getState().createConversation('Old Chat', 'BTCUSDT');
+      useAIStore.getState().addMessage(id1, { role: 'user', content: 'Hello' });
+
+      const newId = useAIStore.getState().startNewConversation('BTCUSDT');
+
+      const state = useAIStore.getState();
+      expect(state.conversations).toHaveLength(2);
+      expect(state.activeConversationId).toBe(newId);
+      expect(state.conversations.find(c => c.id === newId)?.messages).toHaveLength(0);
+      expect(state.conversations.find(c => c.id === id1)?.messages).toHaveLength(1);
+    });
   });
 
   describe('Message Management', () => {
