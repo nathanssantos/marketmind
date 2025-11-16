@@ -2,6 +2,7 @@ import { Select as CustomSelect, type SelectOption } from '@/renderer/components
 import { useAIStore } from '@/renderer/store/aiStore';
 import type { AIProviderType } from '@shared/types';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const MODEL_OPTIONS: SelectOption[] = [
   { value: 'openai:gpt-4o', label: '🤖 GPT-4o' },
@@ -18,6 +19,7 @@ const MODEL_OPTIONS: SelectOption[] = [
 ];
 
 export const AIModelSelector = memo(() => {
+  const { t } = useTranslation();
   const settings = useAIStore((state) => state.settings);
   const provider = settings?.provider;
   const model = settings?.model;
@@ -45,7 +47,7 @@ export const AIModelSelector = memo(() => {
       value={currentValue}
       onChange={handleChange}
       options={MODEL_OPTIONS}
-      placeholder="Select AI Model"
+      placeholder={t('common.selectAiModel')}
       enableSearch
       noWrap
     />

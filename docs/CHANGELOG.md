@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2025-11-16
+
+### Added
+- **Complete i18n Coverage**
+  - Translated all remaining UI components
+  - Header component fully internationalized (theme toggle, shortcuts, settings tooltips)
+  - MessageInput with translated placeholders and aria-labels
+  - ChartControls with all labels and tooltips translated
+  - AdvancedControls with complete translations for all settings
+  - OnboardingDialog with all steps and buttons translated
+  - KeyboardShortcutsDialog with sections and shortcuts described
+  - UpdateNotification with status messages and download progress
+  - AboutTab with features, tech stack, and resources translated
+
+### Changed
+- **Translation Files Enhanced**
+  - Expanded EN/PT/ES translation files with 200+ new keys
+  - Added nested translation structures for complex components
+  - Organized translations by feature area (header, chart, onboarding, etc.)
+  - Added interpolation support for dynamic values (versions, percentages)
+
+### Fixed
+- **i18n Coverage**
+  - Eliminated hardcoded strings across all major components
+  - Ensured consistent translation key naming
+  - Fixed missing aria-labels and accessibility strings
+
 ## [0.13.0] - 2025-11-16
 
 ### Added

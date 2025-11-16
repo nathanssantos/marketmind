@@ -4,8 +4,10 @@ import { NumberInput } from '@/renderer/components/ui/number-input';
 import { PasswordInput } from '@/renderer/components/ui/password-input';
 import { Box, Checkbox, Flex, Link, Separator, Stack, Text, VStack } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const NewsConfigTab = () => {
+  const { t } = useTranslation();
   const [enabled, setEnabled] = useState(false);
   const [newsApiKey, setNewsApiKey] = useState('');
   const [cryptoPanicApiKey, setCryptoPanicApiKey] = useState('');
@@ -137,19 +139,18 @@ export const NewsConfigTab = () => {
 
       <Separator />
 
-      {/* NewsAPI */}
       <Box>
         <Text fontSize="lg" fontWeight="semibold" mb={4}>
           NewsAPI Configuration
         </Text>
         
         <Stack gap={4}>
-          <Field label="API Key" required>
+          <Field label={t('settings.news.newsApiKey')} required>
             <Flex gap={2}>
               <PasswordInput
                 value={newsApiKey}
                 onChange={(e) => setNewsApiKey(e.target.value)}
-                placeholder="Enter your NewsAPI key"
+                placeholder={t('settings.news.newsApiKeyPlaceholder')}
                 disabled={!enabled}
                 flex={1}
               />
@@ -158,7 +159,7 @@ export const NewsConfigTab = () => {
                 disabled={!newsApiKey.trim() || !enabled}
                 size="sm"
               >
-                Save
+                {t('common.save')}
               </Button>
             </Flex>
             <Text fontSize="sm" color="fg.muted" mt={2}>
@@ -190,18 +191,17 @@ export const NewsConfigTab = () => {
 
       <Separator />
 
-      {/* CryptoPanic */}
       <Box>
         <Text fontSize="lg" fontWeight="semibold" mb={4}>
           CryptoPanic Configuration
         </Text>
         
-        <Field label="API Key">
+        <Field label={t('settings.news.cryptoPanicApiKey')}>
           <Flex gap={2}>
             <PasswordInput
               value={cryptoPanicApiKey}
               onChange={(e) => setCryptoPanicApiKey(e.target.value)}
-              placeholder="Enter CryptoPanic API key or use 'free'"
+              placeholder={t('settings.news.cryptoPanicApiKeyPlaceholder')}
               disabled={!enabled}
               flex={1}
             />
@@ -210,7 +210,7 @@ export const NewsConfigTab = () => {
               disabled={!cryptoPanicApiKey.trim() || !enabled}
               size="sm"
             >
-              Save
+              {t('common.save')}
             </Button>
           </Flex>
           <Text fontSize="sm" color="fg.muted" mt={2}>
@@ -225,14 +225,13 @@ export const NewsConfigTab = () => {
 
       <Separator />
 
-      {/* Advanced Settings */}
       <Box>
         <Text fontSize="lg" fontWeight="semibold" mb={4}>
           Advanced Settings
         </Text>
         
         <Stack gap={4}>
-          <Field label="Refresh Interval (minutes)">
+          <Field label={t('settings.news.refreshInterval')}>
             <NumberInput
               min={1}
               max={60}
@@ -245,7 +244,7 @@ export const NewsConfigTab = () => {
             </Text>
           </Field>
 
-          <Field label="Maximum Articles">
+          <Field label={t('settings.news.maxArticles')}>
             <NumberInput
               min={5}
               max={50}

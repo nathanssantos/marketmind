@@ -2,6 +2,7 @@ import { Field } from '@/renderer/components/ui/field';
 import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Select } from '@/renderer/components/ui/select';
 import { Box, Stack, Text } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 
 interface ChartSettingsTabProps {
@@ -10,6 +11,8 @@ interface ChartSettingsTabProps {
 }
 
 export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabProps) => {
+  const { t } = useTranslation();
+
   const handleChange = (key: keyof AdvancedControlsConfig, value: string) => {
     const numValue = parseFloat(value);
     if (isNaN(numValue)) return;
@@ -29,13 +32,12 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
 
   return (
     <Stack gap={6}>
-      {/* Chart Dimensions */}
       <Box>
         <Text fontSize="sm" fontWeight="bold" mb={4}>
-          Chart Dimensions
+          {t('settings.chart.chartDimensions')}
         </Text>
         <Stack gap={4}>
-          <Field label="Right Margin" helperText="Space reserved on the right side of the chart">
+          <Field label={t('settings.chart.rightMargin')} helperText={t('settings.chart.rightMarginHelper')}>
             <NumberInput
               value={config.rightMargin}
               onChange={(e) => handleChange('rightMargin', e.target.value)}
@@ -44,7 +46,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
             />
           </Field>
 
-          <Field label="Volume Height Ratio" helperText="Height of volume bars relative to chart (0-1)">
+          <Field label={t('settings.chart.volumeHeightRatio')} helperText={t('settings.chart.volumeHeightRatioHelper')}>
             <NumberInput
               value={config.volumeHeightRatio}
               onChange={(e) => handleChange('volumeHeightRatio', e.target.value)}
@@ -56,13 +58,12 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
         </Stack>
       </Box>
 
-      {/* Candle Settings */}
       <Box>
         <Text fontSize="sm" fontWeight="bold" mb={4}>
-          Candle Settings
+          {t('settings.chart.candleSettings')}
         </Text>
         <Stack gap={4}>
-          <Field label="Candle Spacing" helperText="Space between candles">
+          <Field label={t('settings.chart.candleSpacing')} helperText={t('settings.chart.candleSpacingHelper')}>
             <NumberInput
               value={config.candleSpacing}
               onChange={(e) => handleChange('candleSpacing', e.target.value)}
@@ -71,7 +72,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
             />
           </Field>
 
-          <Field label="Wick Width" helperText="Width of candle wicks">
+          <Field label={t('settings.chart.wickWidth')} helperText={t('settings.chart.wickWidthHelper')}>
             <NumberInput
               value={config.candleWickWidth}
               onChange={(e) => handleChange('candleWickWidth', e.target.value)}
@@ -82,12 +83,11 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
         </Stack>
       </Box>
 
-      {/* Grid Settings */}
       <Box>
         <Text fontSize="sm" fontWeight="bold" mb={4}>
-          Grid Settings
+          {t('settings.chart.gridSettings')}
         </Text>
-        <Field label="Grid Line Width" helperText="Thickness of grid lines">
+        <Field label={t('settings.chart.gridLineWidth')} helperText={t('settings.chart.gridLineWidthHelper')}>
           <NumberInput
             value={config.gridLineWidth}
             onChange={(e) => handleChange('gridLineWidth', e.target.value)}
@@ -97,13 +97,12 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
         </Field>
       </Box>
 
-      {/* Current Price Line Settings */}
       <Box>
         <Text fontSize="sm" fontWeight="bold" mb={4}>
-          Current Price Line
+          {t('settings.chart.currentPriceLine')}
         </Text>
         <Stack gap={4}>
-          <Field label="Line Width" helperText="Thickness of the current price line">
+          <Field label={t('settings.chart.lineWidth')} helperText={t('settings.chart.lineWidthHelper')}>
             <NumberInput
               value={config.currentPriceLineWidth}
               onChange={(e) => handleChange('currentPriceLineWidth', e.target.value)}
@@ -112,27 +111,26 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
             />
           </Field>
 
-          <Field label="Line Style" helperText="Style of the current price line">
+          <Field label={t('settings.chart.lineStyle')} helperText={t('settings.chart.lineStyleHelper')}>
             <Select
               value={config.currentPriceLineStyle}
               onChange={handleStyleChange}
               options={[
-                { value: 'solid', label: 'Solid' },
-                { value: 'dashed', label: 'Dashed' },
-                { value: 'dotted', label: 'Dotted' },
+                { value: 'solid', label: t('settings.chart.solid') },
+                { value: 'dashed', label: t('settings.chart.dashed') },
+                { value: 'dotted', label: t('settings.chart.dotted') },
               ]}
             />
           </Field>
         </Stack>
       </Box>
 
-      {/* Padding */}
       <Box>
         <Text fontSize="sm" fontWeight="bold" mb={4}>
-          Chart Padding
+          {t('settings.chart.chartPadding')}
         </Text>
         <Stack gap={4}>
-          <Field label="Top Padding">
+          <Field label={t('settings.chart.topPadding')}>
             <NumberInput
               value={config.paddingTop}
               onChange={(e) => handleChange('paddingTop', e.target.value)}
@@ -141,7 +139,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
             />
           </Field>
 
-          <Field label="Bottom Padding">
+          <Field label={t('settings.chart.bottomPadding')}>
             <NumberInput
               value={config.paddingBottom}
               onChange={(e) => handleChange('paddingBottom', e.target.value)}
@@ -150,7 +148,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
             />
           </Field>
 
-          <Field label="Left Padding">
+          <Field label={t('settings.chart.leftPadding')}>
             <NumberInput
               value={config.paddingLeft}
               onChange={(e) => handleChange('paddingLeft', e.target.value)}
@@ -159,7 +157,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
             />
           </Field>
 
-          <Field label="Right Padding">
+          <Field label={t('settings.chart.rightPadding')}>
             <NumberInput
               value={config.paddingRight}
               onChange={(e) => handleChange('paddingRight', e.target.value)}

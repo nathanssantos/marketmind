@@ -12,7 +12,6 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>((p
 
   return (
     <Box position="relative">
-      {/* @ts-expect-error - Chakra UI type conflict */}
       <Input
         {...props}
         ref={ref}

@@ -40,7 +40,7 @@ describe('SymbolSelector', () => {
       />
     );
 
-    expect(screen.getByTestId('select-label')).toHaveTextContent('Binance');
+    expect(screen.getByTestId('select-label')).toHaveTextContent('symbolSelector.label');
   });
 
   it('should display symbol display name as placeholder', () => {

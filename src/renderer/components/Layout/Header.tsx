@@ -2,6 +2,7 @@ import { useColorMode } from '@/renderer/components/ui/color-mode';
 import { Logo } from '@/renderer/components/ui/logo';
 import { Flex, IconButton, Text } from '@chakra-ui/react';
 import { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { HiCog6Tooth, HiCommandLine, HiMoon, HiSun } from 'react-icons/hi2';
 import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
 import { TooltipWrapper } from '../ui/Tooltip';
@@ -11,6 +12,7 @@ interface HeaderProps {
 }
 
 export const Header = memo(({ onSettingsClick }: HeaderProps) => {
+  const { t } = useTranslation();
   const { colorMode, toggleColorMode } = useColorMode();
   const [showShortcuts, setShowShortcuts] = useState(false);
 
@@ -33,14 +35,14 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
       <Flex align="center" gap={2}>
         <Logo size={24} />
         <Text fontSize="xl" fontWeight="bold">
-          MarketMind
+          {t('app.title')}
         </Text>
       </Flex>
 
       <Flex align="center" gap={3}>
-        <TooltipWrapper label={`Theme: ${colorMode === 'dark' ? 'Dark' : 'Light'}`} placement="bottom" showArrow>
+        <TooltipWrapper label={`${t('header.theme')}: ${colorMode === 'dark' ? t('header.themeDark') : t('header.themeLight')}`} placement="bottom" showArrow>
           <IconButton
-            aria-label="Toggle color mode"
+            aria-label={t('header.toggleColorMode')}
             onClick={toggleColorMode}
             variant="ghost"
             size="sm"
@@ -48,9 +50,9 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
             {colorMode === 'dark' ? <HiSun /> : <HiMoon />}
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label="Keyboard Shortcuts" placement="bottom" showArrow>
+        <TooltipWrapper label={t('header.keyboardShortcuts')} placement="bottom" showArrow>
           <IconButton
-            aria-label="Show keyboard shortcuts"
+            aria-label={t('header.showKeyboardShortcuts')}
             onClick={() => setShowShortcuts(true)}
             variant="ghost"
             size="sm"
@@ -58,9 +60,9 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
             <HiCommandLine />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label="Settings" placement="bottom" showArrow>
+        <TooltipWrapper label={t('header.settings')} placement="bottom" showArrow>
           <IconButton
-            aria-label="Settings"
+            aria-label={t('header.settings')}
             onClick={onSettingsClick}
             variant="ghost"
             size="sm"

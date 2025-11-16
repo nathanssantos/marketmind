@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Box, Button, Text, Progress, Stack } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { useAutoUpdate } from '@renderer/hooks/useAutoUpdate';
 
 export const UpdateNotification = () => {
+  const { t } = useTranslation();
   const {
     status,
     updateInfo,
@@ -63,14 +65,14 @@ export const UpdateNotification = () => {
           <>
             <Box>
               <Text fontSize="lg" fontWeight="bold">
-                Update Available
+                {t('update.available')}
               </Text>
               <Text fontSize="sm" color="fg.muted">
-                Version {updateInfo?.version} is now available
+                {t('update.version', { version: updateInfo?.version })}
               </Text>
               {currentVersion && (
                 <Text fontSize="xs" color="fg.muted">
-                  Current version: {currentVersion}
+                  {t('update.currentVersion', { version: currentVersion })}
                 </Text>
               )}
             </Box>
@@ -90,10 +92,10 @@ export const UpdateNotification = () => {
 
             <Stack direction="row" gap={2}>
               <Button size="sm" colorScheme="blue" onClick={handleDownload}>
-                Download Update
+                {t('update.downloadUpdate')}
               </Button>
               <Button size="sm" variant="ghost" onClick={handleDismiss}>
-                Later
+                {t('update.later')}
               </Button>
             </Stack>
           </>
@@ -103,10 +105,10 @@ export const UpdateNotification = () => {
           <>
             <Box>
               <Text fontSize="lg" fontWeight="bold">
-                Downloading Update
+                {t('update.downloading')}
               </Text>
               <Text fontSize="sm" color="fg.muted">
-                Version {updateInfo?.version}
+                {t('update.version', { version: updateInfo?.version })}
               </Text>
             </Box>
 
@@ -118,13 +120,13 @@ export const UpdateNotification = () => {
               </Progress.Root>
               <Stack direction="row" justify="space-between" mt={1}>
                 <Text fontSize="xs" color="fg.muted">
-                  {progress.percent}%
+                  {t('update.percent', { percent: progress.percent })}
                 </Text>
                 <Text fontSize="xs" color="fg.muted">
                   {formatBytes(progress.transferred)} / {formatBytes(progress.total)}
                 </Text>
                 <Text fontSize="xs" color="fg.muted">
-                  {formatSpeed(progress.bytesPerSecond)}
+                  {t('update.downloadSpeed', { speed: formatSpeed(progress.bytesPerSecond) })}
                 </Text>
               </Stack>
             </Box>
@@ -135,19 +137,19 @@ export const UpdateNotification = () => {
           <>
             <Box>
               <Text fontSize="lg" fontWeight="bold">
-                Update Ready
+                {t('update.ready')}
               </Text>
               <Text fontSize="sm" color="fg.muted">
-                Version {updateInfo?.version} has been downloaded
+                {t('update.downloadedVersion', { version: updateInfo?.version })}
               </Text>
             </Box>
 
             <Stack direction="row" gap={2}>
               <Button size="sm" colorScheme="green" onClick={handleInstall}>
-                Restart and Install
+                {t('update.restartAndInstall')}
               </Button>
               <Button size="sm" variant="ghost" onClick={handleDismiss}>
-                Later
+                {t('update.later')}
               </Button>
             </Stack>
           </>
@@ -157,7 +159,7 @@ export const UpdateNotification = () => {
           <>
             <Box>
               <Text fontSize="lg" fontWeight="bold" color="red.500">
-                Update Error
+                {t('update.error')}
               </Text>
               <Text fontSize="sm" color="fg.muted">
                 {error.message}
@@ -165,7 +167,7 @@ export const UpdateNotification = () => {
             </Box>
 
             <Button size="sm" variant="ghost" onClick={handleDismiss}>
-              Dismiss
+              {t('common.dismiss')}
             </Button>
           </>
         )}

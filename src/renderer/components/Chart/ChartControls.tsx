@@ -1,5 +1,6 @@
 import { Box, Switch as ChakraSwitch, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
 import type { ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     HiOutlineChartBar,
     HiOutlineTrendingUp,
@@ -47,6 +48,7 @@ export const ChartControls = ({
   onAdvancedConfigChange,
   onTimeframeChange,
 }: ChartControlsProps): ReactElement => {
+  const { t } = useTranslation();
   const { pinnedControls } = usePinnedControls();
   
   const toggleMA = (index: number): void => {
@@ -68,23 +70,22 @@ export const ChartControls = ({
   };
 
   const controlLabels: Record<string, string> = {
-    rightMargin: 'Right Margin',
-    volumeHeightRatio: 'Volume Height %',
-    candleSpacing: 'Candle Spacing',
-    candleWickWidth: 'Wick Width',
-    gridLineWidth: 'Grid Line Width',
-    paddingTop: 'Padding Top',
-    paddingBottom: 'Padding Bottom',
-    paddingLeft: 'Padding Left',
-    paddingRight: 'Padding Right',
+    rightMargin: t('chart.advanced.rightMargin'),
+    volumeHeightRatio: t('chart.advanced.volumeHeight'),
+    candleSpacing: t('chart.advanced.spacing'),
+    candleWickWidth: t('chart.advanced.wickWidth'),
+    gridLineWidth: t('chart.advanced.lineWidth'),
+    paddingTop: t('chart.advanced.top'),
+    paddingBottom: t('chart.advanced.bottom'),
+    paddingLeft: t('chart.advanced.left'),
+    paddingRight: t('chart.advanced.right'),
   };
 
   return (
-    <ControlPanel title="Chart Controls">
-      {/* Timeframe Selector */}
+    <ControlPanel title={t('chart.controls.title')}>
       <Box>
         <Text fontSize="xs" color="gray.400" mb={1} fontWeight="semibold">
-          Timeframe
+          {t('chart.controls.timeframe')}
         </Text>
         <TimeframeSelector
           selectedTimeframe={timeframe}
@@ -92,16 +93,15 @@ export const ChartControls = ({
         />
       </Box>
 
-      {/* Chart Type */}
       <Box>
         <Text fontSize="xs" color="gray.400" mb={1} fontWeight="semibold">
-          Chart Type
+          {t('chart.controls.chartType')}
         </Text>
         <HStack gap={2}>
-          <TooltipWrapper label="Candlestick Chart">
+          <TooltipWrapper label={t('chart.controls.candlestickChart')}>
             <IconButton
               size="sm"
-              aria-label="Candlestick chart"
+              aria-label={t('chart.controls.candlestickChart')}
               onClick={() => onChartTypeChange('candlestick')}
               colorPalette={chartType === 'candlestick' ? 'blue' : 'gray'}
               variant={chartType === 'candlestick' ? 'solid' : 'outline'}
@@ -110,10 +110,10 @@ export const ChartControls = ({
               <MdCandlestickChart />
             </IconButton>
           </TooltipWrapper>
-          <TooltipWrapper label="Line Chart">
+          <TooltipWrapper label={t('chart.controls.lineChart')}>
             <IconButton
               size="sm"
-              aria-label="Line chart"
+              aria-label={t('chart.controls.lineChart')}
               onClick={() => onChartTypeChange('line')}
               colorPalette={chartType === 'line' ? 'blue' : 'gray'}
               variant={chartType === 'line' ? 'solid' : 'outline'}
@@ -125,16 +125,15 @@ export const ChartControls = ({
         </HStack>
       </Box>
 
-        {/* Display Options */}
         <Box>
           <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
-            Display
+            {t('chart.controls.display')}
           </Text>
           <Stack gap={2}>
             <HStack justify="space-between" gap={3}>
               <HStack gap={2}>
                 <HiOutlineChartBar size={14} color="var(--chakra-colors-gray-300)" />
-                <Text fontSize="xs" color="gray.300">Volume</Text>
+                <Text fontSize="xs" color="gray.300">{t('chart.controls.volume')}</Text>
               </HStack>
               <ChakraSwitch.Root
                 size="sm"
@@ -151,7 +150,7 @@ export const ChartControls = ({
             <HStack justify="space-between" gap={3}>
               <HStack gap={2}>
                 <HiOutlineViewGrid size={14} color="var(--chakra-colors-gray-300)" />
-                <Text fontSize="xs" color="gray.300">Grid</Text>
+                <Text fontSize="xs" color="gray.300">{t('chart.controls.grid')}</Text>
               </HStack>
               <ChakraSwitch.Root
                 size="sm"
@@ -168,7 +167,7 @@ export const ChartControls = ({
             <HStack justify="space-between" gap={3}>
               <HStack gap={2}>
                 <HiOutlineTrendingUp size={14} color="var(--chakra-colors-gray-300)" />
-                <Text fontSize="xs" color="gray.300">Current Price</Text>
+                <Text fontSize="xs" color="gray.300">{t('chart.controls.currentPrice')}</Text>
               </HStack>
               <ChakraSwitch.Root
                 size="sm"
@@ -185,11 +184,10 @@ export const ChartControls = ({
           </Stack>
         </Box>
 
-        {/* Moving Averages */}
         {movingAverages.length > 0 && (
           <Box>
             <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
-              Indicators
+              {t('chart.controls.indicators')}
             </Text>
             <Stack gap={2}>
               {movingAverages.map((ma, index) => (
@@ -217,11 +215,10 @@ export const ChartControls = ({
           </Box>
         )}
 
-        {/* Pinned Advanced Controls */}
         {pinnedControls.size > 0 && advancedConfig && (
           <Box>
             <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
-              Quick Settings
+              {t('chart.controls.quickSettings')}
             </Text>
             <Stack gap={2}>
               {Array.from(pinnedControls).map((controlKey) => (

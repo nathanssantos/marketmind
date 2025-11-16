@@ -11,12 +11,32 @@
     "success": "Success",
     "search": "Search",
     "noResults": "No results found",
-    "typeToSearch": "Type to search..."
+    "typeToSearch": "Type to search...",
+    "dismiss": "Dismiss",
+    "skip": "Skip",
+    "next": "Next",
+    "previous": "Previous",
+    "selectAiModel": "Select AI Model",
+    "selectAi": "Select AI",
+    "selectModel": "Select Model",
+    "openChat": "Open chat",
+    "deleteConversation": "Delete conversation",
+    "conversationHistory": "Conversation history"
   },
   "app": {
+    "title": "MarketMind",
     "loadingMarketData": "Loading market data...",
     "failedToLoadMarketData": "Failed to Load Market Data",
     "retry": "Retry"
+  },
+  "header": {
+    "theme": "Theme",
+    "themeDark": "Dark",
+    "themeLight": "Light",
+    "keyboardShortcuts": "Keyboard Shortcuts",
+    "settings": "Settings",
+    "toggleColorMode": "Toggle color mode",
+    "showKeyboardShortcuts": "Show keyboard shortcuts"
   },
   "symbolSelector": {
     "label": "Binance",
@@ -33,26 +53,84 @@
       "ai": "AI Configuration",
       "news": "News",
       "about": "About"
+    },
+    "chart": {
+      "chartDimensions": "Chart Dimensions",
+      "rightMargin": "Right Margin",
+      "rightMarginHelper": "Space reserved on the right side of the chart",
+      "volumeHeightRatio": "Volume Height Ratio",
+      "volumeHeightRatioHelper": "Height of volume bars relative to chart (0-1)",
+      "candleSettings": "Candle Settings",
+      "candleSpacing": "Candle Spacing",
+      "candleSpacingHelper": "Space between candles",
+      "wickWidth": "Wick Width",
+      "wickWidthHelper": "Width of candle wicks",
+      "gridSettings": "Grid Settings",
+      "gridLineWidth": "Grid Line Width",
+      "gridLineWidthHelper": "Thickness of grid lines",
+      "currentPriceLine": "Current Price Line",
+      "lineWidth": "Line Width",
+      "lineWidthHelper": "Thickness of the current price line",
+      "lineStyle": "Line Style",
+      "lineStyleHelper": "Style of the current price line",
+      "solid": "Solid",
+      "dashed": "Dashed",
+      "dotted": "Dotted",
+      "chartPadding": "Chart Padding",
+      "topPadding": "Top Padding",
+      "bottomPadding": "Bottom Padding",
+      "leftPadding": "Left Padding",
+      "rightPadding": "Right Padding"
+    },
+    "news": {
+      "newsApiKey": "API Key",
+      "newsApiKeyPlaceholder": "Enter your NewsAPI key",
+      "newsApiKeyRequired": "Required",
+      "cryptoPanicApiKey": "API Key",
+      "cryptoPanicApiKeyPlaceholder": "Enter CryptoPanic API key or use 'free'",
+      "refreshInterval": "Refresh Interval (minutes)",
+      "maxArticles": "Maximum Articles"
     }
   },
   "chat": {
     "title": "AI Assistant",
     "newConversation": "New conversation",
     "closeChat": "Close chat",
-    "inputPlaceholder": "Ask me anything about the chart...",
+    "inputPlaceholder": "Ask about the chart...",
+    "sendMessage": "Send message",
     "send": "Send",
     "noMessages": "No messages yet",
     "startConversation": "Start a conversation to get insights about the chart"
   },
   "chart": {
     "controls": {
+      "title": "Chart Controls",
+      "timeframe": "Timeframe",
+      "chartType": "Chart Type",
+      "candlestickChart": "Candlestick Chart",
+      "lineChart": "Line Chart",
+      "display": "Display",
       "volume": "Volume",
       "grid": "Grid",
-      "currentPriceLine": "Current Price Line",
-      "candlestick": "Candlestick",
-      "line": "Line",
-      "movingAverages": "Moving Averages",
-      "timeframe": "Timeframe"
+      "currentPrice": "Current Price",
+      "indicators": "Indicators",
+      "quickSettings": "Quick Settings"
+    },
+    "advanced": {
+      "title": "Advanced Settings",
+      "chartDimensions": "Chart Dimensions",
+      "rightMargin": "Right Margin",
+      "volumeHeight": "Volume Height %",
+      "candleSettings": "Candle Settings",
+      "spacing": "Spacing",
+      "wickWidth": "Wick Width",
+      "gridSettings": "Grid Settings",
+      "lineWidth": "Line Width",
+      "padding": "Padding",
+      "top": "Top",
+      "bottom": "Bottom",
+      "left": "Left",
+      "right": "Right"
     },
     "timeframes": {
       "1m": "1 Minute",
@@ -83,27 +161,159 @@
     }
   },
   "onboarding": {
-    "welcome": "Welcome to MarketMind",
+    "title": "Getting Started",
     "skip": "Skip",
     "next": "Next",
     "previous": "Previous",
-    "finish": "Get Started"
+    "getStarted": "Get Started",
+    "steps": {
+      "welcome": {
+        "title": "Welcome to MarketMind",
+        "description": "Your AI-powered financial chart analysis assistant. MarketMind combines advanced charting with AI analysis to help you make informed trading decisions."
+      },
+      "aiProvider": {
+        "title": "Choose Your AI Provider",
+        "description": "MarketMind supports multiple AI providers: OpenAI (GPT-4), Anthropic (Claude), and Google (Gemini). Configure your API keys in the settings to get started."
+      },
+      "analyze": {
+        "title": "Analyze Market Data",
+        "description": "View real-time candlestick charts, volume indicators, and moving averages. Use the controls to customize your chart view and select different timeframes."
+      },
+      "chat": {
+        "title": "Chat with AI",
+        "description": "Ask questions about chart patterns, trends, and trading signals. The AI has access to your chart data and can provide technical analysis and insights."
+      },
+      "ready": {
+        "title": "Ready to Start",
+        "description": "Open the settings (top right) to configure your AI provider and API keys. Then start analyzing charts and chatting with your AI assistant!"
+      }
+    }
   },
   "update": {
     "available": "Update Available",
-    "downloading": "Downloading update...",
-    "readyToInstall": "Update ready to install",
-    "installNow": "Install Now",
-    "installOnQuit": "Install on Quit",
-    "later": "Later"
+    "downloading": "Downloading Update",
+    "ready": "Update Ready",
+    "error": "Update Error",
+    "version": "Version {{version}} is now available",
+    "currentVersion": "Current version: {{version}}",
+    "downloadedVersion": "Version {{version}} has been downloaded",
+    "downloadUpdate": "Download Update",
+    "restartAndInstall": "Restart and Install",
+    "later": "Later",
+    "percent": "{{percent}}%",
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "keyboardShortcuts": {
     "title": "Keyboard Shortcuts",
-    "categories": {
-      "general": "General",
-      "chart": "Chart",
-      "navigation": "Navigation",
-      "chat": "Chat"
+    "global": "Global",
+    "chartControls": "Chart Controls",
+    "chatInterface": "Chat Interface",
+    "symbolSelector": "Symbol Selector",
+    "shortcuts": {
+      "openSettings": "Open Settings",
+      "focusChatInput": "Focus Chat Input",
+      "toggleChatSidebar": "Toggle Chat Sidebar",
+      "showKeyboardShortcuts": "Show Keyboard Shortcuts",
+      "closeDialogs": "Close Dialogs",
+      "toggleVolume": "Toggle Volume Display",
+      "toggleGrid": "Toggle Grid Display",
+      "switchChartType": "Switch Chart Type",
+      "toggleMovingAverages": "Toggle Moving Averages",
+      "zoomIn": "Zoom In",
+      "zoomOut": "Zoom Out",
+      "resetZoom": "Reset Zoom",
+      "panLeftRight": "Pan Left/Right",
+      "panChart": "Pan Chart",
+      "sendMessage": "Send Message",
+      "newLine": "New Line",
+      "editLastMessage": "Edit Last Message",
+      "clearChatHistory": "Clear Chat History",
+      "openSymbolSelector": "Open Symbol Selector",
+      "navigateSymbolList": "Navigate Symbol List",
+      "selectSymbol": "Select Symbol",
+      "closeSelector": "Close Selector"
     }
+  },
+  "aiConfig": {
+    "title": "AI Configuration",
+    "quickTips": "💡 Quick Tips",
+    "tips": {
+      "encryption": "API keys are encrypted and stored securely using OS-level encryption",
+      "temperatureLow": "Lower temperature (0-0.5) for technical analysis",
+      "temperatureHigh": "Higher temperature (0.7-1.5) for creative insights",
+      "geminiFree": "Gemini 2.0 Flash Exp is FREE with no API key required"
+    },
+    "provider": "AI Provider",
+    "providerRequired": "Required",
+    "model": "Model",
+    "apiKeys": "API Keys (Encrypted)",
+    "apiKey": "{{provider}} API Key",
+    "apiKeyPlaceholder": "Enter your {{provider}} API key",
+    "apiKeyHelper": "Using {{envVar}} from .env",
+    "temperature": "Temperature: {{value}}",
+    "temperatureHelper": "Controls randomness (0 = focused, 2 = creative)",
+    "maxTokens": "Max Tokens: {{value}}",
+    "maxTokensHelper": "Maximum response length",
+    "encryptionNotAvailable": "Warning: Encryption not available on this platform",
+    "providers": {
+      "openai": "OpenAI",
+      "anthropic": "Anthropic (Claude)",
+      "gemini": "Google Gemini"
+    },
+    "models": {
+      "gpt4o": "GPT-4o",
+      "gpt4oMini": "GPT-4o Mini",
+      "claudeSonnet": "Claude 4.5 Sonnet",
+      "claudeHaiku": "Claude 4.5 Haiku",
+      "claudeOpus": "Claude 4.1 Opus",
+      "gemini2Flash": "Gemini 2.0 Flash Exp",
+      "gemini15Pro": "Gemini 1.5 Pro",
+      "gemini15Flash": "Gemini 1.5 Flash",
+      "gemini15Flash8b": "Gemini 1.5 Flash-8B"
+    },
+    "pricing": {
+      "gpt4o": "$2.50/$10 per 1M tokens",
+      "gpt4oMini": "$0.15/$0.60 per 1M tokens",
+      "claudeSonnet": "$3/$15 per 1M tokens",
+      "claudeHaiku": "$1/$5 per 1M tokens",
+      "claudeOpus": "$15/$75 per 1M tokens",
+      "gemini2Flash": "FREE",
+      "gemini15Pro": "$1.25/$5 per 1M tokens",
+      "gemini15Flash": "$0.075/$0.30 per 1M tokens",
+      "gemini15Flash8b": "$0.0375/$0.15 per 1M tokens"
+    }
+  },
+  "about": {
+    "version": "Version {{version}}",
+    "description": "An AI-powered trading assistant that combines advanced financial chart visualization with artificial intelligence to provide insights on cryptocurrencies, stocks, and other tradeable assets.",
+    "features": "Features",
+    "featuresList": {
+      "marketData": "Real-time cryptocurrency market data (Binance)",
+      "charts": "Advanced candlestick charts with moving averages",
+      "aiAnalysis": "AI analysis with OpenAI GPT-4o, Claude 4.5, and Gemini 2.0",
+      "news": "Financial news integration (NewsAPI & CryptoPanic)",
+      "chat": "Interactive chat interface with conversation history",
+      "security": "Secure API key storage with OS-level encryption",
+      "autoUpdate": "Auto-update system with GitHub releases",
+      "shortcuts": "Keyboard shortcuts for productivity",
+      "themes": "Light and dark themes",
+      "websocket": "WebSocket live updates"
+    },
+    "techStack": "Technology Stack",
+    "techStackList": {
+      "electron": "Electron {{version}} - Desktop framework",
+      "react": "React {{version}} - UI framework",
+      "typescript": "TypeScript {{version}} - Type safety",
+      "chakra": "Chakra UI {{version}} - Component library",
+      "vite": "Vite {{version}} - Build tool",
+      "zustand": "Zustand {{version}} - State management"
+    },
+    "resources": "Resources",
+    "resourcesList": {
+      "github": "GitHub Repository",
+      "documentation": "Documentation",
+      "changelog": "Changelog"
+    },
+    "copyright": "© 2025 MarketMind. Built with ❤️ for traders and investors."
   }
 }
