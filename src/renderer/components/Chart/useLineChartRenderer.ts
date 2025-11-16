@@ -1,11 +1,11 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import type { ChartColors } from '@shared/types';
+import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { useCallback, useEffect } from 'react';
 
 export interface UseLineChartRendererProps {
   manager: CanvasManager | null;
-  colors: ChartColors;
+  colors: ChartThemeColors;
   enabled?: boolean;
   rightMargin?: number;
 }
@@ -40,7 +40,7 @@ export const useLineChartRenderer = ({
     ctx.rect(0, 0, effectiveWidth, chartHeight);
     ctx.clip();
 
-    ctx.strokeStyle = colors.bullish;
+    ctx.strokeStyle = colors.lineDefault;
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
@@ -69,7 +69,7 @@ export const useLineChartRenderer = ({
       const firstX = manager.indexToX(firstIndex);
       const lastX = manager.indexToX(lastIndex);
 
-      ctx.fillStyle = `${colors.bullish}22`;
+      ctx.fillStyle = `${colors.lineDefault}22`;
       ctx.lineTo(lastX, chartHeight);
       ctx.lineTo(firstX, chartHeight);
       ctx.closePath();
