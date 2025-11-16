@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **AI Study Identification System**
+  - Sequential numbering for AI-generated studies (starting from #1)
+  - Numbers displayed next to AI icon on chart for each study
+  - AI prompted to reference studies by number in analysis text
+  - Interactive study references in chat messages
+  - Bidirectional hover highlighting between chat and chart
+  - Hover over "Study #1" in chat highlights corresponding drawing on chart
+  - Hover over drawing on chart highlights its number
+  - Visual feedback with colored, underlined study references in chat
+
+### Fixed
+- TypeScript compilation error in migration.ts
+- Password input type compatibility with Chakra UI
+
+## [0.14.1] - 2025-11-16
+
+### Added
+- **Moving Averages Data Migration**
+  - Automatic migration of legacy SMA to EMA configurations
+  - migrateMovingAverages() function in migration system
+  - Converts `type: 'SMA'` to `type: 'EMA'` in localStorage
+  - One-time migration with status tracking
+  - Fixes incorrect "SMA20, SMA50" labels showing as "SMA" instead of "EMA"
+
+### Fixed
+- TypeScript compilation error in migration.ts (simplified function signature)
+- Password input type assertion for Chakra UI compatibility
+- Migration test to account for moving averages migration running independently
+
+### Changed
+- Updated migration test expectations for partial failures
+- Password input component now uses type assertion for props spreading
+
 ## [0.14.0] - 2025-11-16
 
 ### Added

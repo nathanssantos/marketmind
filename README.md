@@ -53,7 +53,7 @@
 - 🔍 **Tooltips**: Contextual help and information throughout the interface
 - ♿ **Accessibility**: ARIA labels, keyboard support, and screen reader compatibility
 - 🎯 **Performance**: Web Workers for heavy calculations, IndexedDB caching
-- 🌍 **Internationalization**: Multi-language support (English, Portuguese, Spanish)
+- 🌍 **Internationalization**: Multi-language support (English, Portuguese, Spanish, French)
 - 🔄 **Language Detection**: Automatic language detection from browser/system
 - ⚙️ **Language Selector**: Manual language switching in settings
 
@@ -62,7 +62,7 @@
 - 📊 **Technical Indicators**: RSI, MACD, Bollinger Bands, and more
 - 📡 **WebSocket**: Real-time candle updates via WebSocket
 - 🧪 **Testing**: Comprehensive unit and integration tests
-- 🌐 **More Languages**: French, German, Japanese, Chinese support
+- 🌐 **More Languages**: German, Japanese, Chinese support
 
 ## 🛠 Technology Stack
 
@@ -381,7 +381,7 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 
 **Phase 14: Internationalization** ✅ COMPLETED (100%)
 - [x] i18next + react-i18next integration
-- [x] Multi-language support (English, Portuguese, Spanish)
+- [x] Multi-language support (English, Portuguese, Spanish, French)
 - [x] 250+ translation keys covering all components
 - [x] Automatic language detection from browser/system
 - [x] Language selector in Settings → General
@@ -414,7 +414,7 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] Onboarding for first-time users
 - [x] Keyboard shortcuts system
 - [x] Accessibility features
-- [x] Multi-language support (EN, PT, ES with 250+ keys)
+- [x] Multi-language support (EN, PT, ES, FR with 255+ keys)
 
 **MVP Progress:** 100% Complete (production ready! 🚀)
 
@@ -426,7 +426,7 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [ ] Asset watchlist
 - [ ] Symbol favorites and recents
 - [ ] Chart export as images
-- [ ] More languages (FR, DE, JP, CN)
+- [ ] More languages (DE, JP, CN)
 - [ ] Integration and E2E tests
 
 ## 📄 License

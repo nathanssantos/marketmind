@@ -13,7 +13,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>((p
   return (
     <Box position="relative">
       <Input
-        {...props}
+        {...(props as any)}
         ref={ref}
         type={show ? 'text' : 'password'}
         pr="44px"

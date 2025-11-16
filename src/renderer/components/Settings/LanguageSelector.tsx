@@ -6,6 +6,7 @@ const LANGUAGES = [
   { value: 'en', label: 'English', description: 'English' },
   { value: 'pt', label: 'Português', description: 'Portuguese (Brazil)' },
   { value: 'es', label: 'Español', description: 'Spanish' },
+  { value: 'fr', label: 'Français', description: 'French' },
 ];
 
 export const LanguageSelector = () => {

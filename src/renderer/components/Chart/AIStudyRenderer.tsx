@@ -2,6 +2,7 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { AIStudy, AIStudyLine, AIStudyZone, Candle } from '@shared/types';
 import { AI_STUDY_COLORS } from '@shared/types';
 import { useEffect, useRef, useState } from 'react';
+import { useAIStudyHover } from '../../context/AIStudyHoverContext';
 
 interface AIStudyRendererProps {
   canvasManager: CanvasManager | null;
@@ -27,11 +28,11 @@ export const AIStudyRenderer = ({
 }: AIStudyRendererProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredStudy, setHoveredStudy] = useState<AIStudy | null>(null);
+  const { hoveredStudyId, setHoveredStudyId } = useAIStudyHover();
 
   useEffect(() => {
     if (!canvasManager || candles.length === 0 || !mousePosition) {
       setHoveredStudy(null);
-      onStudyHover(null);
       return;
     }
 
@@ -85,8 +86,23 @@ export const AIStudyRenderer = ({
     }
 
     setHoveredStudy(found);
-    onStudyHover(found);
-  }, [canvasManager, candles, studies, mousePosition, onStudyHover]);
+    if (found?.id) {
+      setHoveredStudyId(found.id);
+    } else {
+      setHoveredStudyId(null);
+    }
+  }, [canvasManager, candles, studies, mousePosition, setHoveredStudyId]);
+
+  useEffect(() => {
+    if (hoveredStudyId !== null) {
+      const studyById = studies.find(s => s.id === hoveredStudyId);
+      if (studyById && studyById !== hoveredStudy) {
+        setHoveredStudy(studyById);
+      }
+    } else if (!mousePosition) {
+      setHoveredStudy(null);
+    }
+  }, [hoveredStudyId, studies, mousePosition, hoveredStudy]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -99,25 +115,31 @@ export const AIStudyRenderer = ({
 
     ctx.clearRect(0, 0, width, height);
 
-    studies.forEach((study) => {
+    studies.forEach((study, index) => {
       if (study.visible === false) return;
       
       const isHovered = hoveredStudy === study;
+      const studyNumber = study.id ?? index + 1;
       
       if ('points' in study) {
-        drawLine(ctx, study as AIStudyLine, canvasManager, candles, isHovered);
+        drawLine(ctx, study as AIStudyLine, canvasManager, candles, isHovered, studyNumber);
       } else {
-        drawZone(ctx, study as AIStudyZone, canvasManager, candles, isHovered);
+        drawZone(ctx, study as AIStudyZone, canvasManager, candles, isHovered, studyNumber);
       }
     });
   }, [canvasManager, candles, studies, width, height, hoveredStudy]);
+
+  useEffect(() => {
+    onStudyHover(hoveredStudy);
+  }, [hoveredStudy, onStudyHover]);
 
   const drawLine = (
     ctx: CanvasRenderingContext2D,
     study: AIStudyLine,
     manager: CanvasManager,
     candles: Candle[],
-    isHovered: boolean
+    isHovered: boolean,
+    studyNumber: number
   ) => {
     const [point1, point2] = study.points;
     
@@ -146,7 +168,7 @@ export const AIStudyRenderer = ({
 
     const iconX = Math.min(x1, x2);
     const iconY = Math.min(y1, y2) - AI_ICON_SIZE - AI_ICON_PADDING;
-    drawAIIcon(ctx, iconX, iconY);
+    drawAIIcon(ctx, iconX, iconY, studyNumber);
   };
 
   const drawZone = (
@@ -154,7 +176,8 @@ export const AIStudyRenderer = ({
     study: AIStudyZone,
     manager: CanvasManager,
     candles: Candle[],
-    isHovered: boolean
+    isHovered: boolean,
+    studyNumber: number
   ) => {
     const startIndex = candles.findIndex(c => c.timestamp >= study.startTimestamp);
     const endIndex = candles.findIndex(c => c.timestamp >= study.endTimestamp);
@@ -177,10 +200,10 @@ export const AIStudyRenderer = ({
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
     ctx.restore();
 
-    drawAIIcon(ctx, x1 + AI_ICON_PADDING, y1 + AI_ICON_PADDING);
+    drawAIIcon(ctx, x1 + AI_ICON_PADDING, y1 + AI_ICON_PADDING, studyNumber);
   };
 
-  const drawAIIcon = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
+  const drawAIIcon = (ctx: CanvasRenderingContext2D, x: number, y: number, studyNumber: number) => {
     ctx.save();
     
     ctx.fillStyle = 'rgba(138, 43, 226, 0.9)';
@@ -193,6 +216,22 @@ export const AIStudyRenderer = ({
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('AI', x + AI_ICON_SIZE / 2, y + AI_ICON_SIZE / 2);
+    
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.fillRect(x + AI_ICON_SIZE + 2, y, 18, AI_ICON_SIZE);
+    
+    ctx.strokeStyle = 'rgba(138, 43, 226, 0.9)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + AI_ICON_SIZE + 2, y, 18, AI_ICON_SIZE);
+
+    ctx.fillStyle = 'rgba(138, 43, 226, 0.9)';
+    ctx.font = 'bold 11px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${studyNumber}`, x + AI_ICON_SIZE + 11, y + AI_ICON_SIZE / 2);
     
     ctx.restore();
   };

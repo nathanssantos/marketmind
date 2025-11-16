@@ -1,8 +1,8 @@
 # 📊 MarketMind - Project Status
 
 > **Last Updated:** November 16, 2025  
-> **Current Version:** 0.14.0 (Production)  
-> **Current Branch:** `develop`  
+> **Current Version:** 0.14.1 (Production)  
+> **Current Branch:** `main`  
 > **Current Phase:** All Phases Complete! 🎉
 
 ---
@@ -28,18 +28,16 @@ Phase 14: Internationalization  ████████████████
 
 **Overall Project Completion:** 100% (14/14 phases complete) 🚀
 
-**Status:** Production ready! All 581 tests passing with 90.62% coverage. Complete feature set including UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI study tooltips, and **multi-language support (EN, PT, ES)**.
+**Status:** Production ready! All 581 tests passing with 90.62% coverage. Complete feature set including UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI study tooltips, **multi-language support (EN, PT, ES, FR)**, and **automatic data migrations**.
 
-**Latest Release (v0.14.0):**
-- ✅ Complete internationalization with i18next + react-i18next
-- ✅ 3 languages: English (default), Portuguese, Spanish
-- ✅ 250+ translation keys covering all components
-- ✅ Automatic language detection from browser/system
-- ✅ Language selector in Settings → General
-- ✅ All UI components fully translated
-- ✅ Persistent language preference in localStorage
-- ✅ All JSX comments removed for cleaner codebase
-- ✅ Test suite updated for English error messages
+**Latest Release (v0.14.1):**
+- ✅ Moving averages data migration system
+- ✅ Automatic conversion of legacy SMA to EMA configurations
+- ✅ One-time migration with status tracking
+- ✅ Fixes incorrect "SMA" labels (now correctly shows "EMA")
+- ✅ TypeScript compilation fixes
+- ✅ Password input compatibility improvements
+- ✅ All 581 tests passing (100% pass rate)
 - ✅ 90.62% code coverage (exceeded target!)
 
 ---
@@ -1691,6 +1689,32 @@ package.json                                  ✅ (version 0.12.0)
 ---
 
 ## 🔄 Recent Changes
+
+### November 16, 2025 - v0.14.1 Release: Moving Averages Migration 🔄
+- 🎉 **v0.14.1 Released to Production**
+  - Fixed TypeScript compilation errors
+  - Implemented moving averages data migration
+  - Automatic SMA to EMA conversion
+  - All tests passing (581/581)
+  
+- 🔧 **Data Migration System**
+  - migrateMovingAverages() function added to migration.ts
+  - Converts legacy `type: 'SMA'` to `type: 'EMA'` in localStorage
+  - One-time migration with movingAveragesMigrated flag
+  - Handles missing, empty, or invalid configurations gracefully
+  - Logs all migration activities for debugging
+  
+- 🐛 **Bug Fixes**
+  - Fixed TypeScript error in migration.ts (simplified function signature)
+  - Fixed password-input.tsx type compatibility with Chakra UI
+  - Updated migration tests for partial failure scenarios
+  - Corrected test expectations for independent migrations
+  
+- 📝 **Documentation**
+  - Updated PROJECT_STATUS.md with v0.14.1 details
+  - Updated CHANGELOG.md with migration features
+  - Updated IMPLEMENTATION_PLAN.md completion status
+  - Version bump in package.json (0.14.1)
 
 ### November 16, 2025 - v0.14.0 Release: Complete Internationalization 🌍
 - 🎉 **v0.14.0 Released to Production**
