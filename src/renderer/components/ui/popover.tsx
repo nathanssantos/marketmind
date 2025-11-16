@@ -1,10 +1,6 @@
 import {
-  PopoverArrow,
-  PopoverBody,
-  PopoverContent,
-  PopoverRoot,
-  PopoverTrigger,
-  Portal,
+    Popover as ChakraPopover,
+    Portal,
 } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 
@@ -16,7 +12,6 @@ interface PopoverProps {
   width?: string;
   showArrow?: boolean;
   usePortal?: boolean;
-  zIndex?: number;
 }
 
 export const Popover = ({
@@ -25,21 +20,26 @@ export const Popover = ({
   open,
   onOpenChange,
   width = '320px',
-  showArrow = true,
+  showArrow = false,
   usePortal = true,
-  zIndex = 9999,
 }: PopoverProps) => {
-  const content = (
-    <PopoverContent width={width} zIndex={zIndex}>
-      {showArrow && <PopoverArrow />}
-      <PopoverBody p={0}>{children}</PopoverBody>
-    </PopoverContent>
+  const positioner = (
+    <ChakraPopover.Positioner>
+      <ChakraPopover.Content width={width}>
+        {showArrow && (
+          <ChakraPopover.Arrow>
+            <ChakraPopover.ArrowTip />
+          </ChakraPopover.Arrow>
+        )}
+        <ChakraPopover.Body p={0}>{children}</ChakraPopover.Body>
+      </ChakraPopover.Content>
+    </ChakraPopover.Positioner>
   );
 
   return (
-    <PopoverRoot open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      {usePortal ? <Portal>{content}</Portal> : content}
-    </PopoverRoot>
+    <ChakraPopover.Root open={open} onOpenChange={onOpenChange}>
+      <ChakraPopover.Trigger asChild>{trigger}</ChakraPopover.Trigger>
+      {usePortal ? <Portal>{positioner}</Portal> : positioner}
+    </ChakraPopover.Root>
   );
 };

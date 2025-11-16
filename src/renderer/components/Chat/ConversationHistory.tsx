@@ -50,6 +50,7 @@ export const ConversationHistory = () => {
     <Popover
       open={open}
       onOpenChange={(e) => setOpen(e.open)}
+      showArrow={false}
       trigger={
         <IconButton
           aria-label="Conversation history"
