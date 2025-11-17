@@ -5,9 +5,11 @@ import { Select } from '@/renderer/components/ui/select';
 import { Slider } from '@/renderer/components/ui/slider';
 import { DEFAULT_AI_SETTINGS } from '@/renderer/constants/defaults';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
+import { useCustomPrompts } from '@/renderer/hooks/useCustomPrompts';
 import { useSecureStorage } from '@/renderer/hooks/useSecureStorage';
 import { useAIStore } from '@/renderer/store';
 import {
+  Accordion,
   Box,
   Flex,
   Separator,
@@ -19,6 +21,7 @@ import type { AIProviderType } from '@shared/types';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HiArrowPath } from 'react-icons/hi2';
+import { PromptEditor } from './PromptEditor';
 
 type AIProvider = 'openai' | 'anthropic' | 'gemini';
 
@@ -56,6 +59,17 @@ export const AIConfigTab = () => {
     setApiKey: setSecureApiKey,
     getApiKey,
   } = useSecureStorage();
+
+  const {
+    getChartAnalysisPrompt,
+    getChatPrompt,
+    setChartAnalysisPrompt,
+    setChatPrompt,
+    resetChartAnalysisPrompt,
+    resetChatPrompt,
+    getDefaultChartAnalysisPrompt,
+    getDefaultChatPrompt,
+  } = useCustomPrompts();
 
   const [apiKeys, setApiKeys] = useState<Record<AIProvider, string>>({
     openai: '',
@@ -298,6 +312,54 @@ export const AIConfigTab = () => {
           />
         </Field>
       </Box>
+
+      <Separator />
+
+      <Accordion.Root collapsible defaultValue={[]}>
+        <Accordion.Item value="chart-analysis">
+          <Accordion.ItemTrigger py={3} justifyContent="space-between" alignItems="center">
+            <Text fontWeight="medium" fontSize="sm">
+              {t('settings.prompt.chartAnalysisPrompt')}
+            </Text>
+            <Accordion.ItemIndicator />
+          </Accordion.ItemTrigger>
+          <Accordion.ItemContent>
+            <Box pt={4}>
+              <PromptEditor
+                value={getChartAnalysisPrompt()}
+                defaultValue={getDefaultChartAnalysisPrompt()}
+                onChange={setChartAnalysisPrompt}
+                onReset={resetChartAnalysisPrompt}
+                label={t('settings.prompt.chartAnalysisPrompt')}
+                description={t('settings.prompt.chartAnalysisDescription')}
+                placeholder={t('settings.prompt.jsonPlaceholder')}
+              />
+            </Box>
+          </Accordion.ItemContent>
+        </Accordion.Item>
+
+        <Accordion.Item value="chat">
+          <Accordion.ItemTrigger py={3} justifyContent="space-between" alignItems="center">
+            <Text fontWeight="medium" fontSize="sm">
+              {t('settings.prompt.chatPrompt')}
+            </Text>
+            <Accordion.ItemIndicator />
+          </Accordion.ItemTrigger>
+          <Accordion.ItemContent>
+            <Box pt={4}>
+              <PromptEditor
+                value={getChatPrompt()}
+                defaultValue={getDefaultChatPrompt()}
+                onChange={setChatPrompt}
+                onReset={resetChatPrompt}
+                label={t('settings.prompt.chatPrompt')}
+                description={t('settings.prompt.chatDescription')}
+                placeholder={t('settings.prompt.jsonPlaceholder')}
+              />
+            </Box>
+          </Accordion.ItemContent>
+        </Accordion.Item>
+      </Accordion.Root>
     </Stack>
   );
 };
