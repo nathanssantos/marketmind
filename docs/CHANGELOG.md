@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Application Toolbar**
+  - New toolbar component positioned below header with all chart controls
+  - Symbol selector with compact size and borderless design
+  - Timeframe selector with visual feedback
+  - Chart type switcher (candlestick/line)
+  - Display toggles (volume, grid, current price)
+  - Moving averages indicators with color-coded borders
+  - Horizontal scroll support for responsive layouts
+  - Portal-based dropdown rendering to prevent clipping
+  - Toolbar height: 56px, total header+toolbar: 116px
+
+- **Select Component Enhancement**
+  - Added `size` prop with `xs`, `sm`, `md`, `lg` variants
+  - Portal-based dropdown positioning for proper z-index handling
+  - Borderless variant with transparent background
+  - Responsive font sizes and padding per size variant
+  - Dynamic dropdown positioning based on trigger element
+  - Improved hover states and visual feedback
+
 - **Settings Immediate Application**
   - New `useDebounceCallback` hook for debounced state updates
   - Centralized defaults in `src/renderer/constants/defaults.ts`
@@ -32,6 +51,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - studyDataId tracking in conversation metadata
 
 ### Changed
+- **Layout Structure**
+  - MainLayout now starts at 116px from top (header + toolbar)
+  - Removed ChartControls from left sidebar overlay
+  - Chart controls integrated into main toolbar
+  - Cleaner, more professional interface with better space utilization
+
 - **Settings Dialog Behavior**
   - Removed Save/Cancel buttons from settings dialog footer
   - All settings apply immediately with debounce

@@ -1,10 +1,9 @@
-import { Menu } from '@chakra-ui/react';
+import { Menu, Portal } from '@chakra-ui/react';
+import type { ReactNode } from 'react';
 import { LuEye, LuEyeOff, LuTrash2 } from 'react-icons/lu';
 
 interface ChartContextMenuProps {
-  isOpen: boolean;
-  position: { x: number; y: number };
-  onClose: () => void;
+  children: ReactNode;
   onDeleteStudies: () => void;
   onToggleStudiesVisibility: () => void;
   hasStudies: boolean;
@@ -12,50 +11,63 @@ interface ChartContextMenuProps {
 }
 
 export const ChartContextMenu = ({
-  isOpen,
-  position,
-  onClose,
+  children,
   onDeleteStudies,
   onToggleStudiesVisibility,
   hasStudies,
   studiesVisible,
 }: ChartContextMenuProps) => {
-  if (!isOpen) return null;
-
   return (
-    <Menu.Root open={isOpen} onOpenChange={({ open }) => !open && onClose()}>
-      <Menu.Positioner>
-        <Menu.Content
-          style={{
-            position: 'fixed',
-            left: `${position.x}px`,
-            top: `${position.y}px`,
-          }}
-        >
-          <Menu.Item
-            value="toggle-studies"
-            onClick={onToggleStudiesVisibility}
-            disabled={!hasStudies}
-            css={{
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {studiesVisible ? <LuEyeOff /> : <LuEye />}
-            {studiesVisible ? 'Hide AI Studies' : 'Show AI Studies'}
-          </Menu.Item>
-          <Menu.Item
-            value="delete-studies"
-            onClick={onDeleteStudies}
-            disabled={!hasStudies}
-            css={{
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <LuTrash2 />
-            Delete AI Studies
-          </Menu.Item>
-        </Menu.Content>
-      </Menu.Positioner>
+    <Menu.Root>
+      <Menu.ContextTrigger asChild>
+        {children}
+      </Menu.ContextTrigger>
+      <Portal>
+        <Menu.Positioner>
+          <Menu.Content>
+            <Menu.Item
+              value="toggle-studies"
+              onClick={onToggleStudiesVisibility}
+              disabled={!hasStudies}
+              padding="8px 12px"
+              gap="8px"
+              cursor="pointer"
+              display="flex"
+              alignItems="center"
+              whiteSpace="nowrap"
+              _hover={{
+                bg: 'gray.100',
+                _dark: {
+                  bg: 'gray.700',
+                },
+              }}
+            >
+              {studiesVisible ? <LuEyeOff /> : <LuEye />}
+              {studiesVisible ? 'Hide AI Studies' : 'Show AI Studies'}
+            </Menu.Item>
+            <Menu.Item
+              value="delete-studies"
+              onClick={onDeleteStudies}
+              disabled={!hasStudies}
+              padding="8px 12px"
+              gap="8px"
+              cursor="pointer"
+              display="flex"
+              alignItems="center"
+              whiteSpace="nowrap"
+              _hover={{
+                bg: 'gray.100',
+                _dark: {
+                  bg: 'gray.700',
+                },
+              }}
+            >
+              <LuTrash2 />
+              Delete AI Studies
+            </Menu.Item>
+          </Menu.Content>
+        </Menu.Positioner>
+      </Portal>
     </Menu.Root>
   );
 };

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { HiChevronRight, HiPlus } from 'react-icons/hi2';
 import { useChartContext } from '../../context/ChartContext';
 import { useAIStore } from '../../store/aiStore';
+import { TooltipWrapper } from '../ui/Tooltip';
 import { ConversationHistory } from './ConversationHistory';
 import { MessageInput } from './MessageInput';
 import { MessageList } from './MessageList';
@@ -57,23 +58,27 @@ export const ChatSidebar = ({ width, isOpen, onToggle }: ChatSidebarProps) => {
           )}
         </Flex>
         <Flex align="center" gap={1}>
-          <IconButton
-            aria-label={t('chat.newConversation')}
-            onClick={handleNewConversation}
-            size="sm"
-            variant="ghost"
-          >
-            <HiPlus />
-          </IconButton>
+          <TooltipWrapper label={t('chat.newConversation')} showArrow>
+            <IconButton
+              aria-label={t('chat.newConversation')}
+              onClick={handleNewConversation}
+              size="sm"
+              variant="ghost"
+            >
+              <HiPlus />
+            </IconButton>
+          </TooltipWrapper>
           <ConversationHistory />
-          <IconButton
-            aria-label={t('chat.closeChat')}
-            onClick={onToggle}
-            size="sm"
-            variant="ghost"
-          >
-            <HiChevronRight />
-          </IconButton>
+          <TooltipWrapper label={t('chat.closeChat')} showArrow>
+            <IconButton
+              aria-label={t('chat.closeChat')}
+              onClick={onToggle}
+              size="sm"
+              variant="ghost"
+            >
+              <HiChevronRight />
+            </IconButton>
+          </TooltipWrapper>
         </Flex>
       </Flex>
 
