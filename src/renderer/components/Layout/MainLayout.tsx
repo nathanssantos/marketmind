@@ -8,6 +8,7 @@ import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import { ChatSidebar } from '../Chat/ChatSidebar';
 import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
 import { SettingsDialog } from '../Settings/SettingsDialog';
+import { TooltipWrapper } from '../ui/Tooltip';
 import { Header } from './Header';
 
 interface MainLayoutProps {
@@ -90,7 +91,7 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
       
       <Flex
         position="fixed"
-        top="60px"
+        top="116px"
         left={0}
         right={0}
         bottom={0}
@@ -126,19 +127,21 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
         )}
 
         {!isChatOpen && (
-          <IconButton
-            aria-label={t('common.openChat')}
-            onClick={toggleChat}
-            position="fixed"
-            right={4}
-            bottom={4}
-            colorPalette="blue"
-            borderRadius="full"
-            size="lg"
-            zIndex={100}
-          >
-            <HiChevronLeft />
-          </IconButton>
+          <TooltipWrapper label={t('common.openChat')} showArrow placement="left">
+            <IconButton
+              aria-label={t('common.openChat')}
+              onClick={toggleChat}
+              position="fixed"
+              right={4}
+              bottom={4}
+              colorPalette="blue"
+              borderRadius="full"
+              size="lg"
+              zIndex={100}
+            >
+              <HiChevronLeft />
+            </IconButton>
+          </TooltipWrapper>
         )}
       </Flex>
 

@@ -1,4 +1,4 @@
-import { Box, ChakraProvider, Text as ChakraText, IconButton, Stack, Toaster } from '@chakra-ui/react';
+import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { Candle } from '@shared/types';
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
@@ -6,13 +6,12 @@ import { useTranslation } from 'react-i18next';
 import { HiX } from 'react-icons/hi';
 import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
-import { ChartControls } from './components/Chart/ChartControls';
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
 import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { MainLayout } from './components/Layout/MainLayout';
+import { Toolbar } from './components/Layout/Toolbar';
 import { OnboardingDialog } from './components/Onboarding/OnboardingDialog';
-import { SymbolSelector } from './components/SymbolSelector';
 import { ErrorMessage } from './components/ui/ErrorMessage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
@@ -296,6 +295,24 @@ function AppContent(): ReactElement {
 
   return (
     <>
+      <Toolbar
+        marketService={marketService}
+        symbol={symbol}
+        timeframe={timeframe}
+        chartType={chartType}
+        showVolume={showVolume}
+        showGrid={showGrid}
+        showCurrentPriceLine={showCurrentPriceLine}
+        movingAverages={movingAverages}
+        onSymbolChange={setSymbol}
+        onTimeframeChange={setTimeframe}
+        onChartTypeChange={setChartType}
+        onShowVolumeChange={setShowVolume}
+        onShowGridChange={setShowGrid}
+        onShowCurrentPriceLineChange={setShowCurrentPriceLine}
+        onMovingAveragesChange={setMovingAverages}
+      />
+
       <MainLayout 
         onOpenSymbolSelector={() => {}}
         advancedConfig={advancedConfig}
@@ -313,39 +330,6 @@ function AppContent(): ReactElement {
           advancedConfig={advancedConfig}
           setAdvancedConfig={setAdvancedConfig}
         />
-        <Box position="absolute" top={4} right={4} zIndex={10}>
-        <SymbolSelector
-          marketService={marketService}
-          value={symbol}
-          onChange={setSymbol}
-        />
-      </Box>
-
-          <Stack 
-            position="absolute" 
-            top={4} 
-            left={4} 
-            gap={4} 
-            zIndex={10}
-            userSelect="none"
-          >
-            <ChartControls
-              showVolume={showVolume}
-              showGrid={showGrid}
-              showCurrentPriceLine={showCurrentPriceLine}
-              chartType={chartType}
-              movingAverages={movingAverages}
-              advancedConfig={advancedConfig}
-              timeframe={timeframe}
-              onShowVolumeChange={setShowVolume}
-              onShowGridChange={setShowGrid}
-              onShowCurrentPriceLineChange={setShowCurrentPriceLine}
-              onChartTypeChange={setChartType}
-              onMovingAveragesChange={setMovingAverages}
-              onAdvancedConfigChange={setAdvancedConfig}
-              onTimeframeChange={setTimeframe}
-            />
-          </Stack>
           
           {loading && (
             <LoadingSpinner message={t('app.loadingMarketData')} />

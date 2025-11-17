@@ -4,7 +4,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.14.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.15.0-blue.svg)
 ![Tests](https://img.shields.io/badge/tests-592%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-90.62%25-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
@@ -25,11 +25,17 @@
 - 📊 **Volume Visualization**: Volume bars synchronized with candlesticks
 - 📉 **Moving Averages**: MA-9, MA-20, MA-50, MA-100, MA-200 (configurable)
 - 🎨 **Grid System**: Dynamic grid with price and time labels
-- 🖱️ **Interactive Controls**: Advanced chart settings panel with pin functionality
+- 🎛️ **Application Toolbar**: Centralized chart controls with professional design
+- 🔤 **Symbol Selector**: Compact search with borderless design
+- ⏱️ **Timeframe Selector**: 9 square icon buttons (1m to 1M)
+- 📊 **Chart Type Switcher**: Toggle between candlestick and line
+- �️ **Display Toggles**: Volume, grid, and current price line controls
+- 📈 **Indicator Buttons**: Moving averages with color-coded borders
+- �🖱️ **Interactive Controls**: Advanced chart settings panel with pin functionality
 - ⚙️ **Advanced Settings**: 9 configurable parameters (margins, spacing, grid, etc.)
 - 💾 **Persistent Settings**: All configurations saved with localStorage
 - 🎯 **Smart Tooltip**: Hover to see OHLCV data with intelligent positioning
-- ⏱️ **Timeframe Selector**: 9 timeframes from 1 minute to 1 month
+- 💬 **Contextual Tooltips**: All buttons have arrows for better UX
 - 🖱️ **Pan & Zoom**: Mouse wheel zoom, drag to pan (horizontal and vertical)
 - 🎨 **Dynamic Cursors**: Context-aware cursor feedback
 - 🌓 **Dark/Light Themes**: Full Chakra UI theme support with 24 chart-specific semantic tokens
@@ -250,7 +256,7 @@ This project is in active development. Contributions are welcome!
 
 See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the detailed project roadmap.
 
-### Current Status (v0.14.0)
+### Current Status (v0.15.0)
 
 **Phase 1: Initial Setup** ✅ COMPLETED (100%)
 - [x] Vite + Electron + React + TypeScript configuration
@@ -401,6 +407,21 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] Persistent language preference in localStorage
 - [x] All JSX comments removed for cleaner code
 - [x] Test suite updated for English error messages
+
+**Phase 15: Application Toolbar** ✅ COMPLETED (100%)
+- [x] Toolbar component with horizontal layout (56px height)
+- [x] Symbol selector with compact size and borderless design
+- [x] Timeframe selector with square IconButtons and tooltips
+- [x] Chart type switcher (candlestick/line icons)
+- [x] Display toggles (volume, grid, current price line)
+- [x] Moving averages indicators with color-coded borders
+- [x] Portal-based dropdown rendering
+- [x] Size prop for Select component (xs, sm, md, lg)
+- [x] Variant prop for Select (bordered/borderless)
+- [x] Visual separators between sections
+- [x] Horizontal scroll with custom scrollbar
+- [x] Tooltips with arrows on all buttons
+- [x] MainLayout adjusted to 116px offset (header + toolbar)
 
 ### MVP (v1.0) - Target Q1 2025
 - [x] Candlestick chart rendering
