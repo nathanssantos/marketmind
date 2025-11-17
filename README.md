@@ -9,7 +9,7 @@
 ![Coverage](https://img.shields.io/badge/coverage-90.62%25-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
-![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES-success.svg)
+![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES%20%7C%20FR-success.svg)
 
 </div>
 

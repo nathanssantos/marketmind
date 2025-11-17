@@ -1226,6 +1226,8 @@ export class UpdateManager {
   - Created src/renderer/locales/pt/translation.json (Portuguese)
   - Created src/renderer/locales/es/translation.json (Spanish)
   - Created src/renderer/locales/fr/translation.json (French)
+  - Created src/renderer/locales/es/translation.json (Spanish)
+  - Created src/renderer/locales/fr/translation.json (French)
   - Comprehensive translations for all UI sections (255 keys)
 
 #### 14.2 Component Internationalization ✅
@@ -1296,7 +1298,7 @@ export class UpdateManager {
 - `package.json` - Added i18n dependencies
 
 #### Production Status ✅
-- Multi-language support (English, Portuguese, Spanish)
+- Multi-language support (English, Portuguese, Spanish, French)
 - Auto language detection from browser/system
 - Manual language selector in settings
 - Persistent language preference in localStorage
@@ -1795,7 +1797,7 @@ Next step: implement the CandlestickRenderer.
   - ✅ Removed debug logs from production code
 - **Phase 14:** Internationalization (i18n) (100%)
   - ✅ i18next integration
-  - ✅ 3 languages support (English, Portuguese, Spanish)
+  - ✅ 4 languages support (English, Portuguese, Spanish, French)
   - ✅ Auto language detection
   - ✅ Language selector in settings
   - ✅ All UI components translated
@@ -1808,7 +1810,7 @@ Next step: implement the CandlestickRenderer.
 - ✅ 533 tests passing (100% pass rate)
 - ✅ 90.59% code coverage (exceeded 80% target!)
 - ✅ All MVP features implemented
-- ✅ Multi-language support (EN, PT, ES)
+- ✅ Multi-language support (EN, PT, ES, FR)
 - ✅ Comprehensive documentation
 - ✅ Production-ready builds (macOS, Windows)
 - ✅ Auto-update system functional
@@ -1844,7 +1846,7 @@ This plan provides a complete roadmap to develop MarketMind from scratch to laun
 - ✅ Secure encrypted storage for API keys
 - ✅ Auto-update system via GitHub Releases
 - ✅ 581 tests with 90.62% coverage
-- ✅ Multi-language support (EN, PT, ES)
+- ✅ Multi-language support (EN, PT, ES, FR)
 - ✅ Comprehensive documentation
 - ✅ Production builds for macOS and Windows
 

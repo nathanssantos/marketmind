@@ -1,7 +1,9 @@
 import { Button } from '@/renderer/components/ui/button';
 import { Slider } from '@/renderer/components/ui/slider';
 import { Switch } from '@/renderer/components/ui/switch';
+import { DEFAULT_AUTO_UPDATE_SETTINGS } from '@/renderer/constants/defaults';
 import { useAutoUpdate } from '@/renderer/hooks/useAutoUpdate';
+import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
 import { useAIStore } from '@/renderer/store';
 import { Box, Flex, Separator, Stack, Text } from '@chakra-ui/react';
@@ -13,11 +15,13 @@ export const GeneralTab = () => {
   const { t } = useTranslation();
   const { conversations, importConversation, clearAll } = useAIStore();
   
-  const [autoCheckUpdates, setAutoCheckUpdates] = useLocalStorage('autoCheckUpdates', true);
-  const [autoDownloadUpdates, setAutoDownloadUpdates] = useLocalStorage('autoDownloadUpdates', true);
-  const [updateCheckInterval, setUpdateCheckInterval] = useLocalStorage('updateCheckInterval', 24);
+  const [autoCheckUpdates, setAutoCheckUpdates] = useLocalStorage<boolean>('autoCheckUpdates', DEFAULT_AUTO_UPDATE_SETTINGS.autoCheckUpdates);
+  const [autoDownloadUpdates, setAutoDownloadUpdates] = useLocalStorage<boolean>('autoDownloadUpdates', DEFAULT_AUTO_UPDATE_SETTINGS.autoDownloadUpdates);
+  const [updateCheckInterval, setUpdateCheckInterval] = useLocalStorage<number>('updateCheckInterval', DEFAULT_AUTO_UPDATE_SETTINGS.updateCheckInterval);
   
   const { status, checkForUpdates, startAutoCheck, stopAutoCheck } = useAutoUpdate();
+
+  const debouncedSetUpdateCheckInterval = useDebounceCallback(setUpdateCheckInterval, 300);
 
   const handleExportAll = () => {
     const data = {
@@ -80,8 +84,8 @@ export const GeneralTab = () => {
   };
 
   const handleIntervalChange = (value: number[]) => {
-    const interval = value[0] ?? 24;
-    setUpdateCheckInterval(interval);
+    const interval = value[0] ?? DEFAULT_AUTO_UPDATE_SETTINGS.updateCheckInterval;
+    debouncedSetUpdateCheckInterval(interval);
     if (autoCheckUpdates) {
       stopAutoCheck();
       startAutoCheck(interval);
@@ -90,6 +94,17 @@ export const GeneralTab = () => {
 
   const handleCheckNow = () => {
     checkForUpdates();
+  };
+
+  const handleResetAutoUpdate = () => {
+    setAutoCheckUpdates(DEFAULT_AUTO_UPDATE_SETTINGS.autoCheckUpdates);
+    setAutoDownloadUpdates(DEFAULT_AUTO_UPDATE_SETTINGS.autoDownloadUpdates);
+    setUpdateCheckInterval(DEFAULT_AUTO_UPDATE_SETTINGS.updateCheckInterval);
+    if (DEFAULT_AUTO_UPDATE_SETTINGS.autoCheckUpdates) {
+      startAutoCheck(DEFAULT_AUTO_UPDATE_SETTINGS.updateCheckInterval);
+    } else {
+      stopAutoCheck();
+    }
   };
 
   return (
@@ -169,6 +184,14 @@ export const GeneralTab = () => {
           >
             <HiArrowPath />
             {t('settings.autoUpdate.checkNow')}
+          </Button>
+
+          <Button 
+            variant="outline" 
+            onClick={handleResetAutoUpdate}
+          >
+            <HiArrowPath />
+            {t('settings.resetToDefaults')}
           </Button>
         </Stack>
       </Box>

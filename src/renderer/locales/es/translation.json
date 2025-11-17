@@ -47,6 +47,7 @@
   },
   "settings": {
     "title": "Configuración",
+    "resetToDefaults": "Restaurar Valores Predeterminados",
     "tabs": {
       "general": "General",
       "chart": "Gráfico",
@@ -90,6 +91,8 @@
       "checkNow": "Buscar Actualizaciones Ahora"
     },
     "chart": {
+      "tipsRealtime": "Los cambios se aplican inmediatamente con un debounce de 300ms",
+      "tipsReset": "Haga clic en 'Restaurar Valores Predeterminados' para restaurar la configuración predeterminada del gráfico",
       "chartDimensions": "Dimensiones del Gráfico",
       "rightMargin": "Margen Derecho",
       "rightMarginHelper": "Espacio reservado en el lado derecho del gráfico",
@@ -116,6 +119,11 @@
       "bottomPadding": "Relleno Inferior",
       "leftPadding": "Relleno Izquierdo",
       "rightPadding": "Relleno Derecho"
+    },
+    "ai": {
+      "tipsEncryption": "Las claves de API están cifradas y almacenadas de forma segura usando cifrado a nivel del SO",
+      "tipsTemperature": "Temperatura más baja (0-0,5) para análisis técnico, más alta (0,7-1,5) para ideas creativas",
+      "tipsFree": "Gemini 2.0 Flash Exp es GRATUITO y no requiere clave de API"
     },
     "news": {
       "newsApiKey": "Clave de API",

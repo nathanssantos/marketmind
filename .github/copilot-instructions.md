@@ -344,7 +344,7 @@ Track progress in `IMPLEMENTATION_PLAN.md`. Update this section when starting ne
 
 ### v0.14.0 Release Highlights
 - Complete i18n coverage (all components internationalized)
-- 250+ translation keys in EN/PT/ES
+- 250+ translation keys in EN/PT/ES/FR
 - ChartSettingsTab, NewsConfigTab, AIConfigTab fully translated
 - All selectors and aria-labels internationalized
 - All JSX comments removed for cleaner codebase
@@ -355,7 +355,7 @@ Track progress in `IMPLEMENTATION_PLAN.md`. Update this section when starting ne
 - 581 passing tests (100% pass rate)
 - 90.62% code coverage (exceeded 80% target!)
 - All MVP features implemented
-- Complete multi-language support (EN, PT, ES)
+- Complete multi-language support (EN, PT, ES, FR)
 - Production-ready builds (macOS, Windows)
 - Auto-update system functional
 - Performance optimized
