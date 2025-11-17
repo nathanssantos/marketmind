@@ -32,7 +32,8 @@
 - ⏱️ **Timeframe Selector**: 9 timeframes from 1 minute to 1 month
 - 🖱️ **Pan & Zoom**: Mouse wheel zoom, drag to pan (horizontal and vertical)
 - 🎨 **Dynamic Cursors**: Context-aware cursor feedback
-- 🌓 **Dark/Light Themes**: Full Chakra UI theme support
+- 🌓 **Dark/Light Themes**: Full Chakra UI theme support with 24 chart-specific semantic tokens
+- 🎨 **Theme Integration**: Complete color system integration (all chart colors from theme)
 - 🔌 **Real Market Data**: Integration with Binance API for live cryptocurrency data
 - 📊 **Symbol Selector**: Search and select from 8 popular cryptocurrencies or search entire catalog
 - 🔄 **API Fallback**: Automatic failover to CoinGecko if primary provider fails
@@ -158,6 +159,17 @@ npm run test:coverage
 **Production Ready:** All features tested and verified! 🚀
 
 See [Testing Documentation](./docs/IMPLEMENTATION_PLAN.md#phase-11-testing--quality-assurance-) for details.
+
+## 🎨 Theme System
+
+MarketMind features a comprehensive theme color system with full light/dark mode support:
+
+- **24+ Semantic Tokens**: Chart-specific colors with light/dark variants
+- **Single Source of Truth**: All colors defined in theme configuration
+- **Reactive Theming**: Chart responds automatically to theme changes
+- **Type Safety**: Full TypeScript support with `ChartThemeColors` interface
+
+See [docs/THEME_COLORS.md](docs/THEME_COLORS.md) for detailed theme documentation.
 
 ## 📦 Production Build
 

@@ -634,10 +634,16 @@ package.json                           ✅ (added @anthropic-ai/sdk, @google/gen
   - Global CSS for inputs/selects
   - Padding standards (px: 3 for inputs, px: 2 for badges)
   - Select dropdown background fix
+  - **24 chart semantic tokens** (chart.background, chart.bullish, chart.bearish, etc.)
+  - **getChartColors() helper** - Single source of truth for chart colors
+  - **useChartColors() hook** - Reactive theme-aware chart rendering
+  - **Light theme palette** for all chart elements (candlesticks, volume, grid, MAs)
+  - **AI study colors** with light/dark variants (8 study types)
   
 - ✅ **ColorModeProvider**
   - localStorage persistence
   - Document class management
+  - data-theme attribute for Chakra UI integration
   - Context-based theme access
   - Toggle function
   - Manual mode setting
@@ -1689,6 +1695,53 @@ package.json                                  ✅ (version 0.12.0)
 ---
 
 ## 🔄 Recent Changes
+
+### November 16, 2025 - Theme Colors Integration 🎨
+- ✨ **Chakra UI Theme Integration (In Progress)**
+  - Complete migration from hardcoded colors to Chakra UI semantic tokens
+  - Created 24 chart-specific semantic tokens with light/dark variants
+  - Implemented `getChartColors(colorMode)` helper as single source of truth
+  - Created `useChartColors()` hook for reactive theme-aware chart rendering
+  - Chart now fully responds to light/dark theme changes
+  
+- 🎨 **Light Theme Development**
+  - Designed complete light theme color palette for charts
+  - Light theme candlesticks (bullish: #16a34a, bearish: #dc2626)
+  - Light theme volume bars with transparency
+  - Light theme grid, axes, and labels
+  - Light theme moving averages (3 colors)
+  - Light theme AI study overlays (8 study types)
+  
+- 🔧 **Technical Implementation**
+  - Removed all hardcoded color constants from `chartConfig.ts`
+  - Removed `AI_STUDY_COLORS` from `aiStudy.ts`
+  - Updated 8 chart renderer hooks to use `ChartThemeColors` type
+  - Updated ChartTooltip with semantic tokens (bg.muted, fg, border)
+  - Updated ChartControls and ControlPanel with semantic tokens
+  - Added `data-theme` attribute support to ColorModeProvider
+  - Fixed Canvas API color rendering (requires actual values, not token refs)
+  
+- 📦 **Files Modified**
+  - `src/renderer/theme/index.ts` - Added 24 semantic tokens + getChartColors()
+  - `src/renderer/hooks/useChartColors.tsx` (NEW) - Hook for chart colors
+  - `src/renderer/components/ui/color-mode.tsx` - Added data-theme attribute
+  - `src/renderer/components/Chart/ChartCanvas.tsx` - Uses useChartColors()
+  - `src/renderer/components/Chart/AIStudyRenderer.tsx` - Theme-aware colors
+  - `src/renderer/components/Chart/ChartTooltip.tsx` - Semantic tokens
+  - `src/renderer/components/Chart/ChartControls.tsx` - Semantic tokens
+  - `src/renderer/components/Chart/ControlPanel.tsx` - Semantic tokens
+  - All 8 chart renderer hooks updated (type signatures)
+  - `src/shared/constants/chartConfig.ts` - Removed color constants
+  - `src/shared/types/aiStudy.ts` - Removed color exports
+  
+- ✅ **Testing**
+  - All 592 tests passing (100% pass rate)
+  - No breaking changes
+  - Theme switching works seamlessly across all components
+  
+- 📝 **Git Workflow**
+  - Branch: feature/theme-colors
+  - Status: Ready for PR to develop
 
 ### November 16, 2025 - v0.14.1 Release: Moving Averages Migration 🔄
 - 🎉 **v0.14.1 Released to Production**

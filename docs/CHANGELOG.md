@@ -8,11 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Chakra UI Theme Integration**
+  - Complete theme color integration for all chart components
+  - 24 semantic color tokens with light/dark mode support
+  - `getChartColors()` helper as single source of truth for chart colors
+  - `useChartColors()` hook for reactive theme-aware rendering
+  - Light theme color palette for charts (candlesticks, volume, grid, indicators)
+  - Semantic tokens for UI components (ChartTooltip, ChartControls, ControlPanel)
+  - Theme-aware AI study colors (8 study types with light/dark variants)
+
 - **AI Studies Per-Conversation Isolation**
   - Studies are now isolated per conversation instead of per symbol
   - Each conversation maintains its own set of AI-generated studies
   - Switching conversations correctly loads/clears studies
   - studyDataId tracking in conversation metadata
+
+### Changed
+- **Chart Rendering System**
+  - All chart renderers now use `ChartThemeColors` type instead of `ChartColors`
+  - Canvas rendering now responds to theme changes via `useChartColors()` hook
+  - Removed hardcoded color constants from `chartConfig.ts`
+  - Removed `AI_STUDY_COLORS` export from `aiStudy.ts`
+  - ChartTooltip now uses semantic tokens: `bg.muted`, `fg`, `fg.muted`, `border`
+  - ChartControls and ControlPanel now use semantic tokens for consistent theming
 
 ### Fixed
 - **AI Studies Rendering and Synchronization**
@@ -25,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Bidirectional hover now works correctly across multiple study additions
 - TypeScript compilation error in migration.ts
 - Password input type compatibility with Chakra UI
+- Canvas color rendering now works correctly with Chakra UI semantic tokens
 
 ## [0.14.1] - 2025-11-16
 
