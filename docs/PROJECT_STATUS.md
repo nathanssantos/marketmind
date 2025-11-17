@@ -1638,7 +1638,7 @@ package.json                                  ✅ (version 0.12.0)
 - **News Providers:** 2 (NewsAPI, CryptoPanic)
 - **Market Providers:** 2 (Binance, CoinGecko)
 - **Web Workers:** 1 (movingAverages.worker.ts)
-- **Translation Files:** 3 (EN, PT, ES with 250+ keys each)
+- **Translation Files:** 4 (EN, PT, ES, FR with 250+ keys each)
 - **Lines of Code:** ~13,000+
 
 ### Test Coverage
@@ -1786,7 +1786,7 @@ package.json                                  ✅ (version 0.12.0)
   - AboutTab with features, tech stack, resources
   
 - 📦 **Translation System**
-  - 250+ translation keys in EN/PT/ES
+  - 250+ translation keys in EN/PT/ES/FR
   - Nested translation structures for complex components
   - Organized by feature area (settings, chart, common, etc.)
   - Interpolation support for dynamic values
@@ -2340,7 +2340,7 @@ package.json                                  ✅ (version 0.12.0)
 - [x] Final documentation ✅
 - [x] Complete Phase 14 (Internationalization) ✅
 - [x] i18next integration ✅
-- [x] Multi-language support (EN, PT, ES) ✅
+- [x] Multi-language support (EN, PT, ES, FR) ✅
 - [x] All components internationalized ✅
 - [x] Remove all JSX comments ✅
 - [x] Update test suite for i18n ✅

@@ -8,6 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Application Toolbar**
+  - New toolbar component positioned below header with all chart controls
+  - Symbol selector with compact size and borderless design
+  - Timeframe selector with visual feedback
+  - Chart type switcher (candlestick/line)
+  - Display toggles (volume, grid, current price)
+  - Moving averages indicators with color-coded borders
+  - Horizontal scroll support for responsive layouts
+  - Portal-based dropdown rendering to prevent clipping
+  - Toolbar height: 56px, total header+toolbar: 116px
+
+- **Select Component Enhancement**
+  - Added `size` prop with `xs`, `sm`, `md`, `lg` variants
+  - Portal-based dropdown positioning for proper z-index handling
+  - Borderless variant with transparent background
+  - Responsive font sizes and padding per size variant
+  - Dynamic dropdown positioning based on trigger element
+  - Improved hover states and visual feedback
+
+- **Settings Immediate Application**
+  - New `useDebounceCallback` hook for debounced state updates
+  - Centralized defaults in `src/renderer/constants/defaults.ts`
+  - Reset to Defaults button in all settings tabs
+  - Settings now apply immediately with 300ms debounce (no Save/Cancel needed)
+  - Tips section in Chart and AI settings tabs explaining behavior
+  - Complete internationalization for all new settings features (EN/PT/ES/FR)
+
 - **Chakra UI Theme Integration**
   - Complete theme color integration for all chart components
   - 24 semantic color tokens with light/dark mode support
@@ -24,6 +51,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - studyDataId tracking in conversation metadata
 
 ### Changed
+- **Layout Structure**
+  - MainLayout now starts at 116px from top (header + toolbar)
+  - Removed ChartControls from left sidebar overlay
+  - Chart controls integrated into main toolbar
+  - Cleaner, more professional interface with better space utilization
+
+- **Settings Dialog Behavior**
+  - Removed Save/Cancel buttons from settings dialog footer
+  - All settings apply immediately with debounce
+  - Chart settings: dimensions, candles, grid, padding with 300ms debounce
+  - AI settings: temperature and maxTokens with 300ms debounce
+  - News settings: refreshInterval and maxArticles with 300ms debounce
+  - General settings: updateCheckInterval with 300ms debounce
+  - Dropdowns and switches apply immediately (no debounce)
+  - `useSettingsDialog` hook no longer tracks isDirty state
+
 - **Chart Rendering System**
   - All chart renderers now use `ChartThemeColors` type instead of `ChartColors`
   - Canvas rendering now responds to theme changes via `useChartColors()` hook
@@ -84,7 +127,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Translation Files Enhanced**
-  - Expanded EN/PT/ES translation files with 250+ keys
+  - Expanded EN/PT/ES/FR translation files with 250+ keys
   - Added nested translation structures for complex components
   - Organized translations by feature area (settings, chart, common, etc.)
   - Added interpolation support for dynamic values (versions, percentages)
@@ -102,7 +145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Internationalization (i18n)**
   - Multi-language support using react-i18next
-  - 3 languages available: English (default), Portuguese (Brazil), Spanish
+  - 4 languages available: English (default), Portuguese (Brazil), Spanish, French
   - Automatic language detection from browser/system settings
   - Manual language selector in Settings → General tab
   - Persistent language preference in localStorage

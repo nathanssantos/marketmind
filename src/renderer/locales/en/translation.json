@@ -21,7 +21,8 @@
     "selectModel": "Select Model",
     "openChat": "Open chat",
     "deleteConversation": "Delete conversation",
-    "conversationHistory": "Conversation history"
+    "conversationHistory": "Conversation history",
+    "tips": "Tips"
   },
   "app": {
     "title": "MarketMind",
@@ -47,6 +48,7 @@
   },
   "settings": {
     "title": "Settings",
+    "resetToDefaults": "Reset to Defaults",
     "tabs": {
       "general": "General",
       "chart": "Chart",
@@ -90,6 +92,8 @@
       "checkNow": "Check for Updates Now"
     },
     "chart": {
+      "tipsRealtime": "Changes are applied immediately with a 300ms debounce",
+      "tipsReset": "Click 'Reset to Defaults' to restore default chart settings",
       "chartDimensions": "Chart Dimensions",
       "rightMargin": "Right Margin",
       "rightMarginHelper": "Space reserved on the right side of the chart",
@@ -116,6 +120,11 @@
       "bottomPadding": "Bottom Padding",
       "leftPadding": "Left Padding",
       "rightPadding": "Right Padding"
+    },
+    "ai": {
+      "tipsEncryption": "API keys are encrypted and stored securely using OS-level encryption",
+      "tipsTemperature": "Lower temperature (0-0.5) for technical analysis, higher (0.7-1.5) for creative insights",
+      "tipsFree": "Gemini 2.0 Flash Exp is FREE with no API key required"
     },
     "news": {
       "newsApiKey": "API Key",

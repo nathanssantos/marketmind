@@ -1,9 +1,9 @@
 import { Box } from '@chakra-ui/react';
+import { useChartColors } from '@renderer/hooks/useChartColors';
 import { CHART_CONFIG } from '@shared/constants';
 import type { AIStudy, Candle, Viewport } from '@shared/types';
 import type { ReactElement } from 'react';
 import { useEffect, useState } from 'react';
-import { useChartColors } from '@renderer/hooks/useChartColors';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import { AIStudyRenderer } from './AIStudyRenderer';
 import { ChartContextMenu } from './ChartContextMenu';
@@ -71,15 +71,6 @@ export const ChartCanvas = ({
   const [hoveredAIStudy, setHoveredAIStudy] = useState<AIStudy | null>(null);
   const [isInteracting, setIsInteracting] = useState(false);
   const [interactionTimeout, setInteractionTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [contextMenu, setContextMenu] = useState<{
-    isOpen: boolean;
-    x: number;
-    y: number;
-  }>({
-    isOpen: false,
-    x: 0,
-    y: 0,
-  });
   const [cursor, setCursor] = useState<'crosshair' | 'ns-resize' | 'grab' | 'grabbing'>('crosshair');
   const {
     canvasRef,
@@ -243,31 +234,12 @@ export const ChartCanvas = ({
     setHoveredAIStudy(study);
   };
 
-  const handleContextMenu = (event: React.MouseEvent<HTMLCanvasElement>): void => {
-    event.preventDefault();
-    setContextMenu({
-      isOpen: true,
-      x: event.clientX,
-      y: event.clientY,
-    });
-  };
-
-  const handleCloseContextMenu = (): void => {
-    setContextMenu({
-      isOpen: false,
-      x: 0,
-      y: 0,
-    });
-  };
-
   const handleDeleteStudies = (): void => {
     onDeleteAIStudies?.();
-    handleCloseContextMenu();
   };
 
   const handleToggleStudiesVisibility = (): void => {
     onToggleAIStudiesVisibility?.();
-    handleCloseContextMenu();
   };
 
   const startInteraction = (): void => {
@@ -347,21 +319,27 @@ export const ChartCanvas = ({
       bg={colors.background}
       userSelect="none"
     >
-      <canvas
-        ref={canvasRef}
-        onMouseDown={handleCanvasMouseDown}
-        onMouseMove={handleCanvasMouseMove}
-        onMouseUp={handleCanvasMouseUp}
-        onMouseLeave={handleCanvasMouseLeave}
-        onContextMenu={handleContextMenu}
-        onWheel={handleWheel}
-        style={{
-          width: '100%',
-          height: '100%',
-          cursor,
-          display: 'block',
-        }}
-      />
+      <ChartContextMenu
+        onDeleteStudies={handleDeleteStudies}
+        onToggleStudiesVisibility={handleToggleStudiesVisibility}
+        hasStudies={aiStudies.length > 0}
+        studiesVisible={aiStudiesVisible}
+      >
+        <canvas
+          ref={canvasRef}
+          onMouseDown={handleCanvasMouseDown}
+          onMouseMove={handleCanvasMouseMove}
+          onMouseUp={handleCanvasMouseUp}
+          onMouseLeave={handleCanvasMouseLeave}
+          onWheel={handleWheel}
+          style={{
+            width: '100%',
+            height: '100%',
+            cursor,
+            display: 'block',
+          }}
+        />
+      </ChartContextMenu>
       {manager && !isInteracting && (
         <AIStudyRenderer
           canvasManager={manager}
@@ -382,15 +360,6 @@ export const ChartCanvas = ({
         containerWidth={tooltipData.containerWidth ?? window.innerWidth}
         containerHeight={tooltipData.containerHeight ?? window.innerHeight}
         aiStudy={tooltipData.aiStudy}
-      />
-      <ChartContextMenu
-        isOpen={contextMenu.isOpen}
-        position={{ x: contextMenu.x, y: contextMenu.y }}
-        onClose={handleCloseContextMenu}
-        onDeleteStudies={handleDeleteStudies}
-        onToggleStudiesVisibility={handleToggleStudiesVisibility}
-        hasStudies={aiStudies.length > 0}
-        studiesVisible={aiStudiesVisible}
       />
     </Box>
   );

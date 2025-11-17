@@ -55,7 +55,9 @@ export function SymbolSelector({ marketService, value, onChange }: SymbolSelecto
       isLoading={loading}
       emptyMessage={searchQuery.length >= 2 ? t('symbolSelector.noSymbolsFound') : t('common.typeToSearch')}
       sectionLabel={searchQuery.length < 2 ? t('symbolSelector.popularSymbols') : undefined}
-      minWidth="280px"
+      minWidth="200px"
+      size="sm"
+      variant="borderless"
     />
   );
 }

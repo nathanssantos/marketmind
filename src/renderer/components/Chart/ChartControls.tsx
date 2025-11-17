@@ -1,9 +1,9 @@
-import { Box, Switch as ChakraSwitch, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     HiOutlineChartBar,
-    HiOutlineTrendingUp,
+    HiOutlineCurrencyDollar,
     HiOutlineViewGrid
 } from 'react-icons/hi';
 import { MdCandlestickChart, MdShowChart } from 'react-icons/md';
@@ -93,127 +93,107 @@ export const ChartControls = ({
         />
       </Box>
 
-      <Box>
-        <Text fontSize="xs" color="fg.muted" mb={1} fontWeight="semibold">
-          {t('chart.controls.chartType')}
-        </Text>
-        <HStack gap={2}>
-          <TooltipWrapper label={t('chart.controls.candlestickChart')}>
-            <IconButton
-              size="sm"
-              aria-label={t('chart.controls.candlestickChart')}
-              onClick={() => onChartTypeChange('candlestick')}
-              colorPalette={chartType === 'candlestick' ? 'blue' : 'gray'}
-              variant={chartType === 'candlestick' ? 'solid' : 'outline'}
-              color={chartType === 'candlestick' ? undefined : 'gray.400'}
-            >
-              <MdCandlestickChart />
-            </IconButton>
-          </TooltipWrapper>
-          <TooltipWrapper label={t('chart.controls.lineChart')}>
-            <IconButton
-              size="sm"
-              aria-label={t('chart.controls.lineChart')}
-              onClick={() => onChartTypeChange('line')}
-              colorPalette={chartType === 'line' ? 'blue' : 'gray'}
-              variant={chartType === 'line' ? 'solid' : 'outline'}
-              color={chartType === 'line' ? undefined : 'gray.400'}
-            >
-              <MdShowChart />
-            </IconButton>
-          </TooltipWrapper>
-        </HStack>
-      </Box>
+      <Flex gap={4} wrap="wrap">
+        <Box flex="0 0 auto" minW="100px">
+          <Text fontSize="xs" color="fg.muted" mb={1} fontWeight="semibold">
+            {t('chart.controls.chartType')}
+          </Text>
+          <HStack gap={2}>
+            <TooltipWrapper label={t('chart.controls.candlestickChart')}>
+              <IconButton
+                size="sm"
+                aria-label={t('chart.controls.candlestickChart')}
+                onClick={() => onChartTypeChange('candlestick')}
+                colorPalette={chartType === 'candlestick' ? 'blue' : 'gray'}
+                variant={chartType === 'candlestick' ? 'solid' : 'ghost'}
+              >
+                <MdCandlestickChart />
+              </IconButton>
+            </TooltipWrapper>
+            <TooltipWrapper label={t('chart.controls.lineChart')}>
+              <IconButton
+                size="sm"
+                aria-label={t('chart.controls.lineChart')}
+                onClick={() => onChartTypeChange('line')}
+                colorPalette={chartType === 'line' ? 'blue' : 'gray'}
+                variant={chartType === 'line' ? 'solid' : 'ghost'}
+              >
+                <MdShowChart />
+              </IconButton>
+            </TooltipWrapper>
+          </HStack>
+        </Box>
 
-        <Box>
-          <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="semibold">
+        <Box flex="0 0 auto" minW="120px">
+          <Text fontSize="xs" color="fg.muted" mb={1} fontWeight="semibold">
             {t('chart.controls.display')}
           </Text>
-          <Stack gap={2}>
-            <HStack justify="space-between" gap={3}>
-              <HStack gap={2}>
-                <HiOutlineChartBar size={14} color="currentColor" />
-                <Text fontSize="xs" color="fg">{t('chart.controls.volume')}</Text>
-              </HStack>
-              <ChakraSwitch.Root
+          <HStack gap={2}>
+            <TooltipWrapper label={t('chart.controls.volume')}>
+              <IconButton
                 size="sm"
-                checked={showVolume}
-                onCheckedChange={(e) => onShowVolumeChange(e.checked)}
-                colorPalette="blue"
+                aria-label={t('chart.controls.volume')}
+                onClick={() => onShowVolumeChange(!showVolume)}
+                colorPalette={showVolume ? 'blue' : 'gray'}
+                variant={showVolume ? 'solid' : 'ghost'}
               >
-                <ChakraSwitch.HiddenInput />
-                <ChakraSwitch.Control>
-                  <ChakraSwitch.Thumb />
-                </ChakraSwitch.Control>
-              </ChakraSwitch.Root>
-            </HStack>
-            <HStack justify="space-between" gap={3}>
-              <HStack gap={2}>
-                <HiOutlineViewGrid size={14} color="currentColor" />
-                <Text fontSize="xs" color="fg">{t('chart.controls.grid')}</Text>
-              </HStack>
-              <ChakraSwitch.Root
+                <HiOutlineChartBar />
+              </IconButton>
+            </TooltipWrapper>
+            <TooltipWrapper label={t('chart.controls.grid')}>
+              <IconButton
                 size="sm"
-                checked={showGrid}
-                onCheckedChange={(e) => onShowGridChange(e.checked)}
-                colorPalette="blue"
+                aria-label={t('chart.controls.grid')}
+                onClick={() => onShowGridChange(!showGrid)}
+                colorPalette={showGrid ? 'blue' : 'gray'}
+                variant={showGrid ? 'solid' : 'ghost'}
               >
-                <ChakraSwitch.HiddenInput />
-                <ChakraSwitch.Control>
-                  <ChakraSwitch.Thumb />
-                </ChakraSwitch.Control>
-              </ChakraSwitch.Root>
-            </HStack>
-            <HStack justify="space-between" gap={3}>
-              <HStack gap={2}>
-                <HiOutlineTrendingUp size={14} color="currentColor" />
-                <Text fontSize="xs" color="fg">{t('chart.controls.currentPrice')}</Text>
-              </HStack>
-              <ChakraSwitch.Root
+                <HiOutlineViewGrid />
+              </IconButton>
+            </TooltipWrapper>
+            <TooltipWrapper label={t('chart.controls.currentPrice')}>
+              <IconButton
                 size="sm"
-                checked={showCurrentPriceLine}
-                onCheckedChange={(e) => onShowCurrentPriceLineChange(e.checked)}
-                colorPalette="blue"
+                aria-label={t('chart.controls.currentPrice')}
+                onClick={() => onShowCurrentPriceLineChange(!showCurrentPriceLine)}
+                colorPalette={showCurrentPriceLine ? 'blue' : 'gray'}
+                variant={showCurrentPriceLine ? 'solid' : 'ghost'}
               >
-                <ChakraSwitch.HiddenInput />
-                <ChakraSwitch.Control>
-                  <ChakraSwitch.Thumb />
-                </ChakraSwitch.Control>
-              </ChakraSwitch.Root>
-            </HStack>
-          </Stack>
+                <HiOutlineCurrencyDollar />
+              </IconButton>
+            </TooltipWrapper>
+          </HStack>
         </Box>
 
         {movingAverages.length > 0 && (
-          <Box>
-            <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="semibold">
+          <Box flex="1" minW="180px">
+            <Text fontSize="xs" color="fg.muted" mb={1} fontWeight="semibold">
               {t('chart.controls.indicators')}
             </Text>
-            <Stack gap={2}>
+            <HStack gap={2} flexWrap="wrap">
               {movingAverages.map((ma, index) => (
-                <HStack key={index} justify="space-between" gap={3}>
-                  <HStack gap={2}>
-                    <HiOutlineTrendingUp size={14} color={ma.color} style={{ opacity: ma.visible !== false ? 1 : 0.3 }} />
-                    <Text fontSize="xs" color="fg">
+                <TooltipWrapper key={index} label={`${ma.type === 'EMA' ? 'EMA' : 'SMA'}${ma.period}`}>
+                  <IconButton
+                    size="sm"
+                    aria-label={`${ma.type === 'EMA' ? 'EMA' : 'SMA'}${ma.period}`}
+                    onClick={() => toggleMA(index)}
+                    colorPalette={ma.visible !== false ? 'blue' : 'gray'}
+                    variant={ma.visible !== false ? 'solid' : 'ghost'}
+                    style={{ 
+                      position: 'relative',
+                      borderLeft: ma.visible !== false ? `3px solid ${ma.color}` : undefined
+                    }}
+                  >
+                    <Text fontSize="xs" fontWeight="medium">
                       {ma.type === 'EMA' ? 'EMA' : 'SMA'}{ma.period}
                     </Text>
-                  </HStack>
-                  <ChakraSwitch.Root
-                    size="sm"
-                    checked={ma.visible !== false}
-                    onCheckedChange={() => toggleMA(index)}
-                    colorPalette="blue"
-                  >
-                    <ChakraSwitch.HiddenInput />
-                    <ChakraSwitch.Control>
-                      <ChakraSwitch.Thumb />
-                    </ChakraSwitch.Control>
-                  </ChakraSwitch.Root>
-                </HStack>
+                  </IconButton>
+                </TooltipWrapper>
               ))}
-            </Stack>
+            </HStack>
           </Box>
         )}
+      </Flex>
 
         {pinnedControls.size > 0 && advancedConfig && (
           <Box>

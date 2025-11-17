@@ -2,19 +2,33 @@ import { Button } from '@/renderer/components/ui/button';
 import { Field } from '@/renderer/components/ui/field';
 import { NumberInput } from '@/renderer/components/ui/number-input';
 import { PasswordInput } from '@/renderer/components/ui/password-input';
+import { DEFAULT_NEWS_SETTINGS } from '@/renderer/constants/defaults';
+import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { Box, Checkbox, Flex, Link, Separator, Stack, Text, VStack } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { HiArrowPath } from 'react-icons/hi2';
 
 export const NewsConfigTab = () => {
   const { t } = useTranslation();
-  const [enabled, setEnabled] = useState(false);
-  const [newsApiKey, setNewsApiKey] = useState('');
-  const [cryptoPanicApiKey, setCryptoPanicApiKey] = useState('');
-  const [refreshInterval, setRefreshInterval] = useState(5);
-  const [maxArticles, setMaxArticles] = useState(10);
-  const [testMessage, setTestMessage] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [enabled, setEnabled] = useState<boolean>(DEFAULT_NEWS_SETTINGS.enabled);
+  const [newsApiKey, setNewsApiKey] = useState<string>('');
+  const [cryptoPanicApiKey, setCryptoPanicApiKey] = useState<string>('');
+  const [refreshInterval, setRefreshInterval] = useState<number>(DEFAULT_NEWS_SETTINGS.refreshInterval);
+  const [maxArticles, setMaxArticles] = useState<number>(DEFAULT_NEWS_SETTINGS.maxArticles);
+  const [testMessage, setTestMessage] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const debouncedSaveSettings = useDebounceCallback(
+    async (settings: { enabled: boolean; refreshInterval: number; maxArticles: number }) => {
+      try {
+        await window.electron.secureStorage.setNewsSettings(settings);
+      } catch (error) {
+        console.error('Failed to save news settings:', error);
+      }
+    },
+    300
+  );
 
   useEffect(() => {
     loadSettings();
@@ -95,6 +109,30 @@ export const NewsConfigTab = () => {
     }
   };
 
+  const handleEnabledChange = (checked: boolean) => {
+    setEnabled(checked);
+    debouncedSaveSettings({ enabled: checked, refreshInterval, maxArticles });
+  };
+
+  const handleRefreshIntervalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.max(1, Math.min(60, parseInt(e.target.value) || DEFAULT_NEWS_SETTINGS.refreshInterval));
+    setRefreshInterval(value);
+    debouncedSaveSettings({ enabled, refreshInterval: value, maxArticles });
+  };
+
+  const handleMaxArticlesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.max(5, Math.min(50, parseInt(e.target.value) || DEFAULT_NEWS_SETTINGS.maxArticles));
+    setMaxArticles(value);
+    debouncedSaveSettings({ enabled, refreshInterval, maxArticles: value });
+  };
+
+  const handleReset = () => {
+    setEnabled(DEFAULT_NEWS_SETTINGS.enabled);
+    setRefreshInterval(DEFAULT_NEWS_SETTINGS.refreshInterval);
+    setMaxArticles(DEFAULT_NEWS_SETTINGS.maxArticles);
+    window.electron.secureStorage.setNewsSettings(DEFAULT_NEWS_SETTINGS);
+  };
+
   return (
     <VStack align="stretch" gap={6}>
       {loading && (
@@ -123,7 +161,7 @@ export const NewsConfigTab = () => {
       <Separator />
 
       <Box>
-        <Checkbox.Root checked={enabled} onCheckedChange={(e) => setEnabled(!!e.checked)}>
+        <Checkbox.Root checked={enabled} onCheckedChange={(e) => handleEnabledChange(!!e.checked)}>
           <Checkbox.HiddenInput />
           <Checkbox.Control>
             <Checkbox.Indicator />
@@ -236,7 +274,7 @@ export const NewsConfigTab = () => {
               min={1}
               max={60}
               value={refreshInterval}
-              onChange={(e) => setRefreshInterval(Math.max(1, Math.min(60, parseInt(e.target.value) || 5)))}
+              onChange={handleRefreshIntervalChange}
               disabled={!enabled}
             />
             <Text fontSize="sm" color="fg.muted" mt={1}>
@@ -249,13 +287,21 @@ export const NewsConfigTab = () => {
               min={5}
               max={50}
               value={maxArticles}
-              onChange={(e) => setMaxArticles(Math.max(5, Math.min(50, parseInt(e.target.value) || 10)))}
+              onChange={handleMaxArticlesChange}
               disabled={!enabled}
             />
             <Text fontSize="sm" color="fg.muted" mt={1}>
               Maximum number of articles to fetch (5-50)
             </Text>
           </Field>
+
+          <Button 
+            variant="outline" 
+            onClick={handleReset}
+          >
+            <HiArrowPath />
+            {t('settings.resetToDefaults')}
+          </Button>
         </Stack>
       </Box>
     </VStack>

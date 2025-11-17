@@ -1,8 +1,12 @@
+import { Button } from '@/renderer/components/ui/button';
 import { Field } from '@/renderer/components/ui/field';
 import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Select } from '@/renderer/components/ui/select';
-import { Box, Stack, Text } from '@chakra-ui/react';
+import { DEFAULT_ADVANCED_CONFIG } from '@/renderer/constants/defaults';
+import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
+import { Box, Separator, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
+import { HiArrowPath } from 'react-icons/hi2';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 
 interface ChartSettingsTabProps {
@@ -13,11 +17,13 @@ interface ChartSettingsTabProps {
 export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabProps) => {
   const { t } = useTranslation();
 
+  const debouncedConfigChange = useDebounceCallback(onConfigChange, 300);
+
   const handleChange = (key: keyof AdvancedControlsConfig, value: string) => {
     const numValue = parseFloat(value);
     if (isNaN(numValue)) return;
     
-    onConfigChange({
+    debouncedConfigChange({
       ...config,
       [key]: numValue,
     });
@@ -30,8 +36,42 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
     });
   };
 
+  const handleReset = () => {
+    onConfigChange(DEFAULT_ADVANCED_CONFIG);
+  };
+
   return (
     <Stack gap={6}>
+      <Box
+        bg="blue.500/10"
+        p={4}
+        borderRadius="md"
+        borderLeft="4px solid"
+        borderColor="blue.500"
+      >
+        <Text fontSize="sm" fontWeight="semibold" mb={2}>
+          💡 {t('common.tips')}
+        </Text>
+        <Stack gap={1} fontSize="sm" color="fg.muted">
+          <Text>• {t('settings.chart.tipsRealtime')}</Text>
+          <Text>• {t('settings.chart.tipsReset')}</Text>
+        </Stack>
+      </Box>
+
+      <Box>
+        <Button
+          variant="outline"
+          onClick={handleReset}
+          width="full"
+          colorPalette="red"
+        >
+          <HiArrowPath />
+          {t('settings.resetToDefaults')}
+        </Button>
+      </Box>
+
+      <Separator />
+
       <Box>
         <Text fontSize="sm" fontWeight="bold" mb={4}>
           {t('settings.chart.chartDimensions')}

@@ -5,6 +5,7 @@ import { HiClock, HiTrash } from 'react-icons/hi2';
 import { useChartContext } from '../../context/ChartContext';
 import { useAIStore } from '../../store/aiStore';
 import { Popover } from '../ui/popover';
+import { TooltipWrapper } from '../ui/Tooltip';
 
 export const ConversationHistory = () => {
   const { t } = useTranslation();
@@ -54,13 +55,15 @@ export const ConversationHistory = () => {
       onOpenChange={(e) => setOpen(e.open)}
       showArrow={false}
       trigger={
-        <IconButton
-          aria-label={t('common.conversationHistory')}
-          size="sm"
-          variant="ghost"
-        >
-          <HiClock />
-        </IconButton>
+        <TooltipWrapper label={t('common.conversationHistory')} showArrow>
+          <IconButton
+            aria-label={t('common.conversationHistory')}
+            size="sm"
+            variant="ghost"
+          >
+            <HiClock />
+          </IconButton>
+        </TooltipWrapper>
       }
     >
       <Flex direction="column" maxHeight="400px">

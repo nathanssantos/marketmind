@@ -1,4 +1,3 @@
-import { Button } from '@/renderer/components/ui/button';
 import { Dialog } from '@/renderer/components/ui/dialog';
 import { Tabs } from '@/renderer/components/ui/tabs';
 import { Box, CloseButton } from '@chakra-ui/react';
@@ -10,7 +9,6 @@ import { AIConfigTab } from './AIConfigTab';
 import { ChartSettingsTab } from './ChartSettingsTab';
 import { GeneralTab } from './GeneralTab';
 import { NewsConfigTab } from './NewsConfigTab';
-import { useSettingsDialog } from './useSettingsDialog';
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -22,10 +20,9 @@ interface SettingsDialogProps {
 export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConfigChange }: SettingsDialogProps) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<string>('general');
-  const { isDirty, handleSave, handleClose } = useSettingsDialog(onClose);
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && handleClose()} size="xl">
+    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="xl">
       <Dialog.Backdrop />
       <Dialog.Positioner>
         <Dialog.Content maxH="85vh">
@@ -33,7 +30,7 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
             position="absolute"
             top={4}
             right={4}
-            onClick={handleClose}
+            onClick={onClose}
             size="sm"
           />
           <Dialog.Header borderBottom="1px solid" borderColor="border">
@@ -76,17 +73,6 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
               </Box>
             </Tabs.Root>
           </Dialog.Body>
-
-          <Dialog.Footer borderTop="1px solid" borderColor="border">
-            <Dialog.ActionTrigger asChild>
-              <Button variant="outline" onClick={handleClose}>
-                {t('common.cancel')}
-              </Button>
-            </Dialog.ActionTrigger>
-            <Button colorPalette="blue" onClick={handleSave} disabled={!isDirty}>
-              {t('common.saveChanges')}
-            </Button>
-          </Dialog.Footer>
         </Dialog.Content>
       </Dialog.Positioner>
     </Dialog.Root>

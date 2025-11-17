@@ -3,19 +3,22 @@ import { Field } from '@/renderer/components/ui/field';
 import { PasswordInput } from '@/renderer/components/ui/password-input';
 import { Select } from '@/renderer/components/ui/select';
 import { Slider } from '@/renderer/components/ui/slider';
+import { DEFAULT_AI_SETTINGS } from '@/renderer/constants/defaults';
+import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useSecureStorage } from '@/renderer/hooks/useSecureStorage';
 import { useAIStore } from '@/renderer/store';
 import {
-    Box,
-    Flex,
-    Separator,
-    Spinner,
-    Stack,
-    Text,
+  Box,
+  Flex,
+  Separator,
+  Spinner,
+  Stack,
+  Text,
 } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { HiArrowPath } from 'react-icons/hi2';
 
 type AIProvider = 'openai' | 'anthropic' | 'gemini';
 
@@ -63,8 +66,10 @@ export const AIConfigTab = () => {
 
   const provider = settings?.provider || 'gemini';
   const model = settings?.model || DEFAULT_MODELS[provider];
-  const temperature = settings?.temperature ?? 0.7;
-  const maxTokens = settings?.maxTokens ?? 4096;
+  const temperature = settings?.temperature ?? DEFAULT_AI_SETTINGS.temperature;
+  const maxTokens = settings?.maxTokens ?? DEFAULT_AI_SETTINGS.maxTokens;
+
+  const debouncedUpdateSettings = useDebounceCallback(updateSettings, 300);
 
   useEffect(() => {
     const loadApiKeys = async () => {
@@ -127,14 +132,21 @@ export const AIConfigTab = () => {
 
   const handleTemperatureChange = (value: number[]) => {
     if (value[0] !== undefined) {
-      updateSettings({ temperature: value[0] });
+      debouncedUpdateSettings({ temperature: value[0] });
     }
   };
 
   const handleMaxTokensChange = (value: number[]) => {
     if (value[0] !== undefined) {
-      updateSettings({ maxTokens: value[0] });
+      debouncedUpdateSettings({ maxTokens: value[0] });
     }
+  };
+
+  const handleReset = () => {
+    updateSettings({
+      temperature: DEFAULT_AI_SETTINGS.temperature,
+      maxTokens: DEFAULT_AI_SETTINGS.maxTokens,
+    });
   };
 
   const renderApiKeyInput = (provider: AIProvider, label: string) => {
@@ -184,14 +196,25 @@ export const AIConfigTab = () => {
         borderColor="blue.500"
       >
         <Text fontSize="sm" fontWeight="semibold" mb={2}>
-          💡 Quick Tips
+          💡 {t('common.tips')}
         </Text>
         <Stack gap={1} fontSize="sm" color="fg.muted">
-          <Text>• API keys are encrypted and stored securely using OS-level encryption</Text>
-          <Text>• Lower temperature (0-0.5) for technical analysis</Text>
-          <Text>• Higher temperature (0.7-1.5) for creative insights</Text>
-          <Text>• Gemini 2.0 Flash Exp is FREE with no API key required</Text>
+          <Text>• {t('settings.ai.tipsEncryption')}</Text>
+          <Text>• {t('settings.ai.tipsTemperature')}</Text>
+          <Text>• {t('settings.ai.tipsFree')}</Text>
         </Stack>
+      </Box>
+
+      <Box>
+        <Button
+          variant="outline"
+          onClick={handleReset}
+          width="full"
+          colorPalette="red"
+        >
+          <HiArrowPath />
+          {t('settings.resetToDefaults')}
+        </Button>
       </Box>
 
       <Separator />
