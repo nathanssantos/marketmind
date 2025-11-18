@@ -33,6 +33,7 @@ export interface SelectProps {
   openUpwards?: boolean;
   size?: 'xs' | 'sm' | 'md' | 'lg';
   variant?: 'bordered' | 'borderless';
+  usePortal?: boolean;
 }
 
 export const Select = ({
@@ -53,15 +54,21 @@ export const Select = ({
   openUpwards = false,
   size = 'md',
   variant = 'bordered',
+  usePortal = true,
 }: SelectProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const clickedInsideContainer = containerRef.current?.contains(target);
+      const clickedInsideDropdown = dropdownRef.current?.contains(target);
+      
+      if (!clickedInsideContainer && !clickedInsideDropdown) {
         setIsOpen(false);
       }
     };
@@ -156,21 +163,111 @@ export const Select = ({
       </Box>
 
       {isOpen && (
-        <Portal>
+        usePortal ? (
+          <Portal>
+            <Box
+              ref={dropdownRef}
+              position="fixed"
+              top={openUpwards ? 'auto' : `${dropdownPosition.top}px`}
+              bottom={openUpwards ? `calc(100vh - ${dropdownPosition.top}px)` : 'auto'}
+              left={`${dropdownPosition.left}px`}
+              width={`${dropdownPosition.width}px`}
+              bg="bg.panel"
+              border="1px solid"
+              borderColor="border"
+              borderRadius="md"
+              shadow="lg"
+              zIndex={99999}
+              maxH="400px"
+              overflowY="auto"
+            >
+            {enableSearch && (
+              <Box p={3} borderBottomWidth="1px" borderColor="border">
+                <Input
+                  placeholder={searchPlaceholder}
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  size="sm"
+                  bg="bg.muted"
+                  borderColor="border"
+                  _focus={{ borderColor: 'blue.500' }}
+                  autoFocus
+                  px={3}
+                />
+              </Box>
+            )}
+
+            {isLoading && (
+              <Box p={4} textAlign="center">
+                <Spinner size="sm" color="blue.500" />
+              </Box>
+            )}
+
+            {!isLoading && filteredOptions.length === 0 && (
+              <Box p={4} textAlign="center">
+                <Text color="fg.muted" fontSize="sm">
+                  {emptyMessage}
+                </Text>
+              </Box>
+            )}
+
+            {!isLoading && filteredOptions.length > 0 && (
+              <>
+                {sectionLabel && (
+                  <Box px={3} py={2} bg="bg.muted">
+                    <Text fontSize="xs" color="fg.muted" fontWeight="medium">
+                      {sectionLabel}
+                    </Text>
+                  </Box>
+                )}
+                <VStack gap={0} align="stretch">
+                  {filteredOptions.map((option) => (
+                    <Box
+                      key={option.value}
+                      px={4}
+                      py={2.5}
+                      cursor="pointer"
+                      bg={value === option.value ? 'bg.muted' : 'transparent'}
+                      _hover={{ bg: 'bg.muted' }}
+                      onClick={() => handleSelect(option.value)}
+                      borderBottomWidth="1px"
+                      borderColor="border"
+                    >
+                      <VStack align="start" gap={0}>
+                        <Text fontWeight="medium" fontSize="sm" color="fg">
+                          {option.label}
+                        </Text>
+                        {option.description && (
+                          <Text fontSize="xs" color="fg.muted">
+                            {option.description}
+                          </Text>
+                        )}
+                      </VStack>
+                    </Box>
+                  ))}
+                </VStack>
+              </>
+            )}
+            </Box>
+          </Portal>
+        ) : (
           <Box
-            position="fixed"
-            top={openUpwards ? 'auto' : `${dropdownPosition.top}px`}
-            bottom={openUpwards ? `calc(100vh - ${dropdownPosition.top}px)` : 'auto'}
-            left={`${dropdownPosition.left}px`}
-            width={`${dropdownPosition.width}px`}
+            ref={dropdownRef}
+            position="absolute"
+            top={openUpwards ? 'auto' : '100%'}
+            bottom={openUpwards ? '100%' : 'auto'}
+            left={0}
+            width="100%"
             bg="bg.panel"
             border="1px solid"
             borderColor="border"
             borderRadius="md"
             shadow="lg"
-            zIndex={10000}
+            zIndex={1}
             maxH="400px"
             overflowY="auto"
+            mt={openUpwards ? 0 : 2}
+            mb={openUpwards ? 2 : 0}
           >
             {enableSearch && (
               <Box p={3} borderBottomWidth="1px" borderColor="border">
@@ -240,7 +337,7 @@ export const Select = ({
               </>
             )}
           </Box>
-        </Portal>
+        )
       )}
     </Box>
   );

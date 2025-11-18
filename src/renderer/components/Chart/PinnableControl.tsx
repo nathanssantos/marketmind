@@ -1,8 +1,8 @@
 import { Input } from '@/renderer/components/ui/input';
-import { HStack, IconButton, Text, Box } from '@chakra-ui/react';
-import { HiOutlineStar, HiStar } from 'react-icons/hi2';
+import { Box, HStack, IconButton, Text } from '@chakra-ui/react';
 import type { ReactElement } from 'react';
 import { useState } from 'react';
+import { LuStar } from 'react-icons/lu';
 import { usePinnedControls, type PinnedControl } from './PinnedControlsContext';
 
 export interface PinnableControlProps {
@@ -47,7 +47,7 @@ export const PinnableControl = ({
             transition="opacity 0.2s"
             color={pinned ? 'blue.400' : 'gray.400'}
           >
-            {pinned ? <HiStar size={12} /> : <HiOutlineStar size={12} />}
+            <LuStar size={12} fill={pinned ? 'currentColor' : 'none'} />
           </IconButton>
           <Input
             size="xs"

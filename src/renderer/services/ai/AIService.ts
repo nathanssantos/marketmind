@@ -9,6 +9,8 @@ export interface AIServiceConfig {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  useOptimizedPrompts?: boolean;
+  enableAIStudies?: boolean;
   customPrompts?: {
     chartAnalysis?: typeof defaultPrompts.chartAnalysis;
     chat?: typeof defaultPrompts.chat;
@@ -68,6 +70,10 @@ export class AIService {
         break;
       default:
         throw new Error(`Unknown provider type: ${this.providerType}`);
+    }
+    
+    if (this.provider && this.config.enableAIStudies !== undefined) {
+      this.provider.enableAIStudies = this.config.enableAIStudies;
     }
   }
 
@@ -136,5 +142,22 @@ export class AIService {
 
   getSignalInfo(signal: keyof typeof defaultPrompts.signals) {
     return this.config.customPrompts?.signals?.[signal] || defaultPrompts.signals[signal];
+  }
+
+  setOptimizedPrompts(enabled: boolean): void {
+    if (this.provider) {
+      this.provider['useOptimizedPrompts'] = enabled;
+    }
+  }
+  
+  setEnableAIStudies(enabled: boolean): void {
+    this.config.enableAIStudies = enabled;
+    if (this.provider) {
+      this.provider.enableAIStudies = enabled;
+    }
+  }
+
+  isUsingOptimizedPrompts(): boolean {
+    return this.provider?.['useOptimizedPrompts'] ?? true;
   }
 }

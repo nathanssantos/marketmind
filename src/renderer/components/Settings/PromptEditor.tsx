@@ -3,7 +3,7 @@ import { Field } from '@/renderer/components/ui/field';
 import { Box, Code, Flex, Separator, Stack, Text, Textarea } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HiArrowPath, HiCheck, HiXMark } from 'react-icons/hi2';
+import { LuCheck, LuRefreshCw, LuX } from 'react-icons/lu';
 
 interface PromptEditorProps {
   value: string;
@@ -155,7 +155,7 @@ export const PromptEditor = ({
           colorPalette="green"
           flex={1}
         >
-          <HiCheck />
+          <LuCheck />
           {t('common.save')}
         </Button>
 
@@ -174,7 +174,7 @@ export const PromptEditor = ({
             colorPalette="gray"
             flex={1}
           >
-            <HiXMark />
+            <LuX />
             {t('common.cancel')}
           </Button>
         )}
@@ -189,7 +189,7 @@ export const PromptEditor = ({
             colorPalette="red"
             width="full"
           >
-            <HiArrowPath />
+            <LuRefreshCw />
             {t('settings.prompt.resetToDefault')}
           </Button>
         </>

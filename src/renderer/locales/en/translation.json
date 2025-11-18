@@ -156,6 +156,8 @@
     "title": "AI Assistant",
     "newConversation": "New conversation",
     "closeChat": "Close chat",
+    "enableAIStudies": "Enable AI chart drawings",
+    "disableAIStudies": "Disable AI chart drawings",
     "inputPlaceholder": "Ask about the chart...",
     "sendMessage": "Send message",
     "send": "Send",

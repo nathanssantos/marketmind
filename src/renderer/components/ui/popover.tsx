@@ -12,6 +12,10 @@ interface PopoverProps {
   width?: string;
   showArrow?: boolean;
   usePortal?: boolean;
+  positioning?: {
+    placement?: 'top' | 'bottom' | 'left' | 'right' | 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end' | 'left-start' | 'left-end' | 'right-start' | 'right-end';
+    offset?: { mainAxis?: number; crossAxis?: number };
+  };
 }
 
 export const Popover = ({
@@ -22,6 +26,7 @@ export const Popover = ({
   width = '320px',
   showArrow = false,
   usePortal = true,
+  positioning,
 }: PopoverProps) => {
   const positioner = (
     <ChakraPopover.Positioner>
@@ -37,7 +42,7 @@ export const Popover = ({
   );
 
   return (
-    <ChakraPopover.Root open={open} onOpenChange={onOpenChange}>
+    <ChakraPopover.Root open={open} onOpenChange={onOpenChange} positioning={positioning}>
       <ChakraPopover.Trigger asChild>{trigger}</ChakraPopover.Trigger>
       {usePortal ? <Portal>{positioner}</Portal> : positioner}
     </ChakraPopover.Root>

@@ -3,7 +3,7 @@ import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
 import { Box, Flex, IconButton } from '@chakra-ui/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HiChevronLeft } from 'react-icons/hi2';
+import { LuChevronLeft } from 'react-icons/lu';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import { ChatSidebar } from '../Chat/ChatSidebar';
 import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
@@ -139,7 +139,7 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
               size="lg"
               zIndex={100}
             >
-              <HiChevronLeft />
+              <LuChevronLeft />
             </IconButton>
           </TooltipWrapper>
         )}

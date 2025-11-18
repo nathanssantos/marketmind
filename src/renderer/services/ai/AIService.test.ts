@@ -488,6 +488,71 @@ describe('AIService', () => {
     });
   });
 
+  describe('AI Studies control', () => {
+    it('should pass enableAIStudies=true to provider', async () => {
+      const service = new AIService({
+        provider: 'openai',
+        apiKey: 'test-key',
+        enableAIStudies: true,
+      });
+
+      const request: AIAnalysisRequest = {
+        chartImage: 'data:image/png;base64,test',
+        candles: [],
+      };
+
+      mockAnalyzeChart.mockResolvedValue({
+        text: 'Analysis with studies',
+      });
+
+      await service.analyzeChart(request);
+
+      expect(mockAnalyzeChart).toHaveBeenCalled();
+    });
+
+    it('should pass enableAIStudies=false to provider', async () => {
+      const service = new AIService({
+        provider: 'openai',
+        apiKey: 'test-key',
+        enableAIStudies: false,
+      });
+
+      const request: AIAnalysisRequest = {
+        chartImage: 'data:image/png;base64,test',
+        candles: [],
+      };
+
+      mockAnalyzeChart.mockResolvedValue({
+        text: 'Analysis without studies',
+      });
+
+      await service.analyzeChart(request);
+
+      expect(mockAnalyzeChart).toHaveBeenCalled();
+    });
+
+    it('should update enableAIStudies dynamically', () => {
+      const service = new AIService({
+        provider: 'openai',
+        apiKey: 'test-key',
+        enableAIStudies: true,
+      });
+
+      service.setEnableAIStudies(false);
+      
+      expect(service.getConfig().enableAIStudies).toBe(false);
+    });
+
+    it('should default enableAIStudies to undefined', () => {
+      const service = new AIService({
+        provider: 'openai',
+        apiKey: 'test-key',
+      });
+
+      expect(service.getConfig().enableAIStudies).toBeUndefined();
+    });
+  });
+
   describe('error handling', () => {
     it('should throw error for unknown provider type', async () => {
       const service = new AIService({

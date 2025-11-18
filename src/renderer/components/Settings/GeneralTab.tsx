@@ -8,7 +8,7 @@ import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
 import { useAIStore } from '@/renderer/store';
 import { Box, Flex, Separator, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { HiArrowDownTray, HiArrowPath, HiArrowUpTray, HiTrash } from 'react-icons/hi2';
+import { LuDownload, LuRefreshCw, LuTrash2, LuUpload } from 'react-icons/lu';
 import { LanguageSelector } from './LanguageSelector';
 
 export const GeneralTab = () => {
@@ -182,7 +182,7 @@ export const GeneralTab = () => {
             onClick={handleCheckNow}
             disabled={status === 'checking'}
           >
-            <HiArrowPath />
+            <LuRefreshCw />
             {t('settings.autoUpdate.checkNow')}
           </Button>
 
@@ -190,7 +190,7 @@ export const GeneralTab = () => {
             variant="outline" 
             onClick={handleResetAutoUpdate}
           >
-            <HiArrowPath />
+            <LuRefreshCw />
             {t('settings.resetToDefaults')}
           </Button>
         </Stack>
@@ -204,15 +204,15 @@ export const GeneralTab = () => {
         </Text>
         <Flex gap={2}>
           <Button flex={1} variant="outline" onClick={handleExportAll} disabled={conversations.length === 0}>
-            <HiArrowDownTray />
+            <LuDownload />
             {t('settings.dataManagement.exportAll')}
           </Button>
           <Button flex={1} variant="outline" onClick={handleImport}>
-            <HiArrowUpTray />
+            <LuUpload />
             {t('settings.dataManagement.importConversation')}
           </Button>
           <Button flex={1} colorPalette="red" variant="outline" onClick={handleClearAll} disabled={conversations.length === 0}>
-            <HiTrash />
+            <LuTrash2 />
             {t('settings.dataManagement.clearAll')}
           </Button>
         </Flex>

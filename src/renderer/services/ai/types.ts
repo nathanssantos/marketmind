@@ -1,4 +1,8 @@
-import type { AIMessage, AIAnalysisRequest, AIAnalysisResponse } from '@shared/types';
+import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage } from '@shared/types';
+import { formatCandlesForPrompt, optimizeCandles } from '../../utils/candleOptimizer';
+import { buildOptimizedMessages } from '../../utils/conversationSummarizer';
+import { detectIntentFromConversation, getSystemPrompt as getOptimizedSystemPrompt } from '../../utils/intentDetection';
+import optimizedPrompts from './prompts-optimized.json';
 import prompts from './prompts.json';
 
 export interface AIProviderConfig {
@@ -34,12 +38,16 @@ export abstract class BaseAIProvider {
   protected model: string;
   protected temperature: number;
   protected maxTokens: number;
+  protected useOptimizedPrompts: boolean;
+  public enableAIStudies: boolean;
 
   constructor(config: AIProviderConfig) {
     this.apiKey = config.apiKey;
     this.model = config.model || this.getDefaultModel();
     this.temperature = config.temperature ?? 0.7;
     this.maxTokens = config.maxTokens ?? 4096;
+    this.useOptimizedPrompts = true;
+    this.enableAIStudies = true;
   }
 
   protected abstract getDefaultModel(): string;
@@ -54,7 +62,15 @@ export abstract class BaseAIProvider {
   ): Promise<AIAnalysisResponse>;
 
   protected convertMessages(messages: AIMessage[]): ChatCompletionMessage[] {
-    return messages.map(msg => ({
+    if (!this.useOptimizedPrompts) {
+      return messages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+    }
+    
+    const optimizedMessages = buildOptimizedMessages(messages, false);
+    return optimizedMessages.map(msg => ({
       role: msg.role,
       content: msg.content,
     }));
@@ -95,23 +111,79 @@ export abstract class BaseAIProvider {
     return messages;
   }
 
-  protected getSystemPrompt(): string {
-    return prompts.chartAnalysis.system;
+  protected getSystemPrompt(messages?: AIMessage[]): string {
+    if (!this.useOptimizedPrompts) {
+      return prompts.chartAnalysis.system;
+    }
+    
+    if (!this.enableAIStudies) {
+      return getOptimizedSystemPrompt('simple', 'chartAnalysis');
+    }
+    
+    const mode = messages && messages.length > 0 
+      ? detectIntentFromConversation(messages)
+      : 'full';
+    
+    return getOptimizedSystemPrompt(mode, 'chartAnalysis');
   }
 
   protected buildUserPrompt(request: AIAnalysisRequest): string {
+    if (!this.useOptimizedPrompts) {
+      const parts: string[] = [
+        prompts.chartAnalysis.userTemplate,
+      ];
+
+      if (request.context) {
+        parts.push(prompts.chartAnalysis.contextTemplate.replace('{context}', request.context));
+      }
+
+      if (request.candles && request.candles.length > 0) {
+        const latestCandle = request.candles[request.candles.length - 1];
+        if (latestCandle) {
+          const priceData = prompts.chartAnalysis.priceDataTemplate
+            .replace('{open}', latestCandle.open.toFixed(2))
+            .replace('{high}', latestCandle.high.toFixed(2))
+            .replace('{low}', latestCandle.low.toFixed(2))
+            .replace('{close}', latestCandle.close.toFixed(2))
+            .replace('{volume}', latestCandle.volume.toLocaleString());
+          parts.push(priceData);
+        }
+      }
+
+      if (request.news && request.news.length > 0) {
+        const newsItems = request.news.slice(0, 5)
+          .map((article, i) => `${i + 1}. ${article.title} (${article.source})`)
+          .join('\n');
+        parts.push(prompts.chartAnalysis.newsTemplate.replace('{newsItems}', newsItems));
+      }
+
+      return parts.join('\n');
+    }
+    
     const parts: string[] = [
-      prompts.chartAnalysis.userTemplate,
+      optimizedPrompts.chartAnalysis.userTemplate,
     ];
 
     if (request.context) {
-      parts.push(prompts.chartAnalysis.contextTemplate.replace('{context}', request.context));
+      parts.push(optimizedPrompts.chartAnalysis.contextTemplate.replace('{context}', request.context));
     }
 
     if (request.candles && request.candles.length > 0) {
+      const optimized = optimizeCandles(request.candles);
+      
+      const timestampInfo = optimizedPrompts.chartAnalysis.timestampInfoTemplate
+        .replace('{firstTimestamp}', optimized.timestampInfo.first.toString())
+        .replace('{lastTimestamp}', optimized.timestampInfo.last.toString())
+        .replace('{totalCandles}', optimized.timestampInfo.total.toString())
+        .replace('{timeframe}', optimized.timestampInfo.timeframe);
+      parts.push(timestampInfo);
+      
+      const candleData = formatCandlesForPrompt(optimized);
+      parts.push(`\n\nCANDLE DATA:\n${candleData}`);
+      
       const latestCandle = request.candles[request.candles.length - 1];
       if (latestCandle) {
-        const priceData = prompts.chartAnalysis.priceDataTemplate
+        const priceData = optimizedPrompts.chartAnalysis.priceDataTemplate
           .replace('{open}', latestCandle.open.toFixed(2))
           .replace('{high}', latestCandle.high.toFixed(2))
           .replace('{low}', latestCandle.low.toFixed(2))
@@ -125,7 +197,7 @@ export abstract class BaseAIProvider {
       const newsItems = request.news.slice(0, 5)
         .map((article, i) => `${i + 1}. ${article.title} (${article.source})`)
         .join('\n');
-      parts.push(prompts.chartAnalysis.newsTemplate.replace('{newsItems}', newsItems));
+      parts.push(optimizedPrompts.chartAnalysis.newsTemplate.replace('{newsItems}', newsItems));
     }
 
     return parts.join('\n');

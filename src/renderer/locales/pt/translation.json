@@ -155,6 +155,8 @@
     "title": "Assistente IA",
     "newConversation": "Nova conversa",
     "closeChat": "Fechar chat",
+    "enableAIStudies": "Ativar desenhos da IA no gráfico",
+    "disableAIStudies": "Desativar desenhos da IA no gráfico",
     "inputPlaceholder": "Pergunte sobre o gráfico...",
     "sendMessage": "Enviar mensagem",
     "send": "Enviar",

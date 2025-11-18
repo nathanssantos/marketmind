@@ -1,7 +1,7 @@
 import { Box, Button, DialogBackdrop, DialogBody, DialogCloseTrigger, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTitle, HStack, Stack, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HiChartBar, HiChatBubbleLeftRight, HiCog, HiSparkles } from 'react-icons/hi2';
+import { LuChartBar, LuMessageSquare, LuSettings, LuSparkles } from 'react-icons/lu';
 
 interface OnboardingDialogProps {
   isOpen: boolean;
@@ -14,27 +14,27 @@ export const OnboardingDialog = ({ isOpen, onClose }: OnboardingDialogProps) => 
 
   const steps = [
     {
-      icon: HiChartBar,
+      icon: LuChartBar,
       titleKey: 'onboarding.steps.welcome.title',
       descriptionKey: 'onboarding.steps.welcome.description',
     },
     {
-      icon: HiSparkles,
+      icon: LuSparkles,
       titleKey: 'onboarding.steps.aiProvider.title',
       descriptionKey: 'onboarding.steps.aiProvider.description',
     },
     {
-      icon: HiChartBar,
+      icon: LuChartBar,
       titleKey: 'onboarding.steps.analyze.title',
       descriptionKey: 'onboarding.steps.analyze.description',
     },
     {
-      icon: HiChatBubbleLeftRight,
+      icon: LuMessageSquare,
       titleKey: 'onboarding.steps.chat.title',
       descriptionKey: 'onboarding.steps.chat.description',
     },
     {
-      icon: HiCog,
+      icon: LuSettings,
       titleKey: 'onboarding.steps.ready.title',
       descriptionKey: 'onboarding.steps.ready.description',
     },

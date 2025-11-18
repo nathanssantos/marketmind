@@ -22,14 +22,16 @@ export class OpenAIProvider extends BaseAIProvider {
     images?: string[]
   ): Promise<AIAnalysisResponse> {
     try {
-      const systemPrompt = this.getSystemPrompt();
+      const systemPrompt = this.getSystemPrompt(messages);
+      
+      const optimizedMessages = this.convertMessages(messages);
       
       const chatMessages: OpenAI.ChatCompletionMessageParam[] = [
         {
           role: 'system',
           content: systemPrompt,
         },
-        ...messages.map(msg => ({
+        ...optimizedMessages.map(msg => ({
           role: msg.role,
           content: msg.content,
         })) as OpenAI.ChatCompletionMessageParam[],

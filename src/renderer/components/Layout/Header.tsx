@@ -3,7 +3,7 @@ import { Logo } from '@/renderer/components/ui/logo';
 import { Flex, IconButton, Text } from '@chakra-ui/react';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HiCog6Tooth, HiCommandLine, HiMoon, HiSun } from 'react-icons/hi2';
+import { LuMoon, LuSettings, LuSun, LuTerminal } from 'react-icons/lu';
 import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
 import { TooltipWrapper } from '../ui/Tooltip';
 
@@ -47,7 +47,7 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
             variant="ghost"
             size="sm"
           >
-            {colorMode === 'dark' ? <HiSun /> : <HiMoon />}
+            {colorMode === 'dark' ? <LuSun /> : <LuMoon />}
           </IconButton>
         </TooltipWrapper>
         <TooltipWrapper label={t('header.keyboardShortcuts')} placement="bottom" showArrow>
@@ -57,7 +57,7 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
             variant="ghost"
             size="sm"
           >
-            <HiCommandLine />
+            <LuTerminal />
           </IconButton>
         </TooltipWrapper>
         <TooltipWrapper label={t('header.settings')} placement="bottom" showArrow>
@@ -67,7 +67,7 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
             variant="ghost"
             size="sm"
           >
-            <HiCog6Tooth />
+            <LuSettings />
           </IconButton>
         </TooltipWrapper>
       </Flex>

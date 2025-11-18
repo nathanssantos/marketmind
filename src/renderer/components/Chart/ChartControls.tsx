@@ -2,11 +2,12 @@ import { Box, Flex, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    HiOutlineChartBar,
-    HiOutlineCurrencyDollar,
-    HiOutlineViewGrid
-} from 'react-icons/hi';
-import { MdCandlestickChart, MdShowChart } from 'react-icons/md';
+    LuChartBar,
+    LuChartCandlestick,
+    LuChartLine,
+    LuDollarSign,
+    LuGrid3X3
+} from 'react-icons/lu';
 import { TooltipWrapper } from '../ui/Tooltip';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import { ControlPanel } from './ControlPanel';
@@ -107,7 +108,7 @@ export const ChartControls = ({
                 colorPalette={chartType === 'candlestick' ? 'blue' : 'gray'}
                 variant={chartType === 'candlestick' ? 'solid' : 'ghost'}
               >
-                <MdCandlestickChart />
+                <LuChartCandlestick />
               </IconButton>
             </TooltipWrapper>
             <TooltipWrapper label={t('chart.controls.lineChart')}>
@@ -118,7 +119,7 @@ export const ChartControls = ({
                 colorPalette={chartType === 'line' ? 'blue' : 'gray'}
                 variant={chartType === 'line' ? 'solid' : 'ghost'}
               >
-                <MdShowChart />
+                <LuChartLine />
               </IconButton>
             </TooltipWrapper>
           </HStack>
@@ -137,7 +138,7 @@ export const ChartControls = ({
                 colorPalette={showVolume ? 'blue' : 'gray'}
                 variant={showVolume ? 'solid' : 'ghost'}
               >
-                <HiOutlineChartBar />
+                <LuChartBar />
               </IconButton>
             </TooltipWrapper>
             <TooltipWrapper label={t('chart.controls.grid')}>
@@ -148,7 +149,7 @@ export const ChartControls = ({
                 colorPalette={showGrid ? 'blue' : 'gray'}
                 variant={showGrid ? 'solid' : 'ghost'}
               >
-                <HiOutlineViewGrid />
+                <LuGrid3X3 />
               </IconButton>
             </TooltipWrapper>
             <TooltipWrapper label={t('chart.controls.currentPrice')}>
@@ -159,7 +160,7 @@ export const ChartControls = ({
                 colorPalette={showCurrentPriceLine ? 'blue' : 'gray'}
                 variant={showCurrentPriceLine ? 'solid' : 'ghost'}
               >
-                <HiOutlineCurrencyDollar />
+                <LuDollarSign />
               </IconButton>
             </TooltipWrapper>
           </HStack>

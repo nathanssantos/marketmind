@@ -2,7 +2,46 @@
 
 ## 📋 Visão Geral
 
-O MarketMind agora possui um sistema robusto que permite à AI desenhar estudos técnicos diretamente no gráfico. Os desenhos incluem suportes, resistências, linhas de tendência, zonas de liquidez, e outras análises visuais.
+O MarketMind possui um sistema que permite à AI desenhar estudos técnicos diretamente no gráfico. Os desenhos incluem suportes, resistências, linhas de tendência, zonas de liquidez, e outras análises visuais.
+
+**⚠️ IMPORTANTE:** Os estudos podem ser desligados através do botão de toggle na sidebar do chat. Quando desligados, a AI **não receberá instruções sobre como desenhar estudos** e suas respostas não conterão referências a "Study #1", "Study #2", etc.
+
+## 🎛️ Controle de Estudos
+
+### Ativar/Desativar Estudos
+
+Os estudos podem ser controlados através da UI:
+
+1. Abra a sidebar do chat (ícone à esquerda)
+2. Clique no botão "Enable AI Studies" / "Disable AI Studies"
+3. Quando **desligado**:
+   - ✅ A AI usa prompt **simplificado** (respostas mais curtas)
+   - ✅ Respostas **não** contêm referências a "Study #1", "Study #2"
+   - ✅ Análises focam apenas em texto sem desenhos
+   - ✅ Ideal para perguntas rápidas e respostas concisas
+
+4. Quando **ligado**:
+   - ✅ A AI usa prompt **completo** (análises detalhadas)
+   - ✅ Respostas incluem estudos desenhados no gráfico
+   - ✅ Análises mais abrangentes com suporte/resistência
+   - ✅ Ideal para análises técnicas completas
+
+### Estado do Toggle
+
+```typescript
+import { useAIStore } from '@/renderer/store/aiStore';
+
+const enableAIStudies = useAIStore((state) => state.enableAIStudies);
+const toggleAIStudies = useAIStore((state) => state.toggleAIStudies);
+
+// Verificar se estudos estão habilitados
+if (enableAIStudies) {
+  // Processar estudos da resposta
+}
+
+// Alternar estado
+toggleAIStudies();
+```
 
 ## 🎯 Características
 
@@ -212,9 +251,26 @@ interface AIStudyData {
 ## 🐛 Troubleshooting
 
 ### Estudos não aparecem
-1. Verifique se a AI retornou JSON válido
-2. Abra o console e procure por erros de parsing
-3. Confirme que os timestamps estão dentro do range dos candles
+1. **Verifique se os estudos estão habilitados**: Toggle na sidebar do chat deve estar azul
+2. Verifique se a AI retornou JSON válido
+3. Abra o console e procure por erros de parsing
+4. Confirme que os timestamps estão dentro do range dos candles
+
+### AI menciona "Study #1" mas estudos estão desligados
+- **Causa**: Estado do toggle não foi propagado corretamente para o AIService
+- **Solução**: 
+  1. Reabra a sidebar do chat
+  2. Toggle os estudos (desligar e ligar novamente)
+  3. Envie nova mensagem para a AI
+  4. O prompt será atualizado automaticamente
+
+### Respostas da AI muito longas com instruções de desenho
+- **Causa**: Estudos habilitados usam prompt "full" com análises detalhadas
+- **Solução**: Desabilite os estudos através do toggle para ativar o prompt "simple" e obter respostas mais curtas e objetivas
+
+### Diferença entre prompts
+- **Prompt Full** (estudos ligados): ~2000+ caracteres, análise detalhada com seções estruturadas
+- **Prompt Simple** (estudos desligados): ~300 caracteres, respostas diretas e concisas
 4. Verifique se o símbolo está correto
 
 ### Estudos não são salvos

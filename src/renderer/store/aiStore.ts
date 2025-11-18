@@ -51,6 +51,7 @@ interface AIState {
   messages: AIMessage[];
   provider: AIProviderType | null;
   model: string | null;
+  enableAIStudies: boolean;
   
   responseProcessor: ((response: string) => string) | null;
 
@@ -85,6 +86,7 @@ interface AIState {
 
   sendMessage: (content: string, chartData?: ChartData) => Promise<void>;
   setResponseProcessor: (processor: ((response: string) => string) | null) => void;
+  toggleAIStudies: () => void;
 
   clearAll: () => void;
 }
@@ -227,13 +229,14 @@ export const useAIStore = create<AIState>()(
     (set, get) => ({
       conversations: [],
       activeConversationId: null,
-      settings: null,
+      settings: { provider: 'openai', model: 'gpt-4o' },
       isLoading: false,
       error: null,
       lastAnalysis: null,
       messages: [],
-      provider: null,
-      model: null,
+      provider: 'openai',
+      model: 'gpt-4o',
+      enableAIStudies: true,
       responseProcessor: null,
 
       setSettings: (settings) => set({ 
@@ -243,21 +246,24 @@ export const useAIStore = create<AIState>()(
       }),
       
       updateSettings: (partialSettings) => set((state) => {
-        const newProvider = partialSettings.provider || state.settings?.provider;
-        let newModel = partialSettings.model || state.settings?.model;
+        const currentSettings = state.settings || { provider: 'openai' as AIProviderType, model: 'gpt-4o' };
+        const newProvider = partialSettings.provider || currentSettings.provider;
+        let newModel = partialSettings.model || currentSettings.model;
         
         if (partialSettings.provider && newProvider && !partialSettings.model) {
           newModel = DEFAULT_MODELS[newProvider];
         }
         
-        const newSettings = state.settings 
-          ? { ...state.settings, ...partialSettings, ...(newModel ? { model: newModel } : {}) }
-          : null;
+        const newSettings = { 
+          ...currentSettings, 
+          ...partialSettings, 
+          ...(newModel ? { model: newModel } : {}) 
+        };
         
         return {
           settings: newSettings,
-          provider: newSettings?.provider || null,
-          model: newSettings?.model || null,
+          provider: newSettings.provider,
+          model: newSettings.model || null,
         };
       }),
 
@@ -268,6 +274,8 @@ export const useAIStore = create<AIState>()(
       }),
 
       setResponseProcessor: (processor) => set({ responseProcessor: processor }),
+
+      toggleAIStudies: () => set((state) => ({ enableAIStudies: !state.enableAIStudies })),
 
       createConversation: (title, symbol) => {
         const id = generateId();
@@ -498,7 +506,7 @@ export const useAIStore = create<AIState>()(
 
       sendMessage: async (content, chartData) => {
         const state = get();
-        const { settings } = state;
+        const { settings, enableAIStudies } = state;
 
         if (!settings || !settings.provider) {
           set({ error: 'Please configure AI settings first' });
@@ -535,7 +543,10 @@ export const useAIStore = create<AIState>()(
         });
 
         try {
-          const aiService = new AIService(settings);
+          const aiService = new AIService({
+            ...settings,
+            enableAIStudies,
+          });
           
           const messagesForAPI = chartData 
             ? [
@@ -592,11 +603,27 @@ export const useAIStore = create<AIState>()(
     }),
     {
       name: 'marketmind-ai-storage',
+      version: 1,
       partialize: (state) => ({
         conversations: state.conversations,
         activeConversationId: state.activeConversationId,
         settings: state.settings,
+        provider: state.provider,
+        model: state.model,
+        enableAIStudies: state.enableAIStudies,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        
+        if (!state.settings || !state.settings.provider) {
+          state.settings = { provider: 'openai', model: 'gpt-4o' };
+          state.provider = 'openai';
+          state.model = 'gpt-4o';
+        } else if (!state.provider) {
+          state.provider = state.settings.provider;
+          state.model = state.settings.model || null;
+        }
+      },
     }
   )
 );

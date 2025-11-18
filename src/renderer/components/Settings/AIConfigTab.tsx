@@ -4,8 +4,8 @@ import { PasswordInput } from '@/renderer/components/ui/password-input';
 import { Select } from '@/renderer/components/ui/select';
 import { Slider } from '@/renderer/components/ui/slider';
 import { DEFAULT_AI_SETTINGS } from '@/renderer/constants/defaults';
-import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useCustomPrompts } from '@/renderer/hooks/useCustomPrompts';
+import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useSecureStorage } from '@/renderer/hooks/useSecureStorage';
 import { useAIStore } from '@/renderer/store';
 import {
@@ -20,7 +20,7 @@ import {
 import type { AIProviderType } from '@shared/types';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HiArrowPath } from 'react-icons/hi2';
+import { LuRefreshCw } from 'react-icons/lu';
 import { PromptEditor } from './PromptEditor';
 
 type AIProvider = 'openai' | 'anthropic' | 'gemini';
@@ -226,7 +226,7 @@ export const AIConfigTab = () => {
           width="full"
           colorPalette="red"
         >
-          <HiArrowPath />
+          <LuRefreshCw />
           {t('settings.resetToDefaults')}
         </Button>
       </Box>

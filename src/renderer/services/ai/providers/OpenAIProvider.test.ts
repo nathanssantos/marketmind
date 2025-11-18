@@ -1,9 +1,6 @@
 import type { AIAnalysisRequest, AIMessage } from '@shared/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OpenAIProvider } from './OpenAIProvider';
-import prompts from '../prompts.json';
-
-const SYSTEM_PROMPT = prompts.chartAnalysis.system;
 
 const mockCreate = vi.fn();
 
@@ -85,7 +82,7 @@ describe('OpenAIProvider', () => {
         messages: [
           {
             role: 'system',
-            content: SYSTEM_PROMPT,
+            content: expect.any(String),
           },
           {
             role: 'user',
@@ -140,7 +137,7 @@ describe('OpenAIProvider', () => {
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'system', content: expect.any(String) },
             { role: 'user', content: 'What is RSI?' },
             { role: 'assistant', content: 'RSI is a momentum indicator...' },
             { role: 'user', content: 'What values indicate overbought?' },
@@ -184,7 +181,7 @@ describe('OpenAIProvider', () => {
           messages: [
             {
               role: 'system',
-              content: SYSTEM_PROMPT,
+              content: expect.any(String),
             },
             {
               role: 'user',
@@ -240,7 +237,7 @@ describe('OpenAIProvider', () => {
           messages: [
             {
               role: 'system',
-              content: SYSTEM_PROMPT,
+              content: expect.any(String),
             },
             {
               role: 'user',

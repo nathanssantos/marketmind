@@ -22,8 +22,9 @@ export class ClaudeProvider extends BaseAIProvider {
     images?: string[]
   ): Promise<AIAnalysisResponse> {
     try {
-      const systemPrompt = this.getSystemPrompt();
-      const userMessages = messages.filter(m => m.role === 'user' || m.role === 'assistant');
+      const systemPrompt = this.getSystemPrompt(messages);
+      const optimizedMessages = this.convertMessages(messages);
+      const userMessages = optimizedMessages.filter(m => m.role === 'user' || m.role === 'assistant');
 
       const claudeMessages = userMessages.map(msg => {
         if (msg.role === 'user' && images && images.length > 0) {
