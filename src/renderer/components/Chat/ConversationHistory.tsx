@@ -1,15 +1,15 @@
-import { Box, Flex, IconButton, Text } from '@chakra-ui/react';
+import { Box, Flex, IconButton, Spinner, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HiClock, HiTrash } from 'react-icons/hi2';
+import { LuHistory, LuTrash2 } from 'react-icons/lu';
 import { useChartContext } from '../../context/ChartContext';
 import { useAIStore } from '../../store/aiStore';
 import { Popover } from '../ui/popover';
-import { TooltipWrapper } from '../ui/Tooltip';
 
 export const ConversationHistory = () => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const { chartData } = useChartContext();
   const activeConversationId = useAIStore((state) => state.activeConversationId);
   const getConversationsBySymbol = useAIStore((state) => state.getConversationsBySymbol);
@@ -24,9 +24,18 @@ export const ConversationHistory = () => {
     setOpen(false);
   };
 
-  const handleDeleteConversation = (id: string, e: React.MouseEvent) => {
+  const handleDeleteConversation = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    setDeletingIds((prev) => new Set(prev).add(id));
+    
+    await new Promise(resolve => setTimeout(resolve, 300));
     deleteConversation(id);
+    
+    setDeletingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
   };
 
   const formatDate = (timestamp: number): string => {
@@ -54,16 +63,16 @@ export const ConversationHistory = () => {
       open={open}
       onOpenChange={(e) => setOpen(e.open)}
       showArrow={false}
+      positioning={{ placement: 'bottom-start', offset: { mainAxis: 8 } }}
       trigger={
-        <TooltipWrapper label={t('common.conversationHistory')} showArrow>
-          <IconButton
-            aria-label={t('common.conversationHistory')}
-            size="sm"
-            variant="ghost"
-          >
-            <HiClock />
-          </IconButton>
-        </TooltipWrapper>
+        <IconButton
+          aria-label={t('common.conversationHistory')}
+          size="sm"
+          variant="ghost"
+          onClick={() => setOpen(!open)}
+        >
+          <LuHistory />
+        </IconButton>
       }
     >
       <Flex direction="column" maxHeight="400px">
@@ -128,8 +137,13 @@ export const ConversationHistory = () => {
                   size="xs"
                   variant="ghost"
                   colorScheme="red"
+                  disabled={deletingIds.has(conversation.id)}
                 >
-                  <HiTrash />
+                  {deletingIds.has(conversation.id) ? (
+                    <Spinner size="xs" />
+                  ) : (
+                    <LuTrash2 />
+                  )}
                 </IconButton>
               </Flex>
             ))

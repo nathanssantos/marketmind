@@ -133,13 +133,31 @@
       "cryptoPanicApiKeyPlaceholder": "Entrez la clé API CryptoPanic ou utilisez 'free'",
       "refreshInterval": "Intervalle de rafraîchissement (minutes)",
       "maxArticles": "Nombre maximum d'articles"
+    },
+    "prompt": {
+      "chartAnalysisPrompt": "Prompt d'Analyse du Graphique",
+      "chartAnalysisDescription": "Personnalisez le prompt système utilisé pour l'analyse des graphiques",
+      "chatPrompt": "Prompt du Chat",
+      "chatDescription": "Personnalisez le prompt système utilisé pour les interactions générales de chat",
+      "jsonPlaceholder": "Entrez un JSON valide...",
+      "customPromptWarning": "Vous utilisez un prompt personnalisé. Cliquez sur 'Réinitialiser par Défaut' pour restaurer la configuration d'origine.",
+      "errorEmpty": "Le prompt ne peut pas être vide",
+      "errorInvalidJson": "Format JSON invalide",
+      "formatJson": "Formater JSON",
+      "resetToDefault": "Réinitialiser le Prompt par Défaut",
+      "defaultValue": "Valeur par Défaut",
+      "tipValidJson": "Le prompt doit être au format JSON valide",
+      "tipFormat": "Utilisez le bouton 'Formater JSON' pour formater automatiquement votre JSON",
+      "tipBackup": "Conservez une sauvegarde avant d'apporter des modifications majeures aux prompts"
     }
   },
   "chat": {
     "title": "Assistant IA",
     "newConversation": "Nouvelle conversation",
     "closeChat": "Fermer le chat",
-    "inputPlaceholder": "Posez une question sur le graphique...",
+    "enableAIStudies": "Activer les dessins IA sur le graphique",
+    "disableAIStudies": "Désactiver les dessins IA sur le graphique",
+    "inputPlaceholder": "Posez des questions sur le graphique...",
     "sendMessage": "Envoyer le message",
     "send": "Envoyer",
     "noMessages": "Aucun message pour le moment",

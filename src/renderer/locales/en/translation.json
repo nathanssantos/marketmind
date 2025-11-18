@@ -134,12 +134,30 @@
       "cryptoPanicApiKeyPlaceholder": "Enter CryptoPanic API key or use 'free'",
       "refreshInterval": "Refresh Interval (minutes)",
       "maxArticles": "Maximum Articles"
+    },
+    "prompt": {
+      "chartAnalysisPrompt": "Chart Analysis Prompt",
+      "chartAnalysisDescription": "Customize the system prompt used for chart analysis",
+      "chatPrompt": "Chat Prompt",
+      "chatDescription": "Customize the system prompt used for general chat interactions",
+      "jsonPlaceholder": "Enter valid JSON...",
+      "customPromptWarning": "You are using a custom prompt. Click 'Reset to Default' to restore the original configuration.",
+      "errorEmpty": "Prompt cannot be empty",
+      "errorInvalidJson": "Invalid JSON format",
+      "formatJson": "Format JSON",
+      "resetToDefault": "Reset to Default Prompt",
+      "defaultValue": "Default Value",
+      "tipValidJson": "The prompt must be valid JSON format",
+      "tipFormat": "Use 'Format JSON' button to auto-format your JSON",
+      "tipBackup": "Keep a backup before making major changes to prompts"
     }
   },
   "chat": {
     "title": "AI Assistant",
     "newConversation": "New conversation",
     "closeChat": "Close chat",
+    "enableAIStudies": "Enable AI chart drawings",
+    "disableAIStudies": "Disable AI chart drawings",
     "inputPlaceholder": "Ask about the chart...",
     "sendMessage": "Send message",
     "send": "Send",

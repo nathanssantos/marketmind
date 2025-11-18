@@ -1,6 +1,6 @@
 import { Box, Flex, IconButton, Textarea } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { HiPaperAirplane } from 'react-icons/hi2';
+import { LuSend } from 'react-icons/lu';
 import { UnifiedAISelector } from '../Layout/UnifiedAISelector';
 import { useMessageInput } from './useMessageInput';
 
@@ -46,7 +46,7 @@ export const MessageInput = () => {
           width="48px"
           alignSelf="stretch"
         >
-          <HiPaperAirplane />
+          <LuSend />
         </IconButton>
       </Flex>
     </Box>

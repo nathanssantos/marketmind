@@ -26,9 +26,8 @@ interface UnifiedAISelectorProps {
 
 export const UnifiedAISelector = memo(({ showBadge = true, openUpwards = false }: UnifiedAISelectorProps) => {
   const { t } = useTranslation();
-  const settings = useAIStore((state) => state.settings);
-  const provider = settings?.provider;
-  const model = settings?.model;
+  const provider = useAIStore((state) => state.provider);
+  const model = useAIStore((state) => state.model);
   const updateSettings = useAIStore((state) => state.updateSettings);
 
   const currentValue = useMemo(

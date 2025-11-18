@@ -1,5 +1,5 @@
 import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage, AIProviderType } from '@shared/types';
-import prompts from './prompts.json';
+import defaultPrompts from './prompts.json';
 import { ClaudeProvider, GeminiProvider, OpenAIProvider } from './providers';
 import type { AIProviderConfig, BaseAIProvider } from './types';
 
@@ -9,6 +9,13 @@ export interface AIServiceConfig {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  useOptimizedPrompts?: boolean;
+  enableAIStudies?: boolean;
+  customPrompts?: {
+    chartAnalysis?: typeof defaultPrompts.chartAnalysis;
+    chat?: typeof defaultPrompts.chat;
+    signals?: typeof defaultPrompts.signals;
+  };
 }
 
 export class AIService {
@@ -64,6 +71,10 @@ export class AIService {
       default:
         throw new Error(`Unknown provider type: ${this.providerType}`);
     }
+    
+    if (this.provider && this.config.enableAIStudies !== undefined) {
+      this.provider.enableAIStudies = this.config.enableAIStudies;
+    }
   }
 
   async sendMessage(
@@ -118,18 +129,35 @@ export class AIService {
   }
 
   getSystemPrompt(): string {
-    return prompts.chartAnalysis.system;
+    return this.config.customPrompts?.chartAnalysis?.system || defaultPrompts.chartAnalysis.system;
   }
 
   getChatSystemPrompt(): string {
-    return prompts.chat.system;
+    return this.config.customPrompts?.chat?.system || defaultPrompts.chat.system;
   }
 
   getDisclaimer(): string {
-    return prompts.chat.disclaimer;
+    return this.config.customPrompts?.chat?.disclaimer || defaultPrompts.chat.disclaimer;
   }
 
-  getSignalInfo(signal: keyof typeof prompts.signals) {
-    return prompts.signals[signal];
+  getSignalInfo(signal: keyof typeof defaultPrompts.signals) {
+    return this.config.customPrompts?.signals?.[signal] || defaultPrompts.signals[signal];
+  }
+
+  setOptimizedPrompts(enabled: boolean): void {
+    if (this.provider) {
+      this.provider['useOptimizedPrompts'] = enabled;
+    }
+  }
+  
+  setEnableAIStudies(enabled: boolean): void {
+    this.config.enableAIStudies = enabled;
+    if (this.provider) {
+      this.provider.enableAIStudies = enabled;
+    }
+  }
+
+  isUsingOptimizedPrompts(): boolean {
+    return this.provider?.['useOptimizedPrompts'] ?? true;
   }
 }

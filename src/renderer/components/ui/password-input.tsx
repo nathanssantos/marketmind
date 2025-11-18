@@ -3,7 +3,7 @@ import type { InputProps } from '@/renderer/components/ui/input';
 import { Input } from '@/renderer/components/ui/input';
 import { Box } from '@chakra-ui/react';
 import { forwardRef, useState } from 'react';
-import { HiEye, HiEyeSlash } from 'react-icons/hi2';
+import { LuEye, LuEyeOff } from 'react-icons/lu';
 
 export interface PasswordInputProps extends Omit<InputProps, 'type'> {}
 
@@ -29,7 +29,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>((p
         disabled={props.disabled}
         aria-label={show ? 'Hide password' : 'Show password'}
       >
-        {show ? <HiEyeSlash /> : <HiEye />}
+        {show ? <LuEyeOff /> : <LuEye />}
       </Button>
     </Box>
   );

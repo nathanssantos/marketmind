@@ -1,7 +1,7 @@
 import { Logo } from '@/renderer/components/ui/logo';
 import { Box, Flex, Link, Separator, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { HiArrowTopRightOnSquare } from 'react-icons/hi2';
+import { LuExternalLink } from 'react-icons/lu';
 
 export const AboutTab = () => {
   const { t } = useTranslation();
@@ -68,15 +68,15 @@ export const AboutTab = () => {
         <Stack gap={2} fontSize="sm">
           <Link href="https://github.com/nathanssantos/marketmind" target="_blank" color="blue.500" display="flex" alignItems="center" gap={1}>
             {t('about.resourcesList.github')}
-            <HiArrowTopRightOnSquare />
+            <LuExternalLink />
           </Link>
           <Link href="https://github.com/nathanssantos/marketmind/blob/main/docs/AI_CONTEXT.md" target="_blank" color="blue.500" display="flex" alignItems="center" gap={1}>
             {t('about.resourcesList.documentation')}
-            <HiArrowTopRightOnSquare />
+            <LuExternalLink />
           </Link>
           <Link href="https://github.com/nathanssantos/marketmind/blob/main/docs/CHANGELOG.md" target="_blank" color="blue.500" display="flex" alignItems="center" gap={1}>
             {t('about.resourcesList.changelog')}
-            <HiArrowTopRightOnSquare />
+            <LuExternalLink />
           </Link>
         </Stack>
       </Box>

@@ -6,7 +6,7 @@ import { DEFAULT_ADVANCED_CONFIG } from '@/renderer/constants/defaults';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { Box, Separator, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { HiArrowPath } from 'react-icons/hi2';
+import { LuRefreshCw } from 'react-icons/lu';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 
 interface ChartSettingsTabProps {
@@ -65,7 +65,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
           width="full"
           colorPalette="red"
         >
-          <HiArrowPath />
+          <LuRefreshCw />
           {t('settings.resetToDefaults')}
         </Button>
       </Box>

@@ -2,7 +2,7 @@ import { Avatar, Box, Flex, Spinner, Text } from '@chakra-ui/react';
 import type { AIMessage } from '@shared/types';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HiSparkles, HiUser } from 'react-icons/hi2';
+import { LuSparkles, LuUser } from 'react-icons/lu';
 import ReactMarkdown from 'react-markdown';
 import { useAIStudyHover } from '../../context/AIStudyHoverContext';
 import { useToast } from '../../hooks/useToast';
@@ -45,7 +45,7 @@ export const MessageList = () => {
           gap={3}
           color="fg.muted"
         >
-          <HiSparkles size={48} />
+          <LuSparkles size={48} />
           <Text fontSize="lg" fontWeight="medium">
             {t('chat.emptyStateTitle')}
           </Text>
@@ -66,7 +66,7 @@ export const MessageList = () => {
                 bg={message.role === 'user' ? 'blue.500' : 'purple.500'}
               >
                 <Avatar.Icon>
-                  {message.role === 'user' ? <HiUser /> : <HiSparkles />}
+                  {message.role === 'user' ? <LuUser /> : <LuSparkles />}
                 </Avatar.Icon>
               </Avatar.Root>
               <Flex direction="column" flex={1} gap={1}>
@@ -110,7 +110,7 @@ export const MessageList = () => {
             <Flex align="center" gap={3}>
               <Avatar.Root size="sm" bg="purple.500">
                 <Avatar.Icon>
-                  <HiSparkles />
+                  <LuSparkles />
                 </Avatar.Icon>
               </Avatar.Root>
               <Flex align="center" gap={2}>

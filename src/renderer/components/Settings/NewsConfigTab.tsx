@@ -7,7 +7,7 @@ import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { Box, Checkbox, Flex, Link, Separator, Stack, Text, VStack } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HiArrowPath } from 'react-icons/hi2';
+import { LuRefreshCw } from 'react-icons/lu';
 
 export const NewsConfigTab = () => {
   const { t } = useTranslation();
@@ -299,7 +299,7 @@ export const NewsConfigTab = () => {
             variant="outline" 
             onClick={handleReset}
           >
-            <HiArrowPath />
+            <LuRefreshCw />
             {t('settings.resetToDefaults')}
           </Button>
         </Stack>

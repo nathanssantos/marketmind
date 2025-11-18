@@ -19,7 +19,8 @@ export class GeminiProvider extends BaseAIProvider {
     images?: string[]
   ): Promise<AIAnalysisResponse> {
     try {
-      const systemPrompt = this.getSystemPrompt();
+      const systemPrompt = this.getSystemPrompt(messages);
+      const optimizedMessages = this.convertMessages(messages);
       
       const model = this.client.getGenerativeModel({ 
         model: this.model,
@@ -35,25 +36,13 @@ export class GeminiProvider extends BaseAIProvider {
         parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }>;
       }> = [];
 
-      for (let i = 0; i < messages.length - 1; i++) {
-        const msg = messages[i];
+      for (let i = 0; i < optimizedMessages.length - 1; i++) {
+        const msg = optimizedMessages[i];
         if (!msg) continue;
         
         const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
 
         parts.push({ text: msg.content });
-
-        if (msg.images && msg.images.length > 0) {
-          msg.images.forEach(imageUrl => {
-            const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, '');
-            parts.push({
-              inlineData: {
-                mimeType: 'image/png',
-                data: base64Data,
-              },
-            });
-          });
-        }
 
         history.push({
           role: msg.role === 'user' ? 'user' : 'model',
@@ -63,7 +52,7 @@ export class GeminiProvider extends BaseAIProvider {
 
       const chat = model.startChat({ history });
 
-      const lastMessage = messages[messages.length - 1];
+      const lastMessage = optimizedMessages[optimizedMessages.length - 1];
       if (!lastMessage) {
         throw new Error('No messages provided');
       }

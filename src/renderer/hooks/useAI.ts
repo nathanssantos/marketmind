@@ -64,6 +64,7 @@ export const useAI = (options?: UseAIOptions) => {
     isLoading,
     error,
     lastAnalysis,
+    enableAIStudies,
     setSettings,
     updateSettings,
     createConversation,
@@ -90,6 +91,7 @@ export const useAI = (options?: UseAIOptions) => {
     try {
       const config: AIServiceConfig = {
         provider: settings.provider,
+        enableAIStudies,
       };
 
       if (settings.model) config.model = settings.model;
@@ -101,7 +103,7 @@ export const useAI = (options?: UseAIOptions) => {
       console.error('Failed to initialize AI service:', error);
       return null;
     }
-  }, [settings, options?.service]);
+  }, [settings, options?.service, enableAIStudies]);
 
   const isConfigured = useMemo(() => {
     return settings !== null;

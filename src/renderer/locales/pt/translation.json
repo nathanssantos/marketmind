@@ -133,12 +133,30 @@
       "cryptoPanicApiKeyPlaceholder": "Digite a chave da API CryptoPanic ou use 'free'",
       "refreshInterval": "Intervalo de Atualização (minutos)",
       "maxArticles": "Máximo de Artigos"
+    },
+    "prompt": {
+      "chartAnalysisPrompt": "Prompt de Análise do Gráfico",
+      "chartAnalysisDescription": "Personalize o prompt do sistema usado para análise de gráficos",
+      "chatPrompt": "Prompt do Chat",
+      "chatDescription": "Personalize o prompt do sistema usado para interações gerais de chat",
+      "jsonPlaceholder": "Digite um JSON válido...",
+      "customPromptWarning": "Você está usando um prompt personalizado. Clique em 'Restaurar Padrão' para restaurar a configuração original.",
+      "errorEmpty": "O prompt não pode estar vazio",
+      "errorInvalidJson": "Formato JSON inválido",
+      "formatJson": "Formatar JSON",
+      "resetToDefault": "Restaurar Prompt Padrão",
+      "defaultValue": "Valor Padrão",
+      "tipValidJson": "O prompt deve estar em formato JSON válido",
+      "tipFormat": "Use o botão 'Formatar JSON' para formatar automaticamente seu JSON",
+      "tipBackup": "Mantenha um backup antes de fazer grandes mudanças nos prompts"
     }
   },
   "chat": {
     "title": "Assistente IA",
     "newConversation": "Nova conversa",
     "closeChat": "Fechar chat",
+    "enableAIStudies": "Ativar desenhos da IA no gráfico",
+    "disableAIStudies": "Desativar desenhos da IA no gráfico",
     "inputPlaceholder": "Pergunte sobre o gráfico...",
     "sendMessage": "Enviar mensagem",
     "send": "Enviar",

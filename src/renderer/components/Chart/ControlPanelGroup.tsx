@@ -1,7 +1,7 @@
 import { Box, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
-import { HiOutlineChevronDown, HiOutlineChevronUp } from 'react-icons/hi';
 import type { ReactElement, ReactNode } from 'react';
 import { useState } from 'react';
+import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 
 export interface ControlPanelGroupProps {
   title: string;
@@ -60,7 +60,7 @@ export const ControlPanelGroup = ({
               colorPalette="gray"
               color="gray.400"
             >
-              {isExpanded ? <HiOutlineChevronUp size={14} /> : <HiOutlineChevronDown size={14} />}
+              {isExpanded ? <LuChevronUp size={14} /> : <LuChevronDown size={14} />}
             </IconButton>
           </HStack>
 

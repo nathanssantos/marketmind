@@ -1,6 +1,6 @@
 import { Box, Button, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { HiExclamationTriangle } from 'react-icons/hi2';
+import { LuTriangleAlert } from 'react-icons/lu';
 
 interface ErrorMessageProps {
   title?: string;
@@ -36,7 +36,7 @@ export const ErrorMessage = ({
           bg="red.500/10"
           color="red.500"
         >
-          <HiExclamationTriangle size={32} />
+          <LuTriangleAlert size={32} />
         </Box>
         
         <Stack gap={2}>

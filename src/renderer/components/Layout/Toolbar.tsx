@@ -2,11 +2,12 @@ import { Box, Flex, HStack, IconButton, Text } from '@chakra-ui/react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    HiOutlineChartBar,
-    HiOutlineCurrencyDollar,
-    HiOutlineViewGrid
-} from 'react-icons/hi';
-import { MdCandlestickChart, MdShowChart } from 'react-icons/md';
+    LuChartBar,
+    LuChartCandlestick,
+    LuChartLine,
+    LuDollarSign,
+    LuGrid3X3
+} from 'react-icons/lu';
 import type { MarketDataService } from '../../services/market/MarketDataService';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
@@ -117,7 +118,7 @@ export const Toolbar = memo(({
               colorPalette={chartType === 'candlestick' ? 'blue' : 'gray'}
               variant={chartType === 'candlestick' ? 'solid' : 'ghost'}
             >
-              <MdCandlestickChart />
+              <LuChartCandlestick />
             </IconButton>
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.lineChart')} showArrow>
@@ -128,7 +129,7 @@ export const Toolbar = memo(({
               colorPalette={chartType === 'line' ? 'blue' : 'gray'}
               variant={chartType === 'line' ? 'solid' : 'ghost'}
             >
-              <MdShowChart />
+              <LuChartLine />
             </IconButton>
           </TooltipWrapper>
         </HStack>
@@ -144,7 +145,7 @@ export const Toolbar = memo(({
               colorPalette={showVolume ? 'blue' : 'gray'}
               variant={showVolume ? 'solid' : 'ghost'}
             >
-              <HiOutlineChartBar />
+              <LuChartBar />
             </IconButton>
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.grid')} showArrow>
@@ -155,7 +156,7 @@ export const Toolbar = memo(({
               colorPalette={showGrid ? 'blue' : 'gray'}
               variant={showGrid ? 'solid' : 'ghost'}
             >
-              <HiOutlineViewGrid />
+              <LuGrid3X3 />
             </IconButton>
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.currentPrice')} showArrow>
@@ -166,7 +167,7 @@ export const Toolbar = memo(({
               colorPalette={showCurrentPriceLine ? 'blue' : 'gray'}
               variant={showCurrentPriceLine ? 'solid' : 'ghost'}
             >
-              <HiOutlineCurrencyDollar />
+              <LuDollarSign />
             </IconButton>
           </TooltipWrapper>
         </HStack>

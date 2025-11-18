@@ -30,6 +30,7 @@ export const LanguageSelector = () => {
           onChange={handleLanguageChange}
           options={LANGUAGES}
           placeholder={LANGUAGES.find(l => l.value === i18n.language)?.label || 'English'}
+          usePortal={false}
         />
       </Stack>
     </Box>

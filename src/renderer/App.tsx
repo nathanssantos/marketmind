@@ -3,7 +3,7 @@ import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { Candle } from '@shared/types';
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HiX } from 'react-icons/hi';
+import { LuX } from 'react-icons/lu';
 import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
@@ -108,7 +108,7 @@ function App(): ReactElement {
                 color="white"
                 _hover={{ bg: 'whiteAlpha.200' }}
               >
-                <HiX />
+                <LuX />
               </IconButton>
               <ChakraText fontWeight="bold" mb={1} pr={6}>
                 {toast.title}
@@ -264,11 +264,16 @@ function AppContent(): ReactElement {
     processAIResponse 
   } = useAIStudies({ symbol, conversationId: activeConversationId });
   const setResponseProcessor = useAIStore(state => state.setResponseProcessor);
+  const enableAIStudies = useAIStore(state => state.enableAIStudies);
 
   useEffect(() => {
-    setResponseProcessor(processAIResponse);
+    if (enableAIStudies) {
+      setResponseProcessor(processAIResponse);
+    } else {
+      setResponseProcessor(null);
+    }
     return () => setResponseProcessor(null);
-  }, [processAIResponse, setResponseProcessor]);
+  }, [processAIResponse, setResponseProcessor, enableAIStudies]);
 
   useEffect(() => {
     if (activeConversationId && studyDataId) {
