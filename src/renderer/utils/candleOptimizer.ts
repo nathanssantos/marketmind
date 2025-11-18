@@ -110,18 +110,20 @@ export const formatCandlesForPrompt = (optimized: OptimizedCandleData): string =
   const parts: string[] = [];
   
   if (optimized.detailed.length > 0) {
-    parts.push('Recent Candles (Detailed):');
+    parts.push('📊 Recent Candles (MOST CURRENT - Use these timestamps for current price levels):');
     optimized.detailed.forEach((candle, index) => {
       const date = new Date(candle.timestamp).toISOString();
+      const isMostRecent = index === optimized.detailed.length - 1;
+      const marker = isMostRecent ? ' ← CURRENT/LATEST' : '';
       parts.push(
         `${index + 1}. [${date}] O:$${candle.open.toFixed(2)} H:$${candle.high.toFixed(2)} ` +
-        `L:$${candle.low.toFixed(2)} C:$${candle.close.toFixed(2)} V:${candle.volume.toLocaleString()}`
+        `L:$${candle.low.toFixed(2)} C:$${candle.close.toFixed(2)} V:${candle.volume.toLocaleString()}${marker}`
       );
     });
   }
   
   if (optimized.simplified.length > 0) {
-    parts.push(`\nHistorical Data (${optimized.simplified.length} candles, simplified):`);
+    parts.push(`\n📈 Historical Data (${optimized.simplified.length} candles, simplified - OLDER data):`);
     const firstSimplified = optimized.simplified[0];
     const lastSimplified = optimized.simplified[optimized.simplified.length - 1];
     
