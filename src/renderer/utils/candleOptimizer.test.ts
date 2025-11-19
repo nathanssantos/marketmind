@@ -138,7 +138,9 @@ describe('candleOptimizer', () => {
       const optimized = optimizeCandles(candles);
       const formatted = formatCandlesForPrompt(optimized);
 
-      expect(formatted).toContain('Recent Candles (Detailed)');
+      expect(formatted).toContain('Recent Candles');
+      expect(formatted).toContain('MOST CURRENT');
+      expect(formatted).toContain('CURRENT/LATEST');
       expect(formatted).toContain('O:$');
       expect(formatted).toContain('H:$');
       expect(formatted).toContain('L:$');
@@ -154,6 +156,7 @@ describe('candleOptimizer', () => {
       const formatted = formatCandlesForPrompt(optimized);
 
       expect(formatted).toContain('Historical Data');
+      expect(formatted).toContain('OLDER data');
       expect(formatted).toContain('Range:');
     });
 

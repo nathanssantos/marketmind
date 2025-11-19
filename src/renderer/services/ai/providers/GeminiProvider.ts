@@ -42,7 +42,8 @@ export class GeminiProvider extends BaseAIProvider {
         
         const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
 
-        parts.push({ text: msg.content });
+        const contentText = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+        parts.push({ text: contentText });
 
         history.push({
           role: msg.role === 'user' ? 'user' : 'model',
@@ -59,7 +60,8 @@ export class GeminiProvider extends BaseAIProvider {
 
       const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
 
-      parts.push({ text: lastMessage.content });
+      const lastContentText = typeof lastMessage.content === 'string' ? lastMessage.content : JSON.stringify(lastMessage.content);
+      parts.push({ text: lastContentText });
 
       if (images && images.length > 0) {
         images.forEach(imageUrl => {

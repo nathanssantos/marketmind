@@ -4,8 +4,8 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.15.0-blue.svg)
-![Tests](https://img.shields.io/badge/tests-592%20passing-brightgreen.svg)
+![Version](https://img.shields.io/badge/version-0.16.0-blue.svg)
+![Tests](https://img.shields.io/badge/tests-652%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-90.62%25-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
@@ -31,7 +31,7 @@
 - 📊 **Chart Type Switcher**: Toggle between candlestick and line
 - �️ **Display Toggles**: Volume, grid, and current price line controls
 - 📈 **Indicator Buttons**: Moving averages with color-coded borders
-- �🖱️ **Interactive Controls**: Advanced chart settings panel with pin functionality
+- 🖱️ **Interactive Controls**: Advanced chart settings panel with pin functionality
 - ⚙️ **Advanced Settings**: 9 configurable parameters (margins, spacing, grid, etc.)
 - 💾 **Persistent Settings**: All configurations saved with localStorage
 - 🎯 **Smart Tooltip**: Hover to see OHLCV data with intelligent positioning
@@ -46,10 +46,15 @@
 - 💾 **Data Caching**: Smart caching system to reduce API calls
 - 🤖 **AI Chat Interface**: Full chat system with 10 AI models (OpenAI, Claude, Gemini)
 - 💬 **Interactive Sidebar**: Resizable chat sidebar (300-800px) with markdown rendering
-- 📊 **Chart Data Integration**: Sends structured data (100 candles + statistics) instead of images
+- 📊 **Chart Data Integration**: Sends structured data (1020 candles optimized) instead of images
 - 🎨 **Theme System**: Enhanced dark mode with semantic tokens
 - ⚙️ **AI Selector**: Provider and model selection with pricing info
 - 📝 **Message History**: Clean UI with auto-scroll and loading states
+- 🎨 **AI Studies System**: Visual indicators (arrows, zones, lines) with toggle control
+- 🔄 **Smart Prompt Selection**: Automatic switching between full/simple modes based on user intent
+- ⚙️ **Configurable AI Settings**: Adjustable detailed candles count (10-100, default: 32)
+- 🚀 **Performance Optimized**: Conversation summarization, candle optimization, AI caching
+- 📉 **Token Reduction**: ~60% reduction in token usage for long conversations
 - 🔐 **Secure Storage**: Platform-native encryption for API keys (Keychain/DPAPI/libsecret)
 - ⚙️ **Settings System**: Comprehensive settings with AI, news, and general configuration
 - 📰 **News Integration**: Multi-provider news aggregation (NewsAPI, CryptoPanic, Finnhub)

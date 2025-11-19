@@ -1805,8 +1805,8 @@ Next step: implement the CandlestickRenderer.
 
 ### ✅ Phase 15: Application Toolbar (100% Complete)
 **Status:** ✅ Complete  
-**Branch:** feature/toolbar  
-**Target:** Centralize chart controls in a professional toolbar
+**Branch:** feature/toolbar → main  
+**Released:** v0.15.0 (November 17, 2025)
 
 #### Deliverables
 - ✅ Toolbar component with horizontal layout
@@ -1822,27 +1822,52 @@ Next step: implement the CandlestickRenderer.
 - ✅ Layout adjustments (116px offset for header+toolbar)
 - ✅ All tests passing (592 tests)
 
+### ✅ Phase 16: AI Studies Toggle & Performance (100% Complete)
+**Status:** ✅ Complete  
+**Branch:** feature/enhanced-technical-studies → main  
+**Released:** v0.16.0 (November 18, 2025)
+
+#### Deliverables
+- ✅ AI Studies toggle button in chat sidebar
+- ✅ Automatic prompt mode selection (full vs simple)
+- ✅ Intent-based prompt optimization
+- ✅ Configurable detailed candles count (10-100, default: 32)
+- ✅ Conversation summarization (keeps last 10 messages)
+- ✅ Candle data optimization (32 detailed + up to 1000 simplified)
+- ✅ AI context caching system (5-minute cache)
+- ✅ ~60% reduction in token usage for long conversations
+- ✅ Enhanced timestamp guidance (OLD vs RECENT labels)
+- ✅ Visual markers for temporal orientation (📊 recent, 📈 historical)
+- ✅ Improved zone rendering (auto-extension, minimum width)
+- ✅ Mandatory study reference in analysis text
+- ✅ Icon system migration to Lucide (22 files)
+- ✅ Study reference color optimization (fixed flickering)
+- ✅ Settings modal UX improvements (portal disabled in selects)
+- ✅ Complete i18n for Settings modal (104 new keys, 4 languages)
+- ✅ TypeScript strict mode compliance (0 type errors)
+- ✅ All 652 tests passing
+
 ### 🎯 Project Status
-**All 15 Phases Complete! Production Ready! 🚀**
+**All 16 Phases Complete! Production Ready! 🚀**
 
 ### 📋 Summary
-- ✅ 592 tests passing (100% pass rate)
+- ✅ 652 tests passing (100% pass rate)
 - ✅ 90.62% code coverage (exceeded 80% target!)
 - ✅ All MVP features implemented
+- ✅ AI Studies system with smart toggle
+- ✅ Performance optimized (60% token reduction)
 - ✅ Professional toolbar interface
 - ✅ Multi-language support (EN, PT, ES, FR)
 - ✅ Comprehensive documentation
 - ✅ Production-ready builds (macOS, Windows)
 - ✅ Auto-update system functional
-- ✅ Performance optimized
 - ✅ Accessibility compliant
 
 ### 🚀 Next Steps (Post-MVP)
-1. ✅ **COMPLETED**: Merged feature/i18n-complete → develop → main
-2. ✅ **COMPLETED**: Created v0.14.0 release on GitHub with annotated tag
-3. ✅ **COMPLETED**: All 14 phases complete, production ready! 🎉
-4. **In Progress**: Phase 15 - Application Toolbar (feature/toolbar branch)
-5. **Future v1.0+**:
+1. ✅ **COMPLETED**: Phase 14 - Internationalization (v0.14.0)
+2. ✅ **COMPLETED**: Phase 15 - Application Toolbar (v0.15.0)
+3. ✅ **COMPLETED**: Phase 16 - AI Studies Toggle & Performance (v0.16.0)
+4. **Future v1.0+**:
    - Integration and E2E tests
    - Additional technical indicators (RSI, MACD, Bollinger Bands)
    - WebSocket for real-time updates (Binance already has WebSocket)
@@ -1858,16 +1883,17 @@ Next step: implement the CandlestickRenderer.
 
 ## ✅ Conclusion
 
-This plan provides a complete roadmap to develop MarketMind from scratch to launch. The project successfully achieved all 15 phases, resulting in a production-ready application with:
+This plan provides a complete roadmap to develop MarketMind from scratch to launch. The project successfully achieved all 16 phases, resulting in a production-ready application with:
 
 - ✅ Complete chart rendering system with technical indicators
+- ✅ AI Studies system with smart toggle and performance optimization
 - ✅ Professional toolbar with centralized controls
 - ✅ Multi-provider AI integration (OpenAI, Anthropic, Google)
 - ✅ Real-time market data from Binance and CoinGecko
 - ✅ News integration with AI analysis
 - ✅ Secure encrypted storage for API keys
 - ✅ Auto-update system via GitHub Releases
-- ✅ 592 tests with 90.62% coverage
+- ✅ 652 tests with 90.62% coverage
 - ✅ Multi-language support (EN, PT, ES, FR)
 - ✅ Comprehensive documentation
 - ✅ Production builds for macOS and Windows
@@ -1877,8 +1903,8 @@ This plan provides a complete roadmap to develop MarketMind from scratch to laun
 
 ---
 
-**Document Version:** 1.4  
-**Date:** November 16, 2025  
+**Document Version:** 1.5  
+**Date:** November 18, 2025  
 **Author:** Initial planning for MarketMind development  
-**Last Update:** Phase 14 completed - Internationalization (581 tests passing, 90.62% coverage, v0.14.0 released)
+**Last Update:** Phase 16 completed - AI Studies Toggle & Performance (652 tests passing, 90.62% coverage, v0.16.0 released)
 

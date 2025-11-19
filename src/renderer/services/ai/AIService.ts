@@ -11,6 +11,7 @@ export interface AIServiceConfig {
   maxTokens?: number;
   useOptimizedPrompts?: boolean;
   enableAIStudies?: boolean;
+  detailedCandlesCount?: number;
   customPrompts?: {
     chartAnalysis?: typeof defaultPrompts.chartAnalysis;
     chat?: typeof defaultPrompts.chat;
@@ -56,6 +57,7 @@ export class AIService {
       ...(this.config.model && { model: this.config.model }),
       ...(this.config.temperature !== undefined && { temperature: this.config.temperature }),
       ...(this.config.maxTokens !== undefined && { maxTokens: this.config.maxTokens }),
+      ...(this.config.detailedCandlesCount !== undefined && { detailedCandlesCount: this.config.detailedCandlesCount }),
     };
 
     switch (this.providerType) {

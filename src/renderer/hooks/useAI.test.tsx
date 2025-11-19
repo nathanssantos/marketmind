@@ -1,6 +1,8 @@
 import type { AIAnalysisResponse, AIMessage, AIProviderType, Candle } from '@shared/types';
 import { act, renderHook } from '@testing-library/react';
+import React, { type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ChartProvider } from '../context/ChartContext';
 import type { AIService } from '../services/ai';
 import { useAIStore, type AISettings, type Conversation } from '../store/aiStore';
 import { useAI } from './useAI';
@@ -45,6 +47,10 @@ describe('useAI', () => {
 
   let mockStore: MockStore;
   let mockAIService: AIService;
+
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <ChartProvider>{children}</ChartProvider>
+  );
 
   beforeEach(() => {
     const sendMessageMock = vi.fn<(messages: AIMessage[], images?: string[]) => Promise<AIAnalysisResponse>>()
@@ -95,7 +101,7 @@ describe('useAI', () => {
   });
 
   it('should return store state', () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     expect(result.current.conversations).toEqual(mockStore.conversations);
     expect(result.current.activeConversationId).toBe(mockConversationId);
@@ -106,13 +112,13 @@ describe('useAI', () => {
   it('should indicate not configured when settings is null', () => {
     mockStore.settings = null;
 
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     expect(result.current.isConfigured).toBe(false);
   });
 
   it('should send message successfully', async () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     let response;
     await act(async () => {
@@ -138,7 +144,7 @@ describe('useAI', () => {
   });
 
   it('should send message with images', async () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
     const images = ['data:image/png;base64,abc123'];
 
     await act(async () => {
@@ -155,7 +161,7 @@ describe('useAI', () => {
 
   it('should handle sendMessage error when no service', async () => {
     mockStore.settings = null;
-    const { result } = renderHook(() => useAI());
+    const { result } = renderHook(() => useAI(), { wrapper });
 
     await act(async () => {
       const response = await result.current.sendMessage('Test');
@@ -167,7 +173,7 @@ describe('useAI', () => {
 
   it('should handle sendMessage error when no active conversation', async () => {
     mockStore.activeConversationId = null;
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     await act(async () => {
       const response = await result.current.sendMessage('Test');
@@ -184,7 +190,7 @@ describe('useAI', () => {
       context: 'Analyze this chart',
     };
 
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     let response;
     await act(async () => {
@@ -202,7 +208,7 @@ describe('useAI', () => {
       candles: [],
     };
 
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     await act(async () => {
       await result.current.analyzeChart(chartRequest);
@@ -231,7 +237,7 @@ describe('useAI', () => {
       candles: [],
     };
 
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     await act(async () => {
       await result.current.analyzeChartSilent(chartRequest);
@@ -245,7 +251,7 @@ describe('useAI', () => {
   });
 
   it('should use quickAnalyze shortcut', async () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     await act(async () => {
       await result.current.quickAnalyze('data:image/png;base64,chart', 'Quick analysis');
@@ -253,13 +259,14 @@ describe('useAI', () => {
 
     expect(mockAIService.analyzeChart).toHaveBeenCalledWith({
       chartImage: 'data:image/png;base64,chart',
-      candles: [],
+      candles: expect.any(Array),
+      news: undefined,
       context: 'Quick analysis',
     });
   });
 
   it('should create and activate new conversation', () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     let newId;
     act(() => {
@@ -272,7 +279,7 @@ describe('useAI', () => {
   });
 
   it('should configure settings', () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
     const newSettings = {
       provider: 'anthropic' as AIProviderType,
       model: 'claude-sonnet-4-5-20250514',
@@ -286,7 +293,7 @@ describe('useAI', () => {
   });
 
   it('should update partial settings', () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
     const partialSettings = { temperature: 0.9 };
 
     act(() => {
@@ -297,7 +304,7 @@ describe('useAI', () => {
   });
 
   it('should delete conversation', () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     act(() => {
       result.current.deleteConversation('conv-to-delete');
@@ -307,7 +314,7 @@ describe('useAI', () => {
   });
 
   it('should clear messages', () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     act(() => {
       result.current.clearMessages(mockConversationId);
@@ -317,7 +324,7 @@ describe('useAI', () => {
   });
 
   it('should use provided service over default', () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     expect(result.current.isConfigured).toBe(true);
   });
@@ -333,7 +340,7 @@ describe('useAI', () => {
       sendMessage: vi.fn().mockRejectedValue(new Error('429 Too Many Requests')),
     } as unknown as AIService;
 
-    const { result } = renderHook(() => useAI({ service: geminiService }));
+    const { result } = renderHook(() => useAI({ service: geminiService }), { wrapper });
 
     await act(async () => {
       await result.current.sendMessage('Test');
@@ -355,7 +362,7 @@ describe('useAI', () => {
       sendMessage: vi.fn().mockRejectedValue(new Error('rate limit exceeded')),
     } as unknown as AIService;
 
-    const { result } = renderHook(() => useAI({ service: errorService }));
+    const { result } = renderHook(() => useAI({ service: errorService }), { wrapper });
 
     await act(async () => {
       await result.current.sendMessage('Test');
@@ -377,7 +384,7 @@ describe('useAI', () => {
       sendMessage: vi.fn().mockRejectedValue(new Error('quota exceeded')),
     } as unknown as AIService;
 
-    const { result } = renderHook(() => useAI({ service: errorService }));
+    const { result } = renderHook(() => useAI({ service: errorService }), { wrapper });
 
     await act(async () => {
       await result.current.sendMessage('Test');
@@ -394,7 +401,7 @@ describe('useAI', () => {
       sendMessage: vi.fn().mockRejectedValue(new Error('401 unauthorized')),
     } as unknown as AIService;
 
-    const { result } = renderHook(() => useAI({ service: errorService }));
+    const { result } = renderHook(() => useAI({ service: errorService }), { wrapper });
 
     await act(async () => {
       await result.current.sendMessage('Test');
@@ -411,7 +418,7 @@ describe('useAI', () => {
       sendMessage: vi.fn().mockRejectedValue(new Error('timeout')),
     } as unknown as AIService;
 
-    const { result } = renderHook(() => useAI({ service: errorService }));
+    const { result } = renderHook(() => useAI({ service: errorService }), { wrapper });
 
     await act(async () => {
       await result.current.sendMessage('Test');
@@ -426,7 +433,7 @@ describe('useAI', () => {
       sendMessage: vi.fn().mockRejectedValue(new Error('network error')),
     } as unknown as AIService;
 
-    const { result } = renderHook(() => useAI({ service: errorService }));
+    const { result } = renderHook(() => useAI({ service: errorService }), { wrapper });
 
     await act(async () => {
       await result.current.sendMessage('Test');
@@ -441,7 +448,7 @@ describe('useAI', () => {
       sendMessage: vi.fn().mockRejectedValue(new Error('context_length exceeded')),
     } as unknown as AIService;
 
-    const { result } = renderHook(() => useAI({ service: errorService }));
+    const { result } = renderHook(() => useAI({ service: errorService }), { wrapper });
 
     await act(async () => {
       await result.current.sendMessage('Test');
@@ -455,7 +462,7 @@ describe('useAI', () => {
   it('should handle missing active conversation error', async () => {
     mockStore.getActiveConversation = vi.fn().mockReturnValue(null);
 
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     await act(async () => {
       await result.current.sendMessage('Test');
@@ -466,7 +473,7 @@ describe('useAI', () => {
 
   it('should handle analyzeChart error when no service', async () => {
     mockStore.settings = null;
-    const { result } = renderHook(() => useAI());
+    const { result } = renderHook(() => useAI(), { wrapper });
 
     await act(async () => {
       const response = await result.current.analyzeChart({
@@ -490,7 +497,7 @@ describe('useAI', () => {
       analyzeChart: vi.fn().mockRejectedValue(new Error('429 Too Many Requests')),
     } as unknown as AIService;
 
-    const { result } = renderHook(() => useAI({ service: errorService }));
+    const { result } = renderHook(() => useAI({ service: errorService }), { wrapper });
 
     await act(async () => {
       await result.current.analyzeChart({
@@ -510,7 +517,7 @@ describe('useAI', () => {
       analyzeChart: vi.fn().mockRejectedValue(new Error('API error')),
     } as unknown as AIService;
 
-    const { result } = renderHook(() => useAI({ service: errorService }));
+    const { result } = renderHook(() => useAI({ service: errorService }), { wrapper });
 
     await act(async () => {
       const response = await result.current.analyzeChartSilent({
@@ -535,7 +542,7 @@ describe('useAI', () => {
       sendMessage: vi.fn().mockRejectedValue(new Error('401 unauthorized')),
     } as unknown as AIService;
 
-    const { result } = renderHook(() => useAI({ service: errorService }));
+    const { result } = renderHook(() => useAI({ service: errorService }), { wrapper });
 
     await act(async () => {
       await result.current.sendMessage('Test');
@@ -547,7 +554,7 @@ describe('useAI', () => {
   });
 
   it('should update conversation title', () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     act(() => {
       result.current.updateConversationTitle(mockConversationId, 'New Title');
@@ -557,7 +564,7 @@ describe('useAI', () => {
   });
 
   it('should export conversation', () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     act(() => {
       result.current.exportConversation(mockConversationId);
@@ -567,7 +574,7 @@ describe('useAI', () => {
   });
 
   it('should import conversation', () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
     const conversationData = JSON.stringify({
       id: 'imported',
       title: 'Imported',
@@ -584,14 +591,14 @@ describe('useAI', () => {
   });
 
   it('should get active conversation', () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     expect(result.current.activeConversation).toBeDefined();
     expect(result.current.activeConversation?.id).toBe(mockConversationId);
   });
 
   it('should set active conversation', () => {
-    const { result } = renderHook(() => useAI({ service: mockAIService }));
+    const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
 
     act(() => {
       result.current.setActiveConversation('new-conv');
