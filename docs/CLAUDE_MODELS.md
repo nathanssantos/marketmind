@@ -2,8 +2,13 @@
 
 ## 🤖 Available Claude Models (API)
 
-### Claude Sonnet 4.5 (Recommended)
-**API ID:** `claude-sonnet-4-5-20250929`
+MarketMind uses **auto-updating aliases** for Claude 4 models. These aliases automatically point to the latest model snapshots.
+
+### Claude Sonnet 4.5 (Recommended) ✨
+**API ID (Auto):** `claude-sonnet-4-5` ⭐ **Recommended**
+**API ID (Fixed):** `claude-sonnet-4-5-20250929`
+
+**Why use alias?** Automatically updates to latest Sonnet 4.5 within a week of new releases.
 
 **Best for:**
 - Complex agents and coding tasks
@@ -22,8 +27,11 @@
 
 ---
 
-### Claude Haiku 4.5 (Fastest)
-**API ID:** `claude-haiku-4-5-20251001`
+### Claude Haiku 4.5 (Fastest) ⚡
+**API ID (Auto):** `claude-haiku-4-5` ⭐ **Recommended**
+**API ID (Fixed):** `claude-haiku-4-5-20251001`
+
+**Why use alias?** Automatically updates to latest Haiku 4.5 within a week of new releases.
 
 **Best for:**
 - Quick responses
@@ -42,8 +50,11 @@
 
 ---
 
-### Claude Opus 4.1 (Specialized Reasoning)
-**API ID:** `claude-opus-4-1-20250805`
+### Claude Opus 4.1 (Specialized Reasoning) 💎
+**API ID (Auto):** `claude-opus-4-1` ⭐ **Recommended**
+**API ID (Fixed):** `claude-opus-4-1-20250805`
+
+**Why use alias?** Automatically updates to latest Opus 4.1 within a week of new releases.
 
 **Best for:**
 - Complex reasoning tasks
@@ -85,38 +96,40 @@
 
 ## 🔧 Using Different Models
 
-### In Code
+### In Code (Recommended - Auto-updating aliases)
 
 ```typescript
-// Use Claude Sonnet 4.5 (default)
+// Use Claude Sonnet 4.5 (default) - AUTO-UPDATES ✨
 const aiService = new AIService({
   provider: 'anthropic',
   apiKey: 'sk-ant-...',
-  model: 'claude-sonnet-4-5-20250929', // or omit for default
+  model: 'claude-sonnet-4-5', // Alias - auto-updates to latest
 });
 
-// Use Claude Haiku 4.5 (fastest)
+// Use Claude Haiku 4.5 (fastest) - AUTO-UPDATES ⚡
 const aiService = new AIService({
   provider: 'anthropic',
   apiKey: 'sk-ant-...',
-  model: 'claude-haiku-4-5-20251001',
+  model: 'claude-haiku-4-5', // Alias - auto-updates to latest
 });
 
-// Use Claude Opus 4.1 (specialized reasoning)
+// Use Claude Opus 4.1 (specialized reasoning) - AUTO-UPDATES 💎
 const aiService = new AIService({
   provider: 'anthropic',
   apiKey: 'sk-ant-...',
-  model: 'claude-opus-4-1-20250805',
+  model: 'claude-opus-4-1', // Alias - auto-updates to latest
 });
 ```
 
-### Using Aliases (Auto-update)
+### Fixed Snapshots (Production use - no auto-updates)
 
 ```typescript
-// Using aliases (automatically points to latest version)
+// Fixed snapshots for consistent behavior
 const aiService = new AIService({
   provider: 'anthropic',
   apiKey: 'sk-ant-...',
+  model: 'claude-sonnet-4-5-20250929', // Fixed - never changes
+});
   model: 'claude-sonnet-4-5', // alias
 });
 ```

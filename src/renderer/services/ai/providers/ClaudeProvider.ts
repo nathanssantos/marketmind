@@ -14,7 +14,7 @@ export class ClaudeProvider extends BaseAIProvider {
   }
 
   protected getDefaultModel(): string {
-    return 'claude-sonnet-4-5-20250929';
+    return 'claude-sonnet-4-5';
   }
 
   async sendMessage(

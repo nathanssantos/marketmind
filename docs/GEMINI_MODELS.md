@@ -1,6 +1,6 @@
 # Google Gemini Models Guide
 
-> **Last Updated:** November 15, 2025  
+> **Last Updated:** November 19, 2025  
 > **SDK Version:** @google/generative-ai (latest)
 
 ---
@@ -13,7 +13,59 @@ This document provides comprehensive information about Google Gemini models avai
 
 ## 🤖 Available Models
 
-### 1. Gemini 2.0 Flash (Experimental)
+### 1. Gemini 3 Pro (Preview) 🌟 NEW!
+
+**Model ID:** `gemini-3-pro-preview`
+
+**Status:** Preview / Production-Ready  
+**Best For:** Advanced reasoning, complex analysis, agentic workflows, multimodal tasks
+
+#### Specifications
+- **Context Window:** 1M tokens (input) / 64k tokens (output)
+- **Max Output:** 64,000 tokens
+- **Vision:** ✅ Yes (images, video with enhanced resolution control)
+- **Multimodal:** ✅ Yes
+- **Speed:** ⚡ Fast
+- **Quality:** ★★★★★★ (Best reasoning model!)
+- **Knowledge Cutoff:** January 2025
+
+#### Key Features
+- **Dynamic Thinking:** Uses adaptive reasoning depth (configurable via `thinking_level`)
+- **Thought Signatures:** Maintains reasoning context across API calls
+- **Media Resolution Control:** Granular control over image/video processing quality
+- **Structured Outputs:** Compatible with tools (Google Search, Code Execution, etc.)
+- **Temperature:** Optimized at default 1.0 (do not change unless necessary)
+
+#### Pricing
+- **Input:** $2.00 / 1M tokens (<200k tokens)
+- **Input:** $4.00 / 1M tokens (>200k tokens)
+- **Output:** $12.00 / 1M tokens (<200k tokens)
+- **Output:** $18.00 / 1M tokens (>200k tokens)
+- **Rate Limits:** To be confirmed
+
+#### Use Cases
+- ✅ Complex technical analysis patterns
+- ✅ Advanced chart pattern recognition
+- ✅ Multi-step reasoning for market analysis
+- ✅ Detailed code generation and debugging
+- ✅ Agentic workflows requiring deep thinking
+- ✅ Document analysis with OCR requirements
+- ✅ Professional-grade AI analysis
+
+#### Code Example
+```typescript
+const aiService = new AIService({
+  provider: 'gemini',
+  apiKey: 'YOUR_GEMINI_API_KEY',
+  model: 'gemini-3-pro-preview',
+  temperature: 1.0, // Keep at default for best reasoning
+  maxTokens: 8192,
+});
+```
+
+---
+
+### 2. Gemini 2.0 Flash (Experimental)
 
 **Model ID:** `gemini-2.0-flash-exp`
 
@@ -162,6 +214,7 @@ const aiService = new AIService({
 
 | Model | Input ($/MTok) | Output ($/MTok) | Context | Speed | Quality | Best For |
 |-------|---------------|-----------------|---------|-------|---------|----------|
+| **Gemini 3 Pro (Preview)** | $2-4 | $12-18 | 1M/64k | ⚡ | ★★★★★★ | Advanced Reasoning |
 | **Gemini 2.0 Flash Exp** | **FREE** | **FREE** | 1M | ⚡⚡ | ★★★★☆ | Testing, Development |
 | **Gemini 1.5 Pro** | $1.25 | $5.00 | 2M | ⚡ | ★★★★★ | Best Quality |
 | **Gemini 1.5 Flash** | $0.075 | $0.30 | 1M | ⚡⚡ | ★★★★☆ | Balanced |
@@ -189,6 +242,15 @@ const aiService = new AIService({
 ---
 
 ## 🎯 Model Selection Guide
+
+### Choose Gemini 3 Pro (Preview) if:
+- ✅ You need the most advanced reasoning capabilities
+- ✅ You're working on complex technical analysis patterns
+- ✅ You require multi-step logical reasoning
+- ✅ You need state-of-the-art multimodal understanding
+- ✅ You want the latest and most powerful Gemini model
+- ✅ Budget allows for premium pricing ($2-18/MTok)
+- ✅ You need advanced agentic workflows
 
 ### Choose Gemini 2.0 Flash Exp if:
 - ✅ You're testing or developing
@@ -322,12 +384,13 @@ Based on MarketMind internal testing:
 ## 📝 Summary
 
 **Best Overall:** Gemini 2.0 Flash Exp (FREE!)  
+**Most Advanced:** Gemini 3 Pro (Preview) - Best reasoning & multimodal  
 **Best Paid:** Gemini 1.5 Flash (excellent balance)  
 **Best Quality:** Gemini 1.5 Pro (2M context + best analysis)  
 **Best Value:** Gemini 1.5 Flash-8B (cheapest paid option)
 
-For most users, we recommend starting with **Gemini 2.0 Flash Exp** (free) and upgrading to **Gemini 1.5 Flash** when ready for production.
+For most users, we recommend starting with **Gemini 2.0 Flash Exp** (free) and upgrading to **Gemini 3 Pro** or **Gemini 1.5 Flash** when ready for production with advanced capabilities.
 
 ---
 
-**Last Updated:** November 15, 2025
+**Last Updated:** November 19, 2025

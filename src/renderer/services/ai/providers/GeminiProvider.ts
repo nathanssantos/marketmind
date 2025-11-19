@@ -11,7 +11,7 @@ export class GeminiProvider extends BaseAIProvider {
   }
 
   protected getDefaultModel(): string {
-    return 'gemini-2.0-flash-exp';
+    return 'gemini-2.5-flash';
   }
 
   async sendMessage(
@@ -141,3 +141,4 @@ export class GeminiProvider extends BaseAIProvider {
     }
   }
 }
+
