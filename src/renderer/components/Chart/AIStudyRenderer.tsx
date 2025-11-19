@@ -85,7 +85,7 @@ export const AIStudyRenderer = ({
         const y1 = canvasManager.priceToY(study.topPrice);
         const y2 = canvasManager.priceToY(study.bottomPrice);
 
-        if (study.type === 'buy-zone' || study.type === 'sell-zone' || study.type === 'liquidity-zone') {
+        if (study.type === 'buy-zone' || study.type === 'sell-zone' || study.type === 'liquidity-zone' || study.type === 'accumulation-zone') {
           const lastCandleX = canvasManager.indexToX(candles.length - 1);
           const extensionDistance = CHART_CONFIG.STUDY_EXTENSION_DISTANCE;
           const targetX = lastCandleX + extensionDistance;
@@ -1094,7 +1094,7 @@ export const AIStudyRenderer = ({
     const y1 = manager.priceToY(study.topPrice);
     const y2 = manager.priceToY(study.bottomPrice);
 
-    if (study.type === 'buy-zone' || study.type === 'sell-zone' || study.type === 'liquidity-zone') {
+    if (study.type === 'buy-zone' || study.type === 'sell-zone' || study.type === 'liquidity-zone' || study.type === 'accumulation-zone') {
       const lastCandleX = manager.indexToX(candles.length - 1);
       const extensionDistance = CHART_CONFIG.STUDY_EXTENSION_DISTANCE;
       const targetX = lastCandleX + extensionDistance;
