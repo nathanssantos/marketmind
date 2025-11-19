@@ -6,17 +6,31 @@ import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const AI_MODEL_OPTIONS: SelectOption[] = [
+  { value: 'openai:gpt-5.1', label: 'OpenAI - GPT-5.1' },
+  { value: 'openai:gpt-5', label: 'OpenAI - GPT-5' },
+  { value: 'openai:gpt-5-pro', label: 'OpenAI - GPT-5 Pro' },
+  { value: 'openai:gpt-5-mini', label: 'OpenAI - GPT-5 Mini' },
+  { value: 'openai:gpt-5-nano', label: 'OpenAI - GPT-5 Nano' },
+  { value: 'openai:o3', label: 'OpenAI - o3 (Reasoning)' },
+  { value: 'openai:o3-mini', label: 'OpenAI - o3-mini (Reasoning)' },
+  { value: 'openai:o1', label: 'OpenAI - o1 (Reasoning)' },
+  { value: 'openai:gpt-4.1', label: 'OpenAI - GPT-4.1' },
+  { value: 'openai:gpt-4.1-mini', label: 'OpenAI - GPT-4.1 Mini' },
   { value: 'openai:gpt-4o', label: 'OpenAI - GPT-4o' },
   { value: 'openai:gpt-4o-mini', label: 'OpenAI - GPT-4o Mini' },
   
-  { value: 'anthropic:claude-sonnet-4-5-20250929', label: 'Claude - 4.5 Sonnet' },
-  { value: 'anthropic:claude-haiku-4-5-20251001', label: 'Claude - 4.5 Haiku' },
-  { value: 'anthropic:claude-opus-4-1-20250805', label: 'Claude - 4.1 Opus' },
+  { value: 'anthropic:claude-sonnet-4-5', label: 'Claude - 4.5 Sonnet' },
+  { value: 'anthropic:claude-haiku-4-5', label: 'Claude - 4.5 Haiku' },
+  { value: 'anthropic:claude-opus-4-1', label: 'Claude - 4.1 Opus' },
+  { value: 'anthropic:claude-3-5-haiku-20241022', label: 'Claude - 3.5 Haiku' },
+  { value: 'anthropic:claude-3-haiku-20240307', label: 'Claude - 3 Haiku' },
   
+  { value: 'gemini:gemini-3-pro-preview', label: 'Gemini - 3 Pro Preview' },
+  { value: 'gemini:gemini-2.5-pro', label: 'Gemini - 2.5 Pro' },
+  { value: 'gemini:gemini-2.5-flash', label: 'Gemini - 2.5 Flash' },
+  { value: 'gemini:gemini-2.5-flash-lite', label: 'Gemini - 2.5 Flash-Lite' },
+  { value: 'gemini:gemini-2.0-flash', label: 'Gemini - 2.0 Flash' },
   { value: 'gemini:gemini-2.0-flash-exp', label: 'Gemini - 2.0 Flash Exp (FREE)' },
-  { value: 'gemini:gemini-1.5-pro', label: 'Gemini - 1.5 Pro' },
-  { value: 'gemini:gemini-1.5-flash', label: 'Gemini - 1.5 Flash' },
-  { value: 'gemini:gemini-1.5-flash-8b', label: 'Gemini - 1.5 Flash-8B' },
 ];
 
 interface UnifiedAISelectorProps {

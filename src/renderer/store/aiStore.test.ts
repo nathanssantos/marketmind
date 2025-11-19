@@ -66,7 +66,7 @@ describe('aiStore', () => {
 
       const state = useAIStore.getState();
       expect(state.settings?.provider).toBe('anthropic');
-      expect(state.settings?.model).toBe('claude-sonnet-4-5-20250929');
+      expect(state.settings?.model).toBe('claude-sonnet-4-5');
     });
 
     it('should clear settings', () => {

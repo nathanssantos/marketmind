@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2025-11-19
+
+### Added
+- **AI Model Expansion**
+  - Added all latest OpenAI models: GPT-5.1, GPT-5 series, o3/o3-mini, GPT-4.1 series
+  - Added Claude 4.5 Sonnet, Claude 4.5 Haiku, Claude 4.1 Opus with auto-updating aliases
+  - Added Claude 3.5 Haiku and Claude 3 Haiku legacy models
+  - Added Gemini 3 Pro Preview, Gemini 2.5 series, Gemini 2.0 Flash Exp (FREE)
+  - Model selection scripts: `list-openai-models.mjs`, `list-claude-models.mjs`, `list-gemini-models.mjs`
+  - Total: 12 OpenAI + 5 Claude + 6 Gemini = 23 AI models
+
+### Changed
+- **Claude Models to Auto-Updating Aliases**
+  - Default Claude model: `claude-sonnet-4-5-20250929` → `claude-sonnet-4-5`
+  - All Claude 4.x models now use aliases (auto-update to latest snapshots)
+  - Aliases: `claude-sonnet-4-5`, `claude-haiku-4-5`, `claude-opus-4-1`
+  - Benefits: automatic updates to latest improvements within a week
+
+- **Gemini Models Corrected**
+  - Removed deprecated Gemini 1.5 models (404 errors)
+  - Updated to available Gemini 2.x series (2.5 Pro/Flash/Lite, 2.0 Flash)
+  - Default model: `gemini-3-pro-preview` → `gemini-2.5-flash` (verified working)
+
+### Improved
+- **Model Documentation**
+  - Updated `docs/GEMINI_MODELS.md` with Gemini 3 Pro Preview details
+  - Updated `docs/CLAUDE_MODELS.md` with alias recommendations and usage patterns
+  - Added pricing, context limits, and feature comparisons for all models
+
+### Fixed
+- **API Integration Issues**
+  - Fixed Gemini API quota exceeded errors (updated to free tier models)
+  - Fixed Claude model naming (4.x series now available)
+  - All 659 tests passing with updated model defaults
+
+### Technical
+- Updated AIModelSelector, UnifiedAISelector, AISelector components
+- Updated aiStore.ts default models
+- Updated GeminiProvider.ts and ClaudeProvider.ts default models
+- Updated all related tests for new model names
+- Created API verification scripts for all three providers
+
 ## [0.17.0] - 2025-11-19
 
 ### Added

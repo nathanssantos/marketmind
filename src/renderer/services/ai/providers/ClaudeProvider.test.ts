@@ -75,7 +75,7 @@ describe('ClaudeProvider', () => {
       });
 
       expect(mockCreate).toHaveBeenCalledWith({
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'claude-sonnet-4-5',
         max_tokens: 4096,
         temperature: 0.7,
         messages: [
