@@ -22,6 +22,7 @@ const MODEL_OPTIONS: Record<AIProviderType, SelectOption[]> = {
     { value: 'claude-opus-4-1-20250805', label: 'Claude 4.1 Opus' },
   ],
   gemini: [
+    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro Preview' },
     { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
     { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' },

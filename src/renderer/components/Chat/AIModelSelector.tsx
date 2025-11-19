@@ -12,6 +12,7 @@ const MODEL_OPTIONS: SelectOption[] = [
   { value: 'anthropic:claude-haiku-4-5-20251001', label: '🧠 Claude 4.5 Haiku' },
   { value: 'anthropic:claude-opus-4-1-20250805', label: '🧠 Claude 4.1 Opus' },
   
+  { value: 'gemini:gemini-3-pro-preview', label: '✨ Gemini 3 Pro Preview 💎' },
   { value: 'gemini:gemini-2.5-pro', label: '✨ Gemini 2.5 Pro 🌟' },
   { value: 'gemini:gemini-2.5-flash', label: '✨ Gemini 2.5 Flash' },
   { value: 'gemini:gemini-2.5-flash-lite', label: '✨ Gemini 2.5 Flash-Lite' },
