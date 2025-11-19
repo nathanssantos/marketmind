@@ -65,11 +65,11 @@ export const NewsConfigTab = () => {
 
     try {
       await window.electron.secureStorage.setApiKey('newsapi', newsApiKey.trim());
-      setTestMessage('✅ NewsAPI key saved successfully!');
+      setTestMessage(t('settings.news.newsApiKeySaved'));
       setTimeout(() => setTestMessage(''), 3000);
     } catch (error) {
       console.error('Failed to save NewsAPI key:', error);
-      setTestMessage('❌ Failed to save NewsAPI key');
+      setTestMessage(t('settings.news.newsApiKeyFailed'));
     }
   };
 
@@ -78,20 +78,20 @@ export const NewsConfigTab = () => {
 
     try {
       await window.electron.secureStorage.setApiKey('cryptopanic', cryptoPanicApiKey.trim());
-      alert('CryptoPanic API key saved successfully!');
+      alert(t('settings.news.cryptoPanicKeySaved'));
     } catch (error) {
       console.error('Failed to save CryptoPanic key:', error);
-      alert('Failed to save CryptoPanic API key');
+      alert(t('settings.news.cryptoPanicKeyFailed'));
     }
   };
 
   const handleTestNewsAPI = async () => {
     if (!newsApiKey.trim()) {
-      setTestMessage('⚠️ Please enter a NewsAPI key first');
+      setTestMessage(t('settings.news.enterKeyFirst'));
       return;
     }
 
-    setTestMessage('Testing connection...');
+    setTestMessage(t('settings.news.testingConnection'));
     
     try {
       const response = await fetch(
@@ -99,13 +99,13 @@ export const NewsConfigTab = () => {
       );
 
       if (response.ok) {
-        setTestMessage('✅ NewsAPI connection successful!');
+        setTestMessage(t('settings.news.connectionSuccessful'));
       } else {
         const data = await response.json();
-        setTestMessage(`❌ Error: ${data.message || 'Invalid API key'}`);
+        setTestMessage(t('settings.news.connectionError', { message: data.message || t('settings.news.invalidApiKey') }));
       }
     } catch (error) {
-      setTestMessage('❌ Connection failed. Check your internet connection.');
+      setTestMessage(t('settings.news.connectionFailed'));
     }
   };
 
@@ -137,7 +137,7 @@ export const NewsConfigTab = () => {
     <VStack align="stretch" gap={6}>
       {loading && (
         <Box textAlign="center" py={4}>
-          <Text color="fg.muted">Loading settings...</Text>
+          <Text color="fg.muted">{t('settings.news.loadingSettings')}</Text>
         </Box>
       )}
 
@@ -149,12 +149,12 @@ export const NewsConfigTab = () => {
         borderColor="orange.500"
       >
         <Text fontSize="sm" fontWeight="semibold" mb={2}>
-          ⚠️ Important Notes
+          ⚠️ {t('settings.news.importantNotes')}
         </Text>
         <VStack align="start" gap={1} fontSize="sm" color="fg.muted">
-          <Text>• API keys are encrypted and stored securely using OS-level encryption</Text>
-          <Text>• Free tier limits: NewsAPI (100 req/day), CryptoPanic (varies)</Text>
-          <Text>• Restart app after changing settings for full effect</Text>
+          <Text>• {t('settings.news.noteEncryption')}</Text>
+          <Text>• {t('settings.news.noteFreeTier')}</Text>
+          <Text>• {t('settings.news.noteRestart')}</Text>
         </VStack>
       </Box>
 
@@ -167,11 +167,11 @@ export const NewsConfigTab = () => {
             <Checkbox.Indicator />
           </Checkbox.Control>
           <Checkbox.Label>
-            <Text fontWeight="medium">Enable News Integration</Text>
+            <Text fontWeight="medium">{t('settings.news.enableNewsIntegration')}</Text>
           </Checkbox.Label>
         </Checkbox.Root>
         <Text fontSize="sm" color="fg.muted" mt={2}>
-          Integrate financial news into AI analysis for better market insights
+          {t('settings.news.newsIntegrationDescription')}
         </Text>
       </Box>
 
@@ -179,7 +179,7 @@ export const NewsConfigTab = () => {
 
       <Box>
         <Text fontSize="lg" fontWeight="semibold" mb={4}>
-          NewsAPI Configuration
+          {t('settings.news.newsApiConfiguration')}
         </Text>
         
         <Stack gap={4}>
@@ -201,11 +201,11 @@ export const NewsConfigTab = () => {
               </Button>
             </Flex>
             <Text fontSize="sm" color="fg.muted" mt={2}>
-              Get your free API key at{' '}
+              {t('settings.news.getFreeApiKey')}{' '}
               <Link href="https://newsapi.org/" target="_blank" rel="noopener noreferrer" color="blue.500">
                 newsapi.org
               </Link>
-              {' '}(Free tier: 100 requests/day)
+              {' '}{t('settings.news.freeTierLimit')}
             </Text>
           </Field>
 
@@ -216,7 +216,7 @@ export const NewsConfigTab = () => {
               onClick={handleTestNewsAPI}
               disabled={!enabled || !newsApiKey.trim()}
             >
-              Test Connection
+              {t('settings.news.testConnection')}
             </Button>
             {testMessage && (
               <Text fontSize="sm" alignSelf="center">
@@ -231,7 +231,7 @@ export const NewsConfigTab = () => {
 
       <Box>
         <Text fontSize="lg" fontWeight="semibold" mb={4}>
-          CryptoPanic Configuration
+          {t('settings.news.cryptoPanicConfiguration')}
         </Text>
         
         <Field label={t('settings.news.cryptoPanicApiKey')}>
@@ -252,11 +252,11 @@ export const NewsConfigTab = () => {
             </Button>
           </Flex>
           <Text fontSize="sm" color="fg.muted" mt={2}>
-            Get API key at{' '}
+            {t('settings.news.getApiKeyAt')}{' '}
             <Link href="https://cryptopanic.com/developers/api/" target="_blank" rel="noopener noreferrer" color="blue.500">
               cryptopanic.com/developers
             </Link>
-            {' '}or use "free" for public endpoint
+            {' '}{t('settings.news.orUseFree')}
           </Text>
         </Field>
       </Box>
@@ -265,7 +265,7 @@ export const NewsConfigTab = () => {
 
       <Box>
         <Text fontSize="lg" fontWeight="semibold" mb={4}>
-          Advanced Settings
+          {t('settings.news.advancedSettings')}
         </Text>
         
         <Stack gap={4}>
@@ -278,7 +278,7 @@ export const NewsConfigTab = () => {
               disabled={!enabled}
             />
             <Text fontSize="sm" color="fg.muted" mt={1}>
-              How often to fetch new articles (1-60 minutes)
+              {t('settings.news.refreshIntervalHelper')}
             </Text>
           </Field>
 
@@ -291,7 +291,7 @@ export const NewsConfigTab = () => {
               disabled={!enabled}
             />
             <Text fontSize="sm" color="fg.muted" mt={1}>
-              Maximum number of articles to fetch (5-50)
+              {t('settings.news.maxArticlesHelper')}
             </Text>
           </Field>
 

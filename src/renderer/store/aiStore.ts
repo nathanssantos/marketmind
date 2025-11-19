@@ -38,6 +38,7 @@ export interface AISettings {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  detailedCandlesCount?: number;
 }
 
 interface AIState {

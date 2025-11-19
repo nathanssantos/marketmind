@@ -57,6 +57,7 @@ export const DEFAULT_ADVANCED_CONFIG: AdvancedControlsConfig = {
 export const DEFAULT_AI_SETTINGS = {
   temperature: 0.7,
   maxTokens: 4096,
+  detailedCandlesCount: 32,
 } as const;
 
 export const DEFAULT_NEWS_SETTINGS = {

@@ -10,6 +10,7 @@ export interface AIProviderConfig {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  detailedCandlesCount?: number;
 }
 
 export interface ChatCompletionMessage {
@@ -40,6 +41,7 @@ export abstract class BaseAIProvider {
   protected maxTokens: number;
   protected useOptimizedPrompts: boolean;
   public enableAIStudies: boolean;
+  protected detailedCandlesCount: number;
 
   constructor(config: AIProviderConfig) {
     this.apiKey = config.apiKey;
@@ -48,6 +50,7 @@ export abstract class BaseAIProvider {
     this.maxTokens = config.maxTokens ?? 4096;
     this.useOptimizedPrompts = true;
     this.enableAIStudies = true;
+    this.detailedCandlesCount = config.detailedCandlesCount ?? 32;
   }
 
   protected abstract getDefaultModel(): string;
@@ -169,7 +172,7 @@ export abstract class BaseAIProvider {
     }
 
     if (request.candles && request.candles.length > 0) {
-      const optimized = optimizeCandles(request.candles);
+      const optimized = optimizeCandles(request.candles, this.detailedCandlesCount);
       
       const timestampInfo = optimizedPrompts.chartAnalysis.timestampInfoTemplate
         .replace('{firstTimestamp}', optimized.timestampInfo.first.toString())
