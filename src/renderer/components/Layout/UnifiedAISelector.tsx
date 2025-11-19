@@ -19,9 +19,11 @@ const AI_MODEL_OPTIONS: SelectOption[] = [
   { value: 'openai:gpt-4o', label: 'OpenAI - GPT-4o' },
   { value: 'openai:gpt-4o-mini', label: 'OpenAI - GPT-4o Mini' },
   
-  { value: 'anthropic:claude-sonnet-4-5-20250929', label: 'Claude - 4.5 Sonnet' },
-  { value: 'anthropic:claude-haiku-4-5-20251001', label: 'Claude - 4.5 Haiku' },
-  { value: 'anthropic:claude-opus-4-1-20250805', label: 'Claude - 4.1 Opus' },
+  { value: 'anthropic:claude-sonnet-4-5', label: 'Claude - 4.5 Sonnet' },
+  { value: 'anthropic:claude-haiku-4-5', label: 'Claude - 4.5 Haiku' },
+  { value: 'anthropic:claude-opus-4-1', label: 'Claude - 4.1 Opus' },
+  { value: 'anthropic:claude-3-5-haiku-20241022', label: 'Claude - 3.5 Haiku' },
+  { value: 'anthropic:claude-3-haiku-20240307', label: 'Claude - 3 Haiku' },
   
   { value: 'gemini:gemini-3-pro-preview', label: 'Gemini - 3 Pro Preview' },
   { value: 'gemini:gemini-2.5-pro', label: 'Gemini - 2.5 Pro' },

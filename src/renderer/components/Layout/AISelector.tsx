@@ -27,9 +27,11 @@ const MODEL_OPTIONS: Record<AIProviderType, SelectOption[]> = {
     { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
   ],
   anthropic: [
-    { value: 'claude-sonnet-4-5-20250929', label: 'Claude 4.5 Sonnet' },
-    { value: 'claude-haiku-4-5-20251001', label: 'Claude 4.5 Haiku' },
-    { value: 'claude-opus-4-1-20250805', label: 'Claude 4.1 Opus' },
+    { value: 'claude-sonnet-4-5', label: 'Claude 4.5 Sonnet' },
+    { value: 'claude-haiku-4-5', label: 'Claude 4.5 Haiku' },
+    { value: 'claude-opus-4-1', label: 'Claude 4.1 Opus' },
+    { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
+    { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' },
   ],
   gemini: [
     { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro Preview' },

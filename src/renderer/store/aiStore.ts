@@ -5,9 +5,9 @@ import type { AIAnalysisResponse, AIMessage, AIProviderType, Candle } from '@sha
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-const DEFAULT_MODELS: Record<AIProviderType, string> = {
+export const DEFAULT_MODELS: Record<AIProviderType, string> = {
   openai: 'gpt-4o',
-  anthropic: 'claude-sonnet-4-5-20250929',
+  anthropic: 'claude-sonnet-4-5',
   gemini: 'gemini-2.5-flash',
 };
 
