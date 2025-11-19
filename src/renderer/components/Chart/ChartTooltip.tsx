@@ -11,6 +11,12 @@ export interface ChartTooltipProps {
   containerWidth?: number;
   containerHeight?: number;
   aiStudy?: AIStudy | null | undefined;
+  movingAverage?: {
+    period: number;
+    type: 'SMA' | 'EMA';
+    color: string;
+    value?: number;
+  } | undefined;
 }
 
 export const ChartTooltip = ({
@@ -21,8 +27,9 @@ export const ChartTooltip = ({
   containerWidth = window.innerWidth,
   containerHeight = window.innerHeight,
   aiStudy,
+  movingAverage,
 }: ChartTooltipProps): ReactElement | null => {
-  if (!visible || (!candle && !aiStudy)) return null;
+  if (!visible || (!candle && !aiStudy && !movingAverage)) return null;
 
   const isBullish = candle ? candle.close >= candle.open : false;
   const change = candle ? candle.close - candle.open : 0;
@@ -106,6 +113,46 @@ export const ChartTooltip = ({
               </HStack>
             </>
           ) : null}
+        </Stack>
+      </Box>
+    );
+  }
+
+  if (movingAverage) {
+    const maTypeLabel = movingAverage.type === 'SMA' ? 'Simple Moving Average' : 'Exponential Moving Average';
+    
+    return (
+      <Box
+        position="absolute"
+        left={`${leftPos}px`}
+        top={`${topPos}px`}
+        bg="bg.muted"
+        color="fg"
+        p={3}
+        borderRadius="md"
+        boxShadow="lg"
+        fontSize="xs"
+        zIndex={1000}
+        pointerEvents="none"
+        opacity={0.95}
+        minW={`${tooltipWidth}px`}
+        borderWidth={1}
+        borderColor="border"
+      >
+        <Stack gap={1.5}>
+          <HStack>
+            <Box w={3} h={3} bg={movingAverage.color} borderRadius="sm" />
+            <Text fontWeight="semibold">
+              {movingAverage.type}({movingAverage.period})
+            </Text>
+          </HStack>
+          <Text color="fg.muted" fontSize="2xs">{maTypeLabel}</Text>
+          {movingAverage.value !== undefined && (
+            <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+              <Text color="fg.muted">Value:</Text>
+              <Text fontWeight="medium">{formatPrice(movingAverage.value)}</Text>
+            </HStack>
+          )}
         </Stack>
       </Box>
     );

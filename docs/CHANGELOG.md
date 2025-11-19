@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2025-11-19
+
+### Added
+- **Enhanced Chart Interactions**
+  - Study extensions beyond last candles by configurable distance (36px default)
+  - Precise tooltip triggering on candle body/wick/volume only
+  - Hover effects for all chart elements (candles, volumes, studies, MAs)
+  - Study number tags (#1, #2, etc.) trigger parent study hover effects
+  - Arrow-shaped current price label occupying full scale width
+  - Consistent shadow/glow effects across all interactive elements (8px blur)
+  - Moving average tooltips showing period, type, value, and color indicator
+  - CHART_CONFIG.STUDY_EXTENSION_DISTANCE configuration (36px default)
+
+### Improved
+- **Chart Rendering System**
+  - Fixed inconsistent candle/volume spacing at different zoom levels
+  - Implemented centered candle positioning (80% width ratio, 20% automatic spacing)
+  - Wicks render without passing through candle bodies
+  - Optimized z-ordering: grid → volume → candles → MAs → scales → current price
+  - Canvas clipping excludes only right/bottom padding (scales always visible)
+  - Removed transparency from candles and wicks for better visibility
+  - Coordinate system optimized with widthPerCandle calculations
+  - Position centering: candleX/barX = x + (widthPerCandle - candleWidth) / 2
+
+- **AI Studies System**
+  - Extended all study types (support/resistance, liquidity zones) beyond last candles
+  - Hover detection extended to study extensions
+  - Study tags stored in Map for efficient hover detection
+  - Enhanced visual feedback with consistent shadow effects
+  - Validation that all drawn studies are referenced in analysis text
+  - Warnings logged for unreferenced studies
+
+### Fixed
+- **Test Suite**
+  - Fixed candleOptimizer test expectations (32 detailed, 68 simplified candles)
+  - Fixed aiStore test ordering dependency (order-independent assertions)
+  - All 659 tests passing
+
+- **Chart Spacing**
+  - Fixed spacing algorithm: widthPerCandle = effectiveWidth / visibleRange
+  - Fixed candle width: candleWidth = widthPerCandle * 0.8
+  - Fixed position calculation for centered rendering
+  - Consistent spacing at all zoom levels
+
+### Changed
+- **Drawing Utilities**
+  - drawCandleBody and drawCandleWick opacity set to 1.0 (no transparency)
+  - Shadow effects only applied on hover state
+  - Canvas clipping: left=0, top=0 (no left/top padding exclusion)
+
+### Technical
+- New configuration constants in chartConfig.ts
+- Enhanced AIStudyRenderer with studyTagsRef Map
+- Extended ChartCanvas hover detection (candles, volumes, MAs, study tags)
+- Updated ChartTooltip with moving average support
+- Enhanced CanvasManager with centered coordinate calculations
+- Updated all chart renderers with centered positioning
+- Updated prompts.json with study reference requirements
+- Added AIResponseParser validation tests (7 new tests)
+
 ## [0.16.0] - 2025-11-18
 
 ### Added

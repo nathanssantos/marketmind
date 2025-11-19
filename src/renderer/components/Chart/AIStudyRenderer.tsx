@@ -33,6 +33,7 @@ export const AIStudyRenderer = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredStudy, setHoveredStudy] = useState<AIStudy | null>(null);
   const { hoveredStudyId, setHoveredStudyId } = useAIStudyHover();
+  const studyTagsRef = useRef<Map<number, { x: number; y: number; width: number; height: number }>>(new Map());
 
   const getStudyColor = (type: AIStudy['type']): string => {
     return STUDY_COLORS[type] || '#6366f1';
@@ -58,6 +59,21 @@ export const AIStudyRenderer = ({
     for (const study of studies) {
       if (study.visible === false) continue;
       
+      const studyId = study.id;
+      if (studyId !== undefined) {
+        const tagBounds = studyTagsRef.current.get(studyId);
+        
+        if (tagBounds) {
+          if (mouseX >= tagBounds.x && 
+              mouseX <= tagBounds.x + tagBounds.width && 
+              mouseY >= tagBounds.y && 
+              mouseY <= tagBounds.y + tagBounds.height) {
+            found = study;
+            break;
+          }
+        }
+      }
+      
       if ('topPrice' in study) {
         const startIndex = candles.findIndex(c => c.timestamp >= study.startTimestamp);
         const endIndex = candles.findIndex(c => c.timestamp >= study.endTimestamp);
@@ -65,9 +81,19 @@ export const AIStudyRenderer = ({
         if (startIndex === -1 || endIndex === -1) continue;
 
         const x1 = canvasManager.indexToX(startIndex);
-        const x2 = canvasManager.indexToX(endIndex);
+        let x2 = canvasManager.indexToX(endIndex);
         const y1 = canvasManager.priceToY(study.topPrice);
         const y2 = canvasManager.priceToY(study.bottomPrice);
+
+        if (study.type === 'buy-zone' || study.type === 'sell-zone' || study.type === 'liquidity-zone') {
+          const lastCandleX = canvasManager.indexToX(candles.length - 1);
+          const extensionDistance = CHART_CONFIG.STUDY_EXTENSION_DISTANCE;
+          const targetX = lastCandleX + extensionDistance;
+
+          if (x2 < targetX) {
+            x2 = targetX;
+          }
+        }
 
         if (mouseX >= x1 && mouseX <= x2 && mouseY >= y1 && mouseY <= y2) {
           found = study;
@@ -84,14 +110,29 @@ export const AIStudyRenderer = ({
         const x2 = canvasManager.indexToX(index2);
         const y1 = canvasManager.priceToY(point1.price);
         const y2 = canvasManager.priceToY(point2.price);
+
+        let finalX2 = x2;
+        let finalY2 = y2;
+
+        if (study.type === 'support' || study.type === 'resistance') {
+          const lastCandleX = canvasManager.indexToX(candles.length - 1);
+          const extensionDistance = CHART_CONFIG.STUDY_EXTENSION_DISTANCE;
+          const targetX = lastCandleX + extensionDistance;
+
+          if (x2 < targetX) {
+            finalX2 = targetX;
+            const slope = (y2 - y1) / (x2 - x1);
+            finalY2 = y1 + slope * (finalX2 - x1);
+          }
+        }
         
         const lineThreshold = 5;
-        const minX = Math.min(x1, x2);
-        const maxX = Math.max(x1, x2);
+        const minX = Math.min(x1, finalX2);
+        const maxX = Math.max(x1, finalX2);
         
         if (mouseX >= minX && mouseX <= maxX) {
-          const t = (mouseX - x1) / (x2 - x1);
-          const lineY = y1 + t * (y2 - y1);
+          const t = (mouseX - x1) / (finalX2 - x1);
+          const lineY = y1 + t * (finalY2 - y1);
           
           if (Math.abs(mouseY - lineY) <= lineThreshold) {
             found = study;
@@ -135,22 +176,28 @@ export const AIStudyRenderer = ({
       return;
     }
 
-    const paddingLeft = advancedConfig?.paddingLeft ?? CHART_CONFIG.CANVAS_PADDING_LEFT;
+    const dimensions = canvasManager.getDimensions();
+    if (!dimensions) return;
+
     const paddingRight = advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT;
-    const paddingTop = advancedConfig?.paddingTop ?? CHART_CONFIG.CANVAS_PADDING_TOP;
     const paddingBottom = advancedConfig?.paddingBottom ?? CHART_CONFIG.CANVAS_PADDING_BOTTOM;
 
+    const chartRightBoundary = dimensions.width - paddingRight;
+    const chartBottomBoundary = dimensions.height - paddingBottom;
+
     const chartArea = {
-      left: paddingLeft,
-      right: width - paddingRight,
-      top: paddingTop,
-      bottom: height - paddingBottom,
+      left: 0,
+      right: chartRightBoundary,
+      top: 0,
+      bottom: chartBottomBoundary,
     };
 
     ctx.save();
     ctx.beginPath();
     ctx.rect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
     ctx.clip();
+
+    studyTagsRef.current.clear();
 
     studies.forEach((study, index) => {
       if (study.visible === false) return;
@@ -297,14 +344,34 @@ export const AIStudyRenderer = ({
     const y1 = manager.priceToY(point1.price);
     const y2 = manager.priceToY(point2.price);
 
+    let finalX2 = x2;
+    let finalY2 = y2;
+
+    if (study.type === 'support' || study.type === 'resistance') {
+      const lastCandleX = manager.indexToX(candles.length - 1);
+      const extensionDistance = CHART_CONFIG.STUDY_EXTENSION_DISTANCE;
+      const targetX = lastCandleX + extensionDistance;
+
+      if (x2 < targetX) {
+        finalX2 = targetX;
+        const slope = (y2 - y1) / (x2 - x1);
+        finalY2 = y1 + slope * (finalX2 - x1);
+      }
+    }
+
     ctx.save();
     ctx.strokeStyle = getStudyColor(study.type);
     ctx.lineWidth = isHovered ? 3 : 2;
     ctx.setLineDash(getLineStyle(study.type));
 
+    if (isHovered) {
+      ctx.shadowColor = getStudyColor(study.type);
+      ctx.shadowBlur = 8;
+    }
+
     ctx.beginPath();
     ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
+    ctx.lineTo(finalX2, finalY2);
     ctx.stroke();
 
     ctx.setLineDash([]);
@@ -312,7 +379,7 @@ export const AIStudyRenderer = ({
 
     const iconX = Math.min(x1, x2);
     const iconY = Math.min(y1, y2) - 22;
-    drawStudyTag(ctx, iconX, iconY, studyNumber, study.type);
+    drawAndStoreStudyTag(ctx, iconX, iconY, studyNumber, study);
   };
 
   const drawChannel = (
@@ -330,6 +397,11 @@ export const AIStudyRenderer = ({
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
     ctx.setLineDash(getLineStyle(study.type));
+
+    if (isHovered) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+    }
 
     [study.upperLine, study.lowerLine].forEach((line) => {
       const [point1, point2] = line;
@@ -381,6 +453,11 @@ export const AIStudyRenderer = ({
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
     ctx.setLineDash([2, 3]);
+
+    if (isHovered) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+    }
 
     study.levels.forEach((level) => {
       const y = manager.priceToY(level.price);
@@ -477,6 +554,11 @@ export const AIStudyRenderer = ({
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
+
+    if (isHovered) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+    }
 
     ctx.beginPath();
     indices.forEach((index, i) => {
@@ -577,6 +659,11 @@ export const AIStudyRenderer = ({
     ctx.lineWidth = lineWidth;
     ctx.setLineDash([5, 5]);
 
+    if (isHovered) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+    }
+
     [study.upperTrendline, study.lowerTrendline].forEach((line) => {
       const [point1, point2] = line;
       const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
@@ -618,6 +705,11 @@ export const AIStudyRenderer = ({
     ctx.lineWidth = lineWidth;
     ctx.setLineDash([5, 5]);
 
+    if (isHovered) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+    }
+
     [study.upperTrendline, study.lowerTrendline].forEach((line) => {
       const [point1, point2] = line;
       const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
@@ -657,6 +749,11 @@ export const AIStudyRenderer = ({
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
+
+    if (isHovered) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+    }
 
     const poleStartIndex = candles.findIndex(c => c.timestamp >= study.flagpole.start.timestamp);
     const poleEndIndex = candles.findIndex(c => c.timestamp >= study.flagpole.end.timestamp);
@@ -706,6 +803,11 @@ export const AIStudyRenderer = ({
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
+
+    if (isHovered) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+    }
 
     const poleStartIndex = candles.findIndex(c => c.timestamp >= study.flagpole.start.timestamp);
     const poleEndIndex = candles.findIndex(c => c.timestamp >= study.flagpole.end.timestamp);
@@ -762,6 +864,11 @@ export const AIStudyRenderer = ({
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
 
+    if (isHovered) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+    }
+
     ctx.beginPath();
     ctx.moveTo(manager.indexToX(cupStartIndex), manager.priceToY(study.cupStart.price));
     ctx.quadraticCurveTo(
@@ -812,6 +919,11 @@ export const AIStudyRenderer = ({
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
 
+    if (isHovered) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+    }
+
     ctx.beginPath();
     ctx.moveTo(manager.indexToX(startIndex), manager.priceToY(study.start.price));
     ctx.quadraticCurveTo(
@@ -860,6 +972,12 @@ export const AIStudyRenderer = ({
     ctx.strokeStyle = color;
     ctx.lineWidth = isHovered ? 2 : 1;
     ctx.setLineDash([3, 3]);
+    
+    if (isHovered) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+    }
+    
     ctx.strokeRect(x1, Math.min(y1, y2), x2 - x1, Math.abs(y2 - y1));
     ctx.setLineDash([]);
     
@@ -882,6 +1000,11 @@ export const AIStudyRenderer = ({
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
+
+    if (isHovered) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+    }
 
     const wavePoints = [
       study.impulse.wave1.start,
@@ -967,9 +1090,19 @@ export const AIStudyRenderer = ({
     if (startIndex === -1 || endIndex === -1) return;
 
     const x1 = manager.indexToX(startIndex);
-    const x2 = manager.indexToX(endIndex);
+    let x2 = manager.indexToX(endIndex);
     const y1 = manager.priceToY(study.topPrice);
     const y2 = manager.priceToY(study.bottomPrice);
+
+    if (study.type === 'buy-zone' || study.type === 'sell-zone' || study.type === 'liquidity-zone') {
+      const lastCandleX = manager.indexToX(candles.length - 1);
+      const extensionDistance = CHART_CONFIG.STUDY_EXTENSION_DISTANCE;
+      const targetX = lastCandleX + extensionDistance;
+
+      if (x2 < targetX) {
+        x2 = targetX;
+      }
+    }
 
     const baseColor = getStudyColor(study.type);
     const rgb = hexToRgb(baseColor);
@@ -985,10 +1118,16 @@ export const AIStudyRenderer = ({
 
     ctx.strokeStyle = baseColor;
     ctx.lineWidth = isHovered ? 2 : 1;
+    
+    if (isHovered) {
+      ctx.shadowColor = baseColor;
+      ctx.shadowBlur = 8;
+    }
+    
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
     ctx.restore();
 
-    drawStudyTag(ctx, x1 + 4, y1 + 4, studyNumber, study.type);
+    drawAndStoreStudyTag(ctx, x1 + 4, y1 + 4, studyNumber, study);
   };
 
   const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
@@ -1006,7 +1145,7 @@ export const AIStudyRenderer = ({
     y: number,
     studyNumber: number,
     studyType: AIStudy['type']
-  ) => {
+  ): { x: number; y: number; width: number; height: number } => {
     const studyColor = STUDY_COLORS[studyType] || '#8b5cf6';
     const rgb = hexToRgb(studyColor);
     const bgColor = rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)` : 'rgba(139, 92, 246, 0.15)';
@@ -1037,6 +1176,25 @@ export const AIStudyRenderer = ({
     ctx.fillText(text, x + paddingX, y + paddingY + 1);
     
     ctx.restore();
+    
+    return { x, y, width: boxWidth, height: boxHeight };
+  };
+
+  const storeTagBounds = (study: AIStudy, bounds: { x: number; y: number; width: number; height: number }) => {
+    if (study.id !== undefined) {
+      studyTagsRef.current.set(study.id, bounds);
+    }
+  };
+
+  const drawAndStoreStudyTag = (
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    studyNumber: number,
+    study: AIStudy
+  ) => {
+    const tagBounds = drawStudyTag(ctx, x, y, studyNumber, study.type);
+    storeTagBounds(study, tagBounds);
   };
 
   return (

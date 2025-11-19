@@ -1,13 +1,13 @@
 import { CHART_CONFIG } from '@shared/constants';
 import type { Candle, Viewport } from '@shared/types';
 import {
-    calculateBounds,
-    clampViewport,
-    priceToY,
-    volumeToHeight,
-    yToPrice,
-    type Bounds,
-    type Dimensions,
+  calculateBounds,
+  clampViewport,
+  priceToY,
+  volumeToHeight,
+  yToPrice,
+  type Bounds,
+  type Dimensions,
 } from './coordinateSystem';
 import { clearCanvas, setupCanvas } from './drawingUtils';
 
@@ -176,16 +176,18 @@ export class CanvasManager {
     if (!this.dimensions) return 0;
     const effectiveWidth = this.dimensions.chartWidth - this.rightMargin;
     const visibleRange = this.viewport.end - this.viewport.start;
-    const ratio = (index - this.viewport.start) / visibleRange;
-    return ratio * effectiveWidth;
+    const widthPerCandle = effectiveWidth / visibleRange;
+    const relativeIndex = index - this.viewport.start;
+    return relativeIndex * widthPerCandle;
   }
 
   public xToIndex(x: number): number {
     if (!this.dimensions) return 0;
     const effectiveWidth = this.dimensions.chartWidth - this.rightMargin;
     const visibleRange = this.viewport.end - this.viewport.start;
-    const ratio = x / effectiveWidth;
-    return this.viewport.start + ratio * visibleRange;
+    const widthPerCandle = effectiveWidth / visibleRange;
+    const relativeIndex = x / widthPerCandle;
+    return this.viewport.start + relativeIndex;
   }
 
   public getVisibleCandles(): Candle[] {
@@ -279,7 +281,8 @@ export class CanvasManager {
     
     const widthPerCandle = availableWidth / visibleRange;
     
-    const calculatedWidth = widthPerCandle - this.viewport.candleSpacing;
+    const candleWidthRatio = 0.8;
+    const calculatedWidth = widthPerCandle * candleWidthRatio;
     
     this.viewport.candleWidth = Math.max(
       CHART_CONFIG.MIN_CANDLE_WIDTH,

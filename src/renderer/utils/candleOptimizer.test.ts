@@ -86,14 +86,14 @@ describe('candleOptimizer', () => {
       expect(result.timestampInfo.total).toBe(0);
     });
 
-    it('should keep last 20 candles detailed', () => {
+    it('should keep last 32 candles detailed', () => {
       const candles: Candle[] = Array.from({ length: 100 }, (_, i) =>
         createCandle(i * 60000, 100 + i)
       );
 
       const result = optimizeCandles(candles);
-      expect(result.detailed).toHaveLength(20);
-      expect(result.detailed[0]?.close).toBe(185);
+      expect(result.detailed).toHaveLength(32);
+      expect(result.detailed[0]?.close).toBe(173);
     });
 
     it('should simplify remaining candles', () => {
@@ -102,7 +102,7 @@ describe('candleOptimizer', () => {
       );
 
       const result = optimizeCandles(candles);
-      expect(result.simplified).toHaveLength(80);
+      expect(result.simplified).toHaveLength(68);
     });
 
     it('should downsample if too many candles', () => {

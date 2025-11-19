@@ -69,17 +69,25 @@ export const useCurrentPriceLineRenderer = ({
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     
-    const labelPadding = 4;
-    const textMetrics = ctx.measureText(priceText);
-    const labelX = lineEndX + 4;
-    const labelWidth = textMetrics.width + labelPadding * 2;
-    const labelHeight = 16;
+    const labelPadding = 8;
+    const labelX = lineEndX;
+    const labelWidth = rightMargin;
+    const labelHeight = 18;
+    const arrowWidth = 6;
     
     ctx.fillStyle = colors.currentPriceLabel.bg;
-    ctx.fillRect(labelX, y - labelHeight / 2, labelWidth, labelHeight);
+    
+    ctx.beginPath();
+    ctx.moveTo(labelX, y);
+    ctx.lineTo(labelX + arrowWidth, y - labelHeight / 2);
+    ctx.lineTo(labelX + labelWidth, y - labelHeight / 2);
+    ctx.lineTo(labelX + labelWidth, y + labelHeight / 2);
+    ctx.lineTo(labelX + arrowWidth, y + labelHeight / 2);
+    ctx.closePath();
+    ctx.fill();
     
     ctx.fillStyle = colors.currentPriceLabel.text;
-    ctx.fillText(priceText, labelX + labelPadding, y);
+    ctx.fillText(priceText, labelX + arrowWidth + labelPadding, y);
 
     ctx.restore();
   }, [enabled, manager, colors, lineWidth, lineStyle, rightMargin, manager?.getCandles()]);

@@ -1,7 +1,7 @@
+import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawRect } from '@renderer/utils/canvas/drawingUtils';
 import { CHART_CONFIG } from '@shared/constants';
-import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { useCallback, useEffect } from 'react';
 
 export interface UseVolumeRendererProps {
@@ -41,6 +41,9 @@ export const useVolumeRenderer = ({
     const { chartHeight, chartWidth } = dimensions;
     const { candleWidth } = viewport;
     const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
+    
+    const visibleRange = viewport.end - viewport.start;
+    const widthPerCandle = effectiveWidth / visibleRange;
 
     ctx.save();
     ctx.beginPath();
@@ -55,6 +58,8 @@ export const useVolumeRenderer = ({
       const x = manager.indexToX(actualIndex);
 
       if (x < 0 || x > effectiveWidth) return;
+
+      const barX = x + (widthPerCandle - candleWidth) / 2;
 
       const volumeRatio = candle.volume / bounds.maxVolume;
       const barHeight = volumeRatio * volumeOverlayHeight;
@@ -75,7 +80,7 @@ export const useVolumeRenderer = ({
         ctx.shadowBlur = 6;
       }
 
-      drawRect(ctx, x, volumeBaseY - barHeight, candleWidth, barHeight, color);
+      drawRect(ctx, barX, volumeBaseY - barHeight, candleWidth, barHeight, color);
 
       if (isHovered) {
         ctx.restore();
