@@ -72,21 +72,33 @@ export const drawCandle = (
   const isBullish = closeY < openY;
   let color = isBullish ? bullishColor : bearishColor;
 
-  if (isHighlighted) {
-    ctx.save();
-    ctx.globalAlpha = 1;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 8;
-  } else {
-    ctx.save();
-    ctx.globalAlpha = 0.8;
-  }
-
   const bodyTop = Math.min(openY, closeY);
   const bodyBottom = Math.max(openY, closeY);
   const bodyHeight = bodyBottom - bodyTop;
 
-  drawLine(ctx, x + width / 2, highY, x + width / 2, lowY, color, wickWidth);
+  ctx.save();
+  
+  if (isHighlighted) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+  }
+
+  if (highY < bodyTop) {
+    drawLine(ctx, x + width / 2, highY, x + width / 2, bodyTop, color, wickWidth);
+  }
+  
+  if (lowY > bodyBottom) {
+    drawLine(ctx, x + width / 2, bodyBottom, x + width / 2, lowY, color, wickWidth);
+  }
+  
+  ctx.restore();
+
+  ctx.save();
+  
+  if (isHighlighted) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+  }
 
   if (bodyHeight > 0) {
     drawRect(ctx, x, bodyTop, width, bodyHeight, color);

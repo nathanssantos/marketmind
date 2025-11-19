@@ -1,7 +1,7 @@
+import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawCandle } from '@renderer/utils/canvas/drawingUtils';
 import { CHART_CONFIG } from '@shared/constants';
-import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { useCallback, useEffect } from 'react';
 
 export interface UseCandlestickRendererProps {
@@ -38,6 +38,9 @@ export const useCandlestickRenderer = ({
     const { candleWidth } = viewport;
     const { chartWidth, chartHeight } = dimensions;
     const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
+    
+    const visibleRange = viewport.end - viewport.start;
+    const widthPerCandle = effectiveWidth / visibleRange;
 
     ctx.save();
     ctx.beginPath();
@@ -50,6 +53,8 @@ export const useCandlestickRenderer = ({
 
       if (x < 0 || x > effectiveWidth) return;
 
+      const candleX = x + (widthPerCandle - candleWidth) / 2;
+
       const openY = manager.priceToY(candle.open);
       const closeY = manager.priceToY(candle.close);
       const highY = manager.priceToY(candle.high);
@@ -59,7 +64,7 @@ export const useCandlestickRenderer = ({
 
       drawCandle(
         ctx,
-        x,
+        candleX,
         openY,
         closeY,
         highY,

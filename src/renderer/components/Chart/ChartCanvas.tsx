@@ -1,5 +1,6 @@
 import { Box } from '@chakra-ui/react';
 import { useChartColors } from '@renderer/hooks/useChartColors';
+import { calculateMovingAverage } from '@renderer/utils/movingAverages';
 import { CHART_CONFIG } from '@shared/constants';
 import type { AIStudy, Candle, Viewport } from '@shared/types';
 import type { ReactElement } from 'react';
@@ -61,6 +62,12 @@ export const ChartCanvas = ({
     containerHeight?: number;
     candleIndex?: number;
     aiStudy?: AIStudy;
+    movingAverage?: {
+      period: number;
+      type: 'SMA' | 'EMA';
+      color: string;
+      value?: number;
+    };
   }>({
     candle: null,
     x: 0,
@@ -69,6 +76,7 @@ export const ChartCanvas = ({
   });
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [hoveredAIStudy, setHoveredAIStudy] = useState<AIStudy | null>(null);
+  const [hoveredMAIndex, setHoveredMAIndex] = useState<number | undefined>(undefined);
   const [isInteracting, setIsInteracting] = useState(false);
   const [interactionTimeout, setInteractionTimeout] = useState<NodeJS.Timeout | null>(null);
   const [cursor, setCursor] = useState<'crosshair' | 'ns-resize' | 'grab' | 'grabbing'>('crosshair');
@@ -123,6 +131,7 @@ export const ChartCanvas = ({
     manager,
     movingAverages,
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
+    hoveredMAIndex,
   });
 
   const { render: renderCurrentPriceLine } = useCurrentPriceLineRenderer({
@@ -147,8 +156,9 @@ export const ChartCanvas = ({
 
     const viewport = manager.getViewport();
     const dimensions = manager.getDimensions();
+    const bounds = manager.getBounds();
 
-    if (!dimensions) return;
+    if (!dimensions || !bounds) return;
 
     const priceScaleLeft = dimensions.width - (advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
     const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
@@ -158,17 +168,21 @@ export const ChartCanvas = ({
     
     const isOnTimeScale = mouseY >= timeScaleTop;
     
+    const lastCandleX = manager.indexToX(candles.length - 1);
+    const studyExtensionArea = lastCandleX + CHART_CONFIG.STUDY_EXTENSION_DISTANCE;
     const isInChartArea = mouseX < chartAreaRight && mouseY < timeScaleTop;
+    const isInExtendedStudyArea = mouseX >= chartAreaRight && mouseX <= studyExtensionArea && mouseY < timeScaleTop;
 
     if (isOnPriceScale) {
       setCursor('ns-resize');
     } else if (isOnTimeScale) {
       setCursor('crosshair');
-    } else if (isInChartArea) {
+    } else if (isInChartArea || isInExtendedStudyArea) {
       setCursor('crosshair');
     }
 
-    if (!isInChartArea || isOnPriceScale || isOnTimeScale) {
+    if (isOnPriceScale || isOnTimeScale) {
+      setHoveredMAIndex(undefined);
       setTooltipData({
         candle: null,
         x: 0,
@@ -176,6 +190,90 @@ export const ChartCanvas = ({
         visible: false,
       });
       return;
+    }
+
+    const distanceToLine = (px: number, py: number, x1: number, y1: number, x2: number, y2: number): number => {
+      const A = px - x1;
+      const B = py - y1;
+      const C = x2 - x1;
+      const D = y2 - y1;
+      const dot = A * C + B * D;
+      const lenSq = C * C + D * D;
+      const param = lenSq !== 0 ? dot / lenSq : -1;
+
+      let xx: number;
+      let yy: number;
+
+      if (param < 0) {
+        xx = x1;
+        yy = y1;
+      } else if (param > 1) {
+        xx = x2;
+        yy = y2;
+      } else {
+        xx = x1 + param * C;
+        yy = y1 + param * D;
+      }
+
+      const dx = px - xx;
+      const dy = py - yy;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    let closestMAIndex: number | undefined = undefined;
+    let closestMADistance = Infinity;
+    let closestMAValue: number | undefined = undefined;
+    const HOVER_THRESHOLD = 8;
+
+    movingAverages.forEach((ma, index) => {
+      if (ma.visible === false) return;
+      
+      const maValues = calculateMovingAverage(candles, ma.period, ma.type);
+      const startIndex = Math.max(0, Math.floor(viewport.start));
+      const endIndex = Math.min(candles.length, Math.ceil(viewport.end));
+
+      for (let i = startIndex; i < endIndex - 1; i++) {
+        const value1 = maValues[i];
+        const value2 = maValues[i + 1];
+        
+        if (value1 === null || value1 === undefined || value2 === null || value2 === undefined) continue;
+
+        const x1 = manager.indexToX(i);
+        const y1 = manager.priceToY(value1);
+        const x2 = manager.indexToX(i + 1);
+        const y2 = manager.priceToY(value2);
+
+        const distance = distanceToLine(mouseX, mouseY, x1, y1, x2, y2);
+
+        if (distance < HOVER_THRESHOLD && distance < closestMADistance) {
+          closestMADistance = distance;
+          closestMAIndex = index;
+          closestMAValue = (value1 + value2) / 2;
+        }
+      }
+    });
+
+    setHoveredMAIndex(closestMAIndex);
+
+    if (closestMAIndex !== undefined) {
+      const ma = movingAverages[closestMAIndex];
+      if (ma) {
+        setTooltipData({
+          candle: null,
+          x: mouseX,
+          y: mouseY,
+          visible: true,
+          containerWidth: rect.width,
+          containerHeight: rect.height,
+          movingAverage: {
+            period: ma.period,
+            type: ma.type,
+            color: ma.color,
+            ...(closestMAValue !== undefined && { value: closestMAValue }),
+          },
+        });
+        return;
+      }
     }
 
     if (hoveredAIStudy) {
@@ -191,22 +289,74 @@ export const ChartCanvas = ({
       return;
     }
 
+    if (!isInChartArea) {
+      setTooltipData({
+        candle: null,
+        x: 0,
+        y: 0,
+        visible: false,
+      });
+      return;
+    }
+
     const effectiveChartWidth = chartAreaRight;
     const hoveredIndex = Math.floor(viewport.start + (mouseX / effectiveChartWidth) * (viewport.end - viewport.start));
 
     if (hoveredIndex >= 0 && hoveredIndex < candles.length) {
       const candle = candles[hoveredIndex];
       if (candle) {
-        setTooltipData({
-          candle,
-          x: mouseX,
-          y: mouseY,
-          visible: true,
-          containerWidth: rect.width,
-          containerHeight: rect.height,
-          candleIndex: hoveredIndex,
-        });
-        return;
+        const x = manager.indexToX(hoveredIndex);
+        const candleWidth = viewport.candleWidth;
+        
+        const visibleRange = viewport.end - viewport.start;
+        const widthPerCandle = chartAreaRight / visibleRange;
+        const candleX = x + (widthPerCandle - candleWidth) / 2;
+        
+        const openY = manager.priceToY(candle.open);
+        const closeY = manager.priceToY(candle.close);
+        const highY = manager.priceToY(candle.high);
+        const lowY = manager.priceToY(candle.low);
+
+        const bodyLeft = candleX;
+        const bodyRight = candleX + candleWidth;
+        const bodyTop = Math.min(openY, closeY);
+        const bodyBottom = Math.max(openY, closeY);
+
+        const volumeHeightRatio = advancedConfig?.volumeHeightRatio ?? CHART_CONFIG.VOLUME_HEIGHT_RATIO;
+        const volumeOverlayHeight = dimensions.chartHeight * volumeHeightRatio;
+        const volumeBaseY = dimensions.chartHeight;
+        const volumeRatio = candle.volume / bounds.maxVolume;
+        const barHeight = volumeRatio * volumeOverlayHeight;
+        const volumeTop = volumeBaseY - barHeight;
+
+        const isOnCandleBody = mouseX >= bodyLeft && 
+                               mouseX <= bodyRight && 
+                               mouseY >= bodyTop && 
+                               mouseY <= bodyBottom;
+
+        const isOnCandleWick = mouseX >= bodyLeft && 
+                               mouseX <= bodyRight && 
+                               mouseY >= highY && 
+                               mouseY <= lowY;
+
+        const isOnVolumeBar = showVolume &&
+                              mouseX >= bodyLeft && 
+                              mouseX <= bodyRight && 
+                              mouseY >= volumeTop && 
+                              mouseY <= volumeBaseY;
+
+        if (isOnCandleBody || isOnCandleWick || isOnVolumeBar) {
+          setTooltipData({
+            candle,
+            x: mouseX,
+            y: mouseY,
+            visible: true,
+            containerWidth: rect.width,
+            containerHeight: rect.height,
+            candleIndex: hoveredIndex,
+          });
+          return;
+        }
       }
     }
 
@@ -360,6 +510,7 @@ export const ChartCanvas = ({
         containerWidth={tooltipData.containerWidth ?? window.innerWidth}
         containerHeight={tooltipData.containerHeight ?? window.innerHeight}
         aiStudy={tooltipData.aiStudy}
+        {...(tooltipData.movingAverage && { movingAverage: tooltipData.movingAverage })}
       />
     </Box>
   );

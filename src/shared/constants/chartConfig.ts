@@ -15,6 +15,7 @@ export const CHART_CONFIG = {
   CURRENT_PRICE_LINE_WIDTH: 2,
   CURRENT_PRICE_LINE_STYLE: 'dashed' as const,
   AXIS_LABEL_FONT: '11px monospace',
+  STUDY_EXTENSION_DISTANCE: 36,
 } as const;
 
 export const DEFAULT_MA_PERIODS = [20, 50, 200] as const;

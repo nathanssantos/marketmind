@@ -15,6 +15,7 @@ export interface UseMovingAverageRendererProps {
   manager: CanvasManager | null;
   movingAverages?: MovingAverageConfig[];
   rightMargin?: number;
+  hoveredMAIndex?: number | undefined;
 }
 
 export interface UseMovingAverageRendererReturn {
@@ -25,6 +26,7 @@ export const useMovingAverageRenderer = ({
   manager,
   movingAverages = [],
   rightMargin,
+  hoveredMAIndex,
 }: UseMovingAverageRendererProps): UseMovingAverageRendererReturn => {
   const render = useCallback((): void => {
     if (!manager || movingAverages.length === 0) return;
@@ -47,15 +49,21 @@ export const useMovingAverageRenderer = ({
     ctx.rect(0, 0, effectiveWidth, chartHeight);
     ctx.clip();
 
-    movingAverages.forEach((ma) => {
+    movingAverages.forEach((ma, index) => {
       if (ma.visible === false) return;
 
       const values = calculateMovingAverage(candles, ma.period, ma.type);
+      const isHovered = hoveredMAIndex === index;
 
       ctx.strokeStyle = ma.color;
-      ctx.lineWidth = ma.lineWidth || 1.5;
+      ctx.lineWidth = isHovered ? (ma.lineWidth || 1.5) + 1 : (ma.lineWidth || 1.5);
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
+      
+      if (isHovered) {
+        ctx.shadowColor = ma.color;
+        ctx.shadowBlur = 8;
+      }
 
       ctx.beginPath();
 
@@ -79,10 +87,15 @@ export const useMovingAverageRenderer = ({
       }
 
       ctx.stroke();
+      
+      if (isHovered) {
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+      }
     });
 
     ctx.restore();
-  }, [manager, movingAverages, rightMargin, manager?.getCandles()]);
+  }, [manager, movingAverages, rightMargin, hoveredMAIndex, manager?.getCandles()]);
 
   return { render };
 };

@@ -23,6 +23,23 @@ export const parseAIResponse = (response: string): AIAnalysisWithStudies => {
       id: index + 1,
     }));
 
+    if (studiesWithIds.length > 0) {
+      const missingReferences: number[] = [];
+      studiesWithIds.forEach((study) => {
+        const studyRef = `Study #${study.id}`;
+        if (!analysis.includes(studyRef)) {
+          missingReferences.push(study.id);
+        }
+      });
+
+      if (missingReferences.length > 0) {
+        console.warn(
+          `[AIResponseParser] Studies not referenced in analysis text: ${missingReferences.map(id => `#${id}`).join(', ')}. ` +
+          `Total studies created: ${studiesWithIds.length}, Referenced: ${studiesWithIds.length - missingReferences.length}`
+        );
+      }
+    }
+
     return {
       analysis,
       studies: studiesWithIds,
