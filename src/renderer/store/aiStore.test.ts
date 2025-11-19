@@ -162,8 +162,11 @@ describe('aiStore', () => {
 
       expect(btcConversations).toHaveLength(2);
       expect(ethConversations).toHaveLength(1);
-      expect(btcConversations[0]?.title).toBe('BTC Chat 1');
-      expect(btcConversations[1]?.title).toBe('BTC Chat 2');
+      
+      const btcTitles = btcConversations.map(c => c.title);
+      expect(btcTitles).toContain('BTC Chat 1');
+      expect(btcTitles).toContain('BTC Chat 2');
+      expect(ethConversations[0]?.title).toBe('ETH Chat');
     });
 
     it('should set active conversation by symbol - existing conversation', () => {

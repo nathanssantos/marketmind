@@ -1,8 +1,8 @@
+import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawGrid, drawLine, drawText } from '@renderer/utils/canvas/drawingUtils';
 import { formatPrice, formatTimestamp } from '@renderer/utils/formatters';
 import { CHART_CONFIG } from '@shared/constants';
-import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { useCallback, useEffect } from 'react';
 
 export interface UseGridRendererProps {
@@ -55,6 +55,14 @@ export const useGridRenderer = ({
     );
 
     const labelColor = colors.axisLabel;
+    const effectivePaddingRight = paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT;
+    const chartRightBoundary = width - effectivePaddingRight;
+
+    ctx.save();
+    ctx.fillStyle = colors.background;
+    ctx.fillRect(chartRightBoundary, 0, effectivePaddingRight, chartHeight);
+    ctx.fillRect(0, chartHeight, chartRightBoundary, effectivePaddingRight);
+    ctx.restore();
 
     const priceRange = maxPrice - minPrice;
     const priceStep = priceRange / (horizontalLines + 1);
@@ -64,11 +72,10 @@ export const useGridRenderer = ({
       const y = manager.priceToY(price);
 
       if (y >= 0 && y <= chartHeight) {
-        const effectivePaddingRight = paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT;
         drawText(
           ctx,
           formatPrice(price),
-          width - effectivePaddingRight + 10,
+          chartRightBoundary + 10,
           y - 6,
           labelColor,
           CHART_CONFIG.AXIS_LABEL_FONT,
@@ -78,9 +85,9 @@ export const useGridRenderer = ({
 
         drawLine(
           ctx,
-          width - effectivePaddingRight,
+          chartRightBoundary,
           y,
-          width - effectivePaddingRight + 5,
+          chartRightBoundary + 5,
           y,
           colors.axisLine,
           1,
@@ -98,7 +105,6 @@ export const useGridRenderer = ({
 
         const index = Math.floor(viewport.start) + i;
         const x = manager.indexToX(index);
-        const chartRightBoundary = width - (paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
 
         if (x >= 0 && x <= chartRightBoundary - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN)) {
           const timeLabel = formatTimestamp(candle.timestamp);
@@ -126,8 +132,6 @@ export const useGridRenderer = ({
         }
       }
     }
-
-    const chartRightBoundary = width - (paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
 
     drawLine(
       ctx,
