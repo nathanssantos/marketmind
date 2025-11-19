@@ -13,10 +13,11 @@ const AI_MODEL_OPTIONS: SelectOption[] = [
   { value: 'anthropic:claude-haiku-4-5-20251001', label: 'Claude - 4.5 Haiku' },
   { value: 'anthropic:claude-opus-4-1-20250805', label: 'Claude - 4.1 Opus' },
   
+  { value: 'gemini:gemini-2.5-pro', label: 'Gemini - 2.5 Pro' },
+  { value: 'gemini:gemini-2.5-flash', label: 'Gemini - 2.5 Flash' },
+  { value: 'gemini:gemini-2.5-flash-lite', label: 'Gemini - 2.5 Flash-Lite' },
+  { value: 'gemini:gemini-2.0-flash', label: 'Gemini - 2.0 Flash' },
   { value: 'gemini:gemini-2.0-flash-exp', label: 'Gemini - 2.0 Flash Exp (FREE)' },
-  { value: 'gemini:gemini-1.5-pro', label: 'Gemini - 1.5 Pro' },
-  { value: 'gemini:gemini-1.5-flash', label: 'Gemini - 1.5 Flash' },
-  { value: 'gemini:gemini-1.5-flash-8b', label: 'Gemini - 1.5 Flash-8B' },
 ];
 
 interface UnifiedAISelectorProps {

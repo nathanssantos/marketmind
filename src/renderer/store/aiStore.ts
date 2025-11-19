@@ -8,7 +8,7 @@ import { persist } from 'zustand/middleware';
 const DEFAULT_MODELS: Record<AIProviderType, string> = {
   openai: 'gpt-4o',
   anthropic: 'claude-sonnet-4-5-20250929',
-  gemini: 'gemini-2.0-flash-exp',
+  gemini: 'gemini-2.5-flash',
 };
 
 const MAX_MESSAGES_PER_CONVERSATION = 100;
@@ -108,7 +108,7 @@ const generateTitle = (messages: AIMessage[]): string => {
     : preview;
 };
 
-const formatAIError = (error: Error, provider?: AIProviderType): string => {
+const formatAIError = (error: Error, provider?: AIProviderType, model?: string): string => {
   let errorMessage = error.message;
   
   const providerName = provider === 'anthropic' ? 'Claude' : 
@@ -118,29 +118,65 @@ const formatAIError = (error: Error, provider?: AIProviderType): string => {
   if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests') || errorMessage.includes('quota')) {
     if (provider === 'gemini') {
       const waitTime = errorMessage.match(/retry in (\d+)/i)?.[1] || '60';
-      if (errorMessage.includes('limit: 0') || errorMessage.includes('Quota exceeded')) {
+      
+      if (model === 'gemini-2.0-flash-exp') {
         return `⚠️ **Cota do Gemini 2.0 Flash Exp esgotada**\n\n` +
           `O tier gratuito tem limite de **10 requisições por minuto**.\n\n` +
           `**Soluções:**\n` +
           `• Aguarde ${waitTime} segundos e tente novamente\n` +
-          `• Ou vá em Settings > AI Configuration e troque para **Gemini 1.5 Flash** (mais rápido e barato)\n` +
+          `• Ou vá em Settings > AI Configuration e troque para:\n` +
+          `  - **Gemini 3 Pro** (melhor raciocínio)\n` +
+          `  - **Gemini 1.5 Flash** (mais rápido e barato)\n` +
           `• Ou use outro provedor (OpenAI/Claude)`;
+      } else if (model === 'gemini-3-pro-preview') {
+        return `⚠️ **Limite de requisições do Gemini 3 Pro excedido**\n\n` +
+          `**Soluções:**\n` +
+          `• Aguarde ${waitTime} segundos e tente novamente\n` +
+          `• Ou reduza a frequência de requisições\n` +
+          `• Ou considere usar Gemini 1.5 Flash (mais barato e com limite maior)`;
+      } else if (model?.includes('1.5-pro')) {
+        return `⚠️ **Limite de requisições do Gemini 1.5 Pro excedido**\n\n` +
+          `Limite: 360 req/min\n\n` +
+          `**Soluções:**\n` +
+          `• Aguarde ${waitTime} segundos\n` +
+          `• Ou use Gemini 1.5 Flash (limite de 1000 req/min)`;
+      } else if (model?.includes('1.5-flash')) {
+        return `⚠️ **Limite de requisições do Gemini 1.5 Flash excedido**\n\n` +
+          `Limite: 1000 req/min\n\n` +
+          `**Aguarde ${waitTime} segundos e tente novamente**`;
       } else {
-        return `⚠️ Limite de requisições do Gemini excedido (10 req/min). Aguarde ${waitTime}s ou troque de modelo nas configurações.`;
+        return `⚠️ Limite de requisições do Gemini excedido. Aguarde ${waitTime}s ou troque de modelo nas configurações.`;
       }
+    } else if (provider === 'openai') {
+      return `⚠️ **Limite de requisições do OpenAI excedido**\n\n` +
+        `**Soluções:**\n` +
+        `• Aguarde alguns minutos\n` +
+        `• Verifique seu plano na OpenAI (Tier 1/2/3/4/5)\n` +
+        `• Considere usar Gemini (mais econômico)`;
+    } else if (provider === 'anthropic') {
+      return `⚠️ **Limite de requisições do Claude excedido**\n\n` +
+        `**Soluções:**\n` +
+        `• Aguarde alguns minutos\n` +
+        `• Verifique seus créditos na Anthropic\n` +
+        `• Considere usar Gemini (mais econômico)`;
     } else {
       return `⚠️ Limite de requisições excedido no ${providerName}. Aguarde alguns minutos e tente novamente.`;
     }
   } else if (errorMessage.includes('rate limit')) {
     return `⚠️ Taxa de requisições excedida no ${providerName}. Aguarde alguns minutos.`;
   } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized') || errorMessage.includes('invalid') || errorMessage.includes('API key')) {
-    return `🔑 Invalid API key for ${providerName}. Check your settings.`;
+    return `🔑 **Chave de API inválida para ${providerName}**\n\n` +
+      `Vá em Settings > AI Configuration e verifique sua API key.`;
   } else if (errorMessage.includes('timeout')) {
-    return '⏱️ Request timeout. Try again.';
+    return '⏱️ **Timeout na requisição**\n\nA AI demorou muito para responder. Tente novamente.';
   } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-    return '🌐 Connection error. Check your internet.';
+    return '🌐 **Erro de conexão**\n\nVerifique sua internet e tente novamente.';
   } else if (errorMessage.includes('context_length') || errorMessage.includes('too long')) {
-    return '📏 Message too long. Reduce size or clear history.';
+    return `📏 **Mensagem muito longa**\n\n` +
+      `A conversa excedeu o limite de ${model?.includes('1.5-pro') ? '2M' : '1M'} tokens.\n\n` +
+      `**Soluções:**\n` +
+      `• Clique em "Clear Chat" para limpar o histórico\n` +
+      `• Ou reduza o tamanho da mensagem`;
   }
   
   return errorMessage;
@@ -583,7 +619,7 @@ export const useAIStore = create<AIState>()(
           });
         } catch (error) {
           const errorMessage = error instanceof Error 
-            ? formatAIError(error, settings.provider)
+            ? formatAIError(error, settings.provider, settings.model)
             : 'Failed to send message';
           
           set({ 
