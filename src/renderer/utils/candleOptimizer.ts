@@ -22,7 +22,7 @@ export interface TimestampInfo {
   timeframe: string;
 }
 
-const DETAILED_CANDLES_COUNT = 20;
+const DETAILED_CANDLES_COUNT = 32;
 const MAX_SIMPLIFIED_CANDLES = 1000;
 
 export const detectTimeframe = (candles: Candle[]): string => {
@@ -61,7 +61,7 @@ export const simplifyCandle = (candle: Candle): SimplifiedCandle => {
   };
 };
 
-export const optimizeCandles = (candles: Candle[]): OptimizedCandleData => {
+export const optimizeCandles = (candles: Candle[], detailedCount: number = DETAILED_CANDLES_COUNT): OptimizedCandleData => {
   if (candles.length === 0) {
     return {
       detailed: [],
@@ -77,7 +77,7 @@ export const optimizeCandles = (candles: Candle[]): OptimizedCandleData => {
   
   const timeframe = detectTimeframe(candles);
   
-  const detailed = candles.slice(-DETAILED_CANDLES_COUNT);
+  const detailed = candles.slice(-detailedCount);
   
   const remainingCandles = candles.slice(0, -DETAILED_CANDLES_COUNT);
   

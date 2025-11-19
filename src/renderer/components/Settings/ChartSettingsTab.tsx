@@ -160,6 +160,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
                 { value: 'dashed', label: t('settings.chart.dashed') },
                 { value: 'dotted', label: t('settings.chart.dotted') },
               ]}
+              usePortal={false}
             />
           </Field>
         </Stack>

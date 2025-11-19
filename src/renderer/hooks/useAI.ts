@@ -1,5 +1,6 @@
 import type { AIAnalysisRequest } from '@shared/types';
 import { useCallback, useMemo } from 'react';
+import { useChartContext } from '../context/ChartContext';
 import { AIService, type AIServiceConfig } from '../services/ai';
 import { useAIStore } from '../store/aiStore';
 
@@ -81,6 +82,8 @@ export const useAI = (options?: UseAIOptions) => {
     importConversation,
   } = useAIStore();
 
+  const { chartData } = useChartContext();
+
   const aiService = useMemo(() => {
     if (options?.service) {
       return options.service;
@@ -97,6 +100,7 @@ export const useAI = (options?: UseAIOptions) => {
       if (settings.model) config.model = settings.model;
       if (settings.temperature !== undefined) config.temperature = settings.temperature;
       if (settings.maxTokens !== undefined) config.maxTokens = settings.maxTokens;
+      if (settings.detailedCandlesCount !== undefined) config.detailedCandlesCount = settings.detailedCandlesCount;
 
       return getDefaultAIService(config);
     } catch (error) {
@@ -244,7 +248,8 @@ export const useAI = (options?: UseAIOptions) => {
     async (chartImage: string, context?: string) => {
       const request: AIAnalysisRequest = {
         chartImage,
-        candles: [],
+        candles: chartData?.candles || [],
+        ...(chartData?.news && { news: chartData.news }),
       };
 
       if (context) {
@@ -253,7 +258,7 @@ export const useAI = (options?: UseAIOptions) => {
 
       return analyzeChart(request);
     },
-    [analyzeChart]
+    [analyzeChart, chartData]
   );
 
   const startNewConversation = useCallback(() => {

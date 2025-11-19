@@ -28,10 +28,11 @@ export class ClaudeProvider extends BaseAIProvider {
 
       const claudeMessages = userMessages.map(msg => {
         if (msg.role === 'user' && images && images.length > 0) {
+          const contentText = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
           const content: Anthropic.MessageParam['content'] = [
             {
               type: 'text',
-              text: msg.content,
+              text: contentText,
             },
             ...images.map(image => ({
               type: 'image' as const,

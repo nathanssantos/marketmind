@@ -9,13 +9,13 @@ import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useSecureStorage } from '@/renderer/hooks/useSecureStorage';
 import { useAIStore } from '@/renderer/store';
 import {
-  Accordion,
-  Box,
-  Flex,
-  Separator,
-  Spinner,
-  Stack,
-  Text,
+    Accordion,
+    Box,
+    Flex,
+    Separator,
+    Spinner,
+    Stack,
+    Text,
 } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
 import { useEffect, useState } from 'react';
@@ -82,6 +82,7 @@ export const AIConfigTab = () => {
   const model = settings?.model || DEFAULT_MODELS[provider];
   const temperature = settings?.temperature ?? DEFAULT_AI_SETTINGS.temperature;
   const maxTokens = settings?.maxTokens ?? DEFAULT_AI_SETTINGS.maxTokens;
+  const detailedCandlesCount = settings?.detailedCandlesCount ?? DEFAULT_AI_SETTINGS.detailedCandlesCount;
 
   const debouncedUpdateSettings = useDebounceCallback(updateSettings, 300);
 
@@ -156,34 +157,45 @@ export const AIConfigTab = () => {
     }
   };
 
+  const handleDetailedCandlesCountChange = (value: number[]) => {
+    if (value[0] !== undefined) {
+      debouncedUpdateSettings({ detailedCandlesCount: value[0] });
+    }
+  };
+
   const handleReset = () => {
     updateSettings({
       temperature: DEFAULT_AI_SETTINGS.temperature,
       maxTokens: DEFAULT_AI_SETTINGS.maxTokens,
+      detailedCandlesCount: DEFAULT_AI_SETTINGS.detailedCandlesCount,
     });
   };
 
   const renderApiKeyInput = (provider: AIProvider, label: string) => {
     const envVar = `VITE_${provider.toUpperCase()}_API_KEY`;
     const envKey = import.meta.env[envVar] as string | undefined;
+    
+    const labelKey = provider === 'openai' ? 'openaiApiKey' : 
+                     provider === 'anthropic' ? 'anthropicApiKey' : 
+                     'geminiApiKey';
 
     return (
       <Box key={provider}>
         <Field 
-          label={`${label} API Key`} 
-          helperText={envKey ? `Using ${envVar} from .env` : undefined}
+          label={t(`settings.ai.${labelKey}`)} 
+          helperText={envKey ? t('settings.ai.usingEnvVar', { var: envVar }) : undefined}
         >
           {isLoadingKeys ? (
             <Flex align="center" gap={2} p={2}>
               <Spinner size="sm" />
-              <Text fontSize="sm" color="fg.muted">Loading...</Text>
+              <Text fontSize="sm" color="fg.muted">{t('common.loading')}</Text>
             </Flex>
           ) : (
             <Flex gap={2}>
               <PasswordInput
                 value={apiKeys[provider]}
                 onChange={(e) => handleApiKeyChange(provider, e.target.value)}
-                placeholder={envKey || `Enter your ${label} API key`}
+                placeholder={envKey || t('settings.ai.enterApiKey', { provider: label })}
                 flex={1}
               />
               <Button
@@ -243,6 +255,7 @@ export const AIConfigTab = () => {
               { value: 'anthropic', label: t('aiConfig.providers.anthropic') },
               { value: 'gemini', label: t('aiConfig.providers.gemini') },
             ]}
+            usePortal={false}
           />
         </Field>
       </Box>
@@ -258,6 +271,7 @@ export const AIConfigTab = () => {
               description: option.pricing,
             }))}
             enableSearch
+            usePortal={false}
           />
         </Field>
       </Box>
@@ -266,12 +280,12 @@ export const AIConfigTab = () => {
 
       <Stack gap={4}>
         <Text fontWeight="medium" fontSize="sm">
-          API Keys (Encrypted)
+          {t('settings.ai.apiKeysTitle')}
         </Text>
         
-        {renderApiKeyInput('openai', 'OpenAI')}
-        {renderApiKeyInput('anthropic', 'Anthropic')}
-        {renderApiKeyInput('gemini', 'Google Gemini')}
+        {renderApiKeyInput('openai', t('aiConfig.providers.openai'))}
+        {renderApiKeyInput('anthropic', t('aiConfig.providers.anthropic'))}
+        {renderApiKeyInput('gemini', t('aiConfig.providers.gemini'))}
 
         {secureStorageError && (
           <Text fontSize="sm" color="red.500">
@@ -280,7 +294,7 @@ export const AIConfigTab = () => {
         )}
         {!isEncryptionAvailable && (
           <Text fontSize="sm" color="orange.500">
-            Warning: Encryption not available on this platform
+            {t('settings.ai.encryptionNotAvailable')}
           </Text>
         )}
       </Stack>
@@ -288,7 +302,7 @@ export const AIConfigTab = () => {
       <Separator />
 
       <Box>
-        <Field label={`Temperature: ${temperature.toFixed(2)}`} helperText="Controls randomness (0 = focused, 2 = creative)">
+        <Field label={t('settings.ai.temperature', { value: temperature.toFixed(2) })} helperText={t('settings.ai.temperatureHelper')}>
           <Slider
             value={[temperature]}
             onValueChange={handleTemperatureChange}
@@ -301,13 +315,26 @@ export const AIConfigTab = () => {
       </Box>
 
       <Box>
-        <Field label={`Max Tokens: ${maxTokens.toLocaleString()}`} helperText="Maximum response length">
+        <Field label={t('settings.ai.maxTokens', { value: maxTokens.toLocaleString() })} helperText={t('settings.ai.maxTokensHelper')}>
           <Slider
             value={[maxTokens]}
             onValueChange={handleMaxTokensChange}
             min={256}
             max={16384}
             step={256}
+            width="full"
+          />
+        </Field>
+      </Box>
+
+      <Box>
+        <Field label={t('settings.ai.detailedCandles', { value: detailedCandlesCount })} helperText={t('settings.ai.detailedCandlesHelper')}>
+          <Slider
+            value={[detailedCandlesCount]}
+            onValueChange={handleDetailedCandlesCountChange}
+            min={10}
+            max={100}
+            step={1}
             width="full"
           />
         </Field>
