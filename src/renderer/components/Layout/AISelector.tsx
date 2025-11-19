@@ -13,6 +13,16 @@ const PROVIDER_OPTIONS: SelectOption[] = [
 
 const MODEL_OPTIONS: Record<AIProviderType, SelectOption[]> = {
   openai: [
+    { value: 'gpt-5.1', label: 'GPT-5.1 (Latest)' },
+    { value: 'gpt-5', label: 'GPT-5' },
+    { value: 'gpt-5-pro', label: 'GPT-5 Pro' },
+    { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+    { value: 'gpt-5-nano', label: 'GPT-5 Nano' },
+    { value: 'o3', label: 'o3 (Reasoning)' },
+    { value: 'o3-mini', label: 'o3-mini (Reasoning)' },
+    { value: 'o1', label: 'o1 (Reasoning)' },
+    { value: 'gpt-4.1', label: 'GPT-4.1' },
+    { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
     { value: 'gpt-4o', label: 'GPT-4o' },
     { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
   ],

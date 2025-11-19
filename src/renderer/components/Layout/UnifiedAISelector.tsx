@@ -6,6 +6,16 @@ import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const AI_MODEL_OPTIONS: SelectOption[] = [
+  { value: 'openai:gpt-5.1', label: 'OpenAI - GPT-5.1' },
+  { value: 'openai:gpt-5', label: 'OpenAI - GPT-5' },
+  { value: 'openai:gpt-5-pro', label: 'OpenAI - GPT-5 Pro' },
+  { value: 'openai:gpt-5-mini', label: 'OpenAI - GPT-5 Mini' },
+  { value: 'openai:gpt-5-nano', label: 'OpenAI - GPT-5 Nano' },
+  { value: 'openai:o3', label: 'OpenAI - o3 (Reasoning)' },
+  { value: 'openai:o3-mini', label: 'OpenAI - o3-mini (Reasoning)' },
+  { value: 'openai:o1', label: 'OpenAI - o1 (Reasoning)' },
+  { value: 'openai:gpt-4.1', label: 'OpenAI - GPT-4.1' },
+  { value: 'openai:gpt-4.1-mini', label: 'OpenAI - GPT-4.1 Mini' },
   { value: 'openai:gpt-4o', label: 'OpenAI - GPT-4o' },
   { value: 'openai:gpt-4o-mini', label: 'OpenAI - GPT-4o Mini' },
   

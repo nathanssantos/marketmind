@@ -5,6 +5,16 @@ import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const MODEL_OPTIONS: SelectOption[] = [
+  { value: 'openai:gpt-5.1', label: '🤖 GPT-5.1 💎' },
+  { value: 'openai:gpt-5', label: '🤖 GPT-5 🌟' },
+  { value: 'openai:gpt-5-pro', label: '🤖 GPT-5 Pro' },
+  { value: 'openai:gpt-5-mini', label: '🤖 GPT-5 Mini' },
+  { value: 'openai:gpt-5-nano', label: '🤖 GPT-5 Nano' },
+  { value: 'openai:o3', label: '🤖 o3 (Reasoning)' },
+  { value: 'openai:o3-mini', label: '🤖 o3-mini (Reasoning)' },
+  { value: 'openai:o1', label: '🤖 o1 (Reasoning)' },
+  { value: 'openai:gpt-4.1', label: '🤖 GPT-4.1' },
+  { value: 'openai:gpt-4.1-mini', label: '🤖 GPT-4.1 Mini' },
   { value: 'openai:gpt-4o', label: '🤖 GPT-4o' },
   { value: 'openai:gpt-4o-mini', label: '🤖 GPT-4o Mini' },
   
