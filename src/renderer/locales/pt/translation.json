@@ -216,6 +216,9 @@
       "volume": "Volume",
       "grid": "Grade",
       "currentPrice": "Preço Atual",
+      "crosshair": "Mira",
+      "measurementRuler": "Régua de Medição",
+      "measurementArea": "Área de Medição",
       "indicators": "Indicadores",
       "quickSettings": "Configurações Rápidas"
     },

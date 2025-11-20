@@ -11,6 +11,7 @@ import { ChartContextMenu } from './ChartContextMenu';
 import { ChartTooltip } from './ChartTooltip';
 import { useCandlestickRenderer } from './useCandlestickRenderer';
 import { useChartCanvas } from './useChartCanvas';
+import { useCrosshairPriceLineRenderer } from './useCrosshairPriceLineRenderer';
 import { useCurrentPriceLineRenderer } from './useCurrentPriceLineRenderer';
 import { useGridRenderer } from './useGridRenderer';
 import { useLineChartRenderer } from './useLineChartRenderer';
@@ -26,6 +27,9 @@ export interface ChartCanvasProps {
   showGrid?: boolean;
   showVolume?: boolean;
   showCurrentPriceLine?: boolean;
+  showCrosshair?: boolean;
+  showMeasurementRuler?: boolean;
+  showMeasurementArea?: boolean;
   movingAverages?: MovingAverageConfig[];
   chartType?: 'candlestick' | 'line';
   advancedConfig?: AdvancedControlsConfig;
@@ -44,6 +48,9 @@ export const ChartCanvas = ({
   showGrid = true,
   showVolume = true,
   showCurrentPriceLine = true,
+  showCrosshair = true,
+  showMeasurementRuler = false,
+  showMeasurementArea = false,
   movingAverages = [],
   chartType = 'candlestick',
   advancedConfig,
@@ -68,6 +75,13 @@ export const ChartCanvas = ({
       color: string;
       value?: number;
     };
+    measurement?: {
+      candleCount: number;
+      priceChange: number;
+      percentChange: number;
+      startPrice: number;
+      endPrice: number;
+    };
   }>({
     candle: null,
     x: 0,
@@ -80,6 +94,15 @@ export const ChartCanvas = ({
   const [isInteracting, setIsInteracting] = useState(false);
   const [interactionTimeout, setInteractionTimeout] = useState<NodeJS.Timeout | null>(null);
   const [cursor, setCursor] = useState<'crosshair' | 'ns-resize' | 'grab' | 'grabbing'>('crosshair');
+  const [measurementArea, setMeasurementArea] = useState<{
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
+    startIndex: number;
+    endIndex: number;
+  } | null>(null);
+  const [isMeasuring, setIsMeasuring] = useState(false);
   const {
     canvasRef,
     manager,
@@ -143,7 +166,66 @@ export const ChartCanvas = ({
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
   });
 
+  const { render: renderCrosshairPriceLine } = useCrosshairPriceLineRenderer({
+    manager,
+    colors,
+    enabled: showCrosshair,
+    mouseX: mousePosition?.x ?? null,
+    mouseY: mousePosition?.y ?? null,
+    lineWidth: 1,
+    lineStyle: 'solid',
+    ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
+  });
+
   const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>): void => {
+    if (isMeasuring && manager && canvasRef.current && measurementArea) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+      
+      const viewport = manager.getViewport();
+      const dimensions = manager.getDimensions();
+      if (!dimensions) return;
+      
+      const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? 72);
+      const hoveredIndex = Math.floor(viewport.start + (mouseX / chartAreaRight) * (viewport.end - viewport.start));
+      
+      setMeasurementArea({
+        ...measurementArea,
+        endX: mouseX,
+        endY: mouseY,
+        endIndex: hoveredIndex,
+      });
+      
+      const startIndex = Math.min(measurementArea.startIndex, hoveredIndex);
+      const endIndex = Math.max(measurementArea.startIndex, hoveredIndex);
+      const candleCount = Math.abs(endIndex - startIndex);
+      
+      const startPrice = manager.yToPrice(measurementArea.startY);
+      const endPrice = manager.yToPrice(mouseY);
+      const priceChange = endPrice - startPrice;
+      const percentChange = (priceChange / startPrice) * 100;
+      
+      setTooltipData({
+        candle: null,
+        x: mouseX,
+        y: mouseY,
+        visible: true,
+        containerWidth: rect.width,
+        containerHeight: rect.height,
+        measurement: {
+          candleCount,
+          priceChange,
+          percentChange,
+          startPrice,
+          endPrice,
+        },
+      });
+      
+      setMousePosition({ x: mouseX, y: mouseY });
+      return;
+    }
+    
     handleMouseMove(event);
 
     if (!manager || !canvasRef.current) return;
@@ -372,6 +454,8 @@ export const ChartCanvas = ({
     handleMouseLeave();
     setMousePosition(null);
     setHoveredAIStudy(null);
+    setIsMeasuring(false);
+    setMeasurementArea(null);
     setTooltipData({
       candle: null,
       x: 0,
@@ -407,11 +491,46 @@ export const ChartCanvas = ({
   };
 
   const handleCanvasMouseDown = (event: React.MouseEvent<HTMLCanvasElement>): void => {
+    if ((showMeasurementRuler || showMeasurementArea) && manager && canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+      
+      const dimensions = manager.getDimensions();
+      if (!dimensions) return;
+      
+      const timeScaleTop = dimensions.height - 40;
+      const priceScaleLeft = dimensions.width - (advancedConfig?.rightMargin ?? 72);
+      
+      if (mouseX < priceScaleLeft && mouseY < timeScaleTop) {
+        const viewport = manager.getViewport();
+        const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? 72);
+        const hoveredIndex = Math.floor(viewport.start + (mouseX / chartAreaRight) * (viewport.end - viewport.start));
+        
+        setIsMeasuring(true);
+        setMeasurementArea({
+          startX: mouseX,
+          startY: mouseY,
+          endX: mouseX,
+          endY: mouseY,
+          startIndex: hoveredIndex,
+          endIndex: hoveredIndex,
+        });
+        return;
+      }
+    }
+    
     handleMouseDown(event);
     startInteraction();
   };
 
   const handleCanvasMouseUp = (): void => {
+    if (isMeasuring) {
+      setIsMeasuring(false);
+      setMeasurementArea(null);
+      return;
+    }
+    
     handleMouseUp();
     endInteraction();
   };
@@ -451,6 +570,53 @@ export const ChartCanvas = ({
       }
       renderMovingAverages();
       renderCurrentPriceLine();
+      renderCrosshairPriceLine();
+      
+      if (measurementArea && isMeasuring) {
+        const ctx = manager.getContext();
+        if (!ctx) return;
+        
+        const { startX, startY, endX, endY } = measurementArea;
+        
+        const startPrice = manager.yToPrice(startY);
+        const endPrice = manager.yToPrice(endY);
+        const priceChange = endPrice - startPrice;
+        const isPositive = priceChange >= 0;
+        
+        ctx.save();
+        
+        if (showMeasurementArea) {
+          ctx.fillStyle = 'rgba(100, 116, 139, 0.1)';
+          ctx.fillRect(
+            Math.min(startX, endX),
+            Math.min(startY, endY),
+            Math.abs(endX - startX),
+            Math.abs(endY - startY)
+          );
+          
+          ctx.strokeStyle = colors.crosshair;
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(
+            Math.min(startX, endX),
+            Math.min(startY, endY),
+            Math.abs(endX - startX),
+            Math.abs(endY - startY)
+          );
+        }
+        
+        if (showMeasurementRuler) {
+          ctx.strokeStyle = isPositive ? colors.bullish : colors.bearish;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 3]);
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+        }
+        
+        ctx.restore();
+      }
     };
 
     manager.setRenderCallback(render);
@@ -458,7 +624,7 @@ export const ChartCanvas = ({
     return () => {
       manager.setRenderCallback(null);
     };
-  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine, chartType]);
+  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine, renderCrosshairPriceLine, chartType, measurementArea, isMeasuring, colors, showMeasurementRuler, showMeasurementArea]);
 
   return (
     <Box
@@ -511,6 +677,7 @@ export const ChartCanvas = ({
         containerHeight={tooltipData.containerHeight ?? window.innerHeight}
         aiStudy={tooltipData.aiStudy}
         {...(tooltipData.movingAverage && { movingAverage: tooltipData.movingAverage })}
+        {...(tooltipData.measurement && { measurement: tooltipData.measurement })}
       />
     </Box>
   );
