@@ -216,6 +216,9 @@
       "volume": "Volumen",
       "grid": "Cuadrícula",
       "currentPrice": "Precio Actual",
+      "crosshair": "Reticulado",
+      "measurementRuler": "Regla de Medición",
+      "measurementArea": "Área de Medición",
       "indicators": "Indicadores",
       "quickSettings": "Configuración Rápida"
     },

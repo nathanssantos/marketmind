@@ -5,8 +5,11 @@ import {
     LuChartBar,
     LuChartCandlestick,
     LuChartLine,
+    LuCrosshair,
     LuDollarSign,
-    LuGrid3X3
+    LuGrid3X3,
+    LuRuler,
+    LuScan
 } from 'react-icons/lu';
 import type { MarketDataService } from '../../services/market/MarketDataService';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
@@ -22,6 +25,9 @@ export interface ToolbarProps {
   showVolume: boolean;
   showGrid: boolean;
   showCurrentPriceLine: boolean;
+  showCrosshair: boolean;
+  showMeasurementRuler: boolean;
+  showMeasurementArea: boolean;
   movingAverages: MovingAverageConfig[];
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
@@ -29,6 +35,9 @@ export interface ToolbarProps {
   onShowVolumeChange: (show: boolean) => void;
   onShowGridChange: (show: boolean) => void;
   onShowCurrentPriceLineChange: (show: boolean) => void;
+  onShowCrosshairChange: (show: boolean) => void;
+  onShowMeasurementRulerChange: (show: boolean) => void;
+  onShowMeasurementAreaChange: (show: boolean) => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
 }
 
@@ -40,6 +49,9 @@ export const Toolbar = memo(({
   showVolume,
   showGrid,
   showCurrentPriceLine,
+  showCrosshair,
+  showMeasurementRuler,
+  showMeasurementArea,
   movingAverages,
   onSymbolChange,
   onTimeframeChange,
@@ -47,6 +59,9 @@ export const Toolbar = memo(({
   onShowVolumeChange,
   onShowGridChange,
   onShowCurrentPriceLineChange,
+  onShowCrosshairChange,
+  onShowMeasurementRulerChange,
+  onShowMeasurementAreaChange,
   onMovingAveragesChange,
 }: ToolbarProps) => {
   const { t } = useTranslation();
@@ -168,6 +183,39 @@ export const Toolbar = memo(({
               variant={showCurrentPriceLine ? 'solid' : 'ghost'}
             >
               <LuDollarSign />
+            </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label={t('chart.controls.crosshair')} showArrow>
+            <IconButton
+              size="sm"
+              aria-label={t('chart.controls.crosshair')}
+              onClick={() => onShowCrosshairChange(!showCrosshair)}
+              colorPalette={showCrosshair ? 'blue' : 'gray'}
+              variant={showCrosshair ? 'solid' : 'ghost'}
+            >
+              <LuCrosshair />
+            </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label={t('chart.controls.measurementRuler')} showArrow>
+            <IconButton
+              size="sm"
+              aria-label={t('chart.controls.measurementRuler')}
+              onClick={() => onShowMeasurementRulerChange(!showMeasurementRuler)}
+              colorPalette={showMeasurementRuler ? 'blue' : 'gray'}
+              variant={showMeasurementRuler ? 'solid' : 'ghost'}
+            >
+              <LuRuler />
+            </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label={t('chart.controls.measurementArea')} showArrow>
+            <IconButton
+              size="sm"
+              aria-label={t('chart.controls.measurementArea')}
+              onClick={() => onShowMeasurementAreaChange(!showMeasurementArea)}
+              colorPalette={showMeasurementArea ? 'blue' : 'gray'}
+              variant={showMeasurementArea ? 'solid' : 'ghost'}
+            >
+              <LuScan />
             </IconButton>
           </TooltipWrapper>
         </HStack>

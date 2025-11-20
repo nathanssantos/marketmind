@@ -217,6 +217,9 @@
       "volume": "Volume",
       "grid": "Grid",
       "currentPrice": "Current Price",
+      "crosshair": "Crosshair",
+      "measurementRuler": "Measurement Ruler",
+      "measurementArea": "Measurement Area",
       "indicators": "Indicators",
       "quickSettings": "Quick Settings"
     },

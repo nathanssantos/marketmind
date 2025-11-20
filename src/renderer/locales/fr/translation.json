@@ -215,7 +215,10 @@
       "display": "Affichage",
       "volume": "Volume",
       "grid": "Grille",
-      "currentPrice": "Prix actuel",
+      "currentPrice": "Prix Actuel",
+      "crosshair": "Réticule",
+      "measurementRuler": "Règle de Mesure",
+      "measurementArea": "Zone de Mesure",
       "indicators": "Indicateurs",
       "quickSettings": "Paramètres rapides"
     },
