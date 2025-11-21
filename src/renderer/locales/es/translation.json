@@ -444,6 +444,42 @@
       "totalCost": "Costo Total",
       "buy": "Comprar",
       "sell": "Vender"
+    },
+    "portfolio": {
+      "title": "Portafolio",
+      "noWallet": "Por favor, crea y selecciona una cartera primero.",
+      "empty": "No hay posiciones abiertas.",
+      "totalPositions": "Posiciones Totales",
+      "totalPnL": "P&G Total",
+      "orders": "órdenes",
+      "quantity": "Cantidad",
+      "avgPrice": "Precio Promedio",
+      "currentPrice": "Precio Actual",
+      "pnl": "P&G"
+    },
+    "orders": {
+      "title": "Órdenes",
+      "noWallet": "Por favor, crea y selecciona una cartera primero.",
+      "empty": "No se encontraron órdenes.",
+      "total": "Total de Órdenes",
+      "active": "Activas",
+      "pending": "Pendientes",
+      "filterByStatus": "Filtrar por Estado",
+      "allStatuses": "Todos los Estados",
+      "statusPending": "Pendiente",
+      "statusActive": "Activa",
+      "statusFilled": "Ejecutada",
+      "statusClosed": "Cerrada",
+      "statusCancelled": "Cancelada",
+      "statusExpired": "Expirada",
+      "quantity": "Cantidad",
+      "entryPrice": "Precio de Entrada",
+      "currentPrice": "Precio Actual",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "pnl": "P&G",
+      "close": "Cerrar Orden",
+      "cancel": "Cancelar Orden"
     }
   },
   "about": {

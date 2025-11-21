@@ -444,6 +444,42 @@
       "totalCost": "Coût Total",
       "buy": "Acheter",
       "sell": "Vendre"
+    },
+    "portfolio": {
+      "title": "Portefeuille",
+      "noWallet": "Veuillez créer et sélectionner un portefeuille d'abord.",
+      "empty": "Aucune position ouverte.",
+      "totalPositions": "Positions Totales",
+      "totalPnL": "P&L Total",
+      "orders": "ordres",
+      "quantity": "Quantité",
+      "avgPrice": "Prix Moyen",
+      "currentPrice": "Prix Actuel",
+      "pnl": "P&L"
+    },
+    "orders": {
+      "title": "Ordres",
+      "noWallet": "Veuillez créer et sélectionner un portefeuille d'abord.",
+      "empty": "Aucun ordre trouvé.",
+      "total": "Total des Ordres",
+      "active": "Actifs",
+      "pending": "En Attente",
+      "filterByStatus": "Filtrer par Statut",
+      "allStatuses": "Tous les Statuts",
+      "statusPending": "En Attente",
+      "statusActive": "Actif",
+      "statusFilled": "Exécuté",
+      "statusClosed": "Fermé",
+      "statusCancelled": "Annulé",
+      "statusExpired": "Expiré",
+      "quantity": "Quantité",
+      "entryPrice": "Prix d'Entrée",
+      "currentPrice": "Prix Actuel",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "pnl": "P&L",
+      "close": "Fermer l'Ordre",
+      "cancel": "Annuler l'Ordre"
     }
   },
   "about": {

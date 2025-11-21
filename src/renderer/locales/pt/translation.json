@@ -444,6 +444,42 @@
       "totalCost": "Custo Total",
       "buy": "Comprar",
       "sell": "Vender"
+    },
+    "portfolio": {
+      "title": "Portfólio",
+      "noWallet": "Por favor, crie e selecione uma carteira primeiro.",
+      "empty": "Nenhuma posição aberta.",
+      "totalPositions": "Posições Totais",
+      "totalPnL": "L&P Total",
+      "orders": "ordens",
+      "quantity": "Quantidade",
+      "avgPrice": "Preço Médio",
+      "currentPrice": "Preço Atual",
+      "pnl": "L&P"
+    },
+    "orders": {
+      "title": "Ordens",
+      "noWallet": "Por favor, crie e selecione uma carteira primeiro.",
+      "empty": "Nenhuma ordem encontrada.",
+      "total": "Total de Ordens",
+      "active": "Ativas",
+      "pending": "Pendentes",
+      "filterByStatus": "Filtrar por Status",
+      "allStatuses": "Todos os Status",
+      "statusPending": "Pendente",
+      "statusActive": "Ativa",
+      "statusFilled": "Executada",
+      "statusClosed": "Fechada",
+      "statusCancelled": "Cancelada",
+      "statusExpired": "Expirada",
+      "quantity": "Quantidade",
+      "entryPrice": "Preço de Entrada",
+      "currentPrice": "Preço Atual",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "pnl": "L&P",
+      "close": "Fechar Ordem",
+      "cancel": "Cancelar Ordem"
     }
   },
   "about": {

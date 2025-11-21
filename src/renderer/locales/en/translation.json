@@ -445,6 +445,42 @@
       "totalCost": "Total Cost",
       "buy": "Buy Long",
       "sell": "Sell Short"
+    },
+    "portfolio": {
+      "title": "Portfolio",
+      "noWallet": "Please create and select a wallet first.",
+      "empty": "No open positions.",
+      "totalPositions": "Total Positions",
+      "totalPnL": "Total P&L",
+      "orders": "orders",
+      "quantity": "Quantity",
+      "avgPrice": "Avg Price",
+      "currentPrice": "Current Price",
+      "pnl": "P&L"
+    },
+    "orders": {
+      "title": "Orders",
+      "noWallet": "Please create and select a wallet first.",
+      "empty": "No orders found.",
+      "total": "Total Orders",
+      "active": "Active",
+      "pending": "Pending",
+      "filterByStatus": "Filter by Status",
+      "allStatuses": "All Statuses",
+      "statusPending": "Pending",
+      "statusActive": "Active",
+      "statusFilled": "Filled",
+      "statusClosed": "Closed",
+      "statusCancelled": "Cancelled",
+      "statusExpired": "Expired",
+      "quantity": "Quantity",
+      "entryPrice": "Entry Price",
+      "currentPrice": "Current Price",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "pnl": "P&L",
+      "close": "Close Order",
+      "cancel": "Cancel Order"
     }
   },
   "about": {
