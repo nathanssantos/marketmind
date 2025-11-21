@@ -30,6 +30,7 @@ import { MarketDataService } from './services/market/MarketDataService';
 import { BinanceProvider } from './services/market/providers/BinanceProvider';
 import { CoinGeckoProvider } from './services/market/providers/CoinGeckoProvider';
 import { useAIStore } from './store/aiStore';
+import { useTradingStore } from './store/tradingStore';
 import { system } from './theme';
 import { runMigrations } from './utils/migration';
 import { toaster } from './utils/toaster';
@@ -170,6 +171,9 @@ function AppContent(): ReactElement {
   const restoreActiveConversation = useAIStore((state) => state.restoreActiveConversation);
   const setActiveConversationBySymbol = useAIStore((state) => state.setActiveConversationBySymbol);
   const getActiveConversation = useAIStore((state) => state.getActiveConversation);
+
+  const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
+  const toggleSimulator = useTradingStore((state) => state.toggleSimulator);
 
   useEffect(() => {
     restoreActiveConversation();
@@ -315,6 +319,7 @@ function AppContent(): ReactElement {
         showMeasurementRuler={showMeasurementRuler}
         showMeasurementArea={showMeasurementArea}
         movingAverages={movingAverages}
+        isSimulatorActive={isSimulatorActive}
         onSymbolChange={setSymbol}
         onTimeframeChange={setTimeframe}
         onChartTypeChange={setChartType}
@@ -325,6 +330,7 @@ function AppContent(): ReactElement {
         onShowMeasurementRulerChange={setShowMeasurementRuler}
         onShowMeasurementAreaChange={setShowMeasurementArea}
         onMovingAveragesChange={setMovingAverages}
+        onToggleSimulator={toggleSimulator}
       />
 
       <MainLayout

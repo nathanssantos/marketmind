@@ -8,6 +8,8 @@ import {
   LuCrosshair,
   LuDollarSign,
   LuGrid3X3,
+  LuPause,
+  LuPlay,
   LuRuler,
   LuScan
 } from 'react-icons/lu';
@@ -29,6 +31,7 @@ export interface ToolbarProps {
   showMeasurementRuler: boolean;
   showMeasurementArea: boolean;
   movingAverages: MovingAverageConfig[];
+  isSimulatorActive: boolean;
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
   onChartTypeChange: (type: 'candlestick' | 'line') => void;
@@ -39,6 +42,7 @@ export interface ToolbarProps {
   onShowMeasurementRulerChange: (show: boolean) => void;
   onShowMeasurementAreaChange: (show: boolean) => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
+  onToggleSimulator: () => void;
 }
 
 export const Toolbar = memo(({
@@ -53,6 +57,7 @@ export const Toolbar = memo(({
   showMeasurementRuler,
   showMeasurementArea,
   movingAverages,
+  isSimulatorActive,
   onSymbolChange,
   onTimeframeChange,
   onChartTypeChange,
@@ -63,6 +68,7 @@ export const Toolbar = memo(({
   onShowMeasurementRulerChange,
   onShowMeasurementAreaChange,
   onMovingAveragesChange,
+  onToggleSimulator,
 }: ToolbarProps) => {
   const { t } = useTranslation();
 
@@ -220,6 +226,20 @@ export const Toolbar = memo(({
             </IconButton>
           </TooltipWrapper>
         </HStack>
+
+        <Box w="1px" h="32px" bg="border" flexShrink={0} />
+
+        <TooltipWrapper label={t('trading.simulator.toggle')} showArrow>
+          <IconButton
+            size="2xs"
+            aria-label={t('trading.simulator.toggle')}
+            onClick={onToggleSimulator}
+            colorPalette={isSimulatorActive ? 'green' : 'gray'}
+            variant={isSimulatorActive ? 'solid' : 'ghost'}
+          >
+            {isSimulatorActive ? <LuPause /> : <LuPlay />}
+          </IconButton>
+        </TooltipWrapper>
 
         {movingAverages.length > 0 && (
           <>

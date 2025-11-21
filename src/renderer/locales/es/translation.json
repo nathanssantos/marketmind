@@ -398,6 +398,13 @@
       "gemini15Flash8b": "$0.0375/$0.15 por 1M tokens"
     }
   },
+  "trading": {
+    "simulator": {
+      "toggle": "Simulador de Trading",
+      "active": "Simulador Activo",
+      "inactive": "Simulador Inactivo"
+    }
+  },
   "about": {
     "version": "Versión {{version}}",
     "description": "Un asistente de trading con IA que combina visualización avanzada de gráficos financieros con inteligencia artificial para proporcionar información sobre criptomonedas, acciones y otros activos negociables.",
