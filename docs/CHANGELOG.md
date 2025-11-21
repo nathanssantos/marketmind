@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Trading Simulator - Phase 1: Foundation**
+  - Created trading type system with Wallet, Order, Position interfaces
+  - Added WalletPerformancePoint for historical tracking
+  - Created tradingStore with Zustand (wallet and order management)
+  - Added wallet operations: create, update, delete, activate
+  - Added order operations: create, update, cancel, close
+  - Implemented position aggregation by symbol
+  - Created uiStore for chat positioning (left/right)
+  - Installed nanoid for unique ID generation
+
 ## [0.21.0] - 2025-11-20
 
 ### Added
