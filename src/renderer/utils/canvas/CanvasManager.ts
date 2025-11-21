@@ -1,13 +1,13 @@
 import { CHART_CONFIG } from '@shared/constants';
 import type { Candle, Viewport } from '@shared/types';
 import {
-  calculateBounds,
-  clampViewport,
-  priceToY,
-  volumeToHeight,
-  yToPrice,
-  type Bounds,
-  type Dimensions,
+    calculateBounds,
+    clampViewport,
+    priceToY,
+    volumeToHeight,
+    yToPrice,
+    type Bounds,
+    type Dimensions,
 } from './coordinateSystem';
 import { clearCanvas, setupCanvas } from './drawingUtils';
 
@@ -271,6 +271,38 @@ export class CanvasManager {
     this.priceScale = 1;
     this.updateBounds();
     this.triggerRender();
+  }
+
+  public resetToInitialView(): void {
+    const initialCandleCount = Math.min(CHART_CONFIG.INITIAL_CANDLES_VISIBLE, this.candles.length);
+    
+    this.viewport = {
+      ...this.viewport,
+      start: Math.max(0, this.candles.length - initialCandleCount),
+      end: this.candles.length,
+    };
+    
+    this.resetVerticalZoom();
+    this.updateCandleWidth();
+    this.triggerRender();
+  }
+
+  public panToNextCandle(): void {
+    if (this.candles.length === 0) return;
+    
+    const newStart = this.viewport.start + 1;
+    const newEnd = this.viewport.end + 1;
+    
+    if (newEnd <= this.candles.length) {
+      this.viewport = {
+        ...this.viewport,
+        start: newStart,
+        end: newEnd,
+      };
+      
+      this.updateBounds();
+      this.triggerRender();
+    }
   }
 
   private updateCandleWidth(): void {

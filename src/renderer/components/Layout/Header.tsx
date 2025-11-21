@@ -23,8 +23,9 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
       top={0}
       left={0}
       right={0}
-      height="60px"
+      height="48px"
       px={4}
+      py={2}
       align="center"
       justify="space-between"
       bg="bg.panel"
@@ -33,8 +34,8 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
       zIndex={100}
     >
       <Flex align="center" gap={2}>
-        <Logo size={24} />
-        <Text fontSize="xl" fontWeight="bold">
+        <Logo size={20} />
+        <Text fontSize="lg" fontWeight="bold">
           {t('app.title')}
         </Text>
       </Flex>
@@ -45,7 +46,7 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
             aria-label={t('header.toggleColorMode')}
             onClick={toggleColorMode}
             variant="ghost"
-            size="sm"
+            size="xs"
           >
             {colorMode === 'dark' ? <LuSun /> : <LuMoon />}
           </IconButton>
@@ -55,7 +56,7 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
             aria-label={t('header.showKeyboardShortcuts')}
             onClick={() => setShowShortcuts(true)}
             variant="ghost"
-            size="sm"
+            size="xs"
           >
             <LuTerminal />
           </IconButton>
@@ -65,16 +66,16 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
             aria-label={t('header.settings')}
             onClick={onSettingsClick}
             variant="ghost"
-            size="sm"
+            size="xs"
           >
             <LuSettings />
           </IconButton>
         </TooltipWrapper>
       </Flex>
-      
-      <KeyboardShortcutsDialog 
-        isOpen={showShortcuts} 
-        onClose={() => setShowShortcuts(false)} 
+
+      <KeyboardShortcutsDialog
+        isOpen={showShortcuts}
+        onClose={() => setShowShortcuts(false)}
       />
     </Flex>
   );

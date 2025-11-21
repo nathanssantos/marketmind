@@ -46,9 +46,6 @@ export const useVolumeRenderer = ({
     const widthPerCandle = effectiveWidth / visibleRange;
 
     ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, 0, effectiveWidth, chartHeight);
-    ctx.clip();
 
     const volumeOverlayHeight = chartHeight * (volumeHeightRatio ?? CHART_CONFIG.VOLUME_HEIGHT_RATIO);
     const volumeBaseY = chartHeight;
@@ -57,7 +54,7 @@ export const useVolumeRenderer = ({
       const actualIndex = Math.floor(viewport.start) + index;
       const x = manager.indexToX(actualIndex);
 
-      if (x < 0 || x > effectiveWidth) return;
+      if (x + candleWidth < 0 || x > effectiveWidth) return;
 
       const barX = x + (widthPerCandle - candleWidth) / 2;
 

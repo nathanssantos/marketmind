@@ -58,61 +58,66 @@ export const MessageList = () => {
           {messages.map((message: AIMessage) => (
             <Flex
               key={message.id}
-              gap={3}
-              direction={message.role === 'user' ? 'row-reverse' : 'row'}
+              gap={2}
+              direction="column"
+              alignItems={message.role === 'user' ? 'flex-end' : 'flex-start'}
             >
-              <Avatar.Root
-                size="sm"
-                bg={message.role === 'user' ? 'blue.500' : 'purple.500'}
+              <Flex 
+                direction="column" 
+                align={message.role === 'user' ? 'flex-end' : 'flex-start'}
+                gap={1}
               >
-                <Avatar.Icon>
-                  {message.role === 'user' ? <LuUser /> : <LuSparkles />}
-                </Avatar.Icon>
-              </Avatar.Root>
-              <Flex direction="column" flex={1} gap={1}>
-                <Flex
-                  align="center"
-                  gap={2}
-                  justify={message.role === 'user' ? 'flex-end' : 'flex-start'}
+                <Avatar.Root
+                  size="xs"
+                  bg={message.role === 'user' ? 'blue.500' : 'purple.500'}
                 >
-                  <Text fontSize="xs" color="fg.muted">
+                  <Avatar.Icon>
+                    {message.role === 'user' ? <LuUser /> : <LuSparkles />}
+                  </Avatar.Icon>
+                </Avatar.Root>
+                <Flex align="center" gap={2}>
+                  <Text fontSize="xs" color="fg.muted" fontWeight="medium">
                     {message.role === 'user' ? 'You' : message.model || 'AI'}
                   </Text>
                   <Text fontSize="xs" color="fg.muted">
                     {new Date(message.timestamp).toLocaleTimeString()}
                   </Text>
                 </Flex>
-                <Box
-                  bg={message.role === 'user' ? 'blue.500' : 'bg.muted'}
-                  color={message.role === 'user' ? 'white' : 'fg'}
-                  px={4}
-                  py={2}
-                  borderRadius="lg"
-                  maxWidth="85%"
-                  alignSelf={message.role === 'user' ? 'flex-end' : 'flex-start'}
-                  className="markdown"
-                >
-                  {message.role === 'assistant' ? (
-                    <MarkdownWithStudyRefs 
-                      content={message.content}
-                      onStudyHover={setHoveredStudyId}
-                    />
-                  ) : (
-                    <ReactMarkdown>
-                      {message.content}
-                    </ReactMarkdown>
-                  )}
-                </Box>
               </Flex>
+              <Box
+                bg={message.role === 'user' ? 'blue.500' : 'bg.muted'}
+                color={message.role === 'user' ? 'white' : 'fg'}
+                px={4}
+                py={2}
+                borderRadius="lg"
+                maxWidth="90%"
+                className="markdown"
+              >
+                {message.role === 'assistant' ? (
+                  <MarkdownWithStudyRefs 
+                    content={message.content}
+                    onStudyHover={setHoveredStudyId}
+                  />
+                ) : (
+                  <ReactMarkdown>
+                    {message.content}
+                  </ReactMarkdown>
+                )}
+              </Box>
             </Flex>
           ))}
           {loading && (
-            <Flex align="center" gap={3}>
-              <Avatar.Root size="sm" bg="purple.500">
-                <Avatar.Icon>
-                  <LuSparkles />
-                </Avatar.Icon>
-              </Avatar.Root>
+            <Flex gap={2} direction="column" alignItems="flex-start">
+              <Flex direction="column" align="flex-start" gap={1}>
+                <Avatar.Root size="xs" bg="purple.500">
+                  <Avatar.Icon>
+                    <LuSparkles />
+                  </Avatar.Icon>
+                </Avatar.Root>
+                <Text fontSize="xs" color="fg.muted" fontWeight="medium">
+                  AI
+                </Text>
+              </Flex>
               <Flex align="center" gap={2}>
                 <Spinner size="sm" />
                 <Text fontSize="sm" color="fg.muted">

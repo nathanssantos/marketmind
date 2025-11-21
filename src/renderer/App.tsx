@@ -185,7 +185,7 @@ function AppContent(): ReactElement {
   const marketService = useMemo(() => {
     const binance = new BinanceProvider();
     const coingecko = new CoinGeckoProvider();
-    
+
     return new MarketDataService({
       primaryProvider: binance,
       fallbackProviders: [coingecko],
@@ -208,15 +208,15 @@ function AppContent(): ReactElement {
       if (prev.length === 0) return [candle];
 
       const lastCandle = prev[prev.length - 1];
-      
+
       if (lastCandle && candle.timestamp === lastCandle.timestamp) {
         return [...prev.slice(0, -1), candle];
       }
-      
+
       if (isFinal) {
         return [...prev, candle];
       }
-      
+
       return [...prev.slice(0, -1), candle];
     });
   }, []);
@@ -258,13 +258,13 @@ function AppContent(): ReactElement {
   const updateConversationStudyDataId = useAIStore(state => state.updateConversationStudyDataId);
   const activeConversationId = useAIStore(state => state.activeConversationId);
 
-  const { 
-    studies: aiStudies, 
+  const {
+    studies: aiStudies,
     studiesVisible,
     studyDataId,
-    deleteStudies, 
-    toggleStudiesVisibility, 
-    processAIResponse 
+    deleteStudies,
+    toggleStudiesVisibility,
+    processAIResponse
   } = useAIStudies({ symbol, conversationId: activeConversationId });
   const setResponseProcessor = useAIStore(state => state.setResponseProcessor);
   const enableAIStudies = useAIStore(state => state.enableAIStudies);
@@ -327,8 +327,8 @@ function AppContent(): ReactElement {
         onMovingAveragesChange={setMovingAverages}
       />
 
-      <MainLayout 
-        onOpenSymbolSelector={() => {}}
+      <MainLayout
+        onOpenSymbolSelector={() => { }}
         advancedConfig={advancedConfig}
         onAdvancedConfigChange={setAdvancedConfig}
       >
@@ -344,48 +344,49 @@ function AppContent(): ReactElement {
           advancedConfig={advancedConfig}
           setAdvancedConfig={setAdvancedConfig}
         />
-          
-          {loading && (
-            <LoadingSpinner message={t('app.loadingMarketData')} />
-          )}
 
-          {error && (
-            <ErrorMessage 
-              title={t('app.failedToLoadMarketData')}
-              message={error.message}
-              onRetry={() => window.location.reload()}
-            />
-          )}
+        {loading && (
+          <LoadingSpinner message={t('app.loadingMarketData')} />
+        )}
 
-          {marketData && (
-            <ChartCanvas 
-              candles={displayCandles} 
-              width="100%"
-              height="100%"
-              showVolume={showVolume}
-              showGrid={showGrid}
-              showCurrentPriceLine={showCurrentPriceLine}
-              showCrosshair={showCrosshair}
-              showMeasurementRuler={showMeasurementRuler}
-              showMeasurementArea={showMeasurementArea}
-              chartType={chartType}
-              movingAverages={movingAverages}
-              advancedConfig={debouncedAdvancedConfig}
-              aiStudies={aiStudies}
-              onDeleteAIStudies={deleteStudies}
-              onToggleAIStudiesVisibility={toggleStudiesVisibility}
-              aiStudiesVisible={studiesVisible}
-            />
-          )}
-        </MainLayout>
+        {error && (
+          <ErrorMessage
+            title={t('app.failedToLoadMarketData')}
+            message={error.message}
+            onRetry={() => window.location.reload()}
+          />
+        )}
 
-        <UpdateNotification />
-        
-        <OnboardingDialog 
-          isOpen={showOnboarding} 
-          onClose={() => setShowOnboarding(false)} 
-        />
-      </>
+        {marketData && (
+          <ChartCanvas
+            candles={displayCandles}
+            width="100%"
+            height="100%"
+            showVolume={showVolume}
+            showGrid={showGrid}
+            showCurrentPriceLine={showCurrentPriceLine}
+            showCrosshair={showCrosshair}
+            showMeasurementRuler={showMeasurementRuler}
+            showMeasurementArea={showMeasurementArea}
+            chartType={chartType}
+            movingAverages={movingAverages}
+            advancedConfig={debouncedAdvancedConfig}
+            aiStudies={aiStudies}
+            onDeleteAIStudies={deleteStudies}
+            onToggleAIStudiesVisibility={toggleStudiesVisibility}
+            aiStudiesVisible={studiesVisible}
+            timeframe={timeframe}
+          />
+        )}
+      </MainLayout>
+
+      <UpdateNotification />
+
+      <OnboardingDialog
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+      />
+    </>
   );
 }
 
@@ -444,13 +445,13 @@ function AppContentWithKeyboardShortcuts({
         candleSpacing: CHART_CONFIG.CANDLE_SPACING,
       }));
     },
-    onPanLeft: () => {}, 
-    onPanRight: () => {},
+    onPanLeft: () => { },
+    onPanRight: () => { },
     onOpenSettings: globalActions.openSettings,
     onToggleChatSidebar: globalActions.toggleChatSidebar,
     onFocusChatInput: globalActions.focusChatInput,
     onShowShortcuts: globalActions.showKeyboardShortcuts,
-    onOpenSymbolSelector: () => {},
+    onOpenSymbolSelector: () => { },
   });
 
   return null;
