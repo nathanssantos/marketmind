@@ -239,3 +239,32 @@ global.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
 });
 
 global.cancelAnimationFrame = vi.fn();
+
+class MockWorker {
+  url: string;
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  onerror: ((event: ErrorEvent) => void) | null = null;
+  
+  constructor(url: string | URL) {
+    this.url = url.toString();
+  }
+  
+  postMessage(message: any) {
+    queueMicrotask(() => {
+      if (this.onmessage) {
+        this.onmessage(new MessageEvent('message', { data: message }));
+      }
+    });
+  }
+  
+  terminate() {
+    this.onmessage = null;
+    this.onerror = null;
+  }
+  
+  addEventListener() {}
+  removeEventListener() {}
+  dispatchEvent() { return true; }
+}
+
+global.Worker = MockWorker as any;
