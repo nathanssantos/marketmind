@@ -5,6 +5,7 @@ import {
     LuChartBar,
     LuChartCandlestick,
     LuChartLine,
+    LuCrosshair,
     LuDollarSign,
     LuGrid3X3
 } from 'react-icons/lu';
@@ -20,6 +21,7 @@ export interface ChartControlsProps {
   showVolume: boolean;
   showGrid: boolean;
   showCurrentPriceLine: boolean;
+  showCrosshair: boolean;
   chartType: 'candlestick' | 'line';
   movingAverages: MovingAverageConfig[];
   advancedConfig?: AdvancedControlsConfig;
@@ -27,6 +29,7 @@ export interface ChartControlsProps {
   onShowVolumeChange: (show: boolean) => void;
   onShowGridChange: (show: boolean) => void;
   onShowCurrentPriceLineChange: (show: boolean) => void;
+  onShowCrosshairChange: (show: boolean) => void;
   onChartTypeChange: (type: 'candlestick' | 'line') => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onAdvancedConfigChange?: (config: AdvancedControlsConfig) => void;
@@ -37,6 +40,7 @@ export const ChartControls = ({
   showVolume,
   showGrid,
   showCurrentPriceLine,
+  showCrosshair,
   chartType,
   movingAverages,
   advancedConfig,
@@ -44,6 +48,7 @@ export const ChartControls = ({
   onShowVolumeChange,
   onShowGridChange,
   onShowCurrentPriceLineChange,
+  onShowCrosshairChange,
   onChartTypeChange,
   onMovingAveragesChange,
   onAdvancedConfigChange,
@@ -161,6 +166,17 @@ export const ChartControls = ({
                 variant={showCurrentPriceLine ? 'solid' : 'ghost'}
               >
                 <LuDollarSign />
+              </IconButton>
+            </TooltipWrapper>
+            <TooltipWrapper label={t('chart.controls.crosshair')}>
+              <IconButton
+                size="sm"
+                aria-label={t('chart.controls.crosshair')}
+                onClick={() => onShowCrosshairChange(!showCrosshair)}
+                colorPalette={showCrosshair ? 'blue' : 'gray'}
+                variant={showCrosshair ? 'solid' : 'ghost'}
+              >
+                <LuCrosshair />
               </IconButton>
             </TooltipWrapper>
           </HStack>

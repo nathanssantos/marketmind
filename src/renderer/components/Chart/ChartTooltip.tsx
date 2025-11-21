@@ -17,6 +17,13 @@ export interface ChartTooltipProps {
     color: string;
     value?: number;
   } | undefined;
+  measurement?: {
+    candleCount: number;
+    priceChange: number;
+    percentChange: number;
+    startPrice: number;
+    endPrice: number;
+  } | undefined;
 }
 
 export const ChartTooltip = ({
@@ -28,15 +35,16 @@ export const ChartTooltip = ({
   containerHeight = window.innerHeight,
   aiStudy,
   movingAverage,
+  measurement,
 }: ChartTooltipProps): ReactElement | null => {
-  if (!visible || (!candle && !aiStudy && !movingAverage)) return null;
+  if (!visible || (!candle && !aiStudy && !movingAverage && !measurement)) return null;
 
   const isBullish = candle ? candle.close >= candle.open : false;
   const change = candle ? candle.close - candle.open : 0;
   const changePercent = candle ? ((change / candle.open) * 100).toFixed(2) : '0.00';
 
   const tooltipWidth = 220;
-  const tooltipHeight = aiStudy ? 120 : 200;
+  const tooltipHeight = measurement ? 120 : aiStudy ? 120 : 200;
   const offset = 10;
 
   let leftPos = x + offset;
@@ -56,6 +64,63 @@ export const ChartTooltip = ({
 
   if (topPos < 0) {
     topPos = offset;
+  }
+
+  if (measurement) {
+    const isPositive = measurement.priceChange >= 0;
+    
+    return (
+      <Box
+        position="absolute"
+        left={`${leftPos}px`}
+        top={`${topPos}px`}
+        bg="bg.muted"
+        color="fg"
+        p={3}
+        borderRadius="md"
+        boxShadow="lg"
+        fontSize="xs"
+        zIndex={1000}
+        pointerEvents="none"
+        opacity={0.95}
+        minW={`${tooltipWidth}px`}
+        borderWidth={1}
+        borderColor="border"
+      >
+        <Stack gap={1.5}>
+          <HStack gap={1.5}>
+            <Text>📏</Text>
+            <Text fontWeight="semibold" color="blue.500">
+              Measurement
+            </Text>
+          </HStack>
+          <HStack justify="space-between">
+            <Text color="fg.muted">Candles:</Text>
+            <Text fontWeight="medium">{measurement.candleCount}</Text>
+          </HStack>
+          <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+            <Text color="fg.muted">Price Change:</Text>
+            <Text
+              fontWeight="semibold"
+              color={isPositive ? 'green.500' : 'red.500'}
+            >
+              {isPositive ? '+' : ''}
+              {formatPrice(measurement.priceChange)}
+            </Text>
+          </HStack>
+          <HStack justify="space-between">
+            <Text color="fg.muted">Percentage:</Text>
+            <Text
+              fontWeight="semibold"
+              color={isPositive ? 'green.500' : 'red.500'}
+            >
+              {isPositive ? '+' : ''}
+              {measurement.percentChange.toFixed(2)}%
+            </Text>
+          </HStack>
+        </Stack>
+      </Box>
+    );
   }
 
   if (aiStudy) {
@@ -92,9 +157,12 @@ export const ChartTooltip = ({
         borderColor="border"
       >
         <Stack gap={1.5}>
-          <Text fontWeight="semibold" color="blue.500">
-            🤖 {studyTypeLabel}
-          </Text>
+          <HStack gap={1.5}>
+            <Text>🤖</Text>
+            <Text fontWeight="semibold" color="blue.500">
+              {studyTypeLabel}
+            </Text>
+          </HStack>
           <Text color="fg.muted">{aiStudy.label}</Text>
           {isLine && priceValue !== undefined ? (
             <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
@@ -140,7 +208,7 @@ export const ChartTooltip = ({
         borderColor="border"
       >
         <Stack gap={1.5}>
-          <HStack>
+          <HStack gap={1.5}>
             <Box w={3} h={3} bg={movingAverage.color} borderRadius="sm" />
             <Text fontWeight="semibold">
               {movingAverage.type}({movingAverage.period})

@@ -137,6 +137,9 @@ function AppContent(): ReactElement {
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
   const [showCurrentPriceLine, setShowCurrentPriceLine] = useLocalStorage('marketmind:showCurrentPriceLine', true);
+  const [showCrosshair, setShowCrosshair] = useLocalStorage('marketmind:showCrosshair', true);
+  const [showMeasurementRuler, setShowMeasurementRuler] = useLocalStorage('marketmind:showMeasurementRuler', false);
+  const [showMeasurementArea, setShowMeasurementArea] = useLocalStorage('marketmind:showMeasurementArea', false);
   const [chartType, setChartType] = useLocalStorage<'candlestick' | 'line'>('marketmind:chartType', 'candlestick');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
   const [showOnboarding, setShowOnboarding] = useLocalStorage('marketmind:showOnboarding', true);
@@ -308,6 +311,9 @@ function AppContent(): ReactElement {
         showVolume={showVolume}
         showGrid={showGrid}
         showCurrentPriceLine={showCurrentPriceLine}
+        showCrosshair={showCrosshair}
+        showMeasurementRuler={showMeasurementRuler}
+        showMeasurementArea={showMeasurementArea}
         movingAverages={movingAverages}
         onSymbolChange={setSymbol}
         onTimeframeChange={setTimeframe}
@@ -315,6 +321,9 @@ function AppContent(): ReactElement {
         onShowVolumeChange={setShowVolume}
         onShowGridChange={setShowGrid}
         onShowCurrentPriceLineChange={setShowCurrentPriceLine}
+        onShowCrosshairChange={setShowCrosshair}
+        onShowMeasurementRulerChange={setShowMeasurementRuler}
+        onShowMeasurementAreaChange={setShowMeasurementArea}
         onMovingAveragesChange={setMovingAverages}
       />
 
@@ -356,6 +365,9 @@ function AppContent(): ReactElement {
               showVolume={showVolume}
               showGrid={showGrid}
               showCurrentPriceLine={showCurrentPriceLine}
+              showCrosshair={showCrosshair}
+              showMeasurementRuler={showMeasurementRuler}
+              showMeasurementArea={showMeasurementArea}
               chartType={chartType}
               movingAverages={movingAverages}
               advancedConfig={debouncedAdvancedConfig}

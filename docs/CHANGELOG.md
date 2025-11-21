@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2025-11-20
+
+### Added
+- **Crosshair Price Line**
+  - Added horizontal and vertical crosshair lines that follow mouse position
+  - Price label showing exact price at mouse Y position
+  - New theme color `chart.crosshair` without opacity for clear visibility
+  - Toggle control in toolbar with crosshair icon (LuCrosshair)
+  - Persisted state in localStorage as `marketmind:showCrosshair`
+
+- **Measurement Tools**
+  - **Measurement Ruler**: Diagonal line showing price change direction
+    - Green line for positive changes, red for negative
+    - Dashed line style for clear visibility
+    - Toggle control with ruler icon (LuRuler)
+  - **Measurement Area**: Rectangle selection for price range analysis
+    - Semi-transparent fill with dashed border
+    - Shows measurement data in tooltip
+    - Toggle control with scan icon (LuScan)
+  - **Measurement Tooltip**: Real-time metrics display
+    - Candle count in selected range
+    - Price change (absolute value)
+    - Percentage change with color coding
+    - Auto-positioning to avoid screen edges
+
+- **Interactive Features**
+  - Click and drag to measure when ruler or area is active
+  - Chart pan/zoom disabled during measurement
+  - Chart moves normally when only crosshair is active
+  - Measurement clears on mouse release
+  - Both ruler and area can be active simultaneously
+
+### Changed
+- **Chart Interaction Modes**
+  - Crosshair mode: chart navigation enabled
+  - Ruler/Area mode: chart locked, measurement enabled
+  - Improved cursor feedback for different modes
+
+- **Tooltip Consistency**
+  - Aligned icon spacing across all tooltip types
+  - All tooltips now use `HStack` with `gap={1.5}`
+  - Consistent visual hierarchy for icons and text
+
+### Improved
+- **Theme System**
+  - Added `crosshair` color to theme (opaque version of axis label)
+  - Light mode: `rgb(60, 60, 60)`
+  - Dark mode: `rgb(200, 200, 200)`
+  - Measurement area uses theme-appropriate semi-transparent fill
+
+- **Translations**
+  - Added crosshair, ruler, and area labels in 4 languages:
+    - 🇺🇸 EN: Crosshair, Measurement Ruler, Measurement Area
+    - 🇧🇷 PT: Mira, Régua de Medição, Área de Medição
+    - 🇪🇸 ES: Reticulado, Regla de Medición, Área de Medición
+    - 🇫🇷 FR: Réticule, Règle de Mesure, Zone de Mesure
+
+### Technical
+- Created `useCrosshairPriceLineRenderer.ts` hook for crosshair rendering
+- Enhanced `ChartTooltip.tsx` with measurement data support
+- Updated `ChartCanvas.tsx` with measurement state management
+- Added toolbar controls in `Toolbar.tsx` and `ChartControls.tsx`
+- Mouse event handlers updated for measurement mode
+- Canvas rendering optimized for real-time updates
+
 ## [0.18.0] - 2025-11-19
 
 ### Added
