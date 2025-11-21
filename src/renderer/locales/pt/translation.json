@@ -192,11 +192,15 @@
     }
   },
   "chat": {
-    "title": "Assistente IA",
+    "title": "Chat",
     "newConversation": "Nova conversa",
     "closeChat": "Fechar chat",
     "enableAIStudies": "Ativar desenhos da IA no gráfico",
     "disableAIStudies": "Desativar desenhos da IA no gráfico",
+    "conversationsTitle": "Conversas - {{symbol}}",
+    "noConversationsYet": "Nenhuma conversa ainda",
+    "messageCount_one": "{{count}} mensagem",
+    "messageCount_other": "{{count}} mensagens",
     "inputPlaceholder": "Pergunte sobre o gráfico...",
     "sendMessage": "Enviar mensagem",
     "send": "Enviar",
@@ -210,7 +214,7 @@
       "title": "Controles do Gráfico",
       "timeframe": "Período",
       "chartType": "Tipo de Gráfico",
-      "candlestickChart": "Gráfico de Candlestick",
+      "candlestickChart": "Gráfico de Velas",
       "lineChart": "Gráfico de Linha",
       "display": "Exibição",
       "volume": "Volume",
@@ -221,6 +225,11 @@
       "measurementArea": "Área de Medição",
       "indicators": "Indicadores",
       "quickSettings": "Configurações Rápidas"
+    },
+    "navigation": {
+      "resetView": "Voltar à visualização inicial",
+      "nextCandle": "Próximo candle",
+      "candleTimer": "Tempo até o próximo candle"
     },
     "advanced": {
       "title": "Configurações Avançadas",

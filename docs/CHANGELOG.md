@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2025-11-20
+
+### Added
+- **Chart Navigation Controls**
+  - Added `ChartNavigation` component with two discrete navigation buttons
+  - Reset to initial view button (double chevron icon) - returns to last 100 candles
+  - Advance one candle button (single chevron icon) - pans chart forward by one candle
+  - Positioned inside chart area (bottom right, 8px from scales)
+  - Minimal 2xs size (20px × 20px) with blackAlpha.600 background and blur effect
+  - Integrated with CanvasManager methods: `resetToInitialView()` and `panToNextCandle()`
+  - Added `INITIAL_CANDLES_VISIBLE: 100` constant to chartConfig
+
+- **Candle Countdown Timer**
+  - Added `CandleTimer` component showing time remaining until next candle
+  - Displays MM:SS or HH:MM:SS format based on remaining time
+  - Positioned at scale intersection (bottom right corner, aligned with labels)
+  - Matches scale label styling: 11px monospace font, same color as axis labels
+  - Updates every second via setInterval
+  - Supports all timeframes: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M
+  - Calculates next candle time based on current timeframe interval
+
+### Changed
+- **Chart Rendering Improvements**
+  - Removed `ctx.clip()` from all chart renderers for cleaner edge rendering
+  - Fixed gradual fade effect when panning - candles and lines now cut cleanly at boundaries
+  - Updated visibility checks with proper boundary margins for smooth rendering
+  - Improved line continuity in moving average renderer with tolerance margins
+
+### Fixed
+- **Test Suite**
+  - Fixed SymbolSelector tests to use ChakraProvider properly
+  - Corrected mock structure for Popover-based component (was incorrectly testing Select)
+  - All 603 tests now passing (100% pass rate)
+  - Maintained code coverage at 90.62%
+
+### Translations
+- Added navigation and timer translations in EN, PT, ES, FR:
+  - `chart.navigation.resetView` - Reset to initial view
+  - `chart.navigation.nextCandle` - Advance one candle
+  - `chart.navigation.candleTimer` - Time to next candle
+
 ## [0.20.0] - 2025-11-20
 
 ### Added

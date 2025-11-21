@@ -193,11 +193,15 @@
     }
   },
   "chat": {
-    "title": "AI Assistant",
+    "title": "Chat",
     "newConversation": "New conversation",
     "closeChat": "Close chat",
     "enableAIStudies": "Enable AI chart drawings",
     "disableAIStudies": "Disable AI chart drawings",
+    "conversationsTitle": "Conversations - {{symbol}}",
+    "noConversationsYet": "No conversations yet",
+    "messageCount_one": "{{count}} message",
+    "messageCount_other": "{{count}} messages",
     "inputPlaceholder": "Ask about the chart...",
     "sendMessage": "Send message",
     "send": "Send",
@@ -222,6 +226,11 @@
       "measurementArea": "Measurement Area",
       "indicators": "Indicators",
       "quickSettings": "Quick Settings"
+    },
+    "navigation": {
+      "resetView": "Reset to initial view",
+      "nextCandle": "Next candle",
+      "candleTimer": "Time until next candle"
     },
     "advanced": {
       "title": "Advanced Settings",

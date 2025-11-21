@@ -5,6 +5,7 @@ import { LuHistory, LuTrash2 } from 'react-icons/lu';
 import { useChartContext } from '../../context/ChartContext';
 import { useAIStore } from '../../store/aiStore';
 import { Popover } from '../ui/popover';
+import { TooltipWrapper } from '../ui/Tooltip';
 
 export const ConversationHistory = () => {
   const { t } = useTranslation();
@@ -27,10 +28,10 @@ export const ConversationHistory = () => {
   const handleDeleteConversation = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setDeletingIds((prev) => new Set(prev).add(id));
-    
+
     await new Promise(resolve => setTimeout(resolve, 300));
     deleteConversation(id);
-    
+
     setDeletingIds((prev) => {
       const next = new Set(prev);
       next.delete(id);
@@ -50,9 +51,9 @@ export const ConversationHistory = () => {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    
-    return date.toLocaleDateString('en-US', { 
-      day: '2-digit', 
+
+    return date.toLocaleDateString('en-US', {
+      day: '2-digit',
       month: '2-digit',
       year: '2-digit'
     });
@@ -65,14 +66,17 @@ export const ConversationHistory = () => {
       showArrow={false}
       positioning={{ placement: 'bottom-start', offset: { mainAxis: 8 } }}
       trigger={
-        <IconButton
-          aria-label={t('common.conversationHistory')}
-          size="sm"
-          variant="ghost"
-          onClick={() => setOpen(!open)}
-        >
-          <LuHistory />
-        </IconButton>
+        <Flex>
+          <TooltipWrapper label={t('common.conversationHistory')} showArrow isDisabled={open}>
+            <IconButton
+              aria-label={t('common.conversationHistory')}
+              size="sm"
+              variant="ghost"
+            >
+              <LuHistory />
+            </IconButton>
+          </TooltipWrapper>
+        </Flex>
       }
     >
       <Flex direction="column" maxHeight="400px">
@@ -85,7 +89,7 @@ export const ConversationHistory = () => {
           borderColor="border"
         >
           <Text fontSize="sm" fontWeight="semibold">
-            Conversations - {symbol}
+            {t('chat.conversationsTitle', { symbol })}
           </Text>
         </Flex>
 
@@ -99,7 +103,7 @@ export const ConversationHistory = () => {
               color="fg.muted"
             >
               <Text fontSize="sm" textAlign="center">
-                No conversations yet
+                {t('chat.noConversationsYet')}
               </Text>
             </Flex>
           ) : (
@@ -128,7 +132,7 @@ export const ConversationHistory = () => {
                     {conversation.title}
                   </Text>
                   <Text fontSize="xs" color="fg.muted">
-                    {conversation.messages.length} {conversation.messages.length === 1 ? 'message' : 'messages'} · {formatDate(conversation.updatedAt)}
+                    {t('chat.messageCount', { count: conversation.messages.length })} · {formatDate(conversation.updatedAt)}
                   </Text>
                 </Flex>
                 <IconButton

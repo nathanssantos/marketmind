@@ -58,26 +58,26 @@ export const AIStudyRenderer = ({
 
     for (const study of studies) {
       if (study.visible === false) continue;
-      
+
       const studyId = study.id;
       if (studyId !== undefined) {
         const tagBounds = studyTagsRef.current.get(studyId);
-        
+
         if (tagBounds) {
-          if (mouseX >= tagBounds.x && 
-              mouseX <= tagBounds.x + tagBounds.width && 
-              mouseY >= tagBounds.y && 
-              mouseY <= tagBounds.y + tagBounds.height) {
+          if (mouseX >= tagBounds.x &&
+            mouseX <= tagBounds.x + tagBounds.width &&
+            mouseY >= tagBounds.y &&
+            mouseY <= tagBounds.y + tagBounds.height) {
             found = study;
             break;
           }
         }
       }
-      
+
       if ('topPrice' in study) {
         const startIndex = candles.findIndex(c => c.timestamp >= study.startTimestamp);
         const endIndex = candles.findIndex(c => c.timestamp >= study.endTimestamp);
-        
+
         if (startIndex === -1 || endIndex === -1) continue;
 
         const x1 = canvasManager.indexToX(startIndex);
@@ -103,7 +103,7 @@ export const AIStudyRenderer = ({
         const [point1, point2] = study.points;
         const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
         const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
-        
+
         if (index1 === -1 || index2 === -1) continue;
 
         const x1 = canvasManager.indexToX(index1);
@@ -125,15 +125,15 @@ export const AIStudyRenderer = ({
             finalY2 = y1 + slope * (finalX2 - x1);
           }
         }
-        
+
         const lineThreshold = 5;
         const minX = Math.min(x1, finalX2);
         const maxX = Math.max(x1, finalX2);
-        
+
         if (mouseX >= minX && mouseX <= maxX) {
           const t = (mouseX - x1) / (finalX2 - x1);
           const lineY = y1 + t * (finalY2 - y1);
-          
+
           if (Math.abs(mouseY - lineY) <= lineThreshold) {
             found = study;
             break;
@@ -179,32 +179,16 @@ export const AIStudyRenderer = ({
     const dimensions = canvasManager.getDimensions();
     if (!dimensions) return;
 
-    const paddingRight = advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT;
-    const paddingBottom = advancedConfig?.paddingBottom ?? CHART_CONFIG.CANVAS_PADDING_BOTTOM;
-
-    const chartRightBoundary = dimensions.width - paddingRight;
-    const chartBottomBoundary = dimensions.height - paddingBottom;
-
-    const chartArea = {
-      left: 0,
-      right: chartRightBoundary,
-      top: 0,
-      bottom: chartBottomBoundary,
-    };
-
     ctx.save();
-    ctx.beginPath();
-    ctx.rect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
-    ctx.clip();
 
     studyTagsRef.current.clear();
 
     studies.forEach((study, index) => {
       if (study.visible === false) return;
-      
+
       const isHovered = hoveredStudy === study;
       const studyNumber = study.id ?? index + 1;
-      
+
       switch (study.type) {
         case 'support':
         case 'resistance':
@@ -333,10 +317,10 @@ export const AIStudyRenderer = ({
     studyNumber: number
   ) => {
     const [point1, point2] = study.points;
-    
+
     const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
     const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
-    
+
     if (index1 === -1 || index2 === -1) return;
 
     const x1 = manager.indexToX(index1);
@@ -407,7 +391,7 @@ export const AIStudyRenderer = ({
       const [point1, point2] = line;
       const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
       const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
-      
+
       if (index1 === -1 || index2 === -1) return;
 
       const x1 = manager.indexToX(index1);
@@ -443,7 +427,7 @@ export const AIStudyRenderer = ({
   ) => {
     const startIndex = candles.findIndex(c => c.timestamp >= study.startPoint.timestamp);
     const endIndex = candles.findIndex(c => c.timestamp >= study.endPoint.timestamp);
-    
+
     if (startIndex === -1 || endIndex === -1) return;
 
     const color = getStudyColor(study.type);
@@ -495,7 +479,7 @@ export const AIStudyRenderer = ({
 
     const points = [study.leftShoulder, study.head, study.rightShoulder];
     const indices = points.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-    
+
     if (indices.some(i => i === -1)) return;
 
     ctx.save();
@@ -516,7 +500,7 @@ export const AIStudyRenderer = ({
       const [neck1, neck2] = study.neckline;
       const neckIndex1 = candles.findIndex(c => c.timestamp >= neck1.timestamp);
       const neckIndex2 = candles.findIndex(c => c.timestamp >= neck2.timestamp);
-      
+
       if (neckIndex1 !== -1 && neckIndex2 !== -1) {
         ctx.beginPath();
         ctx.moveTo(manager.indexToX(neckIndex1), manager.priceToY(neck1.price));
@@ -548,7 +532,7 @@ export const AIStudyRenderer = ({
 
     const points = [study.firstPeak, study.secondPeak];
     const indices = points.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-    
+
     if (indices.some(i => i === -1)) return;
 
     ctx.save();
@@ -603,7 +587,7 @@ export const AIStudyRenderer = ({
 
     const points = [study.peak1, study.peak2, study.peak3];
     const indices = points.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-    
+
     if (indices.some(i => i === -1)) return;
 
     ctx.save();
@@ -624,7 +608,7 @@ export const AIStudyRenderer = ({
       const [neck1, neck2] = study.neckline;
       const neckIndex1 = candles.findIndex(c => c.timestamp >= neck1.timestamp);
       const neckIndex2 = candles.findIndex(c => c.timestamp >= neck2.timestamp);
-      
+
       if (neckIndex1 !== -1 && neckIndex2 !== -1) {
         ctx.beginPath();
         ctx.moveTo(manager.indexToX(neckIndex1), manager.priceToY(neck1.price));
@@ -668,7 +652,7 @@ export const AIStudyRenderer = ({
       const [point1, point2] = line;
       const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
       const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
-      
+
       if (index1 === -1 || index2 === -1) return;
 
       ctx.beginPath();
@@ -714,7 +698,7 @@ export const AIStudyRenderer = ({
       const [point1, point2] = line;
       const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
       const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
-      
+
       if (index1 === -1 || index2 === -1) return;
 
       ctx.beginPath();
@@ -757,7 +741,7 @@ export const AIStudyRenderer = ({
 
     const poleStartIndex = candles.findIndex(c => c.timestamp >= study.flagpole.start.timestamp);
     const poleEndIndex = candles.findIndex(c => c.timestamp >= study.flagpole.end.timestamp);
-    
+
     if (poleStartIndex !== -1 && poleEndIndex !== -1) {
       ctx.beginPath();
       ctx.moveTo(manager.indexToX(poleStartIndex), manager.priceToY(study.flagpole.start.price));
@@ -770,7 +754,7 @@ export const AIStudyRenderer = ({
       const [point1, point2] = line;
       const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
       const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
-      
+
       if (index1 === -1 || index2 === -1) return;
 
       ctx.beginPath();
@@ -811,7 +795,7 @@ export const AIStudyRenderer = ({
 
     const poleStartIndex = candles.findIndex(c => c.timestamp >= study.flagpole.start.timestamp);
     const poleEndIndex = candles.findIndex(c => c.timestamp >= study.flagpole.end.timestamp);
-    
+
     if (poleStartIndex !== -1 && poleEndIndex !== -1) {
       ctx.beginPath();
       ctx.moveTo(manager.indexToX(poleStartIndex), manager.priceToY(study.flagpole.start.price));
@@ -824,7 +808,7 @@ export const AIStudyRenderer = ({
       const [point1, point2] = line;
       const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
       const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
-      
+
       if (index1 === -1 || index2 === -1) return;
 
       ctx.beginPath();
@@ -857,7 +841,7 @@ export const AIStudyRenderer = ({
     const cupStartIndex = candles.findIndex(c => c.timestamp >= study.cupStart.timestamp);
     const cupBottomIndex = candles.findIndex(c => c.timestamp >= study.cupBottom.timestamp);
     const cupEndIndex = candles.findIndex(c => c.timestamp >= study.cupEnd.timestamp);
-    
+
     if (cupStartIndex === -1 || cupBottomIndex === -1 || cupEndIndex === -1) return;
 
     ctx.save();
@@ -872,9 +856,9 @@ export const AIStudyRenderer = ({
     ctx.beginPath();
     ctx.moveTo(manager.indexToX(cupStartIndex), manager.priceToY(study.cupStart.price));
     ctx.quadraticCurveTo(
-      manager.indexToX(cupBottomIndex), 
+      manager.indexToX(cupBottomIndex),
       manager.priceToY(study.cupBottom.price),
-      manager.indexToX(cupEndIndex), 
+      manager.indexToX(cupEndIndex),
       manager.priceToY(study.cupEnd.price)
     );
     ctx.stroke();
@@ -882,7 +866,7 @@ export const AIStudyRenderer = ({
     const handleStartIndex = candles.findIndex(c => c.timestamp >= study.handleStart.timestamp);
     const handleLowIndex = candles.findIndex(c => c.timestamp >= study.handleLow.timestamp);
     const handleEndIndex = candles.findIndex(c => c.timestamp >= study.handleEnd.timestamp);
-    
+
     if (handleStartIndex !== -1 && handleLowIndex !== -1 && handleEndIndex !== -1) {
       ctx.beginPath();
       ctx.moveTo(manager.indexToX(handleStartIndex), manager.priceToY(study.handleStart.price));
@@ -912,7 +896,7 @@ export const AIStudyRenderer = ({
     const startIndex = candles.findIndex(c => c.timestamp >= study.start.timestamp);
     const bottomIndex = candles.findIndex(c => c.timestamp >= study.bottom.timestamp);
     const endIndex = candles.findIndex(c => c.timestamp >= study.end.timestamp);
-    
+
     if (startIndex === -1 || bottomIndex === -1 || endIndex === -1) return;
 
     ctx.save();
@@ -927,9 +911,9 @@ export const AIStudyRenderer = ({
     ctx.beginPath();
     ctx.moveTo(manager.indexToX(startIndex), manager.priceToY(study.start.price));
     ctx.quadraticCurveTo(
-      manager.indexToX(bottomIndex), 
+      manager.indexToX(bottomIndex),
       manager.priceToY(study.bottom.price),
-      manager.indexToX(endIndex), 
+      manager.indexToX(endIndex),
       manager.priceToY(study.end.price)
     );
     ctx.stroke();
@@ -951,7 +935,7 @@ export const AIStudyRenderer = ({
   ) => {
     const startIndex = candles.findIndex(c => c.timestamp >= study.gapStart.timestamp);
     const endIndex = candles.findIndex(c => c.timestamp >= study.gapEnd.timestamp);
-    
+
     if (startIndex === -1 || endIndex === -1) return;
 
     const x1 = manager.indexToX(startIndex);
@@ -961,10 +945,10 @@ export const AIStudyRenderer = ({
 
     const color = getStudyColor(study.type);
     const rgb = hexToRgb(color);
-    const fillColor = rgb 
-      ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)` 
+    const fillColor = rgb
+      ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`
       : 'rgba(99, 102, 241, 0.15)';
-    
+
     ctx.save();
     ctx.fillStyle = fillColor;
     ctx.fillRect(x1, Math.min(y1, y2), x2 - x1, Math.abs(y2 - y1));
@@ -972,15 +956,15 @@ export const AIStudyRenderer = ({
     ctx.strokeStyle = color;
     ctx.lineWidth = isHovered ? 2 : 1;
     ctx.setLineDash([3, 3]);
-    
+
     if (isHovered) {
       ctx.shadowColor = color;
       ctx.shadowBlur = 8;
     }
-    
+
     ctx.strokeRect(x1, Math.min(y1, y2), x2 - x1, Math.abs(y2 - y1));
     ctx.setLineDash([]);
-    
+
     ctx.restore();
 
     drawStudyTag(ctx, x1 + 4, Math.min(y1, y2) + 4, studyNumber, study.type);
@@ -1016,7 +1000,7 @@ export const AIStudyRenderer = ({
     ];
 
     const indices = wavePoints.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-    
+
     if (indices.some(i => i === -1)) {
       ctx.restore();
       return;
@@ -1028,7 +1012,7 @@ export const AIStudyRenderer = ({
       const x = manager.indexToX(index);
       const y = manager.priceToY(wavePoints[i]!.price);
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      
+
       if (i > 0 && i <= 5) {
         ctx.save();
         ctx.fillStyle = color;
@@ -1048,7 +1032,7 @@ export const AIStudyRenderer = ({
         study.correction.waveC.end,
       ];
       const correctiveIndices = corrective.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-      
+
       if (!correctiveIndices.some(i => i === -1)) {
         ctx.beginPath();
         correctiveIndices.forEach((index, i) => {
@@ -1056,7 +1040,7 @@ export const AIStudyRenderer = ({
           const x = manager.indexToX(index);
           const y = manager.priceToY(corrective[i]!.price);
           i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-          
+
           const labels = ['A', 'B', 'C', 'D'];
           ctx.fillStyle = color;
           ctx.font = 'bold 12px system-ui';
@@ -1086,7 +1070,7 @@ export const AIStudyRenderer = ({
   ) => {
     const startIndex = candles.findIndex(c => c.timestamp >= study.startTimestamp);
     const endIndex = candles.findIndex(c => c.timestamp >= study.endTimestamp);
-    
+
     if (startIndex === -1 || endIndex === -1) return;
 
     const x1 = manager.indexToX(startIndex);
@@ -1106,24 +1090,24 @@ export const AIStudyRenderer = ({
 
     const baseColor = getStudyColor(study.type);
     const rgb = hexToRgb(baseColor);
-    
+
     const fillOpacity = isHovered ? 0.25 : 0.15;
-    const fillColor = rgb 
-      ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${fillOpacity})` 
+    const fillColor = rgb
+      ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${fillOpacity})`
       : `rgba(99, 102, 241, ${fillOpacity})`;
-    
+
     ctx.save();
     ctx.fillStyle = fillColor;
     ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
 
     ctx.strokeStyle = baseColor;
     ctx.lineWidth = isHovered ? 2 : 1;
-    
+
     if (isHovered) {
       ctx.shadowColor = baseColor;
       ctx.shadowBlur = 8;
     }
-    
+
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
     ctx.restore();
 
@@ -1149,34 +1133,34 @@ export const AIStudyRenderer = ({
     const studyColor = STUDY_COLORS[studyType] || '#8b5cf6';
     const rgb = hexToRgb(studyColor);
     const bgColor = rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)` : 'rgba(139, 92, 246, 0.15)';
-    
+
     const text = `#${studyNumber}`;
     const fontSize = 9;
     const paddingX = 4;
     const paddingY = 2;
-    
+
     ctx.save();
     ctx.font = `bold ${fontSize}px system-ui`;
     const textWidth = ctx.measureText(text).width;
     const boxWidth = textWidth + paddingX * 2;
     const boxHeight = fontSize + paddingY * 2 + 2;
-    
+
     ctx.fillStyle = bgColor;
     ctx.beginPath();
     ctx.roundRect(x, y, boxWidth, boxHeight, 3);
     ctx.fill();
-    
+
     ctx.strokeStyle = studyColor;
     ctx.lineWidth = 1.5;
     ctx.stroke();
-    
+
     ctx.fillStyle = studyColor;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(text, x + paddingX, y + paddingY + 1);
-    
+
     ctx.restore();
-    
+
     return { x, y, width: boxWidth, height: boxHeight };
   };
 

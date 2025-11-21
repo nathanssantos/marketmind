@@ -1,11 +1,15 @@
 import { Box, Flex, IconButton, Textarea } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { LuSend } from 'react-icons/lu';
-import { UnifiedAISelector } from '../Layout/UnifiedAISelector';
+import { LuPencilRuler, LuSend } from 'react-icons/lu';
+import { useAIStore } from '../../store/aiStore';
+import { CompactAISelector } from '../Layout/CompactAISelector';
+import { TooltipWrapper } from '../ui/Tooltip';
 import { useMessageInput } from './useMessageInput';
 
 export const MessageInput = () => {
   const { t } = useTranslation();
+  const enableAIStudies = useAIStore((state) => state.enableAIStudies);
+  const toggleAIStudies = useAIStore((state) => state.toggleAIStudies);
   const {
     message,
     setMessage,
@@ -21,9 +25,6 @@ export const MessageInput = () => {
       borderTop="1px solid"
       borderColor="border"
     >
-      <Box mb={3}>
-        <UnifiedAISelector showBadge={false} openUpwards={true} />
-      </Box>
       <Flex gap={2}>
         <Textarea
           value={message}
@@ -48,6 +49,23 @@ export const MessageInput = () => {
         >
           <LuSend />
         </IconButton>
+      </Flex>
+      <Flex mt={2} align="center" gap={2}>
+        <TooltipWrapper
+          label={enableAIStudies ? t('chat.disableAIStudies') : t('chat.enableAIStudies')}
+          showArrow
+        >
+          <IconButton
+            aria-label={enableAIStudies ? t('chat.disableAIStudies') : t('chat.enableAIStudies')}
+            onClick={toggleAIStudies}
+            size="2xs"
+            variant={enableAIStudies ? 'solid' : 'outline'}
+            colorPalette={enableAIStudies ? 'purple' : 'gray'}
+          >
+            <LuPencilRuler />
+          </IconButton>
+        </TooltipWrapper>
+        <CompactAISelector showBadge={true} />
       </Flex>
     </Box>
   );
