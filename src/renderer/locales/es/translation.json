@@ -427,6 +427,23 @@
       "totalPnL": "P&G Total",
       "viewPerformance": "Ver Rendimiento",
       "delete": "Eliminar Cartera"
+    },
+    "ticket": {
+      "title": "Orden",
+      "noWallet": "Por favor, crea y selecciona una cartera primero.",
+      "activeWallet": "Cartera Activa",
+      "orderType": "Tipo de Orden",
+      "long": "Compra (Long)",
+      "short": "Venta (Short)",
+      "quantity": "Cantidad",
+      "entryPrice": "Precio de Entrada",
+      "useCurrent": "Usar Actual",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "optional": "Opcional",
+      "totalCost": "Costo Total",
+      "buy": "Comprar",
+      "sell": "Vender"
     }
   },
   "about": {

@@ -427,6 +427,23 @@
       "totalPnL": "P&L Total",
       "viewPerformance": "Voir la Performance",
       "delete": "Supprimer le Portefeuille"
+    },
+    "ticket": {
+      "title": "Ordre",
+      "noWallet": "Veuillez créer et sélectionner un portefeuille d'abord.",
+      "activeWallet": "Portefeuille Actif",
+      "orderType": "Type d'Ordre",
+      "long": "Achat (Long)",
+      "short": "Vente (Short)",
+      "quantity": "Quantité",
+      "entryPrice": "Prix d'Entrée",
+      "useCurrent": "Utiliser Actuel",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "optional": "Optionnel",
+      "totalCost": "Coût Total",
+      "buy": "Acheter",
+      "sell": "Vendre"
     }
   },
   "about": {

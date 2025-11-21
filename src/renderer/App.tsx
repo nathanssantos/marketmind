@@ -148,6 +148,7 @@ function AppContent(): ReactElement {
   const [chartType, setChartType] = useLocalStorage<'candlestick' | 'line'>('marketmind:chartType', 'candlestick');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
   const [showOnboarding, setShowOnboarding] = useLocalStorage('marketmind:showOnboarding', true);
+  const [isChatOpen, setIsChatOpen] = useLocalStorage('chat-sidebar-open', true);
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
     'marketmind:movingAverages',
     DEFAULT_MOVING_AVERAGES
@@ -178,6 +179,10 @@ function AppContent(): ReactElement {
 
   const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
   const toggleSimulator = useTradingStore((state) => state.toggleSimulator);
+
+  const toggleChat = useCallback(() => {
+    setIsChatOpen((prev) => !prev);
+  }, [setIsChatOpen]);
 
   useEffect(() => {
     restoreActiveConversation();
@@ -324,6 +329,7 @@ function AppContent(): ReactElement {
         showMeasurementArea={showMeasurementArea}
         movingAverages={movingAverages}
         isSimulatorActive={isSimulatorActive}
+        isChatOpen={isChatOpen}
         onSymbolChange={setSymbol}
         onTimeframeChange={setTimeframe}
         onChartTypeChange={setChartType}
@@ -335,12 +341,15 @@ function AppContent(): ReactElement {
         onShowMeasurementAreaChange={setShowMeasurementArea}
         onMovingAveragesChange={setMovingAverages}
         onToggleSimulator={toggleSimulator}
+        onToggleChat={toggleChat}
       />
 
       <MainLayout
         onOpenSymbolSelector={() => { }}
         advancedConfig={advancedConfig}
         onAdvancedConfigChange={setAdvancedConfig}
+        isChatOpen={isChatOpen}
+        onToggleChat={toggleChat}
       >
         <AppContentWithKeyboardShortcuts
           showVolume={showVolume}

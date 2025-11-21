@@ -427,6 +427,23 @@
       "totalPnL": "L&P Total",
       "viewPerformance": "Ver Desempenho",
       "delete": "Excluir Carteira"
+    },
+    "ticket": {
+      "title": "Ordem",
+      "noWallet": "Por favor, crie e selecione uma carteira primeiro.",
+      "activeWallet": "Carteira Ativa",
+      "orderType": "Tipo de Ordem",
+      "long": "Compra (Long)",
+      "short": "Venda (Short)",
+      "quantity": "Quantidade",
+      "entryPrice": "Preço de Entrada",
+      "useCurrent": "Usar Atual",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "optional": "Opcional",
+      "totalCost": "Custo Total",
+      "buy": "Comprar",
+      "sell": "Vender"
     }
   },
   "about": {

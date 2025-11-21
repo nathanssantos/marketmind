@@ -2,6 +2,7 @@ import { Box, Flex, IconButton, Tabs, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { TooltipWrapper } from '../ui/Tooltip';
+import { OrderTicket } from './OrderTicket';
 import { WalletManager } from './WalletManager';
 
 interface TradingSidebarProps {
@@ -65,9 +66,7 @@ export const TradingSidebar = ({ width }: TradingSidebarProps) => {
           </Tabs.Content>
 
           <Tabs.Content value="ticket">
-            <Box p={4}>
-              <Text fontSize="sm" color="fg.muted">Order Ticket (TODO)</Text>
-            </Box>
+            <OrderTicket />
           </Tabs.Content>
 
           <Tabs.Content value="portfolio">

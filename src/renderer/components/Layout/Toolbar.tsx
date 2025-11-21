@@ -8,6 +8,7 @@ import {
   LuCrosshair,
   LuDollarSign,
   LuGrid3X3,
+  LuMessageSquare,
   LuPause,
   LuPlay,
   LuRuler,
@@ -32,6 +33,7 @@ export interface ToolbarProps {
   showMeasurementArea: boolean;
   movingAverages: MovingAverageConfig[];
   isSimulatorActive: boolean;
+  isChatOpen: boolean;
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
   onChartTypeChange: (type: 'candlestick' | 'line') => void;
@@ -43,6 +45,7 @@ export interface ToolbarProps {
   onShowMeasurementAreaChange: (show: boolean) => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onToggleSimulator: () => void;
+  onToggleChat: () => void;
 }
 
 export const Toolbar = memo(({
@@ -58,6 +61,7 @@ export const Toolbar = memo(({
   showMeasurementArea,
   movingAverages,
   isSimulatorActive,
+  isChatOpen,
   onSymbolChange,
   onTimeframeChange,
   onChartTypeChange,
@@ -69,6 +73,7 @@ export const Toolbar = memo(({
   onShowMeasurementAreaChange,
   onMovingAveragesChange,
   onToggleSimulator,
+  onToggleChat,
 }: ToolbarProps) => {
   const { t } = useTranslation();
 
@@ -272,6 +277,22 @@ export const Toolbar = memo(({
             </HStack>
           </>
         )}
+      </Flex>
+
+      <Box flex={1} />
+
+      <Flex gap={1} align="center" flexShrink={0}>
+        <TooltipWrapper label={t('keyboardShortcuts.shortcuts.toggleChatSidebar')} showArrow>
+          <IconButton
+            size="2xs"
+            aria-label={t('keyboardShortcuts.shortcuts.toggleChatSidebar')}
+            onClick={onToggleChat}
+            colorPalette={isChatOpen ? 'blue' : 'gray'}
+            variant={isChatOpen ? 'solid' : 'ghost'}
+          >
+            <LuMessageSquare />
+          </IconButton>
+        </TooltipWrapper>
       </Flex>
     </Flex>
   );

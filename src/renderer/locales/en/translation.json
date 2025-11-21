@@ -428,6 +428,23 @@
       "totalPnL": "Total P&L",
       "viewPerformance": "View Performance",
       "delete": "Delete Wallet"
+    },
+    "ticket": {
+      "title": "Order Ticket",
+      "noWallet": "Please create and select a wallet first.",
+      "activeWallet": "Active Wallet",
+      "orderType": "Order Type",
+      "long": "Long (Buy)",
+      "short": "Short (Sell)",
+      "quantity": "Quantity",
+      "entryPrice": "Entry Price",
+      "useCurrent": "Use Current",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "optional": "Optional",
+      "totalCost": "Total Cost",
+      "buy": "Buy Long",
+      "sell": "Sell Short"
     }
   },
   "about": {

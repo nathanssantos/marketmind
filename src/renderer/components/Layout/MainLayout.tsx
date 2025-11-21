@@ -2,16 +2,13 @@ import { GlobalActionsProvider } from '@/renderer/context/GlobalActionsContext';
 import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
 import { useTradingStore } from '@/renderer/store/tradingStore';
 import { useUIStore } from '@/renderer/store/uiStore';
-import { Box, Flex, IconButton } from '@chakra-ui/react';
+import { Box, Flex } from '@chakra-ui/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { LuChevronLeft, LuChevronRight } from 'react-icons/lu';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import { ChatSidebar } from '../Chat/ChatSidebar';
 import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { TradingSidebar } from '../Trading/TradingSidebar';
-import { TooltipWrapper } from '../ui/Tooltip';
 import { Header } from './Header';
 
 interface MainLayoutProps {
@@ -19,6 +16,8 @@ interface MainLayoutProps {
   onOpenSymbolSelector?: () => void;
   advancedConfig: AdvancedControlsConfig;
   onAdvancedConfigChange: (config: AdvancedControlsConfig) => void;
+  isChatOpen: boolean;
+  onToggleChat: () => void;
 }
 
 const MIN_CHAT_WIDTH = 300;
@@ -28,9 +27,7 @@ const MIN_TRADING_WIDTH = 300;
 const MAX_TRADING_WIDTH = 600;
 const DEFAULT_TRADING_WIDTH = 400;
 
-export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onAdvancedConfigChange }: MainLayoutProps) => {
-  const { t } = useTranslation();
-  const [isChatOpen, setIsChatOpen] = useLocalStorage('chat-sidebar-open', true);
+export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onAdvancedConfigChange, isChatOpen, onToggleChat }: MainLayoutProps) => {
   const [chatWidth, setChatWidth] = useLocalStorage('chat-sidebar-width', DEFAULT_CHAT_WIDTH);
   const [tradingWidth, setTradingWidth] = useLocalStorage('trading-sidebar-width', DEFAULT_TRADING_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
@@ -43,23 +40,19 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
   const chatPosition = useUIStore((state) => state.chatPosition);
   const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
 
-  const toggleChat = useCallback(() => {
-    setIsChatOpen((prev) => !prev);
-  }, [setIsChatOpen]);
-
   const handleSettingsClick = useCallback(() => {
     setIsSettingsOpen(true);
   }, []);
 
   const globalActions = useMemo(() => ({
     openSettings: () => setIsSettingsOpen(true),
-    toggleChatSidebar: toggleChat,
+    toggleChatSidebar: onToggleChat,
     focusChatInput: () => {
-      if (!isChatOpen) setIsChatOpen(true);
+      if (!isChatOpen) onToggleChat();
     },
     showKeyboardShortcuts: () => setShowKeyboardShortcuts(true),
     openSymbolSelector: () => onOpenSymbolSelector?.(),
-  }), [toggleChat, isChatOpen, setIsChatOpen, onOpenSymbolSelector]);
+  }), [onToggleChat, isChatOpen, onOpenSymbolSelector]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent, target: 'chat' | 'trading') => {
     e.preventDefault();
@@ -122,7 +115,7 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
               <ChatSidebar
                 width={chatWidth}
                 isOpen={isChatOpen}
-                onToggle={toggleChat}
+                onToggle={onToggleChat}
               />
               <Box
                 position="relative"
@@ -183,27 +176,9 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
               <ChatSidebar
                 width={chatWidth}
                 isOpen={isChatOpen}
-                onToggle={toggleChat}
+                onToggle={onToggleChat}
               />
             </>
-          )}
-
-          {!isChatOpen && (
-            <TooltipWrapper label={t('common.openChat')} showArrow placement="left">
-              <IconButton
-                aria-label={t('common.openChat')}
-                onClick={toggleChat}
-                position="fixed"
-                right={isSimulatorActive ? tradingWidth + 16 : 16}
-                bottom={4}
-                colorPalette="blue"
-                borderRadius="full"
-                size="lg"
-                zIndex={100}
-              >
-                {chatPosition === 'left' ? <LuChevronRight /> : <LuChevronLeft />}
-              </IconButton>
-            </TooltipWrapper>
           )}
         </Flex>
 
