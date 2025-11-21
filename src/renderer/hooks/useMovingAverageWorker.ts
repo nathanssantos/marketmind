@@ -1,5 +1,5 @@
 import type { Candle } from '@shared/types';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { WorkerRequest, WorkerResponse } from '../workers/movingAverages.worker';
 
 export interface MovingAverageConfig {
@@ -16,10 +16,20 @@ export interface MovingAverageResult {
   values: (number | null)[];
 }
 
-export const useMovingAverageWorker = () => {
+export interface UseMovingAverageWorkerReturn {
+  calculateMovingAverages: (
+    candles: Candle[],
+    configs: MovingAverageConfig[]
+  ) => Promise<MovingAverageResult[]>;
+  terminate: () => void;
+}
+
+export const useMovingAverageWorker = (): UseMovingAverageWorkerReturn => {
   const workerRef = useRef<Worker | null>(null);
-  const [results, setResults] = useState<MovingAverageResult[]>([]);
-  const [isCalculating, setIsCalculating] = useState(false);
+  const pendingCallbacksRef = useRef<
+    Map<number, (results: MovingAverageResult[]) => void>
+  >(new Map());
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     workerRef.current = new Worker(
@@ -28,37 +38,60 @@ export const useMovingAverageWorker = () => {
     );
 
     workerRef.current.onmessage = (event: MessageEvent<WorkerResponse>) => {
-      if (event.data.type === 'result') {
-        setResults(event.data.results);
-        setIsCalculating(false);
+      const { type, results } = event.data;
+
+      if (type === 'result') {
+        const callbacks = Array.from(pendingCallbacksRef.current.values());
+        pendingCallbacksRef.current.clear();
+
+        callbacks.forEach((callback) => {
+          callback(results);
+        });
       }
     };
 
     return () => {
-      workerRef.current?.terminate();
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
+      pendingCallbacksRef.current.clear();
     };
   }, []);
 
-  const calculate = useCallback((candles: Candle[], configs: MovingAverageConfig[]) => {
-    if (!workerRef.current || candles.length === 0) {
-      setResults([]);
-      return;
+  const calculateMovingAverages = useCallback(
+    (candles: Candle[], configs: MovingAverageConfig[]): Promise<MovingAverageResult[]> => {
+      return new Promise((resolve) => {
+        if (!workerRef.current || candles.length === 0) {
+          resolve([]);
+          return;
+        }
+
+        const requestId = requestIdRef.current++;
+        pendingCallbacksRef.current.set(requestId, resolve);
+
+        const request: WorkerRequest = {
+          type: 'calculate',
+          candles,
+          configs,
+        };
+
+        workerRef.current.postMessage(request);
+      });
+    },
+    []
+  );
+
+  const terminate = useCallback(() => {
+    if (workerRef.current) {
+      workerRef.current.terminate();
+      workerRef.current = null;
     }
-
-    setIsCalculating(true);
-    
-    const request: WorkerRequest = {
-      type: 'calculate',
-      candles,
-      configs,
-    };
-
-    workerRef.current.postMessage(request);
+    pendingCallbacksRef.current.clear();
   }, []);
 
   return {
-    calculate,
-    results,
-    isCalculating,
+    calculateMovingAverages,
+    terminate,
   };
 };
