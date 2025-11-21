@@ -26,6 +26,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { useMarketData } from './hooks/useMarketData';
 import { useNews } from './hooks/useNews';
 import { useRealtimeCandle } from './hooks/useRealtimeCandle';
+import { useSimulatorLayout } from './hooks/useSimulatorLayout';
 import { MarketDataService } from './services/market/MarketDataService';
 import { BinanceProvider } from './services/market/providers/BinanceProvider';
 import { CoinGeckoProvider } from './services/market/providers/CoinGeckoProvider';
@@ -134,6 +135,9 @@ function App(): ReactElement {
 
 function AppContent(): ReactElement {
   const { t } = useTranslation();
+  
+  useSimulatorLayout();
+
   const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);

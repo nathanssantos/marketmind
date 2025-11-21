@@ -26,6 +26,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added price conversion with yToPrice (already exists in CanvasManager)
   - Trading only active when simulator is enabled
 
+- **Trading Simulator - Phase 3: Layout Management**
+  - Updated MainLayout to support dynamic chat positioning (left/right)
+  - Added support for trading sidebar on the right (when simulator active)
+  - Resizable trading sidebar (300-600px, default 400px)
+  - Chat automatically moves to left when simulator activates
+  - Created useSimulatorLayout hook for auto-repositioning
+  - Trading sidebar shows when simulator is active
+  - Proper width calculations for 3-panel layout
+
 ## [0.21.0] - 2025-11-20
 
 ### Added
