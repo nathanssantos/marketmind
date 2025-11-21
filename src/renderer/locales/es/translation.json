@@ -413,6 +413,20 @@
       "ticket": "Orden",
       "portfolio": "Portafolio",
       "orders": "Órdenes"
+    },
+    "wallets": {
+      "title": "Carteras",
+      "create": "Crear Cartera",
+      "createTitle": "Crear Nueva Cartera",
+      "empty": "No hay carteras todavía. Crea una para comenzar a operar.",
+      "name": "Nombre de la Cartera",
+      "namePlaceholder": "Mi Cartera",
+      "initialBalance": "Saldo Inicial",
+      "currency": "Moneda",
+      "balance": "Saldo",
+      "totalPnL": "P&G Total",
+      "viewPerformance": "Ver Rendimiento",
+      "delete": "Eliminar Cartera"
     }
   },
   "about": {

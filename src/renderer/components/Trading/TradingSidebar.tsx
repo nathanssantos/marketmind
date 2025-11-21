@@ -2,6 +2,7 @@ import { Box, Flex, IconButton, Tabs, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { TooltipWrapper } from '../ui/Tooltip';
+import { WalletManager } from './WalletManager';
 
 interface TradingSidebarProps {
   width: number;
@@ -60,9 +61,7 @@ export const TradingSidebar = ({ width }: TradingSidebarProps) => {
 
         <Box flex={1} overflowY="auto">
           <Tabs.Content value="wallets">
-            <Box p={4}>
-              <Text fontSize="sm" color="fg.muted">Wallets (TODO)</Text>
-            </Box>
+            <WalletManager />
           </Tabs.Content>
 
           <Tabs.Content value="ticket">

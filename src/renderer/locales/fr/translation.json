@@ -413,6 +413,20 @@
       "ticket": "Ordre",
       "portfolio": "Portefeuille",
       "orders": "Ordres"
+    },
+    "wallets": {
+      "title": "Portefeuilles",
+      "create": "Créer un Portefeuille",
+      "createTitle": "Créer un Nouveau Portefeuille",
+      "empty": "Aucun portefeuille encore. Créez-en un pour commencer à trader.",
+      "name": "Nom du Portefeuille",
+      "namePlaceholder": "Mon Portefeuille",
+      "initialBalance": "Solde Initial",
+      "currency": "Devise",
+      "balance": "Solde",
+      "totalPnL": "P&L Total",
+      "viewPerformance": "Voir la Performance",
+      "delete": "Supprimer le Portefeuille"
     }
   },
   "about": {

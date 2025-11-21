@@ -413,6 +413,20 @@
       "ticket": "Ordem",
       "portfolio": "Portfólio",
       "orders": "Ordens"
+    },
+    "wallets": {
+      "title": "Carteiras",
+      "create": "Criar Carteira",
+      "createTitle": "Criar Nova Carteira",
+      "empty": "Nenhuma carteira ainda. Crie uma para começar a negociar.",
+      "name": "Nome da Carteira",
+      "namePlaceholder": "Minha Carteira",
+      "initialBalance": "Saldo Inicial",
+      "currency": "Moeda",
+      "balance": "Saldo",
+      "totalPnL": "L&P Total",
+      "viewPerformance": "Ver Desempenho",
+      "delete": "Excluir Carteira"
     }
   },
   "about": {

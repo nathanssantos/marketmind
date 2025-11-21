@@ -414,6 +414,20 @@
       "ticket": "Order Ticket",
       "portfolio": "Portfolio",
       "orders": "Orders"
+    },
+    "wallets": {
+      "title": "Wallets",
+      "create": "Create Wallet",
+      "createTitle": "Create New Wallet",
+      "empty": "No wallets yet. Create one to start trading.",
+      "name": "Wallet Name",
+      "namePlaceholder": "My Wallet",
+      "initialBalance": "Initial Balance",
+      "currency": "Currency",
+      "balance": "Balance",
+      "totalPnL": "Total P&L",
+      "viewPerformance": "View Performance",
+      "delete": "Delete Wallet"
     }
   },
   "about": {
