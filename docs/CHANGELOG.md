@@ -18,6 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Created uiStore for chat positioning (left/right)
   - Installed nanoid for unique ID generation
 
+- **Trading Simulator - Phase 2: Keyboard Shortcuts & Chart Integration**
+  - Created useTradingShortcuts hook for modifier key tracking (Shift/Alt)
+  - Integrated trading clicks in ChartCanvas component
+  - Shift+Click: Enter LONG position at clicked price
+  - Alt+Click: Enter SHORT position at clicked price
+  - Added price conversion with yToPrice (already exists in CanvasManager)
+  - Trading only active when simulator is enabled
+
 ## [0.21.0] - 2025-11-20
 
 ### Added
