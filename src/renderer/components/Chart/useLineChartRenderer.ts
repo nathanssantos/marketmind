@@ -1,6 +1,6 @@
+import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { useCallback, useEffect } from 'react';
 
 export interface UseLineChartRendererProps {
@@ -36,9 +36,6 @@ export const useLineChartRenderer = ({
     if (visibleCandles.length === 0) return;
 
     ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, 0, effectiveWidth, chartHeight);
-    ctx.clip();
 
     ctx.strokeStyle = colors.lineDefault;
     ctx.lineWidth = 2;
@@ -52,7 +49,7 @@ export const useLineChartRenderer = ({
       const x = manager.indexToX(actualIndex);
       const y = manager.priceToY(candle.close);
 
-      if (x < 0 || x > effectiveWidth) return;
+      if (x < -10 || x > effectiveWidth + 10) return;
 
       if (index === 0) {
         ctx.moveTo(x, y);

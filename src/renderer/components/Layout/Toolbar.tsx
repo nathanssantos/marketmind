@@ -2,14 +2,14 @@ import { Box, Flex, HStack, IconButton, Text } from '@chakra-ui/react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    LuChartBar,
-    LuChartCandlestick,
-    LuChartLine,
-    LuCrosshair,
-    LuDollarSign,
-    LuGrid3X3,
-    LuRuler,
-    LuScan
+  LuChartBar,
+  LuChartCandlestick,
+  LuChartLine,
+  LuCrosshair,
+  LuDollarSign,
+  LuGrid3X3,
+  LuRuler,
+  LuScan
 } from 'react-icons/lu';
 import type { MarketDataService } from '../../services/market/MarketDataService';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
@@ -67,8 +67,8 @@ export const Toolbar = memo(({
   const { t } = useTranslation();
 
   const toggleMA = (index: number): void => {
-    const updated = movingAverages.map((ma, i) => 
-      i === index 
+    const updated = movingAverages.map((ma, i) =>
+      i === index
         ? { ...ma, visible: ma.visible === false ? true : false }
         : ma
     );
@@ -78,11 +78,12 @@ export const Toolbar = memo(({
   return (
     <Flex
       position="fixed"
-      top="60px"
+      top="48px"
       left={0}
       right={0}
-      height="56px"
+      height="48px"
       px={4}
+      py={2}
       align="center"
       gap={4}
       bg="bg.panel"
@@ -127,7 +128,7 @@ export const Toolbar = memo(({
         <HStack gap={1}>
           <TooltipWrapper label={t('chart.controls.candlestickChart')} showArrow>
             <IconButton
-              size="sm"
+              size="2xs"
               aria-label={t('chart.controls.candlestickChart')}
               onClick={() => onChartTypeChange('candlestick')}
               colorPalette={chartType === 'candlestick' ? 'blue' : 'gray'}
@@ -138,7 +139,7 @@ export const Toolbar = memo(({
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.lineChart')} showArrow>
             <IconButton
-              size="sm"
+              size="2xs"
               aria-label={t('chart.controls.lineChart')}
               onClick={() => onChartTypeChange('line')}
               colorPalette={chartType === 'line' ? 'blue' : 'gray'}
@@ -154,7 +155,7 @@ export const Toolbar = memo(({
         <HStack gap={1}>
           <TooltipWrapper label={t('chart.controls.volume')} showArrow>
             <IconButton
-              size="sm"
+              size="2xs"
               aria-label={t('chart.controls.volume')}
               onClick={() => onShowVolumeChange(!showVolume)}
               colorPalette={showVolume ? 'blue' : 'gray'}
@@ -165,7 +166,7 @@ export const Toolbar = memo(({
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.grid')} showArrow>
             <IconButton
-              size="sm"
+              size="2xs"
               aria-label={t('chart.controls.grid')}
               onClick={() => onShowGridChange(!showGrid)}
               colorPalette={showGrid ? 'blue' : 'gray'}
@@ -176,7 +177,7 @@ export const Toolbar = memo(({
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.currentPrice')} showArrow>
             <IconButton
-              size="sm"
+              size="2xs"
               aria-label={t('chart.controls.currentPrice')}
               onClick={() => onShowCurrentPriceLineChange(!showCurrentPriceLine)}
               colorPalette={showCurrentPriceLine ? 'blue' : 'gray'}
@@ -187,7 +188,7 @@ export const Toolbar = memo(({
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.crosshair')} showArrow>
             <IconButton
-              size="sm"
+              size="2xs"
               aria-label={t('chart.controls.crosshair')}
               onClick={() => onShowCrosshairChange(!showCrosshair)}
               colorPalette={showCrosshair ? 'blue' : 'gray'}
@@ -198,7 +199,7 @@ export const Toolbar = memo(({
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.measurementRuler')} showArrow>
             <IconButton
-              size="sm"
+              size="2xs"
               aria-label={t('chart.controls.measurementRuler')}
               onClick={() => onShowMeasurementRulerChange(!showMeasurementRuler)}
               colorPalette={showMeasurementRuler ? 'blue' : 'gray'}
@@ -209,7 +210,7 @@ export const Toolbar = memo(({
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.measurementArea')} showArrow>
             <IconButton
-              size="sm"
+              size="2xs"
               aria-label={t('chart.controls.measurementArea')}
               onClick={() => onShowMeasurementAreaChange(!showMeasurementArea)}
               colorPalette={showMeasurementArea ? 'blue' : 'gray'}
@@ -225,19 +226,19 @@ export const Toolbar = memo(({
             <Box w="1px" h="32px" bg="border" flexShrink={0} />
             <HStack gap={1} flexWrap="nowrap">
               {movingAverages.map((ma, index) => (
-                <TooltipWrapper 
-                  key={index} 
+                <TooltipWrapper
+                  key={index}
                   label={`${ma.type === 'EMA' ? 'EMA' : 'SMA'}${ma.period}`}
                   showArrow
                 >
                   <IconButton
-                    size="sm"
+                    size="2xs"
                     aria-label={`${ma.type === 'EMA' ? 'EMA' : 'SMA'}${ma.period}`}
                     onClick={() => toggleMA(index)}
                     colorPalette={ma.visible !== false ? 'blue' : 'gray'}
                     variant={ma.visible !== false ? 'solid' : 'ghost'}
                     px={2}
-                    style={{ 
+                    style={{
                       position: 'relative',
                       borderLeft: ma.visible !== false ? `3px solid ${ma.color}` : undefined
                     }}

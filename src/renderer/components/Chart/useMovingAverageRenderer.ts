@@ -39,15 +39,12 @@ export const useMovingAverageRenderer = ({
 
     if (!ctx || !dimensions || !bounds || !candles) return;
 
-    const { chartWidth, chartHeight } = dimensions;
+    const { chartWidth } = dimensions;
     const startIndex = Math.max(0, Math.floor(viewport.start));
     const endIndex = Math.min(candles.length, Math.ceil(viewport.end));
     const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
 
     ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, 0, effectiveWidth, chartHeight);
-    ctx.clip();
 
     movingAverages.forEach((ma, index) => {
       if (ma.visible === false) return;
@@ -76,12 +73,16 @@ export const useMovingAverageRenderer = ({
         const x = manager.indexToX(i);
         const y = manager.priceToY(value);
 
-        if (x < 0 || x > effectiveWidth) continue;
+        const isVisible = x >= -10 && x <= effectiveWidth + 10;
 
-        if (!hasMovedTo) {
-          ctx.moveTo(x, y);
-          hasMovedTo = true;
-        } else {
+        if (isVisible) {
+          if (!hasMovedTo) {
+            ctx.moveTo(x, y);
+            hasMovedTo = true;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        } else if (hasMovedTo) {
           ctx.lineTo(x, y);
         }
       }

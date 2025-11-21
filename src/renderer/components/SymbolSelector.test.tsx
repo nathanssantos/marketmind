@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { SymbolSelector } from './SymbolSelector';
 import type { MarketDataService } from '../services/market/MarketDataService';
 
@@ -13,13 +14,14 @@ vi.mock('../hooks/useSymbolSearch', () => ({
   })),
 }));
 
-vi.mock('@/renderer/components/ui/select', () => ({
-  Select: ({ placeholder, label }: { placeholder: string; label: string }) => (
-    <div data-testid="select">
-      <div data-testid="select-label">{label}</div>
-      <div data-testid="select-placeholder">{placeholder}</div>
-    </div>
-  ),
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
+vi.mock('@/renderer/components/ui/Tooltip', () => ({
+  TooltipWrapper: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 describe('SymbolSelector', () => {
@@ -31,8 +33,16 @@ describe('SymbolSelector', () => {
     mockOnChange = vi.fn();
   });
 
-  it('should render with Binance label', () => {
-    render(
+  const renderWithChakra = (component: React.ReactElement) => {
+    return render(
+      <ChakraProvider value={defaultSystem}>
+        {component}
+      </ChakraProvider>
+    );
+  };
+
+  it('should render symbol selector button', () => {
+    renderWithChakra(
       <SymbolSelector
         marketService={mockMarketService}
         value="BTCUSDT"
@@ -40,35 +50,11 @@ describe('SymbolSelector', () => {
       />
     );
 
-    expect(screen.getByTestId('select-label')).toHaveTextContent('symbolSelector.label');
+    expect(screen.getByText('Bitcoin / USDT')).toBeInTheDocument();
   });
 
-  it('should display symbol display name as placeholder', () => {
-    render(
-      <SymbolSelector
-        marketService={mockMarketService}
-        value="BTCUSDT"
-        onChange={mockOnChange}
-      />
-    );
-
-    expect(screen.getByTestId('select-placeholder')).toHaveTextContent('Bitcoin / USDT');
-  });
-
-  it('should display symbol code when not in popular list', () => {
-    render(
-      <SymbolSelector
-        marketService={mockMarketService}
-        value="UNKNOWN"
-        onChange={mockOnChange}
-      />
-    );
-
-    expect(screen.getByTestId('select-placeholder')).toHaveTextContent('UNKNOWN');
-  });
-
-  it('should render Select component', () => {
-    render(
+  it('should display current symbol', () => {
+    renderWithChakra(
       <SymbolSelector
         marketService={mockMarketService}
         value="ETHUSDT"
@@ -76,6 +62,30 @@ describe('SymbolSelector', () => {
       />
     );
 
-    expect(screen.getByTestId('select')).toBeInTheDocument();
+    expect(screen.getByText('Ethereum / USDT')).toBeInTheDocument();
+  });
+
+  it('should display symbol code when not in popular list', () => {
+    renderWithChakra(
+      <SymbolSelector
+        marketService={mockMarketService}
+        value="UNKNOWN"
+        onChange={mockOnChange}
+      />
+    );
+
+    expect(screen.getByText('UNKNOWN')).toBeInTheDocument();
+  });
+
+  it('should render IconButton with coins icon', () => {
+    renderWithChakra(
+      <SymbolSelector
+        marketService={mockMarketService}
+        value="BTCUSDT"
+        onChange={mockOnChange}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'symbolSelector.label' })).toBeInTheDocument();
   });
 });

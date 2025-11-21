@@ -88,71 +88,71 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
     <GlobalActionsProvider actions={globalActions}>
       <Box width="100vw" height="100vh" overflow="hidden">
         <Header onSettingsClick={handleSettingsClick} />
-      
-      <Flex
-        position="fixed"
-        top="116px"
-        left={0}
-        right={0}
-        bottom={0}
-        overflow="hidden"
-      >
-        <Box
-          flex={1}
-          position="relative"
+
+        <Flex
+          position="fixed"
+          top="96px"
+          left={0}
+          right={0}
+          bottom={0}
           overflow="hidden"
-          width={isChatOpen ? `calc(100% - ${chatWidth}px)` : '100%'}
-          transition="width 0.2s ease"
         >
-          {children}
-        </Box>
+          <Box
+            flex={1}
+            position="relative"
+            overflow="hidden"
+            width={isChatOpen ? `calc(100% - ${chatWidth}px)` : '100%'}
+            transition="width 0.2s ease"
+          >
+            {children}
+          </Box>
 
-        {isChatOpen && (
-          <>
-            <Box
-              position="relative"
-              width="4px"
-              bg="border"
-              cursor="col-resize"
-              _hover={{ bg: 'blue.500' }}
-              onMouseDown={handleMouseDown}
-              userSelect="none"
-            />
-            <ChatSidebar 
-              width={chatWidth} 
-              isOpen={isChatOpen} 
-              onToggle={toggleChat}
-            />
-          </>
-        )}
+          {isChatOpen && (
+            <>
+              <Box
+                position="relative"
+                width="4px"
+                bg="border"
+                cursor="col-resize"
+                _hover={{ bg: 'blue.500' }}
+                onMouseDown={handleMouseDown}
+                userSelect="none"
+              />
+              <ChatSidebar
+                width={chatWidth}
+                isOpen={isChatOpen}
+                onToggle={toggleChat}
+              />
+            </>
+          )}
 
-        {!isChatOpen && (
-          <TooltipWrapper label={t('common.openChat')} showArrow placement="left">
-            <IconButton
-              aria-label={t('common.openChat')}
-              onClick={toggleChat}
-              position="fixed"
-              right={4}
-              bottom={4}
-              colorPalette="blue"
-              borderRadius="full"
-              size="lg"
-              zIndex={100}
-            >
-              <LuChevronLeft />
-            </IconButton>
-          </TooltipWrapper>
-        )}
-      </Flex>
+          {!isChatOpen && (
+            <TooltipWrapper label={t('common.openChat')} showArrow placement="left">
+              <IconButton
+                aria-label={t('common.openChat')}
+                onClick={toggleChat}
+                position="fixed"
+                right={4}
+                bottom={4}
+                colorPalette="blue"
+                borderRadius="full"
+                size="lg"
+                zIndex={100}
+              >
+                <LuChevronLeft />
+              </IconButton>
+            </TooltipWrapper>
+          )}
+        </Flex>
 
-      <SettingsDialog 
-        isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)}
-        advancedConfig={advancedConfig}
-        onAdvancedConfigChange={onAdvancedConfigChange}
-      />
-      <KeyboardShortcutsDialog isOpen={showKeyboardShortcuts} onClose={() => setShowKeyboardShortcuts(false)} />
-    </Box>
+        <SettingsDialog
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          advancedConfig={advancedConfig}
+          onAdvancedConfigChange={onAdvancedConfigChange}
+        />
+        <KeyboardShortcutsDialog isOpen={showKeyboardShortcuts} onClose={() => setShowKeyboardShortcuts(false)} />
+      </Box>
     </GlobalActionsProvider>
   );
 };

@@ -192,26 +192,30 @@
     }
   },
   "chat": {
-    "title": "Assistant IA",
+    "title": "Chat",
     "newConversation": "Nouvelle conversation",
     "closeChat": "Fermer le chat",
     "enableAIStudies": "Activer les dessins IA sur le graphique",
     "disableAIStudies": "Désactiver les dessins IA sur le graphique",
-    "inputPlaceholder": "Posez des questions sur le graphique...",
+    "conversationsTitle": "Conversations - {{symbol}}",
+    "noConversationsYet": "Aucune conversation pour le moment",
+    "messageCount_one": "{{count}} message",
+    "messageCount_other": "{{count}} messages",
+    "inputPlaceholder": "Posez une question sur le graphique...",
     "sendMessage": "Envoyer le message",
     "send": "Envoyer",
     "noMessages": "Aucun message pour le moment",
-    "startConversation": "Commencez une conversation pour obtenir des informations sur le graphique",
-    "emptyStateTitle": "Commencer une conversation",
-    "emptyStateDescription": "Demandez-moi d'analyser le graphique, d'expliquer les modèles ou de fournir des insights de trading"
+    "startConversation": "Démarrez une conversation pour obtenir des informations sur le graphique",
+    "emptyStateTitle": "Démarrer une conversation",
+    "emptyStateDescription": "Demandez-moi d'analyser le graphique, d'expliquer des modèles ou de fournir des informations de trading"
   },
   "chart": {
     "controls": {
-      "title": "Contrôles du graphique",
+      "title": "Contrôles du Graphique",
       "timeframe": "Période",
-      "chartType": "Type de graphique",
-      "candlestickChart": "Graphique en chandeliers",
-      "lineChart": "Graphique linéaire",
+      "chartType": "Type de Graphique",
+      "candlestickChart": "Graphique en Chandeliers",
+      "lineChart": "Graphique Linéaire",
       "display": "Affichage",
       "volume": "Volume",
       "grid": "Grille",
@@ -220,7 +224,12 @@
       "measurementRuler": "Règle de Mesure",
       "measurementArea": "Zone de Mesure",
       "indicators": "Indicateurs",
-      "quickSettings": "Paramètres rapides"
+      "quickSettings": "Paramètres Rapides"
+    },
+    "navigation": {
+      "resetView": "Retour à la vue initiale",
+      "nextCandle": "Bougie suivante",
+      "candleTimer": "Temps jusqu'à la prochaine bougie"
     },
     "advanced": {
       "title": "Paramètres avancés",

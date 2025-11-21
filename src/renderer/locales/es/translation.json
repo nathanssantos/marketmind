@@ -192,18 +192,22 @@
     }
   },
   "chat": {
-    "title": "Asistente IA",
+    "title": "Chat",
     "newConversation": "Nueva conversación",
     "closeChat": "Cerrar chat",
-    "enableAIStudies": "Activar dibujos de IA en el gráfico",
-    "disableAIStudies": "Desactivar dibujos de IA en el gráfico",
-    "inputPlaceholder": "Pregunte sobre el gráfico...",
+    "enableAIStudies": "Habilitar dibujos de IA en el gráfico",
+    "disableAIStudies": "Deshabilitar dibujos de IA en el gráfico",
+    "conversationsTitle": "Conversaciones - {{symbol}}",
+    "noConversationsYet": "Aún no hay conversaciones",
+    "messageCount_one": "{{count}} mensaje",
+    "messageCount_other": "{{count}} mensajes",
+    "inputPlaceholder": "Pregunta sobre el gráfico...",
     "sendMessage": "Enviar mensaje",
     "send": "Enviar",
     "noMessages": "Aún no hay mensajes",
     "startConversation": "Inicia una conversación para obtener información sobre el gráfico",
     "emptyStateTitle": "Iniciar una conversación",
-    "emptyStateDescription": "Pídeme que analice el gráfico, explique patrones o proporcione insights de trading"
+    "emptyStateDescription": "Pídeme que analice el gráfico, explique patrones o proporcione información de trading"
   },
   "chart": {
     "controls": {
@@ -221,6 +225,11 @@
       "measurementArea": "Área de Medición",
       "indicators": "Indicadores",
       "quickSettings": "Configuración Rápida"
+    },
+    "navigation": {
+      "resetView": "Volver a la vista inicial",
+      "nextCandle": "Siguiente vela",
+      "candleTimer": "Tiempo hasta la próxima vela"
     },
     "advanced": {
       "title": "Configuración Avanzada",
