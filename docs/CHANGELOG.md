@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Created useSimulatorLayout hook for auto-repositioning
   - Trading sidebar shows when simulator is active
   - Proper width calculations for 3-panel layout
+  - Created TradingSidebar component with 4 tabs (Wallets, Order Ticket, Portfolio, Orders)
+  - Added translations for trading sidebar (EN, PT, ES, FR)
 
 ## [0.21.0] - 2025-11-20
 

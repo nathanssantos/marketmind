@@ -403,6 +403,16 @@
       "toggle": "Simulador de Trading",
       "active": "Simulador Activo",
       "inactive": "Simulador Inactivo"
+    },
+    "sidebar": {
+      "title": "Simulador de Trading",
+      "close": "Cerrar barra de trading"
+    },
+    "tabs": {
+      "wallets": "Carteras",
+      "ticket": "Orden",
+      "portfolio": "Portafolio",
+      "orders": "Órdenes"
     }
   },
   "about": {

@@ -404,6 +404,16 @@
       "toggle": "Trading Simulator",
       "active": "Simulator Active",
       "inactive": "Simulator Inactive"
+    },
+    "sidebar": {
+      "title": "Trading Simulator",
+      "close": "Close trading sidebar"
+    },
+    "tabs": {
+      "wallets": "Wallets",
+      "ticket": "Order Ticket",
+      "portfolio": "Portfolio",
+      "orders": "Orders"
     }
   },
   "about": {

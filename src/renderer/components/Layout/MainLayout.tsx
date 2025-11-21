@@ -10,6 +10,7 @@ import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import { ChatSidebar } from '../Chat/ChatSidebar';
 import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
 import { SettingsDialog } from '../Settings/SettingsDialog';
+import { TradingSidebar } from '../Trading/TradingSidebar';
 import { TooltipWrapper } from '../ui/Tooltip';
 import { Header } from './Header';
 
@@ -164,17 +165,7 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
                 onMouseDown={(e) => handleMouseDown(e, 'trading')}
                 userSelect="none"
               />
-              <Box
-                width={`${tradingWidth}px`}
-                bg="bg.surface"
-                borderLeft="1px solid"
-                borderColor="border"
-                overflow="hidden"
-              >
-                <Box p={4}>
-                  <Box>Trading Sidebar (TODO)</Box>
-                </Box>
-              </Box>
+              <TradingSidebar width={tradingWidth} />
             </>
           )}
 
