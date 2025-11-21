@@ -1,8 +1,8 @@
+import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
-import { SymbolSelector } from './SymbolSelector';
 import type { MarketDataService } from '../services/market/MarketDataService';
+import { SymbolSelector } from './SymbolSelector';
 
 vi.mock('../hooks/useSymbolSearch', () => ({
   useSymbolSearch: vi.fn(() => ({
