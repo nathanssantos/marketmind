@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { useTradingStore } from './tradingStore';
 
 describe('tradingStore', () => {
@@ -48,6 +48,8 @@ describe('tradingStore', () => {
         walletId,
         symbol: 'BTCUSDT',
         type: 'long',
+        subType: 'limit',
+        status: 'pending',
         entryPrice: 50000,
         quantity: 0.1,
       });
@@ -76,6 +78,8 @@ describe('tradingStore', () => {
         walletId,
         symbol: 'BTCUSDT',
         type: 'long',
+        subType: 'limit',
+        status: 'pending',
         entryPrice: 50000,
         quantity: 0.1,
       });
@@ -97,6 +101,8 @@ describe('tradingStore', () => {
         walletId,
         symbol: 'BTCUSDT',
         type: 'long',
+        subType: 'limit',
+        status: 'pending',
         entryPrice: 50000,
         quantity: 0.1,
       });
@@ -115,6 +121,8 @@ describe('tradingStore', () => {
         walletId,
         symbol: 'BTCUSDT',
         type: 'long',
+        subType: 'limit',
+        status: 'pending',
         entryPrice: 50000,
         quantity: 0.1,
       });
@@ -127,17 +135,20 @@ describe('tradingStore', () => {
     });
 
     it('should close an order', () => {
-      const { addOrder, closeOrder } = useTradingStore.getState();
+      const { addOrder, updateOrder, closeOrder } = useTradingStore.getState();
       
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
         type: 'long',
+        subType: 'limit',
+        status: 'pending',
         entryPrice: 50000,
         quantity: 0.1,
       });
 
       const orderId = useTradingStore.getState().orders[0].id;
+      updateOrder(orderId, { status: 'active', filledAt: new Date() });
       closeOrder(orderId, 51000);
 
       const { orders } = useTradingStore.getState();
@@ -164,6 +175,114 @@ describe('tradingStore', () => {
 
       setActiveWallet(walletId);
       expect(useTradingStore.getState().activeWalletId).toBe(walletId);
+    });
+
+    it('should close all orders in a grouped position when one is closed', () => {
+      const { addWallet, addOrder, closeOrder } = useTradingStore.getState();
+      
+      addWallet({ name: 'Test Wallet', initialBalance: 10000, currency: 'USD' });
+      const walletId = useTradingStore.getState().wallets[0].id;
+
+      addOrder({
+        walletId,
+        symbol: 'BTCUSDT',
+        type: 'long',
+        subType: 'limit',
+        status: 'active',
+        entryPrice: 50000,
+        quantity: 0.1,
+        filledAt: new Date(),
+      });
+
+      addOrder({
+        walletId,
+        symbol: 'BTCUSDT',
+        type: 'long',
+        subType: 'limit',
+        status: 'active',
+        entryPrice: 51000,
+        quantity: 0.1,
+        filledAt: new Date(),
+      });
+
+      addOrder({
+        walletId,
+        symbol: 'BTCUSDT',
+        type: 'long',
+        subType: 'limit',
+        status: 'active',
+        entryPrice: 49000,
+        quantity: 0.1,
+        filledAt: new Date(),
+      });
+
+      const orders = useTradingStore.getState().orders;
+      expect(orders.length).toBe(3);
+      expect(orders.every(o => o.status === 'active')).toBe(true);
+
+      const firstOrderId = orders[0].id;
+      closeOrder(firstOrderId, 52000);
+
+      const updatedOrders = useTradingStore.getState().orders;
+      expect(updatedOrders.every(o => o.status === 'closed')).toBe(true);
+      
+      const wallet = useTradingStore.getState().wallets.find(w => w.id === walletId);
+      expect(wallet?.balance).toBeGreaterThan(10000);
+    });
+
+    it('should activate pending order at market price', () => {
+      const { addWallet, addOrder, activateOrder } = useTradingStore.getState();
+      
+      addWallet({ name: 'Test Wallet', initialBalance: 10000, currency: 'USD' });
+      const walletId = useTradingStore.getState().wallets[0].id;
+
+      addOrder({
+        walletId,
+        symbol: 'BTCUSDT',
+        type: 'long',
+        subType: 'stop',
+        entryPrice: 51000,
+        quantity: 0.1,
+        status: 'pending',
+        currentPrice: 50000,
+      });
+
+      const orderId = useTradingStore.getState().orders[0].id;
+      const marketPrice = 50500;
+
+      activateOrder(orderId, marketPrice);
+
+      const order = useTradingStore.getState().orders.find(o => o.id === orderId);
+      expect(order?.status).toBe('active');
+      expect(order?.entryPrice).toBe(marketPrice);
+      expect(order?.currentPrice).toBe(marketPrice);
+      expect(order?.filledAt).toBeDefined();
+    });
+  });
+
+  describe('Clear Data', () => {
+    it('should clear all wallets and orders', () => {
+      const { addWallet, addOrder, clearAllData } = useTradingStore.getState();
+      
+      addWallet({ name: 'Test Wallet', initialBalance: 10000, currency: 'USD' });
+      const walletId = useTradingStore.getState().wallets[0].id;
+
+      addOrder({
+        walletId,
+        symbol: 'BTCUSDT',
+        type: 'long',
+        subType: 'limit',
+        status: 'pending',
+        entryPrice: 50000,
+        quantity: 0.1,
+      });
+
+      clearAllData();
+
+      const state = useTradingStore.getState();
+      expect(state.wallets).toHaveLength(0);
+      expect(state.orders).toHaveLength(0);
+      expect(state.activeWalletId).toBeNull();
     });
   });
 });

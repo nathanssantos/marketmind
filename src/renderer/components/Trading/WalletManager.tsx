@@ -1,5 +1,6 @@
-import { Box, Button, Flex, IconButton, Stack, Text } from '@chakra-ui/react';
-import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
+import { Box, Flex, IconButton, Portal, Stack, Text } from '@chakra-ui/react';
+import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
+import { Button } from '@renderer/components/ui/button';
 import { useTradingStore } from '@renderer/store/tradingStore';
 import type { Wallet } from '@shared/types/trading';
 import { useState } from 'react';
@@ -7,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import { LuPlus, LuTrash2, LuTrendingUp } from 'react-icons/lu';
 import { CreateWalletDialog } from './CreateWalletDialog';
+import { WalletPerformanceDialog } from './WalletPerformanceDialog';
 
 export const WalletManager = () => {
   const { t } = useTranslation();
@@ -17,6 +19,8 @@ export const WalletManager = () => {
   const deleteWallet = useTradingStore((state) => state.deleteWallet);
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showPerformanceDialog, setShowPerformanceDialog] = useState(false);
+  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
 
   return (
     <Stack gap={2} p={4}>
@@ -25,7 +29,7 @@ export const WalletManager = () => {
           {t('trading.wallets.title')}
         </Text>
         <Button
-          size="xs"
+          size="2xs"
           colorPalette="blue"
           onClick={() => setShowCreateDialog(true)}
         >
@@ -34,28 +38,45 @@ export const WalletManager = () => {
         </Button>
       </Flex>
 
-      {wallets.length === 0 ? (
-        <Box p={4} textAlign="center">
-          <Text fontSize="sm" color="fg.muted">
-            {t('trading.wallets.empty')}
-          </Text>
-        </Box>
-      ) : (
-        wallets.map((wallet) => (
-          <WalletCard
-            key={wallet.id}
-            wallet={wallet}
-            isActive={wallet.id === activeWalletId}
-            onSelect={() => setActiveWallet(wallet.id)}
-            onDelete={() => deleteWallet(wallet.id)}
-          />
-        ))
-      )}
+      <Box maxH="calc(100vh - 250px)" overflowY="auto">
+        {wallets.length === 0 ? (
+          <Box p={4} textAlign="center">
+            <Text fontSize="sm" color="fg.muted">
+              {t('trading.wallets.empty')}
+            </Text>
+          </Box>
+        ) : (
+          <Stack gap={2}>
+            {wallets.map((wallet) => (
+              <WalletCard
+                key={wallet.id}
+                wallet={wallet}
+                isActive={wallet.id === activeWalletId}
+                onSelect={() => setActiveWallet(wallet.id)}
+                onDelete={() => deleteWallet(wallet.id)}
+                onViewPerformance={() => {
+                  setSelectedWalletId(wallet.id);
+                  setShowPerformanceDialog(true);
+                }}
+              />
+            ))}
+          </Stack>
+        )}
+      </Box>
 
       <CreateWalletDialog
         isOpen={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
         onCreate={addWallet}
+      />
+
+      <WalletPerformanceDialog
+        isOpen={showPerformanceDialog}
+        onClose={() => {
+          setShowPerformanceDialog(false);
+          setSelectedWalletId(null);
+        }}
+        walletId={selectedWalletId}
       />
     </Stack>
   );
@@ -66,9 +87,10 @@ interface WalletCardProps {
   isActive: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onViewPerformance: () => void;
 }
 
-const WalletCard = ({ wallet, isActive, onSelect, onDelete }: WalletCardProps) => {
+const WalletCard = ({ wallet, isActive, onSelect, onDelete, onViewPerformance }: WalletCardProps) => {
   const { t } = useTranslation();
   const totalPnL = wallet.balance - wallet.initialBalance;
   const totalPnLPercent = (totalPnL / wallet.initialBalance) * 100;
@@ -93,10 +115,10 @@ const WalletCard = ({ wallet, isActive, onSelect, onDelete }: WalletCardProps) =
         <Text fontWeight="bold" fontSize="sm">
           {wallet.name}
         </Text>
-        <MenuRoot>
+        <MenuRoot id={`wallet-menu-${wallet.id}`} positioning={{ placement: 'bottom-end' }}>
           <MenuTrigger asChild>
             <IconButton
-              size="xs"
+              size="2xs"
               variant="ghost"
               aria-label="Wallet options"
               onClick={(e) => e.stopPropagation()}
@@ -104,16 +126,42 @@ const WalletCard = ({ wallet, isActive, onSelect, onDelete }: WalletCardProps) =
               <BsThreeDotsVertical />
             </IconButton>
           </MenuTrigger>
-          <MenuContent>
-            <MenuItem value="performance" disabled>
-              <LuTrendingUp />
-              <Text>{t('trading.wallets.viewPerformance')}</Text>
-            </MenuItem>
-            <MenuItem value="delete" onClick={onDelete} color="red.500">
-              <LuTrash2 />
-              <Text>{t('trading.wallets.delete')}</Text>
-            </MenuItem>
-          </MenuContent>
+          <Portal>
+            <MenuPositioner>
+              <MenuContent
+                bg="bg.panel"
+                borderColor="border"
+                shadow="lg"
+                minW="180px"
+                zIndex={99999}
+                p={0}
+              >
+                <MenuItem
+                  value="performance"
+                  onClick={onViewPerformance}
+                  px={4}
+                  py={2.5}
+                  _hover={{ bg: 'bg.muted' }}
+                  borderBottomWidth="1px"
+                  borderColor="border"
+                >
+                  <LuTrendingUp />
+                  <Text>{t('trading.wallets.viewPerformance')}</Text>
+                </MenuItem>
+                <MenuItem
+                  value="delete"
+                  onClick={onDelete}
+                  color="red.500"
+                  px={4}
+                  py={2.5}
+                  _hover={{ bg: 'bg.muted' }}
+                >
+                  <LuTrash2 />
+                  <Text>{t('trading.wallets.delete')}</Text>
+                </MenuItem>
+              </MenuContent>
+            </MenuPositioner>
+          </Portal>
         </MenuRoot>
       </Flex>
 

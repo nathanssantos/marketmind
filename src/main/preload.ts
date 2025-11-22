@@ -1,7 +1,43 @@
+import type { AIMessage, AIProviderType, AIStudyData } from '@shared/types';
+import type { Order, Wallet } from '@shared/types/trading';
 import { contextBridge, ipcRenderer } from 'electron';
 
 type AIProvider = 'openai' | 'anthropic' | 'gemini';
 type NewsProvider = 'newsapi' | 'cryptopanic';
+
+interface Conversation {
+  id: string;
+  title: string;
+  messages: AIMessage[];
+  createdAt: number;
+  updatedAt: number;
+  symbol?: string;
+  studyDataId?: string;
+}
+
+interface AISettings {
+  provider: AIProviderType;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  detailedCandlesCount?: number;
+}
+
+interface AIData {
+  conversations: Conversation[];
+  activeConversationId: string | null;
+  settings: AISettings | null;
+  enableAIStudies: boolean;
+}
+
+interface TradingData {
+  wallets: Wallet[];
+  orders: Order[];
+  isSimulatorActive: boolean;
+  activeWalletId: string | null;
+  defaultQuantity: number;
+  defaultExpiration: 'gtc' | 'day' | 'custom';
+}
 
 interface SecureStorageAPI {
   isEncryptionAvailable: () => Promise<boolean>;
@@ -13,6 +49,18 @@ interface SecureStorageAPI {
   clearAllApiKeys: () => Promise<{ success: boolean; error?: string }>;
   getNewsSettings: () => Promise<{ enabled: boolean; refreshInterval: number; maxArticles: number }>;
   setNewsSettings: (settings: { enabled: boolean; refreshInterval: number; maxArticles: number }) => Promise<{ success: boolean; error?: string }>;
+  getTradingData: () => Promise<{ success: boolean; data: TradingData | null; error?: string }>;
+  setTradingData: (data: TradingData) => Promise<{ success: boolean; error?: string }>;
+  clearTradingData: () => Promise<{ success: boolean; error?: string }>;
+  getAIData: () => Promise<{ success: boolean; data: AIData | null; error?: string }>;
+  setAIData: (data: AIData) => Promise<{ success: boolean; error?: string }>;
+  clearAIData: () => Promise<{ success: boolean; error?: string }>;
+  getAIStudies: () => Promise<{ success: boolean; data: Record<string, AIStudyData>; error?: string }>;
+  setAIStudies: (studies: Record<string, AIStudyData>) => Promise<{ success: boolean; error?: string }>;
+  getAIStudiesForSymbol: (symbol: string) => Promise<{ success: boolean; data: AIStudyData | null; error?: string }>;
+  setAIStudiesForSymbol: (symbol: string, data: AIStudyData) => Promise<{ success: boolean; error?: string }>;
+  deleteAIStudiesForSymbol: (symbol: string) => Promise<{ success: boolean; error?: string }>;
+  clearAIStudies: () => Promise<{ success: boolean; error?: string }>;
 }
 
 interface UpdateInfo {
@@ -96,6 +144,54 @@ const API = {
 
     setNewsSettings: async (settings: { enabled: boolean; refreshInterval: number; maxArticles: number }) => {
       return await ipcRenderer.invoke('storage:setNewsSettings', settings);
+    },
+
+    getTradingData: async () => {
+      return await ipcRenderer.invoke('storage:getTradingData');
+    },
+
+    setTradingData: async (data: TradingData) => {
+      return await ipcRenderer.invoke('storage:setTradingData', data);
+    },
+
+    clearTradingData: async () => {
+      return await ipcRenderer.invoke('storage:clearTradingData');
+    },
+
+    getAIData: async () => {
+      return await ipcRenderer.invoke('storage:getAIData');
+    },
+
+    setAIData: async (data: AIData) => {
+      return await ipcRenderer.invoke('storage:setAIData', data);
+    },
+
+    clearAIData: async () => {
+      return await ipcRenderer.invoke('storage:clearAIData');
+    },
+
+    getAIStudies: async () => {
+      return await ipcRenderer.invoke('storage:getAIStudies');
+    },
+
+    setAIStudies: async (studies: Record<string, AIStudyData>) => {
+      return await ipcRenderer.invoke('storage:setAIStudies', studies);
+    },
+
+    getAIStudiesForSymbol: async (symbol: string) => {
+      return await ipcRenderer.invoke('storage:getAIStudiesForSymbol', symbol);
+    },
+
+    setAIStudiesForSymbol: async (symbol: string, data: AIStudyData) => {
+      return await ipcRenderer.invoke('storage:setAIStudiesForSymbol', symbol, data);
+    },
+
+    deleteAIStudiesForSymbol: async (symbol: string) => {
+      return await ipcRenderer.invoke('storage:deleteAIStudiesForSymbol', symbol);
+    },
+
+    clearAIStudies: async () => {
+      return await ipcRenderer.invoke('storage:clearAIStudies');
     },
   } as SecureStorageAPI,
 

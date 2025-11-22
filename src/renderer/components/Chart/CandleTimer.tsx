@@ -55,6 +55,17 @@ export const CandleTimer = ({ timeframe, lastCandleTime }: CandleTimerProps): Re
             const now = Date.now();
             const nextCandleTime = lastCandleTime + (intervalMinutes * 60 * 1000);
             const remaining = Math.max(0, Math.floor((nextCandleTime - now) / 1000));
+
+            if (remaining === 0) {
+                const periodsElapsed = Math.floor((now - lastCandleTime) / (intervalMinutes * 60 * 1000));
+                if (periodsElapsed > 0) {
+                    const adjustedNextCandleTime = lastCandleTime + ((periodsElapsed + 1) * intervalMinutes * 60 * 1000);
+                    const adjustedRemaining = Math.max(0, Math.floor((adjustedNextCandleTime - now) / 1000));
+                    setTimeRemaining(adjustedRemaining);
+                    return;
+                }
+            }
+
             setTimeRemaining(remaining);
         };
 

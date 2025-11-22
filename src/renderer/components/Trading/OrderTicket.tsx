@@ -1,5 +1,8 @@
-import { Box, Button, Flex, Input, NativeSelectField, NativeSelectRoot, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
+import { Button } from '@renderer/components/ui/button';
+import { NumberInput } from '@renderer/components/ui/number-input';
+import { Select } from '@renderer/components/ui/select';
 import { useChartContext } from '@renderer/context/ChartContext';
 import { useTradingStore } from '@renderer/store/tradingStore';
 import type { OrderType } from '@shared/types/trading';
@@ -9,10 +12,10 @@ import { useTranslation } from 'react-i18next';
 export const OrderTicket = () => {
   const { t } = useTranslation();
   const { chartData } = useChartContext();
-  
+
   const currentPrice = chartData?.candles[chartData.candles.length - 1]?.close;
   const symbol = chartData?.symbol || 'UNKNOWN';
-  
+
   const wallets = useTradingStore((state) => state.wallets);
   const activeWalletId = useTradingStore((state) => state.activeWalletId);
   const addOrder = useTradingStore((state) => state.addOrder);
@@ -41,15 +44,23 @@ export const OrderTicket = () => {
     const cost = qty * entry;
     if (cost > activeWallet.balance) return;
 
+    const subType: 'limit' | 'stop' = currentPrice !== undefined
+      ? (orderType === 'long'
+        ? (entry < currentPrice ? 'limit' : 'stop')
+        : (entry > currentPrice ? 'limit' : 'stop'))
+      : 'limit';
+
     const orderData: Omit<import('@shared/types/trading').Order, 'id' | 'createdAt'> = {
       walletId: activeWallet.id,
       symbol,
       type: orderType,
-      status: 'active',
+      subType,
+      status: 'pending',
       quantity: qty,
       entryPrice: entry,
       ...(stop !== undefined && { stopLoss: stop }),
       ...(target !== undefined && { takeProfit: target }),
+      ...(currentPrice !== undefined && { currentPrice }),
     };
 
     addOrder(orderData);
@@ -73,7 +84,7 @@ export const OrderTicket = () => {
 
   return (
     <Stack gap={3} p={4}>
-      <Flex justify="space-between" align="center" mb={2}>
+      <Flex justify="space-between" align="center" mb={1}>
         <Text fontSize="sm" fontWeight="bold">
           {t('trading.ticket.title')}
         </Text>
@@ -103,78 +114,75 @@ export const OrderTicket = () => {
           <Stack gap={3}>
             <ChakraField.Root>
               <ChakraField.Label fontSize="xs">{t('trading.ticket.orderType')}</ChakraField.Label>
-              <NativeSelectRoot>
-                <NativeSelectField
-                  value={orderType}
-                  onChange={(e) => setOrderType(e.target.value as OrderType)}
-                  fontSize="sm"
-                >
-                  <option value="long">{t('trading.ticket.long')}</option>
-                  <option value="short">{t('trading.ticket.short')}</option>
-                </NativeSelectField>
-              </NativeSelectRoot>
-            </ChakraField.Root>
-
-            <ChakraField.Root>
-              <ChakraField.Label fontSize="xs">{t('trading.ticket.quantity')}</ChakraField.Label>
-              <Input
-                type="number"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="0.00"
-                fontSize="sm"
-                step="0.01"
-                min="0"
+              <Select
+                size="xs"
+                value={orderType}
+                onChange={(value) => setOrderType(value as OrderType)}
+                options={[
+                  { value: 'long', label: t('trading.ticket.long') },
+                  { value: 'short', label: t('trading.ticket.short') },
+                ]}
+                usePortal={false}
               />
             </ChakraField.Root>
 
             <ChakraField.Root>
-              <Flex justify="space-between" align="center" mb={1}>
+              <ChakraField.Label fontSize="xs">{t('trading.ticket.quantity')}</ChakraField.Label>
+              <NumberInput
+                size="xs"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                placeholder="0.00"
+                step={0.01}
+                min={0}
+              />
+            </ChakraField.Root>
+
+            <ChakraField.Root>
+              <HStack justify="space-between" mb={1}>
                 <ChakraField.Label fontSize="xs" mb={0}>{t('trading.ticket.entryPrice')}</ChakraField.Label>
                 <Button
-                  size="xs"
+                  size="2xs"
                   variant="ghost"
                   onClick={handleUseCurrentPrice}
                   disabled={!currentPrice}
                   fontSize="xs"
+                  colorPalette="blue"
                 >
                   {t('trading.ticket.useCurrent')}
                 </Button>
-              </Flex>
-              <Input
-                type="number"
+              </HStack>
+              <NumberInput
+                size="xs"
                 value={entryPrice}
                 onChange={(e) => setEntryPrice(e.target.value)}
                 placeholder="0.00"
-                fontSize="sm"
-                step="0.01"
-                min="0"
+                step={0.01}
+                min={0}
               />
             </ChakraField.Root>
 
             <ChakraField.Root>
               <ChakraField.Label fontSize="xs">{t('trading.ticket.stopLoss')}</ChakraField.Label>
-              <Input
-                type="number"
+              <NumberInput
+                size="xs"
                 value={stopLoss}
                 onChange={(e) => setStopLoss(e.target.value)}
                 placeholder={t('trading.ticket.optional')}
-                fontSize="sm"
-                step="0.01"
-                min="0"
+                step={0.01}
+                min={0}
               />
             </ChakraField.Root>
 
             <ChakraField.Root>
               <ChakraField.Label fontSize="xs">{t('trading.ticket.takeProfit')}</ChakraField.Label>
-              <Input
-                type="number"
+              <NumberInput
+                size="xs"
                 value={takeProfit}
                 onChange={(e) => setTakeProfit(e.target.value)}
                 placeholder={t('trading.ticket.optional')}
-                fontSize="sm"
-                step="0.01"
-                min="0"
+                step={0.01}
+                min={0}
               />
             </ChakraField.Root>
 
@@ -190,6 +198,7 @@ export const OrderTicket = () => {
             )}
 
             <Button
+              size="xs"
               colorPalette={orderType === 'long' ? 'green' : 'red'}
               onClick={handleSubmit}
               disabled={!isValid}

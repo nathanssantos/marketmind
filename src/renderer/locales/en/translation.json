@@ -54,6 +54,7 @@
       "chart": "Chart",
       "ai": "AI Configuration",
       "news": "News",
+      "tradingSimulator": "Trading Simulator",
       "about": "About"
     },
     "language": {
@@ -190,6 +191,23 @@
       "tipValidJson": "The prompt must be valid JSON format",
       "tipFormat": "Use 'Format JSON' button to auto-format your JSON",
       "tipBackup": "Keep a backup before making major changes to prompts"
+    },
+    "tradingSimulator": {
+      "title": "Trading Simulator Settings",
+      "description": "Manage your trading simulator data and settings.",
+      "statistics": {
+        "title": "Statistics",
+        "wallets": "Total Wallets",
+        "orders": "Total Orders",
+        "activeOrders": "Active Orders",
+        "pendingOrders": "Pending Orders"
+      },
+      "dangerZone": {
+        "title": "Danger Zone",
+        "description": "Clearing all data will permanently delete all wallets, orders, and trading history. This action cannot be undone.",
+        "clearAll": "Clear All Data"
+      },
+      "confirmClearAll": "Are you sure you want to clear all trading data? This action cannot be undone."
     }
   },
   "chat": {
@@ -427,12 +445,17 @@
       "balance": "Balance",
       "totalPnL": "Total P&L",
       "viewPerformance": "View Performance",
-      "delete": "Delete Wallet"
+      "delete": "Delete Wallet",
+      "performanceTitle": "Performance - {{name}}",
+      "currentBalance": "Current Balance",
+      "tradeDays": "Trade Days",
+      "avgDailyReturn": "Avg Daily Return"
     },
     "ticket": {
       "title": "Order Ticket",
       "noWallet": "Please create and select a wallet first.",
       "activeWallet": "Active Wallet",
+      "symbol": "Symbol",
       "orderType": "Order Type",
       "long": "Long (Buy)",
       "short": "Short (Sell)",
@@ -450,13 +473,17 @@
       "title": "Portfolio",
       "noWallet": "Please create and select a wallet first.",
       "empty": "No open positions.",
-      "totalPositions": "Total Positions",
-      "totalPnL": "Total P&L",
+      "activePositions": "Active Positions",
+      "totalExposure": "Total Exposure",
+      "unrealizedPnL": "Unrealized P&L",
       "orders": "orders",
+      "orderCount": "Orders",
       "quantity": "Quantity",
+      "totalQuantity": "Total Quantity",
       "avgPrice": "Avg Price",
       "currentPrice": "Current Price",
-      "pnl": "P&L"
+      "pnl": "P&L",
+      "position": "Position"
     },
     "orders": {
       "title": "Orders",
@@ -473,6 +500,9 @@
       "statusClosed": "Closed",
       "statusCancelled": "Cancelled",
       "statusExpired": "Expired",
+      "createdAt": "Created",
+      "filledAt": "Filled",
+      "closedAt": "Closed",
       "quantity": "Quantity",
       "entryPrice": "Entry Price",
       "currentPrice": "Current Price",
@@ -481,7 +511,24 @@
       "pnl": "P&L",
       "close": "Close Order",
       "cancel": "Cancel Order"
-    }
+    },
+    "notifications": {
+      "orderFilled": "Order Filled",
+      "orderFilledDesc": "{{order}} filled at {{price}}",
+      "orderClosed": "Order Closed",
+      "orderClosedProfit": "{{order}} closed with profit: {{pnl}} ({{percent}}%)",
+      "orderClosedLoss": "{{order}} closed with loss: {{pnl}} ({{percent}}%)",
+      "orderCancelled": "Order Cancelled",
+      "orderCancelledDesc": "{{order}} has been cancelled",
+      "orderExpired": "Order Expired",
+      "orderExpiredDesc": "{{order}} has expired"
+    },
+    "closeOrder": "Close Order",
+    "closeOrderConfirm": "Close {{type}} order at entry {{entry}}? Current price: {{current}}",
+    "removeSLTPConfirm": "Remove {{type}} from all orders in this position?",
+    "confirmClose": "Confirm Close",
+    "active": "ACTIVE",
+    "pending": "PENDING"
   },
   "about": {
     "version": "Version {{version}}",

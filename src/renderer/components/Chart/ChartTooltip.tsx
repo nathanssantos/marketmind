@@ -1,7 +1,9 @@
-import { formatPrice, formatTimestamp } from '@/renderer/utils/formatters';
+import { formatDateTimeTooltip, formatPrice } from '@/renderer/utils/formatters';
 import { Box, HStack, Stack, Text } from '@chakra-ui/react';
 import type { AIStudy, Candle } from '@shared/types';
+import type { Order } from '@shared/types/trading';
 import type { ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface ChartTooltipProps {
   candle: Candle | null;
@@ -24,6 +26,8 @@ export interface ChartTooltipProps {
     startPrice: number;
     endPrice: number;
   } | undefined;
+  order?: Order | null | undefined;
+  currentPrice?: number | undefined;
 }
 
 export const ChartTooltip = ({
@@ -36,8 +40,12 @@ export const ChartTooltip = ({
   aiStudy,
   movingAverage,
   measurement,
+  order,
+  currentPrice,
 }: ChartTooltipProps): ReactElement | null => {
-  if (!visible || (!candle && !aiStudy && !movingAverage && !measurement)) return null;
+  const { t } = useTranslation();
+
+  if (!visible || (!candle && !aiStudy && !movingAverage && !measurement && !order)) return null;
 
   const isBullish = candle ? candle.close >= candle.open : false;
   const change = candle ? candle.close - candle.open : 0;
@@ -68,7 +76,7 @@ export const ChartTooltip = ({
 
   if (measurement) {
     const isPositive = measurement.priceChange >= 0;
-    
+
     return (
       <Box
         position="absolute"
@@ -88,6 +96,9 @@ export const ChartTooltip = ({
         borderColor="border"
       >
         <Stack gap={1.5}>
+          <Text fontSize="2xs" color="fg.muted" mb={1}>
+            {candle ? formatDateTimeTooltip(candle.timestamp) : ''}
+          </Text>
           <HStack gap={1.5}>
             <Text>📏</Text>
             <Text fontWeight="semibold" color="blue.500">
@@ -123,21 +134,30 @@ export const ChartTooltip = ({
     );
   }
 
-  if (aiStudy) {
-    const studyTypeLabel = aiStudy.type.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-    const isLine = 'points' in aiStudy;
-    
-    let priceValue: number | undefined;
-    let topPriceValue: number | undefined;
-    let bottomPriceValue: number | undefined;
-    
-    if (isLine && 'points' in aiStudy && aiStudy.points.length >= 2) {
-      priceValue = (aiStudy.points[0].price + aiStudy.points[1].price) / 2;
-    } else if ('topPrice' in aiStudy && 'bottomPrice' in aiStudy) {
-      topPriceValue = aiStudy.topPrice;
-      bottomPriceValue = aiStudy.bottomPrice;
+  if (order) {
+    const isLong = order.type === 'long';
+    const isActive = order.status === 'active';
+    const isPending = order.status === 'pending';
+    const isPosition = 'metadata' in order && order.metadata?.isPosition;
+    const positionData = isPosition ? order.metadata?.positionData : null;
+
+    let pnl = 0;
+    let pnlPercent = 0;
+
+    if (isActive && currentPrice) {
+      if (isPosition && positionData) {
+        pnl = positionData.totalPnL;
+        const totalInvestment = positionData.avgPrice * positionData.totalQuantity;
+        pnlPercent = (pnl / totalInvestment) * 100;
+      } else {
+        const priceChange = currentPrice - order.entryPrice;
+        pnl = priceChange * order.quantity * (isLong ? 1 : -1);
+        pnlPercent = (pnl / (order.entryPrice * order.quantity)) * 100;
+      }
     }
-    
+
+    const isProfitable = pnl >= 0;
+
     return (
       <Box
         position="absolute"
@@ -157,6 +177,114 @@ export const ChartTooltip = ({
         borderColor="border"
       >
         <Stack gap={1.5}>
+          <Text fontSize="2xs" color="fg.muted" mb={1}>
+            {formatDateTimeTooltip(order.createdAt)}
+          </Text>
+          <HStack gap={1.5}>
+            <Text>{isLong ? '📈' : '📉'}</Text>
+            <Text fontWeight="semibold" color={isLong ? 'green.500' : 'red.500'}>
+              {t(`trading.ticket.${order.type}`)} {isPosition ? '' : isPending ? `(${t('trading.orders.statusPending')})` : ''}
+            </Text>
+          </HStack>
+
+          {isPosition && positionData && (
+            <HStack justify="space-between">
+              <Text color="fg.muted">{t('trading.portfolio.orderCount')}:</Text>
+              <Text fontWeight="medium">{positionData.orders.length}x</Text>
+            </HStack>
+          )}
+
+          <HStack justify="space-between">
+            <Text color="fg.muted">{t('trading.ticket.symbol')}:</Text>
+            <Text fontWeight="medium">{order.symbol}</Text>
+          </HStack>
+
+          <HStack justify="space-between">
+            <Text color="fg.muted">{isPosition ? t('trading.portfolio.totalQuantity') : t('trading.ticket.quantity')}:</Text>
+            <Text fontWeight="medium">{order.quantity.toFixed(8)}</Text>
+          </HStack>
+
+          <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+            <Text color="fg.muted">{isPosition ? t('trading.portfolio.avgPrice') : t('trading.ticket.entryPrice')}:</Text>
+            <Text fontWeight="medium">{order.entryPrice.toFixed(2)}</Text>
+          </HStack>
+
+          {isActive && currentPrice && (
+            <>
+              <HStack justify="space-between">
+                <Text color="fg.muted">{t('trading.portfolio.currentPrice')}:</Text>
+                <Text fontWeight="medium">{currentPrice.toFixed(2)}</Text>
+              </HStack>
+
+              <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+                <Text color="fg.muted">{t('trading.portfolio.pnl')}:</Text>
+                <Text
+                  fontWeight="semibold"
+                  color={isProfitable ? 'green.500' : 'red.500'}
+                >
+                  {isProfitable ? '+' : ''}
+                  {pnl.toFixed(2)} ({isProfitable ? '+' : ''}
+                  {pnlPercent.toFixed(2)}%)
+                </Text>
+              </HStack>
+            </>
+          )}
+
+          {order.stopLoss && (
+            <HStack justify="space-between">
+              <Text color="fg.muted">Stop Loss:</Text>
+              <Text fontWeight="medium" color="red.500">{order.stopLoss.toFixed(2)}</Text>
+            </HStack>
+          )}
+
+          {order.takeProfit && (
+            <HStack justify="space-between">
+              <Text color="fg.muted">Take Profit:</Text>
+              <Text fontWeight="medium" color="green.500">{order.takeProfit.toFixed(2)}</Text>
+            </HStack>
+          )}
+        </Stack>
+      </Box>
+    );
+  }
+
+  if (aiStudy) {
+    const studyTypeLabel = aiStudy.type.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+    const isLine = 'points' in aiStudy;
+
+    let priceValue: number | undefined;
+    let topPriceValue: number | undefined;
+    let bottomPriceValue: number | undefined;
+
+    if (isLine && 'points' in aiStudy && aiStudy.points.length >= 2) {
+      priceValue = (aiStudy.points[0].price + aiStudy.points[1].price) / 2;
+    } else if ('topPrice' in aiStudy && 'bottomPrice' in aiStudy) {
+      topPriceValue = aiStudy.topPrice;
+      bottomPriceValue = aiStudy.bottomPrice;
+    }
+
+    return (
+      <Box
+        position="absolute"
+        left={`${leftPos}px`}
+        top={`${topPos}px`}
+        bg="bg.muted"
+        color="fg"
+        p={3}
+        borderRadius="md"
+        boxShadow="lg"
+        fontSize="xs"
+        zIndex={1000}
+        pointerEvents="none"
+        opacity={0.95}
+        minW={`${tooltipWidth}px`}
+        borderWidth={1}
+        borderColor="border"
+      >
+        <Stack gap={1.5}>
+          <Text fontSize="2xs" color="fg.muted" mb={1}>
+            {formatDateTimeTooltip(aiStudy.timestamp)}
+          </Text>
           <HStack gap={1.5}>
             <Text>🤖</Text>
             <Text fontWeight="semibold" color="blue.500">
@@ -188,7 +316,7 @@ export const ChartTooltip = ({
 
   if (movingAverage) {
     const maTypeLabel = movingAverage.type === 'SMA' ? 'Simple Moving Average' : 'Exponential Moving Average';
-    
+
     return (
       <Box
         position="absolute"
@@ -208,6 +336,9 @@ export const ChartTooltip = ({
         borderColor="border"
       >
         <Stack gap={1.5}>
+          <Text fontSize="2xs" color="fg.muted" mb={1}>
+            {candle ? formatDateTimeTooltip(candle.timestamp) : ''}
+          </Text>
           <HStack gap={1.5}>
             <Box w={3} h={3} bg={movingAverage.color} borderRadius="sm" />
             <Text fontWeight="semibold">
@@ -245,8 +376,8 @@ export const ChartTooltip = ({
       borderColor="border"
     >
       <Stack gap={1.5}>
-        <Text fontWeight="semibold" color="fg.muted">
-          {candle ? formatTimestamp(candle.timestamp) : ''}
+        <Text fontSize="2xs" color="fg.muted" mb={1}>
+          {candle ? formatDateTimeTooltip(candle.timestamp) : ''}
         </Text>
 
         {candle && (

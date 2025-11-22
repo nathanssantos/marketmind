@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Trading Simulator - Balance Calculation Bug** 🐛
+  - Fixed incorrect balance calculation when closing positions (was showing 400% profit)
+  - Now correctly returns investment capital + net P&L when closing positions
+  - Formula: `balance = balance + totalInvestment + netPnL`
+  - All 814 tests passing with correct balance calculations
+
+- **Trading Simulator - Wallet Performance Dialog** 📊
+  - Fixed trade days calculation showing incorrect number of days
+  - Changed from counting performance records to actual calendar days since wallet creation
+  - Now accurately displays days since wallet was created
+
+- **Chart - Candle Transition Bugs** 🕯️
+  - Fixed candles not appearing or having incorrect format when transitioning to new candle
+  - Fixed timer freezing at 00:00 when new candle starts
+  - Fixed divergences when changing timeframe (resolved without app reload)
+  - Improved real-time candle update logic to handle transitions correctly
+  - Added automatic reset of live candles when symbol/timeframe changes
+  - Added detection of complete data changes to properly reset viewport
+
+- **Chart - Auto-scroll Functionality** 📜
+  - Implemented automatic scroll when viewing the last candle
+  - Chart automatically follows new candles in real-time
+  - Auto-scroll intelligently disables when user navigates to historical data
+  - Auto-scroll re-enables when user returns to the latest candles
+  - Works correctly with pan (drag), zoom (wheel), and manual navigation
+
+### Changed
+- **Chart - Tooltip Improvements** 🏷️
+  - All tooltips now display full date and time (DD/MM/YYYY HH:MM:SS)
+  - Applied to: candle tooltips, order tooltips, AI study tooltips, moving average tooltips, measurement tooltips
+  - Created `formatDateTimeTooltip()` utility function for consistent formatting
+  - Better context awareness when analyzing chart data
+
+- **Trading Simulator - UI Improvements** 🎨
+  - Increased buy/sell button size from `2xs` to `xs` for better usability
+  - Improved button clickability in OrderTicket component
+
+## [Unreleased - Previous Session]
+
 ### Added
 - **Trading Simulator Mode - Complete Implementation** 🎉
   

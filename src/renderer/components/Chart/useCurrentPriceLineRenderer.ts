@@ -13,6 +13,8 @@ interface UseCurrentPriceLineRendererProps {
 
 interface UseCurrentPriceLineRendererReturn {
   render: () => void;
+  renderLine: () => void;
+  renderLabel: () => void;
 }
 
 export const useCurrentPriceLineRenderer = ({
@@ -23,7 +25,7 @@ export const useCurrentPriceLineRenderer = ({
   lineStyle = 'dashed',
   rightMargin = 72,
 }: UseCurrentPriceLineRendererProps): UseCurrentPriceLineRendererReturn => {
-  const render = useCallback((): void => {
+  const renderLine = useCallback((): void => {
     if (!enabled || !manager) return;
 
     const ctx = manager.getContext();
@@ -38,11 +40,9 @@ export const useCurrentPriceLineRenderer = ({
 
     const currentPrice = lastCandle.close;
     const { width } = dimensions;
-
     const y = manager.priceToY(currentPrice);
 
     ctx.save();
-    
     ctx.strokeStyle = colors.bullish;
     ctx.lineWidth = lineWidth;
     ctx.globalAlpha = 0.8;
@@ -60,16 +60,35 @@ export const useCurrentPriceLineRenderer = ({
     ctx.moveTo(0, y);
     ctx.lineTo(lineEndX, y);
     ctx.stroke();
+    ctx.restore();
+  }, [enabled, manager, colors, lineWidth, lineStyle, rightMargin, manager?.getCandles()]);
 
-    ctx.setLineDash([]);
-    ctx.globalAlpha = 1.0;
+  const renderLabel = useCallback((): void => {
+    if (!manager) return;
 
+    const ctx = manager.getContext();
+    const dimensions = manager.getDimensions();
+    const bounds = manager.getBounds();
+    const candles = manager.getCandles();
+    
+    if (!candles.length || !ctx || !dimensions || !bounds) return;
+
+    const lastCandle = candles[candles.length - 1];
+    if (!lastCandle) return;
+
+    const currentPrice = lastCandle.close;
+    const { width } = dimensions;
+    const y = manager.priceToY(currentPrice);
+
+    ctx.save();
+    
     const priceText = currentPrice.toFixed(2);
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     
     const labelPadding = 8;
+    const lineEndX = width - rightMargin;
     const labelX = lineEndX;
     const labelWidth = rightMargin;
     const labelHeight = 18;
@@ -90,7 +109,12 @@ export const useCurrentPriceLineRenderer = ({
     ctx.fillText(priceText, labelX + arrowWidth + labelPadding, y);
 
     ctx.restore();
-  }, [enabled, manager, colors, lineWidth, lineStyle, rightMargin, manager?.getCandles()]);
+  }, [manager, colors, rightMargin, manager?.getCandles()]);
 
-  return { render };
+  const render = useCallback((): void => {
+    renderLine();
+    renderLabel();
+  }, [renderLine, renderLabel]);
+
+  return { render, renderLine, renderLabel };
 };

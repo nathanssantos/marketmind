@@ -21,7 +21,8 @@
     "selectModel": "Selecionar Modelo",
     "openChat": "Abrir chat",
     "deleteConversation": "Excluir conversa",
-    "conversationHistory": "Histórico de conversas"
+    "conversationHistory": "Histórico de conversas",
+    "tips": "Dicas"
   },
   "app": {
     "title": "MarketMind",
@@ -53,6 +54,7 @@
       "chart": "Gráfico",
       "ai": "Configuração de IA",
       "news": "Notícias",
+      "tradingSimulator": "Simulador de Trading",
       "about": "Sobre"
     },
     "language": {
@@ -189,6 +191,23 @@
       "tipValidJson": "O prompt deve estar em formato JSON válido",
       "tipFormat": "Use o botão 'Formatar JSON' para formatar automaticamente seu JSON",
       "tipBackup": "Mantenha um backup antes de fazer grandes mudanças nos prompts"
+    },
+    "tradingSimulator": {
+      "title": "Configurações do Simulador de Trading",
+      "description": "Gerencie seus dados e configurações do simulador de trading.",
+      "statistics": {
+        "title": "Estatísticas",
+        "wallets": "Total de Carteiras",
+        "orders": "Total de Ordens",
+        "activeOrders": "Ordens Ativas",
+        "pendingOrders": "Ordens Pendentes"
+      },
+      "dangerZone": {
+        "title": "Zona de Perigo",
+        "description": "Limpar todos os dados irá deletar permanentemente todas as carteiras, ordens e histórico de trading. Esta ação não pode ser desfeita.",
+        "clearAll": "Limpar Todos os Dados"
+      },
+      "confirmClearAll": "Tem certeza que deseja limpar todos os dados de trading? Esta ação não pode ser desfeita."
     }
   },
   "chat": {
@@ -426,12 +445,17 @@
       "balance": "Saldo",
       "totalPnL": "L&P Total",
       "viewPerformance": "Ver Desempenho",
-      "delete": "Excluir Carteira"
+      "delete": "Excluir Carteira",
+      "performanceTitle": "Desempenho - {{name}}",
+      "currentBalance": "Saldo Atual",
+      "tradeDays": "Dias de Negociação",
+      "avgDailyReturn": "Retorno Médio Diário"
     },
     "ticket": {
-      "title": "Ordem",
+      "title": "Ticket de Ordem",
       "noWallet": "Por favor, crie e selecione uma carteira primeiro.",
       "activeWallet": "Carteira Ativa",
+      "symbol": "Símbolo",
       "orderType": "Tipo de Ordem",
       "long": "Compra (Long)",
       "short": "Venda (Short)",
@@ -442,20 +466,24 @@
       "takeProfit": "Take Profit",
       "optional": "Opcional",
       "totalCost": "Custo Total",
-      "buy": "Comprar",
-      "sell": "Vender"
+      "buy": "Comprar Long",
+      "sell": "Vender Short"
     },
     "portfolio": {
       "title": "Portfólio",
       "noWallet": "Por favor, crie e selecione uma carteira primeiro.",
       "empty": "Nenhuma posição aberta.",
-      "totalPositions": "Posições Totais",
-      "totalPnL": "L&P Total",
+      "activePositions": "Posições Ativas",
+      "totalExposure": "Exposição Total",
+      "unrealizedPnL": "L&P Não Realizado",
       "orders": "ordens",
+      "orderCount": "Ordens",
       "quantity": "Quantidade",
+      "totalQuantity": "Quantidade Total",
       "avgPrice": "Preço Médio",
       "currentPrice": "Preço Atual",
-      "pnl": "L&P"
+      "pnl": "L&P",
+      "position": "Posição"
     },
     "orders": {
       "title": "Ordens",
@@ -472,6 +500,9 @@
       "statusClosed": "Fechada",
       "statusCancelled": "Cancelada",
       "statusExpired": "Expirada",
+      "createdAt": "Criada",
+      "filledAt": "Executada",
+      "closedAt": "Fechada",
       "quantity": "Quantidade",
       "entryPrice": "Preço de Entrada",
       "currentPrice": "Preço Atual",
@@ -480,7 +511,24 @@
       "pnl": "L&P",
       "close": "Fechar Ordem",
       "cancel": "Cancelar Ordem"
-    }
+    },
+    "notifications": {
+      "orderFilled": "Ordem Executada",
+      "orderFilledDesc": "{{order}} executada em {{price}}",
+      "orderClosed": "Ordem Fechada",
+      "orderClosedProfit": "{{order}} fechada com lucro: {{pnl}} ({{percent}}%)",
+      "orderClosedLoss": "{{order}} fechada com prejuízo: {{pnl}} ({{percent}}%)",
+      "orderCancelled": "Ordem Cancelada",
+      "orderCancelledDesc": "{{order}} foi cancelada",
+      "orderExpired": "Ordem Expirada",
+      "orderExpiredDesc": "{{order}} expirou"
+    },
+    "closeOrder": "Fechar Ordem",
+    "closeOrderConfirm": "Fechar ordem {{type}} com entrada em {{entry}}? Preço atual: {{current}}",
+    "removeSLTPConfirm": "Remover {{type}} de todas as ordens desta posição?",
+    "confirmClose": "Confirmar Fechamento",
+    "active": "ATIVA",
+    "pending": "PENDENTE"
   },
   "about": {
     "version": "Versão {{version}}",
