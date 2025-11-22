@@ -40,13 +40,13 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
         </Text>
       </Flex>
 
-      <Flex align="center" gap={3}>
+      <Flex align="center" gap={2}>
         <TooltipWrapper label={`${t('header.theme')}: ${colorMode === 'dark' ? t('header.themeDark') : t('header.themeLight')}`} placement="bottom" showArrow>
           <IconButton
             aria-label={t('header.toggleColorMode')}
             onClick={toggleColorMode}
             variant="ghost"
-            size="xs"
+            size="2xs"
           >
             {colorMode === 'dark' ? <LuSun /> : <LuMoon />}
           </IconButton>
@@ -56,7 +56,7 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
             aria-label={t('header.showKeyboardShortcuts')}
             onClick={() => setShowShortcuts(true)}
             variant="ghost"
-            size="xs"
+            size="2xs"
           >
             <LuTerminal />
           </IconButton>
@@ -66,7 +66,7 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
             aria-label={t('header.settings')}
             onClick={onSettingsClick}
             variant="ghost"
-            size="xs"
+            size="2xs"
           >
             <LuSettings />
           </IconButton>

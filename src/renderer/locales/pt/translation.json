@@ -398,6 +398,90 @@
       "gemini15Flash8b": "$0.0375/$0.15 por 1M tokens"
     }
   },
+  "trading": {
+    "simulator": {
+      "toggle": "Simulador de Trading",
+      "active": "Simulador Ativo",
+      "inactive": "Simulador Inativo"
+    },
+    "sidebar": {
+      "title": "Simulador de Trading",
+      "close": "Fechar barra de trading"
+    },
+    "tabs": {
+      "wallets": "Carteiras",
+      "ticket": "Ordem",
+      "portfolio": "Portfólio",
+      "orders": "Ordens"
+    },
+    "wallets": {
+      "title": "Carteiras",
+      "create": "Criar Carteira",
+      "createTitle": "Criar Nova Carteira",
+      "empty": "Nenhuma carteira ainda. Crie uma para começar a negociar.",
+      "name": "Nome da Carteira",
+      "namePlaceholder": "Minha Carteira",
+      "initialBalance": "Saldo Inicial",
+      "currency": "Moeda",
+      "balance": "Saldo",
+      "totalPnL": "L&P Total",
+      "viewPerformance": "Ver Desempenho",
+      "delete": "Excluir Carteira"
+    },
+    "ticket": {
+      "title": "Ordem",
+      "noWallet": "Por favor, crie e selecione uma carteira primeiro.",
+      "activeWallet": "Carteira Ativa",
+      "orderType": "Tipo de Ordem",
+      "long": "Compra (Long)",
+      "short": "Venda (Short)",
+      "quantity": "Quantidade",
+      "entryPrice": "Preço de Entrada",
+      "useCurrent": "Usar Atual",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "optional": "Opcional",
+      "totalCost": "Custo Total",
+      "buy": "Comprar",
+      "sell": "Vender"
+    },
+    "portfolio": {
+      "title": "Portfólio",
+      "noWallet": "Por favor, crie e selecione uma carteira primeiro.",
+      "empty": "Nenhuma posição aberta.",
+      "totalPositions": "Posições Totais",
+      "totalPnL": "L&P Total",
+      "orders": "ordens",
+      "quantity": "Quantidade",
+      "avgPrice": "Preço Médio",
+      "currentPrice": "Preço Atual",
+      "pnl": "L&P"
+    },
+    "orders": {
+      "title": "Ordens",
+      "noWallet": "Por favor, crie e selecione uma carteira primeiro.",
+      "empty": "Nenhuma ordem encontrada.",
+      "total": "Total de Ordens",
+      "active": "Ativas",
+      "pending": "Pendentes",
+      "filterByStatus": "Filtrar por Status",
+      "allStatuses": "Todos os Status",
+      "statusPending": "Pendente",
+      "statusActive": "Ativa",
+      "statusFilled": "Executada",
+      "statusClosed": "Fechada",
+      "statusCancelled": "Cancelada",
+      "statusExpired": "Expirada",
+      "quantity": "Quantidade",
+      "entryPrice": "Preço de Entrada",
+      "currentPrice": "Preço Atual",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "pnl": "L&P",
+      "close": "Fechar Ordem",
+      "cancel": "Cancelar Ordem"
+    }
+  },
   "about": {
     "version": "Versão {{version}}",
     "description": "Um assistente de trading com IA que combina visualização avançada de gráficos financeiros com inteligência artificial para fornecer insights sobre criptomoedas, ações e outros ativos negociáveis.",

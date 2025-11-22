@@ -398,6 +398,90 @@
       "gemini15Flash8b": "$0.0375/$0.15 por 1M tokens"
     }
   },
+  "trading": {
+    "simulator": {
+      "toggle": "Simulador de Trading",
+      "active": "Simulador Activo",
+      "inactive": "Simulador Inactivo"
+    },
+    "sidebar": {
+      "title": "Simulador de Trading",
+      "close": "Cerrar barra de trading"
+    },
+    "tabs": {
+      "wallets": "Carteras",
+      "ticket": "Orden",
+      "portfolio": "Portafolio",
+      "orders": "Órdenes"
+    },
+    "wallets": {
+      "title": "Carteras",
+      "create": "Crear Cartera",
+      "createTitle": "Crear Nueva Cartera",
+      "empty": "No hay carteras todavía. Crea una para comenzar a operar.",
+      "name": "Nombre de la Cartera",
+      "namePlaceholder": "Mi Cartera",
+      "initialBalance": "Saldo Inicial",
+      "currency": "Moneda",
+      "balance": "Saldo",
+      "totalPnL": "P&G Total",
+      "viewPerformance": "Ver Rendimiento",
+      "delete": "Eliminar Cartera"
+    },
+    "ticket": {
+      "title": "Orden",
+      "noWallet": "Por favor, crea y selecciona una cartera primero.",
+      "activeWallet": "Cartera Activa",
+      "orderType": "Tipo de Orden",
+      "long": "Compra (Long)",
+      "short": "Venta (Short)",
+      "quantity": "Cantidad",
+      "entryPrice": "Precio de Entrada",
+      "useCurrent": "Usar Actual",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "optional": "Opcional",
+      "totalCost": "Costo Total",
+      "buy": "Comprar",
+      "sell": "Vender"
+    },
+    "portfolio": {
+      "title": "Portafolio",
+      "noWallet": "Por favor, crea y selecciona una cartera primero.",
+      "empty": "No hay posiciones abiertas.",
+      "totalPositions": "Posiciones Totales",
+      "totalPnL": "P&G Total",
+      "orders": "órdenes",
+      "quantity": "Cantidad",
+      "avgPrice": "Precio Promedio",
+      "currentPrice": "Precio Actual",
+      "pnl": "P&G"
+    },
+    "orders": {
+      "title": "Órdenes",
+      "noWallet": "Por favor, crea y selecciona una cartera primero.",
+      "empty": "No se encontraron órdenes.",
+      "total": "Total de Órdenes",
+      "active": "Activas",
+      "pending": "Pendientes",
+      "filterByStatus": "Filtrar por Estado",
+      "allStatuses": "Todos los Estados",
+      "statusPending": "Pendiente",
+      "statusActive": "Activa",
+      "statusFilled": "Ejecutada",
+      "statusClosed": "Cerrada",
+      "statusCancelled": "Cancelada",
+      "statusExpired": "Expirada",
+      "quantity": "Cantidad",
+      "entryPrice": "Precio de Entrada",
+      "currentPrice": "Precio Actual",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "pnl": "P&G",
+      "close": "Cerrar Orden",
+      "cancel": "Cancelar Orden"
+    }
+  },
   "about": {
     "version": "Versión {{version}}",
     "description": "Un asistente de trading con IA que combina visualización avanzada de gráficos financieros con inteligencia artificial para proporcionar información sobre criptomonedas, acciones y otros activos negociables.",

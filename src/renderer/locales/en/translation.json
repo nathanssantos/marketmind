@@ -399,6 +399,90 @@
       "gemini15Flash8b": "$0.0375/$0.15 per 1M tokens"
     }
   },
+  "trading": {
+    "simulator": {
+      "toggle": "Trading Simulator",
+      "active": "Simulator Active",
+      "inactive": "Simulator Inactive"
+    },
+    "sidebar": {
+      "title": "Trading Simulator",
+      "close": "Close trading sidebar"
+    },
+    "tabs": {
+      "wallets": "Wallets",
+      "ticket": "Order Ticket",
+      "portfolio": "Portfolio",
+      "orders": "Orders"
+    },
+    "wallets": {
+      "title": "Wallets",
+      "create": "Create Wallet",
+      "createTitle": "Create New Wallet",
+      "empty": "No wallets yet. Create one to start trading.",
+      "name": "Wallet Name",
+      "namePlaceholder": "My Wallet",
+      "initialBalance": "Initial Balance",
+      "currency": "Currency",
+      "balance": "Balance",
+      "totalPnL": "Total P&L",
+      "viewPerformance": "View Performance",
+      "delete": "Delete Wallet"
+    },
+    "ticket": {
+      "title": "Order Ticket",
+      "noWallet": "Please create and select a wallet first.",
+      "activeWallet": "Active Wallet",
+      "orderType": "Order Type",
+      "long": "Long (Buy)",
+      "short": "Short (Sell)",
+      "quantity": "Quantity",
+      "entryPrice": "Entry Price",
+      "useCurrent": "Use Current",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "optional": "Optional",
+      "totalCost": "Total Cost",
+      "buy": "Buy Long",
+      "sell": "Sell Short"
+    },
+    "portfolio": {
+      "title": "Portfolio",
+      "noWallet": "Please create and select a wallet first.",
+      "empty": "No open positions.",
+      "totalPositions": "Total Positions",
+      "totalPnL": "Total P&L",
+      "orders": "orders",
+      "quantity": "Quantity",
+      "avgPrice": "Avg Price",
+      "currentPrice": "Current Price",
+      "pnl": "P&L"
+    },
+    "orders": {
+      "title": "Orders",
+      "noWallet": "Please create and select a wallet first.",
+      "empty": "No orders found.",
+      "total": "Total Orders",
+      "active": "Active",
+      "pending": "Pending",
+      "filterByStatus": "Filter by Status",
+      "allStatuses": "All Statuses",
+      "statusPending": "Pending",
+      "statusActive": "Active",
+      "statusFilled": "Filled",
+      "statusClosed": "Closed",
+      "statusCancelled": "Cancelled",
+      "statusExpired": "Expired",
+      "quantity": "Quantity",
+      "entryPrice": "Entry Price",
+      "currentPrice": "Current Price",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "pnl": "P&L",
+      "close": "Close Order",
+      "cancel": "Cancel Order"
+    }
+  },
   "about": {
     "version": "Version {{version}}",
     "description": "An AI-powered trading assistant that combines advanced financial chart visualization with artificial intelligence to provide insights on cryptocurrencies, stocks, and other tradeable assets.",

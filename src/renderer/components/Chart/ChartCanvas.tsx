@@ -1,10 +1,12 @@
 import { Box } from '@chakra-ui/react';
 import { useChartColors } from '@renderer/hooks/useChartColors';
+import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
+import { useTradingStore } from '@renderer/store/tradingStore';
 import { calculateMovingAverage } from '@renderer/utils/movingAverages';
 import { CHART_CONFIG } from '@shared/constants';
 import type { AIStudy, Candle, Viewport } from '@shared/types';
 import type { ReactElement } from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import { AIStudyRenderer } from './AIStudyRenderer';
 import { CandleTimer } from './CandleTimer';
@@ -18,6 +20,7 @@ import { useCurrentPriceLineRenderer } from './useCurrentPriceLineRenderer';
 import { useGridRenderer } from './useGridRenderer';
 import { useLineChartRenderer } from './useLineChartRenderer';
 import { useMovingAverageRenderer, type MovingAverageConfig } from './useMovingAverageRenderer';
+import { useOrderLinesRenderer } from './useOrderLinesRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
 
 export interface ChartCanvasProps {
@@ -64,6 +67,29 @@ export const ChartCanvas = ({
   timeframe = '1h',
 }: ChartCanvasProps): ReactElement => {
   const colors = useChartColors();
+  const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
+  const getActiveWallet = useTradingStore((state) => state.getActiveWallet);
+
+  const handleLongEntry = useCallback((price: number) => {
+    const wallet = getActiveWallet();
+    if (!wallet) return;
+
+    console.log('Long entry at price:', price);
+  }, [getActiveWallet]);
+
+  const handleShortEntry = useCallback((price: number) => {
+    const wallet = getActiveWallet();
+    if (!wallet) return;
+
+    console.log('Short entry at price:', price);
+  }, [getActiveWallet]);
+
+  const { shiftPressed, altPressed } = useTradingShortcuts({
+    onLongEntry: handleLongEntry,
+    onShortEntry: handleShortEntry,
+    enabled: isSimulatorActive,
+  });
+
   const [tooltipData, setTooltipData] = useState<{
     candle: Candle | null;
     x: number;
@@ -180,6 +206,8 @@ export const ChartCanvas = ({
     lineStyle: 'solid',
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
   });
+
+  const { renderOrderLines } = useOrderLinesRenderer(manager, isSimulatorActive);
 
   const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>): void => {
     if (isMeasuring && manager && canvasRef.current && measurementArea) {
@@ -495,6 +523,19 @@ export const ChartCanvas = ({
   };
 
   const handleCanvasMouseDown = (event: React.MouseEvent<HTMLCanvasElement>): void => {
+    if (isSimulatorActive && manager && canvasRef.current && (shiftPressed || altPressed)) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const mouseY = event.clientY - rect.top;
+      const price = manager.yToPrice(mouseY);
+
+      if (shiftPressed) {
+        handleLongEntry(price);
+      } else if (altPressed) {
+        handleShortEntry(price);
+      }
+      return;
+    }
+
     if ((showMeasurementRuler || showMeasurementArea) && manager && canvasRef.current) {
       const rect = canvasRef.current.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
@@ -587,6 +628,7 @@ export const ChartCanvas = ({
       renderMovingAverages();
       renderCurrentPriceLine();
       renderCrosshairPriceLine();
+      renderOrderLines();
 
       if (measurementArea && isMeasuring) {
         const ctx = manager.getContext();
@@ -640,7 +682,7 @@ export const ChartCanvas = ({
     return () => {
       manager.setRenderCallback(null);
     };
-  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine, renderCrosshairPriceLine, chartType, measurementArea, isMeasuring, colors, showMeasurementRuler, showMeasurementArea]);
+  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine, renderCrosshairPriceLine, renderOrderLines, chartType, measurementArea, isMeasuring, colors, showMeasurementRuler, showMeasurementArea]);
 
   return (
     <Box
