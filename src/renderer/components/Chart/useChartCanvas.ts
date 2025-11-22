@@ -94,18 +94,26 @@ export const useChartCanvas = ({
   }, []);
 
   const prevCandleCountRef = useRef<number>(candles.length);
+  const wasAtEndRef = useRef<boolean>(true);
+  const prevFirstCandleTimestampRef = useRef<number>(candles[0]?.timestamp || 0);
 
   useEffect(() => {
     if (managerRef.current) {
       const prevCount = prevCandleCountRef.current;
       const currentCount = candles.length;
+      const firstCandleTimestamp = candles[0]?.timestamp || 0;
+      const prevFirstCandleTimestamp = prevFirstCandleTimestampRef.current;
+      
+      const currentViewport = managerRef.current.getViewport();
+      const wasAtEnd = wasAtEndRef.current || Math.abs(currentViewport.end - prevCount) < 1;
       
       managerRef.current.setCandles(candles);
       
       const countDiffPercentage = Math.abs(currentCount - prevCount) / Math.max(prevCount, 1);
       const isSignificantChange = countDiffPercentage > 0.1;
+      const isCompleteDataChange = firstCandleTimestamp !== prevFirstCandleTimestamp && currentCount > 0;
       
-      if (initialViewport === DEFAULT_VIEWPORT && isSignificantChange) {
+      if (initialViewport === DEFAULT_VIEWPORT && (isSignificantChange || isCompleteDataChange)) {
         const visibleCount = Math.min(100, currentCount);
         
         const newViewport = {
@@ -119,9 +127,25 @@ export const useChartCanvas = ({
         onViewportChange?.(newViewport);
         
         managerRef.current.resetVerticalZoom();
+        wasAtEndRef.current = true;
+      } else if (wasAtEnd && currentCount > prevCount && !isCompleteDataChange) {
+        const candlesAdded = currentCount - prevCount;
+        const newViewport = {
+          ...currentViewport,
+          start: currentViewport.start + candlesAdded,
+          end: currentCount,
+        };
+        
+        setViewport(newViewport);
+        managerRef.current.setViewport(newViewport);
+        onViewportChange?.(newViewport);
+        wasAtEndRef.current = true;
+      } else {
+        wasAtEndRef.current = Math.abs(currentViewport.end - currentCount) < 1;
       }
       
       prevCandleCountRef.current = currentCount;
+      prevFirstCandleTimestampRef.current = firstCandleTimestamp;
     }
   }, [candles]);
 
@@ -155,7 +179,9 @@ export const useChartCanvas = ({
       const delta = event.deltaY > 0 ? -1 : 1;
 
       managerRef.current.zoom(delta, mouseX);
-      updateViewport(managerRef.current.getViewport());
+      const newViewport = managerRef.current.getViewport();
+      updateViewport(newViewport);
+      wasAtEndRef.current = Math.abs(newViewport.end - candles.length) < 1;
     };
 
     canvas.addEventListener('wheel', handleWheel, { passive: false });
@@ -163,7 +189,7 @@ export const useChartCanvas = ({
     return () => {
       canvas.removeEventListener('wheel', handleWheel);
     };
-  }, [updateViewport]);
+  }, [updateViewport, candles.length]);
 
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>): void => {
     const canvas = canvasRef.current;
@@ -196,7 +222,9 @@ export const useChartCanvas = ({
       } else {
         if (deltaX !== 0) {
           managerRef.current.pan(deltaX);
-          updateViewport(managerRef.current.getViewport());
+          const newViewport = managerRef.current.getViewport();
+          updateViewport(newViewport);
+          wasAtEndRef.current = Math.abs(newViewport.end - candles.length) < 1;
         }
         if (deltaY !== 0) {
           managerRef.current.panVertical(deltaY);
@@ -205,7 +233,7 @@ export const useChartCanvas = ({
       
       lastMousePosRef.current = { x: event.clientX, y: event.clientY };
     },
-    [isPanning, isPanningOnScale, updateViewport],
+    [isPanning, isPanningOnScale, updateViewport, candles.length],
   );
 
   const handleMouseUp = useCallback((): void => {

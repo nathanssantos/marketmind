@@ -9,6 +9,7 @@ import { AIConfigTab } from './AIConfigTab';
 import { ChartSettingsTab } from './ChartSettingsTab';
 import { GeneralTab } from './GeneralTab';
 import { NewsConfigTab } from './NewsConfigTab';
+import { TradingSimulatorTab } from './TradingSimulatorTab';
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 <Tabs.Trigger value="chart">{t('settings.tabs.chart')}</Tabs.Trigger>
                 <Tabs.Trigger value="ai">{t('settings.tabs.ai')}</Tabs.Trigger>
                 <Tabs.Trigger value="news">{t('settings.tabs.news')}</Tabs.Trigger>
+                <Tabs.Trigger value="tradingSimulator">{t('settings.tabs.tradingSimulator')}</Tabs.Trigger>
                 <Tabs.Trigger value="about">{t('settings.tabs.about')}</Tabs.Trigger>
               </Tabs.List>
 
@@ -53,7 +55,7 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 </Tabs.Content>
 
                 <Tabs.Content value="chart">
-                  <ChartSettingsTab 
+                  <ChartSettingsTab
                     config={advancedConfig}
                     onConfigChange={onAdvancedConfigChange}
                   />
@@ -65,6 +67,10 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
 
                 <Tabs.Content value="news">
                   <NewsConfigTab />
+                </Tabs.Content>
+
+                <Tabs.Content value="tradingSimulator">
+                  <TradingSimulatorTab />
                 </Tabs.Content>
 
                 <Tabs.Content value="about">

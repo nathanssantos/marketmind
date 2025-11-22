@@ -15,8 +15,8 @@ export const useAIStudies = ({ symbol, conversationId }: UseAIStudiesOptions) =>
 
   const storageKey = conversationId || symbol;
 
-  const loadStudies = useCallback(() => {
-    const data = aiStudyStorage.getStudiesForSymbol(storageKey);
+  const loadStudies = useCallback(async () => {
+    const data = await aiStudyStorage.getStudiesForSymbol(storageKey);
     if (data) {
       setStudies(data.studies);
       setHasStudies(true);
@@ -30,17 +30,17 @@ export const useAIStudies = ({ symbol, conversationId }: UseAIStudiesOptions) =>
 
   useEffect(() => {
     loadStudies();
-  }, [storageKey, loadStudies]);
+  }, [loadStudies]);
 
   const saveStudies = useCallback(
-    (newStudies: AIStudy[]) => {
+    async (newStudies: AIStudy[]) => {
       const data: AIStudyData = {
         id: currentStudyDataId || `${storageKey}-${Date.now()}`,
         symbol,
         createdAt: currentStudyDataId ? Date.now() : Date.now(),
         studies: newStudies,
       };
-      aiStudyStorage.saveStudiesForSymbol(storageKey, data);
+      await aiStudyStorage.saveStudiesForSymbol(storageKey, data);
       setStudies(newStudies);
       setHasStudies(true);
       setCurrentStudyDataId(data.id);
@@ -48,8 +48,8 @@ export const useAIStudies = ({ symbol, conversationId }: UseAIStudiesOptions) =>
     [storageKey, symbol, currentStudyDataId]
   );
 
-  const deleteStudies = useCallback(() => {
-    aiStudyStorage.deleteStudiesForSymbol(storageKey);
+  const deleteStudies = useCallback(async () => {
+    await aiStudyStorage.deleteStudiesForSymbol(storageKey);
     setStudies([]);
     setHasStudies(false);
     setCurrentStudyDataId(null);
@@ -65,7 +65,7 @@ export const useAIStudies = ({ symbol, conversationId }: UseAIStudiesOptions) =>
   }, []);
 
   const processAIResponse = useCallback(
-    (response: string) => {
+    async (response: string) => {
       const parsed = parseAIResponse(response);
       
       if (parsed.studies && parsed.studies.length > 0) {
@@ -80,7 +80,7 @@ export const useAIStudies = ({ symbol, conversationId }: UseAIStudiesOptions) =>
         }));
         
         const allStudies = [...existingStudies, ...newStudiesWithIds];
-        saveStudies(allStudies);
+        await saveStudies(allStudies);
       }
 
       return parsed.analysis;

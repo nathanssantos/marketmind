@@ -52,8 +52,11 @@ export const parseAIResponse = (response: string): AIAnalysisWithStudies => {
   }
 };
 
-export const validateAIStudy = (study: AIStudy): boolean => {
-  if (!study.type) return false;
+export const validateAIStudy = (study: unknown): study is AIStudy => {
+  if (!study || typeof study !== 'object') return false;
+
+  const s = study as AIStudy;
+  if (!s.type) return false;
 
   const validatePoint = (p: unknown): boolean => {
     return (
@@ -70,31 +73,31 @@ export const validateAIStudy = (study: AIStudy): boolean => {
     return Array.isArray(pair) && pair.length === 2 && pair.every(validatePoint);
   };
 
-  if ('points' in study) {
-    return validatePointPair(study.points);
+  if ('points' in s) {
+    return validatePointPair(s.points);
   }
 
-  if ('topPrice' in study) {
+  if ('topPrice' in s) {
     return (
-      typeof study.topPrice === 'number' &&
-      typeof study.bottomPrice === 'number' &&
-      typeof study.startTimestamp === 'number' &&
-      typeof study.endTimestamp === 'number' &&
-      study.topPrice > study.bottomPrice &&
-      study.endTimestamp > study.startTimestamp
+      typeof s.topPrice === 'number' &&
+      typeof s.bottomPrice === 'number' &&
+      typeof s.startTimestamp === 'number' &&
+      typeof s.endTimestamp === 'number' &&
+      s.topPrice > s.bottomPrice &&
+      s.endTimestamp > s.startTimestamp
     );
   }
 
-  if ('upperLine' in study && 'lowerLine' in study) {
-    return validatePointPair(study.upperLine) && validatePointPair(study.lowerLine);
+  if ('upperLine' in s && 'lowerLine' in s) {
+    return validatePointPair(s.upperLine) && validatePointPair(s.lowerLine);
   }
 
-  if ('startPoint' in study && 'endPoint' in study) {
+  if ('startPoint' in s && 'endPoint' in s) {
     return (
-      validatePoint(study.startPoint) &&
-      validatePoint(study.endPoint) &&
-      Array.isArray(study.levels) &&
-      study.levels.every(
+      validatePoint(s.startPoint) &&
+      validatePoint(s.endPoint) &&
+      Array.isArray(s.levels) &&
+      s.levels.every(
         (l: unknown) =>
           l !== null &&
           typeof l === 'object' &&
@@ -106,107 +109,107 @@ export const validateAIStudy = (study: AIStudy): boolean => {
     );
   }
 
-  if ('leftShoulder' in study && 'head' in study && 'rightShoulder' in study) {
+  if ('leftShoulder' in s && 'head' in s && 'rightShoulder' in s) {
     return (
-      validatePoint(study.leftShoulder) &&
-      validatePoint(study.head) &&
-      validatePoint(study.rightShoulder) &&
-      (!study.neckline || validatePointPair(study.neckline))
+      validatePoint(s.leftShoulder) &&
+      validatePoint(s.head) &&
+      validatePoint(s.rightShoulder) &&
+      (!s.neckline || validatePointPair(s.neckline))
     );
   }
 
-  if ('firstPeak' in study && 'secondPeak' in study) {
+  if ('firstPeak' in s && 'secondPeak' in s) {
     return (
-      validatePoint(study.firstPeak) &&
-      validatePoint(study.secondPeak) &&
-      (!study.neckline || validatePoint(study.neckline))
+      validatePoint(s.firstPeak) &&
+      validatePoint(s.secondPeak) &&
+      (!s.neckline || validatePoint(s.neckline))
     );
   }
 
-  if ('peak1' in study && 'peak2' in study && 'peak3' in study) {
+  if ('peak1' in s && 'peak2' in s && 'peak3' in s) {
     return (
-      validatePoint(study.peak1) &&
-      validatePoint(study.peak2) &&
-      validatePoint(study.peak3) &&
-      (!study.neckline || validatePointPair(study.neckline))
+      validatePoint(s.peak1) &&
+      validatePoint(s.peak2) &&
+      validatePoint(s.peak3) &&
+      (!s.neckline || validatePointPair(s.neckline))
     );
   }
 
-  if ('upperTrendline' in study && 'lowerTrendline' in study) {
-    return validatePointPair(study.upperTrendline) && validatePointPair(study.lowerTrendline);
+  if ('upperTrendline' in s && 'lowerTrendline' in s) {
+    return validatePointPair(s.upperTrendline) && validatePointPair(s.lowerTrendline);
   }
 
-  if ('flagpole' in study) {
+  if ('flagpole' in s) {
     const validPole =
-      study.flagpole &&
-      typeof study.flagpole === 'object' &&
-      'start' in study.flagpole &&
-      'end' in study.flagpole &&
-      validatePoint(study.flagpole.start) &&
-      validatePoint(study.flagpole.end);
+      s.flagpole &&
+      typeof s.flagpole === 'object' &&
+      'start' in s.flagpole &&
+      'end' in s.flagpole &&
+      validatePoint(s.flagpole.start) &&
+      validatePoint(s.flagpole.end);
 
-    if ('flag' in study) {
+    if ('flag' in s) {
       return (
         validPole &&
-        study.flag &&
-        typeof study.flag === 'object' &&
-        'upperTrendline' in study.flag &&
-        'lowerTrendline' in study.flag &&
-        validatePointPair(study.flag.upperTrendline) &&
-        validatePointPair(study.flag.lowerTrendline)
+        s.flag &&
+        typeof s.flag === 'object' &&
+        'upperTrendline' in s.flag &&
+        'lowerTrendline' in s.flag &&
+        validatePointPair(s.flag.upperTrendline) &&
+        validatePointPair(s.flag.lowerTrendline)
       );
     }
 
-    if ('pennant' in study) {
+    if ('pennant' in s) {
       return (
         validPole &&
-        study.pennant &&
-        typeof study.pennant === 'object' &&
-        'upperTrendline' in study.pennant &&
-        'lowerTrendline' in study.pennant &&
-        validatePointPair(study.pennant.upperTrendline) &&
-        validatePointPair(study.pennant.lowerTrendline)
+        s.pennant &&
+        typeof s.pennant === 'object' &&
+        'upperTrendline' in s.pennant &&
+        'lowerTrendline' in s.pennant &&
+        validatePointPair(s.pennant.upperTrendline) &&
+        validatePointPair(s.pennant.lowerTrendline)
       );
     }
   }
 
-  if ('cupStart' in study && 'cupBottom' in study && 'cupEnd' in study) {
+  if ('cupStart' in s && 'cupBottom' in s && 'cupEnd' in s) {
     return (
-      validatePoint(study.cupStart) &&
-      validatePoint(study.cupBottom) &&
-      validatePoint(study.cupEnd) &&
-      validatePoint(study.handleStart) &&
-      validatePoint(study.handleLow) &&
-      validatePoint(study.handleEnd)
+      validatePoint(s.cupStart) &&
+      validatePoint(s.cupBottom) &&
+      validatePoint(s.cupEnd) &&
+      validatePoint(s.handleStart) &&
+      validatePoint(s.handleLow) &&
+      validatePoint(s.handleEnd)
     );
   }
 
-  if ('start' in study && 'bottom' in study && 'end' in study) {
-    return validatePoint(study.start) && validatePoint(study.bottom) && validatePoint(study.end);
+  if ('start' in s && 'bottom' in s && 'end' in s) {
+    return validatePoint(s.start) && validatePoint(s.bottom) && validatePoint(s.end);
   }
 
-  if ('gapStart' in study && 'gapEnd' in study) {
-    return validatePoint(study.gapStart) && validatePoint(study.gapEnd);
+  if ('gapStart' in s && 'gapEnd' in s) {
+    return validatePoint(s.gapStart) && validatePoint(s.gapEnd);
   }
 
-  if ('impulse' in study) {
+  if ('impulse' in s) {
     const validImpulse =
-      study.impulse &&
-      typeof study.impulse === 'object' &&
-      'wave1' in study.impulse &&
-      'wave2' in study.impulse &&
-      'wave3' in study.impulse &&
-      'wave4' in study.impulse &&
-      'wave5' in study.impulse;
+      s.impulse &&
+      typeof s.impulse === 'object' &&
+      'wave1' in s.impulse &&
+      'wave2' in s.impulse &&
+      'wave3' in s.impulse &&
+      'wave4' in s.impulse &&
+      'wave5' in s.impulse;
 
     if (!validImpulse) return false;
 
     const waves = [
-      study.impulse.wave1,
-      study.impulse.wave2,
-      study.impulse.wave3,
-      study.impulse.wave4,
-      study.impulse.wave5,
+      s.impulse.wave1,
+      s.impulse.wave2,
+      s.impulse.wave3,
+      s.impulse.wave4,
+      s.impulse.wave5,
     ];
 
     return waves.every(

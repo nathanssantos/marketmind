@@ -1,6 +1,8 @@
-import { Button, DialogBackdrop, DialogBody, DialogCloseTrigger, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTitle, Input, Stack } from '@chakra-ui/react';
+import { Button, DialogBackdrop, DialogBody, DialogCloseTrigger, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTitle, Stack } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
-import { NativeSelectField, NativeSelectRoot } from '@chakra-ui/react/native-select';
+import { Input } from '@renderer/components/ui/input';
+import { NumberInput } from '@renderer/components/ui/number-input';
+import { Select } from '@renderer/components/ui/select';
 import type { WalletCurrency } from '@shared/types/trading';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -54,6 +56,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate }: CreateWalletDi
             <ChakraField.Root>
               <ChakraField.Label>{t('trading.wallets.name')}</ChakraField.Label>
               <Input
+                size="xs"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t('trading.wallets.namePlaceholder')}
@@ -62,36 +65,38 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate }: CreateWalletDi
 
             <ChakraField.Root>
               <ChakraField.Label>{t('trading.wallets.initialBalance')}</ChakraField.Label>
-              <Input
-                type="number"
+              <NumberInput
+                size="xs"
                 value={initialBalance}
                 onChange={(e) => setInitialBalance(e.target.value)}
-                min="1"
-                step="100"
+                min={1}
+                step={100}
               />
             </ChakraField.Root>
 
             <ChakraField.Root>
               <ChakraField.Label>{t('trading.wallets.currency')}</ChakraField.Label>
-              <NativeSelectRoot>
-                <NativeSelectField
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value as WalletCurrency)}
-                >
-                  <option value="USD">USD ($)</option>
-                  <option value="BRL">BRL (R$)</option>
-                  <option value="EUR">EUR (€)</option>
-                </NativeSelectField>
-              </NativeSelectRoot>
+              <Select
+                size="xs"
+                value={currency}
+                onChange={(value) => setCurrency(value as WalletCurrency)}
+                options={[
+                  { value: 'USD', label: 'USD ($)' },
+                  { value: 'BRL', label: 'BRL (R$)' },
+                  { value: 'EUR', label: 'EUR (€)' },
+                ]}
+                usePortal={false}
+              />
             </ChakraField.Root>
           </Stack>
         </DialogBody>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={handleClose}>
+          <Button size="2xs" variant="ghost" onClick={handleClose}>
             {t('common.cancel')}
           </Button>
           <Button
+            size="2xs"
             colorPalette="blue"
             onClick={handleSubmit}
             disabled={!name.trim() || parseFloat(initialBalance) <= 0}

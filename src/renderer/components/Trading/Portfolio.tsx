@@ -16,7 +16,7 @@ export const Portfolio = () => {
 
   return (
     <Stack gap={3} p={4}>
-      <Flex justify="space-between" align="center" mb={2}>
+      <Flex justify="space-between" align="center" mb={1}>
         <Text fontSize="sm" fontWeight="bold">
           {t('trading.portfolio.title')}
         </Text>
@@ -39,11 +39,17 @@ export const Portfolio = () => {
           <Box p={3} bg="bg.muted" borderRadius="md">
             <Stack gap={1} fontSize="xs">
               <Flex justify="space-between">
-                <Text color="fg.muted">{t('trading.portfolio.totalPositions')}</Text>
+                <Text color="fg.muted">{t('trading.portfolio.activePositions')}</Text>
                 <Text fontWeight="medium">{positions.length}</Text>
               </Flex>
               <Flex justify="space-between">
-                <Text color="fg.muted">{t('trading.portfolio.totalPnL')}</Text>
+                <Text color="fg.muted">{t('trading.portfolio.totalExposure')}</Text>
+                <Text fontWeight="medium">
+                  {activeWallet.currency} {positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+              </Flex>
+              <Flex justify="space-between">
+                <Text color="fg.muted">{t('trading.portfolio.unrealizedPnL')}</Text>
                 <Text fontWeight="medium" color={totalPnL >= 0 ? 'green.500' : 'red.500'}>
                   {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   {' '}({totalPnL >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%)
@@ -52,11 +58,13 @@ export const Portfolio = () => {
             </Stack>
           </Box>
 
-          <Stack gap={2}>
-            {positions.map((position) => (
-              <PositionCard key={position.symbol} position={position} currency={activeWallet.currency} />
-            ))}
-          </Stack>
+          <Box maxH="calc(100vh - 400px)" overflowY="auto">
+            <Stack gap={2}>
+              {positions.map((position) => (
+                <PositionCard key={position.symbol} position={position} currency={activeWallet.currency} />
+              ))}
+            </Stack>
+          </Box>
         </>
       )}
     </Stack>

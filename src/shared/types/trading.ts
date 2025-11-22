@@ -1,4 +1,5 @@
 export type OrderType = 'long' | 'short';
+export type OrderSubType = 'limit' | 'stop';
 export type OrderStatus =
   | 'pending'
   | 'active'
@@ -31,6 +32,7 @@ export interface Order {
   walletId: string;
   symbol: string;
   type: OrderType;
+  subType: OrderSubType;
   status: OrderStatus;
   quantity: number;
   entryPrice: number;
@@ -44,6 +46,17 @@ export interface Order {
   pnl?: number;
   pnlPercent?: number;
   commission?: number;
+  metadata?: {
+    isPosition?: boolean;
+    positionData?: {
+      symbol: string;
+      type: 'long' | 'short';
+      avgPrice: number;
+      totalQuantity: number;
+      totalPnL: number;
+      orders: Order[];
+    };
+  };
 }
 
 export interface Position {

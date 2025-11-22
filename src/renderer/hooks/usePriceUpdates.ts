@@ -5,8 +5,6 @@ import { useEffect, useRef } from 'react';
 export const usePriceUpdates = () => {
   const { chartData } = useChartContext();
   const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
-  const orders = useTradingStore((state) => state.orders);
-  const wallets = useTradingStore((state) => state.wallets);
   const updateOrder = useTradingStore((state) => state.updateOrder);
   const closeOrder = useTradingStore((state) => state.closeOrder);
   const fillPendingOrders = useTradingStore((state) => state.fillPendingOrders);
@@ -27,6 +25,9 @@ export const usePriceUpdates = () => {
     const symbol = chartData.symbol;
     const candleTime = lastCandle.timestamp;
 
+    const currentState = useTradingStore.getState();
+    const { wallets, orders } = currentState;
+
     if (lastCandleTimeRef.current !== null && candleTime !== lastCandleTimeRef.current) {
       wallets.forEach((wallet) => {
         recordWalletPerformance(wallet.id);
@@ -45,27 +46,35 @@ export const usePriceUpdates = () => {
       
       updateOrder(order.id, { currentPrice });
 
-      if (order.stopLoss) {
-        const stopHit = isLong
-          ? lowPrice <= order.stopLoss
-          : highPrice >= order.stopLoss;
+      const stopHit = order.stopLoss && (isLong
+        ? lowPrice <= order.stopLoss
+        : highPrice >= order.stopLoss);
 
-        if (stopHit) {
-          closeOrder(order.id, order.stopLoss);
-          return;
+      const targetHit = order.takeProfit && (isLong
+        ? highPrice >= order.takeProfit
+        : lowPrice <= order.takeProfit);
+
+      if (stopHit && targetHit) {
+        const stopDistance = Math.abs(currentPrice - (order.stopLoss || 0));
+        const targetDistance = Math.abs(currentPrice - (order.takeProfit || 0));
+        
+        if (stopDistance < targetDistance) {
+          closeOrder(order.id, order.stopLoss!);
+        } else {
+          closeOrder(order.id, order.takeProfit!);
         }
+        return;
       }
 
-      if (order.takeProfit) {
-        const targetHit = isLong
-          ? highPrice >= order.takeProfit
-          : lowPrice <= order.takeProfit;
+      if (stopHit) {
+        closeOrder(order.id, order.stopLoss!);
+        return;
+      }
 
-        if (targetHit) {
-          closeOrder(order.id, order.takeProfit);
-          return;
-        }
+      if (targetHit) {
+        closeOrder(order.id, order.takeProfit!);
+        return;
       }
     });
-  }, [chartData?.candles, chartData?.symbol, isSimulatorActive, orders, wallets, updateOrder, closeOrder, fillPendingOrders, expireOrders, recordWalletPerformance]);
+  }, [chartData?.candles, chartData?.symbol, isSimulatorActive, updateOrder, closeOrder, fillPendingOrders, expireOrders, recordWalletPerformance]);
 };

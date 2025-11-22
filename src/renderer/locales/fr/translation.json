@@ -21,7 +21,8 @@
     "selectModel": "Sélectionner le modèle",
     "openChat": "Ouvrir le chat",
     "deleteConversation": "Supprimer la conversation",
-    "conversationHistory": "Historique des conversations"
+    "conversationHistory": "Historique des conversations",
+    "tips": "Conseils"
   },
   "app": {
     "title": "MarketMind",
@@ -53,6 +54,7 @@
       "chart": "Graphique",
       "ai": "Configuration IA",
       "news": "Actualités",
+      "tradingSimulator": "Simulateur de Trading",
       "about": "À propos"
     },
     "language": {
@@ -189,6 +191,23 @@
       "tipValidJson": "Le prompt doit être au format JSON valide",
       "tipFormat": "Utilisez le bouton 'Formater JSON' pour formater automatiquement votre JSON",
       "tipBackup": "Conservez une sauvegarde avant d'apporter des modifications majeures aux prompts"
+    },
+    "tradingSimulator": {
+      "title": "Paramètres du Simulateur de Trading",
+      "description": "Gérez vos données et paramètres du simulateur de trading.",
+      "statistics": {
+        "title": "Statistiques",
+        "wallets": "Total des Portefeuilles",
+        "orders": "Total des Ordres",
+        "activeOrders": "Ordres Actifs",
+        "pendingOrders": "Ordres en Attente"
+      },
+      "dangerZone": {
+        "title": "Zone Dangereuse",
+        "description": "Effacer toutes les données supprimera définitivement tous les portefeuilles, ordres et historique de trading. Cette action ne peut pas être annulée.",
+        "clearAll": "Effacer Toutes les Données"
+      },
+      "confirmClearAll": "Êtes-vous sûr de vouloir effacer toutes les données de trading ? Cette action ne peut pas être annulée."
     }
   },
   "chat": {
@@ -418,20 +437,25 @@
       "title": "Portefeuilles",
       "create": "Créer un Portefeuille",
       "createTitle": "Créer un Nouveau Portefeuille",
-      "empty": "Aucun portefeuille encore. Créez-en un pour commencer à trader.",
+      "empty": "Aucun portefeuille pour le moment. Créez-en un pour commencer à trader.",
       "name": "Nom du Portefeuille",
       "namePlaceholder": "Mon Portefeuille",
       "initialBalance": "Solde Initial",
       "currency": "Devise",
       "balance": "Solde",
       "totalPnL": "P&L Total",
-      "viewPerformance": "Voir la Performance",
-      "delete": "Supprimer le Portefeuille"
+      "viewPerformance": "Voir les Performances",
+      "delete": "Supprimer le Portefeuille",
+      "performanceTitle": "Performances - {{name}}",
+      "currentBalance": "Solde Actuel",
+      "tradeDays": "Jours de Trading",
+      "avgDailyReturn": "Retour Quotidien Moyen"
     },
     "ticket": {
       "title": "Ordre",
       "noWallet": "Veuillez créer et sélectionner un portefeuille d'abord.",
       "activeWallet": "Portefeuille Actif",
+      "symbol": "Symbole",
       "orderType": "Type d'Ordre",
       "long": "Achat (Long)",
       "short": "Vente (Short)",
@@ -447,15 +471,19 @@
     },
     "portfolio": {
       "title": "Portefeuille",
-      "noWallet": "Veuillez créer et sélectionner un portefeuille d'abord.",
+      "noWallet": "Veuillez d'abord créer et sélectionner un portefeuille.",
       "empty": "Aucune position ouverte.",
-      "totalPositions": "Positions Totales",
-      "totalPnL": "P&L Total",
+      "activePositions": "Positions Actives",
+      "totalExposure": "Exposition Totale",
+      "unrealizedPnL": "P&P Non Réalisé",
       "orders": "ordres",
+      "orderCount": "Ordres",
       "quantity": "Quantité",
+      "totalQuantity": "Quantité Totale",
       "avgPrice": "Prix Moyen",
       "currentPrice": "Prix Actuel",
-      "pnl": "P&L"
+      "pnl": "P&P",
+      "position": "Position"
     },
     "orders": {
       "title": "Ordres",
@@ -472,6 +500,9 @@
       "statusClosed": "Fermé",
       "statusCancelled": "Annulé",
       "statusExpired": "Expiré",
+      "createdAt": "Créé",
+      "filledAt": "Exécuté",
+      "closedAt": "Fermé",
       "quantity": "Quantité",
       "entryPrice": "Prix d'Entrée",
       "currentPrice": "Prix Actuel",
@@ -480,7 +511,24 @@
       "pnl": "P&L",
       "close": "Fermer l'Ordre",
       "cancel": "Annuler l'Ordre"
-    }
+    },
+    "notifications": {
+      "orderFilled": "Ordre Exécuté",
+      "orderFilledDesc": "{{order}} exécuté à {{price}}",
+      "orderClosed": "Ordre Fermé",
+      "orderClosedProfit": "{{order}} fermé avec profit: {{pnl}} ({{percent}}%)",
+      "orderClosedLoss": "{{order}} fermé avec perte: {{pnl}} ({{percent}}%)",
+      "orderCancelled": "Ordre Annulé",
+      "orderCancelledDesc": "{{order}} a été annulé",
+      "orderExpired": "Ordre Expiré",
+      "orderExpiredDesc": "{{order}} a expiré"
+    },
+    "closeOrder": "Fermer l'Ordre",
+    "closeOrderConfirm": "Fermer l'ordre {{type}} avec entrée à {{entry}} ? Prix actuel : {{current}}",
+    "removeSLTPConfirm": "Supprimer {{type}} de tous les ordres dans cette position ?",
+    "confirmClose": "Confirmer la Fermeture",
+    "active": "ACTIVE",
+    "pending": "EN ATTENTE"
   },
   "about": {
     "version": "Version {{version}}",
@@ -513,6 +561,6 @@
       "documentation": "Documentation",
       "changelog": "Journal des modifications"
     },
-    "copyright": "© 2025 MarketMind. Créé avec ❤️ pour les traders et les investisseurs."
+    "copyright": "© 2025 MarketMind. Fait avec ❤️ pour les traders et investisseurs."
   }
 }

@@ -21,7 +21,8 @@
     "selectModel": "Seleccionar Modelo",
     "openChat": "Abrir chat",
     "deleteConversation": "Eliminar conversación",
-    "conversationHistory": "Historial de conversaciones"
+    "conversationHistory": "Historial de conversaciones",
+    "tips": "Consejos"
   },
   "app": {
     "title": "MarketMind",
@@ -53,6 +54,7 @@
       "chart": "Gráfico",
       "ai": "Configuración de IA",
       "news": "Noticias",
+      "tradingSimulator": "Simulador de Trading",
       "about": "Acerca de"
     },
     "language": {
@@ -189,6 +191,23 @@
       "tipValidJson": "El prompt debe estar en formato JSON válido",
       "tipFormat": "Usa el botón 'Formatear JSON' para formatear automáticamente tu JSON",
       "tipBackup": "Mantén una copia de seguridad antes de hacer cambios importantes en los prompts"
+    },
+    "tradingSimulator": {
+      "title": "Configuración del Simulador de Trading",
+      "description": "Administra tus datos y configuración del simulador de trading.",
+      "statistics": {
+        "title": "Estadísticas",
+        "wallets": "Total de Carteras",
+        "orders": "Total de Órdenes",
+        "activeOrders": "Órdenes Activas",
+        "pendingOrders": "Órdenes Pendientes"
+      },
+      "dangerZone": {
+        "title": "Zona de Peligro",
+        "description": "Borrar todos los datos eliminará permanentemente todas las carteras, órdenes e historial de trading. Esta acción no se puede deshacer.",
+        "clearAll": "Borrar Todos los Datos"
+      },
+      "confirmClearAll": "¿Estás seguro de que quieres borrar todos los datos de trading? Esta acción no se puede deshacer."
     }
   },
   "chat": {
@@ -418,20 +437,25 @@
       "title": "Carteras",
       "create": "Crear Cartera",
       "createTitle": "Crear Nueva Cartera",
-      "empty": "No hay carteras todavía. Crea una para comenzar a operar.",
+      "empty": "Aún no hay carteras. Cree una para comenzar a operar.",
       "name": "Nombre de la Cartera",
       "namePlaceholder": "Mi Cartera",
       "initialBalance": "Saldo Inicial",
       "currency": "Moneda",
       "balance": "Saldo",
-      "totalPnL": "P&G Total",
+      "totalPnL": "P&L Total",
       "viewPerformance": "Ver Rendimiento",
-      "delete": "Eliminar Cartera"
+      "delete": "Eliminar Cartera",
+      "performanceTitle": "Rendimiento - {{name}}",
+      "currentBalance": "Saldo Actual",
+      "tradeDays": "Días de Operación",
+      "avgDailyReturn": "Retorno Promedio Diario"
     },
     "ticket": {
-      "title": "Orden",
+      "title": "Ticket de Orden",
       "noWallet": "Por favor, crea y selecciona una cartera primero.",
       "activeWallet": "Cartera Activa",
+      "symbol": "Símbolo",
       "orderType": "Tipo de Orden",
       "long": "Compra (Long)",
       "short": "Venta (Short)",
@@ -442,20 +466,24 @@
       "takeProfit": "Take Profit",
       "optional": "Opcional",
       "totalCost": "Costo Total",
-      "buy": "Comprar",
-      "sell": "Vender"
+      "buy": "Comprar Long",
+      "sell": "Vender Short"
     },
     "portfolio": {
-      "title": "Portafolio",
+      "title": "Cartera",
       "noWallet": "Por favor, crea y selecciona una cartera primero.",
       "empty": "No hay posiciones abiertas.",
-      "totalPositions": "Posiciones Totales",
-      "totalPnL": "P&G Total",
+      "activePositions": "Posiciones Activas",
+      "totalExposure": "Exposición Total",
+      "unrealizedPnL": "PyG No Realizado",
       "orders": "órdenes",
+      "orderCount": "Órdenes",
       "quantity": "Cantidad",
+      "totalQuantity": "Cantidad Total",
       "avgPrice": "Precio Promedio",
       "currentPrice": "Precio Actual",
-      "pnl": "P&G"
+      "pnl": "PyG",
+      "position": "Posición"
     },
     "orders": {
       "title": "Órdenes",
@@ -472,6 +500,9 @@
       "statusClosed": "Cerrada",
       "statusCancelled": "Cancelada",
       "statusExpired": "Expirada",
+      "createdAt": "Creada",
+      "filledAt": "Ejecutada",
+      "closedAt": "Cerrada",
       "quantity": "Cantidad",
       "entryPrice": "Precio de Entrada",
       "currentPrice": "Precio Actual",
@@ -480,7 +511,24 @@
       "pnl": "P&G",
       "close": "Cerrar Orden",
       "cancel": "Cancelar Orden"
-    }
+    },
+    "notifications": {
+      "orderFilled": "Orden Ejecutada",
+      "orderFilledDesc": "{{order}} ejecutada en {{price}}",
+      "orderClosed": "Orden Cerrada",
+      "orderClosedProfit": "{{order}} cerrada con ganancia: {{pnl}} ({{percent}}%)",
+      "orderClosedLoss": "{{order}} cerrada con pérdida: {{pnl}} ({{percent}}%)",
+      "orderCancelled": "Orden Cancelada",
+      "orderCancelledDesc": "{{order}} ha sido cancelada",
+      "orderExpired": "Orden Expirada",
+      "orderExpiredDesc": "{{order}} ha expirado"
+    },
+    "closeOrder": "Cerrar Orden",
+    "closeOrderConfirm": "¿Cerrar orden {{type}} con entrada en {{entry}}? Precio actual: {{current}}",
+    "removeSLTPConfirm": "¿Eliminar {{type}} de todas las órdenes en esta posición?",
+    "confirmClose": "Confirmar Cierre",
+    "active": "ACTIVA",
+    "pending": "PENDIENTE"
   },
   "about": {
     "version": "Versión {{version}}",
