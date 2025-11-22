@@ -1,11 +1,11 @@
 import type {
-  BaseNewsProvider,
-  FetchNewsOptions,
-  NewsResponse,
-  NewsServiceConfig,
-  NewsCacheEntry,
-  NewsFilter,
-  NewsArticle,
+    BaseNewsProvider,
+    FetchNewsOptions,
+    NewsArticle,
+    NewsCacheEntry,
+    NewsFilter,
+    NewsResponse,
+    NewsServiceConfig,
 } from '@shared/types';
 
 export class NewsService {
@@ -101,6 +101,7 @@ export class NewsService {
     }
 
     const providers = [this.primaryProvider, ...this.fallbackProviders];
+    const errors: Error[] = [];
 
     for (const provider of providers) {
       try {
@@ -110,8 +111,14 @@ export class NewsService {
 
         return response;
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        errors.push(error instanceof Error ? error : new Error(errorMessage));
+        
         if (provider === providers[providers.length - 1]) {
-          throw error;
+          if (errors.length === 1) {
+            throw errors[0];
+          }
+          throw new Error(`All news providers failed: ${errors.map(e => e.message).join(', ')}`);
         }
 
         continue;

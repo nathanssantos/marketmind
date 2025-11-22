@@ -1,9 +1,10 @@
+import { workerPool } from '@/renderer/utils/WorkerPool';
+import type {
+    BoundsWorkerRequest,
+    BoundsWorkerResponse,
+} from '@/renderer/workers/bounds.worker';
 import type { Candle } from '@shared/types';
 import { useCallback, useEffect, useRef } from 'react';
-import type {
-  BoundsWorkerRequest,
-  BoundsWorkerResponse,
-} from '@/renderer/workers/bounds.worker';
 
 export interface Bounds {
   minPrice: number;
@@ -29,12 +30,20 @@ export const useBoundsWorker = (): UseBoundsWorkerReturn => {
   const requestIdRef = useRef(0);
 
   useEffect(() => {
-    workerRef.current = new Worker(
-      new URL('../workers/bounds.worker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    const WORKER_KEY = 'bounds';
+    
+    if (!workerPool.has(WORKER_KEY)) {
+      workerPool.register(WORKER_KEY, () => 
+        new Worker(
+          new URL('../workers/bounds.worker.ts', import.meta.url),
+          { type: 'module' }
+        )
+      );
+    }
+    
+    workerRef.current = workerPool.get(WORKER_KEY);
 
-    workerRef.current.onmessage = (event: MessageEvent<BoundsWorkerResponse>) => {
+    const messageHandler = (event: MessageEvent<BoundsWorkerResponse>) => {
       const { type, ...bounds } = event.data;
 
       if (type === 'boundsResult') {
@@ -46,11 +55,14 @@ export const useBoundsWorker = (): UseBoundsWorkerReturn => {
         });
       }
     };
+    
+    if (workerRef.current) {
+      workerRef.current.addEventListener('message', messageHandler);
+    }
 
     return () => {
       if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
+        workerRef.current.removeEventListener('message', messageHandler);
       }
       pendingCallbacksRef.current.clear();
     };

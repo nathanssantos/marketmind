@@ -1938,16 +1938,102 @@ Next step: implement the CandlestickRenderer.
 - **Conversation Summary:** 25ms → 7ms (3.57x faster)
 - **Batch Coordinates:** 18ms → 6ms (3x faster)
 
+### ✅ Phase 19: Calendar Integration & Performance Optimizations (100% Complete)
+**Status:** ✅ Complete  
+**Branch:** develop (in progress)  
+**Target Release:** v0.21.0 (November 22, 2025)
+
+#### Deliverables
+- ✅ **Calendar System**
+  - CoinGecko Events API integration
+  - CalendarService with provider architecture
+  - CalendarDialog component with tabs (events/settings)
+  - CalendarPanel showing upcoming/past events
+  - CalendarSettingsTab for configuration
+  - Event filtering by importance, type, symbols, date range
+  - Events integration with AI analysis (optional correlation)
+  - Full i18n support (EN, PT, ES, FR)
+  - useCalendar hook for state management
+  - CalendarEvent type system with comprehensive metadata
+
+- ✅ **News Enhancements**
+  - NewsDialog component for dedicated viewing
+  - NewsSettingsTab for behavior configuration
+  - useNewsNotifications hook for toast alerts
+  - Auto-refresh with configurable interval (1-60 minutes)
+  - Importance threshold for notifications (0-100%)
+  - Optional AI correlation for market context
+  - Symbol selector for cryptocurrency filtering
+  - Improved CryptoPanicProvider with electron HTTP
+  - NewsAPI integration with secure storage
+  - Environment variable auto-fill for development
+
+- ✅ **Performance Optimizations**
+  - Fixed excessive re-renders in chart renderers
+    - useGridRenderer: removed manager?.getCandles() from dependencies
+    - useVolumeRenderer: removed manager?.getCandles() from dependencies
+    - useCandlestickRenderer: removed manager?.getCandles() from dependencies
+  - Fixed stale data in useMovingAverageRenderer
+  - Optimized useNews with useMemo for optionsKey
+  - Optimized ChartCanvas with useRef for timeout
+  - Fixed NewsConfigTab timeout memory leak
+  - useChartData optimization with useRef tracking
+  - CanvasManager zoom fix (updateCandleWidth call)
+
+- ✅ **Trading Simulator Improvements**
+  - Fixed pending order execution logic
+  - Added previous price tracking
+  - Orders execute only when price crosses entry
+  - Fixed historical order prevention
+  - Improved price update tracking
+  - Better logging for debugging
+  - Fixed trading data persistence
+  - Wallet/order date serialization fixes
+  - Simulator toggle moved to sidebar header
+  - Separate chat/trading sidebar toggles
+
+- ✅ **UI Component Refactoring**
+  - Created SidebarContainer component
+  - Created SidebarHeader component
+  - Improved TradingSidebar styling
+  - Consistent sidebar system
+  - News button added to toolbar
+  - Trading sidebar toggle in toolbar
+
+- ✅ **Code Quality**
+  - Organized imports across worker hooks
+  - Updated keyboard shortcuts (removed obsolete)
+  - Translation updates (60+ calendar, 20+ news)
+  - Removed unused GlobalActionsContext methods
+  - Cleaner code structure throughout
+
+#### Test Coverage
+- 814 tests passing (100% pass rate)
+- 90.62% code coverage maintained
+- All existing tests updated for new features
+- CryptoPanicProvider tests updated for electron HTTP
+
+#### Performance Impact
+- Chart renderers no longer recreate on candle updates
+- JSON.stringify eliminated from useNews hot path
+- Timeout state no longer causes re-renders
+- Memory leaks eliminated
+- Stable callback functions across all renderers
+
 ### 📋 Summary
-- ✅ 603 tests passing (100% pass rate)
+- ✅ 814 tests passing (100% pass rate)
 - ✅ 90.62% code coverage (exceeded 80% target!)
 - ✅ All MVP features implemented
+- ✅ Calendar integration with CoinGecko events
+- ✅ News enhancements with auto-refresh and notifications
+- ✅ Trading simulator improvements with proper order execution
+- ✅ Chart performance optimizations (eliminated excessive re-renders)
 - ✅ Chart navigation controls with discrete buttons
 - ✅ Real-time candle countdown timer
 - ✅ Enhanced chart interactions with comprehensive hover system
 - ✅ AI Studies system with smart toggle and validation
-- ✅ Performance optimized (60% token reduction, 17x worker speedup)
-- ✅ Professional toolbar interface
+- ✅ Performance optimized (60% token reduction, 17x worker speedup, renderer optimizations)
+- ✅ Professional toolbar interface with news and trading toggles
 - ✅ Multi-language support (EN, PT, ES, FR)
 - ✅ Comprehensive documentation
 - ✅ Production-ready builds (macOS, Windows)
@@ -1959,7 +2045,9 @@ Next step: implement the CandlestickRenderer.
 2. ✅ **COMPLETED**: Phase 15 - Application Toolbar (v0.15.0)
 3. ✅ **COMPLETED**: Phase 16 - AI Studies Toggle & Performance (v0.16.0)
 4. ✅ **COMPLETED**: Phase 17 - Enhanced Chart Interactions (v0.17.0)
-5. **Future v1.0+**:
+5. ✅ **COMPLETED**: Phase 18 - Web Workers Performance System (v0.20.0)
+6. ✅ **COMPLETED**: Phase 19 - Calendar Integration & Performance Optimizations (v0.21.0)
+7. **Future v1.0+**:
    - Integration and E2E tests
    - Additional technical indicators (RSI, MACD, Bollinger Bands)
    - WebSocket for real-time updates (Binance already has WebSocket)
@@ -1975,7 +2063,7 @@ Next step: implement the CandlestickRenderer.
 
 ## ✅ Conclusion
 
-This plan provides a complete roadmap to develop MarketMind from scratch to launch. The project successfully achieved all 17 phases, resulting in a production-ready application with:
+This plan provides a complete roadmap to develop MarketMind from scratch to launch. The project successfully achieved all 19 phases, resulting in a production-ready application with:
 
 - ✅ Complete chart rendering system with technical indicators
 - ✅ Enhanced chart interactions with comprehensive hover system
@@ -1983,11 +2071,14 @@ This plan provides a complete roadmap to develop MarketMind from scratch to laun
 - ✅ Professional toolbar with centralized controls
 - ✅ Multi-provider AI integration (OpenAI, Anthropic, Google)
 - ✅ Real-time market data from Binance and CoinGecko
-- ✅ News integration with AI analysis
+- ✅ Calendar integration with event tracking and AI correlation
+- ✅ News integration with auto-refresh, notifications, and AI analysis
+- ✅ Trading Simulator with proper order execution and price tracking
 - ✅ Secure encrypted storage for API keys
 - ✅ Auto-update system via GitHub Releases
-- ✅ 659 tests with 90.62% coverage
+- ✅ 814 tests with 90.62% coverage
 - ✅ Multi-language support (EN, PT, ES, FR)
+- ✅ Performance optimizations (web workers + renderer optimizations)
 - ✅ Comprehensive documentation
 - ✅ Production builds for macOS and Windows
 
@@ -1996,8 +2087,8 @@ This plan provides a complete roadmap to develop MarketMind from scratch to laun
 
 ---
 
-**Document Version:** 1.6  
-**Date:** November 19, 2025  
+**Document Version:** 1.7  
+**Date:** November 22, 2025  
 **Author:** Initial planning for MarketMind development  
-**Last Update:** Phase 17 completed - Enhanced Chart Interactions (659 tests passing, 90.62% coverage, v0.17.0 released)
+**Last Update:** Phase 19 completed - Calendar Integration & Performance Optimizations (814 tests passing, 90.62% coverage, v0.21.0 in progress)
 

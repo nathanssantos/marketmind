@@ -1,3 +1,4 @@
+import type { CalendarEvent } from './calendar';
 import type { Candle } from './candle';
 
 export interface AIProvider {
@@ -37,6 +38,7 @@ export interface AIAnalysisRequest {
   chartImage: string;
   candles: Candle[];
   news?: NewsArticle[];
+  events?: CalendarEvent[];
   context?: string;
 }
 

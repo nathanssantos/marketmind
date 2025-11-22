@@ -2,7 +2,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawCandle } from '@renderer/utils/canvas/drawingUtils';
 import { CHART_CONFIG } from '@shared/constants';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 
 export interface UseCandlestickRendererProps {
   manager: CanvasManager | null;
@@ -75,11 +75,7 @@ export const useCandlestickRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, colors, enabled, rightMargin, candleWickWidth, hoveredCandleIndex, manager?.getCandles()]);
-
-  useEffect(() => {
-    render();
-  }, [render]);
+  }, [manager, colors, enabled, rightMargin, candleWickWidth, hoveredCandleIndex]);
 
   return { render };
 };

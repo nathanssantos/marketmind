@@ -93,7 +93,6 @@ export const ChartCanvas = ({
   const addOrder = useTradingStore((state) => state.addOrder);
   const closeOrder = useTradingStore((state) => state.closeOrder);
   const updateOrder = useTradingStore((state) => state.updateOrder);
-  const activateOrder = useTradingStore((state) => state.activateOrder);
   const orders = useTradingStore((state) => state.orders);
 
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
@@ -186,7 +185,7 @@ export const ChartCanvas = ({
   const lastHoveredOrderRef = useRef<string | null>(null);
   const lastTooltipOrderRef = useRef<string | null>(null);
   const [isInteracting, setIsInteracting] = useState(false);
-  const [interactionTimeout, setInteractionTimeout] = useState<NodeJS.Timeout | null>(null);
+  const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [cursor, setCursor] = useState<'crosshair' | 'ns-resize' | 'grab' | 'grabbing' | 'pointer'>('crosshair');
   const [measurementArea, setMeasurementArea] = useState<{
     startX: number;
@@ -314,7 +313,6 @@ export const ChartCanvas = ({
     enabled: isSimulatorActive,
     getOrderAtPosition: (x, y) => getOrderAtPosition(x, y),
     currentPrice,
-    activateOrder,
   });
 
   const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>): void => {
@@ -696,16 +694,20 @@ export const ChartCanvas = ({
 
   const startInteraction = (): void => {
     setIsInteracting(true);
-    if (interactionTimeout) {
-      clearTimeout(interactionTimeout);
+    if (interactionTimeoutRef.current) {
+      clearTimeout(interactionTimeoutRef.current);
+      interactionTimeoutRef.current = null;
     }
   };
 
   const endInteraction = (): void => {
-    const timeout = setTimeout(() => {
+    if (interactionTimeoutRef.current) {
+      clearTimeout(interactionTimeoutRef.current);
+    }
+    interactionTimeoutRef.current = setTimeout(() => {
       setIsInteracting(false);
+      interactionTimeoutRef.current = null;
     }, 300);
-    setInteractionTimeout(timeout);
   };
 
   const handleCanvasMouseDown = (event: React.MouseEvent<HTMLCanvasElement>): void => {
@@ -819,11 +821,12 @@ export const ChartCanvas = ({
 
   useEffect(() => {
     return () => {
-      if (interactionTimeout) {
-        clearTimeout(interactionTimeout);
+      if (interactionTimeoutRef.current) {
+        clearTimeout(interactionTimeoutRef.current);
+        interactionTimeoutRef.current = null;
       }
     };
-  }, [interactionTimeout]);
+  }, []);
 
   useEffect(() => {
     if (!manager || !advancedConfig) return;
@@ -1052,7 +1055,7 @@ export const ChartCanvas = ({
     return () => {
       manager.setRenderCallback(null);
     };
-  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine, renderCrosshairPriceLine, renderOrderLines, chartType, measurementArea, isMeasuring, colors, showMeasurementRuler, showMeasurementArea, orderPreview, advancedConfig?.rightMargin]);
+  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderOrderLines, chartType]);
 
   return (
     <>

@@ -20,14 +20,13 @@ const modKey = getModifierKey();
 
 export const KeyboardShortcutsDialog = ({ isOpen, onClose }: KeyboardShortcutsDialogProps) => {
   const { t } = useTranslation();
-  
+
   const sections: ShortcutSection[] = [
     {
       titleKey: 'keyboardShortcuts.global',
       shortcuts: [
         { keys: `${modKey} + ,`, descriptionKey: 'keyboardShortcuts.shortcuts.openSettings' },
         { keys: `${modKey} + K`, descriptionKey: 'keyboardShortcuts.shortcuts.focusChatInput' },
-        { keys: `${modKey} + B`, descriptionKey: 'keyboardShortcuts.shortcuts.toggleChatSidebar' },
         { keys: `${modKey} + /`, descriptionKey: 'keyboardShortcuts.shortcuts.showKeyboardShortcuts' },
         { keys: 'Esc', descriptionKey: 'keyboardShortcuts.shortcuts.closeDialogs' },
       ],
@@ -65,7 +64,7 @@ export const KeyboardShortcutsDialog = ({ isOpen, onClose }: KeyboardShortcutsDi
       ],
     },
   ];
-  
+
   return (
     <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="lg">
       <Dialog.Backdrop />
@@ -81,7 +80,7 @@ export const KeyboardShortcutsDialog = ({ isOpen, onClose }: KeyboardShortcutsDi
           <Dialog.Header>
             <Dialog.Title>{t('keyboardShortcuts.title')}</Dialog.Title>
           </Dialog.Header>
-        
+
           <Dialog.Body overflowY="auto">
             <Stack gap={6} py={2}>
               {sections.map((section) => (

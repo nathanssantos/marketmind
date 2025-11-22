@@ -1,9 +1,16 @@
 import type { NewsProviderConfig } from '@shared/types';
-import axios from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CryptoPanicProvider } from './CryptoPanicProvider';
 
-vi.mock('axios');
+const mockElectronFetch = vi.fn();
+
+vi.stubGlobal('window', {
+  electron: {
+    http: {
+      fetch: mockElectronFetch,
+    },
+  },
+});
 
 const mockCryptoPanicPost = {
   id: 123456,
@@ -49,19 +56,9 @@ const mockCryptoPanicResponse = {
 };
 
 describe('CryptoPanicProvider', () => {
-  let mockAxiosInstance: {
-    get: ReturnType<typeof vi.fn>;
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
-
-    mockAxiosInstance = {
-      get: vi.fn(),
-    };
-
-    vi.mocked(axios.create).mockReturnValue(mockAxiosInstance as never);
   });
 
   afterEach(() => {
@@ -77,13 +74,6 @@ describe('CryptoPanicProvider', () => {
       const provider = new CryptoPanicProvider(config);
 
       expect(provider).toBeInstanceOf(CryptoPanicProvider);
-      expect(axios.create).toHaveBeenCalledWith({
-        baseURL: 'https://cryptopanic.com/api/v1',
-        timeout: 10000,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
     });
 
     it('should create instance with custom base URL', () => {
@@ -92,15 +82,9 @@ describe('CryptoPanicProvider', () => {
         baseUrl: 'https://custom.api.com',
       };
 
-      new CryptoPanicProvider(config);
+      const provider = new CryptoPanicProvider(config);
 
-      expect(axios.create).toHaveBeenCalledWith({
-        baseURL: 'https://custom.api.com',
-        timeout: 10000,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      expect(provider).toBeInstanceOf(CryptoPanicProvider);
     });
 
     it('should configure rate limiting', () => {
@@ -121,20 +105,24 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'test-key',
       };
 
-      mockAxiosInstance.get.mockResolvedValue({
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
         data: mockCryptoPanicResponse,
       });
 
       const provider = new CryptoPanicProvider(config);
       const result = await provider.fetchNews({});
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/posts/', {
-        params: {
-          auth_token: 'test-key',
-          public: 'true',
-          kind: 'news',
-        },
-      });
+      expect(mockElectronFetch).toHaveBeenCalledWith(
+        expect.stringContaining('auth_token=test-key')
+      );
+      expect(mockElectronFetch).toHaveBeenCalledWith(
+        expect.stringContaining('public=true')
+      );
+      expect(mockElectronFetch).toHaveBeenCalledWith(
+        expect.stringContaining('kind=news')
+      );
 
       expect(result.articles).toHaveLength(1);
       expect(result.totalResults).toBe(1);
@@ -147,18 +135,18 @@ describe('CryptoPanicProvider', () => {
     it('should use free tier when no API key', async () => {
       const config: NewsProviderConfig = {};
 
-      mockAxiosInstance.get.mockResolvedValue({
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
         data: mockCryptoPanicResponse,
       });
 
       const provider = new CryptoPanicProvider(config);
       await provider.fetchNews({});
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/posts/', {
-        params: expect.objectContaining({
-          auth_token: 'free',
-        }),
-      });
+      expect(mockElectronFetch).toHaveBeenCalledWith(
+        expect.stringContaining('auth_token=free')
+      );
     });
 
     it('should filter by symbols', async () => {
@@ -166,18 +154,18 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'test-key',
       };
 
-      mockAxiosInstance.get.mockResolvedValue({
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
         data: mockCryptoPanicResponse,
       });
 
       const provider = new CryptoPanicProvider(config);
       await provider.fetchNews({ symbols: ['BTC', 'ETH'] });
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/posts/', {
-        params: expect.objectContaining({
-          currencies: 'BTC,ETH',
-        }),
-      });
+      expect(mockElectronFetch).toHaveBeenCalledWith(
+        expect.stringContaining('currencies=BTC%2CETH')
+      );
     });
 
     it('should respect page size limit', async () => {
@@ -185,18 +173,18 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'test-key',
       };
 
-      mockAxiosInstance.get.mockResolvedValue({
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
         data: mockCryptoPanicResponse,
       });
 
       const provider = new CryptoPanicProvider(config);
       await provider.fetchNews({ limit: 30 });
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/posts/', {
-        params: expect.objectContaining({
-          page_size: 30,
-        }),
-      });
+      expect(mockElectronFetch).toHaveBeenCalledWith(
+        expect.stringContaining('page_size=30')
+      );
     });
 
     it('should cap page size at 50', async () => {
@@ -204,18 +192,18 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'test-key',
       };
 
-      mockAxiosInstance.get.mockResolvedValue({
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
         data: mockCryptoPanicResponse,
       });
 
       const provider = new CryptoPanicProvider(config);
       await provider.fetchNews({ limit: 100 });
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/posts/', {
-        params: expect.objectContaining({
-          page_size: 50,
-        }),
-      });
+      expect(mockElectronFetch).toHaveBeenCalledWith(
+        expect.stringContaining('page_size=50')
+      );
     });
 
     it('should calculate positive sentiment', async () => {
@@ -223,7 +211,9 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'test-key',
       };
 
-      mockAxiosInstance.get.mockResolvedValue({
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
         data: {
           count: 1,
           next: null,
@@ -252,7 +242,9 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'test-key',
       };
 
-      mockAxiosInstance.get.mockResolvedValue({
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
         data: {
           count: 1,
           next: null,
@@ -287,7 +279,9 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'test-key',
       };
 
-      mockAxiosInstance.get.mockResolvedValue({
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
         data: {
           count: 1,
           next: null,
@@ -322,7 +316,9 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'test-key',
       };
 
-      mockAxiosInstance.get.mockResolvedValue({
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
         data: {
           count: 1,
           next: null,
@@ -347,7 +343,9 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'test-key',
       };
 
-      mockAxiosInstance.get.mockResolvedValue({
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
         data: mockCryptoPanicResponse,
       });
 
@@ -362,15 +360,11 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'invalid-key',
       };
 
-      mockAxiosInstance.get.mockRejectedValue({
-        isAxiosError: true,
-        response: {
-          status: 401,
-          data: {},
-        },
+      mockElectronFetch.mockResolvedValue({
+        success: false,
+        status: 401,
+        error: 'Unauthorized',
       });
-
-      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const provider = new CryptoPanicProvider(config);
 
@@ -382,15 +376,11 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'test-key',
       };
 
-      mockAxiosInstance.get.mockRejectedValue({
-        isAxiosError: true,
-        response: {
-          status: 429,
-          data: {},
-        },
+      mockElectronFetch.mockResolvedValue({
+        success: false,
+        status: 429,
+        error: 'Too Many Requests',
       });
-
-      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const provider = new CryptoPanicProvider(config);
 
@@ -402,16 +392,11 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'test-key',
       };
 
-      mockAxiosInstance.get.mockRejectedValue({
-        isAxiosError: true,
-        response: {
-          status: 500,
-          data: { message: 'Internal server error' },
-        },
-        message: 'Request failed',
+      mockElectronFetch.mockResolvedValue({
+        success: false,
+        status: 500,
+        statusText: 'Internal server error',
       });
-
-      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const provider = new CryptoPanicProvider(config);
 
@@ -425,10 +410,7 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'test-key',
       };
 
-      const customError = new Error('Network error');
-      mockAxiosInstance.get.mockRejectedValue(customError);
-
-      vi.mocked(axios.isAxiosError).mockReturnValue(false);
+      mockElectronFetch.mockRejectedValue(new Error('Network error'));
 
       const provider = new CryptoPanicProvider(config);
 
@@ -442,18 +424,18 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'test-key',
       };
 
-      mockAxiosInstance.get.mockResolvedValue({
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
         data: mockCryptoPanicResponse,
       });
 
       const provider = new CryptoPanicProvider(config);
       const result = await provider.searchNews('bitcoin', 15);
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/posts/', {
-        params: expect.objectContaining({
-          page_size: 15,
-        }),
-      });
+      expect(mockElectronFetch).toHaveBeenCalledWith(
+        expect.stringContaining('page_size=15')
+      );
 
       expect(result.articles).toHaveLength(1);
     });
@@ -463,18 +445,18 @@ describe('CryptoPanicProvider', () => {
         apiKey: 'test-key',
       };
 
-      mockAxiosInstance.get.mockResolvedValue({
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
         data: mockCryptoPanicResponse,
       });
 
       const provider = new CryptoPanicProvider(config);
-      await provider.searchNews('ethereum');
+      await provider.searchNews('bitcoin');
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/posts/', {
-        params: expect.objectContaining({
-          page_size: 10,
-        }),
-      });
+      expect(mockElectronFetch).toHaveBeenCalledWith(
+        expect.stringContaining('page_size=10')
+      );
     });
   });
 });

@@ -213,8 +213,7 @@
   "chat": {
     "title": "Chat",
     "newConversation": "Nova conversa",
-    "closeChat": "Fechar chat",
-    "enableAIStudies": "Ativar desenhos da IA no gráfico",
+    "enableAIStudies": "Ativar desenhos de IA no gráfico",
     "disableAIStudies": "Desativar desenhos da IA no gráfico",
     "conversationsTitle": "Conversas - {{symbol}}",
     "noConversationsYet": "Nenhuma conversa ainda",
@@ -286,12 +285,77 @@
   },
   "news": {
     "title": "Notícias",
+    "selectSymbol": "Selecione a criptomoeda",
+    "symbolLabel": "Criptomoeda",
     "failedToLoad": "Falha ao carregar notícias",
     "noArticles": "Nenhuma notícia encontrada",
     "sentiment": {
       "positive": "Positivo",
       "negative": "Negativo",
       "neutral": "Neutro"
+    },
+    "tabs": {
+      "news": "Notícias",
+      "settings": "Configurações"
+    },
+    "settings": {
+      "enablePolling": "Ativar Atualização Automática",
+      "pollingDescription": "Buscar automaticamente novos artigos em intervalos regulares",
+      "refreshInterval": "Intervalo de Atualização (minutos)",
+      "refreshIntervalHelper": "Com que frequência verificar novos artigos (1-60 minutos)",
+      "minImportanceForToast": "Limite de Notificação",
+      "importanceLevel": "Importância Mínima",
+      "importanceHelper": "Mostrar apenas notificações para artigos com importância acima deste nível (0-100%)",
+      "correlateWithAI": "Incluir Notícias na Análise da IA",
+      "correlateWithAIDescription": "Quando ativado, notícias recentes serão incluídas na análise de gráficos da IA para melhor contexto de mercado"
+    },
+    "toast": {
+      "newImportantNews": "📰 Notícia Importante",
+      "readMore": "Ler Mais"
+    }
+  },
+  "calendar": {
+    "title": "Calendário de Eventos",
+    "disabled": "Calendário está desativado",
+    "enableInSettings": "Ative o calendário nas configurações para visualizar eventos",
+    "failedToLoad": "Falha ao carregar eventos",
+    "noEvents": "Nenhum evento encontrado",
+    "eventTypes": {
+      "conference": "Conferência",
+      "release": "Lançamento",
+      "airdrop": "Airdrop",
+      "update": "Atualização",
+      "listing": "Listagem",
+      "partnership": "Parceria",
+      "other": "Outro"
+    },
+    "importance": {
+      "low": "Baixa",
+      "medium": "Média",
+      "high": "Alta",
+      "critical": "Crítica"
+    },
+    "status": {
+      "ongoing": "Em Andamento",
+      "past": "Passado"
+    },
+    "tabs": {
+      "events": "Eventos",
+      "settings": "Configurações"
+    },
+    "settings": {
+      "enableCalendar": "Ativar Calendário de Eventos",
+      "enableCalendarDescription": "Buscar e exibir próximos eventos de cripto do CoinGecko",
+      "showOnChart": "Mostrar Eventos no Gráfico",
+      "showOnChartDescription": "Exibir marcadores de eventos no gráfico de candlestick",
+      "minImportanceForChart": "Importância Mínima para Gráfico",
+      "minImportanceHelper": "Mostrar apenas eventos com este nível de importância ou superior no gráfico",
+      "daysAhead": "Dias à Frente",
+      "daysAheadHelper": "Buscar eventos até este número de dias no futuro (1-90)",
+      "daysBehind": "Dias Anteriores",
+      "daysBehindHelper": "Buscar eventos passados até este número de dias atrás (0-90)",
+      "correlateWithAI": "Incluir Eventos na Análise da IA",
+      "correlateWithAIDescription": "Quando ativado, eventos próximos e recentes serão incluídos na análise de gráficos da IA para melhor contexto de mercado"
     }
   },
   "onboarding": {
@@ -345,8 +409,7 @@
     "symbolSelector": "Seletor de Símbolos",
     "shortcuts": {
       "openSettings": "Abrir Configurações",
-      "focusChatInput": "Focar Entrada de Chat",
-      "toggleChatSidebar": "Alternar Barra Lateral do Chat",
+      "focusChatInput": "Focar no Campo de Chat",
       "showKeyboardShortcuts": "Mostrar Atalhos de Teclado",
       "closeDialogs": "Fechar Diálogos",
       "toggleVolume": "Alternar Exibição de Volume",
@@ -424,7 +487,7 @@
       "inactive": "Simulador Inativo"
     },
     "sidebar": {
-      "title": "Simulador de Trading",
+      "title": "Simulador",
       "close": "Fechar barra de trading"
     },
     "tabs": {

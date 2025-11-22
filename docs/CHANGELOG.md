@@ -7,7 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Calendar Integration - CoinGecko Events** 📅
+  - Complete calendar system for tracking crypto events (conferences, releases, airdrops, listings, partnerships)
+  - CalendarService with provider architecture (similar to NewsService)
+  - CoinGeckoCalendarProvider with rate limiting and caching
+  - CalendarDialog component with tabs for events and settings
+  - CalendarPanel showing upcoming and past events with importance levels (low, medium, high, critical)
+  - CalendarSettingsTab for configuring calendar behavior
+  - Events integration with AI analysis (optional correlation)
+  - Support for filtering by importance, type, symbols, and date range
+  - Event markers on chart (configurable minimum importance)
+  - Full i18n support (EN, PT, ES, FR)
+  - Persistent settings via electron storage
+  - useCalendar hook for calendar state management
+  - CalendarEvent type system with comprehensive metadata
+
+- **News Improvements - Enhanced UX** 📰
+  - NewsDialog component for dedicated news viewing experience
+  - NewsSettingsTab for configuring news behavior (polling, importance threshold, AI correlation)
+  - useNewsNotifications hook for toast notifications on important news
+  - Auto-refresh functionality with configurable interval (1-60 minutes)
+  - Minimum importance threshold for notifications (0-100%)
+  - Optional correlation with AI analysis for better market context
+  - Symbol selector in news dialog for filtering by cryptocurrency
+  - Improved CryptoPanicProvider with proper electron HTTP fetch
+  - Better error handling across all news providers
+  - NewsAPI integration with secure storage for API keys
+  - Environment variable auto-fill for development (VITE_NEWSAPI_API_KEY, VITE_CRYPTOPANIC_API_KEY)
+
+- **UI Components - Sidebar System** 🎨
+  - Created reusable SidebarContainer component with position support (left/right)
+  - Created SidebarHeader component with title and action buttons
+  - Improved TradingSidebar using new sidebar components
+  - Consistent sidebar styling across chat, trading, and future panels
+  - Proper border positioning based on sidebar location
+
+- **Trading Simulator - Critical Improvements** 💹
+  - Fixed pending order execution logic (now checks if price moved through entry point)
+  - Added previous price tracking to prevent false order fills
+  - Orders only execute when price actually crosses entry level (not just touches it)
+  - Fixed orders created before app load not being filled (prevents historical order execution)
+  - Improved price update tracking with proper state management
+  - Better logging for debugging order fills
+  - Fixed trading data persistence (proper date serialization/deserialization)
+  - Wallet performance tracking with correct timestamp handling
+  - Order expiration tracking with proper date handling
+  - Simulator toggle moved to trading sidebar header
+  - Separate chat and trading sidebar toggles in toolbar
+  - News button added to toolbar for quick access
+
+- **Keyboard Shortcuts - Refinements** ⌨️
+  - Removed obsolete "Toggle Chat Sidebar" shortcut (Cmd/Ctrl+B)
+  - Kept "Focus Chat Input" shortcut (Cmd/Ctrl+K) for quick access
+  - Updated translations across all languages
+  - Cleaner keyboard shortcuts dialog
+
 ### Fixed
+- **Performance - Critical Chart Renderer Optimizations** 🚀
+  - Fixed excessive re-renders in useGridRenderer by removing `manager?.getCandles()` from useCallback dependencies
+  - Fixed excessive re-renders in useVolumeRenderer by removing `manager?.getCandles()` from useCallback dependencies
+  - Fixed excessive re-renders in useCandlestickRenderer by removing `manager?.getCandles()` from useCallback dependencies
+  - Fixed stale data issue in useMovingAverageRenderer by calling `getCandles()` inside render function
+  - Optimized useNews hook with useMemo for optionsKey (prevents unnecessary JSON.stringify calls)
+  - Prevents unnecessary fetchNews callback recreation on every render
+  - Optimized ChartCanvas by replacing useState with useRef for interactionTimeoutRef
+  - Eliminates unnecessary re-renders when timeout changes
+  - All chart renderers now have stable callback functions that don't recreate on candle updates
+
+- **Memory Leaks - Cleanup Improvements** 🧹
+  - Fixed NewsConfigTab timeout memory leak by adding proper useEffect cleanup
+  - Prevents uncancelled timeouts from lingering after component unmount
+  - Proper cleanup in all chart renderer hooks
+
+- **useChartData Hook - Optimization** 🔄
+  - Fixed unnecessary re-renders by using useRef to track previous params
+  - Only updates context when params actually change (not on every render)
+  - Compares serialized params to detect meaningful changes
+  - Includes events and news in change detection
+
+- **CanvasManager - Zoom Fix** 🔍
+  - Added missing `updateCandleWidth()` call in zoom function
+  - Ensures candle width is recalculated after zoom operations
+  - Prevents visual glitches during zoom interactions
+
 - **Trading Simulator - Balance Calculation Bug** 🐛
   - Fixed incorrect balance calculation when closing positions (was showing 400% profit)
   - Now correctly returns investment capital + net P&L when closing positions
@@ -34,7 +117,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Auto-scroll re-enables when user returns to the latest candles
   - Works correctly with pan (drag), zoom (wheel), and manual navigation
 
+- **AI Analysis - Events and News Integration** 🤖
+  - AI analysis now includes calendar events when correlateWithAI is enabled
+  - Events shown with importance level, timing (TODAY, TOMORROW, in X days, X days ago)
+  - AI can correlate technical analysis with fundamental events
+  - News articles properly sent to AI with source and title
+  - Better prompt engineering with events and news context
+  - Comprehensive logging for debugging AI request data
+
 ### Changed
+- **Layout - Toolbar Reorganization** 🔧
+  - Moved simulator toggle from toolbar to trading sidebar header
+  - Added dedicated news button to toolbar (newspaper icon)
+  - Added dedicated trading sidebar toggle to toolbar (dollar icon)
+  - Chat toggle remains in toolbar (message icon)
+  - Cleaner, more logical button organization
+  - Removed unused GlobalActionsContext.toggleChatSidebar
+
+- **Internationalization - Translation Updates** 🌍
+  - Added 60+ new translation keys for calendar features
+  - Added 20+ new translation keys for news improvements
+  - Updated trading.sidebar.title to just "Simulator" (shorter, cleaner)
+  - Removed obsolete chat.closeChat translations
+  - Removed obsolete keyboardShortcuts.toggleChatSidebar translations
+  - Consistent translations across EN, PT, ES, FR
+
+- **TypeScript - Import Organization** 📦
+  - Consistent import ordering across worker hooks (useBoundsWorker, useCandleOptimizerWorker, useConversationWorker, useMovingAverageWorker)
+  - Utilities imported before types
+  - Cleaner code structure
+
 - **Chart - Tooltip Improvements** 🏷️
   - All tooltips now display full date and time (DD/MM/YYYY HH:MM:SS)
   - Applied to: candle tooltips, order tooltips, AI study tooltips, moving average tooltips, measurement tooltips

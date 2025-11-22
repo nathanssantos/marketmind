@@ -1,14 +1,14 @@
-import axios, { AxiosInstance } from 'axios';
+import type { Candle, CandleData, TimeInterval } from '@shared/types';
 import {
-  BaseMarketProvider,
-  type MarketProviderConfig,
-  type FetchCandlesOptions,
-  type Symbol,
-  type SymbolInfo,
-  type WebSocketSubscription,
-  type WebSocketUpdate,
+    BaseMarketProvider,
+    type FetchCandlesOptions,
+    type MarketProviderConfig,
+    type Symbol,
+    type SymbolInfo,
+    type WebSocketSubscription,
+    type WebSocketUpdate,
 } from '@shared/types';
-import type { CandleData, Candle, TimeInterval } from '@shared/types';
+import axios, { AxiosInstance } from 'axios';
 
 interface BinanceKline {
   0: number;
@@ -219,7 +219,9 @@ export class BinanceProvider extends BaseMarketProvider {
     this.wsConnections.set(streamName, ws);
 
     ws.onopen = () => {
-      console.log(`[Binance WS] Connected to ${streamName}`);
+      if (import.meta.env.DEV) {
+        console.log(`[Binance WS] Connected to ${streamName}`);
+      }
     };
 
     ws.onmessage = (event) => {
@@ -256,7 +258,9 @@ export class BinanceProvider extends BaseMarketProvider {
     };
 
     ws.onclose = () => {
-      console.log(`[Binance WS] Disconnected from ${streamName}`);
+      if (import.meta.env.DEV) {
+        console.log(`[Binance WS] Disconnected from ${streamName}`);
+      }
       this.wsConnections.delete(streamName);
     };
 
