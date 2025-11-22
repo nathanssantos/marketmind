@@ -107,3 +107,12 @@ export const useNews = (options: UseNewsOptions = {}): UseNewsReturn => {
     [articles, loading, error, totalResults, fetchNews, clearCache]
   );
 };
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    if (defaultNewsService) {
+      defaultNewsService.clearCache();
+      defaultNewsService = null;
+    }
+  });
+}

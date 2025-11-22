@@ -1,5 +1,6 @@
 import type { AIMessage } from '@shared/types';
 import { useCallback, useEffect, useRef } from 'react';
+import { workerPool } from '@/renderer/utils/WorkerPool';
 import type {
   ConversationWorkerRequest,
   ConversationWorkerResponse,
@@ -27,12 +28,20 @@ export const useConversationWorker = (): UseConversationWorkerReturn => {
   const requestIdRef = useRef(0);
 
   useEffect(() => {
-    workerRef.current = new Worker(
-      new URL('../workers/conversation.worker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    const WORKER_KEY = 'conversation';
+    
+    if (!workerPool.has(WORKER_KEY)) {
+      workerPool.register(WORKER_KEY, () => 
+        new Worker(
+          new URL('../workers/conversation.worker.ts', import.meta.url),
+          { type: 'module' }
+        )
+      );
+    }
+    
+    workerRef.current = workerPool.get(WORKER_KEY);
 
-    workerRef.current.onmessage = (
+    const messageHandler = (
       event: MessageEvent<ConversationWorkerResponse>
     ) => {
       const { type, ...result } = event.data;
@@ -46,11 +55,14 @@ export const useConversationWorker = (): UseConversationWorkerReturn => {
         });
       }
     };
+    
+    if (workerRef.current) {
+      workerRef.current.addEventListener('message', messageHandler);
+    }
 
     return () => {
       if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
+        workerRef.current.removeEventListener('message', messageHandler);
       }
       pendingCallbacksRef.current.clear();
     };

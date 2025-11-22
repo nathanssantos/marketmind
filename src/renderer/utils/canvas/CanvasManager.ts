@@ -35,6 +35,11 @@ export class CanvasManager {
     this.viewport = viewport;
     this.padding = padding;
     this.initialize();
+    
+    if (!globalThis.__canvasManagerInstances) {
+      globalThis.__canvasManagerInstances = new Set();
+    }
+    globalThis.__canvasManagerInstances.add(this);
   }
 
   public setRenderCallback(callback: (() => void) | null): void {
@@ -339,6 +344,29 @@ export class CanvasManager {
     }
     this.isAnimating = false;
     this.renderCallback = null;
-    this.ctx = null;
+    
+    if (this.ctx) {
+      this.clear();
+      this.ctx = null;
+    }
+    
+    this.candles = [];
+    this.bounds = null;
+    this.dimensions = null;
+    
+    if (globalThis.__canvasManagerInstances) {
+      globalThis.__canvasManagerInstances.delete(this);
+    }
   }
+}
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    if (globalThis.__canvasManagerInstances) {
+      globalThis.__canvasManagerInstances.forEach((manager: CanvasManager) => {
+        manager.destroy();
+      });
+      globalThis.__canvasManagerInstances.clear();
+    }
+  });
 }

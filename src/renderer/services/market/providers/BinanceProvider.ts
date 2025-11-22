@@ -219,7 +219,9 @@ export class BinanceProvider extends BaseMarketProvider {
     this.wsConnections.set(streamName, ws);
 
     ws.onopen = () => {
-      console.log(`[Binance WS] Connected to ${streamName}`);
+      if (import.meta.env.DEV) {
+        console.log(`[Binance WS] Connected to ${streamName}`);
+      }
     };
 
     ws.onmessage = (event) => {
@@ -256,7 +258,9 @@ export class BinanceProvider extends BaseMarketProvider {
     };
 
     ws.onclose = () => {
-      console.log(`[Binance WS] Disconnected from ${streamName}`);
+      if (import.meta.env.DEV) {
+        console.log(`[Binance WS] Disconnected from ${streamName}`);
+      }
       this.wsConnections.delete(streamName);
     };
 

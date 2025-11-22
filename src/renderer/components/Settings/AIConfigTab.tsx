@@ -138,7 +138,9 @@ export const AIConfigTab = () => {
     try {
       const success = await setSecureApiKey(provider, key);
       if (success) {
-        console.log(`${provider} API key saved successfully`);
+        if (import.meta.env.DEV) {
+          console.log(`${provider} API key saved successfully`);
+        }
       }
     } catch (error) {
       console.error(`Failed to save ${provider} API key:`, error);
