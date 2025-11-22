@@ -170,87 +170,165 @@ const setupUpdateIpcHandlers = (): void => {
   });
 };
 
+const createSuccessResponse = (data?: unknown) => ({ 
+  success: true, 
+  ...(data !== undefined && { data }) 
+});
+
+const createErrorResponse = (error: unknown, defaultData?: unknown) => ({
+  success: false,
+  error: error instanceof Error ? error.message : 'Unknown error',
+  ...(defaultData !== undefined && { data: defaultData }),
+});
+
+const handleStorageOperation = async <T>(
+  operation: () => T,
+  errorMessage: string,
+  options: { returnData?: boolean; defaultData?: unknown } = {}
+): Promise<{ success: boolean; data?: T; error?: string }> => {
+  try {
+    const result = operation();
+    return options.returnData ? createSuccessResponse(result) : createSuccessResponse();
+  } catch (error) {
+    console.error(errorMessage, error);
+    return createErrorResponse(error, options.defaultData) as { success: boolean; data?: T; error?: string };
+  }
+};
+
 const setupIpcHandlers = (): void => {
-  ipcMain.handle('storage:isEncryptionAvailable', () => {
-    return storageService.isEncryptionAvailable();
-  });
+  ipcMain.handle('storage:isEncryptionAvailable', () => storageService.isEncryptionAvailable());
 
-  ipcMain.handle('storage:setApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic', apiKey: string) => {
-    try {
-      storageService.setApiKey(provider, apiKey);
-      return { success: true };
-    } catch (error) {
-      console.error(`Failed to set ${provider} API key:`, error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      };
-    }
-  });
+  ipcMain.handle('storage:setApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic', apiKey: string) =>
+    handleStorageOperation(
+      () => storageService.setApiKey(provider, apiKey),
+      `Failed to set ${provider} API key:`
+    )
+  );
 
-  ipcMain.handle('storage:getApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic') => {
-    try {
-      const apiKey = storageService.getApiKey(provider);
-      return { success: true, apiKey };
-    } catch (error) {
-      console.error(`Failed to get ${provider} API key:`, error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      };
-    }
-  });
+  ipcMain.handle('storage:getApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic') =>
+    handleStorageOperation(
+      () => ({ apiKey: storageService.getApiKey(provider) }),
+      `Failed to get ${provider} API key:`,
+      { returnData: false }
+    ).then(result => result.success ? { success: true, apiKey: (result.data as { apiKey: string | null }).apiKey } : result)
+  );
 
-  ipcMain.handle('storage:deleteApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic') => {
-    try {
-      storageService.deleteApiKey(provider);
-      return { success: true };
-    } catch (error) {
-      console.error(`Failed to delete ${provider} API key:`, error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      };
-    }
-  });
+  ipcMain.handle('storage:deleteApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic') =>
+    handleStorageOperation(
+      () => storageService.deleteApiKey(provider),
+      `Failed to delete ${provider} API key:`
+    )
+  );
 
-  ipcMain.handle('storage:hasApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic') => {
-    return storageService.hasApiKey(provider);
-  });
+  ipcMain.handle('storage:hasApiKey', async (_event, provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic') =>
+    storageService.hasApiKey(provider)
+  );
 
-  ipcMain.handle('storage:getAllApiKeys', async () => {
-    return storageService.getAllApiKeys();
-  });
+  ipcMain.handle('storage:getAllApiKeys', async () => storageService.getAllApiKeys());
 
-  ipcMain.handle('storage:clearAllApiKeys', async () => {
-    try {
-      storageService.clearAllApiKeys();
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to clear API keys:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      };
-    }
-  });
+  ipcMain.handle('storage:clearAllApiKeys', async () =>
+    handleStorageOperation(
+      () => storageService.clearAllApiKeys(),
+      'Failed to clear API keys:'
+    )
+  );
   
-  ipcMain.handle('storage:getNewsSettings', async () => {
-    return storageService.getNewsSettings();
-  });
+  ipcMain.handle('storage:getNewsSettings', async () => storageService.getNewsSettings());
 
-  ipcMain.handle('storage:setNewsSettings', async (_event, settings: { enabled: boolean; refreshInterval: number; maxArticles: number }) => {
-    try {
-      storageService.setNewsSettings(settings);
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to set news settings:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      };
-    }
-  });
+  ipcMain.handle('storage:setNewsSettings', async (_event, settings: { enabled: boolean; refreshInterval: number; maxArticles: number }) =>
+    handleStorageOperation(
+      () => storageService.setNewsSettings(settings),
+      'Failed to set news settings:'
+    )
+  );
+
+  ipcMain.handle('storage:getTradingData', async () =>
+    handleStorageOperation(
+      () => storageService.getTradingData(),
+      'Failed to get trading data:',
+      { returnData: true, defaultData: null }
+    )
+  );
+
+  ipcMain.handle('storage:setTradingData', async (_event, data) =>
+    handleStorageOperation(
+      () => storageService.setTradingData(data),
+      'Failed to set trading data:'
+    )
+  );
+
+  ipcMain.handle('storage:clearTradingData', async () =>
+    handleStorageOperation(
+      () => storageService.clearTradingData(),
+      'Failed to clear trading data:'
+    )
+  );
+
+  ipcMain.handle('storage:getAIData', async () =>
+    handleStorageOperation(
+      () => storageService.getAIData(),
+      'Failed to get AI data:',
+      { returnData: true, defaultData: null }
+    )
+  );
+
+  ipcMain.handle('storage:setAIData', async (_event, data) =>
+    handleStorageOperation(
+      () => storageService.setAIData(data),
+      'Failed to set AI data:'
+    )
+  );
+
+  ipcMain.handle('storage:clearAIData', async () =>
+    handleStorageOperation(
+      () => storageService.clearAIData(),
+      'Failed to clear AI data:'
+    )
+  );
+
+  ipcMain.handle('storage:getAIStudies', async () =>
+    handleStorageOperation(
+      () => storageService.getAIStudies(),
+      'Failed to get AI studies:',
+      { returnData: true, defaultData: {} }
+    )
+  );
+
+  ipcMain.handle('storage:setAIStudies', async (_event, studies) =>
+    handleStorageOperation(
+      () => storageService.setAIStudies(studies),
+      'Failed to set AI studies:'
+    )
+  );
+
+  ipcMain.handle('storage:getAIStudiesForSymbol', async (_event, symbol) =>
+    handleStorageOperation(
+      () => storageService.getAIStudiesForSymbol(symbol),
+      'Failed to get AI studies for symbol:',
+      { returnData: true, defaultData: null }
+    )
+  );
+
+  ipcMain.handle('storage:setAIStudiesForSymbol', async (_event, symbol, data) =>
+    handleStorageOperation(
+      () => storageService.setAIStudiesForSymbol(symbol, data),
+      'Failed to set AI studies for symbol:'
+    )
+  );
+
+  ipcMain.handle('storage:deleteAIStudiesForSymbol', async (_event, symbol) =>
+    handleStorageOperation(
+      () => storageService.deleteAIStudiesForSymbol(symbol),
+      'Failed to delete AI studies for symbol:'
+    )
+  );
+
+  ipcMain.handle('storage:clearAIStudies', async () =>
+    handleStorageOperation(
+      () => storageService.clearAIStudies(),
+      'Failed to clear AI studies:'
+    )
+  );
 };
 
 app.whenReady().then(() => {

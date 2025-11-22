@@ -84,6 +84,7 @@ export class CanvasManager {
   public setCandles(candles: Candle[]): void {
     this.candles = candles;
     this.updateBounds();
+    this.triggerRender();
   }
 
   public getCandles(): Candle[] {

@@ -1,7 +1,7 @@
-import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { useAIStudies } from './useAIStudies';
+import { act, renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AIStudy } from '../../shared/types';
+import { useAIStudies } from './useAIStudies';
 
 vi.mock('../services/ai/AIStudyStorage', () => ({
   aiStudyStorage: {
@@ -15,8 +15,8 @@ vi.mock('../services/ai/AIResponseParser', () => ({
   parseAIResponse: vi.fn(),
 }));
 
-import { aiStudyStorage } from '../services/ai/AIStudyStorage';
 import { parseAIResponse } from '../services/ai/AIResponseParser';
+import { aiStudyStorage } from '../services/ai/AIStudyStorage';
 
 describe('useAIStudies', () => {
   const symbol = 'BTCUSDT';
@@ -38,21 +38,23 @@ describe('useAIStudies', () => {
   });
 
   describe('initial state', () => {
-    it('should start with empty studies when no data exists', () => {
-      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockReturnValue(null);
+    it('should start with empty studies when no data exists', async () => {
+      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockResolvedValue(null);
 
       const { result } = renderHook(() => useAIStudies({ symbol }));
 
-      expect(result.current.studies).toEqual([]);
-      expect(result.current.hasStudies).toBe(false);
-      expect(result.current.studiesVisible).toBe(false);
-      expect(result.current.studyDataId).toBeNull();
+      await vi.waitFor(() => {
+        expect(result.current.studies).toEqual([]);
+        expect(result.current.hasStudies).toBe(false);
+        expect(result.current.studiesVisible).toBe(false);
+        expect(result.current.studyDataId).toBeNull();
+      });
     });
 
-    it('should load existing studies from storage', () => {
+    it('should load existing studies from storage', async () => {
       const mockStudies: AIStudy[] = [createMockStudyLine(1)];
 
-      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockReturnValue({
+      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockResolvedValue({
         id: 'test-id',
         symbol,
         createdAt: Date.now(),
@@ -61,39 +63,46 @@ describe('useAIStudies', () => {
 
       const { result } = renderHook(() => useAIStudies({ symbol }));
 
-      expect(result.current.studies).toEqual(mockStudies);
-      expect(result.current.hasStudies).toBe(true);
-      expect(result.current.studiesVisible).toBe(true);
-      expect(result.current.studyDataId).toBe('test-id');
+      await vi.waitFor(() => {
+        expect(result.current.studies).toEqual(mockStudies);
+        expect(result.current.hasStudies).toBe(true);
+        expect(result.current.studiesVisible).toBe(true);
+        expect(result.current.studyDataId).toBe('test-id');
+      });
     });
 
-    it('should use conversationId as storage key when provided', () => {
-      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockReturnValue(null);
+    it('should use conversationId as storage key when provided', async () => {
+      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockResolvedValue(null);
 
       renderHook(() => useAIStudies({ symbol, conversationId }));
 
-      expect(aiStudyStorage.getStudiesForSymbol).toHaveBeenCalledWith(conversationId);
+      await vi.waitFor(() => {
+        expect(aiStudyStorage.getStudiesForSymbol).toHaveBeenCalledWith(conversationId);
+      });
     });
 
-    it('should use symbol as storage key when conversationId is not provided', () => {
-      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockReturnValue(null);
+    it('should use symbol as storage key when conversationId is not provided', async () => {
+      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockResolvedValue(null);
 
       renderHook(() => useAIStudies({ symbol }));
 
-      expect(aiStudyStorage.getStudiesForSymbol).toHaveBeenCalledWith(symbol);
+      await vi.waitFor(() => {
+        expect(aiStudyStorage.getStudiesForSymbol).toHaveBeenCalledWith(symbol);
+      });
     });
   });
 
   describe('saveStudies', () => {
-    it('should save new studies to storage', () => {
-      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockReturnValue(null);
+    it('should save new studies to storage', async () => {
+      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockResolvedValue(null);
+      vi.mocked(aiStudyStorage.saveStudiesForSymbol).mockResolvedValue();
 
       const { result } = renderHook(() => useAIStudies({ symbol }));
 
       const newStudies: AIStudy[] = [createMockStudyLine(1, 'resistance')];
 
-      act(() => {
-        result.current.saveStudies(newStudies);
+      await act(async () => {
+        await result.current.saveStudies(newStudies);
       });
 
       expect(aiStudyStorage.saveStudiesForSymbol).toHaveBeenCalledWith(
@@ -109,22 +118,25 @@ describe('useAIStudies', () => {
   });
 
   describe('deleteStudies', () => {
-    it('should delete studies from storage', () => {
+    it('should delete studies from storage', async () => {
       const mockStudies: AIStudy[] = [createMockStudyLine(1)];
 
-      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockReturnValue({
+      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockResolvedValue({
         id: 'test-id',
         symbol,
         createdAt: Date.now(),
         studies: mockStudies,
       });
+      vi.mocked(aiStudyStorage.deleteStudiesForSymbol).mockResolvedValue();
 
       const { result } = renderHook(() => useAIStudies({ symbol }));
 
-      expect(result.current.hasStudies).toBe(true);
+      await vi.waitFor(() => {
+        expect(result.current.hasStudies).toBe(true);
+      });
 
-      act(() => {
-        result.current.deleteStudies();
+      await act(async () => {
+        await result.current.deleteStudies();
       });
 
       expect(aiStudyStorage.deleteStudiesForSymbol).toHaveBeenCalledWith(symbol);
@@ -134,13 +146,13 @@ describe('useAIStudies', () => {
   });
 
   describe('toggleStudiesVisibility', () => {
-    it('should toggle visibility of all studies', () => {
+    it('should toggle visibility of all studies', async () => {
       const mockStudies: AIStudy[] = [
         createMockStudyLine(1, 'support'),
         createMockStudyLine(2, 'resistance'),
       ];
 
-      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockReturnValue({
+      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockResolvedValue({
         id: 'test-id',
         symbol,
         createdAt: Date.now(),
@@ -149,7 +161,9 @@ describe('useAIStudies', () => {
 
       const { result } = renderHook(() => useAIStudies({ symbol }));
 
-      expect(result.current.studiesVisible).toBe(true);
+      await vi.waitFor(() => {
+        expect(result.current.studiesVisible).toBe(true);
+      });
 
       act(() => {
         result.current.toggleStudiesVisibility();
@@ -168,8 +182,9 @@ describe('useAIStudies', () => {
   });
 
   describe('processAIResponse', () => {
-    it('should process AI response and extract studies when no studies exist', () => {
-      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockReturnValue(null);
+    it('should process AI response and extract studies when no studies exist', async () => {
+      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockResolvedValue(null);
+      vi.mocked(aiStudyStorage.saveStudiesForSymbol).mockResolvedValue();
 
       const newStudies: AIStudy[] = [createMockStudyLine(1)];
 
@@ -181,8 +196,8 @@ describe('useAIStudies', () => {
       const { result } = renderHook(() => useAIStudies({ symbol }));
 
       let processedText: string = '';
-      act(() => {
-        processedText = result.current.processAIResponse(
+      await act(async () => {
+        processedText = await result.current.processAIResponse(
           'AI response with studies'
         );
       });
@@ -193,15 +208,16 @@ describe('useAIStudies', () => {
       expect(result.current.hasStudies).toBe(true);
     });
 
-    it('should append new studies to existing ones', () => {
+    it('should append new studies to existing ones', async () => {
       const existingStudies: AIStudy[] = [createMockStudyLine(1, 'support')];
 
-      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockReturnValue({
+      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockResolvedValue({
         id: 'test-id',
         symbol,
         createdAt: Date.now(),
         studies: existingStudies,
       });
+      vi.mocked(aiStudyStorage.saveStudiesForSymbol).mockResolvedValue();
 
       const newStudies: AIStudy[] = [createMockStudyLine(2, 'resistance')];
 
@@ -212,11 +228,13 @@ describe('useAIStudies', () => {
 
       const { result } = renderHook(() => useAIStudies({ symbol }));
 
-      expect(result.current.studies).toEqual(existingStudies);
+      await vi.waitFor(() => {
+        expect(result.current.studies).toEqual(existingStudies);
+      });
 
       let processedText: string = '';
-      act(() => {
-        processedText = result.current.processAIResponse(
+      await act(async () => {
+        processedText = await result.current.processAIResponse(
           'AI response with new studies'
         );
       });
@@ -227,8 +245,8 @@ describe('useAIStudies', () => {
       expect(result.current.hasStudies).toBe(true);
     });
 
-    it('should return analysis text when no studies in response', () => {
-      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockReturnValue(null);
+    it('should return analysis text when no studies in response', async () => {
+      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockResolvedValue(null);
 
       vi.mocked(parseAIResponse).mockReturnValue({
         analysis: 'Analysis without studies',
@@ -238,8 +256,8 @@ describe('useAIStudies', () => {
       const { result } = renderHook(() => useAIStudies({ symbol }));
 
       let processedText: string = '';
-      act(() => {
-        processedText = result.current.processAIResponse(
+      await act(async () => {
+        processedText = await result.current.processAIResponse(
           'AI response without studies'
         );
       });
@@ -251,11 +269,11 @@ describe('useAIStudies', () => {
   });
 
   describe('symbol change', () => {
-    it('should reload studies when symbol changes', () => {
+    it('should reload studies when symbol changes', async () => {
       const btcStudies: AIStudy[] = [createMockStudyLine(1, 'support')];
       const ethStudies: AIStudy[] = [createMockStudyLine(2, 'resistance')];
 
-      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockImplementation((sym) => {
+      vi.mocked(aiStudyStorage.getStudiesForSymbol).mockImplementation(async (sym) => {
         if (sym === 'BTCUSDT') {
           return {
             id: 'btc-id',
@@ -282,11 +300,15 @@ describe('useAIStudies', () => {
         }
       );
 
-      expect(result.current.studies).toEqual(btcStudies);
+      await vi.waitFor(() => {
+        expect(result.current.studies).toEqual(btcStudies);
+      });
 
       rerender({ symbol: 'ETHUSDT' });
 
-      expect(result.current.studies).toEqual(ethStudies);
+      await vi.waitFor(() => {
+        expect(result.current.studies).toEqual(ethStudies);
+      });
     });
   });
 });

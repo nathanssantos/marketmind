@@ -1,50 +1,61 @@
 import type { AIStudyData } from '@shared/types';
 
-const STORAGE_KEY = 'marketmind-ai-studies';
-
 class AIStudyStorageService {
-  private getAllStudies(): Record<string, AIStudyData> {
+  private async getAllStudies(): Promise<Record<string, AIStudyData>> {
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      return data ? JSON.parse(data) : {};
+      const result = await window.electron.secureStorage.getAIStudies();
+      return result.success ? result.data : {};
     } catch (error) {
       console.error('Error loading AI studies:', error);
       return {};
     }
   }
 
-  private saveAllStudies(studies: Record<string, AIStudyData>): void {
+  private async saveAllStudies(studies: Record<string, AIStudyData>): Promise<void> {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(studies));
+      await window.electron.secureStorage.setAIStudies(studies);
     } catch (error) {
       console.error('Error saving AI studies:', error);
     }
   }
 
-  getStudiesForSymbol(symbol: string): AIStudyData | null {
-    const allStudies = this.getAllStudies();
-    return allStudies[symbol] || null;
+  async getStudiesForSymbol(symbol: string): Promise<AIStudyData | null> {
+    try {
+      const result = await window.electron.secureStorage.getAIStudiesForSymbol(symbol);
+      return result.success ? result.data : null;
+    } catch (error) {
+      console.error('Error loading AI studies for symbol:', error);
+      return null;
+    }
   }
 
-  saveStudiesForSymbol(symbol: string, data: AIStudyData): void {
-    const allStudies = this.getAllStudies();
-    allStudies[symbol] = data;
-    this.saveAllStudies(allStudies);
+  async saveStudiesForSymbol(symbol: string, data: AIStudyData): Promise<void> {
+    try {
+      await window.electron.secureStorage.setAIStudiesForSymbol(symbol, data);
+    } catch (error) {
+      console.error('Error saving AI studies for symbol:', error);
+    }
   }
 
-  deleteStudiesForSymbol(symbol: string): void {
-    const allStudies = this.getAllStudies();
-    delete allStudies[symbol];
-    this.saveAllStudies(allStudies);
+  async deleteStudiesForSymbol(symbol: string): Promise<void> {
+    try {
+      await window.electron.secureStorage.deleteAIStudiesForSymbol(symbol);
+    } catch (error) {
+      console.error('Error deleting AI studies for symbol:', error);
+    }
   }
 
-  hasStudiesForSymbol(symbol: string): boolean {
-    const studies = this.getStudiesForSymbol(symbol);
+  async hasStudiesForSymbol(symbol: string): Promise<boolean> {
+    const studies = await this.getStudiesForSymbol(symbol);
     return studies !== null && studies.studies.length > 0;
   }
 
-  clearAllStudies(): void {
-    localStorage.removeItem(STORAGE_KEY);
+  async clearAllStudies(): Promise<void> {
+    try {
+      await window.electron.secureStorage.clearAIStudies();
+    } catch (error) {
+      console.error('Error clearing AI studies:', error);
+    }
   }
 }
 

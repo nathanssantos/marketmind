@@ -1,10 +1,27 @@
-import { Box } from '@chakra-ui/react';
+import { Button } from '@/renderer/components/ui/button';
+import {
+  DialogActionTrigger,
+  DialogBackdrop,
+  DialogBody,
+  DialogCloseTrigger,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogPositioner,
+  DialogRoot,
+  DialogTitle,
+} from '@/renderer/components/ui/dialog';
+import { Box, Portal } from '@chakra-ui/react';
 import { useChartColors } from '@renderer/hooks/useChartColors';
+import { useToast } from '@renderer/hooks/useToast';
+import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
+import { useTradingStore } from '@renderer/store/tradingStore';
 import { calculateMovingAverage } from '@renderer/utils/movingAverages';
 import { CHART_CONFIG } from '@shared/constants';
 import type { AIStudy, Candle, Viewport } from '@shared/types';
 import type { ReactElement } from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import { AIStudyRenderer } from './AIStudyRenderer';
 import { CandleTimer } from './CandleTimer';
@@ -18,10 +35,13 @@ import { useCurrentPriceLineRenderer } from './useCurrentPriceLineRenderer';
 import { useGridRenderer } from './useGridRenderer';
 import { useLineChartRenderer } from './useLineChartRenderer';
 import { useMovingAverageRenderer, type MovingAverageConfig } from './useMovingAverageRenderer';
+import { useOrderDragHandler } from './useOrderDragHandler';
+import { useOrderLinesRenderer } from './useOrderLinesRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
 
 export interface ChartCanvasProps {
   candles: Candle[];
+  symbol?: string;
   width?: string | number;
   height?: string | number;
   initialViewport?: Viewport;
@@ -44,6 +64,7 @@ export interface ChartCanvasProps {
 
 export const ChartCanvas = ({
   candles,
+  symbol,
   width = '100%',
   height = '600px',
   initialViewport,
@@ -63,7 +84,70 @@ export const ChartCanvas = ({
   aiStudiesVisible = true,
   timeframe = '1h',
 }: ChartCanvasProps): ReactElement => {
+  const { t } = useTranslation();
+  const { warning } = useToast();
   const colors = useChartColors();
+  const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
+  const activeWalletId = useTradingStore((state) => state.activeWalletId);
+  const wallets = useTradingStore((state) => state.wallets);
+  const addOrder = useTradingStore((state) => state.addOrder);
+  const closeOrder = useTradingStore((state) => state.closeOrder);
+  const updateOrder = useTradingStore((state) => state.updateOrder);
+  const activateOrder = useTradingStore((state) => state.activateOrder);
+  const orders = useTradingStore((state) => state.orders);
+
+  const activeWallet = wallets.find((w) => w.id === activeWalletId);
+
+  const handleLongEntry = useCallback((price: number) => {
+    if (!activeWallet) {
+      warning(t('trading.ticket.noWallet'));
+      return;
+    }
+    if (!symbol) return;
+
+    const currentPrice = candles[candles.length - 1]?.close;
+    const subType: 'limit' | 'stop' = currentPrice !== undefined && price < currentPrice ? 'limit' : 'stop';
+
+    addOrder({
+      symbol,
+      type: 'long',
+      subType,
+      status: 'pending',
+      entryPrice: price,
+      quantity: 1,
+      walletId: activeWallet.id,
+      ...(currentPrice !== undefined && { currentPrice }),
+    });
+  }, [activeWallet, addOrder, symbol, candles, warning, t]);
+
+  const handleShortEntry = useCallback((price: number) => {
+    if (!activeWallet) {
+      warning(t('trading.ticket.noWallet'));
+      return;
+    }
+    if (!symbol) return;
+
+    const currentPrice = candles[candles.length - 1]?.close;
+    const subType: 'limit' | 'stop' = currentPrice !== undefined && price > currentPrice ? 'limit' : 'stop';
+
+    addOrder({
+      symbol,
+      type: 'short',
+      subType,
+      status: 'pending',
+      entryPrice: price,
+      quantity: 1,
+      walletId: activeWallet.id,
+      ...(currentPrice !== undefined && { currentPrice }),
+    });
+  }, [activeWallet, addOrder, symbol, candles, warning, t]);
+
+  const { shiftPressed, altPressed } = useTradingShortcuts({
+    onLongEntry: handleLongEntry,
+    onShortEntry: handleShortEntry,
+    enabled: isSimulatorActive,
+  });
+
   const [tooltipData, setTooltipData] = useState<{
     candle: Candle | null;
     x: number;
@@ -86,6 +170,8 @@ export const ChartCanvas = ({
       startPrice: number;
       endPrice: number;
     };
+    order?: import('@shared/types/trading').Order;
+    currentPrice?: number;
   }>({
     candle: null,
     x: 0,
@@ -93,11 +179,15 @@ export const ChartCanvas = ({
     visible: false,
   });
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+  const [orderPreview, setOrderPreview] = useState<{ price: number; type: 'long' | 'short' } | null>(null);
   const [hoveredAIStudy, setHoveredAIStudy] = useState<AIStudy | null>(null);
   const [hoveredMAIndex, setHoveredMAIndex] = useState<number | undefined>(undefined);
+  const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null);
+  const lastHoveredOrderRef = useRef<string | null>(null);
+  const lastTooltipOrderRef = useRef<string | null>(null);
   const [isInteracting, setIsInteracting] = useState(false);
   const [interactionTimeout, setInteractionTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [cursor, setCursor] = useState<'crosshair' | 'ns-resize' | 'grab' | 'grabbing'>('crosshair');
+  const [cursor, setCursor] = useState<'crosshair' | 'ns-resize' | 'grab' | 'grabbing' | 'pointer'>('crosshair');
   const [measurementArea, setMeasurementArea] = useState<{
     startX: number;
     startY: number;
@@ -107,6 +197,7 @@ export const ChartCanvas = ({
     endIndex: number;
   } | null>(null);
   const [isMeasuring, setIsMeasuring] = useState(false);
+  const [orderToClose, setOrderToClose] = useState<string | null>(null);
   const {
     canvasRef,
     manager,
@@ -119,6 +210,35 @@ export const ChartCanvas = ({
     ...(initialViewport !== undefined && { initialViewport }),
     ...(onViewportChange !== undefined && { onViewportChange }),
   });
+
+  const handleConfirmCloseOrder = useCallback((): void => {
+    if (!orderToClose || !manager) return;
+
+    if (orderToClose.startsWith('sltp-')) {
+      const parts = orderToClose.split('-');
+      const type = parts[1] as 'stopLoss' | 'takeProfit';
+      const orderIdsString = parts.slice(2).join('-');
+      const orderIds = orderIdsString.split(',').filter(id => id);
+
+      orderIds.forEach((orderId) => {
+        updateOrder(orderId, {
+          [type]: undefined,
+        });
+      });
+
+      setOrderToClose(null);
+      return;
+    }
+
+    const currentCandles = manager.getCandles();
+    if (!currentCandles.length) return;
+
+    const currentPrice = currentCandles[currentCandles.length - 1]?.close;
+    if (!currentPrice) return;
+
+    closeOrder(orderToClose, currentPrice);
+    setOrderToClose(null);
+  }, [orderToClose, manager, closeOrder, updateOrder]);
 
   const { render: renderGrid } = useGridRenderer({
     manager,
@@ -161,7 +281,7 @@ export const ChartCanvas = ({
     hoveredMAIndex,
   });
 
-  const { render: renderCurrentPriceLine } = useCurrentPriceLineRenderer({
+  const { render: renderCurrentPriceLine, renderLine: renderCurrentPriceLine_Line, renderLabel: renderCurrentPriceLine_Label } = useCurrentPriceLineRenderer({
     manager,
     colors,
     enabled: showCurrentPriceLine,
@@ -181,12 +301,35 @@ export const ChartCanvas = ({
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
   });
 
-  const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>): void => {
-    if (isMeasuring && manager && canvasRef.current && measurementArea) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const mouseX = event.clientX - rect.left;
-      const mouseY = event.clientY - rect.top;
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, isSimulatorActive, hoveredOrderId);
 
+  const currentCandles = manager?.getCandles() ?? [];
+  const currentPrice = currentCandles[currentCandles.length - 1]?.close ?? 0;
+
+  const orderDragHandler = useOrderDragHandler({
+    orders,
+    updateOrder,
+    priceToY: (price) => manager?.priceToY(price) ?? 0,
+    yToPrice: (y) => manager?.yToPrice(y) ?? 0,
+    enabled: isSimulatorActive,
+    getOrderAtPosition: (x, y) => getOrderAtPosition(x, y),
+    currentPrice,
+    activateOrder,
+  });
+
+  const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>): void => {
+    if (!canvasRef.current) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    if (orderDragHandler.isDragging) {
+      orderDragHandler.handleMouseMove(mouseY);
+      return;
+    }
+
+    if (isMeasuring && manager && measurementArea) {
       const viewport = manager.getViewport();
       const dimensions = manager.getDimensions();
       if (!dimensions) return;
@@ -232,11 +375,29 @@ export const ChartCanvas = ({
 
     handleMouseMove(event);
 
-    if (!manager || !canvasRef.current) return;
+    if (!manager) return;
 
-    const rect = canvasRef.current.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
+    const hoveredOrderButton = getClickedOrderId(mouseX, mouseY);
+    const hoveredOrder = getHoveredOrder(mouseX, mouseY);
+    const hoveredSLTP = getSLTPAtPosition(mouseX, mouseY);
+
+    const newHoveredId = hoveredOrder?.id || null;
+    if (newHoveredId !== lastHoveredOrderRef.current) {
+      lastHoveredOrderRef.current = newHoveredId;
+      setHoveredOrderId(newHoveredId);
+    }
+
+    if (orderDragHandler.isDragging) {
+      setCursor('ns-resize');
+    } else if (hoveredOrderButton) {
+      setCursor('pointer');
+    } else if (hoveredSLTP) {
+      setCursor('ns-resize');
+    } else if (hoveredOrder) {
+      setCursor('ns-resize');
+    } else if (cursor !== 'crosshair') {
+      setCursor('crosshair');
+    }
 
     setMousePosition({ x: mouseX, y: mouseY });
 
@@ -249,6 +410,16 @@ export const ChartCanvas = ({
     const priceScaleLeft = dimensions.width - (advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
     const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
     const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
+
+    if (isSimulatorActive && (shiftPressed || altPressed) && mouseY < timeScaleTop) {
+      const price = manager.yToPrice(mouseY);
+      setOrderPreview({
+        price,
+        type: shiftPressed ? 'long' : 'short',
+      });
+    } else {
+      setOrderPreview(null);
+    }
 
     const isOnPriceScale = mouseX >= priceScaleLeft && mouseY < timeScaleTop;
 
@@ -269,6 +440,39 @@ export const ChartCanvas = ({
 
     if (isOnPriceScale || isOnTimeScale) {
       setHoveredMAIndex(undefined);
+      setTooltipData({
+        candle: null,
+        x: 0,
+        y: 0,
+        visible: false,
+      });
+      return;
+    }
+
+    const hoveredOrderForTooltip = getHoveredOrder(mouseX, mouseY);
+    const hoveredOrderIdForTooltip = hoveredOrderForTooltip?.id || null;
+
+    if (hoveredOrderForTooltip && candles.length > 0) {
+      if (hoveredOrderIdForTooltip !== lastTooltipOrderRef.current) {
+        lastTooltipOrderRef.current = hoveredOrderIdForTooltip;
+        const currentPrice = candles[candles.length - 1]?.close;
+        const rect = canvasRef.current?.getBoundingClientRect();
+        setTooltipData({
+          candle: null,
+          x: mouseX,
+          y: mouseY,
+          visible: true,
+          containerWidth: rect?.width,
+          containerHeight: rect?.height,
+          order: hoveredOrderForTooltip,
+          ...(currentPrice && { currentPrice }),
+        });
+      }
+      return;
+    }
+
+    if (!hoveredOrderForTooltip && lastTooltipOrderRef.current) {
+      lastTooltipOrderRef.current = null;
       setTooltipData({
         candle: null,
         x: 0,
@@ -457,7 +661,11 @@ export const ChartCanvas = ({
   const handleCanvasMouseLeave = (): void => {
     handleMouseLeave();
     setMousePosition(null);
+    setOrderPreview(null);
     setHoveredAIStudy(null);
+    setHoveredOrderId(null);
+    lastHoveredOrderRef.current = null;
+    lastTooltipOrderRef.current = null;
     setIsMeasuring(false);
     setMeasurementArea(null);
     setTooltipData({
@@ -468,9 +676,9 @@ export const ChartCanvas = ({
     });
   };
 
-  const handleAIStudyHover = (study: AIStudy | null): void => {
+  const handleAIStudyHover = useCallback((study: AIStudy | null): void => {
     setHoveredAIStudy(study);
-  };
+  }, []);
 
   const handleDeleteStudies = (): void => {
     onDeleteAIStudies?.();
@@ -495,6 +703,48 @@ export const ChartCanvas = ({
   };
 
   const handleCanvasMouseDown = (event: React.MouseEvent<HTMLCanvasElement>): void => {
+    if (!manager || !canvasRef.current) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    const sltpAtPosition = getSLTPAtPosition(mouseX, mouseY);
+
+    const clickedOrderId = getClickedOrderId(mouseX, mouseY);
+    if (clickedOrderId) {
+      setOrderToClose(clickedOrderId);
+      return;
+    }
+
+    if (sltpAtPosition) {
+      if (orderDragHandler.handleSLTPMouseDown(mouseX, mouseY, sltpAtPosition)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+    }
+
+    if (isSimulatorActive && (shiftPressed || altPressed)) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const price = manager.yToPrice(mouseY);
+
+      if (shiftPressed) {
+        handleLongEntry(price);
+      } else if (altPressed) {
+        handleShortEntry(price);
+      }
+      return;
+    }
+
+    if (!shiftPressed && !altPressed && orderDragHandler.handleMouseDown(mouseX, mouseY)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     if ((showMeasurementRuler || showMeasurementArea) && manager && canvasRef.current) {
       const rect = canvasRef.current.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
@@ -529,6 +779,11 @@ export const ChartCanvas = ({
   };
 
   const handleCanvasMouseUp = (): void => {
+    if (orderDragHandler.isDragging) {
+      orderDragHandler.handleMouseUp();
+      return;
+    }
+
     if (isMeasuring) {
       setIsMeasuring(false);
       setMeasurementArea(null);
@@ -573,6 +828,28 @@ export const ChartCanvas = ({
   }, [manager, advancedConfig]);
 
   useEffect(() => {
+    if (!shiftPressed && !altPressed) {
+      setOrderPreview(null);
+      return;
+    }
+
+    if (mousePosition && manager && isSimulatorActive) {
+      const dimensions = manager.getDimensions();
+      if (!dimensions) return;
+
+      const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
+
+      if (mousePosition.y < timeScaleTop) {
+        const price = manager.yToPrice(mousePosition.y);
+        setOrderPreview({
+          price,
+          type: shiftPressed ? 'long' : 'short',
+        });
+      }
+    }
+  }, [shiftPressed, altPressed, mousePosition, manager, isSimulatorActive]);
+
+  useEffect(() => {
     if (!manager) return;
 
     const render = (): void => {
@@ -585,8 +862,137 @@ export const ChartCanvas = ({
         renderLineChart();
       }
       renderMovingAverages();
-      renderCurrentPriceLine();
+      renderCurrentPriceLine_Line();
+      renderOrderLines();
+
+      if (orderDragHandler.isDragging && orderDragHandler.draggedOrder && orderDragHandler.previewPrice && manager) {
+        const ctx = manager.getContext();
+        const dimensions = manager.getDimensions();
+        if (!ctx || !dimensions) return;
+
+        const { dragType, previewPrice, draggedOrder } = orderDragHandler;
+        const y = manager.priceToY(previewPrice);
+
+        let color: string;
+        let label: string;
+        let isDashed = true;
+
+        if (dragType === 'entry' && draggedOrder.status === 'pending') {
+          const willExecuteImmediately =
+            (draggedOrder.type === 'long' && previewPrice <= currentPrice) ||
+            (draggedOrder.type === 'short' && previewPrice >= currentPrice);
+
+          if (willExecuteImmediately) {
+            color = 'rgba(59, 130, 246, 0.9)';
+            label = `${draggedOrder.type === 'long' ? 'L' : 'S'} ${currentPrice.toFixed(2)} [MARKET]`;
+            isDashed = false;
+          } else {
+            color = 'rgba(100, 116, 139, 0.7)';
+            label = `${draggedOrder.type === 'long' ? 'L' : 'S'} ${previewPrice.toFixed(2)} [PENDING]`;
+          }
+        } else {
+          const isStopLoss = dragType === 'stopLoss';
+          color = isStopLoss ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)';
+          label = `${isStopLoss ? 'SL' : 'TP'} ${previewPrice.toFixed(2)}`;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = 0.8;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = isDashed ? 1.5 : 2;
+        if (isDashed) {
+          ctx.setLineDash([5, 5]);
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(dimensions.chartWidth, y);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = color;
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+
+        const labelPadding = 8;
+        const textMetrics = ctx.measureText(label);
+        const textWidth = textMetrics.width;
+        const labelHeight = 18;
+        const arrowWidth = 6;
+        const labelWidth = textWidth + labelPadding * 2;
+
+        ctx.beginPath();
+        ctx.moveTo(labelWidth + arrowWidth, y);
+        ctx.lineTo(labelWidth, y - labelHeight / 2);
+        ctx.lineTo(0, y - labelHeight / 2);
+        ctx.lineTo(0, y + labelHeight / 2);
+        ctx.lineTo(labelWidth, y + labelHeight / 2);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(label, labelPadding, y);
+
+        ctx.restore();
+      }
+
+      renderCurrentPriceLine_Label();
       renderCrosshairPriceLine();
+
+      if (orderPreview && manager) {
+        const ctx = manager.getContext();
+        const dimensions = manager.getDimensions();
+        if (!ctx || !dimensions) return;
+
+        const y = manager.priceToY(orderPreview.price);
+        const isLong = orderPreview.type === 'long';
+
+        const willBeActive = false;
+
+        const color = isLong ? colors.bullish : colors.bearish;
+        const opacity = willBeActive ? 0.8 : 0.5; ctx.save();
+        ctx.globalAlpha = opacity;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.setLineDash(willBeActive ? [] : [5, 5]);
+
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(dimensions.chartWidth, y);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = color;
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+
+        const statusLabel = willBeActive ? t('trading.active') : t('trading.pending');
+        const label = `${isLong ? '↑ L' : '↓ S'} @ ${orderPreview.price.toFixed(2)} [${statusLabel}]`;
+        const labelPadding = 8;
+        const textMetrics = ctx.measureText(label);
+        const textWidth = textMetrics.width;
+        const labelHeight = 18;
+        const arrowWidth = 6;
+        const labelWidth = textWidth + labelPadding * 2;
+
+        ctx.beginPath();
+        ctx.moveTo(labelWidth + arrowWidth, y);
+        ctx.lineTo(labelWidth, y - labelHeight / 2);
+        ctx.lineTo(0, y - labelHeight / 2);
+        ctx.lineTo(0, y + labelHeight / 2);
+        ctx.lineTo(labelWidth, y + labelHeight / 2);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(label, labelPadding, y);
+
+        ctx.restore();
+      }
 
       if (measurementArea && isMeasuring) {
         const ctx = manager.getContext();
@@ -640,69 +1046,152 @@ export const ChartCanvas = ({
     return () => {
       manager.setRenderCallback(null);
     };
-  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine, renderCrosshairPriceLine, chartType, measurementArea, isMeasuring, colors, showMeasurementRuler, showMeasurementArea]);
+  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine, renderCrosshairPriceLine, renderOrderLines, chartType, measurementArea, isMeasuring, colors, showMeasurementRuler, showMeasurementArea, orderPreview, advancedConfig?.rightMargin]);
 
   return (
-    <Box
-      position="relative"
-      width={width}
-      height={height}
-      overflow="hidden"
-      bg={colors.background}
-      userSelect="none"
-    >
-      <ChartContextMenu
-        onDeleteStudies={handleDeleteStudies}
-        onToggleStudiesVisibility={handleToggleStudiesVisibility}
-        hasStudies={aiStudies.length > 0}
-        studiesVisible={aiStudiesVisible}
+    <>
+      <Portal>
+        <DialogRoot
+          open={!!orderToClose}
+          onOpenChange={(e) => !e.open && setOrderToClose(null)}
+          placement="center"
+        >
+          <DialogBackdrop />
+          <DialogPositioner>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{t('trading.closeOrder')}</DialogTitle>
+                <DialogCloseTrigger />
+              </DialogHeader>
+              <DialogBody>
+                {orderToClose && (() => {
+                  if (orderToClose.startsWith('sltp-')) {
+                    const parts = orderToClose.split('-');
+                    const type = parts[1];
+                    const typeLabel = type === 'stopLoss' ? 'Stop Loss' : 'Take Profit';
+
+                    return (
+                      <Box>
+                        {t('trading.removeSLTPConfirm', { type: typeLabel })}
+                      </Box>
+                    );
+                  }
+
+                  const order = orders.find((o) => o.id === orderToClose);
+                  if (!order || !manager) return null;
+
+                  const candles = manager.getCandles();
+                  if (!candles.length) return null;
+
+                  const lastCandle = candles[candles.length - 1];
+                  if (!lastCandle) return null;
+
+                  const currentPrice = lastCandle.close;
+                  const isLong = order.type === 'long';
+                  const priceChange = currentPrice - order.entryPrice;
+                  const percentChange = isLong
+                    ? (priceChange / order.entryPrice) * 100
+                    : (-priceChange / order.entryPrice) * 100;
+                  const isProfit = percentChange >= 0;
+
+                  return (
+                    <Box>
+                      <Box mb={4}>
+                        {t('trading.closeOrderConfirm', {
+                          type: order.type.toUpperCase(),
+                          entry: order.entryPrice.toFixed(2),
+                          current: currentPrice.toFixed(2),
+                        })}
+                      </Box>
+                      <Box
+                        fontSize="lg"
+                        fontWeight="bold"
+                        color={isProfit ? 'green.500' : 'red.500'}
+                      >
+                        {percentChange >= 0 ? '+' : ''}{percentChange.toFixed(2)}%
+                      </Box>
+                    </Box>
+                  );
+                })()}
+              </DialogBody>
+              <DialogFooter>
+                <DialogActionTrigger asChild>
+                  <Button variant="outline">{t('common.cancel')}</Button>
+                </DialogActionTrigger>
+                <Button
+                  onClick={handleConfirmCloseOrder}
+                  colorPalette="red"
+                >
+                  {t('trading.confirmClose')}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </DialogPositioner>
+        </DialogRoot>
+      </Portal>
+      <Box
+        position="relative"
+        width={width}
+        height={height}
+        overflow="hidden"
+        bg={colors.background}
+        userSelect="none"
       >
-        <canvas
-          ref={canvasRef}
-          onMouseDown={handleCanvasMouseDown}
-          onMouseMove={handleCanvasMouseMove}
-          onMouseUp={handleCanvasMouseUp}
-          onMouseLeave={handleCanvasMouseLeave}
-          onWheel={handleWheel}
-          style={{
-            width: '100%',
-            height: '100%',
-            cursor,
-            display: 'block',
-          }}
+        <ChartContextMenu
+          onDeleteStudies={handleDeleteStudies}
+          onToggleStudiesVisibility={handleToggleStudiesVisibility}
+          hasStudies={aiStudies.length > 0}
+          studiesVisible={aiStudiesVisible}
+        >
+          <canvas
+            ref={canvasRef}
+            onMouseDown={handleCanvasMouseDown}
+            onMouseMove={handleCanvasMouseMove}
+            onMouseUp={handleCanvasMouseUp}
+            onMouseLeave={handleCanvasMouseLeave}
+            onWheel={handleWheel}
+            style={{
+              width: '100%',
+              height: '100%',
+              cursor,
+              display: 'block',
+            }}
+          />
+        </ChartContextMenu>
+        {manager && !isInteracting && (
+          <AIStudyRenderer
+            canvasManager={manager}
+            candles={candles}
+            studies={aiStudies}
+            width={canvasRef.current?.width ?? 0}
+            height={canvasRef.current?.height ?? 0}
+            mousePosition={mousePosition}
+            onStudyHover={handleAIStudyHover}
+            advancedConfig={advancedConfig}
+          />
+        )}
+        <ChartNavigation
+          onResetView={handleResetView}
+          onNextCandle={handleNextCandle}
         />
-      </ChartContextMenu>
-      {manager && !isInteracting && (
-        <AIStudyRenderer
-          canvasManager={manager}
-          candles={candles}
-          studies={aiStudies}
-          width={canvasRef.current?.width ?? 0}
-          height={canvasRef.current?.height ?? 0}
-          mousePosition={mousePosition}
-          onStudyHover={handleAIStudyHover}
-          advancedConfig={advancedConfig}
+        <CandleTimer
+          timeframe={timeframe}
+          lastCandleTime={candles[candles.length - 1]?.timestamp}
         />
-      )}
-      <ChartNavigation
-        onResetView={handleResetView}
-        onNextCandle={handleNextCandle}
-      />
-      <CandleTimer
-        timeframe={timeframe}
-        lastCandleTime={candles[candles.length - 1]?.timestamp}
-      />
-      <ChartTooltip
-        candle={tooltipData.candle}
-        x={tooltipData.x}
-        y={tooltipData.y}
-        visible={tooltipData.visible}
-        containerWidth={tooltipData.containerWidth ?? window.innerWidth}
-        containerHeight={tooltipData.containerHeight ?? window.innerHeight}
-        aiStudy={tooltipData.aiStudy}
-        {...(tooltipData.movingAverage && { movingAverage: tooltipData.movingAverage })}
-        {...(tooltipData.measurement && { measurement: tooltipData.measurement })}
-      />
-    </Box>
+        <ChartTooltip
+          candle={tooltipData.candle}
+          x={tooltipData.x}
+          y={tooltipData.y}
+          visible={tooltipData.visible}
+          containerWidth={tooltipData.containerWidth ?? window.innerWidth}
+          containerHeight={tooltipData.containerHeight ?? window.innerHeight}
+          aiStudy={tooltipData.aiStudy}
+          {...(tooltipData.movingAverage && { movingAverage: tooltipData.movingAverage })}
+          {...(tooltipData.measurement && { measurement: tooltipData.measurement })}
+          {...(tooltipData.order && { order: tooltipData.order })}
+          {...(tooltipData.currentPrice && { currentPrice: tooltipData.currentPrice })}
+        />
+      </Box>
+    </>
   );
 };

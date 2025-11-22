@@ -37,12 +37,9 @@ export const useCrosshairPriceLineRenderer = ({
     if (!ctx || !dimensions || !bounds) return;
 
     const { width } = dimensions;
-    const timeScaleTop = dimensions.height - 40;
-
-    if (mouseY >= timeScaleTop) return;
 
     const priceScaleLeft = width - rightMargin;
-    const isInChartArea = mouseX < priceScaleLeft && mouseY < timeScaleTop;
+    const isInChartArea = mouseX < priceScaleLeft;
 
     if (!isInChartArea) return;
 
@@ -71,7 +68,7 @@ export const useCrosshairPriceLineRenderer = ({
 
     ctx.beginPath();
     ctx.moveTo(mouseX, 0);
-    ctx.lineTo(mouseX, timeScaleTop);
+    ctx.lineTo(mouseX, dimensions.height);
     ctx.stroke();
 
     ctx.setLineDash([]);

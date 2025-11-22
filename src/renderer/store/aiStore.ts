@@ -3,7 +3,6 @@ import type { MovingAverageConfig } from '@/renderer/components/Chart/useMovingA
 import { AIService } from '@/renderer/services/ai';
 import type { AIAnalysisResponse, AIMessage, AIProviderType, Candle } from '@shared/types';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 export const DEFAULT_MODELS: Record<AIProviderType, string> = {
   openai: 'gpt-4o',
@@ -54,7 +53,7 @@ interface AIState {
   model: string | null;
   enableAIStudies: boolean;
   
-  responseProcessor: ((response: string) => string) | null;
+  responseProcessor: ((response: string) => Promise<string>) | null;
 
   setSettings: (settings: AISettings) => void;
   updateSettings: (partialSettings: Partial<AISettings>) => void;
@@ -86,11 +85,45 @@ interface AIState {
   importConversation: (data: string) => void;
 
   sendMessage: (content: string, chartData?: ChartData) => Promise<void>;
-  setResponseProcessor: (processor: ((response: string) => string) | null) => void;
+  setResponseProcessor: (processor: ((response: string) => Promise<string>) | null) => void;
   toggleAIStudies: () => void;
 
+  syncWithElectron: () => Promise<void>;
+  saveToElectron: () => Promise<void>;
   clearAll: () => void;
 }
+
+const loadFromElectron = async (): Promise<Partial<AIState>> => {
+  try {
+    const result = await window.electron.secureStorage.getAIData();
+    if (result.success && result.data) {
+      return {
+        conversations: result.data.conversations,
+        activeConversationId: result.data.activeConversationId,
+        settings: result.data.settings,
+        enableAIStudies: result.data.enableAIStudies,
+        provider: result.data.settings?.provider || null,
+        model: result.data.settings?.model || null,
+      };
+    }
+  } catch (error) {
+    console.error('Failed to load AI data from Electron:', error);
+  }
+  return {};
+};
+
+const saveToElectron = async (state: AIState): Promise<void> => {
+  try {
+    await window.electron.secureStorage.setAIData({
+      conversations: state.conversations,
+      activeConversationId: state.activeConversationId,
+      settings: state.settings,
+      enableAIStudies: state.enableAIStudies,
+    });
+  } catch (error) {
+    console.error('Failed to save AI data to Electron:', error);
+  }
+};
 
 const generateId = (): string => {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -261,26 +294,32 @@ const formatChartDataContext = (chartData: ChartData): string => {
   return context;
 };
 
-export const useAIStore = create<AIState>()(
-  persist(
-    (set, get) => ({
-      conversations: [],
-      activeConversationId: null,
-      settings: { provider: 'openai', model: 'gpt-4o' },
-      isLoading: false,
-      error: null,
-      lastAnalysis: null,
-      messages: [],
-      provider: 'openai',
-      model: 'gpt-4o',
-      enableAIStudies: true,
-      responseProcessor: null,
+export const useAIStore = create<AIState>((set, get) => {
+  const setWithSync = (
+    partial: Partial<AIState> | ((state: AIState) => Partial<AIState>)
+  ): void => {
+    set(partial);
+    saveToElectron(get());
+  };
 
-      setSettings: (settings) => set({ 
-        settings,
-        provider: settings.provider,
-        model: settings.model || null,
-      }),
+  return {
+    conversations: [],
+    activeConversationId: null,
+    settings: { provider: 'openai', model: 'gpt-4o' },
+    isLoading: false,
+    error: null,
+    lastAnalysis: null,
+    messages: [],
+    provider: 'openai',
+    model: 'gpt-4o',
+    enableAIStudies: true,
+    responseProcessor: null,
+
+    setSettings: (settings) => setWithSync({ 
+      settings,
+      provider: settings.provider,
+      model: settings.model || null,
+    }),
       
       updateSettings: (partialSettings) => set((state) => {
         const currentSettings = state.settings || { provider: 'openai' as AIProviderType, model: 'gpt-4o' };
@@ -599,7 +638,7 @@ export const useAIStore = create<AIState>()(
 
           let processedContent = response.text;
           if (state.responseProcessor) {
-            processedContent = state.responseProcessor(response.text);
+            processedContent = await state.responseProcessor(response.text);
           }
 
           const assistantMessage: Partial<AIMessage> = {
@@ -629,7 +668,7 @@ export const useAIStore = create<AIState>()(
         }
       },
 
-      clearAll: () => set({
+      clearAll: () => setWithSync({
         conversations: [],
         activeConversationId: null,
         isLoading: false,
@@ -637,30 +676,26 @@ export const useAIStore = create<AIState>()(
         lastAnalysis: null,
         messages: [],
       }),
-    }),
-    {
-      name: 'marketmind-ai-storage',
-      version: 1,
-      partialize: (state) => ({
-        conversations: state.conversations,
-        activeConversationId: state.activeConversationId,
-        settings: state.settings,
-        provider: state.provider,
-        model: state.model,
-        enableAIStudies: state.enableAIStudies,
-      }),
-      onRehydrateStorage: () => (state) => {
-        if (!state) return;
-        
-        if (!state.settings || !state.settings.provider) {
-          state.settings = { provider: 'openai', model: 'gpt-4o' };
-          state.provider = 'openai';
-          state.model = 'gpt-4o';
-        } else if (!state.provider) {
-          state.provider = state.settings.provider;
-          state.model = state.settings.model || null;
-        }
-      },
-    }
-  )
-);
+
+    syncWithElectron: async () => {
+      const data = await loadFromElectron();
+      set(data);
+    },
+
+    saveToElectron: async () => {
+      await saveToElectron(get());
+    },
+  };
+});
+
+useAIStore.subscribe((state, prevState) => {
+  const hasChanged = 
+    state.conversations !== prevState.conversations ||
+    state.activeConversationId !== prevState.activeConversationId ||
+    state.settings !== prevState.settings ||
+    state.enableAIStudies !== prevState.enableAIStudies;
+
+  if (hasChanged) {
+    saveToElectron(state);
+  }
+});
