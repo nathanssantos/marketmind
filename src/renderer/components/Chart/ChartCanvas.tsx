@@ -515,6 +515,12 @@ export const ChartCanvas = ({
     let closestMAValue: number | undefined = undefined;
     const HOVER_THRESHOLD = 8;
 
+    const effectiveWidth = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
+    const visibleRange = viewport.end - viewport.start;
+    const widthPerCandle = effectiveWidth / visibleRange;
+    const { candleWidth } = viewport;
+    const candleCenterOffset = (widthPerCandle - candleWidth) / 2 + candleWidth / 2;
+
     movingAverages.forEach((ma, index) => {
       if (ma.visible === false) return;
 
@@ -528,9 +534,9 @@ export const ChartCanvas = ({
 
         if (value1 === null || value1 === undefined || value2 === null || value2 === undefined) continue;
 
-        const x1 = manager.indexToX(i);
+        const x1 = manager.indexToX(i) + candleCenterOffset;
         const y1 = manager.priceToY(value1);
-        const x2 = manager.indexToX(i + 1);
+        const x2 = manager.indexToX(i + 1) + candleCenterOffset;
         const y2 = manager.priceToY(value2);
 
         const distance = distanceToLine(mouseX, mouseY, x1, y1, x2, y2);

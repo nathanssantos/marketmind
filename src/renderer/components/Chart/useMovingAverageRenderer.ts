@@ -43,6 +43,11 @@ export const useMovingAverageRenderer = ({
     const startIndex = Math.max(0, Math.floor(viewport.start));
     const endIndex = Math.min(candles.length, Math.ceil(viewport.end));
     const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
+    
+    const visibleRange = viewport.end - viewport.start;
+    const widthPerCandle = effectiveWidth / visibleRange;
+    const { candleWidth } = viewport;
+    const candleCenterOffset = (widthPerCandle - candleWidth) / 2 + candleWidth / 2;
 
     ctx.save();
 
@@ -70,7 +75,7 @@ export const useMovingAverageRenderer = ({
         const value = values[i];
         if (value === null || value === undefined) continue;
 
-        const x = manager.indexToX(i);
+        const x = manager.indexToX(i) + candleCenterOffset;
         const y = manager.priceToY(value);
 
         const isVisible = x >= -10 && x <= effectiveWidth + 10;
