@@ -20,6 +20,7 @@ import { useCurrentPriceLineRenderer } from './useCurrentPriceLineRenderer';
 import { useGridRenderer } from './useGridRenderer';
 import { useLineChartRenderer } from './useLineChartRenderer';
 import { useMovingAverageRenderer, type MovingAverageConfig } from './useMovingAverageRenderer';
+import { useOrderLinesRenderer } from './useOrderLinesRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
 
 export interface ChartCanvasProps {
@@ -205,6 +206,8 @@ export const ChartCanvas = ({
     lineStyle: 'solid',
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
   });
+
+  const { renderOrderLines } = useOrderLinesRenderer(manager, isSimulatorActive);
 
   const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>): void => {
     if (isMeasuring && manager && canvasRef.current && measurementArea) {
@@ -625,6 +628,7 @@ export const ChartCanvas = ({
       renderMovingAverages();
       renderCurrentPriceLine();
       renderCrosshairPriceLine();
+      renderOrderLines();
 
       if (measurementArea && isMeasuring) {
         const ctx = manager.getContext();
@@ -678,7 +682,7 @@ export const ChartCanvas = ({
     return () => {
       manager.setRenderCallback(null);
     };
-  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine, renderCrosshairPriceLine, chartType, measurementArea, isMeasuring, colors, showMeasurementRuler, showMeasurementArea]);
+  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine, renderCrosshairPriceLine, renderOrderLines, chartType, measurementArea, isMeasuring, colors, showMeasurementRuler, showMeasurementArea]);
 
   return (
     <Box
