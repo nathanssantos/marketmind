@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 export const useSimulatorSync = (marketService: MarketDataService | null) => {
   const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
   const hasSyncedRef = useRef(false);
+  const previousPricesRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     if (!isSimulatorActive || !marketService || hasSyncedRef.current) return;
@@ -53,10 +54,19 @@ export const useSimulatorSync = (marketService: MarketDataService | null) => {
             (o) => o.symbol === symbol && o.status === 'active'
           );
 
+          const previousPrice = previousPricesRef.current.get(symbol);
+          const hasHistoricalData = previousPrice !== undefined;
+          
+          previousPricesRef.current.set(symbol, currentPrice);
+
           symbolOrders.forEach((order) => {
             const isLong = order.type === 'long';
 
             updateOrder(order.id, { currentPrice });
+
+            if (!hasHistoricalData) {
+              return;
+            }
 
             const stopHit = order.stopLoss && (isLong
               ? lowPrice <= order.stopLoss

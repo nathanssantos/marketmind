@@ -93,7 +93,6 @@ export const ChartCanvas = ({
   const addOrder = useTradingStore((state) => state.addOrder);
   const closeOrder = useTradingStore((state) => state.closeOrder);
   const updateOrder = useTradingStore((state) => state.updateOrder);
-  const activateOrder = useTradingStore((state) => state.activateOrder);
   const orders = useTradingStore((state) => state.orders);
 
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
@@ -314,7 +313,6 @@ export const ChartCanvas = ({
     enabled: isSimulatorActive,
     getOrderAtPosition: (x, y) => getOrderAtPosition(x, y),
     currentPrice,
-    activateOrder,
   });
 
   const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>): void => {
@@ -1057,7 +1055,7 @@ export const ChartCanvas = ({
     return () => {
       manager.setRenderCallback(null);
     };
-  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine, renderCrosshairPriceLine, renderOrderLines, chartType, measurementArea, isMeasuring, colors, showMeasurementRuler, showMeasurementArea, orderPreview, advancedConfig?.rightMargin]);
+  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderOrderLines, chartType]);
 
   return (
     <>

@@ -51,7 +51,7 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
     const candles = manager.getCandles();
     if (!ctx || !dimensions || !candles.length) return;
 
-    const { chartWidth } = dimensions;
+    const { chartWidth, chartHeight } = dimensions;
     const currentPrice = candles[candles.length - 1]?.close;
     if (!currentPrice) return;
 
@@ -75,6 +75,11 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
     const hoveredPendingOrder = hoveredOrderId 
       ? pendingOrders.find(o => o.id === hoveredOrderId)
       : null;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
 
     const groupedPositions = new Map<string, {
       symbol: string;
@@ -805,6 +810,8 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
         ctx.restore();
       }
     });
+    
+    ctx.restore();
   };
 
   const getClickedOrderId = (x: number, y: number): string | null => {

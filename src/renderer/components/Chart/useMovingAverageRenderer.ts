@@ -50,6 +50,9 @@ export const useMovingAverageRenderer = ({
     const candleCenterOffset = (widthPerCandle - candleWidth) / 2 + candleWidth / 2;
 
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, effectiveWidth, dimensions.chartHeight);
+    ctx.clip();
 
     movingAverages.forEach((ma, index) => {
       if (ma.visible === false) return;
@@ -75,20 +78,18 @@ export const useMovingAverageRenderer = ({
         const value = values[i];
         if (value === null || value === undefined) continue;
 
-        const x = manager.indexToX(i) + candleCenterOffset;
+        const x = manager.indexToX(i);
+        
+        if (x > effectiveWidth) break;
+
+        const centerX = x + candleCenterOffset;
         const y = manager.priceToY(value);
 
-        const isVisible = x >= -10 && x <= effectiveWidth + 10;
-
-        if (isVisible) {
-          if (!hasMovedTo) {
-            ctx.moveTo(x, y);
-            hasMovedTo = true;
-          } else {
-            ctx.lineTo(x, y);
-          }
-        } else if (hasMovedTo) {
-          ctx.lineTo(x, y);
+        if (!hasMovedTo) {
+          ctx.moveTo(centerX, y);
+          hasMovedTo = true;
+        } else {
+          ctx.lineTo(centerX, y);
         }
       }
 

@@ -68,7 +68,7 @@ export const useCrosshairPriceLineRenderer = ({
 
     ctx.beginPath();
     ctx.moveTo(mouseX, 0);
-    ctx.lineTo(mouseX, dimensions.height);
+    ctx.lineTo(mouseX, dimensions.chartHeight);
     ctx.stroke();
 
     ctx.setLineDash([]);

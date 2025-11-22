@@ -306,6 +306,7 @@ export class CanvasManager {
         end: newEnd,
       };
       
+      this.updateCandleWidth();
       this.updateBounds();
       this.triggerRender();
     }

@@ -1,10 +1,10 @@
-import type { AIMessage } from '@shared/types';
-import { useCallback, useEffect, useRef } from 'react';
 import { workerPool } from '@/renderer/utils/WorkerPool';
 import type {
-  ConversationWorkerRequest,
-  ConversationWorkerResponse,
+    ConversationWorkerRequest,
+    ConversationWorkerResponse,
 } from '@/renderer/workers/conversation.worker';
+import type { AIMessage } from '@shared/types';
+import { useCallback, useEffect, useRef } from 'react';
 
 export interface SummarizedConversation {
   summary: string;

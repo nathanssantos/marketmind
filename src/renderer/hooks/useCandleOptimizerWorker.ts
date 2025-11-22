@@ -1,11 +1,11 @@
-import type { Candle } from '@shared/types';
-import { useCallback, useEffect, useRef } from 'react';
 import { workerPool } from '@/renderer/utils/WorkerPool';
 import type {
-  OptimizerWorkerRequest,
-  OptimizerWorkerResponse,
-  SimplifiedCandle,
+    OptimizerWorkerRequest,
+    OptimizerWorkerResponse,
+    SimplifiedCandle,
 } from '@/renderer/workers/candleOptimizer.worker';
+import type { Candle } from '@shared/types';
+import { useCallback, useEffect, useRef } from 'react';
 
 export interface OptimizedCandleData {
   detailed: Candle[];

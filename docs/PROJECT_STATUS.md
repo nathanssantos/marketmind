@@ -1,45 +1,48 @@
 # 📊 MarketMind - Project Status
 
-> **Last Updated:** November 19, 2025  
-> **Current Version:** 0.18.0 (Production Ready)  
-> **Current Branch:** `feature/gemini-3-pro-integration`  
-> **Current Phase:** All Phases Complete! 🎉
+> **Last Updated:** November 22, 2025  
+> **Current Version:** 0.21.0 (In Progress)  
+> **Current Branch:** `develop`  
+> **Current Phase:** Phase 19 Complete - Calendar Integration & Performance Optimizations
 
 ---
 
 ## 🎯 Overall Progress
 
 ```
-Phase 1: Initial Setup          ████████████████████ 100% ✅
-Phase 2: Type System            ████████████████████ 100% ✅
-Phase 3: Chart Rendering        ████████████████████ 100% ✅
-Phase 4: Market API             ████████████████████ 100% ✅
-Phase 5: AI System              ████████████████████ 100% ✅
-Phase 6: Chat Interface         ████████████████████ 100% ✅
-Phase 7: Settings System        ████████████████████ 100% ✅
-Phase 8: News Integration       ████████████████████ 100% ✅
-Phase 9: Build & Deploy         ████████████████████ 100% ✅
-Phase 10: Auto-Update           ████████████████████ 100% ✅
-Phase 11: Testing               ████████████████████ 100% ✅
-Phase 12: Optimizations         ████████████████████ 100% ✅
-Phase 13: Final Polish          ████████████████████ 100% ✅
-Phase 14: Internationalization  ████████████████████ 100% ✅
+Phase 1: Initial Setup                          ████████████████████ 100% ✅
+Phase 2: Type System                            ████████████████████ 100% ✅
+Phase 3: Chart Rendering                        ████████████████████ 100% ✅
+Phase 4: Market API                             ████████████████████ 100% ✅
+Phase 5: AI System                              ████████████████████ 100% ✅
+Phase 6: Chat Interface                         ████████████████████ 100% ✅
+Phase 7: Settings System                        ████████████████████ 100% ✅
+Phase 8: News Integration                       ████████████████████ 100% ✅
+Phase 9: Build & Deploy                         ████████████████████ 100% ✅
+Phase 10: Auto-Update                           ████████████████████ 100% ✅
+Phase 11: Testing                               ████████████████████ 100% ✅
+Phase 12: Optimizations                         ████████████████████ 100% ✅
+Phase 13: Final Polish                          ████████████████████ 100% ✅
+Phase 14: Internationalization                  ████████████████████ 100% ✅
+Phase 15: Application Toolbar                   ████████████████████ 100% ✅
+Phase 16: AI Studies Toggle & Performance       ████████████████████ 100% ✅
+Phase 17: Enhanced Chart Interactions           ████████████████████ 100% ✅
+Phase 18: Web Workers Performance System        ████████████████████ 100% ✅
+Phase 19: Calendar & Performance Optimizations  ████████████████████ 100% ✅
 ```
 
-**Overall Project Completion:** 100% (14/14 phases complete) 🚀
+**Overall Project Completion:** 100% (19/19 phases complete) 🚀
 
-**Status:** Production ready! All 659 tests passing with 90.62% coverage. Complete feature set including UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI study tooltips, **multi-language support (EN, PT, ES, FR)**, automatic data migrations, and **comprehensive AI model support (23 models across 3 providers)**.
+**Status:** Production ready! All 814 tests passing with 90.62% coverage. Complete feature set including calendar integration, news enhancements, trading simulator improvements, critical performance optimizations, UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI study tooltips, **multi-language support (EN, PT, ES, FR)**, automatic data migrations, and **comprehensive AI model support (23 models across 3 providers)**.
 
-**Latest Release (v0.18.0):**
-- ✅ Complete AI model expansion (12 OpenAI + 5 Claude + 6 Gemini = 23 models)
-- ✅ GPT-5.1, GPT-5 series, o3/o3-mini reasoning, GPT-4.1 series
-- ✅ Claude 4.5 Sonnet/Haiku, Claude 4.1 Opus with auto-updating aliases
-- ✅ Gemini 3 Pro Preview, Gemini 2.5 series, Gemini 2.0 Flash Exp
-- ✅ Model verification scripts for all three AI providers
-- ✅ Fixed Gemini quota issues (updated to free tier models)
-- ✅ Auto-updating Claude aliases for latest improvements
-- ✅ All 659 tests passing (100% pass rate)
-- ✅ 90.62% code coverage (exceeded target!)
+**Latest Development (v0.21.0 - In Progress):**
+- ✅ **Calendar Integration:** CoinGecko events API with full calendar system
+- ✅ **News Enhancements:** Auto-refresh, notifications, AI correlation, dedicated dialog
+- ✅ **Performance Optimizations:** Fixed excessive re-renders in chart renderers
+- ✅ **Trading Improvements:** Fixed order execution logic, proper price tracking
+- ✅ **UI Refactoring:** Reusable sidebar components, toolbar reorganization
+- ✅ All 814 tests passing (100% pass rate)
+- ✅ 90.62% code coverage maintained
 
 **AI Models Available:**
 - **OpenAI (12):** GPT-5.1, GPT-5, GPT-5 Pro/Mini/Nano, o3, o3-mini, o1, GPT-4.1, GPT-4.1 Mini, GPT-4o, GPT-4o Mini
@@ -1491,6 +1494,184 @@ package.json                                  ✅ (version 0.12.0)
 - **Accessibility** - ARIA labels, keyboard support
 - **Documentation** - Complete guides and references
 - **Production ready** - All features polished and tested
+
+---
+
+## ✅ Phase 19: Calendar Integration & Performance Optimizations (COMPLETED)
+
+**Status:** ✅ 100% Complete  
+**Duration:** 2 days  
+**Completed:** November 22, 2025
+
+### Deliverables
+
+#### Calendar System
+- ✅ **CoinGecko Events API Integration**
+  - CalendarService with provider architecture (similar to NewsService)
+  - CoinGeckoCalendarProvider with rate limiting and caching
+  - Event filtering by importance (low, medium, high, critical), type, symbols, date range
+  - Support for past and upcoming events
+  
+- ✅ **Calendar UI Components**
+  - CalendarDialog with tabs for events and settings
+  - CalendarPanel showing event cards with metadata
+  - CalendarSettingsTab for configuration
+  - Event importance badges with color coding
+  - Event type indicators (conference, release, airdrop, listing, partnership, etc.)
+  
+- ✅ **Calendar Integration**
+  - useCalendar hook for state management
+  - Events integration with AI analysis (optional correlation)
+  - Full i18n support (EN, PT, ES, FR) - 60+ translation keys
+  - Persistent settings via electron storage
+  - CalendarEvent type system with comprehensive metadata
+
+#### News Enhancements
+- ✅ **NewsDialog Component**
+  - Dedicated news viewing experience
+  - Symbol selector for filtering by cryptocurrency
+  - Tabs for news and settings
+  - Auto-refresh trigger on dialog open
+  
+- ✅ **NewsSettingsTab**
+  - Auto-refresh toggle with configurable interval (1-60 minutes)
+  - Minimum importance threshold for notifications (0-100%)
+  - Correlation with AI analysis toggle
+  - Persistent settings via electron storage
+  
+- ✅ **useNewsNotifications Hook**
+  - Toast notifications for important news
+  - Configurable importance threshold
+  - First-load detection (no spam on initial load)
+  - Sentiment-based toast colors (green/red/gray)
+  - Read more action button
+  
+- ✅ **Provider Improvements**
+  - CryptoPanicProvider migrated to electron HTTP fetch
+  - NewsAPIProvider integration with secure storage
+  - Environment variable auto-fill for development
+  - Better error handling across all providers
+  - 20+ new translation keys
+
+#### Performance Optimizations
+- ✅ **Chart Renderer Fixes**
+  - Fixed excessive re-renders in useGridRenderer
+  - Fixed excessive re-renders in useVolumeRenderer
+  - Fixed excessive re-renders in useCandlestickRenderer
+  - Removed `manager?.getCandles()` from useCallback dependencies
+  - Stable callback functions that don't recreate on candle updates
+  
+- ✅ **Hook Optimizations**
+  - Fixed stale data in useMovingAverageRenderer (calls getCandles() inside render)
+  - Optimized useNews with useMemo for optionsKey (prevents JSON.stringify on every render)
+  - Optimized ChartCanvas with useRef for interactionTimeoutRef
+  - useChartData optimization with useRef tracking for params
+  
+- ✅ **Memory Leak Fixes**
+  - Fixed NewsConfigTab timeout memory leak
+  - Proper useEffect cleanup for all timeouts
+  - Proper cleanup in all chart renderer hooks
+  
+- ✅ **Other Fixes**
+  - CanvasManager zoom fix (added missing updateCandleWidth call)
+  - Prevents visual glitches during zoom operations
+
+#### Trading Simulator Improvements
+- ✅ **Order Execution Logic**
+  - Fixed pending order execution (now checks if price moved through entry point)
+  - Added previous price tracking to prevent false fills
+  - Orders only execute when price actually crosses entry level
+  - Fixed historical order prevention (orders created before app load don't execute)
+  - Better logging for debugging order fills
+  
+- ✅ **Data Persistence**
+  - Fixed trading data serialization/deserialization
+  - Proper date handling for wallets (createdAt, performance timestamps)
+  - Proper date handling for orders (createdAt, filledAt, closedAt, expirationDate)
+  
+- ✅ **UI Improvements**
+  - Simulator toggle moved to trading sidebar header
+  - Separate chat and trading sidebar toggles in toolbar
+  - News button added to toolbar for quick access
+
+#### UI Component Refactoring
+- ✅ **Reusable Sidebar Components**
+  - Created SidebarContainer component with position support (left/right)
+  - Created SidebarHeader component with title and action buttons
+  - Improved TradingSidebar using new components
+  - Consistent styling across all sidebars
+  
+- ✅ **Toolbar Reorganization**
+  - News button added (newspaper icon)
+  - Trading sidebar toggle added (dollar icon)
+  - Chat toggle remains (message icon)
+  - Simulator toggle removed from toolbar (moved to trading sidebar)
+  - Cleaner, more logical button organization
+
+#### Code Quality
+- ✅ **Import Organization**
+  - Consistent import ordering across worker hooks
+  - useBoundsWorker, useCandleOptimizerWorker, useConversationWorker, useMovingAverageWorker
+  - Utilities imported before types
+  
+- ✅ **Translations**
+  - 60+ new calendar translation keys
+  - 20+ new news translation keys
+  - Updated trading.sidebar.title to just "Simulator"
+  - Removed obsolete translations (chat.closeChat, keyboardShortcuts.toggleChatSidebar)
+  
+- ✅ **Context Cleanup**
+  - Removed unused GlobalActionsContext.toggleChatSidebar
+  - Removed obsolete keyboard shortcut (Cmd/Ctrl+B)
+
+### Key Files Created
+- `src/shared/types/calendar.ts` - Calendar type system
+- `src/renderer/services/calendar/CalendarService.ts` - Calendar service
+- `src/renderer/services/calendar/providers/CoinGeckoCalendarProvider.ts` - CoinGecko provider
+- `src/renderer/hooks/useCalendar.ts` - Calendar state management
+- `src/renderer/hooks/useNewsNotifications.ts` - News toast notifications
+- `src/renderer/components/Calendar/CalendarDialog.tsx` - Calendar dialog
+- `src/renderer/components/Calendar/CalendarPanel.tsx` - Events list
+- `src/renderer/components/Calendar/CalendarSettingsTab.tsx` - Calendar settings
+- `src/renderer/components/News/NewsDialog.tsx` - News dialog
+- `src/renderer/components/News/NewsSettingsTab.tsx` - News settings
+- `src/renderer/components/ui/Sidebar/SidebarContainer.tsx` - Reusable sidebar container
+- `src/renderer/components/ui/Sidebar/SidebarHeader.tsx` - Reusable sidebar header
+
+### Key Files Modified
+- `src/renderer/components/Chart/useGridRenderer.ts` - Performance fix
+- `src/renderer/components/Chart/useVolumeRenderer.ts` - Performance fix
+- `src/renderer/components/Chart/useCandlestickRenderer.ts` - Performance fix
+- `src/renderer/components/Chart/useMovingAverageRenderer.ts` - Stale data fix
+- `src/renderer/components/Chart/ChartCanvas.tsx` - useRef optimization
+- `src/renderer/hooks/useNews.ts` - useMemo optimization
+- `src/renderer/hooks/useChartData.ts` - useRef tracking
+- `src/renderer/hooks/usePriceUpdates.ts` - Order execution fix
+- `src/renderer/store/tradingStore.ts` - Data persistence fix
+- `src/renderer/utils/canvas/CanvasManager.ts` - Zoom fix
+- All translation files (EN, PT, ES, FR) - 80+ new keys
+
+### Test Coverage
+- ✅ All 814 tests passing (100% pass rate)
+- ✅ 90.62% code coverage maintained
+- ✅ CryptoPanicProvider tests updated for electron HTTP
+- ✅ All existing tests updated for new features
+
+### Performance Impact
+- Chart renderers no longer recreate on every candle update
+- JSON.stringify eliminated from useNews hot path
+- Timeout state changes no longer cause re-renders
+- Memory leaks eliminated from NewsConfigTab
+- Stable callback functions across all renderers
+- Significant reduction in unnecessary re-renders
+
+### Achievements
+- **Calendar integration** - Full event tracking system with CoinGecko
+- **News enhancements** - Auto-refresh, notifications, AI correlation
+- **Performance fixes** - Critical renderer optimizations
+- **Trading improvements** - Proper order execution logic
+- **Code quality** - Cleaner structure, better organization
+- **80+ translations** - Full i18n support for new features
 
 ---
 

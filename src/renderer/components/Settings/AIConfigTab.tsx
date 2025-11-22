@@ -9,13 +9,13 @@ import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useSecureStorage } from '@/renderer/hooks/useSecureStorage';
 import { useAIStore } from '@/renderer/store';
 import {
-    Accordion,
-    Box,
-    Flex,
-    Separator,
-    Spinner,
-    Stack,
-    Text,
+  Accordion,
+  Box,
+  Flex,
+  Separator,
+  Spinner,
+  Stack,
+  Text,
 } from '@chakra-ui/react';
 import type { AIProviderType } from '@shared/types';
 import { useEffect, useState } from 'react';
@@ -52,7 +52,7 @@ const DEFAULT_MODELS: Record<AIProviderType, string> = {
 export const AIConfigTab = () => {
   const { t } = useTranslation();
   const { settings, updateSettings } = useAIStore();
-  const { 
+  const {
     loading: isLoadingSecureStorage,
     error: secureStorageError,
     isEncryptionAvailable,
@@ -176,15 +176,15 @@ export const AIConfigTab = () => {
   const renderApiKeyInput = (provider: AIProvider, label: string) => {
     const envVar = `VITE_${provider.toUpperCase()}_API_KEY`;
     const envKey = import.meta.env[envVar] as string | undefined;
-    
-    const labelKey = provider === 'openai' ? 'openaiApiKey' : 
-                     provider === 'anthropic' ? 'anthropicApiKey' : 
-                     'geminiApiKey';
+
+    const labelKey = provider === 'openai' ? 'openaiApiKey' :
+      provider === 'anthropic' ? 'anthropicApiKey' :
+        'geminiApiKey';
 
     return (
       <Box key={provider}>
-        <Field 
-          label={t(`settings.ai.${labelKey}`)} 
+        <Field
+          label={t(`settings.ai.${labelKey}`)}
           helperText={envKey ? t('settings.ai.usingEnvVar', { var: envVar }) : undefined}
         >
           {isLoadingKeys ? (
@@ -216,9 +216,9 @@ export const AIConfigTab = () => {
 
   return (
     <Stack gap={6}>
-      <Box 
-        bg="blue.500/10" 
-        p={4} 
+      <Box
+        bg="blue.500/10"
+        p={4}
         borderRadius="md"
         borderLeft="4px solid"
         borderColor="blue.500"
@@ -284,7 +284,7 @@ export const AIConfigTab = () => {
         <Text fontWeight="medium" fontSize="sm">
           {t('settings.ai.apiKeysTitle')}
         </Text>
-        
+
         {renderApiKeyInput('openai', t('aiConfig.providers.openai'))}
         {renderApiKeyInput('anthropic', t('aiConfig.providers.anthropic'))}
         {renderApiKeyInput('gemini', t('aiConfig.providers.gemini'))}

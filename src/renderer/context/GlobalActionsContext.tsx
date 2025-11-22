@@ -2,7 +2,6 @@ import { createContext, useContext, type ReactNode } from 'react';
 
 interface GlobalActionsContextType {
   openSettings: () => void;
-  toggleChatSidebar: () => void;
   focusChatInput: () => void;
   showKeyboardShortcuts: () => void;
   openSymbolSelector: () => void;

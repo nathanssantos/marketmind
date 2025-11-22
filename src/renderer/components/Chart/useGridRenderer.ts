@@ -3,7 +3,7 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawGrid, drawLine, drawText } from '@renderer/utils/canvas/drawingUtils';
 import { formatPrice, formatTimestamp } from '@renderer/utils/formatters';
 import { CHART_CONFIG } from '@shared/constants';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 
 export interface UseGridRendererProps {
   manager: CanvasManager | null;
@@ -153,10 +153,6 @@ export const useGridRenderer = ({
       2,
     );
   }, [manager, colors, enabled, horizontalLines, verticalLines, gridLineWidth, paddingRight, rightMargin]);
-
-  useEffect(() => {
-    render();
-  }, [render]);
 
   return { render };
 };

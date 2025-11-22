@@ -56,6 +56,8 @@ interface SecureStoreSchema {
 
 export class StorageService {
   private store: ElectronStore<SecureStoreSchema>;
+  private keyCache: Map<string, { key: string; timestamp: number }> = new Map();
+  private readonly CACHE_DURATION = 30 * 60 * 1000;
 
   constructor() {
     this.store = new ElectronStore<SecureStoreSchema>({
@@ -89,6 +91,11 @@ export class StorageService {
         ...apiKeys,
         [provider]: encrypted,
       });
+
+      this.keyCache.set(provider, {
+        key: apiKey,
+        timestamp: Date.now(),
+      });
     } catch (error) {
       console.error(`Failed to encrypt ${provider} API key:`, error);
       throw new Error(`Failed to encrypt ${provider} API key`);
@@ -96,6 +103,11 @@ export class StorageService {
   }
 
   getApiKey(provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic'): string | null {
+    const cached = this.keyCache.get(provider);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+      return cached.key;
+    }
+
     if (!this.isEncryptionAvailable()) {
       console.warn('Encryption is not available on this platform');
       return null;
@@ -111,6 +123,12 @@ export class StorageService {
     try {
       const buffer = Buffer.from(encrypted, 'base64');
       const decrypted = safeStorage.decryptString(buffer);
+      
+      this.keyCache.set(provider, {
+        key: decrypted,
+        timestamp: Date.now(),
+      });
+      
       return decrypted;
     } catch (error) {
       console.error(`Failed to decrypt ${provider} API key:`, error);
@@ -122,6 +140,7 @@ export class StorageService {
     const apiKeys = this.store.get('apiKeys', {});
     delete apiKeys[provider];
     this.store.set('apiKeys', apiKeys);
+    this.keyCache.delete(provider);
   }
 
   hasApiKey(provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic'): boolean {
@@ -142,6 +161,7 @@ export class StorageService {
 
   clearAllApiKeys(): void {
     this.store.set('apiKeys', {});
+    this.keyCache.clear();
   }
 
   getNewsSettings(): { enabled: boolean; refreshInterval: number; maxArticles: number } {

@@ -1,10 +1,10 @@
-import type { Candle } from '@shared/types';
-import { useCallback, useEffect, useRef } from 'react';
 import { workerPool } from '@/renderer/utils/WorkerPool';
 import type {
-  BoundsWorkerRequest,
-  BoundsWorkerResponse,
+    BoundsWorkerRequest,
+    BoundsWorkerResponse,
 } from '@/renderer/workers/bounds.worker';
+import type { Candle } from '@shared/types';
+import { useCallback, useEffect, useRef } from 'react';
 
 export interface Bounds {
   minPrice: number;
