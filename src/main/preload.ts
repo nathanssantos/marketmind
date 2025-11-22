@@ -48,7 +48,7 @@ interface SecureStorageAPI {
   getAllApiKeys: () => Promise<Record<string, boolean>>;
   clearAllApiKeys: () => Promise<{ success: boolean; error?: string }>;
   getNewsSettings: () => Promise<{ enabled: boolean; refreshInterval: number; maxArticles: number }>;
-  setNewsSettings: (settings: { enabled: boolean; refreshInterval: number; maxArticles: number }) => Promise<{ success: boolean; error?: string }>;
+  setNewsSettings: (settings: { enabled: boolean; refreshInterval: number; maxArticles: number; pollingEnabled?: boolean; minImportanceForToast?: number; correlateWithAI?: boolean }) => Promise<{ success: boolean; error?: string }>;
   getTradingData: () => Promise<{ success: boolean; data: TradingData | null; error?: string }>;
   setTradingData: (data: TradingData) => Promise<{ success: boolean; error?: string }>;
   clearTradingData: () => Promise<{ success: boolean; error?: string }>;
@@ -142,7 +142,7 @@ const API = {
       return await ipcRenderer.invoke('storage:getNewsSettings');
     },
 
-    setNewsSettings: async (settings: { enabled: boolean; refreshInterval: number; maxArticles: number }) => {
+    setNewsSettings: async (settings: { enabled: boolean; refreshInterval: number; maxArticles: number; pollingEnabled?: boolean; minImportanceForToast?: number; correlateWithAI?: boolean }) => {
       return await ipcRenderer.invoke('storage:setNewsSettings', settings);
     },
 
@@ -244,6 +244,12 @@ const API = {
       ipcRenderer.on('update:error', (_event, error) => callback(error));
     },
   } as UpdateAPI,
+
+  http: {
+    fetch: async (url: string, options?: { method?: string; headers?: Record<string, string>; body?: unknown }) => {
+      return await ipcRenderer.invoke('http:fetch', url, options);
+    },
+  },
 } as const;
 
 contextBridge.exposeInMainWorld('electron', API);

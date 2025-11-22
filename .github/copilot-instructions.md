@@ -36,6 +36,8 @@
 10. **English Only:** All commits, docs, and code in English
 11. **Branch Workflow:** Create feature/bugfix branches, never commit directly to main/develop
 12. **Implementation Plan:** Follow and evolve IMPLEMENTATION_PLAN.md as the project progresses
+13. **No Watch Mode:** Never use watch mode commands (`npm test`, `vitest`, etc. without `--run`). Always use run-once commands (`npm test -- --run`, `npm run build`, etc.) to avoid blocking the terminal
+14. **Single-Line Blocks:** Simplify code blocks with only one statement to single-line format when correct and compliant with linting rules (e.g., `if (condition) return value;` instead of multi-line blocks)
 
 ### Git Workflow
 

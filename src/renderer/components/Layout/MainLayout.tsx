@@ -18,6 +18,8 @@ interface MainLayoutProps {
   onAdvancedConfigChange: (config: AdvancedControlsConfig) => void;
   isChatOpen: boolean;
   onToggleChat: () => void;
+  isTradingOpen: boolean;
+  onToggleTrading: () => void;
 }
 
 const MIN_CHAT_WIDTH = 300;
@@ -27,7 +29,7 @@ const MIN_TRADING_WIDTH = 300;
 const MAX_TRADING_WIDTH = 600;
 const DEFAULT_TRADING_WIDTH = 400;
 
-export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onAdvancedConfigChange, isChatOpen, onToggleChat }: MainLayoutProps) => {
+export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onAdvancedConfigChange, isChatOpen, onToggleChat, isTradingOpen, onToggleTrading }: MainLayoutProps) => {
   const [chatWidth, setChatWidth] = useLocalStorage('chat-sidebar-width', DEFAULT_CHAT_WIDTH);
   const [tradingWidth, setTradingWidth] = useLocalStorage('trading-sidebar-width', DEFAULT_TRADING_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
@@ -46,7 +48,6 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
 
   const globalActions = useMemo(() => ({
     openSettings: () => setIsSettingsOpen(true),
-    toggleChatSidebar: onToggleChat,
     focusChatInput: () => {
       if (!isChatOpen) onToggleChat();
     },
@@ -68,11 +69,11 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
     const target = resizingTargetRef.current;
     const isLeftSide = (target === 'chat' && chatPosition === 'left') || (target === 'trading' && false);
     const deltaX = isLeftSide ? e.clientX - startXRef.current : startXRef.current - e.clientX;
-    
+
     const minWidth = target === 'chat' ? MIN_CHAT_WIDTH : MIN_TRADING_WIDTH;
     const maxWidth = target === 'chat' ? MAX_CHAT_WIDTH : MAX_TRADING_WIDTH;
     const newWidth = Math.min(Math.max(startWidthRef.current + deltaX, minWidth), maxWidth);
-    
+
     if (target === 'chat') {
       setChatWidth(newWidth);
     } else {
@@ -134,11 +135,11 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
             position="relative"
             overflow="hidden"
             width={
-              isChatOpen && isSimulatorActive
+              isChatOpen && isTradingOpen
                 ? `calc(100% - ${chatWidth}px - ${tradingWidth}px)`
                 : isChatOpen
                   ? `calc(100% - ${chatWidth}px)`
-                  : isSimulatorActive
+                  : isTradingOpen
                     ? `calc(100% - ${tradingWidth}px)`
                     : '100%'
             }
@@ -147,7 +148,7 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
             {children}
           </Box>
 
-          {isSimulatorActive && (
+          {isTradingOpen && (
             <>
               <Box
                 position="relative"

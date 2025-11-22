@@ -11,6 +11,7 @@ import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { MainLayout } from './components/Layout/MainLayout';
 import { Toolbar } from './components/Layout/Toolbar';
+import { NewsDialog } from './components/News/NewsDialog';
 import { OnboardingDialog } from './components/Onboarding/OnboardingDialog';
 import { ErrorMessage } from './components/ui/ErrorMessage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
@@ -19,6 +20,7 @@ import { AIStudyHoverProvider } from './context/AIStudyHoverContext';
 import { ChartProvider } from './context/ChartContext';
 import { useGlobalActions } from './context/GlobalActionsContext';
 import { useAIStudies } from './hooks/useAIStudies';
+import { useCalendar } from './hooks/useCalendar';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
 import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
@@ -153,10 +155,45 @@ function AppContent(): ReactElement {
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
   const [showOnboarding, setShowOnboarding] = useLocalStorage('marketmind:showOnboarding', true);
   const [isChatOpen, setIsChatOpen] = useLocalStorage('chat-sidebar-open', true);
+  const [isTradingOpen, setIsTradingOpen] = useLocalStorage('trading-sidebar-open', false);
+  const [isNewsOpen, setIsNewsOpen] = useState(false);
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
     'marketmind:movingAverages',
     DEFAULT_MOVING_AVERAGES
   );
+
+  const [newsCorrelateWithAI, setNewsCorrelateWithAI] = useState(false);
+  const [calendarCorrelateWithAI, setCalendarCorrelateWithAI] = useState(false);
+
+  useEffect(() => {
+    const loadNewsSettings = async () => {
+      try {
+        const settings = await window.electron.secureStorage.getNewsSettings();
+        const correlate = (settings as typeof settings & { correlateWithAI?: boolean }).correlateWithAI ?? false;
+        setNewsCorrelateWithAI(correlate);
+      } catch (error) {
+        console.error('Failed to load news settings:', error);
+      }
+    };
+    loadNewsSettings();
+  }, []);
+
+  useEffect(() => {
+    const loadCalendarSettings = async () => {
+      try {
+        const storedSettings = localStorage.getItem('marketmind-calendar-settings');
+        if (storedSettings) {
+          const parsed = JSON.parse(storedSettings);
+          const correlate = parsed.correlateWithAI ?? false;
+          setCalendarCorrelateWithAI(correlate);
+        }
+      } catch (error) {
+        console.error('Failed to load calendar settings:', error);
+      }
+    };
+    loadCalendarSettings();
+  }, []);
+
   const [advancedConfig, setAdvancedConfig] = useLocalStorage<AdvancedControlsConfig>('marketmind:advancedConfig', {
     rightMargin: CHART_CONFIG.CHART_RIGHT_MARGIN,
     volumeHeightRatio: CHART_CONFIG.VOLUME_HEIGHT_RATIO,
@@ -189,6 +226,14 @@ function AppContent(): ReactElement {
   const toggleChat = useCallback(() => {
     setIsChatOpen((prev) => !prev);
   }, [setIsChatOpen]);
+
+  const toggleTrading = useCallback(() => {
+    setIsTradingOpen((prev) => !prev);
+  }, [setIsTradingOpen]);
+
+  const toggleNews = useCallback(() => {
+    setIsNewsOpen((prev) => !prev);
+  }, []);
 
   useEffect(() => {
     restoreActiveConversation();
@@ -230,24 +275,21 @@ function AppContent(): ReactElement {
 
   const handleRealtimeUpdate = useCallback((candle: Candle, isFinal: boolean) => {
     setLiveCandles(prev => {
-      if (prev.length === 0) {
-        return [candle];
-      }
+      if (prev.length === 0) return [candle];
 
       const lastCandle = prev[prev.length - 1];
-
-      if (!lastCandle) {
-        return [candle];
-      }
+      if (!lastCandle) return [candle];
 
       if (candle.timestamp === lastCandle.timestamp) {
+        if (candle.close === lastCandle.close &&
+          candle.high === lastCandle.high &&
+          candle.low === lastCandle.low &&
+          candle.volume === lastCandle.volume) return prev;
         return [...prev.slice(0, -1), candle];
       }
 
       if (candle.timestamp > lastCandle.timestamp) {
-        if (isFinal) {
-          return [...prev, candle];
-        }
+        if (isFinal) return [...prev, candle];
         return [...prev, candle];
       }
 
@@ -266,7 +308,7 @@ function AppContent(): ReactElement {
     if (!marketData?.candles) return [];
     if (liveCandles.length === 0) return marketData.candles;
 
-    const baseCandles = [...marketData.candles];
+    const baseCandles = marketData.candles;
     const lastBaseCandle = baseCandles[baseCandles.length - 1];
     const firstLiveCandle = liveCandles[0];
 
@@ -275,7 +317,7 @@ function AppContent(): ReactElement {
     }
 
     return [...baseCandles, ...liveCandles];
-  }, [marketData, liveCandles]);
+  }, [marketData?.candles, liveCandles]);
 
   const debouncedAdvancedConfig = useDebounce(advancedConfig, 300);
 
@@ -318,12 +360,31 @@ function AppContent(): ReactElement {
     }
   }, [activeConversationId, studyDataId, updateConversationStudyDataId]);
 
+  const currentSymbolCode = extractSymbolCode(symbol);
+  const isCrypto = symbol.endsWith('USDT') || symbol.endsWith('USD');
+  const shouldIncludeBTC = isCrypto && currentSymbolCode !== 'BTC';
+
+  const newsSymbols = shouldIncludeBTC
+    ? ['BTC', currentSymbolCode]
+    : [currentSymbolCode];
+
   const { articles: newsArticles } = useNews({
-    symbols: [extractSymbolCode(symbol)],
-    limit: 10,
-    enabled: false,
+    symbols: newsSymbols,
+    limit: shouldIncludeBTC ? 15 : 10,
+    enabled: newsCorrelateWithAI,
     refetchInterval: 5 * 60 * 1000,
   });
+
+  const { events: calendarEvents } = useCalendar();
+
+  const relevantEvents = calendarCorrelateWithAI
+    ? calendarEvents.filter(event => {
+      if (!event.symbols || event.symbols.length === 0) return true;
+      return event.symbols.some(s =>
+        newsSymbols.some(ns => ns.toLowerCase() === s.toLowerCase())
+      );
+    })
+    : [];
 
   useChartData({
     candles: displayCandles,
@@ -333,6 +394,7 @@ function AppContent(): ReactElement {
     showVolume,
     movingAverages,
     news: newsArticles,
+    events: relevantEvents,
   });
 
   return (
@@ -350,7 +412,9 @@ function AppContent(): ReactElement {
         showMeasurementArea={showMeasurementArea}
         movingAverages={movingAverages}
         isSimulatorActive={isSimulatorActive}
+        isTradingOpen={isTradingOpen}
         isChatOpen={isChatOpen}
+        isNewsOpen={isNewsOpen}
         onSymbolChange={setSymbol}
         onTimeframeChange={setTimeframe}
         onChartTypeChange={setChartType}
@@ -362,7 +426,9 @@ function AppContent(): ReactElement {
         onShowMeasurementAreaChange={setShowMeasurementArea}
         onMovingAveragesChange={setMovingAverages}
         onToggleSimulator={toggleSimulator}
+        onToggleTrading={toggleTrading}
         onToggleChat={toggleChat}
+        onToggleNews={toggleNews}
       />
 
       <MainLayout
@@ -371,6 +437,8 @@ function AppContent(): ReactElement {
         onAdvancedConfigChange={setAdvancedConfig}
         isChatOpen={isChatOpen}
         onToggleChat={toggleChat}
+        isTradingOpen={isTradingOpen}
+        onToggleTrading={toggleTrading}
       >
         <AppContentWithKeyboardShortcuts
           showVolume={showVolume}
@@ -420,6 +488,13 @@ function AppContent(): ReactElement {
           />
         )}
       </MainLayout>
+
+      <NewsDialog
+        open={isNewsOpen}
+        onClose={toggleNews}
+        symbols={[extractSymbolCode(symbol)]}
+        marketService={marketService}
+      />
 
       <UpdateNotification />
 
@@ -489,7 +564,6 @@ function AppContentWithKeyboardShortcuts({
     onPanLeft: () => { },
     onPanRight: () => { },
     onOpenSettings: globalActions.openSettings,
-    onToggleChatSidebar: globalActions.toggleChatSidebar,
     onFocusChatInput: globalActions.focusChatInput,
     onShowShortcuts: globalActions.showKeyboardShortcuts,
     onOpenSymbolSelector: () => { },

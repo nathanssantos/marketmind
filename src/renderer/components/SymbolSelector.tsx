@@ -29,7 +29,7 @@ export function SymbolSelector({ marketService, value, onChange }: SymbolSelecto
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { symbols, loading } = useSymbolSearch(marketService, {
+  const { symbols, loading, search } = useSymbolSearch(marketService, {
     minQueryLength: 2,
     debounceMs: 300,
   });
@@ -37,6 +37,12 @@ export function SymbolSelector({ marketService, value, onChange }: SymbolSelecto
   const displaySymbols = useMemo(() => {
     return searchQuery.length >= 2 ? symbols : POPULAR_SYMBOLS;
   }, [searchQuery, symbols]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    search(query);
+  };
 
   const selectedSymbol = POPULAR_SYMBOLS.find(s => s.symbol === value);
   const currentSymbol = selectedSymbol?.baseAsset || value.replace('USDT', '');
@@ -77,7 +83,7 @@ export function SymbolSelector({ marketService, value, onChange }: SymbolSelecto
           <Input
             placeholder={t('symbolSelector.searchPlaceholder')}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
             size="xs"
             bg="bg.muted"
             borderColor="border"

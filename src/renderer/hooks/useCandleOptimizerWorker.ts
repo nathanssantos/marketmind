@@ -1,10 +1,11 @@
+import { workerPool } from '@/renderer/utils/WorkerPool';
+import type {
+    OptimizerWorkerRequest,
+    OptimizerWorkerResponse,
+    SimplifiedCandle,
+} from '@/renderer/workers/candleOptimizer.worker';
 import type { Candle } from '@shared/types';
 import { useCallback, useEffect, useRef } from 'react';
-import type {
-  OptimizerWorkerRequest,
-  OptimizerWorkerResponse,
-  SimplifiedCandle,
-} from '@/renderer/workers/candleOptimizer.worker';
 
 export interface OptimizedCandleData {
   detailed: Candle[];
@@ -33,12 +34,20 @@ export const useCandleOptimizerWorker = (): UseCandleOptimizerWorkerReturn => {
   const requestIdRef = useRef(0);
 
   useEffect(() => {
-    workerRef.current = new Worker(
-      new URL('../workers/candleOptimizer.worker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    const WORKER_KEY = 'candleOptimizer';
+    
+    if (!workerPool.has(WORKER_KEY)) {
+      workerPool.register(WORKER_KEY, () => 
+        new Worker(
+          new URL('../workers/candleOptimizer.worker.ts', import.meta.url),
+          { type: 'module' }
+        )
+      );
+    }
+    
+    workerRef.current = workerPool.get(WORKER_KEY);
 
-    workerRef.current.onmessage = (
+    const messageHandler = (
       event: MessageEvent<OptimizerWorkerResponse>
     ) => {
       const { type, ...result } = event.data;
@@ -52,11 +61,14 @@ export const useCandleOptimizerWorker = (): UseCandleOptimizerWorkerReturn => {
         });
       }
     };
+    
+    if (workerRef.current) {
+      workerRef.current.addEventListener('message', messageHandler);
+    }
 
     return () => {
       if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
+        workerRef.current.removeEventListener('message', messageHandler);
       }
       pendingCallbacksRef.current.clear();
     };

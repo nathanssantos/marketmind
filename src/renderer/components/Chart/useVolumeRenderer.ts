@@ -2,7 +2,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawRect } from '@renderer/utils/canvas/drawingUtils';
 import { CHART_CONFIG } from '@shared/constants';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 
 export interface UseVolumeRendererProps {
   manager: CanvasManager | null;
@@ -85,11 +85,7 @@ export const useVolumeRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, colors, enabled, opacity, rightMargin, volumeHeightRatio, hoveredCandleIndex, manager?.getCandles()]);
-
-  useEffect(() => {
-    render();
-  }, [render]);
+  }, [manager, colors, enabled, opacity, rightMargin, volumeHeightRatio, hoveredCandleIndex]);
 
   return { render };
 };

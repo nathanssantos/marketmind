@@ -250,10 +250,31 @@ export const useAI = (options?: UseAIOptions) => {
         chartImage,
         candles: chartData?.candles || [],
         ...(chartData?.news && { news: chartData.news }),
+        ...(chartData?.events && { events: chartData.events }),
       };
 
       if (context) {
         request.context = context;
+      }
+
+      console.log('[AI Analysis] Request prepared:', {
+        hasNews: !!request.news,
+        newsCount: request.news?.length || 0,
+        hasEvents: !!request.events,
+        eventsCount: request.events?.length || 0,
+        candlesCount: request.candles.length,
+      });
+
+      if (request.news && request.news.length > 0) {
+        console.log('[AI Analysis] News articles being sent to AI:', 
+          request.news.slice(0, 5).map((n, i) => `${i + 1}. ${n.title} (${n.source})`).join('\n')
+        );
+      }
+
+      if (request.events && request.events.length > 0) {
+        console.log('[AI Analysis] Events being sent to AI:', 
+          request.events.slice(0, 5).map((e, i) => `${i + 1}. ${e.title} (${e.type}, ${e.importance})`).join('\n')
+        );
       }
 
       return analyzeChart(request);

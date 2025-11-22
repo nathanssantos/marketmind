@@ -158,7 +158,9 @@ export abstract class BaseAIProvider {
         const newsItems = request.news.slice(0, 5)
           .map((article, i) => `${i + 1}. ${article.title} (${article.source})`)
           .join('\n');
-        parts.push(prompts.chartAnalysis.newsTemplate.replace('{newsItems}', newsItems));
+        const newsSection = prompts.chartAnalysis.newsTemplate.replace('{newsItems}', newsItems);
+        parts.push(newsSection);
+        console.log('[AI Prompt] News section added to prompt:', newsSection);
       }
 
       return parts.join('\n');
@@ -201,7 +203,39 @@ export abstract class BaseAIProvider {
       const newsItems = request.news.slice(0, 5)
         .map((article, i) => `${i + 1}. ${article.title} (${article.source})`)
         .join('\n');
-      parts.push(optimizedPrompts.chartAnalysis.newsTemplate.replace('{newsItems}', newsItems));
+      const newsSection = optimizedPrompts.chartAnalysis.newsTemplate.replace('{newsItems}', newsItems);
+      parts.push(newsSection);
+      console.log('[AI Prompt] News section added to prompt:', newsSection);
+    }
+
+    if (request.events && request.events.length > 0) {
+      const eventItems = request.events
+        .sort((a, b) => a.startDate - b.startDate)
+        .slice(0, 10)
+        .map((event, i) => {
+          const date = new Date(event.startDate);
+          const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          const timeToEvent = event.startDate - Date.now();
+          const daysAway = Math.floor(timeToEvent / (1000 * 60 * 60 * 24));
+          
+          let timing = '';
+          if (event.isPast) {
+            timing = `(${Math.abs(daysAway)} days ago)`;
+          } else if (daysAway === 0) {
+            timing = '(TODAY)';
+          } else if (daysAway === 1) {
+            timing = '(TOMORROW)';
+          } else if (daysAway > 0) {
+            timing = `(in ${daysAway} days)`;
+          }
+          
+          return `${i + 1}. [${event.importance.toUpperCase()}] ${event.title} - ${event.type} on ${dateStr} ${timing}`;
+        })
+        .join('\n');
+      
+      const eventsSection = optimizedPrompts.chartAnalysis.eventsTemplate.replace('{eventItems}', eventItems);
+      parts.push(eventsSection);
+      console.log('[AI Prompt] Events section added to prompt:', eventsSection);
     }
 
     return parts.join('\n');

@@ -34,6 +34,13 @@ export const NewsConfigTab = () => {
     loadSettings();
   }, []);
 
+  useEffect(() => {
+    if (!testMessage) return;
+
+    const timeout = setTimeout(() => setTestMessage(''), 3000);
+    return () => clearTimeout(timeout);
+  }, [testMessage]);
+
   const loadSettings = async () => {
     setLoading(true);
     try {
@@ -43,11 +50,21 @@ export const NewsConfigTab = () => {
         window.electron.secureStorage.getNewsSettings(),
       ]);
 
+      const envNewsApiKey = import.meta.env['VITE_NEWSAPI_API_KEY'];
+      const envCryptoPanicKey = import.meta.env['VITE_CRYPTOPANIC_API_KEY'];
+
       if (newsKeyResult.success && newsKeyResult.apiKey) {
         setNewsApiKey(newsKeyResult.apiKey);
+      } else if (envNewsApiKey) {
+        setNewsApiKey(envNewsApiKey);
+        await window.electron.secureStorage.setApiKey('newsapi', envNewsApiKey);
       }
-      if (cryptoKeyResult.success && cryptoKeyResult.apiKey) {
+
+      if (cryptoKeyResult.success && 'apiKey' in cryptoKeyResult && cryptoKeyResult.apiKey) {
         setCryptoPanicApiKey(cryptoKeyResult.apiKey);
+      } else if (envCryptoPanicKey) {
+        setCryptoPanicApiKey(envCryptoPanicKey);
+        await window.electron.secureStorage.setApiKey('cryptopanic', envCryptoPanicKey);
       }
 
       setEnabled(settings.enabled);
@@ -66,7 +83,6 @@ export const NewsConfigTab = () => {
     try {
       await window.electron.secureStorage.setApiKey('newsapi', newsApiKey.trim());
       setTestMessage(t('settings.news.newsApiKeySaved'));
-      setTimeout(() => setTestMessage(''), 3000);
     } catch (error) {
       console.error('Failed to save NewsAPI key:', error);
       setTestMessage(t('settings.news.newsApiKeyFailed'));
@@ -92,7 +108,7 @@ export const NewsConfigTab = () => {
     }
 
     setTestMessage(t('settings.news.testingConnection'));
-    
+
     try {
       const response = await fetch(
         `https://newsapi.org/v2/everything?q=bitcoin&apiKey=${newsApiKey.trim()}&pageSize=1`
@@ -181,7 +197,7 @@ export const NewsConfigTab = () => {
         <Text fontSize="lg" fontWeight="semibold" mb={4}>
           {t('settings.news.newsApiConfiguration')}
         </Text>
-        
+
         <Stack gap={4}>
           <Field label={t('settings.news.newsApiKey')} required>
             <Flex gap={2}>
@@ -233,7 +249,7 @@ export const NewsConfigTab = () => {
         <Text fontSize="lg" fontWeight="semibold" mb={4}>
           {t('settings.news.cryptoPanicConfiguration')}
         </Text>
-        
+
         <Field label={t('settings.news.cryptoPanicApiKey')}>
           <Flex gap={2}>
             <PasswordInput
@@ -267,7 +283,7 @@ export const NewsConfigTab = () => {
         <Text fontSize="lg" fontWeight="semibold" mb={4}>
           {t('settings.news.advancedSettings')}
         </Text>
-        
+
         <Stack gap={4}>
           <Field label={t('settings.news.refreshInterval')}>
             <NumberInput
@@ -295,8 +311,8 @@ export const NewsConfigTab = () => {
             </Text>
           </Field>
 
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={handleReset}
           >
             <LuRefreshCw />

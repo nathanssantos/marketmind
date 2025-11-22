@@ -93,7 +93,6 @@ export const ChartCanvas = ({
   const addOrder = useTradingStore((state) => state.addOrder);
   const closeOrder = useTradingStore((state) => state.closeOrder);
   const updateOrder = useTradingStore((state) => state.updateOrder);
-  const activateOrder = useTradingStore((state) => state.activateOrder);
   const orders = useTradingStore((state) => state.orders);
 
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
@@ -186,7 +185,7 @@ export const ChartCanvas = ({
   const lastHoveredOrderRef = useRef<string | null>(null);
   const lastTooltipOrderRef = useRef<string | null>(null);
   const [isInteracting, setIsInteracting] = useState(false);
-  const [interactionTimeout, setInteractionTimeout] = useState<NodeJS.Timeout | null>(null);
+  const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [cursor, setCursor] = useState<'crosshair' | 'ns-resize' | 'grab' | 'grabbing' | 'pointer'>('crosshair');
   const [measurementArea, setMeasurementArea] = useState<{
     startX: number;
@@ -314,7 +313,6 @@ export const ChartCanvas = ({
     enabled: isSimulatorActive,
     getOrderAtPosition: (x, y) => getOrderAtPosition(x, y),
     currentPrice,
-    activateOrder,
   });
 
   const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>): void => {
@@ -515,6 +513,12 @@ export const ChartCanvas = ({
     let closestMAValue: number | undefined = undefined;
     const HOVER_THRESHOLD = 8;
 
+    const effectiveWidth = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
+    const visibleRange = viewport.end - viewport.start;
+    const widthPerCandle = effectiveWidth / visibleRange;
+    const { candleWidth } = viewport;
+    const candleCenterOffset = (widthPerCandle - candleWidth) / 2 + candleWidth / 2;
+
     movingAverages.forEach((ma, index) => {
       if (ma.visible === false) return;
 
@@ -528,9 +532,9 @@ export const ChartCanvas = ({
 
         if (value1 === null || value1 === undefined || value2 === null || value2 === undefined) continue;
 
-        const x1 = manager.indexToX(i);
+        const x1 = manager.indexToX(i) + candleCenterOffset;
         const y1 = manager.priceToY(value1);
-        const x2 = manager.indexToX(i + 1);
+        const x2 = manager.indexToX(i + 1) + candleCenterOffset;
         const y2 = manager.priceToY(value2);
 
         const distance = distanceToLine(mouseX, mouseY, x1, y1, x2, y2);
@@ -690,16 +694,20 @@ export const ChartCanvas = ({
 
   const startInteraction = (): void => {
     setIsInteracting(true);
-    if (interactionTimeout) {
-      clearTimeout(interactionTimeout);
+    if (interactionTimeoutRef.current) {
+      clearTimeout(interactionTimeoutRef.current);
+      interactionTimeoutRef.current = null;
     }
   };
 
   const endInteraction = (): void => {
-    const timeout = setTimeout(() => {
+    if (interactionTimeoutRef.current) {
+      clearTimeout(interactionTimeoutRef.current);
+    }
+    interactionTimeoutRef.current = setTimeout(() => {
       setIsInteracting(false);
+      interactionTimeoutRef.current = null;
     }, 300);
-    setInteractionTimeout(timeout);
   };
 
   const handleCanvasMouseDown = (event: React.MouseEvent<HTMLCanvasElement>): void => {
@@ -813,11 +821,12 @@ export const ChartCanvas = ({
 
   useEffect(() => {
     return () => {
-      if (interactionTimeout) {
-        clearTimeout(interactionTimeout);
+      if (interactionTimeoutRef.current) {
+        clearTimeout(interactionTimeoutRef.current);
+        interactionTimeoutRef.current = null;
       }
     };
-  }, [interactionTimeout]);
+  }, []);
 
   useEffect(() => {
     if (!manager || !advancedConfig) return;
@@ -1046,7 +1055,7 @@ export const ChartCanvas = ({
     return () => {
       manager.setRenderCallback(null);
     };
-  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine, renderCrosshairPriceLine, renderOrderLines, chartType, measurementArea, isMeasuring, colors, showMeasurementRuler, showMeasurementArea, orderPreview, advancedConfig?.rightMargin]);
+  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderOrderLines, chartType]);
 
   return (
     <>

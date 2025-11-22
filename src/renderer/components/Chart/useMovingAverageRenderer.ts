@@ -43,8 +43,16 @@ export const useMovingAverageRenderer = ({
     const startIndex = Math.max(0, Math.floor(viewport.start));
     const endIndex = Math.min(candles.length, Math.ceil(viewport.end));
     const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
+    
+    const visibleRange = viewport.end - viewport.start;
+    const widthPerCandle = effectiveWidth / visibleRange;
+    const { candleWidth } = viewport;
+    const candleCenterOffset = (widthPerCandle - candleWidth) / 2 + candleWidth / 2;
 
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, effectiveWidth, dimensions.chartHeight);
+    ctx.clip();
 
     movingAverages.forEach((ma, index) => {
       if (ma.visible === false) return;
@@ -71,19 +79,17 @@ export const useMovingAverageRenderer = ({
         if (value === null || value === undefined) continue;
 
         const x = manager.indexToX(i);
+        
+        if (x > effectiveWidth) break;
+
+        const centerX = x + candleCenterOffset;
         const y = manager.priceToY(value);
 
-        const isVisible = x >= -10 && x <= effectiveWidth + 10;
-
-        if (isVisible) {
-          if (!hasMovedTo) {
-            ctx.moveTo(x, y);
-            hasMovedTo = true;
-          } else {
-            ctx.lineTo(x, y);
-          }
-        } else if (hasMovedTo) {
-          ctx.lineTo(x, y);
+        if (!hasMovedTo) {
+          ctx.moveTo(centerX, y);
+          hasMovedTo = true;
+        } else {
+          ctx.lineTo(centerX, y);
         }
       }
 
@@ -96,7 +102,7 @@ export const useMovingAverageRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, movingAverages, rightMargin, hoveredMAIndex, manager?.getCandles()]);
+  }, [manager, movingAverages, rightMargin, hoveredMAIndex]);
 
   return { render };
 };

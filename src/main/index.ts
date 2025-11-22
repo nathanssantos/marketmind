@@ -6,7 +6,7 @@ import { storageService } from './services/StorageService';
 import { UpdateManager } from './services/UpdateManager';
 import { windowStateManager } from './services/WindowStateManager';
 
-const { app, BrowserWindow, ipcMain } = electron;
+const { app, BrowserWindow, ipcMain, net } = electron;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -329,6 +329,98 @@ const setupIpcHandlers = (): void => {
       'Failed to clear AI studies:'
     )
   );
+
+  ipcMain.handle('http:fetch', async (_event, url, options = {}) => {
+    try {
+      console.log('[Main] HTTP fetch request:', url);
+      const { method = 'GET', headers = {}, body } = options;
+
+      const defaultHeaders = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
+        ...headers,
+      };
+
+      return new Promise((resolve) => {
+        const request = net.request({
+          method,
+          url,
+        });
+
+        Object.entries(defaultHeaders).forEach(([key, value]) => {
+          request.setHeader(key, value as string);
+        });
+
+        if (body) {
+          const bodyData = typeof body === 'string' ? body : JSON.stringify(body);
+          request.write(bodyData);
+        }
+
+        let responseData = '';
+
+        request.on('response', (response) => {
+          console.log('[Main] Response status:', response.statusCode, response.statusMessage);
+
+          response.on('data', (chunk) => {
+            responseData += chunk.toString();
+          });
+
+          response.on('end', () => {
+            try {
+              console.log('[Main] Raw response data (first 500 chars):', responseData.substring(0, 500));
+              const data = JSON.parse(responseData);
+              console.log('[Main] Response data parsed successfully');
+              
+              resolve({
+                success: response.statusCode >= 200 && response.statusCode < 300,
+                status: response.statusCode,
+                statusText: response.statusMessage || '',
+                data,
+                headers: response.headers,
+              });
+            } catch (error) {
+              console.error('[Main] Failed to parse response. Raw data:', responseData);
+              console.error('[Main] Parse error:', error);
+              resolve({
+                success: false,
+                status: response.statusCode,
+                statusText: 'Failed to parse response',
+                error: error instanceof Error ? error.message : 'Unknown error',
+                rawData: responseData,
+              });
+            }
+          });
+        });
+
+        request.on('error', (error) => {
+          console.error('[Main] HTTP fetch error:', error);
+          resolve({
+            success: false,
+            status: 0,
+            statusText: 'Network Error',
+            error: error.message,
+          });
+        });
+
+        request.end();
+      });
+    } catch (error) {
+      console.error('[Main] HTTP fetch setup error:', error);
+      return {
+        success: false,
+        status: 0,
+        statusText: 'Network Error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  });
 };
 
 app.whenReady().then(() => {
