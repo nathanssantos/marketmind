@@ -186,7 +186,7 @@ export const ChartCanvas = ({
   const lastHoveredOrderRef = useRef<string | null>(null);
   const lastTooltipOrderRef = useRef<string | null>(null);
   const [isInteracting, setIsInteracting] = useState(false);
-  const [interactionTimeout, setInteractionTimeout] = useState<NodeJS.Timeout | null>(null);
+  const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [cursor, setCursor] = useState<'crosshair' | 'ns-resize' | 'grab' | 'grabbing' | 'pointer'>('crosshair');
   const [measurementArea, setMeasurementArea] = useState<{
     startX: number;
@@ -696,16 +696,20 @@ export const ChartCanvas = ({
 
   const startInteraction = (): void => {
     setIsInteracting(true);
-    if (interactionTimeout) {
-      clearTimeout(interactionTimeout);
+    if (interactionTimeoutRef.current) {
+      clearTimeout(interactionTimeoutRef.current);
+      interactionTimeoutRef.current = null;
     }
   };
 
   const endInteraction = (): void => {
-    const timeout = setTimeout(() => {
+    if (interactionTimeoutRef.current) {
+      clearTimeout(interactionTimeoutRef.current);
+    }
+    interactionTimeoutRef.current = setTimeout(() => {
       setIsInteracting(false);
+      interactionTimeoutRef.current = null;
     }, 300);
-    setInteractionTimeout(timeout);
   };
 
   const handleCanvasMouseDown = (event: React.MouseEvent<HTMLCanvasElement>): void => {
@@ -819,11 +823,12 @@ export const ChartCanvas = ({
 
   useEffect(() => {
     return () => {
-      if (interactionTimeout) {
-        clearTimeout(interactionTimeout);
+      if (interactionTimeoutRef.current) {
+        clearTimeout(interactionTimeoutRef.current);
+        interactionTimeoutRef.current = null;
       }
     };
-  }, [interactionTimeout]);
+  }, []);
 
   useEffect(() => {
     if (!manager || !advancedConfig) return;

@@ -52,7 +52,10 @@ export const useNews = (options: UseNewsOptions = {}): UseNewsReturn => {
   const [error, setError] = useState<Error | null>(null);
   const [totalResults, setTotalResults] = useState(0);
 
-  const optionsKey = JSON.stringify({ filter, fetchOptions });
+  const optionsKey = useMemo(
+    () => JSON.stringify({ filter, fetchOptions }),
+    [filter, fetchOptions]
+  );
 
   const fetchNews = useCallback(async () => {
     if (!enabled) return;

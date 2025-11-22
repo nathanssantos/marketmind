@@ -1,7 +1,7 @@
 import { calculateMovingAverage } from '@/renderer/utils/movingAverages';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
 export interface MovingAverageConfig {
   period: number;
@@ -28,8 +28,6 @@ export const useMovingAverageRenderer = ({
   rightMargin,
   hoveredMAIndex,
 }: UseMovingAverageRendererProps): UseMovingAverageRendererReturn => {
-  const candles = useMemo(() => manager?.getCandles() ?? [], [manager]);
-  
   const render = useCallback((): void => {
     if (!manager || movingAverages.length === 0) return;
 
@@ -37,6 +35,7 @@ export const useMovingAverageRenderer = ({
     const dimensions = manager.getDimensions();
     const viewport = manager.getViewport();
     const bounds = manager.getBounds();
+    const candles = manager.getCandles();
 
     if (!ctx || !dimensions || !bounds || !candles) return;
 
@@ -102,7 +101,7 @@ export const useMovingAverageRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, movingAverages, rightMargin, hoveredMAIndex, candles]);
+  }, [manager, movingAverages, rightMargin, hoveredMAIndex]);
 
   return { render };
 };

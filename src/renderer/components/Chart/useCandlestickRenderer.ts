@@ -75,7 +75,7 @@ export const useCandlestickRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, colors, enabled, rightMargin, candleWickWidth, hoveredCandleIndex, manager?.getCandles()]);
+  }, [manager, colors, enabled, rightMargin, candleWickWidth, hoveredCandleIndex]);
 
   useEffect(() => {
     render();

@@ -152,7 +152,7 @@ export const useGridRenderer = ({
       colors.axisLine,
       2,
     );
-  }, [manager, colors, enabled, horizontalLines, verticalLines, gridLineWidth, paddingRight, rightMargin, manager?.getCandles()]);
+  }, [manager, colors, enabled, horizontalLines, verticalLines, gridLineWidth, paddingRight, rightMargin]);
 
   useEffect(() => {
     render();

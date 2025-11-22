@@ -34,6 +34,13 @@ export const NewsConfigTab = () => {
     loadSettings();
   }, []);
 
+  useEffect(() => {
+    if (!testMessage) return;
+    
+    const timeout = setTimeout(() => setTestMessage(''), 3000);
+    return () => clearTimeout(timeout);
+  }, [testMessage]);
+
   const loadSettings = async () => {
     setLoading(true);
     try {
@@ -66,7 +73,6 @@ export const NewsConfigTab = () => {
     try {
       await window.electron.secureStorage.setApiKey('newsapi', newsApiKey.trim());
       setTestMessage(t('settings.news.newsApiKeySaved'));
-      setTimeout(() => setTestMessage(''), 3000);
     } catch (error) {
       console.error('Failed to save NewsAPI key:', error);
       setTestMessage(t('settings.news.newsApiKeyFailed'));

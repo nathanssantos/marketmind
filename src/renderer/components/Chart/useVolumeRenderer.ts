@@ -85,7 +85,7 @@ export const useVolumeRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, colors, enabled, opacity, rightMargin, volumeHeightRatio, hoveredCandleIndex, manager?.getCandles()]);
+  }, [manager, colors, enabled, opacity, rightMargin, volumeHeightRatio, hoveredCandleIndex]);
 
   useEffect(() => {
     render();
