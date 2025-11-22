@@ -9,7 +9,6 @@ interface OrderDragConfig {
   enabled: boolean;
   getOrderAtPosition: (x: number, y: number) => Order | null;
   currentPrice: number;
-  activateOrder: (id: string, executionPrice: number) => void;
 }
 
 export type DragType = 'entry' | 'stopLoss' | 'takeProfit';
@@ -108,17 +107,9 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
     }
 
     if (dragType === 'entry' && draggedOrder.status === 'pending') {
-      const shouldExecuteImmediately =
-        (draggedOrder.type === 'long' && previewPrice <= config.currentPrice) ||
-        (draggedOrder.type === 'short' && previewPrice >= config.currentPrice);
-
-      if (shouldExecuteImmediately) {
-        config.activateOrder(draggedOrder.id, config.currentPrice);
-      } else {
-        config.updateOrder(draggedOrder.id, {
-          entryPrice: previewPrice,
-        });
-      }
+      config.updateOrder(draggedOrder.id, {
+        entryPrice: previewPrice,
+      });
 
       setDraggedOrder(null);
       setDragType(null);

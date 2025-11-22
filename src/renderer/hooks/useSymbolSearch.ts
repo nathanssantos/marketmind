@@ -30,16 +30,18 @@ export const useSymbolSearch = (
       return;
     }
 
+    console.log('[useSymbolSearch] Searching for:', query);
     setLoading(true);
     setError(null);
 
     try {
       const results = await service.searchSymbols(query);
+      console.log('[useSymbolSearch] Found', results.length, 'symbols');
       setSymbols(results);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to search symbols');
       setError(error);
-      console.error('Symbol search failed:', error);
+      console.error('[useSymbolSearch] Search failed:', error);
     } finally {
       setLoading(false);
     }

@@ -11,7 +11,6 @@ interface GlobalKeyboardShortcutsProps {
   onPanLeft?: () => void;
   onPanRight?: () => void;
   onOpenSettings?: () => void;
-  onToggleChatSidebar?: () => void;
   onFocusChatInput?: () => void;
   onShowShortcuts?: () => void;
   onOpenSymbolSelector?: () => void;
@@ -43,12 +42,6 @@ export const useGlobalKeyboardShortcuts = (props: GlobalKeyboardShortcutsProps) 
       if (modKey && key === 'k') {
         event.preventDefault();
         props.onFocusChatInput?.();
-        return;
-      }
-
-      if (modKey && key === 'b') {
-        event.preventDefault();
-        props.onToggleChatSidebar?.();
         return;
       }
 

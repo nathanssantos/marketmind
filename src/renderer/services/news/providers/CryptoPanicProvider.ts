@@ -1,10 +1,9 @@
-import axios, { type AxiosInstance } from 'axios';
 import {
-  BaseNewsProvider,
-  type FetchNewsOptions,
-  type NewsProviderConfig,
-  type NewsResponse,
-  type NewsArticle,
+    BaseNewsProvider,
+    type FetchNewsOptions,
+    type NewsArticle,
+    type NewsProviderConfig,
+    type NewsResponse,
 } from '@shared/types';
 
 interface CryptoPanicPost {
@@ -49,27 +48,18 @@ interface CryptoPanicResponse {
 }
 
 export class CryptoPanicProvider extends BaseNewsProvider {
-  private client: AxiosInstance;
   private lastRequestTime = 0;
   private requestInterval: number;
 
   constructor(config: NewsProviderConfig) {
     super('CryptoPanic', {
-      baseUrl: 'https://cryptopanic.com/api/v1',
+      baseUrl: 'https://cryptopanic.com/api/free/v1',
       rateLimitPerSecond: 2,
       cacheDuration: 300000,
       ...config,
     });
 
     this.requestInterval = 1000 / (this.config.rateLimitPerSecond || 2);
-
-    this.client = axios.create({
-      baseURL: this.config.baseUrl || 'https://cryptopanic.com/api/v1',
-      timeout: 10000,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
   }
 
   private async enforceRateLimit(): Promise<void> {
@@ -126,32 +116,62 @@ export class CryptoPanicProvider extends BaseNewsProvider {
     }
 
     try {
-      const response = await this.client.get<CryptoPanicResponse>('/posts/', { params });
+      const queryString = new URLSearchParams(
+        Object.entries(params).map(([key, value]) => [key, String(value)])
+      ).toString();
+      
+      const baseUrl = this.config.baseUrl || 'https://cryptopanic.com/api/free/v1';
+      const url = `${baseUrl}/posts/?${queryString}`;
 
-      const articles = response.data.results.map((post) => this.normalizeArticle(post));
+      console.log('[CryptoPanic] Fetching news from:', url);
 
-      return {
-        articles,
-        totalResults: response.data.count,
-        pageSize: options.limit || 20,
-      };
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const status = error.response?.status;
-        const message = error.response?.data?.message || error.message;
+      const response = await window.electron.http.fetch(url);
 
-        if (status === 401) {
+      console.log('[CryptoPanic] Response:', { 
+        success: response.success, 
+        status: response.status,
+        hasData: !!response.data,
+        dataType: typeof response.data
+      });
+
+      if (!response.success) {
+        if (response.status === 401) {
           throw new Error('CryptoPanic: Invalid API key');
         }
 
-        if (status === 429) {
+        if (response.status === 429) {
           throw new Error('CryptoPanic: Rate limit exceeded');
         }
 
-        throw new Error(`CryptoPanic request failed: ${message}`);
+        throw new Error(`CryptoPanic request failed: ${response.statusText || response.error}`);
       }
 
-      throw error;
+      if (!response.data || typeof response.data !== 'object') {
+        console.error('[CryptoPanic] Invalid response data:', response.data);
+        throw new Error('Failed to parse response');
+      }
+
+      const data = response.data as CryptoPanicResponse;
+      
+      if (!data.results || !Array.isArray(data.results)) {
+        console.error('[CryptoPanic] Invalid response structure:', data);
+        throw new Error('Invalid response structure');
+      }
+
+      console.log('[CryptoPanic] Successfully fetched', data.results.length, 'articles');
+
+      const articles = data.results.map((post) => this.normalizeArticle(post));
+
+      return {
+        articles,
+        totalResults: data.count,
+        pageSize: options.limit || 20,
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('CryptoPanic request failed: Unknown error');
     }
   }
 

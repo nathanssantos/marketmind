@@ -213,7 +213,6 @@
   "chat": {
     "title": "Chat",
     "newConversation": "New conversation",
-    "closeChat": "Close chat",
     "enableAIStudies": "Enable AI chart drawings",
     "disableAIStudies": "Disable AI chart drawings",
     "conversationsTitle": "Conversations - {{symbol}}",
@@ -286,12 +285,77 @@
   },
   "news": {
     "title": "News",
+    "selectSymbol": "Select cryptocurrency",
+    "symbolLabel": "Cryptocurrency",
     "failedToLoad": "Failed to load news",
     "noArticles": "No news articles found",
     "sentiment": {
       "positive": "Positive",
       "negative": "Negative",
       "neutral": "Neutral"
+    },
+    "tabs": {
+      "news": "News",
+      "settings": "Settings"
+    },
+    "settings": {
+      "enablePolling": "Enable Auto-Refresh",
+      "pollingDescription": "Automatically fetch new articles at regular intervals",
+      "refreshInterval": "Refresh Interval (minutes)",
+      "refreshIntervalHelper": "How often to check for new articles (1-60 minutes)",
+      "minImportanceForToast": "Notification Threshold",
+      "importanceLevel": "Minimum Importance",
+      "importanceHelper": "Only show notifications for articles with importance above this level (0-100%)",
+      "correlateWithAI": "Include News in AI Analysis",
+      "correlateWithAIDescription": "When enabled, recent news will be included in AI chart analysis for better market context"
+    },
+    "toast": {
+      "newImportantNews": "📰 Important News",
+      "readMore": "Read More"
+    }
+  },
+  "calendar": {
+    "title": "Events Calendar",
+    "disabled": "Calendar is disabled",
+    "enableInSettings": "Enable calendar in settings to view events",
+    "failedToLoad": "Failed to load events",
+    "noEvents": "No events found",
+    "eventTypes": {
+      "conference": "Conference",
+      "release": "Release",
+      "airdrop": "Airdrop",
+      "update": "Update",
+      "listing": "Listing",
+      "partnership": "Partnership",
+      "other": "Other"
+    },
+    "importance": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "status": {
+      "ongoing": "Ongoing",
+      "past": "Past"
+    },
+    "tabs": {
+      "events": "Events",
+      "settings": "Settings"
+    },
+    "settings": {
+      "enableCalendar": "Enable Events Calendar",
+      "enableCalendarDescription": "Fetch and display upcoming crypto events from CoinGecko",
+      "showOnChart": "Show Events on Chart",
+      "showOnChartDescription": "Display event markers on candlestick chart",
+      "minImportanceForChart": "Minimum Importance for Chart",
+      "minImportanceHelper": "Only show events with this importance level or higher on the chart",
+      "daysAhead": "Days Ahead",
+      "daysAheadHelper": "Fetch events up to this many days in the future (1-90)",
+      "daysBehind": "Days Behind",
+      "daysBehindHelper": "Fetch past events up to this many days ago (0-90)",
+      "correlateWithAI": "Include Events in AI Analysis",
+      "correlateWithAIDescription": "When enabled, upcoming and recent events will be included in AI chart analysis for better market context"
     }
   },
   "onboarding": {
@@ -346,7 +410,6 @@
     "shortcuts": {
       "openSettings": "Open Settings",
       "focusChatInput": "Focus Chat Input",
-      "toggleChatSidebar": "Toggle Chat Sidebar",
       "showKeyboardShortcuts": "Show Keyboard Shortcuts",
       "closeDialogs": "Close Dialogs",
       "toggleVolume": "Toggle Volume Display",
@@ -424,7 +487,7 @@
       "inactive": "Simulator Inactive"
     },
     "sidebar": {
-      "title": "Trading Simulator",
+      "title": "Simulator",
       "close": "Close trading sidebar"
     },
     "tabs": {

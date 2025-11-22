@@ -42,7 +42,7 @@ interface TradingState {
   setDefaultQuantity: (quantity: number) => void;
   setDefaultExpiration: (type: ExpirationType) => void;
   updatePrices: (symbol: string, price: number) => void;
-  fillPendingOrders: (symbol: string, currentPrice: number, high: number, low: number) => void;
+  fillPendingOrders: (symbol: string, currentPrice: number, previousPrice: number | null, appLoadTime: number) => void;
   activateOrder: (id: string, executionPrice: number) => void;
   expireOrders: () => void;
   clearAllData: () => void;
@@ -54,9 +54,31 @@ const loadFromElectron = async (): Promise<Partial<TradingState>> => {
   try {
     const result = await window.electron.secureStorage.getTradingData();
     if (result.success && result.data) {
+      const wallets = result.data.wallets.map((wallet) => ({
+        ...wallet,
+        createdAt: new Date(wallet.createdAt),
+        performance: wallet.performance.map((p) => ({
+          ...p,
+          timestamp: new Date(p.timestamp),
+        })),
+      }));
+
+      const orders = result.data.orders.map((order) => {
+        const baseOrder = {
+          ...order,
+          createdAt: new Date(order.createdAt),
+        };
+        
+        if (order.filledAt) baseOrder.filledAt = new Date(order.filledAt);
+        if (order.closedAt) baseOrder.closedAt = new Date(order.closedAt);
+        if (order.expirationDate) baseOrder.expirationDate = new Date(order.expirationDate);
+        
+        return baseOrder;
+      });
+
       return {
-        wallets: result.data.wallets,
-        orders: result.data.orders,
+        wallets,
+        orders,
         isSimulatorActive: result.data.isSimulatorActive,
         activeWalletId: result.data.activeWalletId,
         defaultQuantity: result.data.defaultQuantity,
@@ -384,28 +406,56 @@ export const useTradingStore = create<TradingState>((set, get) => {
 
       setDefaultExpiration: (type) => setWithSync({ defaultExpiration: type }),
 
-      fillPendingOrders: (symbol, currentPrice, high, low) =>
+      fillPendingOrders: (symbol, currentPrice, previousPrice, appLoadTime) =>
         setWithSync((state) => {
+          const now = Date.now();
           let hasChanges = false;
+          
+          const pendingOrders = state.orders.filter((o) => o.symbol === symbol && o.status === 'pending');
+          
+          if (pendingOrders.length > 0) {
+            const prevPriceStr = previousPrice !== null ? previousPrice.toFixed(2) : 'N/A';
+            console.log(`[Trading] Checking ${pendingOrders.length} pending orders for ${symbol}`);
+            console.log(`[Trading] Price: current=${currentPrice.toFixed(2)}, previous=${prevPriceStr}`);
+          }
+          
           const updatedOrders = state.orders.map((order) => {
             if (order.symbol !== symbol || order.status !== 'pending') return order;
-
-            const isLong = order.type === 'long';
-            const isLimit = order.subType === 'limit';
             
-            let filled = false;
-            if (isLong && isLimit) {
-              filled = low <= order.entryPrice;
-            } else if (isLong && !isLimit) {
-              filled = high >= order.entryPrice;
-            } else if (!isLong && isLimit) {
-              filled = high >= order.entryPrice;
-            } else {
-              filled = low <= order.entryPrice;
+            const orderTime = order.createdAt.getTime();
+            if (orderTime > now) {
+              console.log(`[Trading] Order ${order.id} skipped: created in future`);
+              return order;
+            }
+
+            if (orderTime < appLoadTime) {
+              if (pendingOrders.length > 0) {
+                console.log(`[Trading] Order ${order.id} skipped: created before app loaded (${new Date(orderTime).toISOString()} < ${new Date(appLoadTime).toISOString()})`);
+              }
+              return order;
+            }
+
+            if (previousPrice === null) {
+              console.log(`[Trading] Order ${order.id} skipped: no previous price yet`);
+              return order;
+            }
+
+            const entryPrice = order.entryPrice;
+            
+            const min = Math.min(previousPrice, currentPrice);
+            const max = Math.max(previousPrice, currentPrice);
+            const priceMovedThroughEntry = min <= entryPrice && entryPrice <= max && previousPrice !== currentPrice;
+            
+            const filled = priceMovedThroughEntry;
+            
+            if (pendingOrders.length > 0) {
+              console.log(`[Trading] Order ${order.id} (${order.type} ${order.subType} @ ${entryPrice.toFixed(2)}): range=[${min.toFixed(2)}, ${max.toFixed(2)}], touched=${priceMovedThroughEntry}, filled=${filled}`);
             }
 
             if (filled) {
               hasChanges = true;
+              const direction = previousPrice < currentPrice ? 'up' : 'down';
+              console.log(`[Trading] ✓ Order filled: ${order.type} ${order.subType} at ${entryPrice.toFixed(2)}, price moved ${direction} through entry (${previousPrice.toFixed(2)} → ${currentPrice.toFixed(2)})`);
               return {
                 ...order,
                 status: 'active' as OrderStatus,

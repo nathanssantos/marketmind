@@ -1,6 +1,8 @@
-import { Box, Flex, IconButton, Tabs, Text } from '@chakra-ui/react';
+import { Box, IconButton, Tabs, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { LuX } from 'react-icons/lu';
+import { LuPause, LuPlay } from 'react-icons/lu';
+import { useTradingStore } from '../../store/tradingStore';
+import { SidebarContainer, SidebarHeader } from '../ui/Sidebar';
 import { TooltipWrapper } from '../ui/Tooltip';
 import { OrdersList } from './OrdersList';
 import { OrderTicket } from './OrderTicket';
@@ -13,38 +15,27 @@ interface TradingSidebarProps {
 
 export const TradingSidebar = ({ width }: TradingSidebarProps) => {
   const { t } = useTranslation();
+  const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
+  const toggleSimulator = useTradingStore((state) => state.toggleSimulator);
 
   return (
-    <Flex
-      direction="column"
-      width={`${width}px`}
-      height="100%"
-      bg="bg.surface"
-      borderLeft="1px solid"
-      borderColor="border"
-    >
-      <Flex
-        px={4}
-        py={3}
-        align="center"
-        justify="space-between"
-        borderBottom="1px solid"
-        borderColor="border"
-        bg="bg.muted"
-      >
-        <Text fontSize="sm" fontWeight="bold">
-          {t('trading.sidebar.title')}
-        </Text>
-        <TooltipWrapper label={t('trading.sidebar.close')} showArrow>
-          <IconButton
-            size="xs"
-            variant="ghost"
-            aria-label={t('trading.sidebar.close')}
-          >
-            <LuX />
-          </IconButton>
-        </TooltipWrapper>
-      </Flex>
+    <SidebarContainer width={width}>
+      <SidebarHeader
+        title={t('trading.sidebar.title')}
+        actions={
+          <TooltipWrapper label={t('trading.simulator.toggle')} showArrow>
+            <IconButton
+              size="2xs"
+              aria-label={t('trading.simulator.toggle')}
+              onClick={toggleSimulator}
+              colorPalette={isSimulatorActive ? 'green' : 'gray'}
+              variant={isSimulatorActive ? 'solid' : 'ghost'}
+            >
+              {isSimulatorActive ? <LuPause /> : <LuPlay />}
+            </IconButton>
+          </TooltipWrapper>
+        }
+      />
 
       <Tabs.Root defaultValue="wallets" fitted>
         <Tabs.List>
@@ -80,6 +71,6 @@ export const TradingSidebar = ({ width }: TradingSidebarProps) => {
           </Tabs.Content>
         </Box>
       </Tabs.Root>
-    </Flex>
+    </SidebarContainer>
   );
 };

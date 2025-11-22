@@ -21,21 +21,70 @@ interface UseNewsReturn {
 }
 
 let defaultNewsService: NewsService | null = null;
+let isInitializing = false;
+let initPromise: Promise<NewsService> | null = null;
+
+const initializeNewsService = async (): Promise<NewsService> => {
+  if (defaultNewsService) {
+    return defaultNewsService;
+  }
+
+  if (isInitializing && initPromise) {
+    return initPromise;
+  }
+
+  isInitializing = true;
+  initPromise = (async () => {
+    try {
+      const newsApiResult = await window.electron.secureStorage.getApiKey('newsapi');
+      const newsApiKey = newsApiResult.apiKey || import.meta.env['VITE_NEWSAPI_API_KEY'] || '';
+
+      if (!newsApiKey) {
+        throw new Error('NewsAPI key is required. CryptoPanic is currently blocked by Cloudflare protection.');
+      }
+
+      defaultNewsService = new NewsService({
+        primaryProvider: new NewsAPIProvider({
+          apiKey: newsApiKey,
+        }),
+        fallbackProviders: [],
+        defaultCacheDuration: 300000,
+      });
+
+      return defaultNewsService;
+    } finally {
+      isInitializing = false;
+      initPromise = null;
+    }
+  })();
+
+  return initPromise;
+};
 
 const getDefaultNewsService = (): NewsService => {
-  if (!defaultNewsService) {
-    defaultNewsService = new NewsService({
-      primaryProvider: new CryptoPanicProvider({
-        apiKey: import.meta.env['VITE_CRYPTOPANIC_API_KEY'],
-      }),
-      fallbackProviders: [
-        new NewsAPIProvider({
-          apiKey: import.meta.env['VITE_NEWSAPI_API_KEY'],
-        }),
-      ],
-      defaultCacheDuration: 300000,
-    });
+  if (defaultNewsService) {
+    return defaultNewsService;
   }
+
+  const cryptoPanicKey = import.meta.env['VITE_CRYPTOPANIC_API_KEY'] || '';
+  const newsApiKey = import.meta.env['VITE_NEWSAPI_API_KEY'] || '';
+
+  defaultNewsService = new NewsService({
+    primaryProvider: new CryptoPanicProvider({
+      apiKey: cryptoPanicKey,
+    }),
+    fallbackProviders: newsApiKey ? [
+      new NewsAPIProvider({
+        apiKey: newsApiKey,
+      }),
+    ] : [],
+    defaultCacheDuration: 300000,
+  });
+
+  initializeNewsService().then((service) => {
+    defaultNewsService = service;
+  });
+
   return defaultNewsService;
 };
 
@@ -60,6 +109,8 @@ export const useNews = (options: UseNewsOptions = {}): UseNewsReturn => {
   const fetchNews = useCallback(async () => {
     if (!enabled) return;
 
+    console.log('[useNews] Fetching news...', { enabled, symbols: fetchOptions.symbols, limit: fetchOptions.limit });
+
     setLoading(true);
     setError(null);
 
@@ -68,10 +119,12 @@ export const useNews = (options: UseNewsOptions = {}): UseNewsReturn => {
         ? await newsService.getNewsWithFilter(fetchOptions, filter)
         : await newsService.fetchNews(fetchOptions);
 
+      console.log('[useNews] News fetched successfully:', response.articles.length, 'articles');
       setArticles(response.articles);
       setTotalResults(response.totalResults);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to fetch news');
+      console.error('[useNews] Failed to fetch news:', error.message);
       setError(error);
       setArticles([]);
       setTotalResults(0);

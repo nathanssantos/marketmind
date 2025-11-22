@@ -1,20 +1,25 @@
 import { Badge, Box, HStack, Link, Spinner, Stack, Text, VStack } from '@chakra-ui/react';
 import type { NewsArticle } from '@shared/types';
 import { formatDistanceToNow } from 'date-fns';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiExternalLink, FiMinus, FiTrendingDown, FiTrendingUp } from 'react-icons/fi';
 import { useNews } from '../../hooks/useNews';
+import { useNewsNotifications } from '../../hooks/useNewsNotifications';
 
 interface NewsPanelProps {
   symbols?: string[];
   limit?: number;
   showSentiment?: boolean;
   refetchInterval?: number;
+  pollingEnabled?: boolean;
+  minImportanceForToast?: number;
+  refetchTrigger?: number;
 }
 
 const SentimentBadge = ({ sentiment }: { sentiment?: NewsArticle['sentiment'] }) => {
   const { t } = useTranslation();
-  
+
   if (!sentiment) return null;
 
   const config = {
@@ -106,13 +111,29 @@ export const NewsPanel = ({
   limit = 10,
   showSentiment = true,
   refetchInterval,
+  pollingEnabled = true,
+  minImportanceForToast = 50,
+  refetchTrigger,
 }: NewsPanelProps) => {
   const { t } = useTranslation();
-  const { articles, loading, error } = useNews({
+  const { articles, loading, error, refetch } = useNews({
     symbols: symbols || [],
     limit,
     enabled: true,
-    refetchInterval,
+    refetchInterval: pollingEnabled ? refetchInterval : undefined,
+  });
+
+  useEffect(() => {
+    if (refetchTrigger && refetchTrigger > 0) {
+      console.log('[NewsPanel] Refetching news due to trigger:', refetchTrigger);
+      refetch();
+    }
+  }, [refetchTrigger, refetch]);
+
+  useNewsNotifications({
+    enabled: pollingEnabled,
+    minImportance: minImportanceForToast,
+    articles,
   });
 
   if (loading && articles.length === 0) {
