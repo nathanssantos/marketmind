@@ -25,6 +25,7 @@ import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useMarketData } from './hooks/useMarketData';
 import { useNews } from './hooks/useNews';
+import { usePriceUpdates } from './hooks/usePriceUpdates';
 import { useRealtimeCandle } from './hooks/useRealtimeCandle';
 import { useSimulatorLayout } from './hooks/useSimulatorLayout';
 import { MarketDataService } from './services/market/MarketDataService';
@@ -137,6 +138,7 @@ function AppContent(): ReactElement {
   const { t } = useTranslation();
   
   useSimulatorLayout();
+  usePriceUpdates();
 
   const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
