@@ -1,5 +1,5 @@
-import type { ChartContextData } from '../context/ChartContext';
 import { formatDistanceToNow } from 'date-fns';
+import type { ChartContextData } from '../context/ChartContext';
 
 export const formatPrice = (price: number): string => {
   if (price >= 1000000) {
@@ -35,6 +35,19 @@ export const formatTimestamp = (timestamp: number, interval?: string): string =>
   }
 
   return `${day}/${month}/${year}`;
+};
+
+export const formatDateTimeTooltip = (timestamp: number | Date): string => {
+  const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+  
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const seconds = date.getSeconds().toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 };
 
 export const formatVolume = (volume: number): string => {

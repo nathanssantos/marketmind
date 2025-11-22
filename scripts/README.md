@@ -4,6 +4,31 @@ Scripts úteis para gerenciamento do repositório e desenvolvimento.
 
 ## 📜 Scripts Disponíveis
 
+### `clear-storage.mjs`
+
+Script para limpar completamente o storage do Electron (dados persistidos).
+
+**O que faz:**
+- ✅ Deleta `config.json` (electron-store)
+- ✅ Remove todos os dados salvos (API keys, conversas, trading data)
+- ✅ Lista arquivos no diretório de storage
+- ✅ Funciona em macOS, Windows e Linux
+
+**Uso:**
+
+```bash
+npm run clear-storage
+# ou
+node scripts/clear-storage.mjs
+```
+
+**⚠️ ATENÇÃO:** Isso remove TODOS os dados salvos. Use com cuidado!
+
+**Caminhos de storage por plataforma:**
+- macOS: `~/Library/Application Support/MarketMind/config.json`
+- Windows: `%APPDATA%\MarketMind\config.json`
+- Linux: `~/.config/MarketMind/config.json`
+
 ### `setup-github.sh`
 
 Script automatizado para configurar o repositório no GitHub.

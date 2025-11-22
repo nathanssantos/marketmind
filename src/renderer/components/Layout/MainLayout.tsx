@@ -1,14 +1,14 @@
 import { GlobalActionsProvider } from '@/renderer/context/GlobalActionsContext';
 import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
-import { Box, Flex, IconButton } from '@chakra-ui/react';
+import { useTradingStore } from '@/renderer/store/tradingStore';
+import { useUIStore } from '@/renderer/store/uiStore';
+import { Box, Flex } from '@chakra-ui/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { LuChevronLeft } from 'react-icons/lu';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import { ChatSidebar } from '../Chat/ChatSidebar';
 import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
 import { SettingsDialog } from '../Settings/SettingsDialog';
-import { TooltipWrapper } from '../ui/Tooltip';
+import { TradingSidebar } from '../Trading/TradingSidebar';
 import { Header } from './Header';
 
 interface MainLayoutProps {
@@ -16,25 +16,29 @@ interface MainLayoutProps {
   onOpenSymbolSelector?: () => void;
   advancedConfig: AdvancedControlsConfig;
   onAdvancedConfigChange: (config: AdvancedControlsConfig) => void;
+  isChatOpen: boolean;
+  onToggleChat: () => void;
 }
 
 const MIN_CHAT_WIDTH = 300;
 const MAX_CHAT_WIDTH = 800;
 const DEFAULT_CHAT_WIDTH = 400;
+const MIN_TRADING_WIDTH = 300;
+const MAX_TRADING_WIDTH = 600;
+const DEFAULT_TRADING_WIDTH = 400;
 
-export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onAdvancedConfigChange }: MainLayoutProps) => {
-  const { t } = useTranslation();
-  const [isChatOpen, setIsChatOpen] = useLocalStorage('chat-sidebar-open', true);
+export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onAdvancedConfigChange, isChatOpen, onToggleChat }: MainLayoutProps) => {
   const [chatWidth, setChatWidth] = useLocalStorage('chat-sidebar-width', DEFAULT_CHAT_WIDTH);
+  const [tradingWidth, setTradingWidth] = useLocalStorage('trading-sidebar-width', DEFAULT_TRADING_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
+  const resizingTargetRef = useRef<'chat' | 'trading' | null>(null);
 
-  const toggleChat = useCallback(() => {
-    setIsChatOpen((prev) => !prev);
-  }, [setIsChatOpen]);
+  const chatPosition = useUIStore((state) => state.chatPosition);
+  const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
 
   const handleSettingsClick = useCallback(() => {
     setIsSettingsOpen(true);
@@ -42,34 +46,43 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
 
   const globalActions = useMemo(() => ({
     openSettings: () => setIsSettingsOpen(true),
-    toggleChatSidebar: toggleChat,
+    toggleChatSidebar: onToggleChat,
     focusChatInput: () => {
-      if (!isChatOpen) setIsChatOpen(true);
+      if (!isChatOpen) onToggleChat();
     },
     showKeyboardShortcuts: () => setShowKeyboardShortcuts(true),
     openSymbolSelector: () => onOpenSymbolSelector?.(),
-  }), [toggleChat, isChatOpen, setIsChatOpen, onOpenSymbolSelector]);
+  }), [onToggleChat, isChatOpen, onOpenSymbolSelector]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent, target: 'chat' | 'trading') => {
     e.preventDefault();
     setIsResizing(true);
+    resizingTargetRef.current = target;
     startXRef.current = e.clientX;
-    startWidthRef.current = chatWidth;
-  }, [chatWidth]);
+    startWidthRef.current = target === 'chat' ? chatWidth : tradingWidth;
+  }, [chatWidth, tradingWidth]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isResizing) return;
+    if (!isResizing || !resizingTargetRef.current) return;
 
-    const deltaX = startXRef.current - e.clientX;
-    const newWidth = Math.min(
-      Math.max(startWidthRef.current + deltaX, MIN_CHAT_WIDTH),
-      MAX_CHAT_WIDTH
-    );
-    setChatWidth(newWidth);
-  }, [isResizing, setChatWidth]);
+    const target = resizingTargetRef.current;
+    const isLeftSide = (target === 'chat' && chatPosition === 'left') || (target === 'trading' && false);
+    const deltaX = isLeftSide ? e.clientX - startXRef.current : startXRef.current - e.clientX;
+    
+    const minWidth = target === 'chat' ? MIN_CHAT_WIDTH : MIN_TRADING_WIDTH;
+    const maxWidth = target === 'chat' ? MAX_CHAT_WIDTH : MAX_TRADING_WIDTH;
+    const newWidth = Math.min(Math.max(startWidthRef.current + deltaX, minWidth), maxWidth);
+    
+    if (target === 'chat') {
+      setChatWidth(newWidth);
+    } else {
+      setTradingWidth(newWidth);
+    }
+  }, [isResizing, chatPosition, setChatWidth, setTradingWidth]);
 
   const handleMouseUp = useCallback(() => {
     setIsResizing(false);
+    resizingTargetRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -97,17 +110,59 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
           bottom={0}
           overflow="hidden"
         >
+          {chatPosition === 'left' && isChatOpen && (
+            <>
+              <ChatSidebar
+                width={chatWidth}
+                isOpen={isChatOpen}
+                onToggle={onToggleChat}
+              />
+              <Box
+                position="relative"
+                width="4px"
+                bg="border"
+                cursor="col-resize"
+                _hover={{ bg: 'blue.500' }}
+                onMouseDown={(e) => handleMouseDown(e, 'chat')}
+                userSelect="none"
+              />
+            </>
+          )}
+
           <Box
             flex={1}
             position="relative"
             overflow="hidden"
-            width={isChatOpen ? `calc(100% - ${chatWidth}px)` : '100%'}
+            width={
+              isChatOpen && isSimulatorActive
+                ? `calc(100% - ${chatWidth}px - ${tradingWidth}px)`
+                : isChatOpen
+                  ? `calc(100% - ${chatWidth}px)`
+                  : isSimulatorActive
+                    ? `calc(100% - ${tradingWidth}px)`
+                    : '100%'
+            }
             transition="width 0.2s ease"
           >
             {children}
           </Box>
 
-          {isChatOpen && (
+          {isSimulatorActive && (
+            <>
+              <Box
+                position="relative"
+                width="4px"
+                bg="border"
+                cursor="col-resize"
+                _hover={{ bg: 'green.500' }}
+                onMouseDown={(e) => handleMouseDown(e, 'trading')}
+                userSelect="none"
+              />
+              <TradingSidebar width={tradingWidth} />
+            </>
+          )}
+
+          {chatPosition === 'right' && isChatOpen && (
             <>
               <Box
                 position="relative"
@@ -115,33 +170,15 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
                 bg="border"
                 cursor="col-resize"
                 _hover={{ bg: 'blue.500' }}
-                onMouseDown={handleMouseDown}
+                onMouseDown={(e) => handleMouseDown(e, 'chat')}
                 userSelect="none"
               />
               <ChatSidebar
                 width={chatWidth}
                 isOpen={isChatOpen}
-                onToggle={toggleChat}
+                onToggle={onToggleChat}
               />
             </>
-          )}
-
-          {!isChatOpen && (
-            <TooltipWrapper label={t('common.openChat')} showArrow placement="left">
-              <IconButton
-                aria-label={t('common.openChat')}
-                onClick={toggleChat}
-                position="fixed"
-                right={4}
-                bottom={4}
-                colorPalette="blue"
-                borderRadius="full"
-                size="lg"
-                zIndex={100}
-              >
-                <LuChevronLeft />
-              </IconButton>
-            </TooltipWrapper>
           )}
         </Flex>
 

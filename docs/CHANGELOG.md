@@ -7,6 +7,133 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Trading Simulator - Balance Calculation Bug** 🐛
+  - Fixed incorrect balance calculation when closing positions (was showing 400% profit)
+  - Now correctly returns investment capital + net P&L when closing positions
+  - Formula: `balance = balance + totalInvestment + netPnL`
+  - All 814 tests passing with correct balance calculations
+
+- **Trading Simulator - Wallet Performance Dialog** 📊
+  - Fixed trade days calculation showing incorrect number of days
+  - Changed from counting performance records to actual calendar days since wallet creation
+  - Now accurately displays days since wallet was created
+
+- **Chart - Candle Transition Bugs** 🕯️
+  - Fixed candles not appearing or having incorrect format when transitioning to new candle
+  - Fixed timer freezing at 00:00 when new candle starts
+  - Fixed divergences when changing timeframe (resolved without app reload)
+  - Improved real-time candle update logic to handle transitions correctly
+  - Added automatic reset of live candles when symbol/timeframe changes
+  - Added detection of complete data changes to properly reset viewport
+
+- **Chart - Auto-scroll Functionality** 📜
+  - Implemented automatic scroll when viewing the last candle
+  - Chart automatically follows new candles in real-time
+  - Auto-scroll intelligently disables when user navigates to historical data
+  - Auto-scroll re-enables when user returns to the latest candles
+  - Works correctly with pan (drag), zoom (wheel), and manual navigation
+
+### Changed
+- **Chart - Tooltip Improvements** 🏷️
+  - All tooltips now display full date and time (DD/MM/YYYY HH:MM:SS)
+  - Applied to: candle tooltips, order tooltips, AI study tooltips, moving average tooltips, measurement tooltips
+  - Created `formatDateTimeTooltip()` utility function for consistent formatting
+  - Better context awareness when analyzing chart data
+
+- **Trading Simulator - UI Improvements** 🎨
+  - Increased buy/sell button size from `2xs` to `xs` for better usability
+  - Improved button clickability in OrderTicket component
+
+## [Unreleased - Previous Session]
+
+### Added
+- **Trading Simulator Mode - Complete Implementation** 🎉
+  
+  **Phase 1: Foundation**
+  - Created trading type system with Wallet, Order, Position interfaces
+  - Added WalletPerformancePoint for historical tracking
+  - Created tradingStore with Zustand (wallet and order management)
+  - Added wallet operations: create, update, delete, activate
+  - Added order operations: create, update, cancel, close
+  - Implemented position aggregation by symbol
+  - Created uiStore for chat positioning (left/right)
+  - Installed nanoid for unique ID generation
+
+  **Phase 2: Keyboard Shortcuts & Chart Integration**
+  - Created useTradingShortcuts hook for modifier key tracking (Shift/Alt)
+  - Integrated trading clicks in ChartCanvas component
+  - Shift+Click: Enter LONG position at clicked price
+  - Alt+Click: Enter SHORT position at clicked price
+  - Trading only active when simulator is enabled
+
+  **Phase 3: Layout Management**
+  - Updated MainLayout to support dynamic chat positioning (left/right)
+  - Added support for trading sidebar on the right (when simulator active)
+  - Resizable trading sidebar (300-600px, default 400px)
+  - Chat automatically moves to left when simulator activates
+  - Created useSimulatorLayout hook for auto-repositioning
+  - Proper width calculations for 3-panel layout
+  - Created TradingSidebar component with 4 tabs
+
+  **Phase 4: Wallet Management**
+  - Created WalletManager component with wallet CRUD
+  - Created CreateWalletDialog with Chakra UI v3 compatibility
+  - WalletCard component showing balance, P&L, performance
+  - Active wallet highlighting with blue border
+  - Profitable/unprofitable wallets indicated with green/red borders
+  - Display total P&L in absolute and percentage format
+  - Wallet menu with delete and view performance options
+  - Multi-currency support (USD, BRL, EUR)
+
+  **Phase 5: Order Placement**
+  - Created OrderTicket component for placing trades
+  - Order type selection (long/short)
+  - Quantity, entry price, stop loss, take profit inputs
+  - Display active wallet info and balance
+  - Calculate total cost and validate affordability
+  - Use current price button for quick entry price fill
+  - Green button for long, red button for short
+
+  **Phase 6: Portfolio & Orders Management**
+  - Created Portfolio component showing aggregated positions
+  - Display total positions count and total P&L
+  - Position cards with quantity, avg price, current price, P&L
+  - Color-coded borders (green for profitable, red for losing)
+  - Created OrdersList component with status filter
+  - Order summary: total, active, pending counts
+  - Filter by status (all, pending, active, filled, closed, cancelled, expired)
+  - Order cards with all details and P&L
+  - Order actions menu: close active, cancel pending
+
+  **Phase 7: Chart Visualization**
+  - Created useOrderLinesRenderer hook for visual order lines
+  - Entry lines: dashed green (long) or red (short) with labels
+  - Stop loss lines: red dotted with SL labels
+  - Take profit lines: green dotted with TP labels
+  - Only shows active/pending orders from active wallet
+
+  **Phase 8: Price Updates & Position Management**
+  - Created usePriceUpdates hook for real-time monitoring
+  - Updates currentPrice for all active orders
+  - Automatically closes orders when SL/TP hit
+  - Uses candle high/low for accurate detection
+  - Long: SL hit when low <= SL, TP hit when high >= TP
+  - Short: SL hit when high >= SL, TP hit when low <= TP
+  - Updates wallet balance on order close
+  - Records performance points for tracking
+
+  **Translations**
+  - Complete i18n for all trading components (EN, PT, ES, FR)
+  - 60+ translation keys for wallets, orders, portfolio
+
+### Fixed
+- **Chart Rendering Issues**
+  - Fixed crosshair vertical line not extending to time scale
+  - Fixed candle rendering not updating when new candles arrive
+  - Added triggerRender() call in setCandles() method
+  - Improved render pipeline for order lines integration
+
 ## [0.21.0] - 2025-11-20
 
 ### Added

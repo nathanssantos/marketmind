@@ -2,6 +2,7 @@ import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage } from '@shared/t
 import { formatCandlesForPrompt, optimizeCandles } from '../../utils/candleOptimizer';
 import { buildOptimizedMessages } from '../../utils/conversationSummarizer';
 import { detectIntentFromConversation, getSystemPrompt as getOptimizedSystemPrompt } from '../../utils/intentDetection';
+import { parseSignalFromResponse } from '../../utils/signalParser';
 import optimizedPrompts from './prompts-optimized.json';
 import prompts from './prompts.json';
 
@@ -210,31 +211,6 @@ export abstract class BaseAIProvider {
     signal: 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell';
     confidence: number;
   } | null {
-    const signalRegex = /\*\*Current Signal\*\*:?\s*(STRONG[_\s]BUY|BUY|HOLD|SELL|STRONG[_\s]SELL)/i;
-    const confidenceRegex = /\*\*Confidence\*\*:?\s*(\d+)%?/i;
-
-    const signalMatch = text.match(signalRegex);
-    const confidenceMatch = text.match(confidenceRegex);
-
-    if (!signalMatch || !signalMatch[1]) return null;
-
-    const signalMap: Record<string, 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell'> = {
-      'STRONG_BUY': 'strong_buy',
-      'STRONG BUY': 'strong_buy',
-      'BUY': 'buy',
-      'HOLD': 'hold',
-      'SELL': 'sell',
-      'STRONG_SELL': 'strong_sell',
-      'STRONG SELL': 'strong_sell',
-    };
-
-    const normalizedSignal = signalMatch[1].toUpperCase().replace(/\s+/g, '_');
-    const signal = signalMap[normalizedSignal];
-
-    if (!signal) return null;
-
-    const confidence = confidenceMatch && confidenceMatch[1] ? parseInt(confidenceMatch[1], 10) : 50;
-
-    return { signal, confidence };
+    return parseSignalFromResponse(text);
   }
 }

@@ -21,7 +21,8 @@
     "selectModel": "Seleccionar Modelo",
     "openChat": "Abrir chat",
     "deleteConversation": "Eliminar conversación",
-    "conversationHistory": "Historial de conversaciones"
+    "conversationHistory": "Historial de conversaciones",
+    "tips": "Consejos"
   },
   "app": {
     "title": "MarketMind",
@@ -53,6 +54,7 @@
       "chart": "Gráfico",
       "ai": "Configuración de IA",
       "news": "Noticias",
+      "tradingSimulator": "Simulador de Trading",
       "about": "Acerca de"
     },
     "language": {
@@ -189,6 +191,23 @@
       "tipValidJson": "El prompt debe estar en formato JSON válido",
       "tipFormat": "Usa el botón 'Formatear JSON' para formatear automáticamente tu JSON",
       "tipBackup": "Mantén una copia de seguridad antes de hacer cambios importantes en los prompts"
+    },
+    "tradingSimulator": {
+      "title": "Configuración del Simulador de Trading",
+      "description": "Administra tus datos y configuración del simulador de trading.",
+      "statistics": {
+        "title": "Estadísticas",
+        "wallets": "Total de Carteras",
+        "orders": "Total de Órdenes",
+        "activeOrders": "Órdenes Activas",
+        "pendingOrders": "Órdenes Pendientes"
+      },
+      "dangerZone": {
+        "title": "Zona de Peligro",
+        "description": "Borrar todos los datos eliminará permanentemente todas las carteras, órdenes e historial de trading. Esta acción no se puede deshacer.",
+        "clearAll": "Borrar Todos los Datos"
+      },
+      "confirmClearAll": "¿Estás seguro de que quieres borrar todos los datos de trading? Esta acción no se puede deshacer."
     }
   },
   "chat": {
@@ -397,6 +416,119 @@
       "gemini15Flash": "$0.075/$0.30 por 1M tokens",
       "gemini15Flash8b": "$0.0375/$0.15 por 1M tokens"
     }
+  },
+  "trading": {
+    "simulator": {
+      "toggle": "Simulador de Trading",
+      "active": "Simulador Activo",
+      "inactive": "Simulador Inactivo"
+    },
+    "sidebar": {
+      "title": "Simulador de Trading",
+      "close": "Cerrar barra de trading"
+    },
+    "tabs": {
+      "wallets": "Carteras",
+      "ticket": "Orden",
+      "portfolio": "Portafolio",
+      "orders": "Órdenes"
+    },
+    "wallets": {
+      "title": "Carteras",
+      "create": "Crear Cartera",
+      "createTitle": "Crear Nueva Cartera",
+      "empty": "Aún no hay carteras. Cree una para comenzar a operar.",
+      "name": "Nombre de la Cartera",
+      "namePlaceholder": "Mi Cartera",
+      "initialBalance": "Saldo Inicial",
+      "currency": "Moneda",
+      "balance": "Saldo",
+      "totalPnL": "P&L Total",
+      "viewPerformance": "Ver Rendimiento",
+      "delete": "Eliminar Cartera",
+      "performanceTitle": "Rendimiento - {{name}}",
+      "currentBalance": "Saldo Actual",
+      "tradeDays": "Días de Operación",
+      "avgDailyReturn": "Retorno Promedio Diario"
+    },
+    "ticket": {
+      "title": "Ticket de Orden",
+      "noWallet": "Por favor, crea y selecciona una cartera primero.",
+      "activeWallet": "Cartera Activa",
+      "symbol": "Símbolo",
+      "orderType": "Tipo de Orden",
+      "long": "Compra (Long)",
+      "short": "Venta (Short)",
+      "quantity": "Cantidad",
+      "entryPrice": "Precio de Entrada",
+      "useCurrent": "Usar Actual",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "optional": "Opcional",
+      "totalCost": "Costo Total",
+      "buy": "Comprar Long",
+      "sell": "Vender Short"
+    },
+    "portfolio": {
+      "title": "Cartera",
+      "noWallet": "Por favor, crea y selecciona una cartera primero.",
+      "empty": "No hay posiciones abiertas.",
+      "activePositions": "Posiciones Activas",
+      "totalExposure": "Exposición Total",
+      "unrealizedPnL": "PyG No Realizado",
+      "orders": "órdenes",
+      "orderCount": "Órdenes",
+      "quantity": "Cantidad",
+      "totalQuantity": "Cantidad Total",
+      "avgPrice": "Precio Promedio",
+      "currentPrice": "Precio Actual",
+      "pnl": "PyG",
+      "position": "Posición"
+    },
+    "orders": {
+      "title": "Órdenes",
+      "noWallet": "Por favor, crea y selecciona una cartera primero.",
+      "empty": "No se encontraron órdenes.",
+      "total": "Total de Órdenes",
+      "active": "Activas",
+      "pending": "Pendientes",
+      "filterByStatus": "Filtrar por Estado",
+      "allStatuses": "Todos los Estados",
+      "statusPending": "Pendiente",
+      "statusActive": "Activa",
+      "statusFilled": "Ejecutada",
+      "statusClosed": "Cerrada",
+      "statusCancelled": "Cancelada",
+      "statusExpired": "Expirada",
+      "createdAt": "Creada",
+      "filledAt": "Ejecutada",
+      "closedAt": "Cerrada",
+      "quantity": "Cantidad",
+      "entryPrice": "Precio de Entrada",
+      "currentPrice": "Precio Actual",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "pnl": "P&G",
+      "close": "Cerrar Orden",
+      "cancel": "Cancelar Orden"
+    },
+    "notifications": {
+      "orderFilled": "Orden Ejecutada",
+      "orderFilledDesc": "{{order}} ejecutada en {{price}}",
+      "orderClosed": "Orden Cerrada",
+      "orderClosedProfit": "{{order}} cerrada con ganancia: {{pnl}} ({{percent}}%)",
+      "orderClosedLoss": "{{order}} cerrada con pérdida: {{pnl}} ({{percent}}%)",
+      "orderCancelled": "Orden Cancelada",
+      "orderCancelledDesc": "{{order}} ha sido cancelada",
+      "orderExpired": "Orden Expirada",
+      "orderExpiredDesc": "{{order}} ha expirado"
+    },
+    "closeOrder": "Cerrar Orden",
+    "closeOrderConfirm": "¿Cerrar orden {{type}} con entrada en {{entry}}? Precio actual: {{current}}",
+    "removeSLTPConfirm": "¿Eliminar {{type}} de todas las órdenes en esta posición?",
+    "confirmClose": "Confirmar Cierre",
+    "active": "ACTIVA",
+    "pending": "PENDIENTE"
   },
   "about": {
     "version": "Versión {{version}}",

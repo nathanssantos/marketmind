@@ -25,13 +25,17 @@ import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useMarketData } from './hooks/useMarketData';
 import { useNews } from './hooks/useNews';
+import { useOrderNotifications } from './hooks/useOrderNotifications';
+import { usePriceUpdates } from './hooks/usePriceUpdates';
 import { useRealtimeCandle } from './hooks/useRealtimeCandle';
+import { useSimulatorLayout } from './hooks/useSimulatorLayout';
+import { useSimulatorSync } from './hooks/useSimulatorSync';
 import { MarketDataService } from './services/market/MarketDataService';
 import { BinanceProvider } from './services/market/providers/BinanceProvider';
 import { CoinGeckoProvider } from './services/market/providers/CoinGeckoProvider';
 import { useAIStore } from './store/aiStore';
+import { useTradingStore } from './store/tradingStore';
 import { system } from './theme';
-import { runMigrations } from './utils/migration';
 import { toaster } from './utils/toaster';
 
 const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
@@ -133,6 +137,11 @@ function App(): ReactElement {
 
 function AppContent(): ReactElement {
   const { t } = useTranslation();
+
+  useSimulatorLayout();
+  usePriceUpdates();
+  useOrderNotifications();
+
   const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
@@ -143,6 +152,7 @@ function AppContent(): ReactElement {
   const [chartType, setChartType] = useLocalStorage<'candlestick' | 'line'>('marketmind:chartType', 'candlestick');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
   const [showOnboarding, setShowOnboarding] = useLocalStorage('marketmind:showOnboarding', true);
+  const [isChatOpen, setIsChatOpen] = useLocalStorage('chat-sidebar-open', true);
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
     'marketmind:movingAverages',
     DEFAULT_MOVING_AVERAGES
@@ -161,15 +171,24 @@ function AppContent(): ReactElement {
     paddingRight: CHART_CONFIG.CANVAS_PADDING_RIGHT,
   });
 
+  const syncWithElectron = useTradingStore((state) => state.syncWithElectron);
+  const syncAIStore = useAIStore((state) => state.syncWithElectron);
+
   useEffect(() => {
-    runMigrations().catch((error) => {
-      console.error('Migration failed:', error);
-    });
-  }, []);
+    syncWithElectron();
+    syncAIStore();
+  }, [syncWithElectron, syncAIStore]);
 
   const restoreActiveConversation = useAIStore((state) => state.restoreActiveConversation);
   const setActiveConversationBySymbol = useAIStore((state) => state.setActiveConversationBySymbol);
   const getActiveConversation = useAIStore((state) => state.getActiveConversation);
+
+  const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
+  const toggleSimulator = useTradingStore((state) => state.toggleSimulator);
+
+  const toggleChat = useCallback(() => {
+    setIsChatOpen((prev) => !prev);
+  }, [setIsChatOpen]);
 
   useEffect(() => {
     restoreActiveConversation();
@@ -194,6 +213,8 @@ function AppContent(): ReactElement {
     });
   }, []);
 
+  useSimulatorSync(marketService);
+
   const { data: marketData, loading, error } = useMarketData(marketService, {
     symbol,
     interval: timeframe,
@@ -203,21 +224,34 @@ function AppContent(): ReactElement {
 
   const [liveCandles, setLiveCandles] = useState<Candle[]>([]);
 
+  useEffect(() => {
+    setLiveCandles([]);
+  }, [symbol, timeframe]);
+
   const handleRealtimeUpdate = useCallback((candle: Candle, isFinal: boolean) => {
     setLiveCandles(prev => {
-      if (prev.length === 0) return [candle];
+      if (prev.length === 0) {
+        return [candle];
+      }
 
       const lastCandle = prev[prev.length - 1];
 
-      if (lastCandle && candle.timestamp === lastCandle.timestamp) {
+      if (!lastCandle) {
+        return [candle];
+      }
+
+      if (candle.timestamp === lastCandle.timestamp) {
         return [...prev.slice(0, -1), candle];
       }
 
-      if (isFinal) {
+      if (candle.timestamp > lastCandle.timestamp) {
+        if (isFinal) {
+          return [...prev, candle];
+        }
         return [...prev, candle];
       }
 
-      return [...prev.slice(0, -1), candle];
+      return prev;
     });
   }, []);
 
@@ -315,6 +349,8 @@ function AppContent(): ReactElement {
         showMeasurementRuler={showMeasurementRuler}
         showMeasurementArea={showMeasurementArea}
         movingAverages={movingAverages}
+        isSimulatorActive={isSimulatorActive}
+        isChatOpen={isChatOpen}
         onSymbolChange={setSymbol}
         onTimeframeChange={setTimeframe}
         onChartTypeChange={setChartType}
@@ -325,12 +361,16 @@ function AppContent(): ReactElement {
         onShowMeasurementRulerChange={setShowMeasurementRuler}
         onShowMeasurementAreaChange={setShowMeasurementArea}
         onMovingAveragesChange={setMovingAverages}
+        onToggleSimulator={toggleSimulator}
+        onToggleChat={toggleChat}
       />
 
       <MainLayout
         onOpenSymbolSelector={() => { }}
         advancedConfig={advancedConfig}
         onAdvancedConfigChange={setAdvancedConfig}
+        isChatOpen={isChatOpen}
+        onToggleChat={toggleChat}
       >
         <AppContentWithKeyboardShortcuts
           showVolume={showVolume}
@@ -360,6 +400,7 @@ function AppContent(): ReactElement {
         {marketData && (
           <ChartCanvas
             candles={displayCandles}
+            symbol={symbol}
             width="100%"
             height="100%"
             showVolume={showVolume}

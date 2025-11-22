@@ -32,19 +32,10 @@ export interface ChartThemeColors extends ChartColors {
 
 export const useChartColors = (): ChartThemeColors => {
   const { colorMode } = useColorMode();
-  
+
   const colors = useMemo(() => {
     const themeColors = getChartColors(colorMode);
-    
-    if (import.meta.env.DEV) {
-      console.log('[useChartColors] Theme colors:', {
-        colorMode,
-        background: themeColors.background,
-        bullish: themeColors.bullish,
-        bearish: themeColors.bearish,
-      });
-    }
-    
+
     return themeColors as ChartThemeColors;
   }, [colorMode]);
 

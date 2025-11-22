@@ -5,7 +5,7 @@ import { LuExternalLink } from 'react-icons/lu';
 
 export const AboutTab = () => {
   const { t } = useTranslation();
-  
+
   return (
     <Stack gap={6}>
       <Box>

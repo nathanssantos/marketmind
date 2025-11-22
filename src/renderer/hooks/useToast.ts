@@ -10,12 +10,13 @@ export interface ToastOptions {
 
 export const useToast = () => {
   const showToast = useCallback((options: ToastOptions) => {
-    console.log('[useToast] Creating toast:', options);
-    toaster.create({
-      title: options.title,
-      description: options.description,
-      type: options.type || 'info',
-      duration: options.duration || 5000,
+    queueMicrotask(() => {
+      toaster.create({
+        title: options.title,
+        description: options.description,
+        type: options.type || 'info',
+        duration: options.duration || 5000,
+      });
     });
   }, []);
 

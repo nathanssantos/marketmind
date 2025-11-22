@@ -165,5 +165,41 @@ describe('candleOptimizer', () => {
       const formatted = formatCandlesForPrompt(optimized);
       expect(formatted).toBe('');
     });
+
+    it('should show samples from simplified data', () => {
+      const candles: Candle[] = Array.from({ length: 100 }, (_, i) =>
+        createCandle(i * 60000, 100 + i)
+      );
+
+      const optimized = optimizeCandles(candles, 10);
+      const formatted = formatCandlesForPrompt(optimized);
+
+      expect(formatted).toContain('simplified');
+      expect(formatted).toMatch(/\$\d+\.\d{2}/);
+    });
+
+    it('should handle data with only detailed candles', () => {
+      const candles: Candle[] = Array.from({ length: 5 }, (_, i) =>
+        createCandle(i * 60000, 100 + i)
+      );
+
+      const optimized = optimizeCandles(candles, 50);
+      const formatted = formatCandlesForPrompt(optimized);
+
+      expect(formatted).toContain('Recent Candles');
+      expect(formatted).not.toContain('Historical Data');
+    });
+
+    it('should format timestamps in ISO format', () => {
+      const candles: Candle[] = [
+        createCandle(1609459200000, 100),
+        createCandle(1609545600000, 110),
+      ];
+
+      const optimized = optimizeCandles(candles);
+      const formatted = formatCandlesForPrompt(optimized);
+
+      expect(formatted).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+    });
   });
 });
