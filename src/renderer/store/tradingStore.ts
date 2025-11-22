@@ -20,11 +20,11 @@ interface TradingState {
   defaultExpiration: ExpirationType;
 
   toggleSimulator: () => void;
-  addWallet: (
-    name: string,
-    initialBalance: number,
-    currency: WalletCurrency
-  ) => void;
+  addWallet: (params: {
+    name: string;
+    initialBalance: number;
+    currency: WalletCurrency;
+  }) => void;
   updateWallet: (id: string, updates: Partial<Wallet>) => void;
   deleteWallet: (id: string) => void;
   setActiveWallet: (id: string) => void;
@@ -43,6 +43,8 @@ interface TradingState {
   setDefaultQuantity: (quantity: number) => void;
   setDefaultExpiration: (type: ExpirationType) => void;
   updatePrices: (symbol: string, price: number) => void;
+  fillPendingOrders: (symbol: string, currentPrice: number, high: number, low: number) => void;
+  expireOrders: () => void;
 }
 
 export const useTradingStore = create<TradingState>()(
@@ -58,7 +60,7 @@ export const useTradingStore = create<TradingState>()(
       toggleSimulator: () =>
         set((state) => ({ isSimulatorActive: !state.isSimulatorActive })),
 
-      addWallet: (name, initialBalance, currency) =>
+      addWallet: ({ name, initialBalance, currency }) =>
         set((state) => {
           const newWallet: Wallet = {
             id: nanoid(),
@@ -298,6 +300,48 @@ export const useTradingStore = create<TradingState>()(
       setDefaultQuantity: (quantity) => set({ defaultQuantity: quantity }),
 
       setDefaultExpiration: (type) => set({ defaultExpiration: type }),
+
+      fillPendingOrders: (symbol, currentPrice, high, low) =>
+        set((state) => {
+          const updatedOrders = state.orders.map((order) => {
+            if (order.symbol !== symbol || order.status !== 'pending') return order;
+
+            const isLong = order.type === 'long';
+            const filled = isLong
+              ? low <= order.entryPrice
+              : high >= order.entryPrice;
+
+            if (filled) {
+              return {
+                ...order,
+                status: 'active' as OrderStatus,
+                filledAt: new Date(),
+                currentPrice,
+              };
+            }
+
+            return order;
+          });
+
+          return { orders: updatedOrders };
+        }),
+
+      expireOrders: () =>
+        set((state) => {
+          const now = new Date();
+          const updatedOrders = state.orders.map((order) => {
+            if (
+              order.status === 'pending' &&
+              order.expirationDate &&
+              order.expirationDate < now
+            ) {
+              return { ...order, status: 'expired' as OrderStatus };
+            }
+            return order;
+          });
+
+          return { orders: updatedOrders };
+        }),
 
       updatePrices: (symbol, price) =>
         set((state) => ({

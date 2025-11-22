@@ -1,13 +1,19 @@
 import { useChartContext } from '@renderer/context/ChartContext';
 import { useTradingStore } from '@renderer/store/tradingStore';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export const usePriceUpdates = () => {
   const { chartData } = useChartContext();
   const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
   const orders = useTradingStore((state) => state.orders);
+  const wallets = useTradingStore((state) => state.wallets);
   const updateOrder = useTradingStore((state) => state.updateOrder);
   const closeOrder = useTradingStore((state) => state.closeOrder);
+  const fillPendingOrders = useTradingStore((state) => state.fillPendingOrders);
+  const expireOrders = useTradingStore((state) => state.expireOrders);
+  const recordWalletPerformance = useTradingStore((state) => state.recordWalletPerformance);
+  
+  const lastCandleTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!isSimulatorActive || !chartData?.candles.length) return;
@@ -18,6 +24,19 @@ export const usePriceUpdates = () => {
     const currentPrice = lastCandle.close;
     const highPrice = lastCandle.high;
     const lowPrice = lastCandle.low;
+    const symbol = chartData.symbol;
+    const candleTime = lastCandle.timestamp;
+
+    if (lastCandleTimeRef.current !== null && candleTime !== lastCandleTimeRef.current) {
+      wallets.forEach((wallet) => {
+        recordWalletPerformance(wallet.id);
+      });
+    }
+    lastCandleTimeRef.current = candleTime;
+
+    expireOrders();
+    
+    fillPendingOrders(symbol, currentPrice, highPrice, lowPrice);
 
     const activeOrders = orders.filter((order) => order.status === 'active');
 
@@ -48,5 +67,5 @@ export const usePriceUpdates = () => {
         }
       }
     });
-  }, [chartData?.candles, isSimulatorActive, orders, updateOrder, closeOrder]);
+  }, [chartData?.candles, chartData?.symbol, isSimulatorActive, orders, wallets, updateOrder, closeOrder, fillPendingOrders, expireOrders, recordWalletPerformance]);
 };

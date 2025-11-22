@@ -8,7 +8,11 @@ import { useTranslation } from 'react-i18next';
 interface CreateWalletDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (name: string, initialBalance: number, currency: WalletCurrency) => void;
+  onCreate: (params: {
+    name: string;
+    initialBalance: number;
+    currency: WalletCurrency;
+  }) => void;
 }
 
 export const CreateWalletDialog = ({ isOpen, onClose, onCreate }: CreateWalletDialogProps) => {
@@ -22,7 +26,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate }: CreateWalletDi
     const balance = parseFloat(initialBalance);
     if (isNaN(balance) || balance <= 0) return;
 
-    onCreate(name.trim(), balance, currency);
+    onCreate({ name: name.trim(), initialBalance: balance, currency });
     setName('');
     setInitialBalance('10000');
     setCurrency('USD');
