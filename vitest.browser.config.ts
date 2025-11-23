@@ -8,6 +8,7 @@ export default defineConfig({
   test: {
     globals: true,
     include: ['**/*.browser.test.{ts,tsx}'],
+    setupFiles: './src/tests/setup.browser.ts',
     browser: {
       enabled: true,
       provider: playwright(),
@@ -23,5 +24,19 @@ export default defineConfig({
       '@renderer': path.resolve(__dirname, './src/renderer'),
       '@main': path.resolve(__dirname, './src/main'),
     },
+  },
+  optimizeDeps: {
+    include: [
+      '@testing-library/jest-dom',
+      '@testing-library/react',
+      '@testing-library/user-event',
+      '@chakra-ui/react',
+      'react-i18next',
+      '@emotion/react/jsx-dev-runtime',
+      'react-icons/lu',
+      'nanoid',
+      'zustand',
+      'date-fns',
+    ],
   },
 });
