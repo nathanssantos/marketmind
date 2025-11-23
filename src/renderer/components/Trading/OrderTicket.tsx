@@ -19,14 +19,24 @@ export const OrderTicket = () => {
   const wallets = useTradingStore((state) => state.wallets);
   const activeWalletId = useTradingStore((state) => state.activeWalletId);
   const addOrder = useTradingStore((state) => state.addOrder);
+  const defaultQuantity = useTradingStore((state) => state.defaultQuantity);
+  const setDefaultQuantity = useTradingStore((state) => state.setDefaultQuantity);
 
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
 
   const [orderType, setOrderType] = useState<OrderType>('long');
-  const [quantity, setQuantity] = useState('');
+  const [quantity, setQuantity] = useState(defaultQuantity.toString());
   const [entryPrice, setEntryPrice] = useState('');
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
+
+  const handleQuantityChange = (value: string) => {
+    setQuantity(value);
+    const numValue = Number(value);
+    if (!isNaN(numValue) && numValue > 0) {
+      setDefaultQuantity(numValue);
+    }
+  };
 
   const handleSubmit = () => {
     if (!activeWallet || !quantity || !entryPrice) return;
@@ -131,7 +141,7 @@ export const OrderTicket = () => {
               <NumberInput
                 size="xs"
                 value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
+                onChange={(e) => handleQuantityChange(e.target.value)}
                 placeholder="0.00"
                 step={0.01}
                 min={0}

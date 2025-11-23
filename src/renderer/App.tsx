@@ -1,7 +1,7 @@
 import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { Candle } from '@shared/types';
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls';
@@ -268,12 +268,35 @@ function AppContent(): ReactElement {
   });
 
   const [liveCandles, setLiveCandles] = useState<Candle[]>([]);
+  const previousPriceRef = useRef<number | null>(null);
+  const appLoadTimeRef = useRef(Date.now());
 
   useEffect(() => {
     setLiveCandles([]);
+    previousPriceRef.current = null;
   }, [symbol, timeframe]);
 
   const handleRealtimeUpdate = useCallback((candle: Candle, isFinal: boolean) => {
+    const currentPrice = candle.close;
+    const previousPrice = previousPriceRef.current;
+
+    if (previousPrice !== null && previousPrice !== currentPrice) {
+      const state = useTradingStore.getState();
+      if (state.isSimulatorActive) {
+        const hasPendingOrders = state.orders.some(o => o.status === 'pending' && o.symbol === symbol);
+        if (hasPendingOrders) {
+          state.fillPendingOrders(symbol, currentPrice, previousPrice, appLoadTimeRef.current);
+        }
+
+        const activeOrders = state.orders.filter(o => o.status === 'active' && o.symbol === symbol);
+        activeOrders.forEach(order => {
+          state.updateOrder(order.id, { currentPrice });
+        });
+      }
+    }
+
+    previousPriceRef.current = currentPrice;
+
     setLiveCandles(prev => {
       if (prev.length === 0) return [candle];
 
@@ -289,13 +312,14 @@ function AppContent(): ReactElement {
       }
 
       if (candle.timestamp > lastCandle.timestamp) {
+        previousPriceRef.current = null;
         if (isFinal) return [...prev, candle];
         return [...prev, candle];
       }
 
       return prev;
     });
-  }, []);
+  }, [symbol]);
 
   useRealtimeCandle(marketService, {
     symbol,

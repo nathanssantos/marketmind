@@ -1,11 +1,11 @@
 import type {
-    ExpirationType,
-    Order,
-    OrderStatus,
-    Position,
-    Wallet,
-    WalletCurrency,
-    WalletPerformancePoint,
+  ExpirationType,
+  Order,
+  OrderStatus,
+  Position,
+  Wallet,
+  WalletCurrency,
+  WalletPerformancePoint,
 } from '@shared/types/trading';
 import { nanoid } from 'nanoid';
 import { create } from 'zustand';
@@ -341,19 +341,21 @@ export const useTradingStore = create<TradingState>((set, get) => {
 
         activeOrders.forEach((order) => {
           const existing = positionMap.get(order.symbol);
+          const orderQuantity = order.type === 'long' ? order.quantity : -order.quantity;
+          
           if (existing) {
-            const totalQuantity = existing.quantity + order.quantity;
-            const avgPrice =
-              (existing.avgPrice * existing.quantity +
-                order.entryPrice * order.quantity) /
-              totalQuantity;
+            const newQuantity = existing.quantity + orderQuantity;
+            const totalInvestment = Math.abs(existing.avgPrice * existing.quantity) + Math.abs(order.entryPrice * orderQuantity);
+            const avgPrice = totalInvestment / Math.abs(newQuantity || 1);
             const currentPrice = order.currentPrice || order.entryPrice;
-            const pnl = (currentPrice - avgPrice) * totalQuantity;
-            const pnlPercent = (pnl / (avgPrice * totalQuantity)) * 100;
+            const pnl = newQuantity >= 0 
+              ? (currentPrice - avgPrice) * newQuantity
+              : (avgPrice - currentPrice) * Math.abs(newQuantity);
+            const pnlPercent = (pnl / (avgPrice * Math.abs(newQuantity || 1))) * 100;
 
             positionMap.set(order.symbol, {
               symbol: order.symbol,
-              quantity: totalQuantity,
+              quantity: newQuantity,
               avgPrice,
               currentPrice,
               pnl,
@@ -362,12 +364,14 @@ export const useTradingStore = create<TradingState>((set, get) => {
             });
           } else {
             const currentPrice = order.currentPrice || order.entryPrice;
-            const pnl = (currentPrice - order.entryPrice) * order.quantity;
+            const pnl = order.type === 'long'
+              ? (currentPrice - order.entryPrice) * order.quantity
+              : (order.entryPrice - currentPrice) * order.quantity;
             const pnlPercent = (pnl / (order.entryPrice * order.quantity)) * 100;
 
             positionMap.set(order.symbol, {
               symbol: order.symbol,
-              quantity: order.quantity,
+              quantity: orderQuantity,
               avgPrice: order.entryPrice,
               currentPrice,
               pnl,
@@ -408,66 +412,202 @@ export const useTradingStore = create<TradingState>((set, get) => {
 
       fillPendingOrders: (symbol, currentPrice, previousPrice, appLoadTime) =>
         setWithSync((state) => {
+          if (previousPrice === null) return state;
+          
           const now = Date.now();
           let hasChanges = false;
-          
-          const pendingOrders = state.orders.filter((o) => o.symbol === symbol && o.status === 'pending');
-          
-          if (pendingOrders.length > 0) {
-            const prevPriceStr = previousPrice !== null ? previousPrice.toFixed(2) : 'N/A';
-            console.log(`[Trading] Checking ${pendingOrders.length} pending orders for ${symbol}`);
-            console.log(`[Trading] Price: current=${currentPrice.toFixed(2)}, previous=${prevPriceStr}`);
-          }
+          const ordersToActivate: Order[] = [];
           
           const updatedOrders = state.orders.map((order) => {
-            if (order.symbol !== symbol || order.status !== 'pending') return order;
-            
-            const orderTime = order.createdAt.getTime();
-            if (orderTime > now) {
-              console.log(`[Trading] Order ${order.id} skipped: created in future`);
-              return order;
-            }
+            if (order.symbol !== symbol) return order;
 
-            if (orderTime < appLoadTime) {
-              if (pendingOrders.length > 0) {
-                console.log(`[Trading] Order ${order.id} skipped: created before app loaded (${new Date(orderTime).toISOString()} < ${new Date(appLoadTime).toISOString()})`);
+            if (order.status === 'active') {
+              if (order.stopLoss || order.takeProfit) {
+                const hitStopLoss = order.stopLoss && (
+                  (order.type === 'long' && currentPrice <= order.stopLoss) ||
+                  (order.type === 'short' && currentPrice >= order.stopLoss)
+                );
+
+                const hitTakeProfit = order.takeProfit && (
+                  (order.type === 'long' && currentPrice >= order.takeProfit) ||
+                  (order.type === 'short' && currentPrice <= order.takeProfit)
+                );
+
+                if (hitStopLoss || hitTakeProfit) {
+                  hasChanges = true;
+                  const exitPrice = hitStopLoss ? order.stopLoss! : order.takeProfit!;
+                  const orderPnl = order.type === 'long'
+                    ? (exitPrice - order.entryPrice) * order.quantity
+                    : (order.entryPrice - exitPrice) * order.quantity;
+                  const orderPnlPercent = (orderPnl / (order.entryPrice * order.quantity)) * 100;
+
+                  const wallet = state.wallets.find(w => w.id === order.walletId);
+                  if (wallet) {
+                    const totalInvestment = order.entryPrice * order.quantity;
+                    const commission = order.commission || 0;
+                    state.wallets = state.wallets.map(w =>
+                      w.id === wallet.id
+                        ? { ...w, balance: w.balance + totalInvestment + orderPnl - commission }
+                        : w
+                    );
+                  }
+
+                  return {
+                    ...order,
+                    status: 'closed' as OrderStatus,
+                    closedAt: new Date(),
+                    exitPrice,
+                    pnl: orderPnl,
+                    pnlPercent: orderPnlPercent,
+                    currentPrice: exitPrice,
+                  };
+                }
               }
               return order;
             }
 
-            if (previousPrice === null) {
-              console.log(`[Trading] Order ${order.id} skipped: no previous price yet`);
-              return order;
+            if (order.status !== 'pending') return order;
+            
+            if (order.expiresAt && order.expiresAt < now) {
+              hasChanges = true;
+              return {
+                ...order,
+                status: 'expired' as OrderStatus,
+              };
             }
+
+            const orderTime = order.createdAt.getTime();
+            if (orderTime > now || orderTime < appLoadTime) return order;
 
             const entryPrice = order.entryPrice;
-            
-            const min = Math.min(previousPrice, currentPrice);
-            const max = Math.max(previousPrice, currentPrice);
-            const priceMovedThroughEntry = min <= entryPrice && entryPrice <= max && previousPrice !== currentPrice;
-            
-            const filled = priceMovedThroughEntry;
-            
-            if (pendingOrders.length > 0) {
-              console.log(`[Trading] Order ${order.id} (${order.type} ${order.subType} @ ${entryPrice.toFixed(2)}): range=[${min.toFixed(2)}, ${max.toFixed(2)}], touched=${priceMovedThroughEntry}, filled=${filled}`);
-            }
+            const priceCrossed = (previousPrice < entryPrice && currentPrice >= entryPrice) || 
+                                 (previousPrice > entryPrice && currentPrice <= entryPrice);
 
-            if (filled) {
+            if (priceCrossed) {
               hasChanges = true;
-              const direction = previousPrice < currentPrice ? 'up' : 'down';
-              console.log(`[Trading] ✓ Order filled: ${order.type} ${order.subType} at ${entryPrice.toFixed(2)}, price moved ${direction} through entry (${previousPrice.toFixed(2)} → ${currentPrice.toFixed(2)})`);
-              return {
+              const investment = entryPrice * order.quantity;
+              const commission = order.commissionRate ? investment * order.commissionRate : 0;
+              
+              const wallet = state.wallets.find(w => w.id === order.walletId);
+              if (wallet) {
+                state.wallets = state.wallets.map(w =>
+                  w.id === wallet.id
+                    ? { ...w, balance: w.balance - investment - commission }
+                    : w
+                );
+              }
+
+              const activatedOrder = {
                 ...order,
                 status: 'active' as OrderStatus,
                 filledAt: new Date(),
                 currentPrice,
+                commission,
               };
+              ordersToActivate.push(activatedOrder);
+              return activatedOrder;
             }
 
             return order;
           });
 
-          return hasChanges ? { orders: [...updatedOrders] } : state;
+          if (!hasChanges) return state;
+
+          let finalOrders = [...updatedOrders];
+          
+          ordersToActivate.forEach((newOrder) => {
+            const oppositeType = newOrder.type === 'long' ? 'short' : 'long';
+            const oppositeOrders = finalOrders.filter(
+              o => o.walletId === newOrder.walletId &&
+                   o.symbol === newOrder.symbol &&
+                   o.type === oppositeType &&
+                   o.status === 'active' &&
+                   o.id !== newOrder.id
+            );
+
+            if (oppositeOrders.length === 0) return;
+
+            let remainingQuantity = newOrder.quantity;
+            const ordersToClose: string[] = [];
+            const ordersToReduce: Array<{ id: string; newQuantity: number }> = [];
+
+            oppositeOrders.forEach((opposite) => {
+              if (remainingQuantity <= 0) return;
+
+              if (opposite.quantity <= remainingQuantity) {
+                ordersToClose.push(opposite.id);
+                remainingQuantity -= opposite.quantity;
+              } else {
+                ordersToReduce.push({
+                  id: opposite.id,
+                  newQuantity: opposite.quantity - remainingQuantity,
+                });
+                remainingQuantity = 0;
+              }
+            });
+
+            finalOrders = finalOrders.map(o => {
+              if (ordersToClose.includes(o.id)) {
+                const orderPnl = o.type === 'long'
+                  ? (currentPrice - o.entryPrice) * o.quantity
+                  : (o.entryPrice - currentPrice) * o.quantity;
+                const orderPnlPercent = (orderPnl / (o.entryPrice * o.quantity)) * 100;
+
+                return {
+                  ...o,
+                  status: 'closed' as OrderStatus,
+                  closedAt: new Date(),
+                  pnl: orderPnl,
+                  pnlPercent: orderPnlPercent,
+                  currentPrice,
+                };
+              }
+
+              const reduction = ordersToReduce.find(r => r.id === o.id);
+              if (reduction) {
+                return { ...o, quantity: reduction.newQuantity };
+              }
+
+              if (o.id === newOrder.id && remainingQuantity === 0) {
+                const orderPnl = newOrder.type === 'long'
+                  ? (currentPrice - newOrder.entryPrice) * newOrder.quantity
+                  : (newOrder.entryPrice - currentPrice) * newOrder.quantity;
+                const orderPnlPercent = (orderPnl / (newOrder.entryPrice * newOrder.quantity)) * 100;
+
+                return {
+                  ...o,
+                  status: 'closed' as OrderStatus,
+                  closedAt: new Date(),
+                  pnl: orderPnl,
+                  pnlPercent: orderPnlPercent,
+                };
+              }
+
+              if (o.id === newOrder.id && remainingQuantity < newOrder.quantity) {
+                return { ...o, quantity: remainingQuantity };
+              }
+
+              return o;
+            });
+
+            const wallet = state.wallets.find(w => w.id === newOrder.walletId);
+            if (wallet) {
+              const totalClosed = ordersToClose.length;
+              if (totalClosed > 0 || remainingQuantity === 0) {
+                const closedOrders = finalOrders.filter(o => ordersToClose.includes(o.id) || (o.id === newOrder.id && remainingQuantity === 0));
+                const totalPnl = closedOrders.reduce((sum, o) => sum + (o.pnl || 0), 0);
+                const totalInvestment = closedOrders.reduce((sum, o) => sum + (o.entryPrice * (o.quantity || 0)), 0);
+
+                state.wallets = state.wallets.map(w =>
+                  w.id === wallet.id
+                    ? { ...w, balance: w.balance + totalInvestment + totalPnl }
+                    : w
+                );
+              }
+            }
+          });
+
+          return { orders: finalOrders, wallets: state.wallets };
         }),
 
       activateOrder: (id, executionPrice) =>

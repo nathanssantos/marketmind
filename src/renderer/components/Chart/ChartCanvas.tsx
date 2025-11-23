@@ -20,7 +20,7 @@ import { calculateMovingAverage } from '@renderer/utils/movingAverages';
 import { CHART_CONFIG } from '@shared/constants';
 import type { AIStudy, Candle, Viewport } from '@shared/types';
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import { AIStudyRenderer } from './AIStudyRenderer';
@@ -89,15 +89,16 @@ export const ChartCanvas = ({
   const colors = useChartColors();
   const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
   const activeWalletId = useTradingStore((state) => state.activeWalletId);
-  const wallets = useTradingStore((state) => state.wallets);
+  const orders = useTradingStore((state) => state.orders);
   const addOrder = useTradingStore((state) => state.addOrder);
+  const defaultQuantity = useTradingStore((state) => state.defaultQuantity);
   const closeOrder = useTradingStore((state) => state.closeOrder);
   const updateOrder = useTradingStore((state) => state.updateOrder);
-  const orders = useTradingStore((state) => state.orders);
-
-  const activeWallet = wallets.find((w) => w.id === activeWalletId);
 
   const handleLongEntry = useCallback((price: number) => {
+    const state = useTradingStore.getState();
+    const activeWallet = state.wallets.find((w) => w.id === state.activeWalletId);
+
     if (!activeWallet) {
       warning(t('trading.ticket.noWallet'));
       return;
@@ -113,13 +114,16 @@ export const ChartCanvas = ({
       subType,
       status: 'pending',
       entryPrice: price,
-      quantity: 1,
+      quantity: defaultQuantity || 1,
       walletId: activeWallet.id,
       ...(currentPrice !== undefined && { currentPrice }),
     });
-  }, [activeWallet, addOrder, symbol, candles, warning, t]);
+  }, [addOrder, symbol, candles, defaultQuantity, warning, t]);
 
   const handleShortEntry = useCallback((price: number) => {
+    const state = useTradingStore.getState();
+    const activeWallet = state.wallets.find((w) => w.id === state.activeWalletId);
+
     if (!activeWallet) {
       warning(t('trading.ticket.noWallet'));
       return;
@@ -135,11 +139,11 @@ export const ChartCanvas = ({
       subType,
       status: 'pending',
       entryPrice: price,
-      quantity: 1,
+      quantity: defaultQuantity || 1,
       walletId: activeWallet.id,
       ...(currentPrice !== undefined && { currentPrice }),
     });
-  }, [activeWallet, addOrder, symbol, candles, warning, t]);
+  }, [addOrder, symbol, candles, defaultQuantity, warning, t]);
 
   const { shiftPressed, altPressed } = useTradingShortcuts({
     onLongEntry: handleLongEntry,
@@ -273,7 +277,7 @@ export const ChartCanvas = ({
     ...(tooltipData.candleIndex !== undefined && { hoveredCandleIndex: tooltipData.candleIndex }),
   });
 
-  const { render: renderMovingAverages } = useMovingAverageRenderer({
+  const { render: renderMovingAverages, getHoveredMATag } = useMovingAverageRenderer({
     manager,
     movingAverages,
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
@@ -305,8 +309,13 @@ export const ChartCanvas = ({
   const currentCandles = manager?.getCandles() ?? [];
   const currentPrice = currentCandles[currentCandles.length - 1]?.close ?? 0;
 
+  const activeOrders = useMemo(
+    () => activeWalletId ? orders.filter(o => o.walletId === activeWalletId) : [],
+    [orders, activeWalletId]
+  );
+
   const orderDragHandler = useOrderDragHandler({
-    orders,
+    orders: activeOrders,
     updateOrder,
     priceToY: (price) => manager?.priceToY(price) ?? 0,
     yToPrice: (y) => manager?.yToPrice(y) ?? 0,
@@ -376,8 +385,8 @@ export const ChartCanvas = ({
     if (!manager) return;
 
     const hoveredOrderButton = getClickedOrderId(mouseX, mouseY);
-    const hoveredOrder = getHoveredOrder(mouseX, mouseY);
     const hoveredSLTP = getSLTPAtPosition(mouseX, mouseY);
+    const hoveredOrder = hoveredSLTP ? null : getHoveredOrder(mouseX, mouseY);
 
     const newHoveredId = hoveredOrder?.id || null;
     if (newHoveredId !== lastHoveredOrderRef.current) {
@@ -428,7 +437,11 @@ export const ChartCanvas = ({
     const isInChartArea = mouseX < chartAreaRight && mouseY < timeScaleTop;
     const isInExtendedStudyArea = mouseX >= chartAreaRight && mouseX <= studyExtensionArea && mouseY < timeScaleTop;
 
-    if (isOnPriceScale) {
+    const hoveredTagIndex = getHoveredMATag(mouseX, mouseY);
+
+    if (hoveredTagIndex !== undefined) {
+      setCursor('pointer');
+    } else if (isOnPriceScale) {
       setCursor('ns-resize');
     } else if (isOnTimeScale) {
       setCursor('crosshair');
@@ -436,7 +449,18 @@ export const ChartCanvas = ({
       setCursor('crosshair');
     }
 
-    if (isOnPriceScale || isOnTimeScale) {
+    if (isOnPriceScale && hoveredTagIndex === undefined) {
+      setHoveredMAIndex(undefined);
+      setTooltipData({
+        candle: null,
+        x: 0,
+        y: 0,
+        visible: false,
+      });
+      return;
+    }
+
+    if (isOnTimeScale) {
       setHoveredMAIndex(undefined);
       setTooltipData({
         candle: null,
@@ -513,39 +537,43 @@ export const ChartCanvas = ({
     let closestMAValue: number | undefined = undefined;
     const HOVER_THRESHOLD = 8;
 
-    const effectiveWidth = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
-    const visibleRange = viewport.end - viewport.start;
-    const widthPerCandle = effectiveWidth / visibleRange;
-    const { candleWidth } = viewport;
-    const candleCenterOffset = (widthPerCandle - candleWidth) / 2 + candleWidth / 2;
+    if (hoveredTagIndex !== undefined) {
+      closestMAIndex = hoveredTagIndex;
+    } else {
+      const effectiveWidth = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
+      const visibleRange = viewport.end - viewport.start;
+      const widthPerCandle = effectiveWidth / visibleRange;
+      const { candleWidth } = viewport;
+      const candleCenterOffset = (widthPerCandle - candleWidth) / 2 + candleWidth / 2;
 
-    movingAverages.forEach((ma, index) => {
-      if (ma.visible === false) return;
+      movingAverages.forEach((ma, index) => {
+        if (ma.visible === false) return;
 
-      const maValues = calculateMovingAverage(candles, ma.period, ma.type);
-      const startIndex = Math.max(0, Math.floor(viewport.start));
-      const endIndex = Math.min(candles.length, Math.ceil(viewport.end));
+        const maValues = calculateMovingAverage(candles, ma.period, ma.type);
+        const startIndex = Math.max(0, Math.floor(viewport.start));
+        const endIndex = Math.min(candles.length, Math.ceil(viewport.end));
 
-      for (let i = startIndex; i < endIndex - 1; i++) {
-        const value1 = maValues[i];
-        const value2 = maValues[i + 1];
+        for (let i = startIndex; i < endIndex - 1; i++) {
+          const value1 = maValues[i];
+          const value2 = maValues[i + 1];
 
-        if (value1 === null || value1 === undefined || value2 === null || value2 === undefined) continue;
+          if (value1 === null || value1 === undefined || value2 === null || value2 === undefined) continue;
 
-        const x1 = manager.indexToX(i) + candleCenterOffset;
-        const y1 = manager.priceToY(value1);
-        const x2 = manager.indexToX(i + 1) + candleCenterOffset;
-        const y2 = manager.priceToY(value2);
+          const x1 = manager.indexToX(i) + candleCenterOffset;
+          const y1 = manager.priceToY(value1);
+          const x2 = manager.indexToX(i + 1) + candleCenterOffset;
+          const y2 = manager.priceToY(value2);
 
-        const distance = distanceToLine(mouseX, mouseY, x1, y1, x2, y2);
+          const distance = distanceToLine(mouseX, mouseY, x1, y1, x2, y2);
 
-        if (distance < HOVER_THRESHOLD && distance < closestMADistance) {
-          closestMADistance = distance;
-          closestMAIndex = index;
-          closestMAValue = (value1 + value2) / 2;
+          if (distance < HOVER_THRESHOLD && distance < closestMADistance) {
+            closestMADistance = distance;
+            closestMAIndex = index;
+            closestMAValue = (value1 + value2) / 2;
+          }
         }
-      }
-    });
+      });
+    }
 
     setHoveredMAIndex(closestMAIndex);
 
@@ -980,7 +1008,8 @@ export const ChartCanvas = ({
         ctx.textBaseline = 'middle';
 
         const statusLabel = willBeActive ? t('trading.active') : t('trading.pending');
-        const label = `${isLong ? '↑ L' : '↓ S'} @ ${orderPreview.price.toFixed(2)} [${statusLabel}]`;
+        const directionSymbol = isLong ? '↑' : '↓';
+        const label = `${directionSymbol} @ ${orderPreview.price.toFixed(2)} [${statusLabel}]`;
         const labelPadding = 8;
         const textMetrics = ctx.measureText(label);
         const textWidth = textMetrics.width;

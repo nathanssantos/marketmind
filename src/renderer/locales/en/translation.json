@@ -576,15 +576,23 @@
       "cancel": "Cancel Order"
     },
     "notifications": {
-      "orderFilled": "Order Filled",
-      "orderFilledDesc": "{{order}} filled at {{price}}",
-      "orderClosed": "Order Closed",
-      "orderClosedProfit": "{{order}} closed with profit: {{pnl}} ({{percent}}%)",
-      "orderClosedLoss": "{{order}} closed with loss: {{pnl}} ({{percent}}%)",
+      "orderFilled": {
+        "title": "Order Filled",
+        "body": "{{type}} order for {{quantity}} {{symbol}} filled at ${{price}}"
+      },
+      "orderClosed": {
+        "titleProfit": "Order Closed - Profit ✓",
+        "titleLoss": "Order Closed - Loss",
+        "body": "{{type}} {{symbol}} ({{quantity}}) closed: {{pnl}}"
+      },
       "orderCancelled": "Order Cancelled",
       "orderCancelledDesc": "{{order}} has been cancelled",
       "orderExpired": "Order Expired",
       "orderExpiredDesc": "{{order}} has expired"
+    },
+    "order": {
+      "long": "LONG",
+      "short": "SHORT"
     },
     "closeOrder": "Close Order",
     "closeOrderConfirm": "Close {{type}} order at entry {{entry}}? Current price: {{current}}",

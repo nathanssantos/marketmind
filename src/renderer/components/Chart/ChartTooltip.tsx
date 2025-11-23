@@ -201,12 +201,12 @@ export const ChartTooltip = ({
 
           <HStack justify="space-between">
             <Text color="fg.muted">{isPosition ? t('trading.portfolio.totalQuantity') : t('trading.ticket.quantity')}:</Text>
-            <Text fontWeight="medium">{order.quantity.toFixed(8)}</Text>
+            <Text fontWeight="medium">{(order.quantity ?? 0).toFixed(8)}</Text>
           </HStack>
 
           <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
             <Text color="fg.muted">{isPosition ? t('trading.portfolio.avgPrice') : t('trading.ticket.entryPrice')}:</Text>
-            <Text fontWeight="medium">{order.entryPrice.toFixed(2)}</Text>
+            <Text fontWeight="medium">{(order.entryPrice ?? 0).toFixed(2)}</Text>
           </HStack>
 
           {isActive && currentPrice && (

@@ -1,9 +1,9 @@
 # 📊 MarketMind - Project Status
 
 > **Last Updated:** November 22, 2025  
-> **Current Version:** 0.21.0 (In Progress)  
+> **Current Version:** 0.22.0 (In Progress)  
 > **Current Branch:** `develop`  
-> **Current Phase:** Phase 19 Complete - Calendar Integration & Performance Optimizations
+> **Current Phase:** Phase 19 Complete + Native OS Notifications System
 
 ---
 
@@ -35,13 +35,15 @@ Phase 19: Calendar & Performance Optimizations  ██████████�
 
 **Status:** Production ready! All 814 tests passing with 90.62% coverage. Complete feature set including calendar integration, news enhancements, trading simulator improvements, critical performance optimizations, UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI study tooltips, **multi-language support (EN, PT, ES, FR)**, automatic data migrations, and **comprehensive AI model support (23 models across 3 providers)**.
 
-**Latest Development (v0.21.0 - In Progress):**
+**Latest Development (v0.22.0 - In Progress):**
+- ✅ **Native OS Notifications:** System-level notifications for trading events (macOS/Windows)
 - ✅ **Calendar Integration:** CoinGecko events API with full calendar system
 - ✅ **News Enhancements:** Auto-refresh, notifications, AI correlation, dedicated dialog
 - ✅ **Performance Optimizations:** Fixed excessive re-renders in chart renderers
 - ✅ **Trading Improvements:** Fixed order execution logic, proper price tracking
 - ✅ **UI Refactoring:** Reusable sidebar components, toolbar reorganization
-- ✅ All 814 tests passing (100% pass rate)
+- ✅ **Tooltip Fixes:** Fixed translation key and pointer events blocking interactions
+- ✅ All 952 tests passing (100% pass rate)
 - ✅ 90.62% code coverage maintained
 
 **AI Models Available:**
@@ -1882,6 +1884,70 @@ package.json                                  ✅ (version 0.12.0)
 ---
 
 ## 🔄 Recent Changes
+
+### November 22, 2025 - v0.22.0: Native OS Notifications System 🔔
+- ✨ **Electron Notification API Integration**
+  - Complete system-level notifications for macOS (Notification Center) and Windows (Action Center)
+  - IPC handlers in main process for secure notification management
+  - NotificationAPI interface in preload script
+  - useNotification React hook for generic notification functionality
+  - Automatic notification support detection
+  
+- ✨ **Trading Notifications**
+  - useOrderNotifications hook updated to send both toast + native OS notifications
+  - Order filled notifications (pending → active)
+  - Order closed notifications with profit/loss distinction
+  - Order cancelled/expired notifications
+  - Urgency levels: normal (profit), low (loss/cancelled/expired)
+  - Silent mode option available
+  
+- 🌍 **Complete Internationalization**
+  - All notifications translated in EN, PT, ES, FR
+  - Updated translation keys: trading.notifications.orderFilled/orderClosed
+  - Added trading.order.long/short translation keys
+  - Proper interpolation for dynamic values (symbol, quantity, price, pnl)
+  
+- 📝 **Documentation**
+  - Created NOTIFICATIONS.md with complete guide
+  - Architecture overview (Main → Preload → Renderer)
+  - Usage examples and API reference
+  - Multilingual support documentation
+  - Future improvements roadmap
+  
+- ✅ **Testing**
+  - All 952 tests passing (100% pass rate)
+  - No breaking changes
+  - Type-safe implementation with TypeScript
+  
+- 📦 **Files Created/Modified**
+  - `src/main/index.ts` - Notification handlers + Notification import
+  - `src/main/preload.ts` - NotificationAPI interface
+  - `src/renderer/hooks/useNotification.ts` - Generic notification hook (NEW)
+  - `src/renderer/hooks/useOrderNotifications.ts` - Native notifications integration
+  - `docs/NOTIFICATIONS.md` - Complete documentation (NEW)
+  - All translation files updated (EN, PT, ES, FR)
+
+### November 22, 2025 - v0.21.1: Tooltip System Fixes 🔧
+- 🐛 **Tooltip Translation Fix**
+  - Fixed chat button tooltip using wrong translation key
+  - Changed from `keyboardShortcuts.shortcuts.toggleChatSidebar` to `common.openChat`
+  - Tooltip now displays correctly as "Open chat" in all languages
+  
+- 🐛 **Tooltip Interaction Fix**
+  - Fixed tooltips blocking button clicks after hover
+  - Added `pointerEvents="none"` to Tooltip.Positioner
+  - Added `pointerEvents="auto"` to Tooltip.Content
+  - Added `zIndex={9999}` for proper layering
+  - Tooltips now render above all UI elements without blocking interactions
+  
+- ✅ **Testing**
+  - All 952 tests passing (100% pass rate)
+  - No breaking changes
+  - Tooltip system working perfectly across all components
+  
+- 📝 **Files Modified**
+  - `src/renderer/components/Layout/Toolbar.tsx` - Fixed translation key
+  - `src/renderer/components/ui/Tooltip.tsx` - Added pointer events and z-index
 
 ### November 16, 2025 - Theme Colors Integration 🎨
 - ✨ **Chakra UI Theme Integration (In Progress)**
