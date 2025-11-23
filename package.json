@@ -19,7 +19,9 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run",
+    "test:run": "npm run test:unit && npm run test:browser",
+    "test:unit": "vitest run",
+    "test:browser": "vitest run --config vitest.browser.config.ts",
     "test:coverage": "vitest run --coverage",
     "clear-storage": "node scripts/clear-storage.mjs",
     "postinstall": "./scripts/install-hooks.sh"
@@ -72,6 +74,7 @@
     "vite": "^7.2.4",
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6",
-    "vitest": "^4.0.13"
+    "vitest": "^4.0.13",
+    "vitest-canvas-mock": "^1.1.2"
   }
 }

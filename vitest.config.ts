@@ -8,6 +8,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/tests/setup.ts',
+    exclude: ['**/*.browser.test.{ts,tsx}', '**/node_modules/**'],
     css: true,
     pool: 'threads',
     poolOptions: {
