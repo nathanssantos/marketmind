@@ -3,7 +3,6 @@ import { Box, Flex, Link, Separator, Stack, Text } from '@chakra-ui/react';
 import { APP_VERSION } from '@shared/constants';
 import { useTranslation } from 'react-i18next';
 import { LuExternalLink } from 'react-icons/lu';
-import { APP_VERSION } from '@shared/constants';
 
 export const AboutTab = () => {
   const { t } = useTranslation();

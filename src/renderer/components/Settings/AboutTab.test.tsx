@@ -1,6 +1,7 @@
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { APP_VERSION } from '../../../shared/constants';
 import { AboutTab } from './AboutTab';
 
 vi.mock('react-i18next', () => ({
@@ -41,7 +42,7 @@ describe('AboutTab', () => {
     it('displays app version', () => {
         renderWithChakra(<AboutTab />);
 
-        expect(screen.getByText('Version 0.22.0')).toBeDefined();
+        expect(screen.getByText(`Version ${APP_VERSION}`)).toBeDefined();
     });
 
     it('renders app description', () => {
