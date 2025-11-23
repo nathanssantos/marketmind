@@ -1,5 +1,5 @@
-import { renderHook } from '@testing-library/react';
 import type { Candle } from '@shared/types';
+import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useLineRenderer } from './useLineRenderer';
 
