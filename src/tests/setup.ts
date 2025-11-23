@@ -1,6 +1,7 @@
 import * as matchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
 import { afterEach, expect, vi } from 'vitest';
+import { workerPool } from '../renderer/utils/WorkerPool';
 
 expect.extend(matchers);
 
@@ -20,6 +21,9 @@ vi.mock('react-i18next', () => ({
 
 afterEach(() => {
   cleanup();
+  workerPool.terminateAll();
+  vi.clearAllTimers();
+  vi.clearAllMocks();
 });
 
 Object.defineProperty(window, 'matchMedia', {
@@ -57,6 +61,8 @@ const indexedDBStore = new Map<string, any>();
 
 afterEach(() => {
   indexedDBStore.clear();
+  pendingRafCallbacks.clear();
+  rafId = 0;
 });
 
 global.indexedDB = {
@@ -232,13 +238,23 @@ global.IDBKeyRange = {
 } as any;
 
 let rafId = 0;
+const pendingRafCallbacks = new Map<number, FrameRequestCallback>();
+
 global.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
   const id = ++rafId;
-  queueMicrotask(() => callback(Date.now()));
+  pendingRafCallbacks.set(id, callback);
+  queueMicrotask(() => {
+    if (pendingRafCallbacks.has(id)) {
+      callback(Date.now());
+      pendingRafCallbacks.delete(id);
+    }
+  });
   return id;
 });
 
-global.cancelAnimationFrame = vi.fn();
+global.cancelAnimationFrame = vi.fn((id: number) => {
+  pendingRafCallbacks.delete(id);
+});
 
 class MockWorker {
   url: string;

@@ -11,6 +11,14 @@ import {
 } from './coordinateSystem';
 import { clearCanvas, setupCanvas } from './drawingUtils';
 
+export interface DirtyFlags {
+  candles: boolean;
+  viewport: boolean;
+  dimensions: boolean;
+  overlays: boolean;
+  all: boolean;
+}
+
 export class CanvasManager {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D | null = null;
@@ -25,6 +33,15 @@ export class CanvasManager {
   private rightMargin: number = CHART_CONFIG.CHART_RIGHT_MARGIN;
   private animationFrameId: number | null = null;
   private isAnimating: boolean = false;
+  private dirtyFlags: DirtyFlags = {
+    candles: true,
+    viewport: true,
+    dimensions: true,
+    overlays: true,
+    all: true,
+  };
+  private lastRenderTime: number = 0;
+  private minFrameTime: number = 16;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -52,14 +69,54 @@ export class CanvasManager {
   private scheduleRender(): void {
     if (this.isAnimating) return;
     
+    if (!this.isDirty()) return;
+    
     this.isAnimating = true;
     this.animationFrameId = requestAnimationFrame(() => {
-      if (this.renderCallback) {
-        this.renderCallback();
+      const now = performance.now();
+      const elapsed = now - this.lastRenderTime;
+      
+      if (elapsed < this.minFrameTime && !this.dirtyFlags.all) {
+        this.isAnimating = false;
+        this.scheduleRender();
+        return;
       }
+      
+      if (this.renderCallback && this.isDirty()) {
+        this.renderCallback();
+        this.lastRenderTime = now;
+      }
+      
       this.isAnimating = false;
       this.animationFrameId = null;
     });
+  }
+  
+  public isDirty(): boolean {
+    return this.dirtyFlags.all || 
+           this.dirtyFlags.candles || 
+           this.dirtyFlags.viewport || 
+           this.dirtyFlags.dimensions || 
+           this.dirtyFlags.overlays;
+  }
+  
+  public markDirty(flag: keyof DirtyFlags = 'all'): void {
+    this.dirtyFlags[flag] = true;
+    this.scheduleRender();
+  }
+  
+  public clearDirtyFlags(): void {
+    this.dirtyFlags = {
+      candles: false,
+      viewport: false,
+      dimensions: false,
+      overlays: false,
+      all: false,
+    };
+  }
+  
+  public getDirtyFlags(): Readonly<DirtyFlags> {
+    return { ...this.dirtyFlags };
   }
 
   private triggerRender(): void {
@@ -84,12 +141,21 @@ export class CanvasManager {
       volumeHeight: 0,
       chartWidth,
     };
+    
+    this.markDirty('dimensions');
   }
 
   public setCandles(candles: Candle[]): void {
+    const candlesChanged = this.candles.length !== candles.length ||
+      (candles.length > 0 && this.candles.length > 0 && 
+       this.candles[this.candles.length - 1]?.timestamp !== candles[candles.length - 1]?.timestamp);
+    
     this.candles = candles;
     this.updateBounds();
-    this.triggerRender();
+    
+    if (candlesChanged) {
+      this.markDirty('candles');
+    }
   }
 
   public getCandles(): Candle[] {
@@ -97,8 +163,17 @@ export class CanvasManager {
   }
 
   public setViewport(viewport: Viewport): void {
+    const viewportChanged = 
+      this.viewport.start !== viewport.start ||
+      this.viewport.end !== viewport.end ||
+      this.viewport.candleWidth !== viewport.candleWidth;
+      
     this.viewport = clampViewport(viewport, this.candles.length);
     this.updateBounds();
+    
+    if (viewportChanged) {
+      this.markDirty('viewport');
+    }
   }
 
   public getViewport(): Viewport {
@@ -137,7 +212,7 @@ export class CanvasManager {
 
   public setRightMargin(margin: number): void {
     this.rightMargin = margin;
-    this.triggerRender();
+    this.markDirty('dimensions');
   }
 
   public clear(): void {
@@ -148,7 +223,7 @@ export class CanvasManager {
   public resize(): void {
     this.initialize();
     this.updateBounds();
-    this.triggerRender();
+    this.markDirty('all');
   }
 
   public priceToY(price: number): number {
@@ -226,7 +301,7 @@ export class CanvasManager {
     this.updateCandleWidth();
     
     this.updateBounds();
-    this.triggerRender();
+    this.markDirty('viewport');
   }
 
   public pan(deltaX: number): void {
@@ -240,7 +315,7 @@ export class CanvasManager {
 
     this.viewport = clampViewport(this.viewport, this.candles.length);
     this.updateBounds();
-    this.triggerRender();
+    this.markDirty('viewport');
   }
 
   public panVertical(deltaY: number): void {
@@ -257,7 +332,7 @@ export class CanvasManager {
     this.priceOffset += priceDelta;
     
     this.updateBounds();
-    this.triggerRender();
+    this.markDirty('viewport');
   }
 
   public zoomVertical(deltaY: number): void {
@@ -269,14 +344,14 @@ export class CanvasManager {
     this.priceScale = Math.max(0.1, Math.min(10, this.priceScale));
     
     this.updateBounds();
-    this.triggerRender();
+    this.markDirty('viewport');
   }
 
   public resetVerticalZoom(): void {
     this.priceOffset = 0;
     this.priceScale = 1;
     this.updateBounds();
-    this.triggerRender();
+    this.markDirty('viewport');
   }
 
   public resetToInitialView(): void {
@@ -290,7 +365,7 @@ export class CanvasManager {
     
     this.resetVerticalZoom();
     this.updateCandleWidth();
-    this.triggerRender();
+    this.markDirty('all');
   }
 
   public panToNextCandle(): void {
@@ -308,7 +383,7 @@ export class CanvasManager {
       
       this.updateCandleWidth();
       this.updateBounds();
-      this.triggerRender();
+      this.markDirty('viewport');
     }
   }
 
