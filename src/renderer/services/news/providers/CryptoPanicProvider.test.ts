@@ -416,6 +416,80 @@ describe('CryptoPanicProvider', () => {
 
       await expect(provider.fetchNews({})).rejects.toThrow('Network error');
     });
+
+    it('should handle invalid response data type', async () => {
+      const config: NewsProviderConfig = {
+        apiKey: 'test-key',
+      };
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
+        data: 'not an object',
+      });
+
+      const provider = new CryptoPanicProvider(config);
+
+      await expect(provider.fetchNews({})).rejects.toThrow('Failed to parse response');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('[CryptoPanic] Invalid response data:', 'not an object');
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should handle missing results array', async () => {
+      const config: NewsProviderConfig = {
+        apiKey: 'test-key',
+      };
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
+        data: { count: 0 },
+      });
+
+      const provider = new CryptoPanicProvider(config);
+
+      await expect(provider.fetchNews({})).rejects.toThrow('Invalid response structure');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('[CryptoPanic] Invalid response structure:', { count: 0 });
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should handle non-array results', async () => {
+      const config: NewsProviderConfig = {
+        apiKey: 'test-key',
+      };
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
+        data: { count: 1, results: 'not an array' },
+      });
+
+      const provider = new CryptoPanicProvider(config);
+
+      await expect(provider.fetchNews({})).rejects.toThrow('Invalid response structure');
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should handle unknown error type', async () => {
+      const config: NewsProviderConfig = {
+        apiKey: 'test-key',
+      };
+
+      mockElectronFetch.mockRejectedValue('unknown error type');
+
+      const provider = new CryptoPanicProvider(config);
+
+      await expect(provider.fetchNews({})).rejects.toThrow('CryptoPanic request failed: Unknown error');
+    });
   });
 
   describe('searchNews', () => {
@@ -457,6 +531,32 @@ describe('CryptoPanicProvider', () => {
       expect(mockElectronFetch).toHaveBeenCalledWith(
         expect.stringContaining('page_size=10')
       );
+    });
+  });
+
+  describe('rate limiting', () => {
+    it('should enforce rate limit between requests', async () => {
+      const config: NewsProviderConfig = {
+        apiKey: 'test-key',
+        rateLimitPerSecond: 10,
+      };
+
+      mockElectronFetch.mockResolvedValue({
+        success: true,
+        status: 200,
+        data: mockCryptoPanicResponse,
+      });
+
+      const provider = new CryptoPanicProvider(config);
+      
+      await provider.fetchNews({});
+      const secondCallPromise = provider.fetchNews({});
+      
+      await vi.advanceTimersByTimeAsync(100);
+      
+      await secondCallPromise;
+      
+      expect(mockElectronFetch).toHaveBeenCalledTimes(2);
     });
   });
 });

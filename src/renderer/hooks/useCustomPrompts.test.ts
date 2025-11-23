@@ -30,6 +30,14 @@ describe('useCustomPrompts', () => {
     expect(() => JSON.parse(prompt)).not.toThrow();
   });
 
+  it('returns default signals prompt initially', () => {
+    const { result } = renderHook(() => useCustomPrompts());
+    const prompt = result.current.getSignalsPrompt();
+    
+    expect(prompt).toBeDefined();
+    expect(() => JSON.parse(prompt)).not.toThrow();
+  });
+
   it('sets and retrieves custom chart analysis prompt', () => {
     const { result } = renderHook(() => useCustomPrompts());
     const customPrompt = JSON.stringify({ system: 'Custom chart analysis' }, null, 2);
@@ -50,6 +58,17 @@ describe('useCustomPrompts', () => {
     });
 
     expect(result.current.getChatPrompt()).toBe(customPrompt);
+  });
+
+  it('sets and retrieves custom signals prompt', () => {
+    const { result } = renderHook(() => useCustomPrompts());
+    const customPrompt = JSON.stringify({ system: 'Custom signals' }, null, 2);
+
+    act(() => {
+      result.current.setSignalsPrompt(customPrompt);
+    });
+
+    expect(result.current.getSignalsPrompt()).toBe(customPrompt);
   });
 
   it('resets chart analysis prompt to default', () => {
@@ -88,6 +107,24 @@ describe('useCustomPrompts', () => {
     expect(result.current.getChatPrompt()).toBe(defaultPrompt);
   });
 
+  it('resets signals prompt to default', () => {
+    const { result } = renderHook(() => useCustomPrompts());
+    const customPrompt = JSON.stringify({ system: 'Custom' }, null, 2);
+    const defaultPrompt = result.current.getDefaultSignalsPrompt();
+
+    act(() => {
+      result.current.setSignalsPrompt(customPrompt);
+    });
+
+    expect(result.current.getSignalsPrompt()).toBe(customPrompt);
+
+    act(() => {
+      result.current.resetSignalsPrompt();
+    });
+
+    expect(result.current.getSignalsPrompt()).toBe(defaultPrompt);
+  });
+
   it('detects modified chart analysis prompt', () => {
     const { result } = renderHook(() => useCustomPrompts());
 
@@ -110,6 +147,18 @@ describe('useCustomPrompts', () => {
     });
 
     expect(result.current.isChatModified()).toBe(true);
+  });
+
+  it('detects modified signals prompt', () => {
+    const { result } = renderHook(() => useCustomPrompts());
+
+    expect(result.current.isSignalsModified()).toBe(false);
+
+    act(() => {
+      result.current.setSignalsPrompt(JSON.stringify({ system: 'Custom' }));
+    });
+
+    expect(result.current.isSignalsModified()).toBe(true);
   });
 
   it('detects any modification', () => {

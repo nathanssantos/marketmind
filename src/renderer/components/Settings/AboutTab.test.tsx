@@ -110,7 +110,7 @@ describe('AboutTab', () => {
         renderWithChakra(<AboutTab />);
 
         const docsLink = screen.getByRole('link', { name: /documentation/i });
-        expect(docsLink.getAttribute('href')).toContain('AI_CONTEXT.md');
+        expect(docsLink.getAttribute('href')).toContain('copilot-instructions.md');
         expect(docsLink.getAttribute('target')).toBe('_blank');
     });
 

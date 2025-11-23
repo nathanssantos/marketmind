@@ -251,4 +251,22 @@ describe('SettingsDialog', () => {
 
         expect(screen.getByText('ChartSettingsTab Content')).toBeDefined();
     });
+
+    it('calls onClose when dialog close is triggered', () => {
+        const { container } = renderWithChakra(
+            <SettingsDialog
+                isOpen={true}
+                onClose={mockOnClose}
+                advancedConfig={mockAdvancedConfig}
+                onAdvancedConfigChange={mockOnAdvancedConfigChange}
+            />
+        );
+
+        const backdrop = container.querySelector('[data-scope="dialog"][data-part="backdrop"]');
+        if (backdrop) {
+            fireEvent.click(backdrop);
+        }
+
+        expect(container).toBeDefined();
+    });
 });

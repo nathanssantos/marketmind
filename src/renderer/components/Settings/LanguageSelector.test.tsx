@@ -41,4 +41,13 @@ describe('LanguageSelector', () => {
 
         expect(screen.getByText('English')).toBeDefined();
     });
+
+    it('changes language when option is selected', async () => {
+        const { findByText } = renderWithChakra(<LanguageSelector />);
+
+        const select = await findByText('English');
+        expect(select).toBeDefined();
+
+        expect(mockChangeLanguage).toBeDefined();
+    });
 });

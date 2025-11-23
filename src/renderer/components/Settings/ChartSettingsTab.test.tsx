@@ -134,4 +134,204 @@ describe('ChartSettingsTab', () => {
 
         expect(screen.getByText('settings.chart.chartPadding')).toBeDefined();
     });
+
+    it('handles invalid numeric input gracefully', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        const inputs = screen.getAllByRole('spinbutton');
+        const firstInput = inputs[0];
+
+        fireEvent.change(firstInput!, { target: { value: 'invalid' } });
+
+        expect(mockOnConfigChange).not.toHaveBeenCalled();
+    });
+
+    it('updates right margin value', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        const inputs = screen.getAllByRole('spinbutton');
+        const rightMarginInput = inputs[0];
+
+        fireEvent.change(rightMarginInput!, { target: { value: '100' } });
+
+        expect(mockOnConfigChange).toHaveBeenCalledWith({
+            ...mockConfig,
+            rightMargin: 100,
+        });
+    });
+
+    it('updates volume height ratio value', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        const inputs = screen.getAllByRole('spinbutton');
+        const volumeHeightInput = inputs[1];
+
+        fireEvent.change(volumeHeightInput!, { target: { value: '0.3' } });
+
+        expect(mockOnConfigChange).toHaveBeenCalledWith({
+            ...mockConfig,
+            volumeHeightRatio: 0.3,
+        });
+    });
+
+    it('updates candle spacing value', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        const inputs = screen.getAllByRole('spinbutton');
+        const candleSpacingInput = inputs[2];
+
+        fireEvent.change(candleSpacingInput!, { target: { value: '10' } });
+
+        expect(mockOnConfigChange).toHaveBeenCalledWith({
+            ...mockConfig,
+            candleSpacing: 10,
+        });
+    });
+
+    it('updates candle wick width value', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        const inputs = screen.getAllByRole('spinbutton');
+        const wickWidthInput = inputs[3];
+
+        fireEvent.change(wickWidthInput!, { target: { value: '2' } });
+
+        expect(mockOnConfigChange).toHaveBeenCalledWith({
+            ...mockConfig,
+            candleWickWidth: 2,
+        });
+    });
+
+    it('updates grid line width value', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        const inputs = screen.getAllByRole('spinbutton');
+        const gridLineWidthInput = inputs[4];
+
+        fireEvent.change(gridLineWidthInput!, { target: { value: '3' } });
+
+        expect(mockOnConfigChange).toHaveBeenCalledWith({
+            ...mockConfig,
+            gridLineWidth: 3,
+        });
+    });
+
+    it('updates current price line width value', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        const inputs = screen.getAllByRole('spinbutton');
+        const priceLineWidthInput = inputs[5];
+
+        fireEvent.change(priceLineWidthInput!, { target: { value: '4' } });
+
+        expect(mockOnConfigChange).toHaveBeenCalledWith({
+            ...mockConfig,
+            currentPriceLineWidth: 4,
+        });
+    });
+
+    it('updates current price line style', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        const selectTrigger = screen.getByText('settings.chart.dashed');
+        fireEvent.click(selectTrigger);
+
+        const solidOption = screen.getByText('settings.chart.solid');
+        fireEvent.click(solidOption);
+
+        expect(mockOnConfigChange).toHaveBeenCalledWith({
+            ...mockConfig,
+            currentPriceLineStyle: 'solid',
+        });
+    });
+
+    it('updates padding top value', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        const inputs = screen.getAllByRole('spinbutton');
+        const paddingTopInput = inputs[6];
+
+        fireEvent.change(paddingTopInput!, { target: { value: '20' } });
+
+        expect(mockOnConfigChange).toHaveBeenCalledWith({
+            ...mockConfig,
+            paddingTop: 20,
+        });
+    });
+
+    it('updates padding bottom value', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        const inputs = screen.getAllByRole('spinbutton');
+        const paddingBottomInput = inputs[7];
+
+        fireEvent.change(paddingBottomInput!, { target: { value: '25' } });
+
+        expect(mockOnConfigChange).toHaveBeenCalledWith({
+            ...mockConfig,
+            paddingBottom: 25,
+        });
+    });
+
+    it('updates padding left value', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        const inputs = screen.getAllByRole('spinbutton');
+        const paddingLeftInput = inputs[8];
+
+        fireEvent.change(paddingLeftInput!, { target: { value: '15' } });
+
+        expect(mockOnConfigChange).toHaveBeenCalledWith({
+            ...mockConfig,
+            paddingLeft: 15,
+        });
+    });
+
+    it('updates padding right value', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        const inputs = screen.getAllByRole('spinbutton');
+        const paddingRightInput = inputs[9];
+
+        fireEvent.change(paddingRightInput!, { target: { value: '18' } });
+
+        expect(mockOnConfigChange).toHaveBeenCalledWith({
+            ...mockConfig,
+            paddingRight: 18,
+        });
+    });
+
+    it('renders tips section', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        expect(screen.getByText(/common\.tips/)).toBeDefined();
+        expect(screen.getByText(/settings\.chart\.tipsRealtime/)).toBeDefined();
+        expect(screen.getByText(/settings\.chart\.tipsReset/)).toBeDefined();
+    });
 });

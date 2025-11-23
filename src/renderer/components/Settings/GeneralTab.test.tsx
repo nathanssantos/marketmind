@@ -228,4 +228,79 @@ describe('GeneralTab', () => {
         expect(mockSetAutoDownloadUpdates).toHaveBeenCalled();
         expect(mockSetUpdateCheckInterval).toHaveBeenCalled();
     });
+
+    it('renders update interval slider when auto check is enabled', () => {
+        renderWithChakra(<GeneralTab />);
+
+        expect(screen.getByText('settings.autoUpdate.checkInterval', { exact: false })).toBeDefined();
+    });
+
+    it('does not render update interval slider when auto check is disabled', () => {
+        mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
+            if (key === 'autoCheckUpdates') return [false, mockSetAutoCheckUpdates];
+            if (key === 'autoDownloadUpdates') return [false, mockSetAutoDownloadUpdates];
+            if (key === 'updateCheckInterval') return [24, mockSetUpdateCheckInterval];
+            return [defaultValue, vi.fn()];
+        });
+
+        renderWithChakra(<GeneralTab />);
+
+        const slider = screen.queryByRole('slider');
+        expect(slider).toBeNull();
+    });
+
+    it('renders interval slider when auto check is enabled', () => {
+        mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
+            if (key === 'autoCheckUpdates') return [true, mockSetAutoCheckUpdates];
+            if (key === 'autoDownloadUpdates') return [false, mockSetAutoDownloadUpdates];
+            if (key === 'updateCheckInterval') return [48, mockSetUpdateCheckInterval];
+            return [defaultValue, vi.fn()];
+        });
+
+        renderWithChakra(<GeneralTab />);
+
+        const slider = document.querySelector('[role="slider"]');
+        expect(slider).not.toBeNull();
+    });
+
+    it('renders with auto download enabled', () => {
+        mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
+            if (key === 'autoCheckUpdates') return [true, mockSetAutoCheckUpdates];
+            if (key === 'autoDownloadUpdates') return [true, mockSetAutoDownloadUpdates];
+            if (key === 'updateCheckInterval') return [24, mockSetUpdateCheckInterval];
+            return [defaultValue, vi.fn()];
+        });
+
+        renderWithChakra(<GeneralTab />);
+
+        expect(screen.getByText('settings.autoUpdate.downloadAutomatically')).toBeDefined();
+    });
+
+    it('renders correctly when both auto features are disabled', () => {
+        mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
+            if (key === 'autoCheckUpdates') return [false, mockSetAutoCheckUpdates];
+            if (key === 'autoDownloadUpdates') return [false, mockSetAutoDownloadUpdates];
+            if (key === 'updateCheckInterval') return [24, mockSetUpdateCheckInterval];
+            return [defaultValue, vi.fn()];
+        });
+
+        renderWithChakra(<GeneralTab />);
+
+        expect(screen.getByText('settings.autoUpdate.checkAutomatically')).toBeDefined();
+        expect(screen.queryByRole('slider')).toBeNull();
+    });
+
+    it('renders with different interval values', () => {
+        mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
+            if (key === 'autoCheckUpdates') return [true, mockSetAutoCheckUpdates];
+            if (key === 'autoDownloadUpdates') return [false, mockSetAutoDownloadUpdates];
+            if (key === 'updateCheckInterval') return [72, mockSetUpdateCheckInterval];
+            return [defaultValue, vi.fn()];
+        });
+
+        renderWithChakra(<GeneralTab />);
+
+        expect(screen.getByText(/settings.autoUpdate.checkInterval/)).toBeDefined();
+    });
 });
+

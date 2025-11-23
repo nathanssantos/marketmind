@@ -141,7 +141,7 @@ marketmind/
 
 When starting a new chat due to context limits, provide:
 
-1. **This document** (`AI_CONTEXT.md`)
+1. **This document** (`copilot-instructions.md`)
 2. **Current phase** from `IMPLEMENTATION_PLAN.md`
 3. **Current branch** and feature being worked on
 4. **Files already created** (list main ones)
@@ -149,7 +149,7 @@ When starting a new chat due to context limits, provide:
 
 Example:
 ```
-Working on MarketMind following AI_CONTEXT.md.
+Working on MarketMind following copilot-instructions.md.
 
 Status:
 - Phase: 3 (Chart Rendering)
@@ -347,7 +347,7 @@ describe('calculateSMA', () => {
 
 ### Configuration
 - `IMPLEMENTATION_PLAN.md` - Full implementation roadmap
-- `AI_CONTEXT.md` - This file
+- `copilot-instructions.md` - This file
 - `README.md` - Project overview
 
 ### Documentation

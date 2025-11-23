@@ -348,5 +348,114 @@ describe('useCandlestickRenderer', () => {
       const secondCalls = (drawingUtils.drawCandle as ReturnType<typeof vi.fn>).mock.calls;
       expect(secondCalls[0][10]).toBe(true);
     });
+
+    it('should use custom rightMargin when provided', () => {
+      const customRightMargin = 100;
+      const { result } = renderHook(() =>
+        useCandlestickRenderer({
+          manager: mockManager,
+          colors: mockColors,
+          rightMargin: customRightMargin,
+        })
+      );
+
+      result.current.render();
+
+      expect(mockCtx.rect).toHaveBeenCalledWith(0, 0, 628, 575);
+    });
+
+    it('should use custom candleWickWidth when provided', () => {
+      const customWickWidth = 3;
+      const { result } = renderHook(() =>
+        useCandlestickRenderer({
+          manager: mockManager,
+          colors: mockColors,
+          candleWickWidth: customWickWidth,
+        })
+      );
+
+      result.current.render();
+
+      expect(drawingUtils.drawCandle).toHaveBeenCalled();
+      const callArgs = (drawingUtils.drawCandle as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(callArgs[7]).toBe(customWickWidth);
+    });
+
+    it('should not render when enabled is false', () => {
+      const { result } = renderHook(() =>
+        useCandlestickRenderer({
+          manager: mockManager,
+          colors: mockColors,
+          enabled: false,
+        })
+      );
+
+      result.current.render();
+
+      expect(drawingUtils.drawCandle).not.toHaveBeenCalled();
+    });
+
+    it('should center candles within available width', () => {
+      const { result } = renderHook(() =>
+        useCandlestickRenderer({
+          manager: mockManager,
+          colors: mockColors,
+        })
+      );
+
+      result.current.render();
+
+      expect(drawingUtils.drawCandle).toHaveBeenCalled();
+      const firstCallX = (drawingUtils.drawCandle as ReturnType<typeof vi.fn>).mock.calls[0][1];
+      expect(typeof firstCallX).toBe('number');
+    });
+
+    it('should handle viewport with different start/end values', () => {
+      mockManager.getViewport = vi.fn(() => ({
+        start: 2,
+        end: 4,
+        candleWidth: 15,
+      }));
+
+      const { result } = renderHook(() =>
+        useCandlestickRenderer({
+          manager: mockManager,
+          colors: mockColors,
+        })
+      );
+
+      result.current.render();
+
+      expect(drawingUtils.drawCandle).toHaveBeenCalled();
+    });
+
+    it('should apply clipping to prevent drawing outside chart area', () => {
+      const { result } = renderHook(() =>
+        useCandlestickRenderer({
+          manager: mockManager,
+          colors: mockColors,
+        })
+      );
+
+      result.current.render();
+
+      expect(mockCtx.beginPath).toHaveBeenCalled();
+      expect(mockCtx.rect).toHaveBeenCalled();
+      expect(mockCtx.clip).toHaveBeenCalled();
+    });
+
+    it('should calculate effective width based on rightMargin', () => {
+      const { result } = renderHook(() =>
+        useCandlestickRenderer({
+          manager: mockManager,
+          colors: mockColors,
+          rightMargin: 80,
+        })
+      );
+
+      result.current.render();
+
+      expect(mockCtx.rect).toHaveBeenCalledWith(0, 0, 648, 575);
+    });
   });
 });

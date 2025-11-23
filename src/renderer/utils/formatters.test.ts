@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { formatPrice, formatTimestamp, formatVolume, formatNumber, formatChartDataContext } from './formatters';
 import type { ChartContextData } from '../context/ChartContext';
+import { formatChartDataContext, formatDateTimeTooltip, formatNumber, formatPrice, formatTimestamp, formatVolume } from './formatters';
 
 describe('formatters', () => {
   describe('formatPrice', () => {
@@ -63,6 +63,28 @@ describe('formatters', () => {
       const earlyDate = new Date('2024-01-05T09:05:00').getTime();
       expect(formatTimestamp(earlyDate, '1m')).toBe('09:05');
       expect(formatTimestamp(earlyDate, '1d')).toBe('05/01/2024');
+    });
+  });
+
+  describe('formatDateTimeTooltip', () => {
+    it('should format date and time with seconds', () => {
+      const testDate = new Date('2024-11-15T14:30:45').getTime();
+      expect(formatDateTimeTooltip(testDate)).toBe('15/11/2024 14:30:45');
+    });
+
+    it('should accept Date object', () => {
+      const testDate = new Date('2024-01-05T09:05:03');
+      expect(formatDateTimeTooltip(testDate)).toBe('05/01/2024 09:05:03');
+    });
+
+    it('should pad single digits with zeros', () => {
+      const earlyDate = new Date('2024-01-05T09:05:03').getTime();
+      expect(formatDateTimeTooltip(earlyDate)).toBe('05/01/2024 09:05:03');
+    });
+
+    it('should handle midnight correctly', () => {
+      const midnight = new Date('2024-12-31T00:00:00').getTime();
+      expect(formatDateTimeTooltip(midnight)).toBe('31/12/2024 00:00:00');
     });
   });
 

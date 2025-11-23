@@ -535,4 +535,218 @@ describe('aiStore', () => {
       expect(state.messages).toHaveLength(0);
     });
   });
+
+  describe('Additional Features', () => {
+    it('should toggle AI studies', () => {
+      useAIStore.setState({ enableAIStudies: true });
+      
+      useAIStore.getState().toggleAIStudies();
+      expect(useAIStore.getState().enableAIStudies).toBe(false);
+      
+      useAIStore.getState().toggleAIStudies();
+      expect(useAIStore.getState().enableAIStudies).toBe(true);
+    });
+
+    it('should restore active conversation messages', () => {
+      const id = useAIStore.getState().createConversation('Test');
+      useAIStore.getState().addMessage(id, { role: 'user', content: 'Hello' });
+      
+      useAIStore.setState({ messages: [] });
+      
+      useAIStore.getState().restoreActiveConversation();
+      
+      const state = useAIStore.getState();
+      expect(state.messages).toHaveLength(1);
+      expect(state.messages[0]?.content).toBe('Hello');
+    });
+
+    it('should not restore when no active conversation', () => {
+      useAIStore.setState({ activeConversationId: null, messages: [] });
+      
+      useAIStore.getState().restoreActiveConversation();
+      
+      expect(useAIStore.getState().messages).toHaveLength(0);
+    });
+
+    it('should update conversation study data ID', () => {
+      const id = useAIStore.getState().createConversation('Test');
+      
+      useAIStore.getState().updateConversationStudyDataId(id, 'study-123');
+      
+      const state = useAIStore.getState();
+      expect(state.conversations[0]?.studyDataId).toBe('study-123');
+    });
+
+    it('should remove study data ID when undefined', () => {
+      const id = useAIStore.getState().createConversation('Test');
+      useAIStore.getState().updateConversationStudyDataId(id, 'study-123');
+      
+      useAIStore.getState().updateConversationStudyDataId(id, undefined);
+      
+      const state = useAIStore.getState();
+      expect(state.conversations[0]?.studyDataId).toBeUndefined();
+    });
+
+    it('should limit stored conversations to 50', () => {
+      for (let i = 0; i < 55; i++) {
+        const id = useAIStore.getState().createConversation(`Conversation ${i}`);
+        useAIStore.getState().addMessage(id, { role: 'user', content: `Message ${i}` });
+      }
+      
+      const state = useAIStore.getState();
+      expect(state.conversations.length).toBeLessThanOrEqual(50);
+    });
+
+    it('should create new conversation when sending message with different symbol', async () => {
+      useAIStore.getState().setSettings({ provider: 'openai', model: 'gpt-4o' });
+      
+      const chartData1: ChartData = {
+        candles: [{
+          timestamp: Date.now(),
+          open: 100,
+          high: 110,
+          low: 90,
+          close: 105,
+          volume: 1000,
+        } as Candle],
+        symbol: 'BTCUSDT',
+        timeframe: '1h',
+        chartType: 'candlestick',
+        showVolume: true,
+        movingAverages: [],
+      };
+
+      await useAIStore.getState().sendMessage('Analyze BTC', chartData1);
+      
+      const chartData2: ChartData = {
+        ...chartData1,
+        symbol: 'ETHUSDT',
+      };
+
+      await useAIStore.getState().sendMessage('Analyze ETH', chartData2);
+      
+      const state = useAIStore.getState();
+      expect(state.conversations).toHaveLength(2);
+      expect(state.conversations[0]?.symbol).toBe('BTCUSDT');
+      expect(state.conversations[1]?.symbol).toBe('ETHUSDT');
+    });
+
+    it('should format Gemini 2.0 Flash Exp quota error', async () => {
+      vi.mocked(AIService.prototype.sendMessage).mockRejectedValue(
+        new Error('429 quota exceeded, retry in 60 seconds')
+      );
+
+      useAIStore.getState().setSettings({
+        provider: 'gemini',
+        model: 'gemini-2.0-flash-exp',
+      });
+
+      await useAIStore.getState().sendMessage('Hello');
+
+      const state = useAIStore.getState();
+      expect(state.error).toContain('Gemini 2.0 Flash Exp');
+      expect(state.error).toContain('10 requisições por minuto');
+      expect(state.error).toContain('60 segundos');
+    });
+
+    it('should format Gemini 1.5 Pro rate limit error', async () => {
+      vi.mocked(AIService.prototype.sendMessage).mockRejectedValue(
+        new Error('Too Many Requests: retry in 30 seconds')
+      );
+
+      useAIStore.getState().setSettings({
+        provider: 'gemini',
+        model: 'gemini-1.5-pro',
+      });
+
+      await useAIStore.getState().sendMessage('Hello');
+
+      const state = useAIStore.getState();
+      expect(state.error).toContain('Gemini 1.5 Pro');
+      expect(state.error).toContain('360 req/min');
+    });
+
+    it('should format OpenAI rate limit error', async () => {
+      vi.mocked(AIService.prototype.sendMessage).mockRejectedValue(
+        new Error('429 rate limit exceeded')
+      );
+
+      useAIStore.getState().setSettings({
+        provider: 'openai',
+        model: 'gpt-4o',
+      });
+
+      await useAIStore.getState().sendMessage('Hello');
+
+      const state = useAIStore.getState();
+      expect(state.error).toContain('OpenAI');
+      expect(state.error).toContain('Aguarde alguns minutos');
+    });
+
+    it('should format API key error', async () => {
+      vi.mocked(AIService.prototype.sendMessage).mockRejectedValue(
+        new Error('401 unauthorized: invalid API key')
+      );
+
+      useAIStore.getState().setSettings({
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-5',
+      });
+
+      await useAIStore.getState().sendMessage('Hello');
+
+      const state = useAIStore.getState();
+      expect(state.error).toContain('Chave de API inválida');
+      expect(state.error).toContain('Claude');
+    });
+
+    it('should format timeout error', async () => {
+      vi.mocked(AIService.prototype.sendMessage).mockRejectedValue(
+        new Error('Request timeout')
+      );
+
+      useAIStore.getState().setSettings({
+        provider: 'openai',
+        model: 'gpt-4o',
+      });
+
+      await useAIStore.getState().sendMessage('Hello');
+
+      const state = useAIStore.getState();
+      expect(state.error).toContain('Timeout');
+    });
+
+    it('should format context length error', async () => {
+      vi.mocked(AIService.prototype.sendMessage).mockRejectedValue(
+        new Error('context_length exceeded: message too long')
+      );
+
+      useAIStore.getState().setSettings({
+        provider: 'openai',
+        model: 'gpt-4o',
+      });
+
+      await useAIStore.getState().sendMessage('Hello');
+
+      const state = useAIStore.getState();
+      expect(state.error).toContain('Mensagem muito longa');
+      expect(state.error).toContain('Clear Chat');
+    });
+
+    it('should format generic error', async () => {
+      vi.mocked(AIService.prototype.sendMessage).mockRejectedValue(
+        new Error('Unknown error occurred')
+      );
+
+      useAIStore.getState().setSettings({
+        provider: 'openai',
+        model: 'gpt-4o',
+      });
+
+      await useAIStore.getState().sendMessage('Hello');
+
+      const state = useAIStore.getState();
+      expect(state.error).toBe('Unknown error occurred');
+    });
+  });
 });

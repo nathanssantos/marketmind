@@ -428,4 +428,106 @@ describe('CanvasManager', () => {
       expect(customManager.getPadding()).toBe(50);
     });
   });
+
+  describe('destroy', () => {
+    it('should clean up resources', () => {
+      manager.setCandles(mockCandles);
+      manager.setRenderCallback(vi.fn());
+      
+      manager.destroy();
+      
+      expect(manager.getCandles()).toEqual([]);
+      expect(manager.getBounds()).toBeNull();
+      expect(manager.getDimensions()).toBeNull();
+    });
+
+    it('should cancel animation frame if running', () => {
+      const spy = vi.spyOn(global, 'cancelAnimationFrame');
+      manager['animationFrameId'] = 123;
+      manager['isAnimating'] = true;
+      
+      manager.destroy();
+      
+      expect(spy).toHaveBeenCalledWith(123);
+      expect(manager['animationFrameId']).toBeNull();
+      expect(manager['isAnimating']).toBe(false);
+      
+      spy.mockRestore();
+    });
+  });
+
+  describe('resetVerticalZoom', () => {
+    beforeEach(() => {
+      manager.setCandles(mockCandles);
+    });
+
+    it('should reset price offset and scale', async () => {
+      const callback = vi.fn();
+      manager.setRenderCallback(callback);
+      callback.mockClear();
+      
+      manager['priceOffset'] = 100;
+      manager['priceScale'] = 2;
+      
+      manager.resetVerticalZoom();
+      
+      expect(manager['priceOffset']).toBe(0);
+      expect(manager['priceScale']).toBe(1);
+      
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('resetToInitialView', () => {
+    it('should reset to initial candle count', async () => {
+      manager.setCandles(mockCandles);
+      const callback = vi.fn();
+      manager.setRenderCallback(callback);
+      callback.mockClear();
+      
+      manager.pan(50);
+      manager.resetToInitialView();
+      
+      const viewport = manager.getViewport();
+      expect(viewport.end).toBe(mockCandles.length);
+      
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('panToNextCandle', () => {
+    beforeEach(() => {
+      manager.setCandles(mockCandles);
+      manager.setViewport({ ...viewport, start: 0, end: 50 });
+    });
+
+    it('should pan forward by one candle', () => {
+      const initialStart = manager.getViewport().start;
+      manager.panToNextCandle();
+      
+      const newStart = manager.getViewport().start;
+      expect(newStart).toBe(initialStart + 1);
+    });
+
+    it('should not pan beyond candle length', () => {
+      manager.setViewport({ ...viewport, start: mockCandles.length - 50, end: mockCandles.length });
+      manager.panToNextCandle();
+      
+      const currentViewport = manager.getViewport();
+      expect(currentViewport.end).toBe(mockCandles.length);
+    });
+
+    it('should do nothing with empty candles', () => {
+      manager.setCandles([]);
+      const initialViewport = manager.getViewport();
+      
+      manager.panToNextCandle();
+      
+      expect(manager.getViewport()).toEqual(initialViewport);
+    });
+  });
 });

@@ -364,4 +364,21 @@ describe('CoinGeckoProvider', () => {
       expect(provider.normalizeSymbol('BitcoinUsd')).toBe('bitcoin');
     });
   });
+
+  describe('BaseMarketProvider getters', () => {
+    it('should return provider name', () => {
+      const provider = new CoinGeckoProvider();
+      expect(provider.name).toBe('CoinGecko');
+    });
+
+    it('should return provider type', () => {
+      const provider = new CoinGeckoProvider();
+      expect(provider.type).toBe('crypto');
+    });
+
+    it('should return enabled status', () => {
+      const provider = new CoinGeckoProvider();
+      expect(provider.isEnabled).toBe(true);
+    });
+  });
 });
