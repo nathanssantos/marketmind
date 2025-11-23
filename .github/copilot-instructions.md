@@ -38,6 +38,7 @@
 12. **Implementation Plan:** Follow and evolve IMPLEMENTATION_PLAN.md as the project progresses
 13. **No Watch Mode:** Never use watch mode commands (`npm test`, `vitest`, etc. without `--run`). Always use run-once commands (`npm test -- --run`, `npm run build`, etc.) to avoid blocking the terminal
 14. **Single-Line Blocks:** Simplify code blocks with only one statement to single-line format when correct and compliant with linting rules (e.g., `if (condition) return value;` instead of multi-line blocks)
+15. **🔴 CRITICAL - All Tests Must Pass:** NEVER commit code with failing tests. ALWAYS run `npm run test:run` before committing. If tests fail, FIX THEM FIRST. Breaking tests is NEVER acceptable. Zero tolerance for broken tests in commits.
 
 ### Git Workflow
 
@@ -53,9 +54,34 @@ git checkout develop
 git pull origin develop
 git checkout -b feature/new-feature
 # ... work and commits ...
+
+# 🔴 MANDATORY: Run tests before EVERY commit
+npm run test:run       # ALL tests must pass
+npm run test:browser:run  # Browser tests must pass
+
+# Only commit if all tests pass
+git add .
+git commit -m "feat: description"
 git push origin feature/new-feature
 # Open PR to develop
 ```
+
+### 🔴 Pre-Commit Checklist (MANDATORY)
+- [ ] `npm run test:run` - ALL unit tests passing
+- [ ] `npm run test:browser:run` - ALL browser tests passing  
+- [ ] `npm run type-check` - No TypeScript errors
+- [ ] `npm run lint` - No linting errors
+- [ ] Tests cover new/changed code
+- [ ] No console.log or debugging code left
+- [ ] No comments in code (use README files instead)
+- [ ] All user-facing text internationalized (no hardcoded strings)
+- [ ] Code reviewed for DRY principles (no duplication)
+- [ ] Code reviewed for testability (pure functions, dependency injection)
+- [ ] Code reviewed for performance (no unnecessary re-renders, memoization where needed)
+- [ ] CHANGELOG.md updated (if applicable)
+- [ ] NEVER push/commit to main branch - ALWAYS create PR from feature/bugfix branch
+
+**NEVER skip this checklist. Broken tests = DO NOT COMMIT. Code comments = DO NOT COMMIT. Hardcoded text = DO NOT COMMIT. Main branch commits = FORBIDDEN.**
 
 ### Conventional Commits (English)
 - `feat:` - New feature
@@ -115,7 +141,7 @@ marketmind/
 
 When starting a new chat due to context limits, provide:
 
-1. **This document** (`AI_CONTEXT.md`)
+1. **This document** (`copilot-instructions.md`)
 2. **Current phase** from `IMPLEMENTATION_PLAN.md`
 3. **Current branch** and feature being worked on
 4. **Files already created** (list main ones)
@@ -123,7 +149,7 @@ When starting a new chat due to context limits, provide:
 
 Example:
 ```
-Working on MarketMind following AI_CONTEXT.md.
+Working on MarketMind following copilot-instructions.md.
 
 Status:
 - Phase: 3 (Chart Rendering)
@@ -321,7 +347,7 @@ describe('calculateSMA', () => {
 
 ### Configuration
 - `IMPLEMENTATION_PLAN.md` - Full implementation roadmap
-- `AI_CONTEXT.md` - This file
+- `copilot-instructions.md` - This file
 - `README.md` - Project overview
 
 ### Documentation
@@ -540,6 +566,9 @@ export const Chart = (props: ChartProps) => {
 ## 🔄 Workflow Checklist
 
 Before committing:
+- [ ] 🔴 **ALL TESTS PASSING** (`npm run test:run` + `npm run test:browser:run`)
+- [ ] 🔴 **No TypeScript errors** (`npm run type-check`)
+- [ ] 🔴 **No linting errors** (`npm run lint`)
 - [ ] Created feature/bugfix branch (never commit to main/develop)
 - [ ] Using latest library versions
 - [ ] Consulted official documentation
@@ -553,8 +582,10 @@ Before committing:
 - [ ] Responsive design
 - [ ] Commit message in English (conventional format)
 
+**🔴 STOP: If ANY test fails, debug and fix BEFORE committing. No exceptions.**
+
 ---
 
 **Last Updated:** November 2025
 **Version:** 1.4
-**Project Version:** 0.14.0
+**Project Version:** 0.22.0

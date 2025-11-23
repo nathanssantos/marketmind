@@ -3,6 +3,7 @@ import { Box, Flex, Link, Separator, Stack, Text } from '@chakra-ui/react';
 import { APP_VERSION } from '@shared/constants';
 import { useTranslation } from 'react-i18next';
 import { LuExternalLink } from 'react-icons/lu';
+import { APP_VERSION } from '@shared/constants';
 
 export const AboutTab = () => {
   const { t } = useTranslation();
@@ -69,7 +70,7 @@ export const AboutTab = () => {
             {t('about.resourcesList.github')}
             <LuExternalLink />
           </Link>
-          <Link href="https://github.com/nathanssantos/marketmind/blob/main/docs/AI_CONTEXT.md" target="_blank" color="blue.500" display="flex" alignItems="center" gap={1}>
+          <Link href="https://github.com/nathanssantos/marketmind/blob/main/.github/copilot-instructions.md" target="_blank" color="blue.500" display="flex" alignItems="center" gap={1}>
             {t('about.resourcesList.documentation')}
             <LuExternalLink />
           </Link>
