@@ -41,8 +41,7 @@ describe('AboutTab', () => {
     it('displays app version', () => {
         renderWithChakra(<AboutTab />);
 
-        expect(screen.getByText(/Version/)).toBeDefined();
-        expect(screen.getByText(/0\.23\.0/)).toBeDefined();
+        expect(screen.getByText('Version 0.22.0')).toBeDefined();
     });
 
     it('renders app description', () => {
@@ -111,7 +110,7 @@ describe('AboutTab', () => {
         renderWithChakra(<AboutTab />);
 
         const docsLink = screen.getByRole('link', { name: /documentation/i });
-        expect(docsLink.getAttribute('href')).toContain('AI_CONTEXT.md');
+        expect(docsLink.getAttribute('href')).toContain('copilot-instructions.md');
         expect(docsLink.getAttribute('target')).toBe('_blank');
     });
 
