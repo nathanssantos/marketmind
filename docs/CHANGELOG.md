@@ -8,6 +8,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Native OS Notifications System** 🔔
+  - Electron Notification API integration for macOS and Windows
+  - System-level notifications for trading events (order filled, closed, cancelled, expired)
+  - useNotification hook for generic notification functionality
+  - useOrderNotifications updated to send both toast + native OS notifications
+  - Support for urgency levels (normal, critical, low)
+  - Silent mode option for notifications
+  - Automatic notification support detection
+  - Complete i18n support for notifications (EN, PT, ES, FR)
+  - IPC handlers for secure main/renderer communication
+  - Comprehensive documentation in NOTIFICATIONS.md
+
+### Fixed
+- **Trading Simulator - SL/TP Execution** 🎯
+  - Fixed Stop Loss and Take Profit orders not executing when price crosses them
+  - Implemented price crossing detection (same logic as pending order execution)
+  - Now tracks previous price to detect actual price crossings vs just touches
+  - Long positions: SL triggers when price crosses below, TP when crosses above
+  - Short positions: SL triggers when price crosses above, TP when crosses below
+  - Fixed issue where orders would not execute if price only touched the level
+  - Maintains priority logic when both SL and TP are crossed (closer one executes first)
+  - All 952 tests passing (100% pass rate)
+
+## [0.21.1] - 2025-11-22
+
+### Fixed
+- **Tooltip System - Interaction Improvements** 🔧
+  - Fixed chat button tooltip using incorrect translation key (changed from `keyboardShortcuts.shortcuts.toggleChatSidebar` to `common.openChat`)
+  - Fixed tooltip overlay blocking button clicks by adding `pointerEvents="none"` to Tooltip.Positioner
+  - Fixed tooltip content interactions with `pointerEvents="auto"` on Tooltip.Content
+  - Added high z-index (9999) to tooltips for proper layering above all UI elements
+  - Tooltips now properly display without interfering with button interactions
+  - All 952 tests passing (100% pass rate)
+
+### Added
 - **Calendar Integration - CoinGecko Events** 📅
   - Complete calendar system for tracking crypto events (conferences, releases, airdrops, listings, partnerships)
   - CalendarService with provider architecture (similar to NewsService)

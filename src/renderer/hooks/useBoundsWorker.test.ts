@@ -17,4 +17,32 @@ describe('useBoundsWorker', () => {
     
     expect(() => unmount()).not.toThrow();
   });
+
+  it('should handle calculateBounds call', () => {
+    const { result } = renderHook(() => useBoundsWorker());
+    
+    const promise = result.current.calculateBounds([], 0, 10);
+    
+    expect(promise).toBeInstanceOf(Promise);
+  });
+
+  it('should handle terminate call', () => {
+    const { result } = renderHook(() => useBoundsWorker());
+    
+    expect(() => result.current.terminate()).not.toThrow();
+  });
+
+  it('should return zero bounds after termination', async () => {
+    const { result } = renderHook(() => useBoundsWorker());
+    
+    result.current.terminate();
+    const bounds = await result.current.calculateBounds([], 0, 0);
+    
+    expect(bounds).toEqual({
+      minPrice: 0,
+      maxPrice: 0,
+      minVolume: 0,
+      maxVolume: 0,
+    });
+  });
 });

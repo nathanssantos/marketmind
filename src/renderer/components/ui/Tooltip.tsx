@@ -10,9 +10,9 @@ interface TooltipWrapperProps {
   showArrow?: boolean;
 }
 
-export const TooltipWrapper = memo(({ 
-  label, 
-  children, 
+export const TooltipWrapper = memo(({
+  label,
+  children,
   placement = 'top',
   isDisabled = false,
   showArrow = false,
@@ -36,7 +36,7 @@ export const TooltipWrapper = memo(({
         {children}
       </Tooltip.Trigger>
       <Portal>
-        <Tooltip.Positioner>
+        <Tooltip.Positioner zIndex={9999} pointerEvents="none">
           <Tooltip.Content
             bg={tooltipBg}
             color="white"
@@ -46,9 +46,10 @@ export const TooltipWrapper = memo(({
             fontSize="sm"
             fontWeight="medium"
             boxShadow="lg"
+            pointerEvents="auto"
             style={{
-              '--tooltip-bg': colorMode === 'dark' 
-                ? 'var(--chakra-colors-gray-800)' 
+              '--tooltip-bg': colorMode === 'dark'
+                ? 'var(--chakra-colors-gray-800)'
                 : 'var(--chakra-colors-gray-700)',
             } as React.CSSProperties}
           >

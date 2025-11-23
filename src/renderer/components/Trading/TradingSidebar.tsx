@@ -37,37 +37,37 @@ export const TradingSidebar = ({ width }: TradingSidebarProps) => {
         }
       />
 
-      <Tabs.Root defaultValue="wallets" fitted>
+      <Tabs.Root defaultValue="ticket" fitted>
         <Tabs.List>
-          <Tabs.Trigger value="wallets">
-            <Text fontSize="xs">{t('trading.tabs.wallets')}</Text>
-          </Tabs.Trigger>
           <Tabs.Trigger value="ticket">
             <Text fontSize="xs">{t('trading.tabs.ticket')}</Text>
-          </Tabs.Trigger>
-          <Tabs.Trigger value="portfolio">
-            <Text fontSize="xs">{t('trading.tabs.portfolio')}</Text>
           </Tabs.Trigger>
           <Tabs.Trigger value="orders">
             <Text fontSize="xs">{t('trading.tabs.orders')}</Text>
           </Tabs.Trigger>
+          <Tabs.Trigger value="portfolio">
+            <Text fontSize="xs">{t('trading.tabs.portfolio')}</Text>
+          </Tabs.Trigger>
+          <Tabs.Trigger value="wallets">
+            <Text fontSize="xs">{t('trading.tabs.wallets')}</Text>
+          </Tabs.Trigger>
         </Tabs.List>
 
         <Box flex={1} overflowY="auto">
-          <Tabs.Content value="wallets">
-            <WalletManager />
-          </Tabs.Content>
-
           <Tabs.Content value="ticket">
             <OrderTicket />
+          </Tabs.Content>
+
+          <Tabs.Content value="orders">
+            <OrdersList />
           </Tabs.Content>
 
           <Tabs.Content value="portfolio">
             <Portfolio />
           </Tabs.Content>
 
-          <Tabs.Content value="orders">
-            <OrdersList />
+          <Tabs.Content value="wallets">
+            <WalletManager />
           </Tabs.Content>
         </Box>
       </Tabs.Root>

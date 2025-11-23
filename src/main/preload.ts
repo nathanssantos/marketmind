@@ -81,6 +81,18 @@ interface UpdateError {
   stack?: string;
 }
 
+interface NotificationOptions {
+  title: string;
+  body: string;
+  silent?: boolean;
+  urgency?: 'normal' | 'critical' | 'low';
+}
+
+interface NotificationAPI {
+  show: (options: NotificationOptions) => Promise<{ success: boolean; error?: string }>;
+  isSupported: () => Promise<boolean>;
+}
+
 interface UpdateAPI {
   checkForUpdates: () => Promise<{ success: boolean; error?: string }>;
   downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
@@ -250,6 +262,16 @@ const API = {
       return await ipcRenderer.invoke('http:fetch', url, options);
     },
   },
+
+  notification: {
+    show: async (options: NotificationOptions) => {
+      return await ipcRenderer.invoke('notification:show', options);
+    },
+
+    isSupported: async () => {
+      return await ipcRenderer.invoke('notification:isSupported');
+    },
+  } as NotificationAPI,
 } as const;
 
 contextBridge.exposeInMainWorld('electron', API);

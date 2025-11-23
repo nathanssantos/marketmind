@@ -6,7 +6,7 @@ import { storageService } from './services/StorageService';
 import { UpdateManager } from './services/UpdateManager';
 import { windowStateManager } from './services/WindowStateManager';
 
-const { app, BrowserWindow, ipcMain, net } = electron;
+const { app, BrowserWindow, ipcMain, net, Notification } = electron;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -423,9 +423,44 @@ const setupIpcHandlers = (): void => {
   });
 };
 
+const setupNotificationHandlers = (): void => {
+  ipcMain.handle('notification:show', async (_event, options: { title: string; body: string; silent?: boolean; urgency?: 'normal' | 'critical' | 'low' }) => {
+    try {
+      if (!Notification.isSupported()) {
+        return {
+          success: false,
+          error: 'Notifications are not supported on this system'
+        };
+      }
+
+      const notification = new Notification({
+        title: options.title,
+        body: options.body,
+        silent: options.silent ?? false,
+        urgency: options.urgency ?? 'normal',
+      });
+
+      notification.show();
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to show notification:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  });
+
+  ipcMain.handle('notification:isSupported', async () => {
+    return Notification.isSupported();
+  });
+};
+
 app.whenReady().then(() => {
   console.log('App ready, setting up IPC handlers...');
   setupIpcHandlers();
+  setupNotificationHandlers();
   console.log('IPC handlers set up, creating window...');
   createWindow();
   console.log('Window created');

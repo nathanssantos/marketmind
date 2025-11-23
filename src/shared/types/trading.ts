@@ -37,9 +37,12 @@ export interface Order {
   quantity: number;
   entryPrice: number;
   currentPrice?: number;
+  exitPrice?: number;
   stopLoss?: number;
   takeProfit?: number;
   expirationDate?: Date;
+  expiresAt?: number;
+  commissionRate?: number;
   createdAt: Date;
   filledAt?: Date;
   closedAt?: Date;
