@@ -1079,7 +1079,12 @@ export const ChartCanvas = ({
       }
     };
 
-    manager.setRenderCallback(render);
+    const renderWithDirtyFlagCleanup = () => {
+      render();
+      manager.clearDirtyFlags();
+    };
+
+    manager.setRenderCallback(renderWithDirtyFlagCleanup);
 
     return () => {
       manager.setRenderCallback(null);

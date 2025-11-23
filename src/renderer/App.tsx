@@ -20,6 +20,7 @@ import { AIStudyHoverProvider } from './context/AIStudyHoverContext';
 import { ChartProvider } from './context/ChartContext';
 import { useGlobalActions } from './context/GlobalActionsContext';
 import { useAIStudies } from './hooks/useAIStudies';
+import { useAppSettings } from './hooks/useAppSettings';
 import { useCalendar } from './hooks/useCalendar';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
@@ -162,37 +163,7 @@ function AppContent(): ReactElement {
     DEFAULT_MOVING_AVERAGES
   );
 
-  const [newsCorrelateWithAI, setNewsCorrelateWithAI] = useState(false);
-  const [calendarCorrelateWithAI, setCalendarCorrelateWithAI] = useState(false);
-
-  useEffect(() => {
-    const loadNewsSettings = async () => {
-      try {
-        const settings = await window.electron.secureStorage.getNewsSettings();
-        const correlate = (settings as typeof settings & { correlateWithAI?: boolean }).correlateWithAI ?? false;
-        setNewsCorrelateWithAI(correlate);
-      } catch (error) {
-        console.error('Failed to load news settings:', error);
-      }
-    };
-    loadNewsSettings();
-  }, []);
-
-  useEffect(() => {
-    const loadCalendarSettings = async () => {
-      try {
-        const storedSettings = localStorage.getItem('marketmind-calendar-settings');
-        if (storedSettings) {
-          const parsed = JSON.parse(storedSettings);
-          const correlate = parsed.correlateWithAI ?? false;
-          setCalendarCorrelateWithAI(correlate);
-        }
-      } catch (error) {
-        console.error('Failed to load calendar settings:', error);
-      }
-    };
-    loadCalendarSettings();
-  }, []);
+  const { settings: appSettings } = useAppSettings();
 
   const [advancedConfig, setAdvancedConfig] = useLocalStorage<AdvancedControlsConfig>('marketmind:advancedConfig', {
     rightMargin: CHART_CONFIG.CHART_RIGHT_MARGIN,
@@ -270,54 +241,81 @@ function AppContent(): ReactElement {
   const [liveCandles, setLiveCandles] = useState<Candle[]>([]);
   const previousPriceRef = useRef<number | null>(null);
   const appLoadTimeRef = useRef(Date.now());
+  const pendingUpdateRef = useRef<{ candle: Candle; isFinal: boolean } | null>(null);
+  const rafIdRef = useRef<number | null>(null);
+  const lastOrderUpdateRef = useRef<number>(0);
 
   useEffect(() => {
     setLiveCandles([]);
     previousPriceRef.current = null;
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    pendingUpdateRef.current = null;
   }, [symbol, timeframe]);
 
   const handleRealtimeUpdate = useCallback((candle: Candle, isFinal: boolean) => {
-    const currentPrice = candle.close;
-    const previousPrice = previousPriceRef.current;
+    pendingUpdateRef.current = { candle, isFinal };
+    
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+    }
+    
+    rafIdRef.current = requestAnimationFrame(() => {
+      const update = pendingUpdateRef.current;
+      if (!update) return;
+      
+      const { candle: latestCandle, isFinal: finalFlag } = update;
+      const currentPrice = latestCandle.close;
+      const previousPrice = previousPriceRef.current;
 
-    if (previousPrice !== null && previousPrice !== currentPrice) {
-      const state = useTradingStore.getState();
-      if (state.isSimulatorActive) {
-        const hasPendingOrders = state.orders.some(o => o.status === 'pending' && o.symbol === symbol);
-        if (hasPendingOrders) {
-          state.fillPendingOrders(symbol, currentPrice, previousPrice, appLoadTimeRef.current);
+      const now = Date.now();
+      const shouldUpdateOrders = now - lastOrderUpdateRef.current > 500;
+
+      if (previousPrice !== null && previousPrice !== currentPrice && shouldUpdateOrders) {
+        const state = useTradingStore.getState();
+        if (state.isSimulatorActive) {
+          const hasPendingOrders = state.orders.some(o => o.status === 'pending' && o.symbol === symbol);
+          if (hasPendingOrders) {
+            state.fillPendingOrders(symbol, currentPrice, previousPrice, appLoadTimeRef.current);
+          }
+
+          const activeOrders = state.orders.filter(o => o.status === 'active' && o.symbol === symbol);
+          activeOrders.forEach(order => {
+            state.updateOrder(order.id, { currentPrice });
+          });
+        }
+        lastOrderUpdateRef.current = now;
+      }
+
+      previousPriceRef.current = currentPrice;
+
+      setLiveCandles(prev => {
+        if (prev.length === 0) return [latestCandle];
+
+        const lastCandle = prev[prev.length - 1];
+        if (!lastCandle) return [latestCandle];
+
+        if (latestCandle.timestamp === lastCandle.timestamp) {
+          if (latestCandle.close === lastCandle.close &&
+            latestCandle.high === lastCandle.high &&
+            latestCandle.low === lastCandle.low &&
+            latestCandle.volume === lastCandle.volume) return prev;
+          return [...prev.slice(0, -1), latestCandle];
         }
 
-        const activeOrders = state.orders.filter(o => o.status === 'active' && o.symbol === symbol);
-        activeOrders.forEach(order => {
-          state.updateOrder(order.id, { currentPrice });
-        });
-      }
-    }
+        if (latestCandle.timestamp > lastCandle.timestamp) {
+          previousPriceRef.current = null;
+          if (finalFlag) return [...prev, latestCandle];
+          return [...prev, latestCandle];
+        }
 
-    previousPriceRef.current = currentPrice;
-
-    setLiveCandles(prev => {
-      if (prev.length === 0) return [candle];
-
-      const lastCandle = prev[prev.length - 1];
-      if (!lastCandle) return [candle];
-
-      if (candle.timestamp === lastCandle.timestamp) {
-        if (candle.close === lastCandle.close &&
-          candle.high === lastCandle.high &&
-          candle.low === lastCandle.low &&
-          candle.volume === lastCandle.volume) return prev;
-        return [...prev.slice(0, -1), candle];
-      }
-
-      if (candle.timestamp > lastCandle.timestamp) {
-        previousPriceRef.current = null;
-        if (isFinal) return [...prev, candle];
-        return [...prev, candle];
-      }
-
-      return prev;
+        return prev;
+      });
+      
+      rafIdRef.current = null;
+      pendingUpdateRef.current = null;
     });
   }, [symbol]);
 
@@ -327,6 +325,14 @@ function AppContent(): ReactElement {
     enabled: !!marketData,
     onUpdate: handleRealtimeUpdate,
   });
+  
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, []);
 
   const displayCandles = useMemo(() => {
     if (!marketData?.candles) return [];
@@ -395,13 +401,13 @@ function AppContent(): ReactElement {
   const { articles: newsArticles } = useNews({
     symbols: newsSymbols,
     limit: shouldIncludeBTC ? 15 : 10,
-    enabled: newsCorrelateWithAI,
-    refetchInterval: 5 * 60 * 1000,
+    enabled: appSettings.newsCorrelateWithAI,
+    refetchInterval: appSettings.newsRefreshInterval,
   });
 
   const { events: calendarEvents } = useCalendar();
 
-  const relevantEvents = calendarCorrelateWithAI
+  const relevantEvents = appSettings.calendarCorrelateWithAI
     ? calendarEvents.filter(event => {
       if (!event.symbols || event.symbols.length === 0) return true;
       return event.symbols.some(s =>

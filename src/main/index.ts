@@ -36,6 +36,13 @@ const createWindow = (): void => {
       preload: join(__dirname, '../preload/preload.mjs'),
       nodeIntegration: false,
       contextIsolation: true,
+      backgroundThrottling: true,
+      enableWebSQL: false,
+      webgl: true,
+      spellcheck: false,
+      autoplayPolicy: 'user-gesture-required',
+      sandbox: true,
+      v8CacheOptions: 'code',
     },
   };
 
@@ -58,10 +65,15 @@ const createWindow = (): void => {
   if (devServerUrl) {
     console.log('Loading dev server URL...');
     mainWindow.loadURL(devServerUrl);
-    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
+  
+  mainWindow.webContents.on('before-input-event', (_event, input) => {
+    if (input.key === 'F12' || (input.key === 'I' && (input.meta || input.control) && input.shift)) {
+      mainWindow?.webContents.toggleDevTools();
+    }
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;

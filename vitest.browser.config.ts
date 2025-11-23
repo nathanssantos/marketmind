@@ -9,6 +9,15 @@ export default defineConfig({
     globals: true,
     include: ['**/*.browser.test.{ts,tsx}'],
     setupFiles: './src/tests/setup.browser.ts',
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: false,
+        maxThreads: 2,
+        minThreads: 1,
+      },
+    },
+    isolate: true,
     browser: {
       enabled: true,
       provider: playwright(),
