@@ -1,6 +1,6 @@
 {
   "name": "marketmind",
-  "version": "0.22.0",
+  "version": "0.24.0",
   "description": "AI-powered consultant for technical analysis of financial charts",
   "main": "dist-electron/main/index.js",
   "author": "Nathan Santos",
@@ -19,10 +19,11 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test:run": "npm run test:unit && npm run test:browser",
+    "test:unit": "vitest run",
     "test:browser": "vitest --config vitest.browser.config.ts",
     "test:browser:run": "vitest run --config vitest.browser.config.ts",
+    "test:coverage": "vitest run --coverage",
     "clear-storage": "node scripts/clear-storage.mjs",
     "postinstall": "./scripts/install-hooks.sh"
   },

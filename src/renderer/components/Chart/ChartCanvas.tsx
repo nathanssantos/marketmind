@@ -350,6 +350,7 @@ export const ChartCanvas = ({
         endY: mouseY,
         endIndex: hoveredIndex,
       });
+      manager.markDirty('overlays');
 
       const startIndex = Math.min(measurementArea.startIndex, hoveredIndex);
       const endIndex = Math.max(measurementArea.startIndex, hoveredIndex);
@@ -392,6 +393,7 @@ export const ChartCanvas = ({
     if (newHoveredId !== lastHoveredOrderRef.current) {
       lastHoveredOrderRef.current = newHoveredId;
       setHoveredOrderId(newHoveredId);
+      manager.markDirty('overlays');
     }
 
     if (orderDragHandler.isDragging) {
@@ -407,6 +409,7 @@ export const ChartCanvas = ({
     }
 
     setMousePosition({ x: mouseX, y: mouseY });
+    manager.markDirty('overlays');
 
     const viewport = manager.getViewport();
     const dimensions = manager.getDimensions();
@@ -424,8 +427,10 @@ export const ChartCanvas = ({
         price,
         type: shiftPressed ? 'long' : 'short',
       });
+      manager.markDirty('overlays');
     } else {
       setOrderPreview(null);
+      manager.markDirty('overlays');
     }
 
     const isOnPriceScale = mouseX >= priceScaleLeft && mouseY < timeScaleTop;
@@ -576,6 +581,7 @@ export const ChartCanvas = ({
     }
 
     setHoveredMAIndex(closestMAIndex);
+    manager.markDirty('overlays');
 
     if (closestMAIndex !== undefined) {
       const ma = movingAverages[closestMAIndex];
@@ -594,6 +600,7 @@ export const ChartCanvas = ({
             ...(closestMAValue !== undefined && { value: closestMAValue }),
           },
         });
+        manager.markDirty('overlays');
         return;
       }
     }
@@ -706,6 +713,9 @@ export const ChartCanvas = ({
       y: 0,
       visible: false,
     });
+    if (manager) {
+      manager.markDirty('overlays');
+    }
   };
 
   const handleAIStudyHover = useCallback((study: AIStudy | null): void => {
@@ -806,6 +816,7 @@ export const ChartCanvas = ({
           startIndex: hoveredIndex,
           endIndex: hoveredIndex,
         });
+        manager.markDirty('overlays');
         return;
       }
     }
@@ -823,6 +834,9 @@ export const ChartCanvas = ({
     if (isMeasuring) {
       setIsMeasuring(false);
       setMeasurementArea(null);
+      if (manager) {
+        manager.markDirty('overlays');
+      }
       return;
     }
 
@@ -1089,7 +1103,7 @@ export const ChartCanvas = ({
     return () => {
       manager.setRenderCallback(null);
     };
-  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderOrderLines, chartType]);
+  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderOrderLines, chartType, mousePosition, measurementArea, isMeasuring, orderPreview, showMeasurementArea, showMeasurementRuler, colors, orders, hoveredOrderId]);
 
   return (
     <>
