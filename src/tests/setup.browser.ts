@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import packageJson from '../../package.json';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -23,7 +24,7 @@ window.electron = {
     writeText: vi.fn(),
   },
   app: {
-    getVersion: vi.fn(() => '0.23.0'),
+    getVersion: vi.fn(() => packageJson.version),
     getName: vi.fn(() => 'MarketMind'),
   },
   autoUpdater: {

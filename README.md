@@ -4,9 +4,9 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.20.0-blue.svg)
-![Tests](https://img.shields.io/badge/tests-667%20passing-brightgreen.svg)
-![Coverage](https://img.shields.io/badge/coverage-90.62%25-brightgreen.svg)
+![Version](https://img.shields.io/badge/version-0.22.0-blue.svg)
+![Tests](https://img.shields.io/badge/tests-1,338%20passing-brightgreen.svg)
+![Coverage](https://img.shields.io/badge/coverage-91.07%25-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 ![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES%20%7C%20FR-success.svg)

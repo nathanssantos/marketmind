@@ -2,6 +2,7 @@ import { Logo } from '@/renderer/components/ui/logo';
 import { Box, Flex, Link, Separator, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuExternalLink } from 'react-icons/lu';
+import { APP_VERSION } from '@shared/constants';
 
 export const AboutTab = () => {
   const { t } = useTranslation();
@@ -16,7 +17,7 @@ export const AboutTab = () => {
           </Text>
         </Flex>
         <Text fontSize="md" color="fg.muted" mb={4}>
-          {t('about.version', { version: '0.21.0' })}
+          {t('about.version', { version: APP_VERSION })}
         </Text>
         <Text fontSize="sm" color="fg.muted">{t('about.description')}</Text>
       </Box>

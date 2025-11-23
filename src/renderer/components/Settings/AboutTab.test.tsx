@@ -41,7 +41,7 @@ describe('AboutTab', () => {
     it('displays app version', () => {
         renderWithChakra(<AboutTab />);
 
-        expect(screen.getByText('Version 0.21.0')).toBeDefined();
+        expect(screen.getByText('Version 0.22.0')).toBeDefined();
     });
 
     it('renders app description', () => {
