@@ -1,5 +1,6 @@
 import { Logo } from '@/renderer/components/ui/logo';
 import { Box, Flex, Link, Separator, Stack, Text } from '@chakra-ui/react';
+import { APP_VERSION } from '@shared/constants';
 import { useTranslation } from 'react-i18next';
 import { LuExternalLink } from 'react-icons/lu';
 
