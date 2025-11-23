@@ -1,5 +1,6 @@
 import type { CanvasManager } from '@/renderer/utils/canvas/CanvasManager';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
+import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { useCallback } from 'react';
 
 interface UseCurrentPriceLineRendererProps {
@@ -81,32 +82,14 @@ export const useCurrentPriceLineRenderer = ({
     const y = manager.priceToY(currentPrice);
 
     ctx.save();
-    
-    const priceText = currentPrice.toFixed(2);
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     
-    const labelPadding = 8;
+    const priceText = currentPrice.toFixed(2);
     const lineEndX = width - rightMargin;
-    const labelX = lineEndX;
-    const labelWidth = rightMargin;
-    const labelHeight = 18;
-    const arrowWidth = 6;
     
-    ctx.fillStyle = colors.currentPriceLabel.bg;
-    
-    ctx.beginPath();
-    ctx.moveTo(labelX, y);
-    ctx.lineTo(labelX + arrowWidth, y - labelHeight / 2);
-    ctx.lineTo(labelX + labelWidth, y - labelHeight / 2);
-    ctx.lineTo(labelX + labelWidth, y + labelHeight / 2);
-    ctx.lineTo(labelX + arrowWidth, y + labelHeight / 2);
-    ctx.closePath();
-    ctx.fill();
-    
-    ctx.fillStyle = colors.currentPriceLabel.text;
-    ctx.fillText(priceText, labelX + arrowWidth + labelPadding, y);
+    drawPriceTag(ctx, priceText, y, lineEndX, colors.currentPriceLabel.bg);
 
     ctx.restore();
   }, [manager, colors, rightMargin, manager?.getCandles()]);

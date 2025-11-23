@@ -576,15 +576,23 @@
       "cancel": "Annuler l'Ordre"
     },
     "notifications": {
-      "orderFilled": "Ordre Exécuté",
-      "orderFilledDesc": "{{order}} exécuté à {{price}}",
-      "orderClosed": "Ordre Fermé",
-      "orderClosedProfit": "{{order}} fermé avec profit: {{pnl}} ({{percent}}%)",
-      "orderClosedLoss": "{{order}} fermé avec perte: {{pnl}} ({{percent}}%)",
+      "orderFilled": {
+        "title": "Ordre Exécuté",
+        "body": "Ordre {{type}} de {{quantity}} {{symbol}} exécuté à ${{price}}"
+      },
+      "orderClosed": {
+        "titleProfit": "Ordre Fermé - Profit ✓",
+        "titleLoss": "Ordre Fermé - Perte",
+        "body": "{{type}} {{symbol}} ({{quantity}}) fermé: {{pnl}}"
+      },
       "orderCancelled": "Ordre Annulé",
       "orderCancelledDesc": "{{order}} a été annulé",
       "orderExpired": "Ordre Expiré",
       "orderExpiredDesc": "{{order}} a expiré"
+    },
+    "order": {
+      "long": "ACHAT",
+      "short": "VENTE"
     },
     "closeOrder": "Fermer l'Ordre",
     "closeOrderConfirm": "Fermer l'ordre {{type}} avec entrée à {{entry}} ? Prix actuel : {{current}}",

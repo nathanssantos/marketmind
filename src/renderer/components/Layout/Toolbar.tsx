@@ -286,10 +286,10 @@ export const Toolbar = memo(({
             <LuNewspaper />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('keyboardShortcuts.shortcuts.toggleChatSidebar')} showArrow>
+        <TooltipWrapper label={t('common.openChat')} showArrow>
           <IconButton
             size="2xs"
-            aria-label={t('keyboardShortcuts.shortcuts.toggleChatSidebar')}
+            aria-label={t('common.openChat')}
             onClick={onToggleChat}
             colorPalette={isChatOpen ? 'blue' : 'gray'}
             variant={isChatOpen ? 'solid' : 'ghost'}
