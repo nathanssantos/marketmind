@@ -316,5 +316,105 @@ describe('useCurrentPriceLineRenderer', () => {
       expect(mockCtx.save).toHaveBeenCalled();
       expect(mockCtx.restore).toHaveBeenCalled();
     });
+
+    it('should use custom lineWidth when provided', () => {
+      const { result } = renderHook(() =>
+        useCurrentPriceLineRenderer({
+          manager: mockManager,
+          colors: mockColors,
+          enabled: true,
+          lineWidth: 4,
+        })
+      );
+
+      result.current.renderLine();
+
+      expect(mockCtx.lineWidth).toBe(4);
+    });
+
+    it('should apply globalAlpha for line transparency', () => {
+      const { result } = renderHook(() =>
+        useCurrentPriceLineRenderer({
+          manager: mockManager,
+          colors: mockColors,
+          enabled: true,
+        })
+      );
+
+      result.current.renderLine();
+
+      expect(mockCtx.globalAlpha).toBe(0.8);
+    });
+
+    it('should use bullish color for current price line', () => {
+      const customColors = {
+        ...mockColors,
+        bullish: '#00FF00',
+      };
+
+      const { result } = renderHook(() =>
+        useCurrentPriceLineRenderer({
+          manager: mockManager,
+          colors: customColors,
+          enabled: true,
+        })
+      );
+
+      result.current.renderLine();
+
+      expect(mockCtx.strokeStyle).toBe('#00FF00');
+    });
+
+    it('should calculate line end position based on rightMargin', () => {
+      const { result } = renderHook(() =>
+        useCurrentPriceLineRenderer({
+          manager: mockManager,
+          colors: mockColors,
+          enabled: true,
+          rightMargin: 80,
+        })
+      );
+
+      result.current.renderLine();
+
+      expect(mockCtx.lineTo).toHaveBeenCalledWith(720, expect.any(Number));
+    });
+
+    it('should handle renderLine and renderLabel independently', () => {
+      const { result } = renderHook(() =>
+        useCurrentPriceLineRenderer({
+          manager: mockManager,
+          colors: mockColors,
+          enabled: true,
+        })
+      );
+
+      vi.clearAllMocks();
+      result.current.renderLine();
+      
+      expect(mockCtx.stroke).toHaveBeenCalled();
+      expect(mockCtx.fill).not.toHaveBeenCalled();
+
+      vi.clearAllMocks();
+      result.current.renderLabel();
+      
+      expect(mockCtx.fill).toHaveBeenCalled();
+      expect(mockCtx.stroke).not.toHaveBeenCalled();
+    });
+
+    it('should position price tag using drawPriceTag utility', () => {
+      const { result } = renderHook(() =>
+        useCurrentPriceLineRenderer({
+          manager: mockManager,
+          colors: mockColors,
+          enabled: true,
+        })
+      );
+
+      result.current.renderLabel();
+
+      expect(mockCtx.fill).toHaveBeenCalled();
+      expect(mockCtx.fillText).toHaveBeenCalled();
+    });
   });
 });

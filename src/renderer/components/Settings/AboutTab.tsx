@@ -68,7 +68,7 @@ export const AboutTab = () => {
             {t('about.resourcesList.github')}
             <LuExternalLink />
           </Link>
-          <Link href="https://github.com/nathanssantos/marketmind/blob/main/docs/AI_CONTEXT.md" target="_blank" color="blue.500" display="flex" alignItems="center" gap={1}>
+          <Link href="https://github.com/nathanssantos/marketmind/blob/main/.github/copilot-instructions.md" target="_blank" color="blue.500" display="flex" alignItems="center" gap={1}>
             {t('about.resourcesList.documentation')}
             <LuExternalLink />
           </Link>

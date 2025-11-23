@@ -543,6 +543,24 @@ describe('AIService', () => {
       expect(service.getConfig().enableAIStudies).toBe(false);
     });
 
+    it('should update enableAIStudies on provider when set', async () => {
+      const service = new AIService({
+        provider: 'openai',
+        apiKey: 'test-key',
+      });
+
+      const messages: AIMessage[] = [
+        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+      ];
+
+      mockSendMessage.mockResolvedValue({ text: 'Response' });
+      await service.sendMessage(messages);
+
+      service.setEnableAIStudies(true);
+
+      expect(service.getConfig().enableAIStudies).toBe(true);
+    });
+
     it('should default enableAIStudies to undefined', () => {
       const service = new AIService({
         provider: 'openai',
@@ -550,6 +568,53 @@ describe('AIService', () => {
       });
 
       expect(service.getConfig().enableAIStudies).toBeUndefined();
+    });
+  });
+
+  describe('Optimized prompts control', () => {
+    it('should enable optimized prompts on provider', async () => {
+      const service = new AIService({
+        provider: 'openai',
+        apiKey: 'test-key',
+      });
+
+      const messages: AIMessage[] = [
+        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+      ];
+
+      mockSendMessage.mockResolvedValue({ text: 'Response' });
+      await service.sendMessage(messages);
+
+      service.setOptimizedPrompts(true);
+
+      expect(service.isUsingOptimizedPrompts()).toBe(true);
+    });
+
+    it('should disable optimized prompts on provider', async () => {
+      const service = new AIService({
+        provider: 'openai',
+        apiKey: 'test-key',
+      });
+
+      const messages: AIMessage[] = [
+        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+      ];
+
+      mockSendMessage.mockResolvedValue({ text: 'Response' });
+      await service.sendMessage(messages);
+
+      service.setOptimizedPrompts(false);
+
+      expect(service.isUsingOptimizedPrompts()).toBe(false);
+    });
+
+    it('should return true for optimized prompts when provider not initialized', () => {
+      const service = new AIService({
+        provider: 'openai',
+        apiKey: 'test-key',
+      });
+
+      expect(service.isUsingOptimizedPrompts()).toBe(true);
     });
   });
 
@@ -582,6 +647,40 @@ describe('AIService', () => {
       ];
 
       await expect(service.sendMessage(messages)).rejects.toThrow('Provider error');
+    });
+
+    it('should throw error if sendMessage called but provider fails to initialize', async () => {
+      const service = new AIService({
+        provider: 'openai',
+        apiKey: 'test-key',
+      });
+
+      vi.spyOn(service as any, 'initializeProvider').mockResolvedValue(undefined);
+      (service as any).provider = null;
+
+      const messages: AIMessage[] = [
+        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+      ];
+
+      await expect(service.sendMessage(messages)).rejects.toThrow('AI provider not initialized');
+    });
+
+    it('should throw error if analyzeChart called but provider fails to initialize', async () => {
+      const service = new AIService({
+        provider: 'openai',
+        apiKey: 'test-key',
+      });
+
+      vi.spyOn(service as any, 'initializeProvider').mockResolvedValue(undefined);
+      (service as any).provider = null;
+
+      const request: AIAnalysisRequest = {
+        symbol: 'BTCUSDT',
+        timeframe: '1h',
+        candles: [],
+      };
+
+      await expect(service.analyzeChart(request)).rejects.toThrow('AI provider not initialized');
     });
   });
 });

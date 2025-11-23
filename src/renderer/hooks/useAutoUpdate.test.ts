@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor, act } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAutoUpdate } from './useAutoUpdate';
 
 const mockElectron = {
@@ -275,5 +275,39 @@ describe('useAutoUpdate', () => {
     });
 
     expect(mockElectron.update.stopAutoCheck).toHaveBeenCalled();
+  });
+
+  it('should handle startAutoCheck errors', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockElectron.update.startAutoCheck.mockResolvedValueOnce({ 
+      success: false, 
+      error: 'Failed to start' 
+    });
+
+    const { result } = renderHook(() => useAutoUpdate());
+
+    await act(async () => {
+      await result.current.startAutoCheck();
+    });
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to start auto-check:', 'Failed to start');
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('should handle stopAutoCheck errors', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockElectron.update.stopAutoCheck.mockResolvedValueOnce({ 
+      success: false, 
+      error: 'Failed to stop' 
+    });
+
+    const { result } = renderHook(() => useAutoUpdate());
+
+    await act(async () => {
+      await result.current.stopAutoCheck();
+    });
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to stop auto-check:', 'Failed to stop');
+    consoleErrorSpy.mockRestore();
   });
 });
