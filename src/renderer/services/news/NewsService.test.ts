@@ -163,6 +163,32 @@ describe('NewsService', () => {
       await expect(service.fetchNews()).rejects.toThrow('Fallback failed');
     });
 
+    it('should throw single error when only primary provider fails', async () => {
+      const error = new Error('Primary provider failed');
+      vi.mocked(primaryProvider.fetchNews).mockRejectedValue(error);
+
+      const service = new NewsService({
+        primaryProvider,
+      });
+
+      await expect(service.fetchNews()).rejects.toThrow('Primary provider failed');
+    });
+
+    it('should throw generic error when no providers configured', async () => {
+      vi.mocked(primaryProvider.fetchNews).mockRejectedValue(new Error('No enabled providers'));
+      
+      const service = new NewsService({
+        primaryProvider,
+        fallbackProviders: [],
+      });
+
+      vi.mocked(primaryProvider.fetchNews).mockImplementation(() => {
+        throw new Error('All news providers failed');
+      });
+
+      await expect(service.fetchNews()).rejects.toThrow();
+    });
+
     it('should cache successful responses', async () => {
       vi.mocked(primaryProvider.fetchNews).mockResolvedValue(mockNewsResponse);
 

@@ -2,6 +2,15 @@ import type { BaseMarketProvider, CandleData, FetchCandlesOptions, MarketProvide
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MarketDataService } from './MarketDataService';
 
+vi.mock('../cache/indexedDBCache', () => ({
+  indexedDBCache: {
+    get: vi.fn(),
+    set: vi.fn(),
+    clear: vi.fn().mockResolvedValue(undefined),
+    delete: vi.fn(),
+  },
+}));
+
 const mockCandles: CandleData = {
   candles: [
     {
@@ -436,6 +445,26 @@ describe('MarketDataService', () => {
       await service.fetchCandles(options);
 
       expect(primaryProvider.fetchCandles).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle indexedDB clear errors gracefully', async () => {
+      const { indexedDBCache } = await import('../cache/indexedDBCache');
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      
+      vi.mocked(indexedDBCache.clear).mockRejectedValueOnce(new Error('IndexedDB error'));
+
+      const service = new MarketDataService({
+        primaryProvider,
+        enableCache: true,
+      });
+
+      service.clearCache();
+      
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to clear IndexedDB cache:', expect.any(Error));
+      
+      consoleErrorSpy.mockRestore();
     });
   });
 

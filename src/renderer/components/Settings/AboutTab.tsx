@@ -17,7 +17,7 @@ export const AboutTab = () => {
           </Text>
         </Flex>
         <Text fontSize="md" color="fg.muted" mb={4}>
-          {t('about.version', { version: '0.21.0' })}
+          {t('about.version', { version: APP_VERSION })}
         </Text>
         <Text fontSize="sm" color="fg.muted">{t('about.description')}</Text>
       </Box>

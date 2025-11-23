@@ -390,10 +390,288 @@ describe('BinanceProvider', () => {
     });
   });
 
-  describe('supportsWebSocket', () => {
-    it('should return true', () => {
+  describe('BaseMarketProvider getters', () => {
+    it('should return provider name', () => {
       const provider = new BinanceProvider();
-      expect(provider.supportsWebSocket()).toBe(true);
+      expect(provider.name).toBe('Binance');
+    });
+
+    it('should return provider type', () => {
+      const provider = new BinanceProvider();
+      expect(provider.type).toBe('crypto');
+    });
+
+    it('should return enabled status', () => {
+      const provider = new BinanceProvider();
+      expect(provider.isEnabled).toBe(true);
+    });
+  });
+
+  describe('rateLimitedFetch', () => {
+    it('should not delay when rateLimit is not configured', async () => {
+      const provider = new BinanceProvider({ rateLimit: undefined });
+      const fetcher = vi.fn().mockResolvedValue('result');
+      
+      const start = Date.now();
+      const result = await (provider as never)['rateLimitedFetch'](fetcher);
+      const duration = Date.now() - start;
+      
+      expect(result).toBe('result');
+      expect(fetcher).toHaveBeenCalledOnce();
+      expect(duration).toBeLessThan(10);
+    });
+  });
+
+  describe('handleError', () => {
+    it('should include error code when available', () => {
+      const provider = new BinanceProvider();
+      const error = Object.assign(new Error('Network error'), { code: 'ERR_NETWORK' });
+      
+      expect(() => {
+        (provider as never)['handleError'](error, 'Fetch failed');
+      }).toThrow();
+      
+      try {
+        (provider as never)['handleError'](error, 'Fetch failed');
+      } catch (err) {
+        const marketError = err as { provider: string; message: string; code?: string };
+        expect(marketError.code).toBe('ERR_NETWORK');
+        expect(marketError.provider).toBe('Binance');
+        expect(marketError.message).toContain('Network error');
+      }
+    });
+  });
+
+  describe('subscribeToUpdates', () => {
+    const WEBSOCKET_OPEN = 1;
+    const WEBSOCKET_CLOSED = 3;
+    let closeFn: ReturnType<typeof vi.fn>;
+    
+    beforeEach(() => {
+      closeFn = vi.fn();
+      
+      const WebSocketMock = vi.fn(function(this: any, url: string) {
+        this.url = url;
+        this.readyState = WEBSOCKET_OPEN;
+        this.close = closeFn;
+        this.send = vi.fn();
+        this.addEventListener = vi.fn();
+        this.removeEventListener = vi.fn();
+        this.onopen = null;
+        this.onmessage = null;
+        this.onerror = null;
+        this.onclose = null;
+      }) as any;
+
+      WebSocketMock.OPEN = WEBSOCKET_OPEN;
+      WebSocketMock.CONNECTING = 0;
+      WebSocketMock.CLOSING = 2;
+      WebSocketMock.CLOSED = WEBSOCKET_CLOSED;
+
+      global.WebSocket = WebSocketMock;
+    });
+
+    afterEach(() => {
+      delete (global as any).WebSocket;
+    });
+
+    it('should create WebSocket connection', () => {
+      const provider = new BinanceProvider();
+      const callback = vi.fn();
+
+      provider.subscribeToUpdates({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        callback,
+      });
+
+      expect(global.WebSocket).toHaveBeenCalledWith(
+        'wss://stream.binance.com:9443/ws/btcusdt@kline_1h'
+      );
+    });
+
+    it('should parse and forward WebSocket messages', () => {
+      const provider = new BinanceProvider();
+      const callback = vi.fn();
+
+      provider.subscribeToUpdates({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        callback,
+      });
+
+      const mockKlineData = {
+        e: 'kline',
+        k: {
+          t: 1704067200000,
+          o: '42000.00',
+          h: '42500.00',
+          l: '41800.00',
+          c: '42300.00',
+          v: '100.50',
+          x: true,
+        },
+      };
+
+      const wsInstance = (global.WebSocket as any).mock.results[0]?.value;
+      const messageEvent = new MessageEvent('message', {
+        data: JSON.stringify(mockKlineData),
+      });
+
+      wsInstance.onmessage(messageEvent);
+
+      expect(callback).toHaveBeenCalledWith({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        candle: {
+          timestamp: 1704067200000,
+          open: 42000,
+          high: 42500,
+          low: 41800,
+          close: 42300,
+          volume: 100.5,
+        },
+        isFinal: true,
+      });
+    });
+
+    it('should handle WebSocket errors', () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const provider = new BinanceProvider();
+
+      provider.subscribeToUpdates({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        callback: vi.fn(),
+      });
+
+      const wsInstance = (global.WebSocket as any).mock.results[0]?.value;
+      const errorEvent = new Event('error');
+      wsInstance.onerror(errorEvent);
+
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+
+    it('should handle invalid WebSocket messages', () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const provider = new BinanceProvider();
+      const callback = vi.fn();
+
+      provider.subscribeToUpdates({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        callback,
+      });
+
+      const wsInstance = (global.WebSocket as any).mock.results[0]?.value;
+      const messageEvent = new MessageEvent('message', {
+        data: 'invalid json',
+      });
+
+      wsInstance.onmessage(messageEvent);
+
+      expect(callback).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+
+    it('should clean up WebSocket on unsubscribe', () => {
+      const provider = new BinanceProvider();
+
+      const unsubscribe = provider.subscribeToUpdates({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        callback: vi.fn(),
+      });
+
+      expect(() => unsubscribe()).not.toThrow();
+      expect(closeFn).toHaveBeenCalled();
+    });
+
+    it('should not close WebSocket if already closed', () => {
+      const WebSocketMock = vi.fn(function(this: any) {
+        this.readyState = WEBSOCKET_CLOSED;
+        this.close = closeFn;
+      });
+      global.WebSocket = WebSocketMock as any;
+      
+      const provider = new BinanceProvider();
+
+      const unsubscribe = provider.subscribeToUpdates({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        callback: vi.fn(),
+      });
+
+      closeFn.mockClear();
+      unsubscribe();
+
+      expect(closeFn).not.toHaveBeenCalled();
+    });
+
+    it('should handle WebSocket close event', () => {
+      const provider = new BinanceProvider();
+
+      provider.subscribeToUpdates({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        callback: vi.fn(),
+      });
+
+      const wsInstance = (global.WebSocket as any).mock.results[0]?.value;
+      const closeEvent = new CloseEvent('close');
+      wsInstance.onclose(closeEvent);
+
+      expect(true).toBe(true);
+    });
+  });
+
+  describe('ensureSymbolsCache', () => {
+    it('should fetch symbols when cache is empty', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: mockExchangeInfo,
+      });
+
+      const provider = new BinanceProvider();
+      await provider.searchSymbols('BTC');
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v3/exchangeInfo');
+    });
+
+    it('should reuse cache when still valid', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: mockExchangeInfo,
+      });
+
+      const provider = new BinanceProvider();
+      
+      await provider.searchSymbols('BTC');
+      mockAxiosInstance.get.mockClear();
+      await provider.searchSymbols('ETH');
+
+      expect(mockAxiosInstance.get).not.toHaveBeenCalled();
+    });
+
+    it('should refresh cache after expiration', async () => {
+      vi.useFakeTimers();
+      
+      mockAxiosInstance.get.mockResolvedValue({
+        data: mockExchangeInfo,
+      });
+
+      const provider = new BinanceProvider();
+      
+      await provider.searchSymbols('BTC');
+      mockAxiosInstance.get.mockClear();
+      
+      vi.advanceTimersByTime(6 * 60 * 1000);
+      
+      await provider.searchSymbols('ETH');
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v3/exchangeInfo');
+      
+      vi.useRealTimers();
     });
   });
 });

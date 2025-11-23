@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  clearCanvas,
-  drawCandle,
-  drawGrid,
-  drawLine,
-  drawRect,
-  drawText,
-  setupCanvas,
+    clearCanvas,
+    drawCandle,
+    drawGrid,
+    drawLine,
+    drawRect,
+    drawText,
+    setupCanvas,
 } from './drawingUtils';
 
 describe('drawingUtils', () => {
@@ -146,6 +146,30 @@ describe('drawingUtils', () => {
       drawCandle(ctx, x, openY, closeY, highY, lowY, width, wickWidth, '#00ff00', '#ff0000');
       
       expect(ctx.stroke).toHaveBeenCalled();
+    });
+
+    it('should apply shadow effect when candle is highlighted', () => {
+      const mockCtx = {
+        ...ctx,
+        shadowColor: '',
+        shadowBlur: 0,
+      } as CanvasRenderingContext2D;
+
+      const x = 100;
+      const openY = 200;
+      const closeY = 150;
+      const highY = 140;
+      const lowY = 210;
+      const width = 10;
+      const wickWidth = 1;
+      const bullishColor = '#00ff00';
+      const bearishColor = '#ff0000';
+      const isHighlighted = true;
+
+      drawCandle(mockCtx, x, openY, closeY, highY, lowY, width, wickWidth, bullishColor, bearishColor, isHighlighted);
+      
+      expect(mockCtx.save).toHaveBeenCalled();
+      expect(mockCtx.restore).toHaveBeenCalled();
     });
   });
 

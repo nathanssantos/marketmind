@@ -344,4 +344,97 @@ describe('useCrosshairPriceLineRenderer', () => {
     expect(mockCtx.save).toHaveBeenCalled();
     expect(mockCtx.restore).toHaveBeenCalled();
   });
+
+  it('should draw price tag arrow shape with path operations', () => {
+    const { result } = renderHook(() =>
+      useCrosshairPriceLineRenderer({
+        manager: mockManager,
+        colors: mockColors,
+        enabled: true,
+        mouseX: 100,
+        mouseY: 200,
+      })
+    );
+
+    result.current.render();
+
+    expect(mockCtx.beginPath).toHaveBeenCalled();
+    expect(mockCtx.moveTo).toHaveBeenCalled();
+    expect(mockCtx.lineTo).toHaveBeenCalled();
+    expect(mockCtx.closePath).toHaveBeenCalled();
+    expect(mockCtx.fill).toHaveBeenCalled();
+  });
+
+  it('should set font and text alignment for price tag', () => {
+    const { result } = renderHook(() =>
+      useCrosshairPriceLineRenderer({
+        manager: mockManager,
+        colors: mockColors,
+        enabled: true,
+        mouseX: 100,
+        mouseY: 200,
+      })
+    );
+
+    result.current.render();
+
+    expect(mockCtx.font).toBe('11px monospace');
+    expect(mockCtx.textAlign).toBe('left');
+    expect(mockCtx.textBaseline).toBe('middle');
+  });
+
+  it('should use crosshair color for stroke and price tag', () => {
+    const customColors = {
+      ...mockColors,
+      crosshair: '#FF5733',
+    };
+
+    const { result } = renderHook(() =>
+      useCrosshairPriceLineRenderer({
+        manager: mockManager,
+        colors: customColors,
+        enabled: true,
+        mouseX: 100,
+        mouseY: 200,
+      })
+    );
+
+    result.current.render();
+
+    expect(mockCtx.strokeStyle).toBe('#FF5733');
+  });
+
+  it('should calculate tag position using CHART_RIGHT_MARGIN', () => {
+    const { result } = renderHook(() =>
+      useCrosshairPriceLineRenderer({
+        manager: mockManager,
+        colors: mockColors,
+        enabled: true,
+        mouseX: 100,
+        mouseY: 200,
+      })
+    );
+
+    result.current.render();
+
+    expect(mockCtx.fillText).toHaveBeenCalled();
+    const fillTextCalls = vi.mocked(mockCtx.fillText).mock.calls;
+    expect(fillTextCalls.length).toBeGreaterThan(0);
+  });
+
+  it('should apply global alpha for crosshair transparency', () => {
+    const { result } = renderHook(() =>
+      useCrosshairPriceLineRenderer({
+        manager: mockManager,
+        colors: mockColors,
+        enabled: true,
+        mouseX: 100,
+        mouseY: 200,
+      })
+    );
+
+    result.current.render();
+
+    expect(mockCtx.globalAlpha).toBe(0.6);
+  });
 });

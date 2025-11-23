@@ -530,4 +530,28 @@ describe('NewsAPIProvider', () => {
       });
     });
   });
+
+  describe('rate limiting', () => {
+    it('should enforce rate limit between requests', async () => {
+      const config: NewsProviderConfig = {
+        apiKey: 'test-api-key',
+        rateLimitPerSecond: 10,
+      };
+
+      mockAxiosInstance.get.mockResolvedValue({
+        data: mockNewsAPIResponse,
+      });
+
+      const provider = new NewsAPIProvider(config);
+      
+      await provider.fetchNews({});
+      const secondCallPromise = provider.fetchNews({});
+      
+      await vi.advanceTimersByTimeAsync(100);
+      
+      await secondCallPromise;
+      
+      expect(mockAxiosInstance.get).toHaveBeenCalledTimes(2);
+    });
+  });
 });

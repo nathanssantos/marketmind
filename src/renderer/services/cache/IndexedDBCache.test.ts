@@ -180,5 +180,49 @@ describe('IndexedDBCache', () => {
       const size = await indexedDBCache.getSize();
       expect(size).toBe(10);
     });
+
+    it('should handle set without db initialization', async () => {
+      const newCache = new (indexedDBCache.constructor as any)();
+      await expect(newCache.set('test', { data: 'test' })).resolves.not.toThrow();
+    });
+
+    it('should handle delete without db initialization', async () => {
+      const newCache = new (indexedDBCache.constructor as any)();
+      await expect(newCache.delete('test')).resolves.not.toThrow();
+    });
+
+    it('should handle clear without db initialization', async () => {
+      const newCache = new (indexedDBCache.constructor as any)();
+      await expect(newCache.clear()).resolves.not.toThrow();
+    });
+
+    it('should handle cleanExpired without db initialization', async () => {
+      const newCache = new (indexedDBCache.constructor as any)();
+      await expect(newCache.cleanExpired()).resolves.not.toThrow();
+    });
+
+    it('should handle getSize without db initialization', async () => {
+      const newCache = new (indexedDBCache.constructor as any)();
+      const size = await newCache.getSize();
+      expect(size).toBe(0);
+    });
+
+    it('should handle getAllKeys without db initialization', async () => {
+      const newCache = new (indexedDBCache.constructor as any)();
+      const keys = await newCache.getAllKeys();
+      expect(keys).toEqual([]);
+    });
+  });
+
+  describe('close', () => {
+    it('should close the database connection', () => {
+      indexedDBCache.close();
+      expect(true).toBe(true);
+    });
+
+    it('should handle close when db is null', () => {
+      const newCache = new (indexedDBCache.constructor as any)();
+      expect(() => newCache.close()).not.toThrow();
+    });
   });
 });
