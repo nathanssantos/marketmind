@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - 2025-11-23
+
+### Fixed
+- **Test Suite Complete Recovery** 🎯
+  - Restored all 1338 tests that were lost during merge
+  - Recovered 17 complete test files (290 tests)
+  - Recovered 97 individual test cases from 18 modified files
+  - Fixed browser test configuration to use Playwright correctly
+  - Browser tests now run in real Chromium environment instead of jsdom
+  - **Test Results:** 1338/1338 passing (100% success rate)
+    - Unit tests (jsdom): 1311 passing (72 files)
+    - Browser tests (Playwright): 27 passing (1 file)
+
+- **Test Configuration** ⚙️
+  - Separated browser tests from unit tests
+  - Excluded `*.browser.test.tsx` from jsdom config
+  - Added `test:unit` and `test:browser` scripts
+  - Updated `test:run` to execute both test suites
+  - Fixed canvas context issues in browser tests
+
+- **Component Bugs** 🐛
+  - AboutTab now uses `APP_VERSION` constant from package.json
+  - Updated documentation link to point to `AI_CONTEXT.md`
+  - Added missing `app.ts` exports to shared constants
+
+### Added
+- **Source Files Recovered** 📁
+  - `src/shared/constants/app.ts` - App version and metadata constants
+  - `src/tests/setup.browser.ts` - Browser test environment setup
+  - `src/tests/utils/testHelpers.tsx` - Shared test utilities
+
+- **Test Files Recovered** 🧪
+  - Chart tests (6 files): ChartCanvas.browser, useCandlestickRenderer, useGridRenderer, useLineChartRenderer, useLineRenderer, useVolumeRenderer
+  - Settings tests (6 files): AboutTab, ChartSettingsTab, GeneralTab, LanguageSelector, SettingsDialog, TradingSimulatorTab
+  - UI tests (4 files): dialog, select, slider, switch
+  - Utility tests (1 file): WorkerPool
+
+### Changed
+- **Test Scripts** 📜
+  - `test:run` now executes both unit and browser tests sequentially
+  - Added `test:unit` for jsdom tests only
+  - Added `test:browser` for Playwright tests only
+
+## [0.23.0] - 2025-11-23
+
 ### Fixed
 - **Test Memory Leaks** 🔧
   - Fixed memory accumulation when running tests repeatedly
