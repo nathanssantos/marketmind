@@ -1,6 +1,6 @@
 import { Box, Flex, IconButton, Textarea } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { LuPencilRuler, LuSend } from 'react-icons/lu';
+import { LuBot, LuPencilRuler, LuSend } from 'react-icons/lu';
 import { useAIStore } from '../../store/aiStore';
 import { CompactAISelector } from '../Layout/CompactAISelector';
 import { TooltipWrapper } from '../ui/Tooltip';
@@ -10,6 +10,8 @@ export const MessageInput = () => {
   const { t } = useTranslation();
   const enableAIStudies = useAIStore((state) => state.enableAIStudies);
   const toggleAIStudies = useAIStore((state) => state.toggleAIStudies);
+  const isAutoTradingActive = useAIStore((state) => state.isAutoTradingActive);
+  const toggleAutoTrading = useAIStore((state) => state.toggleAutoTrading);
   const {
     message,
     setMessage,
@@ -63,6 +65,20 @@ export const MessageInput = () => {
             colorPalette={enableAIStudies ? 'purple' : 'gray'}
           >
             <LuPencilRuler />
+          </IconButton>
+        </TooltipWrapper>
+        <TooltipWrapper
+          label={isAutoTradingActive ? t('chat.disableAutoTrading') : t('chat.enableAutoTrading')}
+          showArrow
+        >
+          <IconButton
+            aria-label={isAutoTradingActive ? t('chat.disableAutoTrading') : t('chat.enableAutoTrading')}
+            onClick={toggleAutoTrading}
+            size="2xs"
+            variant={isAutoTradingActive ? 'solid' : 'outline'}
+            colorPalette={isAutoTradingActive ? 'green' : 'gray'}
+          >
+            <LuBot />
           </IconButton>
         </TooltipWrapper>
         <CompactAISelector showBadge={true} />

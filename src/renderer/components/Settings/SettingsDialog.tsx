@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import { AboutTab } from './AboutTab';
 import { AIConfigTab } from './AIConfigTab';
+import { AITradingConfigTab } from './AITradingConfigTab';
 import { ChartSettingsTab } from './ChartSettingsTab';
 import { GeneralTab } from './GeneralTab';
 import { NewsConfigTab } from './NewsConfigTab';
@@ -44,6 +45,7 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 <Tabs.Trigger value="general">{t('settings.tabs.general')}</Tabs.Trigger>
                 <Tabs.Trigger value="chart">{t('settings.tabs.chart')}</Tabs.Trigger>
                 <Tabs.Trigger value="ai">{t('settings.tabs.ai')}</Tabs.Trigger>
+                <Tabs.Trigger value="aiTrading">{t('settings.tabs.aiTrading')}</Tabs.Trigger>
                 <Tabs.Trigger value="news">{t('settings.tabs.news')}</Tabs.Trigger>
                 <Tabs.Trigger value="tradingSimulator">{t('settings.tabs.tradingSimulator')}</Tabs.Trigger>
                 <Tabs.Trigger value="about">{t('settings.tabs.about')}</Tabs.Trigger>
@@ -63,6 +65,10 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
 
                 <Tabs.Content value="ai">
                   <AIConfigTab />
+                </Tabs.Content>
+
+                <Tabs.Content value="aiTrading">
+                  <AITradingConfigTab />
                 </Tabs.Content>
 
                 <Tabs.Content value="news">

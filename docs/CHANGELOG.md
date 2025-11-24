@@ -7,6 +7,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2025-11-23
+
+### Added
+- **AI Auto-Trading System** 🤖💹
+  - Automated trading using AI analysis and technical patterns
+  - 3 risk profiles: Conservative (50%+ confidence, 1:2 R/R), Moderate (40%+, 1:1.5), Aggressive (30%+, 1:1)
+  - Comprehensive safety mechanisms:
+    - Emergency stops: Max consecutive losses (default: 3)
+    - Daily loss limit (default: 5%)
+    - Rate limiting: Max trades per day (10) and hour (3)
+    - Minimum cooldown between trades (5 minutes)
+    - Confidence and risk/reward validation
+  - Intelligent position sizing based on:
+    - Account risk percentage
+    - Stop-loss distance
+    - Confidence multiplier (0.5x-1.0x)
+    - Maximum position size limit
+  - Automated stop-loss and take-profit execution
+  - Real-time position monitoring
+  - Comprehensive statistics tracking:
+    - Win rate, profit factor, average profit/loss
+    - Pattern success analysis
+    - Consecutive win/loss streaks
+    - Best/worst trades
+    - Total P&L tracking
+  - **New Files:**
+    - `docs/AI_AUTO_TRADING_PLAN.md` - Complete implementation specification
+    - `docs/AI_AUTO_TRADING.md` - User guide and documentation
+    - `src/renderer/services/ai/prompts-trading.json` - Trading-specific AI prompts
+    - `src/shared/types/aiTrading.ts` - 9 TypeScript interfaces
+    - `src/renderer/services/ai/AITradingAgent.ts` - Core trading agent (380+ lines)
+    - `src/renderer/hooks/useAITrading.ts` - React integration hook
+    - `src/renderer/components/Settings/AITradingConfigTab.tsx` - Configuration UI
+
+- **UI Components** 🎨
+  - AI Auto-Trading toggle button in Chat sidebar (🤖 icon)
+  - New "AI Auto-Trading" tab in Settings dialog
+  - Configuration interface with 5 sections:
+    - Status display (active state, wallet info, balance)
+    - Risk profile settings
+    - Trading limits configuration
+    - Safety settings
+    - Performance statistics display
+
+- **Internationalization** 🌍
+  - Added AI Auto-Trading translations for 4 languages:
+    - English: "Enable AI Auto-Trading" / "Disable AI Auto-Trading"
+    - Portuguese: "Ativar Auto-Trading com IA" / "Desativar Auto-Trading com IA"
+    - Spanish: "Activar Auto-Trading con IA" / "Desactivar Auto-Trading con IA"
+    - French: "Activer Auto-Trading avec IA" / "Désactiver Auto-Trading avec IA"
+
+### Changed
+- **State Management** 📦
+  - Extended `aiStore.ts` with 8 new trading functions:
+    - `toggleAutoTrading()` - Enable/disable auto-trading
+    - `updateTradingConfig()` - Update configuration
+    - `addTrade()` / `updateTrade()` - Trade management
+    - `setTradingAnalysisProgress()` - Analysis state
+    - `setTradingError()` - Error tracking
+    - `calculateTradingStats()` - Statistics computation
+    - `clearTradingHistory()` - Reset trades/stats
+  - Added trading data persistence to `StorageService.ts`
+  - Updated `AIData` interface in `preload.ts` with trading fields
+
+- **AI System** 🧠
+  - Integrated `candleOptimizer` for efficient AI analysis
+  - Trading-specific prompts with 34 technical pattern knowledge
+  - Support for all timeframes (1m, 5m, 15m, 30m, 1h, 4h, 1d)
+  - Interval-based analysis (configurable 1m to 1h)
+
 ## [0.24.0] - 2025-11-23
 
 ### Fixed

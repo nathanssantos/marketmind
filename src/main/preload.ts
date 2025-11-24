@@ -1,4 +1,4 @@
-import type { AIMessage, AIProviderType, AIStudyData } from '@shared/types';
+import type { AIMessage, AIProviderType, AIStudyData, AITrade, AITradingConfig, AITradingStats } from '@shared/types';
 import type { Order, Wallet } from '@shared/types/trading';
 import { contextBridge, ipcRenderer } from 'electron';
 
@@ -28,6 +28,10 @@ interface AIData {
   activeConversationId: string | null;
   settings: AISettings | null;
   enableAIStudies: boolean;
+  isAutoTradingActive?: boolean;
+  tradingConfig?: AITradingConfig;
+  trades?: AITrade[];
+  tradingStats?: AITradingStats | null;
 }
 
 interface TradingData {

@@ -53,6 +53,7 @@
       "general": "General",
       "chart": "Gráfico",
       "ai": "Configuración de IA",
+      "aiTrading": "Auto-Trading IA",
       "news": "Noticias",
       "tradingSimulator": "Simulador de Trading",
       "about": "Acerca de"
@@ -213,8 +214,10 @@
   "chat": {
     "title": "Chat",
     "newConversation": "Nueva conversación",
-    "enableAIStudies": "Habilitar dibujos de IA en el gráfico",
-    "disableAIStudies": "Deshabilitar dibujos de IA en el gráfico",
+    "enableAIStudies": "Activar dibujos de IA en el gráfico",
+    "disableAIStudies": "Desactivar dibujos de IA en el gráfico",
+    "enableAutoTrading": "Activar Auto-Trading con IA",
+    "disableAutoTrading": "Desactivar Auto-Trading con IA",
     "conversationsTitle": "Conversaciones - {{symbol}}",
     "noConversationsYet": "Aún no hay conversaciones",
     "messageCount_one": "{{count}} mensaje",
