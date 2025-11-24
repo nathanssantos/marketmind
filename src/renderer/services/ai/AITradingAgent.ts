@@ -1,14 +1,14 @@
+import type { ChartData } from '@/renderer/store/aiStore';
+import { optimizeCandles } from '@/renderer/utils/candleOptimizer';
 import type {
-  AITrade,
-  AITradingConfig,
-  AITradingDecision,
-  Candle,
+    AITrade,
+    AITradingConfig,
+    AITradingDecision,
+    Candle,
 } from '@shared/types';
 import { nanoid } from 'nanoid';
 import { AIService } from './AIService';
 import tradingPrompts from './prompts-trading.json';
-import type { ChartData } from '@/renderer/store/aiStore';
-import { optimizeCandles } from '@/renderer/utils/candleOptimizer';
 
 export interface AITradingAgentConfig {
   config: AITradingConfig;
@@ -30,6 +30,7 @@ export class AITradingAgent {
   private consecutiveLosses: number = 0;
   private dailyLoss: number = 0;
   private isRunning: boolean = false;
+  private forceFirstAnalysis: boolean = false;
 
   private onTrade?: (trade: AITrade) => void;
   private onError?: (error: Error) => void;
@@ -49,23 +50,32 @@ export class AITradingAgent {
   }
 
   async start(aiService: AIService): Promise<void> {
+    console.log('[AITradingAgent] start() called, isRunning:', this.isRunning);
+    
     if (this.isRunning) {
       throw new Error('Trading agent is already running');
     }
 
+    console.log('[AITradingAgent] Setting up agent...');
     this.aiService = aiService;
     this.isRunning = true;
+    this.forceFirstAnalysis = true;
     this.resetDailyCounters();
 
     const intervalMs = this.getIntervalMs();
+    console.log('[AITradingAgent] Analysis interval:', intervalMs, 'ms');
+    
     this.analysisInterval = setInterval(() => {
+      console.log('[AITradingAgent] Interval tick - analyzing...');
       this.analyze().catch((error) => {
-        console.error('Analysis error:', error);
+        console.error('[AITradingAgent] Analysis error:', error);
         this.onError?.(error instanceof Error ? error : new Error(String(error)));
       });
     }, intervalMs);
 
+    console.log('[AITradingAgent] Running first analysis...');
     await this.analyze();
+    console.log('[AITradingAgent] First analysis complete');
   }
 
   stop(): void {
@@ -92,24 +102,41 @@ export class AITradingAgent {
   }
 
   private async analyze(): Promise<void> {
+    console.log('[AITradingAgent] analyze() called');
+    
     if (!this.aiService) {
+      console.error('[AITradingAgent] AI service not initialized');
       throw new Error('AI service not initialized');
     }
 
+    console.log('[AITradingAgent] Checking emergency stop...');
     if (this.checkEmergencyStop()) {
+      console.log('[AITradingAgent] Emergency stop triggered, stopping agent');
       this.stop();
       return;
     }
 
+    console.log('[AITradingAgent] Getting chart data...');
     const chartData = this.getChartData();
     if (!chartData || chartData.candles.length === 0) {
+      console.log('[AITradingAgent] No chart data available');
       return;
     }
 
-    if (!this.shouldAnalyze(chartData.candles)) {
+    console.log('[AITradingAgent] Checking if should analyze...');
+    const shouldAnalyze = this.forceFirstAnalysis || this.shouldAnalyze(chartData.candles);
+    
+    if (!shouldAnalyze) {
+      console.log('[AITradingAgent] Skipping analysis (conditions not met)');
       return;
     }
+    
+    if (this.forceFirstAnalysis) {
+      console.log('[AITradingAgent] Forcing first analysis (just started)');
+      this.forceFirstAnalysis = false;
+    }
 
+    console.log('[AITradingAgent] Getting AI decision...');
     try {
       const decision = await this.getAIDecision(chartData);
 
@@ -292,18 +319,27 @@ ${candlesData}
   }
 
   private shouldAnalyze(candles: Candle[]): boolean {
-    if (candles.length < 20) return false;
+    if (candles.length < 20) {
+      console.log('[AITradingAgent] Not enough candles:', candles.length);
+      return false;
+    }
 
     const priceChangeThreshold = this.getPriceChangeThreshold();
     const recentCandles = candles.slice(-10);
     const firstCandle = recentCandles[0];
     const lastCandle = recentCandles[recentCandles.length - 1];
     
-    if (!firstCandle || !lastCandle) return false;
+    if (!firstCandle || !lastCandle) {
+      console.log('[AITradingAgent] Missing candle data');
+      return false;
+    }
     
     const priceChange = Math.abs(
       (lastCandle.close - firstCandle.close) / firstCandle.close
     );
+    
+    const priceChangePercent = priceChange * 100;
+    console.log('[AITradingAgent] Price change:', priceChangePercent.toFixed(2) + '%', 'Threshold:', priceChangeThreshold + '%', 'Profile:', this.config.riskProfile);
 
     return priceChange >= priceChangeThreshold / 100;
   }

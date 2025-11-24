@@ -20,6 +20,7 @@ import { AIStudyHoverProvider } from './context/AIStudyHoverContext';
 import { ChartProvider } from './context/ChartContext';
 import { useGlobalActions } from './context/GlobalActionsContext';
 import { useAIStudies } from './hooks/useAIStudies';
+import { useAITrading } from './hooks/useAITrading';
 import { useAppSettings } from './hooks/useAppSettings';
 import { useCalendar } from './hooks/useCalendar';
 import { useChartData } from './hooks/useChartData';
@@ -257,15 +258,15 @@ function AppContent(): ReactElement {
 
   const handleRealtimeUpdate = useCallback((candle: Candle, isFinal: boolean) => {
     pendingUpdateRef.current = { candle, isFinal };
-    
+
     if (rafIdRef.current !== null) {
       cancelAnimationFrame(rafIdRef.current);
     }
-    
+
     rafIdRef.current = requestAnimationFrame(() => {
       const update = pendingUpdateRef.current;
       if (!update) return;
-      
+
       const { candle: latestCandle, isFinal: finalFlag } = update;
       const currentPrice = latestCandle.close;
       const previousPrice = previousPriceRef.current;
@@ -313,7 +314,7 @@ function AppContent(): ReactElement {
 
         return prev;
       });
-      
+
       rafIdRef.current = null;
       pendingUpdateRef.current = null;
     });
@@ -325,7 +326,7 @@ function AppContent(): ReactElement {
     enabled: !!marketData,
     onUpdate: handleRealtimeUpdate,
   });
-  
+
   useEffect(() => {
     return () => {
       if (rafIdRef.current !== null) {
@@ -426,6 +427,35 @@ function AppContent(): ReactElement {
     news: newsArticles,
     events: relevantEvents,
   });
+
+  const getCurrentPrice = useCallback(() => {
+    if (displayCandles.length === 0) return null;
+    return displayCandles[displayCandles.length - 1]?.close ?? null;
+  }, [displayCandles]);
+
+  const isAutoTradingActive = useAIStore((state) => state.isAutoTradingActive);
+
+  const aiTrading = useAITrading({
+    symbol,
+    timeframe,
+    chartType,
+    candles: displayCandles,
+    getCurrentPrice,
+  });
+
+  const { startTrading, stopTrading } = aiTrading;
+
+  useEffect(() => {
+    console.log('[App] isAutoTradingActive changed:', isAutoTradingActive);
+
+    if (isAutoTradingActive) {
+      console.log('[App] Calling startTrading()...');
+      startTrading();
+    } else {
+      console.log('[App] Calling stopTrading()...');
+      stopTrading();
+    }
+  }, [isAutoTradingActive]);
 
   return (
     <>

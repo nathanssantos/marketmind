@@ -1,10 +1,10 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { useAIStore } from '@/renderer/store/aiStore';
-import { useTradingStore } from '@/renderer/store/tradingStore';
+import type { Timeframe } from '@/renderer/components/Chart/TimeframeSelector';
 import { AIService } from '@/renderer/services/ai/AIService';
 import { AITradingAgent, type AITradingAgentConfig } from '@/renderer/services/ai/AITradingAgent';
+import { useAIStore } from '@/renderer/store/aiStore';
+import { useTradingStore } from '@/renderer/store/tradingStore';
 import type { AITradingDecision, Candle } from '@shared/types';
-import type { Timeframe } from '@/renderer/components/Chart/TimeframeSelector';
+import { useCallback, useEffect, useRef } from 'react';
 
 interface UseAITradingOptions {
   symbol: string;
@@ -25,7 +25,6 @@ export const useAITrading = (options: UseAITradingOptions) => {
     tradingStats,
     analysisInProgress,
     tradingError,
-    toggleAutoTrading,
     addTrade,
     updateTrade,
     setTradingAnalysisProgress,
@@ -90,7 +89,11 @@ export const useAITrading = (options: UseAITradingOptions) => {
   );
 
   const startTrading = useCallback(async () => {
+    console.log('[useAITrading] startTrading called');
+    console.log('[useAITrading] Agent active?', agentRef.current?.isActive());
+    
     if (agentRef.current?.isActive()) {
+      console.log('[useAITrading] Agent already active, skipping');
       return;
     }
 
@@ -98,6 +101,7 @@ export const useAITrading = (options: UseAITradingOptions) => {
       setTradingError(null);
       setTradingAnalysisProgress(true);
 
+      console.log('[useAITrading] Settings:', settings);
       if (!settings) {
         throw new Error('AI settings not configured');
       }
@@ -109,6 +113,7 @@ export const useAITrading = (options: UseAITradingOptions) => {
       if (settings.temperature !== undefined) aiServiceConfig.temperature = settings.temperature;
       if (settings.maxTokens !== undefined) aiServiceConfig.maxTokens = settings.maxTokens;
 
+      console.log('[useAITrading] Creating AIService with config:', aiServiceConfig);
       const aiService = new AIService(aiServiceConfig);
 
       aiServiceRef.current = aiService;
@@ -116,12 +121,13 @@ export const useAITrading = (options: UseAITradingOptions) => {
       const agentConfig: AITradingAgentConfig = {
         config: tradingConfig,
         onTrade: (trade) => {
+          console.log('[useAITrading] New trade:', trade);
           addTrade(trade);
           calculateTradingStats();
         },
         onError: (error) => {
+          console.error('[useAITrading] Trading error:', error);
           setTradingError(error.message);
-          console.error('Trading error:', error);
         },
         getCurrentPrice: options.getCurrentPrice,
         getChartData,
@@ -129,18 +135,17 @@ export const useAITrading = (options: UseAITradingOptions) => {
         executeTrade,
       };
 
+      console.log('[useAITrading] Creating agent with config:', agentConfig);
       const agent = new AITradingAgent(agentConfig);
       agentRef.current = agent;
 
+      console.log('[useAITrading] Starting agent...');
       await agent.start(aiService);
-      
-      if (!isAutoTradingActive) {
-        toggleAutoTrading();
-      }
+      console.log('[useAITrading] Agent started successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[useAITrading] Failed to start trading:', error);
       setTradingError(errorMessage);
-      console.error('Failed to start trading:', error);
     } finally {
       setTradingAnalysisProgress(false);
     }
@@ -150,8 +155,6 @@ export const useAITrading = (options: UseAITradingOptions) => {
     calculateTradingStats,
     setTradingError,
     setTradingAnalysisProgress,
-    toggleAutoTrading,
-    isAutoTradingActive,
     options.getCurrentPrice,
     getChartData,
     getWalletBalance,
@@ -165,12 +168,8 @@ export const useAITrading = (options: UseAITradingOptions) => {
       agentRef.current = null;
     }
 
-    if (isAutoTradingActive) {
-      toggleAutoTrading();
-    }
-
     setTradingAnalysisProgress(false);
-  }, [isAutoTradingActive, toggleAutoTrading, setTradingAnalysisProgress]);
+  }, [setTradingAnalysisProgress]);
 
   const updateAgentConfig = useCallback(() => {
     if (agentRef.current) {
