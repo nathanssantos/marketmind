@@ -146,9 +146,19 @@ export class CanvasManager {
   }
 
   public setCandles(candles: Candle[]): void {
-    const candlesChanged = this.candles.length !== candles.length ||
-      (candles.length > 0 && this.candles.length > 0 && 
-       this.candles[this.candles.length - 1]?.timestamp !== candles[candles.length - 1]?.timestamp);
+    const oldLastCandle = this.candles[this.candles.length - 1];
+    const newLastCandle = candles[candles.length - 1];
+    
+    const candlesChanged = 
+      this.candles.length !== candles.length ||
+      !oldLastCandle ||
+      !newLastCandle ||
+      oldLastCandle.timestamp !== newLastCandle.timestamp ||
+      oldLastCandle.open !== newLastCandle.open ||
+      oldLastCandle.high !== newLastCandle.high ||
+      oldLastCandle.low !== newLastCandle.low ||
+      oldLastCandle.close !== newLastCandle.close ||
+      oldLastCandle.volume !== newLastCandle.volume;
     
     this.candles = candles;
     this.updateBounds();

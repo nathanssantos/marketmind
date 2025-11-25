@@ -103,7 +103,7 @@ export const AITradingConfigTab = () => {
                 </Box>
                 <Switch
                   checked={isAutoTradingActive}
-                  onCheckedChange={() => {}}
+                  onCheckedChange={() => { }}
                   disabled
                 />
               </Flex>

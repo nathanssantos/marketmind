@@ -177,11 +177,25 @@ export const useChartCanvas = ({
 
       const mouseX = event.clientX - rect.left;
       const delta = event.deltaY > 0 ? -1 : 1;
+      const wasAtEndBeforeZoom = wasAtEndRef.current;
 
       managerRef.current.zoom(delta, mouseX);
-      const newViewport = managerRef.current.getViewport();
+      let newViewport = managerRef.current.getViewport();
+      
+      if (wasAtEndBeforeZoom) {
+        const visibleRange = newViewport.end - newViewport.start;
+        newViewport = {
+          ...newViewport,
+          start: candles.length - visibleRange,
+          end: candles.length,
+        };
+        managerRef.current.setViewport(newViewport);
+        wasAtEndRef.current = true;
+      } else {
+        wasAtEndRef.current = Math.abs(newViewport.end - candles.length) < 1;
+      }
+      
       updateViewport(newViewport);
-      wasAtEndRef.current = Math.abs(newViewport.end - candles.length) < 1;
     };
 
     canvas.addEventListener('wheel', handleWheel, { passive: false });
