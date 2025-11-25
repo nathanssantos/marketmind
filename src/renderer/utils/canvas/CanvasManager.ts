@@ -31,6 +31,8 @@ export class CanvasManager {
   private priceOffset: number = 0;
   private priceScale: number = 1;
   private rightMargin: number = CHART_CONFIG.CHART_RIGHT_MARGIN;
+  private stochasticPanelHeight: number = 0;
+  private rsiPanelHeight: number = 0;
   private animationFrameId: number | null = null;
   private isAnimating: boolean = false;
   private dirtyFlags: DirtyFlags = {
@@ -131,7 +133,7 @@ export class CanvasManager {
 
   private updateDimensions(): void {
     const rect = this.canvas.getBoundingClientRect();
-    const chartHeight = rect.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
+    const chartHeight = rect.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM - this.stochasticPanelHeight - this.rsiPanelHeight;
     const chartWidth = rect.width - CHART_CONFIG.CANVAS_PADDING_RIGHT;
 
     this.dimensions = {
@@ -146,9 +148,19 @@ export class CanvasManager {
   }
 
   public setCandles(candles: Candle[]): void {
-    const candlesChanged = this.candles.length !== candles.length ||
-      (candles.length > 0 && this.candles.length > 0 && 
-       this.candles[this.candles.length - 1]?.timestamp !== candles[candles.length - 1]?.timestamp);
+    const oldLastCandle = this.candles[this.candles.length - 1];
+    const newLastCandle = candles[candles.length - 1];
+    
+    const candlesChanged = 
+      this.candles.length !== candles.length ||
+      !oldLastCandle ||
+      !newLastCandle ||
+      oldLastCandle.timestamp !== newLastCandle.timestamp ||
+      oldLastCandle.open !== newLastCandle.open ||
+      oldLastCandle.high !== newLastCandle.high ||
+      oldLastCandle.low !== newLastCandle.low ||
+      oldLastCandle.close !== newLastCandle.close ||
+      oldLastCandle.volume !== newLastCandle.volume;
     
     this.candles = candles;
     this.updateBounds();
@@ -213,6 +225,30 @@ export class CanvasManager {
   public setRightMargin(margin: number): void {
     this.rightMargin = margin;
     this.markDirty('dimensions');
+  }
+
+  public setStochasticPanelHeight(height: number): void {
+    if (this.stochasticPanelHeight !== height) {
+      this.stochasticPanelHeight = height;
+      this.updateDimensions();
+      this.markDirty('dimensions');
+    }
+  }
+
+  public getStochasticPanelHeight(): number {
+    return this.stochasticPanelHeight;
+  }
+
+  public setRSIPanelHeight(height: number): void {
+    if (this.rsiPanelHeight !== height) {
+      this.rsiPanelHeight = height;
+      this.updateDimensions();
+      this.markDirty('dimensions');
+    }
+  }
+
+  public getRSIPanelHeight(): number {
+    return this.rsiPanelHeight;
   }
 
   public clear(): void {

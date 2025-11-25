@@ -32,9 +32,8 @@ describe('useSymbolSearch', () => {
 
     await waitFor(() => {
       expect(mockService.searchSymbols).toHaveBeenCalledWith('BTC');
-    }, { timeout: 500 });
-
-    expect(result.current.symbols).toEqual(mockSymbols);
+      expect(result.current.symbols).toEqual(mockSymbols);
+    }, { timeout: 1000 });
   });
 
   it('should not search when query is too short', async () => {

@@ -190,6 +190,36 @@ const customConfig = defineConfig({
             _dark: 'rgba(138, 43, 226, 0.9)',
           },
         },
+        'chart.stochastic.k': {
+          value: {
+            base: '#ea580c',
+            _dark: '#ff5722',
+          },
+        },
+        'chart.stochastic.d': {
+          value: {
+            base: '#2563eb',
+            _dark: '#2196f3',
+          },
+        },
+        'chart.stochastic.zone': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.4)',
+            _dark: 'rgba(128, 128, 128, 0.4)',
+          },
+        },
+        'chart.rsi.line': {
+          value: {
+            base: '#7c3aed',
+            _dark: '#9c27b0',
+          },
+        },
+        'chart.rsi.zone': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.4)',
+            _dark: 'rgba(128, 128, 128, 0.4)',
+          },
+        },
       },
     },
   },
@@ -246,6 +276,15 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
         text: resolveValue(tokens['chart.aiStudy.tooltip.text']),
         border: resolveValue(tokens['chart.aiStudy.tooltip.border']),
       },
+    },
+    stochastic: {
+      k: resolveValue(tokens['chart.stochastic.k']),
+      d: resolveValue(tokens['chart.stochastic.d']),
+      zone: resolveValue(tokens['chart.stochastic.zone']),
+    },
+    rsi: {
+      line: resolveValue(tokens['chart.rsi.line']),
+      zone: resolveValue(tokens['chart.rsi.zone']),
     },
   };
 };

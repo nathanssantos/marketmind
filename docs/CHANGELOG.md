@@ -7,6 +7,142 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2025-11-24
+
+### Added
+- **Stochastic Oscillator (14,3,3)** 📊
+  - Classic Slow Stochastic implementation
+  - %K line calculated over 14 periods
+  - %D line as 3-period SMA of %K
+  - Overbought zone at 80, oversold zone at 20
+  - Dedicated 80px panel below candlesticks
+  - Visual design:
+    - %K line: Orange, 2.5px width (drawn first)
+    - %D line: Blue, 1.5px width (drawn on top)
+    - Zone lines: Gray dashed lines at 80/20
+    - Top divider line for visual separation
+  - Web worker for background calculation
+  - 18 comprehensive unit tests
+
+- **RSI (2-Period with 95/5 Zones)** 📈
+  - 2-period RSI implementation (aggressive scalping indicator)
+  - Overbought zone at 95, oversold zone at 5
+  - Dedicated 80px panel below Stochastic
+  - Visual design:
+    - RSI line: Purple, 2.5px width
+    - Zone lines: Gray dashed lines at 95/5
+  - Web worker for background calculation
+  - 7 comprehensive unit tests with edge cases
+
+- **UI Integration** 🎛️
+  - Toolbar toggle buttons for both indicators:
+    - Stochastic: LuActivity icon
+    - RSI: LuScan icon
+  - State persistence via localStorage
+  - Dynamic UI positioning:
+    - CandleTimer adjusts bottom position for both panels
+    - ChartNavigation adjusts for combined panel heights
+  - CanvasManager panel height management
+
+- **Internationalization** 🌍
+  - i18n support for Stochastic and RSI
+  - Translations in 4 languages:
+    - English: "Stochastic (14,3,3)", "RSI (2)"
+    - Portuguese: "Estocástico (14,3,3)", "IFR (2)"
+    - Spanish: "Estocástico (14,3,3)", "RSI (2)"
+    - French: "Stochastique (14,3,3)", "RSI (2)"
+
+- **Theme Integration** 🎨
+  - Chakra UI theme colors for indicators:
+    - Stochastic: k=orange, d=blue, zone=gray.400
+    - RSI: line=purple, zone=gray.400
+  - Responsive to light/dark mode
+
+### Fixed
+- **Popover Conditional Rendering** 🔧
+  - Fixed hover bug in symbol selector and settings popovers
+  - Conditional Portal rendering: `{open && <Portal>...</Portal>}`
+  - Z-index set to 999999 for proper layering
+  - Fixed test to check trigger state instead of removed content
+
+- **RSI Calculation Bounds** ✅
+  - Added `j === 0` guard to prevent array out of bounds
+  - Added non-null assertions for type safety
+
+- **Test Timing Issues** ⏱️
+  - Fixed useSymbolSearch test timing with proper waitFor
+  - Extended timeout to 1000ms for async operations
+
+## [0.25.0] - 2025-11-23
+
+### Added
+- **AI Auto-Trading System** 🤖💹
+  - Automated trading using AI analysis and technical patterns
+  - 3 risk profiles: Conservative (50%+ confidence, 1:2 R/R), Moderate (40%+, 1:1.5), Aggressive (30%+, 1:1)
+  - Comprehensive safety mechanisms:
+    - Emergency stops: Max consecutive losses (default: 3)
+    - Daily loss limit (default: 5%)
+    - Rate limiting: Max trades per day (10) and hour (3)
+    - Minimum cooldown between trades (5 minutes)
+    - Confidence and risk/reward validation
+  - Intelligent position sizing based on:
+    - Account risk percentage
+    - Stop-loss distance
+    - Confidence multiplier (0.5x-1.0x)
+    - Maximum position size limit
+  - Automated stop-loss and take-profit execution
+  - Real-time position monitoring
+  - Comprehensive statistics tracking:
+    - Win rate, profit factor, average profit/loss
+    - Pattern success analysis
+    - Consecutive win/loss streaks
+    - Best/worst trades
+    - Total P&L tracking
+  - **New Files:**
+    - `docs/AI_AUTO_TRADING_PLAN.md` - Complete implementation specification
+    - `docs/AI_AUTO_TRADING.md` - User guide and documentation
+    - `src/renderer/services/ai/prompts-trading.json` - Trading-specific AI prompts
+    - `src/shared/types/aiTrading.ts` - 9 TypeScript interfaces
+    - `src/renderer/services/ai/AITradingAgent.ts` - Core trading agent (380+ lines)
+    - `src/renderer/hooks/useAITrading.ts` - React integration hook
+    - `src/renderer/components/Settings/AITradingConfigTab.tsx` - Configuration UI
+
+- **UI Components** 🎨
+  - AI Auto-Trading toggle button in Chat sidebar (🤖 icon)
+  - New "AI Auto-Trading" tab in Settings dialog
+  - Configuration interface with 5 sections:
+    - Status display (active state, wallet info, balance)
+    - Risk profile settings
+    - Trading limits configuration
+    - Safety settings
+    - Performance statistics display
+
+- **Internationalization** 🌍
+  - Added AI Auto-Trading translations for 4 languages:
+    - English: "Enable AI Auto-Trading" / "Disable AI Auto-Trading"
+    - Portuguese: "Ativar Auto-Trading com IA" / "Desativar Auto-Trading com IA"
+    - Spanish: "Activar Auto-Trading con IA" / "Desactivar Auto-Trading con IA"
+    - French: "Activer Auto-Trading avec IA" / "Désactiver Auto-Trading avec IA"
+
+### Changed
+- **State Management** 📦
+  - Extended `aiStore.ts` with 8 new trading functions:
+    - `toggleAutoTrading()` - Enable/disable auto-trading
+    - `updateTradingConfig()` - Update configuration
+    - `addTrade()` / `updateTrade()` - Trade management
+    - `setTradingAnalysisProgress()` - Analysis state
+    - `setTradingError()` - Error tracking
+    - `calculateTradingStats()` - Statistics computation
+    - `clearTradingHistory()` - Reset trades/stats
+  - Added trading data persistence to `StorageService.ts`
+  - Updated `AIData` interface in `preload.ts` with trading fields
+
+- **AI System** 🧠
+  - Integrated `candleOptimizer` for efficient AI analysis
+  - Trading-specific prompts with 34 technical pattern knowledge
+  - Support for all timeframes (1m, 5m, 15m, 30m, 1h, 4h, 1d)
+  - Interval-based analysis (configurable 1m to 1h)
+
 ## [0.24.0] - 2025-11-23
 
 ### Fixed

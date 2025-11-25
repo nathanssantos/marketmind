@@ -30,6 +30,8 @@ export interface ToolbarProps {
   showCrosshair: boolean;
   showMeasurementRuler: boolean;
   showMeasurementArea: boolean;
+  showStochastic: boolean;
+  showRSI: boolean;
   movingAverages: MovingAverageConfig[];
   isSimulatorActive: boolean;
   isTradingOpen: boolean;
@@ -44,6 +46,8 @@ export interface ToolbarProps {
   onShowCrosshairChange: (show: boolean) => void;
   onShowMeasurementRulerChange: (show: boolean) => void;
   onShowMeasurementAreaChange: (show: boolean) => void;
+  onShowStochasticChange: (show: boolean) => void;
+  onShowRSIChange: (show: boolean) => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onToggleSimulator: () => void;
   onToggleTrading: () => void;
@@ -62,6 +66,8 @@ export const Toolbar = memo(({
   showCrosshair,
   showMeasurementRuler,
   showMeasurementArea,
+  showStochastic,
+  showRSI,
   movingAverages,
   isSimulatorActive,
   isTradingOpen,
@@ -76,6 +82,8 @@ export const Toolbar = memo(({
   onShowCrosshairChange,
   onShowMeasurementRulerChange,
   onShowMeasurementAreaChange,
+  onShowStochasticChange,
+  onShowRSIChange,
   onMovingAveragesChange,
   onToggleSimulator,
   onToggleTrading,
@@ -180,6 +188,28 @@ export const Toolbar = memo(({
               variant={showVolume ? 'solid' : 'ghost'}
             >
               <LuChartBar />
+            </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label={t('chart.controls.stochastic')} showArrow>
+            <IconButton
+              size="2xs"
+              aria-label={t('chart.controls.stochastic')}
+              onClick={() => onShowStochasticChange(!showStochastic)}
+              colorPalette={showStochastic ? 'blue' : 'gray'}
+              variant={showStochastic ? 'solid' : 'ghost'}
+            >
+              <LuChartLine />
+            </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label={t('chart.controls.rsi')} showArrow>
+            <IconButton
+              size="2xs"
+              aria-label={t('chart.controls.rsi')}
+              onClick={() => onShowRSIChange(!showRSI)}
+              colorPalette={showRSI ? 'blue' : 'gray'}
+              variant={showRSI ? 'solid' : 'ghost'}
+            >
+              <LuScan />
             </IconButton>
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.grid')} showArrow>

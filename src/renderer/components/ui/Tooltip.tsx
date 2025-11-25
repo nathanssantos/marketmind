@@ -31,12 +31,14 @@ export const TooltipWrapper = memo(({
       openDelay={300}
       closeDelay={0}
       positioning={{ placement }}
+      unmountOnExit
+      lazyMount
     >
       <Tooltip.Trigger asChild>
         {children}
       </Tooltip.Trigger>
       <Portal>
-        <Tooltip.Positioner zIndex={9999} pointerEvents="none">
+        <Tooltip.Positioner zIndex={9999}>
           <Tooltip.Content
             bg={tooltipBg}
             color="white"
@@ -46,7 +48,6 @@ export const TooltipWrapper = memo(({
             fontSize="sm"
             fontWeight="medium"
             boxShadow="lg"
-            pointerEvents="auto"
             style={{
               '--tooltip-bg': colorMode === 'dark'
                 ? 'var(--chakra-colors-gray-800)'

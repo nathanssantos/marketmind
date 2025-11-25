@@ -1,4 +1,4 @@
-import type { AIMessage, AIProviderType, AIStudyData } from '@shared/types';
+import type { AIMessage, AIProviderType, AIStudyData, AITrade, AITradingConfig, AITradingStats } from '@shared/types';
 import type { Order, Wallet } from '@shared/types/trading';
 import * as electron from 'electron';
 import ElectronStore from 'electron-store';
@@ -49,6 +49,10 @@ interface SecureStoreSchema {
     activeConversationId: string | null;
     settings: AISettings | null;
     enableAIStudies: boolean;
+    isAutoTradingActive?: boolean;
+    tradingConfig?: AITradingConfig;
+    trades?: AITrade[];
+    tradingStats?: AITradingStats | null;
   };
   aiStudies?: Record<string, AIStudyData>;
   version: string;
