@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 export interface CandleTimerProps {
     timeframe: string;
     lastCandleTime?: number | undefined;
+    stochasticPanelHeight?: number;
+    rsiPanelHeight?: number;
 }
 
 const TIMEFRAME_MINUTES: Record<string, number> = {
@@ -40,7 +42,7 @@ const formatTime = (seconds: number): string => {
     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
-export const CandleTimer = ({ timeframe, lastCandleTime }: CandleTimerProps): ReactElement | null => {
+export const CandleTimer = ({ timeframe, lastCandleTime, stochasticPanelHeight = 0, rsiPanelHeight = 0 }: CandleTimerProps): ReactElement | null => {
     const colors = useChartColors();
     const [timeRemaining, setTimeRemaining] = useState<number>(0);
 
@@ -82,8 +84,8 @@ export const CandleTimer = ({ timeframe, lastCandleTime }: CandleTimerProps): Re
     return (
         <Box
             position="absolute"
-            bottom="8px"
-            right="15px"
+            bottom={`${8 + stochasticPanelHeight + rsiPanelHeight}px`}
+            right="4px"
             color={colors.axisLabel}
             fontSize="11px"
             fontFamily="monospace"

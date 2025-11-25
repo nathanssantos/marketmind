@@ -184,8 +184,8 @@ describe('SymbolSelector', () => {
     await user.click(ethOption);
 
     await waitFor(() => {
-      const searchInput = screen.queryByPlaceholderText('symbolSelector.searchPlaceholder');
-      expect(searchInput?.closest('[data-part="content"]')).toHaveAttribute('data-state', 'closed');
+      const trigger = screen.getByRole('button', { name: 'symbolSelector.label' });
+      expect(trigger.closest('[data-part="trigger"]')).toHaveAttribute('data-state', 'closed');
     });
   });
 });

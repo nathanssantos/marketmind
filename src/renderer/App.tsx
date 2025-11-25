@@ -153,6 +153,8 @@ function AppContent(): ReactElement {
   const [showCrosshair, setShowCrosshair] = useLocalStorage('marketmind:showCrosshair', true);
   const [showMeasurementRuler, setShowMeasurementRuler] = useLocalStorage('marketmind:showMeasurementRuler', false);
   const [showMeasurementArea, setShowMeasurementArea] = useLocalStorage('marketmind:showMeasurementArea', false);
+  const [showStochastic, setShowStochastic] = useLocalStorage('marketmind:showStochastic', false);
+  const [showRSI, setShowRSI] = useLocalStorage('marketmind:showRSI', false);
   const [chartType, setChartType] = useLocalStorage<'candlestick' | 'line'>('marketmind:chartType', 'candlestick');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
   const [showOnboarding, setShowOnboarding] = useLocalStorage('marketmind:showOnboarding', true);
@@ -470,6 +472,8 @@ function AppContent(): ReactElement {
         showCrosshair={showCrosshair}
         showMeasurementRuler={showMeasurementRuler}
         showMeasurementArea={showMeasurementArea}
+        showStochastic={showStochastic}
+        showRSI={showRSI}
         movingAverages={movingAverages}
         isSimulatorActive={isSimulatorActive}
         isTradingOpen={isTradingOpen}
@@ -484,14 +488,14 @@ function AppContent(): ReactElement {
         onShowCrosshairChange={setShowCrosshair}
         onShowMeasurementRulerChange={setShowMeasurementRuler}
         onShowMeasurementAreaChange={setShowMeasurementArea}
+        onShowStochasticChange={setShowStochastic}
+        onShowRSIChange={setShowRSI}
         onMovingAveragesChange={setMovingAverages}
         onToggleSimulator={toggleSimulator}
         onToggleTrading={toggleTrading}
         onToggleChat={toggleChat}
         onToggleNews={toggleNews}
-      />
-
-      <MainLayout
+      />      <MainLayout
         onOpenSymbolSelector={() => { }}
         advancedConfig={advancedConfig}
         onAdvancedConfigChange={setAdvancedConfig}
@@ -537,6 +541,8 @@ function AppContent(): ReactElement {
             showCrosshair={showCrosshair}
             showMeasurementRuler={showMeasurementRuler}
             showMeasurementArea={showMeasurementArea}
+            showStochastic={showStochastic}
+            showRSI={showRSI}
             chartType={chartType}
             movingAverages={movingAverages}
             advancedConfig={debouncedAdvancedConfig}

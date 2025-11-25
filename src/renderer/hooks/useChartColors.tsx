@@ -28,6 +28,15 @@ export interface ChartThemeColors extends ChartColors {
       border: string;
     };
   };
+  stochastic: {
+    k: string;
+    d: string;
+    zone: string;
+  };
+  rsi: {
+    line: string;
+    zone: string;
+  };
 }
 
 export const useChartColors = (): ChartThemeColors => {

@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2025-11-24
+
+### Added
+- **Stochastic Oscillator (14,3,3)** 📊
+  - Classic Slow Stochastic implementation
+  - %K line calculated over 14 periods
+  - %D line as 3-period SMA of %K
+  - Overbought zone at 80, oversold zone at 20
+  - Dedicated 80px panel below candlesticks
+  - Visual design:
+    - %K line: Orange, 2.5px width (drawn first)
+    - %D line: Blue, 1.5px width (drawn on top)
+    - Zone lines: Gray dashed lines at 80/20
+    - Top divider line for visual separation
+  - Web worker for background calculation
+  - 18 comprehensive unit tests
+
+- **RSI (2-Period with 95/5 Zones)** 📈
+  - 2-period RSI implementation (aggressive scalping indicator)
+  - Overbought zone at 95, oversold zone at 5
+  - Dedicated 80px panel below Stochastic
+  - Visual design:
+    - RSI line: Purple, 2.5px width
+    - Zone lines: Gray dashed lines at 95/5
+  - Web worker for background calculation
+  - 7 comprehensive unit tests with edge cases
+
+- **UI Integration** 🎛️
+  - Toolbar toggle buttons for both indicators:
+    - Stochastic: LuActivity icon
+    - RSI: LuScan icon
+  - State persistence via localStorage
+  - Dynamic UI positioning:
+    - CandleTimer adjusts bottom position for both panels
+    - ChartNavigation adjusts for combined panel heights
+  - CanvasManager panel height management
+
+- **Internationalization** 🌍
+  - i18n support for Stochastic and RSI
+  - Translations in 4 languages:
+    - English: "Stochastic (14,3,3)", "RSI (2)"
+    - Portuguese: "Estocástico (14,3,3)", "IFR (2)"
+    - Spanish: "Estocástico (14,3,3)", "RSI (2)"
+    - French: "Stochastique (14,3,3)", "RSI (2)"
+
+- **Theme Integration** 🎨
+  - Chakra UI theme colors for indicators:
+    - Stochastic: k=orange, d=blue, zone=gray.400
+    - RSI: line=purple, zone=gray.400
+  - Responsive to light/dark mode
+
+### Fixed
+- **Popover Conditional Rendering** 🔧
+  - Fixed hover bug in symbol selector and settings popovers
+  - Conditional Portal rendering: `{open && <Portal>...</Portal>}`
+  - Z-index set to 999999 for proper layering
+  - Fixed test to check trigger state instead of removed content
+
+- **RSI Calculation Bounds** ✅
+  - Added `j === 0` guard to prevent array out of bounds
+  - Added non-null assertions for type safety
+
+- **Test Timing Issues** ⏱️
+  - Fixed useSymbolSearch test timing with proper waitFor
+  - Extended timeout to 1000ms for async operations
+
 ## [0.25.0] - 2025-11-23
 
 ### Added

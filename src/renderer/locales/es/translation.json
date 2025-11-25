@@ -239,6 +239,8 @@
       "lineChart": "Gráfico de Línea",
       "display": "Visualización",
       "volume": "Volumen",
+      "stochastic": "Estocástico",
+      "rsi": "RSI (2)",
       "grid": "Cuadrícula",
       "currentPrice": "Precio Actual",
       "crosshair": "Reticulado",

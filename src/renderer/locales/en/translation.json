@@ -239,6 +239,8 @@
       "lineChart": "Line Chart",
       "display": "Display",
       "volume": "Volume",
+      "stochastic": "Stochastic",
+      "rsi": "RSI (2)",
       "grid": "Grid",
       "currentPrice": "Current Price",
       "crosshair": "Crosshair",

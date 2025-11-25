@@ -13,10 +13,13 @@ import {
 } from '@/renderer/components/ui/dialog';
 import { Box, Portal } from '@chakra-ui/react';
 import { useChartColors } from '@renderer/hooks/useChartColors';
+import { useRSIWorker } from '@renderer/hooks/useRSIWorker';
+import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
 import { useTradingStore } from '@renderer/store/tradingStore';
 import { calculateMovingAverage } from '@renderer/utils/movingAverages';
+import type { StochasticResult } from '@renderer/utils/stochastic';
 import { CHART_CONFIG } from '@shared/constants';
 import type { AIStudy, Candle, Viewport } from '@shared/types';
 import type { ReactElement } from 'react';
@@ -37,6 +40,8 @@ import { useLineChartRenderer } from './useLineChartRenderer';
 import { useMovingAverageRenderer, type MovingAverageConfig } from './useMovingAverageRenderer';
 import { useOrderDragHandler } from './useOrderDragHandler';
 import { useOrderLinesRenderer } from './useOrderLinesRenderer';
+import { useRSIRenderer } from './useRSIRenderer';
+import { useStochasticRenderer } from './useStochasticRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
 
 export interface ChartCanvasProps {
@@ -48,6 +53,8 @@ export interface ChartCanvasProps {
   onViewportChange?: (viewport: Viewport) => void;
   showGrid?: boolean;
   showVolume?: boolean;
+  showStochastic?: boolean;
+  showRSI?: boolean;
   showCurrentPriceLine?: boolean;
   showCrosshair?: boolean;
   showMeasurementRuler?: boolean;
@@ -71,6 +78,8 @@ export const ChartCanvas = ({
   onViewportChange,
   showGrid = true,
   showVolume = true,
+  showStochastic = false,
+  showRSI = false,
   showCurrentPriceLine = true,
   showCrosshair = true,
   showMeasurementRuler = false,
@@ -201,6 +210,9 @@ export const ChartCanvas = ({
   } | null>(null);
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [orderToClose, setOrderToClose] = useState<string | null>(null);
+  const [stochasticData, setStochasticData] = useState<StochasticResult | null>(null);
+  const { calculateStochastic } = useStochasticWorker();
+  const rsiWorkerData = useRSIWorker(candles, 2, showRSI);
   const {
     canvasRef,
     manager,
@@ -284,7 +296,21 @@ export const ChartCanvas = ({
     hoveredMAIndex,
   });
 
-  const { render: renderCurrentPriceLine, renderLine: renderCurrentPriceLine_Line, renderLabel: renderCurrentPriceLine_Label } = useCurrentPriceLineRenderer({
+  const { render: renderStochastic } = useStochasticRenderer({
+    manager,
+    stochasticData,
+    colors,
+    enabled: showStochastic,
+  });
+
+  const { render: renderRSI } = useRSIRenderer({
+    manager,
+    rsiData: rsiWorkerData,
+    colors,
+    enabled: showRSI,
+  });
+
+  const { renderLine: renderCurrentPriceLine_Line, renderLabel: renderCurrentPriceLine_Label } = useCurrentPriceLineRenderer({
     manager,
     colors,
     enabled: showCurrentPriceLine,
@@ -871,12 +897,43 @@ export const ChartCanvas = ({
   }, []);
 
   useEffect(() => {
+    if (!showStochastic || candles.length === 0) {
+      setStochasticData(null);
+      return;
+    }
+
+    const calculate = async (): Promise<void> => {
+      try {
+        const result = await calculateStochastic(candles, 14, 3);
+        setStochasticData(result);
+      } catch (error) {
+        console.error('Failed to calculate stochastic:', error);
+        setStochasticData(null);
+      }
+    };
+
+    calculate();
+  }, [showStochastic, candles, calculateStochastic]);
+
+  useEffect(() => {
     if (!manager || !advancedConfig) return;
 
     if (advancedConfig.rightMargin !== undefined) {
       manager.setRightMargin(advancedConfig.rightMargin);
     }
   }, [manager, advancedConfig]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = showStochastic ? CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT : 0;
+    manager.setStochasticPanelHeight(height);
+  }, [manager, showStochastic]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = showRSI ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setRSIPanelHeight(height);
+  }, [manager, showRSI]);
 
   useEffect(() => {
     if (!shiftPressed && !altPressed) {
@@ -913,6 +970,8 @@ export const ChartCanvas = ({
         renderLineChart();
       }
       renderMovingAverages();
+      renderStochastic();
+      renderRSI();
       renderCurrentPriceLine_Line();
       renderOrderLines();
 
@@ -1230,10 +1289,14 @@ export const ChartCanvas = ({
         <ChartNavigation
           onResetView={handleResetView}
           onNextCandle={handleNextCandle}
+          stochasticPanelHeight={showStochastic ? CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT : 0}
+          rsiPanelHeight={showRSI ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0}
         />
         <CandleTimer
           timeframe={timeframe}
           lastCandleTime={candles[candles.length - 1]?.timestamp}
+          stochasticPanelHeight={showStochastic ? CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT : 0}
+          rsiPanelHeight={showRSI ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0}
         />
         <ChartTooltip
           candle={tooltipData.candle}

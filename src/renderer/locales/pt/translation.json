@@ -239,6 +239,8 @@
       "lineChart": "Gráfico de Linha",
       "display": "Exibição",
       "volume": "Volume",
+      "stochastic": "Estocástico",
+      "rsi": "IFR (2)",
       "grid": "Grade",
       "currentPrice": "Preço Atual",
       "crosshair": "Mira",
