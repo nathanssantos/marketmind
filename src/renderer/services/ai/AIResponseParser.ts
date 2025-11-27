@@ -4,7 +4,7 @@ export const parseAIResponse = (response: string): AIAnalysisWithStudies => {
   const jsonBlockRegex = /```json\s*\n([\s\S]*?)\n```/;
   const match = response.match(jsonBlockRegex);
 
-  if (!match || !match[1]) {
+  if (!match?.[1]) {
     return {
       analysis: response,
     };
@@ -190,37 +190,6 @@ export const validateAIStudy = (study: unknown): study is AIStudy => {
 
   if ('gapStart' in s && 'gapEnd' in s) {
     return validatePoint(s.gapStart) && validatePoint(s.gapEnd);
-  }
-
-  if ('impulse' in s) {
-    const validImpulse =
-      s.impulse &&
-      typeof s.impulse === 'object' &&
-      'wave1' in s.impulse &&
-      'wave2' in s.impulse &&
-      'wave3' in s.impulse &&
-      'wave4' in s.impulse &&
-      'wave5' in s.impulse;
-
-    if (!validImpulse) return false;
-
-    const waves = [
-      s.impulse.wave1,
-      s.impulse.wave2,
-      s.impulse.wave3,
-      s.impulse.wave4,
-      s.impulse.wave5,
-    ];
-
-    return waves.every(
-      (w: unknown) =>
-        w !== null &&
-        typeof w === 'object' &&
-        'start' in w &&
-        'end' in w &&
-        validatePoint(w.start) &&
-        validatePoint(w.end)
-    );
   }
 
   return false;

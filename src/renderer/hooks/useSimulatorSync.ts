@@ -1,4 +1,4 @@
-import { MarketDataService } from '@renderer/services/market/MarketDataService';
+import type { MarketDataService } from '@renderer/services/market/MarketDataService';
 import { useTradingStore } from '@renderer/store/tradingStore';
 import { useEffect, useRef } from 'react';
 

@@ -54,6 +54,7 @@
       "chart": "Gráfico",
       "ai": "Configuração de IA",
       "aiTrading": "Auto-Trading IA",
+      "patternDetection": "Detecção de Padrões",
       "news": "Notícias",
       "tradingSimulator": "Simulador de Trading",
       "about": "Sobre"
@@ -139,7 +140,21 @@
       "maxTokens": "Máx. Tokens: {{value}}",
       "maxTokensHelper": "Comprimento máximo da resposta",
       "detailedCandles": "Candles Detalhados: {{value}}",
-      "detailedCandlesHelper": "Número de candles recentes enviados com detalhes completos para a IA"
+      "detailedCandlesHelper": "Número de candles recentes enviados com detalhes completos para a IA",
+      "patternDetection": {
+        "title": "Detecção de Padrões",
+        "mode": "Modo de Detecção",
+        "selectMode": "Selecione o modo de detecção",
+        "aiOnly": "Apenas IA - IA detecta e analisa padrões",
+        "algorithmicOnly": "Apenas Algorítmico - Algoritmo detecta padrões localmente",
+        "hybrid": "Híbrido - Algoritmo detecta, IA interpreta (80-90% redução de custo)",
+        "autoDisplay": "Exibir padrões automaticamente no gráfico",
+        "autoDisplayHelper": "Mostrar automaticamente padrões detectados no gráfico ao fazer zoom/pan (analisa apenas candles visíveis)",
+        "minConfidence": "Confiança Mín: {{value}}%",
+        "minConfidenceHelper": "Limite mínimo de confiança para detecção de padrões (50-90%)",
+        "pivotSensitivity": "Sensibilidade de Pivot: {{value}}",
+        "pivotSensitivityHelper": "Janela de lookback para detecção de pontos de pivot (3-10 candles)"
+      }
     },
     "news": {
       "newsApiKey": "Chave de API",
@@ -246,6 +261,7 @@
       "crosshair": "Mira",
       "measurementRuler": "Régua de Medição",
       "measurementArea": "Área de Medição",
+      "autoPatterns": "Detecção Automática de Padrões (candles visíveis)",
       "indicators": "Indicadores",
       "quickSettings": "Configurações Rápidas"
     },
@@ -485,6 +501,134 @@
       "gemini15Flash8b": "$0.0375/$0.15 por 1M tokens"
     }
   },
+  "aiTrading": {
+    "tips": {
+      "experimental": "Auto-Trading IA é experimental e deve ser usado com cautela",
+      "simulator": "Sempre use o Simulador de Trading antes de operar de verdade",
+      "monitor": "Monitore suas posições e ajuste as configurações de risco conforme necessário"
+    },
+    "status": {
+      "title": "Status do Auto-Trading",
+      "autoTrading": "Auto-Trading",
+      "active": "Ativo - IA está analisando e operando",
+      "inactive": "Inativo - Ative no Chat para começar",
+      "activeWallet": "Carteira Ativa: {{name}} ({{currency}})",
+      "balance": "Saldo: {{balance}} {{currency}}"
+    },
+    "riskProfile": {
+      "title": "Perfil de Risco",
+      "tradingStrategy": "Estratégia de Trading",
+      "conservative": "Conservador",
+      "conservativeDesc": "50%+ confiança, 1:2 risco/recompensa",
+      "moderate": "Moderado",
+      "moderateDesc": "40%+ confiança, 1:1.5 risco/recompensa",
+      "aggressive": "Agressivo",
+      "aggressiveDesc": "30%+ confiança, 1:1 risco/recompensa",
+      "maxPositionSize": "Tamanho Máx. de Posição (%)",
+      "accountRisk": "Risco da Conta (%)",
+      "defaultStopLoss": "Stop Loss Padrão (%)",
+      "defaultTakeProfit": "Take Profit Padrão (%)"
+    },
+    "limits": {
+      "title": "Limites de Trading",
+      "analysisInterval": "Intervalo de Análise",
+      "maxTradesPerDay": "Máx. Operações por Dia",
+      "maxTradesPerHour": "Máx. Operações por Hora",
+      "minTimeBetween": "Tempo Mín. Entre Operações (min)",
+      "interval1m": "1 minuto",
+      "interval5m": "5 minutos",
+      "interval15m": "15 minutos",
+      "interval30m": "30 minutos",
+      "interval1h": "1 hora"
+    },
+    "safety": {
+      "title": "Configurações de Segurança",
+      "maxDailyLoss": "Perda Máx. Diária (%)",
+      "emergencyStop": "Parada de Emergência (perdas consecutivas)",
+      "notifyOnTrade": "Notificar ao executar operação",
+      "notifyOnProfit": "Notificar ao fechar com lucro",
+      "notifyOnLoss": "Notificar ao fechar com prejuízo"
+    },
+    "statistics": {
+      "title": "Estatísticas de Trading",
+      "totalTrades": "Total de Operações",
+      "openPositions": "Posições Abertas",
+      "winRate": "Taxa de Acerto",
+      "netPnL": "Lucro/Prejuízo Líquido"
+    },
+    "clearHistory": "Limpar Histórico de Trading"
+  },
+  "patternDetection": {
+    "title": "Configuração de Detecção de Padrões",
+    "resetDefaults": "Restaurar Padrões",
+    "tips": {
+      "sensitivity": "Maior sensibilidade detecta mais pontos de pivô mas pode reduzir a precisão",
+      "confidence": "Confiança mínima filtra padrões baseado no limite de confiabilidade",
+      "period": "Período de formação controla quantos candles analisar para padrões"
+    },
+    "sensitivity": {
+      "label": "Sensibilidade",
+      "helper": "Controla a sensibilidade de detecção de pontos de pivô (0 = rigoroso, 100 = permissivo)"
+    },
+    "minConfidence": {
+      "label": "Confiança Mínima",
+      "helper": "Limite mínimo de confiança para validação de padrões"
+    },
+    "formationPeriod": {
+      "label": "Período de Formação",
+      "helper": "Período de retrospectiva para detecção de padrões",
+      "candles": "candles"
+    },
+    "trendlineAccuracy": {
+      "label": "Precisão da Linha de Tendência (R²)",
+      "helper": "Limite R² para avaliação de qualidade da linha de tendência"
+    },
+    "volumeWeight": {
+      "label": "Peso de Confirmação de Volume",
+      "helper": "Peso do volume no cálculo de confiança"
+    },
+    "enabledPatterns": "Padrões Habilitados",
+    "enabled": "Habilitado",
+    "showPreview": {
+      "label": "Mostrar Pré-visualização de Padrões",
+      "helper": "Exibir pré-visualização de padrões em tempo real no gráfico"
+    },
+    "groups": {
+      "reversalPatterns": "Padrões de Reversão",
+      "continuationPatterns": "Padrões de Continuação",
+      "supportResistance": "Suporte e Resistência",
+      "zones": "Zonas de Negociação",
+      "gaps": "Gaps de Preço"
+    },
+    "patterns": {
+      "head-and-shoulders": "Ombro-Cabeça-Ombro",
+      "inverse-head-and-shoulders": "Ombro-Cabeça-Ombro Invertido",
+      "double-top": "Topo Duplo",
+      "double-bottom": "Fundo Duplo",
+      "triple-top": "Topo Triplo",
+      "triple-bottom": "Fundo Triplo",
+      "rounding-bottom": "Fundo Arredondado",
+      "triangle-ascending": "Triângulo Ascendente",
+      "triangle-descending": "Triângulo Descendente",
+      "triangle-symmetrical": "Triângulo Simétrico",
+      "flag-bullish": "Bandeira de Alta",
+      "flag-bearish": "Bandeira de Baixa",
+      "pennant": "Flâmula",
+      "cup-and-handle": "Xícara com Alça",
+      "wedge-falling": "Cunha Descendente",
+      "wedge-rising": "Cunha Ascendente",
+      "support": "Suporte",
+      "resistance": "Resistência",
+      "buy-zone": "Zona de Compra",
+      "sell-zone": "Zona de Venda",
+      "liquidity-zone": "Zona de Liquidez",
+      "accumulation-zone": "Zona de Acumulação",
+      "gap-common": "Gap Comum",
+      "gap-breakaway": "Gap de Rompimento",
+      "gap-runaway": "Gap de Continuação",
+      "gap-exhaustion": "Gap de Exaustão"
+    }
+  },
   "trading": {
     "simulator": {
       "toggle": "Simulador de Trading",
@@ -603,8 +747,86 @@
     "closeOrderConfirm": "Fechar ordem {{type}} com entrada em {{entry}}? Preço atual: {{current}}",
     "removeSLTPConfirm": "Remover {{type}} de todas as ordens desta posição?",
     "confirmClose": "Confirmar Fechamento",
-    "active": "ATIVA",
+    "active": "ATIVO",
     "pending": "PENDENTE"
+  },
+  "patterns": {
+    "configurePatterns": "Configurar Padrões",
+    "enabledPatterns": "Padrões Habilitados",
+    "basicPatterns": "Básicos",
+    "trendlines": "Tendências",
+    "fibonacci": "Fibonacci",
+    "channels": "Canais",
+    "triangles": "Triângulos",
+    "wedges": "Cunhas",
+    "advancedPatterns": "Avançados",
+    "support": "Suporte",
+    "supportTooltip": "Nível horizontal onde o interesse de compra se concentra, impedindo quedas adicionais. Requer 2+ toques para validação.",
+    "resistance": "Resistência",
+    "resistanceTooltip": "Nível horizontal onde a pressão de venda se concentra, limitando o movimento ascendente. Mais forte com mais toques.",
+    "bullishTrendline": "Tendência de Alta",
+    "bullishTrendlineTooltip": "Linha conectando fundos mais altos, indicando momentum ascendente. Atua como suporte dinâmico durante tendências de alta.",
+    "bearishTrendline": "Tendência de Baixa",
+    "bearishTrendlineTooltip": "Linha conectando topos mais baixos, indicando momentum descendente. Atua como resistência dinâmica durante tendências de baixa.",
+    "fibonacciRetracement": "Retração de Fibonacci",
+    "fibonacciRetracementTooltip": "Níveis-chave (23,6%, 38,2%, 50%, 61,8%, 78,6%) onde o preço frequentemente encontra suporte ou resistência durante correções.",
+    "ascendingChannel": "Canal Ascendente",
+    "ascendingChannelTooltip": "Linhas paralelas ascendentes contendo a ação do preço. Padrão de continuação de alta com suporte e resistência claros.",
+    "descendingChannel": "Canal Descendente",
+    "descendingChannelTooltip": "Linhas paralelas descendentes contendo a ação do preço. Padrão de continuação de baixa indicando tendência de queda sustentada.",
+    "ascendingTriangle": "Triângulo Ascendente",
+    "ascendingTriangleTooltip": "Topo plano com fundos ascendentes. Padrão de alta mostrando compradores ficando mais agressivos. Rompimento geralmente para cima.",
+    "descendingTriangle": "Triângulo Descendente",
+    "descendingTriangleTooltip": "Fundo plano com topos descendentes. Padrão de baixa mostrando vendedores ficando mais agressivos. Rompimento geralmente para baixo.",
+    "symmetricalTriangle": "Triângulo Simétrico",
+    "symmetricalTriangleTooltip": "Linhas de tendência convergentes com topos mais baixos e fundos mais altos. Padrão de consolidação - direção do rompimento incerta.",
+    "risingWedge": "Cunha Ascendente",
+    "risingWedgeTooltip": "Ambas as linhas inclinam para cima mas convergem. Padrão de reversão de baixa - momentum enfraquecendo apesar dos preços mais altos.",
+    "fallingWedge": "Cunha Descendente",
+    "fallingWedgeTooltip": "Ambas as linhas inclinam para baixo mas convergem. Padrão de reversão de alta - pressão de venda diminuindo.",
+    "headAndShoulders": "Ombro-Cabeça-Ombro",
+    "headAndShouldersTooltip": "Três topos com o do meio mais alto. Padrão de reversão de baixa sinalizando exaustão da tendência e possível queda.",
+    "inverseHeadAndShoulders": "OCO Invertido",
+    "inverseHeadAndShouldersTooltip": "Três fundos com o do meio mais baixo. Padrão de reversão de alta indicando formação de fundo e possível alta.",
+    "doubleTop": "Topo Duplo",
+    "doubleTopTooltip": "Dois topos em preço similar (forma de 'M'). Reversão de baixa após tentativa falhada de romper resistência.",
+    "doubleBottom": "Fundo Duplo",
+    "doubleBottomTooltip": "Dois fundos em preço similar (forma de 'W'). Reversão de alta após suporte segurar duas vezes.",
+    "tripleTop": "Topo Triplo",
+    "tripleTopTooltip": "Três topos em preço similar. Padrão de reversão de baixa após múltiplas tentativas falhas de rompimento.",
+    "tripleBottom": "Fundo Triplo",
+    "tripleBottomTooltip": "Três fundos em preço similar. Padrão de reversão de alta após múltiplos suportes.",
+    "flagBullish": "Bandeira de Alta",
+    "flagBullishTooltip": "Consolidação curta após forte movimento de alta, geralmente seguida de continuação para cima.",
+    "flagBearish": "Bandeira de Baixa",
+    "flagBearishTooltip": "Consolidação curta após forte movimento de baixa, geralmente seguida de continuação para baixo.",
+    "pennant": "Pavilhão",
+    "pennantTooltip": "Pequeno triângulo simétrico após movimento brusco, padrão típico de continuação.",
+    "cupAndHandle": "Copo e Alça",
+    "cupAndHandleTooltip": "Fundo arredondado seguido de pequena correção (alça). Padrão de continuação de alta.",
+    "roundingBottom": "Fundo Arredondado",
+    "roundingBottomTooltip": "Mudança gradual de tendência de baixa para alta, formando um fundo arredondado. Reversão de alta.",
+    "gapCommon": "Gap Comum",
+    "gapCommonTooltip": "Gap de preço sem grande significado, geralmente preenchido rapidamente.",
+    "gapBreakaway": "Gap de Ruptura",
+    "gapBreakawayTooltip": "Gap no fim de um padrão, sinalizando início de nova tendência.",
+    "gapRunaway": "Gap de Fuga",
+    "gapRunawayTooltip": "Gap no meio de uma tendência, confirmando sua força.",
+    "gapExhaustion": "Gap de Exaustão",
+    "gapExhaustionTooltip": "Gap próximo ao fim de uma tendência, geralmente sinalizando reversão.",
+    "liquidityZone": "Zona de Liquidez",
+    "liquidityZoneTooltip": "Área de preço com alta atividade, atuando como suporte ou resistência.",
+    "sellZone": "Zona de Venda",
+    "sellZoneTooltip": "Área onde a pressão vendedora tende a aumentar.",
+    "buyZone": "Zona de Compra",
+    "buyZoneTooltip": "Área onde a pressão compradora tende a aumentar.",
+    "accumulationZone": "Zona de Acumulação",
+    "accumulationZoneTooltip": "Área onde grandes players acumulam posições, geralmente antes de uma alta.",
+    "horizontalChannel": "Canal Horizontal",
+    "horizontalChannelTooltip": "Linhas horizontais paralelas contendo o preço. Padrão de mercado lateral.",
+    "fibonacciExtension": "Extensão de Fibonacci",
+    "fibonacciExtensionTooltip": "Níveis usados para projetar possíveis alvos além da tendência atual.",
+    "extraPatterns": "Extras"
   },
   "about": {
     "version": "Versão {{version}}",

@@ -3,11 +3,13 @@ import { Field } from '@/renderer/components/ui/field';
 import { PasswordInput } from '@/renderer/components/ui/password-input';
 import { Select } from '@/renderer/components/ui/select';
 import { Slider } from '@/renderer/components/ui/slider';
+import { Switch } from '@/renderer/components/ui/switch';
 import { DEFAULT_AI_SETTINGS } from '@/renderer/constants/defaults';
 import { useCustomPrompts } from '@/renderer/hooks/useCustomPrompts';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useSecureStorage } from '@/renderer/hooks/useSecureStorage';
-import { useAIStore } from '@/renderer/store';
+import { useAIStore, useUIStore } from '@/renderer/store';
+import type { PatternDetectionMode } from '@/renderer/store/uiStore';
 import {
   Accordion,
   Box,
@@ -52,6 +54,12 @@ const DEFAULT_MODELS: Record<AIProviderType, string> = {
 export const AIConfigTab = () => {
   const { t } = useTranslation();
   const { settings, updateSettings } = useAIStore();
+  const {
+    patternDetectionMode,
+    setPatternDetectionMode,
+    algorithmicDetectionSettings,
+    setAlgorithmicDetectionSettings,
+  } = useUIStore();
   const {
     loading: isLoadingSecureStorage,
     error: secureStorageError,
@@ -340,6 +348,86 @@ export const AIConfigTab = () => {
             width="full"
           />
         </Field>
+      </Box>
+
+      <Separator />
+
+      <Box>
+        <Text fontWeight="medium" fontSize="md" mb={4}>
+          {t('settings.ai.patternDetection.title')}
+        </Text>
+
+        <Field label={t('settings.ai.patternDetection.mode')}>
+          <Select
+            value={patternDetectionMode}
+            onChange={(value) => setPatternDetectionMode(value as PatternDetectionMode)}
+            options={[
+              { value: 'ai-only', label: t('settings.ai.patternDetection.aiOnly') },
+              { value: 'algorithmic-only', label: t('settings.ai.patternDetection.algorithmicOnly') },
+              { value: 'hybrid', label: t('settings.ai.patternDetection.hybrid') },
+            ]}
+            placeholder={t('settings.ai.patternDetection.selectMode')}
+            usePortal={false}
+          />
+        </Field>
+
+        {(patternDetectionMode === 'algorithmic-only' || patternDetectionMode === 'hybrid') && (
+          <Stack gap={4} mt={4}>
+            <Box>
+              <Switch
+                checked={algorithmicDetectionSettings.autoDisplayPatterns}
+                onCheckedChange={(checked) =>
+                  setAlgorithmicDetectionSettings({ autoDisplayPatterns: checked })
+                }
+              >
+                {t('settings.ai.patternDetection.autoDisplay')}
+              </Switch>
+              <Text fontSize="xs" color="fg.muted" mt={1}>
+                {t('settings.ai.patternDetection.autoDisplayHelper')}
+              </Text>
+            </Box>
+
+            <Field
+              label={t('settings.ai.patternDetection.minConfidence', {
+                value: (algorithmicDetectionSettings.minConfidence * 100).toFixed(0),
+              })}
+              helperText={t('settings.ai.patternDetection.minConfidenceHelper')}
+            >
+              <Slider
+                value={[algorithmicDetectionSettings.minConfidence]}
+                onValueChange={(value) => {
+                  if (value[0] !== undefined) {
+                    setAlgorithmicDetectionSettings({ minConfidence: value[0] });
+                  }
+                }}
+                min={0.5}
+                max={0.9}
+                step={0.05}
+                width="full"
+              />
+            </Field>
+
+            <Field
+              label={t('settings.ai.patternDetection.pivotSensitivity', {
+                value: algorithmicDetectionSettings.pivotSensitivity,
+              })}
+              helperText={t('settings.ai.patternDetection.pivotSensitivityHelper')}
+            >
+              <Slider
+                value={[algorithmicDetectionSettings.pivotSensitivity]}
+                onValueChange={(value) => {
+                  if (value[0] !== undefined) {
+                    setAlgorithmicDetectionSettings({ pivotSensitivity: value[0] });
+                  }
+                }}
+                min={3}
+                max={10}
+                step={1}
+                width="full"
+              />
+            </Field>
+          </Stack>
+        )}
       </Box>
 
       <Separator />

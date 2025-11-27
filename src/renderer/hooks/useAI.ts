@@ -3,6 +3,7 @@ import { useCallback, useMemo } from 'react';
 import { useChartContext } from '../context/ChartContext';
 import { AIService, type AIServiceConfig } from '../services/ai';
 import { useAIStore } from '../store/aiStore';
+import { useUIStore } from '../store/uiStore';
 
 let defaultAIServiceInstance: AIService | null = null;
 
@@ -16,7 +17,7 @@ const getDefaultAIService = (config: AIServiceConfig): AIService => {
 };
 
 const formatAIError = (error: Error, provider?: string): string => {
-  let errorMessage = error.message;
+  const errorMessage = error.message;
   
   const providerName = provider === 'anthropic' ? 'Claude' : 
                       provider === 'openai' ? 'OpenAI' : 
@@ -83,6 +84,7 @@ export const useAI = (options?: UseAIOptions) => {
   } = useAIStore();
 
   const { chartData } = useChartContext();
+  const { patternDetectionMode } = useUIStore();
 
   const aiService = useMemo(() => {
     if (options?.service) {
@@ -95,6 +97,7 @@ export const useAI = (options?: UseAIOptions) => {
       const config: AIServiceConfig = {
         provider: settings.provider,
         enableAIStudies,
+        useAlgorithmicDetection: patternDetectionMode === 'hybrid' || patternDetectionMode === 'algorithmic-only',
       };
 
       if (settings.model) config.model = settings.model;
@@ -107,7 +110,7 @@ export const useAI = (options?: UseAIOptions) => {
       console.error('Failed to initialize AI service:', error);
       return null;
     }
-  }, [settings, options?.service, enableAIStudies]);
+  }, [settings, options?.service, enableAIStudies, patternDetectionMode]);
 
   const isConfigured = useMemo(() => {
     return settings !== null;

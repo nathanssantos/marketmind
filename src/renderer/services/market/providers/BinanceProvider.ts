@@ -8,7 +8,8 @@ import {
     type WebSocketSubscription,
     type WebSocketUpdate,
 } from '@shared/types';
-import axios, { AxiosInstance } from 'axios';
+import type { AxiosInstance } from 'axios';
+import axios from 'axios';
 
 interface BinanceKline {
   0: number;
@@ -178,20 +179,20 @@ export class BinanceProvider extends BaseMarketProvider {
     }
 
     const normalizedSymbol = this.normalizeSymbol(symbol);
-    const symbolData = this.symbolsCache!.find(s => s.symbol === normalizedSymbol);
+    const symbolData = this.symbolsCache.find(s => s.symbol === normalizedSymbol);
 
     if (!symbolData) {
       this.handleError(new Error(`Symbol ${symbol} not found`), 'Invalid symbol');
     }
 
-    const priceFilter = symbolData!.filters.find(f => f.filterType === 'PRICE_FILTER');
-    const lotSizeFilter = symbolData!.filters.find(f => f.filterType === 'LOT_SIZE');
+    const priceFilter = symbolData.filters.find(f => f.filterType === 'PRICE_FILTER');
+    const lotSizeFilter = symbolData.filters.find(f => f.filterType === 'LOT_SIZE');
 
     return {
-      symbol: symbolData!.symbol,
-      baseAsset: symbolData!.baseAsset,
-      quoteAsset: symbolData!.quoteAsset,
-      displayName: `${symbolData!.baseAsset}/${symbolData!.quoteAsset}`,
+      symbol: symbolData.symbol,
+      baseAsset: symbolData.baseAsset,
+      quoteAsset: symbolData.quoteAsset,
+      displayName: `${symbolData.baseAsset}/${symbolData.quoteAsset}`,
       minPrice: parseFloat(priceFilter?.minPrice || '0'),
       maxPrice: parseFloat(priceFilter?.maxPrice || '0'),
       tickSize: parseFloat(priceFilter?.tickSize || '0'),

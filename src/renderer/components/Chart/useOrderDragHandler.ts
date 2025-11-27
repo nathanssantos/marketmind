@@ -27,7 +27,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       if (!config.enabled) return false;
 
       const order = config.orders.find((o) => o.id === sltpInfo.orderId);
-      if (!order || order.status !== 'active') return false;
+      if (order?.status !== 'active') return false;
 
       setDraggedOrder(order);
       setDragType(sltpInfo.type);

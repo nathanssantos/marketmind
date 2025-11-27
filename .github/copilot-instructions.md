@@ -588,4 +588,4 @@ Before committing:
 
 **Last Updated:** November 2025
 **Version:** 1.4
-**Project Version:** 0.22.0
+**Project Version:** 0.28.0

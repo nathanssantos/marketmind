@@ -148,8 +148,7 @@ src/renderer/utils/patternDetection/
 │   │   ├── cupAndHandle.ts           # Cup and handle
 │   │   ├── flagsAndPennants.ts       # Flags and pennants
 │   │   └── roundingBottom.ts         # Rounding bottom
-│   ├── gaps.ts                       # Gap detection (4 types)
-│   └── elliottWave.ts                # Elliott Wave (low priority)
+│   └── gaps.ts                       # Gap detection (4 types)
 │
 └── services/
     └── PatternDetectionService.ts    # Main orchestrator

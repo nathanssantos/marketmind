@@ -67,7 +67,7 @@ export const useVolumeRenderer = ({
       
       const rgbMatch = baseColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
       const volumeOpacity = isHovered ? opacity * 2.5 : opacity;
-      const color = rgbMatch && rgbMatch[1] && rgbMatch[2] && rgbMatch[3]
+      const color = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
         ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${volumeOpacity})`
         : `rgba(120, 120, 120, ${volumeOpacity})`;
 

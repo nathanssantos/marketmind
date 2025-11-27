@@ -54,6 +54,7 @@
       "chart": "Gráfico",
       "ai": "Configuración de IA",
       "aiTrading": "Auto-Trading IA",
+      "patternDetection": "Detección de Patrones",
       "news": "Noticias",
       "tradingSimulator": "Simulador de Trading",
       "about": "Acerca de"
@@ -139,7 +140,21 @@
       "maxTokens": "Máx. Tokens: {{value}}",
       "maxTokensHelper": "Longitud máxima de respuesta",
       "detailedCandles": "Velas Detalladas: {{value}}",
-      "detailedCandlesHelper": "Número de velas recientes enviadas con detalles completos a la IA"
+      "detailedCandlesHelper": "Número de velas recientes enviadas con detalles completos a la IA",
+      "patternDetection": {
+        "title": "Detección de Patrones",
+        "mode": "Modo de Detección",
+        "selectMode": "Seleccione el modo de detección",
+        "aiOnly": "Solo IA - La IA detecta y analiza patrones",
+        "algorithmicOnly": "Solo Algorítmico - Algoritmo detecta patrones localmente",
+        "hybrid": "Híbrido - Algoritmo detecta, IA interpreta (80-90% reducción de costo)",
+        "autoDisplay": "Mostrar patrones automáticamente en el gráfico",
+        "autoDisplayHelper": "Mostrar automáticamente patrones detectados en el gráfico al hacer zoom/pan (analiza solo velas visibles)",
+        "minConfidence": "Confianza Mín: {{value}}%",
+        "minConfidenceHelper": "Umbral mínimo de confianza para detección de patrones (50-90%)",
+        "pivotSensitivity": "Sensibilidad de Pivot: {{value}}",
+        "pivotSensitivityHelper": "Ventana de lookback para detección de puntos pivot (3-10 velas)"
+      }
     },
     "news": {
       "newsApiKey": "Clave de API",
@@ -246,6 +261,7 @@
       "crosshair": "Reticulado",
       "measurementRuler": "Regla de Medición",
       "measurementArea": "Área de Medición",
+      "autoPatterns": "Detección Automática de Patrones (velas visibles)",
       "indicators": "Indicadores",
       "quickSettings": "Configuración Rápida"
     },
@@ -485,6 +501,134 @@
       "gemini15Flash8b": "$0.0375/$0.15 por 1M tokens"
     }
   },
+  "aiTrading": {
+    "tips": {
+      "experimental": "Auto-Trading IA es experimental y debe usarse con precaución",
+      "simulator": "Siempre use el Simulador de Trading antes de operar de verdad",
+      "monitor": "Monitoree sus posiciones y ajuste la configuración de riesgo según sea necesario"
+    },
+    "status": {
+      "title": "Estado del Auto-Trading",
+      "autoTrading": "Auto-Trading",
+      "active": "Activo - IA está analizando y operando",
+      "inactive": "Inactivo - Active en Chat para comenzar",
+      "activeWallet": "Cartera Activa: {{name}} ({{currency}})",
+      "balance": "Saldo: {{balance}} {{currency}}"
+    },
+    "riskProfile": {
+      "title": "Perfil de Riesgo",
+      "tradingStrategy": "Estrategia de Trading",
+      "conservative": "Conservador",
+      "conservativeDesc": "50%+ confianza, 1:2 riesgo/recompensa",
+      "moderate": "Moderado",
+      "moderateDesc": "40%+ confianza, 1:1.5 riesgo/recompensa",
+      "aggressive": "Agresivo",
+      "aggressiveDesc": "30%+ confianza, 1:1 riesgo/recompensa",
+      "maxPositionSize": "Tamaño Máx. de Posición (%)",
+      "accountRisk": "Riesgo de Cuenta (%)",
+      "defaultStopLoss": "Stop Loss Predeterminado (%)",
+      "defaultTakeProfit": "Take Profit Predeterminado (%)"
+    },
+    "limits": {
+      "title": "Límites de Trading",
+      "analysisInterval": "Intervalo de Análisis",
+      "maxTradesPerDay": "Máx. Operaciones por Día",
+      "maxTradesPerHour": "Máx. Operaciones por Hora",
+      "minTimeBetween": "Tiempo Mín. Entre Operaciones (min)",
+      "interval1m": "1 minuto",
+      "interval5m": "5 minutos",
+      "interval15m": "15 minutos",
+      "interval30m": "30 minutos",
+      "interval1h": "1 hora"
+    },
+    "safety": {
+      "title": "Configuración de Seguridad",
+      "maxDailyLoss": "Pérdida Máx. Diaria (%)",
+      "emergencyStop": "Parada de Emergencia (pérdidas consecutivas)",
+      "notifyOnTrade": "Notificar al ejecutar operación",
+      "notifyOnProfit": "Notificar al cerrar con ganancia",
+      "notifyOnLoss": "Notificar al cerrar con pérdida"
+    },
+    "statistics": {
+      "title": "Estadísticas de Trading",
+      "totalTrades": "Total de Operaciones",
+      "openPositions": "Posiciones Abiertas",
+      "winRate": "Tasa de Acierto",
+      "netPnL": "Ganancia/Pérdida Neta"
+    },
+    "clearHistory": "Limpiar Historial de Trading"
+  },
+  "patternDetection": {
+    "title": "Configuración de Detección de Patrones",
+    "resetDefaults": "Restaurar Valores Predeterminados",
+    "tips": {
+      "sensitivity": "Mayor sensibilidad detecta más puntos de pivote pero puede reducir la precisión",
+      "confidence": "Confianza mínima filtra patrones basado en umbral de confiabilidad",
+      "period": "Período de formación controla cuántas velas analizar para patrones"
+    },
+    "sensitivity": {
+      "label": "Sensibilidad",
+      "helper": "Controla la sensibilidad de detección de puntos de pivote (0 = estricto, 100 = permisivo)"
+    },
+    "minConfidence": {
+      "label": "Confianza Mínima",
+      "helper": "Umbral mínimo de confianza para validación de patrones"
+    },
+    "formationPeriod": {
+      "label": "Período de Formación",
+      "helper": "Período de retrospectiva para detección de patrones",
+      "candles": "velas"
+    },
+    "trendlineAccuracy": {
+      "label": "Precisión de Línea de Tendencia (R²)",
+      "helper": "Umbral R² para evaluación de calidad de línea de tendencia"
+    },
+    "volumeWeight": {
+      "label": "Peso de Confirmación de Volumen",
+      "helper": "Peso del volumen en el cálculo de confianza"
+    },
+    "enabledPatterns": "Patrones Habilitados",
+    "enabled": "Habilitado",
+    "showPreview": {
+      "label": "Mostrar Vista Previa de Patrones",
+      "helper": "Mostrar vista previa de patrones en tiempo real en el gráfico"
+    },
+    "groups": {
+      "reversalPatterns": "Patrones de Reversión",
+      "continuationPatterns": "Patrones de Continuación",
+      "supportResistance": "Soporte y Resistencia",
+      "zones": "Zonas de Trading",
+      "gaps": "Gaps de Precio"
+    },
+    "patterns": {
+      "head-and-shoulders": "Hombro-Cabeza-Hombro",
+      "inverse-head-and-shoulders": "Hombro-Cabeza-Hombro Invertido",
+      "double-top": "Doble Techo",
+      "double-bottom": "Doble Suelo",
+      "triple-top": "Triple Techo",
+      "triple-bottom": "Triple Suelo",
+      "rounding-bottom": "Suelo Redondeado",
+      "triangle-ascending": "Triángulo Ascendente",
+      "triangle-descending": "Triángulo Descendente",
+      "triangle-symmetrical": "Triángulo Simétrico",
+      "flag-bullish": "Bandera Alcista",
+      "flag-bearish": "Bandera Bajista",
+      "pennant": "Banderín",
+      "cup-and-handle": "Taza con Asa",
+      "wedge-falling": "Cuña Descendente",
+      "wedge-rising": "Cuña Ascendente",
+      "support": "Soporte",
+      "resistance": "Resistencia",
+      "buy-zone": "Zona de Compra",
+      "sell-zone": "Zona de Venta",
+      "liquidity-zone": "Zona de Liquidez",
+      "accumulation-zone": "Zona de Acumulación",
+      "gap-common": "Gap Común",
+      "gap-breakaway": "Gap de Ruptura",
+      "gap-runaway": "Gap de Continuación",
+      "gap-exhaustion": "Gap de Agotamiento"
+    }
+  },
   "trading": {
     "simulator": {
       "toggle": "Simulador de Trading",
@@ -603,8 +747,86 @@
     "closeOrderConfirm": "¿Cerrar orden {{type}} con entrada en {{entry}}? Precio actual: {{current}}",
     "removeSLTPConfirm": "¿Eliminar {{type}} de todas las órdenes en esta posición?",
     "confirmClose": "Confirmar Cierre",
-    "active": "ACTIVA",
+    "active": "ACTIVO",
     "pending": "PENDIENTE"
+  },
+  "patterns": {
+    "configurePatterns": "Configurar Patrones",
+    "enabledPatterns": "Patrones Habilitados",
+    "basicPatterns": "Básicos",
+    "trendlines": "Tendencias",
+    "fibonacci": "Fibonacci",
+    "channels": "Canales",
+    "triangles": "Triángulos",
+    "wedges": "Cuñas",
+    "advancedPatterns": "Avanzados",
+    "support": "Soporte",
+    "supportTooltip": "Nivel horizontal donde se concentra el interés de compra, evitando mayores caídas. Requiere 2+ toques para validación.",
+    "resistance": "Resistencia",
+    "resistanceTooltip": "Nivel horizontal donde se concentra la presión de venta, limitando el movimiento alcista. Más fuerte con más toques.",
+    "bullishTrendline": "Tendencia Alcista",
+    "bullishTrendlineTooltip": "Línea conectando mínimos más altos, indicando momentum alcista. Actúa como soporte dinámico durante tendencias alcistas.",
+    "bearishTrendline": "Tendencia Bajista",
+    "bearishTrendlineTooltip": "Línea conectando máximos más bajos, indicando momentum bajista. Actúa como resistencia dinámica durante tendencias bajistas.",
+    "fibonacciRetracement": "Retroceso de Fibonacci",
+    "fibonacciRetracementTooltip": "Niveles clave (23,6%, 38,2%, 50%, 61,8%, 78,6%) donde el precio a menudo encuentra soporte o resistencia durante retrocesos.",
+    "ascendingChannel": "Canal Ascendente",
+    "ascendingChannelTooltip": "Líneas paralelas ascendentes conteniendo la acción del precio. Patrón de continuación alcista con soporte y resistencia claros.",
+    "descendingChannel": "Canal Descendente",
+    "descendingChannelTooltip": "Líneas paralelas descendentes conteniendo la acción del precio. Patrón de continuación bajista indicando tendencia bajista sostenida.",
+    "ascendingTriangle": "Triángulo Ascendente",
+    "ascendingTriangleTooltip": "Techo plano con mínimos ascendentes. Patrón alcista mostrando compradores cada vez más agresivos. Ruptura generalmente hacia arriba.",
+    "descendingTriangle": "Triángulo Descendente",
+    "descendingTriangleTooltip": "Suelo plano con máximos descendentes. Patrón bajista mostrando vendedores cada vez más agresivos. Ruptura generalmente hacia abajo.",
+    "symmetricalTriangle": "Triángulo Simétrico",
+    "symmetricalTriangleTooltip": "Líneas de tendencia convergentes con máximos más bajos y mínimos más altos. Patrón de consolidación - dirección de ruptura incierta.",
+    "risingWedge": "Cuña Ascendente",
+    "risingWedgeTooltip": "Ambas líneas inclinadas hacia arriba pero convergentes. Patrón de reversión bajista - momentum debilitándose a pesar de precios más altos.",
+    "fallingWedge": "Cuña Descendente",
+    "fallingWedgeTooltip": "Ambas líneas inclinadas hacia abajo pero convergentes. Patrón de reversión alcista - presión de venta disminuyendo.",
+    "headAndShoulders": "Hombro-Cabeza-Hombro",
+    "headAndShouldersTooltip": "Tres picos con el del medio más alto. Patrón de reversión bajista señalando agotamiento de tendencia y posible caída.",
+    "inverseHeadAndShoulders": "HCH Invertido",
+    "inverseHeadAndShouldersTooltip": "Tres valles con el del medio más bajo. Patrón de reversión alcista indicando formación de suelo y posible subida.",
+    "doubleTop": "Doble Techo",
+    "doubleTopTooltip": "Dos picos a precio similar (forma de 'M'). Reversión bajista tras intento fallido de romper resistencia.",
+    "doubleBottom": "Doble Suelo",
+    "doubleBottomTooltip": "Dos valles a precio similar (forma de 'W'). Reversión alcista tras soporte aguantando dos veces.",
+    "tripleTop": "Triple Techo",
+    "tripleTopTooltip": "Tres picos a precio similar. Patrón de reversión bajista tras varios intentos fallidos de ruptura.",
+    "tripleBottom": "Triple Suelo",
+    "tripleBottomTooltip": "Tres valles a precio similar. Patrón de reversión alcista tras varios soportes.",
+    "flagBullish": "Bandera Alcista",
+    "flagBullishTooltip": "Consolidación corta tras fuerte subida, normalmente seguida de continuación alcista.",
+    "flagBearish": "Bandera Bajista",
+    "flagBearishTooltip": "Consolidación corta tras fuerte bajada, normalmente seguida de continuación bajista.",
+    "pennant": "Banderín",
+    "pennantTooltip": "Pequeño triángulo simétrico tras un movimiento brusco, patrón típico de continuación.",
+    "cupAndHandle": "Taza con Asa",
+    "cupAndHandleTooltip": "Fondo redondeado seguido de pequeña corrección (asa). Patrón de continuación alcista.",
+    "roundingBottom": "Fondo Redondeado",
+    "roundingBottomTooltip": "Cambio gradual de tendencia bajista a alcista, formando un fondo redondeado. Reversión alcista.",
+    "gapCommon": "Gap Común",
+    "gapCommonTooltip": "Gap de precio sin gran significado, normalmente se rellena rápido.",
+    "gapBreakaway": "Gap de Ruptura",
+    "gapBreakawayTooltip": "Gap al final de un patrón, señalando inicio de nueva tendencia.",
+    "gapRunaway": "Gap de Fuga",
+    "gapRunawayTooltip": "Gap en medio de una tendencia, confirmando su fuerza.",
+    "gapExhaustion": "Gap de Agotamiento",
+    "gapExhaustionTooltip": "Gap cerca del final de una tendencia, normalmente señalando reversión.",
+    "liquidityZone": "Zona de Liquidez",
+    "liquidityZoneTooltip": "Área de precio con alta actividad, actuando como soporte o resistencia.",
+    "sellZone": "Zona de Venta",
+    "sellZoneTooltip": "Área donde la presión vendedora tiende a aumentar.",
+    "buyZone": "Zona de Compra",
+    "buyZoneTooltip": "Área donde la presión compradora tiende a aumentar.",
+    "accumulationZone": "Zona de Acumulación",
+    "accumulationZoneTooltip": "Área donde grandes jugadores acumulan posiciones, normalmente antes de una subida.",
+    "horizontalChannel": "Canal Horizontal",
+    "horizontalChannelTooltip": "Líneas horizontales paralelas conteniendo el precio. Patrón de mercado lateral.",
+    "fibonacciExtension": "Extensión de Fibonacci",
+    "fibonacciExtensionTooltip": "Niveles usados para proyectar posibles objetivos más allá de la tendencia actual.",
+    "extraPatterns": "Extras"
   },
   "about": {
     "version": "Versión {{version}}",

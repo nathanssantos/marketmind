@@ -121,10 +121,6 @@ export class CanvasManager {
     return { ...this.dirtyFlags };
   }
 
-  private triggerRender(): void {
-    this.scheduleRender();
-  }
-
   private initialize(): void {
     this.ctx = setupCanvas(this.canvas);
     this.updateDimensions();
@@ -296,6 +292,15 @@ export class CanvasManager {
     const widthPerCandle = effectiveWidth / visibleRange;
     const relativeIndex = index - this.viewport.start;
     return relativeIndex * widthPerCandle;
+  }
+
+  public indexToCenterX(index: number): number {
+    if (!this.dimensions) return 0;
+    const effectiveWidth = this.dimensions.chartWidth - this.rightMargin;
+    const visibleRange = this.viewport.end - this.viewport.start;
+    const widthPerCandle = effectiveWidth / visibleRange;
+    const relativeIndex = index - this.viewport.start;
+    return relativeIndex * widthPerCandle + widthPerCandle / 2;
   }
 
   public xToIndex(x: number): number {

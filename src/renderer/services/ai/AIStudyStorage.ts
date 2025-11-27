@@ -1,24 +1,6 @@
 import type { AIStudyData } from '@shared/types';
 
 class AIStudyStorageService {
-  private async getAllStudies(): Promise<Record<string, AIStudyData>> {
-    try {
-      const result = await window.electron.secureStorage.getAIStudies();
-      return result.success ? result.data : {};
-    } catch (error) {
-      console.error('Error loading AI studies:', error);
-      return {};
-    }
-  }
-
-  private async saveAllStudies(studies: Record<string, AIStudyData>): Promise<void> {
-    try {
-      await window.electron.secureStorage.setAIStudies(studies);
-    } catch (error) {
-      console.error('Error saving AI studies:', error);
-    }
-  }
-
   async getStudiesForSymbol(symbol: string): Promise<AIStudyData | null> {
     try {
       const result = await window.electron.secureStorage.getAIStudiesForSymbol(symbol);

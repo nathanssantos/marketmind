@@ -49,7 +49,7 @@ const MAX_SIMPLIFIED_CANDLES = 1000;    // Até 1000 candles simplificados
 - Padrões de curto prazo: 50-100 candles ✅
 - Médias móveis longas (200-day MA): 200+ candles ✅
 - Fibonacci e suportes/resistências: 500+ candles ✅
-- Elliott Waves e padrões complexos: 1000+ candles ✅
+- Padrões complexos: 1000+ candles ✅
 
 ---
 
@@ -265,7 +265,6 @@ const quickAnalyze = useCallback(
 | Double/Triple Top/Bottom | 50-100 | 100-200 | 1020 | ✅ |
 | Triangles, Wedges | 30-50 | 50-150 | 1020 | ✅ |
 | Fibonacci Retracement | 30-50 | 100-200 | 1020 | ✅ |
-| Elliott Waves | 100-200 | 500-1000 | 1020 | ✅ |
 | Cup & Handle | 200-300 | 500-1000 | 1020 | ✅ |
 | Gaps | 20-30 | 50-100 | 1020 | ✅ |
 
@@ -312,11 +311,7 @@ const quickAnalyze = useCallback(
    - Cup & Handle: 7-65 semanas (490-455 candles diários)
    - Sistema atual: ✅ 1020 candles suficiente
 
-3. **Elliott Wave Theory**
-   - Requer centenas de candles para identificar ondas
-   - Sistema atual: ✅ 1020 candles ideal
-
-4. **Moving Averages**
+3. **Moving Averages**
    - MA200 requer mínimo 200 candles
    - Sistema atual: ✅ 1020 candles excelente
 

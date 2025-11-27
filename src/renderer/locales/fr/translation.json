@@ -54,6 +54,7 @@
       "chart": "Graphique",
       "ai": "Configuration IA",
       "aiTrading": "Auto-Trading IA",
+      "patternDetection": "Détection de Motifs",
       "news": "Actualités",
       "tradingSimulator": "Simulateur de Trading",
       "about": "À propos"
@@ -136,10 +137,24 @@
       "encryptionNotAvailable": "Attention : Chiffrement non disponible sur cette plateforme",
       "temperature": "Température : {{value}}",
       "temperatureHelper": "Contrôle l'aléatoire (0 = ciblé, 2 = créatif)",
-      "maxTokens": "Jetons Max : {{value}}",
-      "maxTokensHelper": "Longueur maximale de la réponse",
-      "detailedCandles": "Bougies Détaillées : {{value}}",
-      "detailedCandlesHelper": "Nombre de bougies récentes envoyées avec tous les détails à l'IA"
+      "maxTokens": "Tokens Max: {{value}}",
+      "maxTokensHelper": "Longueur maximale de réponse",
+      "detailedCandles": "Bougies Détaillées: {{value}}",
+      "detailedCandlesHelper": "Nombre de bougies récentes envoyées avec tous les détails à l'IA",
+      "patternDetection": {
+        "title": "Détection de Motifs",
+        "mode": "Mode de Détection",
+        "selectMode": "Sélectionner le mode de détection",
+        "aiOnly": "IA Uniquement - L'IA détecte et analyse les motifs",
+        "algorithmicOnly": "Algorithmique Uniquement - L'algorithme détecte les motifs localement",
+        "hybrid": "Hybride - L'algorithme détecte, l'IA interprète (80-90% de réduction des coûts)",
+        "autoDisplay": "Afficher automatiquement les motifs sur le graphique",
+        "autoDisplayHelper": "Afficher automatiquement les motifs détectés sur le graphique lors du zoom/panoramique (analyse uniquement les bougies visibles)",
+        "minConfidence": "Confiance Min: {{value}}%",
+        "minConfidenceHelper": "Seuil minimum de confiance pour la détection de motifs (50-90%)",
+        "pivotSensitivity": "Sensibilité Pivot: {{value}}",
+        "pivotSensitivityHelper": "Fenêtre de lookback pour la détection des points pivot (3-10 bougies)"
+      }
     },
     "news": {
       "newsApiKey": "Clé API",
@@ -246,6 +261,7 @@
       "crosshair": "Réticule",
       "measurementRuler": "Règle de Mesure",
       "measurementArea": "Zone de Mesure",
+      "autoPatterns": "Détection Automatique de Motifs (bougies visibles)",
       "indicators": "Indicateurs",
       "quickSettings": "Paramètres Rapides"
     },
@@ -485,6 +501,134 @@
       "gemini15Flash8b": "0,0375 $/0,15 $ par 1M tokens"
     }
   },
+  "aiTrading": {
+    "tips": {
+      "experimental": "Auto-Trading IA est expérimental et doit être utilisé avec précaution",
+      "simulator": "Utilisez toujours le Simulateur de Trading avant de trader réellement",
+      "monitor": "Surveillez vos positions et ajustez les paramètres de risque si nécessaire"
+    },
+    "status": {
+      "title": "Statut du Auto-Trading",
+      "autoTrading": "Auto-Trading",
+      "active": "Actif - IA analyse et trade",
+      "inactive": "Inactif - Activez dans le Chat pour commencer",
+      "activeWallet": "Portefeuille Actif: {{name}} ({{currency}})",
+      "balance": "Solde: {{balance}} {{currency}}"
+    },
+    "riskProfile": {
+      "title": "Profil de Risque",
+      "tradingStrategy": "Stratégie de Trading",
+      "conservative": "Conservateur",
+      "conservativeDesc": "50%+ confiance, 1:2 risque/récompense",
+      "moderate": "Modéré",
+      "moderateDesc": "40%+ confiance, 1:1.5 risque/récompense",
+      "aggressive": "Agressif",
+      "aggressiveDesc": "30%+ confiance, 1:1 risque/récompense",
+      "maxPositionSize": "Taille Max. de Position (%)",
+      "accountRisk": "Risque du Compte (%)",
+      "defaultStopLoss": "Stop Loss par Défaut (%)",
+      "defaultTakeProfit": "Take Profit par Défaut (%)"
+    },
+    "limits": {
+      "title": "Limites de Trading",
+      "analysisInterval": "Intervalle d'Analyse",
+      "maxTradesPerDay": "Max. Opérations par Jour",
+      "maxTradesPerHour": "Max. Opérations par Heure",
+      "minTimeBetween": "Temps Min. Entre Opérations (min)",
+      "interval1m": "1 minute",
+      "interval5m": "5 minutes",
+      "interval15m": "15 minutes",
+      "interval30m": "30 minutes",
+      "interval1h": "1 heure"
+    },
+    "safety": {
+      "title": "Paramètres de Sécurité",
+      "maxDailyLoss": "Perte Max. Quotidienne (%)",
+      "emergencyStop": "Arrêt d'Urgence (pertes consécutives)",
+      "notifyOnTrade": "Notifier lors de l'exécution d'une opération",
+      "notifyOnProfit": "Notifier lors de la clôture avec profit",
+      "notifyOnLoss": "Notifier lors de la clôture avec perte"
+    },
+    "statistics": {
+      "title": "Statistiques de Trading",
+      "totalTrades": "Total d'Opérations",
+      "openPositions": "Positions Ouvertes",
+      "winRate": "Taux de Réussite",
+      "netPnL": "Profit/Perte Net"
+    },
+    "clearHistory": "Effacer l'Historique de Trading"
+  },
+  "patternDetection": {
+    "title": "Configuration de Détection de Motifs",
+    "resetDefaults": "Réinitialiser aux Valeurs par Défaut",
+    "tips": {
+      "sensitivity": "Sensibilité plus élevée détecte plus de points de pivot mais peut réduire la précision",
+      "confidence": "Confiance minimale filtre les motifs basé sur le seuil de fiabilité",
+      "period": "Période de formation contrôle combien de bougies analyser pour les motifs"
+    },
+    "sensitivity": {
+      "label": "Sensibilité",
+      "helper": "Contrôle la sensibilité de détection des points de pivot (0 = strict, 100 = permissif)"
+    },
+    "minConfidence": {
+      "label": "Confiance Minimale",
+      "helper": "Seuil minimal de confiance pour la validation des motifs"
+    },
+    "formationPeriod": {
+      "label": "Période de Formation",
+      "helper": "Période de rétrospective pour la détection de motifs",
+      "candles": "bougies"
+    },
+    "trendlineAccuracy": {
+      "label": "Précision de la Ligne de Tendance (R²)",
+      "helper": "Seuil R² pour l'évaluation de la qualité de la ligne de tendance"
+    },
+    "volumeWeight": {
+      "label": "Poids de Confirmation du Volume",
+      "helper": "Poids du volume dans le calcul de confiance"
+    },
+    "enabledPatterns": "Motifs Activés",
+    "enabled": "Activé",
+    "showPreview": {
+      "label": "Afficher l'Aperçu des Motifs",
+      "helper": "Afficher l'aperçu des motifs en temps réel sur le graphique"
+    },
+    "groups": {
+      "reversalPatterns": "Motifs de Retournement",
+      "continuationPatterns": "Motifs de Continuation",
+      "supportResistance": "Support et Résistance",
+      "zones": "Zones de Trading",
+      "gaps": "Gaps de Prix"
+    },
+    "patterns": {
+      "head-and-shoulders": "Tête et Épaules",
+      "inverse-head-and-shoulders": "Tête et Épaules Inversée",
+      "double-top": "Double Sommet",
+      "double-bottom": "Double Creux",
+      "triple-top": "Triple Sommet",
+      "triple-bottom": "Triple Creux",
+      "rounding-bottom": "Creux Arrondi",
+      "triangle-ascending": "Triangle Ascendant",
+      "triangle-descending": "Triangle Descendant",
+      "triangle-symmetrical": "Triangle Symétrique",
+      "flag-bullish": "Drapeau Haussier",
+      "flag-bearish": "Drapeau Baissier",
+      "pennant": "Fanion",
+      "cup-and-handle": "Tasse avec Anse",
+      "wedge-falling": "Biseau Descendant",
+      "wedge-rising": "Biseau Ascendant",
+      "support": "Support",
+      "resistance": "Résistance",
+      "buy-zone": "Zone d'Achat",
+      "sell-zone": "Zone de Vente",
+      "liquidity-zone": "Zone de Liquidité",
+      "accumulation-zone": "Zone d'Accumulation",
+      "gap-common": "Gap Commun",
+      "gap-breakaway": "Gap de Rupture",
+      "gap-runaway": "Gap de Continuation",
+      "gap-exhaustion": "Gap d'Épuisement"
+    }
+  },
   "trading": {
     "simulator": {
       "toggle": "Simulateur de Trading",
@@ -603,8 +747,86 @@
     "closeOrderConfirm": "Fermer l'ordre {{type}} avec entrée à {{entry}} ? Prix actuel : {{current}}",
     "removeSLTPConfirm": "Supprimer {{type}} de tous les ordres dans cette position ?",
     "confirmClose": "Confirmer la Fermeture",
-    "active": "ACTIVE",
+    "active": "ACTIF",
     "pending": "EN ATTENTE"
+  },
+  "patterns": {
+    "configurePatterns": "Configurer les Modèles",
+    "enabledPatterns": "Modèles Activés",
+    "basicPatterns": "De Base",
+    "trendlines": "Tendances",
+    "fibonacci": "Fibonacci",
+    "channels": "Canaux",
+    "triangles": "Triangles",
+    "wedges": "Biseaux",
+    "advancedPatterns": "Avancés",
+    "support": "Support",
+    "supportTooltip": "Niveau horizontal où l'intérêt d'achat se concentre, empêchant de nouvelles baisses. Nécessite 2+ touches pour validation.",
+    "resistance": "Résistance",
+    "resistanceTooltip": "Niveau horizontal où la pression de vente se concentre, limitant le mouvement haussier. Plus fort avec plus de touches.",
+    "bullishTrendline": "Tendance Haussière",
+    "bullishTrendlineTooltip": "Ligne reliant des creux plus élevés, indiquant une dynamique haussière. Agit comme support dynamique pendant les tendances haussières.",
+    "bearishTrendline": "Tendance Baissière",
+    "bearishTrendlineTooltip": "Ligne reliant des sommets plus bas, indiquant une dynamique baissière. Agit comme résistance dynamique pendant les tendances baissières.",
+    "fibonacciRetracement": "Retracement de Fibonacci",
+    "fibonacciRetracementTooltip": "Niveaux clés (23,6%, 38,2%, 50%, 61,8%, 78,6%) où le prix trouve souvent support ou résistance lors des corrections.",
+    "ascendingChannel": "Canal Ascendant",
+    "ascendingChannelTooltip": "Lignes parallèles ascendantes contenant l'action des prix. Modèle de continuation haussier avec support et résistance clairs.",
+    "descendingChannel": "Canal Descendant",
+    "descendingChannelTooltip": "Lignes parallèles descendantes contenant l'action des prix. Modèle de continuation baissier indiquant une tendance baissière soutenue.",
+    "ascendingTriangle": "Triangle Ascendant",
+    "ascendingTriangleTooltip": "Sommet plat avec creux ascendants. Modèle haussier montrant des acheteurs de plus en plus agressifs. Cassure généralement vers le haut.",
+    "descendingTriangle": "Triangle Descendant",
+    "descendingTriangleTooltip": "Base plate avec sommets descendants. Modèle baissier montrant des vendeurs de plus en plus agressifs. Cassure généralement vers le bas.",
+    "symmetricalTriangle": "Triangle Symétrique",
+    "symmetricalTriangleTooltip": "Lignes de tendance convergentes avec sommets plus bas et creux plus élevés. Modèle de consolidation - direction de cassure incertaine.",
+    "risingWedge": "Biseau Ascendant",
+    "risingWedgeTooltip": "Les deux lignes montent mais convergent. Modèle de retournement baissier - la dynamique s'affaiblit malgré des prix plus élevés.",
+    "fallingWedge": "Biseau Descendant",
+    "fallingWedgeTooltip": "Les deux lignes descendent mais convergent. Modèle de retournement haussier - la pression de vente diminue.",
+    "headAndShoulders": "Tête et Épaules",
+    "headAndShouldersTooltip": "Trois pics avec celui du milieu le plus haut. Modèle de retournement baissier signalant l'épuisement de la tendance et une baisse potentielle.",
+    "inverseHeadAndShoulders": "Tête et Épaules Inversé",
+    "inverseHeadAndShouldersTooltip": "Trois creux avec celui du milieu le plus bas. Modèle de retournement haussier indiquant la formation d'un fond et une hausse potentielle.",
+    "doubleTop": "Double Sommet",
+    "doubleTopTooltip": "Deux sommets à prix similaire (forme de 'M'). Retournement baissier après échec de franchir la résistance.",
+    "doubleBottom": "Double Creux",
+    "doubleBottomTooltip": "Deux creux à prix similaire (forme de 'W'). Retournement haussier après que le support ait tenu deux fois.",
+    "tripleTop": "Triple Sommet",
+    "tripleTopTooltip": "Trois sommets à prix similaire. Modèle de retournement baissier après plusieurs échecs de cassure.",
+    "tripleBottom": "Triple Creux",
+    "tripleBottomTooltip": "Trois creux à prix similaire. Modèle de retournement haussier après plusieurs supports.",
+    "flagBullish": "Drapeau Haussier",
+    "flagBullishTooltip": "Courte consolidation après une forte hausse, généralement suivie d'une poursuite à la hausse.",
+    "flagBearish": "Drapeau Baissier",
+    "flagBearishTooltip": "Courte consolidation après une forte baisse, généralement suivie d'une poursuite à la baisse.",
+    "pennant": "Fanion",
+    "pennantTooltip": "Petit triangle symétrique après un mouvement brusque, motif typique de continuation.",
+    "cupAndHandle": "Tasse avec Anse",
+    "cupAndHandleTooltip": "Creux arrondi suivi d'un petit repli (anse). Modèle de continuation haussier.",
+    "roundingBottom": "Creux Arrondi",
+    "roundingBottomTooltip": "Transition progressive de la baisse à la hausse, formant un creux arrondi. Retournement haussier.",
+    "gapCommon": "Gap Commun",
+    "gapCommonTooltip": "Gap de prix sans grande signification, souvent comblé rapidement.",
+    "gapBreakaway": "Gap de Rupture",
+    "gapBreakawayTooltip": "Gap en fin de motif, signalant le début d'une nouvelle tendance.",
+    "gapRunaway": "Gap de Fuite",
+    "gapRunawayTooltip": "Gap au milieu d'une tendance, confirmant sa force.",
+    "gapExhaustion": "Gap d'Épuisement",
+    "gapExhaustionTooltip": "Gap proche de la fin d'une tendance, signalant souvent un retournement.",
+    "liquidityZone": "Zone de Liquidité",
+    "liquidityZoneTooltip": "Zone de prix avec forte activité, agissant comme support ou résistance.",
+    "sellZone": "Zone de Vente",
+    "sellZoneTooltip": "Zone où la pression vendeuse devrait augmenter.",
+    "buyZone": "Zone d'Achat",
+    "buyZoneTooltip": "Zone où la pression acheteuse devrait augmenter.",
+    "accumulationZone": "Zone d'Accumulation",
+    "accumulationZoneTooltip": "Zone où de gros acteurs accumulent des positions, souvent avant une hausse.",
+    "horizontalChannel": "Canal Horizontal",
+    "horizontalChannelTooltip": "Lignes horizontales parallèles contenant le prix. Modèle de marché en range.",
+    "fibonacciExtension": "Extension de Fibonacci",
+    "fibonacciExtensionTooltip": "Niveaux utilisés pour projeter des objectifs au-delà de la tendance actuelle.",
+    "extraPatterns": "Extras"
   },
   "about": {
     "version": "Version {{version}}",

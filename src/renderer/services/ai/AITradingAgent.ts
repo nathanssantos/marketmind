@@ -7,7 +7,7 @@ import type {
     Candle,
 } from '@shared/types';
 import { nanoid } from 'nanoid';
-import { AIService } from './AIService';
+import type { AIService } from './AIService';
 import tradingPrompts from './prompts-trading.json';
 
 export interface AITradingAgentConfig {
@@ -339,7 +339,7 @@ ${candlesData}
     );
     
     const priceChangePercent = priceChange * 100;
-    console.log('[AITradingAgent] Price change:', priceChangePercent.toFixed(2) + '%', 'Threshold:', priceChangeThreshold + '%', 'Profile:', this.config.riskProfile);
+    console.log('[AITradingAgent] Price change:', `${priceChangePercent.toFixed(2)  }%`, 'Threshold:', `${priceChangeThreshold  }%`, 'Profile:', this.config.riskProfile);
 
     return priceChange >= priceChangeThreshold / 100;
   }
