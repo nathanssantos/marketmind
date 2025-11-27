@@ -10,6 +10,7 @@ import { AITradingConfigTab } from './AITradingConfigTab';
 import { ChartSettingsTab } from './ChartSettingsTab';
 import { GeneralTab } from './GeneralTab';
 import { NewsConfigTab } from './NewsConfigTab';
+import { PatternDetectionTab } from './PatternDetectionTab';
 import { TradingSimulatorTab } from './TradingSimulatorTab';
 
 interface SettingsDialogProps {
@@ -24,10 +25,10 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
   const [activeTab, setActiveTab] = useState<string>('general');
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="xl">
+    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="full">
       <Dialog.Backdrop />
       <Dialog.Positioner>
-        <Dialog.Content maxH="85vh">
+        <Dialog.Content maxH="90vh" maxW="95vw">
           <CloseButton
             position="absolute"
             top={4}
@@ -46,6 +47,7 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 <Tabs.Trigger value="chart">{t('settings.tabs.chart')}</Tabs.Trigger>
                 <Tabs.Trigger value="ai">{t('settings.tabs.ai')}</Tabs.Trigger>
                 <Tabs.Trigger value="aiTrading">{t('settings.tabs.aiTrading')}</Tabs.Trigger>
+                <Tabs.Trigger value="patternDetection">{t('settings.tabs.patternDetection')}</Tabs.Trigger>
                 <Tabs.Trigger value="news">{t('settings.tabs.news')}</Tabs.Trigger>
                 <Tabs.Trigger value="tradingSimulator">{t('settings.tabs.tradingSimulator')}</Tabs.Trigger>
                 <Tabs.Trigger value="about">{t('settings.tabs.about')}</Tabs.Trigger>
@@ -69,6 +71,10 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
 
                 <Tabs.Content value="aiTrading">
                   <AITradingConfigTab />
+                </Tabs.Content>
+
+                <Tabs.Content value="patternDetection">
+                  <PatternDetectionTab />
                 </Tabs.Content>
 
                 <Tabs.Content value="news">

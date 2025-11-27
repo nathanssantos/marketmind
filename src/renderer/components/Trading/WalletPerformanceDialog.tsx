@@ -70,7 +70,7 @@ export const WalletPerformanceDialog = ({ isOpen, onClose, walletId }: WalletPer
 
     const tradeDays = Math.max(1, Math.ceil((Date.now() - new Date(wallet.createdAt).getTime()) / (1000 * 60 * 60 * 24)));
     const avgDailyReturn = tradeDays > 1 && wallet.performance[0] && wallet.performance[wallet.performance.length - 1]
-        ? (wallet.performance[wallet.performance.length - 1]!.balance - wallet.performance[0]!.balance) / tradeDays
+        ? (wallet.performance[wallet.performance.length - 1]!.balance - wallet.performance[0].balance) / tradeDays
         : 0;
 
     return (

@@ -1,6 +1,6 @@
 import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import type { Candle } from '@shared/types';
+import type { Candle, Viewport } from '@shared/types';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
@@ -17,11 +17,12 @@ import { ErrorMessage } from './components/ui/ErrorMessage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
 import { AIStudyHoverProvider } from './context/AIStudyHoverContext';
-import { ChartProvider } from './context/ChartContext';
+import { ChartProvider, useChartContext } from './context/ChartContext';
 import { useGlobalActions } from './context/GlobalActionsContext';
 import { useAIStudies } from './hooks/useAIStudies';
 import { useAITrading } from './hooks/useAITrading';
 import { useAppSettings } from './hooks/useAppSettings';
+import { useAutoPatternDetection } from './hooks/useAutoPatternDetection';
 import { useCalendar } from './hooks/useCalendar';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
@@ -141,7 +142,10 @@ function App(): ReactElement {
 
 function AppContent(): ReactElement {
   const { t } = useTranslation();
+  const { detectedStudies } = useChartContext();
+  const [viewport, setViewport] = useState<Viewport | undefined>(undefined);
 
+  useAutoPatternDetection(viewport);
   useSimulatorLayout();
   usePriceUpdates();
   useOrderNotifications();
@@ -160,7 +164,7 @@ function AppContent(): ReactElement {
   const [showOnboarding, setShowOnboarding] = useLocalStorage('marketmind:showOnboarding', true);
   const [isChatOpen, setIsChatOpen] = useLocalStorage('chat-sidebar-open', true);
   const [isTradingOpen, setIsTradingOpen] = useLocalStorage('trading-sidebar-open', false);
-  const [isNewsOpen, setIsNewsOpen] = useState(false);
+  const [isNewsOpen, setIsNewsOpen] = useLocalStorage('news-sidebar-open', false);
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
     'marketmind:movingAverages',
     DEFAULT_MOVING_AVERAGES
@@ -215,7 +219,7 @@ function AppContent(): ReactElement {
 
   useEffect(() => {
     const activeConv = getActiveConversation();
-    if (!activeConv || activeConv.symbol !== symbol) {
+    if (activeConv?.symbol !== symbol) {
       setActiveConversationBySymbol(symbol);
     }
   }, [symbol, setActiveConversationBySymbol, getActiveConversation]);
@@ -546,10 +550,11 @@ function AppContent(): ReactElement {
             chartType={chartType}
             movingAverages={movingAverages}
             advancedConfig={debouncedAdvancedConfig}
-            aiStudies={aiStudies}
+            aiStudies={[...detectedStudies, ...aiStudies]}
             onDeleteAIStudies={deleteStudies}
             onToggleAIStudiesVisibility={toggleStudiesVisibility}
             aiStudiesVisible={studiesVisible}
+            onViewportChange={setViewport}
             timeframe={timeframe}
           />
         )}

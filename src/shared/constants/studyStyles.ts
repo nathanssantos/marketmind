@@ -44,9 +44,6 @@ export const STUDY_COLORS: Record<AIStudyType, string> = {
   'gap-runaway': '#8b5cf6',
   'gap-exhaustion': '#ec4899',
 
-  // Advanced
-  'elliott-wave': '#7c3aed',
-
   // Zones (Legacy - keeping for backward compatibility)
   'liquidity-zone': '#3b82f6',
   'sell-zone': '#ef4444',
@@ -57,8 +54,8 @@ export const STUDY_COLORS: Record<AIStudyType, string> = {
 export const LINE_STYLES: Record<string, 'solid' | 'dashed' | 'dotted'> = {
   support: 'solid',
   resistance: 'solid',
-  'trendline-bullish': 'dashed',
-  'trendline-bearish': 'dashed',
+  'trendline-bullish': 'solid',
+  'trendline-bearish': 'solid',
   fibonacci: 'dotted',
   channel: 'solid',
   pattern: 'solid',
@@ -125,9 +122,6 @@ export const STUDY_LABELS: Record<AIStudyType, string> = {
   'gap-runaway': 'Runaway Gap',
   'gap-exhaustion': 'Exhaustion Gap',
 
-  // Advanced
-  'elliott-wave': 'Elliott Wave',
-
   // Zones
   'liquidity-zone': 'Liquidity Zone',
   'sell-zone': 'Sell Zone',
@@ -161,7 +155,6 @@ export const STUDY_CATEGORIES = {
     'cup-and-handle',
   ],
   Gaps: ['gap-common', 'gap-breakaway', 'gap-runaway', 'gap-exhaustion'],
-  Advanced: ['elliott-wave'],
   Zones: ['liquidity-zone', 'sell-zone', 'buy-zone', 'accumulation-zone'],
 } as const;
 

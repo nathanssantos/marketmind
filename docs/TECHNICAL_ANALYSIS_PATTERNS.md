@@ -23,9 +23,8 @@
    - [Flags and Pennants](#flags-and-pennants)
    - [Rounding Bottom](#rounding-bottom)
 7. [Gaps](#gaps)
-8. [Elliott Wave Theory](#elliott-wave-theory)
-9. [Implementation Guidelines](#implementation-guidelines)
-10. [References](#references)
+8. [Implementation Guidelines](#implementation-guidelines)
+9. [References](#references)
 
 ---
 
@@ -375,7 +374,6 @@ where Price Range = Pivot High - Pivot Low
 - Use with trending markets
 - Combine with support/resistance
 - Wait for price action confirmation
-- Works with Elliott Wave patterns
 
 ---
 
@@ -1143,148 +1141,6 @@ where Price Range = Pivot High - Pivot Low
 
 ---
 
-## Elliott Wave Theory
-
-### Overview
-
-**Creator:** Ralph Nelson Elliott (1930s)  
-**Concept:** Markets move in predictable, repeating wave patterns driven by investor psychology  
-**Structure:** Fractal patterns (self-similar at all scales)
-
-**⚠️ Important Limitations:**
-- Highly subjective interpretation
-- No time frame specification
-- Can explain any move in hindsight
-- Difficult to apply in real-time
-- Best used as complementary tool
-
----
-
-### Wave Structure
-
-#### Impulse Waves (Motive)
-
-**5-Wave Pattern in trend direction:**
-
-1. **Wave 1:** Initial move in new trend direction
-2. **Wave 2:** Correction (cannot retrace more than 100% of Wave 1)
-3. **Wave 3:** Strongest move (cannot be shortest of 1, 3, 5)
-4. **Wave 4:** Correction (cannot overlap Wave 1 price territory)
-5. **Wave 5:** Final move (should show momentum divergence)
-
-**Rules (Must Not Violate):**
-- Wave 2 can't retrace more than beginning of Wave 1
-- Wave 3 cannot be shortest of waves 1, 3, and 5
-- Wave 4 doesn't overlap with Wave 1 price territory
-- Wave 5 should end with momentum divergence
-
----
-
-#### Corrective Waves
-
-**3-Wave Pattern against trend:**
-
-- **Wave A:** First move against trend (5 sub-waves)
-- **Wave B:** Counter-correction (3 sub-waves)
-- **Wave C:** Final correction move (5 sub-waves)
-
-**Characteristics:**
-- Waves A and C are impulsive (5 sub-waves)
-- Wave B is corrective (3 sub-waves)
-- Usually completes as ABC pattern
-
----
-
-### Fibonacci Integration
-
-**Common Relationships:**
-- Wave 2 retraces 38%, 50%, or 62% of Wave 1
-- Wave 3 often 1.618× or 2.618× length of Wave 1
-- Wave 4 retraces 38% or 50% of Wave 3
-- Waves relate in Fibonacci proportions
-
----
-
-### Wave Degrees
-
-**9 Levels (Largest to Smallest):**
-1. Grand Super Cycle
-2. Super Cycle
-3. Cycle
-4. Primary
-5. Intermediate
-6. Minor
-7. Minute
-8. Minuette
-9. Sub-minuette
-
-**Fractal Nature:**
-- Each wave contains smaller waves
-- Pattern repeats at all scales
-- Can analyze across timeframes
-
----
-
-### Drawing Instructions
-
-```typescript
-{
-  type: 'elliott-wave',
-  impulse: {
-    wave1: { start: p0, end: p1, timestamp: [t0, t1] },
-    wave2: { start: p1, end: p2, timestamp: [t1, t2] },
-    wave3: { start: p2, end: p3, timestamp: [t2, t3] },
-    wave4: { start: p3, end: p4, timestamp: [t3, t4] },
-    wave5: { start: p4, end: p5, timestamp: [t4, t5] }
-  },
-  correction: {
-    waveA: { start: p5, end: p6, timestamp: [t5, t6] },
-    waveB: { start: p6, end: p7, timestamp: [t6, t7] },
-    waveC: { start: p7, end: p8, timestamp: [t7, t8] }
-  },
-  degree: 'intermediate',
-  confidence: 0.60 // Lower due to subjectivity
-}
-```
-
----
-
-### Trading Application
-
-**Theoretical Use:**
-- Identify impulse wave, go long
-- Exit at completion of 5 waves
-- Anticipate ABC correction
-- Re-enter after correction
-
-**Practical Challenges:**
-- Different analysts = different counts
-- Pattern can take days or years
-- Easy to miscalculate waves
-- Failed forecasts blamed on "miscount"
-
-**Best Practice:**
-- Use with other technical tools
-- Don't rely exclusively
-- Consider as one input among many
-- Combine with Fibonacci, support/resistance
-
----
-
-### Elliott Wave Oscillator
-
-**Technical Tool:**
-- Difference between 5-period and 35-period moving averages
-- Displayed as histogram
-- Above zero: Bullish momentum (impulse waves up)
-- Below zero: Bearish momentum (corrective waves down)
-
-**Application:**
-- Helps confirm wave counts
-- Momentum indicator
-- Support tool, not definitive
-
----
 
 ## Implementation Guidelines
 
@@ -1422,9 +1278,6 @@ export type AIStudyType =
   | 'gap-breakaway'
   | 'gap-runaway'
   | 'gap-exhaustion'
-  
-  // Advanced
-  | 'elliott-wave';
 ```
 
 ---
@@ -1476,8 +1329,6 @@ export const STUDY_COLORS = {
   'gap-runaway': '#8b5cf6',
   'gap-exhaustion': '#ec4899',
   
-  // Advanced
-  'elliott-wave': '#7c3aed'
 } as const;
 ```
 
@@ -1537,7 +1388,6 @@ export const OPACITY = {
    - Flag Pattern: https://www.investopedia.com/terms/f/flag.asp
    - Pennant Pattern: https://www.investopedia.com/terms/p/pennant.asp
    - Gaps: https://www.investopedia.com/terms/g/gap.asp
-   - Elliott Wave: https://www.investopedia.com/terms/e/elliottwavetheory.asp
    - Triple Tops/Bottoms: https://www.investopedia.com/articles/technical/02/012102.asp
    - Trendlines: https://www.investopedia.com/terms/t/trendline.asp
 
@@ -1547,8 +1397,6 @@ export const OPACITY = {
 ### Additional Reading
 
 - William J. O'Neil - Cup and Handle pattern research
-- Ralph Nelson Elliott - Elliott Wave Theory (1930s)
-- A.J. Frost & Robert Prechter - "Elliott Wave Principle: Key to Market Behavior"
 
 ---
 

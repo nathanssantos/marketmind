@@ -21,7 +21,7 @@ export const summarizeOldMessages = (messages: ConversationMessage[]): string =>
 
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
-    if (!msg || msg.role !== 'user') continue;
+    if (msg?.role !== 'user') continue;
 
     const content = msg.content.toLowerCase();
 
@@ -42,7 +42,7 @@ export const summarizeOldMessages = (messages: ConversationMessage[]): string =>
     }
 
     if (msg.content.length > 50) {
-      keyPoints.push(msg.content.substring(0, 100) + '...');
+      keyPoints.push(`${msg.content.substring(0, 100)  }...`);
     }
   }
 

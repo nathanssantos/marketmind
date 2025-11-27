@@ -243,7 +243,6 @@ interface AIStudyData {
 - [ ] Edição de estudos (arrastar pontos, redimensionar zonas)
 - [ ] Estudos desenhados manualmente pelo usuário
 - [ ] Exportar/importar estudos
-- [ ] Mais tipos de estudos (Fibonacci, Elliott Waves, etc)
 - [ ] Histórico de versões de estudos
 - [ ] Snapshot de estudos junto com análise
 - [ ] Filtros por tipo de estudo (mostrar/ocultar)

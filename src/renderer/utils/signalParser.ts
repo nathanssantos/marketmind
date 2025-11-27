@@ -10,7 +10,7 @@ export const parseSignalFromResponse = (text: string): ParsedSignal | null => {
   const signalMatch = text.match(signalRegex);
   const confidenceMatch = text.match(confidenceRegex);
 
-  if (!signalMatch || !signalMatch[1]) return null;
+  if (!signalMatch?.[1]) return null;
 
   const normalizedSignal = signalMatch[1].toUpperCase().replace(/[_\s]+/g, '_');
 
@@ -26,7 +26,7 @@ export const parseSignalFromResponse = (text: string): ParsedSignal | null => {
 
   if (!signal) return null;
 
-  const confidence = confidenceMatch && confidenceMatch[1] ? parseInt(confidenceMatch[1], 10) : 50;
+  const confidence = confidenceMatch?.[1] ? parseInt(confidenceMatch[1], 10) : 50;
 
   return { signal, confidence };
 };

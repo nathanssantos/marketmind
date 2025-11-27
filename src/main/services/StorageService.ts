@@ -181,7 +181,8 @@ export class StorageService {
   }
 
   getTradingData(): SecureStoreSchema['tradingData'] | null {
-    return this.store.get('tradingData', null);
+    const data = this.store.get('tradingData');
+    return data !== undefined ? data : null;
   }
 
   setTradingData(data: SecureStoreSchema['tradingData']): void {
@@ -193,7 +194,8 @@ export class StorageService {
   }
 
   getAIData(): SecureStoreSchema['aiData'] | null {
-    return this.store.get('aiData', null);
+    const data = this.store.get('aiData');
+    return data !== undefined ? data : null;
   }
 
   setAIData(data: SecureStoreSchema['aiData']): void {

@@ -1,7 +1,6 @@
 import { workerPool } from '@/renderer/utils/WorkerPool';
 import type { Candle } from '@shared/types';
 import { useCallback, useEffect, useRef } from 'react';
-import { workerPool } from '@/renderer/utils/WorkerPool';
 import type { WorkerRequest, WorkerResponse } from '../workers/movingAverages.worker';
 
 export interface MovingAverageConfig {

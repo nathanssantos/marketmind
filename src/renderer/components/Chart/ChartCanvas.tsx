@@ -1162,7 +1162,32 @@ export const ChartCanvas = ({
     return () => {
       manager.setRenderCallback(null);
     };
-  }, [manager, renderGrid, renderVolume, renderCandles, renderLineChart, renderMovingAverages, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderOrderLines, chartType, mousePosition, measurementArea, isMeasuring, orderPreview, showMeasurementArea, showMeasurementRuler, colors, orders, hoveredOrderId]);
+  }, [
+    manager,
+    renderGrid,
+    renderVolume,
+    renderCandles,
+    renderLineChart,
+    renderMovingAverages,
+    renderStochastic,
+    renderRSI,
+    renderCurrentPriceLine_Line,
+    renderCurrentPriceLine_Label,
+    renderCrosshairPriceLine,
+    renderOrderLines,
+    chartType,
+    mousePosition,
+    measurementArea,
+    isMeasuring,
+    orderPreview,
+    showMeasurementArea,
+    showMeasurementRuler,
+    colors,
+    orders,
+    hoveredOrderId,
+    orderDragHandler,
+    currentPrice,
+  ]);
 
   return (
     <>

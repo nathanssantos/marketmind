@@ -126,7 +126,7 @@ export const useCalendar = () => {
       }
 
       if (symbols && symbols.length > 0) {
-        if (!event.symbols || !event.symbols.some(s => symbols.includes(s))) {
+        if (!event.symbols?.some(s => symbols.includes(s))) {
           return false;
         }
       }

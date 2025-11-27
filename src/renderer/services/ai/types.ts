@@ -233,7 +233,7 @@ export abstract class BaseAIProvider {
         })
         .join('\n');
       
-      const eventsSection = optimizedPrompts.chartAnalysis.eventsTemplate.replace('{eventItems}', eventItems);
+      const eventsSection = `\n\nUpcoming Economic Events:\n${eventItems}`;
       parts.push(eventsSection);
       console.log('[AI Prompt] Events section added to prompt:', eventsSection);
     }

@@ -1,7 +1,9 @@
+import { useUIStore } from '@/renderer/store/uiStore';
 import { Box, Flex, HStack, IconButton, Text } from '@chakra-ui/react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  LuBrainCircuit,
   LuChartBar,
   LuChartCandlestick,
   LuChartLine,
@@ -18,6 +20,7 @@ import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { SymbolSelector } from '../SymbolSelector';
 import { TooltipWrapper } from '../ui/Tooltip';
+import { PatternTogglePopover } from './PatternTogglePopover';
 
 export interface ToolbarProps {
   marketService: MarketDataService;
@@ -69,7 +72,7 @@ export const Toolbar = memo(({
   showStochastic,
   showRSI,
   movingAverages,
-  isSimulatorActive,
+  isSimulatorActive: _isSimulatorActive,
   isTradingOpen,
   isChatOpen,
   isNewsOpen,
@@ -85,12 +88,23 @@ export const Toolbar = memo(({
   onShowStochasticChange,
   onShowRSIChange,
   onMovingAveragesChange,
-  onToggleSimulator,
+  onToggleSimulator: _onToggleSimulator,
   onToggleTrading,
   onToggleChat,
   onToggleNews,
 }: ToolbarProps) => {
   const { t } = useTranslation();
+  const { patternDetectionMode, algorithmicDetectionSettings, setAlgorithmicDetectionSettings } = useUIStore();
+
+  const isPatternDetectionActive =
+    (patternDetectionMode === 'algorithmic-only' || patternDetectionMode === 'hybrid') &&
+    algorithmicDetectionSettings.autoDisplayPatterns;
+
+  const togglePatternDetection = () => {
+    setAlgorithmicDetectionSettings({
+      autoDisplayPatterns: !algorithmicDetectionSettings.autoDisplayPatterns,
+    });
+  };
 
   const toggleMA = (index: number): void => {
     const updated = movingAverages.map((ma, i) =>
@@ -271,6 +285,24 @@ export const Toolbar = memo(({
 
         {movingAverages.length > 0 && (
           <>
+            <Box w="1px" h="32px" bg="border" flexShrink={0} />
+
+            <HStack gap={1} flexWrap="nowrap">
+              <TooltipWrapper label={t('chart.controls.autoPatterns')} showArrow placement="top">
+                <IconButton
+                  size="2xs"
+                  aria-label={t('chart.controls.autoPatterns')}
+                  onClick={togglePatternDetection}
+                  colorPalette={isPatternDetectionActive ? 'blue' : 'gray'}
+                  variant={isPatternDetectionActive ? 'solid' : 'ghost'}
+                  disabled={patternDetectionMode === 'ai-only'}
+                >
+                  <LuBrainCircuit />
+                </IconButton>
+              </TooltipWrapper>
+              <PatternTogglePopover />
+            </HStack>
+
             <Box w="1px" h="32px" bg="border" flexShrink={0} />
             <HStack gap={1} flexWrap="nowrap">
               {movingAverages.map((ma, index) => (

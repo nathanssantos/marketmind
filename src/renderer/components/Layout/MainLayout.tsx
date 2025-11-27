@@ -1,6 +1,5 @@
 import { GlobalActionsProvider } from '@/renderer/context/GlobalActionsContext';
 import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
-import { useTradingStore } from '@/renderer/store/tradingStore';
 import { useUIStore } from '@/renderer/store/uiStore';
 import { Box, Flex } from '@chakra-ui/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -29,7 +28,7 @@ const MIN_TRADING_WIDTH = 300;
 const MAX_TRADING_WIDTH = 600;
 const DEFAULT_TRADING_WIDTH = 400;
 
-export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onAdvancedConfigChange, isChatOpen, onToggleChat, isTradingOpen, onToggleTrading }: MainLayoutProps) => {
+export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onAdvancedConfigChange, isChatOpen, onToggleChat, isTradingOpen, onToggleTrading: _onToggleTrading }: MainLayoutProps) => {
   const [chatWidth, setChatWidth] = useLocalStorage('chat-sidebar-width', DEFAULT_CHAT_WIDTH);
   const [tradingWidth, setTradingWidth] = useLocalStorage('trading-sidebar-width', DEFAULT_TRADING_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
@@ -40,7 +39,6 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
   const resizingTargetRef = useRef<'chat' | 'trading' | null>(null);
 
   const chatPosition = useUIStore((state) => state.chatPosition);
-  const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
 
   const handleSettingsClick = useCallback(() => {
     setIsSettingsOpen(true);
@@ -116,7 +114,6 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
               <ChatSidebar
                 width={chatWidth}
                 isOpen={isChatOpen}
-                onToggle={onToggleChat}
               />
               <Box
                 position="relative"
@@ -177,7 +174,6 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
               <ChatSidebar
                 width={chatWidth}
                 isOpen={isChatOpen}
-                onToggle={onToggleChat}
               />
             </>
           )}

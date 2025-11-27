@@ -6,7 +6,8 @@ import {
     type Symbol,
     type SymbolInfo,
 } from '@shared/types';
-import axios, { AxiosInstance } from 'axios';
+import type { AxiosInstance } from 'axios';
+import axios from 'axios';
 
 interface CoinGeckoMarketChart {
   prices: number[][];
@@ -137,17 +138,17 @@ export class CoinGeckoProvider extends BaseMarketProvider {
     }
 
     const normalizedSymbol = this.normalizeSymbol(symbol).toLowerCase();
-    const coin = this.coinsCache!.find(c => c.id === normalizedSymbol);
+    const coin = this.coinsCache.find(c => c.id === normalizedSymbol);
 
     if (!coin) {
       this.handleError(new Error(`Symbol ${symbol} not found`), 'Invalid symbol');
     }
 
     return {
-      symbol: coin!.id.toUpperCase(),
-      baseAsset: coin!.symbol.toUpperCase(),
+      symbol: coin.id.toUpperCase(),
+      baseAsset: coin.symbol.toUpperCase(),
       quoteAsset: 'USD',
-      displayName: `${coin!.name} (${coin!.symbol.toUpperCase()})`,
+      displayName: `${coin.name} (${coin.symbol.toUpperCase()})`,
       minPrice: 0,
       maxPrice: 0,
       tickSize: 0.01,

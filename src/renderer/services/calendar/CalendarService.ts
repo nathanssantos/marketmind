@@ -102,7 +102,7 @@ export class CalendarService {
         }
       }
       if (filter.symbols && filter.symbols.length > 0) {
-        if (!event.symbols || !event.symbols.some(s => filter.symbols!.includes(s))) {
+        if (!event.symbols?.some(s => filter.symbols!.includes(s))) {
           return false;
         }
       }
