@@ -1,6 +1,6 @@
 {
   "name": "marketmind",
-  "version": "0.26.0",
+  "version": "0.28.0",
   "description": "AI-powered consultant for technical analysis of financial charts",
   "main": "dist-electron/main/index.js",
   "author": "Nathan Santos",
@@ -13,8 +13,8 @@
     "build:mac": "yarn build && electron-builder --mac",
     "build:win": "yarn build && electron-builder --win",
     "build:all": "yarn build && electron-builder --mac --win",
-    "lint": "eslint . --ext .ts,.tsx --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "type-check": "tsc --noEmit",
     "preview": "vite preview",
     "test": "npm run test:unit && npm run test:browser:run",

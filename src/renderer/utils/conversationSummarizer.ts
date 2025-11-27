@@ -40,7 +40,7 @@ export const summarizeOldMessages = (messages: AIMessage[]): string => {
       }
       
       if (msg.content.length > 50) {
-        keyPoints.push(msg.content.substring(0, 100) + '...');
+        keyPoints.push(`${msg.content.substring(0, 100)  }...`);
       }
     }
   });

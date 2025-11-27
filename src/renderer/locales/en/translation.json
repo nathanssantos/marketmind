@@ -54,6 +54,7 @@
       "chart": "Chart",
       "ai": "AI Configuration",
       "aiTrading": "AI Auto-Trading",
+      "patternDetection": "Pattern Detection",
       "news": "News",
       "tradingSimulator": "Trading Simulator",
       "about": "About"
@@ -139,7 +140,21 @@
       "maxTokens": "Max Tokens: {{value}}",
       "maxTokensHelper": "Maximum response length",
       "detailedCandles": "Detailed Candles: {{value}}",
-      "detailedCandlesHelper": "Number of recent candles sent with full details to AI"
+      "detailedCandlesHelper": "Number of recent candles sent with full details to AI",
+      "patternDetection": {
+        "title": "Pattern Detection",
+        "mode": "Detection Mode",
+        "selectMode": "Select detection mode",
+        "aiOnly": "AI Only - AI detects and analyzes patterns",
+        "algorithmicOnly": "Algorithmic Only - Algorithm detects patterns locally",
+        "hybrid": "Hybrid - Algorithm detects, AI interprets (80-90% cost reduction)",
+        "autoDisplay": "Auto-display patterns on chart",
+        "autoDisplayHelper": "Automatically show detected patterns on the chart as you zoom/pan (analyzes visible candles only)",
+        "minConfidence": "Min Confidence: {{value}}%",
+        "minConfidenceHelper": "Minimum confidence threshold for pattern detection (50-90%)",
+        "pivotSensitivity": "Pivot Sensitivity: {{value}}",
+        "pivotSensitivityHelper": "Lookback window for pivot point detection (3-10 candles)"
+      }
     },
     "news": {
       "newsApiKey": "API Key",
@@ -246,6 +261,7 @@
       "crosshair": "Crosshair",
       "measurementRuler": "Measurement Ruler",
       "measurementArea": "Measurement Area",
+      "autoPatterns": "Auto Pattern Detection (visible candles)",
       "indicators": "Indicators",
       "quickSettings": "Quick Settings"
     },
@@ -485,6 +501,134 @@
       "gemini15Flash8b": "$0.0375/$0.15 per 1M tokens"
     }
   },
+  "aiTrading": {
+    "tips": {
+      "experimental": "AI Auto-Trading is experimental and should be used with caution",
+      "simulator": "Always use the Trading Simulator before real trading",
+      "monitor": "Monitor your positions and adjust risk settings as needed"
+    },
+    "status": {
+      "title": "Auto-Trading Status",
+      "autoTrading": "Auto-Trading",
+      "active": "Active - AI is analyzing and trading",
+      "inactive": "Inactive - Toggle in Chat to activate",
+      "activeWallet": "Active Wallet: {{name}} ({{currency}})",
+      "balance": "Balance: {{balance}} {{currency}}"
+    },
+    "riskProfile": {
+      "title": "Risk Profile",
+      "tradingStrategy": "Trading Strategy",
+      "conservative": "Conservative",
+      "conservativeDesc": "50%+ confidence, 1:2 risk/reward",
+      "moderate": "Moderate",
+      "moderateDesc": "40%+ confidence, 1:1.5 risk/reward",
+      "aggressive": "Aggressive",
+      "aggressiveDesc": "30%+ confidence, 1:1 risk/reward",
+      "maxPositionSize": "Max Position Size (%)",
+      "accountRisk": "Account Risk (%)",
+      "defaultStopLoss": "Default Stop Loss (%)",
+      "defaultTakeProfit": "Default Take Profit (%)"
+    },
+    "limits": {
+      "title": "Trading Limits",
+      "analysisInterval": "Analysis Interval",
+      "maxTradesPerDay": "Max Trades Per Day",
+      "maxTradesPerHour": "Max Trades Per Hour",
+      "minTimeBetween": "Min Time Between Trades (min)",
+      "interval1m": "1 minute",
+      "interval5m": "5 minutes",
+      "interval15m": "15 minutes",
+      "interval30m": "30 minutes",
+      "interval1h": "1 hour"
+    },
+    "safety": {
+      "title": "Safety Settings",
+      "maxDailyLoss": "Max Daily Loss (%)",
+      "emergencyStop": "Emergency Stop (consecutive losses)",
+      "notifyOnTrade": "Notify on trade execution",
+      "notifyOnProfit": "Notify on profitable close",
+      "notifyOnLoss": "Notify on loss close"
+    },
+    "statistics": {
+      "title": "Trading Statistics",
+      "totalTrades": "Total Trades",
+      "openPositions": "Open Positions",
+      "winRate": "Win Rate",
+      "netPnL": "Net P&L"
+    },
+    "clearHistory": "Clear Trading History"
+  },
+  "patternDetection": {
+    "title": "Pattern Detection Configuration",
+    "resetDefaults": "Reset to Defaults",
+    "tips": {
+      "sensitivity": "Higher sensitivity detects more pivot points but may reduce accuracy",
+      "confidence": "Minimum confidence filters patterns based on reliability threshold",
+      "period": "Formation period controls how many candles to analyze for patterns"
+    },
+    "sensitivity": {
+      "label": "Sensitivity",
+      "helper": "Controls pivot point detection sensitivity (0 = strict, 100 = permissive)"
+    },
+    "minConfidence": {
+      "label": "Minimum Confidence",
+      "helper": "Minimum confidence threshold for pattern validation"
+    },
+    "formationPeriod": {
+      "label": "Formation Period",
+      "helper": "Lookback period for pattern detection",
+      "candles": "candles"
+    },
+    "trendlineAccuracy": {
+      "label": "Trendline Accuracy (R²)",
+      "helper": "R² threshold for trendline quality assessment"
+    },
+    "volumeWeight": {
+      "label": "Volume Confirmation Weight",
+      "helper": "Weight of volume in confidence calculation"
+    },
+    "enabledPatterns": "Enabled Patterns",
+    "enabled": "Enabled",
+    "showPreview": {
+      "label": "Show Pattern Preview",
+      "helper": "Display pattern preview in real-time on chart"
+    },
+    "groups": {
+      "reversalPatterns": "Reversal Patterns",
+      "continuationPatterns": "Continuation Patterns",
+      "supportResistance": "Support & Resistance",
+      "zones": "Trading Zones",
+      "gaps": "Price Gaps"
+    },
+    "patterns": {
+      "head-and-shoulders": "Head and Shoulders",
+      "inverse-head-and-shoulders": "Inverse Head and Shoulders",
+      "double-top": "Double Top",
+      "double-bottom": "Double Bottom",
+      "triple-top": "Triple Top",
+      "triple-bottom": "Triple Bottom",
+      "rounding-bottom": "Rounding Bottom",
+      "triangle-ascending": "Ascending Triangle",
+      "triangle-descending": "Descending Triangle",
+      "triangle-symmetrical": "Symmetrical Triangle",
+      "flag-bullish": "Bullish Flag",
+      "flag-bearish": "Bearish Flag",
+      "pennant": "Pennant",
+      "cup-and-handle": "Cup and Handle",
+      "wedge-falling": "Falling Wedge",
+      "wedge-rising": "Rising Wedge",
+      "support": "Support",
+      "resistance": "Resistance",
+      "buy-zone": "Buy Zone",
+      "sell-zone": "Sell Zone",
+      "liquidity-zone": "Liquidity Zone",
+      "accumulation-zone": "Accumulation Zone",
+      "gap-common": "Common Gap",
+      "gap-breakaway": "Breakaway Gap",
+      "gap-runaway": "Runaway Gap",
+      "gap-exhaustion": "Exhaustion Gap"
+    }
+  },
   "trading": {
     "simulator": {
       "toggle": "Trading Simulator",
@@ -605,6 +749,84 @@
     "confirmClose": "Confirm Close",
     "active": "ACTIVE",
     "pending": "PENDING"
+  },
+  "patterns": {
+    "configurePatterns": "Configure Patterns",
+    "enabledPatterns": "Enabled Patterns",
+    "basicPatterns": "Basic",
+    "trendlines": "Trendlines",
+    "fibonacci": "Fibonacci",
+    "channels": "Channels",
+    "triangles": "Triangles",
+    "wedges": "Wedges",
+    "advancedPatterns": "Advanced",
+    "support": "Support",
+    "supportTooltip": "Horizontal price level where buying interest concentrates, preventing further decline. Requires 2+ touches for validation.",
+    "resistance": "Resistance",
+    "resistanceTooltip": "Horizontal price level where selling pressure concentrates, limiting upward movement. Stronger with more touches.",
+    "bullishTrendline": "Bullish Trendline",
+    "bullishTrendlineTooltip": "Line connecting higher lows, indicating upward momentum. Acts as dynamic support during uptrends.",
+    "bearishTrendline": "Bearish Trendline",
+    "bearishTrendlineTooltip": "Line connecting lower highs, indicating downward momentum. Acts as dynamic resistance during downtrends.",
+    "fibonacciRetracement": "Fibonacci Retracement",
+    "fibonacciRetracementTooltip": "Key levels (23.6%, 38.2%, 50%, 61.8%, 78.6%) where price often finds support or resistance during pullbacks.",
+    "ascendingChannel": "Ascending Channel",
+    "ascendingChannelTooltip": "Parallel upward-sloping lines containing price action. Bullish continuation pattern with clear support and resistance.",
+    "descendingChannel": "Descending Channel",
+    "descendingChannelTooltip": "Parallel downward-sloping lines containing price action. Bearish continuation pattern indicating sustained downtrend.",
+    "ascendingTriangle": "Ascending Triangle",
+    "ascendingTriangleTooltip": "Flat top with rising lows. Bullish pattern showing buyers getting more aggressive. Breakout usually upward.",
+    "descendingTriangle": "Descending Triangle",
+    "descendingTriangleTooltip": "Flat bottom with falling highs. Bearish pattern showing sellers getting more aggressive. Breakout usually downward.",
+    "symmetricalTriangle": "Symmetrical Triangle",
+    "symmetricalTriangleTooltip": "Converging trendlines with lower highs and higher lows. Consolidation pattern - breakout direction uncertain.",
+    "risingWedge": "Rising Wedge",
+    "risingWedgeTooltip": "Both lines slope upward but converge. Bearish reversal pattern - momentum weakening despite higher prices.",
+    "fallingWedge": "Falling Wedge",
+    "fallingWedgeTooltip": "Both lines slope downward but converge. Bullish reversal pattern - selling pressure diminishing.",
+    "headAndShoulders": "Head & Shoulders",
+    "headAndShouldersTooltip": "Three peaks with middle highest. Bearish reversal pattern signaling trend exhaustion and potential decline.",
+    "inverseHeadAndShoulders": "Inverse H&S",
+    "inverseHeadAndShouldersTooltip": "Three troughs with middle lowest. Bullish reversal pattern indicating bottom formation and potential rally.",
+    "doubleTop": "Double Top",
+    "doubleTopTooltip": "Two peaks at similar price ('M' shape). Bearish reversal after failed attempt to break resistance.",
+    "doubleBottom": "Double Bottom",
+    "doubleBottomTooltip": "Two troughs at similar price ('W' shape). Bullish reversal after support holds twice.",
+    "tripleTop": "Triple Top",
+    "tripleTopTooltip": "Three peaks at similar price. Bearish reversal pattern after multiple failed breakouts.",
+    "tripleBottom": "Triple Bottom",
+    "tripleBottomTooltip": "Three troughs at similar price. Bullish reversal pattern after multiple support holds.",
+    "flagBullish": "Bullish Flag",
+    "flagBullishTooltip": "Short consolidation after a strong upward move, usually followed by continuation upward.",
+    "flagBearish": "Bearish Flag",
+    "flagBearishTooltip": "Short consolidation after a strong downward move, usually followed by continuation downward.",
+    "pennant": "Pennant",
+    "pennantTooltip": "Small symmetrical triangle that forms after a sharp move, typically a continuation pattern.",
+    "cupAndHandle": "Cup and Handle",
+    "cupAndHandleTooltip": "Rounded bottom followed by a small pullback (handle). Bullish continuation pattern.",
+    "roundingBottom": "Rounding Bottom",
+    "roundingBottomTooltip": "Gradual shift from downtrend to uptrend, forming a rounded shape. Bullish reversal.",
+    "gapCommon": "Common Gap",
+    "gapCommonTooltip": "A price gap with little significance, often filled quickly.",
+    "gapBreakaway": "Breakaway Gap",
+    "gapBreakawayTooltip": "Gap that occurs at the end of a price pattern, signaling the start of a new trend.",
+    "gapRunaway": "Runaway Gap",
+    "gapRunawayTooltip": "Gap that occurs in the middle of a trend, confirming trend strength.",
+    "gapExhaustion": "Exhaustion Gap",
+    "gapExhaustionTooltip": "Gap that occurs near the end of a trend, often signaling a reversal.",
+    "liquidityZone": "Liquidity Zone",
+    "liquidityZoneTooltip": "Price area with high trading activity, often acting as support or resistance.",
+    "sellZone": "Sell Zone",
+    "sellZoneTooltip": "Area where selling pressure is expected to increase.",
+    "buyZone": "Buy Zone",
+    "buyZoneTooltip": "Area where buying pressure is expected to increase.",
+    "accumulationZone": "Accumulation Zone",
+    "accumulationZoneTooltip": "Area where large players are accumulating positions, often before an uptrend.",
+    "horizontalChannel": "Horizontal Channel",
+    "horizontalChannelTooltip": "Parallel horizontal lines containing price action. Range-bound market pattern.",
+    "fibonacciExtension": "Fibonacci Extension",
+    "fibonacciExtensionTooltip": "Levels used to project possible price targets beyond the current trend.",
+    "extraPatterns": "Extra"
   },
   "about": {
     "version": "Version {{version}}",

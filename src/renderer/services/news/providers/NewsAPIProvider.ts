@@ -74,7 +74,7 @@ export class NewsAPIProvider extends BaseNewsProvider {
       author: article.author ?? undefined,
       publishedAt: Date.parse(article.publishedAt),
       imageUrl: article.urlToImage ?? undefined,
-      symbols: this.extractSymbols(article.title + ' ' + article.description),
+      symbols: this.extractSymbols(`${article.title  } ${  article.description}`),
     };
   }
 

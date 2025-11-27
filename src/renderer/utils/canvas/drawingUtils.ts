@@ -70,7 +70,7 @@ export const drawCandle = (
   isHighlighted: boolean = false,
 ): void => {
   const isBullish = closeY < openY;
-  let color = isBullish ? bullishColor : bearishColor;
+  const color = isBullish ? bullishColor : bearishColor;
 
   const bodyTop = Math.min(openY, closeY);
   const bodyBottom = Math.max(openY, closeY);

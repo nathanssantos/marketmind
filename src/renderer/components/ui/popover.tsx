@@ -35,7 +35,7 @@ export const Popover = ({
       <ChakraPopover.Trigger asChild>{trigger}</ChakraPopover.Trigger>
       {open && (
         <Portal>
-          <ChakraPopover.Positioner>
+          <ChakraPopover.Positioner zIndex={9999}>
             <ChakraPopover.Content width={width}>
               {showArrow && (
                 <ChakraPopover.Arrow>

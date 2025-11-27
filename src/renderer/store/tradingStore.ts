@@ -613,7 +613,7 @@ export const useTradingStore = create<TradingState>((set, get) => {
       activateOrder: (id, executionPrice) =>
         setWithSync((state) => {
           const order = state.orders.find((o) => o.id === id);
-          if (!order || order.status !== 'pending') return state;
+          if (order?.status !== 'pending') return state;
 
           const wallet = state.wallets.find((w) => w.id === order.walletId);
           if (!wallet) return state;

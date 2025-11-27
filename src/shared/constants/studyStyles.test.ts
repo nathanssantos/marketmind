@@ -133,14 +133,6 @@ describe('studyStyles', () => {
       });
     });
 
-    it('should return correct category for elliott wave', () => {
-      const result = getStudyStyle('elliott-wave');
-
-      expect(result.category).toBe('Advanced');
-      expect(result.lineStyle).toBe('solid');
-      expect(result.color).toBe(STUDY_COLORS['elliott-wave']);
-    });
-
     it('should return correct category for zone types', () => {
       const zoneTypes: AIStudyType[] = [
         'liquidity-zone',
@@ -247,7 +239,6 @@ describe('studyStyles', () => {
         ['double-top', 'Double Top'],
         ['triangle-ascending', 'Ascending Triangle'],
         ['gap-common', 'Common Gap'],
-        ['elliott-wave', 'Elliott Wave'],
       ];
 
       tests.forEach(([type, expectedLabel]) => {

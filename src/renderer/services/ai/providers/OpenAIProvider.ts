@@ -39,7 +39,7 @@ export class OpenAIProvider extends BaseAIProvider {
 
       if (images && images.length > 0) {
         const lastMessage = chatMessages[chatMessages.length - 1];
-        if (lastMessage && lastMessage.role === 'user') {
+        if (lastMessage?.role === 'user') {
           const textContent = typeof lastMessage.content === 'string' 
             ? lastMessage.content 
             : '';

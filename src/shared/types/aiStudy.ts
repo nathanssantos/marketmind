@@ -28,7 +28,6 @@ export type AIStudyType =
   | 'gap-breakaway'
   | 'gap-runaway'
   | 'gap-exhaustion'
-  | 'elliott-wave'
   | 'liquidity-zone'
   | 'sell-zone'
   | 'buy-zone'
@@ -46,6 +45,7 @@ export interface AIStudyLine {
   label?: string;
   confidence?: number;
   visible?: boolean;
+  timestamp?: number;
 }
 
 export interface AIStudyChannel {
@@ -56,6 +56,7 @@ export interface AIStudyChannel {
   label?: string;
   confidence?: number;
   visible?: boolean;
+  timestamp?: number;
 }
 
 export interface AIStudyFibonacci {
@@ -71,6 +72,7 @@ export interface AIStudyFibonacci {
   label?: string;
   confidence?: number;
   visible?: boolean;
+  timestamp?: number;
 }
 
 export interface AIStudyHeadAndShoulders {
@@ -84,6 +86,7 @@ export interface AIStudyHeadAndShoulders {
   label?: string;
   confidence?: number;
   visible?: boolean;
+  timestamp?: number;
 }
 
 export interface AIStudyDoublePattern {
@@ -96,6 +99,7 @@ export interface AIStudyDoublePattern {
   label?: string;
   confidence?: number;
   visible?: boolean;
+  timestamp?: number;
 }
 
 export interface AIStudyTriplePattern {
@@ -109,6 +113,7 @@ export interface AIStudyTriplePattern {
   label?: string;
   confidence?: number;
   visible?: boolean;
+  timestamp?: number;
 }
 
 export interface AIStudyTriangle {
@@ -121,6 +126,7 @@ export interface AIStudyTriangle {
   label?: string;
   confidence?: number;
   visible?: boolean;
+  timestamp?: number;
 }
 
 export interface AIStudyWedge {
@@ -134,6 +140,7 @@ export interface AIStudyWedge {
   label?: string;
   confidence?: number;
   visible?: boolean;
+  timestamp?: number;
 }
 
 export interface AIStudyFlag {
@@ -151,6 +158,7 @@ export interface AIStudyFlag {
   label?: string;
   confidence?: number;
   visible?: boolean;
+  timestamp?: number;
 }
 
 export interface AIStudyPennant {
@@ -170,6 +178,7 @@ export interface AIStudyPennant {
   label?: string;
   confidence?: number;
   visible?: boolean;
+  timestamp?: number;
 }
 
 export interface AIStudyCupAndHandle {
@@ -185,6 +194,7 @@ export interface AIStudyCupAndHandle {
   label?: string;
   confidence?: number;
   visible?: boolean;
+  timestamp?: number;
 }
 
 export interface AIStudyRoundingBottom {
@@ -197,6 +207,7 @@ export interface AIStudyRoundingBottom {
   label?: string;
   confidence?: number;
   visible?: boolean;
+  timestamp?: number;
 }
 
 export interface AIStudyGap {
@@ -214,27 +225,7 @@ export interface AIStudyGap {
   label?: string;
   confidence?: number;
   visible?: boolean;
-}
-
-export interface AIStudyElliottWave {
-  id?: number;
-  type: 'elliott-wave';
-  impulse: {
-    wave1: { start: AIStudyPoint; end: AIStudyPoint };
-    wave2: { start: AIStudyPoint; end: AIStudyPoint };
-    wave3: { start: AIStudyPoint; end: AIStudyPoint };
-    wave4: { start: AIStudyPoint; end: AIStudyPoint };
-    wave5: { start: AIStudyPoint; end: AIStudyPoint };
-  };
-  correction?: {
-    waveA: { start: AIStudyPoint; end: AIStudyPoint };
-    waveB: { start: AIStudyPoint; end: AIStudyPoint };
-    waveC: { start: AIStudyPoint; end: AIStudyPoint };
-  };
-  degree?: 'grand-supercycle' | 'supercycle' | 'cycle' | 'primary' | 'intermediate' | 'minor' | 'minute' | 'minuette' | 'subminuette';
-  label?: string;
-  confidence?: number;
-  visible?: boolean;
+  timestamp?: number;
 }
 
 export interface AIStudyZone {
@@ -247,6 +238,7 @@ export interface AIStudyZone {
   label?: string;
   confidence?: number;
   visible?: boolean;
+  timestamp?: number;
 }
 
 export type AIStudy =
@@ -263,7 +255,6 @@ export type AIStudy =
   | AIStudyCupAndHandle
   | AIStudyRoundingBottom
   | AIStudyGap
-  | AIStudyElliottWave
   | AIStudyZone;
 
 export interface AIStudyData {

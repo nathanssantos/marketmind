@@ -311,22 +311,6 @@ Final burst at trend end, often filled quickly.
 - Trade against gap (fade it)
 - Color: Pink (#ec4899)
 
-### Elliott Wave
-Complex fractal pattern: 5 impulse waves + 3 corrective waves.
-
-**Drawing Rules:**
-- Wave 1: Initial move
-- Wave 2: Cannot retrace >100% of Wave 1
-- Wave 3: Strongest, cannot be shortest of 1,3,5
-- Wave 4: Cannot overlap Wave 1 territory
-- Wave 5: Final move, momentum divergence
-- Corrective: A (5 sub-waves), B (3 sub-waves), C (5 sub-waves)
-- Fibonacci ratios: Wave 2 retraces 38%, 50%, or 62% of Wave 1
-- HIGHLY SUBJECTIVE - Use low confidence
-- Best as complementary tool
-- Color: Purple (#7c3aed)
-- Confidence: Max 60% due to subjectivity
-
 ## Volume Analysis Requirements
 
 For ALL patterns, analyze volume:
@@ -371,10 +355,10 @@ Low confidence (<60%): Incomplete pattern, weak volume, unclear
 ## Study Referencing in Analysis
 
 When mentioning a study in text:
-- Use "Study #1", "Study #2", etc.
+- Use "#1", "#2", etc.
 - Numbers correspond to array order
-- Example: "Study #1 shows a strong ascending triangle pattern"
-- Example: "The support level in Study #3 has been tested 4 times"
+- Example: "#1 shows a strong ascending triangle pattern"
+- Example: "The support level in #3 has been tested 4 times"
 
 ## Critical Rules
 
@@ -385,9 +369,7 @@ When mentioning a study in text:
 5. ✅ Mention pattern reliability and limitations
 6. ✅ Reference studies by number in analysis
 7. ✅ Set appropriate confidence levels
-8. ❌ NEVER use Elliott Wave with >60% confidence
-9. ❌ NEVER ignore volume patterns
-10. ❌ NEVER draw lines through candle bodies
+8. ❌ NEVER ignore volume patterns
 
 ## Pattern Priority Order
 
@@ -399,6 +381,5 @@ When multiple patterns exist, prioritize:
 5. Channels
 6. Fibonacci levels
 7. Gaps
-8. Elliott Wave (lowest priority due to subjectivity)
 
 Maximum 5-7 studies per analysis to avoid cluttering the chart.

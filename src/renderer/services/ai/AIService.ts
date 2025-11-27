@@ -1,4 +1,5 @@
-import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage, AIProviderType } from '@shared/types';
+import { patternDetectionService } from '@renderer/utils/patternDetection';
+import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage, AIProviderType, AIStudy, Candle } from '@shared/types';
 import defaultPrompts from './prompts.json';
 import { ClaudeProvider, GeminiProvider, OpenAIProvider } from './providers';
 import type { AIProviderConfig, BaseAIProvider } from './types';
@@ -12,6 +13,7 @@ export interface AIServiceConfig {
   useOptimizedPrompts?: boolean;
   enableAIStudies?: boolean;
   detailedCandlesCount?: number;
+  useAlgorithmicDetection?: boolean;
   customPrompts?: {
     chartAnalysis?: typeof defaultPrompts.chartAnalysis;
     chat?: typeof defaultPrompts.chat;
@@ -103,7 +105,91 @@ export class AIService {
       throw new Error('AI provider not initialized');
     }
 
+    if (this.config.useAlgorithmicDetection) {
+      return this.analyzeChartWithAlgorithmicDetection(request);
+    }
+
     return this.provider.analyzeChart(request);
+  }
+
+  private async analyzeChartWithAlgorithmicDetection(
+    request: AIAnalysisRequest
+  ): Promise<AIAnalysisResponse> {
+    const detectionResult = patternDetectionService.detectPatterns(request.candles, {
+      minConfidence: 0.6,
+    });
+
+    const detectedStudies = detectionResult.studies;
+
+    const interpretationPrompt = this.buildInterpretationPrompt(
+      detectedStudies,
+      request.candles,
+      request.context
+    );
+
+    const messages: AIMessage[] = [
+      {
+        id: 'pattern-interpretation',
+        role: 'user',
+        content: interpretationPrompt,
+        timestamp: Date.now(),
+      },
+    ];
+
+    if (!this.provider) {
+      throw new Error('AI provider not initialized');
+    }
+
+    const aiResponse = await this.provider.sendMessage(messages);
+
+    return {
+      ...aiResponse,
+      studies: detectedStudies,
+    };
+  }
+
+  private buildInterpretationPrompt(
+    studies: AIStudy[],
+    recentCandles: Candle[],
+    context?: string
+  ): string {
+    const studiesSummary = studies.map((study, index) => {
+      let description = `Study #${index + 1}: ${study.type}`;
+      
+      if ('points' in study && study.points) {
+        const [start, end] = study.points;
+        description += ` from ${start.price.toFixed(2)} to ${end.price.toFixed(2)}`;
+      }
+      
+      if (study.confidence) {
+        description += ` (confidence: ${(study.confidence * 100).toFixed(0)}%)`;
+      }
+      
+      return description;
+    }).join('\n');
+
+    const recentCandlesData = recentCandles.slice(-20).map(c => 
+      `${new Date(c.timestamp).toISOString()}: O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`
+    ).join('\n');
+
+    return `
+DETECTED TECHNICAL PATTERNS (Algorithmic Analysis):
+${studiesSummary || 'No significant patterns detected.'}
+
+RECENT PRICE ACTION (Last 20 candles):
+${recentCandlesData}
+
+${context ? `ADDITIONAL CONTEXT:\n${context}\n` : ''}
+
+Please provide:
+1. **Pattern Interpretation**: Analyze the significance and reliability of the detected patterns
+2. **Market Context**: What do these patterns suggest about current market sentiment and structure?
+3. **Trading Implications**: Potential entry/exit points, stop-loss levels, and price targets
+4. **Risk Assessment**: Key support/resistance levels to watch and risk/reward considerations
+5. **Market Outlook**: Short-term and medium-term price expectations based on the patterns
+
+Focus on interpreting the detected patterns rather than finding new ones. Provide actionable insights for traders.
+    `.trim();
   }
 
   async switchProvider(newConfig: AIServiceConfig): Promise<void> {

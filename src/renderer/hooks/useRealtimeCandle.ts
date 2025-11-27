@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import type { TimeInterval, Candle } from '@shared/types';
-import { MarketDataService } from '../services/market/MarketDataService';
+import type { MarketDataService } from '../services/market/MarketDataService';
 
 interface UseRealtimeCandleOptions {
   symbol: string;

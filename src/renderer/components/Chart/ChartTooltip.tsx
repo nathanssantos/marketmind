@@ -282,24 +282,38 @@ export const ChartTooltip = ({
         borderColor="border"
       >
         <Stack gap={1.5}>
-          <Text fontSize="2xs" color="fg.muted" mb={1}>
-            {formatDateTimeTooltip(aiStudy.timestamp)}
-          </Text>
+          {aiStudy.timestamp && (
+            <Text fontSize="2xs" color="fg.muted" mb={1}>
+              {formatDateTimeTooltip(aiStudy.timestamp)}
+            </Text>
+          )}
           <HStack gap={1.5}>
             <Text>🤖</Text>
             <Text fontWeight="semibold" color="blue.500">
               {studyTypeLabel}
             </Text>
           </HStack>
-          <Text color="fg.muted">{aiStudy.label}</Text>
-          {isLine && priceValue !== undefined ? (
+          {aiStudy.label && (
+            <Text color="fg.muted" fontSize="xs">
+              {aiStudy.label}
+            </Text>
+          )}
+          {aiStudy.confidence !== undefined && (
             <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
-              <Text color="fg.muted">Price:</Text>
+              <Text color="fg.muted">Confidence:</Text>
+              <Text fontWeight="medium" color={aiStudy.confidence >= 0.7 ? 'green.500' : aiStudy.confidence >= 0.5 ? 'yellow.500' : 'orange.500'}>
+                {Math.round(aiStudy.confidence * 100)}%
+              </Text>
+            </HStack>
+          )}
+          {isLine && priceValue !== undefined ? (
+            <HStack justify="space-between" pt={aiStudy.confidence === undefined ? 1 : 0} borderTopWidth={aiStudy.confidence === undefined ? 1 : 0} borderColor="border">
+              <Text color="fg.muted">Price Level:</Text>
               <Text fontWeight="medium">{formatPrice(priceValue)}</Text>
             </HStack>
           ) : topPriceValue !== undefined && bottomPriceValue !== undefined ? (
             <>
-              <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+              <HStack justify="space-between" pt={aiStudy.confidence === undefined ? 1 : 0} borderTopWidth={aiStudy.confidence === undefined ? 1 : 0} borderColor="border">
                 <Text color="fg.muted">Top:</Text>
                 <Text fontWeight="medium">{formatPrice(topPriceValue)}</Text>
               </HStack>

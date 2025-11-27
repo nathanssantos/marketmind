@@ -182,12 +182,12 @@ const setupUpdateIpcHandlers = (): void => {
   });
 };
 
-const createSuccessResponse = (data?: unknown) => ({ 
+const createSuccessResponse = <T = undefined>(data?: T): { success: boolean; data?: T; error?: string } => ({ 
   success: true, 
   ...(data !== undefined && { data }) 
 });
 
-const createErrorResponse = (error: unknown, defaultData?: unknown) => ({
+const createErrorResponse = <T = undefined>(error: unknown, defaultData?: T): { success: boolean; data?: T; error?: string } => ({
   success: false,
   error: error instanceof Error ? error.message : 'Unknown error',
   ...(defaultData !== undefined && { data: defaultData }),
@@ -197,13 +197,13 @@ const handleStorageOperation = async <T>(
   operation: () => T,
   errorMessage: string,
   options: { returnData?: boolean; defaultData?: unknown } = {}
-): Promise<{ success: boolean; data?: T; error?: string }> => {
+): Promise<{ success: boolean; data?: T | undefined; error?: string }> => {
   try {
     const result = operation();
-    return options.returnData ? createSuccessResponse(result) : createSuccessResponse();
+    return options.returnData ? createSuccessResponse<T>(result) : createSuccessResponse<T | undefined>(undefined);
   } catch (error) {
     console.error(errorMessage, error);
-    return createErrorResponse(error, options.defaultData) as { success: boolean; data?: T; error?: string };
+    return createErrorResponse<T | undefined>(error, options.defaultData as T | undefined);
   }
 };
 

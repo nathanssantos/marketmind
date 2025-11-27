@@ -1,9 +1,9 @@
 # 📊 MarketMind - Project Status
 
-> **Last Updated:** November 24, 2025  
-> **Current Version:** 0.26.0  
+> **Last Updated:** November 26, 2025  
+> **Current Version:** 0.28.0  
 > **Current Branch:** `develop`  
-> **Current Phase:** Phase 19 Complete + Stochastic & RSI Indicators
+> **Current Phase:** Phase 19 Complete + Pattern Detection UI
 
 ---
 

@@ -1,6 +1,6 @@
 import type { Symbol } from '@shared/types';
 import { useCallback, useEffect, useState } from 'react';
-import { MarketDataService } from '../services/market/MarketDataService';
+import type { MarketDataService } from '../services/market/MarketDataService';
 
 interface UseSymbolSearchOptions {
   minQueryLength?: number;

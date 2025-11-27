@@ -214,7 +214,7 @@ const generateTitle = (messages: AIMessage[]): string => {
 };
 
 const formatAIError = (error: Error, provider?: AIProviderType, model?: string): string => {
-  let errorMessage = error.message;
+  const errorMessage = error.message;
   
   const providerName = provider === 'anthropic' ? 'Claude' : 
                       provider === 'openai' ? 'OpenAI' : 
@@ -665,7 +665,7 @@ export const useAIStore = create<AIState>((set, get) => {
         const state = get();
         const { settings, enableAIStudies } = state;
 
-        if (!settings || !settings.provider) {
+        if (!settings?.provider) {
           set({ error: 'Please configure AI settings first' });
           return;
         }
