@@ -1,7 +1,9 @@
 import { Field } from '@/renderer/components/ui/field';
+import { Select } from '@/renderer/components/ui/select';
 import { Slider } from '@/renderer/components/ui/slider';
 import { Switch } from '@/renderer/components/ui/switch';
 import { usePatternDetectionConfigStore } from '@/renderer/store/patternDetectionConfigStore';
+import { useUIStore, type PatternDetectionMode } from '@/renderer/store/uiStore';
 import { Box, Button, Grid, HStack, Separator, Stack, Text, VStack } from '@chakra-ui/react';
 import type { AIStudyType } from '@shared/types';
 import type React from 'react';
@@ -15,6 +17,12 @@ const MIN_R2 = 50;
 const MAX_VOLUME_WEIGHT = 50;
 const CONFIDENCE_STEP = 5;
 const VOLUME_STEP = 5;
+const MIN_PATTERNS = 5;
+const MAX_PATTERNS = 50;
+const PATTERNS_STEP = 5;
+const MIN_OVERLAP = 30;
+const MAX_OVERLAP = 90;
+const OVERLAP_STEP = 5;
 
 interface PatternGroup {
     title: string;
@@ -70,6 +78,7 @@ export const PatternDetectionTab = (): React.ReactElement => {
     const { t } = useTranslation();
     const { config, setConfig, resetToDefaults, togglePattern, isPatternEnabled } =
         usePatternDetectionConfigStore();
+    const { patternDetectionMode, setPatternDetectionMode } = useUIStore();
     const patternGroups = usePatternGroups();
 
     const getPatternLabel = (pattern: AIStudyType): string => t(`patternDetection.patterns.${pattern}`);
@@ -87,13 +96,28 @@ export const PatternDetectionTab = (): React.ReactElement => {
                 borderColor="blue.500"
             >
                 <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                    💡 {t('common.tips')}
+                    {t('common.tips')}
                 </Text>
                 <Stack gap={1} fontSize="sm" color="fg.muted">
-                    <Text>• {t('patternDetection.tips.sensitivity')}</Text>
-                    <Text>• {t('patternDetection.tips.confidence')}</Text>
-                    <Text>• {t('patternDetection.tips.period')}</Text>
+                    <Text>{t('patternDetection.tips.sensitivity')}</Text>
+                    <Text>{t('patternDetection.tips.confidence')}</Text>
+                    <Text>{t('patternDetection.tips.period')}</Text>
                 </Stack>
+            </Box>
+
+            <Box>
+                <Field label={t('patternDetection.mode.label')} helperText={t('patternDetection.mode.helper')}>
+                    <Select
+                        value={patternDetectionMode}
+                        onChange={(value) => setPatternDetectionMode(value as PatternDetectionMode)}
+                        options={[
+                            { value: 'ai-only', label: t('patternDetection.mode.aiOnly') },
+                            { value: 'algorithmic-only', label: t('patternDetection.mode.algorithmicOnly') },
+                            { value: 'hybrid', label: t('patternDetection.mode.hybrid') },
+                        ]}
+                        usePortal={false}
+                    />
+                </Field>
             </Box>
 
             <Box>
@@ -242,6 +266,113 @@ export const PatternDetectionTab = (): React.ReactElement => {
             <Separator />
 
             <Box>
+                <Text fontSize="sm" fontWeight="bold" mb={4}>
+                    {t('patternDetection.filtering.title')}
+                </Text>
+                <Stack gap={4}>
+                    <Field
+                        label={t('patternDetection.filtering.maxPatterns.label')}
+                        helperText={t('patternDetection.filtering.maxPatterns.helper')}
+                    >
+                        <Slider
+                            value={[config.maxPatternsTotal]}
+                            onValueChange={(e) => setConfig({ maxPatternsTotal: e[0]! })}
+                            min={MIN_PATTERNS}
+                            max={MAX_PATTERNS}
+                            step={PATTERNS_STEP}
+                            width="full"
+                        />
+                        <Text fontSize="sm" color="fg.muted" mt={1}>
+                            {config.maxPatternsTotal} {t('patternDetection.filtering.maxPatterns.patterns')}
+                        </Text>
+                    </Field>
+
+                    <Field>
+                        <HStack justify="space-between">
+                            <Box>
+                                <Text fontWeight="medium">{t('patternDetection.filtering.enableNested.label')}</Text>
+                                <Text fontSize="sm" color="fg.muted">
+                                    {t('patternDetection.filtering.enableNested.helper')}
+                                </Text>
+                            </Box>
+                            <Switch
+                                checked={config.enableNestedFiltering}
+                                onCheckedChange={(checked) => setConfig({ enableNestedFiltering: !!checked })}
+                            />
+                        </HStack>
+                    </Field>
+
+                    <Field>
+                        <HStack justify="space-between">
+                            <Box>
+                                <Text fontWeight="medium">{t('patternDetection.filtering.enableOverlap.label')}</Text>
+                                <Text fontSize="sm" color="fg.muted">
+                                    {t('patternDetection.filtering.enableOverlap.helper')}
+                                </Text>
+                            </Box>
+                            <Switch
+                                checked={config.enableOverlapFiltering}
+                                onCheckedChange={(checked) => setConfig({ enableOverlapFiltering: !!checked })}
+                            />
+                        </HStack>
+                    </Field>
+
+                    {config.enableOverlapFiltering && (
+                        <Field
+                            label={t('patternDetection.filtering.overlapThreshold.label')}
+                            helperText={t('patternDetection.filtering.overlapThreshold.helper')}
+                        >
+                            <Slider
+                                value={[config.overlapThreshold * PERCENT_MULTIPLIER]}
+                                onValueChange={(e) =>
+                                    setConfig({ overlapThreshold: e[0]! / PERCENT_MULTIPLIER })
+                                }
+                                min={MIN_OVERLAP}
+                                max={MAX_OVERLAP}
+                                step={OVERLAP_STEP}
+                                width="full"
+                            />
+                            <Text fontSize="sm" color="fg.muted" mt={1}>
+                                {Math.round(config.overlapThreshold * PERCENT_MULTIPLIER)}%
+                            </Text>
+                        </Field>
+                    )}
+
+                    <Field>
+                        <HStack justify="space-between">
+                            <Box>
+                                <Text fontWeight="medium">{t('patternDetection.filtering.highlightConflicts.label')}</Text>
+                                <Text fontSize="sm" color="fg.muted">
+                                    {t('patternDetection.filtering.highlightConflicts.helper')}
+                                </Text>
+                            </Box>
+                            <Switch
+                                checked={config.highlightConflicts}
+                                onCheckedChange={(checked) => setConfig({ highlightConflicts: !!checked })}
+                            />
+                        </HStack>
+                    </Field>
+
+                    <Field>
+                        <HStack justify="space-between">
+                            <Box>
+                                <Text fontWeight="medium">{t('patternDetection.filtering.showChannelCenterline.label')}</Text>
+                                <Text fontSize="sm" color="fg.muted">
+                                    {t('patternDetection.filtering.showChannelCenterline.helper')}
+                                </Text>
+                            </Box>
+                            <Switch
+                                checked={config.showChannelCenterline}
+                                onCheckedChange={(checked) => setConfig({ showChannelCenterline: !!checked })}
+                            />
+                        </HStack>
+                    </Field>
+                </Stack>
+            </Box>
+
+            <Separator />
+
+            <Box>
                 <Field>
                     <HStack justify="space-between">
                         <Box>
@@ -252,7 +383,7 @@ export const PatternDetectionTab = (): React.ReactElement => {
                         </Box>
                         <Switch
                             checked={config.showPreview}
-                            onCheckedChange={(checked) => setConfig({ showPreview: checked })}
+                            onCheckedChange={(checked) => setConfig({ showPreview: !!checked })}
                         />
                     </HStack>
                 </Field>

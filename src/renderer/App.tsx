@@ -31,6 +31,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { useMarketData } from './hooks/useMarketData';
 import { useNews } from './hooks/useNews';
 import { useOrderNotifications } from './hooks/useOrderNotifications';
+import { usePatternDetectionWorker } from './hooks/usePatternDetectionWorker';
 import { usePriceUpdates } from './hooks/usePriceUpdates';
 import { useRealtimeCandle } from './hooks/useRealtimeCandle';
 import { useSimulatorLayout } from './hooks/useSimulatorLayout';
@@ -145,6 +146,7 @@ function AppContent(): ReactElement {
   const { detectedStudies } = useChartContext();
   const [viewport, setViewport] = useState<Viewport | undefined>(undefined);
 
+  usePatternDetectionWorker();
   useAutoPatternDetection(viewport);
   useSimulatorLayout();
   usePriceUpdates();

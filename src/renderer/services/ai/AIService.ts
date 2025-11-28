@@ -115,7 +115,7 @@ export class AIService {
   private async analyzeChartWithAlgorithmicDetection(
     request: AIAnalysisRequest
   ): Promise<AIAnalysisResponse> {
-    const detectionResult = patternDetectionService.detectPatterns(request.candles, {
+    const detectionResult = await patternDetectionService.detectPatterns(request.candles, {
       minConfidence: 0.6,
     });
 

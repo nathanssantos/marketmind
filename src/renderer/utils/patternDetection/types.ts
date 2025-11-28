@@ -1,5 +1,33 @@
 import type { AIStudy, AIStudyType } from '@shared/types';
 
+export enum PatternTier {
+  MACRO = 'macro',
+  MAJOR = 'major',
+  INTERMEDIATE = 'intermediate',
+  MINOR = 'minor',
+  MICRO = 'micro',
+}
+
+export type RelationshipType = 'nested' | 'overlapping' | 'conflicting';
+
+export interface PatternRelationship {
+  parentPattern: AIStudy;
+  childPattern: AIStudy;
+  relationshipType: RelationshipType;
+  overlapPercentage: number;
+  timeOverlap: number;
+  priceOverlap: number;
+}
+
+export interface ImportanceFactors {
+  patternReliability: number;
+  formationPeriod: number;
+  volumeConfirmation: number;
+  confidence: number;
+  priceMovement: number;
+  recency: number;
+}
+
 export interface PivotPoint {
   index: number;
   price: number;
@@ -31,6 +59,18 @@ export interface DetectionOptions {
   enabledPatterns?: AIStudyType[];
   prioritizeRecent?: boolean;
   maxPatternsPerType?: number;
+  applyFiltering?: boolean;
+  enableNestedFiltering?: boolean;
+  enableOverlapFiltering?: boolean;
+  useWorker?: boolean;
+  maxPatternsPerTier?: {
+    macro: number;
+    major: number;
+    intermediate: number;
+    minor: number;
+  };
+  maxPatternsPerCategory?: number;
+  maxPatternsTotal?: number;
 }
 
 export interface DetectionResult {

@@ -1,6 +1,5 @@
 import {
     Box,
-    Checkbox as ChakraCheckbox,
     Flex,
     IconButton,
     Stack,
@@ -11,6 +10,7 @@ import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HiAdjustmentsHorizontal } from 'react-icons/hi2';
 import { useUIStore } from '../../store/uiStore';
+import { Checkbox } from '../ui/checkbox';
 import { Popover } from '../ui/popover';
 import { TooltipWrapper } from '../ui/Tooltip';
 
@@ -142,19 +142,16 @@ export const PatternTogglePopover = memo(() => {
 
                     {(Object.keys(PATTERN_CATEGORIES) as Array<keyof typeof PATTERN_CATEGORIES>).map((category) => (
                         <Box key={category}>
-                            <ChakraCheckbox.Root
-                                checked={isCategoryEnabled(category)}
-                                onCheckedChange={() => toggleCategory(category)}
-                                mb={2}
-                            >
-                                <ChakraCheckbox.HiddenInput />
-                                <ChakraCheckbox.Control>
-                                    <ChakraCheckbox.Indicator />
-                                </ChakraCheckbox.Control>
-                                <ChakraCheckbox.Label fontWeight="semibold" fontSize="sm">
-                                    {t(`patterns.${CATEGORY_LABELS[category]}`)}
-                                </ChakraCheckbox.Label>
-                            </ChakraCheckbox.Root>
+                            <Box mb={2}>
+                                <Checkbox
+                                    checked={isCategoryEnabled(category)}
+                                    onCheckedChange={() => toggleCategory(category)}
+                                >
+                                    <Text fontWeight="semibold" fontSize="sm">
+                                        {t(`patterns.${CATEGORY_LABELS[category]}`)}
+                                    </Text>
+                                </Checkbox>
+                            </Box>
                             <Stack gap={1} pl={6}>
                                 {PATTERN_CATEGORIES[category].map((pattern) => (
                                     <TooltipWrapper
@@ -164,18 +161,14 @@ export const PatternTogglePopover = memo(() => {
                                         showArrow
                                     >
                                         <Box>
-                                            <ChakraCheckbox.Root
+                                            <Checkbox
                                                 checked={enabledPatterns?.includes(pattern.value as AIStudyType)}
                                                 onCheckedChange={() => togglePattern(pattern.value as AIStudyType)}
                                             >
-                                                <ChakraCheckbox.HiddenInput />
-                                                <ChakraCheckbox.Control>
-                                                    <ChakraCheckbox.Indicator />
-                                                </ChakraCheckbox.Control>
-                                                <ChakraCheckbox.Label fontSize="sm">
+                                                <Text fontSize="sm">
                                                     {t(`patterns.${pattern.labelKey}`)}
-                                                </ChakraCheckbox.Label>
-                                            </ChakraCheckbox.Root>
+                                                </Text>
+                                            </Checkbox>
                                         </Box>
                                     </TooltipWrapper>
                                 ))}

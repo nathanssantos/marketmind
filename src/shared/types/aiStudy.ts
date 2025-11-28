@@ -46,6 +46,11 @@ export interface AIStudyLine {
   confidence?: number;
   visible?: boolean;
   timestamp?: number;
+  importanceScore?: number;
+  tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
+  hasConflict?: boolean;
+  conflictingPatterns?: number[];
+  nestedPatterns?: number[];
 }
 
 export interface AIStudyChannel {
@@ -57,6 +62,11 @@ export interface AIStudyChannel {
   confidence?: number;
   visible?: boolean;
   timestamp?: number;
+  importanceScore?: number;
+  tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
+  hasConflict?: boolean;
+  conflictingPatterns?: number[];
+  nestedPatterns?: number[];
 }
 
 export interface AIStudyFibonacci {
@@ -73,6 +83,11 @@ export interface AIStudyFibonacci {
   confidence?: number;
   visible?: boolean;
   timestamp?: number;
+  importanceScore?: number;
+  tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
+  hasConflict?: boolean;
+  conflictingPatterns?: number[];
+  nestedPatterns?: number[];
 }
 
 export interface AIStudyHeadAndShoulders {
@@ -87,6 +102,11 @@ export interface AIStudyHeadAndShoulders {
   confidence?: number;
   visible?: boolean;
   timestamp?: number;
+  importanceScore?: number;
+  tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
+  hasConflict?: boolean;
+  conflictingPatterns?: number[];
+  nestedPatterns?: number[];
 }
 
 export interface AIStudyDoublePattern {
@@ -100,6 +120,11 @@ export interface AIStudyDoublePattern {
   confidence?: number;
   visible?: boolean;
   timestamp?: number;
+  importanceScore?: number;
+  tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
+  hasConflict?: boolean;
+  conflictingPatterns?: number[];
+  nestedPatterns?: number[];
 }
 
 export interface AIStudyTriplePattern {
@@ -114,6 +139,11 @@ export interface AIStudyTriplePattern {
   confidence?: number;
   visible?: boolean;
   timestamp?: number;
+  importanceScore?: number;
+  tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
+  hasConflict?: boolean;
+  conflictingPatterns?: number[];
+  nestedPatterns?: number[];
 }
 
 export interface AIStudyTriangle {
@@ -127,6 +157,11 @@ export interface AIStudyTriangle {
   confidence?: number;
   visible?: boolean;
   timestamp?: number;
+  importanceScore?: number;
+  tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
+  hasConflict?: boolean;
+  conflictingPatterns?: number[];
+  nestedPatterns?: number[];
 }
 
 export interface AIStudyWedge {
@@ -141,6 +176,11 @@ export interface AIStudyWedge {
   confidence?: number;
   visible?: boolean;
   timestamp?: number;
+  importanceScore?: number;
+  tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
+  hasConflict?: boolean;
+  conflictingPatterns?: number[];
+  nestedPatterns?: number[];
 }
 
 export interface AIStudyFlag {
@@ -159,6 +199,11 @@ export interface AIStudyFlag {
   confidence?: number;
   visible?: boolean;
   timestamp?: number;
+  importanceScore?: number;
+  tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
+  hasConflict?: boolean;
+  conflictingPatterns?: number[];
+  nestedPatterns?: number[];
 }
 
 export interface AIStudyPennant {
@@ -179,6 +224,11 @@ export interface AIStudyPennant {
   confidence?: number;
   visible?: boolean;
   timestamp?: number;
+  importanceScore?: number;
+  tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
+  hasConflict?: boolean;
+  conflictingPatterns?: number[];
+  nestedPatterns?: number[];
 }
 
 export interface AIStudyCupAndHandle {
@@ -195,6 +245,11 @@ export interface AIStudyCupAndHandle {
   confidence?: number;
   visible?: boolean;
   timestamp?: number;
+  importanceScore?: number;
+  tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
+  hasConflict?: boolean;
+  conflictingPatterns?: number[];
+  nestedPatterns?: number[];
 }
 
 export interface AIStudyRoundingBottom {
@@ -208,6 +263,11 @@ export interface AIStudyRoundingBottom {
   confidence?: number;
   visible?: boolean;
   timestamp?: number;
+  importanceScore?: number;
+  tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
+  hasConflict?: boolean;
+  conflictingPatterns?: number[];
+  nestedPatterns?: number[];
 }
 
 export interface AIStudyGap {
@@ -226,6 +286,11 @@ export interface AIStudyGap {
   confidence?: number;
   visible?: boolean;
   timestamp?: number;
+  importanceScore?: number;
+  tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
+  hasConflict?: boolean;
+  conflictingPatterns?: number[];
+  nestedPatterns?: number[];
 }
 
 export interface AIStudyZone {
@@ -239,6 +304,11 @@ export interface AIStudyZone {
   confidence?: number;
   visible?: boolean;
   timestamp?: number;
+  importanceScore?: number;
+  tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
+  hasConflict?: boolean;
+  conflictingPatterns?: number[];
+  nestedPatterns?: number[];
 }
 
 export type AIStudy =

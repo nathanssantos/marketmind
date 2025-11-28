@@ -1,4 +1,4 @@
-import type { CandleData, TimeInterval } from './candle';
+import type { Candle, CandleData, TimeInterval } from './candle';
 
 export interface Symbol {
   symbol: string;
@@ -47,7 +47,7 @@ export interface MarketDataError {
 export interface WebSocketUpdate {
   symbol: string;
   interval: TimeInterval;
-  candle: import('./candle').Candle;
+  candle: Candle;
   isFinal: boolean;
 }
 

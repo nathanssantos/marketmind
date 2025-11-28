@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.1] - 2025-11-28
+
+### Fixed
+- **Pattern Extension Rendering** 🔧
+  - Fixed pattern extensions (support, resistance, trendlines, channels) not extending to proper cutoff position
+  - Extensions now correctly extend to last candle + 36px (half of rightMargin) as per original behavior
+  - Added state migration from version 1 to 2 for `patternDetectionConfigStore` to handle legacy states
+  - Added fallback defaults (true) for `extendSupport`, `extendResistance`, `extendTrendlines`, `extendChannels` using nullish coalescing operator
+  - Ensures pattern extensions work correctly even with persisted states from older versions
+
 ## [0.28.0] - 2025-11-26
 
 ### Added

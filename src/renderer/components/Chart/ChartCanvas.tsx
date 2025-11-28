@@ -22,6 +22,8 @@ import { calculateMovingAverage } from '@renderer/utils/movingAverages';
 import type { StochasticResult } from '@renderer/utils/stochastic';
 import { CHART_CONFIG } from '@shared/constants';
 import type { AIStudy, Candle, Viewport } from '@shared/types';
+import type { Order } from '@shared/types/trading';
+import type React from 'react';
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -43,6 +45,8 @@ import { useOrderLinesRenderer } from './useOrderLinesRenderer';
 import { useRSIRenderer } from './useRSIRenderer';
 import { useStochasticRenderer } from './useStochasticRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
+
+const MOUSE_POSITION_THROTTLE_MS = 16;
 
 export interface ChartCanvasProps {
   candles: Candle[];
@@ -182,7 +186,7 @@ export const ChartCanvas = ({
       startPrice: number;
       endPrice: number;
     };
-    order?: import('@shared/types/trading').Order;
+    order?: Order;
     currentPrice?: number;
   }>({
     candle: null,
@@ -197,6 +201,7 @@ export const ChartCanvas = ({
   const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null);
   const lastHoveredOrderRef = useRef<string | null>(null);
   const lastTooltipOrderRef = useRef<string | null>(null);
+  const lastMousePositionUpdateRef = useRef<number>(0);
   const [isInteracting, setIsInteracting] = useState(false);
   const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [cursor, setCursor] = useState<'crosshair' | 'ns-resize' | 'grab' | 'grabbing' | 'pointer'>('crosshair');
@@ -403,7 +408,11 @@ export const ChartCanvas = ({
         },
       });
 
-      setMousePosition({ x: mouseX, y: mouseY });
+      const now = Date.now();
+      if (now - lastMousePositionUpdateRef.current > MOUSE_POSITION_THROTTLE_MS) {
+        setMousePosition({ x: mouseX, y: mouseY });
+        lastMousePositionUpdateRef.current = now;
+      }
       return;
     }
 
@@ -434,7 +443,11 @@ export const ChartCanvas = ({
       setCursor('crosshair');
     }
 
-    setMousePosition({ x: mouseX, y: mouseY });
+    const now = Date.now();
+    if (now - lastMousePositionUpdateRef.current > MOUSE_POSITION_THROTTLE_MS) {
+      setMousePosition({ x: mouseX, y: mouseY });
+      lastMousePositionUpdateRef.current = now;
+    }
     manager.markDirty('overlays');
 
     const viewport = manager.getViewport();

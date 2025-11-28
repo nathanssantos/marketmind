@@ -262,6 +262,7 @@
       "measurementRuler": "Règle de Mesure",
       "measurementArea": "Zone de Mesure",
       "autoPatterns": "Détection Automatique de Motifs (bougies visibles)",
+      "studyExtensions": "Étendre les Études au-delà de la Dernière Bougie",
       "indicators": "Indicateurs",
       "quickSettings": "Paramètres Rapides"
     },
@@ -559,8 +560,15 @@
     "clearHistory": "Effacer l'Historique de Trading"
   },
   "patternDetection": {
-    "title": "Configuration de Détection de Motifs",
+    "title": "Configuration de la Détection de Motifs",
     "resetDefaults": "Réinitialiser aux Valeurs par Défaut",
+    "mode": {
+      "label": "Mode de Détection",
+      "helper": "Détermine comment les données de motifs sont envoyées à l'IA (n'affecte pas l'affichage du graphique)",
+      "aiOnly": "IA Seulement - Aucune détection automatique, l'IA analyse le graphique visuellement",
+      "algorithmicOnly": "Algorithmique Seulement - Envoie les motifs détectés à l'IA",
+      "hybrid": "Hybride - L'IA analyse le graphique et les motifs détectés"
+    },
     "tips": {
       "sensitivity": "Sensibilité plus élevée détecte plus de points de pivot mais peut réduire la précision",
       "confidence": "Confiance minimale filtre les motifs basé sur le seuil de fiabilité",
@@ -590,8 +598,42 @@
     "enabledPatterns": "Motifs Activés",
     "enabled": "Activé",
     "showPreview": {
-      "label": "Afficher l'Aperçu des Motifs",
+      "label": "Afficher Aperçu des Motifs",
       "helper": "Afficher l'aperçu des motifs en temps réel sur le graphique"
+    },
+    "filtering": {
+      "title": "Filtrage des Motifs",
+      "mode": {
+        "label": "Mode de Filtrage",
+        "helper": "Choisissez entre propre (moins de motifs, haute qualité) ou complet (afficher tous les motifs détectés)",
+        "clean": "Propre (max. 20 motifs)",
+        "complete": "Complet (max. 50 motifs)"
+      },
+      "maxPatterns": {
+        "label": "Maximum de Motifs",
+        "helper": "Nombre maximum de motifs à afficher sur le graphique",
+        "patterns": "motifs"
+      },
+      "enableNested": {
+        "label": "Filtrer Motifs Imbriqués",
+        "helper": "Supprimer les petits motifs du même type qui sont imbriqués dans des motifs plus grands (différents types sont conservés)"
+      },
+      "enableOverlap": {
+        "label": "Filtrer Motifs Superposés",
+        "helper": "Supprimer les motifs avec un chevauchement élevé (conserve le plus important)"
+      },
+      "overlapThreshold": {
+        "label": "Seuil de Chevauchement",
+        "helper": "Pourcentage minimum de chevauchement pour considérer les motifs comme superposés"
+      },
+      "highlightConflicts": {
+        "label": "Mettre en Évidence Motifs Conflictuels",
+        "helper": "Afficher des indicateurs visuels lorsque les motifs donnent des signaux opposés (les deux motifs sont conservés)"
+      },
+      "showChannelCenterline": {
+        "label": "Afficher Ligne Centrale dans Canaux",
+        "helper": "Afficher ligne centrale en pointillés dans les motifs de canal"
+      }
     },
     "groups": {
       "reversalPatterns": "Motifs de Retournement",

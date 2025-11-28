@@ -1,21 +1,27 @@
 import type { Candle, Viewport } from '@shared/types';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChartContext } from '../context/ChartContext';
+import { usePatternDetectionConfigStore } from '../store/patternDetectionConfigStore';
 import { useUIStore } from '../store/uiStore';
 import { patternDetectionService } from '../utils/patternDetection';
 
+const INTERACTION_DEBOUNCE_MS = 500;
+const DETECTION_DEBOUNCE_MS = 500;
+
 export const useAutoPatternDetection = (viewport?: Viewport) => {
   const { chartData, setDetectedStudies } = useChartContext();
-  const { patternDetectionMode, algorithmicDetectionSettings } = useUIStore();
-  const lastDetectionRef = useRef<{ 
-    symbol: string; 
-    candleCount: number; 
-    viewportStart: number; 
+  const { algorithmicDetectionSettings } = useUIStore();
+  const { config: patternConfig } = usePatternDetectionConfigStore();
+  const lastDetectionRef = useRef<{
+    symbol: string;
+    candleCount: number;
+    viewportStart: number;
     viewportEnd: number;
     enabledPatterns: string;
   } | null>(null);
-  const throttleTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const pendingDetectionRef = useRef(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isInteracting, setIsInteracting] = useState(false);
+  const interactionTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const visibleStart = viewport ? Math.floor(viewport.start) : 0;
   const visibleEnd = viewport ? Math.ceil(viewport.end) : chartData?.candles.length || 0;
@@ -28,19 +34,33 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
         lookback: algorithmicDetectionSettings.pivotSensitivity,
         lookahead: algorithmicDetectionSettings.pivotSensitivity,
       },
+      applyFiltering: true,
+      enableNestedFiltering: patternConfig.enableNestedFiltering,
+      enableOverlapFiltering: patternConfig.enableOverlapFiltering,
+      useWorker: true,
+      maxPatternsPerTier: patternConfig.maxPatternsPerTier,
+      maxPatternsPerCategory: patternConfig.maxPatternsPerCategory,
+      maxPatternsTotal: patternConfig.filteringMode === 'clean' 
+        ? Math.min(patternConfig.maxPatternsTotal, 20)
+        : Math.min(patternConfig.maxPatternsTotal, 50),
     }),
     [
       algorithmicDetectionSettings.minConfidence,
       algorithmicDetectionSettings.enabledPatterns,
       algorithmicDetectionSettings.pivotSensitivity,
+      patternConfig.enableNestedFiltering,
+      patternConfig.enableOverlapFiltering,
+      patternConfig.maxPatternsPerTier,
+      patternConfig.maxPatternsPerCategory,
+      patternConfig.maxPatternsTotal,
+      patternConfig.filteringMode,
     ]
   );
 
   const detectPatterns = useCallback(
     async (candles: Candle[], symbol: string, candleCount: number, start: number, end: number) => {
       try {
-        const visibleCandles = viewport ? candles.slice(start, end) : candles;
-
+        const visibleCandles = candles.slice(start, end);
         const detectionResult = await patternDetectionService.detectPatterns(
           visibleCandles,
           detectionOptions
@@ -59,21 +79,56 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
         setDetectedStudies([]);
       }
     },
-    [detectionOptions, setDetectedStudies, viewport]
+    [detectionOptions, setDetectedStudies]
+  );
+
+  useEffect(() => {
+    if (viewport) {
+      setIsInteracting(true);
+
+      if (interactionTimerRef.current) {
+        clearTimeout(interactionTimerRef.current);
+      }
+
+      interactionTimerRef.current = setTimeout(() => {
+        setIsInteracting(false);
+      }, INTERACTION_DEBOUNCE_MS);
+    }
+  }, [viewport?.start, viewport?.end, viewport]);
+
+  const shouldSkipDetection = useCallback(
+    (
+      currentSymbol: string,
+      currentCandleCount: number,
+      currentEnabledPatterns: string
+    ): boolean => {
+      if (!lastDetectionRef.current) return false;
+
+      return (
+        lastDetectionRef.current.symbol === currentSymbol &&
+        lastDetectionRef.current.candleCount === currentCandleCount &&
+        lastDetectionRef.current.viewportStart === visibleStart &&
+        lastDetectionRef.current.viewportEnd === visibleEnd &&
+        lastDetectionRef.current.enabledPatterns === currentEnabledPatterns
+      );
+    },
+    [visibleStart, visibleEnd]
   );
 
   useEffect(() => {
     const shouldDetect =
-      (patternDetectionMode === 'algorithmic-only' || patternDetectionMode === 'hybrid') &&
       algorithmicDetectionSettings.autoDisplayPatterns &&
       chartData?.candles &&
-      chartData.candles.length > 0;
+      chartData.candles.length > 0 &&
+      !isInteracting;
 
     if (!shouldDetect) {
-      setDetectedStudies([]);
-      if (throttleTimerRef.current) {
-        clearTimeout(throttleTimerRef.current);
-        throttleTimerRef.current = null;
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      if (!algorithmicDetectionSettings.autoDisplayPatterns) {
+        setDetectedStudies([]);
       }
       return;
     }
@@ -82,49 +137,36 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
     const currentCandleCount = chartData.candles.length;
     const currentEnabledPatterns = JSON.stringify(algorithmicDetectionSettings.enabledPatterns);
 
-    if (
-      lastDetectionRef.current?.symbol === currentSymbol &&
-      lastDetectionRef.current?.candleCount === currentCandleCount &&
-      lastDetectionRef.current?.viewportStart === visibleStart &&
-      lastDetectionRef.current?.viewportEnd === visibleEnd &&
-      lastDetectionRef.current?.enabledPatterns === currentEnabledPatterns
-    ) {
-      return;
+    if (shouldSkipDetection(currentSymbol, currentCandleCount, currentEnabledPatterns)) return;
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
 
-    if (throttleTimerRef.current) {
-      pendingDetectionRef.current = true;
-      return;
-    }
-
-    const runDetection = () => {
-      detectPatterns(chartData.candles, currentSymbol, currentCandleCount, visibleStart, visibleEnd);
-      
-      throttleTimerRef.current = setTimeout(() => {
-        throttleTimerRef.current = null;
-        if (pendingDetectionRef.current) {
-          pendingDetectionRef.current = false;
-          runDetection();
-        }
-      }, 150);
-    };
-
-    runDetection();
+    debounceTimerRef.current = setTimeout(() => {
+      void detectPatterns(chartData.candles, currentSymbol, currentCandleCount, visibleStart, visibleEnd);
+      debounceTimerRef.current = null;
+    }, DETECTION_DEBOUNCE_MS);
   }, [
     chartData?.candles,
     chartData?.symbol,
-    patternDetectionMode,
     algorithmicDetectionSettings.autoDisplayPatterns,
     algorithmicDetectionSettings.enabledPatterns,
     detectPatterns,
     visibleStart,
     visibleEnd,
+    isInteracting,
+    setDetectedStudies,
+    shouldSkipDetection,
   ]);
 
   useEffect(() => {
     return () => {
-      if (throttleTimerRef.current) {
-        clearTimeout(throttleTimerRef.current);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (interactionTimerRef.current) {
+        clearTimeout(interactionTimerRef.current);
       }
     };
   }, []);
