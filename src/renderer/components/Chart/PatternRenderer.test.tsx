@@ -1,15 +1,16 @@
 import { render } from '@testing-library/react';
+import { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Candle } from '../../../shared/types';
-import { AIStudyHoverProvider } from '../../context/AIStudyHoverContext';
+import { PatternHoverProvider } from '../../context/PatternHoverContext';
 import type { CanvasManager } from '../../utils/canvas/CanvasManager';
-import { AIStudyRenderer } from './AIStudyRenderer';
+import { PatternRenderer } from './PatternRenderer';
 
-const renderWithProvider = (component: React.ReactElement) => {
+const renderWithProvider = (component: ReactElement) => {
     return render(
-        <AIStudyHoverProvider>
+        <PatternHoverProvider>
             {component}
-        </AIStudyHoverProvider>
+        </PatternHoverProvider>
     );
 };
 
@@ -39,7 +40,7 @@ const createMockContext = () => ({
     textBaseline: 'top' as CanvasTextBaseline,
 });
 
-describe('AIStudyRenderer', () => {
+describe('PatternRenderer', () => {
     const mockCandles: Candle[] = Array.from({ length: 50 }, (_, i) => ({
         timestamp: 1000000 + i * 60000,
         open: 100 + i,
@@ -62,7 +63,7 @@ describe('AIStudyRenderer', () => {
         priceToY: vi.fn((price) => 300 - price),
     };
 
-    const mockOnStudyHover = vi.fn();
+    const mockOnPatternHover = vi.fn();
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -70,14 +71,14 @@ describe('AIStudyRenderer', () => {
 
     it('should render canvas with correct dimensions', () => {
         const { container } = renderWithProvider(
-            <AIStudyRenderer
+            <PatternRenderer
                 canvasManager={mockCanvasManager as CanvasManager}
                 candles={mockCandles}
-                studies={[]}
+                patterns={[]}
                 width={800}
                 height={600}
                 mousePosition={null}
-                onStudyHover={mockOnStudyHover}
+                onPatternHover={mockOnPatternHover}
             />
         );
 
@@ -95,10 +96,10 @@ describe('AIStudyRenderer', () => {
         HTMLCanvasElement.prototype.getContext = mockGetContext as any;
 
         renderWithProvider(
-            <AIStudyRenderer
+            <PatternRenderer
                 canvasManager={mockCanvasManager as CanvasManager}
                 candles={mockCandles}
-                studies={[
+                patterns={[
                     {
                         type: 'support',
                         points: [
@@ -111,7 +112,7 @@ describe('AIStudyRenderer', () => {
                 width={800}
                 height={600}
                 mousePosition={null}
-                onStudyHover={mockOnStudyHover}
+                onPatternHover={mockOnPatternHover}
             />
         );
 
@@ -123,14 +124,14 @@ describe('AIStudyRenderer', () => {
 
     it('should not render when canvasManager is null', () => {
         const { container } = renderWithProvider(
-            <AIStudyRenderer
+            <PatternRenderer
                 canvasManager={null}
                 candles={mockCandles}
-                studies={[]}
+                patterns={[]}
                 width={800}
                 height={600}
                 mousePosition={null}
-                onStudyHover={mockOnStudyHover}
+                onPatternHover={mockOnPatternHover}
             />
         );
 
@@ -138,7 +139,7 @@ describe('AIStudyRenderer', () => {
         expect(canvas).toBeTruthy();
     });
 
-    it('should skip invisible studies', () => {
+    it('should skip invisible patterns', () => {
         const mockContext = {
             save: vi.fn(),
             restore: vi.fn(),
@@ -157,10 +158,10 @@ describe('AIStudyRenderer', () => {
         HTMLCanvasElement.prototype.getContext = vi.fn(() => mockContext) as any;
 
         renderWithProvider(
-            <AIStudyRenderer
+            <PatternRenderer
                 canvasManager={mockCanvasManager as CanvasManager}
                 candles={mockCandles}
-                studies={[
+                patterns={[
                     {
                         type: 'support',
                         points: [
@@ -174,7 +175,7 @@ describe('AIStudyRenderer', () => {
                 width={800}
                 height={600}
                 mousePosition={null}
-                onStudyHover={mockOnStudyHover}
+                onPatternHover={mockOnPatternHover}
             />
         );
 
@@ -182,11 +183,11 @@ describe('AIStudyRenderer', () => {
         expect(mockContext.lineTo).not.toHaveBeenCalled();
     });
 
-    it('should call onStudyHover when mouse hovers over study tag', () => {
+    it('should call onPatternHover when mouse hovers over pattern tag', () => {
         const mockContext = createMockContext();
         HTMLCanvasElement.prototype.getContext = vi.fn(() => mockContext) as any;
 
-        const study = {
+        const pattern = {
             id: 1,
             type: 'support' as const,
             points: [
@@ -197,17 +198,17 @@ describe('AIStudyRenderer', () => {
         };
 
         renderWithProvider(
-            <AIStudyRenderer
+            <PatternRenderer
                 canvasManager={mockCanvasManager as CanvasManager}
                 candles={mockCandles}
-                studies={[study]}
+                patterns={[pattern]}
                 width={800}
                 height={600}
                 mousePosition={{ x: 55, y: 195 }}
-                onStudyHover={mockOnStudyHover}
+                onPatternHover={mockOnPatternHover}
             />
         );
 
-        expect(mockOnStudyHover).toHaveBeenCalled();
+        expect(mockOnPatternHover).toHaveBeenCalled();
     });
 });

@@ -66,7 +66,7 @@ export const useAI = (options?: UseAIOptions) => {
     isLoading,
     error,
     lastAnalysis,
-    enableAIStudies,
+    enableAIPatterns,
     setSettings,
     updateSettings,
     createConversation,
@@ -96,7 +96,7 @@ export const useAI = (options?: UseAIOptions) => {
     try {
       const config: AIServiceConfig = {
         provider: settings.provider,
-        enableAIStudies,
+        enableAIPatterns,
         useAlgorithmicDetection: patternDetectionMode === 'hybrid' || patternDetectionMode === 'algorithmic-only',
       };
 
@@ -110,7 +110,7 @@ export const useAI = (options?: UseAIOptions) => {
       console.error('Failed to initialize AI service:', error);
       return null;
     }
-  }, [settings, options?.service, enableAIStudies, patternDetectionMode]);
+  }, [settings, options?.service, enableAIPatterns, patternDetectionMode]);
 
   const isConfigured = useMemo(() => {
     return settings !== null;

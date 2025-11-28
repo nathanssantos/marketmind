@@ -1,4 +1,4 @@
-import type { AIStudy } from '../../../../shared/types';
+import type { AIPattern } from '../../../../shared/types';
 import type { PatternRelationship } from './patternRelationships';
 import {
   getPatternEndTimestamp,
@@ -11,9 +11,9 @@ const TEMPORAL_DURATION_MS = {
 } as const;
 
 export function resolveNestedPatterns(
-  patterns: AIStudy[],
+  patterns: AIPattern[],
   relationships: PatternRelationship[]
-): AIStudy[] {
+): AIPattern[] {
   const patternsToRemove = new Set<number>();
 
   relationships
@@ -49,8 +49,8 @@ function resolveNestedPair(
 }
 
 function resolveTiedPatterns(
-  parent: AIStudy,
-  child: AIStudy,
+  parent: AIPattern,
+  child: AIPattern,
   patternsToRemove: Set<number>
 ): void {
   const parentConfidence = parent.confidence ?? 0;
@@ -69,7 +69,7 @@ function resolveTiedPatterns(
   }
 }
 
-function calculatePatternDuration(pattern: AIStudy): number {
+function calculatePatternDuration(pattern: AIPattern): number {
   const startTime = getPatternStartTimestamp(pattern);
   const endTime = getPatternEndTimestamp(pattern);
 
@@ -81,9 +81,9 @@ function calculatePatternDuration(pattern: AIStudy): number {
 }
 
 export function resolveOverlappingPatterns(
-  patterns: AIStudy[],
+  patterns: AIPattern[],
   relationships: PatternRelationship[]
-): AIStudy[] {
+): AIPattern[] {
   const patternsToRemove = new Set<number>();
 
   relationships
@@ -118,8 +118,8 @@ function resolveOverlappingPair(
 }
 
 function resolveTiedImportance(
-  pattern1: AIStudy,
-  pattern2: AIStudy,
+  pattern1: AIPattern,
+  pattern2: AIPattern,
   patternsToRemove: Set<number>
 ): void {
   const confidence1 = pattern1.confidence ?? 0;
@@ -139,9 +139,9 @@ function resolveTiedImportance(
 }
 
 export function markConflictingPatterns(
-  patterns: AIStudy[],
+  patterns: AIPattern[],
   relationships: PatternRelationship[]
-): AIStudy[] {
+): AIPattern[] {
   const conflictMap = new Map<number, Set<number>>();
 
   relationships
@@ -174,9 +174,9 @@ export function markConflictingPatterns(
 }
 
 export function applyTierLimits(
-  patterns: AIStudy[],
+  patterns: AIPattern[],
   maxPatternsPerTier: { macro: number; major: number; intermediate: number; minor: number }
-): AIStudy[] {
+): AIPattern[] {
   const patternsByTier = {
     macro: patterns.filter((p) => p.tier === 'macro'),
     major: patterns.filter((p) => p.tier === 'major'),
@@ -184,7 +184,7 @@ export function applyTierLimits(
     minor: patterns.filter((p) => p.tier === 'minor'),
   };
 
-  const sortByImportance = (a: AIStudy, b: AIStudy): number =>
+  const sortByImportance = (a: AIPattern, b: AIPattern): number =>
     (b.importanceScore ?? 0) - (a.importanceScore ?? 0);
 
   const limitedMacro = patternsByTier.macro
@@ -207,10 +207,10 @@ export function applyTierLimits(
 }
 
 export function applyCategoryLimits(
-  patterns: AIStudy[],
+  patterns: AIPattern[],
   maxPatternsPerCategory: number
-): AIStudy[] {
-  const patternsByCategory = new Map<string, AIStudy[]>();
+): AIPattern[] {
+  const patternsByCategory = new Map<string, AIPattern[]>();
 
   patterns.forEach((pattern) => {
     const category = getPatternCategory(pattern.type);
@@ -220,7 +220,7 @@ export function applyCategoryLimits(
     patternsByCategory.get(category)!.push(pattern);
   });
 
-  const result: AIStudy[] = [];
+  const result: AIPattern[] = [];
 
   patternsByCategory.forEach((categoryPatterns) => {
     const sortedByImportance = categoryPatterns.sort(
@@ -285,7 +285,7 @@ function getPatternCategory(type: string): string {
 }
 
 export function filterAndPrioritizePatterns(
-  patterns: AIStudy[],
+  patterns: AIPattern[],
   relationships: PatternRelationship[],
   config: {
     enableNestedFiltering: boolean;
@@ -294,7 +294,7 @@ export function filterAndPrioritizePatterns(
     maxPatternsPerCategory: number;
     maxPatternsTotal: number;
   }
-): AIStudy[] {
+): AIPattern[] {
   let filtered = [...patterns];
 
   if (config.enableNestedFiltering) {

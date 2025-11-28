@@ -1,4 +1,4 @@
-import type { AIStudy, Candle } from '@shared/types';
+import type { AIPattern, Candle } from '@shared/types';
 import {
     IMPORTANCE_NORMALIZATION,
     IMPORTANCE_WEIGHTS,
@@ -24,7 +24,7 @@ export function normalizeFormationPeriod(period: number): number {
 }
 
 export function normalizePriceMovement(
-  pattern: AIStudy,
+  pattern: AIPattern,
   candles: Candle[]
 ): number {
   if (candles.length === 0) return 0;
@@ -54,7 +54,7 @@ export function normalizePriceMovement(
   );
 }
 
-export function normalizeRecency(pattern: AIStudy, candles: Candle[]): number {
+export function normalizeRecency(pattern: AIPattern, candles: Candle[]): number {
   if (candles.length === 0) return 0;
 
   const latestCandle = candles[candles.length - 1];
@@ -90,7 +90,7 @@ export function normalizeRecency(pattern: AIStudy, candles: Candle[]): number {
   );
 }
 
-export function getVolumeConfirmation(pattern: AIStudy): number {
+export function getVolumeConfirmation(pattern: AIPattern): number {
   if ('volumeConfirmation' in pattern && typeof pattern.volumeConfirmation === 'number') {
     return pattern.volumeConfirmation;
   }
@@ -98,7 +98,7 @@ export function getVolumeConfirmation(pattern: AIStudy): number {
 }
 
 export function calculateImportanceFactors(
-  pattern: AIStudy,
+  pattern: AIPattern,
   candles: Candle[]
 ): ImportanceFactors {
   const patternType = pattern.type;
@@ -128,7 +128,7 @@ export function calculateImportanceFactors(
 }
 
 export function calculateImportanceScore(
-  pattern: AIStudy,
+  pattern: AIPattern,
   candles: Candle[]
 ): number {
   const factors = calculateImportanceFactors(pattern, candles);

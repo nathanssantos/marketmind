@@ -24,7 +24,7 @@ describe('PatternDetectionService', () => {
       const result = await service.detectPatterns(mockCandles);
 
       expect(result).toBeDefined();
-      expect(result.studies).toBeInstanceOf(Array);
+      expect(result.patterns).toBeInstanceOf(Array);
       expect(result.metadata).toBeDefined();
       expect(result.metadata.candlesAnalyzed).toBe(100);
       expect(result.metadata.executionTime).toBeGreaterThan(0);
@@ -35,8 +35,8 @@ describe('PatternDetectionService', () => {
         minConfidence: 0.9,
       });
 
-      const allConfident = result.studies.every(
-        study => (study.confidence || 0) >= 0.9
+      const allConfident = result.patterns.every(
+        pattern => (pattern.confidence || 0) >= 0.9
       );
 
       expect(allConfident).toBe(true);
@@ -47,32 +47,32 @@ describe('PatternDetectionService', () => {
         enabledPatterns: ['support', 'resistance'],
       });
 
-      const onlyEnabled = result.studies.every(
-        study => study.type === 'support' || study.type === 'resistance'
+      const onlyEnabled = result.patterns.every(
+        pattern => pattern.type === 'support' || pattern.type === 'resistance'
       );
 
       expect(onlyEnabled).toBe(true);
     });
 
-    it('should assign unique IDs to studies', async () => {
+    it('should assign unique IDs to patterns', async () => {
       const result = await service.detectPatterns(mockCandles);
 
-      const ids = result.studies.map(s => s.id);
+      const ids = result.patterns.map(s => s.id);
       const uniqueIds = new Set(ids);
 
       expect(ids.length).toBe(uniqueIds.size);
       
-      if (result.studies.length > 0) {
-        expect(result.studies[0]?.id).toBe(1);
+      if (result.patterns.length > 0) {
+        expect(result.patterns[0]?.id).toBe(1);
       }
     });
 
-    it('should sort studies by confidence descending', async () => {
+    it('should sort patterns by confidence descending', async () => {
       const result = await service.detectPatterns(mockCandles);
 
-      for (let i = 0; i < result.studies.length - 1; i++) {
-        const currentConf = result.studies[i]?.confidence || 0;
-        const nextConf = result.studies[i + 1]?.confidence || 0;
+      for (let i = 0; i < result.patterns.length - 1; i++) {
+        const currentConf = result.patterns[i]?.confidence || 0;
+        const nextConf = result.patterns[i + 1]?.confidence || 0;
         expect(currentConf).toBeGreaterThanOrEqual(nextConf);
       }
     });
@@ -81,7 +81,7 @@ describe('PatternDetectionService', () => {
       const fewCandles: Candle[] = mockCandles.slice(0, 5);
       const result = await service.detectPatterns(fewCandles);
 
-      expect(result.studies).toEqual([]);
+      expect(result.patterns).toEqual([]);
     });
 
     it('should detect support patterns when enabled', async () => {
@@ -90,7 +90,7 @@ describe('PatternDetectionService', () => {
         minConfidence: 0.5,
       });
 
-      const supportPatterns = result.studies.filter(s => s.type === 'support');
+      const supportPatterns = result.patterns.filter(s => s.type === 'support');
       expect(supportPatterns.length).toBeGreaterThanOrEqual(0);
     });
 
@@ -100,7 +100,7 @@ describe('PatternDetectionService', () => {
         minConfidence: 0.5,
       });
 
-      const resistancePatterns = result.studies.filter(s => s.type === 'resistance');
+      const resistancePatterns = result.patterns.filter(s => s.type === 'resistance');
       expect(resistancePatterns.length).toBeGreaterThanOrEqual(0);
     });
 
@@ -117,19 +117,19 @@ describe('PatternDetectionService', () => {
         enabledPatterns: undefined,
       });
 
-      expect(result.studies.length).toBeGreaterThanOrEqual(0);
+      expect(result.patterns.length).toBeGreaterThanOrEqual(0);
     });
   });
 
   describe('detectPatternsIncremental', () => {
     it('should detect patterns incrementally', async () => {
-      const existingStudies = (await service.detectPatterns(mockCandles.slice(0, 50))).studies;
+      const existingPatterns = (await service.detectPatterns(mockCandles.slice(0, 50))).patterns;
       const newCandles = mockCandles.slice(50);
 
-      const result = await service.detectPatternsIncremental(existingStudies, newCandles);
+      const result = await service.detectPatternsIncremental(existingPatterns, newCandles);
 
       expect(result).toBeDefined();
-      expect(result.studies).toBeInstanceOf(Array);
+      expect(result.patterns).toBeInstanceOf(Array);
     });
   });
 
@@ -157,7 +157,7 @@ describe('PatternDetectionService', () => {
         minConfidence: 0.5,
       });
 
-      const trendlines = result.studies.filter(
+      const trendlines = result.patterns.filter(
         s => s.type === 'trendline-bullish' || s.type === 'trendline-bearish'
       );
       expect(trendlines.length).toBeGreaterThanOrEqual(0);
@@ -169,7 +169,7 @@ describe('PatternDetectionService', () => {
         minConfidence: 0.5,
       });
 
-      const channels = result.studies.filter(
+      const channels = result.patterns.filter(
         s => s.type === 'channel-ascending' || s.type === 'channel-descending'
       );
       expect(channels.length).toBeGreaterThanOrEqual(0);
@@ -181,7 +181,7 @@ describe('PatternDetectionService', () => {
         minConfidence: 0.5,
       });
 
-      const triangles = result.studies.filter(
+      const triangles = result.patterns.filter(
         s => s.type.startsWith('triangle')
       );
       expect(triangles.length).toBeGreaterThanOrEqual(0);
@@ -193,7 +193,7 @@ describe('PatternDetectionService', () => {
         minConfidence: 0.5,
       });
 
-      const wedges = result.studies.filter(
+      const wedges = result.patterns.filter(
         s => s.type === 'wedge-rising' || s.type === 'wedge-falling'
       );
       expect(wedges.length).toBeGreaterThanOrEqual(0);
@@ -217,7 +217,7 @@ describe('PatternDetectionService', () => {
     it('should include patterns detected count', async () => {
       const result = await service.detectPatterns(mockCandles);
 
-      expect(result.metadata.patternsDetected).toBe(result.studies.length);
+      expect(result.metadata.patternsDetected).toBe(result.patterns.length);
     });
   });
 });

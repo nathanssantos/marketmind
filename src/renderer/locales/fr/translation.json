@@ -229,8 +229,8 @@
   "chat": {
     "title": "Chat",
     "newConversation": "Nouvelle conversation",
-    "enableAIStudies": "Activer les dessins IA sur le graphique",
-    "disableAIStudies": "Désactiver les dessins IA sur le graphique",
+    "enableAIPatterns": "Activer les dessins IA sur le graphique",
+    "disableAIPatterns": "Désactiver les dessins IA sur le graphique",
     "enableAutoTrading": "Activer Auto-Trading avec IA",
     "disableAutoTrading": "Désactiver Auto-Trading avec IA",
     "conversationsTitle": "Conversations - {{symbol}}",
@@ -261,10 +261,18 @@
       "crosshair": "Réticule",
       "measurementRuler": "Règle de Mesure",
       "measurementArea": "Zone de Mesure",
-      "autoPatterns": "Détection Automatique de Motifs (bougies visibles)",
-      "studyExtensions": "Étendre les Études au-delà de la Dernière Bougie",
+      "autoPatterns": "Détection Automatique de Motifs",
+      "detectPatterns": "Détecter les Motifs Maintenant",
+      "patternExtensions": "Étendre les Motifs Au-delà de la Dernière Bougie",
       "indicators": "Indicateurs",
       "quickSettings": "Paramètres Rapides"
+    },
+    "contextMenu": {
+      "deletePattern": "Supprimer le Motif",
+      "deletePattern": "Supprimer le Motif",
+      "hidePatterns": "Masquer les Motifs Détectés",
+      "showPatterns": "Afficher les Motifs Détectés",
+      "deleteAllPatterns": "Supprimer Tous les Motifs Détectés"
     },
     "navigation": {
       "resetView": "Retour à la vue initiale",

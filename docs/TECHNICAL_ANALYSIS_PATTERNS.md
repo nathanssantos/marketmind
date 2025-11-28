@@ -1173,7 +1173,7 @@ where Price Range = Pivot High - Pivot Low
      ↓
    Confidence Calculation
      ↓
-   AI Study Output (JSON)
+   AI Pattern Output (JSON)
    ```
 
 4. **Time Frame Validation:**
@@ -1232,10 +1232,10 @@ where Price Range = Pivot High - Pivot Low
 
 ---
 
-### New Study Type Structure
+### New Pattern Type Structure
 
 ```typescript
-export type AIStudyType =
+export type AIPatternType =
   // Support/Resistance
   | 'support'
   | 'resistance'
@@ -1285,7 +1285,7 @@ export type AIStudyType =
 ### Color Scheme
 
 ```typescript
-export const STUDY_COLORS = {
+export const PATTERN_COLORS = {
   // Support/Resistance
   support: '#22c55e',           // Green
   resistance: '#ef4444',        // Red
@@ -1365,7 +1365,7 @@ export const OPACITY = {
   line: 0.8,
   zone: 0.2,       // Filled areas
   label: 0.9,
-  inactive: 0.4    // When hovering other study
+  inactive: 0.4    // When hovering other pattern
 } as const;
 ```
 
@@ -1412,7 +1412,7 @@ export const OPACITY = {
 
 **Next Steps:**
 1. Update AI prompts with detailed drawing instructions
-2. Implement new study type system
+2. Implement new pattern type system
 3. Create pattern recognition algorithms
-4. Update UI for study references (colored outlined tags)
+4. Update UI for pattern references (colored outlined tags)
 5. Test and validate pattern detection accuracy

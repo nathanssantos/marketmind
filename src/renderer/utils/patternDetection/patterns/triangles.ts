@@ -1,4 +1,4 @@
-import type { AIStudyTriangle, Candle } from '@shared/types';
+import type { AIPatternTriangle, Candle } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -68,10 +68,10 @@ const findApex = (upperLine: TrendlineData, lowerLine: TrendlineData): { x: numb
 export const detectAscendingTriangles = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyTriangle[] => {
+): AIPatternTriangle[] => {
   if (!candles || candles.length < 20) return [];
 
-  const triangles: AIStudyTriangle[] = [];
+  const triangles: AIPatternTriangle[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
 
@@ -174,10 +174,10 @@ export const detectAscendingTriangles = (
 export const detectDescendingTriangles = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyTriangle[] => {
+): AIPatternTriangle[] => {
   if (!candles || candles.length < 20) return [];
 
-  const triangles: AIStudyTriangle[] = [];
+  const triangles: AIPatternTriangle[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
 
@@ -280,10 +280,10 @@ export const detectDescendingTriangles = (
 export const detectSymmetricalTriangles = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyTriangle[] => {
+): AIPatternTriangle[] => {
   if (!candles || candles.length < 20) return [];
 
-  const triangles: AIStudyTriangle[] = [];
+  const triangles: AIPatternTriangle[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
 

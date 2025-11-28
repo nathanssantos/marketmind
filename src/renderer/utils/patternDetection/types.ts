@@ -1,4 +1,4 @@
-import type { AIStudy, AIStudyType } from '@shared/types';
+import type { AIPattern, AIPatternType } from '@shared/types';
 
 export enum PatternTier {
   MACRO = 'macro',
@@ -11,8 +11,8 @@ export enum PatternTier {
 export type RelationshipType = 'nested' | 'overlapping' | 'conflicting';
 
 export interface PatternRelationship {
-  parentPattern: AIStudy;
-  childPattern: AIStudy;
+  parentPattern: AIPattern;
+  childPattern: AIPattern;
   relationshipType: RelationshipType;
   overlapPercentage: number;
   timeOverlap: number;
@@ -56,7 +56,7 @@ export interface PatternCluster {
 export interface DetectionOptions {
   minConfidence?: number;
   pivotSensitivity?: number;
-  enabledPatterns?: AIStudyType[];
+  enabledPatterns?: AIPatternType[];
   prioritizeRecent?: boolean;
   maxPatternsPerType?: number;
   applyFiltering?: boolean;
@@ -74,7 +74,7 @@ export interface DetectionOptions {
 }
 
 export interface DetectionResult {
-  studies: AIStudy[];
+  patterns: AIPattern[];
   metadata: {
     pivotsFound: number;
     patternsDetected: number;

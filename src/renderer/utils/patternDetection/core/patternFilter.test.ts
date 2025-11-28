@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AIStudy } from '../../../../shared/types';
+import type { AIPattern } from '../../../../shared/types';
 import {
   applyCategoryLimits,
   applyTierLimits,
@@ -12,7 +12,7 @@ import type { PatternRelationship } from './patternRelationships';
 describe('patternFilter', () => {
   describe('resolveNestedPatterns', () => {
     it('should remove smaller nested pattern (KEEP LARGEST strategy)', () => {
-      const largePattern: AIStudy = {
+      const largePattern: AIPattern = {
         id: 1,
         type: 'support',
         points: [
@@ -24,7 +24,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const smallPattern: AIStudy = {
+      const smallPattern: AIPattern = {
         id: 2,
         type: 'support',
         points: [
@@ -55,7 +55,7 @@ describe('patternFilter', () => {
     });
 
     it('should keep multiple patterns when no nesting exists', () => {
-      const pattern1: AIStudy = {
+      const pattern1: AIPattern = {
         id: 1,
         type: 'double-bottom',
         firstPeak: { timestamp: 1000, price: 90 },
@@ -66,7 +66,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const pattern2: AIStudy = {
+      const pattern2: AIPattern = {
         id: 2,
         type: 'double-top',
         firstPeak: { timestamp: 6000, price: 110 },
@@ -86,7 +86,7 @@ describe('patternFilter', () => {
     });
 
     it('should handle multiple nested patterns (chain)', () => {
-      const macro: AIStudy = {
+      const macro: AIPattern = {
         id: 1,
         type: 'support',
         points: [
@@ -98,7 +98,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const major: AIStudy = {
+      const major: AIPattern = {
         id: 2,
         type: 'support',
         points: [
@@ -110,7 +110,7 @@ describe('patternFilter', () => {
         timestamp: 1500,
       };
 
-      const minor: AIStudy = {
+      const minor: AIPattern = {
         id: 3,
         type: 'support',
         points: [
@@ -149,7 +149,7 @@ describe('patternFilter', () => {
     });
 
     it('should use confidence as tiebreaker when durations are equal', () => {
-      const highConfidence: AIStudy = {
+      const highConfidence: AIPattern = {
         id: 1,
         type: 'double-top',
         firstPeak: { timestamp: 1000, price: 90 },
@@ -160,7 +160,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const lowConfidence: AIStudy = {
+      const lowConfidence: AIPattern = {
         id: 2,
         type: 'double-top',
         firstPeak: { timestamp: 1000, price: 110 },
@@ -190,7 +190,7 @@ describe('patternFilter', () => {
     });
 
     it('should use ID as final tiebreaker (keep lower ID)', () => {
-      const pattern1: AIStudy = {
+      const pattern1: AIPattern = {
         id: 1,
         type: 'support',
         points: [
@@ -202,7 +202,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const pattern2: AIStudy = {
+      const pattern2: AIPattern = {
         id: 2,
         type: 'support',
         points: [
@@ -233,7 +233,7 @@ describe('patternFilter', () => {
     });
 
     it('should ignore non-nested relationships', () => {
-      const pattern1: AIStudy = {
+      const pattern1: AIPattern = {
         id: 1,
         type: 'double-bottom',
         firstPeak: { timestamp: 1000, price: 90 },
@@ -244,7 +244,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const pattern2: AIStudy = {
+      const pattern2: AIPattern = {
         id: 2,
         type: 'double-top',
         firstPeak: { timestamp: 1500, price: 110 },
@@ -281,7 +281,7 @@ describe('patternFilter', () => {
     });
 
     it('should handle patterns without IDs gracefully', () => {
-      const patternWithId: AIStudy = {
+      const patternWithId: AIPattern = {
         id: 1,
         type: 'support',
         points: [
@@ -293,7 +293,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const patternWithoutId: AIStudy = {
+      const patternWithoutId: AIPattern = {
         type: 'resistance',
         points: [
           { timestamp: 2000, price: 100 },
@@ -327,7 +327,7 @@ describe('patternFilter', () => {
     });
 
     it('should handle empty relationships list', () => {
-      const pattern1: AIStudy = {
+      const pattern1: AIPattern = {
         id: 1,
         type: 'support',
         points: [
@@ -347,7 +347,7 @@ describe('patternFilter', () => {
     });
 
     it('should handle reverse nested relationship (smaller parent, larger child)', () => {
-      const smallPattern: AIStudy = {
+      const smallPattern: AIPattern = {
         id: 1,
         type: 'support',
         points: [
@@ -359,7 +359,7 @@ describe('patternFilter', () => {
         timestamp: 2000,
       };
 
-      const largePattern: AIStudy = {
+      const largePattern: AIPattern = {
         id: 2,
         type: 'support',
         points: [
@@ -392,7 +392,7 @@ describe('patternFilter', () => {
 
   describe('resolveOverlappingPatterns', () => {
     it('should remove pattern with lower importance score (KEEP HIGHEST IMPORTANCE)', () => {
-      const highImportance: AIStudy = {
+      const highImportance: AIPattern = {
         id: 1,
         type: 'head-and-shoulders',
         leftShoulder: { timestamp: 1000, price: 100 },
@@ -408,7 +408,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const lowImportance: AIStudy = {
+      const lowImportance: AIPattern = {
         id: 2,
         type: 'double-bottom',
         firstPeak: { timestamp: 2000, price: 92 },
@@ -439,7 +439,7 @@ describe('patternFilter', () => {
     });
 
     it('should keep both patterns when no overlapping exists', () => {
-      const pattern1: AIStudy = {
+      const pattern1: AIPattern = {
         id: 1,
         type: 'support',
         points: [
@@ -452,7 +452,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const pattern2: AIStudy = {
+      const pattern2: AIPattern = {
         id: 2,
         type: 'resistance',
         points: [
@@ -474,7 +474,7 @@ describe('patternFilter', () => {
     });
 
     it('should handle multiple overlapping patterns', () => {
-      const highest: AIStudy = {
+      const highest: AIPattern = {
         id: 1,
         type: 'head-and-shoulders',
         leftShoulder: { timestamp: 1000, price: 100 },
@@ -490,7 +490,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const medium: AIStudy = {
+      const medium: AIPattern = {
         id: 2,
         type: 'double-top',
         firstPeak: { timestamp: 2000, price: 108 },
@@ -502,7 +502,7 @@ describe('patternFilter', () => {
         timestamp: 2000,
       };
 
-      const lowest: AIStudy = {
+      const lowest: AIPattern = {
         id: 3,
         type: 'resistance',
         points: [
@@ -542,7 +542,7 @@ describe('patternFilter', () => {
     });
 
     it('should use confidence as tiebreaker when importance scores are equal', () => {
-      const highConfidence: AIStudy = {
+      const highConfidence: AIPattern = {
         id: 1,
         type: 'double-bottom',
         firstPeak: { timestamp: 1000, price: 90 },
@@ -554,7 +554,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const lowConfidence: AIStudy = {
+      const lowConfidence: AIPattern = {
         id: 2,
         type: 'support',
         points: [
@@ -586,7 +586,7 @@ describe('patternFilter', () => {
     });
 
     it('should use ID as final tiebreaker (keep lower ID)', () => {
-      const pattern1: AIStudy = {
+      const pattern1: AIPattern = {
         id: 1,
         type: 'support',
         points: [
@@ -599,7 +599,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const pattern2: AIStudy = {
+      const pattern2: AIPattern = {
         id: 2,
         type: 'resistance',
         points: [
@@ -631,7 +631,7 @@ describe('patternFilter', () => {
     });
 
     it('should ignore non-overlapping relationships', () => {
-      const pattern1: AIStudy = {
+      const pattern1: AIPattern = {
         id: 1,
         type: 'double-bottom',
         firstPeak: { timestamp: 1000, price: 90 },
@@ -643,7 +643,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const pattern2: AIStudy = {
+      const pattern2: AIPattern = {
         id: 2,
         type: 'double-top',
         firstPeak: { timestamp: 1500, price: 110 },
@@ -681,7 +681,7 @@ describe('patternFilter', () => {
     });
 
     it('should handle patterns without importance scores (default to 0)', () => {
-      const withScore: AIStudy = {
+      const withScore: AIPattern = {
         id: 1,
         type: 'support',
         points: [
@@ -694,7 +694,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const withoutScore: AIStudy = {
+      const withoutScore: AIPattern = {
         id: 2,
         type: 'resistance',
         points: [
@@ -725,7 +725,7 @@ describe('patternFilter', () => {
     });
 
     it('should handle patterns without IDs gracefully', () => {
-      const patternWithId: AIStudy = {
+      const patternWithId: AIPattern = {
         id: 1,
         type: 'support',
         points: [
@@ -738,7 +738,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const patternWithoutId: AIStudy = {
+      const patternWithoutId: AIPattern = {
         type: 'resistance',
         points: [
           { timestamp: 1500, price: 100 },
@@ -773,7 +773,7 @@ describe('patternFilter', () => {
     });
 
     it('should handle empty relationships list', () => {
-      const pattern1: AIStudy = {
+      const pattern1: AIPattern = {
         id: 1,
         type: 'support',
         points: [
@@ -794,7 +794,7 @@ describe('patternFilter', () => {
     });
 
     it('should handle reverse overlapping relationship (lower importance parent)', () => {
-      const lowImportance: AIStudy = {
+      const lowImportance: AIPattern = {
         id: 1,
         type: 'support',
         points: [
@@ -807,7 +807,7 @@ describe('patternFilter', () => {
         timestamp: 1000,
       };
 
-      const highImportance: AIStudy = {
+      const highImportance: AIPattern = {
         id: 2,
         type: 'head-and-shoulders',
         leftShoulder: { timestamp: 1000, price: 100 },
@@ -844,11 +844,11 @@ describe('patternFilter', () => {
 
   describe('applyTierLimits', () => {
     it('should limit patterns per tier keeping highest importance', () => {
-      const patterns: AIStudy[] = [
-        { id: 1, type: 'support', tier: 'macro', importanceScore: 0.9, confidence: 0.8, visible: true, timestamp: 1000 } as AIStudy,
-        { id: 2, type: 'support', tier: 'macro', importanceScore: 0.7, confidence: 0.7, visible: true, timestamp: 2000 } as AIStudy,
-        { id: 3, type: 'resistance', tier: 'major', importanceScore: 0.85, confidence: 0.8, visible: true, timestamp: 3000 } as AIStudy,
-        { id: 4, type: 'resistance', tier: 'major', importanceScore: 0.6, confidence: 0.7, visible: true, timestamp: 4000 } as AIStudy,
+      const patterns: AIPattern[] = [
+        { id: 1, type: 'support', tier: 'macro', importanceScore: 0.9, confidence: 0.8, visible: true, timestamp: 1000 } as AIPattern,
+        { id: 2, type: 'support', tier: 'macro', importanceScore: 0.7, confidence: 0.7, visible: true, timestamp: 2000 } as AIPattern,
+        { id: 3, type: 'resistance', tier: 'major', importanceScore: 0.85, confidence: 0.8, visible: true, timestamp: 3000 } as AIPattern,
+        { id: 4, type: 'resistance', tier: 'major', importanceScore: 0.6, confidence: 0.7, visible: true, timestamp: 4000 } as AIPattern,
       ];
 
       const maxPatternsPerTier = { macro: 1, major: 1, intermediate: 5, minor: 5 };
@@ -867,11 +867,11 @@ describe('patternFilter', () => {
 
   describe('applyCategoryLimits', () => {
     it('should limit patterns per category keeping highest importance', () => {
-      const patterns: AIStudy[] = [
-        { id: 1, type: 'support', importanceScore: 0.9, confidence: 0.8, visible: true, timestamp: 1000 } as AIStudy,
-        { id: 2, type: 'resistance', importanceScore: 0.7, confidence: 0.7, visible: true, timestamp: 2000 } as AIStudy,
-        { id: 3, type: 'double-top', importanceScore: 0.85, confidence: 0.8, visible: true, timestamp: 3000 } as AIStudy,
-        { id: 4, type: 'double-bottom', importanceScore: 0.8, confidence: 0.8, visible: true, timestamp: 4000 } as AIStudy,
+      const patterns: AIPattern[] = [
+        { id: 1, type: 'support', importanceScore: 0.9, confidence: 0.8, visible: true, timestamp: 1000 } as AIPattern,
+        { id: 2, type: 'resistance', importanceScore: 0.7, confidence: 0.7, visible: true, timestamp: 2000 } as AIPattern,
+        { id: 3, type: 'double-top', importanceScore: 0.85, confidence: 0.8, visible: true, timestamp: 3000 } as AIPattern,
+        { id: 4, type: 'double-bottom', importanceScore: 0.8, confidence: 0.8, visible: true, timestamp: 4000 } as AIPattern,
       ];
 
       const result = applyCategoryLimits(patterns, 1);
@@ -889,12 +889,12 @@ describe('patternFilter', () => {
 
   describe('filterAndPrioritizePatterns', () => {
     it('should apply all filtering phases in order', () => {
-      const patterns: AIStudy[] = [
-        { id: 1, type: 'support', tier: 'macro', importanceScore: 0.9, confidence: 0.8, visible: true, timestamp: 1000 } as AIStudy,
-        { id: 2, type: 'resistance', tier: 'major', importanceScore: 0.85, confidence: 0.8, visible: true, timestamp: 2000 } as AIStudy,
-        { id: 3, type: 'double-top', tier: 'major', importanceScore: 0.8, confidence: 0.7, visible: true, timestamp: 3000 } as AIStudy,
-        { id: 4, type: 'double-bottom', tier: 'intermediate', importanceScore: 0.75, confidence: 0.7, visible: true, timestamp: 4000 } as AIStudy,
-        { id: 5, type: 'support', tier: 'minor', importanceScore: 0.7, confidence: 0.6, visible: true, timestamp: 5000 } as AIStudy,
+      const patterns: AIPattern[] = [
+        { id: 1, type: 'support', tier: 'macro', importanceScore: 0.9, confidence: 0.8, visible: true, timestamp: 1000 } as AIPattern,
+        { id: 2, type: 'resistance', tier: 'major', importanceScore: 0.85, confidence: 0.8, visible: true, timestamp: 2000 } as AIPattern,
+        { id: 3, type: 'double-top', tier: 'major', importanceScore: 0.8, confidence: 0.7, visible: true, timestamp: 3000 } as AIPattern,
+        { id: 4, type: 'double-bottom', tier: 'intermediate', importanceScore: 0.75, confidence: 0.7, visible: true, timestamp: 4000 } as AIPattern,
+        { id: 5, type: 'support', tier: 'minor', importanceScore: 0.7, confidence: 0.6, visible: true, timestamp: 5000 } as AIPattern,
       ];
 
       const relationships: PatternRelationship[] = [];
@@ -916,7 +916,7 @@ describe('patternFilter', () => {
     });
 
     it('should respect global limit even with high tier limits', () => {
-      const patterns: AIStudy[] = Array.from({ length: 100 }, (_, i) => ({
+      const patterns: AIPattern[] = Array.from({ length: 100 }, (_, i) => ({
         id: i + 1,
         type: 'support',
         tier: 'macro',
@@ -924,7 +924,7 @@ describe('patternFilter', () => {
         confidence: 0.8,
         visible: true,
         timestamp: 1000 + i * 1000,
-      } as AIStudy));
+      } as AIPattern));
 
       const relationships: PatternRelationship[] = [];
 
@@ -956,7 +956,7 @@ describe('patternFilter', () => {
     });
 
     it('should apply nested filtering when enabled', () => {
-      const largePattern: AIStudy = {
+      const largePattern: AIPattern = {
         id: 1,
         type: 'support',
         tier: 'macro',
@@ -970,7 +970,7 @@ describe('patternFilter', () => {
         ],
       };
 
-      const smallPattern: AIStudy = {
+      const smallPattern: AIPattern = {
         id: 2,
         type: 'support',
         tier: 'minor',
@@ -1011,7 +1011,7 @@ describe('patternFilter', () => {
     });
 
     it('should skip nested filtering when disabled', () => {
-      const largePattern: AIStudy = {
+      const largePattern: AIPattern = {
         id: 1,
         type: 'support',
         tier: 'macro',
@@ -1025,7 +1025,7 @@ describe('patternFilter', () => {
         ],
       };
 
-      const smallPattern: AIStudy = {
+      const smallPattern: AIPattern = {
         id: 2,
         type: 'support',
         tier: 'minor',
@@ -1065,7 +1065,7 @@ describe('patternFilter', () => {
     });
 
     it('should keep nested patterns of different types', () => {
-      const supportPattern: AIStudy = {
+      const supportPattern: AIPattern = {
         id: 1,
         type: 'support',
         tier: 'macro',
@@ -1079,7 +1079,7 @@ describe('patternFilter', () => {
         ],
       };
 
-      const flagPattern: AIStudy = {
+      const flagPattern: AIPattern = {
         id: 2,
         type: 'flag-bullish',
         tier: 'minor',

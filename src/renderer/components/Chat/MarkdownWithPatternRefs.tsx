@@ -1,44 +1,44 @@
-import { useAIStudies } from '@renderer/hooks/useAIStudies';
+import { usePatterns } from '@renderer/hooks/usePatterns';
 import { useAIStore } from '@renderer/store/aiStore';
 import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { StudyReference } from './StudyReference';
+import { PatternReference } from './PatternReference';
 
-interface MarkdownWithStudyRefsProps {
+interface MarkdownWithPatternRefsProps {
   content: string;
-  onStudyHover: (studyNumber: number | null) => void;
+  onPatternHover: (patternNumber: number | null) => void;
 }
 
-export const MarkdownWithStudyRefs = ({ content, onStudyHover }: MarkdownWithStudyRefsProps) => {
+export const MarkdownWithPatternRefs = ({ content, onPatternHover }: MarkdownWithPatternRefsProps) => {
   const { activeConversationId } = useAIStore();
-  const { studies } = useAIStudies({ 
+  const { patterns } = usePatterns({
     symbol: activeConversationId || 'default',
-    conversationId: activeConversationId || null 
+    conversationId: activeConversationId || null
   });
 
-  const studiesMap = useMemo(() => {
-    return new Map(studies.map(s => [s.id, s]));
-  }, [studies]);
+  const patternsMap = useMemo(() => {
+    return new Map(patterns.map(s => [s.id, s]));
+  }, [patterns]);
   const processText = (text: string): (string | React.ReactElement)[] => {
-    const studyPattern = /#(\d+)/g;
+    const patternPattern = /#(\d+)/g;
     const parts: (string | React.ReactElement)[] = [];
     let lastIndex = 0;
     let match;
 
-    while ((match = studyPattern.exec(text)) !== null) {
+    while ((match = patternPattern.exec(text)) !== null) {
       if (match.index > lastIndex) {
         parts.push(text.substring(lastIndex, match.index));
       }
 
-      const studyNumber = parseInt(match[1]!, 10);
-      const study = studiesMap.get(studyNumber);
-      const studyRef = study ? { study } : {};
+      const patternNumber = parseInt(match[1]!, 10);
+      const pattern = patternsMap.get(patternNumber);
+
       parts.push(
-        <StudyReference
-          key={`study-ref-${match.index}-${studyNumber}`}
-          studyNumber={studyNumber}
-          {...studyRef}
-          onHover={onStudyHover}
+        <PatternReference
+          key={`pattern-ref-${match.index}-${patternNumber}`}
+          patternNumber={patternNumber}
+          pattern={pattern}
+          onHover={onPatternHover}
         />
       );
 

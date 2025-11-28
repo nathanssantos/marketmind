@@ -1,4 +1,4 @@
-export type AIStudyType =
+export type AIPatternType =
   | 'support'
   | 'resistance'
   | 'trendline-bullish'
@@ -33,15 +33,15 @@ export type AIStudyType =
   | 'buy-zone'
   | 'accumulation-zone';
 
-export interface AIStudyPoint {
+export interface AIPatternPoint {
   timestamp: number;
   price: number;
 }
 
-export interface AIStudyLine {
+export interface AIPatternLine {
   id?: number;
   type: 'support' | 'resistance' | 'trendline-bullish' | 'trendline-bearish';
-  points: [AIStudyPoint, AIStudyPoint];
+  points: [AIPatternPoint, AIPatternPoint];
   label?: string;
   confidence?: number;
   visible?: boolean;
@@ -53,11 +53,11 @@ export interface AIStudyLine {
   nestedPatterns?: number[];
 }
 
-export interface AIStudyChannel {
+export interface AIPatternChannel {
   id?: number;
   type: 'channel-ascending' | 'channel-descending' | 'channel-horizontal';
-  upperLine: [AIStudyPoint, AIStudyPoint];
-  lowerLine: [AIStudyPoint, AIStudyPoint];
+  upperLine: [AIPatternPoint, AIPatternPoint];
+  lowerLine: [AIPatternPoint, AIPatternPoint];
   label?: string;
   confidence?: number;
   visible?: boolean;
@@ -69,11 +69,11 @@ export interface AIStudyChannel {
   nestedPatterns?: number[];
 }
 
-export interface AIStudyFibonacci {
+export interface AIPatternFibonacci {
   id?: number;
   type: 'fibonacci-retracement' | 'fibonacci-extension';
-  startPoint: AIStudyPoint;
-  endPoint: AIStudyPoint;
+  startPoint: AIPatternPoint;
+  endPoint: AIPatternPoint;
   levels: Array<{
     ratio: number;
     price: number;
@@ -90,14 +90,14 @@ export interface AIStudyFibonacci {
   nestedPatterns?: number[];
 }
 
-export interface AIStudyHeadAndShoulders {
+export interface AIPatternHeadAndShoulders {
   id?: number;
   type: 'head-and-shoulders' | 'inverse-head-and-shoulders';
-  leftShoulder: AIStudyPoint;
-  head: AIStudyPoint;
-  rightShoulder: AIStudyPoint;
-  neckline: [AIStudyPoint, AIStudyPoint];
-  breakoutPoint?: AIStudyPoint;
+  leftShoulder: AIPatternPoint;
+  head: AIPatternPoint;
+  rightShoulder: AIPatternPoint;
+  neckline: [AIPatternPoint, AIPatternPoint];
+  breakoutPoint?: AIPatternPoint;
   label?: string;
   confidence?: number;
   visible?: boolean;
@@ -109,13 +109,13 @@ export interface AIStudyHeadAndShoulders {
   nestedPatterns?: number[];
 }
 
-export interface AIStudyDoublePattern {
+export interface AIPatternDoublePattern {
   id?: number;
   type: 'double-top' | 'double-bottom';
-  firstPeak: AIStudyPoint;
-  secondPeak: AIStudyPoint;
-  neckline: AIStudyPoint;
-  breakoutPoint?: AIStudyPoint;
+  firstPeak: AIPatternPoint;
+  secondPeak: AIPatternPoint;
+  neckline: AIPatternPoint;
+  breakoutPoint?: AIPatternPoint;
   label?: string;
   confidence?: number;
   visible?: boolean;
@@ -127,14 +127,14 @@ export interface AIStudyDoublePattern {
   nestedPatterns?: number[];
 }
 
-export interface AIStudyTriplePattern {
+export interface AIPatternTriplePattern {
   id?: number;
   type: 'triple-top' | 'triple-bottom';
-  peak1: AIStudyPoint;
-  peak2: AIStudyPoint;
-  peak3: AIStudyPoint;
-  neckline: [AIStudyPoint, AIStudyPoint];
-  breakoutPoint?: AIStudyPoint;
+  peak1: AIPatternPoint;
+  peak2: AIPatternPoint;
+  peak3: AIPatternPoint;
+  neckline: [AIPatternPoint, AIPatternPoint];
+  breakoutPoint?: AIPatternPoint;
   label?: string;
   confidence?: number;
   visible?: boolean;
@@ -146,13 +146,13 @@ export interface AIStudyTriplePattern {
   nestedPatterns?: number[];
 }
 
-export interface AIStudyTriangle {
+export interface AIPatternTriangle {
   id?: number;
   type: 'triangle-ascending' | 'triangle-descending' | 'triangle-symmetrical';
-  upperTrendline: [AIStudyPoint, AIStudyPoint];
-  lowerTrendline: [AIStudyPoint, AIStudyPoint];
-  apex?: AIStudyPoint;
-  breakoutPoint?: AIStudyPoint;
+  upperTrendline: [AIPatternPoint, AIPatternPoint];
+  lowerTrendline: [AIPatternPoint, AIPatternPoint];
+  apex?: AIPatternPoint;
+  breakoutPoint?: AIPatternPoint;
   label?: string;
   confidence?: number;
   visible?: boolean;
@@ -164,13 +164,13 @@ export interface AIStudyTriangle {
   nestedPatterns?: number[];
 }
 
-export interface AIStudyWedge {
+export interface AIPatternWedge {
   id?: number;
   type: 'wedge-rising' | 'wedge-falling';
-  upperTrendline: [AIStudyPoint, AIStudyPoint];
-  lowerTrendline: [AIStudyPoint, AIStudyPoint];
-  convergencePoint?: AIStudyPoint;
-  breakoutPoint?: AIStudyPoint;
+  upperTrendline: [AIPatternPoint, AIPatternPoint];
+  lowerTrendline: [AIPatternPoint, AIPatternPoint];
+  convergencePoint?: AIPatternPoint;
+  breakoutPoint?: AIPatternPoint;
   context?: 'uptrend' | 'downtrend';
   label?: string;
   confidence?: number;
@@ -183,18 +183,18 @@ export interface AIStudyWedge {
   nestedPatterns?: number[];
 }
 
-export interface AIStudyFlag {
+export interface AIPatternFlag {
   id?: number;
   type: 'flag-bullish' | 'flag-bearish';
   flagpole: {
-    start: AIStudyPoint;
-    end: AIStudyPoint;
+    start: AIPatternPoint;
+    end: AIPatternPoint;
   };
   flag: {
-    upperTrendline: [AIStudyPoint, AIStudyPoint];
-    lowerTrendline: [AIStudyPoint, AIStudyPoint];
+    upperTrendline: [AIPatternPoint, AIPatternPoint];
+    lowerTrendline: [AIPatternPoint, AIPatternPoint];
   };
-  breakoutPoint?: AIStudyPoint;
+  breakoutPoint?: AIPatternPoint;
   label?: string;
   confidence?: number;
   visible?: boolean;
@@ -206,19 +206,19 @@ export interface AIStudyFlag {
   nestedPatterns?: number[];
 }
 
-export interface AIStudyPennant {
+export interface AIPatternPennant {
   id?: number;
   type: 'pennant';
   flagpole: {
-    start: AIStudyPoint;
-    end: AIStudyPoint;
+    start: AIPatternPoint;
+    end: AIPatternPoint;
   };
   pennant: {
-    upperTrendline: [AIStudyPoint, AIStudyPoint];
-    lowerTrendline: [AIStudyPoint, AIStudyPoint];
-    apex?: AIStudyPoint;
+    upperTrendline: [AIPatternPoint, AIPatternPoint];
+    lowerTrendline: [AIPatternPoint, AIPatternPoint];
+    apex?: AIPatternPoint;
   };
-  breakoutPoint?: AIStudyPoint;
+  breakoutPoint?: AIPatternPoint;
   direction: 'bullish' | 'bearish';
   label?: string;
   confidence?: number;
@@ -231,16 +231,16 @@ export interface AIStudyPennant {
   nestedPatterns?: number[];
 }
 
-export interface AIStudyCupAndHandle {
+export interface AIPatternCupAndHandle {
   id?: number;
   type: 'cup-and-handle';
-  cupStart: AIStudyPoint;
-  cupBottom: AIStudyPoint;
-  cupEnd: AIStudyPoint;
-  handleStart: AIStudyPoint;
-  handleLow: AIStudyPoint;
-  handleEnd: AIStudyPoint;
-  breakoutPoint?: AIStudyPoint;
+  cupStart: AIPatternPoint;
+  cupBottom: AIPatternPoint;
+  cupEnd: AIPatternPoint;
+  handleStart: AIPatternPoint;
+  handleLow: AIPatternPoint;
+  handleEnd: AIPatternPoint;
+  breakoutPoint?: AIPatternPoint;
   label?: string;
   confidence?: number;
   visible?: boolean;
@@ -252,13 +252,13 @@ export interface AIStudyCupAndHandle {
   nestedPatterns?: number[];
 }
 
-export interface AIStudyRoundingBottom {
+export interface AIPatternRoundingBottom {
   id?: number;
   type: 'rounding-bottom';
-  start: AIStudyPoint;
-  bottom: AIStudyPoint;
-  end: AIStudyPoint;
-  breakoutPoint?: AIStudyPoint;
+  start: AIPatternPoint;
+  bottom: AIPatternPoint;
+  end: AIPatternPoint;
+  breakoutPoint?: AIPatternPoint;
   label?: string;
   confidence?: number;
   visible?: boolean;
@@ -270,11 +270,11 @@ export interface AIStudyRoundingBottom {
   nestedPatterns?: number[];
 }
 
-export interface AIStudyGap {
+export interface AIPatternGap {
   id?: number;
   type: 'gap-common' | 'gap-breakaway' | 'gap-runaway' | 'gap-exhaustion';
-  gapStart: AIStudyPoint;
-  gapEnd: AIStudyPoint;
+  gapStart: AIPatternPoint;
+  gapEnd: AIPatternPoint;
   filled?: boolean;
   fillDate?: number;
   direction?: 'bullish' | 'bearish';
@@ -293,7 +293,7 @@ export interface AIStudyGap {
   nestedPatterns?: number[];
 }
 
-export interface AIStudyZone {
+export interface AIPatternZone {
   id?: number;
   type: 'liquidity-zone' | 'sell-zone' | 'buy-zone' | 'accumulation-zone';
   topPrice: number;
@@ -311,30 +311,30 @@ export interface AIStudyZone {
   nestedPatterns?: number[];
 }
 
-export type AIStudy =
-  | AIStudyLine
-  | AIStudyChannel
-  | AIStudyFibonacci
-  | AIStudyHeadAndShoulders
-  | AIStudyDoublePattern
-  | AIStudyTriplePattern
-  | AIStudyTriangle
-  | AIStudyWedge
-  | AIStudyFlag
-  | AIStudyPennant
-  | AIStudyCupAndHandle
-  | AIStudyRoundingBottom
-  | AIStudyGap
-  | AIStudyZone;
+export type AIPattern =
+  | AIPatternLine
+  | AIPatternChannel
+  | AIPatternFibonacci
+  | AIPatternHeadAndShoulders
+  | AIPatternDoublePattern
+  | AIPatternTriplePattern
+  | AIPatternTriangle
+  | AIPatternWedge
+  | AIPatternFlag
+  | AIPatternPennant
+  | AIPatternCupAndHandle
+  | AIPatternRoundingBottom
+  | AIPatternGap
+  | AIPatternZone;
 
-export interface AIStudyData {
+export interface AIPatternData {
   id: string;
   symbol: string;
   createdAt: number;
-  studies: AIStudy[];
+  patterns: AIPattern[];
 }
 
-export interface AIAnalysisWithStudies {
+export interface AIAnalysisWithPatterns {
   analysis: string;
-  studies?: AIStudy[] | undefined;
+  patterns?: AIPattern[] | undefined;
 }

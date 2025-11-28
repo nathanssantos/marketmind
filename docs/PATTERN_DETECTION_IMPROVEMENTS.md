@@ -22,7 +22,7 @@ Comprehensive implementation plan to complete algorithmic detection for all 33 c
    - Register in `PatternDetectionService.ts`
 
 2. **Enhance Fibonacci Rendering**
-   - File: `src/renderer/components/Chart/AIStudyRenderer.tsx`
+   - File: `src/renderer/components/Chart/AIPatternRenderer.tsx`
    - Add 0% and 100% levels to both retracement and extension
    - Draw dashed reference lines connecting start/end points
    - Show measurement candles (similar to TradingView)
@@ -83,11 +83,11 @@ Functions:
 - Flat support/resistance with range-bound movement
 
 ### Phase 5: Rendering Updates ✅
-Update `AIStudyRenderer.tsx` to handle all new patterns:
+Update `AIPatternRenderer.tsx` to handle all new patterns:
 - Use drawing helpers for consistency
 - Ensure all 34 pattern types render correctly
 - Add hover states for all patterns
-- Implement study tags with proper positioning
+- Implement pattern tags with proper positioning
 
 ### Phase 6: Testing & Validation ✅
 1. **Unit Tests** for all new detectors
@@ -140,7 +140,7 @@ Create settings tab in chart configuration modal for pattern detection parameter
 
 **Important**: All pattern types available in the enable/disable checkboxes MUST have:
 - ✅ Complete algorithmic detection implementation (using pivot points, regression, and rules)
-- ✅ Full rendering support in AIStudyRenderer
+- ✅ Full rendering support in AIPatternRenderer
 - ✅ Unit tests with >80% coverage
 - ✅ Integration tests with real market data
 - ✅ No stub functions or incomplete implementations
@@ -203,7 +203,7 @@ Create settings tab in chart configuration modal for pattern detection parameter
 7. ✅ Zone Patterns
 8. ✅ Horizontal Channels (complete stub)
 9. ✅ Update PatternDetectionService to register all new detectors
-10. ✅ Update AIStudyRenderer for all new patterns
+10. ✅ Update AIPatternRenderer for all new patterns
 11. ✅ Comprehensive testing
 12. ✅ **Pattern Detection Configuration UI Tab - COMPLETE**
 13. ✅ **Storage integration for user preferences - COMPLETE**
@@ -243,7 +243,7 @@ Create settings tab in chart configuration modal for pattern detection parameter
 - `src/renderer/utils/patternDetection/patterns/channels.ts` - Complete horizontal
 - `src/renderer/utils/patternDetection/patterns/advancedPatterns.ts` - Add triple patterns
 - `src/renderer/utils/patternDetection/services/PatternDetectionService.ts` - Register all
-- `src/renderer/components/Chart/AIStudyRenderer.tsx` - Enhanced rendering
+- `src/renderer/components/Chart/AIPatternRenderer.tsx` - Enhanced rendering
 
 ### New Files
 - `src/renderer/components/Chart/utils/drawingHelpers.ts` - Reusable drawing functions

@@ -60,7 +60,7 @@ describe('useCurrentPriceLineRenderer', () => {
       currentPriceLabel: { bg: '#22c55e', text: '#ffffff' },
       lineDefault: '#666666',
       ma: ['#3b82f6', '#f59e0b', '#8b5cf6'],
-      aiStudy: {
+      aiPattern: {
         support: '#22c55e',
         resistance: '#ef4444',
         trendlineBullish: '#22c55e',

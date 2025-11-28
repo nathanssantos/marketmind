@@ -1,6 +1,6 @@
-import type { AIStudyType } from '../types/aiStudy';
+import type { AIPatternType } from '@shared/types';
 
-export const STUDY_COLORS: Record<AIStudyType, string> = {
+export const PATTERN_COLORS: Record<AIPatternType, string> = {
   support: '#22c55e',
   resistance: '#ef4444',
 
@@ -70,7 +70,7 @@ export const OPACITY = {
   hover: 1.0,
 } as const;
 
-export const STUDY_LABELS: Record<AIStudyType, string> = {
+export const PATTERN_LABELS: Record<AIPatternType, string> = {
   support: 'Support',
   resistance: 'Resistance',
 
@@ -113,7 +113,7 @@ export const STUDY_LABELS: Record<AIStudyType, string> = {
   'accumulation-zone': 'Accumulation Zone',
 } as const;
 
-export const STUDY_CATEGORIES = {
+export const PATTERN_CATEGORIES = {
   'Support & Resistance': ['support', 'resistance'],
   Trendlines: ['trendline-bullish', 'trendline-bearish'],
   Channels: ['channel-ascending', 'channel-descending', 'channel-horizontal'],
@@ -142,9 +142,9 @@ export const STUDY_CATEGORIES = {
   Zones: ['liquidity-zone', 'sell-zone', 'buy-zone', 'accumulation-zone'],
 } as const;
 
-export const getStudyStyle = (type: AIStudyType) => {
-  const category = Object.keys(STUDY_CATEGORIES).find((cat) =>
-    STUDY_CATEGORIES[cat as keyof typeof STUDY_CATEGORIES].includes(
+export const getPatternStyle = (type: AIPatternType) => {
+  const category = Object.keys(PATTERN_CATEGORIES).find((cat) =>
+    PATTERN_CATEGORIES[cat as keyof typeof PATTERN_CATEGORIES].includes(
       type as never
     )
   );
@@ -155,12 +155,12 @@ export const getStudyStyle = (type: AIStudyType) => {
   else if (type.startsWith('gap')) lineStyle = 'dashed';
 
   return {
-    color: STUDY_COLORS[type],
+    color: PATTERN_COLORS[type],
     lineStyle,
     lineWidth: LINE_WIDTHS.primary,
     opacity: OPACITY.line,
     zoneOpacity: OPACITY.zone,
     category,
-    label: STUDY_LABELS[type],
+    label: PATTERN_LABELS[type],
   };
 };

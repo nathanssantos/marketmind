@@ -25,10 +25,10 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
   const [activeTab, setActiveTab] = useState<string>('general');
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="full">
+    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="lg">
       <Dialog.Backdrop />
       <Dialog.Positioner>
-        <Dialog.Content maxH="90vh" maxW="95vw">
+        <Dialog.Content maxH="85vh" maxW="900px">
           <CloseButton
             position="absolute"
             top={4}

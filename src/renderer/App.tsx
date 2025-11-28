@@ -1,6 +1,6 @@
 import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import type { Candle, Viewport } from '@shared/types';
+import type { AIPattern, Candle, Viewport } from '@shared/types';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
@@ -16,10 +16,9 @@ import { OnboardingDialog } from './components/Onboarding/OnboardingDialog';
 import { ErrorMessage } from './components/ui/ErrorMessage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
-import { AIStudyHoverProvider } from './context/AIStudyHoverContext';
 import { ChartProvider, useChartContext } from './context/ChartContext';
 import { useGlobalActions } from './context/GlobalActionsContext';
-import { useAIStudies } from './hooks/useAIStudies';
+import { PatternHoverProvider } from './context/PatternHoverContext';
 import { useAITrading } from './hooks/useAITrading';
 import { useAppSettings } from './hooks/useAppSettings';
 import { useAutoPatternDetection } from './hooks/useAutoPatternDetection';
@@ -28,10 +27,12 @@ import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
 import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { useManualPatternDetection } from './hooks/useManualPatternDetection';
 import { useMarketData } from './hooks/useMarketData';
 import { useNews } from './hooks/useNews';
 import { useOrderNotifications } from './hooks/useOrderNotifications';
 import { usePatternDetectionWorker } from './hooks/usePatternDetectionWorker';
+import { usePatterns } from './hooks/usePatterns';
 import { usePriceUpdates } from './hooks/usePriceUpdates';
 import { useRealtimeCandle } from './hooks/useRealtimeCandle';
 import { useSimulatorLayout } from './hooks/useSimulatorLayout';
@@ -130,29 +131,42 @@ function App(): ReactElement {
           );
         }}
       </Toaster>
-      <AIStudyHoverProvider>
+      <PatternHoverProvider>
         <ChartProvider>
           <PinnedControlsProvider>
             <AppContent />
           </PinnedControlsProvider>
         </ChartProvider>
-      </AIStudyHoverProvider>
+      </PatternHoverProvider>
     </ChakraProvider>
   );
 }
 
 function AppContent(): ReactElement {
   const { t } = useTranslation();
-  const { detectedStudies } = useChartContext();
+  const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
   const [viewport, setViewport] = useState<Viewport | undefined>(undefined);
+
+  const activeConversationId = useAIStore(state => state.activeConversationId);
+  const { detectedPatterns } = useChartContext();
+
+  const {
+    patterns,
+    patternsVisible,
+    deletePattern,
+    deleteAllPatterns,
+    togglePatternsVisibility,
+    processAIResponse,
+    addPatterns
+  } = usePatterns({ symbol, conversationId: activeConversationId });
 
   usePatternDetectionWorker();
   useAutoPatternDetection(viewport);
+  const { detectPatterns } = useManualPatternDetection(addPatterns);
   useSimulatorLayout();
   usePriceUpdates();
   useOrderNotifications();
 
-  const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
   const [showCurrentPriceLine, setShowCurrentPriceLine] = useLocalStorage('marketmind:showCurrentPriceLine', true);
@@ -214,6 +228,12 @@ function AppContent(): ReactElement {
   const toggleNews = useCallback(() => {
     setIsNewsOpen((prev) => !prev);
   }, []);
+
+  const handleDetectPatterns = useCallback((): void => {
+    if (viewport) {
+      detectPatterns(viewport);
+    }
+  }, [detectPatterns, viewport]);
 
   useEffect(() => {
     restoreActiveConversation();
@@ -370,34 +390,21 @@ function AppContent(): ReactElement {
     return fullSymbol;
   };
 
-  const updateConversationStudyDataId = useAIStore(state => state.updateConversationStudyDataId);
-  const activeConversationId = useAIStore(state => state.activeConversationId);
-
-  const {
-    studies: aiStudies,
-    studiesVisible,
-    studyDataId,
-    deleteStudies,
-    toggleStudiesVisibility,
-    processAIResponse
-  } = useAIStudies({ symbol, conversationId: activeConversationId });
   const setResponseProcessor = useAIStore(state => state.setResponseProcessor);
-  const enableAIStudies = useAIStore(state => state.enableAIStudies);
+  const enableAIPatterns = useAIStore(state => state.enableAIPatterns);
+
+  const handleDeletePattern = useCallback((patternId: number): void => {
+    void deletePattern(patternId);
+  }, [deletePattern]);
 
   useEffect(() => {
-    if (enableAIStudies) {
+    if (enableAIPatterns && processAIResponse) {
       setResponseProcessor(processAIResponse);
     } else {
       setResponseProcessor(null);
     }
     return () => setResponseProcessor(null);
-  }, [processAIResponse, setResponseProcessor, enableAIStudies]);
-
-  useEffect(() => {
-    if (activeConversationId && studyDataId) {
-      updateConversationStudyDataId(activeConversationId, studyDataId);
-    }
-  }, [activeConversationId, studyDataId, updateConversationStudyDataId]);
+  }, [processAIResponse, setResponseProcessor, enableAIPatterns]);
 
   const currentSymbolCode = extractSymbolCode(symbol);
   const isCrypto = symbol.endsWith('USDT') || symbol.endsWith('USD');
@@ -501,6 +508,7 @@ function AppContent(): ReactElement {
         onToggleTrading={toggleTrading}
         onToggleChat={toggleChat}
         onToggleNews={toggleNews}
+        onDetectPatterns={handleDetectPatterns}
       />      <MainLayout
         onOpenSymbolSelector={() => { }}
         advancedConfig={advancedConfig}
@@ -552,10 +560,12 @@ function AppContent(): ReactElement {
             chartType={chartType}
             movingAverages={movingAverages}
             advancedConfig={debouncedAdvancedConfig}
-            aiStudies={[...detectedStudies, ...aiStudies]}
-            onDeleteAIStudies={deleteStudies}
-            onToggleAIStudiesVisibility={toggleStudiesVisibility}
-            aiStudiesVisible={studiesVisible}
+            aiPatterns={[...(patterns as unknown as AIPattern[]), ...detectedPatterns]}
+            onDeleteAIPatterns={deleteAllPatterns}
+            onDeleteAIPattern={handleDeletePattern}
+            onToggleAIPatternsVisibility={togglePatternsVisibility}
+            aiPatternsVisible={patternsVisible}
+            onDeletePattern={handleDeletePattern}
             onViewportChange={setViewport}
             timeframe={timeframe}
           />

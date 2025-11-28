@@ -5,7 +5,7 @@ import {
     Stack,
     Text,
 } from '@chakra-ui/react';
-import type { AIStudyType } from '@shared/types';
+import type { AIPatternType } from '@shared/types';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HiAdjustmentsHorizontal } from 'react-icons/hi2';
@@ -83,7 +83,7 @@ export const PatternTogglePopover = memo(() => {
     const enabledPatterns = algorithmicDetectionSettings.enabledPatterns;
     const [isOpen, setIsOpen] = useState(false);
 
-    const togglePattern = (pattern: AIStudyType) => {
+    const togglePattern = (pattern: AIPatternType) => {
         const currentPatterns = enabledPatterns || [];
         const isEnabled = currentPatterns.includes(pattern);
 
@@ -95,7 +95,7 @@ export const PatternTogglePopover = memo(() => {
     };
 
     const toggleCategory = (category: keyof typeof PATTERN_CATEGORIES) => {
-        const categoryPatterns = PATTERN_CATEGORIES[category].map(p => p.value as AIStudyType);
+        const categoryPatterns = PATTERN_CATEGORIES[category].map(p => p.value as AIPatternType);
         const currentPatterns = enabledPatterns || [];
         const allEnabled = categoryPatterns.every(p => currentPatterns.includes(p));
 
@@ -107,7 +107,7 @@ export const PatternTogglePopover = memo(() => {
     };
 
     const isCategoryEnabled = (category: keyof typeof PATTERN_CATEGORIES) => {
-        const categoryPatterns = PATTERN_CATEGORIES[category].map(p => p.value as AIStudyType);
+        const categoryPatterns = PATTERN_CATEGORIES[category].map(p => p.value as AIPatternType);
         const currentPatterns = enabledPatterns || [];
         return categoryPatterns.every(p => currentPatterns.includes(p));
     };
@@ -162,8 +162,8 @@ export const PatternTogglePopover = memo(() => {
                                     >
                                         <Box>
                                             <Checkbox
-                                                checked={enabledPatterns?.includes(pattern.value as AIStudyType)}
-                                                onCheckedChange={() => togglePattern(pattern.value as AIStudyType)}
+                                                checked={enabledPatterns?.includes(pattern.value as AIPatternType)}
+                                                onCheckedChange={() => togglePattern(pattern.value as AIPatternType)}
                                             >
                                                 <Text fontSize="sm">
                                                     {t(`patterns.${pattern.labelKey}`)}

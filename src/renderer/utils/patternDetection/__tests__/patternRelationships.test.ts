@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Candle } from '../../../../shared/types';
-import type { AIStudy } from '../../../../shared/types/aiStudy';
+import type { AIPattern } from '../../../../shared/types/aiPattern';
 import {
-  buildPatternRelationships,
-  calculateFormationPeriod,
-  classifyPatternTier,
-  detectPriceOverlap,
-  detectTimeOverlap,
-  isNested,
-  PatternTier,
+    buildPatternRelationships,
+    calculateFormationPeriod,
+    classifyPatternTier,
+    detectPriceOverlap,
+    detectTimeOverlap,
+    isNested,
+    PatternTier,
 } from '../core/patternRelationships';
 
 const createTestCandles = (count: number, basePrice: number, intervalMs: number = 60000): Candle[] => {
@@ -34,7 +34,7 @@ const createTestSupportPattern = (
   endTime: number,
   price: number,
   id: number = 1
-): AIStudy => ({
+): AIPattern => ({
   id,
   type: 'support',
   points: [
@@ -52,7 +52,7 @@ const createTestTrianglePattern = (
   minPrice: number,
   maxPrice: number,
   id: number = 2
-): AIStudy => ({
+): AIPattern => ({
   id,
   type: 'triangle-ascending',
   upperTrendline: [
@@ -71,7 +71,7 @@ const createTestTrianglePattern = (
 const createTestHeadAndShouldersPattern = (
   baseTime: number,
   basePrice: number
-): AIStudy => ({
+): AIPattern => ({
   id: 3,
   type: 'head-and-shoulders',
   leftShoulder: { timestamp: baseTime, price: basePrice + 10 },
@@ -229,7 +229,7 @@ describe('Pattern Relationships', () => {
     });
 
     it('should identify conflicting patterns (bullish vs bearish)', () => {
-      const bullishPattern: AIStudy = {
+      const bullishPattern: AIPattern = {
         id: 1,
         type: 'double-bottom',
         firstPeak: { timestamp: 1000, price: 90 },
@@ -240,7 +240,7 @@ describe('Pattern Relationships', () => {
         timestamp: 1000,
       };
 
-      const bearishPattern: AIStudy = {
+      const bearishPattern: AIPattern = {
         id: 2,
         type: 'double-top',
         firstPeak: { timestamp: 1500, price: 110 },
@@ -393,7 +393,7 @@ describe('Pattern Relationships', () => {
     it('should handle complex multi-pattern scenario', () => {
       const longTermTriangle = createTestTrianglePattern(1000, 100000, 80, 120);
       const mediumTermSupport = createTestSupportPattern(10000, 50000, 90);
-      const shortTermResistance: AIStudy = {
+      const shortTermResistance: AIPattern = {
         id: 3,
         type: 'resistance',
         points: [

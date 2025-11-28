@@ -1,4 +1,4 @@
-import type { AIStudyLine, AIStudyPoint, Candle } from '@shared/types';
+import type { AIPatternLine, AIPatternPoint, Candle } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -60,8 +60,8 @@ const clusterPivotsByPrice = (
 export const detectSupport = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyLine[] => {
-  const supports: AIStudyLine[] = [];
+): AIPatternLine[] => {
+  const supports: AIPatternLine[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low');
   
   const clusters = clusterPivotsByPrice(lowPivots);
@@ -70,7 +70,7 @@ export const detectSupport = (
     c => c.touches >= PATTERN_DETECTION_CONFIG.MIN_TOUCHES_SUPPORT
   );
 
-  let studyId = 1;
+  let patternId = 1;
   
   for (const cluster of validClusters) {
     const volumeConfirmation = validateVolumeConfirmation(candles, cluster.indices);
@@ -98,12 +98,12 @@ export const detectSupport = (
     const firstTouch = cluster.timestamps[0] || 0;
     const lastTouch = cluster.timestamps[cluster.timestamps.length - 1] || 0;
     
-    const startPoint: AIStudyPoint = {
+    const startPoint: AIPatternPoint = {
       timestamp: firstTouch,
       price: cluster.price,
     };
     
-    const endPoint: AIStudyPoint = {
+    const endPoint: AIPatternPoint = {
       timestamp: lastTouch,
       price: cluster.price,
     };
@@ -113,7 +113,7 @@ export const detectSupport = (
     const confidencePercent = Math.round(confidence * 100);
     
     supports.push({
-      id: studyId++,
+      id: patternId++,
       type: 'support',
       points: [startPoint, endPoint],
       label: `Support at ${cluster.price.toFixed(2)} · ${cluster.touches} touches · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
@@ -131,8 +131,8 @@ export const detectSupport = (
 export const detectResistance = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyLine[] => {
-  const resistances: AIStudyLine[] = [];
+): AIPatternLine[] => {
+  const resistances: AIPatternLine[] = [];
   const highPivots = pivots.filter(p => p.type === 'high');
   
   const clusters = clusterPivotsByPrice(highPivots);
@@ -141,7 +141,7 @@ export const detectResistance = (
     c => c.touches >= PATTERN_DETECTION_CONFIG.MIN_TOUCHES_RESISTANCE
   );
 
-  let studyId = 1;
+  let patternId = 1;
   
   for (const cluster of validClusters) {
     const volumeConfirmation = validateVolumeConfirmation(candles, cluster.indices);
@@ -169,12 +169,12 @@ export const detectResistance = (
     const firstTouch = cluster.timestamps[0] || 0;
     const lastTouch = cluster.timestamps[cluster.timestamps.length - 1] || 0;
     
-    const startPoint: AIStudyPoint = {
+    const startPoint: AIPatternPoint = {
       timestamp: firstTouch,
       price: cluster.price,
     };
     
-    const endPoint: AIStudyPoint = {
+    const endPoint: AIPatternPoint = {
       timestamp: lastTouch,
       price: cluster.price,
     };
@@ -184,7 +184,7 @@ export const detectResistance = (
     const confidencePercent = Math.round(confidence * 100);
     
     resistances.push({
-      id: studyId++,
+      id: patternId++,
       type: 'resistance',
       points: [startPoint, endPoint],
       label: `Resistance at ${cluster.price.toFixed(2)} · ${cluster.touches} touches · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,

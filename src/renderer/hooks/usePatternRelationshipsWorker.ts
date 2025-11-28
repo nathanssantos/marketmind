@@ -1,5 +1,5 @@
 import { workerPool } from '@/renderer/utils/WorkerPool';
-import type { AIStudy } from '@shared/types';
+import type { AIPattern } from '@shared/types';
 import { useCallback, useEffect, useRef } from 'react';
 import type { PatternRelationship } from '../utils/patternDetection/core/patternRelationships';
 import { buildPatternRelationships } from '../utils/patternDetection/core/patternRelationships';
@@ -15,7 +15,7 @@ interface WorkerOutput {
 }
 
 interface UsePatternRelationshipsWorkerReturn {
-  buildRelationships: (patterns: AIStudy[], useWorker?: boolean) => Promise<PatternRelationship[]>;
+  buildRelationships: (patterns: AIPattern[], useWorker?: boolean) => Promise<PatternRelationship[]>;
   terminate: () => void;
 }
 
@@ -43,7 +43,7 @@ export const usePatternRelationshipsWorker = (): UsePatternRelationshipsWorkerRe
   }, []);
 
   const buildRelationships = useCallback(
-    async (patterns: AIStudy[], useWorker: boolean = true): Promise<PatternRelationship[]> => {
+    async (patterns: AIPattern[], useWorker: boolean = true): Promise<PatternRelationship[]> => {
       if (!useWorker || patterns.length < MIN_PATTERNS_FOR_WORKER) {
         return buildPatternRelationships(patterns);
       }

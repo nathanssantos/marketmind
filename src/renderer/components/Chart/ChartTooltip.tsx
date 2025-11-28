@@ -1,6 +1,6 @@
 import { formatDateTimeTooltip, formatPrice } from '@/renderer/utils/formatters';
 import { Box, HStack, Stack, Text } from '@chakra-ui/react';
-import type { AIStudy, Candle } from '@shared/types';
+import type { AIPattern, Candle } from '@shared/types';
 import type { Order } from '@shared/types/trading';
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,7 @@ export interface ChartTooltipProps {
   visible: boolean;
   containerWidth?: number;
   containerHeight?: number;
-  aiStudy?: AIStudy | null | undefined;
+  aiPattern?: AIPattern | null | undefined;
   movingAverage?: {
     period: number;
     type: 'SMA' | 'EMA';
@@ -37,7 +37,7 @@ export const ChartTooltip = ({
   visible,
   containerWidth = window.innerWidth,
   containerHeight = window.innerHeight,
-  aiStudy,
+  aiPattern,
   movingAverage,
   measurement,
   order,
@@ -45,14 +45,14 @@ export const ChartTooltip = ({
 }: ChartTooltipProps): ReactElement | null => {
   const { t } = useTranslation();
 
-  if (!visible || (!candle && !aiStudy && !movingAverage && !measurement && !order)) return null;
+  if (!visible || (!candle && !aiPattern && !movingAverage && !measurement && !order)) return null;
 
   const isBullish = candle ? candle.close >= candle.open : false;
   const change = candle ? candle.close - candle.open : 0;
   const changePercent = candle ? ((change / candle.open) * 100).toFixed(2) : '0.00';
 
   const tooltipWidth = 220;
-  const tooltipHeight = measurement ? 120 : aiStudy ? 120 : 200;
+  const tooltipHeight = measurement ? 120 : aiPattern ? 120 : 200;
   const offset = 10;
 
   let leftPos = x + offset;
@@ -248,19 +248,19 @@ export const ChartTooltip = ({
     );
   }
 
-  if (aiStudy) {
-    const studyTypeLabel = aiStudy.type.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-    const isLine = 'points' in aiStudy;
+  if (aiPattern) {
+    const patternTypeLabel = aiPattern.type.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+    const isLine = 'points' in aiPattern;
 
     let priceValue: number | undefined;
     let topPriceValue: number | undefined;
     let bottomPriceValue: number | undefined;
 
-    if (isLine && 'points' in aiStudy && aiStudy.points.length >= 2) {
-      priceValue = (aiStudy.points[0].price + aiStudy.points[1].price) / 2;
-    } else if ('topPrice' in aiStudy && 'bottomPrice' in aiStudy) {
-      topPriceValue = aiStudy.topPrice;
-      bottomPriceValue = aiStudy.bottomPrice;
+    if (isLine && 'points' in aiPattern && aiPattern.points.length >= 2) {
+      priceValue = (aiPattern.points[0].price + aiPattern.points[1].price) / 2;
+    } else if ('topPrice' in aiPattern && 'bottomPrice' in aiPattern) {
+      topPriceValue = aiPattern.topPrice;
+      bottomPriceValue = aiPattern.bottomPrice;
     }
 
     return (
@@ -282,38 +282,38 @@ export const ChartTooltip = ({
         borderColor="border"
       >
         <Stack gap={1.5}>
-          {aiStudy.timestamp && (
+          {aiPattern.timestamp && (
             <Text fontSize="2xs" color="fg.muted" mb={1}>
-              {formatDateTimeTooltip(aiStudy.timestamp)}
+              {formatDateTimeTooltip(aiPattern.timestamp)}
             </Text>
           )}
           <HStack gap={1.5}>
             <Text>🤖</Text>
             <Text fontWeight="semibold" color="blue.500">
-              {studyTypeLabel}
+              {patternTypeLabel}
             </Text>
           </HStack>
-          {aiStudy.label && (
+          {aiPattern.label && (
             <Text color="fg.muted" fontSize="xs">
-              {aiStudy.label}
+              {aiPattern.label}
             </Text>
           )}
-          {aiStudy.confidence !== undefined && (
+          {aiPattern.confidence !== undefined && (
             <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
               <Text color="fg.muted">Confidence:</Text>
-              <Text fontWeight="medium" color={aiStudy.confidence >= 0.7 ? 'green.500' : aiStudy.confidence >= 0.5 ? 'yellow.500' : 'orange.500'}>
-                {Math.round(aiStudy.confidence * 100)}%
+              <Text fontWeight="medium" color={aiPattern.confidence >= 0.7 ? 'green.500' : aiPattern.confidence >= 0.5 ? 'yellow.500' : 'orange.500'}>
+                {Math.round(aiPattern.confidence * 100)}%
               </Text>
             </HStack>
           )}
           {isLine && priceValue !== undefined ? (
-            <HStack justify="space-between" pt={aiStudy.confidence === undefined ? 1 : 0} borderTopWidth={aiStudy.confidence === undefined ? 1 : 0} borderColor="border">
+            <HStack justify="space-between" pt={aiPattern.confidence === undefined ? 1 : 0} borderTopWidth={aiPattern.confidence === undefined ? 1 : 0} borderColor="border">
               <Text color="fg.muted">Price Level:</Text>
               <Text fontWeight="medium">{formatPrice(priceValue)}</Text>
             </HStack>
           ) : topPriceValue !== undefined && bottomPriceValue !== undefined ? (
             <>
-              <HStack justify="space-between" pt={aiStudy.confidence === undefined ? 1 : 0} borderTopWidth={aiStudy.confidence === undefined ? 1 : 0} borderColor="border">
+              <HStack justify="space-between" pt={aiPattern.confidence === undefined ? 1 : 0} borderTopWidth={aiPattern.confidence === undefined ? 1 : 0} borderColor="border">
                 <Text color="fg.muted">Top:</Text>
                 <Text fontWeight="medium">{formatPrice(topPriceValue)}</Text>
               </HStack>

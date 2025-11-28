@@ -7,9 +7,11 @@ import { patternDetectionService } from '../utils/patternDetection';
 
 const INTERACTION_DEBOUNCE_MS = 500;
 const DETECTION_DEBOUNCE_MS = 500;
+const MAX_PATTERNS_CLEAN_MODE = 20;
+const MAX_PATTERNS_NORMAL_MODE = 50;
 
-export const useAutoPatternDetection = (viewport?: Viewport) => {
-  const { chartData, setDetectedStudies } = useChartContext();
+export const useAutoPatternDetection = (viewport?: Viewport): void => {
+  const { chartData, setDetectedPatterns } = useChartContext();
   const { algorithmicDetectionSettings } = useUIStore();
   const { config: patternConfig } = usePatternDetectionConfigStore();
   const lastDetectionRef = useRef<{
@@ -19,12 +21,12 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
     viewportEnd: number;
     enabledPatterns: string;
   } | null>(null);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isInteracting, setIsInteracting] = useState(false);
-  const interactionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const interactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const visibleStart = viewport ? Math.floor(viewport.start) : 0;
-  const visibleEnd = viewport ? Math.ceil(viewport.end) : chartData?.candles.length || 0;
+  const visibleEnd = viewport ? Math.ceil(viewport.end) : (chartData?.candles.length ?? 0);
 
   const detectionOptions = useMemo(
     () => ({
@@ -41,8 +43,8 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
       maxPatternsPerTier: patternConfig.maxPatternsPerTier,
       maxPatternsPerCategory: patternConfig.maxPatternsPerCategory,
       maxPatternsTotal: patternConfig.filteringMode === 'clean' 
-        ? Math.min(patternConfig.maxPatternsTotal, 20)
-        : Math.min(patternConfig.maxPatternsTotal, 50),
+        ? Math.min(patternConfig.maxPatternsTotal, MAX_PATTERNS_CLEAN_MODE)
+        : Math.min(patternConfig.maxPatternsTotal, MAX_PATTERNS_NORMAL_MODE),
     }),
     [
       algorithmicDetectionSettings.minConfidence,
@@ -66,7 +68,7 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
           detectionOptions
         );
 
-        setDetectedStudies(detectionResult.studies);
+        setDetectedPatterns(detectionResult.patterns);
         lastDetectionRef.current = {
           symbol,
           candleCount,
@@ -76,10 +78,10 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
         };
       } catch (error) {
         console.error('Auto pattern detection failed:', error);
-        setDetectedStudies([]);
+        setDetectedPatterns([]);
       }
     },
-    [detectionOptions, setDetectedStudies]
+    [detectionOptions, setDetectedPatterns]
   );
 
   useEffect(() => {
@@ -128,7 +130,7 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
         debounceTimerRef.current = null;
       }
       if (!algorithmicDetectionSettings.autoDisplayPatterns) {
-        setDetectedStudies([]);
+        setDetectedPatterns([]);
       }
       return;
     }
@@ -156,7 +158,7 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
     visibleStart,
     visibleEnd,
     isInteracting,
-    setDetectedStudies,
+    setDetectedPatterns,
     shouldSkipDetection,
   ]);
 

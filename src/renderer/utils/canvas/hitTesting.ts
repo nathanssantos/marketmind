@@ -1,5 +1,5 @@
 import { CHART_CONFIG } from '@shared/constants';
-import type { AIStudy, Candle } from '@shared/types';
+import type { AIPattern, Candle } from '@shared/types';
 import type { CanvasManager } from './CanvasManager';
 
 export interface HitTestPoint {
@@ -102,15 +102,15 @@ export const isPointInRect = (
   );
 };
 
-export const testLineStudyHit = (
-  study: AIStudy,
+export const testLinePatternHit = (
+  pattern: AIPattern,
   mousePoint: HitTestPoint,
   canvasManager: CanvasManager,
   candles: Candle[]
 ): boolean => {
-  if (!('points' in study)) return false;
+  if (!('points' in pattern)) return false;
 
-  const [point1, point2] = study.points;
+  const [point1, point2] = pattern.points;
   const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
   const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
 
@@ -124,9 +124,9 @@ export const testLineStudyHit = (
   let finalX2 = x2;
   let finalY2 = y2;
 
-  if (study.type === 'support' || study.type === 'resistance') {
+  if (pattern.type === 'support' || pattern.type === 'resistance') {
     const lastCandleX = canvasManager.indexToX(candles.length - 1);
-    const extensionDistance = CHART_CONFIG.STUDY_EXTENSION_DISTANCE;
+    const extensionDistance = CHART_CONFIG.PATTERN_EXTENSION_DISTANCE;
     const targetX = lastCandleX + extensionDistance;
 
     if (x2 < targetX) {
@@ -143,28 +143,28 @@ export const testLineStudyHit = (
   );
 };
 
-export const testZoneStudyHit = (
-  study: AIStudy,
+export const testZonePatternHit = (
+  pattern: AIPattern,
   mousePoint: HitTestPoint,
   canvasManager: CanvasManager,
   candles: Candle[]
 ): boolean => {
-  if (!('topPrice' in study)) return false;
+  if (!('topPrice' in pattern)) return false;
 
-  const startIndex = candles.findIndex(c => c.timestamp >= study.startTimestamp);
-  const endIndex = candles.findIndex(c => c.timestamp >= study.endTimestamp);
+  const startIndex = candles.findIndex(c => c.timestamp >= pattern.startTimestamp);
+  const endIndex = candles.findIndex(c => c.timestamp >= pattern.endTimestamp);
 
   if (startIndex === -1 || endIndex === -1) return false;
 
   const x1 = canvasManager.indexToCenterX(startIndex);
   let x2 = canvasManager.indexToCenterX(endIndex);
-  const y1 = canvasManager.priceToY(study.topPrice);
-  const y2 = canvasManager.priceToY(study.bottomPrice);
+  const y1 = canvasManager.priceToY(pattern.topPrice);
+  const y2 = canvasManager.priceToY(pattern.bottomPrice);
 
-  if (study.type === 'buy-zone' || study.type === 'sell-zone' || 
-      study.type === 'liquidity-zone' || study.type === 'accumulation-zone') {
+  if (pattern.type === 'buy-zone' || pattern.type === 'sell-zone' || 
+      pattern.type === 'liquidity-zone' || pattern.type === 'accumulation-zone') {
     const lastCandleX = canvasManager.indexToX(candles.length - 1);
-    const extensionDistance = CHART_CONFIG.STUDY_EXTENSION_DISTANCE;
+    const extensionDistance = CHART_CONFIG.PATTERN_EXTENSION_DISTANCE;
     const targetX = lastCandleX + extensionDistance;
 
     if (x2 < targetX) {
@@ -180,18 +180,18 @@ export const testZoneStudyHit = (
   });
 };
 
-export const testChannelStudyHit = (
-  study: AIStudy,
+export const testChannelPatternHit = (
+  pattern: AIPattern,
   mousePoint: HitTestPoint,
   canvasManager: CanvasManager,
   candles: Candle[]
 ): boolean => {
-  if (!('upperLine' in study) || !('lowerLine' in study)) return false;
+  if (!('upperLine' in pattern) || !('lowerLine' in pattern)) return false;
 
-  const upperPoint1 = study.upperLine[0];
-  const upperPoint2 = study.upperLine[1];
-  const lowerPoint1 = study.lowerLine[0];
-  const lowerPoint2 = study.lowerLine[1];
+  const upperPoint1 = pattern.upperLine[0];
+  const upperPoint2 = pattern.upperLine[1];
+  const lowerPoint1 = pattern.lowerLine[0];
+  const lowerPoint2 = pattern.lowerLine[1];
 
   const upperIndex1 = candles.findIndex(c => c.timestamp >= upperPoint1.timestamp);
   const upperIndex2 = candles.findIndex(c => c.timestamp >= upperPoint2.timestamp);
@@ -210,16 +210,16 @@ export const testChannelStudyHit = (
   return isPointInPolygon(mousePoint, vertices) || isPointNearPolygonEdge(mousePoint, vertices);
 };
 
-export const testTriangleStudyHit = (
-  study: AIStudy,
+export const testTrianglePatternHit = (
+  pattern: AIPattern,
   mousePoint: HitTestPoint,
   canvasManager: CanvasManager,
   candles: Candle[]
 ): boolean => {
-  if (!('upperTrendline' in study) || !('lowerTrendline' in study)) return false;
+  if (!('upperTrendline' in pattern) || !('lowerTrendline' in pattern)) return false;
 
-  const allPoints = [...study.upperTrendline, ...study.lowerTrendline];
-  if ('apex' in study && study.apex) allPoints.push(study.apex);
+  const allPoints = [...pattern.upperTrendline, ...pattern.lowerTrendline];
+  if ('apex' in pattern && pattern.apex) allPoints.push(pattern.apex);
 
   const coords = allPoints
     .map(p => {
@@ -254,23 +254,23 @@ export const testTriangleStudyHit = (
   return isPointInPolygon(mousePoint, polygon);
 };
 
-export const testFibonacciStudyHit = (
-  study: AIStudy,
+export const testFibonacciPatternHit = (
+  pattern: AIPattern,
   mousePoint: HitTestPoint,
   canvasManager: CanvasManager,
   candles: Candle[]
 ): boolean => {
-  if (!('startPoint' in study) || !('endPoint' in study) || !('levels' in study)) return false;
+  if (!('startPoint' in pattern) || !('endPoint' in pattern) || !('levels' in pattern)) return false;
 
-  const startIndex = candles.findIndex(c => c.timestamp >= study.startPoint.timestamp);
-  const endIndex = candles.findIndex(c => c.timestamp >= study.endPoint.timestamp);
+  const startIndex = candles.findIndex(c => c.timestamp >= pattern.startPoint.timestamp);
+  const endIndex = candles.findIndex(c => c.timestamp >= pattern.endPoint.timestamp);
 
   if (startIndex === -1 || endIndex === -1) return false;
 
   const x1 = canvasManager.indexToCenterX(startIndex);
   const x2 = canvasManager.indexToCenterX(endIndex);
 
-  for (const level of study.levels) {
+  for (const level of pattern.levels) {
     const y = canvasManager.priceToY(level.price);
     
     if (isPointNearLine(
@@ -285,8 +285,8 @@ export const testFibonacciStudyHit = (
   return false;
 };
 
-export const testPatternStudyHit = (
-  study: AIStudy,
+export const testPatternFormationHit = (
+  pattern: AIPattern,
   mousePoint: HitTestPoint,
   canvasManager: CanvasManager,
   candles: Candle[]
@@ -294,75 +294,75 @@ export const testPatternStudyHit = (
 ): boolean => {
   let allPoints: { timestamp: number; price: number }[] = [];
 
-  if (study.type === 'head-and-shoulders' || study.type === 'inverse-head-and-shoulders') {
-    if ('leftShoulder' in study && 'head' in study && 'rightShoulder' in study) {
-      allPoints = [study.leftShoulder, study.head, study.rightShoulder];
-      if ('neckline' in study && study.neckline) {
-        allPoints.push(...study.neckline);
+  if (pattern.type === 'head-and-shoulders' || pattern.type === 'inverse-head-and-shoulders') {
+    if ('leftShoulder' in pattern && 'head' in pattern && 'rightShoulder' in pattern) {
+      allPoints = [pattern.leftShoulder, pattern.head, pattern.rightShoulder];
+      if ('neckline' in pattern && pattern.neckline) {
+        allPoints.push(...pattern.neckline);
       }
     }
-  } else if (study.type === 'double-top' || study.type === 'double-bottom') {
-    if ('firstPeak' in study && 'secondPeak' in study) {
-      allPoints = [study.firstPeak, study.secondPeak];
-      if ('neckline' in study && study.neckline) {
-        allPoints.push(study.neckline);
+  } else if (pattern.type === 'double-top' || pattern.type === 'double-bottom') {
+    if ('firstPeak' in pattern && 'secondPeak' in pattern) {
+      allPoints = [pattern.firstPeak, pattern.secondPeak];
+      if ('neckline' in pattern && pattern.neckline) {
+        allPoints.push(pattern.neckline);
       }
     }
-  } else if (study.type === 'triple-top' || study.type === 'triple-bottom') {
-    if ('peak1' in study && 'peak2' in study && 'peak3' in study) {
-      allPoints = [study.peak1, study.peak2, study.peak3];
-      if ('neckline' in study && study.neckline) {
-        allPoints.push(...study.neckline);
+  } else if (pattern.type === 'triple-top' || pattern.type === 'triple-bottom') {
+    if ('peak1' in pattern && 'peak2' in pattern && 'peak3' in pattern) {
+      allPoints = [pattern.peak1, pattern.peak2, pattern.peak3];
+      if ('neckline' in pattern && pattern.neckline) {
+        allPoints.push(...pattern.neckline);
       }
     }
-  } else if (study.type === 'flag-bullish' || study.type === 'flag-bearish') {
-    if ('flagpole' in study && 'flag' in study) {
+  } else if (pattern.type === 'flag-bullish' || pattern.type === 'flag-bearish') {
+    if ('flagpole' in pattern && 'flag' in pattern) {
       allPoints = [
-        study.flagpole.start,
-        study.flagpole.end,
-        ...study.flag.upperTrendline,
-        ...study.flag.lowerTrendline
+        pattern.flagpole.start,
+        pattern.flagpole.end,
+        ...pattern.flag.upperTrendline,
+        ...pattern.flag.lowerTrendline
       ];
     }
-  } else if (study.type === 'pennant') {
-    if ('flagpole' in study && 'pennant' in study) {
+  } else if (pattern.type === 'pennant') {
+    if ('flagpole' in pattern && 'pennant' in pattern) {
       allPoints = [
-        study.flagpole.start,
-        study.flagpole.end,
-        ...study.pennant.upperTrendline,
-        ...study.pennant.lowerTrendline
+        pattern.flagpole.start,
+        pattern.flagpole.end,
+        ...pattern.pennant.upperTrendline,
+        ...pattern.pennant.lowerTrendline
       ];
-      if ('apex' in study.pennant && study.pennant.apex) {
-        allPoints.push(study.pennant.apex);
+      if ('apex' in pattern.pennant && pattern.pennant.apex) {
+        allPoints.push(pattern.pennant.apex);
       }
     }
-  } else if (study.type === 'wedge-rising' || study.type === 'wedge-falling') {
-    if ('upperTrendline' in study && 'lowerTrendline' in study) {
-      allPoints = [...study.upperTrendline, ...study.lowerTrendline];
-      if ('convergencePoint' in study && study.convergencePoint) {
-        allPoints.push(study.convergencePoint);
+  } else if (pattern.type === 'wedge-rising' || pattern.type === 'wedge-falling') {
+    if ('upperTrendline' in pattern && 'lowerTrendline' in pattern) {
+      allPoints = [...pattern.upperTrendline, ...pattern.lowerTrendline];
+      if ('convergencePoint' in pattern && pattern.convergencePoint) {
+        allPoints.push(pattern.convergencePoint);
       }
     }
-  } else if (study.type === 'cup-and-handle') {
-    if ('cupStart' in study && 'cupBottom' in study && 'cupEnd' in study &&
-        'handleStart' in study && 'handleLow' in study && 'handleEnd' in study) {
+  } else if (pattern.type === 'cup-and-handle') {
+    if ('cupStart' in pattern && 'cupBottom' in pattern && 'cupEnd' in pattern &&
+        'handleStart' in pattern && 'handleLow' in pattern && 'handleEnd' in pattern) {
       allPoints = [
-        study.cupStart,
-        study.cupBottom,
-        study.cupEnd,
-        study.handleStart,
-        study.handleLow,
-        study.handleEnd
+        pattern.cupStart,
+        pattern.cupBottom,
+        pattern.cupEnd,
+        pattern.handleStart,
+        pattern.handleLow,
+        pattern.handleEnd
       ];
     }
-  } else if (study.type === 'rounding-bottom') {
-    if ('start' in study && 'bottom' in study && 'end' in study) {
-      allPoints = [study.start, study.bottom, study.end];
+  } else if (pattern.type === 'rounding-bottom') {
+    if ('start' in pattern && 'bottom' in pattern && 'end' in pattern) {
+      allPoints = [pattern.start, pattern.bottom, pattern.end];
     }
-  } else if (study.type === 'gap-common' || study.type === 'gap-breakaway' || 
-             study.type === 'gap-runaway' || study.type === 'gap-exhaustion') {
-    if ('gapStart' in study && 'gapEnd' in study) {
-      allPoints = [study.gapStart, study.gapEnd];
+  } else if (pattern.type === 'gap-common' || pattern.type === 'gap-breakaway' || 
+             pattern.type === 'gap-runaway' || pattern.type === 'gap-exhaustion') {
+    if ('gapStart' in pattern && 'gapEnd' in pattern) {
+      allPoints = [pattern.gapStart, pattern.gapEnd];
     }
   }
 
@@ -396,8 +396,8 @@ export const testPatternStudyHit = (
   return false;
 };
 
-export const testStudyHit = (
-  study: AIStudy,
+export const testPatternHit = (
+  pattern: AIPattern,
   mousePoint: HitTestPoint,
   canvasManager: CanvasManager,
   candles: Candle[],
@@ -412,26 +412,26 @@ export const testStudyHit = (
     return true;
   }
 
-  if ('topPrice' in study) {
-    return testZoneStudyHit(study, mousePoint, canvasManager, candles);
+  if ('topPrice' in pattern) {
+    return testZonePatternHit(pattern, mousePoint, canvasManager, candles);
   }
 
-  if ('points' in study) {
-    return testLineStudyHit(study, mousePoint, canvasManager, candles);
+  if ('points' in pattern) {
+    return testLinePatternHit(pattern, mousePoint, canvasManager, candles);
   }
 
-  if ('upperLine' in study && 'lowerLine' in study) {
-    if (study.type.includes('channel')) {
-      return testChannelStudyHit(study, mousePoint, canvasManager, candles);
+  if ('upperLine' in pattern && 'lowerLine' in pattern) {
+    if (pattern.type.includes('channel')) {
+      return testChannelPatternHit(pattern, mousePoint, canvasManager, candles);
     }
-    if (study.type.includes('triangle')) {
-      return testTriangleStudyHit(study, mousePoint, canvasManager, candles);
+    if (pattern.type.includes('triangle')) {
+      return testTrianglePatternHit(pattern, mousePoint, canvasManager, candles);
     }
   }
 
-  if ('startPoint' in study && 'endPoint' in study && 'levels' in study) {
-    return testFibonacciStudyHit(study, mousePoint, canvasManager, candles);
+  if ('startPoint' in pattern && 'endPoint' in pattern && 'levels' in pattern) {
+    return testFibonacciPatternHit(pattern, mousePoint, canvasManager, candles);
   }
 
-  return testPatternStudyHit(study, mousePoint, canvasManager, candles);
+  return testPatternFormationHit(pattern, mousePoint, canvasManager, candles);
 };

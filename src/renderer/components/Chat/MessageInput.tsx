@@ -8,8 +8,8 @@ import { useMessageInput } from './useMessageInput';
 
 export const MessageInput = () => {
   const { t } = useTranslation();
-  const enableAIStudies = useAIStore((state) => state.enableAIStudies);
-  const toggleAIStudies = useAIStore((state) => state.toggleAIStudies);
+  const enableAIPatterns = useAIStore((state) => state.enableAIPatterns);
+  const toggleAIPatterns = useAIStore((state) => state.toggleAIPatterns);
   const isAutoTradingActive = useAIStore((state) => state.isAutoTradingActive);
   const toggleAutoTrading = useAIStore((state) => state.toggleAutoTrading);
   const {
@@ -54,15 +54,15 @@ export const MessageInput = () => {
       </Flex>
       <Flex mt={2} align="center" gap={2}>
         <TooltipWrapper
-          label={enableAIStudies ? t('chat.disableAIStudies') : t('chat.enableAIStudies')}
+          label={enableAIPatterns ? t('chat.disableAIPatterns') : t('chat.enableAIPatterns')}
           showArrow
         >
           <IconButton
-            aria-label={enableAIStudies ? t('chat.disableAIStudies') : t('chat.enableAIStudies')}
-            onClick={toggleAIStudies}
+            aria-label={enableAIPatterns ? t('chat.disableAIPatterns') : t('chat.enableAIPatterns')}
+            onClick={toggleAIPatterns}
             size="2xs"
-            variant={enableAIStudies ? 'solid' : 'outline'}
-            colorPalette={enableAIStudies ? 'purple' : 'gray'}
+            variant={enableAIPatterns ? 'solid' : 'outline'}
+            colorPalette={enableAIPatterns ? 'purple' : 'gray'}
           >
             <LuPencilRuler />
           </IconButton>

@@ -1,11 +1,11 @@
 import type {
-  ExpirationType,
-  Order,
-  OrderStatus,
-  Position,
-  Wallet,
-  WalletCurrency,
-  WalletPerformancePoint,
+    ExpirationType,
+    Order,
+    OrderStatus,
+    Position,
+    Wallet,
+    WalletCurrency,
+    WalletPerformancePoint,
 } from '@shared/types/trading';
 import { nanoid } from 'nanoid';
 import { create } from 'zustand';
@@ -111,7 +111,7 @@ export const useTradingStore = create<TradingState>((set, get) => {
     partial: Partial<TradingState> | ((state: TradingState) => Partial<TradingState>)
   ): void => {
     set(partial);
-    saveToElectron(get());
+    void saveToElectron(get());
   };
 
   return {

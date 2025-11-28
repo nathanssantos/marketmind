@@ -25,7 +25,7 @@ Phase 12: Optimizations                         ██████████�
 Phase 13: Final Polish                          ████████████████████ 100% ✅
 Phase 14: Internationalization                  ████████████████████ 100% ✅
 Phase 15: Application Toolbar                   ████████████████████ 100% ✅
-Phase 16: AI Studies Toggle & Performance       ████████████████████ 100% ✅
+Phase 16: AI Patterns Toggle & Performance       ████████████████████ 100% ✅
 Phase 17: Enhanced Chart Interactions           ████████████████████ 100% ✅
 Phase 18: Web Workers Performance System        ████████████████████ 100% ✅
 Phase 19: Calendar & Performance Optimizations  ████████████████████ 100% ✅
@@ -33,7 +33,7 @@ Phase 19: Calendar & Performance Optimizations  ██████████�
 
 **Overall Project Completion:** 100% (19/19 phases complete) 🚀
 
-**Status:** Production ready! All 814 tests passing with 90.62% coverage. Complete feature set including calendar integration, news enhancements, trading simulator improvements, critical performance optimizations, UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI study tooltips, **multi-language support (EN, PT, ES, FR)**, automatic data migrations, and **comprehensive AI model support (23 models across 3 providers)**.
+**Status:** Production ready! All 814 tests passing with 90.62% coverage. Complete feature set including calendar integration, news enhancements, trading simulator improvements, critical performance optimizations, UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI pattern tooltips, **multi-language support (EN, PT, ES, FR)**, automatic data migrations, and **comprehensive AI model support (23 models across 3 providers)**.
 
 **Latest Development (v0.22.0 - In Progress):**
 - ✅ **Native OS Notifications:** System-level notifications for trading events (macOS/Windows)
@@ -649,7 +649,7 @@ package.json                           ✅ (added @anthropic-ai/sdk, @google/gen
   - **getChartColors() helper** - Single source of truth for chart colors
   - **useChartColors() hook** - Reactive theme-aware chart rendering
   - **Light theme palette** for all chart elements (candlesticks, volume, grid, MAs)
-  - **AI study colors** with light/dark variants (8 study types)
+  - **AI pattern colors** with light/dark variants (8 pattern types)
   
 - ✅ **ColorModeProvider**
   - localStorage persistence
@@ -1963,11 +1963,11 @@ package.json                                  ✅ (version 0.12.0)
   - Light theme volume bars with transparency
   - Light theme grid, axes, and labels
   - Light theme moving averages (3 colors)
-  - Light theme AI study overlays (8 study types)
+  - Light theme AI pattern overlays (8 pattern types)
   
 - 🔧 **Technical Implementation**
   - Removed all hardcoded color constants from `chartConfig.ts`
-  - Removed `AI_STUDY_COLORS` from `aiStudy.ts`
+  - Removed `AI_PATTERN_COLORS` from `aiPattern.ts`
   - Updated 8 chart renderer hooks to use `ChartThemeColors` type
   - Updated ChartTooltip with semantic tokens (bg.muted, fg, border)
   - Updated ChartControls and ControlPanel with semantic tokens
@@ -1979,13 +1979,13 @@ package.json                                  ✅ (version 0.12.0)
   - `src/renderer/hooks/useChartColors.tsx` (NEW) - Hook for chart colors
   - `src/renderer/components/ui/color-mode.tsx` - Added data-theme attribute
   - `src/renderer/components/Chart/ChartCanvas.tsx` - Uses useChartColors()
-  - `src/renderer/components/Chart/AIStudyRenderer.tsx` - Theme-aware colors
+  - `src/renderer/components/Chart/AIPatternRenderer.tsx` - Theme-aware colors
   - `src/renderer/components/Chart/ChartTooltip.tsx` - Semantic tokens
   - `src/renderer/components/Chart/ChartControls.tsx` - Semantic tokens
   - `src/renderer/components/Chart/ControlPanel.tsx` - Semantic tokens
   - All 8 chart renderer hooks updated (type signatures)
   - `src/shared/constants/chartConfig.ts` - Removed color constants
-  - `src/shared/types/aiStudy.ts` - Removed color exports
+  - `src/shared/types/aiPattern.ts` - Removed color exports
   
 - ✅ **Testing**
   - All 592 tests passing (100% pass rate)
