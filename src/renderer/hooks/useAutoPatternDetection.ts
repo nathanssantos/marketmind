@@ -60,8 +60,7 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
   const detectPatterns = useCallback(
     async (candles: Candle[], symbol: string, candleCount: number, start: number, end: number) => {
       try {
-        const visibleCandles = viewport ? candles.slice(start, end) : candles;
-
+        const visibleCandles = candles.slice(start, end);
         const detectionResult = await patternDetectionService.detectPatterns(
           visibleCandles,
           detectionOptions
@@ -80,7 +79,7 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
         setDetectedStudies([]);
       }
     },
-    [detectionOptions, setDetectedStudies, viewport]
+    [detectionOptions, setDetectedStudies]
   );
 
   useEffect(() => {
@@ -96,6 +95,25 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
       }, INTERACTION_DEBOUNCE_MS);
     }
   }, [viewport?.start, viewport?.end, viewport]);
+
+  const shouldSkipDetection = useCallback(
+    (
+      currentSymbol: string,
+      currentCandleCount: number,
+      currentEnabledPatterns: string
+    ): boolean => {
+      if (!lastDetectionRef.current) return false;
+
+      return (
+        lastDetectionRef.current.symbol === currentSymbol &&
+        lastDetectionRef.current.candleCount === currentCandleCount &&
+        lastDetectionRef.current.viewportStart === visibleStart &&
+        lastDetectionRef.current.viewportEnd === visibleEnd &&
+        lastDetectionRef.current.enabledPatterns === currentEnabledPatterns
+      );
+    },
+    [visibleStart, visibleEnd]
+  );
 
   useEffect(() => {
     const shouldDetect =
@@ -119,15 +137,7 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
     const currentCandleCount = chartData.candles.length;
     const currentEnabledPatterns = JSON.stringify(algorithmicDetectionSettings.enabledPatterns);
 
-    if (
-      lastDetectionRef.current?.symbol === currentSymbol &&
-      lastDetectionRef.current?.candleCount === currentCandleCount &&
-      lastDetectionRef.current?.viewportStart === visibleStart &&
-      lastDetectionRef.current?.viewportEnd === visibleEnd &&
-      lastDetectionRef.current?.enabledPatterns === currentEnabledPatterns
-    ) {
-      return;
-    }
+    if (shouldSkipDetection(currentSymbol, currentCandleCount, currentEnabledPatterns)) return;
 
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -146,6 +156,8 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
     visibleStart,
     visibleEnd,
     isInteracting,
+    setDetectedStudies,
+    shouldSkipDetection,
   ]);
 
   useEffect(() => {
