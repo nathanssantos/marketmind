@@ -1,6 +1,7 @@
 import type { Candle, Viewport } from '@shared/types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChartContext } from '../context/ChartContext';
+import { usePatternDetectionConfigStore } from '../store/patternDetectionConfigStore';
 import { useUIStore } from '../store/uiStore';
 import { patternDetectionService } from '../utils/patternDetection';
 
@@ -10,6 +11,7 @@ const DETECTION_DEBOUNCE_MS = 500;
 export const useAutoPatternDetection = (viewport?: Viewport) => {
   const { chartData, setDetectedStudies } = useChartContext();
   const { algorithmicDetectionSettings } = useUIStore();
+  const { config: patternConfig } = usePatternDetectionConfigStore();
   const lastDetectionRef = useRef<{
     symbol: string;
     candleCount: number;
@@ -32,11 +34,26 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
         lookback: algorithmicDetectionSettings.pivotSensitivity,
         lookahead: algorithmicDetectionSettings.pivotSensitivity,
       },
+      applyFiltering: true,
+      enableNestedFiltering: patternConfig.enableNestedFiltering,
+      enableOverlapFiltering: patternConfig.enableOverlapFiltering,
+      useWorker: true,
+      maxPatternsPerTier: patternConfig.maxPatternsPerTier,
+      maxPatternsPerCategory: patternConfig.maxPatternsPerCategory,
+      maxPatternsTotal: patternConfig.filteringMode === 'clean' 
+        ? Math.min(patternConfig.maxPatternsTotal, 20)
+        : Math.min(patternConfig.maxPatternsTotal, 50),
     }),
     [
       algorithmicDetectionSettings.minConfidence,
       algorithmicDetectionSettings.enabledPatterns,
       algorithmicDetectionSettings.pivotSensitivity,
+      patternConfig.enableNestedFiltering,
+      patternConfig.enableOverlapFiltering,
+      patternConfig.maxPatternsPerTier,
+      patternConfig.maxPatternsPerCategory,
+      patternConfig.maxPatternsTotal,
+      patternConfig.filteringMode,
     ]
   );
 

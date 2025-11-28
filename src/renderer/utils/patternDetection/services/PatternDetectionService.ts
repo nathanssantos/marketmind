@@ -1,8 +1,9 @@
 import type { AIStudy, Candle } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import { filterAndPrioritizePatterns } from '../core/patternFilter';
+import { calculateImportanceScore } from '../core/patternImportance';
 import type { PatternRelationship } from '../core/patternRelationships';
-import { buildPatternRelationships } from '../core/patternRelationships';
+import { buildPatternRelationships, classifyPatternTier } from '../core/patternRelationships';
 import { findPivotPoints } from '../core/pivotPoints';
 import { detectDoubleBottoms, detectDoubleTops, detectHeadAndShoulders, detectInverseHeadAndShoulders, detectTripleBottoms, detectTripleTops } from '../patterns/advancedPatterns';
 import { detectAscendingChannels, detectDescendingChannels, detectHorizontalChannels } from '../patterns/channels';
@@ -189,6 +190,11 @@ export class PatternDetectionService {
     let finalStudies = sortedStudies;
 
     if (options.applyFiltering) {
+      sortedStudies.forEach(study => {
+        study.importanceScore = calculateImportanceScore(study, candles);
+        study.tier = classifyPatternTier(study, candles);
+      });
+
       let relationships: PatternRelationship[];
       
       try {
