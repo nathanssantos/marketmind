@@ -189,7 +189,9 @@ export class PatternDetectionService {
 
     let finalStudies = sortedStudies;
 
-    if (options.applyFiltering) {
+    if (options.applyFiltering && sortedStudies.length > 0) {
+      console.log('[PatternDetection] Before filtering:', sortedStudies.length, 'patterns');
+      
       sortedStudies.forEach(study => {
         study.importanceScore = calculateImportanceScore(study, candles);
         study.tier = classifyPatternTier(study, candles);
@@ -207,6 +209,8 @@ export class PatternDetectionService {
         relationships = buildPatternRelationships(sortedStudies);
       }
       
+      console.log('[PatternDetection] Relationships:', relationships.length);
+      
       finalStudies = filterAndPrioritizePatterns(
         sortedStudies,
         relationships,
@@ -223,6 +227,13 @@ export class PatternDetectionService {
           maxPatternsTotal: options.maxPatternsTotal ?? 20,
         }
       );
+      
+      console.log('[PatternDetection] After filtering:', finalStudies.length, 'patterns');
+      
+      if (finalStudies.length === 0 && sortedStudies.length > 0) {
+        console.warn('[PatternDetection] Filtering removed all patterns! Returning top 10 unfiltered');
+        finalStudies = sortedStudies.slice(0, 10);
+      }
     }
 
     const executionTime = performance.now() - startTime;
