@@ -1,10 +1,25 @@
+import { workerPool } from '@/renderer/utils/WorkerPool';
 import type { Candle } from '@shared/types';
 import { useEffect, useRef, useState } from 'react';
 import type { RSIResult } from '../utils/rsi';
 
+const WORKER_KEY = 'rsi';
+
 export const useRSIWorker = (candles: Candle[], period: number = 2, enabled: boolean = false) => {
   const [rsiData, setRSIData] = useState<RSIResult | null>(null);
   const workerRef = useRef<Worker | null>(null);
+
+  useEffect(() => {
+    if (!workerPool.has(WORKER_KEY)) {
+      workerPool.register(WORKER_KEY, () => 
+        new Worker(new URL('../workers/rsi.worker.ts', import.meta.url), {
+          type: 'module',
+        })
+      );
+    }
+
+    workerRef.current = workerPool.get(WORKER_KEY);
+  }, []);
 
   useEffect(() => {
     if (!enabled || candles.length === 0) {
@@ -12,13 +27,8 @@ export const useRSIWorker = (candles: Candle[], period: number = 2, enabled: boo
       return;
     }
 
-    if (!workerRef.current) {
-      workerRef.current = new Worker(new URL('../workers/rsi.worker.ts', import.meta.url), {
-        type: 'module',
-      });
-    }
-
     const worker = workerRef.current;
+    if (!worker) return;
 
     const handleMessage = (e: MessageEvent<RSIResult>) => {
       setRSIData(e.data);
@@ -28,18 +38,11 @@ export const useRSIWorker = (candles: Candle[], period: number = 2, enabled: boo
     worker.postMessage({ candles, period });
 
     return () => {
-      worker.removeEventListener('message', handleMessage);
-    };
-  }, [candles, period, enabled]);
-
-  useEffect(() => {
-    return () => {
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
+      if (worker) {
+        worker.removeEventListener('message', handleMessage);
       }
     };
-  }, []);
+  }, [candles, period, enabled]);
 
   return rsiData;
 };

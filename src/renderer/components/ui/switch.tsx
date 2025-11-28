@@ -11,14 +11,18 @@ export interface SwitchProps {
 
 export const Switch = (props: SwitchProps): ReactElement => {
   const { checked, onCheckedChange, children, size = 'md', disabled = false } = props;
-  
+
   return (
-    <ChakraSwitch.Root 
-      checked={checked} 
-      onCheckedChange={(e) => onCheckedChange(e.checked)} 
+    <ChakraSwitch.Root
+      checked={checked}
+      onCheckedChange={(details) => {
+        const isChecked = typeof details === 'boolean' ? details : details.checked;
+        onCheckedChange(isChecked);
+      }}
       size={size}
       disabled={disabled}
     >
+      <ChakraSwitch.HiddenInput />
       {children && <ChakraSwitch.Label>{children}</ChakraSwitch.Label>}
       <ChakraSwitch.Control>
         <ChakraSwitch.Thumb />

@@ -10,6 +10,25 @@ export interface PatternDetectionConfig {
   volumeConfirmationWeight: number;
   enabledPatterns: AIStudyType[];
   showPreview: boolean;
+  filteringMode: 'clean' | 'complete';
+  maxPatternsTotal: number;
+  enableNestedFiltering: boolean;
+  enableOverlapFiltering: boolean;
+  overlapThreshold: number;
+  highlightConflicts: boolean;
+  showChannelCenterline: boolean;
+  showExtensions: boolean;
+  extendTrendlines: boolean;
+  extendChannels: boolean;
+  extendSupport: boolean;
+  extendResistance: boolean;
+  maxPatternsPerTier: {
+    macro: number;
+    major: number;
+    intermediate: number;
+    minor: number;
+  };
+  maxPatternsPerCategory: number;
 }
 
 interface PatternDetectionConfigState {
@@ -55,6 +74,25 @@ const DEFAULT_CONFIG: PatternDetectionConfig = {
     'gap-exhaustion',
   ],
   showPreview: true,
+  filteringMode: 'clean',
+  maxPatternsTotal: 20,
+  enableNestedFiltering: false,
+  enableOverlapFiltering: false,
+  overlapThreshold: 0.6,
+  highlightConflicts: true,
+  showChannelCenterline: true,
+  showExtensions: true,
+  extendTrendlines: true,
+  extendChannels: true,
+  extendSupport: true,
+  extendResistance: true,
+  maxPatternsPerTier: {
+    macro: 10,
+    major: 8,
+    intermediate: 6,
+    minor: 4,
+  },
+  maxPatternsPerCategory: 5,
 };
 
 export const usePatternDetectionConfigStore = create<PatternDetectionConfigState>()(
@@ -90,7 +128,26 @@ export const usePatternDetectionConfigStore = create<PatternDetectionConfigState
     }),
     {
       name: 'marketmind-pattern-detection-config',
-      version: 1,
+      version: 2,
+      migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as PatternDetectionConfigState;
+        
+        if (version < 2) {
+          return {
+            ...state,
+            config: {
+              ...DEFAULT_CONFIG,
+              ...state.config,
+              extendTrendlines: state.config.extendTrendlines ?? true,
+              extendChannels: state.config.extendChannels ?? true,
+              extendSupport: state.config.extendSupport ?? true,
+              extendResistance: state.config.extendResistance ?? true,
+            },
+          };
+        }
+        
+        return state;
+      },
     },
   ),
 );

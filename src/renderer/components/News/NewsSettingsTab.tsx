@@ -1,10 +1,11 @@
 import { Button } from '@/renderer/components/ui/button';
+import { Checkbox } from '@/renderer/components/ui/checkbox';
 import { Field } from '@/renderer/components/ui/field';
 import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Slider } from '@/renderer/components/ui/slider';
 import { DEFAULT_NEWS_SETTINGS } from '@/renderer/constants/defaults';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
-import { Box, Checkbox, HStack, Separator, Text, VStack } from '@chakra-ui/react';
+import { Box, HStack, Separator, Text, VStack } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw } from 'react-icons/lu';
@@ -131,18 +132,12 @@ export const NewsSettingsTab = ({
             )}
 
             <Box>
-                <Checkbox.Root
+                <Checkbox
                     checked={pollingEnabled}
-                    onCheckedChange={(e) => handlePollingEnabledChange(!!e.checked)}
+                    onCheckedChange={handlePollingEnabledChange}
                 >
-                    <Checkbox.HiddenInput />
-                    <Checkbox.Control>
-                        <Checkbox.Indicator />
-                    </Checkbox.Control>
-                    <Checkbox.Label>
-                        <Text fontWeight="medium">{t('news.settings.enablePolling')}</Text>
-                    </Checkbox.Label>
-                </Checkbox.Root>
+                    <Text fontWeight="medium">{t('news.settings.enablePolling')}</Text>
+                </Checkbox>
                 <Text fontSize="sm" color="fg.muted" mt={2}>
                     {t('news.settings.pollingDescription')}
                 </Text>
@@ -195,18 +190,12 @@ export const NewsSettingsTab = ({
             <Separator />
 
             <Box>
-                <Checkbox.Root
+                <Checkbox
                     checked={correlateWithAI}
-                    onCheckedChange={(e) => handleCorrelateWithAIChange(!!e.checked)}
+                    onCheckedChange={handleCorrelateWithAIChange}
                 >
-                    <Checkbox.HiddenInput />
-                    <Checkbox.Control>
-                        <Checkbox.Indicator />
-                    </Checkbox.Control>
-                    <Checkbox.Label>
-                        <Text fontWeight="medium">{t('news.settings.correlateWithAI')}</Text>
-                    </Checkbox.Label>
-                </Checkbox.Root>
+                    <Text fontWeight="medium">{t('news.settings.correlateWithAI')}</Text>
+                </Checkbox>
                 <Text fontSize="sm" color="fg.muted" mt={2}>
                     {t('news.settings.correlateWithAIDescription')}
                 </Text>

@@ -122,7 +122,18 @@
       "topPadding": "Top Padding",
       "bottomPadding": "Bottom Padding",
       "leftPadding": "Left Padding",
-      "rightPadding": "Right Padding"
+      "rightPadding": "Right Padding",
+      "studyExtensions": "Study Extensions",
+      "showAllExtensions": "Enable All Extensions",
+      "showAllExtensionsHelper": "Master toggle for extending studies beyond the last candle",
+      "extendTrendlines": "Extend Trendlines",
+      "extendTrendlinesHelper": "Extend bullish and bearish trendlines to the right",
+      "extendChannels": "Extend Channels",
+      "extendChannelsHelper": "Extend channel upper and lower lines to the right",
+      "extendSupport": "Extend Support Levels",
+      "extendSupportHelper": "Extend support lines to the right",
+      "extendResistance": "Extend Resistance Levels",
+      "extendResistanceHelper": "Extend resistance lines to the right"
     },
     "ai": {
       "tipsEncryption": "API keys are encrypted and stored securely using OS-level encryption",
@@ -262,6 +273,7 @@
       "measurementRuler": "Measurement Ruler",
       "measurementArea": "Measurement Area",
       "autoPatterns": "Auto Pattern Detection (visible candles)",
+      "studyExtensions": "Extend Studies Beyond Last Candle",
       "indicators": "Indicators",
       "quickSettings": "Quick Settings"
     },
@@ -561,6 +573,13 @@
   "patternDetection": {
     "title": "Pattern Detection Configuration",
     "resetDefaults": "Reset to Defaults",
+    "mode": {
+      "label": "Detection Mode",
+      "helper": "Determines how pattern data is sent to AI for analysis (does not affect chart display)",
+      "aiOnly": "AI Only - No automatic detection, AI analyzes chart visually",
+      "algorithmicOnly": "Algorithmic Only - Send detected patterns to AI",
+      "hybrid": "Hybrid - AI analyzes both chart and detected patterns"
+    },
     "tips": {
       "sensitivity": "Higher sensitivity detects more pivot points but may reduce accuracy",
       "confidence": "Minimum confidence filters patterns based on reliability threshold",
@@ -592,6 +611,40 @@
     "showPreview": {
       "label": "Show Pattern Preview",
       "helper": "Display pattern preview in real-time on chart"
+    },
+    "filtering": {
+      "title": "Pattern Filtering",
+      "mode": {
+        "label": "Filtering Mode",
+        "helper": "Choose between clean (fewer, high-quality patterns) or complete (show all detected patterns)",
+        "clean": "Clean (20 patterns max)",
+        "complete": "Complete (50 patterns max)"
+      },
+      "maxPatterns": {
+        "label": "Maximum Patterns",
+        "helper": "Maximum number of patterns to display on chart",
+        "patterns": "patterns"
+      },
+      "enableNested": {
+        "label": "Filter Nested Patterns",
+        "helper": "Remove smaller patterns of the same type that are nested inside larger ones (different types are kept)"
+      },
+      "enableOverlap": {
+        "label": "Filter Overlapping Patterns",
+        "helper": "Remove patterns with high overlap (keeps the most important one)"
+      },
+      "overlapThreshold": {
+        "label": "Overlap Threshold",
+        "helper": "Minimum overlap percentage to consider patterns as overlapping"
+      },
+      "highlightConflicts": {
+        "label": "Highlight Conflicting Patterns",
+        "helper": "Show visual indicators when patterns give opposite signals (both patterns are kept)"
+      },
+      "showChannelCenterline": {
+        "label": "Show Channel Centerline",
+        "helper": "Display dashed centerline in channel patterns"
+      }
     },
     "groups": {
       "reversalPatterns": "Reversal Patterns",

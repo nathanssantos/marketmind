@@ -1,24 +1,19 @@
 import type { AIStudyType } from '../types/aiStudy';
 
 export const STUDY_COLORS: Record<AIStudyType, string> = {
-  // Support/Resistance
   support: '#22c55e',
   resistance: '#ef4444',
 
-  // Trendlines
   'trendline-bullish': '#10b981',
   'trendline-bearish': '#f43f5e',
 
-  // Channels
   'channel-ascending': '#059669',
   'channel-descending': '#dc2626',
   'channel-horizontal': '#3b82f6',
 
-  // Fibonacci
   'fibonacci-retracement': '#8b5cf6',
   'fibonacci-extension': '#a78bfa',
 
-  // Reversal Patterns
   'head-and-shoulders': '#ef4444',
   'inverse-head-and-shoulders': '#22c55e',
   'double-top': '#dc2626',
@@ -27,7 +22,6 @@ export const STUDY_COLORS: Record<AIStudyType, string> = {
   'triple-bottom': '#15803d',
   'rounding-bottom': '#4ade80',
 
-  // Continuation Patterns
   'triangle-ascending': '#10b981',
   'triangle-descending': '#f43f5e',
   'triangle-symmetrical': '#6366f1',
@@ -38,13 +32,11 @@ export const STUDY_COLORS: Record<AIStudyType, string> = {
   pennant: '#8b5cf6',
   'cup-and-handle': '#14b8a6',
 
-  // Gaps
   'gap-common': '#94a3b8',
   'gap-breakaway': '#6366f1',
   'gap-runaway': '#8b5cf6',
   'gap-exhaustion': '#ec4899',
 
-  // Zones (Legacy - keeping for backward compatibility)
   'liquidity-zone': '#3b82f6',
   'sell-zone': '#ef4444',
   'buy-zone': '#22c55e',
@@ -79,24 +71,19 @@ export const OPACITY = {
 } as const;
 
 export const STUDY_LABELS: Record<AIStudyType, string> = {
-  // Support/Resistance
   support: 'Support',
   resistance: 'Resistance',
 
-  // Trendlines
   'trendline-bullish': 'Bullish Trendline',
   'trendline-bearish': 'Bearish Trendline',
 
-  // Channels
   'channel-ascending': 'Ascending Channel',
   'channel-descending': 'Descending Channel',
   'channel-horizontal': 'Horizontal Channel',
 
-  // Fibonacci
   'fibonacci-retracement': 'Fibonacci Retracement',
   'fibonacci-extension': 'Fibonacci Extension',
 
-  // Reversal Patterns
   'head-and-shoulders': 'Head and Shoulders',
   'inverse-head-and-shoulders': 'Inverse H&S',
   'double-top': 'Double Top',
@@ -105,7 +92,6 @@ export const STUDY_LABELS: Record<AIStudyType, string> = {
   'triple-bottom': 'Triple Bottom',
   'rounding-bottom': 'Rounding Bottom',
 
-  // Continuation Patterns
   'triangle-ascending': 'Ascending Triangle',
   'triangle-descending': 'Descending Triangle',
   'triangle-symmetrical': 'Symmetrical Triangle',
@@ -116,13 +102,11 @@ export const STUDY_LABELS: Record<AIStudyType, string> = {
   pennant: 'Pennant',
   'cup-and-handle': 'Cup and Handle',
 
-  // Gaps
   'gap-common': 'Common Gap',
   'gap-breakaway': 'Breakaway Gap',
   'gap-runaway': 'Runaway Gap',
   'gap-exhaustion': 'Exhaustion Gap',
 
-  // Zones
   'liquidity-zone': 'Liquidity Zone',
   'sell-zone': 'Sell Zone',
   'buy-zone': 'Buy Zone',

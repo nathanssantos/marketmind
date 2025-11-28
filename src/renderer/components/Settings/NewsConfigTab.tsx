@@ -1,10 +1,11 @@
 import { Button } from '@/renderer/components/ui/button';
+import { Checkbox } from '@/renderer/components/ui/checkbox';
 import { Field } from '@/renderer/components/ui/field';
 import { NumberInput } from '@/renderer/components/ui/number-input';
 import { PasswordInput } from '@/renderer/components/ui/password-input';
 import { DEFAULT_NEWS_SETTINGS } from '@/renderer/constants/defaults';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
-import { Box, Checkbox, Flex, Link, Separator, Stack, Text, VStack } from '@chakra-ui/react';
+import { Box, Flex, Link, Separator, Stack, Text, VStack } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw } from 'react-icons/lu';
@@ -177,15 +178,9 @@ export const NewsConfigTab = () => {
       <Separator />
 
       <Box>
-        <Checkbox.Root checked={enabled} onCheckedChange={(e) => handleEnabledChange(!!e.checked)}>
-          <Checkbox.HiddenInput />
-          <Checkbox.Control>
-            <Checkbox.Indicator />
-          </Checkbox.Control>
-          <Checkbox.Label>
-            <Text fontWeight="medium">{t('settings.news.enableNewsIntegration')}</Text>
-          </Checkbox.Label>
-        </Checkbox.Root>
+        <Checkbox checked={enabled} onCheckedChange={handleEnabledChange}>
+          <Text fontWeight="medium">{t('settings.news.enableNewsIntegration')}</Text>
+        </Checkbox>
         <Text fontSize="sm" color="fg.muted" mt={2}>
           {t('settings.news.newsIntegrationDescription')}
         </Text>

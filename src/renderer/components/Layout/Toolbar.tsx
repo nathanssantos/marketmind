@@ -1,8 +1,10 @@
 import { useUIStore } from '@/renderer/store/uiStore';
 import { Box, Flex, HStack, IconButton, Text } from '@chakra-ui/react';
+import { usePatternDetectionConfigStore } from '@renderer/store/patternDetectionConfigStore';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  LuArrowRightToLine,
   LuBrainCircuit,
   LuChartBar,
   LuChartCandlestick,
@@ -94,15 +96,21 @@ export const Toolbar = memo(({
   onToggleNews,
 }: ToolbarProps) => {
   const { t } = useTranslation();
-  const { patternDetectionMode, algorithmicDetectionSettings, setAlgorithmicDetectionSettings } = useUIStore();
+  const { algorithmicDetectionSettings, setAlgorithmicDetectionSettings } = useUIStore();
+  const { config: patternConfig, setConfig: setPatternConfig } = usePatternDetectionConfigStore();
 
-  const isPatternDetectionActive =
-    (patternDetectionMode === 'algorithmic-only' || patternDetectionMode === 'hybrid') &&
-    algorithmicDetectionSettings.autoDisplayPatterns;
+  const isPatternDetectionActive = algorithmicDetectionSettings.autoDisplayPatterns;
+  const isExtensionsActive = patternConfig.showExtensions;
 
   const togglePatternDetection = () => {
     setAlgorithmicDetectionSettings({
       autoDisplayPatterns: !algorithmicDetectionSettings.autoDisplayPatterns,
+    });
+  };
+
+  const toggleExtensions = () => {
+    setPatternConfig({
+      showExtensions: !patternConfig.showExtensions,
     });
   };
 
@@ -295,9 +303,19 @@ export const Toolbar = memo(({
                   onClick={togglePatternDetection}
                   colorPalette={isPatternDetectionActive ? 'blue' : 'gray'}
                   variant={isPatternDetectionActive ? 'solid' : 'ghost'}
-                  disabled={patternDetectionMode === 'ai-only'}
                 >
                   <LuBrainCircuit />
+                </IconButton>
+              </TooltipWrapper>
+              <TooltipWrapper label={t('chart.controls.studyExtensions')} showArrow placement="top">
+                <IconButton
+                  size="2xs"
+                  aria-label={t('chart.controls.studyExtensions')}
+                  onClick={toggleExtensions}
+                  colorPalette={isExtensionsActive ? 'blue' : 'gray'}
+                  variant={isExtensionsActive ? 'solid' : 'ghost'}
+                >
+                  <LuArrowRightToLine />
                 </IconButton>
               </TooltipWrapper>
               <PatternTogglePopover />

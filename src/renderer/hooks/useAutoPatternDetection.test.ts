@@ -180,7 +180,7 @@ describe('useAutoPatternDetection', () => {
     });
   });
 
-  it('should clear studies when pattern detection mode is disabled', async () => {
+  it('should clear studies when autoDisplayPatterns is disabled', async () => {
     const { rerender } = renderHook(() => useAutoPatternDetection());
 
     await waitFor(() => {
@@ -188,12 +188,12 @@ describe('useAutoPatternDetection', () => {
     });
 
     vi.mocked(useUIStore).mockReturnValue({
-      patternDetectionMode: 'ai-only',
+      patternDetectionMode: 'hybrid',
       algorithmicDetectionSettings: {
         minConfidence: 0.7,
         pivotSensitivity: 5,
         enabledPatterns: ['support'],
-        autoDisplayPatterns: true,
+        autoDisplayPatterns: false,
       },
       setAlgorithmicDetectionSettings: vi.fn(),
       theme: 'dark',
