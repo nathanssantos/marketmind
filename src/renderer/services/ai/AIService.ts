@@ -1,5 +1,5 @@
 import { patternDetectionService } from '@renderer/utils/patternDetection';
-import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage, AIProviderType, AIStudy, Candle } from '@shared/types';
+import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage, AIPattern, AIProviderType, Candle } from '@shared/types';
 import defaultPrompts from './prompts.json';
 import { ClaudeProvider, GeminiProvider, OpenAIProvider } from './providers';
 import type { AIProviderConfig, BaseAIProvider } from './types';
@@ -11,7 +11,7 @@ export interface AIServiceConfig {
   temperature?: number;
   maxTokens?: number;
   useOptimizedPrompts?: boolean;
-  enableAIStudies?: boolean;
+  enableAIPatterns?: boolean;
   detailedCandlesCount?: number;
   useAlgorithmicDetection?: boolean;
   customPrompts?: {
@@ -76,8 +76,8 @@ export class AIService {
         throw new Error(`Unknown provider type: ${this.providerType}`);
     }
     
-    if (this.provider && this.config.enableAIStudies !== undefined) {
-      this.provider.enableAIStudies = this.config.enableAIStudies;
+    if (this.provider && this.config.enableAIPatterns !== undefined) {
+      this.provider.enableAIPatterns = this.config.enableAIPatterns;
     }
   }
 
@@ -119,10 +119,10 @@ export class AIService {
       minConfidence: 0.6,
     });
 
-    const detectedStudies = detectionResult.studies;
+    const detectedPatterns = detectionResult.patterns;
 
     const interpretationPrompt = this.buildInterpretationPrompt(
-      detectedStudies,
+      detectedPatterns,
       request.candles,
       request.context
     );
@@ -144,25 +144,25 @@ export class AIService {
 
     return {
       ...aiResponse,
-      studies: detectedStudies,
+      patterns: detectedPatterns,
     };
   }
 
   private buildInterpretationPrompt(
-    studies: AIStudy[],
+    patterns: AIPattern[],
     recentCandles: Candle[],
     context?: string
   ): string {
-    const studiesSummary = studies.map((study, index) => {
-      let description = `Study #${index + 1}: ${study.type}`;
+    const patternsSummary = patterns.map((pattern, index) => {
+      let description = `Pattern #${index + 1}: ${pattern.type}`;
       
-      if ('points' in study && study.points) {
-        const [start, end] = study.points;
+      if ('points' in pattern && pattern.points) {
+        const [start, end] = pattern.points;
         description += ` from ${start.price.toFixed(2)} to ${end.price.toFixed(2)}`;
       }
       
-      if (study.confidence) {
-        description += ` (confidence: ${(study.confidence * 100).toFixed(0)}%)`;
+      if (pattern.confidence) {
+        description += ` (confidence: ${(pattern.confidence * 100).toFixed(0)}%)`;
       }
       
       return description;
@@ -174,7 +174,7 @@ export class AIService {
 
     return `
 DETECTED TECHNICAL PATTERNS (Algorithmic Analysis):
-${studiesSummary || 'No significant patterns detected.'}
+${patternsSummary || 'No significant patterns detected.'}
 
 RECENT PRICE ACTION (Last 20 candles):
 ${recentCandlesData}
@@ -238,10 +238,10 @@ Focus on interpreting the detected patterns rather than finding new ones. Provid
     }
   }
   
-  setEnableAIStudies(enabled: boolean): void {
-    this.config.enableAIStudies = enabled;
+  setEnableAIPatterns(enabled: boolean): void {
+    this.config.enableAIPatterns = enabled;
     if (this.provider) {
-      this.provider.enableAIStudies = enabled;
+      this.provider.enableAIPatterns = enabled;
     }
   }
 

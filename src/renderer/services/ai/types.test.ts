@@ -20,30 +20,30 @@ class TestProvider extends BaseAIProvider {
   }
 }
 
-describe('BaseAIProvider - AI Studies Control', () => {
-  it('should use full prompt when enableAIStudies is true', () => {
+describe('BaseAIProvider - AI Patterns Control', () => {
+  it('should use full prompt when enableAIPatterns is true', () => {
     const provider = new TestProvider({
       apiKey: 'test-key',
     });
 
-    provider.enableAIStudies = true;
+    provider.enableAIPatterns = true;
 
     const systemPrompt = provider.getTestSystemPrompt();
 
-    expect(systemPrompt).toContain('DRAWING STUDIES');
+    expect(systemPrompt).toContain('DRAWING PATTERN');
     expect(systemPrompt).toContain('actionable insights');
   });
 
-  it('should use simple prompt when enableAIStudies is false', () => {
+  it('should use simple prompt when enableAIPatterns is false', () => {
     const provider = new TestProvider({
       apiKey: 'test-key',
     });
 
-    provider.enableAIStudies = false;
+    provider.enableAIPatterns = false;
 
     const systemPrompt = provider.getTestSystemPrompt();
 
-    expect(systemPrompt).not.toContain('DRAWING STUDIES');
+    expect(systemPrompt).not.toContain('DRAWING PATTERN');
     expect(systemPrompt).not.toContain('JSON Format');
     expect(systemPrompt).toContain('clear, concise');
     expect(systemPrompt.length).toBeLessThan(500);
@@ -54,13 +54,13 @@ describe('BaseAIProvider - AI Studies Control', () => {
       apiKey: 'test-key',
     });
 
-    provider.enableAIStudies = true;
+    provider.enableAIPatterns = true;
     const fullPrompt = provider.getTestSystemPrompt();
-    expect(fullPrompt).toContain('DRAWING STUDIES');
+    expect(fullPrompt).toContain('DRAWING PATTERN');
 
-    provider.enableAIStudies = false;
+    provider.enableAIPatterns = false;
     const simplePrompt = provider.getTestSystemPrompt();
-    expect(simplePrompt).not.toContain('DRAWING STUDIES');
+    expect(simplePrompt).not.toContain('DRAWING PATTERN');
     expect(simplePrompt.length).toBeLessThan(fullPrompt.length);
   });
 });

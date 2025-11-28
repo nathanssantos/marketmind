@@ -59,7 +59,7 @@ describe('useCrosshairPriceLineRenderer', () => {
       ma: ['#3b82f6', '#f59e0b', '#8b5cf6'],
       bullish: '#22c55e',
       bearish: '#ef4444',
-      aiStudy: {
+      aiPattern: {
         support: '#22c55e',
         resistance: '#ef4444',
         trendlineBullish: '#22c55e',

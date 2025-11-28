@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { CHART_CONFIG } from '@shared/constants';
 import type { Candle, Viewport } from '@shared/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

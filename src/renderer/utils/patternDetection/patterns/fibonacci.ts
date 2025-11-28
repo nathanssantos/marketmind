@@ -1,4 +1,4 @@
-import type { AIStudyFibonacci, AIStudyPoint, Candle } from '@shared/types';
+import type { AIPatternFibonacci, AIPatternPoint, Candle } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
   calculateConfidence,
@@ -9,10 +9,10 @@ import type { PivotPoint } from '../types';
 export const detectFibonacciRetracements = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyFibonacci[] => {
+): AIPatternFibonacci[] => {
   if (!candles || candles.length === 0) return [];
   
-  const fibs: AIStudyFibonacci[] = [];
+  const fibs: AIPatternFibonacci[] = [];
   
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => b.price - a.price);
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.price - b.price);
@@ -58,11 +58,11 @@ export const detectFibonacciRetracements = (
 
   if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) return [];
 
-  const startPoint: AIStudyPoint = direction === 'uptrend'
+  const startPoint: AIPatternPoint = direction === 'uptrend'
     ? { timestamp: swingLow.timestamp, price: swingLow.price }
     : { timestamp: swingHigh.timestamp, price: swingHigh.price };
     
-  const endPoint: AIStudyPoint = direction === 'uptrend'
+  const endPoint: AIPatternPoint = direction === 'uptrend'
     ? { timestamp: swingHigh.timestamp, price: swingHigh.price }
     : { timestamp: swingLow.timestamp, price: swingLow.price };
 
@@ -89,10 +89,10 @@ export const detectFibonacciRetracements = (
 export const detectFibonacciExtensions = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyFibonacci[] => {
+): AIPatternFibonacci[] => {
   if (!candles || candles.length === 0) return [];
   
-  const fibs: AIStudyFibonacci[] = [];
+  const fibs: AIPatternFibonacci[] = [];
   
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => b.price - a.price);
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.price - b.price);
@@ -138,11 +138,11 @@ export const detectFibonacciExtensions = (
 
   if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) return [];
 
-  const startPoint: AIStudyPoint = direction === 'uptrend'
+  const startPoint: AIPatternPoint = direction === 'uptrend'
     ? { timestamp: swingLow.timestamp, price: swingLow.price }
     : { timestamp: swingHigh.timestamp, price: swingHigh.price };
     
-  const endPoint: AIStudyPoint = direction === 'uptrend'
+  const endPoint: AIPatternPoint = direction === 'uptrend'
     ? { timestamp: swingHigh.timestamp, price: swingHigh.price }
     : { timestamp: swingLow.timestamp, price: swingLow.price };
 

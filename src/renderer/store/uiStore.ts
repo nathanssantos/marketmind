@@ -1,4 +1,4 @@
-import type { AIStudyType } from '@shared/types';
+import type { AIPatternType } from '@shared/types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -14,13 +14,13 @@ interface UIState {
   algorithmicDetectionSettings: {
     minConfidence: number;
     pivotSensitivity: number;
-    enabledPatterns: AIStudyType[];
+    enabledPatterns: AIPatternType[];
     autoDisplayPatterns: boolean;
   };
   setAlgorithmicDetectionSettings: (settings: Partial<UIState['algorithmicDetectionSettings']>) => void;
 }
 
-const DEFAULT_ENABLED_PATTERNS: AIStudyType[] = [
+const DEFAULT_ENABLED_PATTERNS: AIPatternType[] = [
   'support',
   'resistance',
   'trendline-bullish',

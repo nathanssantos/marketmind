@@ -1,12 +1,13 @@
+/* eslint-disable no-undef */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-    clearCanvas,
-    drawCandle,
-    drawGrid,
-    drawLine,
-    drawRect,
-    drawText,
-    setupCanvas,
+  clearCanvas,
+  drawCandle,
+  drawGrid,
+  drawLine,
+  drawRect,
+  drawText,
+  setupCanvas,
 } from './drawingUtils';
 
 describe('drawingUtils', () => {

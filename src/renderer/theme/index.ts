@@ -124,67 +124,67 @@ const customConfig = defineConfig({
             _dark: '#9c27b0',
           },
         },
-        'chart.aiStudy.support': {
+        'chart.aiPattern.support': {
           value: {
             base: '#14b8a6',
             _dark: '#26a69a',
           },
         },
-        'chart.aiStudy.resistance': {
+        'chart.aiPattern.resistance': {
           value: {
             base: '#dc2626',
             _dark: '#ef5350',
           },
         },
-        'chart.aiStudy.trendlineBullish': {
+        'chart.aiPattern.trendlineBullish': {
           value: {
             base: '#16a34a',
             _dark: '#4caf50',
           },
         },
-        'chart.aiStudy.trendlineBearish': {
+        'chart.aiPattern.trendlineBearish': {
           value: {
             base: '#dc2626',
             _dark: '#f44336',
           },
         },
-        'chart.aiStudy.liquidityZone': {
+        'chart.aiPattern.liquidityZone': {
           value: {
             base: 'rgba(124, 58, 237, 0.15)',
             _dark: 'rgba(156, 39, 176, 0.2)',
           },
         },
-        'chart.aiStudy.sellZone': {
+        'chart.aiPattern.sellZone': {
           value: {
             base: 'rgba(220, 38, 38, 0.15)',
             _dark: 'rgba(244, 67, 54, 0.2)',
           },
         },
-        'chart.aiStudy.buyZone': {
+        'chart.aiPattern.buyZone': {
           value: {
             base: 'rgba(22, 163, 74, 0.15)',
             _dark: 'rgba(76, 175, 80, 0.2)',
           },
         },
-        'chart.aiStudy.accumulationZone': {
+        'chart.aiPattern.accumulationZone': {
           value: {
             base: 'rgba(37, 99, 235, 0.15)',
             _dark: 'rgba(33, 150, 243, 0.2)',
           },
         },
-        'chart.aiStudy.tooltip.bg': {
+        'chart.aiPattern.tooltip.bg': {
           value: {
             base: 'rgba(124, 58, 237, 0.95)',
             _dark: 'rgba(138, 43, 226, 0.9)',
           },
         },
-        'chart.aiStudy.tooltip.text': {
+        'chart.aiPattern.tooltip.text': {
           value: {
             base: '#ffffff',
             _dark: '#ffffff',
           },
         },
-        'chart.aiStudy.tooltip.border': {
+        'chart.aiPattern.tooltip.border': {
           value: {
             base: 'rgba(124, 58, 237, 0.95)',
             _dark: 'rgba(138, 43, 226, 0.9)',
@@ -237,10 +237,11 @@ export const system = createSystem(defaultConfig, customConfig);
 export const getChartColors = (colorMode: 'light' | 'dark') => {
   const tokens = customConfig.theme?.semanticTokens?.colors || {};
   
-  const resolveValue = (token: any) => {
-    if (!token?.value) return '';
-    if (typeof token.value === 'string') return token.value;
-    return colorMode === 'dark' ? (token.value._dark || token.value.base) : token.value.base;
+  const resolveValue = (token: unknown): string => {
+    if (!token || typeof token !== 'object' || !('value' in token)) return '';
+    const tokenValue = (token as { value: string | { base: string; _dark?: string } }).value;
+    if (typeof tokenValue === 'string') return tokenValue;
+    return colorMode === 'dark' ? (tokenValue._dark || tokenValue.base) : tokenValue.base;
   };
 
   return {
@@ -262,19 +263,19 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
       resolveValue(tokens['chart.ma.2']),
       resolveValue(tokens['chart.ma.3']),
     ],
-    aiStudy: {
-      support: resolveValue(tokens['chart.aiStudy.support']),
-      resistance: resolveValue(tokens['chart.aiStudy.resistance']),
-      trendlineBullish: resolveValue(tokens['chart.aiStudy.trendlineBullish']),
-      trendlineBearish: resolveValue(tokens['chart.aiStudy.trendlineBearish']),
-      liquidityZone: resolveValue(tokens['chart.aiStudy.liquidityZone']),
-      sellZone: resolveValue(tokens['chart.aiStudy.sellZone']),
-      buyZone: resolveValue(tokens['chart.aiStudy.buyZone']),
-      accumulationZone: resolveValue(tokens['chart.aiStudy.accumulationZone']),
+    aiPattern: {
+      support: resolveValue(tokens['chart.aiPattern.support']),
+      resistance: resolveValue(tokens['chart.aiPattern.resistance']),
+      trendlineBullish: resolveValue(tokens['chart.aiPattern.trendlineBullish']),
+      trendlineBearish: resolveValue(tokens['chart.aiPattern.trendlineBearish']),
+      liquidityZone: resolveValue(tokens['chart.aiPattern.liquidityZone']),
+      sellZone: resolveValue(tokens['chart.aiPattern.sellZone']),
+      buyZone: resolveValue(tokens['chart.aiPattern.buyZone']),
+      accumulationZone: resolveValue(tokens['chart.aiPattern.accumulationZone']),
       tooltip: {
-        bg: resolveValue(tokens['chart.aiStudy.tooltip.bg']),
-        text: resolveValue(tokens['chart.aiStudy.tooltip.text']),
-        border: resolveValue(tokens['chart.aiStudy.tooltip.border']),
+        bg: resolveValue(tokens['chart.aiPattern.tooltip.bg']),
+        text: resolveValue(tokens['chart.aiPattern.tooltip.text']),
+        border: resolveValue(tokens['chart.aiPattern.tooltip.border']),
       },
     },
     stochastic: {

@@ -1,4 +1,4 @@
-import type { AIStudyLine, AIStudyPoint, Candle } from '@shared/types';
+import type { AIPatternLine, AIPatternPoint, Candle } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -77,10 +77,10 @@ const validateTrendlineBounces = (
 export const detectBullishTrendlines = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyLine[] => {
+): AIPatternLine[] => {
   if (!candles) return [];
   
-  const trendlines: AIStudyLine[] = [];
+  const trendlines: AIPatternLine[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   
   if (lowPivots.length < PATTERN_DETECTION_CONFIG.MIN_PIVOTS_TRENDLINE) return [];
@@ -127,12 +127,12 @@ export const detectBullishTrendlines = (
 
       if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) continue;
 
-      const startPoint: AIStudyPoint = {
+      const startPoint: AIPatternPoint = {
         timestamp: pivot1.timestamp,
         price: pivot1.price,
       };
       
-      const endPoint: AIStudyPoint = {
+      const endPoint: AIPatternPoint = {
         timestamp: pivot2.timestamp,
         price: pivot2.price,
       };
@@ -162,10 +162,10 @@ export const detectBullishTrendlines = (
 export const detectBearishTrendlines = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyLine[] => {
+): AIPatternLine[] => {
   if (!candles) return [];
   
-  const trendlines: AIStudyLine[] = [];
+  const trendlines: AIPatternLine[] = [];
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
   
   if (highPivots.length < PATTERN_DETECTION_CONFIG.MIN_PIVOTS_TRENDLINE) return [];
@@ -212,12 +212,12 @@ export const detectBearishTrendlines = (
 
       if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) continue;
 
-      const startPoint: AIStudyPoint = {
+      const startPoint: AIPatternPoint = {
         timestamp: pivot1.timestamp,
         price: pivot1.price,
       };
       
-      const endPoint: AIStudyPoint = {
+      const endPoint: AIPatternPoint = {
         timestamp: pivot2.timestamp,
         price: pivot2.price,
       };

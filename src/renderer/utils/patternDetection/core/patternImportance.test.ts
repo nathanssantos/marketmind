@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AIStudy, Candle } from '../../../../shared/types';
+import type { AIPattern, Candle } from '../../../../shared/types';
 import {
     calculateImportanceFactors,
     calculateImportanceScore,
@@ -22,11 +22,11 @@ const createMockCandles = (count: number, startTime = 1000000): Candle[] => {
 };
 
 const createMockPattern = (
-  type: AIStudy['type'],
+  type: AIPattern['type'],
   startIdx: number,
   endIdx: number,
   candles: Candle[]
-): AIStudy => {
+): AIPattern => {
   const start = candles[startIdx];
   const end = candles[endIdx];
 
@@ -43,7 +43,7 @@ const createMockPattern = (
     ],
     confidence: 0.8,
     visible: true,
-  } as AIStudy;
+  } as AIPattern;
 };
 
 describe('normalizeFormationPeriod', () => {
@@ -92,7 +92,7 @@ describe('normalizePriceMovement', () => {
 
   it('should return 0 for pattern with no price range', () => {
     const candles = createMockCandles(50);
-    const pattern: AIStudy = {
+    const pattern: AIPattern = {
       id: 1,
       type: 'support',
       points: [
@@ -111,7 +111,7 @@ describe('normalizePriceMovement', () => {
     const avgPrice = 125;
     const largeRange = avgPrice * 0.25;
 
-    const pattern: AIStudy = {
+    const pattern: AIPattern = {
       id: 1,
       type: 'head-and-shoulders',
       leftShoulder: { timestamp: candles[0]?.timestamp ?? 0, price: avgPrice },
@@ -140,7 +140,7 @@ describe('normalizePriceMovement', () => {
     const avgPrice = 125;
     const smallRange = avgPrice * 0.01;
 
-    const pattern: AIStudy = {
+    const pattern: AIPattern = {
       id: 1,
       type: 'support',
       points: [
@@ -197,7 +197,7 @@ describe('normalizeRecency', () => {
 
 describe('getVolumeConfirmation', () => {
   it('should return 0 for patterns without volumeConfirmation', () => {
-    const pattern: AIStudy = {
+    const pattern: AIPattern = {
       id: 1,
       type: 'support',
       points: [
@@ -225,7 +225,7 @@ describe('getVolumeConfirmation', () => {
       confidence: 0.8,
       visible: true,
       volumeConfirmation: 0.75,
-    } as AIStudy;
+    } as AIPattern;
 
     expect(getVolumeConfirmation(pattern)).toBe(0.75);
   });
@@ -247,7 +247,7 @@ describe('calculateImportanceFactors', () => {
       confidence: 0.85,
       visible: true,
       volumeConfirmation: 0.9,
-    } as AIStudy;
+    } as AIPattern;
 
     const factors = calculateImportanceFactors(pattern, candles);
 
@@ -265,7 +265,7 @@ describe('calculateImportanceFactors', () => {
 
   it('should use default reliability for unknown pattern types', () => {
     const candles = createMockCandles(50);
-    const pattern: AIStudy = {
+    const pattern: AIPattern = {
       id: 1,
       type: 'support',
       points: [
@@ -307,7 +307,7 @@ describe('calculateImportanceScore', () => {
       confidence: 0.9,
       visible: true,
       volumeConfirmation: 0.9,
-    } as AIStudy;
+    } as AIPattern;
 
     const lowReliability = {
       id: 2,
@@ -317,7 +317,7 @@ describe('calculateImportanceScore', () => {
       confidence: 0.9,
       visible: true,
       volumeConfirmation: 0.9,
-    } as AIStudy;
+    } as AIPattern;
 
     const highScore = calculateImportanceScore(highReliability, candles);
     const lowScore = calculateImportanceScore(lowReliability, candles);
@@ -365,7 +365,7 @@ describe('calculateImportanceScore', () => {
       confidence: 1.0,
       visible: true,
       volumeConfirmation: 1.0,
-    } as AIStudy;
+    } as AIPattern;
 
     const score = calculateImportanceScore(perfectPattern, candles);
     expect(score).toBeGreaterThan(0.7);

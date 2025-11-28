@@ -1,4 +1,4 @@
-import type { AIStudy, Candle } from '@shared/types';
+import type { AIPattern, Candle } from '@shared/types';
 
 export enum PatternTier {
   MACRO = 'macro',
@@ -11,15 +11,15 @@ export enum PatternTier {
 export type RelationshipType = 'nested' | 'overlapping' | 'conflicting';
 
 export interface PatternRelationship {
-  parentPattern: AIStudy;
-  childPattern: AIStudy;
+  parentPattern: AIPattern;
+  childPattern: AIPattern;
   relationshipType: RelationshipType;
   overlapPercentage: number;
   timeOverlap: number;
   priceOverlap: number;
 }
 
-export function getPatternStartTimestamp(pattern: AIStudy): number {
+export function getPatternStartTimestamp(pattern: AIPattern): number {
   switch (pattern.type) {
     case 'support':
     case 'resistance':
@@ -106,7 +106,7 @@ export function getPatternStartTimestamp(pattern: AIStudy): number {
   }
 }
 
-export function getPatternEndTimestamp(pattern: AIStudy): number {
+export function getPatternEndTimestamp(pattern: AIPattern): number {
   switch (pattern.type) {
     case 'support':
     case 'resistance':
@@ -201,7 +201,7 @@ export function getPatternEndTimestamp(pattern: AIStudy): number {
   }
 }
 
-export function getPatternMinPrice(pattern: AIStudy): number {
+export function getPatternMinPrice(pattern: AIPattern): number {
   switch (pattern.type) {
     case 'support':
     case 'resistance':
@@ -314,7 +314,7 @@ export function getPatternMinPrice(pattern: AIStudy): number {
   }
 }
 
-export function getPatternMaxPrice(pattern: AIStudy): number {
+export function getPatternMaxPrice(pattern: AIPattern): number {
   switch (pattern.type) {
     case 'support':
     case 'resistance':
@@ -427,7 +427,7 @@ export function getPatternMaxPrice(pattern: AIStudy): number {
   }
 }
 
-export function detectTimeOverlap(pattern1: AIStudy, pattern2: AIStudy): number {
+export function detectTimeOverlap(pattern1: AIPattern, pattern2: AIPattern): number {
   const start1 = getPatternStartTimestamp(pattern1);
   const end1 = getPatternEndTimestamp(pattern1);
   const start2 = getPatternStartTimestamp(pattern2);
@@ -447,7 +447,7 @@ export function detectTimeOverlap(pattern1: AIStudy, pattern2: AIStudy): number 
   return minDuration > 0 ? (overlapDuration / minDuration) * 100 : 0;
 }
 
-export function detectPriceOverlap(pattern1: AIStudy, pattern2: AIStudy): number {
+export function detectPriceOverlap(pattern1: AIPattern, pattern2: AIPattern): number {
   const min1 = getPatternMinPrice(pattern1);
   const max1 = getPatternMaxPrice(pattern1);
   const min2 = getPatternMinPrice(pattern2);
@@ -467,7 +467,7 @@ export function detectPriceOverlap(pattern1: AIStudy, pattern2: AIStudy): number
   return minRange > 0 ? (overlapRange / minRange) * 100 : 0;
 }
 
-export function isNested(child: AIStudy, parent: AIStudy): boolean {
+export function isNested(child: AIPattern, parent: AIPattern): boolean {
   const childStart = getPatternStartTimestamp(child);
   const childEnd = getPatternEndTimestamp(child);
   const parentStart = getPatternStartTimestamp(parent);
@@ -498,8 +498,8 @@ export function isNested(child: AIStudy, parent: AIStudy): boolean {
 }
 
 function determineRelationshipType(
-  pattern1: AIStudy,
-  pattern2: AIStudy,
+  pattern1: AIPattern,
+  pattern2: AIPattern,
   timeOverlap: number,
   priceOverlap: number
 ): RelationshipType {
@@ -517,8 +517,8 @@ function determineRelationshipType(
   return 'overlapping';
 }
 
-function isBullishPattern(pattern: AIStudy): boolean {
-  const bullishPatterns: AIStudy['type'][] = [
+function isBullishPattern(pattern: AIPattern): boolean {
+  const bullishPatterns: AIPattern['type'][] = [
     'inverse-head-and-shoulders',
     'double-bottom',
     'triple-bottom',
@@ -536,8 +536,8 @@ function isBullishPattern(pattern: AIStudy): boolean {
   return bullishPatterns.includes(pattern.type);
 }
 
-function isBearishPattern(pattern: AIStudy): boolean {
-  const bearishPatterns: AIStudy['type'][] = [
+function isBearishPattern(pattern: AIPattern): boolean {
+  const bearishPatterns: AIPattern['type'][] = [
     'head-and-shoulders',
     'double-top',
     'triple-top',
@@ -554,7 +554,7 @@ function isBearishPattern(pattern: AIStudy): boolean {
 }
 
 export function buildPatternRelationships(
-  patterns: AIStudy[]
+  patterns: AIPattern[]
 ): PatternRelationship[] {
   const relationships: PatternRelationship[] = [];
 
@@ -601,7 +601,7 @@ export function buildPatternRelationships(
 }
 
 export function calculateFormationPeriod(
-  pattern: AIStudy,
+  pattern: AIPattern,
   candles: Candle[]
 ): number {
   if (candles.length === 0) return 0;
@@ -626,7 +626,7 @@ export function calculateFormationPeriod(
 }
 
 export function classifyPatternTier(
-  pattern: AIStudy,
+  pattern: AIPattern,
   candles: Candle[]
 ): PatternTier {
   const formationPeriod = calculateFormationPeriod(pattern, candles);

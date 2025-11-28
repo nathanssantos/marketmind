@@ -1,5 +1,5 @@
 export * from './ai';
-export * from './aiStudy';
+export * from './aiPattern';
 export * from './aiTrading';
 export * from './calendar';
 export * from './candle';

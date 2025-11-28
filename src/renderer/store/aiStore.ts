@@ -75,7 +75,7 @@ export interface Conversation {
   createdAt: number;
   updatedAt: number;
   symbol?: string;
-  studyDataId?: string;
+  patternDataId?: string;
 }
 
 export interface AISettings {
@@ -97,7 +97,7 @@ interface AIState {
   messages: AIMessage[];
   provider: AIProviderType | null;
   model: string | null;
-  enableAIStudies: boolean;
+  enableAIPatterns: boolean;
   
   responseProcessor: ((response: string) => Promise<string>) | null;
 
@@ -121,7 +121,7 @@ interface AIState {
   setActiveConversationBySymbol: (symbol: string) => void;
   restoreActiveConversation: () => void;
   updateConversationTitle: (id: string, title: string) => void;
-  updateConversationStudyDataId: (id: string, studyDataId: string | undefined) => void;
+  updateConversationPatternDataId: (id: string, patternDataId: string | undefined) => void;
 
   addMessage: (conversationId: string, message: Omit<AIMessage, 'id' | 'timestamp'>) => void;
   updateMessage: (conversationId: string, messageId: string, content: string) => void;
@@ -141,7 +141,7 @@ interface AIState {
 
   sendMessage: (content: string, chartData?: ChartData) => Promise<void>;
   setResponseProcessor: (processor: ((response: string) => Promise<string>) | null) => void;
-  toggleAIStudies: () => void;
+  toggleAIPatterns: () => void;
 
   toggleAutoTrading: () => void;
   updateTradingConfig: (config: Partial<AITradingConfig>) => void;
@@ -165,7 +165,7 @@ const loadFromElectron = async (): Promise<Partial<AIState>> => {
         conversations: result.data.conversations,
         activeConversationId: result.data.activeConversationId,
         settings: result.data.settings,
-        enableAIStudies: result.data.enableAIStudies,
+        enableAIPatterns: result.data.enableAIPatterns,
         provider: result.data.settings?.provider || null,
         model: result.data.settings?.model || null,
         isAutoTradingActive: result.data.isAutoTradingActive || false,
@@ -186,7 +186,7 @@ const saveToElectron = async (state: AIState): Promise<void> => {
       conversations: state.conversations,
       activeConversationId: state.activeConversationId,
       settings: state.settings,
-      enableAIStudies: state.enableAIStudies,
+      enableAIPatterns: state.enableAIPatterns,
       isAutoTradingActive: state.isAutoTradingActive,
       tradingConfig: state.tradingConfig,
       trades: state.trades,
@@ -333,8 +333,8 @@ const formatChartDataContext = (chartData: ChartData): string => {
   context += `Bullish Candles: ${bullishCount} (${(bullishCount / recentCandles.length * 100).toFixed(1)}%)\n`;
   context += `Bearish Candles: ${bearishCount} (${(bearishCount / recentCandles.length * 100).toFixed(1)}%)\n`;
   
-  context += `\n=== TIMESTAMP INFORMATION FOR DRAWING STUDIES ===\n`;
-  context += `⚠️ IMPORTANT: When creating studies (support, resistance, zones), use these timestamps:\n`;
+  context += `\n=== TIMESTAMP INFORMATION FOR DRAWING PATTERNS ===\n`;
+  context += `⚠️ IMPORTANT: When creating patterns (support, resistance, zones), use these timestamps:\n`;
   context += `First Candle Timestamp: ${recentCandles[0]?.timestamp} (${new Date(recentCandles[0]?.timestamp || 0).toISOString()})\n`;
   context += `Last Candle Timestamp: ${lastCandle.timestamp} (${new Date(lastCandle.timestamp).toISOString()})\n`;
   context += `Timeframe: ${chartData.timeframe} (use appropriate timestamps based on this interval)\n`;
@@ -371,7 +371,7 @@ export const useAIStore = create<AIState>((set, get) => {
     partial: Partial<AIState> | ((state: AIState) => Partial<AIState>)
   ): void => {
     set(partial);
-    saveToElectron(get());
+    void saveToElectron(get());
   };
 
   return {
@@ -384,7 +384,7 @@ export const useAIStore = create<AIState>((set, get) => {
     messages: [],
     provider: 'openai',
     model: 'gpt-4o',
-    enableAIStudies: true,
+    enableAIPatterns: true,
     responseProcessor: null,
 
     isAutoTradingActive: false,
@@ -432,7 +432,7 @@ export const useAIStore = create<AIState>((set, get) => {
 
       setResponseProcessor: (processor) => set({ responseProcessor: processor }),
 
-      toggleAIStudies: () => set((state) => ({ enableAIStudies: !state.enableAIStudies })),
+      toggleAIPatterns: () => set((state) => ({ enableAIPatterns: !state.enableAIPatterns })),
 
       createConversation: (title, symbol) => {
         const id = generateId();
@@ -518,14 +518,14 @@ export const useAIStore = create<AIState>((set, get) => {
         ),
       })),
 
-      updateConversationStudyDataId: (id, studyDataId) => set((state) => ({
+      updateConversationPatternDataId: (id, patternDataId) => set((state) => ({
         conversations: state.conversations.map(c => {
           if (c.id !== id) return c;
           const updated: Conversation = { ...c, updatedAt: Date.now() };
-          if (studyDataId !== undefined) {
-            updated.studyDataId = studyDataId;
+          if (patternDataId !== undefined) {
+            updated.patternDataId = patternDataId;
           } else {
-            delete updated.studyDataId;
+            delete updated.patternDataId;
           }
           return updated;
         }),
@@ -656,14 +656,14 @@ export const useAIStore = create<AIState>((set, get) => {
             conversations: [...state.conversations, importedConversation],
             activeConversationId: newId,
           }));
-        } catch (error) {
+        } catch {
           throw new Error('Invalid conversation data');
         }
       },
 
       sendMessage: async (content, chartData) => {
         const state = get();
-        const { settings, enableAIStudies } = state;
+        const { settings, enableAIPatterns } = state;
 
         if (!settings?.provider) {
           set({ error: 'Please configure AI settings first' });
@@ -702,7 +702,7 @@ export const useAIStore = create<AIState>((set, get) => {
         try {
           const aiService = new AIService({
             ...settings,
-            enableAIStudies,
+            enableAIPatterns,
           });
           
           const messagesForAPI = chartData 
@@ -893,9 +893,9 @@ useAIStore.subscribe((state, prevState) => {
     state.conversations !== prevState.conversations ||
     state.activeConversationId !== prevState.activeConversationId ||
     state.settings !== prevState.settings ||
-    state.enableAIStudies !== prevState.enableAIStudies;
+    state.enableAIPatterns !== prevState.enableAIPatterns;
 
   if (hasChanged) {
-    saveToElectron(state);
+    void saveToElectron(state);
   }
 });

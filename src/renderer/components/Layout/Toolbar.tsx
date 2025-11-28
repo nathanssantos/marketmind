@@ -58,6 +58,7 @@ export interface ToolbarProps {
   onToggleTrading: () => void;
   onToggleChat: () => void;
   onToggleNews: () => void;
+  onDetectPatterns: () => void;
 }
 
 export const Toolbar = memo(({
@@ -94,6 +95,7 @@ export const Toolbar = memo(({
   onToggleTrading,
   onToggleChat,
   onToggleNews,
+  onDetectPatterns,
 }: ToolbarProps) => {
   const { t } = useTranslation();
   const { algorithmicDetectionSettings, setAlgorithmicDetectionSettings } = useUIStore();
@@ -102,13 +104,13 @@ export const Toolbar = memo(({
   const isPatternDetectionActive = algorithmicDetectionSettings.autoDisplayPatterns;
   const isExtensionsActive = patternConfig.showExtensions;
 
-  const togglePatternDetection = () => {
+  const togglePatternDetection = (): void => {
     setAlgorithmicDetectionSettings({
       autoDisplayPatterns: !algorithmicDetectionSettings.autoDisplayPatterns,
     });
   };
 
-  const toggleExtensions = () => {
+  const toggleExtensions = (): void => {
     setPatternConfig({
       showExtensions: !patternConfig.showExtensions,
     });
@@ -307,10 +309,21 @@ export const Toolbar = memo(({
                   <LuBrainCircuit />
                 </IconButton>
               </TooltipWrapper>
-              <TooltipWrapper label={t('chart.controls.studyExtensions')} showArrow placement="top">
+              <TooltipWrapper label={t('chart.controls.detectPatterns')} showArrow placement="top">
                 <IconButton
                   size="2xs"
-                  aria-label={t('chart.controls.studyExtensions')}
+                  aria-label={t('chart.controls.detectPatterns')}
+                  onClick={onDetectPatterns}
+                  colorPalette="blue"
+                  variant="ghost"
+                >
+                  <LuScan />
+                </IconButton>
+              </TooltipWrapper>
+              <TooltipWrapper label={t('chart.controls.patternExtensions')} showArrow placement="top">
+                <IconButton
+                  size="2xs"
+                  aria-label={t('chart.controls.patternExtensions')}
                   onClick={toggleExtensions}
                   colorPalette={isExtensionsActive ? 'blue' : 'gray'}
                   variant={isExtensionsActive ? 'solid' : 'ghost'}

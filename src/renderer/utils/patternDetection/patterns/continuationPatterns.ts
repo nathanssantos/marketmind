@@ -1,4 +1,4 @@
-import type { AIStudyCupAndHandle, AIStudyFlag, AIStudyPennant, AIStudyRoundingBottom, Candle } from '@shared/types';
+import type { AIPatternCupAndHandle, AIPatternFlag, AIPatternPennant, AIPatternRoundingBottom, Candle } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -59,10 +59,10 @@ const fitTrendline = (points: Point[]): TrendlineData => {
 export const detectBullishFlags = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyFlag[] => {
+): AIPatternFlag[] => {
   if (!candles || candles.length < 20) return [];
 
-  const patterns: AIStudyFlag[] = [];
+  const patterns: AIPatternFlag[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
 
@@ -168,10 +168,10 @@ export const detectBullishFlags = (
 export const detectBearishFlags = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyFlag[] => {
+): AIPatternFlag[] => {
   if (!candles || candles.length < 20) return [];
 
-  const patterns: AIStudyFlag[] = [];
+  const patterns: AIPatternFlag[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
 
@@ -277,10 +277,10 @@ export const detectBearishFlags = (
 export const detectPennants = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyPennant[] => {
+): AIPatternPennant[] => {
   if (!candles || candles.length < 20) return [];
 
-  const patterns: AIStudyPennant[] = [];
+  const patterns: AIPatternPennant[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
 
@@ -381,10 +381,10 @@ export const detectPennants = (
 export const detectCupAndHandle = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyCupAndHandle[] => {
+): AIPatternCupAndHandle[] => {
   if (!candles || candles.length < 40) return [];
 
-  const patterns: AIStudyCupAndHandle[] = [];
+  const patterns: AIPatternCupAndHandle[] = [];
   const allPivots = [...pivots].sort((a, b) => a.index - b.index);
 
   if (allPivots.length < 6) return [];
@@ -482,10 +482,10 @@ export const detectCupAndHandle = (
 export const detectRoundingBottom = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyRoundingBottom[] => {
+): AIPatternRoundingBottom[] => {
   if (!candles || candles.length < 30) return [];
 
-  const patterns: AIStudyRoundingBottom[] = [];
+  const patterns: AIPatternRoundingBottom[] = [];
   const allPivots = [...pivots].sort((a, b) => a.index - b.index);
 
   if (allPivots.length < 3) return [];

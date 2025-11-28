@@ -1,4 +1,4 @@
 export * from './app';
 export * from './chartConfig';
-export * from './studyStyles';
+export * from './patternStyles';
 

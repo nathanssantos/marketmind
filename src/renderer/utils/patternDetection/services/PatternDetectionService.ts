@@ -1,4 +1,4 @@
-import type { AIStudy, Candle } from '@shared/types';
+import type { AIPattern, Candle } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import { filterAndPrioritizePatterns } from '../core/patternFilter';
 import { calculateImportanceScore } from '../core/patternImportance';
@@ -18,10 +18,10 @@ import { detectAccumulationZones, detectBuyZones, detectLiquidityZones, detectSe
 import type { DetectionOptions, DetectionResult, PivotPoint } from '../types';
 
 export class PatternDetectionService {
-  private workerBuildRelationships: ((patterns: AIStudy[], useWorker?: boolean) => Promise<PatternRelationship[]>) | null = null;
+  private workerBuildRelationships: ((patterns: AIPattern[], useWorker?: boolean) => Promise<PatternRelationship[]>) | null = null;
 
   setWorkerBuildRelationships(
-    buildRelationships: (patterns: AIStudy[], useWorker?: boolean) => Promise<PatternRelationship[]>
+    buildRelationships: (patterns: AIPattern[], useWorker?: boolean) => Promise<PatternRelationship[]>
   ): void {
     this.workerBuildRelationships = buildRelationships;
   }
@@ -40,177 +40,177 @@ export class PatternDetectionService {
 
     const pivots = findPivotPoints(candles, pivotSensitivity, pivotSensitivity);
     
-    const allStudies: AIStudy[] = [];
+    const allPatterns: AIPattern[] = [];
 
     if (!enabledPatterns || enabledPatterns.includes('support')) {
-      allStudies.push(...detectSupport(candles, pivots));
+      allPatterns.push(...detectSupport(candles, pivots));
     }
     
     if (!enabledPatterns || enabledPatterns.includes('resistance')) {
-      allStudies.push(...detectResistance(candles, pivots));
+      allPatterns.push(...detectResistance(candles, pivots));
     }
     
     if (!enabledPatterns || enabledPatterns.includes('trendline-bullish')) {
-      allStudies.push(...detectBullishTrendlines(candles, pivots));
+      allPatterns.push(...detectBullishTrendlines(candles, pivots));
     }
     
     if (!enabledPatterns || enabledPatterns.includes('trendline-bearish')) {
-      allStudies.push(...detectBearishTrendlines(candles, pivots));
+      allPatterns.push(...detectBearishTrendlines(candles, pivots));
     }
     
     if (!enabledPatterns || enabledPatterns.includes('fibonacci-retracement')) {
-      allStudies.push(...detectFibonacciRetracements(candles, pivots));
+      allPatterns.push(...detectFibonacciRetracements(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('fibonacci-extension')) {
-      allStudies.push(...detectFibonacciExtensions(candles, pivots));
+      allPatterns.push(...detectFibonacciExtensions(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('channel-ascending')) {
-      allStudies.push(...detectAscendingChannels(candles, pivots));
+      allPatterns.push(...detectAscendingChannels(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('channel-descending')) {
-      allStudies.push(...detectDescendingChannels(candles, pivots));
+      allPatterns.push(...detectDescendingChannels(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('channel-horizontal')) {
-      allStudies.push(...detectHorizontalChannels(candles, pivots));
+      allPatterns.push(...detectHorizontalChannels(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('triangle-ascending')) {
-      allStudies.push(...detectAscendingTriangles(candles, pivots));
+      allPatterns.push(...detectAscendingTriangles(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('triangle-descending')) {
-      allStudies.push(...detectDescendingTriangles(candles, pivots));
+      allPatterns.push(...detectDescendingTriangles(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('triangle-symmetrical')) {
-      allStudies.push(...detectSymmetricalTriangles(candles, pivots));
+      allPatterns.push(...detectSymmetricalTriangles(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('wedge-rising')) {
-      allStudies.push(...detectRisingWedges(candles, pivots));
+      allPatterns.push(...detectRisingWedges(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('wedge-falling')) {
-      allStudies.push(...detectFallingWedges(candles, pivots));
+      allPatterns.push(...detectFallingWedges(candles, pivots));
     }
     
     if (!enabledPatterns || enabledPatterns.includes('head-and-shoulders')) {
-      allStudies.push(...detectHeadAndShoulders(candles, pivots));
+      allPatterns.push(...detectHeadAndShoulders(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('inverse-head-and-shoulders')) {
-      allStudies.push(...detectInverseHeadAndShoulders(candles, pivots));
+      allPatterns.push(...detectInverseHeadAndShoulders(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('double-top')) {
-      allStudies.push(...detectDoubleTops(candles, pivots));
+      allPatterns.push(...detectDoubleTops(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('double-bottom')) {
-      allStudies.push(...detectDoubleBottoms(candles, pivots));
+      allPatterns.push(...detectDoubleBottoms(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('triple-top')) {
-      allStudies.push(...detectTripleTops(candles, pivots));
+      allPatterns.push(...detectTripleTops(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('triple-bottom')) {
-      allStudies.push(...detectTripleBottoms(candles, pivots));
+      allPatterns.push(...detectTripleBottoms(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('flag-bullish')) {
-      allStudies.push(...detectBullishFlags(candles, pivots));
+      allPatterns.push(...detectBullishFlags(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('flag-bearish')) {
-      allStudies.push(...detectBearishFlags(candles, pivots));
+      allPatterns.push(...detectBearishFlags(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('pennant')) {
-      allStudies.push(...detectPennants(candles, pivots));
+      allPatterns.push(...detectPennants(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('cup-and-handle')) {
-      allStudies.push(...detectCupAndHandle(candles, pivots));
+      allPatterns.push(...detectCupAndHandle(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('rounding-bottom')) {
-      allStudies.push(...detectRoundingBottom(candles, pivots));
+      allPatterns.push(...detectRoundingBottom(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('gap-common')) {
-      allStudies.push(...detectCommonGaps(candles, pivots));
+      allPatterns.push(...detectCommonGaps(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('gap-breakaway')) {
-      allStudies.push(...detectBreakawayGaps(candles, pivots));
+      allPatterns.push(...detectBreakawayGaps(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('gap-runaway')) {
-      allStudies.push(...detectRunawayGaps(candles, pivots));
+      allPatterns.push(...detectRunawayGaps(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('gap-exhaustion')) {
-      allStudies.push(...detectExhaustionGaps(candles, pivots));
+      allPatterns.push(...detectExhaustionGaps(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('buy-zone')) {
-      allStudies.push(...detectBuyZones(candles, pivots));
+      allPatterns.push(...detectBuyZones(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('sell-zone')) {
-      allStudies.push(...detectSellZones(candles, pivots));
+      allPatterns.push(...detectSellZones(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('liquidity-zone')) {
-      allStudies.push(...detectLiquidityZones(candles, pivots));
+      allPatterns.push(...detectLiquidityZones(candles, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('accumulation-zone')) {
-      allStudies.push(...detectAccumulationZones(candles, pivots));
+      allPatterns.push(...detectAccumulationZones(candles, pivots));
     }
 
-    const filteredStudies = allStudies.filter(
-      study => (study.confidence || 0) >= minConfidence
+    const filteredPatterns = allPatterns.filter(
+      pattern => (pattern.confidence || 0) >= minConfidence
     );
 
-    const sortedStudies = filteredStudies.sort(
+    const sortedPatterns = filteredPatterns.sort(
       (a, b) => (b.confidence || 0) - (a.confidence || 0)
     );
 
-    let studyId = 1;
-    sortedStudies.forEach(study => {
-      study.id = studyId++;
+    let patternId = 1;
+    sortedPatterns.forEach(pattern => {
+      pattern.id = patternId++;
     });
 
-    let finalStudies = sortedStudies;
+    let finalPatterns = sortedPatterns;
 
-    if (options.applyFiltering && sortedStudies.length > 0) {
-      console.log('[PatternDetection] Before filtering:', sortedStudies.length, 'patterns');
+    if (options.applyFiltering && sortedPatterns.length > 0) {
+      console.log('[PatternDetection] Before filtering:', sortedPatterns.length, 'patterns');
       
-      sortedStudies.forEach(study => {
-        study.importanceScore = calculateImportanceScore(study, candles);
-        study.tier = classifyPatternTier(study, candles);
+      sortedPatterns.forEach(pattern => {
+        pattern.importanceScore = calculateImportanceScore(pattern, candles);
+        pattern.tier = classifyPatternTier(pattern, candles);
       });
 
       let relationships: PatternRelationship[];
       
       try {
         if (this.workerBuildRelationships) {
-          relationships = await this.workerBuildRelationships(sortedStudies, options.useWorker ?? true);
+          relationships = await this.workerBuildRelationships(sortedPatterns, options.useWorker ?? true);
         } else {
-          relationships = buildPatternRelationships(sortedStudies);
+          relationships = buildPatternRelationships(sortedPatterns);
         }
       } catch {
-        relationships = buildPatternRelationships(sortedStudies);
+        relationships = buildPatternRelationships(sortedPatterns);
       }
       
-      finalStudies = filterAndPrioritizePatterns(
-        sortedStudies,
+      finalPatterns = filterAndPrioritizePatterns(
+        sortedPatterns,
         relationships,
         {
           enableNestedFiltering: options.enableNestedFiltering ?? false,
@@ -230,10 +230,10 @@ export class PatternDetectionService {
     const executionTime = performance.now() - startTime;
 
     return {
-      studies: finalStudies,
+      patterns: finalPatterns,
       metadata: {
         pivotsFound: pivots.length,
-        patternsDetected: finalStudies.length,
+        patternsDetected: finalPatterns.length,
         executionTime,
         candlesAnalyzed: candles.length,
       },
@@ -241,7 +241,7 @@ export class PatternDetectionService {
   }
 
   async detectPatternsIncremental(
-    _existingStudies: AIStudy[],
+    _existingPatterns: AIPattern[],
     newCandles: Candle[],
     options: DetectionOptions = {}
   ): Promise<DetectionResult> {
@@ -251,7 +251,7 @@ export class PatternDetectionService {
   private lastDetection: {
     candles: Candle[];
     pivots: PivotPoint[];
-    studies: AIStudy[];
+    patterns: AIPattern[];
   } | null = null;
 
   getCachedPivots(): PivotPoint[] | null {

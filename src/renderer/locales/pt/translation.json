@@ -229,8 +229,8 @@
   "chat": {
     "title": "Chat",
     "newConversation": "Nova conversa",
-    "enableAIStudies": "Ativar desenhos de IA no gráfico",
-    "disableAIStudies": "Desativar desenhos da IA no gráfico",
+    "enableAIPatterns": "Ativar desenhos de IA no gráfico",
+    "disableAIPatterns": "Desativar desenhos da IA no gráfico",
     "enableAutoTrading": "Ativar Auto-Trading com IA",
     "disableAutoTrading": "Desativar Auto-Trading com IA",
     "conversationsTitle": "Conversas - {{symbol}}",
@@ -261,10 +261,18 @@
       "crosshair": "Mira",
       "measurementRuler": "Régua de Medição",
       "measurementArea": "Área de Medição",
-      "autoPatterns": "Detecção Automática de Padrões (candles visíveis)",
-      "studyExtensions": "Estender Estudos Além da Última Candle",
+      "autoPatterns": "Detecção Automática de Padrões",
+      "detectPatterns": "Detectar Padrões Agora",
+      "patternExtensions": "Estender Padrões Além da Última Vela",
       "indicators": "Indicadores",
       "quickSettings": "Configurações Rápidas"
+    },
+    "contextMenu": {
+      "deletePattern": "Deletar Padrão",
+      "deletePattern": "Deletar Padrão",
+      "hidePatterns": "Ocultar Padrões Detectados",
+      "showPatterns": "Mostrar Padrões Detectados",
+      "deleteAllPatterns": "Remover Todos os Padrões Detectados"
     },
     "navigation": {
       "resetView": "Voltar à visualização inicial",

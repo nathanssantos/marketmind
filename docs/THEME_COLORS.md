@@ -81,29 +81,29 @@ export const customConfig = createSystem(defaultConfig, {
           value: { base: '#ec4899', _dark: '#f472b6' } 
         },
         
-        // AI Studies (8 types)
-        'chart.aiStudy.support': { 
+        // AI Patterns (8 types)
+        'chart.aiPattern.support': { 
           value: { base: '#16a34a', _dark: '#22c55e' } 
         },
-        'chart.aiStudy.resistance': { 
+        'chart.aiPattern.resistance': { 
           value: { base: '#dc2626', _dark: '#ef4444' } 
         },
-        'chart.aiStudy.trendLine': { 
+        'chart.aiPattern.trendLine': { 
           value: { base: '#3b82f6', _dark: '#60a5fa' } 
         },
-        'chart.aiStudy.fibonacci': { 
+        'chart.aiPattern.fibonacci': { 
           value: { base: '#f59e0b', _dark: '#fbbf24' } 
         },
-        'chart.aiStudy.pattern': { 
+        'chart.aiPattern.pattern': { 
           value: { base: '#8b5cf6', _dark: '#a78bfa' } 
         },
-        'chart.aiStudy.priceTarget': { 
+        'chart.aiPattern.priceTarget': { 
           value: { base: '#ec4899', _dark: '#f472b6' } 
         },
-        'chart.aiStudy.annotation': { 
+        'chart.aiPattern.annotation': { 
           value: { base: '#6b7280', _dark: '#9ca3af' } 
         },
-        'chart.aiStudy.zone': { 
+        'chart.aiPattern.zone': { 
           value: { base: 'rgba(59, 130, 246, 0.1)', _dark: 'rgba(96, 165, 250, 0.1)' } 
         },
       },
@@ -198,9 +198,9 @@ export const useChartColors = (): ChartThemeColors => {
 | MA 2 (20-period) | Purple | `#a78bfa` |
 | MA 3 (50-period) | Pink | `#f472b6` |
 
-### AI Study Colors
+### AI pattern Colors
 
-| Study Type | Light | Dark |
+| pattern Type | Light | Dark |
 |------------|-------|------|
 | Support | `#16a34a` | `#22c55e` |
 | Resistance | `#dc2626` | `#ef4444` |
@@ -245,18 +245,18 @@ export const useCandlestickRenderer = ({
 };
 ```
 
-### AI Study Renderer
+### AI pattern Renderer
 
 ```typescript
-// AIStudyRenderer.tsx
+// AIPatternRenderer.tsx
 const colors = useChartColors();
 
-const getStudyColor = (type: AIStudy['type']): string => {
-  const { aiStudy } = colors;
-  const colorMap: Record<AIStudy['type'], string> = {
-    'support': aiStudy.support,
-    'resistance': aiStudy.resistance,
-    'trendLine': aiStudy.trendLine,
+const getPatternColor = (type: AIPattern['type']): string => {
+  const { aiPattern} = colors;
+  const colorMap: Record<AIPattern['type'], string> = {
+    'support': aiPattern.support,
+    'resistance': aiPattern.resistance,
+    'trendLine': aiPattern.trendLine,
     // ... all 8 types
   };
   return colorMap[type];
@@ -311,7 +311,7 @@ export interface ChartColors {
     2: string;
     3: string;
   };
-  aiStudy: {
+  aiPattern: {
     support: string;
     resistance: string;
     trendLine: string;
@@ -378,14 +378,14 @@ const colors = useChartColors(); // Reactive to theme changes
 
 **Removed Constants:**
 - `src/shared/constants/chartConfig.ts` - Removed `CHART_COLORS_DARK`, `CHART_COLORS_LIGHT`, `MA_COLORS`
-- `src/shared/types/aiStudy.ts` - Removed `AI_STUDY_COLORS` export
+- `src/shared/types/aiPattern.ts` - Removed `AI_PATTERN_COLORS` export
 
 **Updated Components:**
 - `src/renderer/components/Chart/ChartCanvas.tsx` - Uses `useChartColors()`
 - `src/renderer/components/Chart/ChartTooltip.tsx` - Uses semantic tokens
 - `src/renderer/components/Chart/ChartControls.tsx` - Uses semantic tokens
 - `src/renderer/components/Chart/ControlPanel.tsx` - Uses semantic tokens
-- `src/renderer/components/Chart/AIStudyRenderer.tsx` - Uses `useChartColors()`
+- `src/renderer/components/Chart/AIPatternRenderer.tsx` - Uses `useChartColors()`
 
 **Updated Renderers (8 files):**
 - `useCandlestickRenderer.ts`

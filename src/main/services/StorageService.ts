@@ -1,4 +1,4 @@
-import type { AIMessage, AIProviderType, AIStudyData, AITrade, AITradingConfig, AITradingStats } from '@shared/types';
+import type { AIMessage, AIPatternData, AIProviderType, AITrade, AITradingConfig, AITradingStats } from '@shared/types';
 import type { Order, Wallet } from '@shared/types/trading';
 import * as electron from 'electron';
 import ElectronStore from 'electron-store';
@@ -12,7 +12,7 @@ interface Conversation {
   createdAt: number;
   updatedAt: number;
   symbol?: string;
-  studyDataId?: string;
+  patternDataId?: string;
 }
 
 interface AISettings {
@@ -48,13 +48,13 @@ interface SecureStoreSchema {
     conversations: Conversation[];
     activeConversationId: string | null;
     settings: AISettings | null;
-    enableAIStudies: boolean;
+    enableAIPatterns: boolean;
     isAutoTradingActive?: boolean;
     tradingConfig?: AITradingConfig;
     trades?: AITrade[];
     tradingStats?: AITradingStats | null;
   };
-  aiStudies?: Record<string, AIStudyData>;
+  aiPatterns?: Record<string, AIPatternData>;
   version: string;
 }
 
@@ -206,33 +206,33 @@ export class StorageService {
     this.store.delete('aiData');
   }
 
-  getAIStudies(): Record<string, AIStudyData> {
-    return this.store.get('aiStudies', {});
+  getAIPatterns(): Record<string, AIPatternData> {
+    return this.store.get('aiPatterns', {});
   }
 
-  setAIStudies(studies: Record<string, AIStudyData>): void {
-    this.store.set('aiStudies', studies);
+  setAIPatterns(patterns: Record<string, AIPatternData>): void {
+    this.store.set('aiPatterns', patterns);
   }
 
-  getAIStudiesForSymbol(symbol: string): AIStudyData | null {
-    const studies = this.getAIStudies();
-    return studies[symbol] || null;
+  getAIPatternsForSymbol(symbol: string): AIPatternData | null {
+    const patterns = this.getAIPatterns();
+    return patterns[symbol] || null;
   }
 
-  setAIStudiesForSymbol(symbol: string, data: AIStudyData): void {
-    const studies = this.getAIStudies();
-    studies[symbol] = data;
-    this.setAIStudies(studies);
+  setAIPatternsForSymbol(symbol: string, data: AIPatternData): void {
+    const patterns = this.getAIPatterns();
+    patterns[symbol] = data;
+    this.setAIPatterns(patterns);
   }
 
-  deleteAIStudiesForSymbol(symbol: string): void {
-    const studies = this.getAIStudies();
-    delete studies[symbol];
-    this.setAIStudies(studies);
+  deleteAIPatternsForSymbol(symbol: string): void {
+    const patterns = this.getAIPatterns();
+    delete patterns[symbol];
+    this.setAIPatterns(patterns);
   }
 
-  clearAIStudies(): void {
-    this.store.delete('aiStudies');
+  clearAIPatterns(): void {
+    this.store.delete('aiPatterns');
   }
 
   getVersion(): string {

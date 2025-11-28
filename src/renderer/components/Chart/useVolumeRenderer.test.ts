@@ -72,7 +72,7 @@ describe('useVolumeRenderer', () => {
       },
       lineDefault: '#3b82f6',
       ma: ['#3b82f6', '#f59e0b', '#10b981'],
-      aiStudy: {
+      aiPattern: {
         support: '#10b981',
         resistance: '#ef4444',
         trendlineBullish: '#10b981',

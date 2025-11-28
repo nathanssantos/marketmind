@@ -41,7 +41,7 @@ export abstract class BaseAIProvider {
   protected temperature: number;
   protected maxTokens: number;
   protected useOptimizedPrompts: boolean;
-  public enableAIStudies: boolean;
+  public enableAIPatterns: boolean;
   protected detailedCandlesCount: number;
 
   constructor(config: AIProviderConfig) {
@@ -50,7 +50,7 @@ export abstract class BaseAIProvider {
     this.temperature = config.temperature ?? 0.7;
     this.maxTokens = config.maxTokens ?? 4096;
     this.useOptimizedPrompts = true;
-    this.enableAIStudies = true;
+    this.enableAIPatterns = true;
     this.detailedCandlesCount = config.detailedCandlesCount ?? 32;
   }
 
@@ -120,7 +120,7 @@ export abstract class BaseAIProvider {
       return prompts.chartAnalysis.system;
     }
     
-    if (!this.enableAIStudies) {
+    if (!this.enableAIPatterns) {
       return getOptimizedSystemPrompt('simple', 'chartAnalysis');
     }
     

@@ -4,18 +4,18 @@ import { LuEye, LuEyeOff, LuTrash2 } from 'react-icons/lu';
 
 interface ChartContextMenuProps {
   children: ReactNode;
-  onDeleteStudies: () => void;
-  onToggleStudiesVisibility: () => void;
-  hasStudies: boolean;
-  studiesVisible: boolean;
+  onDeletePatterns: () => void;
+  onTogglePatternsVisibility: () => void;
+  hasPatterns: boolean;
+  patternsVisible: boolean;
 }
 
 export const ChartContextMenu = ({
   children,
-  onDeleteStudies,
-  onToggleStudiesVisibility,
-  hasStudies,
-  studiesVisible,
+  onDeletePatterns,
+  onTogglePatternsVisibility,
+  hasPatterns,
+  patternsVisible,
 }: ChartContextMenuProps) => {
   return (
     <Menu.Root>
@@ -26,9 +26,9 @@ export const ChartContextMenu = ({
         <Menu.Positioner>
           <Menu.Content>
             <Menu.Item
-              value="toggle-studies"
-              onClick={onToggleStudiesVisibility}
-              disabled={!hasStudies}
+              value="toggle-patterns"
+              onClick={onTogglePatternsVisibility}
+              disabled={!hasPatterns}
               padding="8px 12px"
               gap="8px"
               cursor="pointer"
@@ -42,13 +42,13 @@ export const ChartContextMenu = ({
                 },
               }}
             >
-              {studiesVisible ? <LuEyeOff /> : <LuEye />}
-              {studiesVisible ? 'Hide AI Studies' : 'Show AI Studies'}
+              {patternsVisible ? <LuEyeOff /> : <LuEye />}
+              {patternsVisible ? 'Hide AI Patterns' : 'Show AI Patterns'}
             </Menu.Item>
             <Menu.Item
-              value="delete-studies"
-              onClick={onDeleteStudies}
-              disabled={!hasStudies}
+              value="delete-patterns"
+              onClick={onDeletePatterns}
+              disabled={!hasPatterns}
               padding="8px 12px"
               gap="8px"
               cursor="pointer"
@@ -63,7 +63,7 @@ export const ChartContextMenu = ({
               }}
             >
               <LuTrash2 />
-              Delete AI Studies
+              Delete AI Patterns
             </Menu.Item>
           </Menu.Content>
         </Menu.Positioner>

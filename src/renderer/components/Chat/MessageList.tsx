@@ -4,16 +4,16 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuSparkles, LuUser } from 'react-icons/lu';
 import ReactMarkdown from 'react-markdown';
-import { useAIStudyHover } from '../../context/AIStudyHoverContext';
+import { usePatternHover } from '../../context/PatternHoverContext';
 import { useToast } from '../../hooks/useToast';
 import '../../markdown.css';
-import { MarkdownWithStudyRefs } from './MarkdownWithStudyRefs';
+import { MarkdownWithPatternRefs } from './MarkdownWithPatternRefs';
 import { useMessageList } from './useMessageList';
 
 export const MessageList = () => {
   const { t } = useTranslation();
   const { messages, loading, error, messagesEndRef, clearError } = useMessageList();
-  const { setHoveredStudyId } = useAIStudyHover();
+  const { setHoveredPatternId } = usePatternHover();
   const toast = useToast();
   const lastErrorRef = useRef<string | null>(null);
 
@@ -62,8 +62,8 @@ export const MessageList = () => {
               direction="column"
               alignItems={message.role === 'user' ? 'flex-end' : 'flex-start'}
             >
-              <Flex 
-                direction="column" 
+              <Flex
+                direction="column"
                 align={message.role === 'user' ? 'flex-end' : 'flex-start'}
                 gap={1}
               >
@@ -94,9 +94,9 @@ export const MessageList = () => {
                 className="markdown"
               >
                 {message.role === 'assistant' ? (
-                  <MarkdownWithStudyRefs 
+                  <MarkdownWithPatternRefs
                     content={message.content}
-                    onStudyHover={setHoveredStudyId}
+                    onPatternHover={setHoveredPatternId}
                   />
                 ) : (
                   <ReactMarkdown>

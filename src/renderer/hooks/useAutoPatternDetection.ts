@@ -9,7 +9,7 @@ const INTERACTION_DEBOUNCE_MS = 500;
 const DETECTION_DEBOUNCE_MS = 500;
 
 export const useAutoPatternDetection = (viewport?: Viewport) => {
-  const { chartData, setDetectedStudies } = useChartContext();
+  const { chartData, setDetectedPatterns } = useChartContext();
   const { algorithmicDetectionSettings } = useUIStore();
   const { config: patternConfig } = usePatternDetectionConfigStore();
   const lastDetectionRef = useRef<{
@@ -66,7 +66,7 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
           detectionOptions
         );
 
-        setDetectedStudies(detectionResult.studies);
+        setDetectedPatterns(detectionResult.patterns);
         lastDetectionRef.current = {
           symbol,
           candleCount,
@@ -76,10 +76,10 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
         };
       } catch (error) {
         console.error('Auto pattern detection failed:', error);
-        setDetectedStudies([]);
+        setDetectedPatterns([]);
       }
     },
-    [detectionOptions, setDetectedStudies]
+    [detectionOptions, setDetectedPatterns]
   );
 
   useEffect(() => {
@@ -128,7 +128,7 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
         debounceTimerRef.current = null;
       }
       if (!algorithmicDetectionSettings.autoDisplayPatterns) {
-        setDetectedStudies([]);
+        setDetectedPatterns([]);
       }
       return;
     }
@@ -156,7 +156,7 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
     visibleStart,
     visibleEnd,
     isInteracting,
-    setDetectedStudies,
+    setDetectedPatterns,
     shouldSkipDetection,
   ]);
 

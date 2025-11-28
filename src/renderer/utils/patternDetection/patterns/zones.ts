@@ -1,4 +1,4 @@
-import type { AIStudyZone, Candle } from '@shared/types';
+import type { AIPatternZone, Candle } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -10,10 +10,10 @@ import type { PivotPoint } from '../types';
 export const detectBuyZones = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyZone[] => {
+): AIPatternZone[] => {
   if (!candles || candles.length < 20) return [];
 
-  const zones: AIStudyZone[] = [];
+  const zones: AIPatternZone[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.price - b.price);
 
   if (lowPivots.length < 3) return [];
@@ -87,10 +87,10 @@ export const detectBuyZones = (
 export const detectSellZones = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyZone[] => {
+): AIPatternZone[] => {
   if (!candles || candles.length < 20) return [];
 
-  const zones: AIStudyZone[] = [];
+  const zones: AIPatternZone[] = [];
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => b.price - a.price);
 
   if (highPivots.length < 3) return [];
@@ -164,10 +164,10 @@ export const detectSellZones = (
 export const detectLiquidityZones = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyZone[] => {
+): AIPatternZone[] => {
   if (!candles || candles.length < 20) return [];
 
-  const zones: AIStudyZone[] = [];
+  const zones: AIPatternZone[] = [];
   const allPivots = [...pivots].sort((a, b) => a.index - b.index);
 
   if (allPivots.length < 4) return [];
@@ -243,10 +243,10 @@ export const detectLiquidityZones = (
 export const detectAccumulationZones = (
   candles: Candle[],
   _pivots: PivotPoint[]
-): AIStudyZone[] => {
+): AIPatternZone[] => {
   if (!candles || candles.length < 30) return [];
 
-  const zones: AIStudyZone[] = [];
+  const zones: AIPatternZone[] = [];
 
   for (let i = 20; i < candles.length - 10; i++) {
     const window = candles.slice(i - 20, i);
