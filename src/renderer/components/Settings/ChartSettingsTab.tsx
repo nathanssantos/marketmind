@@ -2,8 +2,10 @@ import { Button } from '@/renderer/components/ui/button';
 import { Field } from '@/renderer/components/ui/field';
 import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Select } from '@/renderer/components/ui/select';
+import { Switch } from '@/renderer/components/ui/switch';
 import { DEFAULT_ADVANCED_CONFIG } from '@/renderer/constants/defaults';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
+import { usePatternDetectionConfigStore } from '@/renderer/store/patternDetectionConfigStore';
 import { Box, Separator, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw } from 'react-icons/lu';
@@ -16,13 +18,14 @@ interface ChartSettingsTabProps {
 
 export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabProps) => {
   const { t } = useTranslation();
+  const { config: patternConfig, setConfig: setPatternConfig } = usePatternDetectionConfigStore();
 
   const debouncedConfigChange = useDebounceCallback(onConfigChange, 300);
 
   const handleChange = (key: keyof AdvancedControlsConfig, value: string) => {
     const numValue = parseFloat(value);
     if (isNaN(numValue)) return;
-    
+
     debouncedConfigChange({
       ...config,
       [key]: numValue,
@@ -204,6 +207,54 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
               onChange={(e) => handleChange('paddingRight', e.target.value)}
               min={0}
               max={100}
+            />
+          </Field>
+        </Stack>
+      </Box>
+
+      <Separator />
+
+      <Box>
+        <Text fontSize="sm" fontWeight="bold" mb={4}>
+          {t('settings.chart.studyExtensions')}
+        </Text>
+        <Stack gap={4}>
+          <Field label={t('settings.chart.showAllExtensions')} helperText={t('settings.chart.showAllExtensionsHelper')}>
+            <Switch
+              checked={patternConfig.showExtensions}
+              onCheckedChange={(e) => setPatternConfig({ showExtensions: e.checked })}
+            />
+          </Field>
+
+          <Field label={t('settings.chart.extendTrendlines')} helperText={t('settings.chart.extendTrendlinesHelper')}>
+            <Switch
+              checked={patternConfig.extendTrendlines}
+              onCheckedChange={(e) => setPatternConfig({ extendTrendlines: e.checked })}
+              disabled={!patternConfig.showExtensions}
+            />
+          </Field>
+
+          <Field label={t('settings.chart.extendChannels')} helperText={t('settings.chart.extendChannelsHelper')}>
+            <Switch
+              checked={patternConfig.extendChannels}
+              onCheckedChange={(e) => setPatternConfig({ extendChannels: e.checked })}
+              disabled={!patternConfig.showExtensions}
+            />
+          </Field>
+
+          <Field label={t('settings.chart.extendSupport')} helperText={t('settings.chart.extendSupportHelper')}>
+            <Switch
+              checked={patternConfig.extendSupport}
+              onCheckedChange={(e) => setPatternConfig({ extendSupport: e.checked })}
+              disabled={!patternConfig.showExtensions}
+            />
+          </Field>
+
+          <Field label={t('settings.chart.extendResistance')} helperText={t('settings.chart.extendResistanceHelper')}>
+            <Switch
+              checked={patternConfig.extendResistance}
+              onCheckedChange={(e) => setPatternConfig({ extendResistance: e.checked })}
+              disabled={!patternConfig.showExtensions}
             />
           </Field>
         </Stack>

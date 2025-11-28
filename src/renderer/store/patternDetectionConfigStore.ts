@@ -17,6 +17,11 @@ export interface PatternDetectionConfig {
   overlapThreshold: number;
   highlightConflicts: boolean;
   showChannelCenterline: boolean;
+  showExtensions: boolean;
+  extendTrendlines: boolean;
+  extendChannels: boolean;
+  extendSupport: boolean;
+  extendResistance: boolean;
   maxPatternsPerTier: {
     macro: number;
     major: number;
@@ -76,6 +81,11 @@ const DEFAULT_CONFIG: PatternDetectionConfig = {
   overlapThreshold: 0.6,
   highlightConflicts: true,
   showChannelCenterline: true,
+  showExtensions: true,
+  extendTrendlines: true,
+  extendChannels: true,
+  extendSupport: true,
+  extendResistance: true,
   maxPatternsPerTier: {
     macro: 10,
     major: 8,
@@ -118,7 +128,26 @@ export const usePatternDetectionConfigStore = create<PatternDetectionConfigState
     }),
     {
       name: 'marketmind-pattern-detection-config',
-      version: 1,
+      version: 2,
+      migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as PatternDetectionConfigState;
+        
+        if (version < 2) {
+          return {
+            ...state,
+            config: {
+              ...DEFAULT_CONFIG,
+              ...state.config,
+              extendTrendlines: state.config.extendTrendlines ?? true,
+              extendChannels: state.config.extendChannels ?? true,
+              extendSupport: state.config.extendSupport ?? true,
+              extendResistance: state.config.extendResistance ?? true,
+            },
+          };
+        }
+        
+        return state;
+      },
     },
   ),
 );

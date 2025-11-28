@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { AIStudy } from '../../../../shared/types';
 import {
-    applyCategoryLimits,
-    applyTierLimits,
-    filterAndPrioritizePatterns,
-    resolveNestedPatterns,
-    resolveOverlappingPatterns
+  applyCategoryLimits,
+  applyTierLimits,
+  filterAndPrioritizePatterns,
+  resolveNestedPatterns,
+  resolveOverlappingPatterns
 } from './patternFilter';
 import type { PatternRelationship } from './patternRelationships';
 
@@ -14,16 +14,11 @@ describe('patternFilter', () => {
     it('should remove smaller nested pattern (KEEP LARGEST strategy)', () => {
       const largePattern: AIStudy = {
         id: 1,
-        type: 'triangle-ascending',
-        upperTrendline: [
+        type: 'support',
+        points: [
           { timestamp: 1000, price: 100 },
-          { timestamp: 5000, price: 105 },
+          { timestamp: 5000, price: 100 },
         ],
-        lowerTrendline: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 5000, price: 95 },
-        ],
-        apex: { timestamp: 6000, price: 105 },
         confidence: 0.8,
         visible: true,
         timestamp: 1000,
@@ -93,11 +88,8 @@ describe('patternFilter', () => {
     it('should handle multiple nested patterns (chain)', () => {
       const macro: AIStudy = {
         id: 1,
-        type: 'head-and-shoulders',
-        leftShoulder: { timestamp: 1000, price: 100 },
-        head: { timestamp: 3000, price: 110 },
-        rightShoulder: { timestamp: 5000, price: 100 },
-        neckline: [
+        type: 'support',
+        points: [
           { timestamp: 1000, price: 90 },
           { timestamp: 6000, price: 90 },
         ],
@@ -108,16 +100,11 @@ describe('patternFilter', () => {
 
       const major: AIStudy = {
         id: 2,
-        type: 'triangle-descending',
-        upperTrendline: [
-          { timestamp: 1500, price: 105 },
-          { timestamp: 4500, price: 95 },
-        ],
-        lowerTrendline: [
+        type: 'support',
+        points: [
           { timestamp: 1500, price: 90 },
           { timestamp: 4500, price: 90 },
         ],
-        apex: { timestamp: 5000, price: 90 },
         confidence: 0.8,
         visible: true,
         timestamp: 1500,
@@ -164,7 +151,7 @@ describe('patternFilter', () => {
     it('should use confidence as tiebreaker when durations are equal', () => {
       const highConfidence: AIStudy = {
         id: 1,
-        type: 'double-bottom',
+        type: 'double-top',
         firstPeak: { timestamp: 1000, price: 90 },
         secondPeak: { timestamp: 5000, price: 90 },
         neckline: { timestamp: 3000, price: 100 },
@@ -217,7 +204,7 @@ describe('patternFilter', () => {
 
       const pattern2: AIStudy = {
         id: 2,
-        type: 'resistance',
+        type: 'support',
         points: [
           { timestamp: 1000, price: 100 },
           { timestamp: 5000, price: 100 },
@@ -374,16 +361,11 @@ describe('patternFilter', () => {
 
       const largePattern: AIStudy = {
         id: 2,
-        type: 'triangle-ascending',
-        upperTrendline: [
+        type: 'support',
+        points: [
           { timestamp: 1000, price: 100 },
-          { timestamp: 5000, price: 105 },
+          { timestamp: 5000, price: 100 },
         ],
-        lowerTrendline: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 5000, price: 95 },
-        ],
-        apex: { timestamp: 6000, price: 105 },
         confidence: 0.8,
         visible: true,
         timestamp: 1000,
@@ -1081,5 +1063,64 @@ describe('patternFilter', () => {
 
       expect(result.length).toBe(2);
     });
+
+    it('should keep nested patterns of different types', () => {
+      const supportPattern: AIStudy = {
+        id: 1,
+        type: 'support',
+        tier: 'macro',
+        importanceScore: 0.9,
+        confidence: 0.8,
+        visible: true,
+        timestamp: 1000,
+        points: [
+          { timestamp: 1000, price: 90 },
+          { timestamp: 5000, price: 90 },
+        ],
+      };
+
+      const flagPattern: AIStudy = {
+        id: 2,
+        type: 'flag-bullish',
+        tier: 'minor',
+        importanceScore: 0.7,
+        confidence: 0.7,
+        visible: true,
+        timestamp: 2000,
+        points: [
+          { timestamp: 2000, price: 91 },
+          { timestamp: 2500, price: 92 },
+          { timestamp: 3000, price: 91.5 },
+          { timestamp: 3500, price: 92.5 },
+        ],
+      };
+
+      const patterns = [supportPattern, flagPattern];
+      const relationships: PatternRelationship[] = [
+        {
+          parentPattern: supportPattern,
+          childPattern: flagPattern,
+          relationshipType: 'nested',
+          overlapPercentage: 95,
+          timeOverlap: 90,
+          priceOverlap: 85,
+        },
+      ];
+
+      const config = {
+        enableNestedFiltering: true,
+        enableOverlapFiltering: false,
+        maxPatternsPerTier: { macro: 10, major: 10, intermediate: 10, minor: 10 },
+        maxPatternsPerCategory: 10,
+        maxPatternsTotal: 20,
+      };
+
+      const result = filterAndPrioritizePatterns(patterns, relationships, config);
+
+      expect(result.length).toBe(2);
+      expect(result.some((p) => p.id === 1)).toBe(true);
+      expect(result.some((p) => p.id === 2)).toBe(true);
+    });
   });
 });
+

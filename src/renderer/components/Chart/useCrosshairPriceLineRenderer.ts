@@ -3,6 +3,10 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { CHART_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
 
+const CROSSHAIR_DASH_PATTERN = [1, 3] as const;
+const DASHED_LINE_PATTERN = [8, 4] as const;
+const DOTTED_LINE_PATTERN = [2, 3] as const;
+
 interface UseCrosshairPriceLineRendererProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
@@ -56,11 +60,11 @@ export const useCrosshairPriceLineRenderer = ({
     ctx.globalAlpha = 0.6;
     
     if (lineStyle === 'dashed') {
-      ctx.setLineDash([8, 4]);
+      ctx.setLineDash(DASHED_LINE_PATTERN);
     } else if (lineStyle === 'dotted') {
-      ctx.setLineDash([2, 3]);
+      ctx.setLineDash(DOTTED_LINE_PATTERN);
     } else {
-      ctx.setLineDash([]);
+      ctx.setLineDash(CROSSHAIR_DASH_PATTERN);
     }
 
     const lineEndX = chartWidth;

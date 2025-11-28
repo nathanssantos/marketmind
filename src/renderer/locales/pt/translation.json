@@ -262,6 +262,7 @@
       "measurementRuler": "Régua de Medição",
       "measurementArea": "Área de Medição",
       "autoPatterns": "Detecção Automática de Padrões (candles visíveis)",
+      "studyExtensions": "Estender Estudos Além da Última Candle",
       "indicators": "Indicadores",
       "quickSettings": "Configurações Rápidas"
     },
@@ -615,7 +616,7 @@
       },
       "enableNested": {
         "label": "Filtrar Padrões Aninhados",
-        "helper": "Remover padrões menores que estão completamente dentro de padrões maiores (mantém o maior)"
+        "helper": "Remover padrões menores do mesmo tipo que estão aninhados dentro de padrões maiores (tipos diferentes são mantidos)"
       },
       "enableOverlap": {
         "label": "Filtrar Padrões Sobrepostos",

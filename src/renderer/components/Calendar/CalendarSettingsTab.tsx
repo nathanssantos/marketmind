@@ -1,8 +1,9 @@
 import { Button } from '@/renderer/components/ui/button';
+import { Checkbox } from '@/renderer/components/ui/checkbox';
 import { Field } from '@/renderer/components/ui/field';
 import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Select } from '@/renderer/components/ui/select';
-import { Box, Checkbox, Separator, Text, VStack } from '@chakra-ui/react';
+import { Box, Separator, Text, VStack } from '@chakra-ui/react';
 import type { EventImportance } from '@shared/types';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -61,15 +62,9 @@ export const CalendarSettingsTab = () => {
     return (
         <VStack align="stretch" gap={6}>
             <Box>
-                <Checkbox.Root checked={settings.enabled} onCheckedChange={toggleEnabled}>
-                    <Checkbox.HiddenInput />
-                    <Checkbox.Control>
-                        <Checkbox.Indicator />
-                    </Checkbox.Control>
-                    <Checkbox.Label>
-                        <Text fontWeight="medium">{t('calendar.settings.enableCalendar')}</Text>
-                    </Checkbox.Label>
-                </Checkbox.Root>
+                <Checkbox checked={settings.enabled} onCheckedChange={toggleEnabled}>
+                    <Text fontWeight="medium">{t('calendar.settings.enableCalendar')}</Text>
+                </Checkbox>
                 <Text fontSize="sm" color="fg.muted" mt={2}>
                     {t('calendar.settings.enableCalendarDescription')}
                 </Text>
@@ -78,19 +73,13 @@ export const CalendarSettingsTab = () => {
             <Separator />
 
             <Box opacity={settings.enabled ? 1 : 0.5}>
-                <Checkbox.Root
+                <Checkbox
                     checked={settings.showOnChart}
                     onCheckedChange={toggleShowOnChart}
                     disabled={!settings.enabled}
                 >
-                    <Checkbox.HiddenInput />
-                    <Checkbox.Control>
-                        <Checkbox.Indicator />
-                    </Checkbox.Control>
-                    <Checkbox.Label>
-                        <Text fontWeight="medium">{t('calendar.settings.showOnChart')}</Text>
-                    </Checkbox.Label>
-                </Checkbox.Root>
+                    <Text fontWeight="medium">{t('calendar.settings.showOnChart')}</Text>
+                </Checkbox>
                 <Text fontSize="sm" color="fg.muted" mt={2}>
                     {t('calendar.settings.showOnChartDescription')}
                 </Text>
@@ -153,18 +142,12 @@ export const CalendarSettingsTab = () => {
             <Separator />
 
             <Box>
-                <Checkbox.Root
+                <Checkbox
                     checked={settings.correlateWithAI}
                     onCheckedChange={toggleCorrelateWithAI}
                 >
-                    <Checkbox.HiddenInput />
-                    <Checkbox.Control>
-                        <Checkbox.Indicator />
-                    </Checkbox.Control>
-                    <Checkbox.Label>
-                        <Text fontWeight="medium">{t('calendar.settings.correlateWithAI')}</Text>
-                    </Checkbox.Label>
-                </Checkbox.Root>
+                    <Text fontWeight="medium">{t('calendar.settings.correlateWithAI')}</Text>
+                </Checkbox>
                 <Text fontSize="sm" color="fg.muted" mt={2}>
                     {t('calendar.settings.correlateWithAIDescription')}
                 </Text>

@@ -243,7 +243,7 @@ MAX_PATTERNS_BY_CATEGORY: {
    - Adicionar configurações de filtragem:
      - `filteringMode: 'clean' | 'complete'`
      - `maxPatternsTotal: number` (5-50, padrão baseado em modo)
-     - `enableNestedFiltering: boolean`
+     - `enableNestedFiltering: boolean` (filtra apenas padrões do mesmo tipo)
      - `enableOverlapFiltering: boolean`
      - `overlapThreshold: number` (30-90%)
      - `highlightConflicts: boolean` (padrão: true) - Toggle para marcação visual de conflitos
@@ -360,8 +360,8 @@ MAX_PATTERNS_BY_CATEGORY: {
 
 - [ ] Criar `patternFilter.ts`
 - [ ] Implementar `resolveNestedPatterns()`
-  - Manter parent (timeframe maior)
-  - Exceção: child com +0.2 importância, manter ambos
+  - Filtra apenas padrões do **mesmo tipo** aninhados (mantém o maior)
+  - Padrões de tipos diferentes são mantidos mesmo quando aninhados
   - Adicionar lista de `nestedPatterns` ao parent
 - [ ] Integrar em PatternDetectionService
 - [ ] Testes com casos reais
@@ -399,7 +399,7 @@ MAX_PATTERNS_BY_CATEGORY: {
 - [x] Adicionar configurações ao patternDetectionConfigStore:
   - `filteringMode: 'clean' | 'complete'`
   - `maxPatternsTotal: number` (range: 5-50, default: clean=20, complete=50)
-  - `enableNestedFiltering: boolean` (default: true)
+  - `enableNestedFiltering: boolean` (default: true, filtra apenas padrões do mesmo tipo aninhados)
   - `enableOverlapFiltering: boolean` (default: true)
   - `overlapThreshold: number` (default: 0.6 = 60%)
   - `highlightConflicts: boolean` (default: true)
@@ -442,7 +442,7 @@ MAX_PATTERNS_BY_CATEGORY: {
 **Objetivo**: Integrar tudo e otimizar
 
 - [x] Implementar `filterAndPrioritizePatterns()` completo
-  - Fase 1: resolveNestedPatterns() (se habilitado)
+  - Fase 1: resolveNestedPatterns() (se habilitado, filtra apenas mesmo tipo)
   - Fase 2: resolveOverlappingPatterns() (se habilitado)
   - Fase 3: markConflictingPatterns() (sempre)
   - Fase 4: applyTierLimits()

@@ -122,7 +122,18 @@
       "topPadding": "Top Padding",
       "bottomPadding": "Bottom Padding",
       "leftPadding": "Left Padding",
-      "rightPadding": "Right Padding"
+      "rightPadding": "Right Padding",
+      "studyExtensions": "Study Extensions",
+      "showAllExtensions": "Enable All Extensions",
+      "showAllExtensionsHelper": "Master toggle for extending studies beyond the last candle",
+      "extendTrendlines": "Extend Trendlines",
+      "extendTrendlinesHelper": "Extend bullish and bearish trendlines to the right",
+      "extendChannels": "Extend Channels",
+      "extendChannelsHelper": "Extend channel upper and lower lines to the right",
+      "extendSupport": "Extend Support Levels",
+      "extendSupportHelper": "Extend support lines to the right",
+      "extendResistance": "Extend Resistance Levels",
+      "extendResistanceHelper": "Extend resistance lines to the right"
     },
     "ai": {
       "tipsEncryption": "API keys are encrypted and stored securely using OS-level encryption",
@@ -262,6 +273,7 @@
       "measurementRuler": "Measurement Ruler",
       "measurementArea": "Measurement Area",
       "autoPatterns": "Auto Pattern Detection (visible candles)",
+      "studyExtensions": "Extend Studies Beyond Last Candle",
       "indicators": "Indicators",
       "quickSettings": "Quick Settings"
     },
@@ -615,7 +627,7 @@
       },
       "enableNested": {
         "label": "Filter Nested Patterns",
-        "helper": "Remove smaller patterns that are completely inside larger ones (keeps the largest)"
+        "helper": "Remove smaller patterns of the same type that are nested inside larger ones (different types are kept)"
       },
       "enableOverlap": {
         "label": "Filter Overlapping Patterns",

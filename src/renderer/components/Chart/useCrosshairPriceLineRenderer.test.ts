@@ -290,7 +290,7 @@ describe('useCrosshairPriceLineRenderer', () => {
 
     result.current.render();
 
-    expect(mockCtx.setLineDash).toHaveBeenCalledWith([]);
+    expect(mockCtx.setLineDash).toHaveBeenCalledWith([1, 3]);
   });
 
   it('should use custom line width when specified', () => {
