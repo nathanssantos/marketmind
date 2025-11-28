@@ -1,21 +1,25 @@
 import type { Candle, Viewport } from '@shared/types';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChartContext } from '../context/ChartContext';
 import { useUIStore } from '../store/uiStore';
 import { patternDetectionService } from '../utils/patternDetection';
 
+const INTERACTION_DEBOUNCE_MS = 500;
+const DETECTION_DEBOUNCE_MS = 500;
+
 export const useAutoPatternDetection = (viewport?: Viewport) => {
   const { chartData, setDetectedStudies } = useChartContext();
-  const { patternDetectionMode, algorithmicDetectionSettings } = useUIStore();
-  const lastDetectionRef = useRef<{ 
-    symbol: string; 
-    candleCount: number; 
-    viewportStart: number; 
+  const { algorithmicDetectionSettings } = useUIStore();
+  const lastDetectionRef = useRef<{
+    symbol: string;
+    candleCount: number;
+    viewportStart: number;
     viewportEnd: number;
     enabledPatterns: string;
   } | null>(null);
-  const throttleTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const pendingDetectionRef = useRef(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isInteracting, setIsInteracting] = useState(false);
+  const interactionTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const visibleStart = viewport ? Math.floor(viewport.start) : 0;
   const visibleEnd = viewport ? Math.ceil(viewport.end) : chartData?.candles.length || 0;
@@ -63,17 +67,33 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
   );
 
   useEffect(() => {
+    if (viewport) {
+      setIsInteracting(true);
+
+      if (interactionTimerRef.current) {
+        clearTimeout(interactionTimerRef.current);
+      }
+
+      interactionTimerRef.current = setTimeout(() => {
+        setIsInteracting(false);
+      }, INTERACTION_DEBOUNCE_MS);
+    }
+  }, [viewport?.start, viewport?.end, viewport]);
+
+  useEffect(() => {
     const shouldDetect =
-      (patternDetectionMode === 'algorithmic-only' || patternDetectionMode === 'hybrid') &&
       algorithmicDetectionSettings.autoDisplayPatterns &&
       chartData?.candles &&
-      chartData.candles.length > 0;
+      chartData.candles.length > 0 &&
+      !isInteracting;
 
     if (!shouldDetect) {
-      setDetectedStudies([]);
-      if (throttleTimerRef.current) {
-        clearTimeout(throttleTimerRef.current);
-        throttleTimerRef.current = null;
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      if (!algorithmicDetectionSettings.autoDisplayPatterns) {
+        setDetectedStudies([]);
       }
       return;
     }
@@ -92,39 +112,32 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
       return;
     }
 
-    if (throttleTimerRef.current) {
-      pendingDetectionRef.current = true;
-      return;
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
 
-    const runDetection = () => {
-      detectPatterns(chartData.candles, currentSymbol, currentCandleCount, visibleStart, visibleEnd);
-      
-      throttleTimerRef.current = setTimeout(() => {
-        throttleTimerRef.current = null;
-        if (pendingDetectionRef.current) {
-          pendingDetectionRef.current = false;
-          runDetection();
-        }
-      }, 150);
-    };
-
-    runDetection();
+    debounceTimerRef.current = setTimeout(() => {
+      void detectPatterns(chartData.candles, currentSymbol, currentCandleCount, visibleStart, visibleEnd);
+      debounceTimerRef.current = null;
+    }, DETECTION_DEBOUNCE_MS);
   }, [
     chartData?.candles,
     chartData?.symbol,
-    patternDetectionMode,
     algorithmicDetectionSettings.autoDisplayPatterns,
     algorithmicDetectionSettings.enabledPatterns,
     detectPatterns,
     visibleStart,
     visibleEnd,
+    isInteracting,
   ]);
 
   useEffect(() => {
     return () => {
-      if (throttleTimerRef.current) {
-        clearTimeout(throttleTimerRef.current);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (interactionTimerRef.current) {
+        clearTimeout(interactionTimerRef.current);
       }
     };
   }, []);

@@ -1,5 +1,8 @@
 import type { AIStudy, Candle } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
+import { filterAndPrioritizePatterns } from '../core/patternFilter';
+import type { PatternRelationship } from '../core/patternRelationships';
+import { buildPatternRelationships } from '../core/patternRelationships';
 import { findPivotPoints } from '../core/pivotPoints';
 import { detectDoubleBottoms, detectDoubleTops, detectHeadAndShoulders, detectInverseHeadAndShoulders, detectTripleBottoms, detectTripleTops } from '../patterns/advancedPatterns';
 import { detectAscendingChannels, detectDescendingChannels, detectHorizontalChannels } from '../patterns/channels';
@@ -14,10 +17,18 @@ import { detectAccumulationZones, detectBuyZones, detectLiquidityZones, detectSe
 import type { DetectionOptions, DetectionResult, PivotPoint } from '../types';
 
 export class PatternDetectionService {
-  detectPatterns(
+  private workerBuildRelationships: ((patterns: AIStudy[], useWorker?: boolean) => Promise<PatternRelationship[]>) | null = null;
+
+  setWorkerBuildRelationships(
+    buildRelationships: (patterns: AIStudy[], useWorker?: boolean) => Promise<PatternRelationship[]>
+  ): void {
+    this.workerBuildRelationships = buildRelationships;
+  }
+
+  async detectPatterns(
     candles: Candle[],
     options: DetectionOptions = {}
-  ): DetectionResult {
+  ): Promise<DetectionResult> {
     const startTime = performance.now();
     
     const {
@@ -175,24 +186,57 @@ export class PatternDetectionService {
       study.id = studyId++;
     });
 
+    let finalStudies = sortedStudies;
+
+    if (options.applyFiltering) {
+      let relationships: PatternRelationship[];
+      
+      try {
+        if (this.workerBuildRelationships) {
+          relationships = await this.workerBuildRelationships(sortedStudies, options.useWorker ?? true);
+        } else {
+          relationships = buildPatternRelationships(sortedStudies);
+        }
+      } catch {
+        relationships = buildPatternRelationships(sortedStudies);
+      }
+      
+      finalStudies = filterAndPrioritizePatterns(
+        sortedStudies,
+        relationships,
+        {
+          enableNestedFiltering: options.enableNestedFiltering ?? true,
+          enableOverlapFiltering: options.enableOverlapFiltering ?? true,
+          maxPatternsPerTier: options.maxPatternsPerTier ?? {
+            macro: 10,
+            major: 8,
+            intermediate: 6,
+            minor: 4,
+          },
+          maxPatternsPerCategory: options.maxPatternsPerCategory ?? 5,
+          maxPatternsTotal: options.maxPatternsTotal ?? 20,
+        }
+      );
+    }
+
     const executionTime = performance.now() - startTime;
 
     return {
-      studies: sortedStudies,
+      studies: finalStudies,
       metadata: {
         pivotsFound: pivots.length,
-        patternsDetected: sortedStudies.length,
+        patternsDetected: finalStudies.length,
         executionTime,
         candlesAnalyzed: candles.length,
       },
     };
   }
 
-  detectPatternsIncremental(
+  async detectPatternsIncremental(
     _existingStudies: AIStudy[],
     newCandles: Candle[],
     options: DetectionOptions = {}
-  ): DetectionResult {
+  ): Promise<DetectionResult> {
     return this.detectPatterns(newCandles, options);
   }
 

@@ -561,6 +561,13 @@
   "patternDetection": {
     "title": "Configuração de Detecção de Padrões",
     "resetDefaults": "Restaurar Padrões",
+    "mode": {
+      "label": "Modo de Detecção",
+      "helper": "Define como os dados de padrões são enviados para a IA (não afeta a exibicão no gráfico)",
+      "aiOnly": "Apenas IA - Sem detecção automática, IA analisa o gráfico visualmente",
+      "algorithmicOnly": "Apenas Algorítmico - Envia padrões detectados para a IA",
+      "hybrid": "Híbrido - IA analisa o gráfico e os padrões detectados"
+    },
     "tips": {
       "sensitivity": "Maior sensibilidade detecta mais pontos de pivô mas pode reduzir a precisão",
       "confidence": "Confiança mínima filtra padrões baseado no limite de confiabilidade",
@@ -592,6 +599,40 @@
     "showPreview": {
       "label": "Mostrar Pré-visualização de Padrões",
       "helper": "Exibir pré-visualização de padrões em tempo real no gráfico"
+    },
+    "filtering": {
+      "title": "Filtragem de Padrões",
+      "mode": {
+        "label": "Modo de Filtragem",
+        "helper": "Escolha entre limpo (menos padrões, alta qualidade) ou completo (mostrar todos os padrões detectados)",
+        "clean": "Limpo (máx. 20 padrões)",
+        "complete": "Completo (máx. 50 padrões)"
+      },
+      "maxPatterns": {
+        "label": "Máximo de Padrões",
+        "helper": "Número máximo de padrões a exibir no gráfico",
+        "patterns": "padrões"
+      },
+      "enableNested": {
+        "label": "Filtrar Padrões Aninhados",
+        "helper": "Remover padrões menores que estão completamente dentro de padrões maiores (mantém o maior)"
+      },
+      "enableOverlap": {
+        "label": "Filtrar Padrões Sobrepostos",
+        "helper": "Remover padrões com alta sobreposição (mantém o mais importante)"
+      },
+      "overlapThreshold": {
+        "label": "Limite de Sobreposição",
+        "helper": "Porcentagem mínima de sobreposição para considerar padrões como sobrepostos"
+      },
+      "highlightConflicts": {
+        "label": "Destacar Padrões Conflitantes",
+        "helper": "Mostrar indicadores visuais quando padrões dão sinais opostos (ambos os padrões são mantidos)"
+      },
+      "showChannelCenterline": {
+        "label": "Mostrar Linha Central em Canais",
+        "helper": "Exibir linha central tracejada em padrões de canal"
+      }
     },
     "groups": {
       "reversalPatterns": "Padrões de Reversão",

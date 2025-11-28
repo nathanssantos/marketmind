@@ -10,6 +10,20 @@ export interface PatternDetectionConfig {
   volumeConfirmationWeight: number;
   enabledPatterns: AIStudyType[];
   showPreview: boolean;
+  filteringMode: 'clean' | 'complete';
+  maxPatternsTotal: number;
+  enableNestedFiltering: boolean;
+  enableOverlapFiltering: boolean;
+  overlapThreshold: number;
+  highlightConflicts: boolean;
+  showChannelCenterline: boolean;
+  maxPatternsPerTier: {
+    macro: number;
+    major: number;
+    intermediate: number;
+    minor: number;
+  };
+  maxPatternsPerCategory: number;
 }
 
 interface PatternDetectionConfigState {
@@ -55,6 +69,20 @@ const DEFAULT_CONFIG: PatternDetectionConfig = {
     'gap-exhaustion',
   ],
   showPreview: true,
+  filteringMode: 'clean',
+  maxPatternsTotal: 20,
+  enableNestedFiltering: true,
+  enableOverlapFiltering: true,
+  overlapThreshold: 0.6,
+  highlightConflicts: true,
+  showChannelCenterline: true,
+  maxPatternsPerTier: {
+    macro: 10,
+    major: 8,
+    intermediate: 6,
+    minor: 4,
+  },
+  maxPatternsPerCategory: 5,
 };
 
 export const usePatternDetectionConfigStore = create<PatternDetectionConfigState>()(

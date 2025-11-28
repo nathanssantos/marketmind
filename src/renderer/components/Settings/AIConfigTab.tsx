@@ -371,63 +371,61 @@ export const AIConfigTab = () => {
           />
         </Field>
 
-        {(patternDetectionMode === 'algorithmic-only' || patternDetectionMode === 'hybrid') && (
-          <Stack gap={4} mt={4}>
-            <Box>
-              <Switch
-                checked={algorithmicDetectionSettings.autoDisplayPatterns}
-                onCheckedChange={(checked) =>
-                  setAlgorithmicDetectionSettings({ autoDisplayPatterns: checked })
+        <Stack gap={4} mt={4}>
+          <Box>
+            <Switch
+              checked={algorithmicDetectionSettings.autoDisplayPatterns}
+              onCheckedChange={(checked) =>
+                setAlgorithmicDetectionSettings({ autoDisplayPatterns: checked })
+              }
+            >
+              {t('settings.ai.patternDetection.autoDisplay')}
+            </Switch>
+            <Text fontSize="xs" color="fg.muted" mt={1}>
+              {t('settings.ai.patternDetection.autoDisplayHelper')}
+            </Text>
+          </Box>
+
+          <Field
+            label={t('settings.ai.patternDetection.minConfidence', {
+              value: (algorithmicDetectionSettings.minConfidence * 100).toFixed(0),
+            })}
+            helperText={t('settings.ai.patternDetection.minConfidenceHelper')}
+          >
+            <Slider
+              value={[algorithmicDetectionSettings.minConfidence]}
+              onValueChange={(value) => {
+                if (value[0] !== undefined) {
+                  setAlgorithmicDetectionSettings({ minConfidence: value[0] });
                 }
-              >
-                {t('settings.ai.patternDetection.autoDisplay')}
-              </Switch>
-              <Text fontSize="xs" color="fg.muted" mt={1}>
-                {t('settings.ai.patternDetection.autoDisplayHelper')}
-              </Text>
-            </Box>
+              }}
+              min={0.5}
+              max={0.9}
+              step={0.05}
+              width="full"
+            />
+          </Field>
 
-            <Field
-              label={t('settings.ai.patternDetection.minConfidence', {
-                value: (algorithmicDetectionSettings.minConfidence * 100).toFixed(0),
-              })}
-              helperText={t('settings.ai.patternDetection.minConfidenceHelper')}
-            >
-              <Slider
-                value={[algorithmicDetectionSettings.minConfidence]}
-                onValueChange={(value) => {
-                  if (value[0] !== undefined) {
-                    setAlgorithmicDetectionSettings({ minConfidence: value[0] });
-                  }
-                }}
-                min={0.5}
-                max={0.9}
-                step={0.05}
-                width="full"
-              />
-            </Field>
-
-            <Field
-              label={t('settings.ai.patternDetection.pivotSensitivity', {
-                value: algorithmicDetectionSettings.pivotSensitivity,
-              })}
-              helperText={t('settings.ai.patternDetection.pivotSensitivityHelper')}
-            >
-              <Slider
-                value={[algorithmicDetectionSettings.pivotSensitivity]}
-                onValueChange={(value) => {
-                  if (value[0] !== undefined) {
-                    setAlgorithmicDetectionSettings({ pivotSensitivity: value[0] });
-                  }
-                }}
-                min={3}
-                max={10}
-                step={1}
-                width="full"
-              />
-            </Field>
-          </Stack>
-        )}
+          <Field
+            label={t('settings.ai.patternDetection.pivotSensitivity', {
+              value: algorithmicDetectionSettings.pivotSensitivity,
+            })}
+            helperText={t('settings.ai.patternDetection.pivotSensitivityHelper')}
+          >
+            <Slider
+              value={[algorithmicDetectionSettings.pivotSensitivity]}
+              onValueChange={(value) => {
+                if (value[0] !== undefined) {
+                  setAlgorithmicDetectionSettings({ pivotSensitivity: value[0] });
+                }
+              }}
+              min={3}
+              max={10}
+              step={1}
+              width="full"
+            />
+          </Field>
+        </Stack>
       </Box>
 
       <Separator />

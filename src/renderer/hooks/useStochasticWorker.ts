@@ -1,6 +1,9 @@
+import { workerPool } from '@/renderer/utils/WorkerPool';
 import type { Candle } from '@shared/types';
 import { useEffect, useRef } from 'react';
 import type { StochasticResult } from '../utils/stochastic';
+
+const WORKER_KEY = 'stochastic';
 
 export interface UseStochasticWorkerReturn {
   calculateStochastic: (
@@ -15,14 +18,16 @@ export const useStochasticWorker = (): UseStochasticWorkerReturn => {
   const workerRef = useRef<Worker | null>(null);
 
   useEffect(() => {
-    workerRef.current = new Worker(
-      new URL('../workers/stochastic.worker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    if (!workerPool.has(WORKER_KEY)) {
+      workerPool.register(WORKER_KEY, () =>
+        new Worker(
+          new URL('../workers/stochastic.worker.ts', import.meta.url),
+          { type: 'module' }
+        )
+      );
+    }
 
-    return () => {
-      workerRef.current?.terminate();
-    };
+    workerRef.current = workerPool.get(WORKER_KEY);
   }, []);
 
   const calculateStochastic = (
@@ -63,8 +68,7 @@ export const useStochasticWorker = (): UseStochasticWorkerReturn => {
   };
 
   const terminate = (): void => {
-    workerRef.current?.terminate();
-    workerRef.current = null;
+    workerPool.terminate(WORKER_KEY);
   };
 
   return { calculateStochastic, terminate };

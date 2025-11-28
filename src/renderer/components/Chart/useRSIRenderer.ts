@@ -34,12 +34,13 @@ export const useRSIRenderer = ({
     const stochasticHeight = manager.getStochasticPanelHeight();
     const panelHeight = CHART_CONFIG.RSI_PANEL_HEIGHT;
     const panelTop = height - stochasticHeight - panelHeight;
+    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
 
     ctx.save();
 
     const padding = 4;
     const innerHeight = panelHeight - padding * 2;
-    const candleWidth = chartWidth / (viewport.end - viewport.start);
+    const candleWidth = effectiveWidth / (viewport.end - viewport.start);
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -51,7 +52,7 @@ export const useRSIRenderer = ({
     };
 
     ctx.fillStyle = 'rgba(128, 128, 128, 0.05)';
-    ctx.fillRect(0, panelTop, chartWidth, panelHeight);
+    ctx.fillRect(0, panelTop, effectiveWidth, panelHeight);
 
     ctx.strokeStyle = colors.rsi.zone;
     ctx.lineWidth = 1;
@@ -60,20 +61,20 @@ export const useRSIRenderer = ({
     const overboughtY = valueToY(overboughtLevel);
     ctx.beginPath();
     ctx.moveTo(0, overboughtY);
-    ctx.lineTo(chartWidth, overboughtY);
+    ctx.lineTo(effectiveWidth, overboughtY);
     ctx.stroke();
 
     const oversoldY = valueToY(oversoldLevel);
     ctx.beginPath();
     ctx.moveTo(0, oversoldY);
-    ctx.lineTo(chartWidth, oversoldY);
+    ctx.lineTo(effectiveWidth, oversoldY);
     ctx.stroke();
 
     const midY = valueToY(50);
     ctx.strokeStyle = 'rgba(128, 128, 128, 0.1)';
     ctx.beginPath();
     ctx.moveTo(0, midY);
-    ctx.lineTo(chartWidth, midY);
+    ctx.lineTo(effectiveWidth, midY);
     ctx.stroke();
 
     ctx.setLineDash([]);

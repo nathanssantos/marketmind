@@ -94,11 +94,9 @@ export const Toolbar = memo(({
   onToggleNews,
 }: ToolbarProps) => {
   const { t } = useTranslation();
-  const { patternDetectionMode, algorithmicDetectionSettings, setAlgorithmicDetectionSettings } = useUIStore();
+  const { algorithmicDetectionSettings, setAlgorithmicDetectionSettings } = useUIStore();
 
-  const isPatternDetectionActive =
-    (patternDetectionMode === 'algorithmic-only' || patternDetectionMode === 'hybrid') &&
-    algorithmicDetectionSettings.autoDisplayPatterns;
+  const isPatternDetectionActive = algorithmicDetectionSettings.autoDisplayPatterns;
 
   const togglePatternDetection = () => {
     setAlgorithmicDetectionSettings({
@@ -295,7 +293,6 @@ export const Toolbar = memo(({
                   onClick={togglePatternDetection}
                   colorPalette={isPatternDetectionActive ? 'blue' : 'gray'}
                   variant={isPatternDetectionActive ? 'solid' : 'ghost'}
-                  disabled={patternDetectionMode === 'ai-only'}
                 >
                   <LuBrainCircuit />
                 </IconButton>

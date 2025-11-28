@@ -561,6 +561,13 @@
   "patternDetection": {
     "title": "Configuración de Detección de Patrones",
     "resetDefaults": "Restaurar Valores Predeterminados",
+    "mode": {
+      "label": "Modo de Detección",
+      "helper": "Determina cómo se envían los datos de patrones a la IA (no afecta la visualización del gráfico)",
+      "aiOnly": "Solo IA - Sin detección automática, IA analiza el gráfico visualmente",
+      "algorithmicOnly": "Solo Algorítmico - Envía patrones detectados a la IA",
+      "hybrid": "Híbrido - IA analiza el gráfico y los patrones detectados"
+    },
     "tips": {
       "sensitivity": "Mayor sensibilidad detecta más puntos de pivote pero puede reducir la precisión",
       "confidence": "Confianza mínima filtra patrones basado en umbral de confiabilidad",
@@ -592,6 +599,40 @@
     "showPreview": {
       "label": "Mostrar Vista Previa de Patrones",
       "helper": "Mostrar vista previa de patrones en tiempo real en el gráfico"
+    },
+    "filtering": {
+      "title": "Filtrado de Patrones",
+      "mode": {
+        "label": "Modo de Filtrado",
+        "helper": "Elija entre limpio (menos patrones, alta calidad) o completo (mostrar todos los patrones detectados)",
+        "clean": "Limpio (máx. 20 patrones)",
+        "complete": "Completo (máx. 50 patrones)"
+      },
+      "maxPatterns": {
+        "label": "Máximo de Patrones",
+        "helper": "Número máximo de patrones a mostrar en el gráfico",
+        "patterns": "patrones"
+      },
+      "enableNested": {
+        "label": "Filtrar Patrones Anidados",
+        "helper": "Eliminar patrones más pequeños que están completamente dentro de patrones más grandes (mantiene el más grande)"
+      },
+      "enableOverlap": {
+        "label": "Filtrar Patrones Superpuestos",
+        "helper": "Eliminar patrones con alta superposición (mantiene el más importante)"
+      },
+      "overlapThreshold": {
+        "label": "Umbral de Superposición",
+        "helper": "Porcentaje mínimo de superposición para considerar patrones como superpuestos"
+      },
+      "highlightConflicts": {
+        "label": "Destacar Patrones Conflictivos",
+        "helper": "Mostrar indicadores visuales cuando los patrones dan señales opuestas (ambos patrones se mantienen)"
+      },
+      "showChannelCenterline": {
+        "label": "Mostrar Línea Central en Canales",
+        "helper": "Mostrar línea central discontinua en patrones de canal"
+      }
     },
     "groups": {
       "reversalPatterns": "Patrones de Reversión",

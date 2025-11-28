@@ -40,7 +40,7 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
         </Text>
       </Flex>
 
-      <Flex align="center" gap={2}>
+      <Flex align="center" gap={1}>
         <TooltipWrapper label={`${t('header.theme')}: ${colorMode === 'dark' ? t('header.themeDark') : t('header.themeLight')}`} placement="bottom" showArrow>
           <IconButton
             aria-label={t('header.toggleColorMode')}

@@ -641,7 +641,7 @@ export const AIStudyRenderer = ({
 
     ctx.save();
 
-    ctx.fillStyle = `${color  }0D`;
+    ctx.fillStyle = `${color}0D`;
     ctx.beginPath();
     ctx.moveTo(upperX1, upperY1);
     ctx.lineTo(upperX2, upperY2);
@@ -699,7 +699,7 @@ export const AIStudyRenderer = ({
 
     ctx.save();
 
-    ctx.strokeStyle = `${color  }40`;
+    ctx.strokeStyle = `${color}40`;
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
     ctx.beginPath();
@@ -720,7 +720,7 @@ export const AIStudyRenderer = ({
         if (nextLevel) {
           const nextY = manager.priceToY(nextLevel.price);
 
-          ctx.fillStyle = `${color  }0D`;
+          ctx.fillStyle = `${color}0D`;
           ctx.fillRect(x1, y, x2 - x1, nextY - y);
         }
       }
@@ -980,7 +980,7 @@ export const AIStudyRenderer = ({
 
     ctx.save();
 
-    ctx.fillStyle = `${color  }0D`;
+    ctx.fillStyle = `${color}0D`;
     ctx.beginPath();
     ctx.moveTo(upperX1, upperY1);
     ctx.lineTo(upperX2, upperY2);
@@ -1063,7 +1063,7 @@ export const AIStudyRenderer = ({
 
     ctx.save();
 
-    ctx.fillStyle = `${color  }0D`;
+    ctx.fillStyle = `${color}0D`;
     ctx.beginPath();
     ctx.moveTo(upperX1, upperY1);
     ctx.lineTo(upperX2, upperY2);
@@ -1433,41 +1433,21 @@ export const AIStudyRenderer = ({
     studyNumber: number,
     _studyType: AIStudy['type']
   ): { x: number; y: number; width: number; height: number } => {
-    // const studyColor = STUDY_COLORS[studyType] || '#8b5cf6';
-    // const rgb = hexToRgb(studyColor);
-    // const bgColor = rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)` : 'rgba(139, 92, 246, 0.15)';
-
+    const PADDING_MULTIPLIER = 2;
+    const EXTRA_HEIGHT = 2;
     const text = `#${studyNumber}`;
     const fontSize = 9;
     const paddingX = 4;
     const paddingY = 2;
 
-    // ctx.save();
-    // ctx.font = `bold ${fontSize}px system-ui`;
     const textWidth = ctx.measureText(text).width;
-    const boxWidth = textWidth + paddingX * 2;
-    const boxHeight = fontSize + paddingY * 2 + 2;
-
-    // ctx.fillStyle = bgColor;
-    // ctx.beginPath();
-    // ctx.roundRect(x, y, boxWidth, boxHeight, 3);
-    // ctx.fill();
-
-    // ctx.strokeStyle = studyColor;
-    // ctx.lineWidth = 1.5;
-    // ctx.stroke();
-
-    // ctx.fillStyle = studyColor;
-    // ctx.textAlign = 'left';
-    // ctx.textBaseline = 'top';
-    // ctx.fillText(text, x + paddingX, y + paddingY + 1);
-
-    // ctx.restore();
+    const boxWidth = textWidth + paddingX * PADDING_MULTIPLIER;
+    const boxHeight = fontSize + paddingY * PADDING_MULTIPLIER + EXTRA_HEIGHT;
 
     return { x, y, width: boxWidth, height: boxHeight };
   };
 
-  const storeTagBounds = (study: AIStudy, bounds: { x: number; y: number; width: number; height: number }) => {
+  const storeTagBounds = (study: AIStudy, bounds: { x: number; y: number; width: number; height: number }): void => {
     if (study.id !== undefined) {
       studyTagsRef.current.set(study.id, bounds);
     }
@@ -1479,7 +1459,7 @@ export const AIStudyRenderer = ({
     y: number,
     studyNumber: number,
     study: AIStudy
-  ) => {
+  ): void => {
     const tagBounds = drawStudyTag(ctx, x, y, studyNumber, study.type);
     storeTagBounds(study, tagBounds);
   };
