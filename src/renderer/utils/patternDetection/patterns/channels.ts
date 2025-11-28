@@ -1,4 +1,4 @@
-import type { AIStudyChannel, Candle } from '@shared/types';
+import type { AIPatternChannel, Candle } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
   calculateConfidence,
@@ -59,10 +59,10 @@ const fitTrendline = (points: Point[]): TrendlineData => {
 export const detectAscendingChannels = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyChannel[] => {
+): AIPatternChannel[] => {
   if (!candles || candles.length < 20) return [];
 
-  const channels: AIStudyChannel[] = [];
+  const channels: AIPatternChannel[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
 
@@ -164,10 +164,10 @@ export const detectAscendingChannels = (
 export const detectDescendingChannels = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyChannel[] => {
+): AIPatternChannel[] => {
   if (!candles || candles.length < 20) return [];
 
-  const channels: AIStudyChannel[] = [];
+  const channels: AIPatternChannel[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
 
@@ -269,10 +269,10 @@ export const detectDescendingChannels = (
 export const detectHorizontalChannels = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyChannel[] => {
+): AIPatternChannel[] => {
   if (!candles || candles.length < 20) return [];
 
-  const channels: AIStudyChannel[] = [];
+  const channels: AIPatternChannel[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
 

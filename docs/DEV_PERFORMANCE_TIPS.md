@@ -52,7 +52,7 @@ Should stay around:
 **Good Practices:**
 - ✅ Close unused sidebars
 - ✅ Limit number of open conversations
-- ✅ Clear old AI studies occasionally
+- ✅ Clear old AI patterns occasionally
 - ✅ Restart app after heavy development sessions
 
 ---

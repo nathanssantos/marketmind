@@ -4,16 +4,18 @@ import { usePatternDetectionConfigStore } from '@renderer/store/patternDetection
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  LuActivity,
   LuArrowRightToLine,
-  LuBrainCircuit,
   LuChartBar,
   LuChartCandlestick,
   LuChartLine,
   LuCrosshair,
   LuDollarSign,
   LuGrid3X3,
+  LuLightbulb,
   LuMessageSquare,
   LuNewspaper,
+  LuRadar,
   LuRuler,
   LuScan
 } from 'react-icons/lu';
@@ -58,6 +60,7 @@ export interface ToolbarProps {
   onToggleTrading: () => void;
   onToggleChat: () => void;
   onToggleNews: () => void;
+  onDetectPatterns: () => void;
 }
 
 export const Toolbar = memo(({
@@ -94,6 +97,7 @@ export const Toolbar = memo(({
   onToggleTrading,
   onToggleChat,
   onToggleNews,
+  onDetectPatterns,
 }: ToolbarProps) => {
   const { t } = useTranslation();
   const { algorithmicDetectionSettings, setAlgorithmicDetectionSettings } = useUIStore();
@@ -102,13 +106,13 @@ export const Toolbar = memo(({
   const isPatternDetectionActive = algorithmicDetectionSettings.autoDisplayPatterns;
   const isExtensionsActive = patternConfig.showExtensions;
 
-  const togglePatternDetection = () => {
+  const togglePatternDetection = (): void => {
     setAlgorithmicDetectionSettings({
       autoDisplayPatterns: !algorithmicDetectionSettings.autoDisplayPatterns,
     });
   };
 
-  const toggleExtensions = () => {
+  const toggleExtensions = (): void => {
     setPatternConfig({
       showExtensions: !patternConfig.showExtensions,
     });
@@ -209,7 +213,9 @@ export const Toolbar = memo(({
               colorPalette={showVolume ? 'blue' : 'gray'}
               variant={showVolume ? 'solid' : 'ghost'}
             >
-              <LuChartBar />
+              <Box transform="rotate(-90deg)">
+                <LuChartBar />
+              </Box>
             </IconButton>
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.stochastic')} showArrow>
@@ -231,7 +237,7 @@ export const Toolbar = memo(({
               colorPalette={showRSI ? 'blue' : 'gray'}
               variant={showRSI ? 'solid' : 'ghost'}
             >
-              <LuScan />
+              <LuActivity />
             </IconButton>
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.grid')} showArrow>
@@ -304,13 +310,24 @@ export const Toolbar = memo(({
                   colorPalette={isPatternDetectionActive ? 'blue' : 'gray'}
                   variant={isPatternDetectionActive ? 'solid' : 'ghost'}
                 >
-                  <LuBrainCircuit />
+                  <LuRadar />
                 </IconButton>
               </TooltipWrapper>
-              <TooltipWrapper label={t('chart.controls.studyExtensions')} showArrow placement="top">
+              <TooltipWrapper label={t('chart.controls.detectPatterns')} showArrow placement="top">
                 <IconButton
                   size="2xs"
-                  aria-label={t('chart.controls.studyExtensions')}
+                  aria-label={t('chart.controls.detectPatterns')}
+                  onClick={onDetectPatterns}
+                  colorPalette="blue"
+                  variant="solid"
+                >
+                  <LuLightbulb />
+                </IconButton>
+              </TooltipWrapper>
+              <TooltipWrapper label={t('chart.controls.patternExtensions')} showArrow placement="top">
+                <IconButton
+                  size="2xs"
+                  aria-label={t('chart.controls.patternExtensions')}
                   onClick={toggleExtensions}
                   colorPalette={isExtensionsActive ? 'blue' : 'gray'}
                   variant={isExtensionsActive ? 'solid' : 'ghost'}

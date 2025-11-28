@@ -1,4 +1,4 @@
-import type { AIStudyType } from '@shared/types';
+import type { AIPatternType } from '@shared/types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -8,7 +8,7 @@ export interface PatternDetectionConfig {
   formationPeriod: number;
   trendlineR2Threshold: number;
   volumeConfirmationWeight: number;
-  enabledPatterns: AIStudyType[];
+  enabledPatterns: AIPatternType[];
   showPreview: boolean;
   filteringMode: 'clean' | 'complete';
   maxPatternsTotal: number;
@@ -35,8 +35,8 @@ interface PatternDetectionConfigState {
   config: PatternDetectionConfig;
   setConfig: (config: Partial<PatternDetectionConfig>) => void;
   resetToDefaults: () => void;
-  togglePattern: (pattern: AIStudyType) => void;
-  isPatternEnabled: (pattern: AIStudyType) => boolean;
+  togglePattern: (pattern: AIPatternType) => void;
+  isPatternEnabled: (pattern: AIPatternType) => boolean;
 }
 
 const DEFAULT_CONFIG: PatternDetectionConfig = {

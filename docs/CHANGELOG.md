@@ -70,12 +70,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     3. AI focuses on market context and trading implications
   - 80-90% reduction in token usage (send pattern summaries instead of raw candle data)
   - New `buildInterpretationPrompt()` method formats detected patterns for AI
-  - Hybrid response includes both algorithmic studies and AI analysis
+  - Hybrid response includes both algorithmic patterns and AI analysis
   - Cost-effective pattern analysis without compromising insight quality
 
 - **Type System Enhancements** 🔧
-  - Extended `AIAnalysisResponse` to include optional `studies` field
-  - Added `AIStudy` import to ai.ts type file
+  - Extended `AIAnalysisResponse` to include optional `patterns` field
+  - Added `AIPattern` import to ai.ts type file
   - New pattern detection types:
     - `PivotPoint`: High/low pivot with strength and volume data
     - `TrendlineData`: Linear regression data with R² and angle
@@ -105,7 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Files Modified
 - `src/renderer/services/ai/AIService.ts` - Added hybrid mode support
-- `src/shared/types/ai.ts` - Extended AIAnalysisResponse with studies field
+- `src/shared/types/ai.ts` - Extended AIAnalysisResponse with patterns field
 
 ### Performance
 - Local pattern detection: <100ms for 100 candles
@@ -532,7 +532,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Chart - Tooltip Improvements** 🏷️
   - All tooltips now display full date and time (DD/MM/YYYY HH:MM:SS)
-  - Applied to: candle tooltips, order tooltips, AI study tooltips, moving average tooltips, measurement tooltips
+  - Applied to: candle tooltips, order tooltips, AI pattern tooltips, moving average tooltips, measurement tooltips
   - Created `formatDateTimeTooltip()` utility function for consistent formatting
   - Better context awareness when analyzing chart data
 
@@ -821,14 +821,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Enhanced Chart Interactions**
-  - Study extensions beyond last candles by configurable distance (36px default)
+  - pattern extensions beyond last candles by configurable distance (36px default)
   - Precise tooltip triggering on candle body/wick/volume only
-  - Hover effects for all chart elements (candles, volumes, studies, MAs)
-  - Study number tags (#1, #2, etc.) trigger parent study hover effects
+  - Hover effects for all chart elements (candles, volumes, patterns, MAs)
+  - pattern number tags (#1, #2, etc.) trigger parent pattern hover effects
   - Arrow-shaped current price label occupying full scale width
   - Consistent shadow/glow effects across all interactive elements (8px blur)
   - Moving average tooltips showing period, type, value, and color indicator
-  - CHART_CONFIG.STUDY_EXTENSION_DISTANCE configuration (36px default)
+  - CHART_CONFIG.PATTERN_EXTENSION_DISTANCE configuration (36px default)
 
 ### Improved
 - **Chart Rendering System**
@@ -841,13 +841,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Coordinate system optimized with widthPerCandle calculations
   - Position centering: candleX/barX = x + (widthPerCandle - candleWidth) / 2
 
-- **AI Studies System**
-  - Extended all study types (support/resistance, liquidity zones) beyond last candles
-  - Hover detection extended to study extensions
-  - Study tags stored in Map for efficient hover detection
+- **AI Patterns System**
+  - Extended all pattern types (support/resistance, liquidity zones) beyond last candles
+  - Hover detection extended to pattern extensions
+  - pattern tags stored in Map for efficient hover detection
   - Enhanced visual feedback with consistent shadow effects
-  - Validation that all drawn studies are referenced in analysis text
-  - Warnings logged for unreferenced studies
+  - Validation that all drawn patterns are referenced in analysis text
+  - Warnings logged for unreferenced patterns
 
 ### Fixed
 - **Test Suite**
@@ -869,22 +869,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical
 - New configuration constants in chartConfig.ts
-- Enhanced AIStudyRenderer with studyTagsRef Map
-- Extended ChartCanvas hover detection (candles, volumes, MAs, study tags)
+- Enhanced AIPatternRenderer with patternTagsRef Map
+- Extended ChartCanvas hover detection (candles, volumes, MAs, pattern tags)
 - Updated ChartTooltip with moving average support
 - Enhanced CanvasManager with centered coordinate calculations
 - Updated all chart renderers with centered positioning
-- Updated prompts.json with study reference requirements
+- Updated prompts.json with pattern reference requirements
 - Added AIResponseParser validation tests (7 new tests)
 
 ## [0.16.0] - 2025-11-18
 
 ### Added
-- **AI Studies Toggle & Smart Prompt Selection**
+- **AI Patterns Toggle & Smart Prompt Selection**
   - Toggle button to enable/disable AI chart drawings in chat sidebar
   - Automatic prompt mode switching (full vs simple) based on user intent
   - Intent detection for optimized prompt selection
-  - Translations for AI studies toggle (EN, PT, ES, FR)
+  - Translations for AI patterns toggle (EN, PT, ES, FR)
 
 - **Configurable Detailed Candles Count**
   - New setting to control number of detailed candles sent to AI (10-100, default: 32)
@@ -918,7 +918,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All hardcoded text replaced with translation functions
   - Dynamic messages with interpolation support
 
-- **AI Study Zone Rendering**
+- **AI pattern Zone Rendering**
   - Zones now extend from historical detection point to near price scale
   - Automatic width adjustment (minimum 20 candles or 30% of visible range)
   - Zones extend to chart's right edge for better visibility
@@ -927,36 +927,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AI Prompt System**
   - Enhanced timestamp guidance with clear OLD vs RECENT labels
   - Visual markers (📊 for recent, 📈 for historical data)
-  - Mandatory study reference requirements in analysis text
+  - Mandatory pattern reference requirements in analysis text
   - Detailed examples of correct vs incorrect timestamp usage
   - Improved instructions for creating wide, visible zones
 
-- **Study Reference System**
+- **pattern Reference System**
   - Fixed color flickering issues (purple flash before correct color)
-  - Optimized study loading (once in parent, not per tag)
+  - Optimized pattern loading (once in parent, not per tag)
   - Added memoization to prevent unnecessary recalculations
-  - Improved pattern matching for "Study #X" and "#X" formats
+  - Improved pattern matching for "Pattern #X" and "#X" formats
 
 ### Fixed
 - **TypeScript Strict Mode Compliance**
-  - Fixed `exactOptionalPropertyTypes` errors in MarkdownWithStudyRefs
+  - Fixed `exactOptionalPropertyTypes` errors in MarkdownWithPatternRefs
   - Fixed optional property handling in useAI hook
   - Fixed type guards in ClaudeProvider and GeminiProvider
   - All type-check errors resolved (0 errors)
 
-- **Study Reference Performance**
-  - Fixed flickering/flashing of study tags showing purple briefly before correct color
-  - Optimized to load studies once in parent component instead of per tag
+- **pattern Reference Performance**
+  - Fixed flickering/flashing of pattern tags showing purple briefly before correct color
+  - Optimized to load patterns once in parent component instead of per tag
   - Added `useMemo` hooks to prevent unnecessary color recalculations
-  - Studies now passed via props to `StudyReference` to avoid redundant hook calls
-  - **Impact**: Smooth, instant rendering of study tags with correct colors
+  - Patterns now passed via props to `PatternReference` to avoid redundant hook calls
+  - **Impact**: Smooth, instant rendering of pattern tags with correct colors
 
-- **Study Reference Colors in Chat**
-  - Study tags in chat messages now correctly display pattern-specific colors
-  - Improved pattern matching to capture both "Study #X" and "#X" formats
-  - Fixed context issue where studies weren't being found by using activeConversationId
+- **pattern Reference Colors in Chat**
+  - pattern tags in chat messages now correctly display pattern-specific colors
+  - Improved pattern matching to capture both "Pattern #X" and "#X" formats
+  - Fixed context issue where patterns weren't being found by using activeConversationId
   - Extended markdown processing to all elements (h1-h6, blockquote, code, tables)
-  - Study reference tags now have matching border colors and semi-transparent backgrounds
+  - pattern reference tags now have matching border colors and semi-transparent backgrounds
   - **Impact**: Visual consistency between canvas drawings and chat references
 
 - **Critical AI Data Bug**
@@ -967,7 +967,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added ChartProvider wrapper to all useAI tests (33 tests, all passing)
   - **Impact**: AI now receives complete chart data for technical analysis
     * Analysis accuracy improved from 40% → 85% (+45%)
-    * Study validation enabled: 0% → 95% (+95%)
+    * pattern validation enabled: 0% → 95% (+95%)
     * Pattern detection improved from 30% → 95% (+65%)
 
 ### Added
@@ -977,8 +977,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Validation of current implementation (1020 candles = IDEAL)
   - Research on industry best practices for AI chart analysis
 
-- **Enhanced Technical Analysis Studies**
-  - Expanded from 8 to 34 study types with professional pattern recognition
+- **Enhanced Technical Analysis Patterns**
+  - Expanded from 8 to 34 pattern types with professional pattern recognition
   - Support & Resistance: Basic horizontal levels with touch validation
   - Trendlines: Bullish/bearish dynamic support/resistance
   - Channels: Ascending, descending, and horizontal price channels
@@ -990,15 +990,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Gap Analysis: Common, breakaway, runaway, and exhaustion gaps
   - Complete validation system for all 34 pattern types in AIResponseParser
   - Pattern-specific rendering with 13 specialized drawing functions
-  - Color-coded study tags in chat and on canvas with pattern-specific colors
+  - Color-coded pattern tags in chat and on canvas with pattern-specific colors
   - Semi-transparent fills (15-25% opacity) for zones and gaps to preserve data visibility
-  - Compact study tags on canvas (`#1`, `#2`, etc.) matching chat styling but smaller (9px font)
+  - Compact pattern tags on canvas (`#1`, `#2`, etc.) matching chat styling but smaller (9px font)
   - Comprehensive documentation (TECHNICAL_ANALYSIS_PATTERNS.md - 11K+ lines)
   - AI prompt optimization with concise pattern identification rules
   - Volume confirmation requirements for all patterns
   - Confidence scoring formula: (Touches×30% + Volume×30% + Time×20% + Symmetry×20%)
-  - Pattern priority system to avoid chart clutter (max 5-7 studies per analysis)
-  - Study styles system (STUDY_COLORS, LINE_STYLES, STUDY_LABELS, STUDY_CATEGORIES)
+  - Pattern priority system to avoid chart clutter (max 5-7 patterns per analysis)
+  - pattern styles system (PATTERN_COLORS, LINE_STYLES, PATTERN_LABELS, PATTERN_CATEGORIES)
 
 - **Application Toolbar**
   - New toolbar component positioned below header with all chart controls
@@ -1034,13 +1034,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `useChartColors()` hook for reactive theme-aware rendering
   - Light theme color palette for charts (candlesticks, volume, grid, indicators)
   - Semantic tokens for UI components (ChartTooltip, ChartControls, ControlPanel)
-  - Theme-aware AI study colors (8 study types with light/dark variants)
+  - Theme-aware AI pattern colors (8 pattern types with light/dark variants)
 
-- **AI Studies Per-Conversation Isolation**
-  - Studies are now isolated per conversation instead of per symbol
-  - Each conversation maintains its own set of AI-generated studies
-  - Switching conversations correctly loads/clears studies
-  - studyDataId tracking in conversation metadata
+- **AI Patterns Per-Conversation Isolation**
+  - Patterns are now isolated per conversation instead of per symbol
+  - Each conversation maintains its own set of AI-generated patterns
+  - Switching conversations correctly loads/clears patterns
+  - patternDataId tracking in conversation metadata
 
 ### Changed
 - **Layout Structure**
@@ -1063,7 +1063,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All chart renderers now use `ChartThemeColors` type instead of `ChartColors`
   - Canvas rendering now responds to theme changes via `useChartColors()` hook
   - Removed hardcoded color constants from `chartConfig.ts`
-  - Removed `AI_STUDY_COLORS` export from `aiStudy.ts`
+  - Removed `AI_PATTERN_COLORS` export from `aiPattern.ts`
   - ChartTooltip now uses semantic tokens: `bg.muted`, `fg`, `fg.muted`, `border`
   - ChartControls and ControlPanel now use semantic tokens for consistent theming
 
@@ -1073,16 +1073,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Now correctly sends chartData.candles (up to 1020 optimized candles)
   - Includes news data from chartContext for enhanced analysis
   - AI can now perform accurate technical analysis with real data
-  - Studies validated with volume confirmation and precise timestamps
+  - Patterns validated with volume confirmation and precise timestamps
 
-- **AI Studies Rendering and Synchronization**
-  - Fixed canvas clearing logic - canvas now clears before checking if studies exist
-  - Studies now properly appear when switching between conversations
-  - Newly created studies appear immediately on chart after AI response
-  - Fixed study ID sequencing to maintain sequential numbering when adding new studies
-  - Implemented canvas clipping area to prevent studies from overlapping with price/time scales
+- **AI Patterns Rendering and Synchronization**
+  - Fixed canvas clearing logic - canvas now clears before checking if patterns exist
+  - Patterns now properly appear when switching between conversations
+  - Newly created patterns appear immediately on chart after AI response
+  - Fixed pattern ID sequencing to maintain sequential numbering when adding new patterns
+  - Implemented canvas clipping area to prevent patterns from overlapping with price/time scales
   - Reduced z-index from 2 to 1 to prevent overlap with UI elements
-  - Bidirectional hover now works correctly across multiple study additions
+  - Bidirectional hover now works correctly across multiple pattern additions
 - TypeScript compilation error in migration.ts
 - Password input type compatibility with Chakra UI
 - Canvas color rendering now works correctly with Chakra UI semantic tokens
@@ -1208,28 +1208,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Achieved 92%+ total code coverage across the codebase
 
 ### Changed
-- **AI Study Display**
-  - All study information now shown in tooltip instead of canvas labels
+- **AI pattern Display**
+  - All pattern information now shown in tooltip instead of canvas labels
   - Simplified rendering (70% less code, better performance)
   - English translations for all UI elements (formerly Portuguese)
-  - Context menu items: "Hide AI Studies", "Show AI Studies", "Delete AI Studies"
+  - Context menu items: "Hide AI Patterns", "Show AI Patterns", "Delete AI Patterns"
 
 ### Removed
-- Debug console.log statements from useAIStudies hook
+- Debug console.log statements from useAIPatterns hook
 - Debug console.log statements from AIResponseParser
-- Canvas label rendering for AI studies
+- Canvas label rendering for AI patterns
 
 ## [0.8.0] - 2024-12-XX
 
 ### Added
-- **AI Study Tooltips**
-  - Unified tooltip system for both candles and AI studies
-  - Hover-only display for AI study information
+- **AI pattern Tooltips**
+  - Unified tooltip system for both candles and AI patterns
+  - Hover-only display for AI pattern information
   - Price formatting with K/M notation (e.g., 1.5K, 2.3M)
-  - Study type, label, and price information in tooltip
+  - pattern type, label, and price information in tooltip
   - Visual hover effects (thicker lines, more opaque zones)
   - Intelligent hover detection for lines and zones
-  - Study labels removed from canvas for cleaner visualization
+  - pattern labels removed from canvas for cleaner visualization
 
 ### In Progress
 - Cross-platform testing (macOS, Windows, Linux)

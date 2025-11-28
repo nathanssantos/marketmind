@@ -1,4 +1,4 @@
-import type { AIMessage, AIProviderType, AIStudyData, AITrade, AITradingConfig, AITradingStats } from '@shared/types';
+import type { AIMessage, AIPatternData, AIProviderType, AITrade, AITradingConfig, AITradingStats } from '@shared/types';
 import type { Order, Wallet } from '@shared/types/trading';
 import { contextBridge, ipcRenderer } from 'electron';
 
@@ -12,7 +12,7 @@ interface Conversation {
   createdAt: number;
   updatedAt: number;
   symbol?: string;
-  studyDataId?: string;
+  patternDataId?: string;
 }
 
 interface AISettings {
@@ -27,7 +27,7 @@ interface AIData {
   conversations: Conversation[];
   activeConversationId: string | null;
   settings: AISettings | null;
-  enableAIStudies: boolean;
+  enableAIPatterns: boolean;
   isAutoTradingActive?: boolean;
   tradingConfig?: AITradingConfig;
   trades?: AITrade[];
@@ -59,12 +59,12 @@ interface SecureStorageAPI {
   getAIData: () => Promise<{ success: boolean; data: AIData | null; error?: string }>;
   setAIData: (data: AIData) => Promise<{ success: boolean; error?: string }>;
   clearAIData: () => Promise<{ success: boolean; error?: string }>;
-  getAIStudies: () => Promise<{ success: boolean; data: Record<string, AIStudyData>; error?: string }>;
-  setAIStudies: (studies: Record<string, AIStudyData>) => Promise<{ success: boolean; error?: string }>;
-  getAIStudiesForSymbol: (symbol: string) => Promise<{ success: boolean; data: AIStudyData | null; error?: string }>;
-  setAIStudiesForSymbol: (symbol: string, data: AIStudyData) => Promise<{ success: boolean; error?: string }>;
-  deleteAIStudiesForSymbol: (symbol: string) => Promise<{ success: boolean; error?: string }>;
-  clearAIStudies: () => Promise<{ success: boolean; error?: string }>;
+  getAIPatterns: () => Promise<{ success: boolean; data: Record<string, AIPatternData>; error?: string }>;
+  setAIPatterns: (patterns: Record<string, AIPatternData>) => Promise<{ success: boolean; error?: string }>;
+  getAIPatternsForSymbol: (symbol: string) => Promise<{ success: boolean; data: AIPatternData | null; error?: string }>;
+  setAIPatternsForSymbol: (symbol: string, data: AIPatternData) => Promise<{ success: boolean; error?: string }>;
+  deleteAIPatternsForSymbol: (symbol: string) => Promise<{ success: boolean; error?: string }>;
+  clearAIPatterns: () => Promise<{ success: boolean; error?: string }>;
 }
 
 interface UpdateInfo {
@@ -186,28 +186,28 @@ const API = {
       return await ipcRenderer.invoke('storage:clearAIData');
     },
 
-    getAIStudies: async () => {
-      return await ipcRenderer.invoke('storage:getAIStudies');
+    getAIPatterns: async () => {
+      return await ipcRenderer.invoke('storage:getAIPatterns');
     },
 
-    setAIStudies: async (studies: Record<string, AIStudyData>) => {
-      return await ipcRenderer.invoke('storage:setAIStudies', studies);
+    setAIPatterns: async (patterns: Record<string, AIPatternData>) => {
+      return await ipcRenderer.invoke('storage:setAIPatterns', patterns);
     },
 
-    getAIStudiesForSymbol: async (symbol: string) => {
-      return await ipcRenderer.invoke('storage:getAIStudiesForSymbol', symbol);
+    getAIPatternsForSymbol: async (symbol: string) => {
+      return await ipcRenderer.invoke('storage:getAIPatternsForSymbol', symbol);
     },
 
-    setAIStudiesForSymbol: async (symbol: string, data: AIStudyData) => {
-      return await ipcRenderer.invoke('storage:setAIStudiesForSymbol', symbol, data);
+    setAIPatternsForSymbol: async (symbol: string, data: AIPatternData) => {
+      return await ipcRenderer.invoke('storage:setAIPatternsForSymbol', symbol, data);
     },
 
-    deleteAIStudiesForSymbol: async (symbol: string) => {
-      return await ipcRenderer.invoke('storage:deleteAIStudiesForSymbol', symbol);
+    deleteAIPatternsForSymbol: async (symbol: string) => {
+      return await ipcRenderer.invoke('storage:deleteAIPatternsForSymbol', symbol);
     },
 
-    clearAIStudies: async () => {
-      return await ipcRenderer.invoke('storage:clearAIStudies');
+    clearAIPatterns: async () => {
+      return await ipcRenderer.invoke('storage:clearAIPatterns');
     },
   } as SecureStorageAPI,
 

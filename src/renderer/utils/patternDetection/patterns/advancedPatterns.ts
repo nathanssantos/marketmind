@@ -1,4 +1,4 @@
-import type { AIStudyDoublePattern, AIStudyHeadAndShoulders, AIStudyTriplePattern, Candle } from '@shared/types';
+import type { AIPatternDoublePattern, AIPatternHeadAndShoulders, AIPatternTriplePattern, Candle } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -10,10 +10,10 @@ import type { PivotPoint } from '../types';
 export const detectHeadAndShoulders = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyHeadAndShoulders[] => {
+): AIPatternHeadAndShoulders[] => {
   if (!candles || candles.length < 20) return [];
 
-  const patterns: AIStudyHeadAndShoulders[] = [];
+  const patterns: AIPatternHeadAndShoulders[] = [];
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
 
@@ -94,10 +94,10 @@ export const detectHeadAndShoulders = (
 export const detectInverseHeadAndShoulders = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyHeadAndShoulders[] => {
+): AIPatternHeadAndShoulders[] => {
   if (!candles || candles.length < 20) return [];
 
-  const patterns: AIStudyHeadAndShoulders[] = [];
+  const patterns: AIPatternHeadAndShoulders[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
 
@@ -178,10 +178,10 @@ export const detectInverseHeadAndShoulders = (
 export const detectDoubleTops = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyDoublePattern[] => {
+): AIPatternDoublePattern[] => {
   if (!candles || candles.length < 15) return [];
 
-  const patterns: AIStudyDoublePattern[] = [];
+  const patterns: AIPatternDoublePattern[] = [];
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
 
@@ -250,10 +250,10 @@ export const detectDoubleTops = (
 export const detectDoubleBottoms = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyDoublePattern[] => {
+): AIPatternDoublePattern[] => {
   if (!candles || candles.length < 15) return [];
 
-  const patterns: AIStudyDoublePattern[] = [];
+  const patterns: AIPatternDoublePattern[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
 
@@ -321,10 +321,10 @@ export const detectDoubleBottoms = (
 export const detectTripleTops = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyTriplePattern[] => {
+): AIPatternTriplePattern[] => {
   if (!candles || candles.length < 30) return [];
 
-  const patterns: AIStudyTriplePattern[] = [];
+  const patterns: AIPatternTriplePattern[] = [];
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
 
@@ -405,10 +405,10 @@ export const detectTripleTops = (
 export const detectTripleBottoms = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyTriplePattern[] => {
+): AIPatternTriplePattern[] => {
   if (!candles || candles.length < 30) return [];
 
-  const patterns: AIStudyTriplePattern[] = [];
+  const patterns: AIPatternTriplePattern[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
 

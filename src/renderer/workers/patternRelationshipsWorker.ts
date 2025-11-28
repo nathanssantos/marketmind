@@ -1,8 +1,8 @@
-import type { AIStudy } from '@shared/types';
+import type { AIPattern } from '@shared/types';
 import { buildPatternRelationships, type PatternRelationship } from '../utils/patternDetection/core/patternRelationships';
 
 interface WorkerInput {
-  patterns: AIStudy[];
+  patterns: AIPattern[];
 }
 
 interface WorkerOutput {

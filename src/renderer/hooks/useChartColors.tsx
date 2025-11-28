@@ -13,7 +13,7 @@ export interface ChartThemeColors extends ChartColors {
   };
   lineDefault: string;
   ma: [string, string, string];
-  aiStudy: {
+  aiPattern: {
     support: string;
     resistance: string;
     trendlineBullish: string;

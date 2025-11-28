@@ -1,6 +1,6 @@
-import type { AIAnalysisWithStudies, AIStudy } from '@shared/types';
+import type { AIAnalysisWithPatterns, AIPattern } from '@shared/types';
 
-export const parseAIResponse = (response: string): AIAnalysisWithStudies => {
+export const parseAIResponse = (response: string): AIAnalysisWithPatterns => {
   const jsonBlockRegex = /```json\s*\n([\s\S]*?)\n```/;
   const match = response.match(jsonBlockRegex);
 
@@ -12,50 +12,50 @@ export const parseAIResponse = (response: string): AIAnalysisWithStudies => {
 
   try {
     const jsonData = JSON.parse(match[1]);
-    const studies: AIStudy[] = jsonData.studies || [];
+    const patterns: AIPattern[] = jsonData.patterns || [];
 
     const analysis = response.replace(jsonBlockRegex, '').trim();
 
-    const validStudies = studies.filter(validateAIStudy);
+    const validPatterns = patterns.filter(validateAIPattern);
 
-    const studiesWithIds = validStudies.map((study, index) => ({
-      ...study,
+    const patternsWithIds = validPatterns.map((pattern, index) => ({
+      ...pattern,
       id: index + 1,
     }));
 
-    if (studiesWithIds.length > 0) {
+    if (patternsWithIds.length > 0) {
       const missingReferences: number[] = [];
-      studiesWithIds.forEach((study) => {
-        const studyRef = `Study #${study.id}`;
-        if (!analysis.includes(studyRef)) {
-          missingReferences.push(study.id);
+      patternsWithIds.forEach((pattern) => {
+        const patternRef = `Pattern #${pattern.id}`;
+        if (!analysis.includes(patternRef)) {
+          missingReferences.push(pattern.id);
         }
       });
 
       if (missingReferences.length > 0) {
         console.warn(
-          `[AIResponseParser] Studies not referenced in analysis text: ${missingReferences.map(id => `#${id}`).join(', ')}. ` +
-          `Total studies created: ${studiesWithIds.length}, Referenced: ${studiesWithIds.length - missingReferences.length}`
+          `[AIResponseParser] Patterns not referenced in analysis text: ${missingReferences.map(id => `#${id}`).join(', ')}. ` +
+          `Total patterns created: ${patternsWithIds.length}, Referenced: ${patternsWithIds.length - missingReferences.length}`
         );
       }
     }
 
     return {
       analysis,
-      studies: studiesWithIds,
+      patterns: patternsWithIds,
     };
   } catch (error) {
-    console.error('[AIResponseParser] Error parsing AI studies JSON:', error);
+    console.error('[AIResponseParser] Error parsing AI patterns JSON:', error);
     return {
       analysis: response,
     };
   }
 };
 
-export const validateAIStudy = (study: unknown): study is AIStudy => {
-  if (!study || typeof study !== 'object') return false;
+export const validateAIPattern = (pattern: unknown): pattern is AIPattern => {
+  if (!pattern || typeof pattern !== 'object') return false;
 
-  const s = study as AIStudy;
+  const s = pattern as AIPattern;
   if (!s.type) return false;
 
   const validatePoint = (p: unknown): boolean => {

@@ -488,12 +488,12 @@ describe('AIService', () => {
     });
   });
 
-  describe('AI Studies control', () => {
-    it('should pass enableAIStudies=true to provider', async () => {
+  describe('AI Patterns control', () => {
+    it('should pass enableAIPatterns=true to provider', async () => {
       const service = new AIService({
         provider: 'openai',
         apiKey: 'test-key',
-        enableAIStudies: true,
+        enableAIPatterns: true,
       });
 
       const request: AIAnalysisRequest = {
@@ -502,7 +502,7 @@ describe('AIService', () => {
       };
 
       mockAnalyzeChart.mockResolvedValue({
-        text: 'Analysis with studies',
+        text: 'Analysis with patterns',
       });
 
       await service.analyzeChart(request);
@@ -510,11 +510,11 @@ describe('AIService', () => {
       expect(mockAnalyzeChart).toHaveBeenCalled();
     });
 
-    it('should pass enableAIStudies=false to provider', async () => {
+    it('should pass enableAIPatterns=false to provider', async () => {
       const service = new AIService({
         provider: 'openai',
         apiKey: 'test-key',
-        enableAIStudies: false,
+        enableAIPatterns: false,
       });
 
       const request: AIAnalysisRequest = {
@@ -523,7 +523,7 @@ describe('AIService', () => {
       };
 
       mockAnalyzeChart.mockResolvedValue({
-        text: 'Analysis without studies',
+        text: 'Analysis without patterns',
       });
 
       await service.analyzeChart(request);
@@ -531,19 +531,19 @@ describe('AIService', () => {
       expect(mockAnalyzeChart).toHaveBeenCalled();
     });
 
-    it('should update enableAIStudies dynamically', () => {
+    it('should update enableAIPatterns dynamically', () => {
       const service = new AIService({
         provider: 'openai',
         apiKey: 'test-key',
-        enableAIStudies: true,
+        enableAIPatterns: true,
       });
 
-      service.setEnableAIStudies(false);
+      service.setEnableAIPatterns(false);
       
-      expect(service.getConfig().enableAIStudies).toBe(false);
+      expect(service.getConfig().enableAIPatterns).toBe(false);
     });
 
-    it('should update enableAIStudies on provider when set', async () => {
+    it('should update enableAIPatterns on provider when set', async () => {
       const service = new AIService({
         provider: 'openai',
         apiKey: 'test-key',
@@ -556,18 +556,18 @@ describe('AIService', () => {
       mockSendMessage.mockResolvedValue({ text: 'Response' });
       await service.sendMessage(messages);
 
-      service.setEnableAIStudies(true);
+      service.setEnableAIPatterns(true);
 
-      expect(service.getConfig().enableAIStudies).toBe(true);
+      expect(service.getConfig().enableAIPatterns).toBe(true);
     });
 
-    it('should default enableAIStudies to undefined', () => {
+    it('should default enableAIPatterns to undefined', () => {
       const service = new AIService({
         provider: 'openai',
         apiKey: 'test-key',
       });
 
-      expect(service.getConfig().enableAIStudies).toBeUndefined();
+      expect(service.getConfig().enableAIPatterns).toBeUndefined();
     });
   });
 

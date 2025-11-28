@@ -1792,8 +1792,8 @@ Next step: implement the CandlestickRenderer.
   - ✅ Accessibility (ARIA labels, keyboard navigation)
   - ✅ Complete documentation updates
   - ✅ Version 0.12.0 released
-  - ✅ AI Study tooltips with hover-only display
-  - ✅ Unified tooltip system (candles + AI studies)
+  - ✅ AI pattern tooltips with hover-only display
+  - ✅ Unified tooltip system (candles + AI patterns)
   - ✅ Price formatting with K/M notation
   - ✅ English UI translations
   - ✅ Removed debug logs from production code
@@ -1824,13 +1824,13 @@ Next step: implement the CandlestickRenderer.
 - ✅ Layout adjustments (116px offset for header+toolbar)
 - ✅ All tests passing (592 tests)
 
-### ✅ Phase 16: AI Studies Toggle & Performance (100% Complete)
+### ✅ Phase 16: AI Patterns Toggle & Performance (100% Complete)
 **Status:** ✅ Complete  
-**Branch:** feature/enhanced-technical-studies → main  
+**Branch:** feature/enhanced-technical-patterns → main  
 **Released:** v0.16.0 (November 18, 2025)
 
 #### Deliverables
-- ✅ AI Studies toggle button in chat sidebar
+- ✅ AI Patterns toggle button in chat sidebar
 - ✅ Automatic prompt mode selection (full vs simple)
 - ✅ Intent-based prompt optimization
 - ✅ Configurable detailed candles count (10-100, default: 32)
@@ -1841,9 +1841,9 @@ Next step: implement the CandlestickRenderer.
 - ✅ Enhanced timestamp guidance (OLD vs RECENT labels)
 - ✅ Visual markers for temporal orientation (📊 recent, 📈 historical)
 - ✅ Improved zone rendering (auto-extension, minimum width)
-- ✅ Mandatory study reference in analysis text
+- ✅ Mandatory pattern reference in analysis text
 - ✅ Icon system migration to Lucide (22 files)
-- ✅ Study reference color optimization (fixed flickering)
+- ✅ pattern reference color optimization (fixed flickering)
 - ✅ Settings modal UX improvements (portal disabled in selects)
 - ✅ Complete i18n for Settings modal (104 new keys, 4 languages)
 - ✅ TypeScript strict mode compliance (0 type errors)
@@ -1855,10 +1855,10 @@ Next step: implement the CandlestickRenderer.
 **Released:** v0.17.0 (November 19, 2025)
 
 #### Deliverables
-- ✅ Study extensions beyond last candles (configurable, 36px default)
+- ✅ pattern extensions beyond last candles (configurable, 36px default)
 - ✅ Precise tooltip triggering (candle body/wick/volume only)
-- ✅ Comprehensive hover system (candles, volumes, studies, MAs, study tags)
-- ✅ Study tag hover triggers parent study effects
+- ✅ Comprehensive hover system (candles, volumes, patterns, MAs, pattern tags)
+- ✅ pattern tag hover triggers parent pattern effects
 - ✅ Arrow-shaped current price label (full scale width)
 - ✅ Consistent shadow/glow effects (8px blur)
 - ✅ Moving average tooltips (period, type, value, color)
@@ -1868,8 +1868,8 @@ Next step: implement the CandlestickRenderer.
 - ✅ Optimized z-ordering (grid → volume → candles → MAs → scales)
 - ✅ Canvas clipping improvements (scales always visible)
 - ✅ Removed candle/wick transparency
-- ✅ AI study reference validation with warnings
-- ✅ Enhanced prompts for study references
+- ✅ AI pattern reference validation with warnings
+- ✅ Enhanced prompts for pattern references
 - ✅ Fixed test expectations (candleOptimizer, aiStore)
 - ✅ Added 7 validation tests for AI parser
 - ✅ All 659 tests passing
@@ -2076,7 +2076,7 @@ Next step: implement the CandlestickRenderer.
 - ✅ Chart navigation controls with discrete buttons
 - ✅ Real-time candle countdown timer
 - ✅ Enhanced chart interactions with comprehensive hover system
-- ✅ AI Studies system with smart toggle and validation
+- ✅ AI Patterns system with smart toggle and validation
 - ✅ Performance optimized (60% token reduction, 17x worker speedup, renderer optimizations)
 - ✅ Professional toolbar interface with news and trading toggles
 - ✅ Multi-language support (EN, PT, ES, FR)
@@ -2088,7 +2088,7 @@ Next step: implement the CandlestickRenderer.
 ### 🚀 Next Steps (Post-MVP)
 1. ✅ **COMPLETED**: Phase 14 - Internationalization (v0.14.0)
 2. ✅ **COMPLETED**: Phase 15 - Application Toolbar (v0.15.0)
-3. ✅ **COMPLETED**: Phase 16 - AI Studies Toggle & Performance (v0.16.0)
+3. ✅ **COMPLETED**: Phase 16 - AI Patterns Toggle & Performance (v0.16.0)
 4. ✅ **COMPLETED**: Phase 17 - Enhanced Chart Interactions (v0.17.0)
 5. ✅ **COMPLETED**: Phase 18 - Web Workers Performance System (v0.20.0)
 6. ✅ **COMPLETED**: Phase 19 - Calendar Integration & Performance Optimizations (v0.21.0)
@@ -2113,7 +2113,7 @@ This plan provides a complete roadmap to develop MarketMind from scratch to laun
 
 - ✅ Complete chart rendering system with technical indicators
 - ✅ Enhanced chart interactions with comprehensive hover system
-- ✅ AI Studies system with smart toggle, validation, and performance optimization
+- ✅ AI Patterns system with smart toggle, validation, and performance optimization
 - ✅ Algorithmic pattern detection with 26 pattern types
 - ✅ Pattern Detection UI configuration with full settings interface
 - ✅ Professional toolbar with centralized controls

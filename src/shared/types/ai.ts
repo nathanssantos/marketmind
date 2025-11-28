@@ -1,4 +1,4 @@
-import type { AIStudy } from './aiStudy';
+import type { AIPattern } from './aiPattern';
 import type { CalendarEvent } from './calendar';
 import type { Candle } from './candle';
 
@@ -53,7 +53,7 @@ export interface AIAnalysisResponse {
   text: string;
   confidence?: number;
   signals?: TradingSignalData[];
-  studies?: AIStudy[];
+  patterns?: AIPattern[];
 }
 
 export type TradingSignal = 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell';

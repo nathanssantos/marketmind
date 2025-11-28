@@ -1,19 +1,19 @@
 import { usePatternDetectionConfigStore } from '@renderer/store/patternDetectionConfigStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { testStudyHit } from '@renderer/utils/canvas/hitTesting';
-import { LINE_STYLES, STUDY_COLORS } from '@shared/constants';
-import type { AIStudy, AIStudyChannel, AIStudyCupAndHandle, AIStudyDoublePattern, AIStudyFibonacci, AIStudyFlag, AIStudyGap, AIStudyHeadAndShoulders, AIStudyLine, AIStudyPennant, AIStudyRoundingBottom, AIStudyTriangle, AIStudyTriplePattern, AIStudyWedge, AIStudyZone, Candle } from '@shared/types';
+import { testPatternHit } from '@renderer/utils/canvas/hitTesting';
+import { LINE_STYLES, PATTERN_COLORS } from '@shared/constants';
+import type { AIPattern, AIPatternChannel, AIPatternCupAndHandle, AIPatternDoublePattern, AIPatternFibonacci, AIPatternFlag, AIPatternGap, AIPatternHeadAndShoulders, AIPatternLine, AIPatternPennant, AIPatternRoundingBottom, AIPatternTriangle, AIPatternTriplePattern, AIPatternWedge, AIPatternZone, Candle } from '@shared/types';
 import { useEffect, useRef, useState } from 'react';
-import { useAIStudyHover } from '../../context/AIStudyHoverContext';
+import { usePatternHover } from '../../context/PatternHoverContext';
 
-interface AIStudyRendererProps {
+interface PatternRendererProps {
   canvasManager: CanvasManager | null;
   candles: Candle[];
-  studies: AIStudy[];
+  patterns: AIPattern[];
   width: number;
   height: number;
   mousePosition: { x: number; y: number } | null;
-  onStudyHover: (study: AIStudy | null) => void;
+  onPatternHover: (pattern: AIPattern | null) => void;
   advancedConfig?: {
     paddingLeft?: number;
     paddingRight?: number;
@@ -22,27 +22,27 @@ interface AIStudyRendererProps {
   } | undefined;
 }
 
-export const AIStudyRenderer = ({
+export const PatternRenderer = ({
   canvasManager,
   candles,
-  studies,
+  patterns,
   width,
   height,
   mousePosition,
-  onStudyHover,
+  onPatternHover,
   advancedConfig,
-}: AIStudyRendererProps) => {
+}: PatternRendererProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [hoveredStudy, setHoveredStudy] = useState<AIStudy | null>(null);
-  const { hoveredStudyId, setHoveredStudyId } = useAIStudyHover();
-  const studyTagsRef = useRef<Map<number, { x: number; y: number; width: number; height: number }>>(new Map());
+  const [hoveredPattern, setHoveredPattern] = useState<AIPattern | null>(null);
+  const { hoveredPatternId, setHoveredPatternId } = usePatternHover();
+  const patternTagsRef = useRef<Map<number, { x: number; y: number; width: number; height: number }>>(new Map());
   const { config: patternConfig } = usePatternDetectionConfigStore();
 
-  const getStudyColor = (type: AIStudy['type']): string => {
-    return STUDY_COLORS[type] || '#6366f1';
+  const getPatternColor = (type: AIPattern['type']): string => {
+    return PATTERN_COLORS[type] || '#6366f1';
   };
 
-  const getLineStyle = (type: AIStudy['type']): number[] => {
+  const getLineStyle = (type: AIPattern['type']): number[] => {
     const style = LINE_STYLES[type];
     if (style === 'solid') return [];
     if (style === 'dashed') return [5, 5];
@@ -52,21 +52,21 @@ export const AIStudyRenderer = ({
 
   useEffect(() => {
     if (!canvasManager || candles.length === 0 || !mousePosition) {
-      setHoveredStudy(null);
+      setHoveredPattern(null);
       return;
     }
 
     const { x: mouseX, y: mouseY } = mousePosition;
-    let found: AIStudy | null = null;
+    let found: AIPattern | null = null;
 
-    for (const study of studies) {
-      if (study.visible === false) continue;
+    for (const pattern of patterns) {
+      if (pattern.visible === false) continue;
 
-      const studyId = study.id;
-      const tagBounds = studyId !== undefined ? studyTagsRef.current.get(studyId) : undefined;
+      const patternId = pattern.id;
+      const tagBounds = patternId !== undefined ? patternTagsRef.current.get(patternId) : undefined;
 
-      const isHit = testStudyHit(
-        study,
+      const isHit = testPatternHit(
+        pattern,
         { x: mouseX, y: mouseY },
         canvasManager,
         candles,
@@ -74,29 +74,29 @@ export const AIStudyRenderer = ({
       );
 
       if (isHit) {
-        found = study;
+        found = pattern;
         break;
       }
     }
 
-    setHoveredStudy(found);
+    setHoveredPattern(found);
     if (found?.id) {
-      setHoveredStudyId(found.id);
+      setHoveredPatternId(found.id);
     } else {
-      setHoveredStudyId(null);
+      setHoveredPatternId(null);
     }
-  }, [canvasManager, candles, studies, mousePosition, setHoveredStudyId]);
+  }, [canvasManager, candles, patterns, mousePosition, setHoveredPatternId]);
 
   useEffect(() => {
-    if (hoveredStudyId !== null) {
-      const studyById = studies.find(s => s.id === hoveredStudyId);
-      if (studyById && studyById !== hoveredStudy) {
-        setHoveredStudy(studyById);
+    if (hoveredPatternId !== null) {
+      const patternById = patterns.find(s => s.id === hoveredPatternId);
+      if (patternById && patternById !== hoveredPattern) {
+        setHoveredPattern(patternById);
       }
     } else if (!mousePosition) {
-      setHoveredStudy(null);
+      setHoveredPattern(null);
     }
-  }, [hoveredStudyId, studies, mousePosition, hoveredStudy]);
+  }, [hoveredPatternId, patterns, mousePosition, hoveredPattern]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -109,7 +109,7 @@ export const AIStudyRenderer = ({
 
     ctx.clearRect(0, 0, width, height);
 
-    if (studies.length === 0) {
+    if (patterns.length === 0) {
       return;
     }
 
@@ -124,95 +124,95 @@ export const AIStudyRenderer = ({
     ctx.rect(0, 0, clipWidth, clipHeight);
     ctx.clip();
 
-    studyTagsRef.current.clear(); studies.forEach((study, index) => {
-      if (study.visible === false) return;
+    patternTagsRef.current.clear(); patterns.forEach((pattern, index) => {
+      if (pattern.visible === false) return;
 
-      const isHovered = hoveredStudy === study;
-      const studyNumber = study.id ?? index + 1;
+      const isHovered = hoveredPattern === pattern;
+      const patternNumber = pattern.id ?? index + 1;
 
-      switch (study.type) {
+      switch (pattern.type) {
         case 'support':
         case 'resistance':
         case 'trendline-bullish':
         case 'trendline-bearish':
-          if ('points' in study) {
-            drawLine(ctx, study, canvasManager, candles, isHovered, studyNumber);
+          if ('points' in pattern) {
+            drawLine(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
           }
           break;
 
         case 'channel-ascending':
         case 'channel-descending':
         case 'channel-horizontal':
-          if ('upperLine' in study) {
-            drawChannel(ctx, study, canvasManager, candles, isHovered, studyNumber);
+          if ('upperLine' in pattern) {
+            drawChannel(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
           }
           break;
 
         case 'fibonacci-retracement':
         case 'fibonacci-extension':
-          if ('startPoint' in study) {
-            drawFibonacci(ctx, study, canvasManager, candles, isHovered, studyNumber);
+          if ('startPoint' in pattern) {
+            drawFibonacci(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
           }
           break;
 
         case 'head-and-shoulders':
         case 'inverse-head-and-shoulders':
-          if ('leftShoulder' in study) {
-            drawHeadAndShoulders(ctx, study, canvasManager, candles, isHovered, studyNumber);
+          if ('leftShoulder' in pattern) {
+            drawHeadAndShoulders(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
           }
           break;
 
         case 'double-top':
         case 'double-bottom':
-          if ('firstPeak' in study) {
-            drawDoublePattern(ctx, study, canvasManager, candles, isHovered, studyNumber);
+          if ('firstPeak' in pattern) {
+            drawDoublePattern(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
           }
           break;
 
         case 'triple-top':
         case 'triple-bottom':
-          if ('peak1' in study) {
-            drawTriplePattern(ctx, study, canvasManager, candles, isHovered, studyNumber);
+          if ('peak1' in pattern) {
+            drawTriplePattern(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
           }
           break;
 
         case 'triangle-ascending':
         case 'triangle-descending':
         case 'triangle-symmetrical':
-          if ('upperTrendline' in study) {
-            drawTriangle(ctx, study, canvasManager, candles, isHovered, studyNumber);
+          if ('upperTrendline' in pattern) {
+            drawTriangle(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
           }
           break;
 
         case 'wedge-rising':
         case 'wedge-falling':
-          if ('upperTrendline' in study) {
-            drawWedge(ctx, study, canvasManager, candles, isHovered, studyNumber);
+          if ('upperTrendline' in pattern) {
+            drawWedge(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
           }
           break;
 
         case 'flag-bullish':
         case 'flag-bearish':
-          if ('flagpole' in study) {
-            drawFlag(ctx, study, canvasManager, candles, isHovered, studyNumber);
+          if ('flagpole' in pattern) {
+            drawFlag(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
           }
           break;
 
         case 'pennant':
-          if ('flagpole' in study) {
-            drawPennant(ctx, study, canvasManager, candles, isHovered, studyNumber);
+          if ('flagpole' in pattern) {
+            drawPennant(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
           }
           break;
 
         case 'cup-and-handle':
-          if ('cupBottom' in study) {
-            drawCupAndHandle(ctx, study, canvasManager, candles, isHovered, studyNumber);
+          if ('cupBottom' in pattern) {
+            drawCupAndHandle(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
           }
           break;
 
         case 'rounding-bottom':
-          if ('bottom' in study) {
-            drawRoundingBottom(ctx, study, canvasManager, candles, isHovered, studyNumber);
+          if ('bottom' in pattern) {
+            drawRoundingBottom(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
           }
           break;
 
@@ -220,8 +220,8 @@ export const AIStudyRenderer = ({
         case 'gap-breakaway':
         case 'gap-runaway':
         case 'gap-exhaustion':
-          if ('gapStart' in study) {
-            drawGap(ctx, study, canvasManager, candles, isHovered, studyNumber);
+          if ('gapStart' in pattern) {
+            drawGap(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
           }
           break;
 
@@ -229,29 +229,29 @@ export const AIStudyRenderer = ({
         case 'sell-zone':
         case 'buy-zone':
         case 'accumulation-zone':
-          if ('topPrice' in study) {
-            drawZone(ctx, study, canvasManager, candles, isHovered, studyNumber);
+          if ('topPrice' in pattern) {
+            drawZone(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
           }
           break;
       }
     });
 
     ctx.restore();
-  }, [canvasManager, candles, studies, width, height, hoveredStudy, advancedConfig]);
+  }, [canvasManager, candles, patterns, width, height, hoveredPattern, advancedConfig]);
 
   useEffect(() => {
-    onStudyHover(hoveredStudy);
-  }, [hoveredStudy, onStudyHover]);
+    onPatternHover(hoveredPattern);
+  }, [hoveredPattern, onPatternHover]);
 
   const drawLine = (
     ctx: CanvasRenderingContext2D,
-    study: AIStudyLine,
+    pattern: AIPatternLine,
     manager: CanvasManager,
     candles: Candle[],
     isHovered: boolean,
-    studyNumber: number
+    patternNumber: number
   ) => {
-    const [point1, point2] = study.points;
+    const [point1, point2] = pattern.points;
 
     const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
     const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
@@ -267,9 +267,9 @@ export const AIStudyRenderer = ({
     let finalY2 = y2;
 
     const shouldExtend = patternConfig.showExtensions && (
-      (study.type === 'support' && (patternConfig.extendSupport ?? true)) ||
-      (study.type === 'resistance' && (patternConfig.extendResistance ?? true)) ||
-      ((study.type === 'trendline-bullish' || study.type === 'trendline-bearish') && (patternConfig.extendTrendlines ?? true))
+      (pattern.type === 'support' && (patternConfig.extendSupport ?? true)) ||
+      (pattern.type === 'resistance' && (patternConfig.extendResistance ?? true)) ||
+      ((pattern.type === 'trendline-bullish' || pattern.type === 'trendline-bearish') && (patternConfig.extendTrendlines ?? true))
     );
 
     if (shouldExtend) {
@@ -285,12 +285,12 @@ export const AIStudyRenderer = ({
     }
 
     ctx.save();
-    ctx.strokeStyle = getStudyColor(study.type);
+    ctx.strokeStyle = getPatternColor(pattern.type);
     ctx.lineWidth = isHovered ? 3 : 2;
-    ctx.setLineDash(getLineStyle(study.type));
+    ctx.setLineDash(getLineStyle(pattern.type));
 
     if (isHovered) {
-      ctx.shadowColor = getStudyColor(study.type);
+      ctx.shadowColor = getPatternColor(pattern.type);
       ctx.shadowBlur = 8;
     }
 
@@ -303,26 +303,26 @@ export const AIStudyRenderer = ({
 
     const iconX = Math.min(x1, x2);
     const iconY = Math.min(y1, y2) - 22;
-    drawAndStoreStudyTag(ctx, iconX, iconY, studyNumber, study);
+    drawAndStorePatternTag(ctx, iconX, iconY, patternNumber, pattern);
 
     ctx.restore();
   };
 
   const drawChannel = (
     ctx: CanvasRenderingContext2D,
-    study: AIStudyChannel,
+    pattern: AIPatternChannel,
     manager: CanvasManager,
     candles: Candle[],
     isHovered: boolean,
-    studyNumber: number
+    patternNumber: number
   ) => {
-    const color = getStudyColor(study.type);
+    const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 3 : 2;
 
-    const upperPoint1 = study.upperLine[0];
-    const upperPoint2 = study.upperLine[1];
-    const lowerPoint1 = study.lowerLine[0];
-    const lowerPoint2 = study.lowerLine[1];
+    const upperPoint1 = pattern.upperLine[0];
+    const upperPoint2 = pattern.upperLine[1];
+    const lowerPoint1 = pattern.lowerLine[0];
+    const lowerPoint2 = pattern.lowerLine[1];
 
     const upperIndex1 = candles.findIndex(c => c.timestamp >= upperPoint1.timestamp);
     const upperIndex2 = candles.findIndex(c => c.timestamp >= upperPoint2.timestamp);
@@ -377,7 +377,7 @@ export const AIStudyRenderer = ({
 
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
-    ctx.setLineDash(getLineStyle(study.type));
+    ctx.setLineDash(getLineStyle(pattern.type));
 
     if (isHovered) {
       ctx.shadowColor = color;
@@ -415,28 +415,28 @@ export const AIStudyRenderer = ({
 
     const x = Math.min(upperX1, lowerX1);
     const y = Math.min(upperY1, lowerY1);
-    drawStudyTag(ctx, x, y - 22, studyNumber, study.type);
+    drawPatternTag(ctx, x, y - 22, patternNumber, pattern.type);
   };
 
   const drawFibonacci = (
     ctx: CanvasRenderingContext2D,
-    study: AIStudyFibonacci,
+    pattern: AIPatternFibonacci,
     manager: CanvasManager,
     candles: Candle[],
     isHovered: boolean,
-    studyNumber: number
+    patternNumber: number
   ) => {
-    const startIndex = candles.findIndex(c => c.timestamp >= study.startPoint.timestamp);
-    const endIndex = candles.findIndex(c => c.timestamp >= study.endPoint.timestamp);
+    const startIndex = candles.findIndex(c => c.timestamp >= pattern.startPoint.timestamp);
+    const endIndex = candles.findIndex(c => c.timestamp >= pattern.endPoint.timestamp);
 
     if (startIndex === -1 || endIndex === -1) return;
 
-    const color = getStudyColor(study.type);
+    const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 2 : 1;
     const x1 = manager.indexToCenterX(startIndex);
     const x2 = manager.indexToCenterX(endIndex);
-    const y1 = manager.priceToY(study.startPoint.price);
-    const y2 = manager.priceToY(study.endPoint.price);
+    const y1 = manager.priceToY(pattern.startPoint.price);
+    const y2 = manager.priceToY(pattern.endPoint.price);
 
     ctx.save();
 
@@ -449,15 +449,15 @@ export const AIStudyRenderer = ({
     ctx.stroke();
     ctx.setLineDash([]);
 
-    const keyLevels = study.type === 'fibonacci-retracement'
+    const keyLevels = pattern.type === 'fibonacci-retracement'
       ? [0.382, 0.5, 0.618]
       : [1.272, 1.618];
 
-    study.levels.forEach((level, index) => {
+    pattern.levels.forEach((level, index) => {
       const y = manager.priceToY(level.price);
 
-      if (keyLevels.includes(level.ratio) && index < study.levels.length - 1) {
-        const nextLevel = study.levels[index + 1];
+      if (keyLevels.includes(level.ratio) && index < pattern.levels.length - 1) {
+        const nextLevel = pattern.levels[index + 1];
         if (nextLevel) {
           const nextY = manager.priceToY(nextLevel.price);
 
@@ -476,7 +476,7 @@ export const AIStudyRenderer = ({
       ctx.shadowBlur = 8;
     }
 
-    study.levels.forEach((level) => {
+    pattern.levels.forEach((level) => {
       const y = manager.priceToY(level.price);
       const isKeyLevel = keyLevels.includes(level.ratio);
       const is0or100 = level.ratio === 0 || level.ratio === 1;
@@ -516,22 +516,22 @@ export const AIStudyRenderer = ({
     ctx.restore();
 
     const x = manager.indexToCenterX(startIndex);
-    const y = manager.priceToY(study.startPoint.price);
-    drawStudyTag(ctx, x, y - 22, studyNumber, study.type);
+    const y = manager.priceToY(pattern.startPoint.price);
+    drawPatternTag(ctx, x, y - 22, patternNumber, pattern.type);
   };
 
   const drawHeadAndShoulders = (
     ctx: CanvasRenderingContext2D,
-    study: AIStudyHeadAndShoulders,
+    pattern: AIPatternHeadAndShoulders,
     manager: CanvasManager,
     candles: Candle[],
     isHovered: boolean,
-    studyNumber: number
+    patternNumber: number
   ) => {
-    const color = getStudyColor(study.type);
+    const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 3 : 2;
 
-    const points = [study.leftShoulder, study.head, study.rightShoulder];
+    const points = [pattern.leftShoulder, pattern.head, pattern.rightShoulder];
     const indices = points.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
 
     if (indices.some(i => i === -1)) return;
@@ -554,9 +554,9 @@ export const AIStudyRenderer = ({
     });
     ctx.stroke();
 
-    if (study.neckline) {
+    if (pattern.neckline) {
       ctx.setLineDash([5, 5]);
-      const [neck1, neck2] = study.neckline;
+      const [neck1, neck2] = pattern.neckline;
       const neckIndex1 = candles.findIndex(c => c.timestamp >= neck1.timestamp);
       const neckIndex2 = candles.findIndex(c => c.timestamp >= neck2.timestamp);
 
@@ -574,22 +574,22 @@ export const AIStudyRenderer = ({
     if (indices[0] !== undefined && indices[0] !== -1) {
       const x = manager.indexToCenterX(indices[0]);
       const y = manager.priceToY(points[0]!.price);
-      drawStudyTag(ctx, x, y - 22, studyNumber, study.type);
+      drawPatternTag(ctx, x, y - 22, patternNumber, pattern.type);
     }
   };
 
   const drawDoublePattern = (
     ctx: CanvasRenderingContext2D,
-    study: AIStudyDoublePattern,
+    pattern: AIPatternDoublePattern,
     manager: CanvasManager,
     candles: Candle[],
     isHovered: boolean,
-    studyNumber: number
+    patternNumber: number
   ) => {
-    const color = getStudyColor(study.type);
+    const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 3 : 2;
 
-    const points = [study.firstPeak, study.secondPeak];
+    const points = [pattern.firstPeak, pattern.secondPeak];
     const indices = points.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
 
     if (indices.some(i => i === -1)) return;
@@ -612,9 +612,9 @@ export const AIStudyRenderer = ({
     });
     ctx.stroke();
 
-    if (study.neckline) {
+    if (pattern.neckline) {
       ctx.setLineDash([5, 5]);
-      const neckY = manager.priceToY(study.neckline.price);
+      const neckY = manager.priceToY(pattern.neckline.price);
       if (indices[0] !== -1 && indices[1] !== -1 && indices[0] !== undefined && indices[1] !== undefined) {
         ctx.beginPath();
         ctx.moveTo(manager.indexToCenterX(indices[0]), neckY);
@@ -629,22 +629,22 @@ export const AIStudyRenderer = ({
     if (indices[0] !== undefined && indices[0] !== -1) {
       const x = manager.indexToCenterX(indices[0]);
       const y = manager.priceToY(points[0]!.price);
-      drawStudyTag(ctx, x, y - 22, studyNumber, study.type);
+      drawPatternTag(ctx, x, y - 22, patternNumber, pattern.type);
     }
   };
 
   const drawTriplePattern = (
     ctx: CanvasRenderingContext2D,
-    study: AIStudyTriplePattern,
+    pattern: AIPatternTriplePattern,
     manager: CanvasManager,
     candles: Candle[],
     isHovered: boolean,
-    studyNumber: number
+    patternNumber: number
   ) => {
-    const color = getStudyColor(study.type);
+    const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 3 : 2;
 
-    const points = [study.peak1, study.peak2, study.peak3];
+    const points = [pattern.peak1, pattern.peak2, pattern.peak3];
     const indices = points.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
 
     if (indices.some(i => i === -1)) return;
@@ -662,9 +662,9 @@ export const AIStudyRenderer = ({
     });
     ctx.stroke();
 
-    if (study.neckline) {
+    if (pattern.neckline) {
       ctx.setLineDash([5, 5]);
-      const [neck1, neck2] = study.neckline;
+      const [neck1, neck2] = pattern.neckline;
       const neckIndex1 = candles.findIndex(c => c.timestamp >= neck1.timestamp);
       const neckIndex2 = candles.findIndex(c => c.timestamp >= neck2.timestamp);
 
@@ -682,25 +682,25 @@ export const AIStudyRenderer = ({
     if (indices[0] !== undefined && indices[0] !== -1) {
       const x = manager.indexToCenterX(indices[0]);
       const y = manager.priceToY(points[0]!.price);
-      drawStudyTag(ctx, x, y - 22, studyNumber, study.type);
+      drawPatternTag(ctx, x, y - 22, patternNumber, pattern.type);
     }
   };
 
   const drawTriangle = (
     ctx: CanvasRenderingContext2D,
-    study: AIStudyTriangle,
+    pattern: AIPatternTriangle,
     manager: CanvasManager,
     candles: Candle[],
     isHovered: boolean,
-    studyNumber: number
+    patternNumber: number
   ) => {
-    const color = getStudyColor(study.type);
+    const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 3 : 2;
 
-    const upperPoint1 = study.upperTrendline[0];
-    const upperPoint2 = study.upperTrendline[1];
-    const lowerPoint1 = study.lowerTrendline[0];
-    const lowerPoint2 = study.lowerTrendline[1];
+    const upperPoint1 = pattern.upperTrendline[0];
+    const upperPoint2 = pattern.upperTrendline[1];
+    const lowerPoint1 = pattern.lowerTrendline[0];
+    const lowerPoint2 = pattern.lowerTrendline[1];
 
     const upperIndex1 = candles.findIndex(c => c.timestamp >= upperPoint1.timestamp);
     const upperIndex2 = candles.findIndex(c => c.timestamp >= upperPoint2.timestamp);
@@ -725,11 +725,11 @@ export const AIStudyRenderer = ({
     ctx.beginPath();
     ctx.moveTo(upperX1, upperY1);
     ctx.lineTo(upperX2, upperY2);
-    if (study.apex) {
-      const apexIndex = candles.findIndex(c => c.timestamp >= study.apex!.timestamp);
+    if (pattern.apex) {
+      const apexIndex = candles.findIndex(c => c.timestamp >= pattern.apex!.timestamp);
       if (apexIndex !== -1) {
         const apexX = manager.indexToCenterX(apexIndex);
-        const apexY = manager.priceToY(study.apex.price);
+        const apexY = manager.priceToY(pattern.apex.price);
         ctx.lineTo(apexX, apexY);
       }
     }
@@ -740,7 +740,7 @@ export const AIStudyRenderer = ({
 
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
-    ctx.setLineDash(getLineStyle(study.type));
+    ctx.setLineDash(getLineStyle(pattern.type));
 
     if (isHovered) {
       ctx.shadowColor = color;
@@ -760,30 +760,30 @@ export const AIStudyRenderer = ({
     ctx.setLineDash([]);
     ctx.restore();
 
-    const firstPoint = study.upperTrendline[0];
+    const firstPoint = pattern.upperTrendline[0];
     const index = candles.findIndex(c => c.timestamp >= firstPoint.timestamp);
     if (index !== -1) {
       const x = manager.indexToCenterX(index);
       const y = manager.priceToY(firstPoint.price);
-      drawStudyTag(ctx, x, y - 22, studyNumber, study.type);
+      drawPatternTag(ctx, x, y - 22, patternNumber, pattern.type);
     }
   };
 
   const drawWedge = (
     ctx: CanvasRenderingContext2D,
-    study: AIStudyWedge,
+    pattern: AIPatternWedge,
     manager: CanvasManager,
     candles: Candle[],
     isHovered: boolean,
-    studyNumber: number
+    patternNumber: number
   ) => {
-    const color = getStudyColor(study.type);
+    const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 3 : 2;
 
-    const upperPoint1 = study.upperTrendline[0];
-    const upperPoint2 = study.upperTrendline[1];
-    const lowerPoint1 = study.lowerTrendline[0];
-    const lowerPoint2 = study.lowerTrendline[1];
+    const upperPoint1 = pattern.upperTrendline[0];
+    const upperPoint2 = pattern.upperTrendline[1];
+    const lowerPoint1 = pattern.lowerTrendline[0];
+    const lowerPoint2 = pattern.lowerTrendline[1];
 
     const upperIndex1 = candles.findIndex(c => c.timestamp >= upperPoint1.timestamp);
     const upperIndex2 = candles.findIndex(c => c.timestamp >= upperPoint2.timestamp);
@@ -808,11 +808,11 @@ export const AIStudyRenderer = ({
     ctx.beginPath();
     ctx.moveTo(upperX1, upperY1);
     ctx.lineTo(upperX2, upperY2);
-    if (study.convergencePoint) {
-      const convIndex = candles.findIndex(c => c.timestamp >= study.convergencePoint!.timestamp);
+    if (pattern.convergencePoint) {
+      const convIndex = candles.findIndex(c => c.timestamp >= pattern.convergencePoint!.timestamp);
       if (convIndex !== -1) {
         const convX = manager.indexToCenterX(convIndex);
-        const convY = manager.priceToY(study.convergencePoint.price);
+        const convY = manager.priceToY(pattern.convergencePoint.price);
         ctx.lineTo(convX, convY);
       }
     }
@@ -823,7 +823,7 @@ export const AIStudyRenderer = ({
 
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
-    ctx.setLineDash(getLineStyle(study.type));
+    ctx.setLineDash(getLineStyle(pattern.type));
 
     if (isHovered) {
       ctx.shadowColor = color;
@@ -843,24 +843,24 @@ export const AIStudyRenderer = ({
     ctx.setLineDash([]);
     ctx.restore();
 
-    const firstPoint = study.upperTrendline[0];
+    const firstPoint = pattern.upperTrendline[0];
     const index = candles.findIndex(c => c.timestamp >= firstPoint.timestamp);
     if (index !== -1) {
       const x = manager.indexToCenterX(index);
       const y = manager.priceToY(firstPoint.price);
-      drawStudyTag(ctx, x, y - 22, studyNumber, study.type);
+      drawPatternTag(ctx, x, y - 22, patternNumber, pattern.type);
     }
   };
 
   const drawFlag = (
     ctx: CanvasRenderingContext2D,
-    study: AIStudyFlag,
+    pattern: AIPatternFlag,
     manager: CanvasManager,
     candles: Candle[],
     isHovered: boolean,
-    studyNumber: number
+    patternNumber: number
   ) => {
-    const color = getStudyColor(study.type);
+    const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 3 : 2;
 
     ctx.save();
@@ -872,18 +872,18 @@ export const AIStudyRenderer = ({
       ctx.shadowBlur = 8;
     }
 
-    const poleStartIndex = candles.findIndex(c => c.timestamp >= study.flagpole.start.timestamp);
-    const poleEndIndex = candles.findIndex(c => c.timestamp >= study.flagpole.end.timestamp);
+    const poleStartIndex = candles.findIndex(c => c.timestamp >= pattern.flagpole.start.timestamp);
+    const poleEndIndex = candles.findIndex(c => c.timestamp >= pattern.flagpole.end.timestamp);
 
     if (poleStartIndex !== -1 && poleEndIndex !== -1) {
       ctx.beginPath();
-      ctx.moveTo(manager.indexToCenterX(poleStartIndex), manager.priceToY(study.flagpole.start.price));
-      ctx.lineTo(manager.indexToCenterX(poleEndIndex), manager.priceToY(study.flagpole.end.price));
+      ctx.moveTo(manager.indexToCenterX(poleStartIndex), manager.priceToY(pattern.flagpole.start.price));
+      ctx.lineTo(manager.indexToCenterX(poleEndIndex), manager.priceToY(pattern.flagpole.end.price));
       ctx.stroke();
     }
 
     ctx.setLineDash([5, 5]);
-    [study.flag.upperTrendline, study.flag.lowerTrendline].forEach((line) => {
+    [pattern.flag.upperTrendline, pattern.flag.lowerTrendline].forEach((line) => {
       const [point1, point2] = line;
       const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
       const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
@@ -901,20 +901,20 @@ export const AIStudyRenderer = ({
 
     if (poleStartIndex !== -1) {
       const x = manager.indexToCenterX(poleStartIndex);
-      const y = manager.priceToY(study.flagpole.start.price);
-      drawStudyTag(ctx, x, y - 22, studyNumber, study.type);
+      const y = manager.priceToY(pattern.flagpole.start.price);
+      drawPatternTag(ctx, x, y - 22, patternNumber, pattern.type);
     }
   };
 
   const drawPennant = (
     ctx: CanvasRenderingContext2D,
-    study: AIStudyPennant,
+    pattern: AIPatternPennant,
     manager: CanvasManager,
     candles: Candle[],
     isHovered: boolean,
-    studyNumber: number
+    patternNumber: number
   ) => {
-    const color = getStudyColor(study.type);
+    const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 3 : 2;
 
     ctx.save();
@@ -926,18 +926,18 @@ export const AIStudyRenderer = ({
       ctx.shadowBlur = 8;
     }
 
-    const poleStartIndex = candles.findIndex(c => c.timestamp >= study.flagpole.start.timestamp);
-    const poleEndIndex = candles.findIndex(c => c.timestamp >= study.flagpole.end.timestamp);
+    const poleStartIndex = candles.findIndex(c => c.timestamp >= pattern.flagpole.start.timestamp);
+    const poleEndIndex = candles.findIndex(c => c.timestamp >= pattern.flagpole.end.timestamp);
 
     if (poleStartIndex !== -1 && poleEndIndex !== -1) {
       ctx.beginPath();
-      ctx.moveTo(manager.indexToCenterX(poleStartIndex), manager.priceToY(study.flagpole.start.price));
-      ctx.lineTo(manager.indexToCenterX(poleEndIndex), manager.priceToY(study.flagpole.end.price));
+      ctx.moveTo(manager.indexToCenterX(poleStartIndex), manager.priceToY(pattern.flagpole.start.price));
+      ctx.lineTo(manager.indexToCenterX(poleEndIndex), manager.priceToY(pattern.flagpole.end.price));
       ctx.stroke();
     }
 
     ctx.setLineDash([5, 5]);
-    [study.pennant.upperTrendline, study.pennant.lowerTrendline].forEach((line) => {
+    [pattern.pennant.upperTrendline, pattern.pennant.lowerTrendline].forEach((line) => {
       const [point1, point2] = line;
       const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
       const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
@@ -955,25 +955,25 @@ export const AIStudyRenderer = ({
 
     if (poleStartIndex !== -1) {
       const x = manager.indexToCenterX(poleStartIndex);
-      const y = manager.priceToY(study.flagpole.start.price);
-      drawStudyTag(ctx, x, y - 22, studyNumber, study.type);
+      const y = manager.priceToY(pattern.flagpole.start.price);
+      drawPatternTag(ctx, x, y - 22, patternNumber, pattern.type);
     }
   };
 
   const drawCupAndHandle = (
     ctx: CanvasRenderingContext2D,
-    study: AIStudyCupAndHandle,
+    pattern: AIPatternCupAndHandle,
     manager: CanvasManager,
     candles: Candle[],
     isHovered: boolean,
-    studyNumber: number
+    patternNumber: number
   ) => {
-    const color = getStudyColor(study.type);
+    const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 2 : 1;
 
-    const cupStartIndex = candles.findIndex(c => c.timestamp >= study.cupStart.timestamp);
-    const cupBottomIndex = candles.findIndex(c => c.timestamp >= study.cupBottom.timestamp);
-    const cupEndIndex = candles.findIndex(c => c.timestamp >= study.cupEnd.timestamp);
+    const cupStartIndex = candles.findIndex(c => c.timestamp >= pattern.cupStart.timestamp);
+    const cupBottomIndex = candles.findIndex(c => c.timestamp >= pattern.cupBottom.timestamp);
+    const cupEndIndex = candles.findIndex(c => c.timestamp >= pattern.cupEnd.timestamp);
 
     if (cupStartIndex === -1 || cupBottomIndex === -1 || cupEndIndex === -1) return;
 
@@ -987,48 +987,48 @@ export const AIStudyRenderer = ({
     }
 
     ctx.beginPath();
-    ctx.moveTo(manager.indexToCenterX(cupStartIndex), manager.priceToY(study.cupStart.price));
+    ctx.moveTo(manager.indexToCenterX(cupStartIndex), manager.priceToY(pattern.cupStart.price));
     ctx.quadraticCurveTo(
       manager.indexToCenterX(cupBottomIndex),
-      manager.priceToY(study.cupBottom.price),
+      manager.priceToY(pattern.cupBottom.price),
       manager.indexToCenterX(cupEndIndex),
-      manager.priceToY(study.cupEnd.price)
+      manager.priceToY(pattern.cupEnd.price)
     );
     ctx.stroke();
 
-    const handleStartIndex = candles.findIndex(c => c.timestamp >= study.handleStart.timestamp);
-    const handleLowIndex = candles.findIndex(c => c.timestamp >= study.handleLow.timestamp);
-    const handleEndIndex = candles.findIndex(c => c.timestamp >= study.handleEnd.timestamp);
+    const handleStartIndex = candles.findIndex(c => c.timestamp >= pattern.handleStart.timestamp);
+    const handleLowIndex = candles.findIndex(c => c.timestamp >= pattern.handleLow.timestamp);
+    const handleEndIndex = candles.findIndex(c => c.timestamp >= pattern.handleEnd.timestamp);
 
     if (handleStartIndex !== -1 && handleLowIndex !== -1 && handleEndIndex !== -1) {
       ctx.beginPath();
-      ctx.moveTo(manager.indexToCenterX(handleStartIndex), manager.priceToY(study.handleStart.price));
-      ctx.lineTo(manager.indexToCenterX(handleLowIndex), manager.priceToY(study.handleLow.price));
-      ctx.lineTo(manager.indexToCenterX(handleEndIndex), manager.priceToY(study.handleEnd.price));
+      ctx.moveTo(manager.indexToCenterX(handleStartIndex), manager.priceToY(pattern.handleStart.price));
+      ctx.lineTo(manager.indexToCenterX(handleLowIndex), manager.priceToY(pattern.handleLow.price));
+      ctx.lineTo(manager.indexToCenterX(handleEndIndex), manager.priceToY(pattern.handleEnd.price));
       ctx.stroke();
     }
 
     ctx.restore();
 
     const x = manager.indexToCenterX(cupStartIndex);
-    const y = manager.priceToY(study.cupStart.price);
-    drawStudyTag(ctx, x, y - 22, studyNumber, study.type);
+    const y = manager.priceToY(pattern.cupStart.price);
+    drawPatternTag(ctx, x, y - 22, patternNumber, pattern.type);
   };
 
   const drawRoundingBottom = (
     ctx: CanvasRenderingContext2D,
-    study: AIStudyRoundingBottom,
+    pattern: AIPatternRoundingBottom,
     manager: CanvasManager,
     candles: Candle[],
     isHovered: boolean,
-    studyNumber: number
+    patternNumber: number
   ) => {
-    const color = getStudyColor(study.type);
+    const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 2 : 1;
 
-    const startIndex = candles.findIndex(c => c.timestamp >= study.start.timestamp);
-    const bottomIndex = candles.findIndex(c => c.timestamp >= study.bottom.timestamp);
-    const endIndex = candles.findIndex(c => c.timestamp >= study.end.timestamp);
+    const startIndex = candles.findIndex(c => c.timestamp >= pattern.start.timestamp);
+    const bottomIndex = candles.findIndex(c => c.timestamp >= pattern.bottom.timestamp);
+    const endIndex = candles.findIndex(c => c.timestamp >= pattern.end.timestamp);
 
     if (startIndex === -1 || bottomIndex === -1 || endIndex === -1) return;
 
@@ -1042,41 +1042,41 @@ export const AIStudyRenderer = ({
     }
 
     ctx.beginPath();
-    ctx.moveTo(manager.indexToCenterX(startIndex), manager.priceToY(study.start.price));
+    ctx.moveTo(manager.indexToCenterX(startIndex), manager.priceToY(pattern.start.price));
     ctx.quadraticCurveTo(
       manager.indexToCenterX(bottomIndex),
-      manager.priceToY(study.bottom.price),
+      manager.priceToY(pattern.bottom.price),
       manager.indexToCenterX(endIndex),
-      manager.priceToY(study.end.price)
+      manager.priceToY(pattern.end.price)
     );
     ctx.stroke();
 
     ctx.restore();
 
     const x = manager.indexToCenterX(startIndex);
-    const y = manager.priceToY(study.start.price);
-    drawStudyTag(ctx, x, y - 22, studyNumber, study.type);
+    const y = manager.priceToY(pattern.start.price);
+    drawPatternTag(ctx, x, y - 22, patternNumber, pattern.type);
   };
 
   const drawGap = (
     ctx: CanvasRenderingContext2D,
-    study: AIStudyGap,
+    pattern: AIPatternGap,
     manager: CanvasManager,
     candles: Candle[],
     isHovered: boolean,
-    studyNumber: number
+    patternNumber: number
   ) => {
-    const startIndex = candles.findIndex(c => c.timestamp >= study.gapStart.timestamp);
-    const endIndex = candles.findIndex(c => c.timestamp >= study.gapEnd.timestamp);
+    const startIndex = candles.findIndex(c => c.timestamp >= pattern.gapStart.timestamp);
+    const endIndex = candles.findIndex(c => c.timestamp >= pattern.gapEnd.timestamp);
 
     if (startIndex === -1 || endIndex === -1) return;
 
     const x1 = manager.indexToCenterX(startIndex);
     const x2 = manager.indexToCenterX(endIndex);
-    const y1 = manager.priceToY(study.gapStart.price);
-    const y2 = manager.priceToY(study.gapEnd.price);
+    const y1 = manager.priceToY(pattern.gapStart.price);
+    const y2 = manager.priceToY(pattern.gapEnd.price);
 
-    const color = getStudyColor(study.type);
+    const color = getPatternColor(pattern.type);
     const rgb = hexToRgb(color);
     const fillColor = rgb
       ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`
@@ -1100,28 +1100,28 @@ export const AIStudyRenderer = ({
 
     ctx.restore();
 
-    drawStudyTag(ctx, x1 + 4, Math.min(y1, y2) + 4, studyNumber, study.type);
+    drawPatternTag(ctx, x1 + 4, Math.min(y1, y2) + 4, patternNumber, pattern.type);
   };
 
   const drawZone = (
     ctx: CanvasRenderingContext2D,
-    study: AIStudyZone,
+    pattern: AIPatternZone,
     manager: CanvasManager,
     candles: Candle[],
     isHovered: boolean,
-    studyNumber: number
+    patternNumber: number
   ) => {
-    const startIndex = candles.findIndex(c => c.timestamp >= study.startTimestamp);
-    const endIndex = candles.findIndex(c => c.timestamp >= study.endTimestamp);
+    const startIndex = candles.findIndex(c => c.timestamp >= pattern.startTimestamp);
+    const endIndex = candles.findIndex(c => c.timestamp >= pattern.endTimestamp);
 
     if (startIndex === -1 || endIndex === -1) return;
 
     const x1 = manager.indexToCenterX(startIndex);
     let x2 = manager.indexToCenterX(endIndex);
-    const y1 = manager.priceToY(study.topPrice);
-    const y2 = manager.priceToY(study.bottomPrice);
+    const y1 = manager.priceToY(pattern.topPrice);
+    const y2 = manager.priceToY(pattern.bottomPrice);
 
-    if (study.type === 'buy-zone' || study.type === 'sell-zone' || study.type === 'liquidity-zone' || study.type === 'accumulation-zone') {
+    if (pattern.type === 'buy-zone' || pattern.type === 'sell-zone' || pattern.type === 'liquidity-zone' || pattern.type === 'accumulation-zone') {
       const lastCandleX = manager.indexToX(candles.length - 1);
       const extensionDistance = 36;
       const targetX = lastCandleX + extensionDistance;
@@ -1131,7 +1131,7 @@ export const AIStudyRenderer = ({
       }
     }
 
-    const baseColor = getStudyColor(study.type);
+    const baseColor = getPatternColor(pattern.type);
     const rgb = hexToRgb(baseColor);
 
     const fillOpacity = isHovered ? 0.25 : 0.15;
@@ -1153,7 +1153,7 @@ export const AIStudyRenderer = ({
 
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
 
-    drawAndStoreStudyTag(ctx, x1 + 4, y1 + 4, studyNumber, study);
+    drawAndStorePatternTag(ctx, x1 + 4, y1 + 4, patternNumber, pattern);
 
     ctx.restore();
   };
@@ -1167,16 +1167,16 @@ export const AIStudyRenderer = ({
     } : null;
   };
 
-  const drawStudyTag = (
+  const drawPatternTag = (
     ctx: CanvasRenderingContext2D,
     x: number,
     y: number,
-    studyNumber: number,
-    _studyType: AIStudy['type']
+    patternNumber: number,
+    _patternType: AIPattern['type']
   ): { x: number; y: number; width: number; height: number } => {
     const PADDING_MULTIPLIER = 2;
     const EXTRA_HEIGHT = 2;
-    const text = `#${studyNumber}`;
+    const text = `#${patternNumber}`;
     const fontSize = 9;
     const paddingX = 4;
     const paddingY = 2;
@@ -1188,21 +1188,21 @@ export const AIStudyRenderer = ({
     return { x, y, width: boxWidth, height: boxHeight };
   };
 
-  const storeTagBounds = (study: AIStudy, bounds: { x: number; y: number; width: number; height: number }): void => {
-    if (study.id !== undefined) {
-      studyTagsRef.current.set(study.id, bounds);
+  const storeTagBounds = (pattern: AIPattern, bounds: { x: number; y: number; width: number; height: number }): void => {
+    if (pattern.id !== undefined) {
+      patternTagsRef.current.set(pattern.id, bounds);
     }
   };
 
-  const drawAndStoreStudyTag = (
+  const drawAndStorePatternTag = (
     ctx: CanvasRenderingContext2D,
     x: number,
     y: number,
-    studyNumber: number,
-    study: AIStudy
+    patternNumber: number,
+    pattern: AIPattern
   ): void => {
-    const tagBounds = drawStudyTag(ctx, x, y, studyNumber, study.type);
-    storeTagBounds(study, tagBounds);
+    const tagBounds = drawPatternTag(ctx, x, y, patternNumber, pattern.type);
+    storeTagBounds(pattern, tagBounds);
   };
 
   return (

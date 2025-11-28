@@ -56,7 +56,7 @@ Before using AI Auto-Trading, ensure you have:
 ### 3. Activation
 
 1. Open Chat sidebar
-2. Click the 🤖 (Bot icon) button next to AI Studies toggle
+2. Click the 🤖 (Bot icon) button next to AI Patterns toggle
 3. AI will begin analyzing the chart automatically
 4. Trades will appear in the Trading Panel
 
@@ -65,7 +65,7 @@ Before using AI Auto-Trading, ensure you have:
 Track performance in:
 - **Settings > AI Auto-Trading**: View statistics (total trades, win rate, P&L)
 - **Trading Panel**: See open positions and trade history
-- **Chat**: AI will explain its decisions (if AI Studies enabled)
+- **Chat**: AI will explain its decisions (if AI Patterns enabled)
 
 ## 📊 How It Works
 

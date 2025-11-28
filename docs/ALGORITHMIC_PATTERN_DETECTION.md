@@ -49,7 +49,7 @@ This document outlines the implementation plan for automatic technical analysis 
 ### Primary Goals
 
 1. **Implement algorithmic detection** for 34 pattern types documented in `TECHNICAL_ANALYSIS_PATTERNS.md`
-2. **Maintain compatibility** with existing `AIStudy` type system and rendering
+2. **Maintain compatibility** with existing `AIPattern` type system and rendering
 3. **Reduce AI API usage** by offloading pattern detection to local algorithms
 4. **Improve reliability** with deterministic, rule-based detection
 5. **Enable hybrid mode** where algorithms detect patterns and AI provides interpretation
@@ -69,7 +69,7 @@ This document outlines the implementation plan for automatic technical analysis 
 ### Available Assets
 
 ✅ **Complete Type System**
-- `src/shared/types/study.ts` - 34 study types defined
+- `src/shared/types/pattern.ts` - 34 pattern types defined
 - All pattern interfaces with required fields
 - Compatible with existing rendering system
 
@@ -88,7 +88,7 @@ interface Candle {
 ✅ **Drawing Infrastructure**
 - `src/renderer/utils/canvasUtils.ts` - Canvas primitives
 - `src/renderer/utils/chartUtils.ts` - Coordinate conversions
-- Study renderers for all 34 pattern types
+- pattern renderers for all 34 pattern types
 
 ✅ **Technical Indicators**
 - `calculateSMA()` / `calculateEMA()` - Moving averages
@@ -102,7 +102,7 @@ interface Candle {
 - Confidence scoring formula
 
 ✅ **Storage & Persistence**
-- `src/renderer/services/AIStudyStorage.ts` - Study persistence per symbol
+- `src/renderer/services/AIPatternStorage.ts` - pattern persistence per symbol
 
 ### Missing Components
 
@@ -110,7 +110,7 @@ interface Candle {
 - No pivot point detection
 - No swing high/low identification
 - No pattern matching logic
-- No automatic study generation
+- No automatic pattern generation
 
 ❌ **Validation System**
 - No programmatic confidence scoring
@@ -159,10 +159,10 @@ src/renderer/utils/patternDetection/
 ```typescript
 // New service
 class PatternDetectionService {
-  detectPatterns(candles: Candle[]): AIStudy[] {
+  detectPatterns(candles: Candle[]): AIPattern[] {
     // Orchestrate all pattern detectors
     // Apply confidence thresholds
-    // Return compatible AIStudy objects
+    // Return compatible AIPatternobjects
   }
 }
 
@@ -172,14 +172,14 @@ class AIService {
     candles: Candle[];
     useAlgorithmicDetection: boolean;
   }) {
-    let studies: AIStudy[] = [];
+    let patterns: AIPattern[] = [];
     
     if (useAlgorithmicDetection) {
       // Use PatternDetectionService
-      studies = patternDetectionService.detectPatterns(candles);
+      patterns = patternDetectionService.detectPatterns(candles);
       
       // Send detected patterns to AI for interpretation
-      const aiResponse = await this.interpretPatterns(studies);
+      const aiResponse = await this.interpretPatterns(patterns);
       return aiResponse;
     } else {
       // Traditional AI-only approach
@@ -298,7 +298,7 @@ function calculateConfidence(factors: ConfidenceFactors): number
 
 **Implementation:**
 ```typescript
-function detectSupport(candles: Candle[], pivots: PivotPoint[]): SupportStudy[] {
+function detectSupport(candles: Candle[], pivots: PivotPoint[]): SupportPattern[] {
   // Cluster pivot lows by price
   const clusters = clusterPivotsByPrice(
     pivots.filter(p => p.type === 'low'),
@@ -310,10 +310,10 @@ function detectSupport(candles: Candle[], pivots: PivotPoint[]): SupportStudy[] 
   
   // Validate volume patterns
   // Calculate confidence
-  // Return SupportStudy objects
+  // Return SupportPatternobjects
 }
 
-function detectResistance(candles: Candle[], pivots: PivotPoint[]): ResistanceStudy[]
+function detectResistance(candles: Candle[], pivots: PivotPoint[]): ResistancePattern[]
 ```
 
 **Tests:**
@@ -330,14 +330,14 @@ function detectResistance(candles: Candle[], pivots: PivotPoint[]): ResistanceSt
 2. Validate minimum 2 points (prefer 3+)
 3. Check if price respects trendline (bounces)
 4. Calculate angle/slope
-5. Return trendline study
+5. Return trendline pattern
 
 **Implementation:**
 ```typescript
 function detectBullishTrendlines(
   candles: Candle[],
   pivots: PivotPoint[]
-): TrendlineBullishStudy[] {
+): TrendlineBullishPattern[] {
   // Connect ascending pivot lows
   // Use least squares regression
   // Validate bounces off trendline
@@ -347,7 +347,7 @@ function detectBullishTrendlines(
 function detectBearishTrendlines(
   candles: Candle[],
   pivots: PivotPoint[]
-): TrendlineBearishStudy[]
+): TrendlineBearishPattern[]
 ```
 
 **Linear Regression:**
@@ -374,7 +374,7 @@ function fitTrendline(points: Point[]): {
 function detectAscendingChannels(
   candles: Candle[],
   pivots: PivotPoint[]
-): ChannelAscendingStudy[] {
+): ChannelAscendingPattern[] {
   // Find upward sloping trendline (lows)
   // Find parallel resistance line (highs)
   // Validate 4+ touches
@@ -400,14 +400,14 @@ function detectHorizontalChannels(...) // Range-bound
 1. Identify significant swing high and swing low
 2. Calculate Fibonacci levels (23.6%, 38.2%, 50%, 61.8%, 78.6%)
 3. Check if price respects levels (support/resistance)
-4. Return Fibonacci study with all levels
+4. Return Fibonacci pattern with all levels
 
 **Implementation:**
 ```typescript
 function detectFibonacciRetracements(
   candles: Candle[],
   pivots: PivotPoint[]
-): FibonacciRetracementStudy[] {
+): FibonacciRetracementPattern[] {
   // Find major swing points (highest high, lowest low)
   const swingHigh = findHighestPivot(pivots);
   const swingLow = findLowestPivot(pivots);
@@ -423,7 +423,7 @@ function detectFibonacciRetracements(
   };
   
   // Validate price reactions at levels
-  // Return study
+  // Return pattern
 }
 ```
 
@@ -441,7 +441,7 @@ function detectFibonacciRetracements(
 function detectAscendingTriangles(
   candles: Candle[],
   pivots: PivotPoint[]
-): TriangleAscendingStudy[] {
+): TriangleAscendingPattern[] {
   // Find horizontal resistance (repeated highs)
   // Find rising support trendline (ascending lows)
   // Validate convergence
@@ -464,7 +464,7 @@ function detectAscendingTriangles(
 function detectHeadAndShoulders(
   candles: Candle[],
   pivots: PivotPoint[]
-): HeadAndShouldersStudy[] {
+): HeadAndShouldersPattern[] {
   // Find sequence of 3 pivot highs
   // Validate middle is highest
   // Validate shoulders within 5% height
@@ -521,7 +521,7 @@ function detectHeadAndShoulders(
 
 **Algorithm:**
 ```typescript
-function detectGaps(candles: Candle[]): GapStudy[] {
+function detectGaps(candles: Candle[]): GapPattern[] {
   // Find gaps where open != previous close
   // Classify gap type based on:
   //   - Volume
@@ -556,34 +556,34 @@ class PatternDetectionService {
   detectPatterns(
     candles: Candle[],
     options?: DetectionOptions
-  ): AIStudy[] {
+  ): AIPattern[] {
     // 1. Find pivot points
     const pivots = findPivotPoints(candles);
     
     // 2. Run all pattern detectors in parallel
-    const allStudies = await Promise.all(
+    const allPatterns = await Promise.all(
       this.detectors.map(detector => detector(candles, pivots))
     );
     
     // 3. Flatten and filter by confidence threshold
-    const studies = allStudies
+    const patterns = allPatterns
       .flat()
       .filter(s => s.confidence >= options.minConfidence);
     
     // 4. Remove duplicates/overlapping patterns
-    const deduplicated = deduplicateStudies(studies);
+    const deduplicated = deduplicatePatterns(patterns);
     
     // 5. Sort by priority (reversals > continuations > S/R)
     const sorted = sortByPriority(deduplicated);
     
-    // 6. Assign study numbers
-    return assignStudyNumbers(sorted);
+    // 6. Assign pattern numbers
+    return assignPatternNumbers(sorted);
   }
   
   detectPatternsIncremental(
-    existingStudies: AIStudy[],
+    existingPatterns: AIPattern[],
     newCandles: Candle[]
-  ): AIStudy[] {
+  ): AIPattern[] {
     // Optimized for real-time updates
     // Only recalculate patterns affected by new candles
   }
@@ -601,15 +601,15 @@ async analyzeChart(params: AnalysisParams): Promise<AIResponse> {
   
   if (useAlgorithmicDetection) {
     // Phase 1: Detect patterns algorithmically
-    const detectedStudies = patternDetectionService.detectPatterns(candles);
+    const detectedPatterns = patternDetectionService.detectPatterns(candles);
     
     // Phase 2: Send detected patterns to AI for interpretation
-    const prompt = this.buildInterpretationPrompt(detectedStudies, candles);
+    const prompt = this.buildInterpretationPrompt(detectedPatterns, candles);
     const aiResponse = await this.callAI(prompt);
     
-    // Phase 3: Merge algorithmic studies with AI insights
+    // Phase 3: Merge algorithmic patterns with AI insights
     return {
-      studies: detectedStudies,
+      patterns: detectedPatterns,
       analysis: aiResponse.analysis,
       confidence: aiResponse.confidence
     };
@@ -620,12 +620,12 @@ async analyzeChart(params: AnalysisParams): Promise<AIResponse> {
 }
 
 private buildInterpretationPrompt(
-  studies: AIStudy[],
+  patterns: AIPattern[],
   recentCandles: Candle[]
 ): string {
   return `
     The following patterns have been detected in the chart:
-    ${studies.map(s => `- Study #${s.number}: ${s.type}`).join('\n')}
+    ${patterns.map(s => `- Pattern #${s.number}: ${s.type}`).join('\n')}
     
     Recent price action: ${formatRecentCandles(recentCandles)}
     
@@ -661,7 +661,7 @@ interface AISettings {
   algorithmicSettings: {
     minConfidence: number; // 0.5 - 0.9
     pivotSensitivity: number; // 3-10 candles
-    enabledPatterns: AIStudyType[]; // User can disable specific patterns
+    enabledPatterns: AIPatternType[]; // User can disable specific patterns
   };
 }
 ```
@@ -696,20 +696,20 @@ interface AISettings {
 )}
 ```
 
-#### 6.2 Study Visualization Enhancements
+#### 6.2 pattern Visualization Enhancements
 
 **Show detection method:**
 ```tsx
-<Badge colorScheme={study.detectedBy === 'algorithm' ? 'blue' : 'purple'}>
-  {study.detectedBy === 'algorithm' ? '🔢 Algorithmic' : '🤖 AI'}
+<Badge colorScheme={pattern.detectedBy === 'algorithm' ? 'blue' : 'purple'}>
+  {pattern.detectedBy === 'algorithm' ? '🔢 Algorithmic' : '🤖 AI'}
 </Badge>
 ```
 
 **Confidence visualization:**
 ```tsx
 <Progress
-  value={study.confidence * 100}
-  colorScheme={study.confidence > 0.7 ? 'green' : 'yellow'}
+  value={pattern.confidence * 100}
+  colorScheme={pattern.confidence > 0.7 ? 'green' : 'yellow'}
   size="sm"
 />
 ```
@@ -811,13 +811,13 @@ export interface PatternCluster {
 export interface DetectionOptions {
   minConfidence?: number;
   pivotSensitivity?: number;
-  enabledPatterns?: AIStudyType[];
+  enabledPatterns?: AIPatternType[];
   prioritizeRecent?: boolean;
   maxPatternsPerType?: number;
 }
 
 export interface DetectionResult {
-  studies: AIStudy[];
+  patterns: AIPattern[];
   metadata: {
     pivotsFound: number;
     patternsDetected: number;
@@ -855,7 +855,7 @@ self.onmessage = (event: MessageEvent) => {
 class PatternDetectionManager {
   private worker: Worker;
   
-  async detectAsync(candles: Candle[]): Promise<AIStudy[]> {
+  async detectAsync(candles: Candle[]): Promise<AIPattern[]> {
     return new Promise((resolve) => {
       this.worker.postMessage({ candles });
       this.worker.onmessage = (event) => resolve(event.data);
@@ -869,27 +869,27 @@ class PatternDetectionManager {
 ```typescript
 class PatternCache {
   private cache = new Map<string, {
-    studies: AIStudy[];
+    patterns: AIPattern[];
     lastCandle: number;
     timestamp: number;
   }>();
   
-  get(symbol: string, lastCandleTime: number): AIStudy[] | null {
+  get(symbol: string, lastCandleTime: number): AIPattern[] | null {
     const cached = this.cache.get(symbol);
     if (!cached) return null;
     
     // Cache valid if last candle matches and < 5 minutes old
     if (cached.lastCandle === lastCandleTime &&
         Date.now() - cached.timestamp < 5 * 60 * 1000) {
-      return cached.studies;
+      return cached.patterns;
     }
     
     return null;
   }
   
-  set(symbol: string, studies: AIStudy[], lastCandleTime: number): void {
+  set(symbol: string, patterns: AIPattern[], lastCandleTime: number): void {
     this.cache.set(symbol, {
-      studies,
+      patterns,
       lastCandle: lastCandleTime,
       timestamp: Date.now()
     });
@@ -970,24 +970,24 @@ describe('Pattern Detection Integration', () => {
     const service = new PatternDetectionService();
     const result = service.detectPatterns(btcData);
     
-    expect(result.studies.length).toBeGreaterThan(0);
-    expect(result.studies).toContainEqual(
+    expect(result.patterns.length).toBeGreaterThan(0);
+    expect(result.patterns).toContainEqual(
       expect.objectContaining({ type: 'support' })
     );
-    expect(result.studies).toContainEqual(
+    expect(result.patterns).toContainEqual(
       expect.objectContaining({ type: 'resistance' })
     );
   });
   
-  it('should maintain compatibility with AIStudy type', () => {
+  it('should maintain compatibility with AIPatterntype', () => {
     const candles = mockCandles();
-    const studies = patternDetectionService.detectPatterns(candles);
+    const patterns = patternDetectionService.detectPatterns(candles);
     
-    studies.forEach(study => {
-      expect(study).toHaveProperty('id');
-      expect(study).toHaveProperty('type');
-      expect(study).toHaveProperty('confidence');
-      expect(study).toHaveProperty('number');
+    patterns.forEach(pattern => {
+      expect(pattern).toHaveProperty('id');
+      expect(pattern).toHaveProperty('type');
+      expect(pattern).toHaveProperty('confidence');
+      expect(pattern).toHaveProperty('number');
     });
   });
 });
@@ -999,14 +999,14 @@ describe('Pattern Detection Integration', () => {
 ```typescript
 describe('Pattern Rendering', () => {
   it('should render support line at correct price level', () => {
-    const support: SupportStudy = {
+    const support: SupportPattern= {
       type: 'support',
       price: 100,
       touches: 3,
       // ...
     };
     
-    const canvas = renderStudyToCanvas(support, mockCandles());
+    const canvas = renderPatternToCanvas(support, mockCandles());
     const imageData = canvas.toDataURL();
     
     expect(imageData).toMatchSnapshot();
@@ -1051,25 +1051,25 @@ describe('Performance', () => {
 class PatternDetectionService {
   private lastDetection: {
     candles: Candle[];
-    studies: AIStudy[];
+    patterns: AIPattern[];
   } | null = null;
   
-  detectPatternsIncremental(newCandles: Candle[]): AIStudy[] {
+  detectPatternsIncremental(newCandles: Candle[]): AIPattern[] {
     if (!this.lastDetection) {
       return this.detectPatterns(newCandles);
     }
     
     // Only recompute patterns affected by new candles
-    const affectedStudies = this.getAffectedStudies(newCandles);
-    const unchangedStudies = this.lastDetection.studies.filter(
-      s => !affectedStudies.includes(s)
+    const affectedPatterns = this.getAffectedPatterns(newCandles);
+    const unchangedPatterns = this.lastDetection.patterns.filter(
+      s => !affectedPatterns.includes(s)
     );
     
-    const updatedStudies = this.detectPatterns(
+    const updatedPatterns = this.detectPatterns(
       [...this.lastDetection.candles, ...newCandles]
     );
     
-    return [...unchangedStudies, ...updatedStudies];
+    return [...unchangedPatterns, ...updatedPatterns];
   }
 }
 ```
@@ -1079,19 +1079,19 @@ class PatternDetectionService {
 // Don't detect all patterns on initial load
 // Detect high-priority patterns first (S/R, trendlines)
 // Detect complex patterns on demand or in background
-async detectPatternsPrioritized(candles: Candle[]): Promise<AIStudy[]> {
-  const priorityStudies = await this.detectPriorityPatterns(candles);
+async detectPatternsPrioritized(candles: Candle[]): Promise<AIPattern[]> {
+  const priorityPatterns = await this.detectPriorityPatterns(candles);
   
   // Show priority patterns immediately
-  this.emit('patterns-detected', priorityStudies);
+  this.emit('patterns-detected', priorityPatterns);
   
   // Detect remaining patterns in background
   setTimeout(() => {
-    const allStudies = this.detectAllPatterns(candles);
-    this.emit('patterns-complete', allStudies);
+    const allPatterns = this.detectAllPatterns(candles);
+    this.emit('patterns-complete', allPatterns);
   }, 0);
   
-  return priorityStudies;
+  return priorityPatterns;
 }
 ```
 
@@ -1109,15 +1109,15 @@ const debouncedDetection = debounce(
 // Only analyze recent candles for most patterns
 const ANALYSIS_WINDOW = 200; // Last 200 candles
 
-function detectPatterns(allCandles: Candle[]): AIStudy[] {
+function detectPatterns(allCandles: Candle[]): AIPattern[] {
   // Use only recent candles for pattern detection
   const recentCandles = allCandles.slice(-ANALYSIS_WINDOW);
   
   // Detect patterns
-  const studies = this.runDetectors(recentCandles);
+  const patterns = this.runDetectors(recentCandles);
   
-  // Map study timestamps back to full dataset
-  return studies.map(s => ({
+  // Map pattern timestamps back to full dataset
+  return patterns.map(s => ({
     ...s,
     timestamp: adjustTimestamp(s.timestamp, allCandles, recentCandles)
   }));
@@ -1127,7 +1127,7 @@ function detectPatterns(allCandles: Candle[]): AIStudy[] {
 #### 5. **Parallel Processing**
 ```typescript
 // Run independent pattern detectors in parallel
-async detectPatterns(candles: Candle[]): Promise<AIStudy[]> {
+async detectPatterns(candles: Candle[]): Promise<AIPattern[]> {
   const pivots = findPivotPoints(candles);
   
   const [
@@ -1160,17 +1160,17 @@ async detectPatterns(candles: Candle[]): Promise<AIStudy[]> {
 ### Memory Management
 
 ```typescript
-// Limit number of studies kept in memory
-const MAX_STUDIES_PER_SYMBOL = 50;
+// Limit number of patterns kept in memory
+const MAX_PATTERN_PER_SYMBOL = 50;
 
-function pruneStudies(studies: AIStudy[]): AIStudy[] {
-  // Keep high-confidence studies
-  const highConfidence = studies.filter(s => s.confidence > 0.75);
+function prunePatterns(patterns: AIPattern[]): AIPattern[] {
+  // Keep high-confidence patterns
+  const highConfidence = patterns.filter(s => s.confidence > 0.75);
   
-  // Keep recent studies
-  const recent = studies
+  // Keep recent patterns
+  const recent = patterns
     .sort((a, b) => b.timestamp - a.timestamp)
-    .slice(0, MAX_STUDIES_PER_SYMBOL);
+    .slice(0, MAX_PATTERN_PER_SYMBOL);
   
   // Merge and deduplicate
   return [...new Set([...highConfidence, ...recent])];
@@ -1198,7 +1198,7 @@ async analyzeChartHybrid(params: {
   candles: Candle[];
 }): Promise<HybridAnalysisResult> {
   // Step 1: Algorithmic pattern detection
-  const detectedStudies = await patternDetectionService.detectPatterns(
+  const detectedPatterns = await patternDetectionService.detectPatterns(
     params.candles
   );
   
@@ -1207,7 +1207,7 @@ async analyzeChartHybrid(params: {
     Chart Analysis for ${params.symbol}
     
     DETECTED PATTERNS (Algorithmic):
-    ${this.formatStudiesForAI(detectedStudies)}
+    ${this.formatPatternsForAI(detectedPatterns)}
     
     RECENT PRICE ACTION:
     ${this.formatRecentCandles(params.candles.slice(-20))}
@@ -1227,9 +1227,9 @@ async analyzeChartHybrid(params: {
   
   // Step 4: Combine results
   return {
-    studies: detectedStudies,
+    patterns: detectedPatterns,
     analysis: aiResponse.analysis,
-    confidence: this.calculateOverallConfidence(detectedStudies),
+    confidence: this.calculateOverallConfidence(detectedPatterns),
     detectionMethod: 'hybrid'
   };
 }
@@ -1255,17 +1255,17 @@ Recent candles: [1000+ candles of OHLCV data]
 The following patterns have been algorithmically detected:
 
 SUPPORT LEVELS:
-- Study #1: Support at $42,500 (3 touches, confidence: 0.82)
-- Study #2: Support at $40,000 (5 touches, confidence: 0.91)
+- Pattern #1: Support at $42,500 (3 touches, confidence: 0.82)
+- Pattern #2: Support at $40,000 (5 touches, confidence: 0.91)
 
 RESISTANCE LEVELS:
-- Study #3: Resistance at $45,000 (4 touches, confidence: 0.78)
+- Pattern #3: Resistance at $45,000 (4 touches, confidence: 0.78)
 
 TRENDLINES:
-- Study #4: Bullish trendline from Oct 1 to Nov 15 (angle: 23°, confidence: 0.85)
+- Pattern #4: Bullish trendline from Oct 1 to Nov 15 (angle: 23°, confidence: 0.85)
 
 CHART PATTERNS:
-- Study #5: Ascending triangle forming (flat top: $45k, rising lows, confidence: 0.73)
+- Pattern #5: Ascending triangle forming (flat top: $45k, rising lows, confidence: 0.73)
 
 Recent price action: Last 20 candles [minimal data]
 
@@ -1277,11 +1277,11 @@ Provide market interpretation and trading guidance.
 
 **Current AI-only approach:**
 - Input tokens: ~50,000 (candle data + prompt)
-- Output tokens: ~1,500 (analysis + studies JSON)
+- Output tokens: ~1,500 (analysis + patterns JSON)
 - Cost per analysis (GPT-4): ~$0.50
 
 **Hybrid approach:**
-- Input tokens: ~5,000 (studies + recent candles + prompt)
+- Input tokens: ~5,000 (patterns + recent candles + prompt)
 - Output tokens: ~1,000 (interpretation only)
 - Cost per analysis: ~$0.05
 
@@ -1425,8 +1425,8 @@ const AI_STRATEGIES = {
    - **Fallback:** User can disable specific pattern types
 
 4. **Compatibility issues**
-   - **Risk:** Algorithmic studies don't integrate with existing rendering
-   - **Mitigation:** Use same AIStudy type system, maintain compatibility
+   - **Risk:** Algorithmic patterns don't integrate with existing rendering
+   - **Mitigation:** Use same AIPatterntype system, maintain compatibility
    - **Fallback:** Create separate rendering path if needed
 
 5. **User resistance**

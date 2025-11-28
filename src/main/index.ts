@@ -298,47 +298,47 @@ const setupIpcHandlers = (): void => {
     )
   );
 
-  ipcMain.handle('storage:getAIStudies', async () =>
+  ipcMain.handle('storage:getAIPatterns', async () =>
     handleStorageOperation(
-      () => storageService.getAIStudies(),
-      'Failed to get AI studies:',
+      () => storageService.getAIPatterns(),
+      'Failed to get AI patterns:',
       { returnData: true, defaultData: {} }
     )
   );
 
-  ipcMain.handle('storage:setAIStudies', async (_event, studies) =>
+  ipcMain.handle('storage:setAIPatterns', async (_event, patterns) =>
     handleStorageOperation(
-      () => storageService.setAIStudies(studies),
-      'Failed to set AI studies:'
+      () => storageService.setAIPatterns(patterns),
+      'Failed to set AI patterns:'
     )
   );
 
-  ipcMain.handle('storage:getAIStudiesForSymbol', async (_event, symbol) =>
+  ipcMain.handle('storage:getAIPatternsForSymbol', async (_event, symbol) =>
     handleStorageOperation(
-      () => storageService.getAIStudiesForSymbol(symbol),
-      'Failed to get AI studies for symbol:',
+      () => storageService.getAIPatternsForSymbol(symbol),
+      'Failed to get AI patterns for symbol:',
       { returnData: true, defaultData: null }
     )
   );
 
-  ipcMain.handle('storage:setAIStudiesForSymbol', async (_event, symbol, data) =>
+  ipcMain.handle('storage:setAIPatternsForSymbol', async (_event, symbol, data) =>
     handleStorageOperation(
-      () => storageService.setAIStudiesForSymbol(symbol, data),
-      'Failed to set AI studies for symbol:'
+      () => storageService.setAIPatternsForSymbol(symbol, data),
+      'Failed to set AI patterns for symbol:'
     )
   );
 
-  ipcMain.handle('storage:deleteAIStudiesForSymbol', async (_event, symbol) =>
+  ipcMain.handle('storage:deleteAIPatternsForSymbol', async (_event, symbol) =>
     handleStorageOperation(
-      () => storageService.deleteAIStudiesForSymbol(symbol),
-      'Failed to delete AI studies for symbol:'
+      () => storageService.deleteAIPatternsForSymbol(symbol),
+      'Failed to delete AI patterns for symbol:'
     )
   );
 
-  ipcMain.handle('storage:clearAIStudies', async () =>
+  ipcMain.handle('storage:clearAIPatterns', async () =>
     handleStorageOperation(
-      () => storageService.clearAIStudies(),
-      'Failed to clear AI studies:'
+      () => storageService.clearAIPatterns(),
+      'Failed to clear AI patterns:'
     )
   );
 

@@ -1,4 +1,4 @@
-import type { AIStudyWedge, Candle } from '@shared/types';
+import type { AIPatternWedge, Candle } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -68,10 +68,10 @@ const findConvergence = (upperLine: TrendlineData, lowerLine: TrendlineData): { 
 export const detectRisingWedges = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyWedge[] => {
+): AIPatternWedge[] => {
   if (!candles || candles.length < 20) return [];
 
-  const wedges: AIStudyWedge[] = [];
+  const wedges: AIPatternWedge[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
 
@@ -184,10 +184,10 @@ export const detectRisingWedges = (
 export const detectFallingWedges = (
   candles: Candle[],
   pivots: PivotPoint[]
-): AIStudyWedge[] => {
+): AIPatternWedge[] => {
   if (!candles || candles.length < 20) return [];
 
-  const wedges: AIStudyWedge[] = [];
+  const wedges: AIPatternWedge[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
 

@@ -50,7 +50,7 @@
 - 🎨 **Theme System**: Enhanced dark mode with semantic tokens
 - ⚙️ **AI Selector**: Provider and model selection with pricing info
 - 📝 **Message History**: Clean UI with auto-scroll and loading states
-- 🎨 **AI Studies System**: Visual indicators (arrows, zones, lines) with toggle control
+- 🎨 **AI Patterns System**: Visual indicators (arrows, zones, lines) with toggle control
 - 🔄 **Smart Prompt Selection**: Automatic switching between full/simple modes based on user intent
 - ⚙️ **Configurable AI Settings**: Adjustable detailed candles count (10-100, default: 32)
 - 🚀 **Performance Optimized**: Conversation summarization, candle optimization, AI caching

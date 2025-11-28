@@ -21,18 +21,18 @@ import { useTradingStore } from '@renderer/store/tradingStore';
 import { calculateMovingAverage } from '@renderer/utils/movingAverages';
 import type { StochasticResult } from '@renderer/utils/stochastic';
 import { CHART_CONFIG } from '@shared/constants';
-import type { AIStudy, Candle, Viewport } from '@shared/types';
+import type { AIPattern, Candle, Viewport } from '@shared/types';
 import type { Order } from '@shared/types/trading';
 import type React from 'react';
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from './AdvancedControls';
-import { AIStudyRenderer } from './AIStudyRenderer';
 import { CandleTimer } from './CandleTimer';
-import { ChartContextMenu } from './ChartContextMenu';
+import { ChartContextMenuManager } from './ChartContextMenuManager';
 import { ChartNavigation } from './ChartNavigation';
 import { ChartTooltip } from './ChartTooltip';
+import { PatternRenderer } from './PatternRenderer';
 import { useCandlestickRenderer } from './useCandlestickRenderer';
 import { useChartCanvas } from './useChartCanvas';
 import { useCrosshairPriceLineRenderer } from './useCrosshairPriceLineRenderer';
@@ -47,6 +47,7 @@ import { useStochasticRenderer } from './useStochasticRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
 
 const MOUSE_POSITION_THROTTLE_MS = 16;
+const RIGHT_MOUSE_BUTTON = 2;
 
 export interface ChartCanvasProps {
   candles: Candle[];
@@ -66,10 +67,12 @@ export interface ChartCanvasProps {
   movingAverages?: MovingAverageConfig[];
   chartType?: 'candlestick' | 'line';
   advancedConfig?: AdvancedControlsConfig;
-  aiStudies?: AIStudy[];
-  onDeleteAIStudies?: () => void;
-  onToggleAIStudiesVisibility?: () => void;
-  aiStudiesVisible?: boolean;
+  aiPatterns?: AIPattern[];
+  onDeleteAIPatterns?: () => void;
+  onDeleteAIPattern?: (patternId: number) => void;
+  onToggleAIPatternsVisibility?: () => void;
+  aiPatternsVisible?: boolean;
+  onDeletePattern?: (patternId: number) => void;
   timeframe?: string;
 }
 
@@ -91,10 +94,12 @@ export const ChartCanvas = ({
   movingAverages = [],
   chartType = 'candlestick',
   advancedConfig,
-  aiStudies = [],
-  onDeleteAIStudies,
-  onToggleAIStudiesVisibility,
-  aiStudiesVisible = true,
+  aiPatterns = [],
+  onDeleteAIPatterns,
+  onDeleteAIPattern,
+  onToggleAIPatternsVisibility,
+  aiPatternsVisible = true,
+  onDeletePattern,
   timeframe = '1h',
 }: ChartCanvasProps): ReactElement => {
   const { t } = useTranslation();
@@ -172,7 +177,7 @@ export const ChartCanvas = ({
     containerWidth?: number;
     containerHeight?: number;
     candleIndex?: number;
-    aiStudy?: AIStudy;
+    aiPattern?: AIPattern;
     movingAverage?: {
       period: number;
       type: 'SMA' | 'EMA';
@@ -196,7 +201,9 @@ export const ChartCanvas = ({
   });
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [orderPreview, setOrderPreview] = useState<{ price: number; type: 'long' | 'short' } | null>(null);
-  const [hoveredAIStudy, setHoveredAIStudy] = useState<AIStudy | null>(null);
+  const [hoveredAIPattern, setHoveredAIPattern] = useState<AIPattern | null>(null);
+  const [contextMenuPattern, setContextMenuPattern] = useState<AIPattern | null>(null);
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   const [hoveredMAIndex, setHoveredMAIndex] = useState<number | undefined>(undefined);
   const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null);
   const lastHoveredOrderRef = useRef<string | null>(null);
@@ -477,9 +484,9 @@ export const ChartCanvas = ({
     const isOnTimeScale = mouseY >= timeScaleTop;
 
     const lastCandleX = manager.indexToX(candles.length - 1);
-    const studyExtensionArea = lastCandleX + CHART_CONFIG.STUDY_EXTENSION_DISTANCE;
+    const patternExtensionArea = lastCandleX + CHART_CONFIG.PATTERN_EXTENSION_DISTANCE;
     const isInChartArea = mouseX < chartAreaRight && mouseY < timeScaleTop;
-    const isInExtendedStudyArea = mouseX >= chartAreaRight && mouseX <= studyExtensionArea && mouseY < timeScaleTop;
+    const isInExtendedPatternArea = mouseX >= chartAreaRight && mouseX <= patternExtensionArea && mouseY < timeScaleTop;
 
     const hoveredTagIndex = getHoveredMATag(mouseX, mouseY);
 
@@ -489,7 +496,7 @@ export const ChartCanvas = ({
       setCursor('ns-resize');
     } else if (isOnTimeScale) {
       setCursor('crosshair');
-    } else if (isInChartArea || isInExtendedStudyArea) {
+    } else if (isInChartArea || isInExtendedPatternArea) {
       setCursor('crosshair');
     }
 
@@ -644,7 +651,7 @@ export const ChartCanvas = ({
       }
     }
 
-    if (hoveredAIStudy) {
+    if (hoveredAIPattern) {
       setTooltipData({
         candle: null,
         x: mouseX,
@@ -652,7 +659,7 @@ export const ChartCanvas = ({
         visible: true,
         containerWidth: rect.width,
         containerHeight: rect.height,
-        aiStudy: hoveredAIStudy,
+        aiPattern: hoveredAIPattern,
       });
       return;
     }
@@ -740,7 +747,7 @@ export const ChartCanvas = ({
     handleMouseLeave();
     setMousePosition(null);
     setOrderPreview(null);
-    setHoveredAIStudy(null);
+    setHoveredAIPattern(null);
     setHoveredOrderId(null);
     lastHoveredOrderRef.current = null;
     lastTooltipOrderRef.current = null;
@@ -757,16 +764,36 @@ export const ChartCanvas = ({
     }
   };
 
-  const handleAIStudyHover = useCallback((study: AIStudy | null): void => {
-    setHoveredAIStudy(study);
-  }, []);
+  const handleAIPatternHover = useCallback((pattern: AIPattern | null): void => {
+    if (isContextMenuOpen) return;
+    setHoveredAIPattern(pattern);
+  }, [isContextMenuOpen]);
 
-  const handleDeleteStudies = (): void => {
-    onDeleteAIStudies?.();
+  const handleContextMenuOpenChange = useCallback((open: boolean): void => {
+    if (open) {
+      setContextMenuPattern(hoveredAIPattern);
+    } else {
+      setContextMenuPattern(null);
+    }
+    setIsContextMenuOpen(open);
+  }, [hoveredAIPattern]);
+
+  const handleDeleteSinglePattern = (patternId: number): void => {
+    if (!patternId) return;
+    console.log('[ChartCanvas] handleDeleteSinglePatterncalled:', patternId, 'onDeleteAIPattern exists:', !!onDeleteAIPattern);
+    onDeleteAIPattern?.(patternId);
+    setContextMenuPattern(null);
+    setIsContextMenuOpen(false);
   };
 
-  const handleToggleStudiesVisibility = (): void => {
-    onToggleAIStudiesVisibility?.();
+  const handleDeletePatterns = (): void => {
+    onDeleteAIPatterns?.();
+    setContextMenuPattern(null);
+    setIsContextMenuOpen(false);
+  };
+
+  const handleTogglePatternsVisibility = (): void => {
+    onToggleAIPatternsVisibility?.();
   };
 
   const startInteraction = (): void => {
@@ -789,6 +816,10 @@ export const ChartCanvas = ({
 
   const handleCanvasMouseDown = (event: React.MouseEvent<HTMLCanvasElement>): void => {
     if (!manager || !canvasRef.current) return;
+
+    if (event.button === RIGHT_MOUSE_BUTTON) {
+      return;
+    }
 
     const rect = canvasRef.current.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
@@ -1291,11 +1322,15 @@ export const ChartCanvas = ({
         bg={colors.background}
         userSelect="none"
       >
-        <ChartContextMenu
-          onDeleteStudies={handleDeleteStudies}
-          onToggleStudiesVisibility={handleToggleStudiesVisibility}
-          hasStudies={aiStudies.length > 0}
-          studiesVisible={aiStudiesVisible}
+        <ChartContextMenuManager
+          hoveredPattern={contextMenuPattern ?? hoveredAIPattern}
+          onDeletePattern={handleDeleteSinglePattern}
+          onDeleteDetectedPattern={onDeletePattern ?? (() => { })}
+          onDeleteAllPatterns={handleDeletePatterns}
+          onTogglePatternsVisibility={handleTogglePatternsVisibility}
+          hasPatterns={aiPatterns.length > 0}
+          patternsVisible={aiPatternsVisible}
+          onOpenChange={handleContextMenuOpenChange}
         >
           <canvas
             ref={canvasRef}
@@ -1311,16 +1346,16 @@ export const ChartCanvas = ({
               display: 'block',
             }}
           />
-        </ChartContextMenu>
+        </ChartContextMenuManager>
         {manager && !isInteracting && (
-          <AIStudyRenderer
+          <PatternRenderer
             canvasManager={manager}
             candles={candles}
-            studies={aiStudies}
+            patterns={aiPatterns}
             width={canvasRef.current?.width ?? 0}
             height={canvasRef.current?.height ?? 0}
             mousePosition={mousePosition}
-            onStudyHover={handleAIStudyHover}
+            onPatternHover={handleAIPatternHover}
             advancedConfig={advancedConfig}
           />
         )}
@@ -1343,7 +1378,7 @@ export const ChartCanvas = ({
           visible={tooltipData.visible}
           containerWidth={tooltipData.containerWidth ?? window.innerWidth}
           containerHeight={tooltipData.containerHeight ?? window.innerHeight}
-          aiStudy={tooltipData.aiStudy}
+          aiPattern={tooltipData.aiPattern}
           {...(tooltipData.movingAverage && { movingAverage: tooltipData.movingAverage })}
           {...(tooltipData.measurement && { measurement: tooltipData.measurement })}
           {...(tooltipData.order && { order: tooltipData.order })}

@@ -182,7 +182,7 @@ interface AITradingConfig {
    const shouldAnalyze = (
      priceChange >= threshold ||  // 0.5%-2% based on profile
      volumeSpike ||                // Volume > 2x average
-     patternDetected ||            // AI Studies found pattern
+     patternDetected ||            // AI Patterns found pattern
      timeElapsed >= interval       // Scheduled analysis
    );
    ```
@@ -431,7 +431,7 @@ interface AITradingStats {
 
 1. **Technical Analysis**
    - `docs/TECHNICAL_ANALYSIS_PATTERNS.md` - 34 patterns
-   - `docs/AI_STUDIES.md` - AI study system
+   - `docs/AI_PATTERN.md` - AI pattern system
    - `docs/AI_PROMPTS_ENHANCED.md` - Enhanced prompts
 
 2. **Performance**

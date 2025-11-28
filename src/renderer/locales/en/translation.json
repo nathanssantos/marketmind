@@ -123,9 +123,9 @@
       "bottomPadding": "Bottom Padding",
       "leftPadding": "Left Padding",
       "rightPadding": "Right Padding",
-      "studyExtensions": "Study Extensions",
+      "patternExtensions": "Pattern Extensions",
       "showAllExtensions": "Enable All Extensions",
-      "showAllExtensionsHelper": "Master toggle for extending studies beyond the last candle",
+      "showAllExtensionsHelper": "Master toggle for extending patterns beyond the last candle",
       "extendTrendlines": "Extend Trendlines",
       "extendTrendlinesHelper": "Extend bullish and bearish trendlines to the right",
       "extendChannels": "Extend Channels",
@@ -240,8 +240,8 @@
   "chat": {
     "title": "Chat",
     "newConversation": "New conversation",
-    "enableAIStudies": "Enable AI chart drawings",
-    "disableAIStudies": "Disable AI chart drawings",
+    "enableAIPatterns": "Enable AI chart drawings",
+    "disableAIPatterns": "Disable AI chart drawings",
     "enableAutoTrading": "Enable AI Auto-Trading",
     "disableAutoTrading": "Disable AI Auto-Trading",
     "conversationsTitle": "Conversations - {{symbol}}",
@@ -272,10 +272,18 @@
       "crosshair": "Crosshair",
       "measurementRuler": "Measurement Ruler",
       "measurementArea": "Measurement Area",
-      "autoPatterns": "Auto Pattern Detection (visible candles)",
-      "studyExtensions": "Extend Studies Beyond Last Candle",
+      "autoPatterns": "Auto Pattern Detection",
+      "detectPatterns": "Detect Patterns Now",
+      "patternExtensions": "Extend Patterns Beyond Last Candle",
       "indicators": "Indicators",
       "quickSettings": "Quick Settings"
+    },
+    "contextMenu": {
+      "deletePattern": "Delete Pattern",
+      "deletePattern": "Delete Pattern",
+      "hidePatterns": "Hide Detected Patterns",
+      "showPatterns": "Show Detected Patterns",
+      "deleteAllPatterns": "Remove All Detected Patterns"
     },
     "navigation": {
       "resetView": "Reset to initial view",

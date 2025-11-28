@@ -5,7 +5,7 @@ import { Switch } from '@/renderer/components/ui/switch';
 import { usePatternDetectionConfigStore } from '@/renderer/store/patternDetectionConfigStore';
 import { useUIStore, type PatternDetectionMode } from '@/renderer/store/uiStore';
 import { Box, Button, Grid, HStack, Separator, Stack, Text, VStack } from '@chakra-ui/react';
-import type { AIStudyType } from '@shared/types';
+import type { AIPatternType } from '@shared/types';
 import type React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -26,7 +26,7 @@ const OVERLAP_STEP = 5;
 
 interface PatternGroup {
     title: string;
-    patterns: AIStudyType[];
+    patterns: AIPatternType[];
 }
 
 const usePatternGroups = (): PatternGroup[] => {
@@ -81,7 +81,7 @@ export const PatternDetectionTab = (): React.ReactElement => {
     const { patternDetectionMode, setPatternDetectionMode } = useUIStore();
     const patternGroups = usePatternGroups();
 
-    const getPatternLabel = (pattern: AIStudyType): string => t(`patternDetection.patterns.${pattern}`);
+    const getPatternLabel = (pattern: AIPatternType): string => t(`patternDetection.patterns.${pattern}`);
 
     const enabledCount = config.enabledPatterns.length;
     const totalPatterns = patternGroups.reduce((sum, group) => sum + group.patterns.length, 0);

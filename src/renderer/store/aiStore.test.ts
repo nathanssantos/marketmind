@@ -537,14 +537,14 @@ describe('aiStore', () => {
   });
 
   describe('Additional Features', () => {
-    it('should toggle AI studies', () => {
-      useAIStore.setState({ enableAIStudies: true });
+    it('should toggle AI patterns', () => {
+      useAIStore.setState({ enableAIPatterns: true });
       
-      useAIStore.getState().toggleAIStudies();
-      expect(useAIStore.getState().enableAIStudies).toBe(false);
+      useAIStore.getState().toggleAIPatterns();
+      expect(useAIStore.getState().enableAIPatterns).toBe(false);
       
-      useAIStore.getState().toggleAIStudies();
-      expect(useAIStore.getState().enableAIStudies).toBe(true);
+      useAIStore.getState().toggleAIPatterns();
+      expect(useAIStore.getState().enableAIPatterns).toBe(true);
     });
 
     it('should restore active conversation messages', () => {
@@ -568,23 +568,23 @@ describe('aiStore', () => {
       expect(useAIStore.getState().messages).toHaveLength(0);
     });
 
-    it('should update conversation study data ID', () => {
+    it('should update conversation pattern data ID', () => {
       const id = useAIStore.getState().createConversation('Test');
       
-      useAIStore.getState().updateConversationStudyDataId(id, 'study-123');
+      useAIStore.getState().updateConversationPatternDataId(id, 'pattern-123');
       
       const state = useAIStore.getState();
-      expect(state.conversations[0]?.studyDataId).toBe('study-123');
+      expect(state.conversations[0]?.patternDataId).toBe('pattern-123');
     });
 
-    it('should remove study data ID when undefined', () => {
-      const id = useAIStore.getState().createConversation('Test');
-      useAIStore.getState().updateConversationStudyDataId(id, 'study-123');
+    it('should remove pattern data ID when undefined', () => {
+      const id = useAIStore.getState().createConversation('BTC/USD');
+      useAIStore.getState().updateConversationPatternDataId(id, 'pattern-123');
       
-      useAIStore.getState().updateConversationStudyDataId(id, undefined);
+      useAIStore.getState().updateConversationPatternDataId(id, undefined);
       
       const state = useAIStore.getState();
-      expect(state.conversations[0]?.studyDataId).toBeUndefined();
+      expect(state.conversations[0]?.patternDataId).toBeUndefined();
     });
 
     it('should limit stored conversations to 50', () => {

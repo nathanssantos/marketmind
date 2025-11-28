@@ -20,7 +20,7 @@ describe('useAutoPatternDetection', () => {
     volume: 1000,
   }));
 
-  const mockSetDetectedStudies = vi.fn();
+  const mockSetDetectedPatterns = vi.fn();
   const mockDetectPatterns = vi.fn();
 
   beforeEach(() => {
@@ -36,8 +36,8 @@ describe('useAutoPatternDetection', () => {
         movingAverages: [],
       },
       setChartData: vi.fn(),
-      detectedStudies: [],
-      setDetectedStudies: mockSetDetectedStudies,
+      detectedPatterns: [],
+      setDetectedPatterns: mockSetDetectedPatterns,
     });
 
     vi.mocked(useUIStore).mockReturnValue({
@@ -62,7 +62,7 @@ describe('useAutoPatternDetection', () => {
 
     vi.mocked(patternDetectionService.detectPatterns).mockImplementation(mockDetectPatterns);
     mockDetectPatterns.mockResolvedValue({
-      studies: [
+      patterns: [
         {
           type: 'support',
           points: [
@@ -88,7 +88,7 @@ describe('useAutoPatternDetection', () => {
       expect(mockDetectPatterns).toHaveBeenCalled();
     });
 
-    expect(mockSetDetectedStudies).toHaveBeenCalledWith(
+    expect(mockSetDetectedPatterns).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({
           type: 'support',
@@ -122,7 +122,7 @@ describe('useAutoPatternDetection', () => {
     renderHook(() => useAutoPatternDetection());
 
     await waitFor(() => {
-      expect(mockSetDetectedStudies).toHaveBeenCalledWith([]);
+      expect(mockSetDetectedPatterns).toHaveBeenCalledWith([]);
     });
 
     expect(mockDetectPatterns).not.toHaveBeenCalled();
@@ -180,7 +180,7 @@ describe('useAutoPatternDetection', () => {
     });
   });
 
-  it('should clear studies when autoDisplayPatterns is disabled', async () => {
+  it('should clear patterns when autoDisplayPatterns is disabled', async () => {
     const { rerender } = renderHook(() => useAutoPatternDetection());
 
     await waitFor(() => {
@@ -210,7 +210,7 @@ describe('useAutoPatternDetection', () => {
     rerender();
 
     await waitFor(() => {
-      expect(mockSetDetectedStudies).toHaveBeenCalledWith([]);
+      expect(mockSetDetectedPatterns).toHaveBeenCalledWith([]);
     });
   });
 });

@@ -92,7 +92,7 @@ describe('useLineChartRenderer', () => {
         text: '#000000',
       },
       ma: ['#ff0000', '#00ff00', '#0000ff'],
-      aiStudy: {
+      aiPattern: {
         support: '#00ff00',
         resistance: '#ff0000',
         trendlineBullish: '#00ff00',
