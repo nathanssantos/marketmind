@@ -1,5 +1,7 @@
+import { usePatternDetectionConfigStore } from '@renderer/store/patternDetectionConfigStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG, LINE_STYLES, STUDY_COLORS } from '@shared/constants';
+import { testStudyHit } from '@renderer/utils/canvas/hitTesting';
+import { LINE_STYLES, STUDY_COLORS } from '@shared/constants';
 import type { AIStudy, AIStudyChannel, AIStudyCupAndHandle, AIStudyDoublePattern, AIStudyFibonacci, AIStudyFlag, AIStudyGap, AIStudyHeadAndShoulders, AIStudyLine, AIStudyPennant, AIStudyRoundingBottom, AIStudyTriangle, AIStudyTriplePattern, AIStudyWedge, AIStudyZone, Candle } from '@shared/types';
 import { useEffect, useRef, useState } from 'react';
 import { useAIStudyHover } from '../../context/AIStudyHoverContext';
@@ -34,6 +36,7 @@ export const AIStudyRenderer = ({
   const [hoveredStudy, setHoveredStudy] = useState<AIStudy | null>(null);
   const { hoveredStudyId, setHoveredStudyId } = useAIStudyHover();
   const studyTagsRef = useRef<Map<number, { x: number; y: number; width: number; height: number }>>(new Map());
+  const { config: patternConfig } = usePatternDetectionConfigStore();
 
   const getStudyColor = (type: AIStudy['type']): string => {
     return STUDY_COLORS[type] || '#6366f1';
@@ -60,326 +63,19 @@ export const AIStudyRenderer = ({
       if (study.visible === false) continue;
 
       const studyId = study.id;
-      if (studyId !== undefined) {
-        const tagBounds = studyTagsRef.current.get(studyId);
+      const tagBounds = studyId !== undefined ? studyTagsRef.current.get(studyId) : undefined;
 
-        if (tagBounds) {
-          if (mouseX >= tagBounds.x &&
-            mouseX <= tagBounds.x + tagBounds.width &&
-            mouseY >= tagBounds.y &&
-            mouseY <= tagBounds.y + tagBounds.height) {
-            found = study;
-            break;
-          }
-        }
-      }
+      const isHit = testStudyHit(
+        study,
+        { x: mouseX, y: mouseY },
+        canvasManager,
+        candles,
+        tagBounds
+      );
 
-      if ('topPrice' in study) {
-        const startIndex = candles.findIndex(c => c.timestamp >= study.startTimestamp);
-        const endIndex = candles.findIndex(c => c.timestamp >= study.endTimestamp);
-
-        if (startIndex === -1 || endIndex === -1) continue;
-
-        const x1 = canvasManager.indexToCenterX(startIndex);
-        let x2 = canvasManager.indexToCenterX(endIndex);
-        const y1 = canvasManager.priceToY(study.topPrice);
-        const y2 = canvasManager.priceToY(study.bottomPrice);
-
-        if (study.type === 'buy-zone' || study.type === 'sell-zone' || study.type === 'liquidity-zone' || study.type === 'accumulation-zone') {
-          const lastCandleX = canvasManager.indexToX(candles.length - 1);
-          const extensionDistance = CHART_CONFIG.STUDY_EXTENSION_DISTANCE;
-          const targetX = lastCandleX + extensionDistance;
-
-          if (x2 < targetX) {
-            x2 = targetX;
-          }
-        }
-
-        if (mouseX >= x1 && mouseX <= x2 && mouseY >= y1 && mouseY <= y2) {
-          found = study;
-          break;
-        }
-      } else if ('points' in study) {
-        const [point1, point2] = study.points;
-        const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
-        const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
-
-        if (index1 === -1 || index2 === -1) continue;
-
-        const x1 = canvasManager.indexToCenterX(index1);
-        const x2 = canvasManager.indexToX(index2);
-        const y1 = canvasManager.priceToY(point1.price);
-        const y2 = canvasManager.priceToY(point2.price);
-
-        let finalX2 = x2;
-        let finalY2 = y2;
-
-        if (study.type === 'support' || study.type === 'resistance') {
-          const lastCandleX = canvasManager.indexToX(candles.length - 1);
-          const extensionDistance = CHART_CONFIG.STUDY_EXTENSION_DISTANCE;
-          const targetX = lastCandleX + extensionDistance;
-
-          if (x2 < targetX) {
-            finalX2 = targetX;
-            const slope = (y2 - y1) / (x2 - x1);
-            finalY2 = y1 + slope * (finalX2 - x1);
-          }
-        }
-
-        const lineThreshold = 5;
-        const minX = Math.min(x1, finalX2);
-        const maxX = Math.max(x1, finalX2);
-
-        if (mouseX >= minX && mouseX <= maxX) {
-          const t = (mouseX - x1) / (finalX2 - x1);
-          const lineY = y1 + t * (finalY2 - y1);
-
-          if (Math.abs(mouseY - lineY) <= lineThreshold) {
-            found = study;
-            break;
-          }
-        }
-      } else if (study.type === 'head-and-shoulders' || study.type === 'inverse-head-and-shoulders') {
-        const pattern = study;
-        const points = [pattern.leftShoulder, pattern.head, pattern.rightShoulder];
-        const indices = points.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-
-        if (indices.some(i => i === -1)) continue;
-
-        const minX = Math.min(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const maxX = Math.max(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const minY = Math.min(...points.map(p => canvasManager.priceToY(p.price)));
-        const maxY = Math.max(...points.map(p => canvasManager.priceToY(p.price)));
-
-        const padding = 10;
-        if (mouseX >= minX - padding && mouseX <= maxX + padding &&
-          mouseY >= minY - padding && mouseY <= maxY + padding) {
-          found = study;
-          break;
-        }
-      } else if (study.type === 'double-top' || study.type === 'double-bottom') {
-        const pattern = study;
-        const points = [pattern.firstPeak, pattern.secondPeak];
-        const indices = points.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-
-        if (indices.some(i => i === -1)) continue;
-
-        const minX = Math.min(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const maxX = Math.max(...indices.map(i => canvasManager.indexToCenterX(i)));
-
-        if (pattern.neckline) {
-          const neckY = canvasManager.priceToY(pattern.neckline.price);
-          const allY = [...points.map(p => canvasManager.priceToY(p.price)), neckY];
-          const minYAll = Math.min(...allY);
-          const maxYAll = Math.max(...allY);
-
-          const padding = 10;
-          if (mouseX >= minX - padding && mouseX <= maxX + padding &&
-            mouseY >= minYAll - padding && mouseY <= maxYAll + padding) {
-            found = study;
-            break;
-          }
-        }
-      } else if (study.type === 'triangle-ascending' || study.type === 'triangle-descending' || study.type === 'triangle-symmetrical') {
-        const pattern = study;
-        const allPoints = [...pattern.upperTrendline, ...pattern.lowerTrendline];
-        if (pattern.apex) allPoints.push(pattern.apex);
-        const indices = allPoints.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-
-        if (indices.some(i => i === -1)) continue;
-
-        const minX = Math.min(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const maxX = Math.max(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const minY = Math.min(...allPoints.map(p => canvasManager.priceToY(p.price)));
-        const maxY = Math.max(...allPoints.map(p => canvasManager.priceToY(p.price)));
-
-        const padding = 10;
-        if (mouseX >= minX - padding && mouseX <= maxX + padding &&
-          mouseY >= minY - padding && mouseY <= maxY + padding) {
-          found = study;
-          break;
-        }
-      } else if (study.type === 'wedge-rising' || study.type === 'wedge-falling') {
-        const pattern = study;
-        const allPoints = [...pattern.upperTrendline, ...pattern.lowerTrendline];
-        if (pattern.convergencePoint) allPoints.push(pattern.convergencePoint);
-        const indices = allPoints.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-
-        if (indices.some(i => i === -1)) continue;
-
-        const minX = Math.min(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const maxX = Math.max(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const minY = Math.min(...allPoints.map(p => canvasManager.priceToY(p.price)));
-        const maxY = Math.max(...allPoints.map(p => canvasManager.priceToY(p.price)));
-
-        const padding = 10;
-        if (mouseX >= minX - padding && mouseX <= maxX + padding &&
-          mouseY >= minY - padding && mouseY <= maxY + padding) {
-          found = study;
-          break;
-        }
-      } else if (study.type === 'channel-ascending' || study.type === 'channel-descending' || study.type === 'channel-horizontal') {
-        const channel = study;
-        const allPoints = [...channel.upperLine, ...channel.lowerLine];
-        const indices = allPoints.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-
-        if (indices.some(i => i === -1)) continue;
-
-        const minX = Math.min(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const maxX = Math.max(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const minY = Math.min(...allPoints.map(p => canvasManager.priceToY(p.price)));
-        const maxY = Math.max(...allPoints.map(p => canvasManager.priceToY(p.price)));
-
-        const padding = 10;
-        if (mouseX >= minX - padding && mouseX <= maxX + padding &&
-          mouseY >= minY - padding && mouseY <= maxY + padding) {
-          found = study;
-          break;
-        }
-      } else if (study.type === 'fibonacci-retracement' || study.type === 'fibonacci-extension') {
-        const fib = study;
-        const allPoints = [fib.startPoint, fib.endPoint];
-        const indices = allPoints.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-
-        if (indices.some(i => i === -1)) continue;
-
-        const minX = Math.min(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const maxX = Math.max(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const minY = Math.min(...allPoints.map(p => canvasManager.priceToY(p.price)));
-        const maxY = Math.max(...allPoints.map(p => canvasManager.priceToY(p.price)));
-
-        const padding = 10;
-        if (mouseX >= minX - padding && mouseX <= maxX + padding &&
-          mouseY >= minY - padding && mouseY <= maxY + padding) {
-          found = study;
-          break;
-        }
-      } else if (study.type === 'triple-top' || study.type === 'triple-bottom') {
-        const pattern = study;
-        const points = [pattern.peak1, pattern.peak2, pattern.peak3, ...pattern.neckline];
-        const indices = points.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-
-        if (indices.some(i => i === -1)) continue;
-
-        const minX = Math.min(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const maxX = Math.max(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const minY = Math.min(...points.map(p => canvasManager.priceToY(p.price)));
-        const maxY = Math.max(...points.map(p => canvasManager.priceToY(p.price)));
-
-        const padding = 10;
-        if (mouseX >= minX - padding && mouseX <= maxX + padding &&
-          mouseY >= minY - padding && mouseY <= maxY + padding) {
-          found = study;
-          break;
-        }
-      } else if (study.type === 'flag-bullish' || study.type === 'flag-bearish') {
-        const flag = study;
-        const allPoints = [
-          flag.flagpole.start,
-          flag.flagpole.end,
-          ...flag.flag.upperTrendline,
-          ...flag.flag.lowerTrendline
-        ];
-        const indices = allPoints.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-
-        if (indices.some(i => i === -1)) continue;
-
-        const minX = Math.min(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const maxX = Math.max(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const minY = Math.min(...allPoints.map(p => canvasManager.priceToY(p.price)));
-        const maxY = Math.max(...allPoints.map(p => canvasManager.priceToY(p.price)));
-
-        const padding = 10;
-        if (mouseX >= minX - padding && mouseX <= maxX + padding &&
-          mouseY >= minY - padding && mouseY <= maxY + padding) {
-          found = study;
-          break;
-        }
-      } else if (study.type === 'pennant') {
-        const pennant = study;
-        const allPoints = [
-          pennant.flagpole.start,
-          pennant.flagpole.end,
-          ...pennant.pennant.upperTrendline,
-          ...pennant.pennant.lowerTrendline
-        ];
-        if (pennant.pennant.apex) allPoints.push(pennant.pennant.apex);
-        const indices = allPoints.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-
-        if (indices.some(i => i === -1)) continue;
-
-        const minX = Math.min(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const maxX = Math.max(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const minY = Math.min(...allPoints.map(p => canvasManager.priceToY(p.price)));
-        const maxY = Math.max(...allPoints.map(p => canvasManager.priceToY(p.price)));
-
-        const padding = 10;
-        if (mouseX >= minX - padding && mouseX <= maxX + padding &&
-          mouseY >= minY - padding && mouseY <= maxY + padding) {
-          found = study;
-          break;
-        }
-      } else if (study.type === 'cup-and-handle') {
-        const cup = study;
-        const allPoints = [
-          cup.cupStart,
-          cup.cupBottom,
-          cup.cupEnd,
-          cup.handleStart,
-          cup.handleLow,
-          cup.handleEnd
-        ];
-        const indices = allPoints.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-
-        if (indices.some(i => i === -1)) continue;
-
-        const minX = Math.min(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const maxX = Math.max(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const minY = Math.min(...allPoints.map(p => canvasManager.priceToY(p.price)));
-        const maxY = Math.max(...allPoints.map(p => canvasManager.priceToY(p.price)));
-
-        const padding = 10;
-        if (mouseX >= minX - padding && mouseX <= maxX + padding &&
-          mouseY >= minY - padding && mouseY <= maxY + padding) {
-          found = study;
-          break;
-        }
-      } else if (study.type === 'rounding-bottom') {
-        const rounding = study;
-        const allPoints = [rounding.start, rounding.bottom, rounding.end];
-        const indices = allPoints.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-
-        if (indices.some(i => i === -1)) continue;
-
-        const minX = Math.min(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const maxX = Math.max(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const minY = Math.min(...allPoints.map(p => canvasManager.priceToY(p.price)));
-        const maxY = Math.max(...allPoints.map(p => canvasManager.priceToY(p.price)));
-
-        const padding = 10;
-        if (mouseX >= minX - padding && mouseX <= maxX + padding &&
-          mouseY >= minY - padding && mouseY <= maxY + padding) {
-          found = study;
-          break;
-        }
-      } else if (study.type === 'gap-common' || study.type === 'gap-breakaway' || study.type === 'gap-runaway' || study.type === 'gap-exhaustion') {
-        const gap = study;
-        const allPoints = [gap.gapStart, gap.gapEnd];
-        const indices = allPoints.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
-
-        if (indices.some(i => i === -1)) continue;
-
-        const minX = Math.min(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const maxX = Math.max(...indices.map(i => canvasManager.indexToCenterX(i)));
-        const minY = Math.min(...allPoints.map(p => canvasManager.priceToY(p.price)));
-        const maxY = Math.max(...allPoints.map(p => canvasManager.priceToY(p.price)));
-
-        const padding = 10;
-        if (mouseX >= minX - padding && mouseX <= maxX + padding &&
-          mouseY >= minY - padding && mouseY <= maxY + padding) {
-          found = study;
-          break;
-        }
+      if (isHit) {
+        found = study;
+        break;
       }
     }
 
@@ -570,9 +266,15 @@ export const AIStudyRenderer = ({
     let finalX2 = x2;
     let finalY2 = y2;
 
-    if (study.type === 'support' || study.type === 'resistance') {
+    const shouldExtend = patternConfig.showExtensions && (
+      (study.type === 'support' && (patternConfig.extendSupport ?? true)) ||
+      (study.type === 'resistance' && (patternConfig.extendResistance ?? true)) ||
+      ((study.type === 'trendline-bullish' || study.type === 'trendline-bearish') && (patternConfig.extendTrendlines ?? true))
+    );
+
+    if (shouldExtend) {
       const lastCandleX = manager.indexToX(candles.length - 1);
-      const extensionDistance = CHART_CONFIG.STUDY_EXTENSION_DISTANCE;
+      const extensionDistance = 36;
       const targetX = lastCandleX + extensionDistance;
 
       if (x2 < targetX) {
@@ -639,13 +341,36 @@ export const AIStudyRenderer = ({
     const lowerY1 = manager.priceToY(lowerPoint1.price);
     const lowerY2 = manager.priceToY(lowerPoint2.price);
 
+    let finalUpperX2 = upperX2;
+    let finalUpperY2 = upperY2;
+    let finalLowerX2 = lowerX2;
+    let finalLowerY2 = lowerY2;
+
+    if (patternConfig.showExtensions && (patternConfig.extendChannels ?? true)) {
+      const lastCandleX = manager.indexToX(candles.length - 1);
+      const extensionDistance = 36;
+      const targetX = lastCandleX + extensionDistance;
+
+      if (upperX2 < targetX) {
+        finalUpperX2 = targetX;
+        const upperSlope = (upperY2 - upperY1) / (upperX2 - upperX1);
+        finalUpperY2 = upperY1 + upperSlope * (finalUpperX2 - upperX1);
+      }
+
+      if (lowerX2 < targetX) {
+        finalLowerX2 = targetX;
+        const lowerSlope = (lowerY2 - lowerY1) / (lowerX2 - lowerX1);
+        finalLowerY2 = lowerY1 + lowerSlope * (finalLowerX2 - lowerX1);
+      }
+    }
+
     ctx.save();
 
     ctx.fillStyle = `${color}0D`;
     ctx.beginPath();
     ctx.moveTo(upperX1, upperY1);
-    ctx.lineTo(upperX2, upperY2);
-    ctx.lineTo(lowerX2, lowerY2);
+    ctx.lineTo(finalUpperX2, finalUpperY2);
+    ctx.lineTo(finalLowerX2, finalLowerY2);
     ctx.lineTo(lowerX1, lowerY1);
     ctx.closePath();
     ctx.fill();
@@ -661,13 +386,29 @@ export const AIStudyRenderer = ({
 
     ctx.beginPath();
     ctx.moveTo(upperX1, upperY1);
-    ctx.lineTo(upperX2, upperY2);
+    ctx.lineTo(finalUpperX2, finalUpperY2);
     ctx.stroke();
 
     ctx.beginPath();
     ctx.moveTo(lowerX1, lowerY1);
-    ctx.lineTo(lowerX2, lowerY2);
+    ctx.lineTo(finalLowerX2, finalLowerY2);
     ctx.stroke();
+
+    if (patternConfig.showChannelCenterline) {
+      const centerY1 = (upperY1 + lowerY1) / 2;
+      const centerY2 = (finalUpperY2 + finalLowerY2) / 2;
+      const centerX1 = (upperX1 + lowerX1) / 2;
+      const centerX2 = (finalUpperX2 + finalLowerX2) / 2;
+
+      ctx.strokeStyle = `${color}80`;
+      ctx.lineWidth = lineWidth * 0.75;
+      ctx.setLineDash([5, 5]);
+
+      ctx.beginPath();
+      ctx.moveTo(centerX1, centerY1);
+      ctx.lineTo(centerX2, centerY2);
+      ctx.stroke();
+    }
 
     ctx.setLineDash([]);
     ctx.restore();
@@ -1382,7 +1123,7 @@ export const AIStudyRenderer = ({
 
     if (study.type === 'buy-zone' || study.type === 'sell-zone' || study.type === 'liquidity-zone' || study.type === 'accumulation-zone') {
       const lastCandleX = manager.indexToX(candles.length - 1);
-      const extensionDistance = CHART_CONFIG.STUDY_EXTENSION_DISTANCE;
+      const extensionDistance = 36;
       const targetX = lastCandleX + extensionDistance;
 
       if (x2 < targetX) {

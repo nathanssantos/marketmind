@@ -1,8 +1,8 @@
 import type { AIStudy } from '../../../../shared/types';
 import type { PatternRelationship } from './patternRelationships';
 import {
-    getPatternEndTimestamp,
-    getPatternStartTimestamp,
+  getPatternEndTimestamp,
+  getPatternStartTimestamp,
 } from './patternRelationships';
 
 const TEMPORAL_DURATION_MS = {
@@ -18,6 +18,7 @@ export function resolveNestedPatterns(
 
   relationships
     .filter((rel) => rel.relationshipType === 'nested')
+    .filter((rel) => rel.parentPattern.type === rel.childPattern.type)
     .forEach((rel) => {
       resolveNestedPair(rel, patternsToRemove);
     });

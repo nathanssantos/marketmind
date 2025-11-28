@@ -262,6 +262,7 @@
       "measurementRuler": "Règle de Mesure",
       "measurementArea": "Zone de Mesure",
       "autoPatterns": "Détection Automatique de Motifs (bougies visibles)",
+      "studyExtensions": "Étendre les Études au-delà de la Dernière Bougie",
       "indicators": "Indicateurs",
       "quickSettings": "Paramètres Rapides"
     },
@@ -615,7 +616,7 @@
       },
       "enableNested": {
         "label": "Filtrer Motifs Imbriqués",
-        "helper": "Supprimer les petits motifs qui sont complètement à l'intérieur de motifs plus grands (conserve le plus grand)"
+        "helper": "Supprimer les petits motifs du même type qui sont imbriqués dans des motifs plus grands (différents types sont conservés)"
       },
       "enableOverlap": {
         "label": "Filtrer Motifs Superposés",

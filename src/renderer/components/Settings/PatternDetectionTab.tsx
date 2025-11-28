@@ -17,8 +17,6 @@ const MIN_R2 = 50;
 const MAX_VOLUME_WEIGHT = 50;
 const CONFIDENCE_STEP = 5;
 const VOLUME_STEP = 5;
-const MAX_PATTERNS_CLEAN = 20;
-const MAX_PATTERNS_COMPLETE = 50;
 const MIN_PATTERNS = 5;
 const MAX_PATTERNS = 50;
 const PATTERNS_STEP = 5;
@@ -272,21 +270,6 @@ export const PatternDetectionTab = (): React.ReactElement => {
                     {t('patternDetection.filtering.title')}
                 </Text>
                 <Stack gap={4}>
-                    <Field label={t('patternDetection.filtering.mode.label')} helperText={t('patternDetection.filtering.mode.helper')}>
-                        <Select
-                            value={config.filteringMode}
-                            onChange={(value) => setConfig({
-                                filteringMode: value as 'clean' | 'complete',
-                                maxPatternsTotal: value === 'clean' ? MAX_PATTERNS_CLEAN : MAX_PATTERNS_COMPLETE
-                            })}
-                            options={[
-                                { value: 'clean', label: t('patternDetection.filtering.mode.clean') },
-                                { value: 'complete', label: t('patternDetection.filtering.mode.complete') },
-                            ]}
-                            usePortal={false}
-                        />
-                    </Field>
-
                     <Field
                         label={t('patternDetection.filtering.maxPatterns.label')}
                         helperText={t('patternDetection.filtering.maxPatterns.helper')}
@@ -314,7 +297,7 @@ export const PatternDetectionTab = (): React.ReactElement => {
                             </Box>
                             <Switch
                                 checked={config.enableNestedFiltering}
-                                onCheckedChange={(checked) => setConfig({ enableNestedFiltering: checked })}
+                                onCheckedChange={(checked) => setConfig({ enableNestedFiltering: !!checked })}
                             />
                         </HStack>
                     </Field>
@@ -329,7 +312,7 @@ export const PatternDetectionTab = (): React.ReactElement => {
                             </Box>
                             <Switch
                                 checked={config.enableOverlapFiltering}
-                                onCheckedChange={(checked) => setConfig({ enableOverlapFiltering: checked })}
+                                onCheckedChange={(checked) => setConfig({ enableOverlapFiltering: !!checked })}
                             />
                         </HStack>
                     </Field>
@@ -365,7 +348,7 @@ export const PatternDetectionTab = (): React.ReactElement => {
                             </Box>
                             <Switch
                                 checked={config.highlightConflicts}
-                                onCheckedChange={(checked) => setConfig({ highlightConflicts: checked })}
+                                onCheckedChange={(checked) => setConfig({ highlightConflicts: !!checked })}
                             />
                         </HStack>
                     </Field>
@@ -380,7 +363,7 @@ export const PatternDetectionTab = (): React.ReactElement => {
                             </Box>
                             <Switch
                                 checked={config.showChannelCenterline}
-                                onCheckedChange={(checked) => setConfig({ showChannelCenterline: checked })}
+                                onCheckedChange={(checked) => setConfig({ showChannelCenterline: !!checked })}
                             />
                         </HStack>
                     </Field>
@@ -400,7 +383,7 @@ export const PatternDetectionTab = (): React.ReactElement => {
                         </Box>
                         <Switch
                             checked={config.showPreview}
-                            onCheckedChange={(checked) => setConfig({ showPreview: checked })}
+                            onCheckedChange={(checked) => setConfig({ showPreview: !!checked })}
                         />
                     </HStack>
                 </Field>
