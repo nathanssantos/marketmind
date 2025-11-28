@@ -62,14 +62,10 @@ export const useAutoPatternDetection = (viewport?: Viewport) => {
       try {
         const visibleCandles = viewport ? candles.slice(start, end) : candles;
 
-        console.log('[AutoDetection] Detecting patterns for', symbol, 'with options:', detectionOptions);
-
         const detectionResult = await patternDetectionService.detectPatterns(
           visibleCandles,
           detectionOptions
         );
-
-        console.log('[AutoDetection] Detected', detectionResult.studies.length, 'patterns');
 
         setDetectedStudies(detectionResult.studies);
         lastDetectionRef.current = {

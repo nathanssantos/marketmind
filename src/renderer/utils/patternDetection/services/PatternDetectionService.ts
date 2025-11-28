@@ -209,14 +209,12 @@ export class PatternDetectionService {
         relationships = buildPatternRelationships(sortedStudies);
       }
       
-      console.log('[PatternDetection] Relationships:', relationships.length);
-      
       finalStudies = filterAndPrioritizePatterns(
         sortedStudies,
         relationships,
         {
-          enableNestedFiltering: options.enableNestedFiltering ?? true,
-          enableOverlapFiltering: options.enableOverlapFiltering ?? true,
+          enableNestedFiltering: options.enableNestedFiltering ?? false,
+          enableOverlapFiltering: options.enableOverlapFiltering ?? false,
           maxPatternsPerTier: options.maxPatternsPerTier ?? {
             macro: 10,
             major: 8,
@@ -227,13 +225,6 @@ export class PatternDetectionService {
           maxPatternsTotal: options.maxPatternsTotal ?? 20,
         }
       );
-      
-      console.log('[PatternDetection] After filtering:', finalStudies.length, 'patterns');
-      
-      if (finalStudies.length === 0 && sortedStudies.length > 0) {
-        console.warn('[PatternDetection] Filtering removed all patterns! Returning top 10 unfiltered');
-        finalStudies = sortedStudies.slice(0, 10);
-      }
     }
 
     const executionTime = performance.now() - startTime;
