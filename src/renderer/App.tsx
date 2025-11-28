@@ -16,7 +16,7 @@ import { OnboardingDialog } from './components/Onboarding/OnboardingDialog';
 import { ErrorMessage } from './components/ui/ErrorMessage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
-import { ChartProvider } from './context/ChartContext';
+import { ChartProvider, useChartContext } from './context/ChartContext';
 import { useGlobalActions } from './context/GlobalActionsContext';
 import { PatternHoverProvider } from './context/PatternHoverContext';
 import { useAITrading } from './hooks/useAITrading';
@@ -144,10 +144,11 @@ function App(): ReactElement {
 
 function AppContent(): ReactElement {
   const { t } = useTranslation();
-  const [viewport, setViewport] = useState<Viewport | undefined>(undefined);
   const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
+  const [viewport, setViewport] = useState<Viewport | undefined>(undefined);
 
   const activeConversationId = useAIStore(state => state.activeConversationId);
+  const { detectedPatterns } = useChartContext();
 
   const {
     patterns,
@@ -559,7 +560,7 @@ function AppContent(): ReactElement {
             chartType={chartType}
             movingAverages={movingAverages}
             advancedConfig={debouncedAdvancedConfig}
-            aiPatterns={patterns as unknown as AIPattern[]}
+            aiPatterns={[...(patterns as unknown as AIPattern[]), ...detectedPatterns]}
             onDeleteAIPatterns={deleteAllPatterns}
             onDeleteAIPattern={handleDeletePattern}
             onToggleAIPatternsVisibility={togglePatternsVisibility}

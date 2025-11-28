@@ -4,16 +4,18 @@ import { usePatternDetectionConfigStore } from '@renderer/store/patternDetection
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  LuActivity,
   LuArrowRightToLine,
-  LuBrainCircuit,
   LuChartBar,
   LuChartCandlestick,
   LuChartLine,
   LuCrosshair,
   LuDollarSign,
   LuGrid3X3,
+  LuLightbulb,
   LuMessageSquare,
   LuNewspaper,
+  LuRadar,
   LuRuler,
   LuScan
 } from 'react-icons/lu';
@@ -211,7 +213,9 @@ export const Toolbar = memo(({
               colorPalette={showVolume ? 'blue' : 'gray'}
               variant={showVolume ? 'solid' : 'ghost'}
             >
-              <LuChartBar />
+              <Box transform="rotate(-90deg)">
+                <LuChartBar />
+              </Box>
             </IconButton>
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.stochastic')} showArrow>
@@ -233,7 +237,7 @@ export const Toolbar = memo(({
               colorPalette={showRSI ? 'blue' : 'gray'}
               variant={showRSI ? 'solid' : 'ghost'}
             >
-              <LuScan />
+              <LuActivity />
             </IconButton>
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.grid')} showArrow>
@@ -306,7 +310,7 @@ export const Toolbar = memo(({
                   colorPalette={isPatternDetectionActive ? 'blue' : 'gray'}
                   variant={isPatternDetectionActive ? 'solid' : 'ghost'}
                 >
-                  <LuBrainCircuit />
+                  <LuRadar />
                 </IconButton>
               </TooltipWrapper>
               <TooltipWrapper label={t('chart.controls.detectPatterns')} showArrow placement="top">
@@ -315,9 +319,9 @@ export const Toolbar = memo(({
                   aria-label={t('chart.controls.detectPatterns')}
                   onClick={onDetectPatterns}
                   colorPalette="blue"
-                  variant="ghost"
+                  variant="solid"
                 >
-                  <LuScan />
+                  <LuLightbulb />
                 </IconButton>
               </TooltipWrapper>
               <TooltipWrapper label={t('chart.controls.patternExtensions')} showArrow placement="top">
