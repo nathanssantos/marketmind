@@ -16,6 +16,7 @@ interface TradingState {
   activeWalletId: string | null;
   orders: Order[];
   defaultQuantity: number;
+  quantityBySymbol: Record<string, number>;
   defaultExpiration: ExpirationType;
 
   toggleSimulator: () => void;
@@ -40,6 +41,8 @@ interface TradingState {
   getOrdersByWallet: (walletId: string) => Order[];
   getActiveOrders: () => Order[];
   setDefaultQuantity: (quantity: number) => void;
+  getQuantityForSymbol: (symbol: string) => number;
+  setQuantityForSymbol: (symbol: string, quantity: number) => void;
   setDefaultExpiration: (type: ExpirationType) => void;
   updatePrices: (symbol: string, price: number) => void;
   fillPendingOrders: (symbol: string, currentPrice: number, previousPrice: number | null, appLoadTime: number) => void;
@@ -76,12 +79,17 @@ const loadFromElectron = async (): Promise<Partial<TradingState>> => {
         return baseOrder;
       });
 
+      const activeWalletId =
+        result.data.activeWalletId ||
+        (wallets.length > 0 ? wallets[0]?.id || null : null);
+
       return {
         wallets,
         orders,
         isSimulatorActive: result.data.isSimulatorActive,
-        activeWalletId: result.data.activeWalletId,
+        activeWalletId,
         defaultQuantity: result.data.defaultQuantity,
+        quantityBySymbol: result.data.quantityBySymbol || {},
         defaultExpiration: result.data.defaultExpiration,
       };
     }
@@ -99,6 +107,7 @@ const saveToElectron = async (state: TradingState): Promise<void> => {
       isSimulatorActive: state.isSimulatorActive,
       activeWalletId: state.activeWalletId,
       defaultQuantity: state.defaultQuantity,
+      quantityBySymbol: state.quantityBySymbol,
       defaultExpiration: state.defaultExpiration as 'gtc' | 'day' | 'custom',
     });
   } catch (error) {
@@ -110,7 +119,11 @@ export const useTradingStore = create<TradingState>((set, get) => {
   const setWithSync = (
     partial: Partial<TradingState> | ((state: TradingState) => Partial<TradingState>)
   ): void => {
-    set(partial);
+    if (typeof partial === 'function') {
+      set((state) => partial(state));
+    } else {
+      set(partial);
+    }
     void saveToElectron(get());
   };
 
@@ -120,6 +133,7 @@ export const useTradingStore = create<TradingState>((set, get) => {
     activeWalletId: null,
     orders: [],
     defaultQuantity: 1,
+    quantityBySymbol: {},
     defaultExpiration: 'gtc',
 
     toggleSimulator: () =>
@@ -408,6 +422,19 @@ export const useTradingStore = create<TradingState>((set, get) => {
 
       setDefaultQuantity: (quantity) => setWithSync({ defaultQuantity: quantity }),
 
+      getQuantityForSymbol: (symbol) => {
+        const state = get();
+        return state.quantityBySymbol[symbol] ?? state.defaultQuantity;
+      },
+
+      setQuantityForSymbol: (symbol, quantity) =>
+        setWithSync((state) => ({
+          quantityBySymbol: {
+            ...state.quantityBySymbol,
+            [symbol]: quantity,
+          },
+        })),
+
       setDefaultExpiration: (type) => setWithSync({ defaultExpiration: type }),
 
       fillPendingOrders: (symbol, currentPrice, previousPrice, appLoadTime) =>
@@ -665,6 +692,7 @@ export const useTradingStore = create<TradingState>((set, get) => {
           activeWalletId: null,
           orders: [],
           defaultQuantity: 1,
+          quantityBySymbol: {},
           defaultExpiration: 'gtc' as ExpirationType,
         };
         setWithSync(newState);

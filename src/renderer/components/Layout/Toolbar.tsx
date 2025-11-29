@@ -1,11 +1,14 @@
+import { useSetupStore } from '@/renderer/store/setupStore';
 import { useUIStore } from '@/renderer/store/uiStore';
 import { Box, Flex, HStack, IconButton, Text } from '@chakra-ui/react';
+import { useToast } from '@renderer/hooks/useToast';
 import { usePatternDetectionConfigStore } from '@renderer/store/patternDetectionConfigStore';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuActivity,
   LuArrowRightToLine,
+  LuBot,
   LuChartBar,
   LuChartCandlestick,
   LuChartLine,
@@ -17,7 +20,8 @@ import {
   LuNewspaper,
   LuRadar,
   LuRuler,
-  LuScan
+  LuScan,
+  LuTarget
 } from 'react-icons/lu';
 import type { MarketDataService } from '../../services/market/MarketDataService';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
@@ -100,16 +104,48 @@ export const Toolbar = memo(({
   onDetectPatterns,
 }: ToolbarProps) => {
   const { t } = useTranslation();
+  const toast = useToast();
   const { algorithmicDetectionSettings, setAlgorithmicDetectionSettings } = useUIStore();
   const { config: patternConfig, setConfig: setPatternConfig } = usePatternDetectionConfigStore();
+  const { isAutoTradingActive, toggleAutoTrading, config: setupConfig, setConfig: setSetupConfig } = useSetupStore();
 
   const isPatternDetectionActive = algorithmicDetectionSettings.autoDisplayPatterns;
   const isExtensionsActive = patternConfig.showExtensions;
+  const isSetupDetectionActive = setupConfig.setup91.enabled || setupConfig.pattern123.enabled;
 
   const togglePatternDetection = (): void => {
     setAlgorithmicDetectionSettings({
       autoDisplayPatterns: !algorithmicDetectionSettings.autoDisplayPatterns,
     });
+  };
+
+  const toggleSetupDetection = (): void => {
+    const newEnabled = !isSetupDetectionActive;
+
+    if (!newEnabled && isAutoTradingActive) {
+      toggleAutoTrading();
+      toast.warning(
+        t('setupConfig.autoTradingDisabled'),
+        t('setupConfig.autoTradingDisabledDescription')
+      );
+    }
+
+    setSetupConfig({
+      setup91: { ...setupConfig.setup91, enabled: newEnabled },
+      pattern123: { ...setupConfig.pattern123, enabled: newEnabled },
+    });
+  };
+
+  const handleToggleAutoTrading = (): void => {
+    if (!isAutoTradingActive && !isSetupDetectionActive) {
+      toast.error(
+        t('setupConfig.noSetupsEnabled'),
+        t('setupConfig.noSetupsEnabledDescription')
+      );
+      return;
+    }
+
+    toggleAutoTrading();
   };
 
   const toggleExtensions = (): void => {
@@ -336,6 +372,33 @@ export const Toolbar = memo(({
                 </IconButton>
               </TooltipWrapper>
               <PatternTogglePopover />
+            </HStack>
+
+            <Box w="1px" h="32px" bg="border" flexShrink={0} />
+
+            <HStack gap={1} flexWrap="nowrap">
+              <TooltipWrapper label={t('chart.controls.setupDetection')} showArrow placement="top">
+                <IconButton
+                  size="2xs"
+                  aria-label={t('chart.controls.setupDetection')}
+                  onClick={toggleSetupDetection}
+                  colorPalette={isSetupDetectionActive ? 'green' : 'gray'}
+                  variant={isSetupDetectionActive ? 'solid' : 'ghost'}
+                >
+                  <LuTarget />
+                </IconButton>
+              </TooltipWrapper>
+              <TooltipWrapper label={t('setupConfig.status.autoTrading')} showArrow placement="top">
+                <IconButton
+                  size="2xs"
+                  aria-label={t('setupConfig.status.autoTrading')}
+                  onClick={handleToggleAutoTrading}
+                  colorPalette={isAutoTradingActive ? 'green' : 'gray'}
+                  variant={isAutoTradingActive ? 'solid' : 'ghost'}
+                >
+                  <LuBot />
+                </IconButton>
+              </TooltipWrapper>
             </HStack>
 
             <Box w="1px" h="32px" bg="border" flexShrink={0} />

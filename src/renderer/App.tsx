@@ -312,7 +312,33 @@ function AppContent(): ReactElement {
 
           const activeOrders = state.orders.filter(o => o.status === 'active' && o.symbol === symbol);
           activeOrders.forEach(order => {
+            const isLong = order.type === 'long';
+
             state.updateOrder(order.id, { currentPrice });
+
+            if (order.stopLoss) {
+              const stopHit = isLong
+                ? latestCandle.low <= order.stopLoss
+                : latestCandle.high >= order.stopLoss;
+
+              if (stopHit) {
+                console.log(`[OCO] Stop Loss hit for order ${order.id.slice(0, 8)}... at ${order.stopLoss} (${isLong ? 'LONG' : 'SHORT'})`);
+                state.closeOrder(order.id, order.stopLoss);
+                return;
+              }
+            }
+
+            if (order.takeProfit) {
+              const targetHit = isLong
+                ? latestCandle.high >= order.takeProfit
+                : latestCandle.low <= order.takeProfit;
+
+              if (targetHit) {
+                console.log(`[OCO] Take Profit hit for order ${order.id.slice(0, 8)}... at ${order.takeProfit} (${isLong ? 'LONG' : 'SHORT'})`);
+                state.closeOrder(order.id, order.takeProfit);
+                return;
+              }
+            }
           });
         }
         lastOrderUpdateRef.current = now;

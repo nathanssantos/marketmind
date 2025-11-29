@@ -54,6 +54,7 @@
       "chart": "Graphique",
       "ai": "Configuration IA",
       "aiTrading": "Auto-Trading IA",
+      "setupDetection": "Détection de Setups",
       "patternDetection": "Détection de Motifs",
       "news": "Actualités",
       "tradingSimulator": "Simulateur de Trading",
@@ -263,6 +264,7 @@
       "measurementArea": "Zone de Mesure",
       "autoPatterns": "Détection Automatique de Motifs",
       "detectPatterns": "Détecter les Motifs Maintenant",
+      "setupDetection": "Détection Algorithmique de Setups",
       "patternExtensions": "Étendre les Motifs Au-delà de la Dernière Bougie",
       "indicators": "Indicateurs",
       "quickSettings": "Paramètres Rapides"
@@ -910,5 +912,63 @@
       "changelog": "Journal des modifications"
     },
     "copyright": "© 2025 MarketMind. Fait avec ❤️ pour les traders et investisseurs."
+  },
+  "setupConfig": {
+    "tips": {
+      "confidence": "Des filtres de confiance plus élevés ne montrent que les setups les plus forts",
+      "algorithmic": "La détection algorithmique est plus rapide et cohérente que l'IA",
+      "toolbar": "Activez l'auto-trading via l'icône robot dans la barre d'outils"
+    },
+    "resetDefaults": "Réinitialiser aux Valeurs par Défaut",
+    "trendFilter": {
+      "title": "Filtre de Tendance",
+      "enable": "Activer le Filtre de Tendance",
+      "enableDescription": "Utilise EMA 200 pour identifier la tendance majeure et filtrer les configurations",
+      "allowCounter": "Autoriser les Opérations Contre-Tendance",
+      "allowCounterDescription": "Lorsque désactivé, seules les opérations alignées avec la tendance majeure sont autorisées"
+    },
+    "status": {
+      "title": "État de l'Auto-Trading",
+      "autoTrading": "Auto-Trading Algorithmique",
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+    "autoTradingDisabled": "Trading Automatique Désactivé",
+    "autoTradingDisabledDescription": "Le trading automatique a été automatiquement désactivé car la détection des setups a été désactivée.",
+    "noSetupsEnabled": "Aucun Setup Activé",
+    "noSetupsEnabledDescription": "Impossible d'activer le trading automatique sans setups actifs. Veuillez activer au moins un setup dans les Paramètres.",
+    "setups": {
+      "setup91": {
+        "title": "Setup 9.1 (Inversions EMA9)",
+        "description": "Détecte les changements de tendance EMA9 avec confirmation du volume"
+      },
+      "pattern123": {
+        "title": "Motif 123 (Motif d'Inversion)",
+        "description": "Motif classique 123 de pivot avec confirmation de cassure"
+      },
+      "bullTrap": {
+        "title": "Bull Trap (Fausse Cassure)",
+        "description": "Détecte les fausses cassures au-dessus de la résistance suivies d'un renversement"
+      },
+      "bearTrap": {
+        "title": "Bear Trap (Fausse Rupture)",
+        "description": "Détecte les fausses ruptures en dessous du support suivies d'un rebond"
+      },
+      "breakoutRetest": {
+        "title": "Retest de Cassure (Continuation)",
+        "description": "Cassure valide suivie d'un retest réussi et continuation"
+      }
+    },
+    "parameters": {
+      "minConfidence": {
+        "label": "Confiance Minimale",
+        "helper": "Afficher uniquement les setups avec une confiance supérieure à ce seuil"
+      }
+    },
+    "summary": {
+      "title": "Résumé",
+      "enabledSetups": "Setups Activés",
+      "avgConfidence": "Confiance Moyenne"
+    }
   }
 }

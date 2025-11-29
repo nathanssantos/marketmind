@@ -4,9 +4,9 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.22.0-blue.svg)
-![Tests](https://img.shields.io/badge/tests-1,338%20passing-brightgreen.svg)
-![Coverage](https://img.shields.io/badge/coverage-91.07%25-brightgreen.svg)
+![Version](https://img.shields.io/badge/version-0.30.0-blue.svg)
+![Tests](https://img.shields.io/badge/tests-1,764%20passing-brightgreen.svg)
+![Coverage](https://img.shields.io/badge/coverage-92.15%25-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 ![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES%20%7C%20FR-success.svg)
@@ -29,7 +29,7 @@
 - 🔤 **Symbol Selector**: Compact search with borderless design
 - ⏱️ **Timeframe Selector**: 9 square icon buttons (1m to 1M)
 - 📊 **Chart Type Switcher**: Toggle between candlestick and line
-- �️ **Display Toggles**: Volume, grid, and current price line controls
+- 🔢 **Display Toggles**: Volume, grid, and current price line controls
 - 📈 **Indicator Buttons**: Moving averages with color-coded borders
 - 🖱️ **Interactive Controls**: Advanced chart settings panel with pin functionality
 - ⚙️ **Advanced Settings**: 9 configurable parameters (margins, spacing, grid, etc.)
@@ -75,6 +75,26 @@
 - 🌍 **Internationalization**: Multi-language support (English, Portuguese, Spanish, French)
 - 🔄 **Language Detection**: Automatic language detection from browser/system
 - ⚙️ **Language Selector**: Manual language switching in settings
+- 🎯 **Algorithmic Setup Detection**: 5 trading setups with mathematical precision
+  - Setup 9.1 (EMA9 Reversals)
+  - Pattern 123 (Reversal Pattern)
+  - Bull Trap (Fake Breakout)
+  - Bear Trap (Fake Breakdown)
+  - Breakout Retest (Continuation)
+- 🤖 **Auto-Trading System**: Algorithmic trade execution with OCO orders
+- ⏱️ **Setup Cooldown**: Prevents duplicate detections (configurable, default: 10 candles)
+- 📈 **Trend Filter**: EMA 200-based major trend detection
+  - Filters counter-trend trades (optional)
+  - Configurable trend alignment (enable/disable)
+  - Allow/block counter-trend trading
+- 📊 **Setup Configuration**: Per-setup confidence and risk/reward thresholds
+- 📈 **Performance Tracking**: Win rate, expectancy, and statistics per setup type
+- 🎨 **Setup Visualization**: Canvas-based rendering with entry/SL/TP levels
+- 🎯 **Quantity Per Symbol**: Independent position sizing for each trading symbol
+  - Automatic persistence via secure storage
+  - Auto-loads when switching symbols
+  - Fallback to default quantity
+  - Applies to manual and algorithmic trades
 
 **Planned:**
 - 📰 **News Sentiment Analysis**: AI-powered sentiment analysis of financial news
@@ -82,6 +102,8 @@
 - 📡 **WebSocket**: Real-time candle updates via WebSocket
 - 🧪 **Testing**: Comprehensive unit and integration tests
 - 🌐 **More Languages**: German, Japanese, Chinese support
+- 🎯 **5 Additional Setups**: Pin+Inside, OB+FVG, VWAP+EMA, Divergence, Liquidity Sweep
+- 🧠 **Reinforcement Learning**: ML-based trading optimization (future)
 
 ## 🛠 Technology Stack
 

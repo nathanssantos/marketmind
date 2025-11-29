@@ -1,0 +1,240 @@
+import type { Candle } from '@shared/types';
+import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
+import {
+  BaseSetupDetector,
+  type SetupDetectorConfig,
+  type SetupDetectorResult,
+} from './BaseSetupDetector';
+
+const DEFAULT_PIVOT_LOOKBACK = 5;
+const BREAKOUT_THRESHOLD_PERCENT = 0.002;
+const MIN_HIGHER_LOW_PERCENT = 0.001;
+
+export interface Pattern123Config extends SetupDetectorConfig {
+  pivotLookback: number;
+  breakoutThreshold: number;
+}
+
+export class Pattern123Detector extends BaseSetupDetector {
+  private pattern123Config: Pattern123Config;
+
+  constructor(config: Pattern123Config) {
+    super(config);
+    this.pattern123Config = config;
+  }
+
+  detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
+    if (!this.config.enabled || currentIndex < this.pattern123Config.pivotLookback * 3) {
+      return { setup: null, confidence: 0 };
+    }
+
+    const recentCandles = candles.slice(
+      Math.max(0, currentIndex - this.pattern123Config.pivotLookback * 6),
+      currentIndex + 1,
+    );
+
+    const pivots = findPivotPoints(
+      recentCandles,
+      this.pattern123Config.pivotLookback,
+    );
+
+    if (pivots.length < 3) {
+      return { setup: null, confidence: 0 };
+    }
+
+    const bullishSetup = this.detectBullish123(
+      candles,
+      pivots,
+      currentIndex,
+    );
+    if (bullishSetup) return bullishSetup;
+
+    const bearishSetup = this.detectBearish123(
+      candles,
+      pivots,
+      currentIndex,
+    );
+    if (bearishSetup) return bearishSetup;
+
+    return { setup: null, confidence: 0 };
+  }
+
+  private detectBullish123(
+    candles: Candle[],
+    pivots: ReturnType<typeof findPivotPoints>,
+    currentIndex: number,
+  ): SetupDetectorResult | null {
+    const lowPivots = pivots.filter((p) => p.type === 'low');
+    const highPivots = pivots.filter((p) => p.type === 'high');
+
+    for (let i = 0; i < lowPivots.length - 1; i++) {
+      const p1 = lowPivots[i];
+      const p3 = lowPivots[i + 1];
+
+      if (!p1 || !p3) continue;
+
+      const higherLow = p3.price > p1.price * (1 + MIN_HIGHER_LOW_PERCENT);
+
+      if (!higherLow) continue;
+
+      const p2Candidates = highPivots.filter(
+        (h) => h.index > p1.index && h.index < p3.index,
+      );
+
+      if (p2Candidates.length === 0) continue;
+
+      const p2 = p2Candidates.reduce((max, h) =>
+        h.price > max.price ? h : max,
+      );
+
+      const current = candles[currentIndex];
+      if (!current) continue;
+
+      const breakoutPrice = p2.price * (1 + this.pattern123Config.breakoutThreshold);
+
+      if (current.close > breakoutPrice) {
+        const entry = current.close;
+        const stopLoss = p3.price;
+        const riskDistance = entry - stopLoss;
+        const takeProfit = entry + riskDistance * 2;
+        const rr = this.calculateRR(entry, stopLoss, takeProfit);
+
+        const confidence = this.calculateConfidence(p1, p2, p3, current);
+
+        if (!this.meetsMinimumCriteria(confidence, rr)) {
+          return null;
+        }
+
+        const setup = this.createSetup(
+          '123-reversal',
+          'LONG',
+          candles,
+          currentIndex,
+          entry,
+          stopLoss,
+          takeProfit,
+          confidence,
+          true,
+          2,
+          {
+            p1: { index: p1.index, price: p1.price },
+            p2: { index: p2.index, price: p2.price },
+            p3: { index: p3.index, price: p3.price },
+            breakoutPrice,
+          },
+        );
+
+        return { setup, confidence };
+      }
+    }
+
+    return null;
+  }
+
+  private detectBearish123(
+    candles: Candle[],
+    pivots: ReturnType<typeof findPivotPoints>,
+    currentIndex: number,
+  ): SetupDetectorResult | null {
+    const highPivots = pivots.filter((p) => p.type === 'high');
+    const lowPivots = pivots.filter((p) => p.type === 'low');
+
+    for (let i = 0; i < highPivots.length - 1; i++) {
+      const p1 = highPivots[i];
+      const p3 = highPivots[i + 1];
+
+      if (!p1 || !p3) continue;
+
+      const lowerHigh = p3.price < p1.price * (1 - MIN_HIGHER_LOW_PERCENT);
+
+      if (!lowerHigh) continue;
+
+      const p2Candidates = lowPivots.filter(
+        (l) => l.index > p1.index && l.index < p3.index,
+      );
+
+      if (p2Candidates.length === 0) continue;
+
+      const p2 = p2Candidates.reduce((min, l) =>
+        l.price < min.price ? l : min,
+      );
+
+      const current = candles[currentIndex];
+      if (!current) continue;
+
+      const breakoutPrice = p2.price * (1 - this.pattern123Config.breakoutThreshold);
+
+      if (current.close < breakoutPrice) {
+        const entry = current.close;
+        const stopLoss = p3.price;
+        const riskDistance = stopLoss - entry;
+        const takeProfit = entry - riskDistance * 2;
+        const rr = this.calculateRR(entry, stopLoss, takeProfit);
+
+        const confidence = this.calculateConfidence(p1, p2, p3, current);
+
+        if (!this.meetsMinimumCriteria(confidence, rr)) {
+          return null;
+        }
+
+        const setup = this.createSetup(
+          '123-reversal',
+          'SHORT',
+          candles,
+          currentIndex,
+          entry,
+          stopLoss,
+          takeProfit,
+          confidence,
+          true,
+          2,
+          {
+            p1: { index: p1.index, price: p1.price },
+            p2: { index: p2.index, price: p2.price },
+            p3: { index: p3.index, price: p3.price },
+            breakoutPrice,
+          },
+        );
+
+        return { setup, confidence };
+      }
+    }
+
+    return null;
+  }
+
+  private calculateConfidence(
+    p1: { price: number },
+    p2: { price: number },
+    p3: { price: number },
+    current: Candle,
+  ): number {
+    const BASE_CONFIDENCE = 65;
+    let boost = 0;
+
+    const p1p3Range = Math.abs(p3.price - p1.price);
+    const p2Distance = Math.abs(p2.price - (p1.price + p3.price) / 2);
+    const symmetry = p2Distance / p1p3Range;
+
+    if (symmetry < 0.1) boost += 10;
+    else if (symmetry < 0.2) boost += 5;
+
+    const volumeStrength = current.volume;
+    if (volumeStrength > 0) boost += 10;
+
+    const candleSize = Math.abs(current.close - current.open) / current.open;
+    if (candleSize > 0.02) boost += 10;
+    else if (candleSize > 0.01) boost += 5;
+
+    const MAX_CONFIDENCE = 100;
+    return Math.min(BASE_CONFIDENCE + boost, MAX_CONFIDENCE);
+  }
+}
+
+export const createDefault123Config = (): Pattern123Config => ({
+  enabled: false,
+  minConfidence: 75,
+  minRiskReward: 2.5,
+  pivotLookback: DEFAULT_PIVOT_LOOKBACK,
+  breakoutThreshold: BREAKOUT_THRESHOLD_PERCENT,
+});

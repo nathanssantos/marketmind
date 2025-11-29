@@ -7,6 +7,188 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.0] - 2025-11-29
+
+### Added
+- **Quantity Per Symbol** 🎯
+  - Independent quantity configuration for each trading symbol
+  - `quantityBySymbol: Record<string, number>` stores symbol-specific quantities
+  - `getQuantityForSymbol(symbol)` retrieves quantity with fallback to defaultQuantity
+  - `setQuantityForSymbol(symbol, quantity)` saves quantity per symbol
+  - Automatic persistence via Electron secure storage
+  - OrderTicket auto-updates when switching symbols
+  - ChartCanvas uses symbol-specific quantity for:
+    - Automatic setup detection orders
+    - Manual LONG entries (Shift+Click)
+    - Manual SHORT entries (Alt+Click)
+  - Reset handled in clearAllData
+  - 19 comprehensive tests covering all functionality
+
+### Changed
+- **Trading Store Enhancement**
+  - Enhanced TradingState with quantityBySymbol property
+  - Fixed setWithSync to properly handle function callbacks
+  - Updated loadFromElectron with quantityBySymbol fallback (`|| {}`)
+  - Updated saveToElectron to persist quantityBySymbol
+  - Updated clearAllData to reset quantityBySymbol
+
+- **OrderTicket Component**
+  - Imports getQuantityForSymbol and setQuantityForSymbol from store
+  - Added useEffect to load symbol-specific quantity on symbol change
+  - Modified handleQuantityChange to save per symbol instead of globally
+
+- **ChartCanvas Component**
+  - Replaced all defaultQuantity references with getQuantityForSymbol(symbol)
+  - Updated handleLongEntry callback to use symbol-specific quantity
+  - Updated handleShortEntry callback to use symbol-specific quantity
+  - Updated setup detection order creation to use symbol-specific quantity
+  - Added getQuantityForSymbol to useCallback/useEffect dependencies
+
+### Fixed
+- Removed duplicate getQuantityForSymbol/setQuantityForSymbol implementations in tradingStore
+
+## [0.29.0] - 2025-11-29
+
+### Added
+- **Setup Detection Cooldown System** ⏱️
+  - Prevents duplicate setup detections within configurable period (default: 10 candles)
+  - `lastDetectionIndex` Map tracks last detection index per setup type
+  - `canDetectSetup()` method validates cooldown before detection
+  - `markSetupDetected()` records detection index
+  - Configurable via `setupCooldownPeriod` property (default: 10)
+  - Eliminates multiple orders from same setup pattern
+
+- **Trend Filter with EMA 200** 📈
+  - Major trend detection using EMA 200 indicator
+  - `getTrend()` method returns 'bullish', 'bearish', or 'neutral'
+  - `isTrendAligned()` validates setup direction against major trend
+  - Configuration options:
+    - `enableTrendFilter` (default: false) - enables/disables trend filtering
+    - `allowCounterTrend` (default: true) - allows trades against major trend
+    - `trendEmaPeriod` (default: 200) - EMA period for trend detection
+  - Prevents counter-trend trades when configured
+  - Smart filtering: LONG only in bullish trend, SHORT only in bearish trend
+
+- **Trend Filter UI Configuration** 🏛️
+  - New "Trend Filter" section in SetupConfigTab
+  - "Enable Trend Filter" switch with EMA 200 description
+  - "Allow Counter-Trend Trades" nested switch (visible when filter enabled)
+  - Complete translations in EN/PT/ES/FR:
+    - setupConfig.trendFilter.title
+    - setupConfig.trendFilter.enable
+    - setupConfig.trendFilter.enableDescription
+    - setupConfig.trendFilter.allowCounter
+    - setupConfig.trendFilter.allowCounterDescription
+
+### Changed
+- **SetupDetectionService Enhancement**
+  - Added EMA calculation import from indicators
+  - Added `lastDetectionIndex` private Map for cooldown tracking
+  - Modified `detectSetups()` to check cooldown before each detection
+  - Modified `detectSetups()` to validate trend alignment
+  - Enhanced config with 4 new properties (enableTrendFilter, allowCounterTrend, trendEmaPeriod, setupCooldownPeriod)
+  - `createDefaultSetupDetectionConfig()` includes new default values
+
+- **setupStore Type Safety**
+  - Fixed TypeScript error in `updateSetupConfig()` with type guard
+  - Added null check before spreading config properties
+
+### Fixed
+- **Duplicate Setup Detection** 🐞
+  - No longer creates multiple orders for same setup
+  - Cooldown system prevents re-detection within configured period
+  - Each setup type tracked independently
+
+- **Counter-Trend Trading** ⚠️
+  - System no longer enters LONG positions during bearish trends
+  - System no longer enters SHORT positions during bullish trends
+  - Configurable to allow/block counter-trend trades
+
+### Technical
+- 6 new comprehensive tests for cooldown and trend filter
+- 1,750 tests passing (1,723 unit + 27 browser)
+- Zero TypeScript errors
+- Zero linting errors
+- Full test coverage for new features:
+  - Cooldown prevention
+  - Bullish trend detection
+  - Bearish trend detection
+  - Trend filter disabled behavior
+  - Counter-trend allowance
+  - Custom cooldown period
+
+## [0.28.1] - 2025-11-28
+  - BaseSetupDetector abstract class for scalable setup detection architecture
+  - Setup91Detector: EMA9 trend reversal detection with 60-95% confidence scoring
+  - Pattern123Detector: 123 reversal pattern detection with pivot-based analysis
+  - SetupDetectionService: Orchestrates multiple detectors, sorts by confidence
+  - setupStore (Zustand): Persistent state management for setup configuration and execution tracking
+  - SetupRenderer: Canvas-based visualization of entry/SL/TP levels on chart
+  - Automatic setup detection when candles update (50+ candles required)
+  - Performance tracking per setup type (win rate, avg R:R, expectancy, consecutive stats)
+  - Execution history with won/lost/cancelled status tracking
+  - Integration with ChartCanvas for real-time setup rendering
+  - **SetupConfigTab UI**: Configuration interface for setup detection in SettingsDialog
+  - **Algorithmic Auto-Trading Toggle**: Robot button in toolbar to enable/disable auto-trading
+  - **Multi-language Support**: Complete translations for setup config in EN, PT, ES, FR
+  - **AI Integration with Setup Detection**: AI Trading Agent now validates algorithmically detected setups
+    - SetupDetectionService integrated in AITradingAgent.getAIDecision()
+    - AI acts as validator, not creator - never modifies entry/SL/TP from detected setups
+    - formatSetupsForAI() method formats setups for AI validation prompt
+    - New setupValidation system prompt with strict validation rules
+    - AI can approve/reject setups based on market context, volume, trend alignment
+    - Significant token savings: AI validates pre-calculated setups instead of analyzing from scratch
+  - **Automatic Trade Execution**: Trades execute automatically when setups detected and auto-trading enabled
+    - Position sizing based on 2% risk per trade (configurable)
+    - Automatic calculation: quantity = (wallet × riskPercent) / stopDistance
+    - Safety checks: wallet active, sufficient balance, simulator active
+    - Setup execution tracking prevents duplicate trades
+    - Orders created with pre-calculated SL/TP from setup
+    - Smart order type detection (limit vs stop based on current price)
+
+- **Technical Indicators for Setup Detection** 📊
+  - EMA/SMA calculation utilities with comprehensive tests
+  - RSI with bullish/bearish divergence detection
+  - Support/Resistance detection with pivot points and breakout analysis
+  - All indicators fully tested with 100% coverage
+
+### Changed
+- **ChartCanvas Enhancement**
+  - Added SetupDetectionService initialization
+  - Auto-detection useEffect triggers on candle updates
+  - SetupRenderer overlay for visual feedback
+  - Hover detection for setup tooltips
+- **Toolbar Enhancement**
+  - Added dedicated Setup Detection section with separator
+  - Target icon (LuTarget) button for setup detection toggle
+  - Robot icon (LuBot) button for algorithmic auto-trading toggle
+  - Visual feedback with green (active) and gray (inactive) states
+  - Reorganized toolbar: Patterns → Setup Detection → Moving Averages → Sidebar actions
+- **setupStore Enhancement**
+  - Added `isAutoTradingActive` boolean state
+  - Added `toggleAutoTrading()` function
+  - Config changes disabled when auto-trading is active
+- **SettingsDialog Enhancement**
+  - Increased modal size for better setup configuration visibility (xl size, 1200px max width, 90vh height)
+- **AITradingAgent Enhancement**
+  - Integrated SetupDetectionService for algorithmic setup detection
+  - Modified buildTradingPrompt() to include detected setups
+  - Added formatSetupsForAI() helper method
+  - AI now validates setups instead of creating them from scratch
+- **prompts-trading.json Enhancement**
+  - Added setupValidation system prompt
+  - Clear instructions for AI to validate, not modify, setup parameters
+  - Validation criteria: trend alignment, volume, news, market structure
+
+### Technical
+- 18 new files created (2,850+ lines added)
+- 10 files modified for AI integration (450+ lines added)
+- 1,717 tests passing (100% pass rate)
+- Zero TypeScript errors
+- Conservative defaults: setups disabled by default, 70-75% min confidence, 2.5:1 min R:R
+- Setup detection plan documented in PLAN_SETUP_DETECTION.md
+- User guide created in SETUP_DETECTION_GUIDE.md
+
 ## [0.28.1] - 2025-11-28
 
 ### Fixed

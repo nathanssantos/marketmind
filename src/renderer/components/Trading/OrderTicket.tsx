@@ -6,7 +6,7 @@ import { Select } from '@renderer/components/ui/select';
 import { useChartContext } from '@renderer/context/ChartContext';
 import { useTradingStore } from '@renderer/store/tradingStore';
 import type { OrderType } from '@shared/types/trading';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const OrderTicket = () => {
@@ -19,22 +19,27 @@ export const OrderTicket = () => {
   const wallets = useTradingStore((state) => state.wallets);
   const activeWalletId = useTradingStore((state) => state.activeWalletId);
   const addOrder = useTradingStore((state) => state.addOrder);
-  const defaultQuantity = useTradingStore((state) => state.defaultQuantity);
-  const setDefaultQuantity = useTradingStore((state) => state.setDefaultQuantity);
+  const getQuantityForSymbol = useTradingStore((state) => state.getQuantityForSymbol);
+  const setQuantityForSymbol = useTradingStore((state) => state.setQuantityForSymbol);
 
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
+  const symbolQuantity = getQuantityForSymbol(symbol);
 
   const [orderType, setOrderType] = useState<OrderType>('long');
-  const [quantity, setQuantity] = useState(defaultQuantity.toString());
+  const [quantity, setQuantity] = useState(symbolQuantity.toString());
   const [entryPrice, setEntryPrice] = useState('');
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
+
+  useEffect(() => {
+    setQuantity(getQuantityForSymbol(symbol).toString());
+  }, [symbol, getQuantityForSymbol]);
 
   const handleQuantityChange = (value: string) => {
     setQuantity(value);
     const numValue = Number(value);
     if (!isNaN(numValue) && numValue > 0) {
-      setDefaultQuantity(numValue);
+      setQuantityForSymbol(symbol, numValue);
     }
   };
 

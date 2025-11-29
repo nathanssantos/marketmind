@@ -54,6 +54,7 @@
       "chart": "Gráfico",
       "ai": "Configuração de IA",
       "aiTrading": "Auto-Trading IA",
+      "setupDetection": "Detecção de Setups",
       "patternDetection": "Detecção de Padrões",
       "news": "Notícias",
       "tradingSimulator": "Simulador de Trading",
@@ -263,6 +264,7 @@
       "measurementArea": "Área de Medição",
       "autoPatterns": "Detecção Automática de Padrões",
       "detectPatterns": "Detectar Padrões Agora",
+      "setupDetection": "Detecção Algorítmica de Setups",
       "patternExtensions": "Estender Padrões Além da Última Vela",
       "indicators": "Indicadores",
       "quickSettings": "Configurações Rápidas"
@@ -910,5 +912,63 @@
       "changelog": "Registro de Alterações"
     },
     "copyright": "© 2025 MarketMind. Feito com ❤️ para traders e investidores."
+  },
+  "setupConfig": {
+    "tips": {
+      "confidence": "Filtros de confiança mais altos mostram apenas os setups mais fortes",
+      "algorithmic": "Detecção algorítmica é mais rápida e consistente que IA",
+      "toolbar": "Ative o auto-trading pelo ícone de robô na barra de ferramentas"
+    },
+    "resetDefaults": "Restaurar Padrões",
+    "trendFilter": {
+      "title": "Filtro de Tendência",
+      "enable": "Ativar Filtro de Tendência",
+      "enableDescription": "Usa EMA 200 para identificar a tendência maior e filtrar setups",
+      "allowCounter": "Permitir Operações Contra-Tendência",
+      "allowCounterDescription": "Quando desabilitado, apenas operações alinhadas com a tendência maior são permitidas"
+    },
+    "status": {
+      "title": "Status do Auto-Trading",
+      "autoTrading": "Auto-Trading Algorítmico",
+      "active": "Ativo",
+      "inactive": "Inativo"
+    },
+    "autoTradingDisabled": "Auto-Trading Desabilitado",
+    "autoTradingDisabledDescription": "O auto-trading foi desabilitado automaticamente porque a detecção de setups foi desligada.",
+    "noSetupsEnabled": "Nenhum Setup Habilitado",
+    "noSetupsEnabledDescription": "Não é possível habilitar o auto-trading sem setups ativos. Por favor, habilite pelo menos um setup nas Configurações.",
+    "setups": {
+      "setup91": {
+        "title": "Setup 9.1 (Reversões EMA9)",
+        "description": "Detecta mudanças de tendência na EMA9 com confirmação de volume"
+      },
+      "pattern123": {
+        "title": "Padrão 123 (Padrão de Reversão)",
+        "description": "Padrão clássico 123 de pivôs com confirmação de rompimento"
+      },
+      "bullTrap": {
+        "title": "Bull Trap (Falso Rompimento)",
+        "description": "Detecta falsos rompimentos acima da resistência seguidos de reversão"
+      },
+      "bearTrap": {
+        "title": "Bear Trap (Falsa Quebra)",
+        "description": "Detecta falsas quebras abaixo do suporte seguidas de recuperação"
+      },
+      "breakoutRetest": {
+        "title": "Reteste de Rompimento (Continuação)",
+        "description": "Rompimento válido seguido de reteste bem-sucedido e continuação"
+      }
+    },
+    "parameters": {
+      "minConfidence": {
+        "label": "Confiança Mínima",
+        "helper": "Mostrar apenas setups com confiança acima deste limite"
+      }
+    },
+    "summary": {
+      "title": "Resumo",
+      "enabledSetups": "Setups Habilitados",
+      "avgConfidence": "Confiança Média"
+    }
   }
 }
