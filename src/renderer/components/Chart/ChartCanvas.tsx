@@ -17,6 +17,8 @@ import { useRSIWorker } from '@renderer/hooks/useRSIWorker';
 import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
+import { SetupDetectionService } from '@renderer/services/setupDetection';
+import { useSetupStore } from '@renderer/store';
 import { useTradingStore } from '@renderer/store/tradingStore';
 import { calculateMovingAverage } from '@renderer/utils/movingAverages';
 import type { StochasticResult } from '@renderer/utils/stochastic';
@@ -33,6 +35,7 @@ import { ChartContextMenuManager } from './ChartContextMenuManager';
 import { ChartNavigation } from './ChartNavigation';
 import { ChartTooltip } from './ChartTooltip';
 import { PatternRenderer } from './PatternRenderer';
+import { SetupRenderer } from './SetupRenderer';
 import { useCandlestickRenderer } from './useCandlestickRenderer';
 import { useChartCanvas } from './useChartCanvas';
 import { useCrosshairPriceLineRenderer } from './useCrosshairPriceLineRenderer';
@@ -112,6 +115,12 @@ export const ChartCanvas = ({
   const defaultQuantity = useTradingStore((state) => state.defaultQuantity);
   const closeOrder = useTradingStore((state) => state.closeOrder);
   const updateOrder = useTradingStore((state) => state.updateOrder);
+
+  const detectedSetups = useSetupStore((state) => state.detectedSetups);
+  const addDetectedSetup = useSetupStore((state) => state.addDetectedSetup);
+  const setupConfig = useSetupStore((state) => state.config);
+  const [setupService] = useState(() => new SetupDetectionService(setupConfig));
+  const [hoveredSetup, setHoveredSetup] = useState<ReturnType<typeof useSetupStore.getState>['detectedSetups'][0] | null>(null);
 
   const handleLongEntry = useCallback((price: number) => {
     const state = useTradingStore.getState();
@@ -237,6 +246,18 @@ export const ChartCanvas = ({
     ...(initialViewport !== undefined && { initialViewport }),
     ...(onViewportChange !== undefined && { onViewportChange }),
   });
+
+  const handleSetupHover = useCallback((setup: typeof hoveredSetup) => {
+    setHoveredSetup(setup);
+    if (setup && mousePosition) {
+      setTooltipData({
+        candle: null,
+        x: mousePosition.x,
+        y: mousePosition.y,
+        visible: true,
+      });
+    }
+  }, [mousePosition]);
 
   const handleConfirmCloseOrder = useCallback((): void => {
     if (!orderToClose || !manager) return;
@@ -980,6 +1001,20 @@ export const ChartCanvas = ({
   }, [manager, showRSI]);
 
   useEffect(() => {
+    if (candles.length < 50) return;
+
+    setupService.updateConfig(setupConfig);
+    const detectedSetups = setupService.detectSetups(candles);
+    
+    detectedSetups.forEach((setup) => {
+      const existing = useSetupStore.getState().detectedSetups.find(s => s.id === setup.id);
+      if (!existing) {
+        addDetectedSetup(setup);
+      }
+    });
+  }, [candles, setupConfig, setupService, addDetectedSetup]);
+
+  useEffect(() => {
     if (!shiftPressed && !altPressed) {
       setOrderPreview(null);
       return;
@@ -1357,6 +1392,17 @@ export const ChartCanvas = ({
             mousePosition={mousePosition}
             onPatternHover={handleAIPatternHover}
             advancedConfig={advancedConfig}
+          />
+        )}
+        {manager && !isInteracting && (
+          <SetupRenderer
+            canvasManager={manager}
+            candles={candles}
+            setups={detectedSetups.filter((s) => s.visible)}
+            width={canvasRef.current?.width ?? 0}
+            height={canvasRef.current?.height ?? 0}
+            mousePosition={mousePosition}
+            onSetupHover={handleSetupHover}
           />
         )}
         <ChartNavigation
