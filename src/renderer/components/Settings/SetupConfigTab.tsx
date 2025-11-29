@@ -1,0 +1,190 @@
+import { Field } from '@/renderer/components/ui/field';
+import { Slider } from '@/renderer/components/ui/slider';
+import { Switch } from '@/renderer/components/ui/switch';
+import { useSetupStore } from '@/renderer/store/setupStore';
+import { Box, Button, HStack, Separator, Stack, Text } from '@chakra-ui/react';
+import type React from 'react';
+import { useTranslation } from 'react-i18next';
+import { LuRefreshCw } from 'react-icons/lu';
+
+const MIN_CONFIDENCE = 50;
+const MAX_CONFIDENCE = 100;
+const CONFIDENCE_STEP = 5;
+
+interface SetupSection {
+  setupKey: 'setup91' | 'pattern123';
+  titleKey: string;
+  descriptionKey: string;
+}
+
+const useSetupSections = (): SetupSection[] => [
+  {
+    setupKey: 'setup91',
+    titleKey: 'setupConfig.setups.setup91.title',
+    descriptionKey: 'setupConfig.setups.setup91.description',
+  },
+  {
+    setupKey: 'pattern123',
+    titleKey: 'setupConfig.setups.pattern123.title',
+    descriptionKey: 'setupConfig.setups.pattern123.description',
+  },
+];
+
+export const SetupConfigTab = (): React.ReactElement => {
+  const { t } = useTranslation();
+  const { config, updateSetupConfig, resetConfigToDefaults, isAutoTradingActive } = useSetupStore();
+  const sections = useSetupSections();
+
+  const handleToggleSetup = (setupKey: 'setup91' | 'pattern123'): void => {
+    updateSetupConfig(setupKey, {
+      enabled: !config[setupKey].enabled,
+    });
+  };
+
+  const handleConfigChange = (
+    setupKey: 'setup91' | 'pattern123',
+    field: string,
+    value: number,
+  ): void => {
+    updateSetupConfig(setupKey, {
+      [field]: value,
+    });
+  };
+
+  return (
+    <Stack gap={6}>
+      <Box
+        bg="green.500/10"
+        p={4}
+        borderRadius="md"
+        borderLeft="4px solid"
+        borderColor="green.500"
+      >
+        <Text fontSize="sm" fontWeight="semibold" mb={2}>
+          {t('common.tips')}
+        </Text>
+        <Stack gap={1} fontSize="sm" color="fg.muted">
+          <Text>• {t('setupConfig.tips.confidence')}</Text>
+          <Text>• {t('setupConfig.tips.algorithmic')}</Text>
+          <Text>• {t('setupConfig.tips.toolbar')}</Text>
+        </Stack>
+      </Box>
+
+      <Box>
+        <Button
+          variant="outline"
+          onClick={resetConfigToDefaults}
+          width="full"
+          colorPalette="red"
+          disabled={isAutoTradingActive}
+        >
+          <LuRefreshCw />
+          {t('settings.resetToDefaults')}
+        </Button>
+      </Box>
+
+      <Separator />
+
+      <Box>
+        <Text fontSize="sm" fontWeight="bold" mb={4}>
+          {t('setupConfig.status.title')}
+        </Text>
+        <Stack gap={4}>
+          <HStack justify="space-between">
+            <Box>
+              <Text fontWeight="medium">{t('setupConfig.status.autoTrading')}</Text>
+              <Text fontSize="sm" color="fg.muted">
+                {isAutoTradingActive ? t('setupConfig.status.active') : t('setupConfig.status.inactive')}
+              </Text>
+            </Box>
+            <Switch
+              checked={isAutoTradingActive}
+              onCheckedChange={() => { }}
+              disabled
+            />
+          </HStack>
+        </Stack>
+      </Box>
+
+      <Separator />
+
+      {sections.map((section) => {
+        const setupConfig = config[section.setupKey];
+        const isEnabled = setupConfig.enabled;
+
+        return (
+          <Box key={section.setupKey}>
+            <HStack justify="space-between" mb={4}>
+              <Box flex="1">
+                <Text fontSize="md" fontWeight="bold">
+                  {t(section.titleKey)}
+                </Text>
+                <Text fontSize="sm" color="fg.muted">
+                  {t(section.descriptionKey)}
+                </Text>
+              </Box>
+              <Switch
+                checked={isEnabled}
+                onCheckedChange={() => handleToggleSetup(section.setupKey)}
+              />
+            </HStack>
+
+            {isEnabled && (
+              <Stack gap={4} pl={4} borderLeft="2px solid" borderColor="border">
+                <Field
+                  label={t('setupConfig.parameters.minConfidence.label')}
+                  helperText={t('setupConfig.parameters.minConfidence.helper')}
+                >
+                  <Slider
+                    value={[setupConfig.minConfidence]}
+                    onValueChange={(e) =>
+                      handleConfigChange(section.setupKey, 'minConfidence', e[0]!)
+                    }
+                    min={MIN_CONFIDENCE}
+                    max={MAX_CONFIDENCE}
+                    step={CONFIDENCE_STEP}
+                    width="full"
+                  />
+                  <Text fontSize="sm" color="fg.muted" mt={1}>
+                    {setupConfig.minConfidence}%
+                  </Text>
+                </Field>
+              </Stack>
+            )}
+
+            <Separator mt={6} />
+          </Box>
+        );
+      })}
+
+      <Box>
+        <Text fontSize="sm" fontWeight="bold" mb={2}>
+          {t('setupConfig.summary.title')}
+        </Text>
+        <HStack gap={3}>
+          <Box bg="bg.muted" p={3} borderRadius="md" flex="1">
+            <Text fontSize="xs" color="fg.muted">
+              {t('setupConfig.summary.enabledSetups')}
+            </Text>
+            <Text fontSize="lg" fontWeight="bold">
+              {Object.values(config).filter((c) => c.enabled).length}/
+              {Object.keys(config).length}
+            </Text>
+          </Box>
+          <Box bg="bg.muted" p={3} borderRadius="md" flex="1">
+            <Text fontSize="xs" color="fg.muted">
+              {t('setupConfig.summary.avgConfidence')}
+            </Text>
+            <Text fontSize="lg" fontWeight="bold">
+              {Math.round(
+                Object.values(config).reduce((sum, c) => sum + c.minConfidence, 0) /
+                  Object.keys(config).length,
+              )}
+              %
+            </Text>
+          </Box>
+        </HStack>
+      </Box>
+    </Stack>
+  );
+};

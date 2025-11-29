@@ -54,6 +54,7 @@
       "chart": "Graphique",
       "ai": "Configuration IA",
       "aiTrading": "Auto-Trading IA",
+      "setupDetection": "Détection de Setups",
       "patternDetection": "Détection de Motifs",
       "news": "Actualités",
       "tradingSimulator": "Simulateur de Trading",
@@ -910,5 +911,40 @@
       "changelog": "Journal des modifications"
     },
     "copyright": "© 2025 MarketMind. Fait avec ❤️ pour les traders et investisseurs."
+  },
+  "setupConfig": {
+    "tips": {
+      "confidence": "Des filtres de confiance plus élevés ne montrent que les setups les plus forts",
+      "algorithmic": "La détection algorithmique est plus rapide et cohérente que l'IA",
+      "toolbar": "Activez l'auto-trading via l'icône robot dans la barre d'outils"
+    },
+    "resetDefaults": "Réinitialiser aux Valeurs par Défaut",
+    "status": {
+      "title": "État de l'Auto-Trading",
+      "autoTrading": "Auto-Trading Algorithmique",
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+    "setups": {
+      "setup91": {
+        "title": "Setup 9.1 (Renversements EMA9)",
+        "description": "Détecte les changements de tendance EMA9 avec confirmation de volume"
+      },
+      "pattern123": {
+        "title": "Motif 123 (Motif de Renversement)",
+        "description": "Motif classique 123 de pivots avec confirmation de cassure"
+      }
+    },
+    "parameters": {
+      "minConfidence": {
+        "label": "Confiance Minimale",
+        "helper": "Afficher uniquement les setups avec une confiance supérieure à ce seuil"
+      }
+    },
+    "summary": {
+      "title": "Résumé",
+      "enabledSetups": "Setups Activés",
+      "avgConfidence": "Confiance Moyenne"
+    }
   }
 }

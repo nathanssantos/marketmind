@@ -1,4 +1,5 @@
 import { useUIStore } from '@/renderer/store/uiStore';
+import { useSetupStore } from '@/renderer/store/setupStore';
 import { Box, Flex, HStack, IconButton, Text } from '@chakra-ui/react';
 import { usePatternDetectionConfigStore } from '@renderer/store/patternDetectionConfigStore';
 import { memo } from 'react';
@@ -6,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import {
   LuActivity,
   LuArrowRightToLine,
+  LuBot,
   LuChartBar,
   LuChartCandlestick,
   LuChartLine,
@@ -102,6 +104,7 @@ export const Toolbar = memo(({
   const { t } = useTranslation();
   const { algorithmicDetectionSettings, setAlgorithmicDetectionSettings } = useUIStore();
   const { config: patternConfig, setConfig: setPatternConfig } = usePatternDetectionConfigStore();
+  const { isAutoTradingActive, toggleAutoTrading } = useSetupStore();
 
   const isPatternDetectionActive = algorithmicDetectionSettings.autoDisplayPatterns;
   const isExtensionsActive = patternConfig.showExtensions;
@@ -403,6 +406,17 @@ export const Toolbar = memo(({
             variant={isTradingOpen ? 'solid' : 'ghost'}
           >
             <LuDollarSign />
+          </IconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label={t('setupConfig.status.autoTrading')} showArrow>
+          <IconButton
+            size="2xs"
+            aria-label={t('setupConfig.status.autoTrading')}
+            onClick={toggleAutoTrading}
+            colorPalette={isAutoTradingActive ? 'green' : 'gray'}
+            variant={isAutoTradingActive ? 'solid' : 'ghost'}
+          >
+            <LuBot />
           </IconButton>
         </TooltipWrapper>
       </Flex>

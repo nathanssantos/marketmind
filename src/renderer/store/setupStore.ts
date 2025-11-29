@@ -45,6 +45,7 @@ export interface SetupExecution {
 
 interface SetupStoreState {
   config: SetupDetectionConfig;
+  isAutoTradingActive: boolean;
   detectedSetups: TradingSetup[];
   setupHistory: SetupExecution[];
   performanceByType: Record<SetupType, SetupPerformanceStats>;
@@ -56,6 +57,7 @@ interface SetupStoreState {
     setupType: T,
     config: Partial<SetupDetectionConfig[T]>,
   ) => void;
+  toggleAutoTrading: () => void;
 
   addDetectedSetup: (setup: TradingSetup) => void;
   removeDetectedSetup: (id: string) => void;
@@ -178,6 +180,7 @@ export const useSetupStore = create<SetupStoreState>()(
   persist(
     (set, get) => ({
       config: createDefaultSetupDetectionConfig(),
+      isAutoTradingActive: false,
       detectedSetups: [],
       setupHistory: [],
       performanceByType: {} as Record<SetupType, SetupPerformanceStats>,
@@ -202,6 +205,11 @@ export const useSetupStore = create<SetupStoreState>()(
               ...config,
             },
           },
+        })),
+
+      toggleAutoTrading: () =>
+        set((state) => ({
+          isAutoTradingActive: !state.isAutoTradingActive,
         })),
 
       addDetectedSetup: (setup) =>
