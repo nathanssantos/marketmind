@@ -7,6 +7,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Volume Moving Average** 📊
+  - Timeframe-adaptive SMA calculation for volume
+  - `getVolumeMAPeriod(timeframe)`: Returns optimal periods (1m-12h=20, 1d=20, 3d=14, 1w/1M=10)
+  - `calculateVolumeMA(candles, timeframe)`: Calculates volume moving average
+  - Visual rendering with solid light-colored line (colors.volume, 50% opacity, 2px width)
+  - Integrated into ChartCanvas with `showVolumeMA` prop
+  - 17 comprehensive tests covering all timeframes and edge cases
+
+- **Swing Point Detection for Stop Loss** 🎯
+  - `findRecentSwingLow()`: Finds most recent swing low in lookback period
+  - `findRecentSwingHigh()`: Finds most recent swing high in lookback period
+  - `findLowestSwingLow()`: Finds lowest swing low for safer stop placement
+  - `findHighestSwingHigh()`: Finds highest swing high for safer stop placement
+  - 8 comprehensive tests for swing point detection
+
+### Changed
+- **Code Consolidation & DRY Principles** 🔧
+  - **Stochastic Worker**: Removed ~100 lines of duplicated code by importing `calculateStochastic` from `utils/stochastic.ts`
+  - **Moving Averages**: 
+    - Consolidated 3 duplicate `calculateSMA` implementations into single source (`utils/movingAverages.ts`)
+    - Consolidated 3 duplicate `calculateEMA` implementations into single source (`utils/movingAverages.ts`)
+    - Removed `utils/movingAveragesCalculation.ts` (duplicated functionality)
+    - Removed `utils/indicators/ema.ts` (duplicated calculateSMA/calculateEMA)
+    - Added `calculateMovingAverages()` and related interfaces to `movingAverages.ts`
+    - Updated `movingAverages.worker.ts` to import from consolidated source
+    - Renamed `movingAveragesCalculation.test.ts` → `movingAverages.test.ts`
+  - **RSI**: 
+    - Removed unused `utils/indicators/rsi.ts` (different implementation, period=14)
+    - Kept active `utils/rsi.ts` (period=2 for visual component)
+    - Removed associated test files
+  - **Setup Detectors**: Updated all setup detection services to use consolidated EMA:
+    - Changed imports from `@renderer/utils/indicators/ema` to `@renderer/utils/movingAverages`
+    - Updated null checks from `isNaN(ema)` to `ema === null || ema === undefined`
+    - Updated `Setup91Detector`, `BullTrapDetector`, `BearTrapDetector`, `BreakoutRetestDetector`, `SetupDetectionService`
+    - Fixed return type in `SetupDetectionService.getTrend()` to return 'neutral' instead of null
+
+- **Improved Stop Loss Calculations** 🛡️
+  - **Setup91Detector**: Now uses swing points with ATR fallback
+    - LONG: `stopLoss = min(swingLow * 0.998, entry - ATR*2)`
+    - SHORT: `stopLoss = max(swingHigh * 1.002, entry + ATR*2)`
+    - Prevents stops too close to price (stop hunting)
+    - Respects market structure (swing highs/lows)
+  - **BullTrapDetector**: Increased stop buffer from 0.2% to 0.5% (1.002 → 1.005)
+  - **BearTrapDetector**: Increased stop buffer from 0.2% to 0.5% (0.998 → 0.995)
+  - **BreakoutRetestDetector**: Added swing point validation
+    - LONG: Validates swing low between resistance and entry
+    - SHORT: Validates swing high between support and entry
+    - Uses 0.3% buffer from swing points for safety
+
+### Fixed
+- Volume MA calculation: Removed redundant internal `calculateSMA`, now uses centralized implementation
+- TypeScript errors in setup detectors after EMA consolidation (proper null handling for `(number | null)[]`)
+- Missing `calculateMovingAverages` export in `movingAverages.ts`
+- **Setup Detector Minimum Candles** 🔧:
+  - **Setup91Detector**: Now validates `max(emaPeriod=9, atrPeriod=12) + VOLUME_LOOKBACK=20` = **32 candles** (previously only validated 29)
+  - **BullTrapDetector**: Now validates `max(lookback+ema=40, SUPPORT_LOOKBACK+VOLUME=70)` = **70 candles** (previously only validated 40)
+  - **BearTrapDetector**: Now validates `max(lookback+ema=40, RESISTANCE_LOOKBACK+VOLUME=70)` = **70 candles** (previously only validated 40)
+  - **BreakoutRetestDetector**: Now validates `max(lookback+ema=50, PIVOT_LOOKBACK+VOLUME=30)` = **50 candles** (already correct)
+  - **Pattern123Detector**: Increased from `pivotLookback*3=15` to `pivotLookback*6=30` candles for more reliable pattern detection
+- **Stop Loss Safety**: All detectors now consider structural support/resistance instead of just ATR or fixed buffers
+
+### Technical Debt Eliminated
+- **Total Lines Removed**: ~250+ lines of duplicated code
+- **Files Removed**: 4 duplicate files (movingAveragesCalculation.ts, ema.ts, rsi.ts, + 2 test files)
+- **Centralized**: All MA calculations now use single source of truth
+- **Test Coverage**: All 1,746 tests passing (1,719 unit + 27 browser)
+- **Code Coverage**: 90.62% maintained
+
 ## [0.30.0] - 2025-11-29
 
 ### Added

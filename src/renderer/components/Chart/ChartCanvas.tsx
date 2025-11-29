@@ -321,6 +321,8 @@ export const ChartCanvas = ({
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
     ...(advancedConfig?.volumeHeightRatio !== undefined && { volumeHeightRatio: advancedConfig.volumeHeightRatio }),
     ...(tooltipData.candleIndex !== undefined && { hoveredCandleIndex: tooltipData.candleIndex }),
+    timeframe,
+    showVolumeMA: true,
   });
 
   const { render: renderMovingAverages, getHoveredMATag } = useMovingAverageRenderer({

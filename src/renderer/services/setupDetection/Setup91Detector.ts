@@ -1,6 +1,7 @@
 import type { Candle } from '@shared/types';
-import { calculateEMA } from '@renderer/utils/indicators/ema';
+import { calculateEMA } from '@renderer/utils/movingAverages';
 import { calculateATR } from '@renderer/utils/indicators/atr';
+import { findLowestSwingLow, findHighestSwingHigh } from '@renderer/utils/indicators/supportResistance';
 import {
   BaseSetupDetector,
   type SetupDetectorConfig,
@@ -41,10 +42,12 @@ export class Setup91Detector extends BaseSetupDetector {
   }
 
   detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
-    if (
-      !this.config.enabled ||
-      currentIndex < this.setup91Config.emaPeriod + VOLUME_LOOKBACK
-    ) {
+    const minIndex = Math.max(
+      this.setup91Config.emaPeriod,
+      this.setup91Config.atrPeriod,
+    ) + VOLUME_LOOKBACK;
+    
+    if (!this.config.enabled || currentIndex < minIndex) {
       return { setup: null, confidence: 0 };
     }
 
@@ -59,12 +62,12 @@ export class Setup91Detector extends BaseSetupDetector {
 
     if (
       !current ||
+      ema9Current === null ||
       ema9Current === undefined ||
-      isNaN(ema9Current) ||
+      ema9Prev === null ||
       ema9Prev === undefined ||
-      isNaN(ema9Prev) ||
+      ema9PrevPrev === null ||
       ema9PrevPrev === undefined ||
-      isNaN(ema9PrevPrev) ||
       atrCurrent === undefined ||
       isNaN(atrCurrent)
     ) {
@@ -85,7 +88,12 @@ export class Setup91Detector extends BaseSetupDetector {
 
     if (bullishTurn && current.close > ema9Current && volumeConfirmation) {
       const entry = current.close;
-      const stopLoss = entry - atrCurrent * this.setup91Config.atrStopMultiplier;
+      
+      const swingLow = findLowestSwingLow(candles, currentIndex, VOLUME_LOOKBACK, 3);
+      const atrStop = entry - atrCurrent * this.setup91Config.atrStopMultiplier;
+      const swingStop = swingLow ? swingLow * 0.998 : atrStop;
+      const stopLoss = Math.min(swingStop, atrStop);
+      
       const takeProfit = entry + atrCurrent * this.setup91Config.atrTargetMultiplier;
       const rr = this.calculateRR(entry, stopLoss, takeProfit);
 
@@ -122,7 +130,12 @@ export class Setup91Detector extends BaseSetupDetector {
 
     if (bearishTurn && current.close < ema9Current && volumeConfirmation) {
       const entry = current.close;
-      const stopLoss = entry + atrCurrent * this.setup91Config.atrStopMultiplier;
+      
+      const swingHigh = findHighestSwingHigh(candles, currentIndex, VOLUME_LOOKBACK, 3);
+      const atrStop = entry + atrCurrent * this.setup91Config.atrStopMultiplier;
+      const swingStop = swingHigh ? swingHigh * 1.002 : atrStop;
+      const stopLoss = Math.max(swingStop, atrStop);
+      
       const takeProfit = entry - atrCurrent * this.setup91Config.atrTargetMultiplier;
       const rr = this.calculateRR(entry, stopLoss, takeProfit);
 
