@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Performance tracking per setup type (win rate, avg R:R, expectancy, consecutive stats)
   - Execution history with won/lost/cancelled status tracking
   - Integration with ChartCanvas for real-time setup rendering
+  - **SetupConfigTab UI**: Configuration interface for setup detection in SettingsDialog
+  - **Algorithmic Auto-Trading Toggle**: Robot button in toolbar to enable/disable auto-trading
+  - **Multi-language Support**: Complete translations for setup config in EN, PT, ES, FR
 
 - **Technical Indicators for Setup Detection** 📊
   - EMA/SMA calculation utilities with comprehensive tests
@@ -32,12 +35,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Auto-detection useEffect triggers on candle updates
   - SetupRenderer overlay for visual feedback
   - Hover detection for setup tooltips
+- **Toolbar Enhancement**
+  - Added robot icon (LuBot) button for algorithmic auto-trading toggle
+  - Visual feedback with green (active) and gray (inactive) states
+- **setupStore Enhancement**
+  - Added `isAutoTradingActive` boolean state
+  - Added `toggleAutoTrading()` function
+  - Config changes disabled when auto-trading is active
 
 ### Technical
 - 17 new files created (2,639 lines added)
+- 8 files modified for UI integration (362 lines added)
 - 1,717 tests passing (100% pass rate)
 - Zero TypeScript errors
 - Setup detection plan documented in PLAN_SETUP_DETECTION.md
+- User guide created in SETUP_DETECTION_GUIDE.md
 
 ## [0.28.1] - 2025-11-28
 
