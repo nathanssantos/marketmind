@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Algorithmic Trading Setup Detection System** 🎯
+  - BaseSetupDetector abstract class for scalable setup detection architecture
+  - Setup91Detector: EMA9 trend reversal detection with 60-95% confidence scoring
+  - Pattern123Detector: 123 reversal pattern detection with pivot-based analysis
+  - SetupDetectionService: Orchestrates multiple detectors, sorts by confidence
+  - setupStore (Zustand): Persistent state management for setup configuration and execution tracking
+  - SetupRenderer: Canvas-based visualization of entry/SL/TP levels on chart
+  - Automatic setup detection when candles update (50+ candles required)
+  - Performance tracking per setup type (win rate, avg R:R, expectancy, consecutive stats)
+  - Execution history with won/lost/cancelled status tracking
+  - Integration with ChartCanvas for real-time setup rendering
+
+- **Technical Indicators for Setup Detection** 📊
+  - EMA/SMA calculation utilities with comprehensive tests
+  - RSI with bullish/bearish divergence detection
+  - Support/Resistance detection with pivot points and breakout analysis
+  - All indicators fully tested with 100% coverage
+
+### Changed
+- **ChartCanvas Enhancement**
+  - Added SetupDetectionService initialization
+  - Auto-detection useEffect triggers on candle updates
+  - SetupRenderer overlay for visual feedback
+  - Hover detection for setup tooltips
+
+### Technical
+- 17 new files created (2,639 lines added)
+- 1,717 tests passing (100% pass rate)
+- Zero TypeScript errors
+- Setup detection plan documented in PLAN_SETUP_DETECTION.md
+
 ## [0.28.1] - 2025-11-28
 
 ### Fixed
