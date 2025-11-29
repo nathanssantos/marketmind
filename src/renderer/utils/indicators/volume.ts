@@ -119,27 +119,20 @@ export const calculateVolumeMA = (
   candles: Candle[],
   period: number = DEFAULT_VOLUME_PERIOD,
 ): VolumeMovingAverage => {
-  if (period <= 0 || candles.length === 0) {
+  if (candles.length === 0 || period <= 0) {
     return { values: [], period };
   }
 
-  const values: (number | null)[] = [];
+  const volumeCandles = candles.map((c) => ({
+    timestamp: c.timestamp,
+    open: c.volume,
+    high: c.volume,
+    low: c.volume,
+    close: c.volume,
+    volume: c.volume,
+  }));
 
-  for (let i = 0; i < candles.length; i++) {
-    if (i < period - 1) {
-      values.push(null);
-      continue;
-    }
-
-    let sum = 0;
-    for (let j = 0; j < period; j++) {
-      const candle = candles[i - j];
-      if (!candle) continue;
-      sum += candle.volume;
-    }
-
-    values.push(sum / period);
-  }
+  const values = calculateSMA(volumeCandles, period);
 
   return { values, period };
 };
