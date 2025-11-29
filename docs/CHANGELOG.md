@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Integrated into ChartCanvas with `showVolumeMA` prop
   - 17 comprehensive tests covering all timeframes and edge cases
 
+- **Swing Point Detection for Stop Loss** 🎯
+  - `findRecentSwingLow()`: Finds most recent swing low in lookback period
+  - `findRecentSwingHigh()`: Finds most recent swing high in lookback period
+  - `findLowestSwingLow()`: Finds lowest swing low for safer stop placement
+  - `findHighestSwingHigh()`: Finds highest swing high for safer stop placement
+  - 8 comprehensive tests for swing point detection
+
 ### Changed
 - **Code Consolidation & DRY Principles** 🔧
   - **Stochastic Worker**: Removed ~100 lines of duplicated code by importing `calculateStochastic` from `utils/stochastic.ts`
@@ -37,6 +44,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Updated `Setup91Detector`, `BullTrapDetector`, `BearTrapDetector`, `BreakoutRetestDetector`, `SetupDetectionService`
     - Fixed return type in `SetupDetectionService.getTrend()` to return 'neutral' instead of null
 
+- **Improved Stop Loss Calculations** 🛡️
+  - **Setup91Detector**: Now uses swing points with ATR fallback
+    - LONG: `stopLoss = min(swingLow * 0.998, entry - ATR*2)`
+    - SHORT: `stopLoss = max(swingHigh * 1.002, entry + ATR*2)`
+    - Prevents stops too close to price (stop hunting)
+    - Respects market structure (swing highs/lows)
+  - **BullTrapDetector**: Increased stop buffer from 0.2% to 0.5% (1.002 → 1.005)
+  - **BearTrapDetector**: Increased stop buffer from 0.2% to 0.5% (0.998 → 0.995)
+  - **BreakoutRetestDetector**: Added swing point validation
+    - LONG: Validates swing low between resistance and entry
+    - SHORT: Validates swing high between support and entry
+    - Uses 0.3% buffer from swing points for safety
+
 ### Fixed
 - Volume MA calculation: Removed redundant internal `calculateSMA`, now uses centralized implementation
 - TypeScript errors in setup detectors after EMA consolidation (proper null handling for `(number | null)[]`)
@@ -47,12 +67,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **BearTrapDetector**: Now validates `max(lookback+ema=40, RESISTANCE_LOOKBACK+VOLUME=70)` = **70 candles** (previously only validated 40)
   - **BreakoutRetestDetector**: Now validates `max(lookback+ema=50, PIVOT_LOOKBACK+VOLUME=30)` = **50 candles** (already correct)
   - **Pattern123Detector**: Increased from `pivotLookback*3=15` to `pivotLookback*6=30` candles for more reliable pattern detection
+- **Stop Loss Safety**: All detectors now consider structural support/resistance instead of just ATR or fixed buffers
 
 ### Technical Debt Eliminated
 - **Total Lines Removed**: ~250+ lines of duplicated code
 - **Files Removed**: 4 duplicate files (movingAveragesCalculation.ts, ema.ts, rsi.ts, + 2 test files)
 - **Centralized**: All MA calculations now use single source of truth
-- **Test Coverage**: All 1,738 tests passing (1,711 unit + 27 browser)
+- **Test Coverage**: All 1,746 tests passing (1,719 unit + 27 browser)
+- **Code Coverage**: 90.62% maintained
 
 ## [0.30.0] - 2025-11-29
 

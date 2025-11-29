@@ -1,5 +1,5 @@
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
+import { findPivotPoints, findHighestSwingHigh, findLowestSwingLow } from '@renderer/utils/indicators/supportResistance';
 import type { Candle } from '@shared/types';
 import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
 
@@ -275,7 +275,13 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
 
     const aboveEMA = current.close > emaCurrent;
     const entry = current.close;
-    const stopLoss = resistance * (1 - STOP_LOSS_BUFFER_PERCENT);
+    
+    let stopLoss = resistance * (1 - STOP_LOSS_BUFFER_PERCENT);
+    const swingLow = findLowestSwingLow(candles, currentIndex, this.breakoutRetestConfig.lookbackPeriod, 3);
+    if (swingLow && swingLow > stopLoss && swingLow < entry) {
+      stopLoss = swingLow * 0.997;
+    }
+    
     const targetDistance = (entry - stopLoss) * DEFAULT_RR_MULTIPLIER;
     const takeProfit = entry + targetDistance;
     const rr = this.calculateRR(entry, stopLoss, takeProfit);
@@ -338,7 +344,13 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
 
     const belowEMA = current.close < emaCurrent;
     const entry = current.close;
-    const stopLoss = support * (1 + STOP_LOSS_BUFFER_PERCENT);
+    
+    let stopLoss = support * (1 + STOP_LOSS_BUFFER_PERCENT);
+    const swingHigh = findHighestSwingHigh(candles, currentIndex, this.breakoutRetestConfig.lookbackPeriod, 3);
+    if (swingHigh && swingHigh < stopLoss && swingHigh > entry) {
+      stopLoss = swingHigh * 1.003;
+    }
+    
     const targetDistance = (stopLoss - entry) * DEFAULT_RR_MULTIPLIER;
     const takeProfit = entry - targetDistance;
     const rr = this.calculateRR(entry, stopLoss, takeProfit);

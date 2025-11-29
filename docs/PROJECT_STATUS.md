@@ -33,10 +33,15 @@ Phase 19: Calendar & Performance Optimizations  ██████████�
 
 **Overall Project Completion:** 100% (19/19 phases complete) 🚀
 
-**Status:** Production ready! All 1,738 tests passing (1,711 unit + 27 browser) with 90.62% coverage. Complete feature set including volume moving average, consolidated codebase (DRY principles), improved setup detection reliability, algorithmic trading with setup detection, trend filtering, cooldown system, quantity-per-symbol management, calendar integration, news enhancements, trading simulator improvements, critical performance optimizations, UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI pattern tooltips, **multi-language support (EN, PT, ES, FR)**, automatic data migrations, and **comprehensive AI model support (23 models across 3 providers)**.
+**Status:** Production ready! All 1,746 tests passing (1,719 unit + 27 browser) with 90.62% coverage. Complete feature set including volume moving average, **improved stop loss calculations using swing points**, consolidated codebase (DRY principles), improved setup detection reliability, algorithmic trading with setup detection, trend filtering, cooldown system, quantity-per-symbol management, calendar integration, news enhancements, trading simulator improvements, critical performance optimizations, UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI pattern tooltips, **multi-language support (EN, PT, ES, FR)**, automatic data migrations, and **comprehensive AI model support (23 models across 3 providers)**.
 
 **Latest Development (v0.31.0):**
 - ✅ **Volume Moving Average:** Timeframe-adaptive SMA with visual rendering (solid light-colored line)
+- ✅ **Improved Stop Loss:** All detectors now use structural swing points instead of just ATR/buffers
+  - Setup91: Swing lows/highs with ATR fallback
+  - BullTrap/BearTrap: Increased buffers from 0.2% to 0.5%
+  - BreakoutRetest: Added swing point validation
+  - Prevents stop hunting and respects market structure
 - ✅ **Code Consolidation:** Eliminated 250+ lines of duplicate code across 4 major areas
   - Stochastic worker (~100 lines removed)
   - Moving averages (3 duplicate implementations unified)
@@ -46,7 +51,7 @@ Phase 19: Calendar & Performance Optimizations  ██████████�
   - Setup91: 29→32 candles (+10%)
   - BullTrap/BearTrap: 40→70 candles (+75%)
   - Pattern123: 15→30 candles (+100%)
-- ✅ All 1,738 tests passing (100% pass rate)
+- ✅ All 1,746 tests passing (100% pass rate)
 - ✅ 90.62% code coverage maintained
 
 **AI Models Available:**
