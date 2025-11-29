@@ -1,9 +1,9 @@
 # 📊 MarketMind - Project Status
 
 > **Last Updated:** November 29, 2025  
-> **Current Version:** 0.32.0  
+> **Current Version:** 0.31.0  
 > **Current Branch:** `develop`  
-> **Current Phase:** Phase 19 Complete + Take Profit Improvements
+> **Current Phase:** Phase 19 Complete + Code Consolidation & Setup Detection Improvements
 
 ---
 
@@ -33,17 +33,9 @@ Phase 19: Calendar & Performance Optimizations  ██████████�
 
 **Overall Project Completion:** 100% (19/19 phases complete) 🚀
 
-**Status:** Production ready! All 1,746 tests passing (1,719 unit + 27 browser) with 90.62% coverage. Complete feature set including volume moving average, **improved stop loss and take profit calculations using structural levels**, consolidated codebase (DRY principles), improved setup detection reliability, algorithmic trading with setup detection, trend filtering, cooldown system, quantity-per-symbol management, calendar integration, news enhancements, trading simulator improvements, critical performance optimizations, UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI pattern tooltips, **multi-language support (EN, PT, ES, FR)**, automatic data migrations, and **comprehensive AI model support (23 models across 3 providers)**.
+**Status:** Production ready! All 1,746 tests passing (1,719 unit + 27 browser) with 90.62% coverage. Complete feature set including volume moving average, **improved stop loss calculations using swing points**, consolidated codebase (DRY principles), improved setup detection reliability, algorithmic trading with setup detection, trend filtering, cooldown system, quantity-per-symbol management, calendar integration, news enhancements, trading simulator improvements, critical performance optimizations, UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI pattern tooltips, **multi-language support (EN, PT, ES, FR)**, automatic data migrations, and **comprehensive AI model support (23 models across 3 providers)**.
 
-**Latest Development (v0.32.0):**
-- ✅ **Configurable Risk/Reward Ratio:** Added `targetMultiplier` to all setup configs (default 2.0-2.5)
-- ✅ **Structural Take Profit Calculation:** All detectors now consider resistance/support levels for targets
-  - Setup91: Uses nearest R/S with ATR fallback and RR minimum
-  - Pattern123: Validates R/S before RR-based target
-  - BullTrap/BearTrap: Structural target with `targetMultiplier` minimum
-  - BreakoutRetest: Finds next R/S beyond breakout level
-  - Prevents targets in pressure zones and maintains positive mathematical expectation
-- ✅ **Previous (v0.31.0):**
+**Latest Development (v0.31.0):**
 - ✅ **Volume Moving Average:** Timeframe-adaptive SMA with visual rendering (solid light-colored line)
 - ✅ **Improved Stop Loss:** All detectors now use structural swing points instead of just ATR/buffers
   - Setup91: Swing lows/highs with ATR fallback

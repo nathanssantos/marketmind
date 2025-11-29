@@ -101,7 +101,7 @@ export const useVolumeRenderer = ({
 
       let hasMovedTo = false;
 
-      visibleCandles.forEach((_, index) => {
+      visibleCandles.forEach((candle, index) => {
         const actualIndex = Math.floor(viewport.start) + index;
         const maValue = volumeMA.values[actualIndex];
         

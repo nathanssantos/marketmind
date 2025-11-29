@@ -7,41 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.32.0] - 2025-11-29
-
-### Added
-- **Configurable Risk/Reward Ratio** ⚙️
-  - Added `targetMultiplier` to all setup detector configs (default: 2.0-2.5)
-  - Allows configuration of minimum profit/loss ratio for each strategy
-  - Ensures mathematical expectation remains positive
-
-- **Structural Take Profit Calculation** 🎯
-  - **Setup91Detector**:
-    - LONG: Uses nearest resistance with `targetMultiplier` minimum
-    - SHORT: Uses nearest support with `targetMultiplier` minimum
-    - Fallback to ATR-based target if no structural level found
-  - **Pattern123Detector**:
-    - LONG: Validates resistance before RR-based target
-    - SHORT: Validates support before RR-based target
-    - Uses pivot-based S/R detection for accuracy
-  - **BullTrapDetector**:
-    - Uses nearest support with `targetMultiplier` minimum
-    - Structural target preferred over fixed RR when safer
-  - **BearTrapDetector**:
-    - Uses nearest resistance with `targetMultiplier` minimum
-    - Structural target preferred over fixed RR when safer
-  - **BreakoutRetestDetector**:
-    - LONG: Finds next resistance beyond breakout level
-    - SHORT: Finds next support beyond breakout level
-    - Validates path to target is clear of obstacles
-
-### Fixed
-- TypeScript errors: Unused imports and incorrect type references
-- `TradingData` interface: Added `quantityBySymbol` optional property
-- Worker type imports: Corrected `MAWorkerRequest` usage
-
-## [0.31.0] - 2025-11-29
-
 ### Added
 - **Volume Moving Average** 📊
   - Timeframe-adaptive SMA calculation for volume

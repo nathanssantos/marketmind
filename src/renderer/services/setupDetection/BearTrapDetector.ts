@@ -9,6 +9,7 @@ const MAX_TRAP_DISTANCE_PERCENT = 0.02;
 const MIN_REVERSAL_STRENGTH = 0.5;
 const MIN_LOW_PIVOTS = 2;
 const STOP_LOSS_BUFFER = 0.995;
+const DEFAULT_RR_MULTIPLIER = 2.5;
 const BASE_CONFIDENCE = 60;
 const MIN_CONFIDENCE_THRESHOLD = 70;
 const REVERSAL_CONFIDENCE_WEIGHT = 15;
@@ -29,7 +30,6 @@ export interface BearTrapConfig {
   volumeMultiplier: number;
   lookbackPeriod: number;
   emaPeriod: number;
-  targetMultiplier: number;
 }
 
 export const createDefaultBearTrapConfig = (): BearTrapConfig => ({
@@ -39,7 +39,6 @@ export const createDefaultBearTrapConfig = (): BearTrapConfig => ({
   volumeMultiplier: 1.3,
   lookbackPeriod: 20,
   emaPeriod: 20,
-  targetMultiplier: 2.5,
 });
 
 export class BearTrapDetector extends BaseSetupDetector {
@@ -170,9 +169,7 @@ export class BearTrapDetector extends BaseSetupDetector {
     const entry = trap.current.close;
     const stopLoss = trap.trapLow.price * STOP_LOSS_BUFFER;
     const resistanceLevel = this.findNearestResistance(candles, currentIndex, entry);
-    const minTarget = entry + (entry - stopLoss) * this.bearTrapConfig.targetMultiplier;
-    const structuralTarget = resistanceLevel && resistanceLevel < minTarget ? resistanceLevel : minTarget;
-    const takeProfit = structuralTarget;
+    const takeProfit = resistanceLevel ?? entry + (entry - stopLoss) * DEFAULT_RR_MULTIPLIER;
     const rr = this.calculateRR(entry, stopLoss, takeProfit);
 
     if (!this.meetsMinimumCriteria(MIN_CONFIDENCE_THRESHOLD, rr)) {

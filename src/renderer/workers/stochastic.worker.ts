@@ -1,5 +1,6 @@
 import type { Candle } from '@shared/types';
 import { calculateStochastic } from '../utils/stochastic';
+import type { StochasticResult } from '../utils/stochastic';
 
 export interface StochasticWorkerRequest {
   type: 'calculateStochastic';
