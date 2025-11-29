@@ -19,7 +19,8 @@ import {
   LuNewspaper,
   LuRadar,
   LuRuler,
-  LuScan
+  LuScan,
+  LuTarget
 } from 'react-icons/lu';
 import type { MarketDataService } from '../../services/market/MarketDataService';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
@@ -104,14 +105,23 @@ export const Toolbar = memo(({
   const { t } = useTranslation();
   const { algorithmicDetectionSettings, setAlgorithmicDetectionSettings } = useUIStore();
   const { config: patternConfig, setConfig: setPatternConfig } = usePatternDetectionConfigStore();
-  const { isAutoTradingActive, toggleAutoTrading } = useSetupStore();
+  const { isAutoTradingActive, toggleAutoTrading, config: setupConfig, setConfig: setSetupConfig } = useSetupStore();
 
   const isPatternDetectionActive = algorithmicDetectionSettings.autoDisplayPatterns;
   const isExtensionsActive = patternConfig.showExtensions;
+  const isSetupDetectionActive = setupConfig.setup91.enabled || setupConfig.pattern123.enabled;
 
   const togglePatternDetection = (): void => {
     setAlgorithmicDetectionSettings({
       autoDisplayPatterns: !algorithmicDetectionSettings.autoDisplayPatterns,
+    });
+  };
+
+  const toggleSetupDetection = (): void => {
+    const newEnabled = !isSetupDetectionActive;
+    setSetupConfig({
+      setup91: { ...setupConfig.setup91, enabled: newEnabled },
+      pattern123: { ...setupConfig.pattern123, enabled: newEnabled },
     });
   };
 
@@ -342,6 +352,33 @@ export const Toolbar = memo(({
             </HStack>
 
             <Box w="1px" h="32px" bg="border" flexShrink={0} />
+
+            <HStack gap={1} flexWrap="nowrap">
+              <TooltipWrapper label={t('chart.controls.setupDetection')} showArrow placement="top">
+                <IconButton
+                  size="2xs"
+                  aria-label={t('chart.controls.setupDetection')}
+                  onClick={toggleSetupDetection}
+                  colorPalette={isSetupDetectionActive ? 'green' : 'gray'}
+                  variant={isSetupDetectionActive ? 'solid' : 'ghost'}
+                >
+                  <LuTarget />
+                </IconButton>
+              </TooltipWrapper>
+              <TooltipWrapper label={t('setupConfig.status.autoTrading')} showArrow placement="top">
+                <IconButton
+                  size="2xs"
+                  aria-label={t('setupConfig.status.autoTrading')}
+                  onClick={toggleAutoTrading}
+                  colorPalette={isAutoTradingActive ? 'green' : 'gray'}
+                  variant={isAutoTradingActive ? 'solid' : 'ghost'}
+                >
+                  <LuBot />
+                </IconButton>
+              </TooltipWrapper>
+            </HStack>
+
+            <Box w="1px" h="32px" bg="border" flexShrink={0} />
             <HStack gap={1} flexWrap="nowrap">
               {movingAverages.map((ma, index) => (
                 <TooltipWrapper
@@ -406,17 +443,6 @@ export const Toolbar = memo(({
             variant={isTradingOpen ? 'solid' : 'ghost'}
           >
             <LuDollarSign />
-          </IconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('setupConfig.status.autoTrading')} showArrow>
-          <IconButton
-            size="2xs"
-            aria-label={t('setupConfig.status.autoTrading')}
-            onClick={toggleAutoTrading}
-            colorPalette={isAutoTradingActive ? 'green' : 'gray'}
-            variant={isAutoTradingActive ? 'solid' : 'ghost'}
-          >
-            <LuBot />
           </IconButton>
         </TooltipWrapper>
       </Flex>

@@ -183,9 +183,9 @@ export class Setup91Detector extends BaseSetupDetector {
 }
 
 export const createDefault91Config = (): Setup91Config => ({
-  enabled: true,
-  minConfidence: 60,
-  minRiskReward: 2.0,
+  enabled: false,
+  minConfidence: 70,
+  minRiskReward: 2.5,
   emaPeriod: DEFAULT_EMA_PERIOD,
   atrPeriod: DEFAULT_ATR_PERIOD,
   atrStopMultiplier: ATR_STOP_MULTIPLIER,

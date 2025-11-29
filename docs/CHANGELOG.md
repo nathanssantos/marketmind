@@ -22,6 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **SetupConfigTab UI**: Configuration interface for setup detection in SettingsDialog
   - **Algorithmic Auto-Trading Toggle**: Robot button in toolbar to enable/disable auto-trading
   - **Multi-language Support**: Complete translations for setup config in EN, PT, ES, FR
+  - **AI Integration with Setup Detection**: AI Trading Agent now validates algorithmically detected setups
+    - SetupDetectionService integrated in AITradingAgent.getAIDecision()
+    - AI acts as validator, not creator - never modifies entry/SL/TP from detected setups
+    - formatSetupsForAI() method formats setups for AI validation prompt
+    - New setupValidation system prompt with strict validation rules
+    - AI can approve/reject setups based on market context, volume, trend alignment
+    - Significant token savings: AI validates pre-calculated setups instead of analyzing from scratch
 
 - **Technical Indicators for Setup Detection** 📊
   - EMA/SMA calculation utilities with comprehensive tests
@@ -36,18 +43,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - SetupRenderer overlay for visual feedback
   - Hover detection for setup tooltips
 - **Toolbar Enhancement**
-  - Added robot icon (LuBot) button for algorithmic auto-trading toggle
+  - Added dedicated Setup Detection section with separator
+  - Target icon (LuTarget) button for setup detection toggle
+  - Robot icon (LuBot) button for algorithmic auto-trading toggle
   - Visual feedback with green (active) and gray (inactive) states
+  - Reorganized toolbar: Patterns → Setup Detection → Moving Averages → Sidebar actions
 - **setupStore Enhancement**
   - Added `isAutoTradingActive` boolean state
   - Added `toggleAutoTrading()` function
   - Config changes disabled when auto-trading is active
+- **SettingsDialog Enhancement**
+  - Increased modal size for better setup configuration visibility (xl size, 1200px max width, 90vh height)
+- **AITradingAgent Enhancement**
+  - Integrated SetupDetectionService for algorithmic setup detection
+  - Modified buildTradingPrompt() to include detected setups
+  - Added formatSetupsForAI() helper method
+  - AI now validates setups instead of creating them from scratch
+- **prompts-trading.json Enhancement**
+  - Added setupValidation system prompt
+  - Clear instructions for AI to validate, not modify, setup parameters
+  - Validation criteria: trend alignment, volume, news, market structure
 
 ### Technical
-- 17 new files created (2,639 lines added)
-- 8 files modified for UI integration (362 lines added)
+- 18 new files created (2,850+ lines added)
+- 10 files modified for AI integration (450+ lines added)
 - 1,717 tests passing (100% pass rate)
 - Zero TypeScript errors
+- Conservative defaults: setups disabled by default, 70-75% min confidence, 2.5:1 min R:R
 - Setup detection plan documented in PLAN_SETUP_DETECTION.md
 - User guide created in SETUP_DETECTION_GUIDE.md
 

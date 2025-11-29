@@ -1,10 +1,12 @@
 import type { ChartData } from '@/renderer/store/aiStore';
+import { SetupDetectionService } from '@/renderer/services/setupDetection';
 import { optimizeCandles } from '@/renderer/utils/candleOptimizer';
 import type {
     AITrade,
     AITradingConfig,
     AITradingDecision,
     Candle,
+    TradingSetup,
 } from '@shared/types';
 import { nanoid } from 'nanoid';
 import type { AIService } from './AIService';
@@ -23,6 +25,7 @@ export interface AITradingAgentConfig {
 export class AITradingAgent {
   private config: AITradingConfig;
   private aiService: AIService | null = null;
+  private setupDetectionService: SetupDetectionService;
   private analysisInterval: NodeJS.Timeout | null = null;
   private lastAnalysisTime: Date | null = null;
   private tradesCountToday: number = 0;
@@ -41,6 +44,7 @@ export class AITradingAgent {
 
   constructor(agentConfig: AITradingAgentConfig) {
     this.config = agentConfig.config;
+    this.setupDetectionService = new SetupDetectionService();
     if (agentConfig.onTrade) this.onTrade = agentConfig.onTrade;
     if (agentConfig.onError) this.onError = agentConfig.onError;
     this.getCurrentPrice = agentConfig.getCurrentPrice;
@@ -194,7 +198,11 @@ export class AITradingAgent {
 
     const optimizedCandles = optimizeCandles(chartData.candles);
     
-    const prompt = this.buildTradingPrompt(chartData, optimizedCandles);
+    const detectedSetups = chartData.candles.length >= 50 
+      ? this.setupDetectionService.detectSetups(chartData.candles)
+      : [];
+    
+    const prompt = this.buildTradingPrompt(chartData, optimizedCandles, detectedSetups);
 
     const response = await this.aiService.sendMessage([
       {
@@ -211,17 +219,24 @@ export class AITradingAgent {
     return decision;
   }
 
-  private buildTradingPrompt(chartData: ChartData, optimizedCandles: ReturnType<typeof optimizeCandles>): string {
+  private buildTradingPrompt(chartData: ChartData, optimizedCandles: ReturnType<typeof optimizeCandles>, detectedSetups: TradingSetup[] = []): string {
     const profile = this.config.riskProfile;
     const systemPrompt = tradingPrompts.trading.system;
     const profileAddition = tradingPrompts.trading[profile].systemAddition;
     const analysisPrompt = tradingPrompts.trading[profile].analysis;
+    const setupValidationPrompt = detectedSetups.length > 0 
+      ? tradingPrompts.trading.setupValidation 
+      : '';
 
     const candlesData = JSON.stringify({
       detailed: optimizedCandles.detailed,
       simplified: optimizedCandles.simplified,
       timestampInfo: optimizedCandles.timestampInfo,
     });
+
+    const setupsInfo = detectedSetups.length > 0 
+      ? `\n\nDetected Algorithmic Setups:\n${this.formatSetupsForAI(detectedSetups)}` 
+      : '';
 
     const chartInfo = `
 Symbol: ${chartData.symbol}
@@ -232,10 +247,27 @@ Volume Visible: ${chartData.showVolume}
 Moving Averages: ${chartData.movingAverages.map(ma => `${ma.type}(${ma.period})`).join(', ')}
 
 Candle Data:
-${candlesData}
+${candlesData}${setupsInfo}
 `;
 
-    return `${systemPrompt}\n${profileAddition}\n\n${analysisPrompt}\n\n${chartInfo}`;
+    return `${systemPrompt}\n${profileAddition}\n${setupValidationPrompt}\n\n${analysisPrompt}\n\n${chartInfo}`;
+  }
+
+  private formatSetupsForAI(setups: TradingSetup[]): string {
+    return setups.map((setup, index) => {
+      const riskReward = setup.riskRewardRatio.toFixed(2);
+      const confidence = setup.confidence.toFixed(1);
+      
+      return `Setup ${index + 1}:
+- Type: ${setup.type}
+- Direction: ${setup.direction}
+- Confidence: ${confidence}%
+- Entry Price: ${setup.entryPrice.toFixed(2)}
+- Stop Loss: ${setup.stopLoss.toFixed(2)}
+- Take Profit: ${setup.takeProfit.toFixed(2)}
+- Risk:Reward Ratio: 1:${riskReward}
+- Volume Confirmation: ${setup.volumeConfirmation ? 'Yes' : 'No'}`;
+    }).join('\n\n');
   }
 
   private parseAIResponse(responseText: string): AITradingDecision {

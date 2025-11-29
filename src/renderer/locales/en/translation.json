@@ -275,6 +275,7 @@
       "measurementArea": "Measurement Area",
       "autoPatterns": "Auto Pattern Detection",
       "detectPatterns": "Detect Patterns Now",
+      "setupDetection": "Algorithmic Setup Detection",
       "patternExtensions": "Extend Patterns Beyond Last Candle",
       "indicators": "Indicators",
       "quickSettings": "Quick Settings"

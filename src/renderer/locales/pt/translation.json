@@ -264,6 +264,7 @@
       "measurementArea": "Área de Medição",
       "autoPatterns": "Detecção Automática de Padrões",
       "detectPatterns": "Detectar Padrões Agora",
+      "setupDetection": "Detecção Algorítmica de Setups",
       "patternExtensions": "Estender Padrões Além da Última Vela",
       "indicators": "Indicadores",
       "quickSettings": "Configurações Rápidas"

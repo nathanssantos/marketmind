@@ -232,9 +232,9 @@ export class Pattern123Detector extends BaseSetupDetector {
 }
 
 export const createDefault123Config = (): Pattern123Config => ({
-  enabled: true,
-  minConfidence: 60,
-  minRiskReward: 2.0,
+  enabled: false,
+  minConfidence: 75,
+  minRiskReward: 2.5,
   pivotLookback: DEFAULT_PIVOT_LOOKBACK,
   breakoutThreshold: BREAKOUT_THRESHOLD_PERCENT,
 });

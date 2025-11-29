@@ -264,6 +264,7 @@
       "measurementArea": "Zone de Mesure",
       "autoPatterns": "Détection Automatique de Motifs",
       "detectPatterns": "Détecter les Motifs Maintenant",
+      "setupDetection": "Détection Algorithmique de Setups",
       "patternExtensions": "Étendre les Motifs Au-delà de la Dernière Bougie",
       "indicators": "Indicateurs",
       "quickSettings": "Paramètres Rapides"
