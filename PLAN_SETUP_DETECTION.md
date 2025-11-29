@@ -3639,23 +3639,91 @@ Este plano agora cobre **três componentes principais**:
 
 **Próximos Passos:**
 1. ✅ Aprovação do plano expandido
-2. 🔄 Iniciar Fase 1 (Indicadores Técnicos + Setups)
-3. 🔄 **Implementar Backtesting em paralelo (Fase 1.5)**
-4. ⏳ Implementação incremental fase por fase
-5. ⏳ **Validar setups via backtesting antes de deploy**
-6. ⏳ Backtesting contínuo
-7. ⏳ Otimização de parâmetros
-8. ⏳ Deploy Fase 1 em produção
-9. ⏳ (Futuro) Pesquisa e implementação de RL Agent
-10. ⏳ (Futuro) Sistema híbrido
+2. ✅ **Iniciar Fase 1 (Indicadores Técnicos + Setups) - CONCLUÍDO 40%**
+3. 🔄 Integrar com ChartCanvas e detectar setups em tempo real
+4. 🔄 Criar UI de configuração (SetupConfigTab)
+5. ⏳ **Implementar Backtesting em paralelo (Fase 1.5)**
+6. ⏳ Implementar 8 detectores adicionais
+7. ⏳ Integrar com AI Trading Agent
+8. ⏳ **Validar setups via backtesting antes de deploy**
+9. ⏳ Deploy Fase 1 em produção
+10. ⏳ (Futuro) Pesquisa e implementação de RL Agent
+
+**Progresso Atual (28/11/2025):**
+- ✅ **Indicadores Técnicos Implementados:**
+  - EMA/SMA (65 linhas + 82 linhas de testes)
+  - RSI com detecção de divergência (177 + 166 linhas)
+  - Support/Resistance com pivot points e breakouts (180 + 143 linhas)
+  
+- ✅ **Arquitetura de Detecção:**
+  - BaseSetupDetector (abstract class, 83 linhas)
+  - Setup91Detector - Setup 9.1 com EMA9 (194 linhas)
+  - Pattern123Detector - Padrão 123 reversal (237 linhas)
+  - SetupDetectionService - Orquestração (104 + 133 linhas de testes)
+  
+- ✅ **Persistência e Estado:**
+  - setupStore com Zustand (342 linhas)
+  - 8 testes completos para setupStore (220 linhas)
+  - Performance tracking por setup type
+  - Execution history com win/loss/cancelled
+  
+- ✅ **Visualização:**
+  - SetupRenderer para Canvas (252 linhas)
+  - Rendering de entry/SL/TP lines
+  - Setup tags com R:R e confidence
+  - Hover detection e tooltips
+  
+- ✅ **Testes:** 1717/1717 passando (100% pass rate)
+- ✅ **Type-check:** Zero erros TypeScript
+- ✅ **Git:** Commit em branch `feature/setup-detection-system`
+
+**Arquivos Criados (16 total, 2510+ linhas):**
+1. `src/renderer/utils/indicators/ema.ts` + test
+2. `src/renderer/utils/indicators/rsi.ts` + test
+3. `src/renderer/utils/indicators/supportResistance.ts` + test
+4. `src/renderer/services/setupDetection/BaseSetupDetector.ts`
+5. `src/renderer/services/setupDetection/Setup91Detector.ts`
+6. `src/renderer/services/setupDetection/Pattern123Detector.ts`
+7. `src/renderer/services/setupDetection/SetupDetectionService.ts` + test
+8. `src/renderer/services/setupDetection/index.ts`
+9. `src/renderer/store/setupStore.ts` + test
+10. `src/renderer/components/Chart/SetupRenderer.tsx`
+11. `src/renderer/store/index.ts` (modificado com exports)
+
+**Setups Implementados (2/10):**
+- ✅ Setup 9.1 (EMA9 trend reversals)
+- ✅ Padrão 123 (reversal patterns)
+- ⏳ Bull Trap
+- ⏳ Bear Trap
+- ⏳ Breakout Retest
+- ⏳ Pin + Inside Bar Combo
+- ⏳ Order Block + FVG
+- ⏳ VWAP + EMA Cross
+- ⏳ Divergence Reversal
+- ⏳ Liquidity Sweep
+
+**Próximas Tarefas Imediatas:**
+1. 🔄 Integrar SetupRenderer no ChartCanvas
+2. 🔄 Conectar SetupDetectionService ao chart data flow
+3. 🔄 Criar SetupConfigTab em SettingsDialog
+4. ⏳ Implementar 8 detectores restantes
+5. ⏳ Integrar com AI Trading Agent
+6. ⏳ Criar painel de estatísticas de performance
 
 **Decisão Arquitetural:**
-- **Curto Prazo (6 semanas):** Implementar sistema Rule-Based completo + Backtesting básico
+- **Curto Prazo (4-6 semanas):** Completar 10 detectores + UI + integração AI
 - **Médio Prazo (8 semanas):** Backtesting avançado + comparação de estratégias
 - **Longo Prazo (6 meses):** Experimentar com RL agents em paralelo
 - **Futuro (1 ano):** Sistema híbrido em produção se RL provar superioridade
 
-**UI/UX do Backtesting:**
+**UI/UX do Sistema:**
+- **SetupRenderer:** Canvas overlay com linhas entry/SL/TP
+- **SetupConfigTab:** Toggles e sliders para cada setup type
+- **SetupPerformancePanel:** Cards com métricas + gráficos Recharts
+- **Chart Integration:** Detecção automática em tempo real
+- **AI Validation:** Agent recebe setups pré-detectados
+
+**Backtesting (Futuro):**
 - **Modal dedicado** acessível via Settings
 - **4 abas:** Configuration, Results, Trades, Comparison
 - **Gráficos interativos** com Recharts (Equity Curve, Drawdown)
@@ -3666,5 +3734,7 @@ Este plano agora cobre **três componentes principais**:
 ---
 
 **Documento criado em:** 28/11/2025
-**Última atualização:** 28/11/2025
-**Versão:** 3.0 (adicionada seção Sistema de Backtesting)
+**Última atualização:** 28/11/2025 22:15 BRT
+**Versão:** 3.1 (adicionado progresso real alcançado)
+**Branch:** `feature/setup-detection-system`
+**Commit:** `6e1c2cf` - feat: implement algorithmic setup detection system
