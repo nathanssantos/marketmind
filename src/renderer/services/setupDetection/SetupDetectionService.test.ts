@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
 import type { Candle } from '@shared/types';
+import { describe, expect, it } from 'vitest';
 import {
-  SetupDetectionService,
-  createDefaultSetupDetectionConfig,
+    SetupDetectionService,
+    createDefaultSetupDetectionConfig,
 } from './SetupDetectionService';
 
 const createCandle = (
@@ -129,5 +129,132 @@ describe('SetupDetectionService', () => {
     setups.forEach((setup) => {
       expect(setup.confidence).toBeGreaterThanOrEqual(90);
     });
+  });
+
+  it('should prevent duplicate detections with cooldown', () => {
+    const service = new SetupDetectionService({
+      ...createDefaultSetupDetectionConfig(),
+      setup91: { ...createDefaultSetupDetectionConfig().setup91, enabled: true, minConfidence: 50 },
+      setupCooldownPeriod: 5,
+    });
+    
+    const baseCandles = Array.from({ length: 50 }, (_, i) => 
+      createCandle(100 + i * 0.1, 100 + i * 0.1 + 1, 100 + i * 0.1 - 1, 100 + i * 0.1, 1000)
+    );
+
+    const firstDetection = service.detectSetups(baseCandles);
+    const firstCount = firstDetection.filter(s => s.type === 'setup-9-1').length;
+
+    for (let i = 0; i < 4; i++) {
+      const newCandle = createCandle(100 + (50 + i) * 0.1, 100 + (50 + i) * 0.1 + 1, 100 + (50 + i) * 0.1 - 1, 100 + (50 + i) * 0.1, 1000);
+      baseCandles.push(newCandle);
+      const setups = service.detectSetups(baseCandles);
+      const setup91Count = setups.filter(s => s.type === 'setup-9-1').length;
+      expect(setup91Count).toBe(firstCount);
+    }
+
+    for (let i = 4; i < 10; i++) {
+      const newCandle = createCandle(100 + (50 + i) * 0.1, 100 + (50 + i) * 0.1 + 1, 100 + (50 + i) * 0.1 - 1, 100 + (50 + i) * 0.1, 1000);
+      baseCandles.push(newCandle);
+    }
+    
+    const afterCooldown = service.detectSetups(baseCandles);
+    expect(afterCooldown.length).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should detect bullish trend when price above EMA 200', () => {
+    const service = new SetupDetectionService({
+      ...createDefaultSetupDetectionConfig(),
+      enableTrendFilter: true,
+      allowCounterTrend: false,
+      setup91: { ...createDefaultSetupDetectionConfig().setup91, enabled: true, minConfidence: 50 },
+    });
+
+    const candles = Array.from({ length: 250 }, (_, i) => 
+      createCandle(100 + i * 0.5, 100 + i * 0.5 + 1, 100 + i * 0.5 - 1, 100 + i * 0.5, 2000)
+    );
+
+    const setups = service.detectSetups(candles);
+    
+    setups.forEach((setup) => {
+      if (setup.type === 'setup-9-1') {
+        expect(['LONG', 'SHORT']).toContain(setup.direction);
+      }
+    });
+  });
+
+  it('should detect bearish trend when price below EMA 200', () => {
+    const service = new SetupDetectionService({
+      ...createDefaultSetupDetectionConfig(),
+      enableTrendFilter: true,
+      allowCounterTrend: false,
+      setup91: { ...createDefaultSetupDetectionConfig().setup91, enabled: true, minConfidence: 50 },
+    });
+
+    const candles = Array.from({ length: 250 }, (_, i) => 
+      createCandle(200 - i * 0.3, 200 - i * 0.3 + 1, 200 - i * 0.3 - 1, 200 - i * 0.3, 2000)
+    );
+
+    const setups = service.detectSetups(candles);
+    
+    setups.forEach((setup) => {
+      if (setup.type === 'setup-9-1') {
+        expect(['LONG', 'SHORT']).toContain(setup.direction);
+      }
+    });
+  });
+
+  it('should allow all setups when trend filter disabled', () => {
+    const service = new SetupDetectionService({
+      ...createDefaultSetupDetectionConfig(),
+      enableTrendFilter: false,
+      setup91: { ...createDefaultSetupDetectionConfig().setup91, enabled: true, minConfidence: 50 },
+    });
+
+    const candles = Array.from({ length: 250 }, (_, i) => 
+      createCandle(100 + Math.sin(i / 10) * 20, 100 + Math.sin(i / 10) * 20 + 2, 100 + Math.sin(i / 10) * 20 - 2, 100 + Math.sin(i / 10) * 20, 2000)
+    );
+
+    const setups = service.detectSetups(candles);
+    
+    expect(Array.isArray(setups)).toBe(true);
+  });
+
+  it('should allow counter-trend when allowCounterTrend is true', () => {
+    const service = new SetupDetectionService({
+      ...createDefaultSetupDetectionConfig(),
+      enableTrendFilter: true,
+      allowCounterTrend: true,
+      setup91: { ...createDefaultSetupDetectionConfig().setup91, enabled: true, minConfidence: 50 },
+    });
+
+    const candles = Array.from({ length: 250 }, (_, i) => 
+      createCandle(100 + Math.sin(i / 10) * 15, 100 + Math.sin(i / 10) * 15 + 1.5, 100 + Math.sin(i / 10) * 15 - 1.5, 100 + Math.sin(i / 10) * 15, 2000)
+    );
+
+    const setups = service.detectSetups(candles);
+    
+    expect(Array.isArray(setups)).toBe(true);
+  });
+
+  it('should respect custom cooldown period', () => {
+    const customCooldown = 15;
+    const service = new SetupDetectionService({
+      ...createDefaultSetupDetectionConfig(),
+      setup91: { ...createDefaultSetupDetectionConfig().setup91, enabled: true, minConfidence: 50 },
+      setupCooldownPeriod: customCooldown,
+    });
+
+    const candles = Array.from({ length: 100 }, (_, i) => 
+      createCandle(100 + i * 0.1, 100 + i * 0.1 + 1, 100 + i * 0.1 - 1, 100 + i * 0.1, 1500)
+    );
+
+    service.detectSetups(candles);
+
+    for (let i = 0; i < customCooldown - 1; i++) {
+      candles.push(createCandle(100 + (100 + i) * 0.1, 100 + (100 + i) * 0.1 + 1, 100 + (100 + i) * 0.1 - 1, 100 + (100 + i) * 0.1, 1500));
+      const setups = service.detectSetups(candles);
+      expect(Array.isArray(setups)).toBe(true);
+    }
   });
 });

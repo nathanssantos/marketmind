@@ -1,8 +1,8 @@
-import type { TradingSetup, SetupType } from '@shared/types';
 import type { SetupDetectionConfig } from '@renderer/services/setupDetection';
 import {
   createDefaultSetupDetectionConfig,
 } from '@renderer/services/setupDetection';
+import type { SetupType, TradingSetup } from '@shared/types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -188,7 +188,7 @@ export const useSetupStore = create<SetupStoreState>()(
 
       setConfig: (config) =>
         set((state) => ({
-          config: { ...state.config, ...config },
+          config: { ...createDefaultSetupDetectionConfig(), ...state.config, ...config },
         })),
 
       resetConfigToDefaults: () =>
@@ -197,20 +197,43 @@ export const useSetupStore = create<SetupStoreState>()(
         }),
 
       updateSetupConfig: (setupType, config) =>
-        set((state) => ({
-          config: {
-            ...state.config,
-            [setupType]: {
-              ...state.config[setupType],
-              ...config,
-            },
-          },
-        })),
+        set((state) => {
+          const currentConfig = state.config[setupType];
+          
+          if (typeof currentConfig === 'object' && currentConfig !== null) {
+            return {
+              config: {
+                ...state.config,
+                [setupType]: {
+                  ...currentConfig,
+                  ...config,
+                },
+              },
+            };
+          }
+          
+          return state;
+        }),
 
       toggleAutoTrading: () =>
-        set((state) => ({
-          isAutoTradingActive: !state.isAutoTradingActive,
-        })),
+        set((state) => {
+          const hasAnySetupEnabled = 
+            state.config.setup91.enabled ||
+            state.config.pattern123.enabled ||
+            state.config.bullTrap.enabled ||
+            state.config.bearTrap.enabled ||
+            state.config.breakoutRetest.enabled;
+
+          // Se tentando ativar mas nenhum setup está habilitado, não faz nada
+          if (!state.isAutoTradingActive && !hasAnySetupEnabled) {
+            console.warn('[Auto-Trading] Cannot enable: No setups are enabled. Enable at least one setup in Settings.');
+            return state;
+          }
+
+          return {
+            isAutoTradingActive: !state.isAutoTradingActive,
+          };
+        }),
 
       addDetectedSetup: (setup) =>
         set((state) => ({
@@ -336,10 +359,22 @@ export const useSetupStore = create<SetupStoreState>()(
       name: 'marketmind-setup-storage',
       partialize: (state) => ({
         config: state.config,
+        isAutoTradingActive: state.isAutoTradingActive,
         setupHistory: state.setupHistory,
         performanceByType: state.performanceByType,
         globalPerformance: state.globalPerformance,
       }),
+      merge: (persistedState, currentState) => {
+        const defaults = createDefaultSetupDetectionConfig();
+        return {
+          ...currentState,
+          ...(persistedState as Partial<SetupStoreState>),
+          config: {
+            ...defaults,
+            ...(persistedState as Partial<SetupStoreState>).config,
+          },
+        };
+      },
     },
   ),
 );

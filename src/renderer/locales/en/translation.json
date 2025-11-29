@@ -931,12 +931,23 @@
       "toolbar": "Enable auto-trading via the robot icon in the toolbar"
     },
     "resetDefaults": "Reset to Defaults",
+    "trendFilter": {
+      "title": "Trend Filter",
+      "enable": "Enable Trend Filter",
+      "enableDescription": "Use EMA 200 to identify the major trend and filter setups",
+      "allowCounter": "Allow Counter-Trend Trades",
+      "allowCounterDescription": "When disabled, only trades aligned with the major trend are allowed"
+    },
     "status": {
       "title": "Auto-Trading Status",
       "autoTrading": "Algorithmic Auto-Trading",
       "active": "Active",
       "inactive": "Inactive"
     },
+    "autoTradingDisabled": "Auto-Trading Disabled",
+    "autoTradingDisabledDescription": "Auto-trading was automatically disabled because setup detection was turned off.",
+    "noSetupsEnabled": "No Setups Enabled",
+    "noSetupsEnabledDescription": "Cannot enable auto-trading without active setups. Please enable at least one setup in Settings.",
     "setups": {
       "setup91": {
         "title": "Setup 9.1 (EMA9 Reversals)",
@@ -945,6 +956,18 @@
       "pattern123": {
         "title": "Pattern 123 (Reversal Pattern)",
         "description": "Classic 123 pivot pattern with breakout confirmation"
+      },
+      "bullTrap": {
+        "title": "Bull Trap (Fake Breakout)",
+        "description": "Detects false breakouts above resistance followed by reversal"
+      },
+      "bearTrap": {
+        "title": "Bear Trap (Fake Breakdown)",
+        "description": "Detects false breakdowns below support followed by bounce"
+      },
+      "breakoutRetest": {
+        "title": "Breakout Retest (Continuation)",
+        "description": "Valid breakout followed by successful retest and continuation"
       }
     },
     "parameters": {

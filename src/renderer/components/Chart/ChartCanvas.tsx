@@ -112,7 +112,7 @@ export const ChartCanvas = ({
   const activeWalletId = useTradingStore((state) => state.activeWalletId);
   const orders = useTradingStore((state) => state.orders);
   const addOrder = useTradingStore((state) => state.addOrder);
-  const defaultQuantity = useTradingStore((state) => state.defaultQuantity);
+  const getQuantityForSymbol = useTradingStore((state) => state.getQuantityForSymbol);
   const closeOrder = useTradingStore((state) => state.closeOrder);
   const updateOrder = useTradingStore((state) => state.updateOrder);
 
@@ -121,6 +121,7 @@ export const ChartCanvas = ({
   const setupConfig = useSetupStore((state) => state.config);
   const [setupService] = useState(() => new SetupDetectionService(setupConfig));
   const [hoveredSetup, setHoveredSetup] = useState<ReturnType<typeof useSetupStore.getState>['detectedSetups'][0] | null>(null);
+  const executedSetupsRef = useRef<Set<string>>(new Set());
 
   const handleLongEntry = useCallback((price: number) => {
     const state = useTradingStore.getState();
@@ -141,11 +142,11 @@ export const ChartCanvas = ({
       subType,
       status: 'pending',
       entryPrice: price,
-      quantity: defaultQuantity || 1,
+      quantity: getQuantityForSymbol(symbol) ?? 1,
       walletId: activeWallet.id,
       ...(currentPrice !== undefined && { currentPrice }),
     });
-  }, [addOrder, symbol, candles, defaultQuantity, warning, t]);
+  }, [addOrder, symbol, candles, getQuantityForSymbol, warning, t]);
 
   const handleShortEntry = useCallback((price: number) => {
     const state = useTradingStore.getState();
@@ -166,11 +167,11 @@ export const ChartCanvas = ({
       subType,
       status: 'pending',
       entryPrice: price,
-      quantity: defaultQuantity || 1,
+      quantity: getQuantityForSymbol(symbol) ?? 1,
       walletId: activeWallet.id,
       ...(currentPrice !== undefined && { currentPrice }),
     });
-  }, [addOrder, symbol, candles, defaultQuantity, warning, t]);
+  }, [addOrder, symbol, candles, getQuantityForSymbol, warning, t]);
 
   const { shiftPressed, altPressed } = useTradingShortcuts({
     onLongEntry: handleLongEntry,
@@ -1001,53 +1002,55 @@ export const ChartCanvas = ({
   }, [manager, showRSI]);
 
   useEffect(() => {
-    if (candles.length < 50) return;
+    executedSetupsRef.current.clear();
+  }, [symbol]);
+
+  useEffect(() => {
+    const { isAutoTradingActive } = useSetupStore.getState();
+
+    if (!isAutoTradingActive || candles.length < 50) return;
 
     setupService.updateConfig(setupConfig);
     const detectedSetups = setupService.detectSetups(candles);
-    
+
     detectedSetups.forEach((setup) => {
+      if (executedSetupsRef.current.has(setup.id)) return;
+
       const existing = useSetupStore.getState().detectedSetups.find(s => s.id === setup.id);
-      if (!existing) {
-        addDetectedSetup(setup);
-        
-        const { isAutoTradingActive } = useSetupStore.getState();
-        const { isSimulatorActive: simActive, activeWalletId: walletId, wallets } = useTradingStore.getState();
-        
-        if (isAutoTradingActive && simActive && walletId && symbol) {
-          const wallet = wallets.find(w => w.id === walletId);
-          if (!wallet) return;
-          
-          const riskAmount = wallet.balance * 0.02;
-          const stopDistance = Math.abs(setup.entryPrice - setup.stopLoss);
-          const quantity = stopDistance > 0 ? Math.floor(riskAmount / stopDistance) : 1;
-          
-          if (quantity <= 0 || wallet.balance < setup.entryPrice * quantity) return;
-          
-          const currentPrice = candles[candles.length - 1]?.close;
-          const isLong = setup.direction === 'LONG';
-          const subType: 'limit' | 'stop' = currentPrice !== undefined && 
-            ((isLong && setup.entryPrice < currentPrice) || (!isLong && setup.entryPrice > currentPrice)) 
-            ? 'limit' : 'stop';
-          
-          addOrder({
-            symbol,
-            type: isLong ? 'long' : 'short',
-            subType,
-            status: 'pending',
-            entryPrice: setup.entryPrice,
-            quantity,
-            walletId,
-            stopLoss: setup.stopLoss,
-            takeProfit: setup.takeProfit,
-            ...(currentPrice !== undefined && { currentPrice }),
-          });
-          
-          useSetupStore.getState().executeSetup(setup.id);
-        }
-      }
+      if (existing) return;
+
+      addDetectedSetup(setup);
+      executedSetupsRef.current.add(setup.id);
+
+      const { isSimulatorActive: simActive, activeWalletId: walletId, wallets } = useTradingStore.getState();
+
+      if (!simActive || !symbol || !walletId) return;
+
+      const activeWallet = wallets.find(w => w.id === walletId);
+      if (!activeWallet) return;
+
+      const currentPrice = candles[candles.length - 1]?.close;
+      const isLong = setup.direction === 'LONG';
+      const subType: 'limit' | 'stop' = currentPrice !== undefined &&
+        ((isLong && setup.entryPrice < currentPrice) || (!isLong && setup.entryPrice > currentPrice))
+        ? 'limit' : 'stop';
+
+      addOrder({
+        symbol,
+        type: isLong ? 'long' : 'short',
+        subType,
+        status: 'pending',
+        entryPrice: setup.entryPrice,
+        quantity: getQuantityForSymbol(symbol) ?? 1,
+        walletId,
+        stopLoss: setup.stopLoss,
+        takeProfit: setup.takeProfit,
+        ...(currentPrice !== undefined && { currentPrice }),
+      });
+
+      useSetupStore.getState().executeSetup(setup.id);
     });
-  }, [candles, setupConfig, setupService, addDetectedSetup, addOrder, symbol]);
+  }, [candles, setupConfig, setupService, addDetectedSetup, addOrder, getQuantityForSymbol, symbol]);
 
   useEffect(() => {
     if (!shiftPressed && !altPressed) {

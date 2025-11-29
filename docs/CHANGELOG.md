@@ -7,8 +7,117 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.0] - 2025-11-29
+
 ### Added
-- **Algorithmic Trading Setup Detection System** 🎯
+- **Quantity Per Symbol** 🎯
+  - Independent quantity configuration for each trading symbol
+  - `quantityBySymbol: Record<string, number>` stores symbol-specific quantities
+  - `getQuantityForSymbol(symbol)` retrieves quantity with fallback to defaultQuantity
+  - `setQuantityForSymbol(symbol, quantity)` saves quantity per symbol
+  - Automatic persistence via Electron secure storage
+  - OrderTicket auto-updates when switching symbols
+  - ChartCanvas uses symbol-specific quantity for:
+    - Automatic setup detection orders
+    - Manual LONG entries (Shift+Click)
+    - Manual SHORT entries (Alt+Click)
+  - Reset handled in clearAllData
+  - 19 comprehensive tests covering all functionality
+
+### Changed
+- **Trading Store Enhancement**
+  - Enhanced TradingState with quantityBySymbol property
+  - Fixed setWithSync to properly handle function callbacks
+  - Updated loadFromElectron with quantityBySymbol fallback (`|| {}`)
+  - Updated saveToElectron to persist quantityBySymbol
+  - Updated clearAllData to reset quantityBySymbol
+
+- **OrderTicket Component**
+  - Imports getQuantityForSymbol and setQuantityForSymbol from store
+  - Added useEffect to load symbol-specific quantity on symbol change
+  - Modified handleQuantityChange to save per symbol instead of globally
+
+- **ChartCanvas Component**
+  - Replaced all defaultQuantity references with getQuantityForSymbol(symbol)
+  - Updated handleLongEntry callback to use symbol-specific quantity
+  - Updated handleShortEntry callback to use symbol-specific quantity
+  - Updated setup detection order creation to use symbol-specific quantity
+  - Added getQuantityForSymbol to useCallback/useEffect dependencies
+
+### Fixed
+- Removed duplicate getQuantityForSymbol/setQuantityForSymbol implementations in tradingStore
+
+## [0.29.0] - 2025-11-29
+
+### Added
+- **Setup Detection Cooldown System** ⏱️
+  - Prevents duplicate setup detections within configurable period (default: 10 candles)
+  - `lastDetectionIndex` Map tracks last detection index per setup type
+  - `canDetectSetup()` method validates cooldown before detection
+  - `markSetupDetected()` records detection index
+  - Configurable via `setupCooldownPeriod` property (default: 10)
+  - Eliminates multiple orders from same setup pattern
+
+- **Trend Filter with EMA 200** 📈
+  - Major trend detection using EMA 200 indicator
+  - `getTrend()` method returns 'bullish', 'bearish', or 'neutral'
+  - `isTrendAligned()` validates setup direction against major trend
+  - Configuration options:
+    - `enableTrendFilter` (default: false) - enables/disables trend filtering
+    - `allowCounterTrend` (default: true) - allows trades against major trend
+    - `trendEmaPeriod` (default: 200) - EMA period for trend detection
+  - Prevents counter-trend trades when configured
+  - Smart filtering: LONG only in bullish trend, SHORT only in bearish trend
+
+- **Trend Filter UI Configuration** 🏛️
+  - New "Trend Filter" section in SetupConfigTab
+  - "Enable Trend Filter" switch with EMA 200 description
+  - "Allow Counter-Trend Trades" nested switch (visible when filter enabled)
+  - Complete translations in EN/PT/ES/FR:
+    - setupConfig.trendFilter.title
+    - setupConfig.trendFilter.enable
+    - setupConfig.trendFilter.enableDescription
+    - setupConfig.trendFilter.allowCounter
+    - setupConfig.trendFilter.allowCounterDescription
+
+### Changed
+- **SetupDetectionService Enhancement**
+  - Added EMA calculation import from indicators
+  - Added `lastDetectionIndex` private Map for cooldown tracking
+  - Modified `detectSetups()` to check cooldown before each detection
+  - Modified `detectSetups()` to validate trend alignment
+  - Enhanced config with 4 new properties (enableTrendFilter, allowCounterTrend, trendEmaPeriod, setupCooldownPeriod)
+  - `createDefaultSetupDetectionConfig()` includes new default values
+
+- **setupStore Type Safety**
+  - Fixed TypeScript error in `updateSetupConfig()` with type guard
+  - Added null check before spreading config properties
+
+### Fixed
+- **Duplicate Setup Detection** 🐞
+  - No longer creates multiple orders for same setup
+  - Cooldown system prevents re-detection within configured period
+  - Each setup type tracked independently
+
+- **Counter-Trend Trading** ⚠️
+  - System no longer enters LONG positions during bearish trends
+  - System no longer enters SHORT positions during bullish trends
+  - Configurable to allow/block counter-trend trades
+
+### Technical
+- 6 new comprehensive tests for cooldown and trend filter
+- 1,750 tests passing (1,723 unit + 27 browser)
+- Zero TypeScript errors
+- Zero linting errors
+- Full test coverage for new features:
+  - Cooldown prevention
+  - Bullish trend detection
+  - Bearish trend detection
+  - Trend filter disabled behavior
+  - Counter-trend allowance
+  - Custom cooldown period
+
+## [0.28.1] - 2025-11-28
   - BaseSetupDetector abstract class for scalable setup detection architecture
   - Setup91Detector: EMA9 trend reversal detection with 60-95% confidence scoring
   - Pattern123Detector: 123 reversal pattern detection with pivot-based analysis

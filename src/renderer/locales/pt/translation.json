@@ -917,15 +917,26 @@
     "tips": {
       "confidence": "Filtros de confiança mais altos mostram apenas os setups mais fortes",
       "algorithmic": "Detecção algorítmica é mais rápida e consistente que IA",
-      "toolbar": "Ative o auto-trading através do ícone robô na toolbar"
+      "toolbar": "Ative o auto-trading pelo ícone de robô na barra de ferramentas"
     },
     "resetDefaults": "Restaurar Padrões",
+    "trendFilter": {
+      "title": "Filtro de Tendência",
+      "enable": "Ativar Filtro de Tendência",
+      "enableDescription": "Usa EMA 200 para identificar a tendência maior e filtrar setups",
+      "allowCounter": "Permitir Operações Contra-Tendência",
+      "allowCounterDescription": "Quando desabilitado, apenas operações alinhadas com a tendência maior são permitidas"
+    },
     "status": {
       "title": "Status do Auto-Trading",
       "autoTrading": "Auto-Trading Algorítmico",
       "active": "Ativo",
       "inactive": "Inativo"
     },
+    "autoTradingDisabled": "Auto-Trading Desabilitado",
+    "autoTradingDisabledDescription": "O auto-trading foi desabilitado automaticamente porque a detecção de setups foi desligada.",
+    "noSetupsEnabled": "Nenhum Setup Habilitado",
+    "noSetupsEnabledDescription": "Não é possível habilitar o auto-trading sem setups ativos. Por favor, habilite pelo menos um setup nas Configurações.",
     "setups": {
       "setup91": {
         "title": "Setup 9.1 (Reversões EMA9)",
@@ -934,6 +945,18 @@
       "pattern123": {
         "title": "Padrão 123 (Padrão de Reversão)",
         "description": "Padrão clássico 123 de pivôs com confirmação de rompimento"
+      },
+      "bullTrap": {
+        "title": "Bull Trap (Falso Rompimento)",
+        "description": "Detecta falsos rompimentos acima da resistência seguidos de reversão"
+      },
+      "bearTrap": {
+        "title": "Bear Trap (Falsa Quebra)",
+        "description": "Detecta falsas quebras abaixo do suporte seguidas de recuperação"
+      },
+      "breakoutRetest": {
+        "title": "Reteste de Rompimento (Continuação)",
+        "description": "Rompimento válido seguido de reteste bem-sucedido e continuação"
       }
     },
     "parameters": {

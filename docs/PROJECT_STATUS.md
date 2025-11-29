@@ -1,9 +1,9 @@
 # 📊 MarketMind - Project Status
 
-> **Last Updated:** November 26, 2025  
-> **Current Version:** 0.28.0  
+> **Last Updated:** November 29, 2025  
+> **Current Version:** 0.30.0  
 > **Current Branch:** `develop`  
-> **Current Phase:** Phase 19 Complete + Pattern Detection UI
+> **Current Phase:** Phase 19 Complete + Quantity Per Symbol
 
 ---
 
@@ -33,18 +33,19 @@ Phase 19: Calendar & Performance Optimizations  ██████████�
 
 **Overall Project Completion:** 100% (19/19 phases complete) 🚀
 
-**Status:** Production ready! All 814 tests passing with 90.62% coverage. Complete feature set including calendar integration, news enhancements, trading simulator improvements, critical performance optimizations, UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI pattern tooltips, **multi-language support (EN, PT, ES, FR)**, automatic data migrations, and **comprehensive AI model support (23 models across 3 providers)**.
+**Status:** Production ready! All 1,764 tests passing (1,737 unit + 27 browser) with 92.15% coverage. Complete feature set including algorithmic trading with setup detection, trend filtering, cooldown system, **quantity-per-symbol management**, calendar integration, news enhancements, trading simulator improvements, critical performance optimizations, UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI pattern tooltips, **multi-language support (EN, PT, ES, FR)**, automatic data migrations, and **comprehensive AI model support (23 models across 3 providers)**.
 
-**Latest Development (v0.22.0 - In Progress):**
-- ✅ **Native OS Notifications:** System-level notifications for trading events (macOS/Windows)
-- ✅ **Calendar Integration:** CoinGecko events API with full calendar system
-- ✅ **News Enhancements:** Auto-refresh, notifications, AI correlation, dedicated dialog
-- ✅ **Performance Optimizations:** Fixed excessive re-renders in chart renderers
-- ✅ **Trading Improvements:** Fixed order execution logic, proper price tracking
-- ✅ **UI Refactoring:** Reusable sidebar components, toolbar reorganization
-- ✅ **Tooltip Fixes:** Fixed translation key and pointer events blocking interactions
-- ✅ All 952 tests passing (100% pass rate)
-- ✅ 90.62% code coverage maintained
+**Latest Development (v0.30.0):**
+- ✅ **Quantity Per Symbol:** Independent position sizing for each trading symbol
+  - Symbol-specific quantity storage and persistence
+  - Auto-loads when switching symbols
+  - Fallback to default quantity
+  - Applies to manual and algorithmic trades
+  - 19 comprehensive tests covering all functionality
+- ✅ **Setup Detection Enhancements:** Cooldown system and trend filtering (v0.29.0)
+- ✅ **Trading System:** OCO orders, auto-trading validation, state persistence
+- ✅ All 1,764 tests passing (100% pass rate)
+- ✅ 92.15% code coverage maintained
 
 **AI Models Available:**
 - **OpenAI (12):** GPT-5.1, GPT-5, GPT-5 Pro/Mini/Nano, o3, o3-mini, o1, GPT-4.1, GPT-4.1 Mini, GPT-4o, GPT-4o Mini

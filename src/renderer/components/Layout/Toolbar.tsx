@@ -1,6 +1,7 @@
-import { useUIStore } from '@/renderer/store/uiStore';
 import { useSetupStore } from '@/renderer/store/setupStore';
+import { useUIStore } from '@/renderer/store/uiStore';
 import { Box, Flex, HStack, IconButton, Text } from '@chakra-ui/react';
+import { useToast } from '@renderer/hooks/useToast';
 import { usePatternDetectionConfigStore } from '@renderer/store/patternDetectionConfigStore';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -103,6 +104,7 @@ export const Toolbar = memo(({
   onDetectPatterns,
 }: ToolbarProps) => {
   const { t } = useTranslation();
+  const toast = useToast();
   const { algorithmicDetectionSettings, setAlgorithmicDetectionSettings } = useUIStore();
   const { config: patternConfig, setConfig: setPatternConfig } = usePatternDetectionConfigStore();
   const { isAutoTradingActive, toggleAutoTrading, config: setupConfig, setConfig: setSetupConfig } = useSetupStore();
@@ -119,10 +121,31 @@ export const Toolbar = memo(({
 
   const toggleSetupDetection = (): void => {
     const newEnabled = !isSetupDetectionActive;
+
+    if (!newEnabled && isAutoTradingActive) {
+      toggleAutoTrading();
+      toast.warning(
+        t('setupConfig.autoTradingDisabled'),
+        t('setupConfig.autoTradingDisabledDescription')
+      );
+    }
+
     setSetupConfig({
       setup91: { ...setupConfig.setup91, enabled: newEnabled },
       pattern123: { ...setupConfig.pattern123, enabled: newEnabled },
     });
+  };
+
+  const handleToggleAutoTrading = (): void => {
+    if (!isAutoTradingActive && !isSetupDetectionActive) {
+      toast.error(
+        t('setupConfig.noSetupsEnabled'),
+        t('setupConfig.noSetupsEnabledDescription')
+      );
+      return;
+    }
+
+    toggleAutoTrading();
   };
 
   const toggleExtensions = (): void => {
@@ -369,7 +392,7 @@ export const Toolbar = memo(({
                 <IconButton
                   size="2xs"
                   aria-label={t('setupConfig.status.autoTrading')}
-                  onClick={toggleAutoTrading}
+                  onClick={handleToggleAutoTrading}
                   colorPalette={isAutoTradingActive ? 'green' : 'gray'}
                   variant={isAutoTradingActive ? 'solid' : 'ghost'}
                 >

@@ -60,6 +60,7 @@ export const SetupRenderer = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredSetup, setHoveredSetup] = useState<TradingSetup | null>(null);
   const setupTagsRef = useRef<Map<string, { x: number; y: number; width: number; height: number }>>(new Map());
+  const lastHoveredIdRef = useRef<string | null>(null);
 
   const checkTagHit = useCallback((tagBounds: { x: number; y: number; width: number; height: number } | undefined, mouseX: number, mouseY: number): boolean => {
     if (!tagBounds) return false;
@@ -86,7 +87,12 @@ export const SetupRenderer = ({
 
   useEffect(() => {
     if (!canvasManager || candles.length === 0 || !mousePosition) {
-      setHoveredSetup(null);
+      const newId = null;
+      if (lastHoveredIdRef.current !== newId) {
+        lastHoveredIdRef.current = newId;
+        setHoveredSetup(null);
+        onSetupHover(null);
+      }
       return;
     }
 
@@ -108,8 +114,12 @@ export const SetupRenderer = ({
       }
     }
 
-    setHoveredSetup(found);
-    onSetupHover(found);
+    const newId = found?.id ?? null;
+    if (lastHoveredIdRef.current !== newId) {
+      lastHoveredIdRef.current = newId;
+      setHoveredSetup(found);
+      onSetupHover(found);
+    }
   }, [canvasManager, candles, setups, mousePosition, onSetupHover, checkTagHit, checkSetupHit]);
 
   const drawSetupTag = useCallback((ctx: CanvasRenderingContext2D, setup: TradingSetup, x: number, y: number, color: string): void => {
