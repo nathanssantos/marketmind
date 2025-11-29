@@ -5,6 +5,10 @@ import {
   detectSupportResistance,
   isNearLevel,
   findBreakouts,
+  findRecentSwingLow,
+  findRecentSwingHigh,
+  findLowestSwingLow,
+  findHighestSwingHigh,
 } from './supportResistance';
 
 const createCandle = (
@@ -202,3 +206,116 @@ describe('findBreakouts', () => {
     expect(confirmedBreakouts.length).toBeGreaterThan(0);
   });
 });
+
+describe('findRecentSwingLow', () => {
+  it('should return null for insufficient data', () => {
+    const candles = [createCandle(100)];
+    const result = findRecentSwingLow(candles, 0, 20);
+    expect(result).toBeNull();
+  });
+
+  it('should find most recent swing low', () => {
+    const candles = [
+      createCandle(100, 102, 98),
+      createCandle(105, 107, 103),
+      createCandle(110, 112, 108),
+      createCandle(108, 110, 106),
+      createCandle(106, 108, 102),
+      createCandle(104, 106, 100),
+      createCandle(102, 104, 98),
+      createCandle(105, 107, 102),
+      createCandle(108, 110, 106),
+      createCandle(112, 114, 110),
+      createCandle(115, 117, 113),
+    ];
+
+    const result = findRecentSwingLow(candles, 10, 10, 2);
+    expect(result).toBeTruthy();
+    if (result) expect(result).toBeLessThan(110);
+  });
+});
+
+describe('findRecentSwingHigh', () => {
+  it('should return null for insufficient data', () => {
+    const candles = [createCandle(100)];
+    const result = findRecentSwingHigh(candles, 0, 20);
+    expect(result).toBeNull();
+  });
+
+  it('should find most recent swing high', () => {
+    const candles = [
+      createCandle(100, 105, 98),
+      createCandle(98, 103, 96),
+      createCandle(96, 101, 94),
+      createCandle(98, 104, 96),
+      createCandle(100, 110, 98),
+      createCandle(102, 108, 100),
+      createCandle(100, 105, 98),
+      createCandle(98, 103, 96),
+      createCandle(96, 101, 94),
+      createCandle(94, 99, 92),
+      createCandle(92, 97, 90),
+    ];
+
+    const result = findRecentSwingHigh(candles, 10, 10, 2);
+    expect(result).toBeTruthy();
+    if (result) expect(result).toBeGreaterThan(100);
+  });
+});
+
+describe('findLowestSwingLow', () => {
+  it('should return null for insufficient data', () => {
+    const candles = [createCandle(100)];
+    const result = findLowestSwingLow(candles, 0, 20);
+    expect(result).toBeNull();
+  });
+
+  it('should find lowest swing low in range', () => {
+    const candles = [
+      createCandle(100, 102, 95),
+      createCandle(105, 107, 100),
+      createCandle(110, 112, 105),
+      createCandle(108, 110, 103),
+      createCandle(106, 108, 98),
+      createCandle(104, 106, 100),
+      createCandle(105, 107, 102),
+      createCandle(107, 109, 104),
+      createCandle(109, 111, 106),
+      createCandle(111, 113, 108),
+      createCandle(113, 115, 110),
+    ];
+
+    const result = findLowestSwingLow(candles, 10, 10, 2);
+    expect(result).toBeTruthy();
+    if (result) expect(result).toBeLessThan(110);
+  });
+});
+
+describe('findHighestSwingHigh', () => {
+  it('should return null for insufficient data', () => {
+    const candles = [createCandle(100)];
+    const result = findHighestSwingHigh(candles, 0, 20);
+    expect(result).toBeNull();
+  });
+
+  it('should find highest swing high in range', () => {
+    const candles = [
+      createCandle(100, 105, 98),
+      createCandle(98, 103, 96),
+      createCandle(96, 101, 94),
+      createCandle(98, 115, 96),
+      createCandle(100, 110, 98),
+      createCandle(102, 108, 100),
+      createCandle(100, 105, 98),
+      createCandle(98, 103, 96),
+      createCandle(96, 101, 94),
+      createCandle(94, 99, 92),
+      createCandle(92, 97, 90),
+    ];
+
+    const result = findHighestSwingHigh(candles, 10, 10, 2);
+    expect(result).toBeTruthy();
+    if (result) expect(result).toBeGreaterThan(100);
+  });
+});
+

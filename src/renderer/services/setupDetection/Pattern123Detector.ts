@@ -24,7 +24,9 @@ export class Pattern123Detector extends BaseSetupDetector {
   }
 
   detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
-    if (!this.config.enabled || currentIndex < this.pattern123Config.pivotLookback * 3) {
+    const minIndex = this.pattern123Config.pivotLookback * 6;
+    
+    if (!this.config.enabled || currentIndex < minIndex) {
       return { setup: null, confidence: 0 };
     }
 

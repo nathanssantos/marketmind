@@ -1,7 +1,7 @@
 import type { Candle } from '@shared/types';
-import { calculateMovingAverages, type MAConfig, type MAResult } from '../utils/movingAveragesCalculation';
+import { calculateMovingAverages, type MAConfig, type MAResult } from '../utils/movingAverages';
 
-export interface WorkerRequest {
+export interface MAWorkerRequest {
   type: 'calculate';
   candles: Candle[];
   configs: MAConfig[];
