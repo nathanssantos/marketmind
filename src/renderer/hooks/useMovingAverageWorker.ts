@@ -1,7 +1,7 @@
 import { workerPool } from '@/renderer/utils/WorkerPool';
 import type { Candle } from '@shared/types';
 import { useCallback, useEffect, useRef } from 'react';
-import type { WorkerRequest, WorkerResponse } from '../workers/movingAverages.worker';
+import type { MAWorkerRequest, WorkerResponse } from '../workers/movingAverages.worker';
 
 export interface MovingAverageConfig {
   period: number;
@@ -82,7 +82,7 @@ export const useMovingAverageWorker = (): UseMovingAverageWorkerReturn => {
         const requestId = requestIdRef.current++;
         pendingCallbacksRef.current.set(requestId, resolve);
 
-        const request: WorkerRequest = {
+        const request: MAWorkerRequest = {
           type: 'calculate',
           candles,
           configs,
