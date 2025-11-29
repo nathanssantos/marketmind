@@ -22,6 +22,13 @@ describe('useVolumeRenderer', () => {
       restore: vi.fn(),
       shadowColor: '',
       shadowBlur: 0,
+      globalAlpha: 1,
+      lineWidth: 1,
+      strokeStyle: '',
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
     } as unknown as CanvasRenderingContext2D;
 
     const candles = [
@@ -54,6 +61,7 @@ describe('useVolumeRenderer', () => {
         maxVolume: 2000,
       })),
       getVisibleCandles: vi.fn(() => candles),
+      getCandles: vi.fn(() => candles),
       indexToX: vi.fn((index: number) => index * 145.6),
     } as unknown as CanvasManager;
 
