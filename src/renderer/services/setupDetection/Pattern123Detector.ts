@@ -13,6 +13,7 @@ const MIN_HIGHER_LOW_PERCENT = 0.001;
 export interface Pattern123Config extends SetupDetectorConfig {
   pivotLookback: number;
   breakoutThreshold: number;
+  targetMultiplier: number;
 }
 
 export class Pattern123Detector extends BaseSetupDetector {
@@ -98,7 +99,10 @@ export class Pattern123Detector extends BaseSetupDetector {
         const entry = current.close;
         const stopLoss = p3.price;
         const riskDistance = entry - stopLoss;
-        const takeProfit = entry + riskDistance * 2;
+        
+        const resistance = this.findNearestResistance(pivots, entry);
+        const rrTarget = entry + riskDistance * this.pattern123Config.targetMultiplier;
+        const takeProfit = resistance && resistance < rrTarget ? resistance * 0.998 : rrTarget;
         const rr = this.calculateRR(entry, stopLoss, takeProfit);
 
         const confidence = this.calculateConfidence(p1, p2, p3, current);
@@ -170,7 +174,10 @@ export class Pattern123Detector extends BaseSetupDetector {
         const entry = current.close;
         const stopLoss = p3.price;
         const riskDistance = stopLoss - entry;
-        const takeProfit = entry - riskDistance * 2;
+        
+        const support = this.findNearestSupport(pivots, entry);
+        const rrTarget = entry - riskDistance * this.pattern123Config.targetMultiplier;
+        const takeProfit = support && support > rrTarget ? support * 1.002 : rrTarget;
         const rr = this.calculateRR(entry, stopLoss, takeProfit);
 
         const confidence = this.calculateConfidence(p1, p2, p3, current);
@@ -203,6 +210,24 @@ export class Pattern123Detector extends BaseSetupDetector {
     }
 
     return null;
+  }
+
+  private findNearestResistance(pivots: { type: string; price: number }[], currentPrice: number): number | null {
+    const resistances = pivots
+      .filter((p) => p.type === 'high' && p.price > currentPrice)
+      .map((p) => p.price)
+      .sort((a, b) => a - b);
+    
+    return resistances[0] ?? null;
+  }
+
+  private findNearestSupport(pivots: { type: string; price: number }[], currentPrice: number): number | null {
+    const supports = pivots
+      .filter((p) => p.type === 'low' && p.price < currentPrice)
+      .map((p) => p.price)
+      .sort((a, b) => b - a);
+    
+    return supports[0] ?? null;
   }
 
   private calculateConfidence(
@@ -239,4 +264,5 @@ export const createDefault123Config = (): Pattern123Config => ({
   minRiskReward: 2.5,
   pivotLookback: DEFAULT_PIVOT_LOOKBACK,
   breakoutThreshold: BREAKOUT_THRESHOLD_PERCENT,
+  targetMultiplier: 2.0,
 });

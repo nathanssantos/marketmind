@@ -41,6 +41,7 @@ interface TradingData {
   activeWalletId: string | null;
   defaultQuantity: number;
   defaultExpiration: 'gtc' | 'day' | 'custom';
+  quantityBySymbol?: Record<string, number>;
 }
 
 interface SecureStorageAPI {
