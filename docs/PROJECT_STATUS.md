@@ -1,9 +1,9 @@
 # 📊 MarketMind - Project Status
 
 > **Last Updated:** November 29, 2025  
-> **Current Version:** 0.30.0  
+> **Current Version:** 0.31.0  
 > **Current Branch:** `develop`  
-> **Current Phase:** Phase 19 Complete + Quantity Per Symbol
+> **Current Phase:** Phase 19 Complete + Code Consolidation & Setup Detection Improvements
 
 ---
 
@@ -33,19 +33,21 @@ Phase 19: Calendar & Performance Optimizations  ██████████�
 
 **Overall Project Completion:** 100% (19/19 phases complete) 🚀
 
-**Status:** Production ready! All 1,764 tests passing (1,737 unit + 27 browser) with 92.15% coverage. Complete feature set including algorithmic trading with setup detection, trend filtering, cooldown system, **quantity-per-symbol management**, calendar integration, news enhancements, trading simulator improvements, critical performance optimizations, UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI pattern tooltips, **multi-language support (EN, PT, ES, FR)**, automatic data migrations, and **comprehensive AI model support (23 models across 3 providers)**.
+**Status:** Production ready! All 1,738 tests passing (1,711 unit + 27 browser) with 90.62% coverage. Complete feature set including volume moving average, consolidated codebase (DRY principles), improved setup detection reliability, algorithmic trading with setup detection, trend filtering, cooldown system, quantity-per-symbol management, calendar integration, news enhancements, trading simulator improvements, critical performance optimizations, UI/UX polish, onboarding system, keyboard shortcuts, accessibility features, comprehensive documentation, AI pattern tooltips, **multi-language support (EN, PT, ES, FR)**, automatic data migrations, and **comprehensive AI model support (23 models across 3 providers)**.
 
-**Latest Development (v0.30.0):**
-- ✅ **Quantity Per Symbol:** Independent position sizing for each trading symbol
-  - Symbol-specific quantity storage and persistence
-  - Auto-loads when switching symbols
-  - Fallback to default quantity
-  - Applies to manual and algorithmic trades
-  - 19 comprehensive tests covering all functionality
-- ✅ **Setup Detection Enhancements:** Cooldown system and trend filtering (v0.29.0)
-- ✅ **Trading System:** OCO orders, auto-trading validation, state persistence
-- ✅ All 1,764 tests passing (100% pass rate)
-- ✅ 92.15% code coverage maintained
+**Latest Development (v0.31.0):**
+- ✅ **Volume Moving Average:** Timeframe-adaptive SMA with visual rendering (solid light-colored line)
+- ✅ **Code Consolidation:** Eliminated 250+ lines of duplicate code across 4 major areas
+  - Stochastic worker (~100 lines removed)
+  - Moving averages (3 duplicate implementations unified)
+  - RSI (2 implementations consolidated)
+  - 4 duplicate files removed
+- ✅ **Setup Detection Reliability:** Fixed minimum candle requirements
+  - Setup91: 29→32 candles (+10%)
+  - BullTrap/BearTrap: 40→70 candles (+75%)
+  - Pattern123: 15→30 candles (+100%)
+- ✅ All 1,738 tests passing (100% pass rate)
+- ✅ 90.62% code coverage maintained
 
 **AI Models Available:**
 - **OpenAI (12):** GPT-5.1, GPT-5, GPT-5 Pro/Mini/Nano, o3, o3-mini, o1, GPT-4.1, GPT-4.1 Mini, GPT-4o, GPT-4o Mini

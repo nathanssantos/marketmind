@@ -1,4 +1,4 @@
-import { calculateEMA } from '@renderer/utils/indicators/ema';
+import { calculateEMA } from '@renderer/utils/movingAverages';
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import type { Candle } from '@shared/types';
 import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
@@ -59,7 +59,11 @@ export class BearTrapDetector extends BaseSetupDetector {
   }
 
   detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
-    const minIndex = this.bearTrapConfig.lookbackPeriod + this.bearTrapConfig.emaPeriod;
+    const minIndex = Math.max(
+      this.bearTrapConfig.lookbackPeriod + this.bearTrapConfig.emaPeriod,
+      RESISTANCE_LOOKBACK + VOLUME_LOOKBACK,
+    );
+    
     if (!this.config.enabled || currentIndex < minIndex) {
       return { setup: null, confidence: 0 };
     }
@@ -157,7 +161,7 @@ export class BearTrapDetector extends BaseSetupDetector {
     const ema = calculateEMA(candles, this.bearTrapConfig.emaPeriod);
     const emaCurrent = ema[currentIndex];
 
-    if (emaCurrent === undefined || isNaN(emaCurrent)) {
+    if (emaCurrent === null || emaCurrent === undefined) {
       return null;
     }
 

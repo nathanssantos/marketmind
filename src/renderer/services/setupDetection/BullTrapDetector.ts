@@ -1,4 +1,4 @@
-import { calculateEMA } from '@renderer/utils/indicators/ema';
+import { calculateEMA } from '@renderer/utils/movingAverages';
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import type { Candle } from '@shared/types';
 import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
@@ -59,7 +59,11 @@ export class BullTrapDetector extends BaseSetupDetector {
   }
 
   detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
-    const minIndex = this.bullTrapConfig.lookbackPeriod + this.bullTrapConfig.emaPeriod;
+    const minIndex = Math.max(
+      this.bullTrapConfig.lookbackPeriod + this.bullTrapConfig.emaPeriod,
+      SUPPORT_LOOKBACK + VOLUME_LOOKBACK,
+    );
+    
     if (!this.config.enabled || currentIndex < minIndex) {
       return { setup: null, confidence: 0 };
     }
@@ -158,7 +162,7 @@ export class BullTrapDetector extends BaseSetupDetector {
     const ema = calculateEMA(candles, this.bullTrapConfig.emaPeriod);
     const emaCurrent = ema[currentIndex];
 
-    if (emaCurrent === undefined || isNaN(emaCurrent)) {
+    if (emaCurrent === null || emaCurrent === undefined) {
       return null;
     }
 

@@ -1,4 +1,4 @@
-import { calculateEMA } from '@renderer/utils/indicators/ema';
+import { calculateEMA } from '@renderer/utils/movingAverages';
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import type { Candle } from '@shared/types';
 import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
@@ -59,7 +59,11 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
   }
 
   detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
-    const minIndex = this.breakoutRetestConfig.lookbackPeriod + this.breakoutRetestConfig.emaPeriod;
+    const minIndex = Math.max(
+      this.breakoutRetestConfig.lookbackPeriod + this.breakoutRetestConfig.emaPeriod,
+      PIVOT_LOOKBACK + VOLUME_LOOKBACK,
+    );
+    
     if (!this.config.enabled || currentIndex < minIndex) {
       return { setup: null, confidence: 0 };
     }
@@ -267,7 +271,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
     const ema = calculateEMA(candles, this.breakoutRetestConfig.emaPeriod);
     const emaCurrent = ema[currentIndex];
 
-    if (emaCurrent === undefined || isNaN(emaCurrent)) return null;
+    if (emaCurrent === null || emaCurrent === undefined) return null;
 
     const aboveEMA = current.close > emaCurrent;
     const entry = current.close;
@@ -330,7 +334,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
     const ema = calculateEMA(candles, this.breakoutRetestConfig.emaPeriod);
     const emaCurrent = ema[currentIndex];
 
-    if (emaCurrent === undefined || isNaN(emaCurrent)) return null;
+    if (emaCurrent === null || emaCurrent === undefined) return null;
 
     const belowEMA = current.close < emaCurrent;
     const entry = current.close;

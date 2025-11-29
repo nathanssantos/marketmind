@@ -77,10 +77,35 @@ export interface MovingAverageData {
   color: string;
 }
 
+export interface MAConfig {
+  period: number;
+  type: 'SMA' | 'EMA';
+  color: string;
+  enabled: boolean;
+}
+
+export interface MAResult {
+  period: number;
+  type: 'SMA' | 'EMA';
+  color: string;
+  values: (number | null)[];
+}
+
 export const calculateMovingAverage = (
   candles: Candle[],
   period: number,
   type: 'SMA' | 'EMA',
 ): (number | null)[] => {
   return type === 'SMA' ? calculateSMA(candles, period) : calculateEMA(candles, period);
+};
+
+export const calculateMovingAverages = (candles: Candle[], configs: MAConfig[]): MAResult[] => {
+  return configs
+    .filter((config) => config.enabled)
+    .map((config) => ({
+      period: config.period,
+      type: config.type,
+      color: config.color,
+      values: config.type === 'SMA' ? calculateSMA(candles, config.period) : calculateEMA(candles, config.period),
+    }));
 };

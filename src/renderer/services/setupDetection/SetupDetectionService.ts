@@ -1,4 +1,4 @@
-import { calculateEMA } from '@renderer/utils/indicators/ema';
+import { calculateEMA } from '@renderer/utils/movingAverages';
 import type { Candle, TradingSetup } from '@shared/types';
 import {
   BearTrapDetector,
@@ -86,7 +86,7 @@ export class SetupDetectionService {
     const current = candles[currentIndex];
     const ema200Current = ema200[currentIndex];
 
-    if (!current || ema200Current === undefined || isNaN(ema200Current)) {
+    if (!current || ema200Current === null || ema200Current === undefined) {
       return 'neutral';
     }
 
