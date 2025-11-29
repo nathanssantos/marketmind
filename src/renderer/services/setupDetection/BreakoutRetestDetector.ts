@@ -10,7 +10,6 @@ const MIN_CONTINUATION_STRENGTH = 0.4;
 const CONTINUATION_PERCENT_MULTIPLIER = 0.01;
 const BREAKOUT_STRENGTH_SCALE = 100;
 const STOP_LOSS_BUFFER_PERCENT = 0.003;
-const DEFAULT_RR_MULTIPLIER = 2.5;
 const BASE_CONFIDENCE = 65;
 const MIN_CONFIDENCE_THRESHOLD = 70;
 const BREAKOUT_STRENGTH_WEIGHT = 12;
@@ -29,6 +28,7 @@ export interface BreakoutRetestConfig {
   lookbackPeriod: number;
   emaPeriod: number;
   retestTolerance: number;
+  targetMultiplier: number;
 }
 
 export const createDefaultBreakoutRetestConfig = (): BreakoutRetestConfig => ({
@@ -39,6 +39,7 @@ export const createDefaultBreakoutRetestConfig = (): BreakoutRetestConfig => ({
   lookbackPeriod: 30,
   emaPeriod: 20,
   retestTolerance: 0.005,
+  targetMultiplier: 2.5,
 });
 
 export class BreakoutRetestDetector extends BaseSetupDetector {
@@ -191,6 +192,40 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
     return lowPivots.map((p) => p.price).filter((price, index, arr) => arr.indexOf(price) === index);
   }
 
+  private findNextResistance(
+    candles: Candle[],
+    currentIndex: number,
+    currentPrice: number,
+    currentResistance: number,
+  ): number | null {
+    const lookback = Math.min(this.breakoutRetestConfig.lookbackPeriod * 2, currentIndex);
+    const pivots = findPivotPoints(candles.slice(Math.max(0, currentIndex - lookback), currentIndex + 1), PIVOT_LOOKBACK);
+    
+    const nextResistances = pivots
+      .filter((p) => p.type === 'high' && p.price > currentPrice && p.price > currentResistance)
+      .map((p) => p.price)
+      .sort((a, b) => a - b);
+    
+    return nextResistances[0] ?? null;
+  }
+
+  private findNextSupport(
+    candles: Candle[],
+    currentIndex: number,
+    currentPrice: number,
+    currentSupport: number,
+  ): number | null {
+    const lookback = Math.min(this.breakoutRetestConfig.lookbackPeriod * 2, currentIndex);
+    const pivots = findPivotPoints(candles.slice(Math.max(0, currentIndex - lookback), currentIndex + 1), PIVOT_LOOKBACK);
+    
+    const nextSupports = pivots
+      .filter((p) => p.type === 'low' && p.price < currentPrice && p.price < currentSupport)
+      .map((p) => p.price)
+      .sort((a, b) => b - a);
+    
+    return nextSupports[0] ?? null;
+  }
+
   private findBreakoutCandle(
     candles: Candle[],
     level: number,
@@ -282,8 +317,10 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
       stopLoss = swingLow * 0.997;
     }
     
-    const targetDistance = (entry - stopLoss) * DEFAULT_RR_MULTIPLIER;
-    const takeProfit = entry + targetDistance;
+    const minTarget = entry + (entry - stopLoss) * this.breakoutRetestConfig.targetMultiplier;
+    const nextResistance = this.findNextResistance(candles, currentIndex, entry, resistance);
+    const structuralTarget = nextResistance && nextResistance < minTarget ? nextResistance * 0.998 : minTarget;
+    const takeProfit = structuralTarget;
     const rr = this.calculateRR(entry, stopLoss, takeProfit);
 
     if (!this.meetsMinimumCriteria(MIN_CONFIDENCE_THRESHOLD, rr)) return null;
@@ -351,8 +388,10 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
       stopLoss = swingHigh * 1.003;
     }
     
-    const targetDistance = (stopLoss - entry) * DEFAULT_RR_MULTIPLIER;
-    const takeProfit = entry - targetDistance;
+    const minTarget = entry - (stopLoss - entry) * this.breakoutRetestConfig.targetMultiplier;
+    const nextSupport = this.findNextSupport(candles, currentIndex, entry, support);
+    const structuralTarget = nextSupport && nextSupport > minTarget ? nextSupport * 1.002 : minTarget;
+    const takeProfit = structuralTarget;
     const rr = this.calculateRR(entry, stopLoss, takeProfit);
 
     if (!this.meetsMinimumCriteria(MIN_CONFIDENCE_THRESHOLD, rr)) return null;

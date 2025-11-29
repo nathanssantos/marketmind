@@ -1,7 +1,7 @@
 import type { Candle } from '@shared/types';
 import { calculateEMA } from '@renderer/utils/movingAverages';
 import { calculateATR } from '@renderer/utils/indicators/atr';
-import { findLowestSwingLow, findHighestSwingHigh } from '@renderer/utils/indicators/supportResistance';
+import { findLowestSwingLow, findHighestSwingHigh, findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import {
   BaseSetupDetector,
   type SetupDetectorConfig,
@@ -30,6 +30,7 @@ export interface Setup91Config extends SetupDetectorConfig {
   atrPeriod: number;
   atrStopMultiplier: number;
   atrTargetMultiplier: number;
+  targetMultiplier: number;
   volumeMultiplier: number;
 }
 
@@ -94,7 +95,11 @@ export class Setup91Detector extends BaseSetupDetector {
       const swingStop = swingLow ? swingLow * 0.998 : atrStop;
       const stopLoss = Math.min(swingStop, atrStop);
       
-      const takeProfit = entry + atrCurrent * this.setup91Config.atrTargetMultiplier;
+      const resistance = this.findNearestResistance(candles, currentIndex, entry);
+      const atrTarget = entry + atrCurrent * this.setup91Config.atrTargetMultiplier;
+      const minTarget = entry + (entry - stopLoss) * this.setup91Config.targetMultiplier;
+      const structuralTarget = resistance && resistance < atrTarget ? resistance * 0.998 : atrTarget;
+      const takeProfit = Math.max(structuralTarget, minTarget);
       const rr = this.calculateRR(entry, stopLoss, takeProfit);
 
       const confidence = this.calculateConfidence(
@@ -136,7 +141,11 @@ export class Setup91Detector extends BaseSetupDetector {
       const swingStop = swingHigh ? swingHigh * 1.002 : atrStop;
       const stopLoss = Math.max(swingStop, atrStop);
       
-      const takeProfit = entry - atrCurrent * this.setup91Config.atrTargetMultiplier;
+      const support = this.findNearestSupport(candles, currentIndex, entry);
+      const atrTarget = entry - atrCurrent * this.setup91Config.atrTargetMultiplier;
+      const minTarget = entry - (stopLoss - entry) * this.setup91Config.targetMultiplier;
+      const structuralTarget = support && support > atrTarget ? support * 1.002 : atrTarget;
+      const takeProfit = Math.min(structuralTarget, minTarget);
       const rr = this.calculateRR(entry, stopLoss, takeProfit);
 
       const confidence = this.calculateConfidence(
@@ -173,6 +182,38 @@ export class Setup91Detector extends BaseSetupDetector {
     return { setup: null, confidence: 0 };
   }
 
+  private findNearestResistance(
+    candles: Candle[],
+    currentIndex: number,
+    currentPrice: number,
+  ): number | null {
+    const lookback = Math.min(VOLUME_LOOKBACK * 3, currentIndex);
+    const pivots = findPivotPoints(candles.slice(Math.max(0, currentIndex - lookback), currentIndex + 1), 5);
+    
+    const resistances = pivots
+      .filter((p) => p.type === 'high' && p.price > currentPrice)
+      .map((p) => p.price)
+      .sort((a, b) => a - b);
+    
+    return resistances[0] ?? null;
+  }
+
+  private findNearestSupport(
+    candles: Candle[],
+    currentIndex: number,
+    currentPrice: number,
+  ): number | null {
+    const lookback = Math.min(VOLUME_LOOKBACK * 3, currentIndex);
+    const pivots = findPivotPoints(candles.slice(Math.max(0, currentIndex - lookback), currentIndex + 1), 5);
+    
+    const supports = pivots
+      .filter((p) => p.type === 'low' && p.price < currentPrice)
+      .map((p) => p.price)
+      .sort((a, b) => b - a);
+    
+    return supports[0] ?? null;
+  }
+
   private calculateConfidence(
     candle: Candle,
     ema: number,
@@ -203,5 +244,6 @@ export const createDefault91Config = (): Setup91Config => ({
   atrPeriod: DEFAULT_ATR_PERIOD,
   atrStopMultiplier: ATR_STOP_MULTIPLIER,
   atrTargetMultiplier: ATR_TARGET_MULTIPLIER,
+  targetMultiplier: 2.0,
   volumeMultiplier: MIN_VOLUME_MULTIPLIER,
 });

@@ -9,7 +9,6 @@ const MAX_TRAP_DISTANCE_PERCENT = 0.02;
 const MIN_REVERSAL_STRENGTH = 0.5;
 const MIN_HIGH_PIVOTS = 2;
 const STOP_LOSS_BUFFER = 1.005;
-const DEFAULT_RR_MULTIPLIER = 2.5;
 const BASE_CONFIDENCE = 60;
 const MIN_CONFIDENCE_THRESHOLD = 70;
 const REVERSAL_CONFIDENCE_WEIGHT = 15;
@@ -30,6 +29,7 @@ export interface BullTrapConfig {
   volumeMultiplier: number;
   lookbackPeriod: number;
   emaPeriod: number;
+  targetMultiplier: number;
 }
 
 export const createDefaultBullTrapConfig = (): BullTrapConfig => ({
@@ -39,6 +39,7 @@ export const createDefaultBullTrapConfig = (): BullTrapConfig => ({
   volumeMultiplier: 1.3,
   lookbackPeriod: 20,
   emaPeriod: 20,
+  targetMultiplier: 2.5,
 });
 
 export class BullTrapDetector extends BaseSetupDetector {
@@ -170,7 +171,9 @@ export class BullTrapDetector extends BaseSetupDetector {
     const entry = trap.current.close;
     const stopLoss = trap.trapHigh.price * STOP_LOSS_BUFFER;
     const supportLevel = this.findNearestSupport(candles, currentIndex, entry);
-    const takeProfit = supportLevel ?? entry - (stopLoss - entry) * DEFAULT_RR_MULTIPLIER;
+    const minTarget = entry - (stopLoss - entry) * this.bullTrapConfig.targetMultiplier;
+    const structuralTarget = supportLevel && supportLevel > minTarget ? supportLevel : minTarget;
+    const takeProfit = structuralTarget;
     const rr = this.calculateRR(entry, stopLoss, takeProfit);
 
     if (!this.meetsMinimumCriteria(MIN_CONFIDENCE_THRESHOLD, rr)) {

@@ -12,7 +12,7 @@ export interface WorkerResponse {
   results: MAResult[];
 }
 
-self.onmessage = (event: MessageEvent<WorkerRequest>) => {
+self.onmessage = (event: MessageEvent<MAWorkerRequest>) => {
   const { type, candles, configs } = event.data;
 
   if (type !== 'calculate') return;
