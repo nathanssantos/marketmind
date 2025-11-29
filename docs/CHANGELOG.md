@@ -29,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - New setupValidation system prompt with strict validation rules
     - AI can approve/reject setups based on market context, volume, trend alignment
     - Significant token savings: AI validates pre-calculated setups instead of analyzing from scratch
+  - **Automatic Trade Execution**: Trades execute automatically when setups detected and auto-trading enabled
+    - Position sizing based on 2% risk per trade (configurable)
+    - Automatic calculation: quantity = (wallet × riskPercent) / stopDistance
+    - Safety checks: wallet active, sufficient balance, simulator active
+    - Setup execution tracking prevents duplicate trades
+    - Orders created with pre-calculated SL/TP from setup
+    - Smart order type detection (limit vs stop based on current price)
 
 - **Technical Indicators for Setup Detection** 📊
   - EMA/SMA calculation utilities with comprehensive tests

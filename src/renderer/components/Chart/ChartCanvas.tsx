@@ -1010,9 +1010,44 @@ export const ChartCanvas = ({
       const existing = useSetupStore.getState().detectedSetups.find(s => s.id === setup.id);
       if (!existing) {
         addDetectedSetup(setup);
+        
+        const { isAutoTradingActive } = useSetupStore.getState();
+        const { isSimulatorActive: simActive, activeWalletId: walletId, wallets } = useTradingStore.getState();
+        
+        if (isAutoTradingActive && simActive && walletId && symbol) {
+          const wallet = wallets.find(w => w.id === walletId);
+          if (!wallet) return;
+          
+          const riskAmount = wallet.balance * 0.02;
+          const stopDistance = Math.abs(setup.entryPrice - setup.stopLoss);
+          const quantity = stopDistance > 0 ? Math.floor(riskAmount / stopDistance) : 1;
+          
+          if (quantity <= 0 || wallet.balance < setup.entryPrice * quantity) return;
+          
+          const currentPrice = candles[candles.length - 1]?.close;
+          const isLong = setup.direction === 'LONG';
+          const subType: 'limit' | 'stop' = currentPrice !== undefined && 
+            ((isLong && setup.entryPrice < currentPrice) || (!isLong && setup.entryPrice > currentPrice)) 
+            ? 'limit' : 'stop';
+          
+          addOrder({
+            symbol,
+            type: isLong ? 'long' : 'short',
+            subType,
+            status: 'pending',
+            entryPrice: setup.entryPrice,
+            quantity,
+            walletId,
+            stopLoss: setup.stopLoss,
+            takeProfit: setup.takeProfit,
+            ...(currentPrice !== undefined && { currentPrice }),
+          });
+          
+          useSetupStore.getState().executeSetup(setup.id);
+        }
       }
     });
-  }, [candles, setupConfig, setupService, addDetectedSetup]);
+  }, [candles, setupConfig, setupService, addDetectedSetup, addOrder, symbol]);
 
   useEffect(() => {
     if (!shiftPressed && !altPressed) {

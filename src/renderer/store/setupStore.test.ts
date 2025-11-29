@@ -48,13 +48,13 @@ describe('setupStore', () => {
     it('should reset config to defaults', () => {
       const store = useSetupStore.getState();
       store.setConfig({
-        setup91: { ...store.config.setup91, enabled: false },
+        setup91: { ...store.config.setup91, enabled: true },
       });
 
       store.resetConfigToDefaults();
 
       const { config } = useSetupStore.getState();
-      expect(config.setup91.enabled).toBe(true);
+      expect(config.setup91.enabled).toBe(false);
     });
 
     it('should update specific setup config', () => {

@@ -28,8 +28,8 @@ describe('SetupDetectionService', () => {
 
     expect(config.setup91).toBeDefined();
     expect(config.pattern123).toBeDefined();
-    expect(config.setup91.enabled).toBe(true);
-    expect(config.pattern123.enabled).toBe(true);
+    expect(config.setup91.enabled).toBe(false);
+    expect(config.pattern123.enabled).toBe(false);
   });
 
   it('should return empty array for insufficient candles', () => {
@@ -41,7 +41,10 @@ describe('SetupDetectionService', () => {
   });
 
   it('should detect setups with sufficient data', () => {
-    const service = new SetupDetectionService();
+    const service = new SetupDetectionService({
+      setup91: { ...createDefaultSetupDetectionConfig().setup91, enabled: true },
+      pattern123: { ...createDefaultSetupDetectionConfig().pattern123, enabled: true },
+    });
     
     const candles = Array.from({ length: 100 }, (_, i) => {
       const base = 100;
