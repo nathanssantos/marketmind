@@ -1,6 +1,6 @@
 import type { Kline } from '@marketmind/types';
 
-const getKlineClose = (kline: Kline): number => kline.close;
+const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 export const calculateSMA = (klines: Kline[], period: number): (number | null)[] => {
   if (period <= 0 || klines.length === 0) {

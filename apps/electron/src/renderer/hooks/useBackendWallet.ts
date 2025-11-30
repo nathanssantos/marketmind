@@ -40,21 +40,21 @@ export const useBackendWallet = () => {
   );
   
   const updateWallet = useCallback(
-    async (id: number, data: { name?: string; apiKey?: string; apiSecret?: string }) => {
+    async (id: string, data: { name?: string; apiKey?: string; apiSecret?: string }) => {
       return updateMutation.mutateAsync({ id, ...data });
     },
     [updateMutation]
   );
   
   const deleteWallet = useCallback(
-    async (id: number) => {
+    async (id: string) => {
       return deleteMutation.mutateAsync({ id });
     },
     [deleteMutation]
   );
   
   const syncBalance = useCallback(
-    async (id: number) => {
+    async (id: string) => {
       return syncBalanceMutation.mutateAsync({ id });
     },
     [syncBalanceMutation]

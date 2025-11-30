@@ -3,17 +3,17 @@ import { calculateStochastic } from './stochastic';
 import type { Kline } from '@marketmind/types';
 
 const createMockKline = (high: number, low: number, close: number, index: number): Kline => ({
-  openTime: new Date(2024, 0, index + 1),
-  open: (high + low) / 2,
-  high,
-  low,
-  close,
-  volume: 1000,
-  closeTime: new Date(2024, 0, index + 1, 23, 59, 59),
-  quoteVolume: 1000000,
+  openTime: new Date(2024, 0, index + 1).getTime(),
+  open: String((high + low) / 2),
+  high: String(high),
+  low: String(low),
+  close: String(close),
+  volume: '1000',
+  closeTime: new Date(2024, 0, index + 1, 23, 59, 59).getTime(),
+  quoteVolume: '1000000',
   trades: 100,
-  takerBuyBaseVolume: 500,
-  takerBuyQuoteVolume: 500000,
+  takerBuyBaseVolume: '500',
+  takerBuyQuoteVolume: '500000',
 });
 
 describe('calculateStochastic', () => {

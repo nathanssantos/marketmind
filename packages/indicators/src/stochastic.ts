@@ -1,8 +1,8 @@
 import type { Kline } from '@marketmind/types';
 
-const getKlineClose = (kline: Kline): number => kline.close;
-const getKlineHigh = (kline: Kline): number => kline.high;
-const getKlineLow = (kline: Kline): number => kline.low;
+const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
+const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
+const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
 
 export interface StochasticResult {
   k: (number | null)[];

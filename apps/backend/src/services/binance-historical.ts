@@ -7,20 +7,6 @@ import { logger } from './logger';
 const BATCH_SIZE = 1000;
 const RATE_LIMIT_DELAY = 200;
 
-interface HistoricalKline {
-  openTime: number;
-  open: string;
-  high: string;
-  low: string;
-  close: string;
-  volume: string;
-  closeTime: number;
-  quoteVolume: string;
-  trades: number;
-  takerBuyBaseVolume: string;
-  takerBuyQuoteVolume: string;
-}
-
 const binanceClient = Binance();
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
@@ -42,12 +28,12 @@ export const backfillHistoricalKlines = async (
 
   while (currentStartTime < finalEndTime) {
     try {
-      const candles = (await binanceClient.candles({
+      const candles = await binanceClient.candles({
         symbol,
         interval,
         startTime: currentStartTime,
         limit: BATCH_SIZE,
-      })) as HistoricalKline[];
+      });
 
       if (candles.length === 0) break;
 
@@ -58,16 +44,16 @@ export const backfillHistoricalKlines = async (
         symbol,
         interval,
         openTime: new Date(candle.openTime),
-        open: parseFloat(candle.open),
-        high: parseFloat(candle.high),
-        low: parseFloat(candle.low),
-        close: parseFloat(candle.close),
-        volume: parseFloat(candle.volume),
+        open: candle.open,
+        high: candle.high,
+        low: candle.low,
+        close: candle.close,
+        volume: candle.volume,
         closeTime: new Date(candle.closeTime),
-        quoteVolume: parseFloat(candle.quoteVolume),
+        quoteVolume: candle.quoteVolume,
         trades: candle.trades,
-        takerBuyBaseVolume: parseFloat(candle.takerBuyBaseVolume),
-        takerBuyQuoteVolume: parseFloat(candle.takerBuyQuoteVolume),
+        takerBuyBaseVolume: '0',
+        takerBuyQuoteVolume: '0',
       }));
 
       await db.insert(klines).values(klinesData).onConflictDoNothing();

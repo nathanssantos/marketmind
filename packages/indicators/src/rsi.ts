@@ -1,6 +1,6 @@
 import type { Kline } from '@marketmind/types';
 
-const getKlineClose = (kline: Kline): number => kline.close;
+const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 export interface RSIResult {
   values: (number | null)[];
