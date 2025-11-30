@@ -43,5 +43,8 @@ export const useBackendAuth = () => {
     isLoggingIn: loginMutation.isPending,
     isRegistering: registerMutation.isPending,
     isLoggingOut: logoutMutation.isPending,
+    loginError: loginMutation.error,
+    registerError: registerMutation.error,
+    logoutError: logoutMutation.error,
   };
 };
