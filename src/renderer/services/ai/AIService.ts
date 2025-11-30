@@ -1,5 +1,5 @@
 import { patternDetectionService } from '@renderer/utils/patternDetection';
-import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage, AIPattern, AIProviderType, Candle } from '@shared/types';
+import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage, AIPattern, AIProviderType, Kline } from '@shared/types';
 import defaultPrompts from './prompts.json';
 import { ClaudeProvider, GeminiProvider, OpenAIProvider } from './providers';
 import type { AIProviderConfig, BaseAIProvider } from './types';
@@ -12,7 +12,7 @@ export interface AIServiceConfig {
   maxTokens?: number;
   useOptimizedPrompts?: boolean;
   enableAIPatterns?: boolean;
-  detailedCandlesCount?: number;
+  detailedKlinesCount?: number;
   useAlgorithmicDetection?: boolean;
   customPrompts?: {
     chartAnalysis?: typeof defaultPrompts.chartAnalysis;
@@ -59,7 +59,7 @@ export class AIService {
       ...(this.config.model && { model: this.config.model }),
       ...(this.config.temperature !== undefined && { temperature: this.config.temperature }),
       ...(this.config.maxTokens !== undefined && { maxTokens: this.config.maxTokens }),
-      ...(this.config.detailedCandlesCount !== undefined && { detailedCandlesCount: this.config.detailedCandlesCount }),
+      ...(this.config.detailedKlinesCount !== undefined && { detailedKlinesCount: this.config.detailedKlinesCount }),
     };
 
     switch (this.providerType) {
@@ -115,7 +115,7 @@ export class AIService {
   private async analyzeChartWithAlgorithmicDetection(
     request: AIAnalysisRequest
   ): Promise<AIAnalysisResponse> {
-    const detectionResult = await patternDetectionService.detectPatterns(request.candles, {
+    const detectionResult = await patternDetectionService.detectPatterns(request.klines, {
       minConfidence: 0.6,
     });
 
@@ -123,7 +123,7 @@ export class AIService {
 
     const interpretationPrompt = this.buildInterpretationPrompt(
       detectedPatterns,
-      request.candles,
+      request.klines,
       request.context
     );
 
@@ -132,7 +132,7 @@ export class AIService {
         id: 'pattern-interpretation',
         role: 'user',
         content: interpretationPrompt,
-        timestamp: Date.now(),
+        openTime: Date.now(),
       },
     ];
 
@@ -150,7 +150,7 @@ export class AIService {
 
   private buildInterpretationPrompt(
     patterns: AIPattern[],
-    recentCandles: Candle[],
+    recentKlines: Kline[],
     context?: string
   ): string {
     const patternsSummary = patterns.map((pattern, index) => {
@@ -168,16 +168,16 @@ export class AIService {
       return description;
     }).join('\n');
 
-    const recentCandlesData = recentCandles.slice(-20).map(c => 
-      `${new Date(c.timestamp).toISOString()}: O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`
+    const recentKlinesData = recentKlines.slice(-20).map(c => 
+      `${new Date(c.openTime).toISOString()}: O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`
     ).join('\n');
 
     return `
 DETECTED TECHNICAL PATTERNS (Algorithmic Analysis):
 ${patternsSummary || 'No significant patterns detected.'}
 
-RECENT PRICE ACTION (Last 20 candles):
-${recentCandlesData}
+RECENT PRICE ACTION (Last 20 klines):
+${recentKlinesData}
 
 ${context ? `ADDITIONAL CONTEXT:\n${context}\n` : ''}
 

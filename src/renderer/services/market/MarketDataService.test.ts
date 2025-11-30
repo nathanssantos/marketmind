@@ -1,4 +1,4 @@
-import type { BaseMarketProvider, CandleData, FetchCandlesOptions, MarketProviderConfig, Symbol, SymbolInfo, WebSocketSubscription } from '@shared/types';
+import type { BaseMarketProvider, KlineData, MarketProviderConfig, Symbol, SymbolInfo, WebSocketSubscription } from '@shared/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MarketDataService } from './MarketDataService';
 
@@ -11,15 +11,20 @@ vi.mock('../cache/indexedDBCache', () => ({
   },
 }));
 
-const mockCandles: CandleData = {
-  candles: [
+const mockKlines: KlineData = {
+  klines: [
     {
-      timestamp: Date.now(),
-      open: 100,
-      high: 110,
-      low: 95,
-      close: 105,
-      volume: 1000,
+      openTime: Date.now(),
+      closeTime: Date.now() + 3600000,
+      open: '100',
+      high: '110',
+      low: '95',
+      close: '105',
+      volume: '1000',
+      quoteVolume: '105000',
+      trades: 100,
+      takerBuyBaseVolume: '500',
+      takerBuyQuoteVolume: '52500',
     },
   ],
   symbol: 'BTC/USD',
@@ -60,7 +65,7 @@ const createMockProvider = (providerName: string, isEnabled = true): BaseMarketP
     config,
     lastRequestTime: 0,
     requestCount: 0,
-    fetchCandles: vi.fn(),
+    fetchKlines: vi.fn(),
     searchSymbols: vi.fn(),
     getSymbolInfo: vi.fn(),
     normalizeSymbol: vi.fn((symbol: string) => symbol),
@@ -119,83 +124,83 @@ describe('MarketDataService', () => {
     });
   });
 
-  describe('fetchCandles', () => {
-    it('should fetch candles from primary provider', async () => {
-      vi.mocked(primaryProvider.fetchCandles).mockResolvedValue(mockCandles);
+  describe('fetchKlines', () => {
+    it('should fetch klines from primary provider', async () => {
+      vi.mocked(primaryProvider.fetchKlines).mockResolvedValue(mockKlines);
 
       const service = new MarketDataService({
         primaryProvider,
       });
 
-      const options: FetchCandlesOptions = {
+      const options: FetchKlinesOptions = {
         symbol: 'BTC/USD',
         interval: '1h',
         limit: 100,
       };
 
-      const result = await service.fetchCandles(options);
+      const result = await service.fetchKlines(options);
 
-      expect(result).toEqual(mockCandles);
-      expect(primaryProvider.fetchCandles).toHaveBeenCalledWith(options);
+      expect(result).toEqual(mockKlines);
+      expect(primaryProvider.fetchKlines).toHaveBeenCalledWith(options);
     });
 
     it('should use fallback provider when primary fails', async () => {
-      vi.mocked(primaryProvider.fetchCandles).mockRejectedValue(
+      vi.mocked(primaryProvider.fetchKlines).mockRejectedValue(
         new Error('Primary provider error')
       );
-      vi.mocked(fallbackProvider1.fetchCandles).mockResolvedValue(mockCandles);
+      vi.mocked(fallbackProvider1.fetchKlines).mockResolvedValue(mockKlines);
 
       const service = new MarketDataService({
         primaryProvider,
         fallbackProviders: [fallbackProvider1],
       });
 
-      const options: FetchCandlesOptions = {
+      const options: FetchKlinesOptions = {
         symbol: 'BTC/USD',
         interval: '1h',
       };
 
-      const result = await service.fetchCandles(options);
+      const result = await service.fetchKlines(options);
 
-      expect(result).toEqual(mockCandles);
-      expect(primaryProvider.fetchCandles).toHaveBeenCalled();
-      expect(fallbackProvider1.fetchCandles).toHaveBeenCalled();
+      expect(result).toEqual(mockKlines);
+      expect(primaryProvider.fetchKlines).toHaveBeenCalled();
+      expect(fallbackProvider1.fetchKlines).toHaveBeenCalled();
     });
 
     it('should try multiple fallback providers in order', async () => {
-      vi.mocked(primaryProvider.fetchCandles).mockRejectedValue(
+      vi.mocked(primaryProvider.fetchKlines).mockRejectedValue(
         new Error('Primary error')
       );
-      vi.mocked(fallbackProvider1.fetchCandles).mockRejectedValue(
+      vi.mocked(fallbackProvider1.fetchKlines).mockRejectedValue(
         new Error('Fallback1 error')
       );
-      vi.mocked(fallbackProvider2.fetchCandles).mockResolvedValue(mockCandles);
+      vi.mocked(fallbackProvider2.fetchKlines).mockResolvedValue(mockKlines);
 
       const service = new MarketDataService({
         primaryProvider,
         fallbackProviders: [fallbackProvider1, fallbackProvider2],
       });
 
-      const options: FetchCandlesOptions = {
+      const options: FetchKlinesOptions = {
         symbol: 'BTC/USD',
         interval: '1h',
       };
 
-      const result = await service.fetchCandles(options);
+      const result = await service.fetchKlines(options);
       await new Promise(resolve => setTimeout(resolve, 50));
 
-      expect(result).toEqual(mockCandles);
-      expect(primaryProvider.fetchCandles).toHaveBeenCalled();
-      expect(fallbackProvider1.fetchCandles).toHaveBeenCalled();
-      expect(fallbackProvider2.fetchCandles).toHaveBeenCalled();
+      expect(result).toEqual(mockKlines);
+      expect(primaryProvider.fetchKlines).toHaveBeenCalled();
+      expect(fallbackProvider1.fetchKlines).toHaveBeenCalled();
+      expect(fallbackProvider2.fetchKlines).toHaveBeenCalled();
     });
 
     it('should throw error when all providers fail', async () => {
-      vi.mocked(primaryProvider.fetchCandles).mockRejectedValue({
+      vi.mocked(primaryProvider.fetchKlines).mockRejectedValue({
         provider: 'primary',
         message: 'Primary error',
       });
-      vi.mocked(fallbackProvider1.fetchCandles).mockRejectedValue({
+      vi.mocked(fallbackProvider1.fetchKlines).mockRejectedValue({
         provider: 'fallback1',
         message: 'Fallback error',
       });
@@ -205,80 +210,80 @@ describe('MarketDataService', () => {
         fallbackProviders: [fallbackProvider1],
       });
 
-      const options: FetchCandlesOptions = {
+      const options: FetchKlinesOptions = {
         symbol: 'BTC/USD',
         interval: '1h',
       };
 
-      await expect(service.fetchCandles(options)).rejects.toThrow(
-        'All providers failed to fetch candles'
+      await expect(service.fetchKlines(options)).rejects.toThrow(
+        'All providers failed to fetch klines'
       );
     });
 
     it('should skip disabled providers', async () => {
       const disabledProvider = createMockProvider('disabled', false);
-      vi.mocked(disabledProvider.fetchCandles).mockResolvedValue(mockCandles);
-      vi.mocked(fallbackProvider1.fetchCandles).mockResolvedValue(mockCandles);
+      vi.mocked(disabledProvider.fetchKlines).mockResolvedValue(mockKlines);
+      vi.mocked(fallbackProvider1.fetchKlines).mockResolvedValue(mockKlines);
 
       const service = new MarketDataService({
         primaryProvider: disabledProvider,
         fallbackProviders: [fallbackProvider1],
       });
 
-      const options: FetchCandlesOptions = {
+      const options: FetchKlinesOptions = {
         symbol: 'BTC/USD',
         interval: '1h',
       };
 
-      const result = await service.fetchCandles(options);
+      const result = await service.fetchKlines(options);
 
-      expect(result).toEqual(mockCandles);
-      expect(disabledProvider.fetchCandles).not.toHaveBeenCalled();
-      expect(fallbackProvider1.fetchCandles).toHaveBeenCalled();
+      expect(result).toEqual(mockKlines);
+      expect(disabledProvider.fetchKlines).not.toHaveBeenCalled();
+      expect(fallbackProvider1.fetchKlines).toHaveBeenCalled();
     });
 
     it('should cache results when enabled', async () => {
-      vi.mocked(primaryProvider.fetchCandles).mockResolvedValue(mockCandles);
+      vi.mocked(primaryProvider.fetchKlines).mockResolvedValue(mockKlines);
 
       const service = new MarketDataService({
         primaryProvider,
         enableCache: true,
       });
 
-      const options: FetchCandlesOptions = {
+      const options: FetchKlinesOptions = {
         symbol: 'BTC/USD',
         interval: '1h',
         limit: 100,
       };
 
-      await service.fetchCandles(options);
-      await service.fetchCandles(options);
+      await service.fetchKlines(options);
+      await service.fetchKlines(options);
 
-      expect(primaryProvider.fetchCandles).toHaveBeenCalledTimes(1);
+      expect(primaryProvider.fetchKlines).toHaveBeenCalledTimes(1);
     });
 
     it('should not cache when disabled', async () => {
-      vi.mocked(primaryProvider.fetchCandles).mockResolvedValue(mockCandles);
+      vi.mocked(primaryProvider.fetchKlines).mockResolvedValue(mockKlines);
 
       const service = new MarketDataService({
         primaryProvider,
         enableCache: false,
       });
 
-      const options: FetchCandlesOptions = {
+      const options: FetchKlinesOptions = {
         symbol: 'BTC/USD',
         interval: '1h',
       };
 
-      await service.fetchCandles(options);
-      await service.fetchCandles(options);
+      await service.fetchKlines(options);
+      await service.fetchKlines(options);
 
-      expect(primaryProvider.fetchCandles).toHaveBeenCalledTimes(2);
+      expect(primaryProvider.fetchKlines).toHaveBeenCalledTimes(2);
     });
 
     it('should invalidate cache after duration', async () => {
       vi.useFakeTimers();
-      vi.mocked(primaryProvider.fetchCandles).mockResolvedValue(mockCandles);
+      vi.mocked(primaryProvider.fetchKlines).mockResolvedValue(mockKlines);
 
       const service = new MarketDataService({
         primaryProvider,
@@ -286,35 +291,35 @@ describe('MarketDataService', () => {
         cacheDuration: 1000,
       });
 
-      const options: FetchCandlesOptions = {
+      const options: FetchKlinesOptions = {
         symbol: 'BTC/USD',
         interval: '1h',
       };
 
-      await service.fetchCandles(options);
+      await service.fetchKlines(options);
       
       vi.advanceTimersByTime(1001);
       
-      await service.fetchCandles(options);
+      await service.fetchKlines(options);
 
-      expect(primaryProvider.fetchCandles).toHaveBeenCalledTimes(2);
+      expect(primaryProvider.fetchKlines).toHaveBeenCalledTimes(2);
 
       vi.useRealTimers();
     });
 
     it('should use different cache keys for different options', async () => {
-      vi.mocked(primaryProvider.fetchCandles).mockResolvedValue(mockCandles);
+      vi.mocked(primaryProvider.fetchKlines).mockResolvedValue(mockKlines);
 
       const service = new MarketDataService({
         primaryProvider,
         enableCache: true,
       });
 
-      await service.fetchCandles({ symbol: 'BTC/USD', interval: '1h' });
-      await service.fetchCandles({ symbol: 'ETH/USD', interval: '1h' });
-      await service.fetchCandles({ symbol: 'BTC/USD', interval: '4h' });
+      await service.fetchKlines({ symbol: 'BTC/USD', interval: '1h' });
+      await service.fetchKlines({ symbol: 'ETH/USD', interval: '1h' });
+      await service.fetchKlines({ symbol: 'BTC/USD', interval: '4h' });
 
-      expect(primaryProvider.fetchCandles).toHaveBeenCalledTimes(3);
+      expect(primaryProvider.fetchKlines).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -428,23 +433,23 @@ describe('MarketDataService', () => {
 
   describe('clearCache', () => {
     it('should clear all cached data', async () => {
-      vi.mocked(primaryProvider.fetchCandles).mockResolvedValue(mockCandles);
+      vi.mocked(primaryProvider.fetchKlines).mockResolvedValue(mockKlines);
 
       const service = new MarketDataService({
         primaryProvider,
         enableCache: true,
       });
 
-      const options: FetchCandlesOptions = {
+      const options: FetchKlinesOptions = {
         symbol: 'BTC/USD',
         interval: '1h',
       };
 
-      await service.fetchCandles(options);
+      await service.fetchKlines(options);
       service.clearCache();
-      await service.fetchCandles(options);
+      await service.fetchKlines(options);
 
-      expect(primaryProvider.fetchCandles).toHaveBeenCalledTimes(2);
+      expect(primaryProvider.fetchKlines).toHaveBeenCalledTimes(2);
     });
 
     it('should handle indexedDB clear errors gracefully', async () => {
@@ -470,36 +475,36 @@ describe('MarketDataService', () => {
 
   describe('setPrimaryProvider', () => {
     it('should change primary provider and clear cache', async () => {
-      vi.mocked(primaryProvider.fetchCandles).mockResolvedValue(mockCandles);
+      vi.mocked(primaryProvider.fetchKlines).mockResolvedValue(mockKlines);
       const newProvider = createMockProvider('new');
-      vi.mocked(newProvider.fetchCandles).mockResolvedValue(mockCandles);
+      vi.mocked(newProvider.fetchKlines).mockResolvedValue(mockKlines);
 
       const service = new MarketDataService({
         primaryProvider,
         enableCache: true,
       });
 
-      const options: FetchCandlesOptions = {
+      const options: FetchKlinesOptions = {
         symbol: 'BTC/USD',
         interval: '1h',
       };
 
-      await service.fetchCandles(options);
+      await service.fetchKlines(options);
       
       service.setPrimaryProvider(newProvider);
       
-      await service.fetchCandles(options);
+      await service.fetchKlines(options);
 
-      expect(newProvider.fetchCandles).toHaveBeenCalledTimes(1);
+      expect(newProvider.fetchKlines).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('addFallbackProvider', () => {
     it('should add new fallback provider', async () => {
-      vi.mocked(primaryProvider.fetchCandles).mockRejectedValue(
+      vi.mocked(primaryProvider.fetchKlines).mockRejectedValue(
         new Error('Primary failed')
       );
-      vi.mocked(fallbackProvider1.fetchCandles).mockResolvedValue(mockCandles);
+      vi.mocked(fallbackProvider1.fetchKlines).mockResolvedValue(mockKlines);
 
       const service = new MarketDataService({
         primaryProvider,
@@ -507,24 +512,24 @@ describe('MarketDataService', () => {
 
       service.addFallbackProvider(fallbackProvider1);
 
-      const options: FetchCandlesOptions = {
+      const options: FetchKlinesOptions = {
         symbol: 'BTC/USD',
         interval: '1h',
       };
 
-      const result = await service.fetchCandles(options);
+      const result = await service.fetchKlines(options);
 
-      expect(result).toEqual(mockCandles);
-      expect(fallbackProvider1.fetchCandles).toHaveBeenCalled();
+      expect(result).toEqual(mockKlines);
+      expect(fallbackProvider1.fetchKlines).toHaveBeenCalled();
     });
   });
 
   describe('removeFallbackProvider', () => {
     it('should remove fallback provider by name', async () => {
-      vi.mocked(primaryProvider.fetchCandles).mockRejectedValue(
+      vi.mocked(primaryProvider.fetchKlines).mockRejectedValue(
         new Error('Primary failed')
       );
-      vi.mocked(fallbackProvider1.fetchCandles).mockResolvedValue(mockCandles);
+      vi.mocked(fallbackProvider1.fetchKlines).mockResolvedValue(mockKlines);
 
       const service = new MarketDataService({
         primaryProvider,
@@ -533,12 +538,12 @@ describe('MarketDataService', () => {
 
       service.removeFallbackProvider('fallback1');
 
-      const options: FetchCandlesOptions = {
+      const options: FetchKlinesOptions = {
         symbol: 'BTC/USD',
         interval: '1h',
       };
 
-      await expect(service.fetchCandles(options)).rejects.toThrow(
+      await expect(service.fetchKlines(options)).rejects.toThrow(
         'All providers failed'
       );
     });

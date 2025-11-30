@@ -1,6 +1,7 @@
 import type { CanvasManager } from '@/renderer/utils/canvas/CanvasManager';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import { getKlineClose } from '@shared/utils';
 import { useCallback } from 'react';
 
 interface UseCurrentPriceLineRendererProps {
@@ -32,14 +33,14 @@ export const useCurrentPriceLineRenderer = ({
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
     const bounds = manager.getBounds();
-    const candles = manager.getCandles();
-    
-    if (!candles.length || !ctx || !dimensions || !bounds) return;
+    const klines = manager.getKlines();
 
-    const lastCandle = candles[candles.length - 1];
-    if (!lastCandle) return;
+    if (!klines.length || !ctx || !dimensions || !bounds) return;
 
-    const currentPrice = lastCandle.close;
+    const lastKline = klines[klines.length - 1];
+    if (!lastKline) return;
+
+    const currentPrice = getKlineClose(lastKline);
     const { width } = dimensions;
     const y = manager.priceToY(currentPrice);
 
@@ -62,7 +63,7 @@ export const useCurrentPriceLineRenderer = ({
     ctx.lineTo(lineEndX, y);
     ctx.stroke();
     ctx.restore();
-  }, [enabled, manager, colors, lineWidth, lineStyle, rightMargin, manager?.getCandles()]);
+  }, [enabled, manager, colors, lineWidth, lineStyle, rightMargin, manager?.getKlines()]);
 
   const renderLabel = useCallback((): void => {
     if (!manager) return;
@@ -70,14 +71,14 @@ export const useCurrentPriceLineRenderer = ({
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
     const bounds = manager.getBounds();
-    const candles = manager.getCandles();
+    const klines = manager.getKlines();
     
-    if (!candles.length || !ctx || !dimensions || !bounds) return;
+    if (!klines.length || !ctx || !dimensions || !bounds) return;
 
-    const lastCandle = candles[candles.length - 1];
-    if (!lastCandle) return;
+    const lastKline = klines[klines.length - 1];
+    if (!lastKline) return;
 
-    const currentPrice = lastCandle.close;
+    const currentPrice = getKlineClose(lastKline);
     const { width } = dimensions;
     const y = manager.priceToY(currentPrice);
 
@@ -85,14 +86,14 @@ export const useCurrentPriceLineRenderer = ({
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    
+
     const priceText = currentPrice.toFixed(2);
     const lineEndX = width - rightMargin;
     
     drawPriceTag(ctx, priceText, y, lineEndX, colors.currentPriceLabel.bg);
 
     ctx.restore();
-  }, [manager, colors, rightMargin, manager?.getCandles()]);
+  }, [manager, colors, rightMargin, manager?.getKlines()]);
 
   const render = useCallback((): void => {
     renderLine();

@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { calculateVolumeMA, getVolumeMAPeriod } from './volume';
-import type { Candle } from '../../../shared/types';
 
-const createCandle = (volume: number, index: number): Candle => ({
-  timestamp: 1000000 + index * 60000,
-  open: 100,
-  high: 105,
-  low: 95,
-  close: 100,
-  volume,
+const createKline = (volume: number, index: number): Kline => ({
+  openTime: 1000000 + index * 60000,
+  closeTime: 1000000 + (index + 1) * 60000,
+  open: '100',
+  high: '105',
+  low: '95',
+  close: '100',
+  volume: volume.toString(),
+  quoteVolume: (volume * 100).toString(),
+  trades: 100,
+  takerBuyBaseVolume: (volume * 0.5).toString(),
+  takerBuyQuoteVolume: (volume * 50).toString(),
 });
 
 describe('Volume Moving Average', () => {
@@ -42,25 +46,25 @@ describe('Volume Moving Average', () => {
   });
 
   describe('calculateVolumeMA', () => {
-    it('should return empty values for empty candles array', () => {
+    it('should return empty values for empty klines array', () => {
       const result = calculateVolumeMA([], 20);
       expect(result.values).toEqual([]);
       expect(result.period).toBe(20);
     });
 
     it('should return empty values for period <= 0', () => {
-      const candles = [createCandle(1000, 0), createCandle(2000, 1)];
-      const result = calculateVolumeMA(candles, 0);
+      const klines = [createKline(1000, 0), createKline(2000, 1)];
+      const result = calculateVolumeMA(klines, 0);
       expect(result.values).toEqual([]);
     });
 
     it('should return null for periods before enough data', () => {
-      const candles = [
-        createCandle(1000, 0),
-        createCandle(2000, 1),
-        createCandle(3000, 2),
+      const klines = [
+        createKline(1000, 0),
+        createKline(2000, 1),
+        createKline(3000, 2),
       ];
-      const result = calculateVolumeMA(candles, 5);
+      const result = calculateVolumeMA(klines, 5);
       
       expect(result.values[0]).toBe(null);
       expect(result.values[1]).toBe(null);
@@ -68,15 +72,15 @@ describe('Volume Moving Average', () => {
     });
 
     it('should calculate correct SMA for volume', () => {
-      const candles = [
-        createCandle(100, 0),
-        createCandle(200, 1),
-        createCandle(300, 2),
-        createCandle(400, 3),
-        createCandle(500, 4),
+      const klines = [
+        createKline(100, 0),
+        createKline(200, 1),
+        createKline(300, 2),
+        createKline(400, 3),
+        createKline(500, 4),
       ];
       
-      const result = calculateVolumeMA(candles, 3);
+      const result = calculateVolumeMA(klines, 3);
       
       expect(result.values[0]).toBe(null);
       expect(result.values[1]).toBe(null);
@@ -86,13 +90,13 @@ describe('Volume Moving Average', () => {
     });
 
     it('should handle period 1 correctly', () => {
-      const candles = [
-        createCandle(1000, 0),
-        createCandle(2000, 1),
-        createCandle(3000, 2),
+      const klines = [
+        createKline(1000, 0),
+        createKline(2000, 1),
+        createKline(3000, 2),
       ];
       
-      const result = calculateVolumeMA(candles, 1);
+      const result = calculateVolumeMA(klines, 1);
       
       expect(result.values[0]).toBe(1000);
       expect(result.values[1]).toBe(2000);
@@ -100,9 +104,9 @@ describe('Volume Moving Average', () => {
     });
 
     it('should calculate MA correctly for period 20', () => {
-      const candles = Array.from({ length: 25 }, (_, i) => createCandle((i + 1) * 100, i));
+      const klines = Array.from({ length: 25 }, (_, i) => createKline((i + 1) * 100, i));
       
-      const result = calculateVolumeMA(candles, 20);
+      const result = calculateVolumeMA(klines, 20);
       
       for (let i = 0; i < 19; i++) {
         expect(result.values[i]).toBe(null);
@@ -113,13 +117,13 @@ describe('Volume Moving Average', () => {
     });
 
     it('should handle large volumes correctly', () => {
-      const candles = [
-        createCandle(1_000_000, 0),
-        createCandle(2_000_000, 1),
-        createCandle(3_000_000, 2),
+      const klines = [
+        createKline(1_000_000, 0),
+        createKline(2_000_000, 1),
+        createKline(3_000_000, 2),
       ];
       
-      const result = calculateVolumeMA(candles, 2);
+      const result = calculateVolumeMA(klines, 2);
       
       expect(result.values[0]).toBe(null);
       expect(result.values[1]).toBe(1_500_000);
@@ -127,13 +131,13 @@ describe('Volume Moving Average', () => {
     });
 
     it('should handle zero volumes correctly', () => {
-      const candles = [
-        createCandle(0, 0),
-        createCandle(0, 1),
-        createCandle(100, 2),
+      const klines = [
+        createKline(0, 0),
+        createKline(0, 1),
+        createKline(100, 2),
       ];
       
-      const result = calculateVolumeMA(candles, 2);
+      const result = calculateVolumeMA(klines, 2);
       
       expect(result.values[0]).toBe(null);
       expect(result.values[1]).toBe(0);
@@ -141,20 +145,20 @@ describe('Volume Moving Average', () => {
     });
 
     it('should maintain correct period in result', () => {
-      const candles = [createCandle(1000, 0)];
-      const result = calculateVolumeMA(candles, 10);
+      const klines = [createKline(1000, 0)];
+      const result = calculateVolumeMA(klines, 10);
       
       expect(result.period).toBe(10);
     });
 
     it('should handle decimal volumes correctly', () => {
-      const candles = [
-        createCandle(100.5, 0),
-        createCandle(200.5, 1),
-        createCandle(300.5, 2),
+      const klines = [
+        createKline(100.5, 0),
+        createKline(200.5, 1),
+        createKline(300.5, 2),
       ];
       
-      const result = calculateVolumeMA(candles, 2);
+      const result = calculateVolumeMA(klines, 2);
       
       expect(result.values[0]).toBe(null);
       expect(result.values[1]).toBe(150.5);
@@ -163,26 +167,26 @@ describe('Volume Moving Average', () => {
   });
 
   describe('calculateVolumeMA edge cases', () => {
-    it('should handle candles with very high volumes', () => {
-      const candles = [
-        createCandle(Number.MAX_SAFE_INTEGER, 0),
-        createCandle(Number.MAX_SAFE_INTEGER, 1),
+    it('should handle klines with very high volumes', () => {
+      const klines = [
+        createKline(Number.MAX_SAFE_INTEGER, 0),
+        createKline(Number.MAX_SAFE_INTEGER, 1),
       ];
       
-      const result = calculateVolumeMA(candles, 2);
+      const result = calculateVolumeMA(klines, 2);
       expect(result.values[1]).toBe(Number.MAX_SAFE_INTEGER);
     });
 
     it('should produce correct rolling window', () => {
-      const candles = [
-        createCandle(10, 0),
-        createCandle(20, 1),
-        createCandle(30, 2),
-        createCandle(40, 3),
-        createCandle(50, 4),
+      const klines = [
+        createKline(10, 0),
+        createKline(20, 1),
+        createKline(30, 2),
+        createKline(40, 3),
+        createKline(50, 4),
       ];
       
-      const result = calculateVolumeMA(candles, 3);
+      const result = calculateVolumeMA(klines, 3);
       
       expect(result.values[2]).toBe(20);
       expect(result.values[3]).toBe(30);

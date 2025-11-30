@@ -52,7 +52,7 @@ Para cada setup, o sistema mostra:
 [SetupDetection 14:32:45] 
 --- Setup 9.1 ---
 [SetupDetection 14:32:45] Can Detect (Cooldown): false
-[SetupDetection 14:32:45] ❌ Cooldown active (last: 245, need: 10 candles)
+[SetupDetection 14:32:45] ❌ Cooldown active (last: 245, need: 10 klines)
 ```
 
 #### Setup Rejeitado por Tendência
@@ -140,8 +140,8 @@ Para cada setup, o sistema mostra:
 2. Ativar debug logs
 3. Observar:
    - Primeira detecção: "✅ DETECTED"
-   - Próximas 5 candles: "❌ Cooldown active"
-   - Após 5+ candles: "Can Detect: true" novamente
+   - Próximas 5 klines: "❌ Cooldown active"
+   - Após 5+ klines: "Can Detect: true" novamente
 
 ## 🛠️ Mensagens de Debug por Setup
 
@@ -187,7 +187,7 @@ npm run dev
 
 # 3. Abrir DevTools (Cmd+Option+I)
 # 4. Ir para aba Console
-# 5. Aguardar novos candles ou mudar símbolo/timeframe
+# 5. Aguardar novos klines ou mudar símbolo/timeframe
 # 6. Observar logs detalhados
 
 # 7. Quando finalizar debug

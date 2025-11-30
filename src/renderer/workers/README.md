@@ -8,7 +8,7 @@ This directory contains all Web Worker implementations for offloading heavy comp
 workers/
 ├── movingAverages.worker.ts      # SMA/EMA calculations
 ├── bounds.worker.ts               # Chart bounds (min/max prices/volume)
-├── candleOptimizer.worker.ts     # Candle data optimization for AI
+├── klineOptimizer.worker.ts     # Kline data optimization for AI
 ├── conversation.worker.ts         # AI conversation summarization
 └── coordinates.worker.ts          # Batch coordinate transformations
 ```
@@ -116,21 +116,21 @@ export const useMyWorker = () => {
 
 ### Moving Averages Worker
 - **Purpose:** Calculate SMA and EMA for multiple periods
-- **Input:** Array of candles + configurations
+- **Input:** Array of klines + configurations
 - **Output:** Array of calculated values for each MA
 - **Performance:** 3.5x faster than main thread
 - **Batch Support:** Yes - processes multiple MAs in one call
 
 ### Bounds Calculator Worker
 - **Purpose:** Find min/max prices and volumes in viewport
-- **Input:** Candles array + viewport range
+- **Input:** Klines array + viewport range
 - **Output:** `{ minPrice, maxPrice, minVolume, maxVolume }`
 - **Performance:** 4x faster than main thread
 - **Use Case:** Called on every zoom/pan operation
 
-### Candle Optimizer Worker
-- **Purpose:** Prepare candle data for AI (reduce token usage)
-- **Input:** Full candle array
+### Kline Optimizer Worker
+- **Purpose:** Prepare kline data for AI (reduce token usage)
+- **Input:** Full kline array
 - **Output:** Detailed recent + simplified historical data
 - **Performance:** 3.4x faster than main thread
 - **Features:** Automatic timeframe detection, smart sampling

@@ -31,7 +31,7 @@ export interface ImportanceFactors {
 export interface PivotPoint {
   index: number;
   price: number;
-  timestamp: number;
+  openTime: number;
   type: 'high' | 'low';
   strength: number;
   volume?: number;
@@ -48,7 +48,7 @@ export interface TrendlineData {
 export interface PatternCluster {
   price: number;
   touches: number;
-  timestamps: number[];
+  openTimes: number[];
   indices: number[];
   avgVolume: number;
 }
@@ -79,7 +79,7 @@ export interface DetectionResult {
     pivotsFound: number;
     patternsDetected: number;
     executionTime: number;
-    candlesAnalyzed: number;
+    klinesAnalyzed: number;
   };
 }
 

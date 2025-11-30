@@ -30,7 +30,7 @@ This document outlines the implementation plan for automatic technical analysis 
 
 **Current System:**
 - 100% dependent on AI models for pattern detection
-- Sends large context (candle data) to AI APIs
+- Sends large context (kline data) to AI APIs
 - Variable accuracy based on AI model interpretation
 - High API costs for pattern recognition
 - No control over detection logic
@@ -38,7 +38,7 @@ This document outlines the implementation plan for automatic technical analysis 
 **Proposed Solution:**
 - Implement algorithmic pattern detection using documented rules
 - AI focuses on interpretation and market context analysis
-- Reduce data sent to AI APIs (send detected patterns instead of raw candles)
+- Reduce data sent to AI APIs (send detected patterns instead of raw klines)
 - Deterministic, testable, reproducible pattern detection
 - Lower costs and improved performance
 
@@ -57,7 +57,7 @@ This document outlines the implementation plan for automatic technical analysis 
 ### Secondary Goals
 
 1. Performance optimization using Web Workers for background detection
-2. Real-time pattern updates as new candles arrive
+2. Real-time pattern updates as new klines arrive
 3. Comprehensive test coverage for all pattern detection algorithms
 4. User-configurable detection sensitivity and thresholds
 5. Pattern detection confidence visualization
@@ -73,9 +73,9 @@ This document outlines the implementation plan for automatic technical analysis 
 - All pattern interfaces with required fields
 - Compatible with existing rendering system
 
-✅ **Candle Data Structure**
+✅ **Kline Data Structure**
 ```typescript
-interface Candle {
+interface Kline {
   timestamp: number;
   open: number;
   high: number;
@@ -159,7 +159,7 @@ src/renderer/utils/patternDetection/
 ```typescript
 // New service
 class PatternDetectionService {
-  detectPatterns(candles: Candle[]): AIPattern[] {
+  detectPatterns(klines: Kline[]): AIPattern[] {
     // Orchestrate all pattern detectors
     // Apply confidence thresholds
     // Return compatible AIPatternobjects
@@ -169,21 +169,21 @@ class PatternDetectionService {
 // Integration with existing system
 class AIService {
   async analyzeChart(params: {
-    candles: Candle[];
+    klines: Kline[];
     useAlgorithmicDetection: boolean;
   }) {
     let patterns: AIPattern[] = [];
     
     if (useAlgorithmicDetection) {
       // Use PatternDetectionService
-      patterns = patternDetectionService.detectPatterns(candles);
+      patterns = patternDetectionService.detectPatterns(klines);
       
       // Send detected patterns to AI for interpretation
       const aiResponse = await this.interpretPatterns(patterns);
       return aiResponse;
     } else {
       // Traditional AI-only approach
-      const aiResponse = await this.analyzeWithAI(candles);
+      const aiResponse = await this.analyzeWithAI(klines);
       return aiResponse;
     }
   }
@@ -206,7 +206,7 @@ class AIService {
 **Features:**
 - Detect swing highs using lookback/lookahead windows
 - Detect swing lows using lookback/lookahead windows
-- Configurable sensitivity (window size: 3-10 candles)
+- Configurable sensitivity (window size: 3-10 klines)
 - Return pivot point with confidence score
 
 **Algorithm:**
@@ -216,15 +216,15 @@ interface PivotPoint {
   price: number;
   timestamp: number;
   type: 'high' | 'low';
-  strength: number; // How many candles confirmed
+  strength: number; // How many klines confirmed
 }
 
 function findPivotHighs(
-  candles: Candle[],
+  klines: Kline[],
   lookback: number = 5,
   lookahead: number = 5
 ): PivotPoint[] {
-  // For each candle, check if high > all highs in window
+  // For each kline, check if high > all highs in window
   // Return pivot points with strength score
 }
 ```
@@ -246,9 +246,9 @@ function findPivotHighs(
 
 **Functions:**
 ```typescript
-function calculateAverageVolume(candles: Candle[], period: number): number
-function detectVolumeSpike(candle: Candle, avgVolume: number): boolean
-function getVolumePattern(candles: Candle[]): 'increasing' | 'decreasing' | 'stable'
+function calculateAverageVolume(klines: Kline[], period: number): number
+function detectVolumeSpike(kline: Kline, avgVolume: number): boolean
+function getVolumePattern(klines: Kline[]): 'increasing' | 'decreasing' | 'stable'
 function validateVolumeConfirmation(pattern: PatternData): boolean
 ```
 
@@ -298,7 +298,7 @@ function calculateConfidence(factors: ConfidenceFactors): number
 
 **Implementation:**
 ```typescript
-function detectSupport(candles: Candle[], pivots: PivotPoint[]): SupportPattern[] {
+function detectSupport(klines: Kline[], pivots: PivotPoint[]): SupportPattern[] {
   // Cluster pivot lows by price
   const clusters = clusterPivotsByPrice(
     pivots.filter(p => p.type === 'low'),
@@ -313,7 +313,7 @@ function detectSupport(candles: Candle[], pivots: PivotPoint[]): SupportPattern[
   // Return SupportPatternobjects
 }
 
-function detectResistance(candles: Candle[], pivots: PivotPoint[]): ResistancePattern[]
+function detectResistance(klines: Kline[], pivots: PivotPoint[]): ResistancePattern[]
 ```
 
 **Tests:**
@@ -335,7 +335,7 @@ function detectResistance(candles: Candle[], pivots: PivotPoint[]): ResistancePa
 **Implementation:**
 ```typescript
 function detectBullishTrendlines(
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): TrendlineBullishPattern[] {
   // Connect ascending pivot lows
@@ -345,7 +345,7 @@ function detectBullishTrendlines(
 }
 
 function detectBearishTrendlines(
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): TrendlineBearishPattern[]
 ```
@@ -372,7 +372,7 @@ function fitTrendline(points: Point[]): {
 **Implementation:**
 ```typescript
 function detectAscendingChannels(
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): ChannelAscendingPattern[] {
   // Find upward sloping trendline (lows)
@@ -405,7 +405,7 @@ function detectHorizontalChannels(...) // Range-bound
 **Implementation:**
 ```typescript
 function detectFibonacciRetracements(
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): FibonacciRetracementPattern[] {
   // Find major swing points (highest high, lowest low)
@@ -439,7 +439,7 @@ function detectFibonacciRetracements(
 **Algorithm:**
 ```typescript
 function detectAscendingTriangles(
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): TriangleAscendingPattern[] {
   // Find horizontal resistance (repeated highs)
@@ -462,7 +462,7 @@ function detectAscendingTriangles(
 **Implementation:**
 ```typescript
 function detectHeadAndShoulders(
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): HeadAndShouldersPattern[] {
   // Find sequence of 3 pivot highs
@@ -521,7 +521,7 @@ function detectHeadAndShoulders(
 
 **Algorithm:**
 ```typescript
-function detectGaps(candles: Candle[]): GapPattern[] {
+function detectGaps(klines: Kline[]): GapPattern[] {
   // Find gaps where open != previous close
   // Classify gap type based on:
   //   - Volume
@@ -554,15 +554,15 @@ class PatternDetectionService {
   ];
   
   detectPatterns(
-    candles: Candle[],
+    klines: Kline[],
     options?: DetectionOptions
   ): AIPattern[] {
     // 1. Find pivot points
-    const pivots = findPivotPoints(candles);
+    const pivots = findPivotPoints(klines);
     
     // 2. Run all pattern detectors in parallel
     const allPatterns = await Promise.all(
-      this.detectors.map(detector => detector(candles, pivots))
+      this.detectors.map(detector => detector(klines, pivots))
     );
     
     // 3. Flatten and filter by confidence threshold
@@ -582,10 +582,10 @@ class PatternDetectionService {
   
   detectPatternsIncremental(
     existingPatterns: AIPattern[],
-    newCandles: Candle[]
+    newKlines: Kline[]
   ): AIPattern[] {
     // Optimized for real-time updates
-    // Only recalculate patterns affected by new candles
+    // Only recalculate patterns affected by new klines
   }
 }
 ```
@@ -597,14 +597,14 @@ class PatternDetectionService {
 **Refactor AI flow:**
 ```typescript
 async analyzeChart(params: AnalysisParams): Promise<AIResponse> {
-  const { symbol, candles, useAlgorithmicDetection } = params;
+  const { symbol, klines, useAlgorithmicDetection } = params;
   
   if (useAlgorithmicDetection) {
     // Phase 1: Detect patterns algorithmically
-    const detectedPatterns = patternDetectionService.detectPatterns(candles);
+    const detectedPatterns = patternDetectionService.detectPatterns(klines);
     
     // Phase 2: Send detected patterns to AI for interpretation
-    const prompt = this.buildInterpretationPrompt(detectedPatterns, candles);
+    const prompt = this.buildInterpretationPrompt(detectedPatterns, klines);
     const aiResponse = await this.callAI(prompt);
     
     // Phase 3: Merge algorithmic patterns with AI insights
@@ -615,19 +615,19 @@ async analyzeChart(params: AnalysisParams): Promise<AIResponse> {
     };
   } else {
     // Traditional full AI analysis
-    return this.analyzeWithAI(candles);
+    return this.analyzeWithAI(klines);
   }
 }
 
 private buildInterpretationPrompt(
   patterns: AIPattern[],
-  recentCandles: Candle[]
+  recentKlines: Kline[]
 ): string {
   return `
     The following patterns have been detected in the chart:
     ${patterns.map(s => `- Pattern #${s.number}: ${s.type}`).join('\n')}
     
-    Recent price action: ${formatRecentCandles(recentCandles)}
+    Recent price action: ${formatRecentKlines(recentKlines)}
     
     Please provide:
     1. Market context and interpretation of detected patterns
@@ -660,7 +660,7 @@ interface AISettings {
   patternDetectionMode: 'ai-only' | 'algorithmic-only' | 'hybrid';
   algorithmicSettings: {
     minConfidence: number; // 0.5 - 0.9
-    pivotSensitivity: number; // 3-10 candles
+    pivotSensitivity: number; // 3-10 klines
     enabledPatterns: AIPatternType[]; // User can disable specific patterns
   };
 }
@@ -732,7 +732,7 @@ export const PATTERN_DETECTION_CONFIG = {
   
   // Clustering
   PRICE_TOLERANCE_PERCENT: 1.5, // For S/R clustering
-  TIME_TOLERANCE_CANDLES: 5,    // For pattern alignment
+  TIME_TOLERANCE_KLINES: 5,    // For pattern alignment
   
   // Support/Resistance
   MIN_TOUCHES_SUPPORT: 2,
@@ -762,8 +762,8 @@ export const PATTERN_DETECTION_CONFIG = {
   HIGH_CONFIDENCE_THRESHOLD: 0.75,
   
   // Time Frames
-  MIN_PATTERN_FORMATION_CANDLES: 10,
-  IDEAL_PATTERN_FORMATION_CANDLES: 30,
+  MIN_PATTERN_FORMATION_KLINES: 10,
+  IDEAL_PATTERN_FORMATION_KLINES: 30,
   
   // Gaps
   GAP_MIN_PERCENT: 0.5, // Minimum gap size
@@ -774,7 +774,7 @@ export const PATTERN_DETECTION_CONFIG = {
   
   // Performance
   MAX_PATTERNS_PER_TYPE: 5, // Limit to top 5 per pattern type
-  DETECTION_DEBOUNCE_MS: 500, // Debounce rapid candle updates
+  DETECTION_DEBOUNCE_MS: 500, // Debounce rapid kline updates
 } as const;
 ```
 
@@ -822,7 +822,7 @@ export interface DetectionResult {
     pivotsFound: number;
     patternsDetected: number;
     executionTime: number;
-    candlesAnalyzed: number;
+    klinesAnalyzed: number;
   };
 }
 
@@ -843,10 +843,10 @@ export interface VolumeAnalysis {
 import { PatternDetectionService } from '../services/PatternDetectionService';
 
 self.onmessage = (event: MessageEvent) => {
-  const { candles, options } = event.data;
+  const { klines, options } = event.data;
   
   const service = new PatternDetectionService();
-  const result = service.detectPatterns(candles, options);
+  const result = service.detectPatterns(klines, options);
   
   self.postMessage(result);
 };
@@ -855,9 +855,9 @@ self.onmessage = (event: MessageEvent) => {
 class PatternDetectionManager {
   private worker: Worker;
   
-  async detectAsync(candles: Candle[]): Promise<AIPattern[]> {
+  async detectAsync(klines: Kline[]): Promise<AIPattern[]> {
     return new Promise((resolve) => {
-      this.worker.postMessage({ candles });
+      this.worker.postMessage({ klines });
       this.worker.onmessage = (event) => resolve(event.data);
     });
   }
@@ -870,16 +870,16 @@ class PatternDetectionManager {
 class PatternCache {
   private cache = new Map<string, {
     patterns: AIPattern[];
-    lastCandle: number;
+    lastKline: number;
     timestamp: number;
   }>();
   
-  get(symbol: string, lastCandleTime: number): AIPattern[] | null {
+  get(symbol: string, lastKlineTime: number): AIPattern[] | null {
     const cached = this.cache.get(symbol);
     if (!cached) return null;
     
-    // Cache valid if last candle matches and < 5 minutes old
-    if (cached.lastCandle === lastCandleTime &&
+    // Cache valid if last kline matches and < 5 minutes old
+    if (cached.lastKline === lastKlineTime &&
         Date.now() - cached.timestamp < 5 * 60 * 1000) {
       return cached.patterns;
     }
@@ -887,10 +887,10 @@ class PatternCache {
     return null;
   }
   
-  set(symbol: string, patterns: AIPattern[], lastCandleTime: number): void {
+  set(symbol: string, patterns: AIPattern[], lastKlineTime: number): void {
     this.cache.set(symbol, {
       patterns,
-      lastCandle: lastCandleTime,
+      lastKline: lastKlineTime,
       timestamp: Date.now()
     });
   }
@@ -927,10 +927,10 @@ src/renderer/utils/patternDetection/__tests__/
 ```typescript
 describe('Support Detection', () => {
   it('should detect horizontal support with 2+ touches', () => {
-    const candles = mockCandlesWithSupport(100, 3); // 3 touches at $100
-    const pivots = findPivotPoints(candles);
+    const klines = mockKlinesWithSupport(100, 3); // 3 touches at $100
+    const pivots = findPivotPoints(klines);
     
-    const supports = detectSupport(candles, pivots);
+    const supports = detectSupport(klines, pivots);
     
     expect(supports).toHaveLength(1);
     expect(supports[0].price).toBeCloseTo(100, 2);
@@ -939,19 +939,19 @@ describe('Support Detection', () => {
   });
   
   it('should require minimum 2 touches', () => {
-    const candles = mockCandlesWithSupport(100, 1);
-    const pivots = findPivotPoints(candles);
+    const klines = mockKlinesWithSupport(100, 1);
+    const pivots = findPivotPoints(klines);
     
-    const supports = detectSupport(candles, pivots);
+    const supports = detectSupport(klines, pivots);
     
     expect(supports).toHaveLength(0);
   });
   
   it('should validate volume increase on support tests', () => {
-    const candles = mockCandlesWithSupportAndVolume(100, 3, [100, 150, 200]);
-    const pivots = findPivotPoints(candles);
+    const klines = mockKlinesWithSupportAndVolume(100, 3, [100, 150, 200]);
+    const pivots = findPivotPoints(klines);
     
-    const supports = detectSupport(candles, pivots);
+    const supports = detectSupport(klines, pivots);
     
     expect(supports[0].volumeConfirmation).toBe(true);
     expect(supports[0].confidence).toBeGreaterThan(0.7);
@@ -980,8 +980,8 @@ describe('Pattern Detection Integration', () => {
   });
   
   it('should maintain compatibility with AIPatterntype', () => {
-    const candles = mockCandles();
-    const patterns = patternDetectionService.detectPatterns(candles);
+    const klines = mockKlines();
+    const patterns = patternDetectionService.detectPatterns(klines);
     
     patterns.forEach(pattern => {
       expect(pattern).toHaveProperty('id');
@@ -1006,7 +1006,7 @@ describe('Pattern Rendering', () => {
       // ...
     };
     
-    const canvas = renderPatternToCanvas(support, mockCandles());
+    const canvas = renderPatternToCanvas(support, mockKlines());
     const imageData = canvas.toDataURL();
     
     expect(imageData).toMatchSnapshot();
@@ -1018,21 +1018,21 @@ describe('Pattern Rendering', () => {
 
 ```typescript
 describe('Performance', () => {
-  it('should detect patterns in <100ms for 100 candles', () => {
-    const candles = mockCandles(100);
+  it('should detect patterns in <100ms for 100 klines', () => {
+    const klines = mockKlines(100);
     
     const start = performance.now();
-    patternDetectionService.detectPatterns(candles);
+    patternDetectionService.detectPatterns(klines);
     const duration = performance.now() - start;
     
     expect(duration).toBeLessThan(100);
   });
   
-  it('should handle 1000 candles in <500ms', () => {
-    const candles = mockCandles(1000);
+  it('should handle 1000 klines in <500ms', () => {
+    const klines = mockKlines(1000);
     
     const start = performance.now();
-    patternDetectionService.detectPatterns(candles);
+    patternDetectionService.detectPatterns(klines);
     const duration = performance.now() - start;
     
     expect(duration).toBeLessThan(500);
@@ -1050,23 +1050,23 @@ describe('Performance', () => {
 ```typescript
 class PatternDetectionService {
   private lastDetection: {
-    candles: Candle[];
+    klines: Kline[];
     patterns: AIPattern[];
   } | null = null;
   
-  detectPatternsIncremental(newCandles: Candle[]): AIPattern[] {
+  detectPatternsIncremental(newKlines: Kline[]): AIPattern[] {
     if (!this.lastDetection) {
-      return this.detectPatterns(newCandles);
+      return this.detectPatterns(newKlines);
     }
     
-    // Only recompute patterns affected by new candles
-    const affectedPatterns = this.getAffectedPatterns(newCandles);
+    // Only recompute patterns affected by new klines
+    const affectedPatterns = this.getAffectedPatterns(newKlines);
     const unchangedPatterns = this.lastDetection.patterns.filter(
       s => !affectedPatterns.includes(s)
     );
     
     const updatedPatterns = this.detectPatterns(
-      [...this.lastDetection.candles, ...newCandles]
+      [...this.lastDetection.klines, ...newKlines]
     );
     
     return [...unchangedPatterns, ...updatedPatterns];
@@ -1079,15 +1079,15 @@ class PatternDetectionService {
 // Don't detect all patterns on initial load
 // Detect high-priority patterns first (S/R, trendlines)
 // Detect complex patterns on demand or in background
-async detectPatternsPrioritized(candles: Candle[]): Promise<AIPattern[]> {
-  const priorityPatterns = await this.detectPriorityPatterns(candles);
+async detectPatternsPrioritized(klines: Kline[]): Promise<AIPattern[]> {
+  const priorityPatterns = await this.detectPriorityPatterns(klines);
   
   // Show priority patterns immediately
   this.emit('patterns-detected', priorityPatterns);
   
   // Detect remaining patterns in background
   setTimeout(() => {
-    const allPatterns = this.detectAllPatterns(candles);
+    const allPatterns = this.detectAllPatterns(klines);
     this.emit('patterns-complete', allPatterns);
   }, 0);
   
@@ -1097,29 +1097,29 @@ async detectPatternsPrioritized(candles: Candle[]): Promise<AIPattern[]> {
 
 #### 3. **Debouncing**
 ```typescript
-// Don't recalculate on every candle update
+// Don't recalculate on every kline update
 const debouncedDetection = debounce(
-  (candles: Candle[]) => patternDetectionService.detectPatterns(candles),
-  500 // Wait 500ms after last candle before detecting
+  (klines: Kline[]) => patternDetectionService.detectPatterns(klines),
+  500 // Wait 500ms after last kline before detecting
 );
 ```
 
 #### 4. **Data Windowing**
 ```typescript
-// Only analyze recent candles for most patterns
-const ANALYSIS_WINDOW = 200; // Last 200 candles
+// Only analyze recent klines for most patterns
+const ANALYSIS_WINDOW = 200; // Last 200 klines
 
-function detectPatterns(allCandles: Candle[]): AIPattern[] {
-  // Use only recent candles for pattern detection
-  const recentCandles = allCandles.slice(-ANALYSIS_WINDOW);
+function detectPatterns(allKlines: Kline[]): AIPattern[] {
+  // Use only recent klines for pattern detection
+  const recentKlines = allKlines.slice(-ANALYSIS_WINDOW);
   
   // Detect patterns
-  const patterns = this.runDetectors(recentCandles);
+  const patterns = this.runDetectors(recentKlines);
   
   // Map pattern timestamps back to full dataset
   return patterns.map(s => ({
     ...s,
-    timestamp: adjustTimestamp(s.timestamp, allCandles, recentCandles)
+    timestamp: adjustTimestamp(s.timestamp, allKlines, recentKlines)
   }));
 }
 ```
@@ -1127,8 +1127,8 @@ function detectPatterns(allCandles: Candle[]): AIPattern[] {
 #### 5. **Parallel Processing**
 ```typescript
 // Run independent pattern detectors in parallel
-async detectPatterns(candles: Candle[]): Promise<AIPattern[]> {
-  const pivots = findPivotPoints(candles);
+async detectPatterns(klines: Kline[]): Promise<AIPattern[]> {
+  const pivots = findPivotPoints(klines);
   
   const [
     supports,
@@ -1139,13 +1139,13 @@ async detectPatterns(candles: Candle[]): Promise<AIPattern[]> {
     fibonacci,
     patterns
   ] = await Promise.all([
-    detectSupport(candles, pivots),
-    detectResistance(candles, pivots),
-    detectBullishTrendlines(candles, pivots),
-    detectBearishTrendlines(candles, pivots),
-    detectChannels(candles, pivots),
-    detectFibonacci(candles, pivots),
-    detectChartPatterns(candles, pivots)
+    detectSupport(klines, pivots),
+    detectResistance(klines, pivots),
+    detectBullishTrendlines(klines, pivots),
+    detectBearishTrendlines(klines, pivots),
+    detectChannels(klines, pivots),
+    detectFibonacci(klines, pivots),
+    detectChartPatterns(klines, pivots)
   ]);
   
   return [
@@ -1179,8 +1179,8 @@ function prunePatterns(patterns: AIPattern[]): AIPattern[] {
 
 ### Target Performance Metrics
 
-- **Pattern Detection:** <100ms for 100 candles, <500ms for 1000 candles
-- **Incremental Update:** <50ms for single new candle
+- **Pattern Detection:** <100ms for 100 klines, <500ms for 1000 klines
+- **Incremental Update:** <50ms for single new kline
 - **Memory Usage:** <50MB per symbol with full pattern detection
 - **UI Responsiveness:** No blocking of main thread (use Web Workers)
 
@@ -1195,11 +1195,11 @@ function prunePatterns(patterns: AIPattern[]): AIPattern[] {
 ```typescript
 async analyzeChartHybrid(params: {
   symbol: string;
-  candles: Candle[];
+  klines: Kline[];
 }): Promise<HybridAnalysisResult> {
   // Step 1: Algorithmic pattern detection
   const detectedPatterns = await patternDetectionService.detectPatterns(
-    params.candles
+    params.klines
   );
   
   // Step 2: Build AI prompt with detected patterns
@@ -1210,7 +1210,7 @@ async analyzeChartHybrid(params: {
     ${this.formatPatternsForAI(detectedPatterns)}
     
     RECENT PRICE ACTION:
-    ${this.formatRecentCandles(params.candles.slice(-20))}
+    ${this.formatRecentKlines(params.klines.slice(-20))}
     
     Please provide:
     1. **Pattern Interpretation**: Analyze the significance of detected patterns
@@ -1246,7 +1246,7 @@ Analyze this chart and identify technical patterns:
 - Fibonacci retracements
 - Gaps
 
-Recent candles: [1000+ candles of OHLCV data]
+Recent klines: [1000+ klines of OHLCV data]
 ```
 **Context size:** ~50-100KB
 
@@ -1267,7 +1267,7 @@ TRENDLINES:
 CHART PATTERNS:
 - Pattern #5: Ascending triangle forming (flat top: $45k, rising lows, confidence: 0.73)
 
-Recent price action: Last 20 candles [minimal data]
+Recent price action: Last 20 klines [minimal data]
 
 Provide market interpretation and trading guidance.
 ```
@@ -1276,12 +1276,12 @@ Provide market interpretation and trading guidance.
 ### Cost Savings Estimate
 
 **Current AI-only approach:**
-- Input tokens: ~50,000 (candle data + prompt)
+- Input tokens: ~50,000 (kline data + prompt)
 - Output tokens: ~1,500 (analysis + patterns JSON)
 - Cost per analysis (GPT-4): ~$0.50
 
 **Hybrid approach:**
-- Input tokens: ~5,000 (patterns + recent candles + prompt)
+- Input tokens: ~5,000 (patterns + recent klines + prompt)
 - Output tokens: ~1,000 (interpretation only)
 - Cost per analysis: ~$0.05
 
@@ -1318,8 +1318,8 @@ const AI_STRATEGIES = {
    - Measured by comparing with expert-labeled dataset
 
 2. **Performance**
-   - Target: <100ms for 100 candles
-   - Target: <500ms for 1000 candles
+   - Target: <100ms for 100 klines
+   - Target: <500ms for 1000 klines
    - Measured with performance benchmarks
 
 3. **Cost Reduction**

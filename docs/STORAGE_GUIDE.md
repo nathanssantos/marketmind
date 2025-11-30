@@ -33,7 +33,7 @@ MarketMind uses different storage solutions for different types of data. This gu
 // useLocalStorage hook
 const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
 const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
-const [chartType, setChartType] = useLocalStorage('marketmind:chartType', 'candlestick');
+const [chartType, setChartType] = useLocalStorage('marketmind:chartType', 'kline');
 const [timeframe, setTimeframe] = useLocalStorage('marketmind:timeframe', '1d');
 const [movingAverages, setMovingAverages] = useLocalStorage('marketmind:movingAverages', [...]);
 ```

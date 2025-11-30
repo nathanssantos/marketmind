@@ -1,13 +1,14 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose } from '@shared/utils';
 
-export const calculateSMA = (candles: Candle[], period: number): (number | null)[] => {
-  if (period <= 0 || candles.length === 0) {
+export const calculateSMA = (klines: Kline[], period: number): (number | null)[] => {
+  if (period <= 0 || klines.length === 0) {
     return [];
   }
 
   const result: (number | null)[] = [];
 
-  for (let i = 0; i < candles.length; i++) {
+  for (let i = 0; i < klines.length; i++) {
     if (i < period - 1) {
       result.push(null);
       continue;
@@ -15,9 +16,9 @@ export const calculateSMA = (candles: Candle[], period: number): (number | null)
 
     let sum = 0;
     for (let j = 0; j < period; j++) {
-      const candle = candles[i - j];
-      if (!candle) continue;
-      sum += candle.close;
+      const kline = klines[i - j];
+      if (!kline) continue;
+      sum += getKlineClose(kline);
     }
 
     result.push(sum / period);
@@ -26,15 +27,15 @@ export const calculateSMA = (candles: Candle[], period: number): (number | null)
   return result;
 };
 
-export const calculateEMA = (candles: Candle[], period: number): (number | null)[] => {
-  if (period <= 0 || candles.length === 0) {
+export const calculateEMA = (klines: Kline[], period: number): (number | null)[] => {
+  if (period <= 0 || klines.length === 0) {
     return [];
   }
 
   const result: (number | null)[] = [];
   const multiplier = 2 / (period + 1);
 
-  for (let i = 0; i < candles.length; i++) {
+  for (let i = 0; i < klines.length; i++) {
     if (i < period - 1) {
       result.push(null);
       continue;
@@ -43,9 +44,9 @@ export const calculateEMA = (candles: Candle[], period: number): (number | null)
     if (i === period - 1) {
       let sum = 0;
       for (let j = 0; j < period; j++) {
-        const candle = candles[i - j];
-        if (!candle) continue;
-        sum += candle.close;
+        const kline = klines[i - j];
+        if (!kline) continue;
+        sum += getKlineClose(kline);
       }
       result.push(sum / period);
       continue;
@@ -57,13 +58,13 @@ export const calculateEMA = (candles: Candle[], period: number): (number | null)
       continue;
     }
 
-    const currentCandle = candles[i];
-    if (!currentCandle) {
+    const currentKline = klines[i];
+    if (!currentKline) {
       result.push(null);
       continue;
     }
 
-    const ema = (currentCandle.close - previousEMA) * multiplier + previousEMA;
+    const ema = (getKlineClose(currentKline) - previousEMA) * multiplier + previousEMA;
     result.push(ema);
   }
 
@@ -92,20 +93,20 @@ export interface MAResult {
 }
 
 export const calculateMovingAverage = (
-  candles: Candle[],
+  klines: Kline[],
   period: number,
   type: 'SMA' | 'EMA',
 ): (number | null)[] => {
-  return type === 'SMA' ? calculateSMA(candles, period) : calculateEMA(candles, period);
+  return type === 'SMA' ? calculateSMA(klines, period) : calculateEMA(klines, period);
 };
 
-export const calculateMovingAverages = (candles: Candle[], configs: MAConfig[]): MAResult[] => {
+export const calculateMovingAverages = (klines: Kline[], configs: MAConfig[]): MAResult[] => {
   return configs
     .filter((config) => config.enabled)
     .map((config) => ({
       period: config.period,
       type: config.type,
       color: config.color,
-      values: config.type === 'SMA' ? calculateSMA(candles, config.period) : calculateEMA(candles, config.period),
+      values: config.type === 'SMA' ? calculateSMA(klines, config.period) : calculateEMA(klines, config.period),
     }));
 };

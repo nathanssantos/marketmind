@@ -2,6 +2,15 @@ import { useTradingStore } from '@renderer/store/tradingStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants';
 import type { Order } from '@shared/types/trading';
+import {
+    getKlineClose,
+    getOrderId,
+    getOrderPrice,
+    getOrderQuantity,
+    isOrderActive,
+    isOrderLong,
+    isOrderPending,
+} from '@shared/utils';
 import { useMemo, useRef } from 'react';
 
 interface OrderCloseButton {
@@ -182,7 +191,7 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
   
   const activeOrders = useMemo(
     () => isSimulatorActive && activeWalletId
-      ? orders.filter(o => o.walletId === activeWalletId && (o.status === 'active' || o.status === 'pending'))
+      ? orders.filter(o => o.walletId === activeWalletId && (isOrderActive(o) || isOrderPending(o)))
       : [],
     [orders, activeWalletId, isSimulatorActive]
   );
@@ -197,12 +206,14 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
 
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
-    const candles = manager.getCandles();
-    if (!ctx || !dimensions || !candles.length) return;
+    const klines = manager.getKlines();
+    if (!ctx || !dimensions || !klines.length) return;
 
     const { width, chartWidth, chartHeight } = dimensions;
-    const currentPrice = candles[candles.length - 1]?.close;
-    if (!currentPrice) return;
+    const lastKline = klines[klines.length - 1];
+    if (!lastKline) return;
+
+    const currentPrice = getKlineClose(lastKline);
 
     closeButtonsRef.current = [];
     orderHitboxesRef.current = [];
@@ -211,14 +222,14 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
 
     const priceTags: Array<{ priceText: string; y: number; fillColor: string }> = [];
 
-    const pendingOrders = activeOrders.filter((order) => order.status === 'pending');
-    const activeOrdersList = activeOrders.filter((order) => order.status === 'active');
+    const pendingOrders = activeOrders.filter((order) => isOrderPending(order));
+    const activeOrdersList = activeOrders.filter((order) => isOrderActive(order));
 
     const pendingOrdersToRender = hoveredOrderId 
-      ? pendingOrders.filter(o => o.id !== hoveredOrderId)
+      ? pendingOrders.filter(o => getOrderId(o) !== hoveredOrderId)
       : pendingOrders;
     const hoveredPendingOrder = hoveredOrderId 
-      ? pendingOrders.find(o => o.id === hoveredOrderId)
+      ? pendingOrders.find(o => getOrderId(o) === hoveredOrderId)
       : null;
 
     ctx.save();
@@ -238,7 +249,7 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
     activeOrdersList.forEach((order) => {
       const key = order.symbol;
       const existing = groupedPositions.get(key);
-      const orderQuantity = order.type === 'long' ? order.quantity : -order.quantity;
+      const orderQuantity = isOrderLong(order) ? getOrderQuantity(order) : -getOrderQuantity(order);
 
       if (existing) {
         const newNetQty = existing.netQuantity + orderQuantity;
@@ -247,29 +258,34 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
         let avgPrice = existing.avgPrice;
         
         if (sameDirection) {
-          const totalInvestment = Math.abs(existing.avgPrice * existing.netQuantity) + Math.abs(order.entryPrice * orderQuantity);
+          const entryPrice = getOrderPrice(order);
+          const totalInvestment = Math.abs(existing.avgPrice * existing.netQuantity) + Math.abs(entryPrice * orderQuantity);
           avgPrice = totalInvestment / Math.abs(newNetQty || 1);
         }
         
-        const orderPnL = order.type === 'long'
-          ? (currentPrice - order.entryPrice) * order.quantity
-          : (order.entryPrice - currentPrice) * order.quantity;
+        const entryPrice = getOrderPrice(order);
+        const quantity = getOrderQuantity(order);
+        const orderPnL = isOrderLong(order)
+          ? (currentPrice - entryPrice) * quantity
+          : (entryPrice - currentPrice) * quantity;
         
         existing.avgPrice = avgPrice;
         existing.netQuantity = newNetQty;
         existing.totalPnL += orderPnL;
-        existing.orderIds.push(order.id);
+        existing.orderIds.push(getOrderId(order));
         existing.orders.push(order);
       } else {
-        const orderPnL = order.type === 'long'
-          ? (currentPrice - order.entryPrice) * order.quantity
-          : (order.entryPrice - currentPrice) * order.quantity;
+        const entryPrice = getOrderPrice(order);
+        const quantity = getOrderQuantity(order);
+        const orderPnL = isOrderLong(order)
+          ? (currentPrice - entryPrice) * quantity
+          : (entryPrice - currentPrice) * quantity;
 
         groupedPositions.set(key, {
           symbol: order.symbol,
           netQuantity: orderQuantity,
-          avgPrice: order.entryPrice,
-          orderIds: [order.id],
+          avgPrice: entryPrice,
+          orderIds: [getOrderId(order)],
           orders: [order],
           totalPnL: orderPnL,
         });
@@ -277,11 +293,11 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
     });
 
     pendingOrdersToRender.forEach((order) => {
-      const y = manager.priceToY(order.entryPrice);
-      const isLong = order.type === 'long';
+      const y = manager.priceToY(getOrderPrice(order));
+      const isLong = isOrderLong(order);
       
       orderHitboxesRef.current.push({
-        orderId: order.id,
+        orderId: getOrderId(order),
         y,
         tolerance: 8,
         order,
@@ -295,7 +311,7 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
       const lineColor = isLong ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)';
       const fillColor = isLong ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)';
       
-      const priceText = order.entryPrice.toFixed(2);
+      const priceText = getOrderPrice(order).toFixed(2);
       priceTags.push({ priceText, y, fillColor });
       
       const tagStartX = chartWidth;
@@ -306,14 +322,14 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
       ctx.lineTo(tagStartX, y);
       ctx.stroke();
       
-      const typeLabel = order.type === 'long' ? 'L' : 'S';
-      const infoText = `${typeLabel} (${order.quantity})`;
+      const typeLabel = isLong ? 'L' : 'S';
+      const infoText = `${typeLabel} (${getOrderQuantity(order)})`;
       
       const closeButtonRef = { x: 0, y: 0, size: 14 };
       drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef);
       
       closeButtonsRef.current.push({
-        orderId: order.id,
+        orderId: getOrderId(order),
         x: closeButtonRef.x,
         y: closeButtonRef.y,
         width: closeButtonRef.size,
@@ -385,7 +401,7 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
           quantity: absQuantity,
           type: isLong ? 'long' : 'short',
           metadata: { isPosition: true, positionData },
-        } as Order,
+        } as unknown as Order,
       });
       
       ctx.save();
@@ -442,8 +458,8 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
 
     if (hoveredPendingOrder) {
       const order = hoveredPendingOrder;
-      const y = manager.priceToY(order.entryPrice);
-      const isLong = order.type === 'long';
+      const y = manager.priceToY(getOrderPrice(order));
+      const isLong = isOrderLong(order);
       
       ctx.save();
       ctx.font = '11px monospace';
@@ -453,7 +469,7 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
       const lineColor = isLong ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)';
       const fillColor = isLong ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)';
       
-      const priceText = order.entryPrice.toFixed(2);
+      const priceText = getOrderPrice(order).toFixed(2);
       const tagStartX = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
       drawPriceTag(ctx, priceText, y, tagStartX, fillColor, 'left', tagStartX);
       
@@ -464,14 +480,14 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
       ctx.lineTo(tagStartX, y);
       ctx.stroke();
       
-      const typeLabel = order.type === 'long' ? 'L' : 'S';
-      const infoText = `${typeLabel} (${order.quantity})`;
+      const typeLabel = isLong ? 'L' : 'S';
+      const infoText = `${typeLabel} (${getOrderQuantity(order)})`;
       
       const closeButtonRef = { x: 0, y: 0, size: 14 };
       drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef);
       
       closeButtonsRef.current.push({
-        orderId: order.id,
+        orderId: getOrderId(order),
         x: closeButtonRef.x,
         y: closeButtonRef.y,
         width: closeButtonRef.size,
@@ -584,7 +600,7 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
         
         position.orders.forEach((order) => {
           sltpHitboxesRef.current.push({
-            orderId: order.id,
+            orderId: getOrderId(order),
             y: stopY,
             tolerance: 8,
             type: 'stopLoss',
@@ -661,7 +677,7 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
         
         position.orders.forEach((order) => {
           sltpHitboxesRef.current.push({
-            orderId: order.id,
+            orderId: getOrderId(order),
             y: tpY,
             tolerance: 8,
             type: 'takeProfit',
@@ -763,13 +779,13 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
     const activeOrders = orders.filter(
       (order) => 
         order.walletId === activeWalletId && 
-        (order.status === 'active' || order.status === 'pending')
+        (isOrderActive(order) || isOrderPending(order))
     );
 
     const tolerance = 8;
 
     for (const order of activeOrders) {
-      const orderY = manager.priceToY(order.entryPrice);
+      const orderY = manager.priceToY(getOrderPrice(order));
       if (Math.abs(y - orderY) <= tolerance) {
         return order;
       }

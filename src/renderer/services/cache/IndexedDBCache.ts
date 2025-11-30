@@ -2,6 +2,7 @@ export interface CacheEntry<T> {
   key: string;
   value: T;
   timestamp: number;
+  openTime?: number;
   expiresAt: number;
 }
 
@@ -75,6 +76,7 @@ export class IndexedDBCache {
       key,
       value,
       timestamp: Date.now(),
+      openTime: Date.now(),
       expiresAt: Date.now() + ttlMs,
     };
 

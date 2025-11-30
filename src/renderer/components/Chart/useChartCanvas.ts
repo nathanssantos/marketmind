@@ -1,15 +1,15 @@
 import { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants';
-import type { Candle, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@shared/types';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const VIEWPORT_UPDATE_THROTTLE_MS = 16;
-const DEFAULT_VISIBLE_CANDLES = 100;
+const DEFAULT_VISIBLE_KLINES = 100;
 const SIGNIFICANT_CHANGE_THRESHOLD = 0.1;
 
 export interface UseChartCanvasProps {
-  candles: Candle[];
+  klines: Kline[];
   initialViewport?: Viewport;
   onViewportChange?: (viewport: Viewport) => void;
 }
@@ -27,12 +27,12 @@ export interface UseChartCanvasReturn {
 const DEFAULT_VIEWPORT: Viewport = {
   start: 0,
   end: 100,
-  candleWidth: CHART_CONFIG.DEFAULT_CANDLE_WIDTH,
-  candleSpacing: CHART_CONFIG.CANDLE_SPACING,
+  klineWidth: CHART_CONFIG.DEFAULT_KLINE_WIDTH,
+  klineSpacing: CHART_CONFIG.KLINE_SPACING,
 };
 
 export const useChartCanvas = ({
-  candles,
+  klines,
   initialViewport = DEFAULT_VIEWPORT,
   onViewportChange,
 }: UseChartCanvasProps): UseChartCanvasReturn => {
@@ -45,13 +45,13 @@ export const useChartCanvas = ({
       return initialViewport;
     }
     
-    const candleCount = candles.length;
-    const visibleCount = Math.min(DEFAULT_VISIBLE_CANDLES, candleCount);
+    const klineCount = klines.length;
+    const visibleCount = Math.min(DEFAULT_VISIBLE_KLINES, klineCount);
     
     return {
       ...DEFAULT_VIEWPORT,
-      start: Math.max(0, candleCount - visibleCount),
-      end: candleCount,
+      start: Math.max(0, klineCount - visibleCount),
+      end: klineCount,
     };
   });
   
@@ -59,7 +59,7 @@ export const useChartCanvas = ({
   const [isPanningOnScale, setIsPanningOnScale] = useState(false);
   const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
   const onViewportChangeRef = useRef(onViewportChange);
-  const candlesLengthRef = useRef(candles.length);
+  const klinesLengthRef = useRef(klines.length);
   const lastViewportUpdateRef = useRef<number>(0);
 
   useEffect(() => {
@@ -67,8 +67,8 @@ export const useChartCanvas = ({
   }, [onViewportChange]);
 
   useEffect(() => {
-    candlesLengthRef.current = candles.length;
-  }, [candles.length]);
+    klinesLengthRef.current = klines.length;
+  }, [klines.length]);
 
   useEffect(() => {
     if (!canvasRef.current || managerRef.current) return;
@@ -78,7 +78,7 @@ export const useChartCanvas = ({
       viewport,
       CHART_CONFIG.CANVAS_PADDING,
     );
-    newManager.setCandles(candles);
+    newManager.setKlines(klines);
     managerRef.current = newManager;
     setManager(newManager);
 
@@ -109,28 +109,28 @@ export const useChartCanvas = ({
     };
   }, []);
 
-  const prevCandleCountRef = useRef<number>(candles.length);
+  const prevKlineCountRef = useRef<number>(klines.length);
   const wasAtEndRef = useRef<boolean>(true);
-  const prevFirstCandleTimestampRef = useRef<number>(candles[0]?.timestamp ?? 0);
+  const prevFirstKlineTimestampRef = useRef<number>(klines[0]?.openTime ?? 0);
 
   useEffect(() => {
     if (managerRef.current) {
-      const prevCount = prevCandleCountRef.current;
-      const currentCount = candles.length;
-      const firstCandleTimestamp = candles[0]?.timestamp ?? 0;
-      const prevFirstCandleTimestamp = prevFirstCandleTimestampRef.current;
+      const prevCount = prevKlineCountRef.current;
+      const currentCount = klines.length;
+      const firstKlineTimestamp = klines[0]?.openTime ?? 0;
+      const prevFirstKlineTimestamp = prevFirstKlineTimestampRef.current;
       
       const currentViewport = managerRef.current.getViewport();
       const wasAtEnd = wasAtEndRef.current || Math.abs(currentViewport.end - prevCount) < 1;
       
-      managerRef.current.setCandles(candles);
+      managerRef.current.setKlines(klines);
       
       const countDiffPercentage = Math.abs(currentCount - prevCount) / Math.max(prevCount, 1);
       const isSignificantChange = countDiffPercentage > SIGNIFICANT_CHANGE_THRESHOLD;
-      const isCompleteDataChange = firstCandleTimestamp !== prevFirstCandleTimestamp && currentCount > 0;
+      const isCompleteDataChange = firstKlineTimestamp !== prevFirstKlineTimestamp && currentCount > 0;
       
       if (initialViewport === DEFAULT_VIEWPORT && (isSignificantChange || isCompleteDataChange)) {
-        const visibleCount = Math.min(DEFAULT_VISIBLE_CANDLES, currentCount);
+        const visibleCount = Math.min(DEFAULT_VISIBLE_KLINES, currentCount);
         
         const newViewport = {
           ...DEFAULT_VIEWPORT,
@@ -145,10 +145,10 @@ export const useChartCanvas = ({
         managerRef.current.resetVerticalZoom();
         wasAtEndRef.current = true;
       } else if (wasAtEnd && currentCount > prevCount && !isCompleteDataChange) {
-        const candlesAdded = currentCount - prevCount;
+        const klinesAdded = currentCount - prevCount;
         const newViewport = {
           ...currentViewport,
-          start: currentViewport.start + candlesAdded,
+          start: currentViewport.start + klinesAdded,
           end: currentCount,
         };
         
@@ -160,10 +160,10 @@ export const useChartCanvas = ({
         wasAtEndRef.current = Math.abs(currentViewport.end - currentCount) < 1;
       }
       
-      prevCandleCountRef.current = currentCount;
-      prevFirstCandleTimestampRef.current = firstCandleTimestamp;
+      prevKlineCountRef.current = currentCount;
+      prevFirstKlineTimestampRef.current = firstKlineTimestamp;
     }
-  }, [candles]);
+  }, [klines]);
 
   useEffect(() => {
     if (managerRef.current) {
@@ -202,13 +202,13 @@ export const useChartCanvas = ({
         const visibleRange = newViewport.end - newViewport.start;
         newViewport = {
           ...newViewport,
-          start: candles.length - visibleRange,
-          end: candles.length,
+          start: klines.length - visibleRange,
+          end: klines.length,
         };
         managerRef.current.setViewport(newViewport);
         wasAtEndRef.current = true;
       } else {
-        wasAtEndRef.current = Math.abs(newViewport.end - candles.length) < 1;
+        wasAtEndRef.current = Math.abs(newViewport.end - klines.length) < 1;
       }
       
       updateViewport(newViewport);
@@ -219,7 +219,7 @@ export const useChartCanvas = ({
     return () => {
       canvas.removeEventListener('wheel', handleWheel);
     };
-  }, [updateViewport, candles.length]);
+  }, [updateViewport, klines.length]);
 
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>): void => {
     const canvas = canvasRef.current;
@@ -259,7 +259,7 @@ export const useChartCanvas = ({
           if (timeSinceLastUpdate > VIEWPORT_UPDATE_THROTTLE_MS) {
             const newViewport = managerRef.current.getViewport();
             updateViewport(newViewport);
-            wasAtEndRef.current = Math.abs(newViewport.end - candlesLengthRef.current) < 1;
+            wasAtEndRef.current = Math.abs(newViewport.end - klinesLengthRef.current) < 1;
             lastViewportUpdateRef.current = now;
           }
         }

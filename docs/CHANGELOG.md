@@ -8,10 +8,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Algorithmic Auto-Trading Settings Tab** 🤖
+  - New settings section for algorithmic auto-trading configuration
+  - Toggle switch to enable/disable algorithmic auto-trading
+  - Complete translations in 4 languages (EN, PT, ES, FR)
+  - Integration with setupStore for state management
+  - Unit tests with 100% coverage
+
+### Changed
+- **Type System Refactored to Exchange API Format** 🔄
+  - **BREAKING**: Complete type system overhaul to align with exchange API standards
+  - **Order Interface**: 
+    - `id` → `clientOrderId`
+    - `type` ('long'/'short') → `side` ('BUY'/'SELL')
+    - `status` ('pending'/'active') → OrderStatus enum ('NEW'/'PARTIALLY_FILLED'/'FILLED')
+    - `quantity` (number) → `origQty` (string)
+    - `entryPrice` (number) → `price` (string)
+    - `createdAt` (Date) → `time` (number timestamp)
+  - **New Type Definitions**:
+    - `OrderStatus`: 'NEW' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELED' | 'PENDING_CANCEL' | 'REJECTED' | 'EXPIRED' | 'EXPIRED_IN_MATCH'
+    - `OrderSide`: 'BUY' | 'SELL'
+    - `OrderType`: 'LIMIT' | 'MARKET' | 'STOP_LOSS' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT' | 'TAKE_PROFIT_LIMIT' | 'LIMIT_MAKER'
+    - `TimeInForce`: 'GTC' | 'IOC' | 'FOK'
+  - **Kline Interface**: Added alongside Kline for API compatibility with string prices
+  - **Symbol Interface**: Updated to full exchange info structure with filters, permissions, precision
+  - **Price Utilities**: Added `parsePrice`, `formatPrice`, `parseQty`, `formatQty`, `calculatePnL`, `calculatePnLPercent`
+
+### Removed
+- **Deprecated Types Cleaned Up** 🧹
+  - Removed all `@deprecated` tags and legacy type definitions
+  - Removed `LegacyOrderType`, `LegacyOrderStatus`, `LegacyOrderSubType`
+  - Removed legacy type mapper functions (`orderSideToLegacy`, etc.)
+  - Removed deprecated `SymbolInfo` interface comments
+  - Cleaned all type files of migration artifacts
+
+### Documentation
+- **TYPE_MIGRATION_CONTINUATION.md** 📚
+  - Comprehensive guide for completing type system migration
+  - Detailed breaking changes documentation
+  - Component-by-component migration strategy
+  - Common error patterns and fixes
+  - priceUtils usage examples
+  - Complete migration checklist
+  - Success criteria and validation steps
+
+- **Larry Williams EMA9 Trading Setups** 📊
+  - **Setup 9.2 (EMA9 Pullback)**: Trend continuation after single kline pullback below/above previous low/high
+    - Entry on high/low breakout after EMA9 pullback
+    - Stop loss at swing low/high or ATR-based
+    - Target at ATR * 4 from entry
+    - 14 comprehensive tests covering all scenarios
+  - **Setup 9.3 (EMA9 Double Pullback)**: Conservative entry requiring 2 consecutive pullback closes
+    - Entry after 2 closes below/above reference kline
+    - Stronger confirmation than 9.2
+    - Stop at signal kline low/high
+    - 14 comprehensive tests with edge cases
+  - **Setup 9.4 (EMA9 Continuation)**: Late-trend entry after temporary EMA9 failure
+    - Detects 1-kline EMA9 reversal followed by resumption
+    - Validates previous extreme (low/high) not lost
+    - Entry on continuation kline breakout
+    - 16 comprehensive tests including pattern validation
+  - All setups integrated to SetupDetectionService with cooldown and trend filter
+  - Complete translations in 4 languages (EN/PT/ES/FR)
+  - UI updated to show 13 total setups (10 original + 3 new)
+  - 44 unit tests total (100% pass rate)
+
 - **Volume Moving Average** 📊
   - Timeframe-adaptive SMA calculation for volume
   - `getVolumeMAPeriod(timeframe)`: Returns optimal periods (1m-12h=20, 1d=20, 3d=14, 1w/1M=10)
-  - `calculateVolumeMA(candles, timeframe)`: Calculates volume moving average
+  - `calculateVolumeMA(klines, timeframe)`: Calculates volume moving average
   - Visual rendering with solid light-colored line (colors.volume, 50% opacity, 2px width)
   - Integrated into ChartCanvas with `showVolumeMA` prop
   - 17 comprehensive tests covering all timeframes and edge cases
@@ -61,12 +126,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Volume MA calculation: Removed redundant internal `calculateSMA`, now uses centralized implementation
 - TypeScript errors in setup detectors after EMA consolidation (proper null handling for `(number | null)[]`)
 - Missing `calculateMovingAverages` export in `movingAverages.ts`
-- **Setup Detector Minimum Candles** 🔧:
-  - **Setup91Detector**: Now validates `max(emaPeriod=9, atrPeriod=12) + VOLUME_LOOKBACK=20` = **32 candles** (previously only validated 29)
-  - **BullTrapDetector**: Now validates `max(lookback+ema=40, SUPPORT_LOOKBACK+VOLUME=70)` = **70 candles** (previously only validated 40)
-  - **BearTrapDetector**: Now validates `max(lookback+ema=40, RESISTANCE_LOOKBACK+VOLUME=70)` = **70 candles** (previously only validated 40)
-  - **BreakoutRetestDetector**: Now validates `max(lookback+ema=50, PIVOT_LOOKBACK+VOLUME=30)` = **50 candles** (already correct)
-  - **Pattern123Detector**: Increased from `pivotLookback*3=15` to `pivotLookback*6=30` candles for more reliable pattern detection
+- **Setup Detector Minimum Klines** 🔧:
+  - **Setup91Detector**: Now validates `max(emaPeriod=9, atrPeriod=12) + VOLUME_LOOKBACK=20` = **32 klines** (previously only validated 29)
+  - **BullTrapDetector**: Now validates `max(lookback+ema=40, SUPPORT_LOOKBACK+VOLUME=70)` = **70 klines** (previously only validated 40)
+  - **BearTrapDetector**: Now validates `max(lookback+ema=40, RESISTANCE_LOOKBACK+VOLUME=70)` = **70 klines** (previously only validated 40)
+  - **BreakoutRetestDetector**: Now validates `max(lookback+ema=50, PIVOT_LOOKBACK+VOLUME=30)` = **50 klines** (already correct)
+  - **Pattern123Detector**: Increased from `pivotLookback*3=15` to `pivotLookback*6=30` klines for more reliable pattern detection
 - **Stop Loss Safety**: All detectors now consider structural support/resistance instead of just ATR or fixed buffers
 
 ### Technical Debt Eliminated
@@ -120,7 +185,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Setup Detection Cooldown System** ⏱️
-  - Prevents duplicate setup detections within configurable period (default: 10 candles)
+  - Prevents duplicate setup detections within configurable period (default: 10 klines)
   - `lastDetectionIndex` Map tracks last detection index per setup type
   - `canDetectSetup()` method validates cooldown before detection
   - `markSetupDetected()` records detection index
@@ -193,7 +258,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - SetupDetectionService: Orchestrates multiple detectors, sorts by confidence
   - setupStore (Zustand): Persistent state management for setup configuration and execution tracking
   - SetupRenderer: Canvas-based visualization of entry/SL/TP levels on chart
-  - Automatic setup detection when candles update (50+ candles required)
+  - Automatic setup detection when klines update (50+ klines required)
   - Performance tracking per setup type (win rate, avg R:R, expectancy, consecutive stats)
   - Execution history with won/lost/cancelled status tracking
   - Integration with ChartCanvas for real-time setup rendering
@@ -224,7 +289,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **ChartCanvas Enhancement**
   - Added SetupDetectionService initialization
-  - Auto-detection useEffect triggers on candle updates
+  - Auto-detection useEffect triggers on kline updates
   - SetupRenderer overlay for visual feedback
   - Hover detection for setup tooltips
 - **Toolbar Enhancement**
@@ -263,7 +328,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Pattern Extension Rendering** 🔧
   - Fixed pattern extensions (support, resistance, trendlines, channels) not extending to proper cutoff position
-  - Extensions now correctly extend to last candle + 36px (half of rightMargin) as per original behavior
+  - Extensions now correctly extend to last kline + 36px (half of rightMargin) as per original behavior
   - Added state migration from version 1 to 2 for `patternDetectionConfigStore` to handle legacy states
   - Added fallback defaults (true) for `extendSupport`, `extendResistance`, `extendTrendlines`, `extendChannels` using nullish coalescing operator
   - Ensures pattern extensions work correctly even with persisted states from older versions
@@ -319,7 +384,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     1. Algorithm detects patterns locally (no API calls)
     2. Detected patterns sent to AI for interpretation
     3. AI focuses on market context and trading implications
-  - 80-90% reduction in token usage (send pattern summaries instead of raw candle data)
+  - 80-90% reduction in token usage (send pattern summaries instead of raw kline data)
   - New `buildInterpretationPrompt()` method formats detected patterns for AI
   - Hybrid response includes both algorithmic patterns and AI analysis
   - Cost-effective pattern analysis without compromising insight quality
@@ -339,7 +404,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Volume analysis array safety with proper null checks
 - Pivot point detection TypeScript strict mode compliance
-- Trendline detection removed unused candles parameter
+- Trendline detection removed unused klines parameter
 
 ### Files Created
 - `src/renderer/utils/patternDetection/types.ts` - Type definitions
@@ -359,7 +424,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `src/shared/types/ai.ts` - Extended AIAnalysisResponse with patterns field
 
 ### Performance
-- Local pattern detection: <100ms for 100 candles
+- Local pattern detection: <100ms for 100 klines
 - No network latency (offline capable)
 - Token usage reduction: 80-90% in hybrid mode
 - Deterministic results (same input = same output)
@@ -378,7 +443,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - %K line calculated over 14 periods
   - %D line as 3-period SMA of %K
   - Overbought zone at 80, oversold zone at 20
-  - Dedicated 80px panel below candlesticks
+  - Dedicated 80px panel below klines
   - Visual design:
     - %K line: Orange, 2.5px width (drawn first)
     - %D line: Blue, 1.5px width (drawn on top)
@@ -403,7 +468,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - RSI: LuScan icon
   - State persistence via localStorage
   - Dynamic UI positioning:
-    - CandleTimer adjusts bottom position for both panels
+    - KlineTimer adjusts bottom position for both panels
     - ChartNavigation adjusts for combined panel heights
   - CanvasManager panel height management
 
@@ -501,7 +566,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated `AIData` interface in `preload.ts` with trading fields
 
 - **AI System** 🧠
-  - Integrated `candleOptimizer` for efficient AI analysis
+  - Integrated `klineOptimizer` for efficient AI analysis
   - Trading-specific prompts with 34 technical pattern knowledge
   - Support for all timeframes (1m, 5m, 15m, 30m, 1h, 4h, 1d)
   - Interval-based analysis (configurable 1m to 1h)
@@ -538,7 +603,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/tests/utils/testHelpers.tsx` - Shared test utilities
 
 - **Test Files Recovered** 🧪
-  - Chart tests (6 files): ChartCanvas.browser, useCandlestickRenderer, useGridRenderer, useLineChartRenderer, useLineRenderer, useVolumeRenderer
+  - Chart tests (6 files): ChartCanvas.browser, useKlineRenderer, useGridRenderer, useLineChartRenderer, useLineRenderer, useVolumeRenderer
   - Settings tests (6 files): AboutTab, ChartSettingsTab, GeneralTab, LanguageSelector, SettingsDialog, TradingSimulatorTab
   - UI tests (4 files): dialog, select, slider, switch
   - Utility tests (1 file): WorkerPool
@@ -592,7 +657,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Expected: 300-500ms faster startup, ~50-100MB less memory
   - Implemented dirty flag system for canvas rendering
     - Intelligent change detection prevents unnecessary redraws
-    - Tracks dirty state for candles, viewport, dimensions, overlays
+    - Tracks dirty state for klines, viewport, dimensions, overlays
     - 16ms minimum frame time (60 FPS cap)
     - Expected: 30-40% reduction in GPU usage, smoother interactions
   - Consolidated settings loading into single custom hook
@@ -699,15 +764,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Performance - Critical Chart Renderer Optimizations** 🚀
-  - Fixed excessive re-renders in useGridRenderer by removing `manager?.getCandles()` from useCallback dependencies
-  - Fixed excessive re-renders in useVolumeRenderer by removing `manager?.getCandles()` from useCallback dependencies
-  - Fixed excessive re-renders in useCandlestickRenderer by removing `manager?.getCandles()` from useCallback dependencies
-  - Fixed stale data issue in useMovingAverageRenderer by calling `getCandles()` inside render function
+  - Fixed excessive re-renders in useGridRenderer by removing `manager?.getKlines()` from useCallback dependencies
+  - Fixed excessive re-renders in useVolumeRenderer by removing `manager?.getKlines()` from useCallback dependencies
+  - Fixed excessive re-renders in useKlineRenderer by removing `manager?.getKlines()` from useCallback dependencies
+  - Fixed stale data issue in useMovingAverageRenderer by calling `getKlines()` inside render function
   - Optimized useNews hook with useMemo for optionsKey (prevents unnecessary JSON.stringify calls)
   - Prevents unnecessary fetchNews callback recreation on every render
   - Optimized ChartCanvas by replacing useState with useRef for interactionTimeoutRef
   - Eliminates unnecessary re-renders when timeout changes
-  - All chart renderers now have stable callback functions that don't recreate on candle updates
+  - All chart renderers now have stable callback functions that don't recreate on kline updates
 
 - **Memory Leaks - Cleanup Improvements** 🧹
   - Fixed NewsConfigTab timeout memory leak by adding proper useEffect cleanup
@@ -721,8 +786,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Includes events and news in change detection
 
 - **CanvasManager - Zoom Fix** 🔍
-  - Added missing `updateCandleWidth()` call in zoom function
-  - Ensures candle width is recalculated after zoom operations
+  - Added missing `updateKlineWidth()` call in zoom function
+  - Ensures kline width is recalculated after zoom operations
   - Prevents visual glitches during zoom interactions
 
 - **Trading Simulator - Balance Calculation Bug** 🐛
@@ -736,19 +801,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Changed from counting performance records to actual calendar days since wallet creation
   - Now accurately displays days since wallet was created
 
-- **Chart - Candle Transition Bugs** 🕯️
-  - Fixed candles not appearing or having incorrect format when transitioning to new candle
-  - Fixed timer freezing at 00:00 when new candle starts
+- **Chart - Kline Transition Bugs** 🕯️
+  - Fixed klines not appearing or having incorrect format when transitioning to new kline
+  - Fixed timer freezing at 00:00 when new kline starts
   - Fixed divergences when changing timeframe (resolved without app reload)
-  - Improved real-time candle update logic to handle transitions correctly
-  - Added automatic reset of live candles when symbol/timeframe changes
+  - Improved real-time kline update logic to handle transitions correctly
+  - Added automatic reset of live klines when symbol/timeframe changes
   - Added detection of complete data changes to properly reset viewport
 
 - **Chart - Auto-scroll Functionality** 📜
-  - Implemented automatic scroll when viewing the last candle
-  - Chart automatically follows new candles in real-time
+  - Implemented automatic scroll when viewing the last kline
+  - Chart automatically follows new klines in real-time
   - Auto-scroll intelligently disables when user navigates to historical data
-  - Auto-scroll re-enables when user returns to the latest candles
+  - Auto-scroll re-enables when user returns to the latest klines
   - Works correctly with pan (drag), zoom (wheel), and manual navigation
 
 - **AI Analysis - Events and News Integration** 🤖
@@ -777,13 +842,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Consistent translations across EN, PT, ES, FR
 
 - **TypeScript - Import Organization** 📦
-  - Consistent import ordering across worker hooks (useBoundsWorker, useCandleOptimizerWorker, useConversationWorker, useMovingAverageWorker)
+  - Consistent import ordering across worker hooks (useBoundsWorker, useKlineOptimizerWorker, useConversationWorker, useMovingAverageWorker)
   - Utilities imported before types
   - Cleaner code structure
 
 - **Chart - Tooltip Improvements** 🏷️
   - All tooltips now display full date and time (DD/MM/YYYY HH:MM:SS)
-  - Applied to: candle tooltips, order tooltips, AI pattern tooltips, moving average tooltips, measurement tooltips
+  - Applied to: kline tooltips, order tooltips, AI pattern tooltips, moving average tooltips, measurement tooltips
   - Created `formatDateTimeTooltip()` utility function for consistent formatting
   - Better context awareness when analyzing chart data
 
@@ -863,7 +928,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Created usePriceUpdates hook for real-time monitoring
   - Updates currentPrice for all active orders
   - Automatically closes orders when SL/TP hit
-  - Uses candle high/low for accurate detection
+  - Uses kline high/low for accurate detection
   - Long: SL hit when low <= SL, TP hit when high >= TP
   - Short: SL hit when high >= SL, TP hit when low <= TP
   - Updates wallet balance on order close
@@ -876,8 +941,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Chart Rendering Issues**
   - Fixed crosshair vertical line not extending to time scale
-  - Fixed candle rendering not updating when new candles arrive
-  - Added triggerRender() call in setCandles() method
+  - Fixed kline rendering not updating when new klines arrive
+  - Added triggerRender() call in setKlines() method
   - Improved render pipeline for order lines integration
 
 ## [0.21.0] - 2025-11-20
@@ -885,26 +950,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Chart Navigation Controls**
   - Added `ChartNavigation` component with two discrete navigation buttons
-  - Reset to initial view button (double chevron icon) - returns to last 100 candles
-  - Advance one candle button (single chevron icon) - pans chart forward by one candle
+  - Reset to initial view button (double chevron icon) - returns to last 100 klines
+  - Advance one kline button (single chevron icon) - pans chart forward by one kline
   - Positioned inside chart area (bottom right, 8px from scales)
   - Minimal 2xs size (20px × 20px) with blackAlpha.600 background and blur effect
-  - Integrated with CanvasManager methods: `resetToInitialView()` and `panToNextCandle()`
-  - Added `INITIAL_CANDLES_VISIBLE: 100` constant to chartConfig
+  - Integrated with CanvasManager methods: `resetToInitialView()` and `panToNextKline()`
+  - Added `INITIAL_KLINES_VISIBLE: 100` constant to chartConfig
 
-- **Candle Countdown Timer**
-  - Added `CandleTimer` component showing time remaining until next candle
+- **Kline Countdown Timer**
+  - Added `KlineTimer` component showing time remaining until next kline
   - Displays MM:SS or HH:MM:SS format based on remaining time
   - Positioned at scale intersection (bottom right corner, aligned with labels)
   - Matches scale label styling: 11px monospace font, same color as axis labels
   - Updates every second via setInterval
   - Supports all timeframes: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M
-  - Calculates next candle time based on current timeframe interval
+  - Calculates next kline time based on current timeframe interval
 
 ### Changed
 - **Chart Rendering Improvements**
   - Removed `ctx.clip()` from all chart renderers for cleaner edge rendering
-  - Fixed gradual fade effect when panning - candles and lines now cut cleanly at boundaries
+  - Fixed gradual fade effect when panning - klines and lines now cut cleanly at boundaries
   - Updated visibility checks with proper boundary margins for smooth rendering
   - Improved line continuity in moving average renderer with tolerance margins
 
@@ -918,20 +983,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Translations
 - Added navigation and timer translations in EN, PT, ES, FR:
   - `chart.navigation.resetView` - Reset to initial view
-  - `chart.navigation.nextCandle` - Advance one candle
-  - `chart.navigation.candleTimer` - Time to next candle
+  - `chart.navigation.nextKline` - Advance one kline
+  - `chart.navigation.klineTimer` - Time to next kline
 
 ## [0.20.0] - 2025-11-20
 
 ### Added
 - **Web Workers Performance System**
   - Added `bounds.worker.ts` for parallel bounds calculation (4x speedup)
-  - Added `candleOptimizer.worker.ts` for async candle processing (3.43x speedup)
+  - Added `klineOptimizer.worker.ts` for async kline processing (3.43x speedup)
   - Added `conversation.worker.ts` for AI context summarization (3.57x speedup)
   - Added `coordinates.worker.ts` for batch coordinate transformations (3x speedup)
   - Refactored `movingAverages.worker.ts` to Promise-based pattern (3.5x speedup)
   - Created `useBoundsWorker` hook for reactive bounds calculation
-  - Created `useCandleOptimizerWorker` hook for data optimization
+  - Created `useKlineOptimizerWorker` hook for data optimization
   - Created `useConversationWorker` hook for AI message processing
   - Refactored `useMovingAverageWorker` to consistent Promise-based pattern
 
@@ -948,7 +1013,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - SMA(200): 45ms → 12ms (3.75x faster)
   - EMA(200): 52ms → 15ms (3.47x faster)
   - Bounds calculation: 8ms → 2ms (4x faster)
-  - Candle optimization: 120ms → 35ms (3.43x faster)
+  - Kline optimization: 120ms → 35ms (3.43x faster)
   - Conversation summary: 25ms → 7ms (3.57x faster)
   - Batch coordinates: 18ms → 6ms (3x faster)
 - **UI Responsiveness:** 60fps maintained during all calculations
@@ -981,7 +1046,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Shows measurement data in tooltip
     - Toggle control with scan icon (LuScan)
   - **Measurement Tooltip**: Real-time metrics display
-    - Candle count in selected range
+    - Kline count in selected range
     - Price change (absolute value)
     - Percentage change with color coding
     - Auto-positioning to avoid screen edges
@@ -1072,9 +1137,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Enhanced Chart Interactions**
-  - pattern extensions beyond last candles by configurable distance (36px default)
-  - Precise tooltip triggering on candle body/wick/volume only
-  - Hover effects for all chart elements (candles, volumes, patterns, MAs)
+  - pattern extensions beyond last klines by configurable distance (36px default)
+  - Precise tooltip triggering on kline body/wick/volume only
+  - Hover effects for all chart elements (klines, volumes, patterns, MAs)
   - pattern number tags (#1, #2, etc.) trigger parent pattern hover effects
   - Arrow-shaped current price label occupying full scale width
   - Consistent shadow/glow effects across all interactive elements (8px blur)
@@ -1083,17 +1148,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 - **Chart Rendering System**
-  - Fixed inconsistent candle/volume spacing at different zoom levels
-  - Implemented centered candle positioning (80% width ratio, 20% automatic spacing)
-  - Wicks render without passing through candle bodies
-  - Optimized z-ordering: grid → volume → candles → MAs → scales → current price
+  - Fixed inconsistent kline/volume spacing at different zoom levels
+  - Implemented centered kline positioning (80% width ratio, 20% automatic spacing)
+  - Wicks render without passing through kline bodies
+  - Optimized z-ordering: grid → volume → klines → MAs → scales → current price
   - Canvas clipping excludes only right/bottom padding (scales always visible)
-  - Removed transparency from candles and wicks for better visibility
-  - Coordinate system optimized with widthPerCandle calculations
-  - Position centering: candleX/barX = x + (widthPerCandle - candleWidth) / 2
+  - Removed transparency from klines and wicks for better visibility
+  - Coordinate system optimized with widthPerKline calculations
+  - Position centering: klineX/barX = x + (widthPerKline - klineWidth) / 2
 
 - **AI Patterns System**
-  - Extended all pattern types (support/resistance, liquidity zones) beyond last candles
+  - Extended all pattern types (support/resistance, liquidity zones) beyond last klines
   - Hover detection extended to pattern extensions
   - pattern tags stored in Map for efficient hover detection
   - Enhanced visual feedback with consistent shadow effects
@@ -1102,26 +1167,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Test Suite**
-  - Fixed candleOptimizer test expectations (32 detailed, 68 simplified candles)
+  - Fixed klineOptimizer test expectations (32 detailed, 68 simplified klines)
   - Fixed aiStore test ordering dependency (order-independent assertions)
   - All 659 tests passing
 
 - **Chart Spacing**
-  - Fixed spacing algorithm: widthPerCandle = effectiveWidth / visibleRange
-  - Fixed candle width: candleWidth = widthPerCandle * 0.8
+  - Fixed spacing algorithm: widthPerKline = effectiveWidth / visibleRange
+  - Fixed kline width: klineWidth = widthPerKline * 0.8
   - Fixed position calculation for centered rendering
   - Consistent spacing at all zoom levels
 
 ### Changed
 - **Drawing Utilities**
-  - drawCandleBody and drawCandleWick opacity set to 1.0 (no transparency)
+  - drawKlineBody and drawKlineWick opacity set to 1.0 (no transparency)
   - Shadow effects only applied on hover state
   - Canvas clipping: left=0, top=0 (no left/top padding exclusion)
 
 ### Technical
 - New configuration constants in chartConfig.ts
 - Enhanced AIPatternRenderer with patternTagsRef Map
-- Extended ChartCanvas hover detection (candles, volumes, MAs, pattern tags)
+- Extended ChartCanvas hover detection (klines, volumes, MAs, pattern tags)
 - Updated ChartTooltip with moving average support
 - Enhanced CanvasManager with centered coordinate calculations
 - Updated all chart renderers with centered positioning
@@ -1137,16 +1202,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Intent detection for optimized prompt selection
   - Translations for AI patterns toggle (EN, PT, ES, FR)
 
-- **Configurable Detailed Candles Count**
-  - New setting to control number of detailed candles sent to AI (10-100, default: 32)
-  - Increased from 20 to 32 candles for better AI analysis
+- **Configurable Detailed Klines Count**
+  - New setting to control number of detailed klines sent to AI (10-100, default: 32)
+  - Increased from 20 to 32 klines for better AI analysis
   - Configurable via Settings > AI Configuration slider
   - Saves user preference in AI settings
 
 - **Performance Optimizations**
   - Conversation summarization (keeps last 10 messages, summarizes older ones)
-  - Candle data optimization (32 detailed + up to 1000 simplified candles)
-  - AI context caching system (5-minute cache for candles and summaries)
+  - Kline data optimization (32 detailed + up to 1000 simplified klines)
+  - AI context caching system (5-minute cache for klines and summaries)
   - ~60% reduction in token usage for long conversations
   - Faster AI response times
 
@@ -1171,7 +1236,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **AI pattern Zone Rendering**
   - Zones now extend from historical detection point to near price scale
-  - Automatic width adjustment (minimum 20 candles or 30% of visible range)
+  - Automatic width adjustment (minimum 20 klines or 30% of visible range)
   - Zones extend to chart's right edge for better visibility
   - Visual improvements: wider zones, better representation of price levels
 
@@ -1211,8 +1276,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Impact**: Visual consistency between canvas drawings and chat references
 
 - **Critical AI Data Bug**
-  - `useAI.quickAnalyze` was sending empty candles array instead of actual chart data
-  - Integrated ChartContext to provide real candle data (1020 candles)
+  - `useAI.quickAnalyze` was sending empty klines array instead of actual chart data
+  - Integrated ChartContext to provide real kline data (1020 klines)
   - Added news context from ChartContext for enhanced AI analysis
   - Migrated test file to `.tsx` extension to support JSX wrapper
   - Added ChartProvider wrapper to all useAI tests (33 tests, all passing)
@@ -1224,8 +1289,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **AI Data Optimization Analysis**
   - Complete documentation of data optimization system (AI_DATA_OPTIMIZATION_ANALYSIS.md)
-  - Analysis of optimal candle quantities for technical analysis
-  - Validation of current implementation (1020 candles = IDEAL)
+  - Analysis of optimal kline quantities for technical analysis
+  - Validation of current implementation (1020 klines = IDEAL)
   - Research on industry best practices for AI chart analysis
 
 - **Enhanced Technical Analysis Patterns**
@@ -1255,7 +1320,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New toolbar component positioned below header with all chart controls
   - Symbol selector with compact size and borderless design
   - Timeframe selector with visual feedback
-  - Chart type switcher (candlestick/line)
+  - Chart type switcher (kline/line)
   - Display toggles (volume, grid, current price)
   - Moving averages indicators with color-coded borders
   - Horizontal scroll support for responsive layouts
@@ -1283,7 +1348,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 24 semantic color tokens with light/dark mode support
   - `getChartColors()` helper as single source of truth for chart colors
   - `useChartColors()` hook for reactive theme-aware rendering
-  - Light theme color palette for charts (candlesticks, volume, grid, indicators)
+  - Light theme color palette for charts (klines, volume, grid, indicators)
   - Semantic tokens for UI components (ChartTooltip, ChartControls, ControlPanel)
   - Theme-aware AI pattern colors (8 pattern types with light/dark variants)
 
@@ -1303,7 +1368,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Settings Dialog Behavior**
   - Removed Save/Cancel buttons from settings dialog footer
   - All settings apply immediately with debounce
-  - Chart settings: dimensions, candles, grid, padding with 300ms debounce
+  - Chart settings: dimensions, klines, grid, padding with 300ms debounce
   - AI settings: temperature and maxTokens with 300ms debounce
   - News settings: refreshInterval and maxArticles with 300ms debounce
   - General settings: updateCheckInterval with 300ms debounce
@@ -1320,8 +1385,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Critical AI Data Bug**
-  - Fixed `useAI.quickAnalyze` sending empty candles array
-  - Now correctly sends chartData.candles (up to 1020 optimized candles)
+  - Fixed `useAI.quickAnalyze` sending empty klines array
+  - Now correctly sends chartData.klines (up to 1020 optimized klines)
   - Includes news data from chartContext for enhanced analysis
   - AI can now perform accurate technical analysis with real data
   - Patterns validated with volume confirmation and precise timestamps
@@ -1474,7 +1539,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **AI pattern Tooltips**
-  - Unified tooltip system for both candles and AI patterns
+  - Unified tooltip system for both klines and AI patterns
   - Hover-only display for AI pattern information
   - Price formatting with K/M notation (e.g., 1.5K, 2.3M)
   - pattern type, label, and price information in tooltip
@@ -1531,11 +1596,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Chart Rendering Issues**
   - Fixed chart not updating when changing timeframe or symbol
   - Fixed chart not responding to realtime updates
-  - Added `manager?.getCandles()` dependency to all renderer hooks
-  - Chart now re-renders correctly when candles data changes
+  - Added `manager?.getKlines()` dependency to all renderer hooks
+  - Chart now re-renders correctly when klines data changes
   
 - **Viewport Management**
-  - Fixed viewport resetting on every candle update
+  - Fixed viewport resetting on every kline update
   - Implemented smart detection (>10% change = timeframe switch, <10% = realtime update)
   - Viewport now only resets on significant changes (timeframe/symbol)
   - Preserves zoom and pan during realtime updates
@@ -1559,7 +1624,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `px={3}` padding to search inputs in selects
 
 ### Changed
-- Updated `useCandlestickRenderer`, `useVolumeRenderer`, `useGridRenderer`, `useMovingAverageRenderer`, `useLineChartRenderer` hooks
+- Updated `useKlineRenderer`, `useVolumeRenderer`, `useGridRenderer`, `useMovingAverageRenderer`, `useLineChartRenderer` hooks
 - Updated `useCurrentPriceLineRenderer` to use `useCallback` instead of `useMemo`
 - Updated `useChartCanvas` with smart viewport reset logic
 - Added `resetVerticalZoom()` method to `CanvasManager`
@@ -1569,7 +1634,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical Details
 - **Files Modified**:
-  - `src/renderer/components/Chart/useCandlestickRenderer.ts`
+  - `src/renderer/components/Chart/useKlineRenderer.ts`
   - `src/renderer/components/Chart/useVolumeRenderer.ts`
   - `src/renderer/components/Chart/useGridRenderer.ts`
   - `src/renderer/components/Chart/useMovingAverageRenderer.ts`
@@ -1608,7 +1673,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Tooltips & Help**
   - Created `TooltipWrapper` component for consistent tooltips
-  - Added tooltips to chart controls (candlestick/line chart buttons)
+  - Added tooltips to chart controls (kline/line chart buttons)
   - Added tooltips to header buttons (theme, shortcuts, settings)
   - Contextual help throughout the interface
   - 300ms delay for better UX
@@ -1715,7 +1780,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - useChartData.test.ts (10 tests) - 100% coverage
   - useMarketData.test.ts (10 tests) - 100% coverage
   - useSymbolSearch.test.ts (11 tests) - 100% coverage
-  - useRealtimeCandle.test.ts (11 tests) - 100% coverage
+  - useRealtimeKline.test.ts (11 tests) - 100% coverage
   - useAutoUpdate.test.ts (18 tests) - 96.15% coverage
   - useNews.test.ts (15 tests) - 90.24% coverage
   - useAI.test.ts (67 tests) - 75.67% coverage
@@ -1779,7 +1844,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `src/renderer/hooks/useLocalStorage.test.ts`
 - `src/renderer/hooks/useMarketData.test.ts`
 - `src/renderer/hooks/useNews.test.ts`
-- `src/renderer/hooks/useRealtimeCandle.test.ts`
+- `src/renderer/hooks/useRealtimeKline.test.ts`
 - `src/renderer/hooks/useSymbolSearch.test.ts`
 - `src/renderer/components/SymbolSelector.test.tsx`
 - `src/renderer/context/ChartContext.test.tsx`
@@ -2162,7 +2227,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Chart Data Integration**: Structured data instead of images
   - ChartContext for sharing chart data across components
   - useChartData hook to update context
-  - formatChartDataContext function with 100 candles
+  - formatChartDataContext function with 100 klines
   - Detailed statistics (highs, lows, price range, volume metrics)
   - Price action analysis (bullish/bearish counts, strong moves)
   - Trend detection
@@ -2200,7 +2265,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Messages stored without chart data context
   - Chart data added only to API calls
   - User sees clean message history
-  - AI receives full context (100 candles + statistics)
+  - AI receives full context (100 klines + statistics)
 - **Layout**: Removed AITest component
   - Replaced with production chat interface
   - SymbolSelector moved to Header
@@ -2217,7 +2282,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated Chakra UI components to use v3 API (Select.Positioner, Avatar.Root)
 
 ### Technical
-- ChartData interface with Candle[], MovingAverageConfig[], timeframe, symbol
+- ChartData interface with Kline[], MovingAverageConfig[], timeframe, symbol
 - formatChartDataContext returns structured analysis text
 - DEFAULT_MODELS map for automatic model selection
 - localStorage persistence for sidebar width
@@ -2289,11 +2354,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Dependencies
 - Added @google/generative-ai for Gemini integration
 
-- **WebSocket Real-Time Updates**: Live candle updates via Binance WebSocket
+- **WebSocket Real-Time Updates**: Live kline updates via Binance WebSocket
   - subscribeToUpdates method in MarketDataService
-  - useRealtimeCandle hook for React integration
-  - Automatic merging of live data with historical candles
-  - Smart update handling (update vs. new candle detection)
+  - useRealtimeKline hook for React integration
+  - Automatic merging of live data with historical klines
+  - Smart update handling (update vs. new kline detection)
   - WebSocket connection management and cleanup
   - Support for multiple simultaneous subscriptions
   - Automatic reconnection on disconnect
@@ -2304,7 +2369,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CoinGeckoProvider as fallback (free, no API key)
   - MarketDataService with automatic fallback and caching
   - useMarketData hook for React components
-  - Real-time candlestick data from Binance API
+  - Real-time kline data from Binance API
   - Support for all timeframes (1m to 1M)
   - Error handling with automatic provider fallback
   - Response caching (60s duration)
@@ -2342,7 +2407,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Advanced Controls Panel**: 9 configurable chart settings
   - Right margin adjustment
   - Volume height ratio
-  - Candle spacing and wick width
+  - Kline spacing and wick width
   - Grid line width
   - Padding controls (top, bottom, left, right)
 - **Pin Functionality**: Pin favorite controls for quick access
@@ -2374,7 +2439,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All chart renderers now accept optional advanced config props
 
 ### Fixed
-- Right margin now properly pushes candles left instead of hiding them
+- Right margin now properly pushes klines left instead of hiding them
 - Moving averages rendering optimized with debounced inputs
 - Tooltip positioning improved to prevent overflow
 - Performance optimizations with debounced state updates
@@ -2393,7 +2458,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moving average calculations (SMA and EMA)
 - MovingAverageRenderer for displaying moving averages on chart
 - ChartControls component with interactive toggles
-- Support for switching between candlestick and line chart types
+- Support for switching between kline and line chart types
 - Configurable moving averages (EMA-9, SMA-20, SMA-50)
 - Toggle controls for volume, grid, and indicators
 - Full-screen chart mode
@@ -2404,7 +2469,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Moving average rendering now uses manager coordinate methods (indexToX, priceToY)
 - Moving averages now maintain correct position during pan and zoom
-- Moving averages extend to the full width of visible candles
+- Moving averages extend to the full width of visible klines
 - Chart controls positioned with proper z-index
 
 ### Changed
@@ -2417,13 +2482,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Complete canvas rendering system with CanvasManager
 - Coordinate system utilities (price to Y, X to index conversions)
-- Drawing utilities (rectangles, lines, text, candles, grid)
+- Drawing utilities (rectangles, lines, text, klines, grid)
 - ChartCanvas component with zoom and pan support
-- CandlestickRenderer for rendering candlestick charts
+- KlineRenderer for rendering kline charts
 - GridRenderer for rendering grid and price labels
 - VolumeRenderer for rendering volume bars
 - Sample data generator for testing
-- Working chart visualization with candlesticks, grid, and volume
+- Working chart visualization with klines, grid, and volume
 - Horizontal (time) and vertical (price) scales with formatting
 - ResizeObserver for responsive canvas
 - Hook-based architecture for all chart components

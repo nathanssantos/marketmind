@@ -54,6 +54,7 @@
       "chart": "Graphique",
       "ai": "Configuration IA",
       "aiTrading": "Auto-Trading IA",
+      "algorithmicAutoTrading": "Auto-Trading Algorithmique",
       "setupDetection": "Détection de Setups",
       "patternDetection": "Détection de Motifs",
       "news": "Actualités",
@@ -103,9 +104,9 @@
       "rightMarginHelper": "Espace réservé sur le côté droit du graphique",
       "volumeHeightRatio": "Ratio de hauteur du volume",
       "volumeHeightRatioHelper": "Hauteur des barres de volume par rapport au graphique (0-1)",
-      "candleSettings": "Paramètres des bougies",
-      "candleSpacing": "Espacement des bougies",
-      "candleSpacingHelper": "Espace entre les bougies",
+      "klineSettings": "Paramètres des bougies",
+      "klineSpacing": "Espacement des bougies",
+      "klineSpacingHelper": "Espace entre les bougies",
       "wickWidth": "Largeur de la mèche",
       "wickWidthHelper": "Largeur des mèches des bougies",
       "gridSettings": "Paramètres de la grille",
@@ -140,8 +141,8 @@
       "temperatureHelper": "Contrôle l'aléatoire (0 = ciblé, 2 = créatif)",
       "maxTokens": "Tokens Max: {{value}}",
       "maxTokensHelper": "Longueur maximale de réponse",
-      "detailedCandles": "Bougies Détaillées: {{value}}",
-      "detailedCandlesHelper": "Nombre de bougies récentes envoyées avec tous les détails à l'IA",
+      "detailedKlines": "Bougies Détaillées: {{value}}",
+      "detailedKlinesHelper": "Nombre de bougies récentes envoyées avec tous les détails à l'IA",
       "patternDetection": {
         "title": "Détection de Motifs",
         "mode": "Mode de Détection",
@@ -225,6 +226,17 @@
         "clearAll": "Effacer Toutes les Données"
       },
       "confirmClearAll": "Êtes-vous sûr de vouloir effacer toutes les données de trading ? Cette action ne peut pas être annulée."
+    },
+    "algorithmicAutoTrading": {
+      "title": "Auto-Trading Algorithmique",
+      "description": "Configurez l'exécution automatique des ordres basée sur les setups de trading détectés.",
+      "status": {
+        "title": "Statut de l'Auto-Trading",
+        "description": "Activez ou désactivez l'ouverture automatique d'ordres lorsque des setups de trading sont détectés sur le graphique.",
+        "active": "L'auto-trading est actif - les ordres seront créés automatiquement",
+        "inactive": "L'auto-trading est inactif - les setups seront seulement détectés et affichés",
+        "info": "Cette fonctionnalité fonctionne avec le système de détection de setups. Assurez-vous d'activer au moins un type de setup dans l'onglet Détection de Setups avant d'activer l'auto-trading."
+      }
     }
   },
   "chat": {
@@ -251,7 +263,7 @@
       "title": "Contrôles du Graphique",
       "timeframe": "Période",
       "chartType": "Type de Graphique",
-      "candlestickChart": "Graphique en Chandeliers",
+      "klineChart": "Graphique en Chandeliers",
       "lineChart": "Graphique Linéaire",
       "display": "Affichage",
       "volume": "Volume",
@@ -274,19 +286,23 @@
       "deletePattern": "Supprimer le Motif",
       "hidePatterns": "Masquer les Motifs Détectés",
       "showPatterns": "Afficher les Motifs Détectés",
-      "deleteAllPatterns": "Supprimer Tous les Motifs Détectés"
+      "deleteAllPatterns": "Supprimer Tous les Motifs Détectés",
+      "deleteSetup": "Supprimer le Setup",
+      "hideSetups": "Masquer les Setups Détectés",
+      "showSetups": "Afficher les Setups Détectés",
+      "deleteAllSetups": "Supprimer Tous les Setups Détectés"
     },
     "navigation": {
       "resetView": "Retour à la vue initiale",
-      "nextCandle": "Bougie suivante",
-      "candleTimer": "Temps jusqu'à la prochaine bougie"
+      "nextKline": "Bougie suivante",
+      "klineTimer": "Temps jusqu'à la prochaine bougie"
     },
     "advanced": {
       "title": "Paramètres avancés",
       "chartDimensions": "Dimensions du graphique",
       "rightMargin": "Marge droite",
       "volumeHeight": "Hauteur du volume %",
-      "candleSettings": "Paramètres des bougies",
+      "klineSettings": "Paramètres des bougies",
       "spacing": "Espacement",
       "wickWidth": "Largeur de la mèche",
       "gridSettings": "Paramètres de la grille",
@@ -595,7 +611,7 @@
     "formationPeriod": {
       "label": "Période de Formation",
       "helper": "Période de rétrospective pour la détection de motifs",
-      "candles": "bougies"
+      "klines": "bougies"
     },
     "trendlineAccuracy": {
       "label": "Précision de la Ligne de Tendance (R²)",
@@ -914,6 +930,9 @@
     "copyright": "© 2025 MarketMind. Fait avec ❤️ pour les traders et investisseurs."
   },
   "setupConfig": {
+    "configureSetups": "Configurer les Setups de Trading",
+    "enabledSetups": "Setups Activés",
+    "toggleAll": "Basculer Tous les Setups",
     "tips": {
       "confidence": "Des filtres de confiance plus élevés ne montrent que les setups les plus forts",
       "algorithmic": "La détection algorithmique est plus rapide et cohérente que l'IA",
@@ -939,8 +958,20 @@
     "noSetupsEnabledDescription": "Impossible d'activer le trading automatique sans setups actifs. Veuillez activer au moins un setup dans les Paramètres.",
     "setups": {
       "setup91": {
-        "title": "Setup 9.1 (Inversions EMA9)",
-        "description": "Détecte les changements de tendance EMA9 avec confirmation du volume"
+        "title": "Setup 9.1 (Retournement EMA9)",
+        "description": "Détecte les changements de tendance EMA9 avec confirmation de volume - entrée sur la bougie qui tourne EMA9"
+      },
+      "setup92": {
+        "title": "Setup 9.2 (Repli EMA9)",
+        "description": "Suiveur de tendance EMA9 - entrée après bougie clôture en dessous/au-dessus du plus bas/haut précédent en tendance haussière/baissière"
+      },
+      "setup93": {
+        "title": "Setup 9.3 (Double Repli EMA9)",
+        "description": "Suiveur de tendance EMA9 - entrée après 2 clôtures consécutives plus basses/hautes depuis bougie de référence"
+      },
+      "setup94": {
+        "title": "Setup 9.4 (Continuation EMA9)",
+        "description": "Continuation EMA9 - échec temporaire d'1 bougie sur EMA9 suivi de reprise de tendance originale"
       },
       "pattern123": {
         "title": "Motif 123 (Motif d'Inversion)",
@@ -957,6 +988,26 @@
       "breakoutRetest": {
         "title": "Retest de Cassure (Continuation)",
         "description": "Cassure valide suivie d'un retest réussi et continuation"
+      },
+      "pinInside": {
+        "title": "Combo Pin + Inside Bar (Rejet + Consolidation)",
+        "description": "Rejet avec pin bar suivi d'une consolidation avec inside bar aux niveaux de support/résistance"
+      },
+      "orderBlockFVG": {
+        "title": "Order Block + FVG (Motif ICT/SMC)",
+        "description": "Order block à volume élevé combiné avec fair value gap pour les zones d'entrée institutionnelles"
+      },
+      "vwapEmaCross": {
+        "title": "VWAP + Croisement EMA (Momentum + Retour à la Moyenne)",
+        "description": "Croisement de l'EMA avec le VWAP et entrée sur pullback pour les trades de momentum et retour à la moyenne"
+      },
+      "divergence": {
+        "title": "Divergence RSI/MACD (Indicateur de Retournement)",
+        "description": "Détecte les divergences haussières/baissières entre le prix et les indicateurs RSI/MACD pour des retournements à haute probabilité"
+      },
+      "liquiditySweep": {
+        "title": "Balayage de Liquidité (Chasse aux Stops)",
+        "description": "Détecte les fausses cassures conçues pour déclencher les stop loss avant de s'inverser - modèle classique de comportement institutionnel"
       }
     },
     "parameters": {

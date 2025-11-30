@@ -1,4 +1,3 @@
-import type { FetchCandlesOptions } from '@shared/types';
 import axios from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CoinGeckoProvider } from './CoinGeckoProvider';
@@ -77,38 +76,43 @@ describe('CoinGeckoProvider', () => {
     });
   });
 
-  describe('fetchCandles', () => {
-    it('should fetch candles successfully', async () => {
+  describe('fetchKlines', () => {
+    it('should fetch klines successfully', async () => {
       mockAxiosInstance.get.mockResolvedValue({
         data: mockMarketChart,
       });
 
       const provider = new CoinGeckoProvider();
-      const options: FetchCandlesOptions = {
+      const options: FetchKlinesOptions = {
         symbol: 'bitcoin',
         interval: '1h',
       };
 
-      const result = await provider.fetchCandles(options);
+      const result = await provider.fetchKlines(options);
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/coins/bitcoin/market_chart', {
         params: {
           vs_currency: 'usd',
-          days: 1,
-          interval: '5m',
+          days: 7,
+          interval: 'hourly',
         },
       });
 
       expect(result.symbol).toBe('bitcoin');
       expect(result.interval).toBe('1h');
-      expect(result.candles).toHaveLength(3);
-      expect(result.candles[0]).toEqual({
-        timestamp: 1704067200000,
-        open: 42000,
-        high: 42000,
-        low: 42000,
-        close: 42000,
-        volume: 100000000,
+      expect(result.klines).toHaveLength(3);
+      expect(result.klines[0]).toEqual({
+        openTime: 1704067200000,
+        closeTime: 1704070800000,
+        open: '42000',
+        high: '42000',
+        low: '42000',
+        close: '42000',
+        volume: '100000000',
+        quoteVolume: '0',
+        trades: 0,
+        takerBuyBaseVolume: '0',
+        takerBuyQuoteVolume: '0',
       });
     });
 
@@ -118,7 +122,7 @@ describe('CoinGeckoProvider', () => {
       });
 
       const provider = new CoinGeckoProvider();
-      await provider.fetchCandles({
+      await provider.fetchKlines({
         symbol: 'BITCOIN',
         interval: '1h',
       });
@@ -135,7 +139,7 @@ describe('CoinGeckoProvider', () => {
 
       const provider = new CoinGeckoProvider();
 
-      await provider.fetchCandles({
+      await provider.fetchKlines({
         symbol: 'BTCUSD',
         interval: '1h',
       });
@@ -151,13 +155,13 @@ describe('CoinGeckoProvider', () => {
       });
 
       const provider = new CoinGeckoProvider();
-      const result = await provider.fetchCandles({
+      const result = await provider.fetchKlines({
         symbol: 'bitcoin',
         interval: '1h',
         limit: 2,
       });
 
-      expect(result.candles).toHaveLength(2);
+      expect(result.klines).toHaveLength(2);
     });
 
     it('should map intervals to days correctly', async () => {
@@ -171,15 +175,15 @@ describe('CoinGeckoProvider', () => {
         ['5m', 1, '5m'],
         ['15m', 1, '5m'],
         ['30m', 1, '5m'],
-        ['1h', 1, '5m'],
+        ['1h', 7, 'hourly'],
         ['4h', 7, 'hourly'],
         ['1d', 90, 'daily'],
-        ['1w', 365, 'daily'],
+        ['1w', 90, 'daily'],
         ['1M', 365, 'daily'],
       ];
 
       for (const [interval, days, cgInterval] of intervals) {
-        await provider.fetchCandles({
+        await provider.fetchKlines({
           symbol: 'bitcoin',
           interval: interval as never,
         });
@@ -200,7 +204,7 @@ describe('CoinGeckoProvider', () => {
       const provider = new CoinGeckoProvider();
 
       await expect(
-        provider.fetchCandles({
+        provider.fetchKlines({
           symbol: 'bitcoin',
           interval: '1h',
         })
@@ -217,12 +221,12 @@ describe('CoinGeckoProvider', () => {
       });
 
       const provider = new CoinGeckoProvider();
-      const result = await provider.fetchCandles({
+      const result = await provider.fetchKlines({
         symbol: 'bitcoin',
         interval: '1h',
       });
 
-      expect(result.candles[0]?.volume).toBe(0);
+      expect(result.klines[0]?.volume).toBe('0');
     });
   });
 
@@ -238,11 +242,12 @@ describe('CoinGeckoProvider', () => {
       const results = await provider.searchSymbols('bitcoin');
 
       expect(results).toHaveLength(1);
-      expect(results[0]).toEqual({
+      expect(results[0]).toMatchObject({
         symbol: 'BITCOIN',
         baseAsset: 'BTC',
         quoteAsset: 'USD',
         displayName: 'Bitcoin (BTC)',
+        status: 'TRADING',
       });
     });
 

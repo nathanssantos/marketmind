@@ -35,7 +35,7 @@ export const customConfig = createSystem(defaultConfig, {
           value: { base: '#ffffff', _dark: '#1e222d' } 
         },
         
-        // Candlestick colors
+        // Kline colors
         'chart.bullish': { 
           value: { base: '#16a34a', _dark: '#26a69a' } 
         },
@@ -173,8 +173,8 @@ export const useChartColors = (): ChartThemeColors => {
 | Element | Color | Hex Value |
 |---------|-------|-----------|
 | Background | White | `#ffffff` |
-| Bullish Candle | Green | `#16a34a` |
-| Bearish Candle | Red | `#dc2626` |
+| Bullish Kline | Green | `#16a34a` |
+| Bearish Kline | Red | `#dc2626` |
 | Volume | Gray (30% opacity) | `rgba(107, 114, 128, 0.3)` |
 | Grid Lines | Gray (20% opacity) | `rgba(107, 114, 128, 0.2)` |
 | Axis Labels | Dark Gray | `#374151` |
@@ -188,8 +188,8 @@ export const useChartColors = (): ChartThemeColors => {
 | Element | Color | Hex Value |
 |---------|-------|-----------|
 | Background | Dark Blue | `#1e222d` |
-| Bullish Candle | Teal | `#26a69a` |
-| Bearish Candle | Red | `#ef5350` |
+| Bullish Kline | Teal | `#26a69a` |
+| Bearish Kline | Red | `#ef5350` |
 | Volume | Slate (30% opacity) | `rgba(148, 163, 184, 0.3)` |
 | Grid Lines | Slate (20% opacity) | `rgba(148, 163, 184, 0.2)` |
 | Axis Labels | Light Gray | `#cbd5e1` |
@@ -228,7 +228,7 @@ const colors = useChartColors();
 </Box>
 
 // Pass to renderers
-useCandlestickRenderer({ colors, /* ... */ });
+useKlineRenderer({ colors, /* ... */ });
 useVolumeRenderer({ colors, /* ... */ });
 useGridRenderer({ colors, /* ... */ });
 ```
@@ -236,11 +236,11 @@ useGridRenderer({ colors, /* ... */ });
 ### Renderer Hooks
 
 ```typescript
-// useCandlestickRenderer.ts
-export const useCandlestickRenderer = ({
+// useKlineRenderer.ts
+export const useKlineRenderer = ({
   colors, // type: ChartThemeColors
   // ... other params
-}: UseCandlestickRendererParams) => {
+}: UseKlineRendererParams) => {
   // Use colors.bullish, colors.bearish
 };
 ```
@@ -388,7 +388,7 @@ const colors = useChartColors(); // Reactive to theme changes
 - `src/renderer/components/Chart/AIPatternRenderer.tsx` - Uses `useChartColors()`
 
 **Updated Renderers (8 files):**
-- `useCandlestickRenderer.ts`
+- `useKlineRenderer.ts`
 - `useVolumeRenderer.ts`
 - `useGridRenderer.ts`
 - `useLineChartRenderer.ts`

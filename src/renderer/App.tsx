@@ -1,6 +1,7 @@
 import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import type { AIPattern, Candle, Viewport } from '@shared/types';
+import type { AIPattern, Kline, Viewport } from '@shared/types';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume, getOrderId, isOrderActive, isOrderLong, isOrderPending } from '@shared/utils';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
@@ -34,7 +35,7 @@ import { useOrderNotifications } from './hooks/useOrderNotifications';
 import { usePatternDetectionWorker } from './hooks/usePatternDetectionWorker';
 import { usePatterns } from './hooks/usePatterns';
 import { usePriceUpdates } from './hooks/usePriceUpdates';
-import { useRealtimeCandle } from './hooks/useRealtimeCandle';
+import { useRealtimeKline } from './hooks/useRealtimeKline';
 import { useSimulatorLayout } from './hooks/useSimulatorLayout';
 import { useSimulatorSync } from './hooks/useSimulatorSync';
 import { MarketDataService } from './services/market/MarketDataService';
@@ -175,7 +176,7 @@ function AppContent(): ReactElement {
   const [showMeasurementArea, setShowMeasurementArea] = useLocalStorage('marketmind:showMeasurementArea', false);
   const [showStochastic, setShowStochastic] = useLocalStorage('marketmind:showStochastic', false);
   const [showRSI, setShowRSI] = useLocalStorage('marketmind:showRSI', false);
-  const [chartType, setChartType] = useLocalStorage<'candlestick' | 'line'>('marketmind:chartType', 'candlestick');
+  const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
   const [showOnboarding, setShowOnboarding] = useLocalStorage('marketmind:showOnboarding', true);
   const [isChatOpen, setIsChatOpen] = useLocalStorage('chat-sidebar-open', true);
@@ -191,8 +192,8 @@ function AppContent(): ReactElement {
   const [advancedConfig, setAdvancedConfig] = useLocalStorage<AdvancedControlsConfig>('marketmind:advancedConfig', {
     rightMargin: CHART_CONFIG.CHART_RIGHT_MARGIN,
     volumeHeightRatio: CHART_CONFIG.VOLUME_HEIGHT_RATIO,
-    candleSpacing: CHART_CONFIG.CANDLE_SPACING,
-    candleWickWidth: CHART_CONFIG.CANDLE_WICK_WIDTH,
+    klineSpacing: CHART_CONFIG.KLINE_SPACING,
+    klineWickWidth: CHART_CONFIG.KLINE_WICK_WIDTH,
     gridLineWidth: CHART_CONFIG.GRID_LINE_WIDTH,
     currentPriceLineWidth: CHART_CONFIG.CURRENT_PRICE_LINE_WIDTH,
     currentPriceLineStyle: CHART_CONFIG.CURRENT_PRICE_LINE_STYLE,
@@ -206,8 +207,8 @@ function AppContent(): ReactElement {
   const syncAIStore = useAIStore((state) => state.syncWithElectron);
 
   useEffect(() => {
-    syncWithElectron();
-    syncAIStore();
+    void syncWithElectron();
+    void syncAIStore();
   }, [syncWithElectron, syncAIStore]);
 
   const restoreActiveConversation = useAIStore((state) => state.restoreActiveConversation);
@@ -231,7 +232,7 @@ function AppContent(): ReactElement {
 
   const handleDetectPatterns = useCallback((): void => {
     if (viewport) {
-      detectPatterns(viewport);
+      void detectPatterns(viewport);
     }
   }, [detectPatterns, viewport]);
 
@@ -267,15 +268,15 @@ function AppContent(): ReactElement {
     enabled: true,
   });
 
-  const [liveCandles, setLiveCandles] = useState<Candle[]>([]);
+  const [liveKlines, setLiveKlines] = useState<Kline[]>([]);
   const previousPriceRef = useRef<number | null>(null);
   const appLoadTimeRef = useRef(Date.now());
-  const pendingUpdateRef = useRef<{ candle: Candle; isFinal: boolean } | null>(null);
+  const pendingUpdateRef = useRef<{ kline: Kline; isFinal: boolean } | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const lastOrderUpdateRef = useRef<number>(0);
 
   useEffect(() => {
-    setLiveCandles([]);
+    setLiveKlines([]);
     previousPriceRef.current = null;
     if (rafIdRef.current !== null) {
       cancelAnimationFrame(rafIdRef.current);
@@ -284,8 +285,8 @@ function AppContent(): ReactElement {
     pendingUpdateRef.current = null;
   }, [symbol, timeframe]);
 
-  const handleRealtimeUpdate = useCallback((candle: Candle, isFinal: boolean) => {
-    pendingUpdateRef.current = { candle, isFinal };
+  const handleRealtimeUpdate = useCallback((kline: Kline, isFinal: boolean) => {
+    pendingUpdateRef.current = { kline, isFinal };
 
     if (rafIdRef.current !== null) {
       cancelAnimationFrame(rafIdRef.current);
@@ -295,8 +296,8 @@ function AppContent(): ReactElement {
       const update = pendingUpdateRef.current;
       if (!update) return;
 
-      const { candle: latestCandle, isFinal: finalFlag } = update;
-      const currentPrice = latestCandle.close;
+      const { kline: latestKline, isFinal: finalFlag } = update;
+      const currentPrice = getKlineClose(latestKline);
       const previousPrice = previousPriceRef.current;
 
       const now = Date.now();
@@ -305,37 +306,39 @@ function AppContent(): ReactElement {
       if (previousPrice !== null && previousPrice !== currentPrice && shouldUpdateOrders) {
         const state = useTradingStore.getState();
         if (state.isSimulatorActive) {
-          const hasPendingOrders = state.orders.some(o => o.status === 'pending' && o.symbol === symbol);
+          const hasPendingOrders = state.orders.some(o => isOrderPending(o) && o.symbol === symbol);
           if (hasPendingOrders) {
             state.fillPendingOrders(symbol, currentPrice, previousPrice, appLoadTimeRef.current);
           }
 
-          const activeOrders = state.orders.filter(o => o.status === 'active' && o.symbol === symbol);
+          const activeOrders = state.orders.filter(o => isOrderActive(o) && o.symbol === symbol);
           activeOrders.forEach(order => {
-            const isLong = order.type === 'long';
+            const isLong = isOrderLong(order);
 
-            state.updateOrder(order.id, { currentPrice });
+            state.updateOrder(getOrderId(order), { currentPrice });
 
             if (order.stopLoss) {
               const stopHit = isLong
-                ? latestCandle.low <= order.stopLoss
-                : latestCandle.high >= order.stopLoss;
+                ? getKlineLow(latestKline) <= order.stopLoss
+                : getKlineHigh(latestKline) >= order.stopLoss;
 
               if (stopHit) {
-                console.log(`[OCO] Stop Loss hit for order ${order.id.slice(0, 8)}... at ${order.stopLoss} (${isLong ? 'LONG' : 'SHORT'})`);
-                state.closeOrder(order.id, order.stopLoss);
+                const orderId = getOrderId(order);
+                console.log(`[OCO] Stop Loss hit for order ${orderId.slice(0, 8)}... at ${order.stopLoss} (${isLong ? 'LONG' : 'SHORT'})`);
+                state.closeOrder(orderId, order.stopLoss);
                 return;
               }
             }
 
             if (order.takeProfit) {
               const targetHit = isLong
-                ? latestCandle.high >= order.takeProfit
-                : latestCandle.low <= order.takeProfit;
+                ? getKlineHigh(latestKline) >= order.takeProfit
+                : getKlineLow(latestKline) <= order.takeProfit;
 
               if (targetHit) {
-                console.log(`[OCO] Take Profit hit for order ${order.id.slice(0, 8)}... at ${order.takeProfit} (${isLong ? 'LONG' : 'SHORT'})`);
-                state.closeOrder(order.id, order.takeProfit);
+                const orderId = getOrderId(order);
+                console.log(`[OCO] Take Profit hit for order ${orderId.slice(0, 8)}... at ${order.takeProfit} (${isLong ? 'LONG' : 'SHORT'})`);
+                state.closeOrder(orderId, order.takeProfit);
                 return;
               }
             }
@@ -346,24 +349,24 @@ function AppContent(): ReactElement {
 
       previousPriceRef.current = currentPrice;
 
-      setLiveCandles(prev => {
-        if (prev.length === 0) return [latestCandle];
+      setLiveKlines(prev => {
+        if (prev.length === 0) return [latestKline];
 
-        const lastCandle = prev[prev.length - 1];
-        if (!lastCandle) return [latestCandle];
+        const lastKline = prev[prev.length - 1];
+        if (!lastKline) return [latestKline];
 
-        if (latestCandle.timestamp === lastCandle.timestamp) {
-          if (latestCandle.close === lastCandle.close &&
-            latestCandle.high === lastCandle.high &&
-            latestCandle.low === lastCandle.low &&
-            latestCandle.volume === lastCandle.volume) return prev;
-          return [...prev.slice(0, -1), latestCandle];
+        if (latestKline.openTime === lastKline.openTime) {
+          if (getKlineClose(latestKline) === getKlineClose(lastKline) &&
+            getKlineHigh(latestKline) === getKlineHigh(lastKline) &&
+            getKlineLow(latestKline) === getKlineLow(lastKline) &&
+            getKlineVolume(latestKline) === getKlineVolume(lastKline)) return prev;
+          return [...prev.slice(0, -1), latestKline];
         }
 
-        if (latestCandle.timestamp > lastCandle.timestamp) {
+        if (latestKline.openTime > lastKline.openTime) {
           previousPriceRef.current = null;
-          if (finalFlag) return [...prev, latestCandle];
-          return [...prev, latestCandle];
+          if (finalFlag) return [...prev, latestKline];
+          return [...prev, latestKline];
         }
 
         return prev;
@@ -374,7 +377,7 @@ function AppContent(): ReactElement {
     });
   }, [symbol]);
 
-  useRealtimeCandle(marketService, {
+  useRealtimeKline(marketService, {
     symbol,
     interval: timeframe,
     enabled: !!marketData,
@@ -389,20 +392,20 @@ function AppContent(): ReactElement {
     };
   }, []);
 
-  const displayCandles = useMemo(() => {
-    if (!marketData?.candles) return [];
-    if (liveCandles.length === 0) return marketData.candles;
+  const displayKlines = useMemo(() => {
+    if (!marketData?.klines) return [];
+    if (liveKlines.length === 0) return marketData.klines;
 
-    const baseCandles = marketData.candles;
-    const lastBaseCandle = baseCandles[baseCandles.length - 1];
-    const firstLiveCandle = liveCandles[0];
+    const baseKlines = marketData.klines;
+    const lastBaseKline = baseKlines[baseKlines.length - 1];
+    const firstLiveKline = liveKlines[0];
 
-    if (lastBaseCandle && firstLiveCandle && firstLiveCandle.timestamp === lastBaseCandle.timestamp) {
-      return [...baseCandles.slice(0, -1), ...liveCandles];
+    if (lastBaseKline && firstLiveKline && firstLiveKline.openTime === lastBaseKline.openTime) {
+      return [...baseKlines.slice(0, -1), ...liveKlines];
     }
 
-    return [...baseCandles, ...liveCandles];
-  }, [marketData?.candles, liveCandles]);
+    return [...baseKlines, ...liveKlines];
+  }, [marketData?.klines, liveKlines]);
 
   const debouncedAdvancedConfig = useDebounce(advancedConfig, 300);
 
@@ -459,7 +462,7 @@ function AppContent(): ReactElement {
     : [];
 
   useChartData({
-    candles: displayCandles,
+    klines: displayKlines,
     symbol,
     timeframe,
     chartType,
@@ -470,9 +473,10 @@ function AppContent(): ReactElement {
   });
 
   const getCurrentPrice = useCallback(() => {
-    if (displayCandles.length === 0) return null;
-    return displayCandles[displayCandles.length - 1]?.close ?? null;
-  }, [displayCandles]);
+    if (displayKlines.length === 0) return null;
+    const lastKline = displayKlines[displayKlines.length - 1];
+    return lastKline ? getKlineClose(lastKline) : null;
+  }, [displayKlines]);
 
   const isAutoTradingActive = useAIStore((state) => state.isAutoTradingActive);
 
@@ -480,7 +484,7 @@ function AppContent(): ReactElement {
     symbol,
     timeframe,
     chartType,
-    candles: displayCandles,
+    klines: displayKlines,
     getCurrentPrice,
   });
 
@@ -491,11 +495,12 @@ function AppContent(): ReactElement {
 
     if (isAutoTradingActive) {
       console.log('[App] Calling startTrading()...');
-      startTrading();
+      void startTrading();
     } else {
       console.log('[App] Calling stopTrading()...');
-      stopTrading();
+      void stopTrading();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAutoTradingActive]);
 
   return (
@@ -571,7 +576,7 @@ function AppContent(): ReactElement {
 
         {marketData && (
           <ChartCanvas
-            candles={displayCandles}
+            klines={displayKlines}
             symbol={symbol}
             width="100%"
             height="100%"
@@ -620,8 +625,8 @@ interface KeyboardShortcutsWrapperProps {
   setShowVolume: (value: boolean | ((prev: boolean) => boolean)) => void;
   showGrid: boolean;
   setShowGrid: (value: boolean | ((prev: boolean) => boolean)) => void;
-  chartType: 'candlestick' | 'line';
-  setChartType: (value: 'candlestick' | 'line' | ((prev: 'candlestick' | 'line') => 'candlestick' | 'line')) => void;
+  chartType: 'kline' | 'line';
+  setChartType: (value: 'kline' | 'line' | ((prev: 'kline' | 'line') => 'kline' | 'line')) => void;
   movingAverages: MovingAverageConfig[];
   setMovingAverages: (value: MovingAverageConfig[] | ((prev: MovingAverageConfig[]) => MovingAverageConfig[])) => void;
   advancedConfig: AdvancedControlsConfig;
@@ -640,7 +645,7 @@ function AppContentWithKeyboardShortcuts({
   useGlobalKeyboardShortcuts({
     onToggleVolume: () => setShowVolume(prev => !prev),
     onToggleGrid: () => setShowGrid(prev => !prev),
-    onToggleChartType: () => setChartType(prev => prev === 'candlestick' ? 'line' : 'candlestick'),
+    onToggleChartType: () => setChartType(prev => prev === 'kline' ? 'line' : 'kline'),
     onToggleMA: (index) => {
       setMovingAverages(prev => {
         if (index < 0 || index >= prev.length) return prev;
@@ -655,19 +660,19 @@ function AppContentWithKeyboardShortcuts({
     onZoomIn: () => {
       setAdvancedConfig(prev => ({
         ...prev,
-        candleSpacing: Math.min(prev.candleSpacing + 1, 30),
+        klineSpacing: Math.min(prev.klineSpacing + 1, 30),
       }));
     },
     onZoomOut: () => {
       setAdvancedConfig(prev => ({
         ...prev,
-        candleSpacing: Math.max(prev.candleSpacing - 1, 2),
+        klineSpacing: Math.max(prev.klineSpacing - 1, 2),
       }));
     },
     onResetZoom: () => {
       setAdvancedConfig(prev => ({
         ...prev,
-        candleSpacing: CHART_CONFIG.CANDLE_SPACING,
+        klineSpacing: CHART_CONFIG.KLINE_SPACING,
       }));
     },
     onPanLeft: () => { },

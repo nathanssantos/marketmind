@@ -32,7 +32,7 @@ function AITestComponent() {
   }, [isConfigured, configure]);
 
   const handleTest = async () => {
-    await sendMessage('What is a doji candlestick pattern?');
+    await sendMessage('What is a doji kline pattern?');
   };
 
   return (
@@ -189,7 +189,7 @@ const chartImage = canvas.toDataURL('image/png');
 // Analyze
 const analysis = await analyzeChart({
   chartImage,
-  candles: marketData.candles,
+  klines: marketData.klines,
   context: 'Bitcoin 1-hour chart',
 });
 

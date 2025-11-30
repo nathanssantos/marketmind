@@ -1,6 +1,6 @@
 import type { SetupDetectionConfig } from '@renderer/services/setupDetection';
 import {
-  createDefaultSetupDetectionConfig,
+    createDefaultSetupDetectionConfig,
 } from '@renderer/services/setupDetection';
 import type { SetupType, TradingSetup } from '@shared/types';
 import { create } from 'zustand';
@@ -32,6 +32,7 @@ export interface SetupExecution {
   setupId: string;
   setupType: SetupType;
   timestamp: number;
+  openTime?: number;
   entryPrice: number;
   stopLoss: number;
   takeProfit: number;
@@ -63,6 +64,9 @@ interface SetupStoreState {
   removeDetectedSetup: (id: string) => void;
   clearDetectedSetups: () => void;
   getDetectedSetup: (id: string) => TradingSetup | undefined;
+  updateSetup: (id: string, updates: Partial<TradingSetup>) => void;
+  cancelSetup: (id: string, reason: TradingSetup['cancellationReason']) => void;
+  triggerSetup: (id: string) => void;
 
   executeSetup: (setupId: string) => void;
   updateExecution: (
@@ -252,6 +256,42 @@ export const useSetupStore = create<SetupStoreState>()(
         return state.detectedSetups.find((s) => s.id === id);
       },
 
+      updateSetup: (id, updates) =>
+        set((state) => ({
+          detectedSetups: state.detectedSetups.map((s) =>
+            s.id === id ? { ...s, ...updates } : s,
+          ),
+        })),
+
+      cancelSetup: (id, reason) =>
+        set((state) => ({
+          detectedSetups: state.detectedSetups.map((s) => {
+            if (s.id !== id) return s;
+            const updated: TradingSetup = {
+              ...s,
+              isCancelled: true,
+              cancelledAt: Date.now(),
+            };
+            if (reason) {
+              updated.cancellationReason = reason;
+            }
+            return updated;
+          }),
+        })),
+
+      triggerSetup: (id) =>
+        set((state) => ({
+          detectedSetups: state.detectedSetups.map((s) =>
+            s.id === id
+              ? {
+                  ...s,
+                  isTriggered: true,
+                  triggeredAt: Date.now(),
+                }
+              : s,
+          ),
+        })),
+
       executeSetup: (setupId) => {
         const state = get();
         const setup = state.detectedSetups.find((s) => s.id === setupId);
@@ -261,6 +301,7 @@ export const useSetupStore = create<SetupStoreState>()(
           setupId: setup.id,
           setupType: setup.type,
           timestamp: Date.now(),
+          openTime: Date.now(),
           entryPrice: setup.entryPrice,
           stopLoss: setup.stopLoss,
           takeProfit: setup.takeProfit,
@@ -360,6 +401,7 @@ export const useSetupStore = create<SetupStoreState>()(
       partialize: (state) => ({
         config: state.config,
         isAutoTradingActive: state.isAutoTradingActive,
+        detectedSetups: state.detectedSetups,
         setupHistory: state.setupHistory,
         performanceByType: state.performanceByType,
         globalPerformance: state.globalPerformance,

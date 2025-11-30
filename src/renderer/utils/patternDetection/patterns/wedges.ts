@@ -1,9 +1,9 @@
-import type { AIPatternWedge, Candle } from '@shared/types';
+import type { AIPatternWedge, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
-    calculateConfidence,
-    normalizeTimeInPattern,
-    normalizeTouchPoints,
+  calculateConfidence,
+  normalizeTimeInPattern,
+  normalizeTouchPoints,
 } from '../core/confidenceScoring';
 import type { PivotPoint, Point, TrendlineData } from '../types';
 
@@ -66,10 +66,10 @@ const findConvergence = (upperLine: TrendlineData, lowerLine: TrendlineData): { 
 };
 
 export const detectRisingWedges = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternWedge[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const wedges: AIPatternWedge[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -115,13 +115,13 @@ export const detectRisingWedges = (
           if (!convergence || convergence.x < high2.index) continue;
 
           const wedgeHeight = ((high1.price - low1.price) / low1.price * 100).toFixed(1);
-          const candlesBetween = high2.index - low1.index;
+          const klinesBetween = high2.index - low1.index;
 
           const touchPointsScore = normalizeTouchPoints(4, 6);
           const timeScore = normalizeTimeInPattern(
-            candlesBetween,
-            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+            klinesBetween,
+            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
           );
 
           let context: 'uptrend' | 'downtrend' = 'uptrend';
@@ -141,12 +141,12 @@ export const detectRisingWedges = (
 
           if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) continue;
 
-          const startDate = new Date(low1.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          const endDate = new Date(high2.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const startDate = new Date(low1.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const endDate = new Date(high2.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
           const confidencePercent = Math.round(confidence * 100);
 
-          const convergenceCandle = candles[Math.round(convergence.x)];
-          const convergenceTimestamp = convergenceCandle?.timestamp || high2.timestamp + (high2.timestamp - low1.timestamp);
+          const convergenceKline = klines[Math.round(convergence.x)];
+          const convergenceTimestamp = convergenceKline?.openTime || high2.openTime + (high2.openTime - low1.openTime);
 
           const bias = context === 'uptrend' ? 'Bearish reversal likely' : 'Continuation pattern';
 
@@ -154,22 +154,22 @@ export const detectRisingWedges = (
             id: wedges.length + 1,
             type: 'wedge-rising',
             upperTrendline: [
-              { timestamp: high1.timestamp, price: high1.price },
-              { timestamp: high2.timestamp, price: high2.price },
+              { openTime: high1.openTime, price: high1.price },
+              { openTime: high2.openTime, price: high2.price },
             ],
             lowerTrendline: [
-              { timestamp: low1.timestamp, price: low1.price },
-              { timestamp: low2.timestamp, price: low2.price },
+              { openTime: low1.openTime, price: low1.price },
+              { openTime: low2.openTime, price: low2.price },
             ],
             convergencePoint: {
-              timestamp: convergenceTimestamp,
+              openTime: convergenceTimestamp,
               price: convergence.y,
             },
             context,
             label: `Rising Wedge · ${wedgeHeight}% height · ${bias} · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
             confidence,
             visible: true,
-            timestamp: low1.timestamp,
+            openTime: low1.openTime,
           });
         }
       }
@@ -182,10 +182,10 @@ export const detectRisingWedges = (
 };
 
 export const detectFallingWedges = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternWedge[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const wedges: AIPatternWedge[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -231,13 +231,13 @@ export const detectFallingWedges = (
           if (!convergence || convergence.x < low2.index) continue;
 
           const wedgeHeight = ((high1.price - low1.price) / low1.price * 100).toFixed(1);
-          const candlesBetween = low2.index - high1.index;
+          const klinesBetween = low2.index - high1.index;
 
           const touchPointsScore = normalizeTouchPoints(4, 6);
           const timeScore = normalizeTimeInPattern(
-            candlesBetween,
-            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+            klinesBetween,
+            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
           );
 
           let context: 'uptrend' | 'downtrend' = 'downtrend';
@@ -257,12 +257,12 @@ export const detectFallingWedges = (
 
           if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) continue;
 
-          const startDate = new Date(high1.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          const endDate = new Date(low2.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const startDate = new Date(high1.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const endDate = new Date(low2.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
           const confidencePercent = Math.round(confidence * 100);
 
-          const convergenceCandle = candles[Math.round(convergence.x)];
-          const convergenceTimestamp = convergenceCandle?.timestamp || low2.timestamp + (low2.timestamp - high1.timestamp);
+          const convergenceKline = klines[Math.round(convergence.x)];
+          const convergenceTimestamp = convergenceKline?.openTime || low2.openTime + (low2.openTime - high1.openTime);
 
           const bias = context === 'downtrend' ? 'Bullish reversal likely' : 'Continuation pattern';
 
@@ -270,22 +270,22 @@ export const detectFallingWedges = (
             id: wedges.length + 1,
             type: 'wedge-falling',
             upperTrendline: [
-              { timestamp: high1.timestamp, price: high1.price },
-              { timestamp: high2.timestamp, price: high2.price },
+              { openTime: high1.openTime, price: high1.price },
+              { openTime: high2.openTime, price: high2.price },
             ],
             lowerTrendline: [
-              { timestamp: low1.timestamp, price: low1.price },
-              { timestamp: low2.timestamp, price: low2.price },
+              { openTime: low1.openTime, price: low1.price },
+              { openTime: low2.openTime, price: low2.price },
             ],
             convergencePoint: {
-              timestamp: convergenceTimestamp,
+              openTime: convergenceTimestamp,
               price: convergence.y,
             },
             context,
             label: `Falling Wedge · ${wedgeHeight}% height · ${bias} · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
             confidence,
             visible: true,
-            timestamp: high1.timestamp,
+            openTime: high1.openTime,
           });
         }
       }

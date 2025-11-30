@@ -17,30 +17,32 @@ import { useRSIWorker } from '@renderer/hooks/useRSIWorker';
 import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
-import { SetupDetectionService } from '@renderer/services/setupDetection';
+import { SetupDetectionService, setupCancellationDetector } from '@renderer/services/setupDetection';
+import { TradingFeeService } from '@renderer/services/TradingFeeService';
 import { useSetupStore } from '@renderer/store';
 import { useTradingStore } from '@renderer/store/tradingStore';
 import { calculateMovingAverage } from '@renderer/utils/movingAverages';
 import type { StochasticResult } from '@renderer/utils/stochastic';
 import { CHART_CONFIG } from '@shared/constants';
-import type { AIPattern, Candle, Viewport } from '@shared/types';
+import type { AIPattern, Kline, Viewport } from '@shared/types';
 import type { Order } from '@shared/types/trading';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume, getOrderPrice, getOrderType, isOrderLong, isOrderPending } from '@shared/utils';
 import type React from 'react';
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from './AdvancedControls';
-import { CandleTimer } from './CandleTimer';
 import { ChartContextMenuManager } from './ChartContextMenuManager';
 import { ChartNavigation } from './ChartNavigation';
 import { ChartTooltip } from './ChartTooltip';
+import { KlineTimer } from './KlineTimer';
 import { PatternRenderer } from './PatternRenderer';
 import { SetupRenderer } from './SetupRenderer';
-import { useCandlestickRenderer } from './useCandlestickRenderer';
 import { useChartCanvas } from './useChartCanvas';
 import { useCrosshairPriceLineRenderer } from './useCrosshairPriceLineRenderer';
 import { useCurrentPriceLineRenderer } from './useCurrentPriceLineRenderer';
 import { useGridRenderer } from './useGridRenderer';
+import { useKlineRenderer } from './useKlineRenderer';
 import { useLineChartRenderer } from './useLineChartRenderer';
 import { useMovingAverageRenderer, type MovingAverageConfig } from './useMovingAverageRenderer';
 import { useOrderDragHandler } from './useOrderDragHandler';
@@ -53,7 +55,7 @@ const MOUSE_POSITION_THROTTLE_MS = 16;
 const RIGHT_MOUSE_BUTTON = 2;
 
 export interface ChartCanvasProps {
-  candles: Candle[];
+  klines: Kline[];
   symbol?: string;
   width?: string | number;
   height?: string | number;
@@ -68,7 +70,7 @@ export interface ChartCanvasProps {
   showMeasurementRuler?: boolean;
   showMeasurementArea?: boolean;
   movingAverages?: MovingAverageConfig[];
-  chartType?: 'candlestick' | 'line';
+  chartType?: 'kline' | 'line';
   advancedConfig?: AdvancedControlsConfig;
   aiPatterns?: AIPattern[];
   onDeleteAIPatterns?: () => void;
@@ -76,11 +78,13 @@ export interface ChartCanvasProps {
   onToggleAIPatternsVisibility?: () => void;
   aiPatternsVisible?: boolean;
   onDeletePattern?: (patternId: number) => void;
+  onToggleSetupsVisibility?: () => void;
+  setupsVisible?: boolean;
   timeframe?: string;
 }
 
 export const ChartCanvas = ({
-  candles,
+  klines,
   symbol,
   width = '100%',
   height = '600px',
@@ -95,7 +99,7 @@ export const ChartCanvas = ({
   showMeasurementRuler = false,
   showMeasurementArea = false,
   movingAverages = [],
-  chartType = 'candlestick',
+  chartType = 'kline',
   advancedConfig,
   aiPatterns = [],
   onDeleteAIPatterns,
@@ -103,6 +107,8 @@ export const ChartCanvas = ({
   onToggleAIPatternsVisibility,
   aiPatternsVisible = true,
   onDeletePattern,
+  onToggleSetupsVisibility,
+  setupsVisible = true,
   timeframe = '1h',
 }: ChartCanvasProps): ReactElement => {
   const { t } = useTranslation();
@@ -118,10 +124,23 @@ export const ChartCanvas = ({
 
   const detectedSetups = useSetupStore((state) => state.detectedSetups);
   const addDetectedSetup = useSetupStore((state) => state.addDetectedSetup);
+  const removeDetectedSetup = useSetupStore((state) => state.removeDetectedSetup);
+  const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
   const setupConfig = useSetupStore((state) => state.config);
   const [setupService] = useState(() => new SetupDetectionService(setupConfig));
   const [hoveredSetup, setHoveredSetup] = useState<ReturnType<typeof useSetupStore.getState>['detectedSetups'][0] | null>(null);
   const executedSetupsRef = useRef<Set<string>>(new Set());
+
+  const tradingFees = useTradingStore((state) => state.tradingFees);
+  const [feeService] = useState(() => {
+    const service = new TradingFeeService();
+    service.setFees(tradingFees);
+    return service;
+  });
+
+  useEffect(() => {
+    feeService.setFees(tradingFees);
+  }, [tradingFees, feeService]);
 
   const handleLongEntry = useCallback((price: number) => {
     const state = useTradingStore.getState();
@@ -133,20 +152,19 @@ export const ChartCanvas = ({
     }
     if (!symbol) return;
 
-    const currentPrice = candles[candles.length - 1]?.close;
-    const subType: 'limit' | 'stop' = currentPrice !== undefined && price < currentPrice ? 'limit' : 'stop';
+    const lastKline = klines[klines.length - 1];
+    const currentPrice = lastKline ? getKlineClose(lastKline) : undefined;
 
     addOrder({
       symbol,
-      type: 'long',
-      subType,
-      status: 'pending',
+      side: 'BUY' as const,
+      status: 'NEW' as const,
       entryPrice: price,
       quantity: getQuantityForSymbol(symbol) ?? 1,
       walletId: activeWallet.id,
       ...(currentPrice !== undefined && { currentPrice }),
     });
-  }, [addOrder, symbol, candles, getQuantityForSymbol, warning, t]);
+  }, [addOrder, symbol, klines, getQuantityForSymbol, warning, t]);
 
   const handleShortEntry = useCallback((price: number) => {
     const state = useTradingStore.getState();
@@ -158,20 +176,19 @@ export const ChartCanvas = ({
     }
     if (!symbol) return;
 
-    const currentPrice = candles[candles.length - 1]?.close;
-    const subType: 'limit' | 'stop' = currentPrice !== undefined && price > currentPrice ? 'limit' : 'stop';
+    const lastKline = klines[klines.length - 1];
+    const currentPrice = lastKline ? getKlineClose(lastKline) : undefined;
 
     addOrder({
       symbol,
-      type: 'short',
-      subType,
-      status: 'pending',
+      side: 'SELL' as const,
+      status: 'NEW' as const,
       entryPrice: price,
       quantity: getQuantityForSymbol(symbol) ?? 1,
       walletId: activeWallet.id,
       ...(currentPrice !== undefined && { currentPrice }),
     });
-  }, [addOrder, symbol, candles, getQuantityForSymbol, warning, t]);
+  }, [addOrder, symbol, klines, getQuantityForSymbol, warning, t]);
 
   const { shiftPressed, altPressed } = useTradingShortcuts({
     onLongEntry: handleLongEntry,
@@ -180,13 +197,13 @@ export const ChartCanvas = ({
   });
 
   const [tooltipData, setTooltipData] = useState<{
-    candle: Candle | null;
+    kline: Kline | null;
     x: number;
     y: number;
     visible: boolean;
     containerWidth?: number;
     containerHeight?: number;
-    candleIndex?: number;
+    klineIndex?: number;
     aiPattern?: AIPattern;
     movingAverage?: {
       period: number;
@@ -195,7 +212,7 @@ export const ChartCanvas = ({
       value?: number;
     };
     measurement?: {
-      candleCount: number;
+      klineCount: number;
       priceChange: number;
       percentChange: number;
       startPrice: number;
@@ -204,7 +221,7 @@ export const ChartCanvas = ({
     order?: Order;
     currentPrice?: number;
   }>({
-    candle: null,
+    kline: null,
     x: 0,
     y: 0,
     visible: false,
@@ -234,7 +251,7 @@ export const ChartCanvas = ({
   const [orderToClose, setOrderToClose] = useState<string | null>(null);
   const [stochasticData, setStochasticData] = useState<StochasticResult | null>(null);
   const { calculateStochastic } = useStochasticWorker();
-  const rsiWorkerData = useRSIWorker(candles, 2, showRSI);
+  const rsiWorkerData = useRSIWorker(klines, 2, showRSI);
   const {
     canvasRef,
     manager,
@@ -243,7 +260,7 @@ export const ChartCanvas = ({
     handleMouseUp,
     handleMouseLeave,
   } = useChartCanvas({
-    candles,
+    klines,
     ...(initialViewport !== undefined && { initialViewport }),
     ...(onViewportChange !== undefined && { onViewportChange }),
   });
@@ -252,7 +269,7 @@ export const ChartCanvas = ({
     setHoveredSetup(setup);
     if (setup && mousePosition) {
       setTooltipData({
-        candle: null,
+        kline: null,
         x: mousePosition.x,
         y: mousePosition.y,
         visible: true,
@@ -279,11 +296,13 @@ export const ChartCanvas = ({
       return;
     }
 
-    const currentCandles = manager.getCandles();
-    if (!currentCandles.length) return;
+    const currentKlines = manager.getKlines();
+    if (!currentKlines.length) return;
 
-    const currentPrice = currentCandles[currentCandles.length - 1]?.close;
-    if (!currentPrice) return;
+    const lastKline = currentKlines[currentKlines.length - 1];
+    if (!lastKline) return;
+
+    const currentPrice = getKlineClose(lastKline);
 
     closeOrder(orderToClose, currentPrice);
     setOrderToClose(null);
@@ -298,13 +317,13 @@ export const ChartCanvas = ({
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
   });
 
-  const { render: renderCandles } = useCandlestickRenderer({
+  const { render: renderKlines } = useKlineRenderer({
     manager,
     colors,
-    enabled: chartType === 'candlestick',
+    enabled: chartType === 'kline',
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
-    ...(advancedConfig?.candleWickWidth !== undefined && { candleWickWidth: advancedConfig.candleWickWidth }),
-    ...(tooltipData.candleIndex !== undefined && { hoveredCandleIndex: tooltipData.candleIndex }),
+    ...(advancedConfig?.klineWickWidth !== undefined && { klineWickWidth: advancedConfig.klineWickWidth }),
+    ...(tooltipData.klineIndex !== undefined && { hoveredKlineIndex: tooltipData.klineIndex }),
   });
 
   const { render: renderLineChart } = useLineChartRenderer({
@@ -320,7 +339,7 @@ export const ChartCanvas = ({
     enabled: showVolume,
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
     ...(advancedConfig?.volumeHeightRatio !== undefined && { volumeHeightRatio: advancedConfig.volumeHeightRatio }),
-    ...(tooltipData.candleIndex !== undefined && { hoveredCandleIndex: tooltipData.candleIndex }),
+    ...(tooltipData.klineIndex !== undefined && { hoveredKlineIndex: tooltipData.klineIndex }),
     timeframe,
     showVolumeMA: true,
   });
@@ -368,8 +387,9 @@ export const ChartCanvas = ({
 
   const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, isSimulatorActive, hoveredOrderId);
 
-  const currentCandles = manager?.getCandles() ?? [];
-  const currentPrice = currentCandles[currentCandles.length - 1]?.close ?? 0;
+  const currentKlines = manager?.getKlines() ?? [];
+  const lastKline = currentKlines[currentKlines.length - 1];
+  const currentPrice = lastKline ? getKlineClose(lastKline) : 0;
 
   const activeOrders = useMemo(
     () => activeWalletId ? orders.filter(o => o.walletId === activeWalletId) : [],
@@ -416,7 +436,7 @@ export const ChartCanvas = ({
 
       const startIndex = Math.min(measurementArea.startIndex, hoveredIndex);
       const endIndex = Math.max(measurementArea.startIndex, hoveredIndex);
-      const candleCount = Math.abs(endIndex - startIndex);
+      const klineCount = Math.abs(endIndex - startIndex);
 
       const startPrice = manager.yToPrice(measurementArea.startY);
       const endPrice = manager.yToPrice(mouseY);
@@ -424,14 +444,14 @@ export const ChartCanvas = ({
       const percentChange = (priceChange / startPrice) * 100;
 
       setTooltipData({
-        candle: null,
+        kline: null,
         x: mouseX,
         y: mouseY,
         visible: true,
         containerWidth: rect.width,
         containerHeight: rect.height,
         measurement: {
-          candleCount,
+          klineCount,
           priceChange,
           percentChange,
           startPrice,
@@ -507,8 +527,8 @@ export const ChartCanvas = ({
 
     const isOnTimeScale = mouseY >= timeScaleTop;
 
-    const lastCandleX = manager.indexToX(candles.length - 1);
-    const patternExtensionArea = lastCandleX + CHART_CONFIG.PATTERN_EXTENSION_DISTANCE;
+    const lastKlineX = manager.indexToX(klines.length - 1);
+    const patternExtensionArea = lastKlineX + CHART_CONFIG.PATTERN_EXTENSION_DISTANCE;
     const isInChartArea = mouseX < chartAreaRight && mouseY < timeScaleTop;
     const isInExtendedPatternArea = mouseX >= chartAreaRight && mouseX <= patternExtensionArea && mouseY < timeScaleTop;
 
@@ -527,7 +547,7 @@ export const ChartCanvas = ({
     if (isOnPriceScale && hoveredTagIndex === undefined) {
       setHoveredMAIndex(undefined);
       setTooltipData({
-        candle: null,
+        kline: null,
         x: 0,
         y: 0,
         visible: false,
@@ -538,7 +558,7 @@ export const ChartCanvas = ({
     if (isOnTimeScale) {
       setHoveredMAIndex(undefined);
       setTooltipData({
-        candle: null,
+        kline: null,
         x: 0,
         y: 0,
         visible: false,
@@ -549,13 +569,14 @@ export const ChartCanvas = ({
     const hoveredOrderForTooltip = getHoveredOrder(mouseX, mouseY);
     const hoveredOrderIdForTooltip = hoveredOrderForTooltip?.id || null;
 
-    if (hoveredOrderForTooltip && candles.length > 0) {
+    if (hoveredOrderForTooltip && klines.length > 0) {
       if (hoveredOrderIdForTooltip !== lastTooltipOrderRef.current) {
         lastTooltipOrderRef.current = hoveredOrderIdForTooltip;
-        const currentPrice = candles[candles.length - 1]?.close;
+        const lastKline = klines[klines.length - 1];
+        const currentPrice = lastKline ? getKlineClose(lastKline) : undefined;
         const rect = canvasRef.current?.getBoundingClientRect();
         setTooltipData({
-          candle: null,
+          kline: null,
           x: mouseX,
           y: mouseY,
           visible: true,
@@ -571,7 +592,7 @@ export const ChartCanvas = ({
     if (!hoveredOrderForTooltip && lastTooltipOrderRef.current) {
       lastTooltipOrderRef.current = null;
       setTooltipData({
-        candle: null,
+        kline: null,
         x: 0,
         y: 0,
         visible: false,
@@ -617,16 +638,16 @@ export const ChartCanvas = ({
     } else {
       const effectiveWidth = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
       const visibleRange = viewport.end - viewport.start;
-      const widthPerCandle = effectiveWidth / visibleRange;
-      const { candleWidth } = viewport;
-      const candleCenterOffset = (widthPerCandle - candleWidth) / 2 + candleWidth / 2;
+      const widthPerKline = effectiveWidth / visibleRange;
+      const { klineWidth } = viewport;
+      const klineCenterOffset = (widthPerKline - klineWidth) / 2 + klineWidth / 2;
 
       movingAverages.forEach((ma, index) => {
         if (ma.visible === false) return;
 
-        const maValues = calculateMovingAverage(candles, ma.period, ma.type);
+        const maValues = calculateMovingAverage(klines, ma.period, ma.type);
         const startIndex = Math.max(0, Math.floor(viewport.start));
-        const endIndex = Math.min(candles.length, Math.ceil(viewport.end));
+        const endIndex = Math.min(klines.length, Math.ceil(viewport.end));
 
         for (let i = startIndex; i < endIndex - 1; i++) {
           const value1 = maValues[i];
@@ -634,9 +655,9 @@ export const ChartCanvas = ({
 
           if (value1 === null || value1 === undefined || value2 === null || value2 === undefined) continue;
 
-          const x1 = manager.indexToX(i) + candleCenterOffset;
+          const x1 = manager.indexToX(i) + klineCenterOffset;
           const y1 = manager.priceToY(value1);
-          const x2 = manager.indexToX(i + 1) + candleCenterOffset;
+          const x2 = manager.indexToX(i + 1) + klineCenterOffset;
           const y2 = manager.priceToY(value2);
 
           const distance = distanceToLine(mouseX, mouseY, x1, y1, x2, y2);
@@ -657,7 +678,7 @@ export const ChartCanvas = ({
       const ma = movingAverages[closestMAIndex];
       if (ma) {
         setTooltipData({
-          candle: null,
+          kline: null,
           x: mouseX,
           y: mouseY,
           visible: true,
@@ -677,7 +698,7 @@ export const ChartCanvas = ({
 
     if (hoveredAIPattern) {
       setTooltipData({
-        candle: null,
+        kline: null,
         x: mouseX,
         y: mouseY,
         visible: true,
@@ -690,7 +711,7 @@ export const ChartCanvas = ({
 
     if (!isInChartArea) {
       setTooltipData({
-        candle: null,
+        kline: null,
         x: 0,
         y: 0,
         visible: false,
@@ -701,39 +722,39 @@ export const ChartCanvas = ({
     const effectiveChartWidth = chartAreaRight;
     const hoveredIndex = Math.floor(viewport.start + (mouseX / effectiveChartWidth) * (viewport.end - viewport.start));
 
-    if (hoveredIndex >= 0 && hoveredIndex < candles.length) {
-      const candle = candles[hoveredIndex];
-      if (candle) {
+    if (hoveredIndex >= 0 && hoveredIndex < klines.length) {
+      const kline = klines[hoveredIndex];
+      if (kline) {
         const x = manager.indexToX(hoveredIndex);
-        const candleWidth = viewport.candleWidth;
+        const klineWidth = viewport.klineWidth;
 
         const visibleRange = viewport.end - viewport.start;
-        const widthPerCandle = chartAreaRight / visibleRange;
-        const candleX = x + (widthPerCandle - candleWidth) / 2;
+        const widthPerKline = chartAreaRight / visibleRange;
+        const klineX = x + (widthPerKline - klineWidth) / 2;
 
-        const openY = manager.priceToY(candle.open);
-        const closeY = manager.priceToY(candle.close);
-        const highY = manager.priceToY(candle.high);
-        const lowY = manager.priceToY(candle.low);
+        const openY = manager.priceToY(getKlineOpen(kline));
+        const closeY = manager.priceToY(getKlineClose(kline));
+        const highY = manager.priceToY(getKlineHigh(kline));
+        const lowY = manager.priceToY(getKlineLow(kline));
 
-        const bodyLeft = candleX;
-        const bodyRight = candleX + candleWidth;
+        const bodyLeft = klineX;
+        const bodyRight = klineX + klineWidth;
         const bodyTop = Math.min(openY, closeY);
         const bodyBottom = Math.max(openY, closeY);
 
         const volumeHeightRatio = advancedConfig?.volumeHeightRatio ?? CHART_CONFIG.VOLUME_HEIGHT_RATIO;
         const volumeOverlayHeight = dimensions.chartHeight * volumeHeightRatio;
         const volumeBaseY = dimensions.chartHeight;
-        const volumeRatio = candle.volume / bounds.maxVolume;
+        const volumeRatio = getKlineVolume(kline) / bounds.maxVolume;
         const barHeight = volumeRatio * volumeOverlayHeight;
         const volumeTop = volumeBaseY - barHeight;
 
-        const isOnCandleBody = mouseX >= bodyLeft &&
+        const isOnKlineBody = mouseX >= bodyLeft &&
           mouseX <= bodyRight &&
           mouseY >= bodyTop &&
           mouseY <= bodyBottom;
 
-        const isOnCandleWick = mouseX >= bodyLeft &&
+        const isOnKlineWick = mouseX >= bodyLeft &&
           mouseX <= bodyRight &&
           mouseY >= highY &&
           mouseY <= lowY;
@@ -744,15 +765,15 @@ export const ChartCanvas = ({
           mouseY >= volumeTop &&
           mouseY <= volumeBaseY;
 
-        if (isOnCandleBody || isOnCandleWick || isOnVolumeBar) {
+        if (isOnKlineBody || isOnKlineWick || isOnVolumeBar) {
           setTooltipData({
-            candle,
+            kline,
             x: mouseX,
             y: mouseY,
             visible: true,
             containerWidth: rect.width,
             containerHeight: rect.height,
-            candleIndex: hoveredIndex,
+            klineIndex: hoveredIndex,
           });
           return;
         }
@@ -760,7 +781,7 @@ export const ChartCanvas = ({
     }
 
     setTooltipData({
-      candle: null,
+      kline: null,
       x: 0,
       y: 0,
       visible: false,
@@ -778,7 +799,7 @@ export const ChartCanvas = ({
     setIsMeasuring(false);
     setMeasurementArea(null);
     setTooltipData({
-      candle: null,
+      kline: null,
       x: 0,
       y: 0,
       visible: false,
@@ -818,6 +839,18 @@ export const ChartCanvas = ({
 
   const handleTogglePatternsVisibility = (): void => {
     onToggleAIPatternsVisibility?.();
+  };
+
+  const handleToggleSetupsVisibility = (): void => {
+    onToggleSetupsVisibility?.();
+  };
+
+  const handleDeleteSingleSetup = (setupId: string): void => {
+    removeDetectedSetup(setupId);
+  };
+
+  const handleDeleteAllSetups = (): void => {
+    clearDetectedSetups();
   };
 
   const startInteraction = (): void => {
@@ -949,9 +982,9 @@ export const ChartCanvas = ({
     }
   };
 
-  const handleNextCandle = (): void => {
+  const handleNextKline = (): void => {
     if (manager) {
-      manager.panToNextCandle();
+      manager.panToNextKline();
     }
   };
 
@@ -965,14 +998,14 @@ export const ChartCanvas = ({
   }, []);
 
   useEffect(() => {
-    if (!showStochastic || candles.length === 0) {
+    if (!showStochastic || klines.length === 0) {
       setStochasticData(null);
       return;
     }
 
     const calculate = async (): Promise<void> => {
       try {
-        const result = await calculateStochastic(candles, 14, 3);
+        const result = await calculateStochastic(klines, 14, 3);
         setStochasticData(result);
       } catch (error) {
         console.error('Failed to calculate stochastic:', error);
@@ -981,7 +1014,7 @@ export const ChartCanvas = ({
     };
 
     calculate();
-  }, [showStochastic, candles, calculateStochastic]);
+  }, [showStochastic, klines, calculateStochastic]);
 
   useEffect(() => {
     if (!manager || !advancedConfig) return;
@@ -1008,12 +1041,23 @@ export const ChartCanvas = ({
   }, [symbol]);
 
   useEffect(() => {
-    const { isAutoTradingActive } = useSetupStore.getState();
+    const { isAutoTradingActive, detectedSetups: activeSetups, cancelSetup } = useSetupStore.getState();
 
-    if (!isAutoTradingActive || candles.length < 50) return;
+    if (!isAutoTradingActive || klines.length < 50) return;
+
+    activeSetups.forEach((setup) => {
+      if (setup.isTriggered || setup.isCancelled) return;
+
+      const currentIndex = klines.length - 1;
+      const cancellationResult = setupCancellationDetector.checkCancellation(setup, klines, currentIndex);
+
+      if (cancellationResult.isCancelled && cancellationResult.reason) {
+        cancelSetup(setup.id, cancellationResult.reason);
+      }
+    });
 
     setupService.updateConfig(setupConfig);
-    const detectedSetups = setupService.detectSetups(candles);
+    const detectedSetups = setupService.detectSetups(klines);
 
     detectedSetups.forEach((setup) => {
       if (executedSetupsRef.current.has(setup.id)) return;
@@ -1031,28 +1075,49 @@ export const ChartCanvas = ({
       const activeWallet = wallets.find(w => w.id === walletId);
       if (!activeWallet) return;
 
-      const currentPrice = candles[candles.length - 1]?.close;
+      const lastKline = klines[klines.length - 1];
+      const currentPrice = lastKline ? getKlineClose(lastKline) : undefined;
+      const quantity = getQuantityForSymbol(symbol) ?? 1;
+
+      const viability = feeService.evaluateTradeViability(
+        setup.entryPrice,
+        setup.stopLoss,
+        setup.takeProfit,
+        quantity,
+      );
+
+      if (!viability.isViable) {
+        console.warn(`[ChartCanvas] Setup ${setup.type} rejected due to fees:`, viability.reason);
+        warning(`Trade Rejected: ${viability.reason ?? 'Trade not viable after fees'}`);
+        return;
+      }
+
       const isLong = setup.direction === 'LONG';
-      const subType: 'limit' | 'stop' = currentPrice !== undefined &&
-        ((isLong && setup.entryPrice < currentPrice) || (!isLong && setup.entryPrice > currentPrice))
-        ? 'limit' : 'stop';
+
+      const fees = viability.fees;
 
       addOrder({
         symbol,
-        type: isLong ? 'long' : 'short',
-        subType,
-        status: 'pending',
+        side: isLong ? 'BUY' : 'SELL',
+        status: 'NEW' as const,
         entryPrice: setup.entryPrice,
-        quantity: getQuantityForSymbol(symbol) ?? 1,
+        quantity,
         walletId,
         stopLoss: setup.stopLoss,
         takeProfit: setup.takeProfit,
+        setupId: setup.id,
+        setupType: setup.type,
+        setupDirection: setup.direction,
+        setupConfidence: setup.confidence,
+        entryFee: fees.entryFee.toString(),
+        exitFee: fees.exitFee.toString(),
+        totalFees: fees.totalFees.toString(),
         ...(currentPrice !== undefined && { currentPrice }),
       });
 
       useSetupStore.getState().executeSetup(setup.id);
     });
-  }, [candles, setupConfig, setupService, addDetectedSetup, addOrder, getQuantityForSymbol, symbol]);
+  }, [klines, setupConfig, setupService, addDetectedSetup, addOrder, getQuantityForSymbol, symbol, feeService, warning]);
 
   useEffect(() => {
     if (!shiftPressed && !altPressed) {
@@ -1083,8 +1148,8 @@ export const ChartCanvas = ({
       manager.clear();
       renderGrid();
       renderVolume();
-      if (chartType === 'candlestick') {
-        renderCandles();
+      if (chartType === 'kline') {
+        renderKlines();
       } else {
         renderLineChart();
       }
@@ -1106,18 +1171,19 @@ export const ChartCanvas = ({
         let label: string;
         let isDashed = true;
 
-        if (dragType === 'entry' && draggedOrder.status === 'pending') {
+        if (dragType === 'entry' && isOrderPending(draggedOrder)) {
+          const isLong = isOrderLong(draggedOrder);
           const willExecuteImmediately =
-            (draggedOrder.type === 'long' && previewPrice <= currentPrice) ||
-            (draggedOrder.type === 'short' && previewPrice >= currentPrice);
+            (isLong && previewPrice <= currentPrice) ||
+            (!isLong && previewPrice >= currentPrice);
 
           if (willExecuteImmediately) {
             color = 'rgba(59, 130, 246, 0.9)';
-            label = `${draggedOrder.type === 'long' ? 'L' : 'S'} ${currentPrice.toFixed(2)} [MARKET]`;
+            label = `${isLong ? 'L' : 'S'} ${currentPrice.toFixed(2)} [MARKET]`;
             isDashed = false;
           } else {
             color = 'rgba(100, 116, 139, 0.7)';
-            label = `${draggedOrder.type === 'long' ? 'L' : 'S'} ${previewPrice.toFixed(2)} [PENDING]`;
+            label = `${isLong ? 'L' : 'S'} ${previewPrice.toFixed(2)} [PENDING]`;
           }
         } else {
           const isStopLoss = dragType === 'stopLoss';
@@ -1285,7 +1351,7 @@ export const ChartCanvas = ({
     manager,
     renderGrid,
     renderVolume,
-    renderCandles,
+    renderKlines,
     renderLineChart,
     renderMovingAverages,
     renderStochastic,
@@ -1340,26 +1406,27 @@ export const ChartCanvas = ({
                   const order = orders.find((o) => o.id === orderToClose);
                   if (!order || !manager) return null;
 
-                  const candles = manager.getCandles();
-                  if (!candles.length) return null;
+                  const klines = manager.getKlines();
+                  if (!klines.length) return null;
 
-                  const lastCandle = candles[candles.length - 1];
-                  if (!lastCandle) return null;
+                  const lastKline = klines[klines.length - 1];
+                  if (!lastKline) return null;
 
-                  const currentPrice = lastCandle.close;
-                  const isLong = order.type === 'long';
-                  const priceChange = currentPrice - order.entryPrice;
+                  const currentPrice = getKlineClose(lastKline);
+                  const isLong = isOrderLong(order);
+                  const entryPrice = getOrderPrice(order);
+                  const priceChange = currentPrice - entryPrice;
                   const percentChange = isLong
-                    ? (priceChange / order.entryPrice) * 100
-                    : (-priceChange / order.entryPrice) * 100;
+                    ? (priceChange / entryPrice) * 100
+                    : (-priceChange / entryPrice) * 100;
                   const isProfit = percentChange >= 0;
 
                   return (
                     <Box>
                       <Box mb={4}>
                         {t('trading.closeOrderConfirm', {
-                          type: order.type.toUpperCase(),
-                          entry: order.entryPrice.toFixed(2),
+                          type: getOrderType(order).toUpperCase(),
+                          entry: entryPrice.toFixed(2),
                           current: currentPrice.toFixed(2),
                         })}
                       </Box>
@@ -1399,12 +1466,18 @@ export const ChartCanvas = ({
       >
         <ChartContextMenuManager
           hoveredPattern={contextMenuPattern ?? hoveredAIPattern}
+          hoveredSetup={hoveredSetup}
           onDeletePattern={handleDeleteSinglePattern}
           onDeleteDetectedPattern={onDeletePattern ?? (() => { })}
           onDeleteAllPatterns={handleDeletePatterns}
+          onDeleteSetup={handleDeleteSingleSetup}
+          onDeleteAllSetups={handleDeleteAllSetups}
           onTogglePatternsVisibility={handleTogglePatternsVisibility}
+          onToggleSetupsVisibility={handleToggleSetupsVisibility}
           hasPatterns={aiPatterns.length > 0}
+          hasSetups={detectedSetups.length > 0}
           patternsVisible={aiPatternsVisible}
+          setupsVisible={setupsVisible}
           onOpenChange={handleContextMenuOpenChange}
         >
           <canvas
@@ -1425,7 +1498,7 @@ export const ChartCanvas = ({
         {manager && !isInteracting && (
           <PatternRenderer
             canvasManager={manager}
-            candles={candles}
+            klines={klines}
             patterns={aiPatterns}
             width={canvasRef.current?.width ?? 0}
             height={canvasRef.current?.height ?? 0}
@@ -1437,7 +1510,7 @@ export const ChartCanvas = ({
         {manager && !isInteracting && (
           <SetupRenderer
             canvasManager={manager}
-            candles={candles}
+            klines={klines}
             setups={detectedSetups.filter((s) => s.visible)}
             width={canvasRef.current?.width ?? 0}
             height={canvasRef.current?.height ?? 0}
@@ -1447,18 +1520,18 @@ export const ChartCanvas = ({
         )}
         <ChartNavigation
           onResetView={handleResetView}
-          onNextCandle={handleNextCandle}
+          onNextKline={handleNextKline}
           stochasticPanelHeight={showStochastic ? CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT : 0}
           rsiPanelHeight={showRSI ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0}
         />
-        <CandleTimer
+        <KlineTimer
           timeframe={timeframe}
-          lastCandleTime={candles[candles.length - 1]?.timestamp}
+          lastKlineTime={klines[klines.length - 1]?.openTime}
           stochasticPanelHeight={showStochastic ? CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT : 0}
           rsiPanelHeight={showRSI ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0}
         />
         <ChartTooltip
-          candle={tooltipData.candle}
+          kline={tooltipData.kline}
           x={tooltipData.x}
           y={tooltipData.y}
           visible={tooltipData.visible}

@@ -136,20 +136,20 @@ describe('formatters', () => {
   });
 
   describe('formatChartDataContext', () => {
-    const mockCandles = [
-      { timestamp: 1700000000000, open: 100, high: 110, low: 95, close: 105, volume: 1000000 },
-      { timestamp: 1700000060000, open: 105, high: 115, low: 100, close: 110, volume: 1500000 },
-      { timestamp: 1700000120000, open: 110, high: 120, low: 105, close: 115, volume: 2000000 },
-      { timestamp: 1700000180000, open: 115, high: 125, low: 110, close: 120, volume: 1800000 },
-      { timestamp: 1700000240000, open: 120, high: 130, low: 115, close: 118, volume: 1600000 },
+    const mockKlines = [
+      { openTime: 1700000000000, closeTime: 1700000060000, open: '100', high: '110', low: '95', close: '105', volume: '1000000', quoteVolume: '105000000', trades: 1000, takerBuyBaseVolume: '500000', takerBuyQuoteVolume: '52500000' },
+      { openTime: 1700000060000, closeTime: 1700000120000, open: '105', high: '115', low: '100', close: '110', volume: '1500000', quoteVolume: '165000000', trades: 1500, takerBuyBaseVolume: '750000', takerBuyQuoteVolume: '82500000' },
+      { openTime: 1700000120000, closeTime: 1700000180000, open: '110', high: '120', low: '105', close: '115', volume: '2000000', quoteVolume: '230000000', trades: 2000, takerBuyBaseVolume: '1000000', takerBuyQuoteVolume: '115000000' },
+      { openTime: 1700000180000, closeTime: 1700000240000, open: '115', high: '125', low: '110', close: '120', volume: '1800000', quoteVolume: '216000000', trades: 1800, takerBuyBaseVolume: '900000', takerBuyQuoteVolume: '108000000' },
+      { openTime: 1700000240000, closeTime: 1700000300000, open: '120', high: '130', low: '115', close: '118', volume: '1600000', quoteVolume: '188800000', trades: 1600, takerBuyBaseVolume: '800000', takerBuyQuoteVolume: '94400000' },
     ];
 
-    it('should handle empty candles', () => {
+    it('should handle empty klines', () => {
       const chartData: ChartContextData = {
         symbol: 'BTCUSDT',
         timeframe: '1m',
-        chartType: 'candlestick',
-        candles: [],
+        chartType: 'kline',
+        klines: [],
         movingAverages: [],
         showVolume: true,
       };
@@ -161,8 +161,8 @@ describe('formatters', () => {
       const chartData: ChartContextData = {
         symbol: 'BTCUSDT',
         timeframe: '1m',
-        chartType: 'candlestick',
-        candles: mockCandles,
+        chartType: 'kline',
+        klines: mockKlines,
         movingAverages: [],
         showVolume: true,
       };
@@ -172,15 +172,15 @@ describe('formatters', () => {
       expect(result).toContain('# Chart Analysis Context');
       expect(result).toContain('Symbol: BTCUSDT');
       expect(result).toContain('Timeframe: 1m');
-      expect(result).toContain('Chart Type: candlestick');
+      expect(result).toContain('Chart Type: kline');
     });
 
     it('should calculate price statistics correctly', () => {
       const chartData: ChartContextData = {
         symbol: 'BTCUSDT',
         timeframe: '1m',
-        chartType: 'candlestick',
-        candles: mockCandles,
+        chartType: 'kline',
+        klines: mockKlines,
         movingAverages: [],
         showVolume: true,
       };
@@ -196,8 +196,8 @@ describe('formatters', () => {
       const chartData: ChartContextData = {
         symbol: 'BTCUSDT',
         timeframe: '1m',
-        chartType: 'candlestick',
-        candles: mockCandles,
+        chartType: 'kline',
+        klines: mockKlines,
         movingAverages: [],
         showVolume: true,
       };
@@ -213,16 +213,16 @@ describe('formatters', () => {
       const chartData: ChartContextData = {
         symbol: 'BTCUSDT',
         timeframe: '1m',
-        chartType: 'candlestick',
-        candles: mockCandles,
+        chartType: 'kline',
+        klines: mockKlines,
         movingAverages: [],
         showVolume: true,
       };
 
       const result = formatChartDataContext(chartData);
 
-      expect(result).toContain('Bullish Candles: 4');
-      expect(result).toContain('Bearish Candles: 1');
+      expect(result).toContain('Bullish Klines: 4');
+      expect(result).toContain('Bearish Klines: 1');
       expect(result).toContain('Overall Trend: Bullish');
     });
 
@@ -230,8 +230,8 @@ describe('formatters', () => {
       const chartData: ChartContextData = {
         symbol: 'BTCUSDT',
         timeframe: '1m',
-        chartType: 'candlestick',
-        candles: mockCandles,
+        chartType: 'kline',
+        klines: mockKlines,
         movingAverages: [
           { period: 20, type: 'SMA', color: '#ff0000', visible: true },
           { period: 50, type: 'EMA', color: '#00ff00', visible: true },
@@ -252,8 +252,8 @@ describe('formatters', () => {
       const chartData: ChartContextData = {
         symbol: 'BTCUSDT',
         timeframe: '1m',
-        chartType: 'candlestick',
-        candles: mockCandles,
+        chartType: 'kline',
+        klines: mockKlines,
         movingAverages: [],
         showVolume: true,
         news: [
@@ -288,28 +288,33 @@ describe('formatters', () => {
       expect(result).toContain('Market correction expected');
     });
 
-    it('should limit candles to last 100', () => {
-      const manyCandles = Array.from({ length: 200 }, (_, i) => ({
-        timestamp: 1700000000000 + i * 60000,
-        open: 100 + i,
-        high: 110 + i,
-        low: 95 + i,
-        close: 105 + i,
-        volume: 1000000 + i * 1000,
+    it('should limit klines to last 100', () => {
+      const manyKlines = Array.from({ length: 200 }, (_, i) => ({
+        openTime: 1700000000000 + i * 60000,
+        closeTime: 1700000000000 + (i + 1) * 60000,
+        open: (100 + i).toString(),
+        high: (110 + i).toString(),
+        low: (95 + i).toString(),
+        close: (105 + i).toString(),
+        volume: (1000000 + i * 1000).toString(),
+        quoteVolume: '105000000',
+        trades: 100,
+        takerBuyBaseVolume: '500000',
+        takerBuyQuoteVolume: '52500000',
       }));
 
       const chartData: ChartContextData = {
         symbol: 'BTCUSDT',
         timeframe: '1m',
-        chartType: 'candlestick',
-        candles: manyCandles,
+        chartType: 'kline',
+        klines: manyKlines,
         movingAverages: [],
         showVolume: true,
       };
 
       const result = formatChartDataContext(chartData);
 
-      expect(result).toContain('Last 100 Candles');
+      expect(result).toContain('Last 100 Klines');
       expect(result).toContain('Current Price: $304.00');
     });
   });

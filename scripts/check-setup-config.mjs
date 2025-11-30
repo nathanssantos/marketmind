@@ -50,7 +50,7 @@ try {
                             console.log('\n🔧 Configurações adicionais:');
                             console.log(`Trend Filter:      ${config.enableTrendFilter ? '✅ Habilitado' : '❌ Desabilitado'}`);
                             console.log(`Allow Counter:     ${config.allowCounterTrend ? '✅ Sim' : '❌ Não'}`);
-                            console.log(`Cooldown Period:   ${config.setupCooldownPeriod} candles`);
+                            console.log(`Cooldown Period:   ${config.setupCooldownPeriod} klines`);
                         }
                     }
                 } catch (e) {

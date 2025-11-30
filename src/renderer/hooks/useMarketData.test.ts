@@ -1,23 +1,23 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import type { KlineData } from '@shared/types';
 import { renderHook, waitFor } from '@testing-library/react';
-import { useMarketData } from './useMarketData';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MarketDataService } from '../services/market/MarketDataService';
-import type { CandleData } from '@shared/types';
+import { useMarketData } from './useMarketData';
 
 describe('useMarketData', () => {
   let mockService: MarketDataService;
-  const mockCandleData: CandleData = {
+  const mockKlineData: KlineData = {
     symbol: 'BTCUSDT',
     interval: '1h',
-    candles: [
-      { timestamp: 1000, open: 100, high: 110, low: 95, close: 105, volume: 1000 },
-      { timestamp: 2000, open: 105, high: 115, low: 100, close: 110, volume: 1500 },
+    klines: [
+      { openTime: 1000, closeTime: 2000, open: '100', high: '110', low: '95', close: '105', volume: '1000', quoteVolume: '105000', trades: 100, takerBuyBaseVolume: '500', takerBuyQuoteVolume: '52500' },
+      { openTime: 2000, closeTime: 3000, open: '105', high: '115', low: '100', close: '110', volume: '1500', quoteVolume: '165000', trades: 150, takerBuyBaseVolume: '750', takerBuyQuoteVolume: '82500' },
     ],
   };
 
   beforeEach(() => {
     mockService = {
-      fetchCandles: vi.fn().mockResolvedValue(mockCandleData),
+      fetchKlines: vi.fn().mockResolvedValue(mockKlineData),
     } as unknown as MarketDataService;
   });
 
@@ -33,9 +33,9 @@ describe('useMarketData', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.data).toEqual(mockCandleData);
+    expect(result.current.data).toEqual(mockKlineData);
     expect(result.current.error).toBe(null);
-    expect(mockService.fetchCandles).toHaveBeenCalledWith({
+    expect(mockService.fetchKlines).toHaveBeenCalledWith({
       symbol: 'BTCUSDT',
       interval: '1h',
       limit: 500,
@@ -44,7 +44,7 @@ describe('useMarketData', () => {
 
   it('should handle fetch errors', async () => {
     const error = new Error('Network error');
-    mockService.fetchCandles = vi.fn().mockRejectedValue(error);
+    mockService.fetchKlines = vi.fn().mockRejectedValue(error);
 
     const { result } = renderHook(() =>
       useMarketData(mockService, { symbol: 'BTCUSDT', interval: '1h' })
@@ -59,7 +59,7 @@ describe('useMarketData', () => {
   });
 
   it('should handle non-Error rejections', async () => {
-    mockService.fetchCandles = vi.fn().mockRejectedValue('String error');
+    mockService.fetchKlines = vi.fn().mockRejectedValue('String error');
 
     const { result } = renderHook(() =>
       useMarketData(mockService, { symbol: 'BTCUSDT', interval: '1h' })
@@ -82,11 +82,11 @@ describe('useMarketData', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(mockService.fetchCandles).toHaveBeenCalledTimes(1);
+    expect(mockService.fetchKlines).toHaveBeenCalledTimes(1);
 
     await result.current.refetch();
 
-    expect(mockService.fetchCandles).toHaveBeenCalledTimes(2);
+    expect(mockService.fetchKlines).toHaveBeenCalledTimes(2);
   });
 
   it('should update data when symbol changes', async () => {
@@ -99,7 +99,7 @@ describe('useMarketData', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(mockService.fetchCandles).toHaveBeenCalledWith({
+    expect(mockService.fetchKlines).toHaveBeenCalledWith({
       symbol: 'BTCUSDT',
       interval: '1h',
       limit: 500,
@@ -108,7 +108,7 @@ describe('useMarketData', () => {
     rerender({ symbol: 'ETHUSDT' });
 
     await waitFor(() => {
-      expect(mockService.fetchCandles).toHaveBeenCalledWith({
+      expect(mockService.fetchKlines).toHaveBeenCalledWith({
         symbol: 'ETHUSDT',
         interval: '1h',
         limit: 500,
@@ -129,7 +129,7 @@ describe('useMarketData', () => {
     rerender({ interval: '1d' as const });
 
     await waitFor(() => {
-      expect(mockService.fetchCandles).toHaveBeenCalledWith({
+      expect(mockService.fetchKlines).toHaveBeenCalledWith({
         symbol: 'BTCUSDT',
         interval: '1d',
         limit: 500,
@@ -146,7 +146,7 @@ describe('useMarketData', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(mockService.fetchCandles).toHaveBeenCalledWith({
+    expect(mockService.fetchKlines).toHaveBeenCalledWith({
       symbol: 'BTCUSDT',
       interval: '1h',
       limit: 100,
@@ -162,7 +162,7 @@ describe('useMarketData', () => {
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    expect(mockService.fetchCandles).not.toHaveBeenCalled();
+    expect(mockService.fetchKlines).not.toHaveBeenCalled();
     expect(result.current.data).toBe(null);
   });
 
@@ -174,7 +174,7 @@ describe('useMarketData', () => {
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    expect(mockService.fetchCandles).not.toHaveBeenCalled();
+    expect(mockService.fetchKlines).not.toHaveBeenCalled();
 
     rerender({ enabled: true });
 
@@ -182,12 +182,12 @@ describe('useMarketData', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(mockService.fetchCandles).toHaveBeenCalled();
+    expect(mockService.fetchKlines).toHaveBeenCalled();
   });
 
   it('should clear error on successful refetch', async () => {
     const error = new Error('Network error');
-    mockService.fetchCandles = vi.fn().mockRejectedValueOnce(error).mockResolvedValueOnce(mockCandleData);
+    mockService.fetchKlines = vi.fn().mockRejectedValueOnce(error).mockResolvedValueOnce(mockKlineData);
 
     const { result } = renderHook(() =>
       useMarketData(mockService, { symbol: 'BTCUSDT', interval: '1h' })
@@ -201,7 +201,7 @@ describe('useMarketData', () => {
 
     await waitFor(() => {
       expect(result.current.error).toBe(null);
-      expect(result.current.data).toEqual(mockCandleData);
+      expect(result.current.data).toEqual(mockKlineData);
     });
   });
 });

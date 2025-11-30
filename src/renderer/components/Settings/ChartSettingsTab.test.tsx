@@ -26,8 +26,8 @@ describe('ChartSettingsTab', () => {
     const mockConfig = {
         rightMargin: 72,
         volumeHeightRatio: 0.2,
-        candleSpacing: 0.3,
-        candleWickWidth: 1,
+        klineSpacing: 0.3,
+        klineWickWidth: 1,
         gridLineWidth: 1,
         currentPriceLineWidth: 2,
         currentPriceLineStyle: 'dashed' as const,
@@ -103,12 +103,12 @@ describe('ChartSettingsTab', () => {
         expect(screen.getByText('settings.chart.rightMargin')).toBeDefined();
     });
 
-    it('renders candle appearance section', () => {
+    it('renders kline appearance section', () => {
         renderWithChakra(
             <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
         );
 
-        expect(screen.getByText('settings.chart.candleSettings')).toBeDefined();
+        expect(screen.getByText('settings.chart.klineSettings')).toBeDefined();
     });
 
     it('renders grid settings section', () => {
@@ -180,23 +180,23 @@ describe('ChartSettingsTab', () => {
         });
     });
 
-    it('updates candle spacing value', () => {
+    it('updates kline spacing value', () => {
         renderWithChakra(
             <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
         );
 
         const inputs = screen.getAllByRole('spinbutton');
-        const candleSpacingInput = inputs[2];
+        const klineSpacingInput = inputs[2];
 
-        fireEvent.change(candleSpacingInput!, { target: { value: '10' } });
+        fireEvent.change(klineSpacingInput!, { target: { value: '10' } });
 
         expect(mockOnConfigChange).toHaveBeenCalledWith({
             ...mockConfig,
-            candleSpacing: 10,
+            klineSpacing: 10,
         });
     });
 
-    it('updates candle wick width value', () => {
+    it('updates kline wick width value', () => {
         renderWithChakra(
             <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
         );
@@ -208,7 +208,7 @@ describe('ChartSettingsTab', () => {
 
         expect(mockOnConfigChange).toHaveBeenCalledWith({
             ...mockConfig,
-            candleWickWidth: 2,
+            klineWickWidth: 2,
         });
     });
 

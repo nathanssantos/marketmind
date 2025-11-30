@@ -21,7 +21,7 @@ src/
 │
 └── shared/                # Code shared between processes
     ├── types/             # TypeScript type definitions
-    │   ├── candle.ts      # Candle data types
+    │   ├── kline.ts      # Kline data types
     │   ├── chart.ts       # Chart configuration types
     │   └── index.ts       # Type exports
     │

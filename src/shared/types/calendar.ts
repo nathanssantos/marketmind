@@ -69,7 +69,7 @@ export interface CalendarServiceConfig {
 
 export interface CalendarCacheEntry {
   data: EventsResponse;
-  timestamp: number;
+  openTime: number;
   expiresAt: number;
 }
 

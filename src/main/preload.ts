@@ -1,4 +1,5 @@
 import type { AIMessage, AIPatternData, AIProviderType, AITrade, AITradingConfig, AITradingStats } from '@shared/types';
+import type { TradingFees } from '@shared/types/fees';
 import type { Order, Wallet } from '@shared/types/trading';
 import { contextBridge, ipcRenderer } from 'electron';
 
@@ -20,7 +21,7 @@ interface AISettings {
   model?: string;
   temperature?: number;
   maxTokens?: number;
-  detailedCandlesCount?: number;
+  detailedKlinesCount?: number;
 }
 
 interface AIData {
@@ -42,6 +43,7 @@ interface TradingData {
   defaultQuantity: number;
   defaultExpiration: 'gtc' | 'day' | 'custom';
   quantityBySymbol?: Record<string, number>;
+  tradingFees?: TradingFees;
 }
 
 interface SecureStorageAPI {

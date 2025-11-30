@@ -1,15 +1,15 @@
 import { workerPool } from '@/renderer/utils/WorkerPool';
 import type {
-    OptimizerWorkerRequest,
-    OptimizerWorkerResponse,
-    SimplifiedCandle,
-} from '@/renderer/workers/candleOptimizer.worker';
-import type { Candle } from '@shared/types';
+  OptimizerWorkerRequest,
+  OptimizerWorkerResponse,
+  SimplifiedKline,
+} from '@/renderer/workers/klineOptimizer.worker';
+import type { Kline } from '@shared/types';
 import { useCallback, useEffect, useRef } from 'react';
 
-export interface OptimizedCandleData {
-  detailed: Candle[];
-  simplified: SimplifiedCandle[];
+export interface OptimizedKlineData {
+  detailed: Kline[];
+  simplified: SimplifiedKline[];
   timestampInfo: {
     first: number;
     last: number;
@@ -18,28 +18,28 @@ export interface OptimizedCandleData {
   };
 }
 
-export interface UseCandleOptimizerWorkerReturn {
-  optimizeCandles: (
-    candles: Candle[],
+export interface UseKlineOptimizerWorkerReturn {
+  optimizeKlines: (
+    klines: Kline[],
     detailedCount?: number
-  ) => Promise<OptimizedCandleData>;
+  ) => Promise<OptimizedKlineData>;
   terminate: () => void;
 }
 
-export const useCandleOptimizerWorker = (): UseCandleOptimizerWorkerReturn => {
+export const useKlineOptimizerWorker = (): UseKlineOptimizerWorkerReturn => {
   const workerRef = useRef<Worker | null>(null);
   const pendingCallbacksRef = useRef<
-    Map<number, (result: OptimizedCandleData) => void>
+    Map<number, (result: OptimizedKlineData) => void>
   >(new Map());
   const requestIdRef = useRef(0);
 
   useEffect(() => {
-    const WORKER_KEY = 'candleOptimizer';
+    const WORKER_KEY = 'klineOptimizer';
     
     if (!workerPool.has(WORKER_KEY)) {
       workerPool.register(WORKER_KEY, () => 
         new Worker(
-          new URL('../workers/candleOptimizer.worker.ts', import.meta.url),
+          new URL('../workers/klineOptimizer.worker.ts', import.meta.url),
           { type: 'module' }
         )
       );
@@ -57,7 +57,7 @@ export const useCandleOptimizerWorker = (): UseCandleOptimizerWorkerReturn => {
         pendingCallbacksRef.current.clear();
 
         callbacks.forEach((callback) => {
-          callback(result);
+          callback(result as unknown as OptimizedKlineData);
         });
       }
     };
@@ -74,8 +74,8 @@ export const useCandleOptimizerWorker = (): UseCandleOptimizerWorkerReturn => {
     };
   }, []);
 
-  const optimizeCandles = useCallback(
-    (candles: Candle[], detailedCount?: number): Promise<OptimizedCandleData> => {
+  const optimizeKlines = useCallback(
+    (klines: Kline[], detailedCount?: number): Promise<OptimizedKlineData> => {
       return new Promise((resolve) => {
         if (!workerRef.current) {
           resolve({
@@ -95,8 +95,8 @@ export const useCandleOptimizerWorker = (): UseCandleOptimizerWorkerReturn => {
         pendingCallbacksRef.current.set(requestId, resolve);
 
         const request: OptimizerWorkerRequest = {
-          type: 'optimizeCandles',
-          candles,
+          type: 'optimizeKlines',
+          klines,
           ...(detailedCount !== undefined && { detailedCount }),
         };
 
@@ -115,7 +115,7 @@ export const useCandleOptimizerWorker = (): UseCandleOptimizerWorkerReturn => {
   }, []);
 
   return {
-    optimizeCandles,
+    optimizeKlines,
     terminate,
   };
 };

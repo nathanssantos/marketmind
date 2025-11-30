@@ -46,7 +46,7 @@ describe('IndexedDBCache', () => {
           array: [1, 2, 3],
           object: { a: 1, b: 2 },
         },
-        timestamp: Date.now(),
+        openTime: Date.now(),
       };
 
       await indexedDBCache.set(key, value);

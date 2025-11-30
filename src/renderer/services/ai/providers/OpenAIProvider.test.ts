@@ -52,8 +52,8 @@ describe('OpenAIProvider', () => {
         {
           id: '1',
           role: 'user',
-          content: 'What is a doji candlestick?',
-          timestamp: Date.now(),
+          content: 'What is a doji kline?',
+          openTime: Date.now(),
         },
       ];
 
@@ -61,7 +61,7 @@ describe('OpenAIProvider', () => {
         choices: [
           {
             message: {
-              content: 'A doji is a candlestick pattern...',
+              content: 'A doji is a kline pattern...',
             },
           },
         ],
@@ -74,7 +74,7 @@ describe('OpenAIProvider', () => {
       const response = await provider.sendMessage(messages);
 
       expect(response).toEqual({
-        text: 'A doji is a candlestick pattern...',
+        text: 'A doji is a kline pattern...',
       });
 
       expect(mockCreate).toHaveBeenCalledWith({
@@ -86,7 +86,7 @@ describe('OpenAIProvider', () => {
           },
           {
             role: 'user',
-            content: 'What is a doji candlestick?',
+            content: 'What is a doji kline?',
           },
         ],
         temperature: 0.7,
@@ -100,19 +100,19 @@ describe('OpenAIProvider', () => {
           id: '1',
           role: 'user',
           content: 'What is RSI?',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
         {
           id: '2',
           role: 'assistant',
           content: 'RSI is a momentum indicator...',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
         {
           id: '3',
           role: 'user',
           content: 'What values indicate overbought?',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -152,7 +152,7 @@ describe('OpenAIProvider', () => {
           id: '1',
           role: 'user',
           content: 'Analyze this chart',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -207,7 +207,7 @@ describe('OpenAIProvider', () => {
           id: '1',
           role: 'user',
           content: 'Compare these charts',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -270,7 +270,7 @@ describe('OpenAIProvider', () => {
           id: '1',
           role: 'user',
           content: 'Hello',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -301,7 +301,7 @@ describe('OpenAIProvider', () => {
           id: '1',
           role: 'user',
           content: 'Hello',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -330,7 +330,7 @@ describe('OpenAIProvider', () => {
           id: '1',
           role: 'user',
           content: 'Hello',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -351,7 +351,7 @@ describe('OpenAIProvider', () => {
           id: '1',
           role: 'user',
           content: 'Hello',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -371,14 +371,19 @@ describe('OpenAIProvider', () => {
     it('should analyze chart successfully', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz789',
-        candles: [
+        klines: [
           {
-            timestamp: Date.now(),
-            open: 100,
-            high: 110,
-            low: 95,
-            close: 105,
-            volume: 1000,
+            openTime: Date.now(),
+            closeTime: Date.now() + 3600000,
+            open: '100',
+            high: '110',
+            low: '95',
+            close: '105',
+            volume: '1000',
+            quoteVolume: '105000',
+            trades: 100,
+            takerBuyBaseVolume: '500',
+            takerBuyQuoteVolume: '52500',
           },
         ],
       };
@@ -412,7 +417,7 @@ describe('OpenAIProvider', () => {
     it('should include context in analysis', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz789',
-        candles: [],
+        klines: [],
         context: 'Bitcoin 1-hour chart showing recent breakout',
       };
 
@@ -439,17 +444,22 @@ describe('OpenAIProvider', () => {
       expect(textContent?.text).toContain('Bitcoin 1-hour chart showing recent breakout');
     });
 
-    it('should include latest candle data', async () => {
+    it('should include latest kline data', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz789',
-        candles: [
+        klines: [
           {
-            timestamp: Date.now(),
-            open: 50000,
-            high: 51000,
-            low: 49500,
-            close: 50500,
-            volume: 1234567,
+            openTime: Date.now(),
+            closeTime: Date.now() + 3600000,
+            open: '50000',
+            high: '51000',
+            low: '49500',
+            close: '50500',
+            volume: '1234567',
+            quoteVolume: '62345935',
+            trades: 1000,
+            takerBuyBaseVolume: '617283',
+            takerBuyQuoteVolume: '31172967',
           },
         ],
       };
@@ -483,7 +493,7 @@ describe('OpenAIProvider', () => {
     it('should include news items', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz789',
-        candles: [],
+        klines: [],
         news: [
           {
             id: '1',
@@ -533,7 +543,7 @@ describe('OpenAIProvider', () => {
     it('should parse signal from response', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz789',
-        candles: [],
+        klines: [],
       };
 
       mockCreate.mockResolvedValue({
@@ -564,7 +574,7 @@ describe('OpenAIProvider', () => {
     it('should parse STRONG_BUY signal', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz789',
-        candles: [],
+        klines: [],
       };
 
       mockCreate.mockResolvedValue({
@@ -590,7 +600,7 @@ describe('OpenAIProvider', () => {
     it('should parse SELL signal', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz789',
-        candles: [],
+        klines: [],
       };
 
       mockCreate.mockResolvedValue({
@@ -616,7 +626,7 @@ describe('OpenAIProvider', () => {
     it('should parse HOLD signal', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz789',
-        candles: [],
+        klines: [],
       };
 
       mockCreate.mockResolvedValue({
@@ -642,7 +652,7 @@ describe('OpenAIProvider', () => {
     it('should handle response without signal', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz789',
-        candles: [],
+        klines: [],
       };
 
       mockCreate.mockResolvedValue({
@@ -669,7 +679,7 @@ describe('OpenAIProvider', () => {
     it('should handle API errors during chart analysis', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz789',
-        candles: [],
+        klines: [],
       };
 
       mockCreate.mockRejectedValue(new Error('Invalid image format'));
@@ -686,7 +696,7 @@ describe('OpenAIProvider', () => {
     it('should use custom configuration for chart analysis', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz789',
-        candles: [],
+        klines: [],
       };
 
       mockCreate.mockResolvedValue({

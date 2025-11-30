@@ -1,9 +1,10 @@
-import type { Candle } from '@shared/types';
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
+import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
 import {
-  BaseSetupDetector,
-  type SetupDetectorConfig,
-  type SetupDetectorResult,
+    BaseSetupDetector,
+    type SetupDetectorConfig,
+    type SetupDetectorResult,
 } from './BaseSetupDetector';
 
 const DEFAULT_PIVOT_LOOKBACK = 5;
@@ -24,20 +25,20 @@ export class Pattern123Detector extends BaseSetupDetector {
     this.pattern123Config = config;
   }
 
-  detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
+  detect(klines: Kline[], currentIndex: number): SetupDetectorResult {
     const minIndex = this.pattern123Config.pivotLookback * 6;
     
     if (!this.config.enabled || currentIndex < minIndex) {
       return { setup: null, confidence: 0 };
     }
 
-    const recentCandles = candles.slice(
+    const recentKlines = klines.slice(
       Math.max(0, currentIndex - this.pattern123Config.pivotLookback * 6),
       currentIndex + 1,
     );
 
     const pivots = findPivotPoints(
-      recentCandles,
+      recentKlines,
       this.pattern123Config.pivotLookback,
     );
 
@@ -46,14 +47,14 @@ export class Pattern123Detector extends BaseSetupDetector {
     }
 
     const bullishSetup = this.detectBullish123(
-      candles,
+      klines,
       pivots,
       currentIndex,
     );
     if (bullishSetup) return bullishSetup;
 
     const bearishSetup = this.detectBearish123(
-      candles,
+      klines,
       pivots,
       currentIndex,
     );
@@ -63,7 +64,7 @@ export class Pattern123Detector extends BaseSetupDetector {
   }
 
   private detectBullish123(
-    candles: Candle[],
+    klines: Kline[],
     pivots: ReturnType<typeof findPivotPoints>,
     currentIndex: number,
   ): SetupDetectorResult | null {
@@ -90,13 +91,13 @@ export class Pattern123Detector extends BaseSetupDetector {
         h.price > max.price ? h : max,
       );
 
-      const current = candles[currentIndex];
+      const current = klines[currentIndex];
       if (!current) continue;
 
       const breakoutPrice = p2.price * (1 + this.pattern123Config.breakoutThreshold);
 
-      if (current.close > breakoutPrice) {
-        const entry = current.close;
+      if (getKlineClose(current) > breakoutPrice) {
+        const entry = getKlineClose(current);
         const stopLoss = p3.price;
         const riskDistance = entry - stopLoss;
         
@@ -114,7 +115,7 @@ export class Pattern123Detector extends BaseSetupDetector {
         const setup = this.createSetup(
           '123-reversal',
           'LONG',
-          candles,
+          klines,
           currentIndex,
           entry,
           stopLoss,
@@ -138,7 +139,7 @@ export class Pattern123Detector extends BaseSetupDetector {
   }
 
   private detectBearish123(
-    candles: Candle[],
+    klines: Kline[],
     pivots: ReturnType<typeof findPivotPoints>,
     currentIndex: number,
   ): SetupDetectorResult | null {
@@ -165,13 +166,13 @@ export class Pattern123Detector extends BaseSetupDetector {
         l.price < min.price ? l : min,
       );
 
-      const current = candles[currentIndex];
+      const current = klines[currentIndex];
       if (!current) continue;
 
       const breakoutPrice = p2.price * (1 - this.pattern123Config.breakoutThreshold);
 
-      if (current.close < breakoutPrice) {
-        const entry = current.close;
+      if (getKlineClose(current) < breakoutPrice) {
+        const entry = getKlineClose(current);
         const stopLoss = p3.price;
         const riskDistance = stopLoss - entry;
         
@@ -189,7 +190,7 @@ export class Pattern123Detector extends BaseSetupDetector {
         const setup = this.createSetup(
           '123-reversal',
           'SHORT',
-          candles,
+          klines,
           currentIndex,
           entry,
           stopLoss,
@@ -234,7 +235,7 @@ export class Pattern123Detector extends BaseSetupDetector {
     p1: { price: number },
     p2: { price: number },
     p3: { price: number },
-    current: Candle,
+    current: Kline,
   ): number {
     const BASE_CONFIDENCE = 65;
     let boost = 0;
@@ -246,12 +247,12 @@ export class Pattern123Detector extends BaseSetupDetector {
     if (symmetry < 0.1) boost += 10;
     else if (symmetry < 0.2) boost += 5;
 
-    const volumeStrength = current.volume;
+    const volumeStrength = getKlineVolume(current);
     if (volumeStrength > 0) boost += 10;
 
-    const candleSize = Math.abs(current.close - current.open) / current.open;
-    if (candleSize > 0.02) boost += 10;
-    else if (candleSize > 0.01) boost += 5;
+    const klineSize = Math.abs(getKlineClose(current) - getKlineOpen(current)) / getKlineOpen(current);
+    if (klineSize > 0.02) boost += 10;
+    else if (klineSize > 0.01) boost += 5;
 
     const MAX_CONFIDENCE = 100;
     return Math.min(BASE_CONFIDENCE + boost, MAX_CONFIDENCE);

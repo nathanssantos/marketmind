@@ -54,6 +54,7 @@
       "chart": "Gráfico",
       "ai": "Configuración de IA",
       "aiTrading": "Auto-Trading IA",
+      "algorithmicAutoTrading": "Auto-Trading Algorítmico",
       "setupDetection": "Detección de Setups",
       "patternDetection": "Detección de Patrones",
       "news": "Noticias",
@@ -103,9 +104,9 @@
       "rightMarginHelper": "Espacio reservado en el lado derecho del gráfico",
       "volumeHeightRatio": "Proporción de Altura del Volumen",
       "volumeHeightRatioHelper": "Altura de las barras de volumen relativa al gráfico (0-1)",
-      "candleSettings": "Configuración de Velas",
-      "candleSpacing": "Espaciado de Velas",
-      "candleSpacingHelper": "Espacio entre velas",
+      "klineSettings": "Configuración de Velas",
+      "klineSpacing": "Espaciado de Velas",
+      "klineSpacingHelper": "Espacio entre velas",
       "wickWidth": "Ancho de Mecha",
       "wickWidthHelper": "Ancho de las mechas de las velas",
       "gridSettings": "Configuración de Cuadrícula",
@@ -151,8 +152,8 @@
       "temperatureHelper": "Controla la aleatoriedad (0 = enfocado, 2 = creativo)",
       "maxTokens": "Máx. Tokens: {{value}}",
       "maxTokensHelper": "Longitud máxima de respuesta",
-      "detailedCandles": "Velas Detalladas: {{value}}",
-      "detailedCandlesHelper": "Número de velas recientes enviadas con detalles completos a la IA",
+      "detailedKlines": "Velas Detalladas: {{value}}",
+      "detailedKlinesHelper": "Número de velas recientes enviadas con detalles completos a la IA",
       "patternDetection": {
         "title": "Detección de Patrones",
         "mode": "Modo de Detección",
@@ -236,6 +237,17 @@
         "clearAll": "Borrar Todos los Datos"
       },
       "confirmClearAll": "¿Estás seguro de que quieres borrar todos los datos de trading? Esta acción no se puede deshacer."
+    },
+    "algorithmicAutoTrading": {
+      "title": "Auto-Trading Algorítmico",
+      "description": "Configure la ejecución automática de órdenes basada en setups de trading detectados.",
+      "status": {
+        "title": "Estado del Auto-Trading",
+        "description": "Active o desactive la apertura automática de órdenes cuando se detecten setups de trading en el gráfico.",
+        "active": "Auto-trading está activo - las órdenes se crearán automáticamente",
+        "inactive": "Auto-trading está inactivo - los setups solo se detectarán y mostrarán",
+        "info": "Esta función funciona con el sistema de detección de setups. Asegúrese de activar al menos un tipo de setup en la pestaña Detección de Setups antes de activar el auto-trading."
+      }
     }
   },
   "chat": {
@@ -262,7 +274,7 @@
       "title": "Controles del Gráfico",
       "timeframe": "Marco Temporal",
       "chartType": "Tipo de Gráfico",
-      "candlestickChart": "Gráfico de Velas",
+      "klineChart": "Gráfico de Velas",
       "lineChart": "Gráfico de Línea",
       "display": "Visualización",
       "volume": "Volumen",
@@ -285,19 +297,23 @@
       "deletePattern": "Eliminar Patrón",
       "hidePatterns": "Ocultar Patrones Detectados",
       "showPatterns": "Mostrar Patrones Detectados",
-      "deleteAllPatterns": "Eliminar Todos los Patrones Detectados"
+      "deleteAllPatterns": "Eliminar Todos los Patrones Detectados",
+      "deleteSetup": "Eliminar Setup",
+      "hideSetups": "Ocultar Setups Detectados",
+      "showSetups": "Mostrar Setups Detectados",
+      "deleteAllSetups": "Eliminar Todos los Setups Detectados"
     },
     "navigation": {
       "resetView": "Volver a la vista inicial",
-      "nextCandle": "Siguiente vela",
-      "candleTimer": "Tiempo hasta la próxima vela"
+      "nextKline": "Siguiente vela",
+      "klineTimer": "Tiempo hasta la próxima vela"
     },
     "advanced": {
       "title": "Configuración Avanzada",
       "chartDimensions": "Dimensiones del Gráfico",
       "rightMargin": "Margen Derecho",
       "volumeHeight": "Altura del Volumen %",
-      "candleSettings": "Configuración de Velas",
+      "klineSettings": "Configuración de Velas",
       "spacing": "Espaciado",
       "wickWidth": "Ancho de Mecha",
       "gridSettings": "Configuración de Cuadrícula",
@@ -606,7 +622,7 @@
     "formationPeriod": {
       "label": "Período de Formación",
       "helper": "Período de retrospectiva para detección de patrones",
-      "candles": "velas"
+      "klines": "velas"
     },
     "trendlineAccuracy": {
       "label": "Precisión de Línea de Tendencia (R²)",
@@ -925,6 +941,9 @@
     "copyright": "© 2025 MarketMind. Hecho con ❤️ para traders e inversores."
   },
   "setupConfig": {
+    "configureSetups": "Configurar Setups de Trading",
+    "enabledSetups": "Setups Habilitados",
+    "toggleAll": "Alternar Todos los Setups",
     "tips": {
       "confidence": "Filtros de confianza más altos muestran solo las configuraciones más fuertes",
       "algorithmic": "La detección algorítmica es más rápida y consistente que la IA",
@@ -950,8 +969,20 @@
     "noSetupsEnabledDescription": "No se puede habilitar el auto-trading sin setups activos. Por favor, habilite al menos un setup en Configuración.",
     "setups": {
       "setup91": {
-        "title": "Setup 9.1 (Reversiones EMA9)",
-        "description": "Detecta cambios de tendencia en EMA9 con confirmación de volumen"
+        "title": "Setup 9.1 (Reversión EMA9)",
+        "description": "Detecta cambios de tendencia de EMA9 con confirmación de volumen - entrada en vela que gira EMA9"
+      },
+      "setup92": {
+        "title": "Setup 9.2 (Retroceso EMA9)",
+        "description": "Seguidor de tendencia EMA9 - entrada después de que vela cierre por debajo/encima del mínimo/máximo anterior en tendencia alcista/bajista"
+      },
+      "setup93": {
+        "title": "Setup 9.3 (Retroceso Doble EMA9)",
+        "description": "Seguidor de tendencia EMA9 - entrada después de 2 cierres consecutivos más bajos/altos desde vela de referencia"
+      },
+      "setup94": {
+        "title": "Setup 9.4 (Continuación EMA9)",
+        "description": "Continuación EMA9 - fallo temporal de 1 vela en EMA9 seguido de reanudación de tendencia original"
       },
       "pattern123": {
         "title": "Patrón 123 (Patrón de Reversión)",
@@ -968,6 +999,26 @@
       "breakoutRetest": {
         "title": "Retesteo de Ruptura (Continuación)",
         "description": "Ruptura válida seguida de retesteo exitoso y continuación"
+      },
+      "pinInside": {
+        "title": "Combo Pin + Inside Bar (Rechazo + Consolidación)",
+        "description": "Rechazo con pin bar seguido de consolidación con inside bar en niveles de soporte/resistencia"
+      },
+      "orderBlockFVG": {
+        "title": "Order Block + FVG (Patrón ICT/SMC)",
+        "description": "Order block de alto volumen combinado con fair value gap para zonas de entrada institucional"
+      },
+      "vwapEmaCross": {
+        "title": "VWAP + Cruce EMA (Momentum + Reversión a la Media)",
+        "description": "Cruce de EMA con VWAP y entrada en retroceso para operaciones de momentum y reversión a la media"
+      },
+      "divergence": {
+        "title": "Divergencia RSI/MACD (Indicador de Reversión)",
+        "description": "Detecta divergencia alcista/bajista entre precio e indicadores RSI/MACD para reversiones de alta probabilidad"
+      },
+      "liquiditySweep": {
+        "title": "Barrido de Liquidez (Caza de Stops)",
+        "description": "Detecta rupturas falsas diseñadas para activar stop losses antes de revertir - patrón clásico de comportamiento institucional"
       }
     },
     "parameters": {

@@ -1,11 +1,12 @@
-import type { OptimizedCandleData } from './candleOptimizer';
+import type { OptimizedKlineData } from './klineOptimizer';
 
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
+  openTime?: number;
 }
 
-interface CandleCacheKey {
+interface KlineCacheKey {
   symbol: string;
   timeframe: string;
   count: number;
@@ -14,15 +15,15 @@ interface CandleCacheKey {
 const CACHE_DURATION = 5 * 60 * 1000;
 
 class AIContextCache {
-  private candleCache: Map<string, CacheEntry<OptimizedCandleData>>;
+  private klineCache: Map<string, CacheEntry<OptimizedKlineData>>;
   private summaryCache: Map<string, CacheEntry<string>>;
   
   constructor() {
-    this.candleCache = new Map();
+    this.klineCache = new Map();
     this.summaryCache = new Map();
   }
   
-  private createCandleCacheKey(key: CandleCacheKey): string {
+  private createKlineCacheKey(key: KlineCacheKey): string {
     return `${key.symbol}:${key.timeframe}:${key.count}`;
   }
   
@@ -30,23 +31,23 @@ class AIContextCache {
     return Date.now() - timestamp > CACHE_DURATION;
   }
   
-  getCachedCandles(key: CandleCacheKey): OptimizedCandleData | null {
-    const cacheKey = this.createCandleCacheKey(key);
-    const entry = this.candleCache.get(cacheKey);
+  getCachedKlines(key: KlineCacheKey): OptimizedKlineData | null {
+    const cacheKey = this.createKlineCacheKey(key);
+    const entry = this.klineCache.get(cacheKey);
     
     if (!entry) return null;
     
     if (this.isExpired(entry.timestamp)) {
-      this.candleCache.delete(cacheKey);
+      this.klineCache.delete(cacheKey);
       return null;
     }
     
     return entry.data;
   }
   
-  setCachedCandles(key: CandleCacheKey, data: OptimizedCandleData): void {
-    const cacheKey = this.createCandleCacheKey(key);
-    this.candleCache.set(cacheKey, {
+  setCachedKlines(key: KlineCacheKey, data: OptimizedKlineData): void {
+    const cacheKey = this.createKlineCacheKey(key);
+    this.klineCache.set(cacheKey, {
       data,
       timestamp: Date.now(),
     });
@@ -72,8 +73,8 @@ class AIContextCache {
     });
   }
   
-  clearCandleCache(): void {
-    this.candleCache.clear();
+  clearKlineCache(): void {
+    this.klineCache.clear();
   }
   
   clearSummaryCache(): void {
@@ -81,13 +82,13 @@ class AIContextCache {
   }
   
   clearAll(): void {
-    this.clearCandleCache();
+    this.clearKlineCache();
     this.clearSummaryCache();
   }
   
   getCacheStats() {
     return {
-      candleCacheSize: this.candleCache.size,
+      klineCacheSize: this.klineCache.size,
       summaryCacheSize: this.summaryCache.size,
     };
   }

@@ -1,5 +1,6 @@
 import { useChartContext } from '@renderer/context/ChartContext';
 import { useTradingStore } from '@renderer/store/tradingStore';
+import { getKlineClose, getOrderId, isOrderActive, isOrderLong } from '@shared/utils';
 import { useEffect, useRef } from 'react';
 
 export const usePriceUpdates = () => {
@@ -9,22 +10,22 @@ export const usePriceUpdates = () => {
   const expireOrders = useTradingStore((state) => state.expireOrders);
   const recordWalletPerformance = useTradingStore((state) => state.recordWalletPerformance);
   
-  const lastCandleTimeRef = useRef<number | null>(null);
+  const lastKlineTimeRef = useRef<number | null>(null);
   const previousPriceRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!isSimulatorActive || !chartData?.candles.length) return;
+    if (!isSimulatorActive || !chartData?.klines.length) return;
 
-    const lastCandle = chartData.candles[chartData.candles.length - 1];
-    if (!lastCandle) return;
+    const lastKline = chartData.klines[chartData.klines.length - 1];
+    if (!lastKline) return;
 
-    const currentPrice = lastCandle.close;
+    const currentPrice = getKlineClose(lastKline);
     const previousPrice = previousPriceRef.current;
-    const candleTime = lastCandle.timestamp;
+    const klineTime = lastKline.openTime;
 
-    const candleChanged = lastCandleTimeRef.current !== null && lastCandleTimeRef.current !== candleTime;
+    const klineChanged = lastKlineTimeRef.current !== null && lastKlineTimeRef.current !== klineTime;
     
-    if (candleChanged) {
+    if (klineChanged) {
       const currentState = useTradingStore.getState();
       const { wallets } = currentState;
       
@@ -35,17 +36,17 @@ export const usePriceUpdates = () => {
       expireOrders();
     }
     
-    lastCandleTimeRef.current = candleTime;
+    lastKlineTimeRef.current = klineTime;
     previousPriceRef.current = currentPrice;
 
     if (previousPrice === null) return;
 
     const currentState = useTradingStore.getState();
     const { orders } = currentState;
-    const activeOrders = orders.filter((order) => order.status === 'active');
+    const activeOrders = orders.filter((order) => isOrderActive(order));
 
     activeOrders.forEach((order) => {
-      const isLong = order.type === 'long';
+      const isLong = isOrderLong(order);
 
       const stopLossCrossed = order.stopLoss && (isLong
         ? previousPrice > order.stopLoss && currentPrice <= order.stopLoss
@@ -60,20 +61,20 @@ export const usePriceUpdates = () => {
         const targetDistance = Math.abs(currentPrice - (order.takeProfit || 0));
         
         if (stopDistance < targetDistance) {
-          closeOrder(order.id, order.stopLoss!);
+          closeOrder(getOrderId(order), order.stopLoss!);
         } else {
-          closeOrder(order.id, order.takeProfit!);
+          closeOrder(getOrderId(order), order.takeProfit!);
         }
         return;
       }
 
       if (stopLossCrossed) {
-        closeOrder(order.id, order.stopLoss!);
+        closeOrder(getOrderId(order), order.stopLoss!);
         return;
       }
 
       if (takeProfitCrossed) {
-        closeOrder(order.id, order.takeProfit!);
+        closeOrder(getOrderId(order), order.takeProfit!);
         return;
       }
     });

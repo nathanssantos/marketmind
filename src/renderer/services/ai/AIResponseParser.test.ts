@@ -26,16 +26,16 @@ describe('AIResponseParser', () => {
     {
       "type": "support",
       "points": [
-        {"timestamp": 1700020000000, "price": 42000},
-        {"timestamp": 1700080000000, "price": 42000}
+        {"openTime": 1700020000000, "price": 42000},
+        {"openTime": 1700080000000, "price": 42000}
       ],
       "label": "Key Support"
     },
     {
       "type": "resistance",
       "points": [
-        {"timestamp": 1700020000000, "price": 45000},
-        {"timestamp": 1700080000000, "price": 45000}
+        {"openTime": 1700020000000, "price": 45000},
+        {"openTime": 1700080000000, "price": 45000}
       ],
       "label": "Key Resistance"
     }
@@ -65,16 +65,16 @@ describe('AIResponseParser', () => {
     {
       "type": "support",
       "points": [
-        {"timestamp": 1700020000000, "price": 42000},
-        {"timestamp": 1700080000000, "price": 42000}
+        {"openTime": 1700020000000, "price": 42000},
+        {"openTime": 1700080000000, "price": 42000}
       ],
       "label": "Key Support"
     },
     {
       "type": "resistance",
       "points": [
-        {"timestamp": 1700020000000, "price": 45000},
-        {"timestamp": 1700080000000, "price": 45000}
+        {"openTime": 1700020000000, "price": 45000},
+        {"openTime": 1700080000000, "price": 45000}
       ],
       "label": "Key Resistance"
     }
@@ -107,32 +107,32 @@ describe('AIResponseParser', () => {
     {
       "type": "support",
       "points": [
-        {"timestamp": 1700020000000, "price": 42000},
-        {"timestamp": 1700080000000, "price": 42000}
+        {"openTime": 1700020000000, "price": 42000},
+        {"openTime": 1700080000000, "price": 42000}
       ],
       "label": "Support 1"
     },
     {
       "type": "resistance",
       "points": [
-        {"timestamp": 1700020000000, "price": 45000},
-        {"timestamp": 1700080000000, "price": 45000}
+        {"openTime": 1700020000000, "price": 45000},
+        {"openTime": 1700080000000, "price": 45000}
       ],
       "label": "Resistance 1"
     },
     {
       "type": "support",
       "points": [
-        {"timestamp": 1700020000000, "price": 40000},
-        {"timestamp": 1700080000000, "price": 40000}
+        {"openTime": 1700020000000, "price": 40000},
+        {"openTime": 1700080000000, "price": 40000}
       ],
       "label": "Support 2"
     },
     {
       "type": "resistance",
       "points": [
-        {"timestamp": 1700020000000, "price": 48000},
-        {"timestamp": 1700080000000, "price": 48000}
+        {"openTime": 1700020000000, "price": 48000},
+        {"openTime": 1700080000000, "price": 48000}
       ],
       "label": "Resistance 2"
     }
@@ -204,24 +204,24 @@ Pattern #1, Pattern #2, Pattern #3
     {
       "type": "support",
       "points": [
-        {"timestamp": 1700020000000, "price": 42000},
-        {"timestamp": 1700080000000, "price": 42000}
+        {"openTime": 1700020000000, "price": 42000},
+        {"openTime": 1700080000000, "price": 42000}
       ],
       "label": "Support"
     },
     {
       "type": "resistance",
       "points": [
-        {"timestamp": 1700020000000, "price": 45000},
-        {"timestamp": 1700080000000, "price": 45000}
+        {"openTime": 1700020000000, "price": 45000},
+        {"openTime": 1700080000000, "price": 45000}
       ],
       "label": "Resistance"
     },
     {
       "type": "support",
       "points": [
-        {"timestamp": 1700020000000, "price": 40000},
-        {"timestamp": 1700080000000, "price": 40000}
+        {"openTime": 1700020000000, "price": 40000},
+        {"openTime": 1700080000000, "price": 40000}
       ],
       "label": "Support 2"
     }
@@ -258,14 +258,14 @@ Pattern #1, Pattern #2, Pattern #3
       const validPattern: AIPattern = {
         type: 'support',
         points: [
-          { timestamp: 1700020000000, price: 42000 },
-          { timestamp: 1700080000000, price: 42000 },
+          { openTime: 1700020000000, price: 42000 },
+          { openTime: 1700080000000, price: 42000 },
         ],
       };
       expect(validateAIPattern(validPattern)).toBe(true);
 
       expect(validateAIPattern({ type: 'support', points: [] })).toBe(false);
-      expect(validateAIPattern({ type: 'support', points: [{ timestamp: 0, price: 100 }] })).toBe(
+      expect(validateAIPattern({ type: 'support', points: [{ openTime: 0, price: 100 }] })).toBe(
         false
       );
       expect(validateAIPattern({ type: 'support', points: [{ price: 100 }, { price: 100 }] })).toBe(
@@ -274,7 +274,7 @@ Pattern #1, Pattern #2, Pattern #3
       expect(
         validateAIPattern({
           type: 'support',
-          points: [{ timestamp: 'invalid', price: 100 }, { timestamp: 0, price: 100 }],
+          points: [{ openTime: 'invalid', price: 100 }, { openTime: 0, price: 100 }],
         })
       ).toBe(false);
     });
@@ -283,8 +283,8 @@ Pattern #1, Pattern #2, Pattern #3
       const validTrendline: AIPattern = {
         type: 'trendline-bullish',
         points: [
-          { timestamp: 1700020000000, price: 42000 },
-          { timestamp: 1700080000000, price: 45000 },
+          { openTime: 1700020000000, price: 42000 },
+          { openTime: 1700080000000, price: 45000 },
         ],
       };
       expect(validateAIPattern(validTrendline)).toBe(true);
@@ -295,8 +295,8 @@ Pattern #1, Pattern #2, Pattern #3
         type: 'buy-zone',
         topPrice: 45000,
         bottomPrice: 42000,
-        startTimestamp: 1700020000000,
-        endTimestamp: 1700080000000,
+        startOpenTime: 1700020000000,
+        endOpenTime: 1700080000000,
       };
       expect(validateAIPattern(validZone)).toBe(true);
 
@@ -305,8 +305,8 @@ Pattern #1, Pattern #2, Pattern #3
           type: 'buy-zone',
           topPrice: 42000,
           bottomPrice: 45000,
-          startTimestamp: 1700020000000,
-          endTimestamp: 1700080000000,
+          startOpenTime: 1700020000000,
+          endOpenTime: 1700080000000,
         })
       ).toBe(false);
 
@@ -315,8 +315,8 @@ Pattern #1, Pattern #2, Pattern #3
           type: 'buy-zone',
           topPrice: 45000,
           bottomPrice: 42000,
-          startTimestamp: 1700080000000,
-          endTimestamp: 1700020000000,
+          startOpenTime: 1700080000000,
+          endOpenTime: 1700020000000,
         })
       ).toBe(false);
 
@@ -325,8 +325,8 @@ Pattern #1, Pattern #2, Pattern #3
           type: 'buy-zone',
           topPrice: '45000',
           bottomPrice: 42000,
-          startTimestamp: 1700020000000,
-          endTimestamp: 1700080000000,
+          startOpenTime: 1700020000000,
+          endOpenTime: 1700080000000,
         })
       ).toBe(false);
     });
@@ -335,12 +335,12 @@ Pattern #1, Pattern #2, Pattern #3
       const validChannel: AIPattern = {
         type: 'channel-ascending',
         upperLine: [
-          { timestamp: 1700020000000, price: 44000 },
-          { timestamp: 1700080000000, price: 46000 },
+          { openTime: 1700020000000, price: 44000 },
+          { openTime: 1700080000000, price: 46000 },
         ],
         lowerLine: [
-          { timestamp: 1700020000000, price: 42000 },
-          { timestamp: 1700080000000, price: 44000 },
+          { openTime: 1700020000000, price: 42000 },
+          { openTime: 1700080000000, price: 44000 },
         ],
       };
       expect(validateAIPattern(validChannel)).toBe(true);
@@ -348,10 +348,10 @@ Pattern #1, Pattern #2, Pattern #3
       expect(
         validateAIPattern({
           type: 'channel-ascending',
-          upperLine: [{ timestamp: 0, price: 100 }],
+          upperLine: [{ openTime: 0, price: 100 }],
           lowerLine: [
-            { timestamp: 0, price: 90 },
-            { timestamp: 1000, price: 90 },
+            { openTime: 0, price: 90 },
+            { openTime: 1000, price: 90 },
           ],
         })
       ).toBe(false);
@@ -360,8 +360,8 @@ Pattern #1, Pattern #2, Pattern #3
     it('should validate fibonacci with startPoint/endPoint/levels', () => {
       const validFib: AIPattern = {
         type: 'fibonacci-retracement',
-        startPoint: { timestamp: 1700020000000, price: 40000 },
-        endPoint: { timestamp: 1700080000000, price: 50000 },
+        startPoint: { openTime: 1700020000000, price: 40000 },
+        endPoint: { openTime: 1700080000000, price: 50000 },
         levels: [
           { ratio: 0.236, price: 47640 },
           { ratio: 0.382, price: 46180 },
@@ -375,7 +375,7 @@ Pattern #1, Pattern #2, Pattern #3
         validateAIPattern({
           type: 'fibonacci-retracement',
           startPoint: { price: 40000 },
-          endPoint: { timestamp: 1700080000000, price: 50000 },
+          endPoint: { openTime: 1700080000000, price: 50000 },
           levels: [{ ratio: 0.5, price: 45000 }],
         })
       ).toBe(false);
@@ -383,8 +383,8 @@ Pattern #1, Pattern #2, Pattern #3
       expect(
         validateAIPattern({
           type: 'fibonacci-retracement',
-          startPoint: { timestamp: 1700020000000, price: 40000 },
-          endPoint: { timestamp: 1700080000000, price: 50000 },
+          startPoint: { openTime: 1700020000000, price: 40000 },
+          endPoint: { openTime: 1700080000000, price: 50000 },
           levels: [{ ratio: 0.5 }],
         })
       ).toBe(false);
@@ -392,8 +392,8 @@ Pattern #1, Pattern #2, Pattern #3
       expect(
         validateAIPattern({
           type: 'fibonacci-retracement',
-          startPoint: { timestamp: 1700020000000, price: 40000 },
-          endPoint: { timestamp: 1700080000000, price: 50000 },
+          startPoint: { openTime: 1700020000000, price: 40000 },
+          endPoint: { openTime: 1700080000000, price: 50000 },
           levels: 'invalid',
         })
       ).toBe(false);
@@ -402,21 +402,21 @@ Pattern #1, Pattern #2, Pattern #3
     it('should validate head and shoulders pattern', () => {
       const validHS: AIPattern = {
         type: 'head-and-shoulders',
-        leftShoulder: { timestamp: 1700020000000, price: 44000 },
-        head: { timestamp: 1700040000000, price: 46000 },
-        rightShoulder: { timestamp: 1700060000000, price: 44000 },
+        leftShoulder: { openTime: 1700020000000, price: 44000 },
+        head: { openTime: 1700040000000, price: 46000 },
+        rightShoulder: { openTime: 1700060000000, price: 44000 },
         neckline: [
-          { timestamp: 1700020000000, price: 42000 },
-          { timestamp: 1700060000000, price: 42000 },
+          { openTime: 1700020000000, price: 42000 },
+          { openTime: 1700060000000, price: 42000 },
         ],
       };
       expect(validateAIPattern(validHS)).toBe(true);
 
       const validHSNoNeckline: AIPattern = {
         type: 'head-and-shoulders',
-        leftShoulder: { timestamp: 1700020000000, price: 44000 },
-        head: { timestamp: 1700040000000, price: 46000 },
-        rightShoulder: { timestamp: 1700060000000, price: 44000 },
+        leftShoulder: { openTime: 1700020000000, price: 44000 },
+        head: { openTime: 1700040000000, price: 46000 },
+        rightShoulder: { openTime: 1700060000000, price: 44000 },
       };
       expect(validateAIPattern(validHSNoNeckline)).toBe(true);
 
@@ -424,18 +424,18 @@ Pattern #1, Pattern #2, Pattern #3
         validateAIPattern({
           type: 'head-and-shoulders',
           leftShoulder: { price: 44000 },
-          head: { timestamp: 1700040000000, price: 46000 },
-          rightShoulder: { timestamp: 1700060000000, price: 44000 },
+          head: { openTime: 1700040000000, price: 46000 },
+          rightShoulder: { openTime: 1700060000000, price: 44000 },
         })
       ).toBe(false);
 
       expect(
         validateAIPattern({
           type: 'head-and-shoulders',
-          leftShoulder: { timestamp: 1700020000000, price: 44000 },
-          head: { timestamp: 1700040000000, price: 46000 },
-          rightShoulder: { timestamp: 1700060000000, price: 44000 },
-          neckline: [{ timestamp: 1700020000000, price: 42000 }],
+          leftShoulder: { openTime: 1700020000000, price: 44000 },
+          head: { openTime: 1700040000000, price: 46000 },
+          rightShoulder: { openTime: 1700060000000, price: 44000 },
+          neckline: [{ openTime: 1700020000000, price: 42000 }],
         })
       ).toBe(false);
     });
@@ -443,24 +443,24 @@ Pattern #1, Pattern #2, Pattern #3
     it('should validate double top/bottom pattern', () => {
       const validDouble: AIPattern = {
         type: 'double-top',
-        firstPeak: { timestamp: 1700020000000, price: 45000 },
-        secondPeak: { timestamp: 1700060000000, price: 45000 },
-        neckline: { timestamp: 1700040000000, price: 42000 },
+        firstPeak: { openTime: 1700020000000, price: 45000 },
+        secondPeak: { openTime: 1700060000000, price: 45000 },
+        neckline: { openTime: 1700040000000, price: 42000 },
       };
       expect(validateAIPattern(validDouble)).toBe(true);
 
       const validDoubleNoNeckline: AIPattern = {
         type: 'double-top',
-        firstPeak: { timestamp: 1700020000000, price: 45000 },
-        secondPeak: { timestamp: 1700060000000, price: 45000 },
+        firstPeak: { openTime: 1700020000000, price: 45000 },
+        secondPeak: { openTime: 1700060000000, price: 45000 },
       };
       expect(validateAIPattern(validDoubleNoNeckline)).toBe(true);
 
       expect(
         validateAIPattern({
           type: 'double-top',
-          firstPeak: { timestamp: 'invalid', price: 45000 },
-          secondPeak: { timestamp: 1700060000000, price: 45000 },
+          firstPeak: { openTime: 'invalid', price: 45000 },
+          secondPeak: { openTime: 1700060000000, price: 45000 },
         })
       ).toBe(false);
     });
@@ -468,30 +468,30 @@ Pattern #1, Pattern #2, Pattern #3
     it('should validate triple top/bottom pattern', () => {
       const validTriple: AIPattern = {
         type: 'triple-top',
-        peak1: { timestamp: 1700020000000, price: 45000 },
-        peak2: { timestamp: 1700040000000, price: 45000 },
-        peak3: { timestamp: 1700060000000, price: 45000 },
+        peak1: { openTime: 1700020000000, price: 45000 },
+        peak2: { openTime: 1700040000000, price: 45000 },
+        peak3: { openTime: 1700060000000, price: 45000 },
         neckline: [
-          { timestamp: 1700020000000, price: 42000 },
-          { timestamp: 1700060000000, price: 42000 },
+          { openTime: 1700020000000, price: 42000 },
+          { openTime: 1700060000000, price: 42000 },
         ],
       };
       expect(validateAIPattern(validTriple)).toBe(true);
 
       const validTripleNoNeckline: AIPattern = {
         type: 'triple-top',
-        peak1: { timestamp: 1700020000000, price: 45000 },
-        peak2: { timestamp: 1700040000000, price: 45000 },
-        peak3: { timestamp: 1700060000000, price: 45000 },
+        peak1: { openTime: 1700020000000, price: 45000 },
+        peak2: { openTime: 1700040000000, price: 45000 },
+        peak3: { openTime: 1700060000000, price: 45000 },
       };
       expect(validateAIPattern(validTripleNoNeckline)).toBe(true);
 
       expect(
         validateAIPattern({
           type: 'triple-top',
-          peak1: { timestamp: 1700020000000, price: 45000 },
-          peak2: { timestamp: 1700040000000 },
-          peak3: { timestamp: 1700060000000, price: 45000 },
+          peak1: { openTime: 1700020000000, price: 45000 },
+          peak2: { openTime: 1700040000000 },
+          peak3: { openTime: 1700060000000, price: 45000 },
         })
       ).toBe(false);
     });
@@ -500,12 +500,12 @@ Pattern #1, Pattern #2, Pattern #3
       const validTriangle: AIPattern = {
         type: 'triangle-ascending',
         upperTrendline: [
-          { timestamp: 1700020000000, price: 45000 },
-          { timestamp: 1700080000000, price: 45000 },
+          { openTime: 1700020000000, price: 45000 },
+          { openTime: 1700080000000, price: 45000 },
         ],
         lowerTrendline: [
-          { timestamp: 1700020000000, price: 42000 },
-          { timestamp: 1700080000000, price: 44000 },
+          { openTime: 1700020000000, price: 42000 },
+          { openTime: 1700080000000, price: 44000 },
         ],
       };
       expect(validateAIPattern(validTriangle)).toBe(true);
@@ -513,10 +513,10 @@ Pattern #1, Pattern #2, Pattern #3
       expect(
         validateAIPattern({
           type: 'triangle-ascending',
-          upperTrendline: [{ timestamp: 1700020000000 }, { timestamp: 1700080000000 }],
+          upperTrendline: [{ openTime: 1700020000000 }, { openTime: 1700080000000 }],
           lowerTrendline: [
-            { timestamp: 1700020000000, price: 42000 },
-            { timestamp: 1700080000000, price: 44000 },
+            { openTime: 1700020000000, price: 42000 },
+            { openTime: 1700080000000, price: 44000 },
           ],
         })
       ).toBe(false);
@@ -526,17 +526,17 @@ Pattern #1, Pattern #2, Pattern #3
       const validFlag: AIPattern = {
         type: 'flag-bullish',
         flagpole: {
-          start: { timestamp: 1700020000000, price: 40000 },
-          end: { timestamp: 1700040000000, price: 46000 },
+          start: { openTime: 1700020000000, price: 40000 },
+          end: { openTime: 1700040000000, price: 46000 },
         },
         flag: {
           upperTrendline: [
-            { timestamp: 1700040000000, price: 46000 },
-            { timestamp: 1700060000000, price: 45000 },
+            { openTime: 1700040000000, price: 46000 },
+            { openTime: 1700060000000, price: 45000 },
           ],
           lowerTrendline: [
-            { timestamp: 1700040000000, price: 44000 },
-            { timestamp: 1700060000000, price: 43000 },
+            { openTime: 1700040000000, price: 44000 },
+            { openTime: 1700060000000, price: 43000 },
           ],
         },
       };
@@ -547,16 +547,16 @@ Pattern #1, Pattern #2, Pattern #3
           type: 'flag-bullish',
           flagpole: {
             start: { price: 40000 },
-            end: { timestamp: 1700040000000, price: 46000 },
+            end: { openTime: 1700040000000, price: 46000 },
           },
           flag: {
             upperTrendline: [
-              { timestamp: 1700040000000, price: 46000 },
-              { timestamp: 1700060000000, price: 45000 },
+              { openTime: 1700040000000, price: 46000 },
+              { openTime: 1700060000000, price: 45000 },
             ],
             lowerTrendline: [
-              { timestamp: 1700040000000, price: 44000 },
-              { timestamp: 1700060000000, price: 43000 },
+              { openTime: 1700040000000, price: 44000 },
+              { openTime: 1700060000000, price: 43000 },
             ],
           },
         })
@@ -566,14 +566,14 @@ Pattern #1, Pattern #2, Pattern #3
         validateAIPattern({
           type: 'flag-bullish',
           flagpole: {
-            start: { timestamp: 1700020000000, price: 40000 },
-            end: { timestamp: 1700040000000, price: 46000 },
+            start: { openTime: 1700020000000, price: 40000 },
+            end: { openTime: 1700040000000, price: 46000 },
           },
           flag: {
-            upperTrendline: [{ timestamp: 1700040000000, price: 46000 }],
+            upperTrendline: [{ openTime: 1700040000000, price: 46000 }],
             lowerTrendline: [
-              { timestamp: 1700040000000, price: 44000 },
-              { timestamp: 1700060000000, price: 43000 },
+              { openTime: 1700040000000, price: 44000 },
+              { openTime: 1700060000000, price: 43000 },
             ],
           },
         })
@@ -584,17 +584,17 @@ Pattern #1, Pattern #2, Pattern #3
       const validPennant: AIPattern = {
         type: 'pennant',
         flagpole: {
-          start: { timestamp: 1700020000000, price: 40000 },
-          end: { timestamp: 1700040000000, price: 46000 },
+          start: { openTime: 1700020000000, price: 40000 },
+          end: { openTime: 1700040000000, price: 46000 },
         },
         pennant: {
           upperTrendline: [
-            { timestamp: 1700040000000, price: 46000 },
-            { timestamp: 1700060000000, price: 45000 },
+            { openTime: 1700040000000, price: 46000 },
+            { openTime: 1700060000000, price: 45000 },
           ],
           lowerTrendline: [
-            { timestamp: 1700040000000, price: 44000 },
-            { timestamp: 1700060000000, price: 44500 },
+            { openTime: 1700040000000, price: 44000 },
+            { openTime: 1700060000000, price: 44500 },
           ],
         },
       };
@@ -604,14 +604,14 @@ Pattern #1, Pattern #2, Pattern #3
         validateAIPattern({
           type: 'pennant',
           flagpole: {
-            start: { timestamp: 1700020000000, price: 40000 },
-            end: { timestamp: 1700040000000, price: 46000 },
+            start: { openTime: 1700020000000, price: 40000 },
+            end: { openTime: 1700040000000, price: 46000 },
           },
           pennant: {
             upperTrendline: 'invalid',
             lowerTrendline: [
-              { timestamp: 1700040000000, price: 44000 },
-              { timestamp: 1700060000000, price: 44500 },
+              { openTime: 1700040000000, price: 44000 },
+              { openTime: 1700060000000, price: 44500 },
             ],
           },
         })
@@ -621,12 +621,12 @@ Pattern #1, Pattern #2, Pattern #3
     it('should validate cup and handle pattern', () => {
       const validCup: AIPattern = {
         type: 'cup-and-handle',
-        cupStart: { timestamp: 1700000000000, price: 45000 },
-        cupBottom: { timestamp: 1700040000000, price: 40000 },
-        cupEnd: { timestamp: 1700080000000, price: 45000 },
-        handleStart: { timestamp: 1700080000000, price: 45000 },
-        handleLow: { timestamp: 1700090000000, price: 43000 },
-        handleEnd: { timestamp: 1700100000000, price: 44000 },
+        cupStart: { openTime: 1700000000000, price: 45000 },
+        cupBottom: { openTime: 1700040000000, price: 40000 },
+        cupEnd: { openTime: 1700080000000, price: 45000 },
+        handleStart: { openTime: 1700080000000, price: 45000 },
+        handleLow: { openTime: 1700090000000, price: 43000 },
+        handleEnd: { openTime: 1700100000000, price: 44000 },
       };
       expect(validateAIPattern(validCup)).toBe(true);
 
@@ -634,11 +634,11 @@ Pattern #1, Pattern #2, Pattern #3
         validateAIPattern({
           type: 'cup-and-handle',
           cupStart: { price: 45000 },
-          cupBottom: { timestamp: 1700040000000, price: 40000 },
-          cupEnd: { timestamp: 1700080000000, price: 45000 },
-          handleStart: { timestamp: 1700080000000, price: 45000 },
-          handleLow: { timestamp: 1700090000000, price: 43000 },
-          handleEnd: { timestamp: 1700100000000, price: 44000 },
+          cupBottom: { openTime: 1700040000000, price: 40000 },
+          cupEnd: { openTime: 1700080000000, price: 45000 },
+          handleStart: { openTime: 1700080000000, price: 45000 },
+          handleLow: { openTime: 1700090000000, price: 43000 },
+          handleEnd: { openTime: 1700100000000, price: 44000 },
         })
       ).toBe(false);
     });
@@ -646,18 +646,18 @@ Pattern #1, Pattern #2, Pattern #3
     it('should validate rounding bottom pattern', () => {
       const validRounded: AIPattern = {
         type: 'rounding-bottom',
-        start: { timestamp: 1700000000000, price: 45000 },
-        bottom: { timestamp: 1700040000000, price: 40000 },
-        end: { timestamp: 1700080000000, price: 45000 },
+        start: { openTime: 1700000000000, price: 45000 },
+        bottom: { openTime: 1700040000000, price: 40000 },
+        end: { openTime: 1700080000000, price: 45000 },
       };
       expect(validateAIPattern(validRounded)).toBe(true);
 
       expect(
         validateAIPattern({
           type: 'rounding-bottom',
-          start: { timestamp: 1700000000000 },
-          bottom: { timestamp: 1700040000000, price: 40000 },
-          end: { timestamp: 1700080000000, price: 45000 },
+          start: { openTime: 1700000000000 },
+          bottom: { openTime: 1700040000000, price: 40000 },
+          end: { openTime: 1700080000000, price: 45000 },
         })
       ).toBe(false);
     });
@@ -665,15 +665,15 @@ Pattern #1, Pattern #2, Pattern #3
     it('should validate gap patterns', () => {
       const validGap: AIPattern = {
         type: 'gap-breakaway',
-        gapStart: { timestamp: 1700040000000, price: 43000 },
-        gapEnd: { timestamp: 1700050000000, price: 45000 },
+        gapStart: { openTime: 1700040000000, price: 43000 },
+        gapEnd: { openTime: 1700050000000, price: 45000 },
       };
       expect(validateAIPattern(validGap)).toBe(true);
 
       expect(
         validateAIPattern({
           type: 'gap-breakaway',
-          gapStart: { timestamp: 1700040000000, price: 43000 },
+          gapStart: { openTime: 1700040000000, price: 43000 },
           gapEnd: { price: 45000 },
         })
       ).toBe(false);

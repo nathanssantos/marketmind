@@ -1,27 +1,27 @@
-import { describe, expect, it } from 'vitest';
+import type { Kline, NewsArticle } from '@shared/types';
 import { renderHook } from '@testing-library/react';
-import { createElement } from 'react';
-import { useChartData } from './useChartData';
-import { ChartProvider } from '../context/ChartContext';
-import type { Candle, NewsArticle } from '@shared/types';
 import type { ReactNode } from 'react';
+import { createElement } from 'react';
+import { describe, expect, it } from 'vitest';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
+import { ChartProvider } from '../context/ChartContext';
+import { useChartData } from './useChartData';
 
 const wrapper = ({ children }: { children: ReactNode }) => 
   createElement(ChartProvider, null, children);
 
 describe('useChartData', () => {
-  const mockCandles: Candle[] = [
-    { timestamp: 1000, open: 100, high: 110, low: 95, close: 105, volume: 1000 },
-    { timestamp: 2000, open: 105, high: 115, low: 100, close: 110, volume: 1500 },
+  const mockKlines: Kline[] = [
+    { openTime: 1000, closeTime: 2000, open: '100', high: '110', low: '95', close: '105', volume: '1000', quoteVolume: '105000', trades: 100, takerBuyBaseVolume: '500', takerBuyQuoteVolume: '52500' },
+    { openTime: 2000, closeTime: 3000, open: '105', high: '115', low: '100', close: '110', volume: '1500', quoteVolume: '165000', trades: 150, takerBuyBaseVolume: '750', takerBuyQuoteVolume: '82500' },
   ];
 
   const mockParams = {
-    candles: mockCandles,
+    klines: mockKlines,
     symbol: 'BTCUSDT',
     timeframe: '1h' as Timeframe,
-    chartType: 'candlestick' as 'candlestick' | 'line',
+    chartType: 'kline' as 'kline' | 'line',
     showVolume: true,
     movingAverages: [] as MovingAverageConfig[],
     news: undefined as NewsArticle[] | undefined,
@@ -33,7 +33,7 @@ describe('useChartData', () => {
     expect(result.current).toBeUndefined();
   });
 
-  it('should handle candles changes', () => {
+  it('should handle klines changes', () => {
     const { rerender } = renderHook(
       ({ params }) => useChartData(params),
       {
@@ -42,12 +42,12 @@ describe('useChartData', () => {
       }
     );
 
-    const newCandles = [
-      ...mockCandles,
-      { timestamp: 3000, open: 110, high: 120, low: 105, close: 115, volume: 2000 },
+    const newKlines = [
+      ...mockKlines,
+      { openTime: 3000, closeTime: 4000, open: '110', high: '120', low: '105', close: '115', volume: '2000', quoteVolume: '230000', trades: 200, takerBuyBaseVolume: '1000', takerBuyQuoteVolume: '115000' },
     ];
 
-    rerender({ params: { ...mockParams, candles: newCandles } });
+    rerender({ params: { ...mockParams, klines: newKlines } });
 
     expect(true).toBe(true);
   });
@@ -89,7 +89,7 @@ describe('useChartData', () => {
       }
     );
 
-    rerender({ params: { ...mockParams, chartType: 'line' as 'candlestick' | 'line' } });
+    rerender({ params: { ...mockParams, chartType: 'line' as 'kline' | 'line' } });
 
     expect(true).toBe(true);
   });
@@ -152,8 +152,8 @@ describe('useChartData', () => {
     expect(true).toBe(true);
   });
 
-  it('should handle empty candles array', () => {
-    const emptyParams = { ...mockParams, candles: [] };
+  it('should handle empty klines array', () => {
+    const emptyParams = { ...mockParams, klines: [] };
 
     const { result } = renderHook(() => useChartData(emptyParams), { wrapper });
 

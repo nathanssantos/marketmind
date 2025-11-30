@@ -1,5 +1,5 @@
 import { workerPool } from '@/renderer/utils/WorkerPool';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { useCallback, useEffect, useRef } from 'react';
 import type { MAWorkerRequest, WorkerResponse } from '../workers/movingAverages.worker';
 
@@ -19,7 +19,7 @@ export interface MovingAverageResult {
 
 export interface UseMovingAverageWorkerReturn {
   calculateMovingAverages: (
-    candles: Candle[],
+    klines: Kline[],
     configs: MovingAverageConfig[]
   ) => Promise<MovingAverageResult[]>;
   terminate: () => void;
@@ -72,9 +72,9 @@ export const useMovingAverageWorker = (): UseMovingAverageWorkerReturn => {
   }, []);
 
   const calculateMovingAverages = useCallback(
-    (candles: Candle[], configs: MovingAverageConfig[]): Promise<MovingAverageResult[]> => {
+    (klines: Kline[], configs: MovingAverageConfig[]): Promise<MovingAverageResult[]> => {
       return new Promise((resolve) => {
-        if (!workerRef.current || candles.length === 0) {
+        if (!workerRef.current || klines.length === 0) {
           resolve([]);
           return;
         }
@@ -84,7 +84,7 @@ export const useMovingAverageWorker = (): UseMovingAverageWorkerReturn => {
 
         const request: MAWorkerRequest = {
           type: 'calculate',
-          candles,
+          klines,
           configs,
         };
 

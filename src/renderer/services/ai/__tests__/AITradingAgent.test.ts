@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { AITradingConfig, Candle } from '../../../../shared/types';
+import type { AITradingConfig, Kline } from '../../../../shared/types';
 import { AITradingAgent, type AITradingAgentConfig } from '../AITradingAgent';
 
-const mockCandles: Candle[] = [
-  { timestamp: 1700000000, open: 100, high: 105, low: 99, close: 103, volume: 1000000 },
-  { timestamp: 1700000060, open: 103, high: 107, low: 102, close: 106, volume: 1200000 },
-  { timestamp: 1700000120, open: 106, high: 110, low: 105, close: 109, volume: 1500000 },
+const mockKlines: Kline[] = [
+  { openTime: 1700000000, closeTime: 1700000060, open: '100', high: '105', low: '99', close: '103', volume: '1000000', quoteVolume: '103000000', trades: 1000, takerBuyBaseVolume: '500000', takerBuyQuoteVolume: '51500000' },
+  { openTime: 1700000060, closeTime: 1700000120, open: '103', high: '107', low: '102', close: '106', volume: '1200000', quoteVolume: '127200000', trades: 1200, takerBuyBaseVolume: '600000', takerBuyQuoteVolume: '63600000' },
+  { openTime: 1700000120, closeTime: 1700000180, open: '106', high: '110', low: '105', close: '109', volume: '1500000', quoteVolume: '163500000', trades: 1500, takerBuyBaseVolume: '750000', takerBuyQuoteVolume: '81750000' },
 ];
 
 const defaultConfig: AITradingConfig = {
@@ -37,8 +37,8 @@ describe('AITradingAgent', () => {
       getChartData: () => ({
         symbol: 'BTCUSDT',
         timeframe: '15m',
-        chartType: 'candlestick' as const,
-        candles: mockCandles,
+        chartType: 'kline' as const,
+        klines: mockKlines,
         news: [],
         events: [],
       }),

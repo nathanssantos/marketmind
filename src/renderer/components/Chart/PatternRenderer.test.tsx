@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Candle } from '../../../shared/types';
+import type { Kline } from '../../../shared/types';
 import { PatternHoverProvider } from '../../context/PatternHoverContext';
 import type { CanvasManager } from '../../utils/canvas/CanvasManager';
 import { PatternRenderer } from './PatternRenderer';
@@ -41,8 +41,8 @@ const createMockContext = () => ({
 });
 
 describe('PatternRenderer', () => {
-    const mockCandles: Candle[] = Array.from({ length: 50 }, (_, i) => ({
-        timestamp: 1000000 + i * 60000,
+    const mockKlines: Kline[] = Array.from({ length: 50 }, (_, i) => ({
+        openTime: 1000000 + i * 60000,
         open: 100 + i,
         high: 105 + i,
         low: 95 + i,
@@ -73,7 +73,7 @@ describe('PatternRenderer', () => {
         const { container } = renderWithProvider(
             <PatternRenderer
                 canvasManager={mockCanvasManager as CanvasManager}
-                candles={mockCandles}
+                klines={mockKlines}
                 patterns={[]}
                 width={800}
                 height={600}
@@ -98,13 +98,13 @@ describe('PatternRenderer', () => {
         renderWithProvider(
             <PatternRenderer
                 canvasManager={mockCanvasManager as CanvasManager}
-                candles={mockCandles}
+                klines={mockKlines}
                 patterns={[
                     {
                         type: 'support',
                         points: [
-                            { timestamp: 1000000, price: 100 },
-                            { timestamp: 1060000, price: 100 },
+                            { openTime: 1000000, price: 100 },
+                            { openTime: 1060000, price: 100 },
                         ],
                         confidence: 0.8,
                     },
@@ -126,7 +126,7 @@ describe('PatternRenderer', () => {
         const { container } = renderWithProvider(
             <PatternRenderer
                 canvasManager={null}
-                candles={mockCandles}
+                klines={mockKlines}
                 patterns={[]}
                 width={800}
                 height={600}
@@ -160,13 +160,13 @@ describe('PatternRenderer', () => {
         renderWithProvider(
             <PatternRenderer
                 canvasManager={mockCanvasManager as CanvasManager}
-                candles={mockCandles}
+                klines={mockKlines}
                 patterns={[
                     {
                         type: 'support',
                         points: [
-                            { timestamp: 1000000, price: 100 },
-                            { timestamp: 1060000, price: 100 },
+                            { openTime: 1000000, price: 100 },
+                            { openTime: 1060000, price: 100 },
                         ],
                         visible: false,
                         confidence: 0.8,
@@ -191,8 +191,8 @@ describe('PatternRenderer', () => {
             id: 1,
             type: 'support' as const,
             points: [
-                { timestamp: 1000000, price: 100 },
-                { timestamp: 1060000, price: 100 },
+                { openTime: 1000000, price: 100 },
+                { openTime: 1060000, price: 100 },
             ],
             confidence: 0.8,
         };
@@ -200,7 +200,7 @@ describe('PatternRenderer', () => {
         renderWithProvider(
             <PatternRenderer
                 canvasManager={mockCanvasManager as CanvasManager}
-                candles={mockCandles}
+                klines={mockKlines}
                 patterns={[pattern]}
                 width={800}
                 height={600}

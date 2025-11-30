@@ -54,6 +54,7 @@
       "chart": "Gráfico",
       "ai": "Configuração de IA",
       "aiTrading": "Auto-Trading IA",
+      "algorithmicAutoTrading": "Auto-Trading Algorítmico",
       "setupDetection": "Detecção de Setups",
       "patternDetection": "Detecção de Padrões",
       "news": "Notícias",
@@ -103,11 +104,11 @@
       "rightMarginHelper": "Espaço reservado no lado direito do gráfico",
       "volumeHeightRatio": "Proporção de Altura do Volume",
       "volumeHeightRatioHelper": "Altura das barras de volume relativa ao gráfico (0-1)",
-      "candleSettings": "Configurações de Candle",
-      "candleSpacing": "Espaçamento de Candle",
-      "candleSpacingHelper": "Espaço entre candles",
+      "klineSettings": "Configurações de Kline",
+      "klineSpacing": "Espaçamento de Kline",
+      "klineSpacingHelper": "Espaço entre klines",
       "wickWidth": "Largura do Pavio",
-      "wickWidthHelper": "Largura dos pavios dos candles",
+      "wickWidthHelper": "Largura dos pavios dos klines",
       "gridSettings": "Configurações de Grade",
       "gridLineWidth": "Largura da Linha de Grade",
       "gridLineWidthHelper": "Espessura das linhas de grade",
@@ -140,8 +141,8 @@
       "temperatureHelper": "Controla a aleatoriedade (0 = focado, 2 = criativo)",
       "maxTokens": "Máx. Tokens: {{value}}",
       "maxTokensHelper": "Comprimento máximo da resposta",
-      "detailedCandles": "Candles Detalhados: {{value}}",
-      "detailedCandlesHelper": "Número de candles recentes enviados com detalhes completos para a IA",
+      "detailedKlines": "Klines Detalhados: {{value}}",
+      "detailedKlinesHelper": "Número de klines recentes enviados com detalhes completos para a IA",
       "patternDetection": {
         "title": "Detecção de Padrões",
         "mode": "Modo de Detecção",
@@ -150,11 +151,11 @@
         "algorithmicOnly": "Apenas Algorítmico - Algoritmo detecta padrões localmente",
         "hybrid": "Híbrido - Algoritmo detecta, IA interpreta (80-90% redução de custo)",
         "autoDisplay": "Exibir padrões automaticamente no gráfico",
-        "autoDisplayHelper": "Mostrar automaticamente padrões detectados no gráfico ao fazer zoom/pan (analisa apenas candles visíveis)",
+        "autoDisplayHelper": "Mostrar automaticamente padrões detectados no gráfico ao fazer zoom/pan (analisa apenas klines visíveis)",
         "minConfidence": "Confiança Mín: {{value}}%",
         "minConfidenceHelper": "Limite mínimo de confiança para detecção de padrões (50-90%)",
         "pivotSensitivity": "Sensibilidade de Pivot: {{value}}",
-        "pivotSensitivityHelper": "Janela de lookback para detecção de pontos de pivot (3-10 candles)"
+        "pivotSensitivityHelper": "Janela de lookback para detecção de pontos de pivot (3-10 klines)"
       }
     },
     "news": {
@@ -225,6 +226,17 @@
         "clearAll": "Limpar Todos os Dados"
       },
       "confirmClearAll": "Tem certeza que deseja limpar todos os dados de trading? Esta ação não pode ser desfeita."
+    },
+    "algorithmicAutoTrading": {
+      "title": "Auto-Trading Algorítmico",
+      "description": "Configure a execução automática de ordens baseada em setups de trading detectados.",
+      "status": {
+        "title": "Status do Auto-Trading",
+        "description": "Ative ou desative a abertura automática de ordens quando setups de trading forem detectados no gráfico.",
+        "active": "Auto-trading está ativo - ordens serão criadas automaticamente",
+        "inactive": "Auto-trading está inativo - setups serão apenas detectados e exibidos",
+        "info": "Este recurso funciona com o sistema de detecção de setups. Certifique-se de ativar pelo menos um tipo de setup na aba Detecção de Setups antes de ativar o auto-trading."
+      }
     }
   },
   "chat": {
@@ -251,7 +263,7 @@
       "title": "Controles do Gráfico",
       "timeframe": "Período",
       "chartType": "Tipo de Gráfico",
-      "candlestickChart": "Gráfico de Velas",
+      "klineChart": "Gráfico de Velas",
       "lineChart": "Gráfico de Linha",
       "display": "Exibição",
       "volume": "Volume",
@@ -274,19 +286,23 @@
       "deletePattern": "Deletar Padrão",
       "hidePatterns": "Ocultar Padrões Detectados",
       "showPatterns": "Mostrar Padrões Detectados",
-      "deleteAllPatterns": "Remover Todos os Padrões Detectados"
+      "deleteAllPatterns": "Remover Todos os Padrões Detectados",
+      "deleteSetup": "Deletar Setup",
+      "hideSetups": "Ocultar Setups Detectados",
+      "showSetups": "Mostrar Setups Detectados",
+      "deleteAllSetups": "Remover Todos os Setups Detectados"
     },
     "navigation": {
       "resetView": "Voltar à visualização inicial",
-      "nextCandle": "Próximo candle",
-      "candleTimer": "Tempo até o próximo candle"
+      "nextKline": "Próximo kline",
+      "klineTimer": "Tempo até o próximo kline"
     },
     "advanced": {
       "title": "Configurações Avançadas",
       "chartDimensions": "Dimensões do Gráfico",
       "rightMargin": "Margem Direita",
       "volumeHeight": "Altura do Volume %",
-      "candleSettings": "Configurações de Candle",
+      "klineSettings": "Configurações de Kline",
       "spacing": "Espaçamento",
       "wickWidth": "Largura do Pavio",
       "gridSettings": "Configurações de Grade",
@@ -379,7 +395,7 @@
       "enableCalendar": "Ativar Calendário de Eventos",
       "enableCalendarDescription": "Buscar e exibir próximos eventos de cripto do CoinGecko",
       "showOnChart": "Mostrar Eventos no Gráfico",
-      "showOnChartDescription": "Exibir marcadores de eventos no gráfico de candlestick",
+      "showOnChartDescription": "Exibir marcadores de eventos no gráfico de kline",
       "minImportanceForChart": "Importância Mínima para Gráfico",
       "minImportanceHelper": "Mostrar apenas eventos com este nível de importância ou superior no gráfico",
       "daysAhead": "Dias à Frente",
@@ -407,7 +423,7 @@
       },
       "analyze": {
         "title": "Analise Dados de Mercado",
-        "description": "Visualize gráficos de candlestick em tempo real, indicadores de volume e médias móveis. Use os controles para personalizar a visualização do gráfico e selecionar diferentes períodos."
+        "description": "Visualize gráficos de kline em tempo real, indicadores de volume e médias móveis. Use os controles para personalizar a visualização do gráfico e selecionar diferentes períodos."
       },
       "chat": {
         "title": "Converse com a IA",
@@ -582,7 +598,7 @@
     "tips": {
       "sensitivity": "Maior sensibilidade detecta mais pontos de pivô mas pode reduzir a precisão",
       "confidence": "Confiança mínima filtra padrões baseado no limite de confiabilidade",
-      "period": "Período de formação controla quantos candles analisar para padrões"
+      "period": "Período de formação controla quantos klines analisar para padrões"
     },
     "sensitivity": {
       "label": "Sensibilidade",
@@ -595,7 +611,7 @@
     "formationPeriod": {
       "label": "Período de Formação",
       "helper": "Período de retrospectiva para detecção de padrões",
-      "candles": "candles"
+      "klines": "klines"
     },
     "trendlineAccuracy": {
       "label": "Precisão da Linha de Tendência (R²)",
@@ -886,7 +902,7 @@
     "features": "Recursos",
     "featuresList": {
       "marketData": "Dados de mercado de criptomoedas em tempo real (Binance)",
-      "charts": "Gráficos de candlestick avançados com médias móveis",
+      "charts": "Gráficos de kline avançados com médias móveis",
       "aiAnalysis": "Análise de IA com OpenAI GPT-4o, Claude 4.5 e Gemini 2.0",
       "news": "Integração de notícias financeiras (NewsAPI e CryptoPanic)",
       "chat": "Interface de chat interativa com histórico de conversas",
@@ -914,6 +930,9 @@
     "copyright": "© 2025 MarketMind. Feito com ❤️ para traders e investidores."
   },
   "setupConfig": {
+    "configureSetups": "Configurar Setups de Trading",
+    "enabledSetups": "Setups Habilitados",
+    "toggleAll": "Alternar Todos os Setups",
     "tips": {
       "confidence": "Filtros de confiança mais altos mostram apenas os setups mais fortes",
       "algorithmic": "Detecção algorítmica é mais rápida e consistente que IA",
@@ -939,8 +958,20 @@
     "noSetupsEnabledDescription": "Não é possível habilitar o auto-trading sem setups ativos. Por favor, habilite pelo menos um setup nas Configurações.",
     "setups": {
       "setup91": {
-        "title": "Setup 9.1 (Reversões EMA9)",
-        "description": "Detecta mudanças de tendência na EMA9 com confirmação de volume"
+        "title": "Setup 9.1 (Reversão EMA9)",
+        "description": "Detecta mudanças de tendência da EMA9 com confirmação de volume - entrada no kline que vira a EMA9"
+      },
+      "setup92": {
+        "title": "Setup 9.2 (Pullback EMA9)",
+        "description": "Seguidor de tendência EMA9 - entrada após kline fechar abaixo/acima da mínima/máxima anterior em tendência de alta/baixa"
+      },
+      "setup93": {
+        "title": "Setup 9.3 (Pullback Duplo EMA9)",
+        "description": "Seguidor de tendência EMA9 - entrada após 2 fechamentos consecutivos abaixo/acima do kline de referência"
+      },
+      "setup94": {
+        "title": "Setup 9.4 (Continuação EMA9)",
+        "description": "Continuação EMA9 - falha temporária de 1 kline na EMA9 seguida por retomada da tendência original"
       },
       "pattern123": {
         "title": "Padrão 123 (Padrão de Reversão)",
@@ -957,6 +988,26 @@
       "breakoutRetest": {
         "title": "Reteste de Rompimento (Continuação)",
         "description": "Rompimento válido seguido de reteste bem-sucedido e continuação"
+      },
+      "pinInside": {
+        "title": "Combo Pin + Inside Bar (Rejeição + Consolidação)",
+        "description": "Rejeição com pin bar seguida de consolidação com inside bar em níveis de suporte/resistência"
+      },
+      "orderBlockFVG": {
+        "title": "Order Block + FVG (Padrão ICT/SMC)",
+        "description": "Order block de alto volume combinado com fair value gap para zonas de entrada institucional"
+      },
+      "vwapEmaCross": {
+        "title": "VWAP + Cruzamento EMA (Momentum + Reversão à Média)",
+        "description": "Cruzamento da EMA com VWAP e entrada no pullback para operações de momentum e reversão à média"
+      },
+      "divergence": {
+        "title": "Divergência RSI/MACD (Indicador de Reversão)",
+        "description": "Detecta divergência altista/baixista entre preço e indicadores RSI/MACD para reversões de alta probabilidade"
+      },
+      "liquiditySweep": {
+        "title": "Varredura de Liquidez (Caça aos Stops)",
+        "description": "Detecta rompimentos falsos projetados para acionar stop losses antes de reverter - padrão clássico de comportamento institucional"
       }
     },
     "parameters": {

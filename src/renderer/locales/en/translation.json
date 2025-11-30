@@ -54,6 +54,7 @@
       "chart": "Chart",
       "ai": "AI Configuration",
       "aiTrading": "AI Auto-Trading",
+      "algorithmicAutoTrading": "Algorithmic Auto-Trading",
       "setupDetection": "Setup Detection",
       "patternDetection": "Pattern Detection",
       "news": "News",
@@ -103,11 +104,11 @@
       "rightMarginHelper": "Space reserved on the right side of the chart",
       "volumeHeightRatio": "Volume Height Ratio",
       "volumeHeightRatioHelper": "Height of volume bars relative to chart (0-1)",
-      "candleSettings": "Candle Settings",
-      "candleSpacing": "Candle Spacing",
-      "candleSpacingHelper": "Space between candles",
+      "klineSettings": "Kline Settings",
+      "klineSpacing": "Kline Spacing",
+      "klineSpacingHelper": "Space between klines",
       "wickWidth": "Wick Width",
-      "wickWidthHelper": "Width of candle wicks",
+      "wickWidthHelper": "Width of kline wicks",
       "gridSettings": "Grid Settings",
       "gridLineWidth": "Grid Line Width",
       "gridLineWidthHelper": "Thickness of grid lines",
@@ -126,7 +127,7 @@
       "rightPadding": "Right Padding",
       "patternExtensions": "Pattern Extensions",
       "showAllExtensions": "Enable All Extensions",
-      "showAllExtensionsHelper": "Master toggle for extending patterns beyond the last candle",
+      "showAllExtensionsHelper": "Master toggle for extending patterns beyond the last kline",
       "extendTrendlines": "Extend Trendlines",
       "extendTrendlinesHelper": "Extend bullish and bearish trendlines to the right",
       "extendChannels": "Extend Channels",
@@ -151,8 +152,8 @@
       "temperatureHelper": "Controls randomness (0 = focused, 2 = creative)",
       "maxTokens": "Max Tokens: {{value}}",
       "maxTokensHelper": "Maximum response length",
-      "detailedCandles": "Detailed Candles: {{value}}",
-      "detailedCandlesHelper": "Number of recent candles sent with full details to AI",
+      "detailedKlines": "Detailed Klines: {{value}}",
+      "detailedKlinesHelper": "Number of recent klines sent with full details to AI",
       "patternDetection": {
         "title": "Pattern Detection",
         "mode": "Detection Mode",
@@ -161,11 +162,11 @@
         "algorithmicOnly": "Algorithmic Only - Algorithm detects patterns locally",
         "hybrid": "Hybrid - Algorithm detects, AI interprets (80-90% cost reduction)",
         "autoDisplay": "Auto-display patterns on chart",
-        "autoDisplayHelper": "Automatically show detected patterns on the chart as you zoom/pan (analyzes visible candles only)",
+        "autoDisplayHelper": "Automatically show detected patterns on the chart as you zoom/pan (analyzes visible klines only)",
         "minConfidence": "Min Confidence: {{value}}%",
         "minConfidenceHelper": "Minimum confidence threshold for pattern detection (50-90%)",
         "pivotSensitivity": "Pivot Sensitivity: {{value}}",
-        "pivotSensitivityHelper": "Lookback window for pivot point detection (3-10 candles)"
+        "pivotSensitivityHelper": "Lookback window for pivot point detection (3-10 klines)"
       }
     },
     "news": {
@@ -236,6 +237,17 @@
         "clearAll": "Clear All Data"
       },
       "confirmClearAll": "Are you sure you want to clear all trading data? This action cannot be undone."
+    },
+    "algorithmicAutoTrading": {
+      "title": "Algorithmic Auto-Trading",
+      "description": "Configure automatic order execution based on detected trading setups.",
+      "status": {
+        "title": "Auto-Trading Status",
+        "description": "Enable or disable automatic order placement when trading setups are detected on the chart.",
+        "active": "Auto-trading is currently active - orders will be created automatically",
+        "inactive": "Auto-trading is currently inactive - setups will only be detected and displayed",
+        "info": "This feature works with the setup detection system. Make sure to enable at least one setup type in the Setup Detection tab before activating auto-trading."
+      }
     }
   },
   "chat": {
@@ -262,7 +274,7 @@
       "title": "Chart Controls",
       "timeframe": "Timeframe",
       "chartType": "Chart Type",
-      "candlestickChart": "Candlestick Chart",
+      "klineChart": "Kline Chart",
       "lineChart": "Line Chart",
       "display": "Display",
       "volume": "Volume",
@@ -276,7 +288,7 @@
       "autoPatterns": "Auto Pattern Detection",
       "detectPatterns": "Detect Patterns Now",
       "setupDetection": "Algorithmic Setup Detection",
-      "patternExtensions": "Extend Patterns Beyond Last Candle",
+      "patternExtensions": "Extend Patterns Beyond Last Kline",
       "indicators": "Indicators",
       "quickSettings": "Quick Settings"
     },
@@ -285,19 +297,23 @@
       "deletePattern": "Delete Pattern",
       "hidePatterns": "Hide Detected Patterns",
       "showPatterns": "Show Detected Patterns",
-      "deleteAllPatterns": "Remove All Detected Patterns"
+      "deleteAllPatterns": "Remove All Detected Patterns",
+      "deleteSetup": "Delete Setup",
+      "hideSetups": "Hide Detected Setups",
+      "showSetups": "Show Detected Setups",
+      "deleteAllSetups": "Remove All Detected Setups"
     },
     "navigation": {
       "resetView": "Reset to initial view",
-      "nextCandle": "Next candle",
-      "candleTimer": "Time until next candle"
+      "nextKline": "Next kline",
+      "klineTimer": "Time until next kline"
     },
     "advanced": {
       "title": "Advanced Settings",
       "chartDimensions": "Chart Dimensions",
       "rightMargin": "Right Margin",
       "volumeHeight": "Volume Height %",
-      "candleSettings": "Candle Settings",
+      "klineSettings": "Kline Settings",
       "spacing": "Spacing",
       "wickWidth": "Wick Width",
       "gridSettings": "Grid Settings",
@@ -390,7 +406,7 @@
       "enableCalendar": "Enable Events Calendar",
       "enableCalendarDescription": "Fetch and display upcoming crypto events from CoinGecko",
       "showOnChart": "Show Events on Chart",
-      "showOnChartDescription": "Display event markers on candlestick chart",
+      "showOnChartDescription": "Display event markers on kline chart",
       "minImportanceForChart": "Minimum Importance for Chart",
       "minImportanceHelper": "Only show events with this importance level or higher on the chart",
       "daysAhead": "Days Ahead",
@@ -418,7 +434,7 @@
       },
       "analyze": {
         "title": "Analyze Market Data",
-        "description": "View real-time candlestick charts, volume indicators, and moving averages. Use the controls to customize your chart view and select different timeframes."
+        "description": "View real-time kline charts, volume indicators, and moving averages. Use the controls to customize your chart view and select different timeframes."
       },
       "chat": {
         "title": "Chat with AI",
@@ -593,7 +609,7 @@
     "tips": {
       "sensitivity": "Higher sensitivity detects more pivot points but may reduce accuracy",
       "confidence": "Minimum confidence filters patterns based on reliability threshold",
-      "period": "Formation period controls how many candles to analyze for patterns"
+      "period": "Formation period controls how many klines to analyze for patterns"
     },
     "sensitivity": {
       "label": "Sensitivity",
@@ -606,7 +622,7 @@
     "formationPeriod": {
       "label": "Formation Period",
       "helper": "Lookback period for pattern detection",
-      "candles": "candles"
+      "klines": "klines"
     },
     "trendlineAccuracy": {
       "label": "Trendline Accuracy (R²)",
@@ -897,7 +913,7 @@
     "features": "Features",
     "featuresList": {
       "marketData": "Real-time cryptocurrency market data (Binance)",
-      "charts": "Advanced candlestick charts with moving averages",
+      "charts": "Advanced kline charts with moving averages",
       "aiAnalysis": "AI analysis with OpenAI GPT-4o, Claude 4.5, and Gemini 2.0",
       "news": "Financial news integration (NewsAPI & CryptoPanic)",
       "chat": "Interactive chat interface with conversation history",
@@ -925,6 +941,9 @@
     "copyright": "© 2025 MarketMind. Built with ❤️ for traders and investors."
   },
   "setupConfig": {
+    "configureSetups": "Configure Trading Setups",
+    "enabledSetups": "Enabled Setups",
+    "toggleAll": "Toggle All Setups",
     "tips": {
       "confidence": "Higher confidence filters show only the strongest setups",
       "algorithmic": "Algorithmic detection is faster and more consistent than AI",
@@ -950,8 +969,20 @@
     "noSetupsEnabledDescription": "Cannot enable auto-trading without active setups. Please enable at least one setup in Settings.",
     "setups": {
       "setup91": {
-        "title": "Setup 9.1 (EMA9 Reversals)",
-        "description": "Detects EMA9 trend changes with volume confirmation"
+        "title": "Setup 9.1 (EMA9 Reversal)",
+        "description": "Detects EMA9 trend changes with volume confirmation - entry on kline that turns EMA9"
+      },
+      "setup92": {
+        "title": "Setup 9.2 (EMA9 Pullback)",
+        "description": "EMA9 trend follower - entry after kline closes below/above previous low/high during uptrend/downtrend"
+      },
+      "setup93": {
+        "title": "Setup 9.3 (EMA9 Double Pullback)",
+        "description": "EMA9 trend follower - entry after 2 consecutive lower/higher closes from reference kline"
+      },
+      "setup94": {
+        "title": "Setup 9.4 (EMA9 Continuation)",
+        "description": "EMA9 continuation - temporary 1-kline EMA9 failure followed by resumption of original trend"
       },
       "pattern123": {
         "title": "Pattern 123 (Reversal Pattern)",
@@ -968,6 +999,26 @@
       "breakoutRetest": {
         "title": "Breakout Retest (Continuation)",
         "description": "Valid breakout followed by successful retest and continuation"
+      },
+      "pinInside": {
+        "title": "Pin + Inside Bar Combo (Rejection + Consolidation)",
+        "description": "Pin bar rejection followed by inside bar consolidation at support/resistance levels"
+      },
+      "orderBlockFVG": {
+        "title": "Order Block + FVG (ICT/SMC Pattern)",
+        "description": "High-volume order block combined with fair value gap for institutional entry zones"
+      },
+      "vwapEmaCross": {
+        "title": "VWAP + EMA Cross (Momentum + Mean Reversion)",
+        "description": "EMA crossover of VWAP with pullback entry for momentum and mean reversion trades"
+      },
+      "divergence": {
+        "title": "RSI/MACD Divergence (Reversal Indicator)",
+        "description": "Detects bullish/bearish divergence between price and RSI/MACD indicators for high-probability reversals"
+      },
+      "liquiditySweep": {
+        "title": "Liquidity Sweep (Smart Money Stop Hunt)",
+        "description": "Detects false breakouts designed to trigger stop losses before reversing - classic institutional behavior pattern"
       }
     },
     "parameters": {

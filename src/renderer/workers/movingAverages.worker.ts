@@ -1,9 +1,9 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { calculateMovingAverages, type MAConfig, type MAResult } from '../utils/movingAverages';
 
 export interface MAWorkerRequest {
   type: 'calculate';
-  candles: Candle[];
+  klines: Kline[];
   configs: MAConfig[];
 }
 
@@ -13,11 +13,11 @@ export interface WorkerResponse {
 }
 
 self.onmessage = (event: MessageEvent<MAWorkerRequest>) => {
-  const { type, candles, configs } = event.data;
+  const { type, klines, configs } = event.data;
 
   if (type !== 'calculate') return;
 
-  const results = calculateMovingAverages(candles, configs);
+  const results = calculateMovingAverages(klines, configs);
 
   const response: WorkerResponse = {
     type: 'result',

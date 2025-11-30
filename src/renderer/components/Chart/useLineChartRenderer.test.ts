@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Candle } from '../../../shared/types';
+import type { Kline } from '../../../shared/types';
 import type { ChartThemeColors } from '../../hooks/useChartColors';
 import type { CanvasManager } from '../../utils/canvas/CanvasManager';
 import { useLineChartRenderer } from './useLineChartRenderer';
@@ -13,7 +13,7 @@ describe('useLineChartRenderer', () => {
   let mockManager: CanvasManager;
   let mockColors: ChartThemeColors;
   let mockCtx: CanvasRenderingContext2D;
-  let mockCandles: Candle[];
+  let mockKlines: Kline[];
 
   beforeEach(() => {
     mockCtx = {
@@ -34,9 +34,9 @@ describe('useLineChartRenderer', () => {
       roundRect: vi.fn(),
     } as unknown as CanvasRenderingContext2D;
 
-    mockCandles = [
+    mockKlines = [
       {
-        timestamp: 1000,
+        openTime: 1000,
         open: 100,
         high: 110,
         low: 90,
@@ -44,7 +44,7 @@ describe('useLineChartRenderer', () => {
         volume: 1000,
       },
       {
-        timestamp: 2000,
+        openTime: 2000,
         open: 105,
         high: 115,
         low: 95,
@@ -52,7 +52,7 @@ describe('useLineChartRenderer', () => {
         volume: 1100,
       },
       {
-        timestamp: 3000,
+        openTime: 3000,
         open: 110,
         high: 120,
         low: 100,
@@ -69,11 +69,11 @@ describe('useLineChartRenderer', () => {
         chartWidth: 750,
         chartHeight: 350,
       })),
-      getViewport: vi.fn(() => ({ start: 0, end: 3, candleWidth: 10, candleSpacing: 2 })),
-      getVisibleCandles: vi.fn(() => mockCandles),
+      getViewport: vi.fn(() => ({ start: 0, end: 3, klineWidth: 10, klineSpacing: 2 })),
+      getVisibleKlines: vi.fn(() => mockKlines),
       indexToX: vi.fn((index: number) => 100 + index * 50),
       priceToY: vi.fn((price: number) => 200 - price),
-      getCandles: vi.fn(() => mockCandles),
+      getKlines: vi.fn(() => mockKlines),
     } as unknown as CanvasManager;
 
     mockColors = {
@@ -154,8 +154,8 @@ describe('useLineChartRenderer', () => {
     expect(mockCtx.save).not.toHaveBeenCalled();
   });
 
-  it('should not render when no visible candles', () => {
-    vi.mocked(mockManager.getVisibleCandles).mockReturnValue([]);
+  it('should not render when no visible klines', () => {
+    vi.mocked(mockManager.getVisibleKlines).mockReturnValue([]);
 
     const { result } = renderHook(() =>
       useLineChartRenderer({ manager: mockManager, colors: mockColors })
@@ -210,7 +210,7 @@ describe('useLineChartRenderer', () => {
     expect(mockCtx.stroke).toHaveBeenCalled();
   });
 
-  it('should skip candles outside visible area', () => {
+  it('should skip klines outside visible area', () => {
     vi.mocked(mockManager.indexToX).mockImplementation((index: number) => {
       if (index === 0) return -20;
       if (index === 2) return 1000;
@@ -250,9 +250,9 @@ describe('useLineChartRenderer', () => {
     expect(mockCtx.lineCap).toBe('round');
   });
 
-  it('should handle single candle', () => {
-    const singleCandle = [mockCandles[0]];
-    vi.mocked(mockManager.getVisibleCandles).mockReturnValue(singleCandle);
+  it('should handle single kline', () => {
+    const singleKline = [mockKlines[0]];
+    vi.mocked(mockManager.getVisibleKlines).mockReturnValue(singleKline);
 
     const { result } = renderHook(() =>
       useLineChartRenderer({ manager: mockManager, colors: mockColors })
@@ -321,8 +321,8 @@ describe('useLineChartRenderer', () => {
     vi.mocked(mockManager.getViewport).mockReturnValue({
       start: 1,
       end: 2,
-      candleWidth: 10,
-      candleSpacing: 2,
+      klineWidth: 10,
+      klineSpacing: 2,
     });
 
     const { result } = renderHook(() =>

@@ -1,6 +1,7 @@
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
+import { getKlineClose } from '@shared/utils';
 import { useCallback } from 'react';
 
 export interface UseLineChartRendererProps {
@@ -29,11 +30,11 @@ export const useLineChartRenderer = ({
 
     if (!ctx || !dimensions) return;
 
-    const visibleCandles = manager.getVisibleCandles();
+    const visibleKlines = manager.getVisibleKlines();
     const { chartWidth, chartHeight } = dimensions;
     const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
 
-    if (visibleCandles.length === 0) return;
+    if (visibleKlines.length === 0) return;
 
     ctx.save();
 
@@ -44,10 +45,10 @@ export const useLineChartRenderer = ({
 
     ctx.beginPath();
 
-    visibleCandles.forEach((candle, index) => {
+    visibleKlines.forEach((kline, index) => {
       const actualIndex = Math.floor(viewport.start) + index;
       const x = manager.indexToX(actualIndex);
-      const y = manager.priceToY(candle.close);
+      const y = manager.priceToY(getKlineClose(kline));
 
       if (x < -10 || x > effectiveWidth + 10) return;
 
@@ -60,9 +61,9 @@ export const useLineChartRenderer = ({
 
     ctx.stroke();
 
-    if (visibleCandles.length > 0) {
+    if (visibleKlines.length > 0) {
       const firstIndex = Math.floor(viewport.start);
-      const lastIndex = firstIndex + visibleCandles.length - 1;
+      const lastIndex = firstIndex + visibleKlines.length - 1;
       const firstX = manager.indexToX(firstIndex);
       const lastX = manager.indexToX(lastIndex);
 
@@ -74,7 +75,7 @@ export const useLineChartRenderer = ({
     }
 
     ctx.restore();
-  }, [manager, colors, enabled, rightMargin, manager?.getCandles()]);
+  }, [manager, colors, enabled, rightMargin, manager?.getKlines()]);
 
   return { render };
 };

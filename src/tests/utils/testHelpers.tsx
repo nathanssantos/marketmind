@@ -1,7 +1,7 @@
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { render, RenderOptions } from '@testing-library/react';
 import { ReactElement, ReactNode } from 'react';
-import type { Candle } from '../../shared/types';
+import type { Kline } from '../../shared/types';
 
 interface AllTheProvidersProps {
     children: ReactNode;
@@ -16,35 +16,41 @@ export const renderWithChakra = (
     options?: Omit<RenderOptions, 'wrapper'>
 ) => render(ui, { wrapper: AllTheProviders, ...options });
 
-export const createMockCandle = (overrides?: Partial<Candle>): Candle => ({
-    timestamp: 1700000000000,
-    open: 50000,
-    high: 52000,
-    low: 48000,
-    close: 51000,
-    volume: 1000000,
+export const createMockKline = (overrides?: Partial<Kline>): Kline => ({
+    openTime: 1700000000000,
+    open: '50000',
+    high: '52000',
+    low: '48000',
+    close: '51000',
+    volume: '1000000',
+    closeTime: 1700000000000 + 60000,
+    quoteVolume: '50000000000',
+    trades: 1000,
+    takerBuyBaseVolume: '500000',
+    takerBuyQuoteVolume: '25000000000',
     ...overrides,
 });
 
-export const createMockCandles = (
+export const createMockKlines = (
     count: number,
     options?: {
-        startTimestamp?: number;
+        startOpenTime?: number;
         interval?: number;
         trend?: 'up' | 'down' | 'sideways';
     }
-): Candle[] => {
+): Kline[] => {
     const {
-        startTimestamp = 1700000000000,
+        startOpenTime = 1700000000000,
         interval = 3600000,
         trend = 'sideways',
     } = options || {};
 
-    const candles: Candle[] = [];
+    const klines: Kline[] = [];
     let basePrice = 50000;
 
     for (let i = 0; i < count; i++) {
-        const timestamp = startTimestamp + i * interval;
+        const openTime = startOpenTime + i * interval;
+        const closeTime = openTime + interval;
 
         if (trend === 'up') {
             basePrice += Math.random() * 500;
@@ -60,48 +66,68 @@ export const createMockCandles = (
         const low = Math.min(open, close) - Math.random() * 1000;
         const volume = Math.random() * 2000000;
 
-        candles.push({
-            timestamp,
-            open,
-            high,
-            low,
-            close,
-            volume,
+        klines.push({
+            openTime,
+            open: open.toString(),
+            high: high.toString(),
+            low: low.toString(),
+            close: close.toString(),
+            volume: volume.toString(),
+            closeTime,
+            quoteVolume: (volume * close).toString(),
+            trades: Math.floor(Math.random() * 1000),
+            takerBuyBaseVolume: (volume * 0.5).toString(),
+            takerBuyQuoteVolume: (volume * close * 0.5).toString(),
         });
     }
 
-    return candles;
+    return klines;
 };
 
-export const createBullishCandle = (
-    timestamp = 1700000000000
-): Candle => ({
-    timestamp,
-    open: 50000,
-    high: 52000,
-    low: 49500,
-    close: 51500,
-    volume: 1000000,
+export const createBullishKline = (
+    openTime = 1700000000000
+): Kline => ({
+    openTime,
+    open: '50000',
+    high: '52000',
+    low: '49500',
+    close: '51500',
+    volume: '1000000',
+    closeTime: openTime + 60000,
+    quoteVolume: '51500000000',
+    trades: 1000,
+    takerBuyBaseVolume: '500000',
+    takerBuyQuoteVolume: '25750000000',
 });
 
-export const createBearishCandle = (
-    timestamp = 1700000000000
-): Candle => ({
-    timestamp,
-    open: 51000,
-    high: 51500,
-    low: 48000,
-    close: 48500,
-    volume: 1200000,
+export const createBearishKline = (
+    openTime = 1700000000000
+): Kline => ({
+    openTime,
+    open: '51000',
+    high: '51500',
+    low: '48000',
+    close: '48500',
+    volume: '1200000',
+    closeTime: openTime + 60000,
+    quoteVolume: '58200000000',
+    trades: 1200,
+    takerBuyBaseVolume: '600000',
+    takerBuyQuoteVolume: '29100000000',
 });
 
-export const createDojiCandle = (timestamp = 1700000000000): Candle => ({
-    timestamp,
-    open: 50000,
-    high: 51000,
-    low: 49000,
-    close: 50000,
-    volume: 800000,
+export const createDojiKline = (openTime = 1700000000000): Kline => ({
+    openTime,
+    open: '50000',
+    high: '51000',
+    low: '49000',
+    close: '50000',
+    volume: '800000',
+    closeTime: openTime + 60000,
+    quoteVolume: '40000000000',
+    trades: 800,
+    takerBuyBaseVolume: '400000',
+    takerBuyQuoteVolume: '20000000000',
 });
 
 export const mockLocalStorage = () => {

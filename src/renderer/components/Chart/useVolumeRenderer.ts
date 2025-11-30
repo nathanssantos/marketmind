@@ -3,6 +3,7 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawRect } from '@renderer/utils/canvas/drawingUtils';
 import { calculateVolumeMA, getVolumeMAPeriod } from '@renderer/utils/indicators/volume';
 import { CHART_CONFIG } from '@shared/constants';
+import { getKlineClose, getKlineOpen, getKlineVolume, getKlineBuyPressure } from '@shared/utils';
 import { useCallback } from 'react';
 
 export interface UseVolumeRendererProps {
@@ -12,7 +13,7 @@ export interface UseVolumeRendererProps {
   opacity?: number;
   rightMargin?: number;
   volumeHeightRatio?: number;
-  hoveredCandleIndex?: number;
+  hoveredKlineIndex?: number;
   timeframe?: string;
   showVolumeMA?: boolean;
 }
@@ -28,7 +29,7 @@ export const useVolumeRenderer = ({
   opacity = 0.2,
   rightMargin,
   volumeHeightRatio,
-  hoveredCandleIndex,
+  hoveredKlineIndex,
   timeframe = '1h',
   showVolumeMA = true,
 }: UseVolumeRendererProps): UseVolumeRendererReturn => {
@@ -39,43 +40,57 @@ export const useVolumeRenderer = ({
     const dimensions = manager.getDimensions();
     const viewport = manager.getViewport();
     const bounds = manager.getBounds();
-    const candles = manager.getCandles();
+    const klines = manager.getKlines();
 
-    if (!ctx || !dimensions || !bounds || !candles) return;
+    if (!ctx || !dimensions || !bounds || !klines) return;
 
-    const visibleCandles = manager.getVisibleCandles();
+    const visibleKlines = manager.getVisibleKlines();
     const { chartHeight, chartWidth } = dimensions;
-    const { candleWidth } = viewport;
+    const { klineWidth } = viewport;
     const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
     
     const visibleRange = viewport.end - viewport.start;
-    const widthPerCandle = effectiveWidth / visibleRange;
+    const widthPerKline = effectiveWidth / visibleRange;
 
     ctx.save();
 
     const volumeOverlayHeight = chartHeight * (volumeHeightRatio ?? CHART_CONFIG.VOLUME_HEIGHT_RATIO);
     const volumeBaseY = chartHeight;
 
-    visibleCandles.forEach((candle, index) => {
+    visibleKlines.forEach((kline, index) => {
       const actualIndex = Math.floor(viewport.start) + index;
       const x = manager.indexToX(actualIndex);
 
-      if (x + candleWidth < 0 || x > effectiveWidth) return;
+      if (x + klineWidth < 0 || x > effectiveWidth) return;
 
-      const barX = x + (widthPerCandle - candleWidth) / 2;
+      const barX = x + (widthPerKline - klineWidth) / 2;
 
-      const volumeRatio = candle.volume / bounds.maxVolume;
+      const volumeRatio = getKlineVolume(kline) / bounds.maxVolume;
       const barHeight = volumeRatio * volumeOverlayHeight;
 
-      const isBullish = candle.close >= candle.open;
+      const isBullish = getKlineClose(kline) >= getKlineOpen(kline);
       const baseColor = isBullish ? colors.bullish : colors.bearish;
-      const isHovered = hoveredCandleIndex === actualIndex;
-      
-      const rgbMatch = baseColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+      const isHovered = hoveredKlineIndex === actualIndex;
+
+      const buyPressure = getKlineBuyPressure(kline);
+
+      let finalColor: string;
       const volumeOpacity = isHovered ? opacity * 2.5 : opacity;
-      const color = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
-        ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${volumeOpacity})`
-        : `rgba(120, 120, 120, ${volumeOpacity})`;
+
+      if (buyPressure > 0.55) {
+        const intensity = Math.min((buyPressure - 0.55) / 0.45, 1);
+        const greenIntensity = Math.floor(100 + intensity * 155);
+        finalColor = `rgba(34, ${greenIntensity}, 84, ${volumeOpacity})`;
+      } else if (buyPressure < 0.45) {
+        const intensity = Math.min((0.45 - buyPressure) / 0.45, 1);
+        const redIntensity = Math.floor(100 + intensity * 155);
+        finalColor = `rgba(${redIntensity}, 34, 34, ${volumeOpacity})`;
+      } else {
+        const rgbMatch = baseColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+        finalColor = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
+          ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${volumeOpacity})`
+          : `rgba(120, 120, 120, ${volumeOpacity})`;
+      }
 
       if (isHovered) {
         ctx.save();
@@ -83,16 +98,16 @@ export const useVolumeRenderer = ({
         ctx.shadowBlur = 6;
       }
 
-      drawRect(ctx, barX, volumeBaseY - barHeight, candleWidth, barHeight, color);
+      drawRect(ctx, barX, volumeBaseY - barHeight, klineWidth, barHeight, finalColor);
 
       if (isHovered) {
         ctx.restore();
       }
     });
 
-    if (showVolumeMA && candles.length > 0) {
+    if (showVolumeMA && klines.length > 0) {
       const period = getVolumeMAPeriod(timeframe);
-      const volumeMA = calculateVolumeMA(candles, period);
+      const volumeMA = calculateVolumeMA(klines, period);
       
       ctx.strokeStyle = colors.volume;
       ctx.globalAlpha = 0.5;
@@ -101,16 +116,16 @@ export const useVolumeRenderer = ({
 
       let hasMovedTo = false;
 
-      visibleCandles.forEach((candle, index) => {
+      visibleKlines.forEach((_, index) => {
         const actualIndex = Math.floor(viewport.start) + index;
         const maValue = volumeMA.values[actualIndex];
         
         if (maValue === null || maValue === undefined) return;
 
         const x = manager.indexToX(actualIndex);
-        if (x + candleWidth < 0 || x > effectiveWidth) return;
+        if (x + klineWidth < 0 || x > effectiveWidth) return;
 
-        const barX = x + (widthPerCandle - candleWidth) / 2 + candleWidth / 2;
+        const barX = x + (widthPerKline - klineWidth) / 2 + klineWidth / 2;
         const volumeRatio = maValue / bounds.maxVolume;
         const y = volumeBaseY - (volumeRatio * volumeOverlayHeight);
 
@@ -127,7 +142,7 @@ export const useVolumeRenderer = ({
     }
 
     ctx.restore();
-  }, [manager, colors, enabled, opacity, rightMargin, volumeHeightRatio, hoveredCandleIndex, timeframe, showVolumeMA]);
+  }, [manager, colors, enabled, opacity, rightMargin, volumeHeightRatio, hoveredKlineIndex, timeframe, showVolumeMA]);
 
   return { render };
 };

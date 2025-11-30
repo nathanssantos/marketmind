@@ -1,13 +1,13 @@
-import type { AIPattern, CalendarEvent, Candle, NewsArticle } from '@shared/types';
+import type { AIPattern, CalendarEvent, Kline, NewsArticle } from '@shared/types';
 import React, { createContext, useContext, type ReactNode } from 'react';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
 
 export interface ChartContextData {
-  candles: Candle[];
+  klines: Kline[];
   symbol: string;
   timeframe: Timeframe;
-  chartType: 'candlestick' | 'line';
+  chartType: 'kline' | 'line';
   showVolume: boolean;
   movingAverages: MovingAverageConfig[];
   news?: NewsArticle[] | undefined;

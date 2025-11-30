@@ -1,8 +1,8 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { calculateRSI } from '../utils/rsi';
 
-self.onmessage = (e: MessageEvent<{ candles: Candle[]; period: number }>) => {
-  const { candles, period } = e.data;
-  const result = calculateRSI(candles, period);
+self.onmessage = (e: MessageEvent<{ klines: Kline[]; period: number }>) => {
+  const { klines, period } = e.data;
+  const result = calculateRSI(klines, period);
   self.postMessage(result);
 };

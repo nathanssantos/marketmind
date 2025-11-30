@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../../shared/types';
+import type { Kline } from '../../../../shared/types';
 import { detectBearishTrendlines, detectBullishTrendlines } from '../patterns/trendlines';
 import type { PivotPoint } from '../types';
 
-const createTestCandles = (count: number, basePrice: number): Candle[] => {
-  const candles: Candle[] = [];
+const createTestKlines = (count: number, basePrice: number): Kline[] => {
+  const klines: Kline[] = [];
   const now = Date.now();
   
   for (let i = 0; i < count; i++) {
-    candles.push({
-      timestamp: now + i * 60000,
+    klines.push({
+      openTime: now + i * 60000,
       open: basePrice,
       high: basePrice + 10,
       low: basePrice - 10,
@@ -18,14 +18,14 @@ const createTestCandles = (count: number, basePrice: number): Candle[] => {
     });
   }
   
-  return candles;
+  return klines;
 };
 
 const createTestPivots = (type: 'high' | 'low', prices: number[], indices: number[]): PivotPoint[] => {
   return prices.map((price, i) => ({
     index: indices[i] || i,
     price,
-    timestamp: Date.now() + (indices[i] || i) * 60000,
+    openTime: Date.now() + (indices[i] || i) * 60000,
     type,
     strength: 1,
     volume: 1000,
@@ -35,10 +35,10 @@ const createTestPivots = (type: 'high' | 'low', prices: number[], indices: numbe
 describe('trendlines', () => {
   describe('detectBullishTrendlines', () => {
     it('should detect bullish trendline from ascending low pivots', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const lowPivots = createTestPivots('low', [90, 95, 100], [10, 40, 70]);
       
-      const trendlines = detectBullishTrendlines(candles, lowPivots);
+      const trendlines = detectBullishTrendlines(klines, lowPivots);
       
       expect(trendlines.length).toBeGreaterThan(0);
       expect(trendlines[0]?.type).toBe('trendline-bullish');
@@ -46,28 +46,28 @@ describe('trendlines', () => {
     });
 
     it('should not detect trendline with insufficient pivots', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const lowPivots = createTestPivots('low', [90], [10]);
       
-      const trendlines = detectBullishTrendlines(candles, lowPivots);
+      const trendlines = detectBullishTrendlines(klines, lowPivots);
       
       expect(trendlines.length).toBe(0);
     });
 
     it('should require positive slope for bullish trendlines', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const lowPivots = createTestPivots('low', [100, 95, 90], [10, 40, 70]);
       
-      const trendlines = detectBullishTrendlines(candles, lowPivots);
+      const trendlines = detectBullishTrendlines(klines, lowPivots);
       
       expect(trendlines.length).toBe(0);
     });
 
     it('should assign confidence based on R-squared and bounces', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const lowPivots = createTestPivots('low', [90, 95, 100, 105], [10, 30, 50, 70]);
       
-      const trendlines = detectBullishTrendlines(candles, lowPivots);
+      const trendlines = detectBullishTrendlines(klines, lowPivots);
       
       if (trendlines[0]) {
         expect(trendlines[0].confidence).toBeGreaterThan(0);
@@ -76,22 +76,22 @@ describe('trendlines', () => {
     });
 
     it('should filter high pivots and only use low pivots', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const highPivots = createTestPivots('high', [110, 115, 120], [10, 40, 70]);
       
-      const trendlines = detectBullishTrendlines(candles, highPivots);
+      const trendlines = detectBullishTrendlines(klines, highPivots);
       
       expect(trendlines.length).toBe(0);
     });
 
     it('should sort trendlines by confidence', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const lowPivots = createTestPivots('low', [
         90, 95, 100, 105,
         80, 82, 84, 86, 88, 90,
       ], [10, 20, 30, 40, 50, 55, 60, 65, 70, 75]);
       
-      const trendlines = detectBullishTrendlines(candles, lowPivots);
+      const trendlines = detectBullishTrendlines(klines, lowPivots);
       
       if (trendlines.length >= 2) {
         expect(trendlines[0]!.confidence).toBeGreaterThanOrEqual(trendlines[1]!.confidence!);
@@ -99,10 +99,10 @@ describe('trendlines', () => {
     });
 
     it('should create descriptive labels with bounce count', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const lowPivots = createTestPivots('low', [90, 95, 100], [10, 40, 70]);
       
-      const trendlines = detectBullishTrendlines(candles, lowPivots);
+      const trendlines = detectBullishTrendlines(klines, lowPivots);
       
       if (trendlines[0]) {
         expect(trendlines[0].label).toContain('Bullish Trendline');
@@ -113,10 +113,10 @@ describe('trendlines', () => {
 
   describe('detectBearishTrendlines', () => {
     it('should detect bearish trendline from descending high pivots', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const highPivots = createTestPivots('high', [120, 115, 110], [10, 40, 70]);
       
-      const trendlines = detectBearishTrendlines(candles, highPivots);
+      const trendlines = detectBearishTrendlines(klines, highPivots);
       
       expect(trendlines.length).toBeGreaterThan(0);
       expect(trendlines[0]?.type).toBe('trendline-bearish');
@@ -124,28 +124,28 @@ describe('trendlines', () => {
     });
 
     it('should not detect trendline with insufficient pivots', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const highPivots = createTestPivots('high', [120], [10]);
       
-      const trendlines = detectBearishTrendlines(candles, highPivots);
+      const trendlines = detectBearishTrendlines(klines, highPivots);
       
       expect(trendlines.length).toBe(0);
     });
 
     it('should require negative slope for bearish trendlines', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const highPivots = createTestPivots('high', [110, 115, 120], [10, 40, 70]);
       
-      const trendlines = detectBearishTrendlines(candles, highPivots);
+      const trendlines = detectBearishTrendlines(klines, highPivots);
       
       expect(trendlines.length).toBe(0);
     });
 
     it('should assign confidence based on R-squared and bounces', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const highPivots = createTestPivots('high', [120, 115, 110, 105], [10, 30, 50, 70]);
       
-      const trendlines = detectBearishTrendlines(candles, highPivots);
+      const trendlines = detectBearishTrendlines(klines, highPivots);
       
       if (trendlines[0]) {
         expect(trendlines[0].confidence).toBeGreaterThan(0);
@@ -154,19 +154,19 @@ describe('trendlines', () => {
     });
 
     it('should filter low pivots and only use high pivots', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const lowPivots = createTestPivots('low', [90, 85, 80], [10, 40, 70]);
       
-      const trendlines = detectBearishTrendlines(candles, lowPivots);
+      const trendlines = detectBearishTrendlines(klines, lowPivots);
       
       expect(trendlines.length).toBe(0);
     });
 
     it('should create descriptive labels with bounce count', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const highPivots = createTestPivots('high', [120, 115, 110], [10, 40, 70]);
       
-      const trendlines = detectBearishTrendlines(candles, highPivots);
+      const trendlines = detectBearishTrendlines(klines, highPivots);
       
       if (trendlines[0]) {
         expect(trendlines[0].label).toContain('Bearish Trendline');
@@ -175,7 +175,7 @@ describe('trendlines', () => {
     });
 
     it('should limit results to max patterns per type', () => {
-      const candles = createTestCandles(200, 100);
+      const klines = createTestKlines(200, 100);
       const highPivots: PivotPoint[] = [];
       
       for (let i = 0; i < 20; i++) {
@@ -192,7 +192,7 @@ describe('trendlines', () => {
         ]));
       }
       
-      const trendlines = detectBearishTrendlines(candles, highPivots);
+      const trendlines = detectBearishTrendlines(klines, highPivots);
       
       expect(trendlines.length).toBeLessThanOrEqual(5);
     });

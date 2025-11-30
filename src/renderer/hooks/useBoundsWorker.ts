@@ -3,7 +3,7 @@ import type {
     BoundsWorkerRequest,
     BoundsWorkerResponse,
 } from '@/renderer/workers/bounds.worker';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { useCallback, useEffect, useRef } from 'react';
 
 export interface Bounds {
@@ -15,7 +15,7 @@ export interface Bounds {
 
 export interface UseBoundsWorkerReturn {
   calculateBounds: (
-    candles: Candle[],
+    klines: Kline[],
     viewportStart: number,
     viewportEnd: number
   ) => Promise<Bounds>;
@@ -70,7 +70,7 @@ export const useBoundsWorker = (): UseBoundsWorkerReturn => {
 
   const calculateBounds = useCallback(
     (
-      candles: Candle[],
+      klines: Kline[],
       viewportStart: number,
       viewportEnd: number
     ): Promise<Bounds> => {
@@ -90,7 +90,7 @@ export const useBoundsWorker = (): UseBoundsWorkerReturn => {
 
         const request: BoundsWorkerRequest = {
           type: 'calculateBounds',
-          candles,
+          klines,
           viewportStart,
           viewportEnd,
         };

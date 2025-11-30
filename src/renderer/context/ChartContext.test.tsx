@@ -1,5 +1,4 @@
 import { act, renderHook } from '@testing-library/react';
-import type { Candle } from '@shared/types';
 import type { ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
 import { ChartProvider, useChartContext } from './ChartContext';
@@ -27,19 +26,19 @@ describe('ChartContext', () => {
     const { result } = renderHook(() => useChartContext(), { wrapper });
 
     const testData = {
-      candles: [
+      klines: [
         {
-          timestamp: Date.now(),
+          openTime: Date.now(),
           open: 100,
           high: 110,
           low: 90,
           close: 105,
           volume: 1000,
-        } as Candle,
+        } as Kline,
       ],
       symbol: 'BTCUSDT',
       timeframe: '1h' as const,
-      chartType: 'candlestick' as const,
+      chartType: 'kline' as const,
       showVolume: true,
       movingAverages: [],
     };
@@ -55,7 +54,7 @@ describe('ChartContext', () => {
     const { result, rerender } = renderHook(() => useChartContext(), { wrapper });
 
     const testData = {
-      candles: [],
+      klines: [],
       symbol: 'ETHUSDT',
       timeframe: '4h' as const,
       chartType: 'line' as const,

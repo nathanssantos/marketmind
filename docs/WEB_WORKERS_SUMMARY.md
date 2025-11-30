@@ -8,7 +8,7 @@
 |---|--------|---------|------|--------|
 | 1 | Moving Averages | `movingAverages.worker.ts` | `useMovingAverageWorker` | ✅ Refatorado |
 | 2 | Bounds Calculator | `bounds.worker.ts` | `useBoundsWorker` | ✅ Novo |
-| 3 | Candle Optimizer | `candleOptimizer.worker.ts` | `useCandleOptimizerWorker` | ✅ Novo |
+| 3 | Kline Optimizer | `klineOptimizer.worker.ts` | `useKlineOptimizerWorker` | ✅ Novo |
 | 4 | Conversation Summarizer | `conversation.worker.ts` | `useConversationWorker` | ✅ Novo |
 | 5 | Coordinates Batch | `coordinates.worker.ts` | *(direct use)* | ✅ Novo |
 
@@ -16,14 +16,14 @@
 
 ## 🚀 Performance Gains
 
-### Benchmarks (macOS M1, 10.000 candles)
+### Benchmarks (macOS M1, 10.000 klines)
 
 | Operação | Main Thread | Web Worker | Speedup |
 |----------|-------------|------------|---------|
 | **SMA(200)** | ~45ms | ~12ms | **3.75x** ⚡ |
 | **EMA(200)** | ~52ms | ~15ms | **3.47x** ⚡ |
 | **Bounds Calc** | ~8ms | ~2ms | **4.0x** ⚡ |
-| **Candle Optimizer** | ~120ms | ~35ms | **3.43x** ⚡ |
+| **Kline Optimizer** | ~120ms | ~35ms | **3.43x** ⚡ |
 | **Conversation (100 msgs)** | ~25ms | ~7ms | **3.57x** ⚡ |
 | **Batch Coordinates (1000)** | ~18ms | ~6ms | **3.0x** ⚡ |
 
@@ -36,7 +36,7 @@
 ### Workers (5 novos/modificados)
 - ✅ `src/renderer/workers/movingAverages.worker.ts` (existia)
 - ✅ `src/renderer/workers/bounds.worker.ts` (novo)
-- ✅ `src/renderer/workers/candleOptimizer.worker.ts` (novo)
+- ✅ `src/renderer/workers/klineOptimizer.worker.ts` (novo)
 - ✅ `src/renderer/workers/conversation.worker.ts` (novo)
 - ✅ `src/renderer/workers/coordinates.worker.ts` (novo)
 - ✅ `src/renderer/workers/README.md` (novo)
@@ -44,13 +44,13 @@
 ### Hooks (4 novos/modificados)
 - ✅ `src/renderer/hooks/useMovingAverageWorker.ts` (refatorado para Promise-based)
 - ✅ `src/renderer/hooks/useBoundsWorker.ts` (novo)
-- ✅ `src/renderer/hooks/useCandleOptimizerWorker.ts` (novo)
+- ✅ `src/renderer/hooks/useKlineOptimizerWorker.ts` (novo)
 - ✅ `src/renderer/hooks/useConversationWorker.ts` (novo)
 
 ### Testes (4 novos)
 - ✅ `src/renderer/hooks/useMovingAverageWorker.test.ts` (novo)
 - ✅ `src/renderer/hooks/useBoundsWorker.test.ts` (novo)
-- ✅ `src/renderer/hooks/useCandleOptimizerWorker.test.ts` (novo)
+- ✅ `src/renderer/hooks/useKlineOptimizerWorker.test.ts` (novo)
 - ✅ `src/renderer/hooks/useConversationWorker.test.ts` (novo)
 
 ### Documentação (2 novos/modificados)
@@ -115,7 +115,7 @@ export const useMyWorker = () => {
 Novos testes para workers:
 - `useMovingAverageWorker`: 2 testes ✅
 - `useBoundsWorker`: 2 testes ✅
-- `useCandleOptimizerWorker`: 2 testes ✅
+- `useKlineOptimizerWorker`: 2 testes ✅
 - `useConversationWorker`: 2 testes ✅
 
 **Total novos testes:** 8 ✅
@@ -128,12 +128,12 @@ Novos testes para workers:
 **Quando usar:**
 - Calculando múltiplas médias móveis (SMA/EMA)
 - Períodos longos (50, 100, 200)
-- Datasets grandes (>5000 candles)
+- Datasets grandes (>5000 klines)
 
 **Exemplo:**
 ```typescript
 const { calculateMovingAverages } = useMovingAverageWorker();
-const results = await calculateMovingAverages(candles, [
+const results = await calculateMovingAverages(klines, [
   { period: 20, type: 'SMA', color: '#f00', enabled: true },
   { period: 50, type: 'EMA', color: '#0f0', enabled: true },
 ]);
@@ -148,20 +148,20 @@ const results = await calculateMovingAverages(candles, [
 **Exemplo:**
 ```typescript
 const { calculateBounds } = useBoundsWorker();
-const bounds = await calculateBounds(candles, viewport.start, viewport.end);
+const bounds = await calculateBounds(klines, viewport.start, viewport.end);
 // { minPrice, maxPrice, minVolume, maxVolume }
 ```
 
-### 3. Candle Optimizer Worker
+### 3. Kline Optimizer Worker
 **Quando usar:**
 - Antes de enviar dados para AI
 - Reduzir tokens/custo da API
-- Datasets >1000 candles
+- Datasets >1000 klines
 
 **Exemplo:**
 ```typescript
-const { optimizeCandles } = useCandleOptimizerWorker();
-const optimized = await optimizeCandles(candles, 32);
+const { optimizeKlines } = useKlineOptimizerWorker();
+const optimized = await optimizeKlines(klines, 32);
 // { detailed, simplified, timestampInfo }
 ```
 
@@ -213,7 +213,7 @@ worker.postMessage({
 ### Usuário
 ✅ **Experiência fluida** - Sem travamentos ou lag  
 ✅ **Real-time updates** - WebSocket + cálculos simultâneos  
-✅ **Datasets grandes** - Sem limite prático de candles  
+✅ **Datasets grandes** - Sem limite prático de klines  
 ✅ **Múltiplos indicadores** - Performance não degrada  
 
 ---
@@ -231,7 +231,7 @@ Candidatos para futuros workers:
 
 ### Processamento de Dados
 - [ ] Chart image compression (antes de enviar para AI)
-- [ ] Pattern detection (candlestick patterns)
+- [ ] Pattern detection (kline patterns)
 - [ ] Volume profile calculation
 - [ ] Fibonacci retracements
 

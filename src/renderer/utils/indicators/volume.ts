@@ -1,4 +1,5 @@
-import type { Candle, VolumeCluster } from '@shared/types';
+import type { Kline, VolumeCluster } from '@shared/types';
+import { getKlineClose, getKlineVolume } from '@shared/utils';
 import { calculateSMA } from '../movingAverages';
 
 const DEFAULT_VOLUME_PERIOD = 20;
@@ -36,36 +37,41 @@ export interface VolumeMovingAverage {
 }
 
 export const analyzeVolume = (
-  candles: Candle[],
+  klines: Kline[],
   period = DEFAULT_VOLUME_PERIOD,
   spikeThreshold = DEFAULT_SPIKE_THRESHOLD,
 ): VolumeAnalysis => {
-  const volumeCandles = candles.map((c) => ({
-    timestamp: c.timestamp,
+  const volumeKlines = klines.map((c) => ({
+    openTime: c.openTime,
+    closeTime: c.closeTime,
     open: c.volume,
     high: c.volume,
     low: c.volume,
     close: c.volume,
     volume: c.volume,
+    quoteVolume: '0',
+    trades: 0,
+    takerBuyBaseVolume: '0',
+    takerBuyQuoteVolume: '0',
   }));
   
-  const average = calculateSMA(volumeCandles, period);
+  const average = calculateSMA(volumeKlines, period);
 
   const spikes: number[] = [];
   const isAboveAverage: boolean[] = [];
   const relativeVolume: number[] = [];
 
-  for (let i = 0; i < candles.length; i++) {
-    const candle = candles[i];
+  for (let i = 0; i < klines.length; i++) {
+    const kline = klines[i];
     const avg = average[i];
 
-    if (!candle || avg === null || avg === undefined) {
+    if (!kline || avg === null || avg === undefined) {
       isAboveAverage.push(false);
       relativeVolume.push(1);
       continue;
     }
 
-    const volume = candle.volume;
+    const volume = getKlineVolume(kline);
     const relative = avg > 0 ? volume / avg : 1;
     relativeVolume.push(relative);
 
@@ -86,17 +92,17 @@ export const analyzeVolume = (
 };
 
 export const detectVolumeClusters = (
-  candles: Candle[],
+  klines: Kline[],
   threshold = DEFAULT_PRICE_TOLERANCE,
 ): VolumeCluster[] => {
   const clusters: Map<number, { volume: number; count: number }> = new Map();
 
-  for (const candle of candles) {
-    const priceLevel = Math.round(candle.close / threshold) * threshold;
+  for (const kline of klines) {
+    const priceLevel = Math.round(getKlineClose(kline) / threshold) * threshold;
 
     const existing = clusters.get(priceLevel) ?? { volume: 0, count: 0 };
     clusters.set(priceLevel, {
-      volume: existing.volume + candle.volume,
+      volume: existing.volume + getKlineVolume(kline),
       count: existing.count + 1,
     });
   }
@@ -116,23 +122,28 @@ export const getVolumeMAPeriod = (timeframe: string): number => {
 };
 
 export const calculateVolumeMA = (
-  candles: Candle[],
+  klines: Kline[],
   period: number = DEFAULT_VOLUME_PERIOD,
 ): VolumeMovingAverage => {
-  if (candles.length === 0 || period <= 0) {
+  if (klines.length === 0 || period <= 0) {
     return { values: [], period };
   }
 
-  const volumeCandles = candles.map((c) => ({
-    timestamp: c.timestamp,
+  const volumeKlines = klines.map((c) => ({
+    openTime: c.openTime,
+    closeTime: c.closeTime,
     open: c.volume,
     high: c.volume,
     low: c.volume,
     close: c.volume,
     volume: c.volume,
+    quoteVolume: '0',
+    trades: 0,
+    takerBuyBaseVolume: '0',
+    takerBuyQuoteVolume: '0',
   }));
 
-  const values = calculateSMA(volumeCandles, period);
+  const values = calculateSMA(volumeKlines, period);
 
   return { values, period };
 };

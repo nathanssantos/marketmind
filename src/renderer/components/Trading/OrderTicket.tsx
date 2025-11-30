@@ -5,15 +5,18 @@ import { NumberInput } from '@renderer/components/ui/number-input';
 import { Select } from '@renderer/components/ui/select';
 import { useChartContext } from '@renderer/context/ChartContext';
 import { useTradingStore } from '@renderer/store/tradingStore';
-import type { OrderType } from '@shared/types/trading';
+import { getKlineClose } from '@shared/utils';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+type OrderDirection = 'long' | 'short';
 
 export const OrderTicket = () => {
   const { t } = useTranslation();
   const { chartData } = useChartContext();
 
-  const currentPrice = chartData?.candles[chartData.candles.length - 1]?.close;
+  const lastKline = chartData?.klines[chartData.klines.length - 1];
+  const currentPrice = lastKline ? getKlineClose(lastKline) : undefined;
   const symbol = chartData?.symbol || 'UNKNOWN';
 
   const wallets = useTradingStore((state) => state.wallets);
@@ -25,7 +28,7 @@ export const OrderTicket = () => {
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
   const symbolQuantity = getQuantityForSymbol(symbol);
 
-  const [orderType, setOrderType] = useState<OrderType>('long');
+  const [orderType, setOrderType] = useState<OrderDirection>('long');
   const [quantity, setQuantity] = useState(symbolQuantity.toString());
   const [entryPrice, setEntryPrice] = useState('');
   const [stopLoss, setStopLoss] = useState('');
@@ -65,12 +68,12 @@ export const OrderTicket = () => {
         : (entry > currentPrice ? 'limit' : 'stop'))
       : 'limit';
 
-    const orderData: Omit<import('@shared/types/trading').Order, 'id' | 'createdAt'> = {
+    const orderData = {
       walletId: activeWallet.id,
       symbol,
-      type: orderType,
+      orderDirection: orderType,
       subType,
-      status: 'pending',
+      status: 'NEW' as const,
       quantity: qty,
       entryPrice: entry,
       ...(stop !== undefined && { stopLoss: stop }),
@@ -80,7 +83,6 @@ export const OrderTicket = () => {
 
     addOrder(orderData);
 
-    setQuantity('');
     setEntryPrice('');
     setStopLoss('');
     setTakeProfit('');
@@ -132,7 +134,7 @@ export const OrderTicket = () => {
               <Select
                 size="xs"
                 value={orderType}
-                onChange={(value) => setOrderType(value as OrderType)}
+                onChange={(value) => setOrderType(value as OrderDirection)}
                 options={[
                   { value: 'long', label: t('trading.ticket.long') },
                   { value: 'short', label: t('trading.ticket.short') },

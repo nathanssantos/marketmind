@@ -1,21 +1,22 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 
 const TYPICAL_PRICE_DIVISOR = 3;
 
-export const calculateVWAP = (candles: Candle[]): number[] => {
+export const calculateVWAP = (klines: Kline[]): number[] => {
   const vwap: number[] = [];
   let cumulativeTPV = 0;
   let cumulativeVolume = 0;
 
-  for (const candle of candles) {
+  for (const kline of klines) {
     const typicalPrice =
-      (candle.high + candle.low + candle.close) / TYPICAL_PRICE_DIVISOR;
+      (getKlineHigh(kline) + getKlineLow(kline) + getKlineClose(kline)) / TYPICAL_PRICE_DIVISOR;
 
-    cumulativeTPV += typicalPrice * candle.volume;
-    cumulativeVolume += candle.volume;
+    cumulativeTPV += typicalPrice * getKlineVolume(kline);
+    cumulativeVolume += getKlineVolume(kline);
 
     if (cumulativeVolume === 0) {
-      vwap.push(candle.close);
+      vwap.push(getKlineClose(kline));
     } else {
       vwap.push(cumulativeTPV / cumulativeVolume);
     }
@@ -24,33 +25,33 @@ export const calculateVWAP = (candles: Candle[]): number[] => {
   return vwap;
 };
 
-export const calculateIntradayVWAP = (candles: Candle[]): number[] => {
-  if (candles.length === 0) return [];
+export const calculateIntradayVWAP = (klines: Kline[]): number[] => {
+  if (klines.length === 0) return [];
 
-  const firstCandle = candles[0];
-  if (!firstCandle) return [];
+  const firstKline = klines[0];
+  if (!firstKline) return [];
 
   const vwap: number[] = [];
   let cumulativeTPV = 0;
   let cumulativeVolume = 0;
-  let currentDay = new Date(firstCandle.timestamp).getDate();
+  let currentDay = new Date(firstKline.openTime).getDate();
 
-  for (const candle of candles) {
-    const candleDay = new Date(candle.timestamp).getDate();
+  for (const kline of klines) {
+    const klineDay = new Date(kline.openTime).getDate();
 
-    if (candleDay !== currentDay) {
+    if (klineDay !== currentDay) {
       cumulativeTPV = 0;
       cumulativeVolume = 0;
-      currentDay = candleDay;
+      currentDay = klineDay;
     }
 
     const typicalPrice =
-      (candle.high + candle.low + candle.close) / TYPICAL_PRICE_DIVISOR;
-    cumulativeTPV += typicalPrice * candle.volume;
-    cumulativeVolume += candle.volume;
+      (getKlineHigh(kline) + getKlineLow(kline) + getKlineClose(kline)) / TYPICAL_PRICE_DIVISOR;
+    cumulativeTPV += typicalPrice * getKlineVolume(kline);
+    cumulativeVolume += getKlineVolume(kline);
 
     if (cumulativeVolume === 0) {
-      vwap.push(candle.close);
+      vwap.push(getKlineClose(kline));
     } else {
       vwap.push(cumulativeTPV / cumulativeVolume);
     }

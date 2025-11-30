@@ -1,9 +1,9 @@
-import type { AIPatternLine, AIPatternPoint, Candle } from '@shared/types';
+import type { AIPatternLine, AIPatternPoint, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
-    calculateConfidence,
-    normalizeTimeInPattern,
-    normalizeTouchPoints,
+  calculateConfidence,
+  normalizeTimeInPattern,
+  normalizeTouchPoints,
 } from '../core/confidenceScoring';
 import type { PivotPoint, Point, TrendlineData } from '../types';
 
@@ -75,10 +75,10 @@ const validateTrendlineBounces = (
 };
 
 export const detectBullishTrendlines = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternLine[] => {
-  if (!candles) return [];
+  if (!klines) return [];
   
   const trendlines: AIPatternLine[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -111,11 +111,11 @@ export const detectBullishTrendlines = (
         PATTERN_DETECTION_CONFIG.PREFERRED_PIVOTS_TRENDLINE
       );
       
-      const candlesBetween = pivot2.index - pivot1.index;
+      const klinesBetween = pivot2.index - pivot1.index;
       const timeScore = normalizeTimeInPattern(
-        candlesBetween,
-        PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-        PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+        klinesBetween,
+        PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+        PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
       );
       
       const confidence = calculateConfidence({
@@ -128,17 +128,17 @@ export const detectBullishTrendlines = (
       if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) continue;
 
       const startPoint: AIPatternPoint = {
-        timestamp: pivot1.timestamp,
+        openTime: pivot1.openTime,
         price: pivot1.price,
       };
       
       const endPoint: AIPatternPoint = {
-        timestamp: pivot2.timestamp,
+        openTime: pivot2.openTime,
         price: pivot2.price,
       };
 
-      const startDate = new Date(pivot1.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const endDate = new Date(pivot2.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const startDate = new Date(pivot1.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const endDate = new Date(pivot2.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const priceChange = ((pivot2.price - pivot1.price) / pivot1.price * 100).toFixed(1);
       const confidencePercent = Math.round(confidence * 100);
       
@@ -149,7 +149,7 @@ export const detectBullishTrendlines = (
         label: `Bullish Trendline · +${priceChange}% gain · ${bounces} bounces · ${trendline.angle.toFixed(1)}° angle · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
         confidence,
         visible: true,
-        timestamp: pivot1.timestamp,
+        openTime: pivot1.openTime,
       });
     }
   }
@@ -160,10 +160,10 @@ export const detectBullishTrendlines = (
 };
 
 export const detectBearishTrendlines = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternLine[] => {
-  if (!candles) return [];
+  if (!klines) return [];
   
   const trendlines: AIPatternLine[] = [];
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
@@ -196,11 +196,11 @@ export const detectBearishTrendlines = (
         PATTERN_DETECTION_CONFIG.PREFERRED_PIVOTS_TRENDLINE
       );
       
-      const candlesBetween = pivot2.index - pivot1.index;
+      const klinesBetween = pivot2.index - pivot1.index;
       const timeScore = normalizeTimeInPattern(
-        candlesBetween,
-        PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-        PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+        klinesBetween,
+        PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+        PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
       );
       
       const confidence = calculateConfidence({
@@ -213,17 +213,17 @@ export const detectBearishTrendlines = (
       if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) continue;
 
       const startPoint: AIPatternPoint = {
-        timestamp: pivot1.timestamp,
+        openTime: pivot1.openTime,
         price: pivot1.price,
       };
       
       const endPoint: AIPatternPoint = {
-        timestamp: pivot2.timestamp,
+        openTime: pivot2.openTime,
         price: pivot2.price,
       };
 
-      const startDate = new Date(pivot1.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const endDate = new Date(pivot2.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const startDate = new Date(pivot1.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const endDate = new Date(pivot2.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const priceChange = ((pivot1.price - pivot2.price) / pivot1.price * 100).toFixed(1);
       const confidencePercent = Math.round(confidence * 100);
       
@@ -234,7 +234,7 @@ export const detectBearishTrendlines = (
         label: `Bearish Trendline · -${priceChange}% drop · ${bounces} bounces · ${trendline.angle.toFixed(1)}° angle · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
         confidence,
         visible: true,
-        timestamp: pivot1.timestamp,
+        openTime: pivot1.openTime,
       });
     }
   }

@@ -34,7 +34,7 @@ export type AIPatternType =
   | 'accumulation-zone';
 
 export interface AIPatternPoint {
-  timestamp: number;
+  openTime: number;
   price: number;
 }
 
@@ -45,7 +45,7 @@ export interface AIPatternLine {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
   hasConflict?: boolean;
@@ -61,7 +61,7 @@ export interface AIPatternChannel {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
   hasConflict?: boolean;
@@ -82,7 +82,7 @@ export interface AIPatternFibonacci {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
   hasConflict?: boolean;
@@ -101,7 +101,7 @@ export interface AIPatternHeadAndShoulders {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
   hasConflict?: boolean;
@@ -119,7 +119,7 @@ export interface AIPatternDoublePattern {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
   hasConflict?: boolean;
@@ -138,7 +138,7 @@ export interface AIPatternTriplePattern {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
   hasConflict?: boolean;
@@ -156,7 +156,7 @@ export interface AIPatternTriangle {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
   hasConflict?: boolean;
@@ -175,7 +175,7 @@ export interface AIPatternWedge {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
   hasConflict?: boolean;
@@ -198,7 +198,7 @@ export interface AIPatternFlag {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
   hasConflict?: boolean;
@@ -223,7 +223,7 @@ export interface AIPatternPennant {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
   hasConflict?: boolean;
@@ -244,7 +244,7 @@ export interface AIPatternCupAndHandle {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
   hasConflict?: boolean;
@@ -262,7 +262,7 @@ export interface AIPatternRoundingBottom {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
   hasConflict?: boolean;
@@ -285,7 +285,7 @@ export interface AIPatternGap {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
   hasConflict?: boolean;
@@ -298,12 +298,12 @@ export interface AIPatternZone {
   type: 'liquidity-zone' | 'sell-zone' | 'buy-zone' | 'accumulation-zone';
   topPrice: number;
   bottomPrice: number;
-  startTimestamp: number;
-  endTimestamp: number;
+  startOpenTime: number;
+  endOpenTime: number;
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
   hasConflict?: boolean;

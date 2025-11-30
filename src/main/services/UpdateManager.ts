@@ -3,13 +3,14 @@ import * as electron from 'electron';
 import log from 'electron-log';
 import type { UpdateInfo } from 'electron-updater';
 import * as electronUpdater from 'electron-updater';
+import type { Timeout } from 'node:timers';
 
 const { app } = electron;
 const { autoUpdater } = electronUpdater;
 
 export class UpdateManager {
   private window: BrowserWindowType;
-  private updateCheckInterval: NodeJS.Timeout | null = null;
+  private updateCheckInterval: Timeout | null = null;
   private isDevelopment: boolean;
 
   constructor(window: BrowserWindowType) {

@@ -16,24 +16,24 @@ describe('patternFilter', () => {
         id: 1,
         type: 'support',
         points: [
-          { timestamp: 1000, price: 100 },
-          { timestamp: 5000, price: 100 },
+          { openTime: 1000, price: 100 },
+          { openTime: 5000, price: 100 },
         ],
         confidence: 0.8,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const smallPattern: AIPattern = {
         id: 2,
         type: 'support',
         points: [
-          { timestamp: 2000, price: 92 },
-          { timestamp: 4000, price: 93 },
+          { openTime: 2000, price: 92 },
+          { openTime: 4000, price: 93 },
         ],
         confidence: 0.7,
         visible: true,
-        timestamp: 2000,
+        openTime: 2000,
       };
 
       const patterns = [largePattern, smallPattern];
@@ -58,23 +58,23 @@ describe('patternFilter', () => {
       const pattern1: AIPattern = {
         id: 1,
         type: 'double-bottom',
-        firstPeak: { timestamp: 1000, price: 90 },
-        secondPeak: { timestamp: 5000, price: 90 },
-        neckline: { timestamp: 3000, price: 100 },
+        firstPeak: { openTime: 1000, price: 90 },
+        secondPeak: { openTime: 5000, price: 90 },
+        neckline: { openTime: 3000, price: 100 },
         confidence: 0.8,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const pattern2: AIPattern = {
         id: 2,
         type: 'double-top',
-        firstPeak: { timestamp: 6000, price: 110 },
-        secondPeak: { timestamp: 10000, price: 110 },
-        neckline: { timestamp: 8000, price: 95 },
+        firstPeak: { openTime: 6000, price: 110 },
+        secondPeak: { openTime: 10000, price: 110 },
+        neckline: { openTime: 8000, price: 95 },
         confidence: 0.7,
         visible: true,
-        timestamp: 6000,
+        openTime: 6000,
       };
 
       const patterns = [pattern1, pattern2];
@@ -90,36 +90,36 @@ describe('patternFilter', () => {
         id: 1,
         type: 'support',
         points: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 6000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 6000, price: 90 },
         ],
         confidence: 0.9,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const major: AIPattern = {
         id: 2,
         type: 'support',
         points: [
-          { timestamp: 1500, price: 90 },
-          { timestamp: 4500, price: 90 },
+          { openTime: 1500, price: 90 },
+          { openTime: 4500, price: 90 },
         ],
         confidence: 0.8,
         visible: true,
-        timestamp: 1500,
+        openTime: 1500,
       };
 
       const minor: AIPattern = {
         id: 3,
         type: 'support',
         points: [
-          { timestamp: 2000, price: 92 },
-          { timestamp: 4000, price: 93 },
+          { openTime: 2000, price: 92 },
+          { openTime: 4000, price: 93 },
         ],
         confidence: 0.7,
         visible: true,
-        timestamp: 2000,
+        openTime: 2000,
       };
 
       const patterns = [macro, major, minor];
@@ -152,23 +152,23 @@ describe('patternFilter', () => {
       const highConfidence: AIPattern = {
         id: 1,
         type: 'double-top',
-        firstPeak: { timestamp: 1000, price: 90 },
-        secondPeak: { timestamp: 5000, price: 90 },
-        neckline: { timestamp: 3000, price: 100 },
+        firstPeak: { openTime: 1000, price: 90 },
+        secondPeak: { openTime: 5000, price: 90 },
+        neckline: { openTime: 3000, price: 100 },
         confidence: 0.9,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const lowConfidence: AIPattern = {
         id: 2,
         type: 'double-top',
-        firstPeak: { timestamp: 1000, price: 110 },
-        secondPeak: { timestamp: 5000, price: 110 },
-        neckline: { timestamp: 3000, price: 95 },
+        firstPeak: { openTime: 1000, price: 110 },
+        secondPeak: { openTime: 5000, price: 110 },
+        neckline: { openTime: 3000, price: 95 },
         confidence: 0.5,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const patterns = [highConfidence, lowConfidence];
@@ -194,24 +194,24 @@ describe('patternFilter', () => {
         id: 1,
         type: 'support',
         points: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 5000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 5000, price: 90 },
         ],
         confidence: 0.8,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const pattern2: AIPattern = {
         id: 2,
         type: 'support',
         points: [
-          { timestamp: 1000, price: 100 },
-          { timestamp: 5000, price: 100 },
+          { openTime: 1000, price: 100 },
+          { openTime: 5000, price: 100 },
         ],
         confidence: 0.8,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const patterns = [pattern1, pattern2];
@@ -236,23 +236,23 @@ describe('patternFilter', () => {
       const pattern1: AIPattern = {
         id: 1,
         type: 'double-bottom',
-        firstPeak: { timestamp: 1000, price: 90 },
-        secondPeak: { timestamp: 5000, price: 90 },
-        neckline: { timestamp: 3000, price: 100 },
+        firstPeak: { openTime: 1000, price: 90 },
+        secondPeak: { openTime: 5000, price: 90 },
+        neckline: { openTime: 3000, price: 100 },
         confidence: 0.8,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const pattern2: AIPattern = {
         id: 2,
         type: 'double-top',
-        firstPeak: { timestamp: 1500, price: 110 },
-        secondPeak: { timestamp: 4500, price: 110 },
-        neckline: { timestamp: 3000, price: 95 },
+        firstPeak: { openTime: 1500, price: 110 },
+        secondPeak: { openTime: 4500, price: 110 },
+        neckline: { openTime: 3000, price: 95 },
         confidence: 0.7,
         visible: true,
-        timestamp: 1500,
+        openTime: 1500,
       };
 
       const patterns = [pattern1, pattern2];
@@ -285,23 +285,23 @@ describe('patternFilter', () => {
         id: 1,
         type: 'support',
         points: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 5000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 5000, price: 90 },
         ],
         confidence: 0.8,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const patternWithoutId: AIPattern = {
         type: 'resistance',
         points: [
-          { timestamp: 2000, price: 100 },
-          { timestamp: 4000, price: 100 },
+          { openTime: 2000, price: 100 },
+          { openTime: 4000, price: 100 },
         ],
         confidence: 0.7,
         visible: true,
-        timestamp: 2000,
+        openTime: 2000,
       };
 
       const patterns = [patternWithId, patternWithoutId];
@@ -331,12 +331,12 @@ describe('patternFilter', () => {
         id: 1,
         type: 'support',
         points: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 5000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 5000, price: 90 },
         ],
         confidence: 0.8,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const patterns = [pattern1];
@@ -351,24 +351,24 @@ describe('patternFilter', () => {
         id: 1,
         type: 'support',
         points: [
-          { timestamp: 2000, price: 92 },
-          { timestamp: 4000, price: 93 },
+          { openTime: 2000, price: 92 },
+          { openTime: 4000, price: 93 },
         ],
         confidence: 0.7,
         visible: true,
-        timestamp: 2000,
+        openTime: 2000,
       };
 
       const largePattern: AIPattern = {
         id: 2,
         type: 'support',
         points: [
-          { timestamp: 1000, price: 100 },
-          { timestamp: 5000, price: 100 },
+          { openTime: 1000, price: 100 },
+          { openTime: 5000, price: 100 },
         ],
         confidence: 0.8,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const patterns = [smallPattern, largePattern];
@@ -395,29 +395,29 @@ describe('patternFilter', () => {
       const highImportance: AIPattern = {
         id: 1,
         type: 'head-and-shoulders',
-        leftShoulder: { timestamp: 1000, price: 100 },
-        head: { timestamp: 3000, price: 110 },
-        rightShoulder: { timestamp: 5000, price: 100 },
+        leftShoulder: { openTime: 1000, price: 100 },
+        head: { openTime: 3000, price: 110 },
+        rightShoulder: { openTime: 5000, price: 100 },
         neckline: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 6000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 6000, price: 90 },
         ],
         confidence: 0.9,
         importanceScore: 0.85,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const lowImportance: AIPattern = {
         id: 2,
         type: 'double-bottom',
-        firstPeak: { timestamp: 2000, price: 92 },
-        secondPeak: { timestamp: 4000, price: 92 },
-        neckline: { timestamp: 3000, price: 100 },
+        firstPeak: { openTime: 2000, price: 92 },
+        secondPeak: { openTime: 4000, price: 92 },
+        neckline: { openTime: 3000, price: 100 },
         confidence: 0.7,
         importanceScore: 0.45,
         visible: true,
-        timestamp: 2000,
+        openTime: 2000,
       };
 
       const patterns = [highImportance, lowImportance];
@@ -443,26 +443,26 @@ describe('patternFilter', () => {
         id: 1,
         type: 'support',
         points: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 3000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 3000, price: 90 },
         ],
         confidence: 0.8,
         importanceScore: 0.75,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const pattern2: AIPattern = {
         id: 2,
         type: 'resistance',
         points: [
-          { timestamp: 5000, price: 110 },
-          { timestamp: 7000, price: 110 },
+          { openTime: 5000, price: 110 },
+          { openTime: 7000, price: 110 },
         ],
         confidence: 0.7,
         importanceScore: 0.65,
         visible: true,
-        timestamp: 5000,
+        openTime: 5000,
       };
 
       const patterns = [pattern1, pattern2];
@@ -477,42 +477,42 @@ describe('patternFilter', () => {
       const highest: AIPattern = {
         id: 1,
         type: 'head-and-shoulders',
-        leftShoulder: { timestamp: 1000, price: 100 },
-        head: { timestamp: 5000, price: 110 },
-        rightShoulder: { timestamp: 9000, price: 100 },
+        leftShoulder: { openTime: 1000, price: 100 },
+        head: { openTime: 5000, price: 110 },
+        rightShoulder: { openTime: 9000, price: 100 },
         neckline: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 10000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 10000, price: 90 },
         ],
         confidence: 0.9,
         importanceScore: 0.88,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const medium: AIPattern = {
         id: 2,
         type: 'double-top',
-        firstPeak: { timestamp: 2000, price: 108 },
-        secondPeak: { timestamp: 6000, price: 108 },
-        neckline: { timestamp: 4000, price: 95 },
+        firstPeak: { openTime: 2000, price: 108 },
+        secondPeak: { openTime: 6000, price: 108 },
+        neckline: { openTime: 4000, price: 95 },
         confidence: 0.8,
         importanceScore: 0.65,
         visible: true,
-        timestamp: 2000,
+        openTime: 2000,
       };
 
       const lowest: AIPattern = {
         id: 3,
         type: 'resistance',
         points: [
-          { timestamp: 3000, price: 105 },
-          { timestamp: 7000, price: 105 },
+          { openTime: 3000, price: 105 },
+          { openTime: 7000, price: 105 },
         ],
         confidence: 0.7,
         importanceScore: 0.42,
         visible: true,
-        timestamp: 3000,
+        openTime: 3000,
       };
 
       const patterns = [highest, medium, lowest];
@@ -545,26 +545,26 @@ describe('patternFilter', () => {
       const highConfidence: AIPattern = {
         id: 1,
         type: 'double-bottom',
-        firstPeak: { timestamp: 1000, price: 90 },
-        secondPeak: { timestamp: 5000, price: 90 },
-        neckline: { timestamp: 3000, price: 100 },
+        firstPeak: { openTime: 1000, price: 90 },
+        secondPeak: { openTime: 5000, price: 90 },
+        neckline: { openTime: 3000, price: 100 },
         confidence: 0.9,
         importanceScore: 0.75,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const lowConfidence: AIPattern = {
         id: 2,
         type: 'support',
         points: [
-          { timestamp: 1500, price: 92 },
-          { timestamp: 4500, price: 92 },
+          { openTime: 1500, price: 92 },
+          { openTime: 4500, price: 92 },
         ],
         confidence: 0.6,
         importanceScore: 0.75,
         visible: true,
-        timestamp: 1500,
+        openTime: 1500,
       };
 
       const patterns = [highConfidence, lowConfidence];
@@ -590,26 +590,26 @@ describe('patternFilter', () => {
         id: 1,
         type: 'support',
         points: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 5000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 5000, price: 90 },
         ],
         confidence: 0.8,
         importanceScore: 0.75,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const pattern2: AIPattern = {
         id: 2,
         type: 'resistance',
         points: [
-          { timestamp: 1500, price: 100 },
-          { timestamp: 4500, price: 100 },
+          { openTime: 1500, price: 100 },
+          { openTime: 4500, price: 100 },
         ],
         confidence: 0.8,
         importanceScore: 0.75,
         visible: true,
-        timestamp: 1500,
+        openTime: 1500,
       };
 
       const patterns = [pattern1, pattern2];
@@ -634,25 +634,25 @@ describe('patternFilter', () => {
       const pattern1: AIPattern = {
         id: 1,
         type: 'double-bottom',
-        firstPeak: { timestamp: 1000, price: 90 },
-        secondPeak: { timestamp: 5000, price: 90 },
-        neckline: { timestamp: 3000, price: 100 },
+        firstPeak: { openTime: 1000, price: 90 },
+        secondPeak: { openTime: 5000, price: 90 },
+        neckline: { openTime: 3000, price: 100 },
         confidence: 0.8,
         importanceScore: 0.75,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const pattern2: AIPattern = {
         id: 2,
         type: 'double-top',
-        firstPeak: { timestamp: 1500, price: 110 },
-        secondPeak: { timestamp: 4500, price: 110 },
-        neckline: { timestamp: 3000, price: 95 },
+        firstPeak: { openTime: 1500, price: 110 },
+        secondPeak: { openTime: 4500, price: 110 },
+        neckline: { openTime: 3000, price: 95 },
         confidence: 0.7,
         importanceScore: 0.65,
         visible: true,
-        timestamp: 1500,
+        openTime: 1500,
       };
 
       const patterns = [pattern1, pattern2];
@@ -685,25 +685,25 @@ describe('patternFilter', () => {
         id: 1,
         type: 'support',
         points: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 5000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 5000, price: 90 },
         ],
         confidence: 0.8,
         importanceScore: 0.75,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const withoutScore: AIPattern = {
         id: 2,
         type: 'resistance',
         points: [
-          { timestamp: 1500, price: 100 },
-          { timestamp: 4500, price: 100 },
+          { openTime: 1500, price: 100 },
+          { openTime: 4500, price: 100 },
         ],
         confidence: 0.7,
         visible: true,
-        timestamp: 1500,
+        openTime: 1500,
       };
 
       const patterns = [withScore, withoutScore];
@@ -729,25 +729,25 @@ describe('patternFilter', () => {
         id: 1,
         type: 'support',
         points: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 5000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 5000, price: 90 },
         ],
         confidence: 0.8,
         importanceScore: 0.75,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const patternWithoutId: AIPattern = {
         type: 'resistance',
         points: [
-          { timestamp: 1500, price: 100 },
-          { timestamp: 4500, price: 100 },
+          { openTime: 1500, price: 100 },
+          { openTime: 4500, price: 100 },
         ],
         confidence: 0.7,
         importanceScore: 0.65,
         visible: true,
-        timestamp: 1500,
+        openTime: 1500,
       };
 
       const patterns = [patternWithId, patternWithoutId];
@@ -777,13 +777,13 @@ describe('patternFilter', () => {
         id: 1,
         type: 'support',
         points: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 5000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 5000, price: 90 },
         ],
         confidence: 0.8,
         importanceScore: 0.75,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const patterns = [pattern1];
@@ -798,29 +798,29 @@ describe('patternFilter', () => {
         id: 1,
         type: 'support',
         points: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 5000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 5000, price: 90 },
         ],
         confidence: 0.7,
         importanceScore: 0.45,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const highImportance: AIPattern = {
         id: 2,
         type: 'head-and-shoulders',
-        leftShoulder: { timestamp: 1000, price: 100 },
-        head: { timestamp: 3000, price: 110 },
-        rightShoulder: { timestamp: 5000, price: 100 },
+        leftShoulder: { openTime: 1000, price: 100 },
+        head: { openTime: 3000, price: 110 },
+        rightShoulder: { openTime: 5000, price: 100 },
         neckline: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 6000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 6000, price: 90 },
         ],
         confidence: 0.9,
         importanceScore: 0.85,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const patterns = [lowImportance, highImportance];
@@ -845,10 +845,10 @@ describe('patternFilter', () => {
   describe('applyTierLimits', () => {
     it('should limit patterns per tier keeping highest importance', () => {
       const patterns: AIPattern[] = [
-        { id: 1, type: 'support', tier: 'macro', importanceScore: 0.9, confidence: 0.8, visible: true, timestamp: 1000 } as AIPattern,
-        { id: 2, type: 'support', tier: 'macro', importanceScore: 0.7, confidence: 0.7, visible: true, timestamp: 2000 } as AIPattern,
-        { id: 3, type: 'resistance', tier: 'major', importanceScore: 0.85, confidence: 0.8, visible: true, timestamp: 3000 } as AIPattern,
-        { id: 4, type: 'resistance', tier: 'major', importanceScore: 0.6, confidence: 0.7, visible: true, timestamp: 4000 } as AIPattern,
+        { id: 1, type: 'support', tier: 'macro', importanceScore: 0.9, confidence: 0.8, visible: true, openTime: 1000 } as AIPattern,
+        { id: 2, type: 'support', tier: 'macro', importanceScore: 0.7, confidence: 0.7, visible: true, openTime: 2000 } as AIPattern,
+        { id: 3, type: 'resistance', tier: 'major', importanceScore: 0.85, confidence: 0.8, visible: true, openTime: 3000 } as AIPattern,
+        { id: 4, type: 'resistance', tier: 'major', importanceScore: 0.6, confidence: 0.7, visible: true, openTime: 4000 } as AIPattern,
       ];
 
       const maxPatternsPerTier = { macro: 1, major: 1, intermediate: 5, minor: 5 };
@@ -868,10 +868,10 @@ describe('patternFilter', () => {
   describe('applyCategoryLimits', () => {
     it('should limit patterns per category keeping highest importance', () => {
       const patterns: AIPattern[] = [
-        { id: 1, type: 'support', importanceScore: 0.9, confidence: 0.8, visible: true, timestamp: 1000 } as AIPattern,
-        { id: 2, type: 'resistance', importanceScore: 0.7, confidence: 0.7, visible: true, timestamp: 2000 } as AIPattern,
-        { id: 3, type: 'double-top', importanceScore: 0.85, confidence: 0.8, visible: true, timestamp: 3000 } as AIPattern,
-        { id: 4, type: 'double-bottom', importanceScore: 0.8, confidence: 0.8, visible: true, timestamp: 4000 } as AIPattern,
+        { id: 1, type: 'support', importanceScore: 0.9, confidence: 0.8, visible: true, openTime: 1000 } as AIPattern,
+        { id: 2, type: 'resistance', importanceScore: 0.7, confidence: 0.7, visible: true, openTime: 2000 } as AIPattern,
+        { id: 3, type: 'double-top', importanceScore: 0.85, confidence: 0.8, visible: true, openTime: 3000 } as AIPattern,
+        { id: 4, type: 'double-bottom', importanceScore: 0.8, confidence: 0.8, visible: true, openTime: 4000 } as AIPattern,
       ];
 
       const result = applyCategoryLimits(patterns, 1);
@@ -890,11 +890,11 @@ describe('patternFilter', () => {
   describe('filterAndPrioritizePatterns', () => {
     it('should apply all filtering phases in order', () => {
       const patterns: AIPattern[] = [
-        { id: 1, type: 'support', tier: 'macro', importanceScore: 0.9, confidence: 0.8, visible: true, timestamp: 1000 } as AIPattern,
-        { id: 2, type: 'resistance', tier: 'major', importanceScore: 0.85, confidence: 0.8, visible: true, timestamp: 2000 } as AIPattern,
-        { id: 3, type: 'double-top', tier: 'major', importanceScore: 0.8, confidence: 0.7, visible: true, timestamp: 3000 } as AIPattern,
-        { id: 4, type: 'double-bottom', tier: 'intermediate', importanceScore: 0.75, confidence: 0.7, visible: true, timestamp: 4000 } as AIPattern,
-        { id: 5, type: 'support', tier: 'minor', importanceScore: 0.7, confidence: 0.6, visible: true, timestamp: 5000 } as AIPattern,
+        { id: 1, type: 'support', tier: 'macro', importanceScore: 0.9, confidence: 0.8, visible: true, openTime: 1000 } as AIPattern,
+        { id: 2, type: 'resistance', tier: 'major', importanceScore: 0.85, confidence: 0.8, visible: true, openTime: 2000 } as AIPattern,
+        { id: 3, type: 'double-top', tier: 'major', importanceScore: 0.8, confidence: 0.7, visible: true, openTime: 3000 } as AIPattern,
+        { id: 4, type: 'double-bottom', tier: 'intermediate', importanceScore: 0.75, confidence: 0.7, visible: true, openTime: 4000 } as AIPattern,
+        { id: 5, type: 'support', tier: 'minor', importanceScore: 0.7, confidence: 0.6, visible: true, openTime: 5000 } as AIPattern,
       ];
 
       const relationships: PatternRelationship[] = [];
@@ -923,7 +923,7 @@ describe('patternFilter', () => {
         importanceScore: 1 - i * 0.01,
         confidence: 0.8,
         visible: true,
-        timestamp: 1000 + i * 1000,
+        openTime: 1000 + i * 1000,
       } as AIPattern));
 
       const relationships: PatternRelationship[] = [];
@@ -963,10 +963,10 @@ describe('patternFilter', () => {
         importanceScore: 0.9,
         confidence: 0.8,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
         points: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 5000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 5000, price: 90 },
         ],
       };
 
@@ -977,10 +977,10 @@ describe('patternFilter', () => {
         importanceScore: 0.7,
         confidence: 0.7,
         visible: true,
-        timestamp: 2000,
+        openTime: 2000,
         points: [
-          { timestamp: 2000, price: 91 },
-          { timestamp: 4000, price: 91 },
+          { openTime: 2000, price: 91 },
+          { openTime: 4000, price: 91 },
         ],
       };
 
@@ -1018,10 +1018,10 @@ describe('patternFilter', () => {
         importanceScore: 0.9,
         confidence: 0.8,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
         points: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 5000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 5000, price: 90 },
         ],
       };
 
@@ -1032,10 +1032,10 @@ describe('patternFilter', () => {
         importanceScore: 0.7,
         confidence: 0.7,
         visible: true,
-        timestamp: 2000,
+        openTime: 2000,
         points: [
-          { timestamp: 2000, price: 91 },
-          { timestamp: 4000, price: 91 },
+          { openTime: 2000, price: 91 },
+          { openTime: 4000, price: 91 },
         ],
       };
 
@@ -1072,10 +1072,10 @@ describe('patternFilter', () => {
         importanceScore: 0.9,
         confidence: 0.8,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
         points: [
-          { timestamp: 1000, price: 90 },
-          { timestamp: 5000, price: 90 },
+          { openTime: 1000, price: 90 },
+          { openTime: 5000, price: 90 },
         ],
       };
 
@@ -1086,12 +1086,12 @@ describe('patternFilter', () => {
         importanceScore: 0.7,
         confidence: 0.7,
         visible: true,
-        timestamp: 2000,
+        openTime: 2000,
         points: [
-          { timestamp: 2000, price: 91 },
-          { timestamp: 2500, price: 92 },
-          { timestamp: 3000, price: 91.5 },
-          { timestamp: 3500, price: 92.5 },
+          { openTime: 2000, price: 91 },
+          { openTime: 2500, price: 92 },
+          { openTime: 3000, price: 91.5 },
+          { openTime: 3500, price: 92.5 },
         ],
       };
 

@@ -2,7 +2,7 @@
 
 ## 📋 Project Overview
 
-**MarketMind** is an Electron-based desktop application that combines advanced financial chart visualization (candlesticks) with AI analysis to provide insights on cryptocurrencies, stocks, and other tradeable assets.
+**MarketMind** is an Electron-based desktop application that combines advanced financial chart visualization (klines) with AI analysis to provide insights on cryptocurrencies, stocks, and other tradeable assets.
 
 ### Tech Stack
 - **TypeScript** (end-to-end with unified typing)
@@ -94,10 +94,10 @@ git push origin feature/new-feature
 ### Code Examples
 
 ```typescript
-const calculateSMA = (candles: Candle[], period: number): number => {
-  if (candles.length === 0) return 0;
-  const sum = candles.reduce((total, c) => total + c.close, 0);
-  return sum / candles.length;
+const calculateSMA = (klines: Kline[], period: number): number => {
+  if (klines.length === 0) return 0;
+  const sum = klines.reduce((total, c) => total + c.close, 0);
+  return sum / klines.length;
 };
 
 const backgroundColor = isDarkMode ? '#1e222d' : '#ffffff';
@@ -108,7 +108,7 @@ export const CHART_CONFIG = {
   CANVAS_PADDING: 20,
 } as const;
 
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { CHART_CONFIG } from '@shared/constants';
 import { calculateSMA } from './utils';
 ```
@@ -155,7 +155,7 @@ Status:
 - Phase: 3 (Chart Rendering)
 - Branch: feature/chart-rendering
 - Completed: Project setup, type system, Electron base
-- Current: CandlestickRenderer component
+- Current: KlineRenderer component
 - Next: Implement zoom/pan for chart canvas
 
 Task: [specific request]
@@ -168,14 +168,14 @@ Task: [specific request]
 ### File Naming
 - Components: PascalCase (`ChartCanvas.tsx`)
 - Utilities: camelCase (`drawingUtils.ts`)
-- Types: camelCase (`candle.ts`)
+- Types: camelCase (`kline.ts`)
 - Constants: camelCase (`chartConfig.ts`)
 
 ### Import Order
 ```typescript
 import React, { useState } from 'react';
 import { Box } from '@chakra-ui/react';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { CHART_CONFIG } from '@shared/constants';
 import { calculateSMA } from './utils';
 ```
@@ -257,8 +257,8 @@ export const useStore = create<State>((set) => ({
 const drawVisible = (ctx: CanvasRenderingContext2D) => {
   const visibleStart = Math.floor(viewport.start);
   const visibleEnd = Math.ceil(viewport.end);
-  const visible = candles.slice(visibleStart, visibleEnd);
-  visible.forEach(drawCandle);
+  const visible = klines.slice(visibleStart, visibleEnd);
+  visible.forEach(drawKline);
 };
 
 const animate = () => {
@@ -292,25 +292,25 @@ useEffect(() => {
 ```typescript
 // ✅ src/renderer/store/chartStore.ts
 import { create } from 'zustand';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 
 interface ChartState {
-  candles: Candle[];
+  klines: Kline[];
   loading: boolean;
   error: Error | null;
   
   // Actions
-  setCandles: (candles: Candle[]) => void;
+  setKlines: (klines: Kline[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: Error | null) => void;
 }
 
 export const useChartStore = create<ChartState>((set) => ({
-  candles: [],
+  klines: [],
   loading: false,
   error: null,
   
-  setCandles: (candles) => set({ candles }),
+  setKlines: (klines) => set({ klines }),
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
 }));
@@ -324,13 +324,13 @@ export const useChartStore = create<ChartState>((set) => ({
 // ✅ Test utilities and calculations
 describe('calculateSMA', () => {
   it('should calculate simple moving average correctly', () => {
-    const candles: Candle[] = [
+    const klines: Kline[] = [
       { close: 100, /* ... */ },
       { close: 110, /* ... */ },
       { close: 120, /* ... */ },
     ];
     
-    const result = calculateSMA(candles, 3);
+    const result = calculateSMA(klines, 3);
     expect(result).toBe(110);
   });
   
@@ -528,7 +528,7 @@ useEffect(() => {
 ### File Naming
 - Components: PascalCase (`ChartCanvas.tsx`)
 - Utilities: camelCase (`drawingUtils.ts`)
-- Types: camelCase (`candle.ts`)
+- Types: camelCase (`kline.ts`)
 - Constants: camelCase (`chartConfig.ts`)
 
 ### Import Order
@@ -538,7 +538,7 @@ import React, { useState } from 'react';
 import { Box } from '@chakra-ui/react';
 
 // 2. Internal absolute imports
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { CHART_CONFIG } from '@shared/constants';
 
 // 3. Relative imports
@@ -549,11 +549,11 @@ import type { ChartProps } from './types';
 ### Type Exports
 ```typescript
 // ✅ Use 'import type' for type-only imports
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 
 // ✅ Export types alongside implementation
 export interface ChartProps {
-  data: Candle[];
+  data: Kline[];
 }
 
 export const Chart = (props: ChartProps) => {

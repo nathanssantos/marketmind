@@ -2,10 +2,16 @@
 
 ## 📋 Project Overview
 
-**MarketMind** is a desktop application developed in Electron that combines advanced financial chart visualization (candlesticks) with artificial intelligence analysis to provide insights on cryptocurrencies, stocks, and other tradable assets.
+**MarketMind** is a desktop application developed in Electron that combines advanced financial chart visualization (klines) with artificial intelligence analysis to provide insights on cryptocurrencies, stocks, and other tradable assets.
 
 ### Main Objective
 Create an "AI consultant" that assists traders and investors in technical chart analysis and news interpretation for buy/sell decision making on assets.
+
+### Latest Updates (November 2025)
+- **8 Algorithmic Trading Setups**: Complete Larry Williams EMA9 suite (9.1, 9.2, 9.3, 9.4) + 4 pattern-based setups
+- **44 New Unit Tests**: Full coverage for Setup 9.2, 9.3, and 9.4 detectors
+- **Multi-language Support**: All setups translated to EN/PT/ES/FR
+- **Test Suite**: 1,864 passing tests with 92.15% code coverage
 
 ---
 
@@ -55,9 +61,9 @@ marketmind/
 │   │   │   │   ├── ChartCanvas.tsx
 │   │   │   │   ├── useChartCanvas.ts
 │   │   │   │   ├── useChartCanvas.test.ts
-│   │   │   │   ├── CandlestickRenderer.tsx
-│   │   │   │   ├── useCandlestickRenderer.ts
-│   │   │   │   ├── useCandlestickRenderer.test.ts
+│   │   │   │   ├── KlineRenderer.tsx
+│   │   │   │   ├── useKlineRenderer.ts
+│   │   │   │   ├── useKlineRenderer.test.ts
 │   │   │   │   ├── LineRenderer.tsx
 │   │   │   │   ├── useLineRenderer.ts
 │   │   │   │   ├── useLineRenderer.test.ts
@@ -179,7 +185,7 @@ marketmind/
 │   │
 │   └── shared/                    # Shared code
 │       ├── types/                 # TypeScript types
-│       │   ├── candle.ts
+│       │   ├── kline.ts
 │       │   ├── chart.ts
 │       │   ├── ai.ts
 │       │   └── index.ts
@@ -245,10 +251,10 @@ npm install -D vite-plugin-electron concurrently
 ### **PHASE 2: Unified Type System** ✅ **COMPLETED**
 *Estimated duration: 1 day*
 
-#### 2.1 Candle Data Types ✅
+#### 2.1 Kline Data Types ✅
 ```typescript
-// shared/types/candle.ts
-export interface Candle {
+// shared/types/kline.ts
+export interface Kline {
   timestamp: number;        // Unix timestamp in ms
   open: number;
   high: number;
@@ -257,10 +263,10 @@ export interface Candle {
   volume: number;
 }
 
-export interface CandleData {
+export interface KlineData {
   symbol: string;           // Ex: "BTCUSDT", "AAPL"
   interval: TimeInterval;   // Ex: "1m", "5m", "1h", "1d"
-  candles: Candle[];
+  klines: Kline[];
 }
 
 export type TimeInterval = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1w' | '1M';
@@ -269,7 +275,7 @@ export type TimeInterval = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1
 #### 2.2 Chart Types ✅
 ```typescript
 // shared/types/chart.ts
-export type ChartType = 'candlestick' | 'line';
+export type ChartType = 'kline' | 'line';
 
 export interface MovingAverage {
   period: number;           // Ex: 20, 50, 200
@@ -314,7 +320,7 @@ export interface AIMessage {
 
 export interface AIAnalysisRequest {
   chartImage: string;       // base64
-  candles: Candle[];
+  klines: Kline[];
   news?: NewsArticle[];
   context?: string;
 }
@@ -345,11 +351,11 @@ export type TradingSignal = 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sel
 - [ ] Time labels (X axis)
 - [x] Support lines responsive to zoom
 
-#### 3.3 Candlestick Renderer ✅
-- [x] Draw candles (rectangles + lines)
+#### 3.3 Kline Renderer ✅
+- [x] Draw klines (rectangles + lines)
 - [x] Dynamic colors (bullish/bearish)
 - [x] Optimization for large datasets
-- [ ] Tooltip with candle information
+- [ ] Tooltip with kline information
 
 #### 3.4 Line Chart Renderer
 - [ ] Render line chart
@@ -358,7 +364,7 @@ export type TradingSignal = 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sel
 
 #### 3.5 Volume Renderer ✅
 - [x] Volume bars at the bottom
-- [x] Colors based on candle direction
+- [x] Colors based on kline direction
 - [x] Independent price scale
 
 #### 3.6 Moving Averages
@@ -419,7 +425,7 @@ components/
 ```typescript
 // shared/types/market.ts
 export abstract class BaseMarketProvider {
-  abstract fetchCandles(options: FetchCandlesOptions): Promise<CandleData>;
+  abstract fetchKlines(options: FetchKlinesOptions): Promise<KlineData>;
   abstract searchSymbols(query: string): Promise<Symbol[]>;
   abstract getSymbolInfo(symbol: string): Promise<SymbolInfo>;
   abstract normalizeSymbol(symbol: string): string;
@@ -514,7 +520,7 @@ export abstract class BaseAIProvider {
 ```typescript
 const CHART_ANALYSIS_PROMPT = `
 You are an experienced technical analyst. Analyze the provided chart and:
-1. Identify candlestick patterns (doji, hammer, engulfing, etc)
+1. Identify kline patterns (doji, hammer, engulfing, etc)
 2. Evaluate trends (bullish, bearish, sideways)
 3. Identify supports and resistances
 4. Analyze indicators (moving averages, volume)
@@ -566,7 +572,7 @@ You are an experienced technical analyst. Analyze the provided chart and:
 - [x] Textarea with vertical padding
 - [x] Send button
 - [x] Keyboard shortcut (Enter)
-- [x] Chart data context (100 candles + statistics)
+- [x] Chart data context (100 klines + statistics)
 - [x] Clean UI (data sent to API, not displayed)
 
 #### 6.4 Advanced Features ✅
@@ -967,7 +973,7 @@ export class UpdateManager {
   - useChartData.test.ts (10 tests) - 100% coverage
   - useMarketData.test.ts (10 tests) - 100% coverage
   - useSymbolSearch.test.ts (11 tests) - 100% coverage
-  - useRealtimeCandle.test.ts (11 tests) - 100% coverage
+  - useRealtimeKline.test.ts (11 tests) - 100% coverage
   - useAutoUpdate.test.ts (18 tests) - 96.15% coverage
   - useNews.test.ts (15 tests) - 90.24% coverage
   - useAI.test.ts (67 tests) - 75.67% coverage
@@ -1010,7 +1016,7 @@ export class UpdateManager {
 - [ ] Test settings persistence
 
 #### 11.3 Performance Testing
-- [ ] Benchmark canvas rendering with large datasets (1000+ candles)
+- [ ] Benchmark canvas rendering with large datasets (1000+ klines)
 - [ ] Test memory usage during extended sessions
 - [ ] Test CPU usage during chart interactions (zoom, pan, scroll)
 - [ ] Profile chart renderer performance
@@ -1041,7 +1047,7 @@ export class UpdateManager {
 - [x] Dual-layer caching (memory + IndexedDB)
 - [x] Automatic cache expiration
 - [x] Cache size management
-- [ ] Lazy loading of historical candles (planned for v1.1)
+- [ ] Lazy loading of historical klines (planned for v1.1)
 - [ ] Data compression (planned for v1.1)
 
 #### 12.3 Memory Management ✅
@@ -1264,7 +1270,7 @@ export class UpdateManager {
   
 - [x] **Chart Section**
   - Control labels (Volume, Grid, Current Price Line)
-  - Chart types (Candlestick, Line)
+  - Chart types (Kline, Line)
   - Moving Averages
   - All timeframes (1m to 1M)
   
@@ -1500,7 +1506,7 @@ export const theme = extendTheme({ config, colors });
 ## 📝 MVP Checklist (Minimum Viable Product)
 
 ### Essential for v1.0 Launch
-- [x] Candlestick chart rendering
+- [x] Kline chart rendering
 - [ ] Line chart rendering
 - [x] Volume chart
 - [x] Grid and labels (partial - missing time labels)
@@ -1576,7 +1582,7 @@ log.error('Error loading data', error);
 
 ### Targets
 - **Initial load time:** < 2s
-- **Rendering 1000 candles:** < 100ms
+- **Rendering 1000 klines:** < 100ms
 - **FPS during pan/zoom:** > 30fps
 - **AI response time:** < 10s
 - **Installer size:** < 150MB
@@ -1596,7 +1602,7 @@ main (production)
 
 ### Semantic Commits
 ```
-feat: add candlestick rendering
+feat: add kline rendering
 fix: correct SMA calculation
 docs: update README with instructions
 perf: optimize canvas rendering
@@ -1670,7 +1676,7 @@ When starting a new chat due to large context, provide:
 I'm developing MarketMind according to IMPLEMENTATION_PLAN.md.
 Currently in PHASE 3 (Chart Rendering).
 Already implemented: [list files/features]
-Next step: implement the CandlestickRenderer.
+Next step: implement the KlineRenderer.
 ```
 
 ---
@@ -1690,7 +1696,7 @@ Next step: implement the CandlestickRenderer.
   - ✅ Coordinate system utilities
   - ✅ Drawing utilities
   - ✅ ChartCanvas component
-  - ✅ CandlestickRenderer
+  - ✅ KlineRenderer
   - ✅ GridRenderer with time labels
   - ✅ VolumeRenderer
   - ✅ LineRenderer
@@ -1730,7 +1736,7 @@ Next step: implement the CandlestickRenderer.
   - ✅ MessageList with markdown rendering
   - ✅ MessageInput with chart data integration
   - ✅ ChartContext for data sharing
-  - ✅ Chart data formatting (100 candles, statistics, trends)
+  - ✅ Chart data formatting (100 klines, statistics, trends)
   - ✅ Theme system with semantic tokens
   - ✅ UI polish (padding, colors, backgrounds)
   - ✅ Correct Claude API model IDs
@@ -1793,7 +1799,7 @@ Next step: implement the CandlestickRenderer.
   - ✅ Complete documentation updates
   - ✅ Version 0.12.0 released
   - ✅ AI pattern tooltips with hover-only display
-  - ✅ Unified tooltip system (candles + AI patterns)
+  - ✅ Unified tooltip system (klines + AI patterns)
   - ✅ Price formatting with K/M notation
   - ✅ English UI translations
   - ✅ Removed debug logs from production code
@@ -1814,7 +1820,7 @@ Next step: implement the CandlestickRenderer.
 - ✅ Toolbar component with horizontal layout
 - ✅ Symbol selector integration (compact, borderless)
 - ✅ Timeframe selector with visual feedback
-- ✅ Chart type switcher (candlestick/line)
+- ✅ Chart type switcher (kline/line)
 - ✅ Display toggles (volume, grid, current price)
 - ✅ Moving averages indicators
 - ✅ Portal-based dropdown rendering
@@ -1833,9 +1839,9 @@ Next step: implement the CandlestickRenderer.
 - ✅ AI Patterns toggle button in chat sidebar
 - ✅ Automatic prompt mode selection (full vs simple)
 - ✅ Intent-based prompt optimization
-- ✅ Configurable detailed candles count (10-100, default: 32)
+- ✅ Configurable detailed klines count (10-100, default: 32)
 - ✅ Conversation summarization (keeps last 10 messages)
-- ✅ Candle data optimization (32 detailed + up to 1000 simplified)
+- ✅ Kline data optimization (32 detailed + up to 1000 simplified)
 - ✅ AI context caching system (5-minute cache)
 - ✅ ~60% reduction in token usage for long conversations
 - ✅ Enhanced timestamp guidance (OLD vs RECENT labels)
@@ -1855,22 +1861,22 @@ Next step: implement the CandlestickRenderer.
 **Released:** v0.17.0 (November 19, 2025)
 
 #### Deliverables
-- ✅ pattern extensions beyond last candles (configurable, 36px default)
-- ✅ Precise tooltip triggering (candle body/wick/volume only)
-- ✅ Comprehensive hover system (candles, volumes, patterns, MAs, pattern tags)
+- ✅ pattern extensions beyond last klines (configurable, 36px default)
+- ✅ Precise tooltip triggering (kline body/wick/volume only)
+- ✅ Comprehensive hover system (klines, volumes, patterns, MAs, pattern tags)
 - ✅ pattern tag hover triggers parent pattern effects
 - ✅ Arrow-shaped current price label (full scale width)
 - ✅ Consistent shadow/glow effects (8px blur)
 - ✅ Moving average tooltips (period, type, value, color)
 - ✅ Fixed inconsistent spacing at all zoom levels (80% width ratio)
-- ✅ Centered candle positioning algorithm
+- ✅ Centered kline positioning algorithm
 - ✅ Wicks without body overlap
-- ✅ Optimized z-ordering (grid → volume → candles → MAs → scales)
+- ✅ Optimized z-ordering (grid → volume → klines → MAs → scales)
 - ✅ Canvas clipping improvements (scales always visible)
-- ✅ Removed candle/wick transparency
+- ✅ Removed kline/wick transparency
 - ✅ AI pattern reference validation with warnings
 - ✅ Enhanced prompts for pattern references
-- ✅ Fixed test expectations (candleOptimizer, aiStore)
+- ✅ Fixed test expectations (klineOptimizer, aiStore)
 - ✅ Added 7 validation tests for AI parser
 - ✅ All 659 tests passing
 
@@ -1885,19 +1891,19 @@ Next step: implement the CandlestickRenderer.
 
 #### Deliverables
 - ✅ ChartNavigation component with two discrete buttons
-  - Reset to initial view (double chevron) - shows last 100 candles
-  - Advance one candle (single chevron) - pans forward by one candle
+  - Reset to initial view (double chevron) - shows last 100 klines
+  - Advance one kline (single chevron) - pans forward by one kline
   - Minimal 2xs size (20px × 20px) positioned bottom right (8px from scales)
   - BlackAlpha.600 background with blur effect for discrete appearance
-- ✅ CandleTimer component with real-time countdown
+- ✅ KlineTimer component with real-time countdown
   - Displays MM:SS or HH:MM:SS format based on remaining time
   - Updates every second via setInterval
   - Positioned at scale intersection (bottom right, aligned with labels)
   - Matches scale label styling (11px monospace, same color)
   - Supports all timeframes (1m-1M)
 - ✅ CanvasManager navigation methods
-  - `resetToInitialView()` - returns to last INITIAL_CANDLES_VISIBLE candles
-  - `panToNextCandle()` - advances viewport by one candle
+  - `resetToInitialView()` - returns to last INITIAL_KLINES_VISIBLE klines
+  - `panToNextKline()` - advances viewport by one kline
 - ✅ Chart rendering improvements
   - Removed ctx.clip() from all renderers (cleaner edge rendering)
   - Fixed gradual fade effect when panning
@@ -1908,8 +1914,8 @@ Next step: implement the CandlestickRenderer.
   - All 603 tests passing
 - ✅ Translations for EN, PT, ES, FR
   - chart.navigation.resetView
-  - chart.navigation.nextCandle
-  - chart.navigation.candleTimer
+  - chart.navigation.nextKline
+  - chart.navigation.klineTimer
 
 ### ✅ Phase 18: Web Workers Performance System (100% Complete)
 **Status:** ✅ Complete  
@@ -1919,10 +1925,10 @@ Next step: implement the CandlestickRenderer.
 #### Deliverables
 - ✅ Moving Averages Worker (refactored to Promise-based pattern)
 - ✅ Bounds Calculator Worker (viewport min/max calculations)
-- ✅ Candle Optimizer Worker (AI data preparation)
+- ✅ Kline Optimizer Worker (AI data preparation)
 - ✅ Conversation Summarizer Worker (AI context optimization)
 - ✅ Coordinates Worker (batch transformations)
-- ✅ 4 new React hooks (useBoundsWorker, useCandleOptimizerWorker, useConversationWorker, useMovingAverageWorker)
+- ✅ 4 new React hooks (useBoundsWorker, useKlineOptimizerWorker, useConversationWorker, useMovingAverageWorker)
 - ✅ 8 new worker tests
 - ✅ Complete documentation (WEB_WORKERS.md, workers/README.md)
 - ✅ Performance benchmarks (3.5x-4x speedup)
@@ -1935,7 +1941,7 @@ Next step: implement the CandlestickRenderer.
 - **SMA(200):** 45ms → 12ms (3.75x faster)
 - **EMA(200):** 52ms → 15ms (3.47x faster)
 - **Bounds Calc:** 8ms → 2ms (4x faster)
-- **Candle Optimizer:** 120ms → 35ms (3.43x faster)
+- **Kline Optimizer:** 120ms → 35ms (3.43x faster)
 - **Conversation Summary:** 25ms → 7ms (3.57x faster)
 - **Batch Coordinates:** 18ms → 6ms (3x faster)
 
@@ -1971,15 +1977,15 @@ Next step: implement the CandlestickRenderer.
 
 - ✅ **Performance Optimizations**
   - Fixed excessive re-renders in chart renderers
-    - useGridRenderer: removed manager?.getCandles() from dependencies
-    - useVolumeRenderer: removed manager?.getCandles() from dependencies
-    - useCandlestickRenderer: removed manager?.getCandles() from dependencies
+    - useGridRenderer: removed manager?.getKlines() from dependencies
+    - useVolumeRenderer: removed manager?.getKlines() from dependencies
+    - useKlineRenderer: removed manager?.getKlines() from dependencies
   - Fixed stale data in useMovingAverageRenderer
   - Optimized useNews with useMemo for optionsKey
   - Optimized ChartCanvas with useRef for timeout
   - Fixed NewsConfigTab timeout memory leak
   - useChartData optimization with useRef tracking
-  - CanvasManager zoom fix (updateCandleWidth call)
+  - CanvasManager zoom fix (updateKlineWidth call)
 
 - ✅ **Trading Simulator Improvements**
   - Fixed pending order execution logic
@@ -2015,7 +2021,7 @@ Next step: implement the CandlestickRenderer.
 - CryptoPanicProvider tests updated for electron HTTP
 
 #### Performance Impact
-- Chart renderers no longer recreate on candle updates
+- Chart renderers no longer recreate on kline updates
 - JSON.stringify eliminated from useNews hot path
 - Timeout state no longer causes re-renders
 - Memory leaks eliminated
@@ -2036,7 +2042,7 @@ Next step: implement the CandlestickRenderer.
 - ✅ **Configuration Sliders**
   - Sensitivity slider (0-100%)
   - Minimum confidence slider (0-100%)
-  - Formation period slider (20-200 candles)
+  - Formation period slider (20-200 klines)
   - Trendline accuracy slider (50-100%)
   - Volume weight slider (0-50%)
   - Full-width sliders matching AI Config style
@@ -2079,7 +2085,7 @@ Next step: implement the CandlestickRenderer.
 - ✅ Trading simulator improvements with proper order execution
 - ✅ Chart performance optimizations (eliminated excessive re-renders)
 - ✅ Chart navigation controls with discrete buttons
-- ✅ Real-time candle countdown timer
+- ✅ Real-time kline countdown timer
 - ✅ Enhanced chart interactions with comprehensive hover system
 - ✅ AI Patterns system with smart toggle and validation
 - ✅ Performance optimized (60% token reduction, 17x worker speedup, renderer optimizations)
@@ -2175,8 +2181,8 @@ Implement algorithmic trading setup detection system to reduce AI token consumpt
 - Comprehensive test coverage for all indicators and services
 
 **Performance:**
-- Detection time: < 50ms for 200 candles
-- Real-time updates on candle changes
+- Detection time: < 50ms for 200 klines
+- Real-time updates on kline changes
 - Efficient caching and memoization
 
 #### Current Setups
@@ -2191,7 +2197,7 @@ Implement algorithmic trading setup detection system to reduce AI token consumpt
    - Win rate: ~65-72%, Avg R:R: 2.2:1
 
 #### Integration Status
-- ✅ Auto-detection when candles.length >= 50
+- ✅ Auto-detection when klines.length >= 50
 - ✅ Visual rendering on chart with entry/SL/TP lines
 - ✅ Hover tooltips with setup details
 - ✅ State persistence to localStorage

@@ -1,39 +1,40 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineVolume } from '@shared/utils';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import type { VolumeAnalysis } from '../types';
 
 export const calculateAverageVolume = (
-  candles: Candle[],
+  klines: Kline[],
   period: number = PATTERN_DETECTION_CONFIG.VOLUME_PERIOD
 ): number => {
-  if (candles.length === 0) return 0;
+  if (klines.length === 0) return 0;
   
-  const recentCandles = candles.slice(-period);
-  const sum = recentCandles.reduce((total, candle) => total + candle.volume, 0);
+  const recentKlines = klines.slice(-period);
+  const sum = recentKlines.reduce((total, kline) => total + getKlineVolume(kline), 0);
   
-  return sum / recentCandles.length;
+  return sum / recentKlines.length;
 };
 
 export const detectVolumeSpike = (
-  candle: Candle,
+  kline: Kline,
   avgVolume: number,
   threshold: number = PATTERN_DETECTION_CONFIG.VOLUME_SPIKE_THRESHOLD
 ): boolean => {
   if (avgVolume === 0) return false;
-  return candle.volume >= avgVolume * threshold;
+  return getKlineVolume(kline) >= avgVolume * threshold;
 };
 
 export const getVolumePattern = (
-  candles: Candle[]
+  klines: Kline[]
 ): 'increasing' | 'decreasing' | 'stable' => {
-  if (candles.length < 3) return 'stable';
+  if (klines.length < 3) return 'stable';
   
-  const recentCandles = candles.slice(-10);
-  const firstHalf = recentCandles.slice(0, Math.floor(recentCandles.length / 2));
-  const secondHalf = recentCandles.slice(Math.floor(recentCandles.length / 2));
+  const recentKlines = klines.slice(-10);
+  const firstHalf = recentKlines.slice(0, Math.floor(recentKlines.length / 2));
+  const secondHalf = recentKlines.slice(Math.floor(recentKlines.length / 2));
   
-  const firstAvg = firstHalf.reduce((sum, c) => sum + c.volume, 0) / firstHalf.length;
-  const secondAvg = secondHalf.reduce((sum, c) => sum + c.volume, 0) / secondHalf.length;
+  const firstAvg = firstHalf.reduce((sum, c) => sum + getKlineVolume(c), 0) / firstHalf.length;
+  const secondAvg = secondHalf.reduce((sum, c) => sum + getKlineVolume(c), 0) / secondHalf.length;
   
   const percentChange = ((secondAvg - firstAvg) / firstAvg) * 100;
   
@@ -43,19 +44,19 @@ export const getVolumePattern = (
 };
 
 export const validateVolumeConfirmation = (
-  candles: Candle[],
+  klines: Kline[],
   indices: number[]
 ): boolean => {
   if (indices.length === 0) return false;
   
-  const avgVolume = calculateAverageVolume(candles);
+  const avgVolume = calculateAverageVolume(klines);
   let confirmedTouches = 0;
   
   for (const index of indices) {
-    if (index < 0 || index >= candles.length) continue;
+    if (index < 0 || index >= klines.length) continue;
     
-    const candle = candles[index];
-    if (candle && detectVolumeSpike(candle, avgVolume)) {
+    const kline = klines[index];
+    if (kline && detectVolumeSpike(kline, avgVolume)) {
       confirmedTouches++;
     }
   }
@@ -63,20 +64,20 @@ export const validateVolumeConfirmation = (
   return confirmedTouches >= Math.ceil(indices.length * 0.5);
 };
 
-export const analyzeVolume = (candles: Candle[]): VolumeAnalysis => {
-  const average = calculateAverageVolume(candles);
-  const trend = getVolumePattern(candles);
+export const analyzeVolume = (klines: Kline[]): VolumeAnalysis => {
+  const average = calculateAverageVolume(klines);
+  const trend = getVolumePattern(klines);
   
   const spikes: number[] = [];
   
-  for (let i = 0; i < candles.length; i++) {
-    const candle = candles[i];
-    if (candle && detectVolumeSpike(candle, average)) {
+  for (let i = 0; i < klines.length; i++) {
+    const kline = klines[i];
+    if (kline && detectVolumeSpike(kline, average)) {
       spikes.push(i);
     }
   }
   
-  const confirmation = spikes.length >= Math.ceil(candles.length * 0.1);
+  const confirmation = spikes.length >= Math.ceil(klines.length * 0.1);
   
   return {
     average,
