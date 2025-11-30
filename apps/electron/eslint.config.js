@@ -1,4 +1,4 @@
-import js from '@eslint/js';
+import baseConfig from '../../eslint.config.js';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import reactPlugin from 'eslint-plugin-react';
@@ -7,20 +7,13 @@ import reactRefreshPlugin from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 
 export default [
+    ...baseConfig,
     {
         ignores: [
-            '**/dist/**',
-            '**/dist-electron/**',
-            '**/node_modules/**',
-            '**/build/**',
-            '**/*.config.js',
-            '**/*.config.ts',
-            '.eslintrc.cjs',
             'coverage/**',
             'scripts/**',
         ],
     },
-    js.configs.recommended,
     {
         files: ['**/*.{js,jsx,mjs,cjs,ts,tsx}'],
         ignores: ['**/*.test.{ts,tsx}', '**/*.browser.test.{ts,tsx}', 'src/tests/**'],
