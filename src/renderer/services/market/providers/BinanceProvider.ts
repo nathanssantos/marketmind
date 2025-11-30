@@ -1,7 +1,7 @@
-import type { Candle, CandleData, TimeInterval } from '@shared/types';
+import type { Kline, KlineData, TimeInterval } from '@shared/types';
 import {
     BaseMarketProvider,
-    type FetchCandlesOptions,
+    type FetchKlinesOptions,
     type MarketProviderConfig,
     type Symbol,
     type SymbolInfo,
@@ -72,13 +72,20 @@ interface BinanceWSKline {
 }
 
 const BINANCE_INTERVAL_MAP: Record<TimeInterval, string> = {
+  '1s': '1s',
   '1m': '1m',
+  '3m': '3m',
   '5m': '5m',
   '15m': '15m',
   '30m': '30m',
   '1h': '1h',
+  '2h': '2h',
   '4h': '4h',
+  '6h': '6h',
+  '8h': '8h',
+  '12h': '12h',
   '1d': '1d',
+  '3d': '3d',
   '1w': '1w',
   '1M': '1M',
 };
@@ -112,7 +119,7 @@ export class BinanceProvider extends BaseMarketProvider {
     });
   }
 
-  async fetchCandles(options: FetchCandlesOptions): Promise<CandleData> {
+  async fetchKlines(options: FetchKlinesOptions): Promise<KlineData> {
     const { symbol, interval, limit = 500, startTime, endTime } = options;
 
     return this.rateLimitedFetch(async () => {
@@ -128,22 +135,27 @@ export class BinanceProvider extends BaseMarketProvider {
 
         const response = await this.client.get<BinanceKline[]>('/api/v3/klines', { params });
 
-        const candles: Candle[] = response.data.map(k => ({
-          timestamp: k[0],
-          open: parseFloat(k[1]),
-          high: parseFloat(k[2]),
-          low: parseFloat(k[3]),
-          close: parseFloat(k[4]),
-          volume: parseFloat(k[5]),
+        const klines: Kline[] = response.data.map(k => ({
+          openTime: k[0],
+          open: k[1],
+          high: k[2],
+          low: k[3],
+          close: k[4],
+          volume: k[5],
+          closeTime: k[6],
+          quoteVolume: k[7],
+          trades: k[8],
+          takerBuyBaseVolume: k[9],
+          takerBuyQuoteVolume: k[10],
         }));
 
         return {
           symbol,
           interval,
-          candles,
+          klines,
         };
       } catch (error) {
-        this.handleError(error, `Failed to fetch candles for ${symbol}`);
+        this.handleError(error, `Failed to fetch klines for ${symbol}`);
       }
     });
   }
@@ -164,11 +176,9 @@ export class BinanceProvider extends BaseMarketProvider {
       )
       .slice(0, 50)
       .map(s => ({
-        symbol: s.symbol,
-        baseAsset: s.baseAsset,
-        quoteAsset: s.quoteAsset,
+        ...s,
         displayName: `${s.baseAsset}/${s.quoteAsset}`,
-      }));
+      }) as Symbol);
   }
 
   async getSymbolInfo(symbol: string): Promise<SymbolInfo> {
@@ -230,21 +240,26 @@ export class BinanceProvider extends BaseMarketProvider {
         const data: BinanceWSKline = JSON.parse(event.data);
         
         if (data.e === 'kline' && data.k) {
-          const kline = data.k;
-          const candle: Candle = {
-            timestamp: kline.t,
-            open: parseFloat(kline.o),
-            high: parseFloat(kline.h),
-            low: parseFloat(kline.l),
-            close: parseFloat(kline.c),
-            volume: parseFloat(kline.v),
+          const k = data.k;
+          const kline: Kline = {
+            openTime: k.t,
+            open: k.o,
+            high: k.h,
+            low: k.l,
+            close: k.c,
+            volume: k.v,
+            closeTime: k.T,
+            quoteVolume: k.q,
+            trades: k.n,
+            takerBuyBaseVolume: k.V,
+            takerBuyQuoteVolume: k.Q,
           };
 
           const update: WebSocketUpdate = {
             symbol,
             interval,
-            candle,
-            isFinal: kline.x,
+            kline,
+            isFinal: k.x,
           };
 
           callback(update);

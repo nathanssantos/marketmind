@@ -1,9 +1,9 @@
-import type { AIPatternCupAndHandle, AIPatternFlag, AIPatternPennant, AIPatternRoundingBottom, Candle } from '@shared/types';
+import type { AIPatternCupAndHandle, AIPatternFlag, AIPatternPennant, AIPatternRoundingBottom, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
-    calculateConfidence,
-    normalizeTimeInPattern,
-    normalizeTouchPoints,
+  calculateConfidence,
+  normalizeTimeInPattern,
+  normalizeTouchPoints,
 } from '../core/confidenceScoring';
 import type { PivotPoint, Point, TrendlineData } from '../types';
 
@@ -57,10 +57,10 @@ const fitTrendline = (points: Point[]): TrendlineData => {
 };
 
 export const detectBullishFlags = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternFlag[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const patterns: AIPatternFlag[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -79,8 +79,8 @@ export const detectBullishFlags = (
       const poleHeight = (poleEnd.price - poleStart.price) / poleStart.price;
       if (poleHeight < 0.05) continue;
 
-      const poleCandles = poleEnd.index - poleStart.index;
-      if (poleCandles < 5 || poleCandles > 20) continue;
+      const poleKlines = poleEnd.index - poleStart.index;
+      if (poleKlines < 5 || poleKlines > 20) continue;
 
       const flagPivots = [...highPivots, ...lowPivots]
         .filter(p => p.index > poleEnd.index && p.index < poleEnd.index + 30)
@@ -112,13 +112,13 @@ export const detectBullishFlags = (
 
       if (parallelScore < 0.6) continue;
 
-      const totalCandles = flagLows[1]!.index - poleStart.index;
+      const totalKlines = flagLows[1]!.index - poleStart.index;
 
       const touchPointsScore = normalizeTouchPoints(6, 8);
       const timeScore = normalizeTimeInPattern(
-        totalCandles,
-        PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-        PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+        totalKlines,
+        PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+        PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
       );
 
       const confidence = calculateConfidence({
@@ -137,23 +137,23 @@ export const detectBullishFlags = (
         id: patterns.length + 1,
         type: 'flag-bullish',
         flagpole: {
-          start: { timestamp: poleStart.timestamp, price: poleStart.price },
-          end: { timestamp: poleEnd.timestamp, price: poleEnd.price },
+          start: { openTime: poleStart.openTime, price: poleStart.price },
+          end: { openTime: poleEnd.openTime, price: poleEnd.price },
         },
         flag: {
           upperTrendline: [
-            { timestamp: flagHighs[0]!.timestamp, price: flagHighs[0]!.price },
-            { timestamp: flagHighs[1]!.timestamp, price: flagHighs[1]!.price },
+            { openTime: flagHighs[0]!.openTime, price: flagHighs[0]!.price },
+            { openTime: flagHighs[1]!.openTime, price: flagHighs[1]!.price },
           ],
           lowerTrendline: [
-            { timestamp: flagLows[0]!.timestamp, price: flagLows[0]!.price },
-            { timestamp: flagLows[1]!.timestamp, price: flagLows[1]!.price },
+            { openTime: flagLows[0]!.openTime, price: flagLows[0]!.price },
+            { openTime: flagLows[1]!.openTime, price: flagLows[1]!.price },
           ],
         },
         label: `Bullish Flag · ${heightPercent}% pole · ${confidencePercent}% confidence`,
         confidence,
         visible: true,
-        timestamp: poleStart.timestamp,
+        openTime: poleStart.openTime,
       });
 
       break;
@@ -166,10 +166,10 @@ export const detectBullishFlags = (
 };
 
 export const detectBearishFlags = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternFlag[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const patterns: AIPatternFlag[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -188,8 +188,8 @@ export const detectBearishFlags = (
       const poleHeight = (poleStart.price - poleEnd.price) / poleEnd.price;
       if (poleHeight < 0.05) continue;
 
-      const poleCandles = poleEnd.index - poleStart.index;
-      if (poleCandles < 5 || poleCandles > 20) continue;
+      const poleKlines = poleEnd.index - poleStart.index;
+      if (poleKlines < 5 || poleKlines > 20) continue;
 
       const flagPivots = [...highPivots, ...lowPivots]
         .filter(p => p.index > poleEnd.index && p.index < poleEnd.index + 30)
@@ -221,13 +221,13 @@ export const detectBearishFlags = (
 
       if (parallelScore < 0.6) continue;
 
-      const totalCandles = flagLows[1]!.index - poleStart.index;
+      const totalKlines = flagLows[1]!.index - poleStart.index;
 
       const touchPointsScore = normalizeTouchPoints(6, 8);
       const timeScore = normalizeTimeInPattern(
-        totalCandles,
-        PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-        PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+        totalKlines,
+        PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+        PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
       );
 
       const confidence = calculateConfidence({
@@ -246,23 +246,23 @@ export const detectBearishFlags = (
         id: patterns.length + 1,
         type: 'flag-bearish',
         flagpole: {
-          start: { timestamp: poleStart.timestamp, price: poleStart.price },
-          end: { timestamp: poleEnd.timestamp, price: poleEnd.price },
+          start: { openTime: poleStart.openTime, price: poleStart.price },
+          end: { openTime: poleEnd.openTime, price: poleEnd.price },
         },
         flag: {
           upperTrendline: [
-            { timestamp: flagHighs[0]!.timestamp, price: flagHighs[0]!.price },
-            { timestamp: flagHighs[1]!.timestamp, price: flagHighs[1]!.price },
+            { openTime: flagHighs[0]!.openTime, price: flagHighs[0]!.price },
+            { openTime: flagHighs[1]!.openTime, price: flagHighs[1]!.price },
           ],
           lowerTrendline: [
-            { timestamp: flagLows[0]!.timestamp, price: flagLows[0]!.price },
-            { timestamp: flagLows[1]!.timestamp, price: flagLows[1]!.price },
+            { openTime: flagLows[0]!.openTime, price: flagLows[0]!.price },
+            { openTime: flagLows[1]!.openTime, price: flagLows[1]!.price },
           ],
         },
         label: `Bearish Flag · ${heightPercent}% pole · ${confidencePercent}% confidence`,
         confidence,
         visible: true,
-        timestamp: poleStart.timestamp,
+        openTime: poleStart.openTime,
       });
 
       break;
@@ -275,10 +275,10 @@ export const detectBearishFlags = (
 };
 
 export const detectPennants = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternPennant[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const patterns: AIPatternPennant[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -324,13 +324,13 @@ export const detectPennants = (
       const convergence = Math.abs(upperLine.slope) + Math.abs(lowerLine.slope);
       if (convergence < 0.001) continue;
 
-      const totalCandles = pennantLows[1]!.index - poleStart.index;
+      const totalKlines = pennantLows[1]!.index - poleStart.index;
 
       const touchPointsScore = normalizeTouchPoints(6, 8);
       const timeScore = normalizeTimeInPattern(
-        totalCandles,
-        PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-        PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+        totalKlines,
+        PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+        PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
       );
 
       const confidence = calculateConfidence({
@@ -349,24 +349,24 @@ export const detectPennants = (
         id: patterns.length + 1,
         type: 'pennant',
         flagpole: {
-          start: { timestamp: poleStart.timestamp, price: poleStart.price },
-          end: { timestamp: poleEnd.timestamp, price: poleEnd.price },
+          start: { openTime: poleStart.openTime, price: poleStart.price },
+          end: { openTime: poleEnd.openTime, price: poleEnd.price },
         },
         pennant: {
           upperTrendline: [
-            { timestamp: pennantHighs[0]!.timestamp, price: pennantHighs[0]!.price },
-            { timestamp: pennantHighs[1]!.timestamp, price: pennantHighs[1]!.price },
+            { openTime: pennantHighs[0]!.openTime, price: pennantHighs[0]!.price },
+            { openTime: pennantHighs[1]!.openTime, price: pennantHighs[1]!.price },
           ],
           lowerTrendline: [
-            { timestamp: pennantLows[0]!.timestamp, price: pennantLows[0]!.price },
-            { timestamp: pennantLows[1]!.timestamp, price: pennantLows[1]!.price },
+            { openTime: pennantLows[0]!.openTime, price: pennantLows[0]!.price },
+            { openTime: pennantLows[1]!.openTime, price: pennantLows[1]!.price },
           ],
         },
         direction: 'bullish',
         label: `Pennant (Bullish) · ${heightPercent}% pole · ${confidencePercent}% confidence`,
         confidence,
         visible: true,
-        timestamp: poleStart.timestamp,
+        openTime: poleStart.openTime,
       });
 
       break;
@@ -379,10 +379,10 @@ export const detectPennants = (
 };
 
 export const detectCupAndHandle = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternCupAndHandle[] => {
-  if (!candles || candles.length < 40) return [];
+  if (!klines || klines.length < 40) return [];
 
   const patterns: AIPatternCupAndHandle[] = [];
   const allPivots = [...pivots].sort((a, b) => a.index - b.index);
@@ -435,13 +435,13 @@ export const detectCupAndHandle = (
     const handleDepth = (handleStart.price - handleLow.price) / handleLow.price;
     if (handleDepth > cupDepth * 0.5) continue;
 
-    const totalCandles = handleEnd.index - cupStart.index;
+    const totalKlines = handleEnd.index - cupStart.index;
 
     const touchPointsScore = normalizeTouchPoints(6, 8);
     const timeScore = normalizeTimeInPattern(
-      totalCandles,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES * 3,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES * 2
+      totalKlines,
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES * 3,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES * 2
     );
 
     const confidence = calculateConfidence({
@@ -459,16 +459,16 @@ export const detectCupAndHandle = (
     patterns.push({
       id: patterns.length + 1,
       type: 'cup-and-handle',
-      cupStart: { timestamp: cupStart.timestamp, price: cupStart.price },
-      cupBottom: { timestamp: cupBottom.timestamp, price: cupBottom.price },
-      cupEnd: { timestamp: cupEnd.timestamp, price: cupEnd.price },
-      handleStart: { timestamp: handleStart.timestamp, price: handleStart.price },
-      handleLow: { timestamp: handleLow.timestamp, price: handleLow.price },
-      handleEnd: { timestamp: handleEnd.timestamp, price: handleEnd.price },
+      cupStart: { openTime: cupStart.openTime, price: cupStart.price },
+      cupBottom: { openTime: cupBottom.openTime, price: cupBottom.price },
+      cupEnd: { openTime: cupEnd.openTime, price: cupEnd.price },
+      handleStart: { openTime: handleStart.openTime, price: handleStart.price },
+      handleLow: { openTime: handleLow.openTime, price: handleLow.price },
+      handleEnd: { openTime: handleEnd.openTime, price: handleEnd.price },
       label: `Cup & Handle (Bullish) · ${depthPercent}% depth · ${confidencePercent}% confidence`,
       confidence,
       visible: true,
-      timestamp: cupStart.timestamp,
+      openTime: cupStart.openTime,
     });
 
     break;
@@ -480,10 +480,10 @@ export const detectCupAndHandle = (
 };
 
 export const detectRoundingBottom = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternRoundingBottom[] => {
-  if (!candles || candles.length < 30) return [];
+  if (!klines || klines.length < 30) return [];
 
   const patterns: AIPatternRoundingBottom[] = [];
   const allPivots = [...pivots].sort((a, b) => a.index - b.index);
@@ -516,14 +516,14 @@ export const detectRoundingBottom = (
     const depth = (start.price - bottom.price) / bottom.price;
     if (depth < 0.03) continue;
 
-    const totalCandles = end.index - start.index;
-    if (totalCandles < 15) continue;
+    const totalKlines = end.index - start.index;
+    if (totalKlines < 15) continue;
 
     const touchPointsScore = normalizeTouchPoints(3, 5);
     const timeScore = normalizeTimeInPattern(
-      totalCandles,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES * 2,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+      totalKlines,
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES * 2,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
     );
 
     const confidence = calculateConfidence({
@@ -541,13 +541,13 @@ export const detectRoundingBottom = (
     patterns.push({
       id: patterns.length + 1,
       type: 'rounding-bottom',
-      start: { timestamp: start.timestamp, price: start.price },
-      bottom: { timestamp: bottom.timestamp, price: bottom.price },
-      end: { timestamp: end.timestamp, price: end.price },
+      start: { openTime: start.openTime, price: start.price },
+      bottom: { openTime: bottom.openTime, price: bottom.price },
+      end: { openTime: end.openTime, price: end.price },
       label: `Rounding Bottom (Bullish) · ${depthPercent}% depth · ${confidencePercent}% confidence`,
       confidence,
       visible: true,
-      timestamp: start.timestamp,
+      openTime: start.openTime,
     });
 
     break;

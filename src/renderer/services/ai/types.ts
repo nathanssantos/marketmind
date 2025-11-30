@@ -1,7 +1,7 @@
 import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage } from '@shared/types';
-import { formatCandlesForPrompt, optimizeCandles } from '../../utils/candleOptimizer';
 import { buildOptimizedMessages } from '../../utils/conversationSummarizer';
 import { detectIntentFromConversation, getSystemPrompt as getOptimizedSystemPrompt } from '../../utils/intentDetection';
+import { formatKlinesForPrompt, optimizeKlines } from '../../utils/klineOptimizer';
 import { parseSignalFromResponse } from '../../utils/signalParser';
 import optimizedPrompts from './prompts-optimized.json';
 import prompts from './prompts.json';
@@ -11,7 +11,7 @@ export interface AIProviderConfig {
   model?: string;
   temperature?: number;
   maxTokens?: number;
-  detailedCandlesCount?: number;
+  detailedKlinesCount?: number;
 }
 
 export interface ChatCompletionMessage {
@@ -42,7 +42,7 @@ export abstract class BaseAIProvider {
   protected maxTokens: number;
   protected useOptimizedPrompts: boolean;
   public enableAIPatterns: boolean;
-  protected detailedCandlesCount: number;
+  protected detailedKlinesCount: number;
 
   constructor(config: AIProviderConfig) {
     this.apiKey = config.apiKey;
@@ -51,7 +51,7 @@ export abstract class BaseAIProvider {
     this.maxTokens = config.maxTokens ?? 4096;
     this.useOptimizedPrompts = true;
     this.enableAIPatterns = true;
-    this.detailedCandlesCount = config.detailedCandlesCount ?? 32;
+    this.detailedKlinesCount = config.detailedKlinesCount ?? 32;
   }
 
   protected abstract getDefaultModel(): string;
@@ -141,15 +141,15 @@ export abstract class BaseAIProvider {
         parts.push(prompts.chartAnalysis.contextTemplate.replace('{context}', request.context));
       }
 
-      if (request.candles && request.candles.length > 0) {
-        const latestCandle = request.candles[request.candles.length - 1];
-        if (latestCandle) {
+      if (request.klines && request.klines.length > 0) {
+        const latestKline = request.klines[request.klines.length - 1];
+        if (latestKline) {
           const priceData = prompts.chartAnalysis.priceDataTemplate
-            .replace('{open}', latestCandle.open.toFixed(2))
-            .replace('{high}', latestCandle.high.toFixed(2))
-            .replace('{low}', latestCandle.low.toFixed(2))
-            .replace('{close}', latestCandle.close.toFixed(2))
-            .replace('{volume}', latestCandle.volume.toLocaleString());
+            .replace('{open}', parseFloat(latestKline.open).toFixed(2))
+            .replace('{high}', parseFloat(latestKline.high).toFixed(2))
+            .replace('{low}', parseFloat(latestKline.low).toFixed(2))
+            .replace('{close}', parseFloat(latestKline.close).toFixed(2))
+            .replace('{volume}', parseFloat(latestKline.volume).toLocaleString());
           parts.push(priceData);
         }
       }
@@ -174,27 +174,27 @@ export abstract class BaseAIProvider {
       parts.push(optimizedPrompts.chartAnalysis.contextTemplate.replace('{context}', request.context));
     }
 
-    if (request.candles && request.candles.length > 0) {
-      const optimized = optimizeCandles(request.candles, this.detailedCandlesCount);
+    if (request.klines && request.klines.length > 0) {
+      const optimized = optimizeKlines(request.klines, this.detailedKlinesCount);
       
-      const timestampInfo = optimizedPrompts.chartAnalysis.timestampInfoTemplate
-        .replace('{firstTimestamp}', optimized.timestampInfo.first.toString())
-        .replace('{lastTimestamp}', optimized.timestampInfo.last.toString())
-        .replace('{totalCandles}', optimized.timestampInfo.total.toString())
-        .replace('{timeframe}', optimized.timestampInfo.timeframe);
+      const timestampInfo = optimizedPrompts.chartAnalysis.openTimeInfoTemplate
+        .replace('{firstTimestamp}', optimized.openTimeInfo.first.toString())
+        .replace('{lastTimestamp}', optimized.openTimeInfo.last.toString())
+        .replace('{totalKlines}', optimized.openTimeInfo.total.toString())
+        .replace('{timeframe}', optimized.openTimeInfo.timeframe);
       parts.push(timestampInfo);
       
-      const candleData = formatCandlesForPrompt(optimized);
-      parts.push(`\n\nCANDLE DATA:\n${candleData}`);
+      const klineData = formatKlinesForPrompt(optimized);
+      parts.push(`\n\nKLINE DATA:\n${klineData}`);
       
-      const latestCandle = request.candles[request.candles.length - 1];
-      if (latestCandle) {
+      const latestKline = request.klines[request.klines.length - 1];
+      if (latestKline) {
         const priceData = optimizedPrompts.chartAnalysis.priceDataTemplate
-          .replace('{open}', latestCandle.open.toFixed(2))
-          .replace('{high}', latestCandle.high.toFixed(2))
-          .replace('{low}', latestCandle.low.toFixed(2))
-          .replace('{close}', latestCandle.close.toFixed(2))
-          .replace('{volume}', latestCandle.volume.toLocaleString());
+          .replace('{open}', parseFloat(latestKline.open).toFixed(2))
+          .replace('{high}', parseFloat(latestKline.high).toFixed(2))
+          .replace('{low}', parseFloat(latestKline.low).toFixed(2))
+          .replace('{close}', parseFloat(latestKline.close).toFixed(2))
+          .replace('{volume}', parseFloat(latestKline.volume).toLocaleString());
         parts.push(priceData);
       }
     }

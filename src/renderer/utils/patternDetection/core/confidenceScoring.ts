@@ -28,13 +28,13 @@ export const normalizeTouchPoints = (
 };
 
 export const normalizeTimeInPattern = (
-  candleCount: number,
-  minCandles: number,
-  idealCandles: number
+  klineCount: number,
+  minKlines: number,
+  idealKlines: number
 ): number => {
-  if (candleCount < minCandles) return 0;
-  if (candleCount >= idealCandles) return 1;
-  return (candleCount - minCandles) / (idealCandles - minCandles);
+  if (klineCount < minKlines) return 0;
+  if (klineCount >= idealKlines) return 1;
+  return (klineCount - minKlines) / (idealKlines - minKlines);
 };
 
 export const calculateSymmetryScore = (

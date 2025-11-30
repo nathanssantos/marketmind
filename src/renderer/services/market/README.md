@@ -15,7 +15,7 @@ BaseMarketProvider (Abstract)
 ```
 
 All providers implement the same interface:
-- `fetchCandles()` - Get historical candlestick data
+- `fetchKlines()` - Get historical kline data
 - `searchSymbols()` - Search for trading symbols
 - `getSymbolInfo()` - Get symbol details
 - `normalizeSymbol()` - Convert symbol formats
@@ -36,7 +36,7 @@ Manages multiple providers with automatic fallback:
 - **API Key:** Not required for public data
 - **Rate Limit:** 20 requests/second
 - **Endpoints:**
-  - `/api/v3/klines` - Candlestick data
+  - `/api/v3/klines` - Kline data
   - `/api/v3/exchangeInfo` - Symbol information
 
 **Advantages:**
@@ -63,7 +63,7 @@ Manages multiple providers with automatic fallback:
   - `/coins/list` - Available coins
 
 **Limitations:**
-- Simplified candlestick data (no wicks)
+- Simplified kline data (no wicks)
 - Lower rate limits
 - Less granular intervals
 
@@ -86,8 +86,8 @@ const marketService = new MarketDataService({
   cacheDuration: 60 * 1000, // 1 minute
 });
 
-// Fetch candles
-const data = await marketService.fetchCandles({
+// Fetch klines
+const data = await marketService.fetchKlines({
   symbol: 'BTCUSDT',
   interval: '1h',
   limit: 500,
@@ -110,7 +110,7 @@ function MyComponent() {
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
   
-  return <ChartCanvas candles={data.candles} />;
+  return <ChartCanvas klines={data.klines} />;
 }
 ```
 
@@ -134,7 +134,7 @@ export class NewProvider extends BaseMarketProvider {
     });
   }
 
-  async fetchCandles(options: FetchCandlesOptions): Promise<CandleData> {
+  async fetchKlines(options: FetchKlinesOptions): Promise<KlineData> {
     // Implementation
   }
 
@@ -164,16 +164,16 @@ marketService.setPrimaryProvider(newProvider);
 
 ## 📊 Data Format
 
-### CandleData
+### KlineData
 
 ```typescript
-interface CandleData {
+interface KlineData {
   symbol: string;        // "BTCUSDT"
   interval: TimeInterval; // "1h", "1d", etc.
-  candles: Candle[];
+  klines: Kline[];
 }
 
-interface Candle {
+interface Kline {
   timestamp: number;  // Unix timestamp in milliseconds
   open: number;       // Opening price
   high: number;       // Highest price
@@ -230,7 +230,7 @@ The service automatically handles errors and falls back to alternative providers
 
 ```typescript
 try {
-  const data = await marketService.fetchCandles(options);
+  const data = await marketService.fetchKlines(options);
 } catch (error) {
   // All providers failed
   console.error('Failed to fetch data:', error);
@@ -263,12 +263,12 @@ Individual provider errors are logged but don't stop execution:
 ## 🔄 WebSocket Real-Time Updates
 
 ### Overview
-MarketMind now supports **real-time candle updates** via WebSocket connections. The chart automatically updates as new market data arrives, providing a live trading experience.
+MarketMind now supports **real-time kline updates** via WebSocket connections. The chart automatically updates as new market data arrives, providing a live trading experience.
 
 ### How It Works
 
-1. **WebSocket Connection**: Binance WebSocket stream provides real-time kline (candlestick) data
-2. **Automatic Updates**: New candles are merged with historical data seamlessly
+1. **WebSocket Connection**: Binance WebSocket stream provides real-time kline (kline) data
+2. **Automatic Updates**: New klines are merged with historical data seamlessly
 3. **State Management**: React hooks manage subscription lifecycle and data updates
 
 ### Using WebSocket
@@ -276,7 +276,7 @@ MarketMind now supports **real-time candle updates** via WebSocket connections. 
 #### With React Hook
 
 ```typescript
-import { useRealtimeCandle } from '@/hooks/useRealtimeCandle';
+import { useRealtimeKline } from '@/hooks/useRealtimeKline';
 import { MarketDataService } from '@/services/market';
 
 function MyComponent() {
@@ -284,19 +284,19 @@ function MyComponent() {
     primaryProvider: new BinanceProvider(),
   });
 
-  const [candles, setCandles] = useState<Candle[]>([]);
+  const [klines, setKlines] = useState<Kline[]>([]);
 
-  useRealtimeCandle(marketService, {
+  useRealtimeKline(marketService, {
     symbol: 'BTCUSDT',
     interval: '1m',
     enabled: true,
-    onUpdate: (candle, isFinal) => {
-      setCandles(prev => {
-        // Update last candle or add new one
+    onUpdate: (kline, isFinal) => {
+      setKlines(prev => {
+        // Update last kline or add new one
         if (isFinal) {
-          return [...prev, candle];
+          return [...prev, kline];
         }
-        return [...prev.slice(0, -1), candle];
+        return [...prev.slice(0, -1), kline];
       });
     },
   });
@@ -314,7 +314,7 @@ const unsubscribe = marketService.subscribeToUpdates({
   symbol: 'BTCUSDT',
   interval: '1m',
   callback: (update) => {
-    console.log('New candle:', update.candle);
+    console.log('New kline:', update.kline);
     console.log('Is final?', update.isFinal);
   },
 });
@@ -329,15 +329,15 @@ unsubscribe();
 interface WebSocketUpdate {
   symbol: string;        // "BTCUSDT"
   interval: TimeInterval; // "1m", "1h", etc.
-  candle: Candle;        // Current candle data
-  isFinal: boolean;      // true when candle closes
+  kline: Kline;        // Current kline data
+  isFinal: boolean;      // true when kline closes
 }
 ```
 
 ### Features
 
 - **Real-Time**: Updates arrive as they happen on the exchange
-- **Smart Merging**: New data intelligently merged with historical candles
+- **Smart Merging**: New data intelligently merged with historical klines
 - **Automatic Reconnection**: WebSocket reconnects on connection loss
 - **Multiple Subscriptions**: Subscribe to multiple symbols/intervals simultaneously
 - **Cleanup**: Automatic cleanup when component unmounts
@@ -371,31 +371,31 @@ function TradingChart() {
     limit: 500,
   });
 
-  const [liveCandles, setLiveCandles] = useState<Candle[]>([]);
+  const [liveKlines, setLiveKlines] = useState<Kline[]>([]);
 
   // Subscribe to real-time updates
-  useRealtimeCandle(marketService, {
+  useRealtimeKline(marketService, {
     symbol: 'BTCUSDT',
     interval: '1m',
     enabled: !!data,
-    onUpdate: (candle, isFinal) => {
-      setLiveCandles(prev => {
+    onUpdate: (kline, isFinal) => {
+      setLiveKlines(prev => {
         const last = prev[prev.length - 1];
-        if (last?.timestamp === candle.timestamp) {
-          return [...prev.slice(0, -1), candle];
+        if (last?.timestamp === kline.timestamp) {
+          return [...prev.slice(0, -1), kline];
         }
-        return [...prev, candle];
+        return [...prev, kline];
       });
     },
   });
 
   // Merge historical + live data
-  const displayCandles = useMemo(() => {
+  const displayKlines = useMemo(() => {
     if (!data) return [];
-    return [...data.candles, ...liveCandles];
-  }, [data, liveCandles]);
+    return [...data.klines, ...liveKlines];
+  }, [data, liveKlines]);
 
-  return <ChartCanvas candles={displayCandles} />;
+  return <ChartCanvas klines={displayKlines} />;
 }
 ```
 

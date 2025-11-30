@@ -4,6 +4,14 @@ import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@c
 import { Select } from '@renderer/components/ui/select';
 import { useTradingStore } from '@renderer/store/tradingStore';
 import type { OrderStatus } from '@shared/types/trading';
+import {
+  getOrderId,
+  getOrderPrice,
+  getOrderQuantity,
+  isOrderActive,
+  isOrderLong,
+  isOrderPending,
+} from '@shared/utils';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
@@ -28,8 +36,8 @@ export const OrdersList = () => {
     ? walletOrders
     : walletOrders.filter((o) => o.status === filterStatus);
 
-  const activeOrders = walletOrders.filter((o) => o.status === 'active').length;
-  const pendingOrders = walletOrders.filter((o) => o.status === 'pending').length;
+  const activeOrders = walletOrders.filter((o) => isOrderActive(o)).length;
+  const pendingOrders = walletOrders.filter((o) => isOrderPending(o)).length;
 
   return (
     <Stack gap={3} p={4}>
@@ -94,11 +102,11 @@ export const OrdersList = () => {
               <Stack gap={2}>
                 {filteredOrders.map((order) => (
                   <OrderCard
-                    key={order.id}
+                    key={getOrderId(order)}
                     order={order}
                     currency={activeWallet.currency}
-                    onCancel={() => cancelOrder(order.id)}
-                    onClose={(price) => closeOrder(order.id, price)}
+                    onCancel={() => cancelOrder(getOrderId(order))}
+                    onClose={(price) => closeOrder(getOrderId(order), price)}
                   />
                 ))}
               </Stack>
@@ -122,22 +130,25 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
 
   const getStatusColor = (status: OrderStatus): string => {
     const colors: Record<OrderStatus, string> = {
-      pending: 'orange',
-      active: 'green',
-      filled: 'blue',
-      closed: 'gray',
-      cancelled: 'red',
-      expired: 'gray',
+      NEW: 'orange',
+      PARTIALLY_FILLED: 'green',
+      FILLED: 'blue',
+      CANCELED: 'red',
+      PENDING_CANCEL: 'orange',
+      REJECTED: 'red',
+      EXPIRED: 'gray',
+      EXPIRED_IN_MATCH: 'gray',
+      PENDING_NEW: 'orange',
     };
     return colors[status];
   };
 
-  const getTypeColor = (type: 'long' | 'short'): string => {
-    return type === 'long' ? 'green' : 'red';
+  const getTypeColor = (isLong: boolean): string => {
+    return isLong ? 'green' : 'red';
   };
 
-  const canCancel = order.status === 'pending' || order.status === 'active';
-  const canClose = order.status === 'active';
+  const canCancel = isOrderPending(order) || isOrderActive(order);
+  const canClose = isOrderActive(order);
   const hasActions = canClose || canCancel;
 
   return (
@@ -146,7 +157,7 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
       bg="bg.muted"
       borderRadius="md"
       borderLeft="4px solid"
-      borderColor={`${getTypeColor(order.type)}.500`}
+      borderColor={`${getTypeColor(isOrderLong(order))}.500`}
     >
       <Flex justify="space-between" align="flex-start" mb={2}>
         <Stack gap={1.5}>
@@ -154,8 +165,8 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
             {order.symbol}
           </Text>
           <Flex gap={2} align="center">
-            <Badge colorPalette={getTypeColor(order.type)} size="sm" px={2}>
-              {t(`trading.ticket.${order.type}`)}
+            <Badge colorPalette={getTypeColor(isOrderLong(order))} size="sm" px={2}>
+              {t(`trading.ticket.${isOrderLong(order) ? 'long' : 'short'}`)}
             </Badge>
             <Badge colorPalette={getStatusColor(order.status)} size="sm" px={2}>
               {t(`trading.orders.status${order.status.charAt(0).toUpperCase()}${order.status.slice(1)}`)}
@@ -163,7 +174,7 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
           </Flex>
         </Stack>
         {hasActions && (
-          <MenuRoot id={`order-menu-${order.id}`} positioning={{ placement: 'bottom-end' }}>
+          <MenuRoot id={`order-menu-${getOrderId(order)}`} positioning={{ placement: 'bottom-end' }}>
             <MenuTrigger asChild>
               <IconButton size="2xs" variant="ghost" aria-label="Order options">
                 <BsThreeDotsVertical />
@@ -182,7 +193,7 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
                   {canClose && (
                     <MenuItem
                       value="close"
-                      onClick={() => onClose(order.currentPrice || order.entryPrice)}
+                      onClick={() => onClose(order.currentPrice || getOrderPrice(order))}
                       px={4}
                       py={2.5}
                       _hover={{ bg: 'bg.muted' }}
@@ -217,7 +228,7 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.orders.createdAt')}</Text>
           <Text fontWeight="medium">
-            {new Date(order.createdAt).toLocaleString(undefined, {
+            {order.createdAt && new Date(order.createdAt).toLocaleString(undefined, {
               month: 'short',
               day: 'numeric',
               hour: '2-digit',
@@ -225,11 +236,11 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
             })}
           </Text>
         </Flex>
-        {order.filledAt && (
+        {order.updateTime && (
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.filledAt')}</Text>
             <Text>
-              {new Date(order.filledAt).toLocaleString(undefined, {
+              {new Date(order.updateTime).toLocaleString(undefined, {
                 month: 'short',
                 day: 'numeric',
                 hour: '2-digit',
@@ -253,11 +264,11 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
         )}
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.orders.quantity')}</Text>
-          <Text fontWeight="medium">{order.quantity.toFixed(8)}</Text>
+          <Text fontWeight="medium">{getOrderQuantity(order).toFixed(8)}</Text>
         </Flex>
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.orders.entryPrice')}</Text>
-          <Text>{currency} {order.entryPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+          <Text>{currency} {getOrderPrice(order).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
         </Flex>
         {order.currentPrice && (
           <Flex justify="space-between">
@@ -280,9 +291,9 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
         {order.pnl !== undefined && (
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.pnl')}</Text>
-            <Text fontWeight="medium" color={order.pnl >= 0 ? 'green.500' : 'red.500'}>
-              {order.pnl >= 0 ? '+' : ''}{order.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              {order.pnlPercent !== undefined && ` (${order.pnl >= 0 ? '+' : ''}${order.pnlPercent.toFixed(2)}%)`}
+            <Text fontWeight="medium" color={parseFloat(order.pnl) >= 0 ? 'green.500' : 'red.500'}>
+              {parseFloat(order.pnl) >= 0 ? '+' : ''}{parseFloat(order.pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {order.pnlPercent !== undefined && ` (${parseFloat(order.pnl) >= 0 ? '+' : ''}${parseFloat(order.pnlPercent).toFixed(2)}%)`}
             </Text>
           </Flex>
         )}

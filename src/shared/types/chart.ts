@@ -1,4 +1,4 @@
-export type ChartType = 'candlestick' | 'line';
+export type ChartType = 'kline' | 'line';
 
 export interface MovingAverage {
   period: number;
@@ -26,6 +26,6 @@ export interface ChartColors {
 export interface Viewport {
   start: number;
   end: number;
-  candleWidth: number;
-  candleSpacing: number;
+  klineWidth: number;
+  klineSpacing: number;
 }

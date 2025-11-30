@@ -1,24 +1,29 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { describe, expect, it } from 'vitest';
 import {
-  createDefaultPinInsideConfig,
-  PinInsideDetector,
+    createDefaultPinInsideConfig,
+    PinInsideDetector,
 } from './PinInsideDetector';
 
-const createCandle = (
+const createKline = (
   open: number,
   high: number,
   low: number,
   close: number,
   volume: number = 1000000,
-  timestamp: number = Date.now()
-): Candle => ({
-  timestamp,
-  open,
-  high,
-  low,
-  close,
-  volume,
+  openTime: number = Date.now()
+): Kline => ({
+  openTime,
+  closeTime: openTime + 60000,
+  open: open.toString(),
+  high: high.toString(),
+  low: low.toString(),
+  close: close.toString(),
+  volume: volume.toString(),
+  quoteVolume: (volume * close).toString(),
+  trades: 100,
+  takerBuyBaseVolume: (volume * 0.5).toString(),
+  takerBuyQuoteVolume: (volume * close * 0.5).toString(),
 });
 
 describe('PinInsideDetector', () => {
@@ -41,24 +46,24 @@ describe('PinInsideDetector', () => {
       const config = { ...createDefaultPinInsideConfig(), enabled: false };
       const detector = new PinInsideDetector(config);
 
-      const candles = [
-        createCandle(100, 110, 95, 105),
-        createCandle(105, 108, 103, 107),
-        createCandle(107, 109, 106, 108),
+      const klines = [
+        createKline(100, 110, 95, 105),
+        createKline(105, 108, 103, 107),
+        createKline(107, 109, 106, 108),
       ];
 
-      const result = detector.detect(candles, 2);
+      const result = detector.detect(klines, 2);
       expect(result.setup).toBeNull();
       expect(result.confidence).toBe(0);
     });
 
-    it('should return null when not enough candles', () => {
+    it('should return null when not enough klines', () => {
       const config = { ...createDefaultPinInsideConfig(), enabled: true };
       const detector = new PinInsideDetector(config);
 
-      const candles = [createCandle(100, 110, 95, 105)];
+      const klines = [createKline(100, 110, 95, 105)];
 
-      const result = detector.detect(candles, 0);
+      const result = detector.detect(klines, 0);
       expect(result.setup).toBeNull();
       expect(result.confidence).toBe(0);
     });
@@ -73,19 +78,19 @@ describe('PinInsideDetector', () => {
       const detector = new PinInsideDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
-        candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
+        klines.push(createKline(100, 101, 99, 100, 1000000, baseTime + i * 60000));
       }
 
-      const pinBarCandle = createCandle(100, 102, 95, 100, 1500000, baseTime + 70 * 60000);
-      candles.push(pinBarCandle);
+      const pinBarKline = createKline(100, 102, 95, 100, 1500000, baseTime + 70 * 60000);
+      klines.push(pinBarKline);
 
-      const insideBarCandle = createCandle(98, 99, 97, 98, 800000, baseTime + 71 * 60000);
-      candles.push(insideBarCandle);
+      const insideBarKline = createKline(98, 99, 97, 98, 800000, baseTime + 71 * 60000);
+      klines.push(insideBarKline);
 
-      const result = detector.detect(candles, 71);
+      const result = detector.detect(klines, 71);
       expect(result.setup).toBeNull();
     });
 
@@ -99,19 +104,19 @@ describe('PinInsideDetector', () => {
       const detector = new PinInsideDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
-        candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
+        klines.push(createKline(100, 101, 99, 100, 1000000, baseTime + i * 60000));
       }
 
-      const pinBarCandle = createCandle(100, 102, 95, 100, 1500000, baseTime + 70 * 60000);
-      candles.push(pinBarCandle);
+      const pinBarKline = createKline(100, 102, 95, 100, 1500000, baseTime + 70 * 60000);
+      klines.push(pinBarKline);
 
-      const notInsideCandle = createCandle(98, 103, 97, 98, 800000, baseTime + 71 * 60000);
-      candles.push(notInsideCandle);
+      const notInsideKline = createKline(98, 103, 97, 98, 800000, baseTime + 71 * 60000);
+      klines.push(notInsideKline);
 
-      const result = detector.detect(candles, 71);
+      const result = detector.detect(klines, 71);
       expect(result.setup).toBeNull();
     });
 
@@ -125,19 +130,19 @@ describe('PinInsideDetector', () => {
       const detector = new PinInsideDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
-        candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
+        klines.push(createKline(100, 101, 99, 100, 1000000, baseTime + i * 60000));
       }
 
-      const noPinCandle = createCandle(100, 101, 99, 100, 1500000, baseTime + 70 * 60000);
-      candles.push(noPinCandle);
+      const noPinKline = createKline(100, 101, 99, 100, 1500000, baseTime + 70 * 60000);
+      klines.push(noPinKline);
 
-      const insideBarCandle = createCandle(99.5, 100.5, 99, 99.5, 800000, baseTime + 71 * 60000);
-      candles.push(insideBarCandle);
+      const insideBarKline = createKline(99.5, 100.5, 99, 99.5, 800000, baseTime + 71 * 60000);
+      klines.push(insideBarKline);
 
-      const result = detector.detect(candles, 71);
+      const result = detector.detect(klines, 71);
       expect(result.setup).toBeNull();
     });
   });

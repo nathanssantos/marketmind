@@ -59,7 +59,7 @@ export interface NewsServiceConfig {
 
 export interface NewsCacheEntry {
   data: NewsResponse;
-  timestamp: number;
+  openTime: number;
   expiresAt: number;
 }
 

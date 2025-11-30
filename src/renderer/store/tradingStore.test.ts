@@ -1,3 +1,4 @@
+import { isOrderActive, isOrderClosed } from '@shared/utils/orderUtils';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useTradingStore } from './tradingStore';
 
@@ -47,9 +48,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'pending',
+        status: 'NEW',
         entryPrice: 50000,
         quantity: 0.1,
       });
@@ -77,9 +78,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'pending',
+        status: 'NEW',
         entryPrice: 50000,
         quantity: 0.1,
       });
@@ -89,7 +90,7 @@ describe('tradingStore', () => {
       expect(orders[0].id).toBeDefined();
       expect(orders[0].walletId).toBe(walletId);
       expect(orders[0].symbol).toBe('BTCUSDT');
-      expect(orders[0].type).toBe('long');
+      expect(orders[0].orderDirection).toBe('long');
       expect(orders[0].entryPrice).toBe(50000);
       expect(orders[0].quantity).toBe(0.1);
     });
@@ -100,9 +101,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'pending',
+        status: 'NEW',
         entryPrice: 50000,
         quantity: 0.1,
       });
@@ -120,9 +121,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'pending',
+        status: 'NEW',
         entryPrice: 50000,
         quantity: 0.1,
       });
@@ -140,19 +141,19 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'pending',
+        status: 'NEW',
         entryPrice: 50000,
         quantity: 0.1,
       });
 
       const orderId = useTradingStore.getState().orders[0].id;
-      updateOrder(orderId, { status: 'active', filledAt: new Date() });
+      updateOrder(orderId, { status: 'FILLED', filledAt: new Date() });
       closeOrder(orderId, 51000);
 
       const { orders } = useTradingStore.getState();
-      expect(orders[0].status).toBe('closed');
+      expect(orders[0].status).toBe('FILLED');
     });
   });
 
@@ -186,9 +187,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 0.1,
         filledAt: new Date(),
@@ -197,9 +198,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 51000,
         quantity: 0.1,
         filledAt: new Date(),
@@ -208,9 +209,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 49000,
         quantity: 0.1,
         filledAt: new Date(),
@@ -218,13 +219,13 @@ describe('tradingStore', () => {
 
       const orders = useTradingStore.getState().orders;
       expect(orders.length).toBe(3);
-      expect(orders.every(o => o.status === 'active')).toBe(true);
+      expect(orders.every(o => o.status === 'FILLED')).toBe(true);
 
       const firstOrderId = orders[0].id;
       closeOrder(firstOrderId, 52000);
 
       const updatedOrders = useTradingStore.getState().orders;
-      expect(updatedOrders.every(o => o.status === 'closed')).toBe(true);
+      expect(updatedOrders.every(o => o.closedAt !== undefined)).toBe(true);
       
       const wallet = useTradingStore.getState().wallets.find(w => w.id === walletId);
       expect(wallet?.balance).toBeGreaterThan(10000);
@@ -239,11 +240,11 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'stop',
         entryPrice: 51000,
         quantity: 0.1,
-        status: 'pending',
+        status: 'NEW',
         currentPrice: 50000,
       });
 
@@ -253,7 +254,7 @@ describe('tradingStore', () => {
       activateOrder(orderId, marketPrice);
 
       const order = useTradingStore.getState().orders.find(o => o.id === orderId);
-      expect(order?.status).toBe('active');
+      expect(order?.status).toBe('FILLED');
       expect(order?.entryPrice).toBe(marketPrice);
       expect(order?.currentPrice).toBe(marketPrice);
       expect(order?.filledAt).toBeDefined();
@@ -270,9 +271,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'pending',
+        status: 'NEW',
         entryPrice: 50000,
         quantity: 0.1,
       });
@@ -303,9 +304,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'long',
+          orderDirection: 'long',
           subType: 'limit',
-          status: 'active',
+          status: 'FILLED',
           entryPrice: 50000,
           quantity: 10,
           filledAt: new Date(),
@@ -315,9 +316,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'short',
+          orderDirection: 'short',
           subType: 'stop',
-          status: 'pending',
+          status: 'NEW',
           entryPrice: 51000,
           quantity: 5,
         });
@@ -325,16 +326,16 @@ describe('tradingStore', () => {
         fillPendingOrders('BTCUSDT', 51000, 50900, appLoadTime);
 
         const orders = useTradingStore.getState().orders;
-        const activeOrders = orders.filter(o => o.status === 'active');
-        const closedOrders = orders.filter(o => o.status === 'closed');
+        const activeOrders = orders.filter(isOrderActive);
+        const closedOrders = orders.filter(isOrderClosed);
 
         expect(activeOrders).toHaveLength(1);
-        expect(activeOrders[0].type).toBe('long');
+        expect(activeOrders[0].orderDirection).toBe('long');
         expect(activeOrders[0].quantity).toBe(5);
         expect(activeOrders[0].entryPrice).toBe(50000);
 
         expect(closedOrders).toHaveLength(1);
-        expect(closedOrders[0].type).toBe('short');
+        expect(closedOrders[0].orderDirection).toBe('short');
       });
 
       it('should reduce short position when long is activated (short 10 -> long 5 = short 5)', () => {
@@ -343,9 +344,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'short',
+          orderDirection: 'short',
           subType: 'limit',
-          status: 'active',
+          status: 'FILLED',
           entryPrice: 50000,
           quantity: 10,
           filledAt: new Date(),
@@ -355,9 +356,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'long',
+          orderDirection: 'long',
           subType: 'stop',
-          status: 'pending',
+          status: 'NEW',
           entryPrice: 49000,
           quantity: 5,
         });
@@ -365,16 +366,16 @@ describe('tradingStore', () => {
         fillPendingOrders('BTCUSDT', 49000, 49100, appLoadTime);
 
         const orders = useTradingStore.getState().orders;
-        const activeOrders = orders.filter(o => o.status === 'active');
-        const closedOrders = orders.filter(o => o.status === 'closed');
+        const activeOrders = orders.filter(isOrderActive);
+        const closedOrders = orders.filter(isOrderClosed);
 
         expect(activeOrders).toHaveLength(1);
-        expect(activeOrders[0].type).toBe('short');
+        expect(activeOrders[0].orderDirection).toBe('short');
         expect(activeOrders[0].quantity).toBe(5);
         expect(activeOrders[0].entryPrice).toBe(50000);
 
         expect(closedOrders).toHaveLength(1);
-        expect(closedOrders[0].type).toBe('long');
+        expect(closedOrders[0].orderDirection).toBe('long');
       });
     });
 
@@ -385,9 +386,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'long',
+          orderDirection: 'long',
           subType: 'limit',
-          status: 'active',
+          status: 'FILLED',
           entryPrice: 50000,
           quantity: 10,
           filledAt: new Date(),
@@ -397,9 +398,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'short',
+          orderDirection: 'short',
           subType: 'stop',
-          status: 'pending',
+          status: 'NEW',
           entryPrice: 51000,
           quantity: 10,
         });
@@ -407,15 +408,15 @@ describe('tradingStore', () => {
         fillPendingOrders('BTCUSDT', 51000, 50900, appLoadTime);
 
         const orders = useTradingStore.getState().orders;
-        const activeOrders = orders.filter(o => o.status === 'active');
-        const closedOrders = orders.filter(o => o.status === 'closed');
+        const activeOrders = orders.filter(isOrderActive);
+        const closedOrders = orders.filter(isOrderClosed);
 
         expect(activeOrders).toHaveLength(0);
         expect(closedOrders).toHaveLength(2);
 
-        const longOrder = closedOrders.find(o => o.type === 'long');
+        const longOrder = closedOrders.find(o => o.orderDirection === 'long');
         expect(longOrder?.pnl).toBeDefined();
-        expect(longOrder?.pnl).toBeGreaterThan(0);
+        expect(parseFloat(longOrder?.pnl || '0')).toBeGreaterThan(0);
       });
     });
 
@@ -426,9 +427,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'long',
+          orderDirection: 'long',
           subType: 'limit',
-          status: 'active',
+          status: 'FILLED',
           entryPrice: 50000,
           quantity: 5,
           filledAt: new Date(),
@@ -438,9 +439,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'short',
+          orderDirection: 'short',
           subType: 'stop',
-          status: 'pending',
+          status: 'NEW',
           entryPrice: 51000,
           quantity: 10,
         });
@@ -448,16 +449,16 @@ describe('tradingStore', () => {
         fillPendingOrders('BTCUSDT', 51000, 50900, appLoadTime);
 
         const orders = useTradingStore.getState().orders;
-        const activeOrders = orders.filter(o => o.status === 'active');
-        const closedOrders = orders.filter(o => o.status === 'closed');
+        const activeOrders = orders.filter(isOrderActive);
+        const closedOrders = orders.filter(isOrderClosed);
 
         expect(activeOrders).toHaveLength(1);
-        expect(activeOrders[0].type).toBe('short');
+        expect(activeOrders[0].orderDirection).toBe('short');
         expect(activeOrders[0].quantity).toBe(5);
         expect(activeOrders[0].entryPrice).toBe(51000);
 
         expect(closedOrders).toHaveLength(1);
-        expect(closedOrders[0].type).toBe('long');
+        expect(closedOrders[0].orderDirection).toBe('long');
       });
     });
 
@@ -469,9 +470,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'long',
+          orderDirection: 'long',
           subType: 'limit',
-          status: 'active',
+          status: 'FILLED',
           entryPrice: 50000,
           quantity: 1,
           filledAt: new Date(),
@@ -481,19 +482,19 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'short',
+          orderDirection: 'short',
           subType: 'stop',
-          status: 'pending',
+          status: 'NEW',
           entryPrice: 52000,
           quantity: 1,
         });
 
         fillPendingOrders('BTCUSDT', 52000, 51900, appLoadTime);
 
-        const closedOrders = useTradingStore.getState().orders.filter(o => o.status === 'closed');
-        const longOrder = closedOrders.find(o => o.type === 'long');
+        const closedOrders = useTradingStore.getState().orders.filter(isOrderClosed);
+        const longOrder = closedOrders.find(o => o.orderDirection === 'long');
 
-        expect(longOrder?.pnl).toBe(2000);
+        expect(parseFloat(longOrder?.pnl || '0')).toBe(2000);
         expect(longOrder?.pnlPercent).toBeCloseTo(4, 1);
 
         const wallet = useTradingStore.getState().wallets[0];
@@ -506,9 +507,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'short',
+          orderDirection: 'short',
           subType: 'limit',
-          status: 'active',
+          status: 'FILLED',
           entryPrice: 50000,
           quantity: 1,
           filledAt: new Date(),
@@ -518,19 +519,19 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'long',
+          orderDirection: 'long',
           subType: 'stop',
-          status: 'pending',
+          status: 'NEW',
           entryPrice: 51000,
           quantity: 1,
         });
 
         fillPendingOrders('BTCUSDT', 51000, 50900, appLoadTime);
 
-        const closedOrders = useTradingStore.getState().orders.filter(o => o.status === 'closed');
-        const shortOrder = closedOrders.find(o => o.type === 'short');
+        const closedOrders = useTradingStore.getState().orders.filter(isOrderClosed);
+        const shortOrder = closedOrders.find(o => o.orderDirection === 'short');
 
-        expect(shortOrder?.pnl).toBe(-1000);
+        expect(parseFloat(shortOrder?.pnl || '0')).toBe(-1000);
         expect(shortOrder?.pnlPercent).toBeCloseTo(-2, 1);
       });
     });
@@ -542,9 +543,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'long',
+          orderDirection: 'long',
           subType: 'limit',
-          status: 'active',
+          status: 'FILLED',
           entryPrice: 50000,
           quantity: 3,
           filledAt: new Date(),
@@ -554,9 +555,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'long',
+          orderDirection: 'long',
           subType: 'limit',
-          status: 'active',
+          status: 'FILLED',
           entryPrice: 51000,
           quantity: 4,
           filledAt: new Date(),
@@ -566,9 +567,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'short',
+          orderDirection: 'short',
           subType: 'stop',
-          status: 'pending',
+          status: 'NEW',
           entryPrice: 52000,
           quantity: 5,
         });
@@ -576,15 +577,15 @@ describe('tradingStore', () => {
         fillPendingOrders('BTCUSDT', 52000, 51900, appLoadTime);
 
         const orders = useTradingStore.getState().orders;
-        const activeOrders = orders.filter(o => o.status === 'active');
-        const closedOrders = orders.filter(o => o.status === 'closed');
+        const activeOrders = orders.filter(isOrderActive);
+        const closedOrders = orders.filter(isOrderClosed);
 
         expect(closedOrders).toHaveLength(2);
-        expect(closedOrders.filter(o => o.type === 'long')).toHaveLength(1);
-        expect(closedOrders.filter(o => o.type === 'short')).toHaveLength(1);
+        expect(closedOrders.filter(o => o.orderDirection === 'long')).toHaveLength(1);
+        expect(closedOrders.filter(o => o.orderDirection === 'short')).toHaveLength(1);
 
         expect(activeOrders).toHaveLength(1);
-        expect(activeOrders[0].type).toBe('long');
+        expect(activeOrders[0].orderDirection).toBe('long');
         expect(activeOrders[0].quantity).toBe(2);
       });
     });
@@ -596,9 +597,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'long',
+          orderDirection: 'long',
           subType: 'limit',
-          status: 'active',
+          status: 'FILLED',
           entryPrice: 50000,
           quantity: 10,
           filledAt: new Date(),
@@ -608,9 +609,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'long',
+          orderDirection: 'long',
           subType: 'stop',
-          status: 'pending',
+          status: 'NEW',
           entryPrice: 51000,
           quantity: 5,
         });
@@ -618,10 +619,10 @@ describe('tradingStore', () => {
         fillPendingOrders('BTCUSDT', 51000, 50900, appLoadTime);
 
         const orders = useTradingStore.getState().orders;
-        const activeOrders = orders.filter(o => o.status === 'active');
+        const activeOrders = orders.filter(isOrderActive);
 
         expect(activeOrders).toHaveLength(2);
-        expect(activeOrders.every(o => o.type === 'long')).toBe(true);
+        expect(activeOrders.every(o => o.orderDirection === 'long')).toBe(true);
       });
     });
 
@@ -632,9 +633,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'long',
+          orderDirection: 'long',
           subType: 'stop',
-          status: 'pending',
+          status: 'NEW',
           entryPrice: 51000,
           quantity: 1,
         });
@@ -642,7 +643,7 @@ describe('tradingStore', () => {
         fillPendingOrders('BTCUSDT', 50500, 50000, appLoadTime);
 
         const orders = useTradingStore.getState().orders;
-        expect(orders[0].status).toBe('pending');
+        expect(orders[0].status).toBe('NEW');
       });
 
       it('should activate limit order when price crosses down', () => {
@@ -651,9 +652,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'long',
+          orderDirection: 'long',
           subType: 'limit',
-          status: 'pending',
+          status: 'NEW',
           entryPrice: 49000,
           quantity: 1,
         });
@@ -661,7 +662,7 @@ describe('tradingStore', () => {
         fillPendingOrders('BTCUSDT', 49000, 49500, appLoadTime);
 
         const orders = useTradingStore.getState().orders;
-        expect(orders[0].status).toBe('active');
+        expect(orders[0].status).toBe('FILLED');
       });
 
       it('should activate stop order when price crosses up', () => {
@@ -670,9 +671,9 @@ describe('tradingStore', () => {
         addOrder({
           walletId,
           symbol: 'BTCUSDT',
-          type: 'short',
+          orderDirection: 'short',
           subType: 'stop',
-          status: 'pending',
+          status: 'NEW',
           entryPrice: 51000,
           quantity: 1,
         });
@@ -680,7 +681,7 @@ describe('tradingStore', () => {
         fillPendingOrders('BTCUSDT', 51000, 50500, appLoadTime);
 
         const orders = useTradingStore.getState().orders;
-        expect(orders[0].status).toBe('active');
+        expect(orders[0].status).toBe('FILLED');
       });
     });
   });
@@ -700,9 +701,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 0.1,
         stopLoss: 49000,
@@ -711,9 +712,9 @@ describe('tradingStore', () => {
       fillPendingOrders('BTCUSDT', 48000);
 
       const { orders } = useTradingStore.getState();
-      expect(orders[0].status).toBe('closed');
+      expect(orders[0].status).toBe('FILLED');
       expect(orders[0].exitPrice).toBe(49000);
-      expect(orders[0].pnl).toBeLessThan(0);
+      expect(parseFloat(orders[0].pnl || '0')).toBeLessThan(0);
     });
 
     it('should close long order when price hits take profit', () => {
@@ -722,9 +723,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 0.1,
         takeProfit: 52000,
@@ -733,9 +734,9 @@ describe('tradingStore', () => {
       fillPendingOrders('BTCUSDT', 53000);
 
       const { orders } = useTradingStore.getState();
-      expect(orders[0].status).toBe('closed');
+      expect(orders[0].status).toBe('FILLED');
       expect(orders[0].exitPrice).toBe(52000);
-      expect(orders[0].pnl).toBeGreaterThan(0);
+      expect(parseFloat(orders[0].pnl || '0')).toBeGreaterThan(0);
     });
 
     it('should close short order when price hits stop loss', () => {
@@ -744,9 +745,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'short',
+        orderDirection: 'short',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 0.1,
         stopLoss: 51000,
@@ -755,9 +756,9 @@ describe('tradingStore', () => {
       fillPendingOrders('BTCUSDT', 52000);
 
       const { orders } = useTradingStore.getState();
-      expect(orders[0].status).toBe('closed');
+      expect(orders[0].status).toBe('FILLED');
       expect(orders[0].exitPrice).toBe(51000);
-      expect(orders[0].pnl).toBeLessThan(0);
+      expect(parseFloat(orders[0].pnl || '0')).toBeLessThan(0);
     });
 
     it('should close short order when price hits take profit', () => {
@@ -766,9 +767,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'short',
+        orderDirection: 'short',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 0.1,
         takeProfit: 48000,
@@ -777,9 +778,9 @@ describe('tradingStore', () => {
       fillPendingOrders('BTCUSDT', 47000);
 
       const { orders } = useTradingStore.getState();
-      expect(orders[0].status).toBe('closed');
+      expect(orders[0].status).toBe('FILLED');
       expect(orders[0].exitPrice).toBe(48000);
-      expect(orders[0].pnl).toBeGreaterThan(0);
+      expect(parseFloat(orders[0].pnl || '0')).toBeGreaterThan(0);
     });
 
     it('should prioritize stop loss over take profit when both are hit', () => {
@@ -788,9 +789,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 0.1,
         stopLoss: 49000,
@@ -821,9 +822,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'pending',
+        status: 'NEW',
         entryPrice: 50000,
         quantity: 0.1,
         expiresAt: pastTime,
@@ -832,7 +833,7 @@ describe('tradingStore', () => {
       fillPendingOrders('BTCUSDT', 49000);
 
       const { orders } = useTradingStore.getState();
-      expect(orders[0].status).toBe('expired');
+      expect(orders[0].status).toBe('EXPIRED');
     });
 
     it('should not cancel orders without expiration', () => {
@@ -841,9 +842,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'pending',
+        status: 'NEW',
         entryPrice: 50000,
         quantity: 0.1,
       });
@@ -851,7 +852,7 @@ describe('tradingStore', () => {
       fillPendingOrders('BTCUSDT', 49000);
 
       const { orders } = useTradingStore.getState();
-      expect(orders[0].status).toBe('pending');
+      expect(orders[0].status).toBe('NEW');
     });
   });
 
@@ -871,9 +872,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'pending',
+        status: 'NEW',
         entryPrice: 50000,
         quantity: 0.1,
         commissionRate: 0.001,
@@ -894,9 +895,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'pending',
+        status: 'NEW',
         entryPrice: 50000,
         quantity: 0.1,
         commissionRate: 0.001,
@@ -928,9 +929,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 0.1,
       });
@@ -938,9 +939,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 51000,
         quantity: 0.1,
       });
@@ -951,7 +952,7 @@ describe('tradingStore', () => {
       closeOrder(firstOrderId, 52000);
 
       const { orders: closedOrders } = useTradingStore.getState();
-      const totalPnl = closedOrders.reduce((sum, o) => sum + (o.pnl || 0), 0);
+      const totalPnl = closedOrders.reduce((sum, o) => sum + (parseFloat(o.pnl || '0')), 0);
       const expectedPnl = (52000 - 50000) * 0.1 + (52000 - 51000) * 0.1;
       
       expect(totalPnl).toBeCloseTo(expectedPnl, 1);
@@ -973,9 +974,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 0,
       });
@@ -1056,9 +1057,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 0.1,
       });
@@ -1084,9 +1085,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 0.1,
       });
@@ -1139,9 +1140,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 1,
         currentPrice: 52000,
@@ -1154,7 +1155,7 @@ describe('tradingStore', () => {
       expect(positions[0].quantity).toBe(1);
       expect(positions[0].avgPrice).toBe(50000);
       expect(positions[0].currentPrice).toBe(52000);
-      expect(positions[0].pnl).toBe(2000);
+      expect(parseFloat(String(positions[0].pnl || 0))).toBe(2000);
       expect(positions[0].pnlPercent).toBeCloseTo(4, 1);
     });
 
@@ -1164,9 +1165,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 1,
         currentPrice: 52000,
@@ -1175,9 +1176,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 51000,
         quantity: 1,
         currentPrice: 52000,
@@ -1188,7 +1189,7 @@ describe('tradingStore', () => {
       expect(positions).toHaveLength(1);
       expect(positions[0].quantity).toBe(2);
       expect(positions[0].avgPrice).toBe(50500);
-      expect(positions[0].pnl).toBe(3000);
+      expect(parseFloat(String(positions[0].pnl || 0))).toBe(3000);
     });
 
     it('should get position by symbol', () => {
@@ -1197,9 +1198,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 1,
         currentPrice: 52000,
@@ -1208,9 +1209,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'ETHUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 3000,
         quantity: 5,
         currentPrice: 3100,
@@ -1253,9 +1254,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId: wallet1Id,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 1,
       });
@@ -1263,9 +1264,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId: wallet1Id,
         symbol: 'ETHUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 3000,
         quantity: 5,
       });
@@ -1273,9 +1274,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId: wallet2Id,
         symbol: 'BTCUSDT',
-        type: 'short',
+        orderDirection: 'short',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 51000,
         quantity: 0.5,
       });
@@ -1292,9 +1293,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId: wallet1Id,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 1,
       });
@@ -1302,9 +1303,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId: wallet1Id,
         symbol: 'ETHUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 3000,
         quantity: 5,
       });
@@ -1312,9 +1313,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId: wallet2Id,
         symbol: 'BTCUSDT',
-        type: 'short',
+        orderDirection: 'short',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 51000,
         quantity: 0.5,
       });
@@ -1334,9 +1335,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId: wallet1Id,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 1,
       });
@@ -1344,9 +1345,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId: wallet1Id,
         symbol: 'ETHUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'pending',
+        status: 'NEW',
         entryPrice: 3000,
         quantity: 5,
       });
@@ -1357,7 +1358,7 @@ describe('tradingStore', () => {
       const activeOrders = getActiveOrders();
 
       expect(activeOrders).toHaveLength(1);
-      expect(activeOrders[0].status).toBe('active');
+      expect(activeOrders[0].status).toBe('FILLED');
     });
   });
 
@@ -1400,9 +1401,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 1,
       });
@@ -1419,9 +1420,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'limit',
-        status: 'pending',
+        status: 'NEW',
         entryPrice: 49000,
         quantity: 1,
       });
@@ -1438,9 +1439,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 1,
         currentPrice: 50000,
@@ -1461,9 +1462,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 1,
       });
@@ -1471,9 +1472,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'ETHUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 3000,
         quantity: 5,
       });
@@ -1504,9 +1505,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 0.00000001,
       });
@@ -1515,7 +1516,7 @@ describe('tradingStore', () => {
       closeOrder(orderId, 55000);
 
       const { orders } = useTradingStore.getState();
-      const pnl = orders[0].pnl || 0;
+      const pnl = parseFloat(orders[0].pnl || '0');
 
       expect(pnl).toBeCloseTo(0.00005, 8);
     });
@@ -1526,9 +1527,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 10,
       });
@@ -1537,7 +1538,7 @@ describe('tradingStore', () => {
       closeOrder(orderId, 55000);
 
       const { orders } = useTradingStore.getState();
-      expect(orders[0].pnl).toBe(50000);
+      expect(parseFloat(orders[0].pnl || '0')).toBe(50000);
     });
 
     it('should calculate negative PnL correctly for shorts', () => {
@@ -1546,9 +1547,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'short',
+        orderDirection: 'short',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 1,
       });
@@ -1557,7 +1558,7 @@ describe('tradingStore', () => {
       closeOrder(orderId, 55000);
 
       const { orders } = useTradingStore.getState();
-      expect(orders[0].pnl).toBe(-5000);
+      expect(parseFloat(orders[0].pnl || '0')).toBe(-5000);
       expect(orders[0].pnlPercent).toBeCloseTo(-10, 1);
     });
 
@@ -1567,9 +1568,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 1,
       });
@@ -1578,7 +1579,7 @@ describe('tradingStore', () => {
       closeOrder(orderId, 50000);
 
       const { orders } = useTradingStore.getState();
-      expect(orders[0].pnl).toBe(0);
+      expect(parseFloat(orders[0].pnl || '0')).toBe(0);
       expect(orders[0].pnlPercent).toBe(0);
     });
 
@@ -1588,9 +1589,9 @@ describe('tradingStore', () => {
       addOrder({
         walletId,
         symbol: 'BTCUSDT',
-        type: 'long',
+        orderDirection: 'long',
         subType: 'market',
-        status: 'active',
+        status: 'FILLED',
         entryPrice: 50000,
         quantity: 1,
       });
@@ -1599,7 +1600,7 @@ describe('tradingStore', () => {
       closeOrder(orderId, 100000);
 
       const { orders } = useTradingStore.getState();
-      expect(orders[0].pnl).toBe(50000);
+      expect(parseFloat(orders[0].pnl || '0')).toBe(50000);
       expect(orders[0].pnlPercent).toBe(100);
     });
   });

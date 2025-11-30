@@ -1,14 +1,14 @@
-import type { CalendarEvent, Candle, NewsArticle } from '@shared/types';
+import type { CalendarEvent, Kline, NewsArticle } from '@shared/types';
 import { useEffect, useRef } from 'react';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
 import { useChartContext } from '../context/ChartContext';
 
 interface UseChartDataParams {
-  candles: Candle[];
+  klines: Kline[];
   symbol: string;
   timeframe: Timeframe;
-  chartType: 'candlestick' | 'line';
+  chartType: 'kline' | 'line';
   showVolume: boolean;
   movingAverages: MovingAverageConfig[];
   news?: NewsArticle[] | undefined;
@@ -21,9 +21,9 @@ export const useChartData = (params: UseChartDataParams) => {
 
   useEffect(() => {
     const currentParams = JSON.stringify({
-      candlesLength: params.candles.length,
-      firstCandle: params.candles[0]?.timestamp,
-      lastCandle: params.candles[params.candles.length - 1]?.timestamp,
+      klinesLength: params.klines.length,
+      firstKline: params.klines[0]?.openTime,
+      lastKline: params.klines[params.klines.length - 1]?.openTime,
       symbol: params.symbol,
       timeframe: params.timeframe,
       chartType: params.chartType,

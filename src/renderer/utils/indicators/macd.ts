@@ -1,4 +1,5 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose } from '@shared/utils';
 
 const EMA_MULTIPLIER_NUMERATOR = 2;
 
@@ -36,16 +37,16 @@ const calculateEMA = (data: number[], period: number): number[] => {
 };
 
 export const calculateMACD = (
-  candles: Candle[],
+  klines: Kline[],
   fastPeriod = 12,
   slowPeriod = 26,
   signalPeriod = 9,
 ): MACDResult => {
-  if (candles.length === 0) {
+  if (klines.length === 0) {
     return { macd: [], signal: [], histogram: [] };
   }
 
-  const closes = candles.map((c) => c.close);
+  const closes = klines.map((c) => getKlineClose(c));
 
   const emaFast = calculateEMA(closes, fastPeriod);
   const emaSlow = calculateEMA(closes, slowPeriod);

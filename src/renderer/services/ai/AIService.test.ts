@@ -86,7 +86,7 @@ describe('AIService', () => {
   describe('sendMessage', () => {
     it('should initialize provider and send message', async () => {
       const messages: AIMessage[] = [
-        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+        { id: '1', role: 'user', content: 'Hello', openTime: Date.now() },
       ];
 
       const expectedResponse: AIAnalysisResponse = {
@@ -108,7 +108,7 @@ describe('AIService', () => {
 
     it('should send message with images', async () => {
       const messages: AIMessage[] = [
-        { id: '1', role: 'user', content: 'Analyze this', timestamp: Date.now() },
+        { id: '1', role: 'user', content: 'Analyze this', openTime: Date.now() },
       ];
       const images = ['data:image/png;base64,abc123'];
 
@@ -136,7 +136,7 @@ describe('AIService', () => {
       });
 
       const messages: AIMessage[] = [
-        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+        { id: '1', role: 'user', content: 'Hello', openTime: Date.now() },
       ];
 
       mockSendMessage.mockResolvedValue({ text: 'Response' });
@@ -156,7 +156,7 @@ describe('AIService', () => {
       });
 
       const messages: AIMessage[] = [
-        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+        { id: '1', role: 'user', content: 'Hello', openTime: Date.now() },
       ];
 
       const service = new AIService({
@@ -175,7 +175,7 @@ describe('AIService', () => {
       });
 
       const messages: AIMessage[] = [
-        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+        { id: '1', role: 'user', content: 'Hello', openTime: Date.now() },
       ];
 
       mockSendMessage.mockResolvedValue({ text: 'Response' });
@@ -195,14 +195,19 @@ describe('AIService', () => {
     it('should analyze chart with request data', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz789',
-        candles: [
+        klines: [
           {
-            timestamp: Date.now(),
-            open: 100,
-            high: 110,
-            low: 95,
-            close: 105,
-            volume: 1000,
+            openTime: Date.now(),
+            closeTime: Date.now() + 3600000,
+            open: '100',
+            high: '110',
+            low: '95',
+            close: '105',
+            volume: '1000',
+            quoteVolume: '105000',
+            trades: 100,
+            takerBuyBaseVolume: '500',
+            takerBuyQuoteVolume: '52500',
           },
         ],
       };
@@ -229,7 +234,7 @@ describe('AIService', () => {
     it('should initialize provider if not already initialized', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz789',
-        candles: [],
+        klines: [],
       };
 
       mockAnalyzeChart.mockResolvedValue({ text: 'Analysis' });
@@ -267,7 +272,7 @@ describe('AIService', () => {
       });
 
       const messages: AIMessage[] = [
-        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+        { id: '1', role: 'user', content: 'Hello', openTime: Date.now() },
       ];
 
       mockSendMessage.mockResolvedValue({ text: 'Response' });
@@ -342,7 +347,7 @@ describe('AIService', () => {
       });
 
       const messages: AIMessage[] = [
-        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+        { id: '1', role: 'user', content: 'Hello', openTime: Date.now() },
       ];
 
       mockSendMessage.mockResolvedValue({ text: 'Response' });
@@ -374,7 +379,7 @@ describe('AIService', () => {
       });
 
       const messages: AIMessage[] = [
-        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+        { id: '1', role: 'user', content: 'Hello', openTime: Date.now() },
       ];
 
       mockSendMessage.mockResolvedValue({ text: 'Response' });
@@ -498,7 +503,7 @@ describe('AIService', () => {
 
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,test',
-        candles: [],
+        klines: [],
       };
 
       mockAnalyzeChart.mockResolvedValue({
@@ -519,7 +524,7 @@ describe('AIService', () => {
 
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,test',
-        candles: [],
+        klines: [],
       };
 
       mockAnalyzeChart.mockResolvedValue({
@@ -550,7 +555,7 @@ describe('AIService', () => {
       });
 
       const messages: AIMessage[] = [
-        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+        { id: '1', role: 'user', content: 'Hello', openTime: Date.now() },
       ];
 
       mockSendMessage.mockResolvedValue({ text: 'Response' });
@@ -579,7 +584,7 @@ describe('AIService', () => {
       });
 
       const messages: AIMessage[] = [
-        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+        { id: '1', role: 'user', content: 'Hello', openTime: Date.now() },
       ];
 
       mockSendMessage.mockResolvedValue({ text: 'Response' });
@@ -597,7 +602,7 @@ describe('AIService', () => {
       });
 
       const messages: AIMessage[] = [
-        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+        { id: '1', role: 'user', content: 'Hello', openTime: Date.now() },
       ];
 
       mockSendMessage.mockResolvedValue({ text: 'Response' });
@@ -626,7 +631,7 @@ describe('AIService', () => {
       });
 
       const messages: AIMessage[] = [
-        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+        { id: '1', role: 'user', content: 'Hello', openTime: Date.now() },
       ];
 
       await expect(service.sendMessage(messages)).rejects.toThrow('Unknown provider type');
@@ -643,7 +648,7 @@ describe('AIService', () => {
       });
 
       const messages: AIMessage[] = [
-        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+        { id: '1', role: 'user', content: 'Hello', openTime: Date.now() },
       ];
 
       await expect(service.sendMessage(messages)).rejects.toThrow('Provider error');
@@ -659,7 +664,7 @@ describe('AIService', () => {
       (service as any).provider = null;
 
       const messages: AIMessage[] = [
-        { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+        { id: '1', role: 'user', content: 'Hello', openTime: Date.now() },
       ];
 
       await expect(service.sendMessage(messages)).rejects.toThrow('AI provider not initialized');
@@ -677,7 +682,7 @@ describe('AIService', () => {
       const request: AIAnalysisRequest = {
         symbol: 'BTCUSDT',
         timeframe: '1h',
-        candles: [],
+        klines: [],
       };
 
       await expect(service.analyzeChart(request)).rejects.toThrow('AI provider not initialized');

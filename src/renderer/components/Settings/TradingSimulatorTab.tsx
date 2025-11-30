@@ -1,6 +1,7 @@
 import { Button } from '@/renderer/components/ui/button';
 import { useTradingStore } from '@/renderer/store/tradingStore';
 import { Box, Flex, Separator, Stack, Text } from '@chakra-ui/react';
+import { isOrderActive, isOrderPending } from '@shared/utils';
 import { useTranslation } from 'react-i18next';
 import { LuTrash2 } from 'react-icons/lu';
 
@@ -44,13 +45,13 @@ export const TradingSimulatorTab = () => {
                         <Flex justify="space-between">
                             <Text color="fg.muted">{t('settings.tradingSimulator.statistics.activeOrders')}</Text>
                             <Text fontWeight="medium" color="green.500">
-                                {orders.filter(o => o.status === 'active').length}
+                                {orders.filter(o => isOrderActive(o)).length}
                             </Text>
                         </Flex>
                         <Flex justify="space-between">
                             <Text color="fg.muted">{t('settings.tradingSimulator.statistics.pendingOrders')}</Text>
                             <Text fontWeight="medium" color="orange.500">
-                                {orders.filter(o => o.status === 'pending').length}
+                                {orders.filter(o => isOrderPending(o)).length}
                             </Text>
                         </Flex>
                     </Stack>

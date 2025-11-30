@@ -35,12 +35,12 @@ describe('useMovingAverageRenderer', () => {
       shadowBlur: 0,
     } as unknown as CanvasRenderingContext2D;
 
-    const candles = [
-      { open: 100, high: 105, low: 95, close: 100, volume: 1000, time: 1000 },
-      { open: 100, high: 106, low: 96, close: 102, volume: 1100, time: 2000 },
-      { open: 102, high: 108, low: 101, close: 105, volume: 1200, time: 3000 },
-      { open: 105, high: 110, low: 104, close: 108, volume: 1300, time: 4000 },
-      { open: 108, high: 112, low: 107, close: 110, volume: 1400, time: 5000 },
+    const klines = [
+      { openTime: 1000, closeTime: 2000, open: '100', high: '105', low: '95', close: '100', volume: '1000', quoteVolume: '100000', trades: 100, takerBuyBaseVolume: '500', takerBuyQuoteVolume: '50000' },
+      { openTime: 2000, closeTime: 3000, open: '100', high: '106', low: '96', close: '102', volume: '1100', quoteVolume: '112200', trades: 110, takerBuyBaseVolume: '550', takerBuyQuoteVolume: '56100' },
+      { openTime: 3000, closeTime: 4000, open: '102', high: '108', low: '101', close: '105', volume: '1200', quoteVolume: '126000', trades: 120, takerBuyBaseVolume: '600', takerBuyQuoteVolume: '63000' },
+      { openTime: 4000, closeTime: 5000, open: '105', high: '110', low: '104', close: '108', volume: '1300', quoteVolume: '140400', trades: 130, takerBuyBaseVolume: '650', takerBuyQuoteVolume: '70200' },
+      { openTime: 5000, closeTime: 6000, open: '108', high: '112', low: '107', close: '110', volume: '1400', quoteVolume: '154000', trades: 140, takerBuyBaseVolume: '700', takerBuyQuoteVolume: '77000' },
     ];
 
     mockManager = {
@@ -56,15 +56,15 @@ describe('useMovingAverageRenderer', () => {
         minPrice: 90,
         maxPrice: 120,
       })),
-      getCandles: vi.fn(() => candles),
+      getKlines: vi.fn(() => klines),
       getViewport: vi.fn(() => ({
         start: 0,
         end: 5,
-        candleWidth: 10,
+        klineWidth: 10,
       })),
       priceToY: vi.fn((price: number) => 300 - (price - 100) * 10),
       indexToX: vi.fn((index: number) => index * 20),
-      getVisibleCandles: vi.fn(() => candles),
+      getVisibleKlines: vi.fn(() => klines),
     } as unknown as CanvasManager;
 
     movingAverages = [

@@ -54,7 +54,7 @@ const response = await aiService.sendMessage([
   { 
     id: '1', 
     role: 'user', 
-    content: 'What is a doji candlestick pattern?',
+    content: 'What is a doji kline pattern?',
     timestamp: Date.now()
   }
 ]);
@@ -70,7 +70,7 @@ import type { AIAnalysisRequest } from '@shared/types';
 // Analyze a chart with image
 const request: AIAnalysisRequest = {
   chartImage: 'data:image/png;base64,...', // base64 chart screenshot
-  candles: marketData.candles,              // array of Candle objects
+  klines: marketData.klines,              // array of Kline objects
   context: 'Bitcoin 1-hour chart',          // optional context
   news: recentNews,                         // optional news articles
 };
@@ -140,7 +140,7 @@ analyzeChart(
 
 interface AIAnalysisRequest {
   chartImage: string;        // base64 image
-  candles: Candle[];         // price data
+  klines: Kline[];         // price data
   news?: NewsArticle[];      // optional news
   context?: string;          // optional context
 }
@@ -345,7 +345,7 @@ describe('AIService', () => {
   it('should analyze a chart', async () => {
     const request = {
       chartImage: 'data:image/png;base64,...',
-      candles: mockCandles,
+      klines: mockKlines,
     };
 
     const analysis = await service.analyzeChart(request);
@@ -491,7 +491,7 @@ console.log(response.text);
 ```typescript
 const request: AIAnalysisRequest = {
   chartImage: chartScreenshot,  // base64
-  candles: last100Candles,
+  klines: last100Klines,
   context: 'ETH/USD 4-hour chart showing recent breakout above $2000',
   news: [
     {

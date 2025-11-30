@@ -40,7 +40,7 @@ export const useRSIRenderer = ({
 
     const padding = 4;
     const innerHeight = panelHeight - padding * 2;
-    const candleWidth = effectiveWidth / (viewport.end - viewport.start);
+    const klineWidth = effectiveWidth / (viewport.end - viewport.start);
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -90,7 +90,7 @@ export const useRSIRenderer = ({
       if (value === null || value === undefined) continue;
 
       const globalIndex = visibleStartIndex + i;
-      const x = (globalIndex - viewport.start) * candleWidth + candleWidth / 2;
+      const x = (globalIndex - viewport.start) * klineWidth + klineWidth / 2;
       const y = valueToY(value);
 
       if (isFirstPoint) {

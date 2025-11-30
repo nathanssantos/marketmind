@@ -1,3 +1,4 @@
+import { getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
 import { formatDistanceToNow } from 'date-fns';
 import type { ChartContextData } from '../context/ChartContext';
 
@@ -71,14 +72,14 @@ export const formatNumber = (num: number, decimals: number = 2): string => {
 };
 
 export const formatChartDataContext = (chartData: ChartContextData): string => {
-  const recentCandles = chartData.candles.slice(-100);
+  const recentKlines = chartData.klines.slice(-100);
   
-  if (recentCandles.length === 0) {
+  if (recentKlines.length === 0) {
     return 'No chart data available';
   }
   
-  const prices = recentCandles.map((c) => c.close);
-  const volumes = recentCandles.map((c) => c.volume);
+  const prices = recentKlines.map((c) => getKlineClose(c));
+  const volumes = recentKlines.map((c) => getKlineVolume(c));
   
   const currentPrice = prices[prices.length - 1] || 0;
   const previousPrice = prices[prices.length - 2] || currentPrice;
@@ -90,10 +91,10 @@ export const formatChartDataContext = (chartData: ChartContextData): string => {
   const avgVolume = volumes.reduce((sum, v) => sum + v, 0) / volumes.length;
   const currentVolume = volumes[volumes.length - 1] || 0;
   
-  const bullishCandles = recentCandles.filter((c) => c.close > c.open).length;
-  const bearishCandles = recentCandles.filter((c) => c.close < c.open).length;
+  const bullishKlines = recentKlines.filter((c) => getKlineClose(c) > getKlineOpen(c)).length;
+  const bearishKlines = recentKlines.filter((c) => getKlineClose(c) < getKlineOpen(c)).length;
   
-  const trend = bullishCandles > bearishCandles ? 'Bullish' : bearishCandles > bullishCandles ? 'Bearish' : 'Neutral';
+  const trend = bullishKlines > bearishKlines ? 'Bullish' : bearishKlines > bullishKlines ? 'Bearish' : 'Neutral';
   
   let contextText = `# Chart Analysis Context\n\n`;
   contextText += `## Asset Information\n`;
@@ -101,7 +102,7 @@ export const formatChartDataContext = (chartData: ChartContextData): string => {
   contextText += `- Timeframe: ${chartData.timeframe}\n`;
   contextText += `- Chart Type: ${chartData.chartType}\n\n`;
   
-  contextText += `## Price Statistics (Last 100 Candles)\n`;
+  contextText += `## Price Statistics (Last 100 Klines)\n`;
   contextText += `- Current Price: $${formatPrice(currentPrice)}\n`;
   contextText += `- Price Change: ${priceChange > 0 ? '+' : ''}${formatPrice(priceChange)} (${priceChangePercent > 0 ? '+' : ''}${priceChangePercent.toFixed(2)}%)\n`;
   contextText += `- High: $${formatPrice(highPrice)}\n`;
@@ -113,8 +114,8 @@ export const formatChartDataContext = (chartData: ChartContextData): string => {
   contextText += `- Current Volume: ${formatVolume(currentVolume)}\n\n`;
   
   contextText += `## Price Action\n`;
-  contextText += `- Bullish Candles: ${bullishCandles} (${((bullishCandles / recentCandles.length) * 100).toFixed(1)}%)\n`;
-  contextText += `- Bearish Candles: ${bearishCandles} (${((bearishCandles / recentCandles.length) * 100).toFixed(1)}%)\n`;
+  contextText += `- Bullish Klines: ${bullishKlines} (${((bullishKlines / recentKlines.length) * 100).toFixed(1)}%)\n`;
+  contextText += `- Bearish Klines: ${bearishKlines} (${((bearishKlines / recentKlines.length) * 100).toFixed(1)}%)\n`;
   contextText += `- Overall Trend: ${trend}\n\n`;
   
   if (chartData.movingAverages && chartData.movingAverages.length > 0) {

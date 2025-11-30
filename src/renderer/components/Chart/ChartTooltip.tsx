@@ -1,12 +1,31 @@
 import { formatDateTimeTooltip, formatPrice } from '@/renderer/utils/formatters';
 import { Box, HStack, Stack, Text } from '@chakra-ui/react';
-import type { AIPattern, Candle } from '@shared/types';
+import type { AIPattern, Kline } from '@shared/types';
 import type { Order } from '@shared/types/trading';
+import {
+  getKlineClose,
+  getKlineHigh,
+  getKlineLow,
+  getKlineOpen,
+  getKlineVolume,
+  getKlineQuoteVolume,
+  getKlineTrades,
+  getKlineBuyPressure,
+  getKlinePressureType,
+  getKlineAverageTradeValue,
+  getOrderCreatedAt,
+  getOrderPrice,
+  getOrderQuantity,
+  getOrderType,
+  isOrderActive,
+  isOrderLong,
+  isOrderPending
+} from '@shared/utils';
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export interface ChartTooltipProps {
-  candle: Candle | null;
+  kline: Kline | null;
   x: number;
   y: number;
   visible: boolean;
@@ -20,7 +39,7 @@ export interface ChartTooltipProps {
     value?: number;
   } | undefined;
   measurement?: {
-    candleCount: number;
+    klineCount: number;
     priceChange: number;
     percentChange: number;
     startPrice: number;
@@ -31,7 +50,7 @@ export interface ChartTooltipProps {
 }
 
 export const ChartTooltip = ({
-  candle,
+  kline,
   x,
   y,
   visible,
@@ -45,14 +64,20 @@ export const ChartTooltip = ({
 }: ChartTooltipProps): ReactElement | null => {
   const { t } = useTranslation();
 
-  if (!visible || (!candle && !aiPattern && !movingAverage && !measurement && !order)) return null;
+  if (!visible || (!kline && !aiPattern && !movingAverage && !measurement && !order)) return null;
 
-  const isBullish = candle ? candle.close >= candle.open : false;
-  const change = candle ? candle.close - candle.open : 0;
-  const changePercent = candle ? ((change / candle.open) * 100).toFixed(2) : '0.00';
+  const isBullish = kline ? getKlineClose(kline) >= getKlineOpen(kline) : false;
+  const change = kline ? getKlineClose(kline) - getKlineOpen(kline) : 0;
+  const changePercent = kline ? ((change / getKlineOpen(kline)) * 100).toFixed(2) : '0.00';
+
+  const buyPressure = kline ? getKlineBuyPressure(kline) : 0.5;
+  const pressureType = kline ? getKlinePressureType(kline) : 'neutral';
+  const trades = kline ? getKlineTrades(kline) : 0;
+  const quoteVolume = kline ? getKlineQuoteVolume(kline) : 0;
+  const avgTradeValue = kline ? getKlineAverageTradeValue(kline) : 0;
 
   const tooltipWidth = 220;
-  const tooltipHeight = measurement ? 120 : aiPattern ? 120 : 200;
+  const tooltipHeight = measurement ? 120 : aiPattern ? 120 : 260;
   const offset = 10;
 
   let leftPos = x + offset;
@@ -97,7 +122,7 @@ export const ChartTooltip = ({
       >
         <Stack gap={1.5}>
           <Text fontSize="2xs" color="fg.muted" mb={1}>
-            {candle ? formatDateTimeTooltip(candle.timestamp) : ''}
+            {kline ? formatDateTimeTooltip(kline.openTime) : ''}
           </Text>
           <HStack gap={1.5}>
             <Text>📏</Text>
@@ -106,8 +131,8 @@ export const ChartTooltip = ({
             </Text>
           </HStack>
           <HStack justify="space-between">
-            <Text color="fg.muted">Candles:</Text>
-            <Text fontWeight="medium">{measurement.candleCount}</Text>
+            <Text color="fg.muted">Klines:</Text>
+            <Text fontWeight="medium">{measurement.klineCount}</Text>
           </HStack>
           <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
             <Text color="fg.muted">Price Change:</Text>
@@ -135,11 +160,12 @@ export const ChartTooltip = ({
   }
 
   if (order) {
-    const isLong = order.type === 'long';
-    const isActive = order.status === 'active';
-    const isPending = order.status === 'pending';
-    const isPosition = 'metadata' in order && order.metadata?.isPosition;
-    const positionData = isPosition ? order.metadata?.positionData : null;
+    const isLong = isOrderLong(order);
+    const isActive = isOrderActive(order);
+    const isPending = isOrderPending(order);
+    const metadata = (order as any).metadata as { isPosition?: boolean; positionData?: { symbol: string; type: 'long' | 'short'; avgPrice: number; totalQuantity: number; totalPnL: number; orders: Order[] } } | undefined;
+    const isPosition = metadata?.isPosition ?? false;
+    const positionData = isPosition ? metadata?.positionData : null;
 
     let pnl = 0;
     let pnlPercent = 0;
@@ -150,9 +176,11 @@ export const ChartTooltip = ({
         const totalInvestment = positionData.avgPrice * positionData.totalQuantity;
         pnlPercent = (pnl / totalInvestment) * 100;
       } else {
-        const priceChange = currentPrice - order.entryPrice;
-        pnl = priceChange * order.quantity * (isLong ? 1 : -1);
-        pnlPercent = (pnl / (order.entryPrice * order.quantity)) * 100;
+        const entryPrice = getOrderPrice(order);
+        const quantity = getOrderQuantity(order);
+        const priceChange = currentPrice - entryPrice;
+        pnl = priceChange * quantity * (isLong ? 1 : -1);
+        pnlPercent = (pnl / (entryPrice * quantity)) * 100;
       }
     }
 
@@ -178,12 +206,12 @@ export const ChartTooltip = ({
       >
         <Stack gap={1.5}>
           <Text fontSize="2xs" color="fg.muted" mb={1}>
-            {formatDateTimeTooltip(order.createdAt)}
+            {formatDateTimeTooltip(getOrderCreatedAt(order))}
           </Text>
           <HStack gap={1.5}>
             <Text>{isLong ? '📈' : '📉'}</Text>
             <Text fontWeight="semibold" color={isLong ? 'green.500' : 'red.500'}>
-              {t(`trading.ticket.${order.type}`)} {isPosition ? '' : isPending ? `(${t('trading.orders.statusPending')})` : ''}
+              {t(`trading.ticket.${getOrderType(order)}`)} {isPosition ? '' : isPending ? `(${t('trading.orders.statusPending')})` : ''}
             </Text>
           </HStack>
 
@@ -201,12 +229,12 @@ export const ChartTooltip = ({
 
           <HStack justify="space-between">
             <Text color="fg.muted">{isPosition ? t('trading.portfolio.totalQuantity') : t('trading.ticket.quantity')}:</Text>
-            <Text fontWeight="medium">{(order.quantity ?? 0).toFixed(8)}</Text>
+            <Text fontWeight="medium">{getOrderQuantity(order).toFixed(8)}</Text>
           </HStack>
 
           <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
             <Text color="fg.muted">{isPosition ? t('trading.portfolio.avgPrice') : t('trading.ticket.entryPrice')}:</Text>
-            <Text fontWeight="medium">{(order.entryPrice ?? 0).toFixed(2)}</Text>
+            <Text fontWeight="medium">{getOrderPrice(order).toFixed(2)}</Text>
           </HStack>
 
           {isActive && currentPrice && (
@@ -230,17 +258,54 @@ export const ChartTooltip = ({
             </>
           )}
 
-          {order.stopLoss && (
+          {order.stopLoss !== undefined && order.stopLoss > 0 && (
             <HStack justify="space-between">
               <Text color="fg.muted">Stop Loss:</Text>
               <Text fontWeight="medium" color="red.500">{order.stopLoss.toFixed(2)}</Text>
             </HStack>
           )}
 
-          {order.takeProfit && (
+          {order.takeProfit !== undefined && order.takeProfit > 0 && (
             <HStack justify="space-between">
               <Text color="fg.muted">Take Profit:</Text>
               <Text fontWeight="medium" color="green.500">{order.takeProfit.toFixed(2)}</Text>
+            </HStack>
+          )}
+
+          {order.totalFees !== undefined && parseFloat(order.totalFees) > 0 && (
+            <>
+              <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+                <Text color="fg.muted">Trading Fees:</Text>
+                <Text fontWeight="medium" color="orange.500">
+                  {parseFloat(order.totalFees).toFixed(4)}
+                </Text>
+              </HStack>
+              {order.entryFee !== undefined && (
+                <HStack justify="space-between">
+                  <Text color="fg.muted" fontSize="2xs" pl={2}>• Entry:</Text>
+                  <Text fontSize="2xs" color="fg.muted">{parseFloat(order.entryFee).toFixed(4)}</Text>
+                </HStack>
+              )}
+              {order.exitFee !== undefined && (
+                <HStack justify="space-between">
+                  <Text color="fg.muted" fontSize="2xs" pl={2}>• Exit (est):</Text>
+                  <Text fontSize="2xs" color="fg.muted">{parseFloat(order.exitFee).toFixed(4)}</Text>
+                </HStack>
+              )}
+            </>
+          )}
+
+          {order.netPnl !== undefined && isActive && currentPrice && (
+            <HStack justify="space-between">
+              <Text color="fg.muted">Net P&L:</Text>
+              <Text
+                fontWeight="semibold"
+                color={parseFloat(order.netPnl) >= 0 ? 'green.500' : 'red.500'}
+              >
+                {parseFloat(order.netPnl) >= 0 ? '+' : ''}
+                {parseFloat(order.netPnl).toFixed(2)}
+                {order.netPnlPercent !== undefined && ` (${parseFloat(order.netPnl) >= 0 ? '+' : ''}${parseFloat(order.netPnlPercent).toFixed(2)}%)`}
+              </Text>
             </HStack>
           )}
         </Stack>
@@ -282,9 +347,9 @@ export const ChartTooltip = ({
         borderColor="border"
       >
         <Stack gap={1.5}>
-          {aiPattern.timestamp && (
+          {aiPattern.openTime && (
             <Text fontSize="2xs" color="fg.muted" mb={1}>
-              {formatDateTimeTooltip(aiPattern.timestamp)}
+              {formatDateTimeTooltip(aiPattern.openTime)}
             </Text>
           )}
           <HStack gap={1.5}>
@@ -351,7 +416,7 @@ export const ChartTooltip = ({
       >
         <Stack gap={1.5}>
           <Text fontSize="2xs" color="fg.muted" mb={1}>
-            {candle ? formatDateTimeTooltip(candle.timestamp) : ''}
+            {kline ? formatDateTimeTooltip(kline.openTime) : ''}
           </Text>
           <HStack gap={1.5}>
             <Box w={3} h={3} bg={movingAverage.color} borderRadius="sm" />
@@ -391,35 +456,35 @@ export const ChartTooltip = ({
     >
       <Stack gap={1.5}>
         <Text fontSize="2xs" color="fg.muted" mb={1}>
-          {candle ? formatDateTimeTooltip(candle.timestamp) : ''}
+          {kline ? formatDateTimeTooltip(kline.openTime) : ''}
         </Text>
 
-        {candle && (
+        {kline && (
           <Stack gap={0.5}>
             <HStack justify="space-between">
               <Text color="fg.muted">Open:</Text>
-              <Text fontWeight="medium">{formatPrice(candle.open)}</Text>
+              <Text fontWeight="medium">{formatPrice(getKlineOpen(kline))}</Text>
             </HStack>
             <HStack justify="space-between">
               <Text color="fg.muted">High:</Text>
               <Text fontWeight="medium" color="green.500">
-                {formatPrice(candle.high)}
+                {formatPrice(getKlineHigh(kline))}
               </Text>
             </HStack>
             <HStack justify="space-between">
               <Text color="fg.muted">Low:</Text>
               <Text fontWeight="medium" color="red.500">
-                {formatPrice(candle.low)}
+                {formatPrice(getKlineLow(kline))}
               </Text>
             </HStack>
             <HStack justify="space-between">
               <Text color="fg.muted">Close:</Text>
-              <Text fontWeight="medium">{formatPrice(candle.close)}</Text>
+              <Text fontWeight="medium">{formatPrice(getKlineClose(kline))}</Text>
             </HStack>
           </Stack>
         )}
 
-        {candle && (
+        {kline && (
           <>
             <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
               <Text color="fg.muted">Change:</Text>
@@ -434,7 +499,43 @@ export const ChartTooltip = ({
 
             <HStack justify="space-between">
               <Text color="fg.muted">Volume:</Text>
-              <Text fontWeight="medium">{candle.volume.toLocaleString()}</Text>
+              <Text fontWeight="medium">{getKlineVolume(kline).toLocaleString()}</Text>
+            </HStack>
+
+            <HStack justify="space-between">
+              <Text color="fg.muted">Quote Vol:</Text>
+              <Text fontWeight="medium">${quoteVolume.toLocaleString(undefined, { maximumFractionDigits: 0 })}</Text>
+            </HStack>
+
+            <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+              <Text color="fg.muted">Trades:</Text>
+              <Text fontWeight="medium">{trades.toLocaleString()}</Text>
+            </HStack>
+
+            <HStack justify="space-between">
+              <Text color="fg.muted">Avg Trade:</Text>
+              <Text fontWeight="medium">${avgTradeValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</Text>
+            </HStack>
+
+            <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+              <Text color="fg.muted">Pressure:</Text>
+              <HStack gap={1}>
+                <Text
+                  fontWeight="semibold"
+                  color={
+                    pressureType === 'buy'
+                      ? 'green.500'
+                      : pressureType === 'sell'
+                        ? 'red.500'
+                        : 'gray.500'
+                  }
+                >
+                  {pressureType === 'buy' ? '🟢' : pressureType === 'sell' ? '🔴' : '⚪'}
+                </Text>
+                <Text fontWeight="medium">
+                  {(buyPressure * 100).toFixed(0)}% Buy
+                </Text>
+              </HStack>
             </HStack>
           </>
         )}

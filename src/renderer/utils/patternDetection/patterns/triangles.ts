@@ -1,9 +1,9 @@
-import type { AIPatternTriangle, Candle } from '@shared/types';
+import type { AIPatternTriangle, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
-    calculateConfidence,
-    normalizeTimeInPattern,
-    normalizeTouchPoints,
+  calculateConfidence,
+  normalizeTimeInPattern,
+  normalizeTouchPoints,
 } from '../core/confidenceScoring';
 import type { PivotPoint, Point, TrendlineData } from '../types';
 
@@ -66,10 +66,10 @@ const findApex = (upperLine: TrendlineData, lowerLine: TrendlineData): { x: numb
 };
 
 export const detectAscendingTriangles = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternTriangle[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const triangles: AIPatternTriangle[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -116,13 +116,13 @@ export const detectAscendingTriangles = (
           if (!apex || apex.x < low2.index) continue;
 
           const triangleHeight = ((high1.price - low1.price) / low1.price * 100).toFixed(1);
-          const candlesBetween = high2.index - high1.index;
+          const klinesBetween = high2.index - high1.index;
 
           const touchPointsScore = normalizeTouchPoints(4, 6);
           const timeScore = normalizeTimeInPattern(
-            candlesBetween,
-            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+            klinesBetween,
+            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
           );
 
           const confidence = calculateConfidence({
@@ -134,32 +134,32 @@ export const detectAscendingTriangles = (
 
           if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) continue;
 
-          const startDate = new Date(high1.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          const endDate = new Date(high2.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const startDate = new Date(high1.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const endDate = new Date(high2.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
           const confidencePercent = Math.round(confidence * 100);
 
-          const apexCandle = candles[Math.round(apex.x)];
-          const apexTimestamp = apexCandle?.timestamp || high2.timestamp + (high2.timestamp - high1.timestamp);
+          const apexKline = klines[Math.round(apex.x)];
+          const apexTimestamp = apexKline?.openTime || high2.openTime + (high2.openTime - high1.openTime);
 
           triangles.push({
             id: triangles.length + 1,
             type: 'triangle-ascending',
             upperTrendline: [
-              { timestamp: high1.timestamp, price: high1.price },
-              { timestamp: high2.timestamp, price: high2.price },
+              { openTime: high1.openTime, price: high1.price },
+              { openTime: high2.openTime, price: high2.price },
             ],
             lowerTrendline: [
-              { timestamp: low1.timestamp, price: low1.price },
-              { timestamp: low2.timestamp, price: low2.price },
+              { openTime: low1.openTime, price: low1.price },
+              { openTime: low2.openTime, price: low2.price },
             ],
             apex: {
-              timestamp: apexTimestamp,
+              openTime: apexTimestamp,
               price: apex.y,
             },
             label: `Ascending Triangle · ${triangleHeight}% height · Bullish breakout expected · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
             confidence,
             visible: true,
-            timestamp: high1.timestamp,
+            openTime: high1.openTime,
           });
         }
       }
@@ -172,10 +172,10 @@ export const detectAscendingTriangles = (
 };
 
 export const detectDescendingTriangles = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternTriangle[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const triangles: AIPatternTriangle[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -222,13 +222,13 @@ export const detectDescendingTriangles = (
           if (!apex || apex.x < high2.index) continue;
 
           const triangleHeight = ((high1.price - low1.price) / low1.price * 100).toFixed(1);
-          const candlesBetween = low2.index - low1.index;
+          const klinesBetween = low2.index - low1.index;
 
           const touchPointsScore = normalizeTouchPoints(4, 6);
           const timeScore = normalizeTimeInPattern(
-            candlesBetween,
-            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+            klinesBetween,
+            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
           );
 
           const confidence = calculateConfidence({
@@ -240,32 +240,32 @@ export const detectDescendingTriangles = (
 
           if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) continue;
 
-          const startDate = new Date(low1.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          const endDate = new Date(low2.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const startDate = new Date(low1.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const endDate = new Date(low2.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
           const confidencePercent = Math.round(confidence * 100);
 
-          const apexCandle = candles[Math.round(apex.x)];
-          const apexTimestamp = apexCandle?.timestamp || low2.timestamp + (low2.timestamp - low1.timestamp);
+          const apexKline = klines[Math.round(apex.x)];
+          const apexTimestamp = apexKline?.openTime || low2.openTime + (low2.openTime - low1.openTime);
 
           triangles.push({
             id: triangles.length + 1,
             type: 'triangle-descending',
             upperTrendline: [
-              { timestamp: high1.timestamp, price: high1.price },
-              { timestamp: high2.timestamp, price: high2.price },
+              { openTime: high1.openTime, price: high1.price },
+              { openTime: high2.openTime, price: high2.price },
             ],
             lowerTrendline: [
-              { timestamp: low1.timestamp, price: low1.price },
-              { timestamp: low2.timestamp, price: low2.price },
+              { openTime: low1.openTime, price: low1.price },
+              { openTime: low2.openTime, price: low2.price },
             ],
             apex: {
-              timestamp: apexTimestamp,
+              openTime: apexTimestamp,
               price: apex.y,
             },
             label: `Descending Triangle · ${triangleHeight}% height · Bearish breakout expected · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
             confidence,
             visible: true,
-            timestamp: low1.timestamp,
+            openTime: low1.openTime,
           });
         }
       }
@@ -278,10 +278,10 @@ export const detectDescendingTriangles = (
 };
 
 export const detectSymmetricalTriangles = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternTriangle[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const triangles: AIPatternTriangle[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -329,13 +329,13 @@ export const detectSymmetricalTriangles = (
           if (!apex || apex.x < Math.max(high2.index, low2.index)) continue;
 
           const triangleHeight = ((high1.price - low1.price) / low1.price * 100).toFixed(1);
-          const candlesBetween = Math.max(high2.index, low2.index) - Math.min(high1.index, low1.index);
+          const klinesBetween = Math.max(high2.index, low2.index) - Math.min(high1.index, low1.index);
 
           const touchPointsScore = normalizeTouchPoints(4, 6);
           const timeScore = normalizeTimeInPattern(
-            candlesBetween,
-            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+            klinesBetween,
+            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
           );
 
           const confidence = calculateConfidence({
@@ -347,32 +347,32 @@ export const detectSymmetricalTriangles = (
 
           if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) continue;
 
-          const startDate = new Date(Math.min(high1.timestamp, low1.timestamp)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          const endDate = new Date(Math.max(high2.timestamp, low2.timestamp)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const startDate = new Date(Math.min(high1.openTime, low1.openTime)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const endDate = new Date(Math.max(high2.openTime, low2.openTime)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
           const confidencePercent = Math.round(confidence * 100);
 
-          const apexCandle = candles[Math.round(apex.x)];
-          const apexTimestamp = apexCandle?.timestamp || Math.max(high2.timestamp, low2.timestamp) + candlesBetween * 60000;
+          const apexKline = klines[Math.round(apex.x)];
+          const apexTimestamp = apexKline?.openTime || Math.max(high2.openTime, low2.openTime) + klinesBetween * 60000;
 
           triangles.push({
             id: triangles.length + 1,
             type: 'triangle-symmetrical',
             upperTrendline: [
-              { timestamp: high1.timestamp, price: high1.price },
-              { timestamp: high2.timestamp, price: high2.price },
+              { openTime: high1.openTime, price: high1.price },
+              { openTime: high2.openTime, price: high2.price },
             ],
             lowerTrendline: [
-              { timestamp: low1.timestamp, price: low1.price },
-              { timestamp: low2.timestamp, price: low2.price },
+              { openTime: low1.openTime, price: low1.price },
+              { openTime: low2.openTime, price: low2.price },
             ],
             apex: {
-              timestamp: apexTimestamp,
+              openTime: apexTimestamp,
               price: apex.y,
             },
             label: `Symmetrical Triangle · ${triangleHeight}% height · Breakout direction uncertain · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
             confidence,
             visible: true,
-            timestamp: Math.min(high1.timestamp, low1.timestamp),
+            openTime: Math.min(high1.openTime, low1.openTime),
           });
         }
       }

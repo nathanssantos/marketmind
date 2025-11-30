@@ -1,24 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../shared/types/candle';
+import type { Kline } from '../../../shared/types/kline';
 import {
     createDefault92Config,
     Setup92Detector,
 } from './Setup92Detector';
 
-const createCandle = (
+const createKline = (
   open: number,
   high: number,
   low: number,
   close: number,
   volume: number = 1000000,
-  timestamp: number = Date.now()
-): Candle => ({
-  timestamp,
-  open,
-  high,
-  low,
-  close,
-  volume,
+  openTime: number = Date.now()
+): Kline => ({
+  openTime,
+  closeTime: openTime + 60000,
+  open: open.toString(),
+  high: high.toString(),
+  low: low.toString(),
+  close: close.toString(),
+  volume: volume.toString(),
+  quoteVolume: (volume * close).toString(),
+  trades: 100,
+  takerBuyBaseVolume: (volume * 0.5).toString(),
+  takerBuyQuoteVolume: (volume * close * 0.5).toString(),
 });
 
 describe('Setup92Detector', () => {
@@ -42,38 +47,38 @@ describe('Setup92Detector', () => {
       const config = { ...createDefault92Config(), enabled: false };
       const detector = new Setup92Detector(config);
 
-      const candles = [
-        createCandle(100, 110, 95, 105),
-        createCandle(105, 108, 103, 107),
-        createCandle(107, 109, 106, 108),
+      const klines = [
+        createKline(100, 110, 95, 105),
+        createKline(105, 108, 103, 107),
+        createKline(107, 109, 106, 108),
       ];
 
-      const result = detector.detect(candles, 2);
+      const result = detector.detect(klines, 2);
       expect(result.setup).toBeNull();
       expect(result.confidence).toBe(0);
     });
 
-    it('should return null when not enough candles', () => {
+    it('should return null when not enough klines', () => {
       const config = { ...createDefault92Config(), enabled: true };
       const detector = new Setup92Detector(config);
 
-      const candles = [createCandle(100, 110, 95, 105)];
+      const klines = [createKline(100, 110, 95, 105)];
 
-      const result = detector.detect(candles, 0);
+      const result = detector.detect(klines, 0);
       expect(result.setup).toBeNull();
       expect(result.confidence).toBe(0);
     });
 
-    it('should require minimum candles for detection', () => {
+    it('should require minimum klines for detection', () => {
       const config = { ...createDefault92Config(), enabled: true };
       const detector = new Setup92Detector(config);
 
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
       for (let i = 0; i < 30; i += 1) {
-        candles.push(createCandle(100, 101, 99, 100));
+        klines.push(createKline(100, 101, 99, 100));
       }
 
-      const result = detector.detect(candles, 29);
+      const result = detector.detect(klines, 29);
       expect(result).toBeDefined();
     });
   });
@@ -89,17 +94,17 @@ describe('Setup92Detector', () => {
       const detector = new Setup92Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.3;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
       }
 
-      const prevLow = candles[candles.length - 2]?.low ?? 100;
-      candles.push(createCandle(prevLow + 1, prevLow + 2, prevLow - 0.5, prevLow - 0.3, 2000000, baseTime + 35 * 60000));
+      const prevLow = klines[klines.length - 2]?.low ?? 100;
+      klines.push(createKline(prevLow + 1, prevLow + 2, prevLow - 0.5, prevLow - 0.3, 2000000, baseTime + 35 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       
       if (result.setup) {
         expect(result.setup.type).toBe('setup-9-2');
@@ -120,14 +125,14 @@ describe('Setup92Detector', () => {
       const detector = new Setup92Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 - i * 0.2;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
       }
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
 
@@ -140,17 +145,17 @@ describe('Setup92Detector', () => {
       const detector = new Setup92Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.3;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
       }
 
-      const prevLow = candles[candles.length - 2]?.low ?? 100;
-      candles.push(createCandle(prevLow + 2, prevLow + 3, prevLow + 1, prevLow + 2, 1500000, baseTime + 35 * 60000));
+      const prevLow = klines[klines.length - 2]?.low ?? 100;
+      klines.push(createKline(prevLow + 2, prevLow + 3, prevLow + 1, prevLow + 2, 1500000, baseTime + 35 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
   });
@@ -166,17 +171,17 @@ describe('Setup92Detector', () => {
       const detector = new Setup92Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 - i * 0.3;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
       }
 
-      const prevHigh = candles[candles.length - 2]?.high ?? 100;
-      candles.push(createCandle(prevHigh - 1, prevHigh + 0.3, prevHigh - 2, prevHigh + 0.2, 2000000, baseTime + 35 * 60000));
+      const prevHigh = klines[klines.length - 2]?.high ?? 100;
+      klines.push(createKline(prevHigh - 1, prevHigh + 0.3, prevHigh - 2, prevHigh + 0.2, 2000000, baseTime + 35 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       
       if (result.setup) {
         expect(result.setup.type).toBe('setup-9-2');
@@ -197,14 +202,14 @@ describe('Setup92Detector', () => {
       const detector = new Setup92Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.2;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
       }
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
 
@@ -217,17 +222,17 @@ describe('Setup92Detector', () => {
       const detector = new Setup92Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 - i * 0.3;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
       }
 
-      const prevHigh = candles[candles.length - 2]?.high ?? 100;
-      candles.push(createCandle(prevHigh - 3, prevHigh - 2, prevHigh - 4, prevHigh - 3, 1500000, baseTime + 35 * 60000));
+      const prevHigh = klines[klines.length - 2]?.high ?? 100;
+      klines.push(createKline(prevHigh - 3, prevHigh - 2, prevHigh - 4, prevHigh - 3, 1500000, baseTime + 35 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
   });
@@ -243,17 +248,17 @@ describe('Setup92Detector', () => {
       const detector = new Setup92Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.3;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
       }
 
-      const prevLow = candles[candles.length - 2]?.low ?? 100;
-      candles.push(createCandle(prevLow + 1, prevLow + 2, prevLow - 0.5, prevLow - 0.3, 2000000, baseTime + 35 * 60000));
+      const prevLow = klines[klines.length - 2]?.low ?? 100;
+      klines.push(createKline(prevLow + 1, prevLow + 2, prevLow - 0.5, prevLow - 0.3, 2000000, baseTime + 35 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
 
@@ -267,14 +272,14 @@ describe('Setup92Detector', () => {
       const detector = new Setup92Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.3;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
       }
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.confidence).toBeLessThan(95);
     });
   });
@@ -290,17 +295,17 @@ describe('Setup92Detector', () => {
       const detector = new Setup92Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.3;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
       }
 
-      const prevLow = candles[candles.length - 2]?.low ?? 100;
-      candles.push(createCandle(prevLow + 1, prevLow + 2, prevLow - 0.5, prevLow - 0.3, 2000000, baseTime + 35 * 60000));
+      const prevLow = klines[klines.length - 2]?.low ?? 100;
+      klines.push(createKline(prevLow + 1, prevLow + 2, prevLow - 0.5, prevLow - 0.3, 2000000, baseTime + 35 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       
       if (result.setup) {
         expect(result.setup.volumeConfirmation).toBe(true);
@@ -320,17 +325,17 @@ describe('Setup92Detector', () => {
       const detector = new Setup92Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.3;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
       }
 
-      const prevLow = candles[candles.length - 2]?.low ?? 100;
-      candles.push(createCandle(prevLow + 1, prevLow + 2, prevLow - 0.5, prevLow - 0.3, 2000000, baseTime + 35 * 60000));
+      const prevLow = klines[klines.length - 2]?.low ?? 100;
+      klines.push(createKline(prevLow + 1, prevLow + 2, prevLow - 0.5, prevLow - 0.3, 2000000, baseTime + 35 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       
       if (result.setup) {
         expect(result.setup.setupData.ema9).toBeDefined();

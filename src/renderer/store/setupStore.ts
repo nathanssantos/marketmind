@@ -1,6 +1,6 @@
 import type { SetupDetectionConfig } from '@renderer/services/setupDetection';
 import {
-  createDefaultSetupDetectionConfig,
+    createDefaultSetupDetectionConfig,
 } from '@renderer/services/setupDetection';
 import type { SetupType, TradingSetup } from '@shared/types';
 import { create } from 'zustand';
@@ -32,6 +32,7 @@ export interface SetupExecution {
   setupId: string;
   setupType: SetupType;
   timestamp: number;
+  openTime?: number;
   entryPrice: number;
   stopLoss: number;
   takeProfit: number;
@@ -300,6 +301,7 @@ export const useSetupStore = create<SetupStoreState>()(
           setupId: setup.id,
           setupType: setup.type,
           timestamp: Date.now(),
+          openTime: Date.now(),
           entryPrice: setup.entryPrice,
           stopLoss: setup.stopLoss,
           takeProfit: setup.takeProfit,

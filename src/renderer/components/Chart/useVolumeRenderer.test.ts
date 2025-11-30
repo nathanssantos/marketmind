@@ -31,12 +31,12 @@ describe('useVolumeRenderer', () => {
       stroke: vi.fn(),
     } as unknown as CanvasRenderingContext2D;
 
-    const candles = [
-      { timestamp: 1000, open: 100, high: 105, low: 95, close: 102, volume: 1000 },
-      { timestamp: 2000, open: 102, high: 106, low: 96, close: 98, volume: 1500 },
-      { timestamp: 3000, open: 98, high: 108, low: 97, close: 105, volume: 2000 },
-      { timestamp: 4000, open: 105, high: 110, low: 104, close: 103, volume: 800 },
-      { timestamp: 5000, open: 103, high: 112, low: 102, close: 110, volume: 1200 },
+    const klines = [
+      { openTime: 1000, closeTime: 1000, open: '100', high: '105', low: '95', close: '102', volume: '1000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+      { openTime: 2000, closeTime: 2000, open: '102', high: '106', low: '96', close: '98', volume: '1500', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+      { openTime: 3000, closeTime: 3000, open: '98', high: '108', low: '97', close: '105', volume: '2000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+      { openTime: 4000, closeTime: 4000, open: '105', high: '110', low: '104', close: '103', volume: '800', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+      { openTime: 5000, closeTime: 5000, open: '103', high: '112', low: '102', close: '110', volume: '1200', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
     ];
 
     mockManager = {
@@ -51,8 +51,8 @@ describe('useVolumeRenderer', () => {
       getViewport: vi.fn(() => ({
         start: 0,
         end: 5,
-        candleWidth: 10,
-        candleSpacing: 2,
+        klineWidth: 10,
+        klineSpacing: 2,
       })),
       getBounds: vi.fn(() => ({
         minPrice: 90,
@@ -60,8 +60,8 @@ describe('useVolumeRenderer', () => {
         minVolume: 800,
         maxVolume: 2000,
       })),
-      getVisibleCandles: vi.fn(() => candles),
-      getCandles: vi.fn(() => candles),
+      getVisibleKlines: vi.fn(() => klines),
+      getKlines: vi.fn(() => klines),
       indexToX: vi.fn((index: number) => index * 145.6),
     } as unknown as CanvasManager;
 
@@ -171,7 +171,7 @@ describe('useVolumeRenderer', () => {
       expect(drawingUtils.drawRect).not.toHaveBeenCalled();
     });
 
-    it('should render volume bars for all visible candles', () => {
+    it('should render volume bars for all visible klines', () => {
       const { result } = renderHook(() =>
         useVolumeRenderer({
           manager: mockManager,
@@ -184,7 +184,7 @@ describe('useVolumeRenderer', () => {
       expect(drawingUtils.drawRect).toHaveBeenCalledTimes(5);
     });
 
-    it('should use bullish color for candles that closed higher', () => {
+    it('should use bullish color for klines that closed higher', () => {
       const { result } = renderHook(() =>
         useVolumeRenderer({
           manager: mockManager,
@@ -197,7 +197,7 @@ describe('useVolumeRenderer', () => {
       expect(drawingUtils.drawRect).toHaveBeenCalled();
     });
 
-    it('should use bearish color for candles that closed lower', () => {
+    it('should use bearish color for klines that closed lower', () => {
       const { result } = renderHook(() =>
         useVolumeRenderer({
           manager: mockManager,
@@ -237,13 +237,13 @@ describe('useVolumeRenderer', () => {
       expect(drawingUtils.drawRect).toHaveBeenCalled();
     });
 
-    it('should highlight hovered candle with increased opacity', () => {
+    it('should highlight hovered kline with increased opacity', () => {
       const { result } = renderHook(() =>
         useVolumeRenderer({
           manager: mockManager,
           colors: mockColors,
           opacity: 0.2,
-          hoveredCandleIndex: 2,
+          hoveredKlineIndex: 2,
         })
       );
 
@@ -252,12 +252,12 @@ describe('useVolumeRenderer', () => {
       expect(drawingUtils.drawRect).toHaveBeenCalled();
     });
 
-    it('should add shadow to hovered candle', () => {
+    it('should add shadow to hovered kline', () => {
       const { result } = renderHook(() =>
         useVolumeRenderer({
           manager: mockManager,
           colors: mockColors,
-          hoveredCandleIndex: 2,
+          hoveredKlineIndex: 2,
         })
       );
 

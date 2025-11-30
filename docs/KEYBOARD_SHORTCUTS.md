@@ -18,7 +18,7 @@ MarketMind supports the following keyboard shortcuts for improved accessibility 
 |----------|--------|
 | `V` | Toggle Volume Display |
 | `G` | Toggle Grid Display |
-| `C` | Switch Chart Type (Candlestick/Line) |
+| `C` | Switch Chart Type (Kline/Line) |
 | `1-5` | Toggle Moving Averages (MA9, MA20, MA50, MA100, MA200) |
 | `+` / `=` | Zoom In |
 | `-` | Zoom Out |

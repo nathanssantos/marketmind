@@ -36,7 +36,7 @@ export type PatternType =
   | 'accumulation-zone';
 
 export interface PatternPoint {
-  timestamp: number;
+  openTime: number;
   price: number;
 }
 
@@ -48,7 +48,7 @@ export interface PatternLine {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
 }
@@ -57,9 +57,9 @@ export interface PatternZone {
   id: number;
   source: PatternSource;
   type: 'liquidity-zone' | 'sell-zone' | 'buy-zone' | 'accumulation-zone';
-  timestamp: number;
-  startTimestamp?: number;
-  endTimestamp?: number;
+  openTime: number;
+  startOpenTime?: number;
+  endOpenTime?: number;
   topPrice: number;
   bottomPrice: number;
   label?: string;
@@ -78,7 +78,7 @@ export interface PatternChannel {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
 }
@@ -93,7 +93,7 @@ export interface PatternFibonacci {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
 }
@@ -122,7 +122,7 @@ export interface PatternFormation {
   label?: string;
   confidence?: number;
   visible?: boolean;
-  timestamp?: number;
+  openTime?: number;
   importanceScore?: number;
   tier?: 'macro' | 'major' | 'intermediate' | 'minor' | 'micro';
 }
@@ -131,7 +131,7 @@ export interface PatternGap {
   id: number;
   source: PatternSource;
   type: 'gap-common' | 'gap-breakaway' | 'gap-runaway' | 'gap-exhaustion';
-  timestamp: number;
+  openTime: number;
   gapStart: number;
   gapEnd: number;
   direction: 'up' | 'down';

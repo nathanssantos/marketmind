@@ -1,11 +1,11 @@
 import { workerPool } from '@/renderer/utils/WorkerPool';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { useEffect, useRef, useState } from 'react';
 import type { RSIResult } from '../utils/rsi';
 
 const WORKER_KEY = 'rsi';
 
-export const useRSIWorker = (candles: Candle[], period: number = 2, enabled: boolean = false) => {
+export const useRSIWorker = (klines: Kline[], period: number = 2, enabled: boolean = false) => {
   const [rsiData, setRSIData] = useState<RSIResult | null>(null);
   const workerRef = useRef<Worker | null>(null);
 
@@ -22,7 +22,7 @@ export const useRSIWorker = (candles: Candle[], period: number = 2, enabled: boo
   }, []);
 
   useEffect(() => {
-    if (!enabled || candles.length === 0) {
+    if (!enabled || klines.length === 0) {
       setRSIData(null);
       return;
     }
@@ -35,14 +35,14 @@ export const useRSIWorker = (candles: Candle[], period: number = 2, enabled: boo
     };
 
     worker.addEventListener('message', handleMessage);
-    worker.postMessage({ candles, period });
+    worker.postMessage({ klines, period });
 
     return () => {
       if (worker) {
         worker.removeEventListener('message', handleMessage);
       }
     };
-  }, [candles, period, enabled]);
+  }, [klines, period, enabled]);
 
   return rsiData;
 };

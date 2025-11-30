@@ -1,7 +1,8 @@
 import { calculateATR } from '@renderer/utils/indicators/atr';
 import { findHighestSwingHigh, findLowestSwingLow } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '@shared/utils';
 import {
     BaseSetupDetector,
     type SetupDetectorConfig,
@@ -17,8 +18,8 @@ const MIN_VOLUME_MULTIPLIER = 1.0;
 const BASE_CONFIDENCE = 60;
 const DISTANCE_CLOSE_THRESHOLD = 0.005;
 const DISTANCE_NEAR_THRESHOLD = 0.01;
-const CANDLE_STRONG_THRESHOLD = 0.015;
-const CANDLE_MODERATE_THRESHOLD = 0.01;
+const KLINE_STRONG_THRESHOLD = 0.015;
+const KLINE_MODERATE_THRESHOLD = 0.01;
 const CONFIDENCE_BOOST_SMALL = 5;
 const CONFIDENCE_BOOST_MEDIUM = 10;
 const CONFIDENCE_BOOST_LARGE = 20;
@@ -44,8 +45,8 @@ export class Setup92Detector extends BaseSetupDetector {
   }
 
   private validateInputs(
-    current: Candle | undefined,
-    previous: Candle | undefined,
+    current: Kline | undefined,
+    previous: Kline | undefined,
     ema9Current: number | null | undefined,
     ema9Prev: number | null | undefined,
     atrCurrent: number | undefined,
@@ -63,36 +64,36 @@ export class Setup92Detector extends BaseSetupDetector {
   }
 
   private calculateVolumeConfirmation(
-    candles: Candle[],
+    klines: Kline[],
     currentIndex: number,
-    current: Candle,
+    current: Kline,
   ): { avgVolume: number; volumeConfirmation: boolean } {
-    const volumeData = candles.slice(
+    const volumeData = klines.slice(
       Math.max(0, currentIndex - VOLUME_LOOKBACK),
       currentIndex,
     );
     const avgVolume =
-      volumeData.reduce((sum, c) => sum + c.volume, 0) / volumeData.length;
+      volumeData.reduce((sum, c) => sum + getKlineVolume(c), 0) / volumeData.length;
     const volumeConfirmation =
-      current.volume >= avgVolume * this.setup92Config.volumeMultiplier;
+      getKlineVolume(current) >= avgVolume * this.setup92Config.volumeMultiplier;
     return { avgVolume, volumeConfirmation };
   }
 
   private createLongSetup(
-    candles: Candle[],
+    klines: Kline[],
     currentIndex: number,
-    current: Candle,
+    current: Kline,
     ema9Current: number,
     atrCurrent: number,
     avgVolume: number,
     volumeConfirmation: boolean,
-    previous: Candle,
+    previous: Kline,
   ): SetupDetectorResult {
-    const entry = current.high;
-    const swingLow = findLowestSwingLow(candles, currentIndex, VOLUME_LOOKBACK, SWING_STRENGTH);
+    const entry = getKlineHigh(current);
+    const swingLow = findLowestSwingLow(klines, currentIndex, VOLUME_LOOKBACK, SWING_STRENGTH);
     const atrStop = entry - atrCurrent * this.setup92Config.atrStopMultiplier;
     const swingStop = swingLow ? swingLow * STOP_BUFFER_LONG : atrStop;
-    const stopLoss = Math.max(current.low * STOP_BUFFER_LONG, Math.min(swingStop, atrStop));
+    const stopLoss = Math.max(getKlineLow(current) * STOP_BUFFER_LONG, Math.min(swingStop, atrStop));
     const takeProfit = entry + atrCurrent * this.setup92Config.atrTargetMultiplier;
     const rr = this.calculateRR(entry, stopLoss, takeProfit);
     const confidence = this.calculateConfidence(current, previous, ema9Current, volumeConfirmation, true);
@@ -102,7 +103,7 @@ export class Setup92Detector extends BaseSetupDetector {
     const setup = this.createSetup(
       'setup-9-2',
       'LONG',
-      candles,
+      klines,
       currentIndex,
       entry,
       stopLoss,
@@ -113,7 +114,7 @@ export class Setup92Detector extends BaseSetupDetector {
       {
         ema9: ema9Current,
         atr: atrCurrent,
-        volumeRatio: current.volume / avgVolume,
+        volumeRatio: getKlineVolume(current) / avgVolume,
         closeBelowPrevLow: true,
       },
     );
@@ -121,20 +122,20 @@ export class Setup92Detector extends BaseSetupDetector {
   }
 
   private createShortSetup(
-    candles: Candle[],
+    klines: Kline[],
     currentIndex: number,
-    current: Candle,
+    current: Kline,
     ema9Current: number,
     atrCurrent: number,
     avgVolume: number,
     volumeConfirmation: boolean,
-    previous: Candle,
+    previous: Kline,
   ): SetupDetectorResult {
-    const entry = current.low;
-    const swingHigh = findHighestSwingHigh(candles, currentIndex, VOLUME_LOOKBACK, SWING_STRENGTH);
+    const entry = getKlineLow(current);
+    const swingHigh = findHighestSwingHigh(klines, currentIndex, VOLUME_LOOKBACK, SWING_STRENGTH);
     const atrStop = entry + atrCurrent * this.setup92Config.atrStopMultiplier;
     const swingStop = swingHigh ? swingHigh * STOP_BUFFER_SHORT : atrStop;
-    const stopLoss = Math.min(current.high * STOP_BUFFER_SHORT, Math.max(swingStop, atrStop));
+    const stopLoss = Math.min(getKlineHigh(current) * STOP_BUFFER_SHORT, Math.max(swingStop, atrStop));
     const takeProfit = entry - atrCurrent * this.setup92Config.atrTargetMultiplier;
     const rr = this.calculateRR(entry, stopLoss, takeProfit);
     const confidence = this.calculateConfidence(current, previous, ema9Current, volumeConfirmation, false);
@@ -144,7 +145,7 @@ export class Setup92Detector extends BaseSetupDetector {
     const setup = this.createSetup(
       'setup-9-2',
       'SHORT',
-      candles,
+      klines,
       currentIndex,
       entry,
       stopLoss,
@@ -155,14 +156,14 @@ export class Setup92Detector extends BaseSetupDetector {
       {
         ema9: ema9Current,
         atr: atrCurrent,
-        volumeRatio: current.volume / avgVolume,
+        volumeRatio: getKlineVolume(current) / avgVolume,
         closeAbovePrevHigh: true,
       },
     );
     return { setup, confidence };
   }
 
-  detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
+  detect(klines: Kline[], currentIndex: number): SetupDetectorResult {
     const minIndex = Math.max(
       this.setup92Config.emaPeriod,
       this.setup92Config.atrPeriod,
@@ -172,11 +173,11 @@ export class Setup92Detector extends BaseSetupDetector {
       return { setup: null, confidence: 0 };
     }
 
-    const ema9 = calculateEMA(candles, this.setup92Config.emaPeriod);
-    const atr = calculateATR(candles, this.setup92Config.atrPeriod);
+    const ema9 = calculateEMA(klines, this.setup92Config.emaPeriod);
+    const atr = calculateATR(klines, this.setup92Config.atrPeriod);
 
-    const current = candles[currentIndex];
-    const previous = candles[currentIndex - 1];
+    const current = klines[currentIndex];
+    const previous = klines[currentIndex - 1];
     const ema9Current = ema9[currentIndex];
     const ema9Prev = ema9[currentIndex - 1];
     const atrCurrent = atr[currentIndex];
@@ -190,7 +191,7 @@ export class Setup92Detector extends BaseSetupDetector {
     }
 
     const { avgVolume, volumeConfirmation } = this.calculateVolumeConfirmation(
-      candles,
+      klines,
       currentIndex,
       current,
     );
@@ -198,9 +199,9 @@ export class Setup92Detector extends BaseSetupDetector {
     const emaUptrend = ema9Current > ema9Prev;
     const emaDowntrend = ema9Current < ema9Prev;
 
-    if (emaUptrend && current.close < previous.low) {
+    if (emaUptrend && getKlineClose(current) < getKlineLow(previous)) {
       return this.createLongSetup(
-        candles,
+        klines,
         currentIndex,
         current,
         ema9Current,
@@ -211,9 +212,9 @@ export class Setup92Detector extends BaseSetupDetector {
       );
     }
 
-    if (emaDowntrend && current.close > previous.high) {
+    if (emaDowntrend && getKlineClose(current) > getKlineHigh(previous)) {
       return this.createShortSetup(
-        candles,
+        klines,
         currentIndex,
         current,
         ema9Current,
@@ -228,8 +229,8 @@ export class Setup92Detector extends BaseSetupDetector {
   }
 
   private calculateConfidence(
-    current: Candle,
-    previous: Candle,
+    current: Kline,
+    previous: Kline,
     ema: number,
     volumeConfirmed: boolean,
     isLong: boolean,
@@ -237,21 +238,21 @@ export class Setup92Detector extends BaseSetupDetector {
     const confidence = BASE_CONFIDENCE;
     let boost = 0;
 
-    const distanceFromEMA = Math.abs(current.close - ema) / ema;
+    const distanceFromEMA = Math.abs(getKlineClose(current) - ema) / ema;
     if (distanceFromEMA < DISTANCE_CLOSE_THRESHOLD) boost += CONFIDENCE_BOOST_MEDIUM;
     else if (distanceFromEMA < DISTANCE_NEAR_THRESHOLD) boost += CONFIDENCE_BOOST_SMALL;
 
     if (volumeConfirmed) boost += CONFIDENCE_BOOST_LARGE;
 
     const pullbackStrength = isLong
-      ? (previous.low - current.close) / previous.low
-      : (current.close - previous.high) / previous.high;
+      ? (getKlineLow(previous) - getKlineClose(current)) / getKlineLow(previous)
+      : (getKlineClose(current) - getKlineHigh(previous)) / getKlineHigh(previous);
     
-    if (pullbackStrength > CANDLE_STRONG_THRESHOLD) boost += CONFIDENCE_BOOST_MEDIUM;
-    else if (pullbackStrength > CANDLE_MODERATE_THRESHOLD) boost += CONFIDENCE_BOOST_SMALL;
+    if (pullbackStrength > KLINE_STRONG_THRESHOLD) boost += CONFIDENCE_BOOST_MEDIUM;
+    else if (pullbackStrength > KLINE_MODERATE_THRESHOLD) boost += CONFIDENCE_BOOST_SMALL;
 
-    const candleStrength = Math.abs(current.close - current.open) / current.open;
-    if (candleStrength > CANDLE_STRONG_THRESHOLD) boost += CONFIDENCE_BOOST_SMALL;
+    const klineStrength = Math.abs(getKlineClose(current) - getKlineOpen(current)) / getKlineOpen(current);
+    if (klineStrength > KLINE_STRONG_THRESHOLD) boost += CONFIDENCE_BOOST_SMALL;
 
     return Math.min(confidence + boost, MAX_CONFIDENCE);
   }

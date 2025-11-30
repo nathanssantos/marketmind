@@ -1,13 +1,14 @@
-import type { ChartData } from '@/renderer/store/aiStore';
 import { SetupDetectionService } from '@/renderer/services/setupDetection';
-import { optimizeCandles } from '@/renderer/utils/candleOptimizer';
+import type { ChartData } from '@/renderer/store/aiStore';
+import { optimizeKlines } from '@/renderer/utils/klineOptimizer';
 import type {
     AITrade,
     AITradingConfig,
     AITradingDecision,
-    Candle,
+    Kline,
     TradingSetup,
 } from '@shared/types';
+import { getKlineClose } from '@shared/utils';
 import { nanoid } from 'nanoid';
 import type { AIService } from './AIService';
 import tradingPrompts from './prompts-trading.json';
@@ -122,13 +123,13 @@ export class AITradingAgent {
 
     console.log('[AITradingAgent] Getting chart data...');
     const chartData = this.getChartData();
-    if (!chartData || chartData.candles.length === 0) {
+    if (!chartData || chartData.klines.length === 0) {
       console.log('[AITradingAgent] No chart data available');
       return;
     }
 
     console.log('[AITradingAgent] Checking if should analyze...');
-    const shouldAnalyze = this.forceFirstAnalysis || this.shouldAnalyze(chartData.candles);
+    const shouldAnalyze = this.forceFirstAnalysis || this.shouldAnalyze(chartData.klines);
     
     if (!shouldAnalyze) {
       console.log('[AITradingAgent] Skipping analysis (conditions not met)');
@@ -164,7 +165,7 @@ export class AITradingAgent {
 
       const trade: AITrade = {
         id: nanoid(),
-        timestamp: new Date(),
+        openTime: new Date(),
         symbol: chartData.symbol,
         timeframe: chartData.timeframe,
         action: decision.action === 'buy' ? 'buy' : 'sell',
@@ -196,20 +197,20 @@ export class AITradingAgent {
       throw new Error('AI service not initialized');
     }
 
-    const optimizedCandles = optimizeCandles(chartData.candles);
+    const optimizedKlines = optimizeKlines(chartData.klines);
     
-    const detectedSetups = chartData.candles.length >= 50 
-      ? this.setupDetectionService.detectSetups(chartData.candles)
+    const detectedSetups = chartData.klines.length >= 50 
+      ? this.setupDetectionService.detectSetups(chartData.klines)
       : [];
     
-    const prompt = this.buildTradingPrompt(chartData, optimizedCandles, detectedSetups);
+    const prompt = this.buildTradingPrompt(chartData, optimizedKlines, detectedSetups);
 
     const response = await this.aiService.sendMessage([
       {
         id: nanoid(),
         role: 'user',
         content: prompt,
-        timestamp: Date.now(),
+        openTime: Date.now(),
       },
     ]);
 
@@ -219,7 +220,7 @@ export class AITradingAgent {
     return decision;
   }
 
-  private buildTradingPrompt(chartData: ChartData, optimizedCandles: ReturnType<typeof optimizeCandles>, detectedSetups: TradingSetup[] = []): string {
+  private buildTradingPrompt(chartData: ChartData, optimizedKlines: ReturnType<typeof optimizeKlines>, detectedSetups: TradingSetup[] = []): string {
     const profile = this.config.riskProfile;
     const systemPrompt = tradingPrompts.trading.system;
     const profileAddition = tradingPrompts.trading[profile].systemAddition;
@@ -228,10 +229,10 @@ export class AITradingAgent {
       ? tradingPrompts.trading.setupValidation 
       : '';
 
-    const candlesData = JSON.stringify({
-      detailed: optimizedCandles.detailed,
-      simplified: optimizedCandles.simplified,
-      timestampInfo: optimizedCandles.timestampInfo,
+    const klinesData = JSON.stringify({
+      detailed: optimizedKlines.detailed,
+      simplified: optimizedKlines.simplified,
+      openTimeInfo: optimizedKlines.openTimeInfo,
     });
 
     const setupsInfo = detectedSetups.length > 0 
@@ -246,8 +247,8 @@ Current Price: ${this.getCurrentPrice()}
 Volume Visible: ${chartData.showVolume}
 Moving Averages: ${chartData.movingAverages.map(ma => `${ma.type}(${ma.period})`).join(', ')}
 
-Candle Data:
-${candlesData}${setupsInfo}
+Kline Data:
+${klinesData}${setupsInfo}
 `;
 
     return `${systemPrompt}\n${profileAddition}\n${setupValidationPrompt}\n\n${analysisPrompt}\n\n${chartInfo}`;
@@ -350,24 +351,24 @@ ${candlesData}${setupsInfo}
     return 0.5;
   }
 
-  private shouldAnalyze(candles: Candle[]): boolean {
-    if (candles.length < 20) {
-      console.log('[AITradingAgent] Not enough candles:', candles.length);
+  private shouldAnalyze(klines: Kline[]): boolean {
+    if (klines.length < 20) {
+      console.log('[AITradingAgent] Not enough klines:', klines.length);
       return false;
     }
 
     const priceChangeThreshold = this.getPriceChangeThreshold();
-    const recentCandles = candles.slice(-10);
-    const firstCandle = recentCandles[0];
-    const lastCandle = recentCandles[recentCandles.length - 1];
+    const recentKlines = klines.slice(-10);
+    const firstKline = recentKlines[0];
+    const lastKline = recentKlines[recentKlines.length - 1];
     
-    if (!firstCandle || !lastCandle) {
-      console.log('[AITradingAgent] Missing candle data');
+    if (!firstKline || !lastKline) {
+      console.log('[AITradingAgent] Missing kline data');
       return false;
     }
     
     const priceChange = Math.abs(
-      (lastCandle.close - firstCandle.close) / firstCandle.close
+      (getKlineClose(lastKline) - getKlineClose(firstKline)) / getKlineClose(firstKline)
     );
     
     const priceChangePercent = priceChange * 100;

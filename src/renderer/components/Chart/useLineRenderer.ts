@@ -1,12 +1,13 @@
-import { useCallback } from 'react';
-import type { Candle, Viewport } from '@shared/types';
 import type { Bounds, Dimensions } from '@/renderer/utils/canvas/coordinateSystem';
 import { priceToY } from '@/renderer/utils/canvas/coordinateSystem';
+import type { Kline, Viewport } from '@shared/types';
+import { getKlineClose } from '@shared/utils';
+import { useCallback } from 'react';
 
 const DEFAULT_LINE_COLOR = '#2196f3';
 
 interface LineRendererConfig {
-  candles: Candle[];
+  klines: Kline[];
   viewport: Viewport;
   canvas: HTMLCanvasElement;
   bounds: Bounds;
@@ -19,7 +20,7 @@ interface LineRendererConfig {
 export const useLineRenderer = () => {
   const renderLine = useCallback((config: LineRendererConfig) => {
     const {
-      candles,
+      klines,
       viewport,
       canvas,
       bounds,
@@ -32,13 +33,13 @@ export const useLineRenderer = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const candleWidth = dimensions.width / (viewport.end - viewport.start);
+    const klineWidth = dimensions.width / (viewport.end - viewport.start);
 
     const startIndex = Math.max(0, Math.floor(viewport.start));
-    const endIndex = Math.min(candles.length, Math.ceil(viewport.end));
-    const visibleCandles = candles.slice(startIndex, endIndex);
+    const endIndex = Math.min(klines.length, Math.ceil(viewport.end));
+    const visibleKlines = klines.slice(startIndex, endIndex);
 
-    if (visibleCandles.length === 0) return;
+    if (visibleKlines.length === 0) return;
 
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
@@ -47,9 +48,9 @@ export const useLineRenderer = () => {
 
     ctx.beginPath();
 
-    visibleCandles.forEach((candle, i) => {
-      const x = (startIndex + i - viewport.start) * candleWidth + candleWidth / 2;
-      const y = priceToY(candle.close, bounds, dimensions, 10, 10);
+    visibleKlines.forEach((kline, i) => {
+      const x = (startIndex + i - viewport.start) * klineWidth + klineWidth / 2;
+      const y = priceToY(getKlineClose(kline), bounds, dimensions, 10, 10);
 
       if (i === 0) {
         ctx.moveTo(x, y);
@@ -61,8 +62,8 @@ export const useLineRenderer = () => {
     ctx.stroke();
 
     if (showArea) {
-      const lastX = (endIndex - 1 - viewport.start) * candleWidth + candleWidth / 2;
-      const firstX = (startIndex - viewport.start) * candleWidth + candleWidth / 2;
+      const lastX = (endIndex - 1 - viewport.start) * klineWidth + klineWidth / 2;
+      const firstX = (startIndex - viewport.start) * klineWidth + klineWidth / 2;
 
       ctx.fillStyle = `${color}33`;
       ctx.lineTo(lastX, dimensions.chartHeight);

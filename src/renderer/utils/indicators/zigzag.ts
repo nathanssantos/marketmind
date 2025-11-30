@@ -1,8 +1,9 @@
-import type { Candle, PivotPoint } from '@shared/types';
+import type { Kline, PivotPoint } from '@shared/types';
+import { getKlineClose, getKlineHigh, getKlineLow } from '@shared/utils';
 
 const DEFAULT_ZIGZAG_DEVIATION = 5;
 const PERCENT_DIVISOR = 100;
-const MIN_CANDLES = 3;
+const MIN_KLINES = 3;
 const MIN_PIVOTS_FOR_TREND = 2;
 
 export interface ZigZagResult {
@@ -40,8 +41,8 @@ const determineTrend = (
 };
 
 const processUpDirection = (
-  candles: Candle[],
-  current: Candle,
+  klines: Kline[],
+  current: Kline,
   i: number,
   extremePrice: number,
   extremeIndex: number,
@@ -55,23 +56,23 @@ const processUpDirection = (
   let newExtremePrice = extremePrice;
   let newExtremeIndex = extremeIndex;
 
-  if (current.high > extremePrice) {
-    newExtremePrice = current.high;
+  if (getKlineHigh(current) > extremePrice) {
+    newExtremePrice = getKlineHigh(current);
     newExtremeIndex = i;
   }
 
-  const drop = (newExtremePrice - current.low) / newExtremePrice;
+  const drop = (newExtremePrice - getKlineLow(current)) / newExtremePrice;
 
   if (drop >= deviation / PERCENT_DIVISOR) {
     return {
       foundPivot: true,
       pivot: {
         index: newExtremeIndex,
-        timestamp: candles[newExtremeIndex]?.timestamp ?? current.timestamp,
+        openTime: klines[newExtremeIndex]?.openTime ?? current.openTime,
         price: newExtremePrice,
         type: 'high',
       },
-      newExtremePrice: current.low,
+      newExtremePrice: getKlineLow(current),
       newExtremeIndex: i,
     };
   }
@@ -84,8 +85,8 @@ const processUpDirection = (
 };
 
 const processDownDirection = (
-  candles: Candle[],
-  current: Candle,
+  klines: Kline[],
+  current: Kline,
   i: number,
   extremePrice: number,
   extremeIndex: number,
@@ -99,23 +100,23 @@ const processDownDirection = (
   let newExtremePrice = extremePrice;
   let newExtremeIndex = extremeIndex;
 
-  if (current.low < extremePrice) {
-    newExtremePrice = current.low;
+  if (getKlineLow(current) < extremePrice) {
+    newExtremePrice = getKlineLow(current);
     newExtremeIndex = i;
   }
 
-  const rise = (current.high - newExtremePrice) / newExtremePrice;
+  const rise = (getKlineHigh(current) - newExtremePrice) / newExtremePrice;
 
   if (rise >= deviation / PERCENT_DIVISOR) {
     return {
       foundPivot: true,
       pivot: {
         index: newExtremeIndex,
-        timestamp: candles[newExtremeIndex]?.timestamp ?? current.timestamp,
+        openTime: klines[newExtremeIndex]?.openTime ?? current.openTime,
         price: newExtremePrice,
         type: 'low',
       },
-      newExtremePrice: current.high,
+      newExtremePrice: getKlineHigh(current),
       newExtremeIndex: i,
     };
   }
@@ -128,37 +129,37 @@ const processDownDirection = (
 };
 
 export const calculateZigZag = (
-  candles: Candle[],
+  klines: Kline[],
   deviation = DEFAULT_ZIGZAG_DEVIATION,
 ): ZigZagResult => {
   const highs: PivotPoint[] = [];
   const lows: PivotPoint[] = [];
 
-  if (candles.length < MIN_CANDLES) {
+  if (klines.length < MIN_KLINES) {
     return { highs, lows, trend: 'neutral' };
   }
 
-  const firstCandle = candles[0];
-  const secondCandle = candles[1];
+  const firstKline = klines[0];
+  const secondKline = klines[1];
 
-  if (!firstCandle || !secondCandle) {
+  if (!firstKline || !secondKline) {
     return { highs, lows, trend: 'neutral' };
   }
 
   const lastPivotType =
-    firstCandle.close > secondCandle.close ? 'high' : 'low';
+    getKlineClose(firstKline) > getKlineClose(secondKline) ? 'high' : 'low';
   let currentDirection: 'up' | 'down' =
     lastPivotType === 'high' ? 'down' : 'up';
-  let extremePrice = firstCandle.close;
+  let extremePrice = getKlineClose(firstKline);
   let extremeIndex = 0;
 
-  for (let i = 1; i < candles.length; i++) {
-    const current = candles[i];
+  for (let i = 1; i < klines.length; i++) {
+    const current = klines[i];
     if (!current) continue;
 
     if (currentDirection === 'up') {
       const result = processUpDirection(
-        candles,
+        klines,
         current,
         i,
         extremePrice,
@@ -175,7 +176,7 @@ export const calculateZigZag = (
       extremeIndex = result.newExtremeIndex;
     } else {
       const result = processDownDirection(
-        candles,
+        klines,
         current,
         i,
         extremePrice,

@@ -1,6 +1,7 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineHigh, getKlineVolume } from '@shared/utils/klineUtils';
 import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
 
 const VOLUME_LOOKBACK = 20;
@@ -58,7 +59,7 @@ export class BearTrapDetector extends BaseSetupDetector {
     return this.bearTrapConfig;
   }
 
-  detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
+  detect(klines: Kline[], currentIndex: number): SetupDetectorResult {
     const minIndex = Math.max(
       this.bearTrapConfig.lookbackPeriod + this.bearTrapConfig.emaPeriod,
       RESISTANCE_LOOKBACK + VOLUME_LOOKBACK,
@@ -68,7 +69,7 @@ export class BearTrapDetector extends BaseSetupDetector {
       return { setup: null, confidence: 0 };
     }
 
-    const trapSetup = this.detectTrapPattern(candles, currentIndex);
+    const trapSetup = this.detectTrapPattern(klines, currentIndex);
     if (!trapSetup) {
       return { setup: null, confidence: 0 };
     }
@@ -76,9 +77,9 @@ export class BearTrapDetector extends BaseSetupDetector {
     return trapSetup;
   }
 
-  private detectTrapPattern(candles: Candle[], currentIndex: number): SetupDetectorResult | null {
+  private detectTrapPattern(klines: Kline[], currentIndex: number): SetupDetectorResult | null {
     const pivots = findPivotPoints(
-      candles.slice(0, currentIndex + 1),
+      klines.slice(0, currentIndex + 1),
       this.bearTrapConfig.lookbackPeriod,
     );
 
@@ -87,12 +88,12 @@ export class BearTrapDetector extends BaseSetupDetector {
       return null;
     }
 
-    const trap = this.validateTrapStructure(recentLowPivots, candles, currentIndex);
+    const trap = this.validateTrapStructure(recentLowPivots, klines, currentIndex);
     if (!trap) {
       return null;
     }
 
-    return this.createTrapSetup(trap, candles, currentIndex);
+    return this.createTrapSetup(trap, klines, currentIndex);
   }
 
   private getRecentLowPivots(
@@ -107,27 +108,29 @@ export class BearTrapDetector extends BaseSetupDetector {
 
   private validateTrapStructure(
     lowPivots: ReturnType<typeof findPivotPoints>,
-    candles: Candle[],
+    klines: Kline[],
     currentIndex: number,
   ): {
     trapLow: { price: number; index: number };
     supportLow: { price: number };
     breakoutDistance: number;
     reversalStrength: number;
-    current: Candle;
+    current: Kline;
   } | null {
     const trapLow = lowPivots[0];
     const supportLow = lowPivots[1];
-    const current = candles[currentIndex];
+    const current = klines[currentIndex];
 
     if (!trapLow || !supportLow || !current) {
       return null;
     }
 
+    const currentClose = getKlineClose(current);
+    const currentHigh = getKlineHigh(current);
     const fakeBreakdown = trapLow.price < supportLow.price;
     const breakoutDistance = (supportLow.price - trapLow.price) / supportLow.price;
-    const reversalInProgress = current.close > supportLow.price;
-    const reversalStrength = (current.close - trapLow.price) / (current.high - trapLow.price);
+    const reversalInProgress = currentClose > supportLow.price;
+    const reversalStrength = (currentClose - trapLow.price) / (currentHigh - trapLow.price);
 
     const validBreakoutDistance =
       breakoutDistance >= MIN_TRAP_DISTANCE_PERCENT &&
@@ -148,27 +151,29 @@ export class BearTrapDetector extends BaseSetupDetector {
       supportLow: { price: number };
       breakoutDistance: number;
       reversalStrength: number;
-      current: Candle;
+      current: Kline;
     },
-    candles: Candle[],
+    klines: Kline[],
     currentIndex: number,
   ): SetupDetectorResult | null {
-    const volumeData = candles.slice(Math.max(0, currentIndex - VOLUME_LOOKBACK), currentIndex);
-    const avgVolume = volumeData.reduce((sum, c) => sum + c.volume, 0) / volumeData.length;
+    const volumeData = klines.slice(Math.max(0, currentIndex - VOLUME_LOOKBACK), currentIndex);
+    const avgVolume = volumeData.reduce((sum, c) => sum + getKlineVolume(c), 0) / volumeData.length;
+    const currentVolume = getKlineVolume(trap.current);
     const volumeConfirmation =
-      trap.current.volume > avgVolume * this.bearTrapConfig.volumeMultiplier;
+      currentVolume > avgVolume * this.bearTrapConfig.volumeMultiplier;
 
-    const ema = calculateEMA(candles, this.bearTrapConfig.emaPeriod);
+    const ema = calculateEMA(klines, this.bearTrapConfig.emaPeriod);
     const emaCurrent = ema[currentIndex];
 
     if (emaCurrent === null || emaCurrent === undefined) {
       return null;
     }
 
-    const aboveEMA = trap.current.close > emaCurrent;
-    const entry = trap.current.close;
+    const currentClose = getKlineClose(trap.current);
+    const aboveEMA = currentClose > emaCurrent;
+    const entry = currentClose;
     const stopLoss = trap.trapLow.price * STOP_LOSS_BUFFER;
-    const resistanceLevel = this.findNearestResistance(candles, currentIndex, entry);
+    const resistanceLevel = this.findNearestResistance(klines, currentIndex, entry);
     const takeProfit = resistanceLevel ?? entry + (entry - stopLoss) * DEFAULT_RR_MULTIPLIER;
     const rr = this.calculateRR(entry, stopLoss, takeProfit);
 
@@ -190,7 +195,7 @@ export class BearTrapDetector extends BaseSetupDetector {
     const setup = this.createSetup(
       'bear-trap',
       'LONG',
-      candles,
+      klines,
       currentIndex,
       entry,
       stopLoss,
@@ -212,15 +217,15 @@ export class BearTrapDetector extends BaseSetupDetector {
   }
 
   private findNearestResistance(
-    candles: Candle[],
+    klines: Kline[],
     currentIndex: number,
     currentPrice: number,
   ): number | null {
     const lookback = Math.min(RESISTANCE_LOOKBACK, currentIndex);
-    const recentCandles = candles.slice(Math.max(0, currentIndex - lookback), currentIndex);
+    const recentKlines = klines.slice(Math.max(0, currentIndex - lookback), currentIndex);
 
-    const highs = recentCandles
-      .map((c) => c.high)
+    const highs = recentKlines
+      .map((c) => getKlineHigh(c))
       .filter((high) => high > currentPrice)
       .sort((a, b) => a - b);
 

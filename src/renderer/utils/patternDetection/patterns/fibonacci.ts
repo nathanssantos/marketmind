@@ -1,4 +1,4 @@
-import type { AIPatternFibonacci, AIPatternPoint, Candle } from '@shared/types';
+import type { AIPatternFibonacci, AIPatternPoint, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
   calculateConfidence,
@@ -7,10 +7,10 @@ import {
 import type { PivotPoint } from '../types';
 
 export const detectFibonacciRetracements = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternFibonacci[] => {
-  if (!candles || candles.length === 0) return [];
+  if (!klines || klines.length === 0) return [];
   
   const fibs: AIPatternFibonacci[] = [];
   
@@ -29,7 +29,7 @@ export const detectFibonacciRetracements = (
   
   if (priceRangePercent < PATTERN_DETECTION_CONFIG.MIN_PATTERN_PRICE_RANGE_PERCENT) return [];
   
-  const direction = swingHigh.timestamp > swingLow.timestamp ? 'downtrend' : 'uptrend';
+  const direction = swingHigh.openTime > swingLow.openTime ? 'downtrend' : 'uptrend';
   
   const levels = [
     { ratio: 0, price: direction === 'uptrend' ? swingHigh.price : swingLow.price },
@@ -42,11 +42,11 @@ export const detectFibonacciRetracements = (
     { ratio: 1, price: direction === 'uptrend' ? swingLow.price : swingHigh.price },
   ];
 
-  const candlesBetween = Math.abs(swingHigh.index - swingLow.index);
+  const klinesBetween = Math.abs(swingHigh.index - swingLow.index);
   const timeScore = normalizeTimeInPattern(
-    candlesBetween,
-    PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-    PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+    klinesBetween,
+    PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+    PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
   );
   
   const confidence = calculateConfidence({
@@ -59,15 +59,15 @@ export const detectFibonacciRetracements = (
   if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) return [];
 
   const startPoint: AIPatternPoint = direction === 'uptrend'
-    ? { timestamp: swingLow.timestamp, price: swingLow.price }
-    : { timestamp: swingHigh.timestamp, price: swingHigh.price };
+    ? { openTime: swingLow.openTime, price: swingLow.price }
+    : { openTime: swingHigh.openTime, price: swingHigh.price };
     
   const endPoint: AIPatternPoint = direction === 'uptrend'
-    ? { timestamp: swingHigh.timestamp, price: swingHigh.price }
-    : { timestamp: swingLow.timestamp, price: swingLow.price };
+    ? { openTime: swingHigh.openTime, price: swingHigh.price }
+    : { openTime: swingLow.openTime, price: swingLow.price };
 
-  const startDate = new Date(startPoint.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const endDate = new Date(endPoint.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const startDate = new Date(startPoint.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const endDate = new Date(endPoint.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const confidencePercent = Math.round(confidence * 100);
   
   fibs.push({
@@ -80,17 +80,17 @@ export const detectFibonacciRetracements = (
     label: `Fibonacci Retracement · ${direction === 'uptrend' ? 'Bullish' : 'Bearish'} · ${priceRangePercent.toFixed(1)}% swing · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
     confidence,
     visible: true,
-    timestamp: startPoint.timestamp,
+    openTime: startPoint.openTime,
   });
 
   return fibs;
 };
 
 export const detectFibonacciExtensions = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternFibonacci[] => {
-  if (!candles || candles.length === 0) return [];
+  if (!klines || klines.length === 0) return [];
   
   const fibs: AIPatternFibonacci[] = [];
   
@@ -109,7 +109,7 @@ export const detectFibonacciExtensions = (
   
   if (priceRangePercent < PATTERN_DETECTION_CONFIG.MIN_PATTERN_PRICE_RANGE_PERCENT) return [];
   
-  const direction = swingHigh.timestamp > swingLow.timestamp ? 'downtrend' : 'uptrend';
+  const direction = swingHigh.openTime > swingLow.openTime ? 'downtrend' : 'uptrend';
   
   const levels = [
     { ratio: 0, price: direction === 'uptrend' ? swingLow.price : swingHigh.price },
@@ -122,11 +122,11 @@ export const detectFibonacciExtensions = (
     })),
   ];
 
-  const candlesBetween = Math.abs(swingHigh.index - swingLow.index);
+  const klinesBetween = Math.abs(swingHigh.index - swingLow.index);
   const timeScore = normalizeTimeInPattern(
-    candlesBetween,
-    PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-    PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+    klinesBetween,
+    PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+    PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
   );
   
   const confidence = calculateConfidence({
@@ -139,15 +139,15 @@ export const detectFibonacciExtensions = (
   if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) return [];
 
   const startPoint: AIPatternPoint = direction === 'uptrend'
-    ? { timestamp: swingLow.timestamp, price: swingLow.price }
-    : { timestamp: swingHigh.timestamp, price: swingHigh.price };
+    ? { openTime: swingLow.openTime, price: swingLow.price }
+    : { openTime: swingHigh.openTime, price: swingHigh.price };
     
   const endPoint: AIPatternPoint = direction === 'uptrend'
-    ? { timestamp: swingHigh.timestamp, price: swingHigh.price }
-    : { timestamp: swingLow.timestamp, price: swingLow.price };
+    ? { openTime: swingHigh.openTime, price: swingHigh.price }
+    : { openTime: swingLow.openTime, price: swingLow.price };
 
-  const startDate = new Date(startPoint.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const endDate = new Date(endPoint.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const startDate = new Date(startPoint.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const endDate = new Date(endPoint.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const confidencePercent = Math.round(confidence * 100);
   
   fibs.push({
@@ -160,7 +160,7 @@ export const detectFibonacciExtensions = (
     label: `Fibonacci Extension · ${direction === 'uptrend' ? 'Bullish' : 'Bearish'} · ${priceRangePercent.toFixed(1)}% base · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
     confidence,
     visible: true,
-    timestamp: startPoint.timestamp,
+    openTime: startPoint.openTime,
   });
 
   return fibs;

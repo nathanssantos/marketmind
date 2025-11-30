@@ -103,7 +103,7 @@ export const useAI = (options?: UseAIOptions) => {
       if (settings.model) config.model = settings.model;
       if (settings.temperature !== undefined) config.temperature = settings.temperature;
       if (settings.maxTokens !== undefined) config.maxTokens = settings.maxTokens;
-      if (settings.detailedCandlesCount !== undefined) config.detailedCandlesCount = settings.detailedCandlesCount;
+      if (settings.detailedKlinesCount !== undefined) config.detailedKlinesCount = settings.detailedKlinesCount;
 
       return getDefaultAIService(config);
     } catch (error) {
@@ -251,7 +251,7 @@ export const useAI = (options?: UseAIOptions) => {
     async (chartImage: string, context?: string) => {
       const request: AIAnalysisRequest = {
         chartImage,
-        candles: chartData?.candles || [],
+        klines: chartData?.klines || [],
         ...(chartData?.news && { news: chartData.news }),
         ...(chartData?.events && { events: chartData.events }),
       };
@@ -265,7 +265,7 @@ export const useAI = (options?: UseAIOptions) => {
         newsCount: request.news?.length || 0,
         hasEvents: !!request.events,
         eventsCount: request.events?.length || 0,
-        candlesCount: request.candles.length,
+        klinesCount: request.klines.length,
       });
 
       if (request.news && request.news.length > 0) {

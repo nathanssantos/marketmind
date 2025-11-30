@@ -14,7 +14,7 @@ describe('conversationSummarizer', () => {
         id: `msg-${i}`,
         role: 'user',
         content: 'Test message',
-        timestamp: Date.now(),
+        openTime: Date.now(),
       }));
 
       expect(shouldSummarizeConversation(messages)).toBe(false);
@@ -25,7 +25,7 @@ describe('conversationSummarizer', () => {
         id: `msg-${i}`,
         role: 'user',
         content: 'Test message',
-        timestamp: Date.now(),
+        openTime: Date.now(),
       }));
 
       expect(shouldSummarizeConversation(messages)).toBe(true);
@@ -43,13 +43,13 @@ describe('conversationSummarizer', () => {
           id: 'msg-1',
           role: 'user',
           content: 'Can you analyze this chart?',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
         {
           id: 'msg-2',
           role: 'user',
           content: 'What are the support and resistance levels?',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -64,13 +64,13 @@ describe('conversationSummarizer', () => {
           id: 'msg-1',
           role: 'user',
           content: 'Test',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
         {
           id: 'msg-2',
           role: 'assistant',
           content: 'Response',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -85,7 +85,7 @@ describe('conversationSummarizer', () => {
         id: `msg-${i}`,
         role: 'user',
         content: 'Test message',
-        timestamp: Date.now(),
+        openTime: Date.now(),
       }));
 
       const result = summarizeConversation(messages);
@@ -99,7 +99,7 @@ describe('conversationSummarizer', () => {
         id: `msg-${i}`,
         role: 'user',
         content: 'Test message',
-        timestamp: Date.now(),
+        openTime: Date.now(),
       }));
 
       const result = summarizeConversation(messages);
@@ -115,7 +115,7 @@ describe('conversationSummarizer', () => {
         id: `msg-${i}`,
         role: 'user',
         content: 'Test message',
-        timestamp: Date.now(),
+        openTime: Date.now(),
       }));
 
       const result = buildOptimizedMessages(messages);
@@ -127,7 +127,7 @@ describe('conversationSummarizer', () => {
         id: `msg-${i}`,
         role: 'user',
         content: 'Test message',
-        timestamp: Date.now(),
+        openTime: Date.now(),
       }));
 
       const result = buildOptimizedMessages(messages);
@@ -142,7 +142,7 @@ describe('conversationSummarizer', () => {
         role: 'user',
         content: 'Look at this chart',
         images: i === 19 ? ['data:image/png;base64,abc123'] : undefined,
-        timestamp: Date.now(),
+        openTime: Date.now(),
       }));
 
       const result = buildOptimizedMessages(messages, false);

@@ -1,4 +1,5 @@
 import type { Order } from '@shared/types/trading';
+import { getOrderId, getOrderPrice, isOrderActive, isOrderLong, isOrderPending, isOrderShort } from '@shared/utils';
 import { useCallback, useState } from 'react';
 
 interface OrderDragConfig {
@@ -26,8 +27,8 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
     ): boolean => {
       if (!config.enabled) return false;
 
-      const order = config.orders.find((o) => o.id === sltpInfo.orderId);
-      if (order?.status !== 'active') return false;
+      const order = config.orders.find((o) => getOrderId(o) === sltpInfo.orderId);
+      if (!order || !isOrderActive(order)) return false;
 
       setDraggedOrder(order);
       setDragType(sltpInfo.type);
@@ -44,13 +45,13 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       const order = config.getOrderAtPosition(x, y);
       if (!order) return false;
 
-      if (order.status === 'pending') {
+      if (isOrderPending(order)) {
         setDraggedOrder(order);
         setDragType('entry');
         return true;
       }
 
-      if (order.status === 'active') {
+      if (isOrderActive(order)) {
         setDraggedOrder(order);
         setDragType(null);
         setPreviewPrice(null);
@@ -68,20 +69,21 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
 
       const currentPrice = config.yToPrice(y);
 
-      if (dragType === 'entry' && draggedOrder.status === 'pending') {
+      if (dragType === 'entry' && isOrderPending(draggedOrder)) {
         setPreviewPrice(currentPrice);
         return;
       }
 
-      if (draggedOrder.status === 'active') {
-        const entryY = config.priceToY(draggedOrder.entryPrice);
+      if (isOrderActive(draggedOrder)) {
+        const entryPrice = getOrderPrice(draggedOrder);
+        const entryY = config.priceToY(entryPrice);
         const currentY = y;
         
         const isMovingUp = currentY < entryY;
         
         const isCreatingTakeProfit =
-          (draggedOrder.type === 'long' && isMovingUp) ||
-          (draggedOrder.type === 'short' && !isMovingUp);
+          (isOrderLong(draggedOrder) && isMovingUp) ||
+          (isOrderShort(draggedOrder) && !isMovingUp);
 
         setDragType(isCreatingTakeProfit ? 'takeProfit' : 'stopLoss');
         setPreviewPrice(currentPrice);
@@ -106,8 +108,8 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       return;
     }
 
-    if (dragType === 'entry' && draggedOrder.status === 'pending') {
-      config.updateOrder(draggedOrder.id, {
+    if (dragType === 'entry' && isOrderPending(draggedOrder)) {
+      config.updateOrder(getOrderId(draggedOrder), {
         entryPrice: previewPrice,
       });
 
@@ -121,12 +123,12 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       const relatedOrders = config.orders.filter(
         (order) =>
           order.symbol === draggedOrder.symbol &&
-          order.type === draggedOrder.type &&
-          order.status === 'active'
+          isOrderLong(order) === isOrderLong(draggedOrder) &&
+          isOrderActive(order)
       );
 
       relatedOrders.forEach((order) => {
-        config.updateOrder(order.id, {
+        config.updateOrder(getOrderId(order), {
           [dragType]: previewPrice,
         });
       });

@@ -1,24 +1,36 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../shared/types/candle';
+import type { Kline } from '../../../shared/types/kline';
+import {
+    getKlineClose,
+    getKlineHigh,
+    getKlineLow,
+    getKlineOpen,
+    getKlineVolume,
+} from '../../../shared/utils/klineUtils';
 import {
     createDefaultOrderBlockFVGConfig,
     OrderBlockFVGDetector,
 } from './OrderBlockFVGDetector';
 
-const createCandle = (
+const createKline = (
   open: number,
   high: number,
   low: number,
   close: number,
   volume: number = 1000000,
-  timestamp: number = Date.now()
-): Candle => ({
-  timestamp,
-  open,
-  high,
-  low,
-  close,
-  volume,
+  openTime: number = Date.now()
+): Kline => ({
+  openTime,
+  closeTime: openTime + 60000,
+  open: open.toString(),
+  high: high.toString(),
+  low: low.toString(),
+  close: close.toString(),
+  volume: volume.toString(),
+  quoteVolume: (volume * close).toString(),
+  trades: 100,
+  takerBuyBaseVolume: (volume * 0.5).toString(),
+  takerBuyQuoteVolume: (volume * close * 0.5).toString(),
 });
 
 describe('OrderBlockFVGDetector', () => {
@@ -41,24 +53,24 @@ describe('OrderBlockFVGDetector', () => {
       const config = { ...createDefaultOrderBlockFVGConfig(), enabled: false };
       const detector = new OrderBlockFVGDetector(config);
 
-      const candles = [
-        createCandle(100, 110, 95, 105),
-        createCandle(105, 108, 103, 107),
-        createCandle(107, 109, 106, 108),
+      const klines = [
+        createKline(100, 110, 95, 105),
+        createKline(105, 108, 103, 107),
+        createKline(107, 109, 106, 108),
       ];
 
-      const result = detector.detect(candles, 2);
+      const result = detector.detect(klines, 2);
       expect(result.setup).toBeNull();
       expect(result.confidence).toBe(0);
     });
 
-    it('should return null when not enough candles', () => {
+    it('should return null when not enough klines', () => {
       const config = { ...createDefaultOrderBlockFVGConfig(), enabled: true };
       const detector = new OrderBlockFVGDetector(config);
 
-      const candles = [createCandle(100, 110, 95, 105)];
+      const klines = [createKline(100, 110, 95, 105)];
 
-      const result = detector.detect(candles, 0);
+      const result = detector.detect(klines, 0);
       expect(result.setup).toBeNull();
       expect(result.confidence).toBe(0);
     });
@@ -73,13 +85,13 @@ describe('OrderBlockFVGDetector', () => {
       const detector = new OrderBlockFVGDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
-        candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
+        klines.push(createKline(100, 101, 99, 100, 1000000, baseTime + i * 60000));
       }
 
-      const result = detector.detect(candles, 70);
+      const result = detector.detect(klines, 70);
       expect(result.setup).toBeNull();
     });
   });
@@ -96,17 +108,17 @@ describe('OrderBlockFVGDetector', () => {
       const detector = new OrderBlockFVGDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
-        candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
+        klines.push(createKline(100, 101, 99, 100, 1000000, baseTime + i * 60000));
       }
 
-      const orderBlockCandle = createCandle(100, 105, 99, 104, 2000000, baseTime + 70 * 60000);
-      candles.push(orderBlockCandle);
+      const orderBlockKline = createKline(100, 105, 99, 104, 2000000, baseTime + 70 * 60000);
+      klines.push(orderBlockKline);
 
-      expect(orderBlockCandle.volume).toBeGreaterThan(1000000 * config.orderBlockVolumeMultiplier);
-      expect(orderBlockCandle.close).toBeGreaterThan(orderBlockCandle.open);
+      expect(getKlineVolume(orderBlockKline)).toBeGreaterThan(1000000 * config.orderBlockVolumeMultiplier);
+      expect(getKlineClose(orderBlockKline)).toBeGreaterThan(getKlineOpen(orderBlockKline));
     });
 
     it('should detect bearish order block with high volume', () => {
@@ -120,17 +132,17 @@ describe('OrderBlockFVGDetector', () => {
       const _detector = new OrderBlockFVGDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
-        candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
+        klines.push(createKline(100, 101, 99, 100, 1000000, baseTime + i * 60000));
       }
 
-      const orderBlockCandle = createCandle(104, 105, 99, 100, 2000000, baseTime + 70 * 60000);
-      candles.push(orderBlockCandle);
+      const orderBlockKline = createKline(104, 105, 99, 100, 2000000, baseTime + 70 * 60000);
+      klines.push(orderBlockKline);
 
-      expect(orderBlockCandle.volume).toBeGreaterThan(1000000 * config.orderBlockVolumeMultiplier);
-      expect(orderBlockCandle.close).toBeLessThan(orderBlockCandle.open);
+      expect(getKlineVolume(orderBlockKline)).toBeGreaterThan(1000000 * config.orderBlockVolumeMultiplier);
+      expect(getKlineClose(orderBlockKline)).toBeLessThan(getKlineOpen(orderBlockKline));
     });
 
     it('should reject order block with low volume', () => {
@@ -144,16 +156,16 @@ describe('OrderBlockFVGDetector', () => {
       const _detector = new OrderBlockFVGDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
-        candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
+        klines.push(createKline(100, 101, 99, 100, 1000000, baseTime + i * 60000));
       }
 
-      const lowVolumeCandle = createCandle(100, 105, 99, 104, 1500000, baseTime + 70 * 60000);
-      candles.push(lowVolumeCandle);
+      const lowVolumeKline = createKline(100, 105, 99, 104, 1500000, baseTime + 70 * 60000);
+      klines.push(lowVolumeKline);
 
-      expect(lowVolumeCandle.volume).toBeLessThan(1000000 * config.orderBlockVolumeMultiplier);
+      expect(getKlineVolume(lowVolumeKline)).toBeLessThan(1000000 * config.orderBlockVolumeMultiplier);
     });
   });
 
@@ -168,14 +180,14 @@ describe('OrderBlockFVGDetector', () => {
 
       const baseTime = Date.now();
 
-      const prevCandle = createCandle(100, 101, 99, 100, 1000000, baseTime);
-      const _middleCandle = createCandle(100, 105, 99, 104, 2000000, baseTime + 60000);
-      const nextCandle = createCandle(104, 106, 103, 105, 1000000, baseTime + 120000);
+      const prevKline = createKline(100, 101, 99, 100, 1000000, baseTime);
+      const _middleKline = createKline(100, 105, 99, 104, 2000000, baseTime + 60000);
+      const nextKline = createKline(104, 106, 103, 105, 1000000, baseTime + 120000);
 
-      const gapBottom = prevCandle.high;
-      const gapTop = nextCandle.low;
+      const gapBottom = prevKline.high;
+      const gapTop = nextKline.low;
 
-      expect(gapTop).toBeGreaterThan(gapBottom);
+      expect(getKlineLow(nextKline)).toBeGreaterThan(getKlineHigh(prevKline));
     });
 
     it('should detect bearish FVG gap', () => {
@@ -188,14 +200,14 @@ describe('OrderBlockFVGDetector', () => {
 
       const baseTime = Date.now();
 
-      const prevCandle = createCandle(100, 101, 99, 100, 1000000, baseTime);
-      const _middleCandle = createCandle(104, 105, 95, 96, 2000000, baseTime + 60000);
-      const nextCandle = createCandle(95, 97, 94, 95, 1000000, baseTime + 120000);
+      const prevKline = createKline(100, 101, 99, 100, 1000000, baseTime);
+      const _middleKline = createKline(104, 105, 95, 96, 2000000, baseTime + 60000);
+      const nextKline = createKline(95, 97, 94, 95, 1000000, baseTime + 120000);
 
-      const gapTop = prevCandle.low;
-      const gapBottom = nextCandle.high;
+      const gapTop = prevKline.low;
+      const gapBottom = nextKline.high;
 
-      expect(gapTop).toBeGreaterThan(gapBottom);
+      expect(getKlineLow(prevKline)).toBeGreaterThan(getKlineHigh(nextKline));
     });
 
     it('should validate minimum gap size', () => {
@@ -208,11 +220,11 @@ describe('OrderBlockFVGDetector', () => {
 
       const baseTime = Date.now();
 
-      const prevCandle = createCandle(100, 100.5, 99, 100, 1000000, baseTime);
-      const nextCandle = createCandle(104, 106, 100.6, 105, 1000000, baseTime + 120000);
+      const prevKline = createKline(100, 100.5, 99, 100, 1000000, baseTime);
+      const nextKline = createKline(104, 106, 100.6, 105, 1000000, baseTime + 120000);
 
-      const gapSize = nextCandle.low - prevCandle.high;
-      const gapPercent = (gapSize / prevCandle.close) * 100;
+      const gapSize = nextKline.low - prevKline.high;
+      const gapPercent = (gapSize / prevKline.close) * 100;
 
       expect(gapPercent).toBeLessThan(config.fvgMinSize);
     });

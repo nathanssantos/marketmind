@@ -1,9 +1,9 @@
-import type { AIPatternLine, AIPatternPoint, Candle } from '@shared/types';
+import type { AIPatternLine, AIPatternPoint, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
-    calculateConfidence,
-    normalizeTimeInPattern,
-    normalizeTouchPoints,
+  calculateConfidence,
+  normalizeTimeInPattern,
+  normalizeTouchPoints,
 } from '../core/confidenceScoring';
 import { validateVolumeConfirmation } from '../core/volumeAnalysis';
 import type { PatternCluster, PivotPoint } from '../types';
@@ -23,7 +23,7 @@ const clusterPivotsByPrice = (
   let currentCluster: PatternCluster = {
     price: firstPivot.price,
     touches: 1,
-    timestamps: [firstPivot.timestamp],
+    openTimes: [firstPivot.openTime],
     indices: [firstPivot.index],
     avgVolume: firstPivot.volume || 0,
   };
@@ -36,7 +36,7 @@ const clusterPivotsByPrice = (
 
     if (priceDiff <= tolerancePercent) {
       currentCluster.touches++;
-      currentCluster.timestamps.push(pivot.timestamp);
+      currentCluster.openTimes.push(pivot.openTime);
       currentCluster.indices.push(pivot.index);
       currentCluster.price = (currentCluster.price * (currentCluster.touches - 1) + pivot.price) / currentCluster.touches;
       currentCluster.avgVolume = (currentCluster.avgVolume * (currentCluster.touches - 1) + (pivot.volume || 0)) / currentCluster.touches;
@@ -45,7 +45,7 @@ const clusterPivotsByPrice = (
       currentCluster = {
         price: pivot.price,
         touches: 1,
-        timestamps: [pivot.timestamp],
+        openTimes: [pivot.openTime],
         indices: [pivot.index],
         avgVolume: pivot.volume || 0,
       };
@@ -58,7 +58,7 @@ const clusterPivotsByPrice = (
 };
 
 export const detectSupport = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternLine[] => {
   const supports: AIPatternLine[] = [];
@@ -73,7 +73,7 @@ export const detectSupport = (
   let patternId = 1;
   
   for (const cluster of validClusters) {
-    const volumeConfirmation = validateVolumeConfirmation(candles, cluster.indices);
+    const volumeConfirmation = validateVolumeConfirmation(klines, cluster.indices);
     
     const touchPointsScore = normalizeTouchPoints(
       cluster.touches,
@@ -81,9 +81,9 @@ export const detectSupport = (
     );
     
     const timeScore = normalizeTimeInPattern(
-      cluster.timestamps.length,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+      cluster.openTimes.length,
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
     );
     
     const confidence = calculateConfidence({
@@ -95,16 +95,16 @@ export const detectSupport = (
 
     if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) continue;
 
-    const firstTouch = cluster.timestamps[0] || 0;
-    const lastTouch = cluster.timestamps[cluster.timestamps.length - 1] || 0;
+    const firstTouch = cluster.openTimes[0] || 0;
+    const lastTouch = cluster.openTimes[cluster.openTimes.length - 1] || 0;
     
     const startPoint: AIPatternPoint = {
-      timestamp: firstTouch,
+      openTime: firstTouch,
       price: cluster.price,
     };
     
     const endPoint: AIPatternPoint = {
-      timestamp: lastTouch,
+      openTime: lastTouch,
       price: cluster.price,
     };
 
@@ -119,7 +119,7 @@ export const detectSupport = (
       label: `Support at ${cluster.price.toFixed(2)} · ${cluster.touches} touches · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
       confidence,
       visible: true,
-      timestamp: firstTouch,
+      openTime: firstTouch,
     });
   }
 
@@ -129,7 +129,7 @@ export const detectSupport = (
 };
 
 export const detectResistance = (
-  candles: Candle[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternLine[] => {
   const resistances: AIPatternLine[] = [];
@@ -144,7 +144,7 @@ export const detectResistance = (
   let patternId = 1;
   
   for (const cluster of validClusters) {
-    const volumeConfirmation = validateVolumeConfirmation(candles, cluster.indices);
+    const volumeConfirmation = validateVolumeConfirmation(klines, cluster.indices);
     
     const touchPointsScore = normalizeTouchPoints(
       cluster.touches,
@@ -152,9 +152,9 @@ export const detectResistance = (
     );
     
     const timeScore = normalizeTimeInPattern(
-      cluster.timestamps.length,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+      cluster.openTimes.length,
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
     );
     
     const confidence = calculateConfidence({
@@ -166,16 +166,16 @@ export const detectResistance = (
 
     if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) continue;
 
-    const firstTouch = cluster.timestamps[0] || 0;
-    const lastTouch = cluster.timestamps[cluster.timestamps.length - 1] || 0;
+    const firstTouch = cluster.openTimes[0] || 0;
+    const lastTouch = cluster.openTimes[cluster.openTimes.length - 1] || 0;
     
     const startPoint: AIPatternPoint = {
-      timestamp: firstTouch,
+      openTime: firstTouch,
       price: cluster.price,
     };
     
     const endPoint: AIPatternPoint = {
-      timestamp: lastTouch,
+      openTime: lastTouch,
       price: cluster.price,
     };
 
@@ -190,7 +190,7 @@ export const detectResistance = (
       label: `Resistance at ${cluster.price.toFixed(2)} · ${cluster.touches} touches · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
       confidence,
       visible: true,
-      timestamp: firstTouch,
+      openTime: firstTouch,
     });
   }
 

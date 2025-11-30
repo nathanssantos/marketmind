@@ -190,7 +190,7 @@ export const CalendarPanel = ({ symbols, refetchTrigger }: CalendarPanelProps) =
         if (settings.enabled && (refetchTrigger === undefined || refetchTrigger > 0)) {
             console.log('[CalendarPanel] Fetching events, trigger:', refetchTrigger);
             const filter = symbols ? { symbols } : {};
-            fetchEvents(filter);
+            void fetchEvents(filter);
         }
     }, [refetchTrigger, symbols, fetchEvents, settings.enabled]);
 

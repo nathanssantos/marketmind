@@ -1,6 +1,6 @@
 import type { AIPattern } from './aiPattern';
 import type { CalendarEvent } from './calendar';
-import type { Candle } from './candle';
+import type { Kline } from './kline';
 
 export interface AIProvider {
   id: string;
@@ -15,7 +15,7 @@ export interface AIMessage {
   role: 'user' | 'assistant';
   content: string;
   images?: string[];
-  timestamp: number;
+  openTime: number;
   model?: string;
 }
 
@@ -37,7 +37,7 @@ export interface NewsArticle {
 
 export interface AIAnalysisRequest {
   chartImage: string;
-  candles: Candle[];
+  klines: Kline[];
   news?: NewsArticle[];
   events?: CalendarEvent[];
   context?: string;

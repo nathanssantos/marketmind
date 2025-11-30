@@ -219,7 +219,7 @@ Restrict analysis to specific timeframes:
 **Solutions**:
 1. Check AI configuration (API key valid)
 2. Verify wallet has sufficient balance
-3. Ensure chart has enough candle data (20+ candles)
+3. Ensure chart has enough kline data (20+ klines)
 4. Check if price movement meets threshold
 5. Review trading limits (may have hit daily/hourly cap)
 

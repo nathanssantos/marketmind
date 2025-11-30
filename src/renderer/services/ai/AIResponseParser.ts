@@ -62,9 +62,9 @@ export const validateAIPattern = (pattern: unknown): pattern is AIPattern => {
     return (
       p !== null &&
       typeof p === 'object' &&
-      'timestamp' in p &&
+      'openTime' in p &&
       'price' in p &&
-      typeof p.timestamp === 'number' &&
+      typeof p.openTime === 'number' &&
       typeof p.price === 'number'
     );
   };
@@ -81,10 +81,10 @@ export const validateAIPattern = (pattern: unknown): pattern is AIPattern => {
     return (
       typeof s.topPrice === 'number' &&
       typeof s.bottomPrice === 'number' &&
-      typeof s.startTimestamp === 'number' &&
-      typeof s.endTimestamp === 'number' &&
+      typeof s.startOpenTime === 'number' &&
+      typeof s.endOpenTime === 'number' &&
       s.topPrice > s.bottomPrice &&
-      s.endTimestamp > s.startTimestamp
+      s.endOpenTime > s.startOpenTime
     );
   }
 

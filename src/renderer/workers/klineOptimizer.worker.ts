@@ -1,13 +1,13 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import {
-    optimizeCandles,
+    optimizeKlines,
     type OptimizationResult,
-    type SimplifiedCandle,
-} from '../utils/candleOptimization';
+    type SimplifiedKline,
+} from '../utils/klineOptimization';
 
 export interface OptimizerWorkerRequest {
-  type: 'optimizeCandles';
-  candles: Candle[];
+  type: 'optimizeKlines';
+  klines: Kline[];
   detailedCount?: number;
 }
 
@@ -16,11 +16,11 @@ export interface OptimizerWorkerResponse extends OptimizationResult {
 }
 
 self.onmessage = (event: MessageEvent<OptimizerWorkerRequest>) => {
-  const { type, candles, detailedCount } = event.data;
+  const { type, klines, detailedCount } = event.data;
 
-  if (type !== 'optimizeCandles') return;
+  if (type !== 'optimizeKlines') return;
 
-  const result = optimizeCandles(candles, detailedCount);
+  const result = optimizeKlines(klines, detailedCount);
 
   const response: OptimizerWorkerResponse = {
     type: 'optimizedResult',
@@ -31,5 +31,5 @@ self.onmessage = (event: MessageEvent<OptimizerWorkerRequest>) => {
 };
 
 export { };
-export type { SimplifiedCandle };
+export type { SimplifiedKline };
 

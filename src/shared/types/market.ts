@@ -1,10 +1,37 @@
-import type { Candle, CandleData, TimeInterval } from './candle';
+import type { Kline, KlineData, TimeInterval } from './kline';
+
+export type SymbolStatus = 'TRADING' | 'HALT' | 'BREAK';
+
+export interface SymbolFilter {
+  filterType: string;
+  [key: string]: string | number | boolean;
+}
 
 export interface Symbol {
   symbol: string;
+  status: SymbolStatus;
   baseAsset: string;
+  baseAssetPrecision: number;
   quoteAsset: string;
-  displayName: string;
+  quotePrecision: number;
+  quoteAssetPrecision: number;
+  baseCommissionPrecision: number;
+  quoteCommissionPrecision: number;
+  orderTypes: string[];
+  icebergAllowed: boolean;
+  ocoAllowed: boolean;
+  otoAllowed?: boolean;
+  quoteOrderQtyMarketAllowed: boolean;
+  allowTrailingStop: boolean;
+  cancelReplaceAllowed: boolean;
+  isSpotTradingAllowed: boolean;
+  isMarginTradingAllowed: boolean;
+  filters: SymbolFilter[];
+  permissions: string[];
+  permissionSets?: string[][];
+  defaultSelfTradePreventionMode?: string;
+  allowedSelfTradePreventionModes?: string[];
+  displayName?: string;
 }
 
 export interface SymbolInfo {
@@ -29,7 +56,7 @@ export interface MarketProviderConfig {
   enabled: boolean;
 }
 
-export interface FetchCandlesOptions {
+export interface FetchKlinesOptions {
   symbol: string;
   interval: TimeInterval;
   limit?: number;
@@ -47,7 +74,7 @@ export interface MarketDataError {
 export interface WebSocketUpdate {
   symbol: string;
   interval: TimeInterval;
-  candle: Candle;
+  kline: Kline;
   isFinal: boolean;
 }
 
@@ -59,6 +86,8 @@ export interface WebSocketSubscription {
   callback: WebSocketCallback;
 }
 
+const MS_PER_SECOND = 1000;
+
 export abstract class BaseMarketProvider {
   protected config: MarketProviderConfig;
   protected lastRequestTime = 0;
@@ -68,7 +97,7 @@ export abstract class BaseMarketProvider {
     this.config = config;
   }
 
-  abstract fetchCandles(options: FetchCandlesOptions): Promise<CandleData>;
+  abstract fetchKlines(options: FetchKlinesOptions): Promise<KlineData>;
   abstract searchSymbols(query: string): Promise<Symbol[]>;
   abstract getSymbolInfo(symbol: string): Promise<SymbolInfo>;
   abstract normalizeSymbol(symbol: string): string;
@@ -83,7 +112,7 @@ export abstract class BaseMarketProvider {
 
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
-    const minInterval = 1000 / this.config.rateLimit;
+    const minInterval = MS_PER_SECOND / this.config.rateLimit;
 
     if (timeSinceLastRequest < minInterval) {
       const delay = minInterval - timeSinceLastRequest;

@@ -94,7 +94,7 @@ export const buildOptimizedMessages = (
       id: 'summary',
       role: 'assistant',
       content: summary,
-      timestamp: Date.now(),
+      openTime: Date.now(),
     });
   }
   

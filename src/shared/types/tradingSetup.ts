@@ -38,7 +38,7 @@ export interface TradingSetup {
   id: string;
   type: SetupType;
   direction: SetupDirection;
-  timestamp: number;
+  openTime: number;
   entryPrice: number;
   stopLoss: number;
   takeProfit: number;
@@ -46,7 +46,7 @@ export interface TradingSetup {
   confidence: number;
   volumeConfirmation: boolean;
   indicatorConfluence: number;
-  candleIndex: number;
+  klineIndex: number;
   setupData: SetupSpecificData;
   visible: boolean;
   source: 'algorithm';
@@ -60,7 +60,7 @@ export interface TradingSetup {
 
 export interface PivotPoint {
   index: number;
-  timestamp: number;
+  openTime: number;
   price: number;
   type: 'high' | 'low';
 }
@@ -69,14 +69,14 @@ export interface FVG {
   type: 'bullish' | 'bearish';
   top: number;
   bottom: number;
-  timestamp: number;
+  openTime: number;
 }
 
 export interface OrderBlock {
   type: 'bullish' | 'bearish';
   high: number;
   low: number;
-  timestamp: number;
+  openTime: number;
 }
 
 export interface VolumeCluster {

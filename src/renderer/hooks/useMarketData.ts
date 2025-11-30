@@ -1,4 +1,4 @@
-import type { CandleData, TimeInterval } from '@shared/types';
+import type { KlineData, TimeInterval } from '@shared/types';
 import { useCallback, useEffect, useState } from 'react';
 import type { MarketDataService } from '../services/market/MarketDataService';
 
@@ -10,7 +10,7 @@ interface UseMarketDataOptions {
 }
 
 interface UseMarketDataReturn {
-  data: CandleData | null;
+  data: KlineData | null;
   loading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
@@ -21,7 +21,7 @@ export const useMarketData = (
   options: UseMarketDataOptions
 ): UseMarketDataReturn => {
   const { symbol, interval, limit = 500, enabled = true } = options;
-  const [data, setData] = useState<CandleData | null>(null);
+  const [data, setData] = useState<KlineData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -32,7 +32,7 @@ export const useMarketData = (
     setError(null);
 
     try {
-      const result = await service.fetchCandles({
+      const result = await service.fetchKlines({
         symbol,
         interval,
         limit,

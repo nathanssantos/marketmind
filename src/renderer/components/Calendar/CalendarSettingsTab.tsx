@@ -5,6 +5,7 @@ import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Select } from '@/renderer/components/ui/select';
 import { Box, Separator, Text, VStack } from '@chakra-ui/react';
 import type { EventImportance } from '@shared/types';
+import type React from 'react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw } from 'react-icons/lu';

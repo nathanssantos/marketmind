@@ -1,29 +1,30 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineHigh, getKlineLow } from '@shared/utils';
 
 const DEFAULT_ATR_PERIOD = 14;
 
 export const calculateATR = (
-  candles: Candle[],
+  klines: Kline[],
   period = DEFAULT_ATR_PERIOD,
 ): number[] => {
-  if (candles.length === 0) return [];
+  if (klines.length === 0) return [];
 
   const trueRanges: number[] = [];
 
-  for (let i = 0; i < candles.length; i++) {
-    const current = candles[i];
+  for (let i = 0; i < klines.length; i++) {
+    const current = klines[i];
     if (!current) continue;
 
     if (i === 0) {
-      trueRanges.push(current.high - current.low);
+      trueRanges.push(getKlineHigh(current) - getKlineLow(current));
     } else {
-      const prev = candles[i - 1];
+      const prev = klines[i - 1];
       if (!prev) continue;
 
       const tr = Math.max(
-        current.high - current.low,
-        Math.abs(current.high - prev.close),
-        Math.abs(current.low - prev.close),
+        getKlineHigh(current) - getKlineLow(current),
+        Math.abs(getKlineHigh(current) - getKlineClose(prev)),
+        Math.abs(getKlineLow(current) - getKlineClose(prev)),
       );
 
       trueRanges.push(tr);

@@ -1,24 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../shared/types/candle';
+import type { Kline } from '../../../shared/types/kline';
+import { getKlineClose } from '../../../shared/utils/klineUtils';
 import {
     createDefaultDivergenceConfig,
     DivergenceDetector,
 } from './DivergenceDetector';
 
-const createCandle = (
+const createKline = (
   open: number,
   high: number,
   low: number,
   close: number,
   volume: number = 1000000,
-  timestamp: number = Date.now()
-): Candle => ({
-  timestamp,
-  open,
-  high,
-  low,
-  close,
-  volume,
+  openTime: number = Date.now()
+): Kline => ({
+  openTime,
+  closeTime: openTime + 60000,
+  open: open.toString(),
+  high: high.toString(),
+  low: low.toString(),
+  close: close.toString(),
+  volume: volume.toString(),
+  quoteVolume: (volume * close).toString(),
+  trades: 100,
+  takerBuyBaseVolume: (volume * 0.5).toString(),
+  takerBuyQuoteVolume: (volume * close * 0.5).toString(),
 });
 
 describe('DivergenceDetector', () => {
@@ -45,24 +51,24 @@ describe('DivergenceDetector', () => {
       const config = { ...createDefaultDivergenceConfig(), enabled: false };
       const detector = new DivergenceDetector(config);
 
-      const candles = [
-        createCandle(100, 110, 95, 105),
-        createCandle(105, 108, 103, 107),
-        createCandle(107, 109, 106, 108),
+      const klines = [
+        createKline(100, 110, 95, 105),
+        createKline(105, 108, 103, 107),
+        createKline(107, 109, 106, 108),
       ];
 
-      const result = detector.detect(candles, 2);
+      const result = detector.detect(klines, 2);
       expect(result.setup).toBeNull();
       expect(result.confidence).toBe(0);
     });
 
-    it('should return null when not enough candles', () => {
+    it('should return null when not enough klines', () => {
       const config = { ...createDefaultDivergenceConfig(), enabled: true };
       const detector = new DivergenceDetector(config);
 
-      const candles = [createCandle(100, 110, 95, 105)];
+      const klines = [createKline(100, 110, 95, 105)];
 
-      const result = detector.detect(candles, 0);
+      const result = detector.detect(klines, 0);
       expect(result.setup).toBeNull();
       expect(result.confidence).toBe(0);
     });
@@ -77,13 +83,13 @@ describe('DivergenceDetector', () => {
       const detector = new DivergenceDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i += 1) {
-        candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
+        klines.push(createKline(100, 101, 99, 100, 1000000, baseTime + i * 60000));
       }
 
-      const result = detector.detect(candles, 49);
+      const result = detector.detect(klines, 49);
       expect(result.setup).toBeNull();
     });
   });
@@ -102,15 +108,15 @@ describe('DivergenceDetector', () => {
       const _detector = new DivergenceDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 30; i += 1) {
         const price = 100 - i * 0.5;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
       }
 
-      expect(candles.length).toBeGreaterThanOrEqual(30);
-      expect(candles[0]?.close).toBeGreaterThan(candles[29]?.close ?? 0);
+      expect(klines.length).toBeGreaterThanOrEqual(30);
+      expect(getKlineClose(klines[0]!)).toBeGreaterThan(getKlineClose(klines[29]!));
     });
 
     it('should detect bearish RSI divergence pattern', () => {
@@ -126,15 +132,15 @@ describe('DivergenceDetector', () => {
       const _detector = new DivergenceDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 30; i += 1) {
         const price = 100 + i * 0.5;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
       }
 
-      expect(candles.length).toBeGreaterThanOrEqual(30);
-      expect(candles[0]?.close).toBeLessThan(candles[29]?.close ?? 0);
+      expect(klines.length).toBeGreaterThanOrEqual(30);
+      expect(getKlineClose(klines[0]!)).toBeLessThan(getKlineClose(klines[29]!));
     });
 
     it('should validate price makes lower low for bullish divergence', () => {
@@ -168,14 +174,14 @@ describe('DivergenceDetector', () => {
       const _detector = new DivergenceDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 40; i += 1) {
         const price = 100 - i * 0.3;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
       }
 
-      expect(candles.length).toBeGreaterThanOrEqual(40);
+      expect(klines.length).toBeGreaterThanOrEqual(40);
     });
 
     it('should detect bearish MACD divergence pattern', () => {
@@ -193,14 +199,14 @@ describe('DivergenceDetector', () => {
       const _detector = new DivergenceDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 40; i += 1) {
         const price = 100 + i * 0.3;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
       }
 
-      expect(candles.length).toBeGreaterThanOrEqual(40);
+      expect(klines.length).toBeGreaterThanOrEqual(40);
     });
 
     it('should validate MACD makes higher low while price makes lower low', () => {

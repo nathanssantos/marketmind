@@ -1,13 +1,13 @@
 /* eslint-disable no-undef */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  clearCanvas,
-  drawCandle,
-  drawGrid,
-  drawLine,
-  drawRect,
-  drawText,
-  setupCanvas,
+    clearCanvas,
+    drawGrid,
+    drawKline,
+    drawLine,
+    drawRect,
+    drawText,
+    setupCanvas,
 } from './drawingUtils';
 
 describe('drawingUtils', () => {
@@ -102,8 +102,8 @@ describe('drawingUtils', () => {
     });
   });
 
-  describe('drawCandle', () => {
-    it('should draw bullish candle', () => {
+  describe('drawKline', () => {
+    it('should draw bullish kline', () => {
       const x = 100;
       const openY = 200;
       const closeY = 150;
@@ -114,12 +114,12 @@ describe('drawingUtils', () => {
       const bullishColor = '#00ff00';
       const bearishColor = '#ff0000';
 
-      drawCandle(ctx, x, openY, closeY, highY, lowY, width, wickWidth, bullishColor, bearishColor);
+      drawKline(ctx, x, openY, closeY, highY, lowY, width, wickWidth, bullishColor, bearishColor);
       
       expect(ctx.fillStyle).toContain('00ff00');
     });
 
-    it('should draw bearish candle', () => {
+    it('should draw bearish kline', () => {
       const x = 100;
       const openY = 150;
       const closeY = 200;
@@ -130,12 +130,12 @@ describe('drawingUtils', () => {
       const bullishColor = '#00ff00';
       const bearishColor = '#ff0000';
 
-      drawCandle(ctx, x, openY, closeY, highY, lowY, width, wickWidth, bullishColor, bearishColor);
+      drawKline(ctx, x, openY, closeY, highY, lowY, width, wickWidth, bullishColor, bearishColor);
       
       expect(ctx.fillStyle).toContain('ff0000');
     });
 
-    it('should draw doji candle (open equals close)', () => {
+    it('should draw doji kline (open equals close)', () => {
       const x = 100;
       const openY = 175;
       const closeY = 175;
@@ -144,12 +144,12 @@ describe('drawingUtils', () => {
       const width = 10;
       const wickWidth = 1;
 
-      drawCandle(ctx, x, openY, closeY, highY, lowY, width, wickWidth, '#00ff00', '#ff0000');
+      drawKline(ctx, x, openY, closeY, highY, lowY, width, wickWidth, '#00ff00', '#ff0000');
       
       expect(ctx.stroke).toHaveBeenCalled();
     });
 
-    it('should apply shadow effect when candle is highlighted', () => {
+    it('should apply shadow effect when kline is highlighted', () => {
       const mockCtx = {
         ...ctx,
         shadowColor: '',
@@ -167,7 +167,7 @@ describe('drawingUtils', () => {
       const bearishColor = '#ff0000';
       const isHighlighted = true;
 
-      drawCandle(mockCtx, x, openY, closeY, highY, lowY, width, wickWidth, bullishColor, bearishColor, isHighlighted);
+      drawKline(mockCtx, x, openY, closeY, highY, lowY, width, wickWidth, bullishColor, bearishColor, isHighlighted);
       
       expect(mockCtx.save).toHaveBeenCalled();
       expect(mockCtx.restore).toHaveBeenCalled();

@@ -54,6 +54,7 @@
       "chart": "Gráfico",
       "ai": "Configuración de IA",
       "aiTrading": "Auto-Trading IA",
+      "algorithmicAutoTrading": "Auto-Trading Algorítmico",
       "setupDetection": "Detección de Setups",
       "patternDetection": "Detección de Patrones",
       "news": "Noticias",
@@ -103,9 +104,9 @@
       "rightMarginHelper": "Espacio reservado en el lado derecho del gráfico",
       "volumeHeightRatio": "Proporción de Altura del Volumen",
       "volumeHeightRatioHelper": "Altura de las barras de volumen relativa al gráfico (0-1)",
-      "candleSettings": "Configuración de Velas",
-      "candleSpacing": "Espaciado de Velas",
-      "candleSpacingHelper": "Espacio entre velas",
+      "klineSettings": "Configuración de Velas",
+      "klineSpacing": "Espaciado de Velas",
+      "klineSpacingHelper": "Espacio entre velas",
       "wickWidth": "Ancho de Mecha",
       "wickWidthHelper": "Ancho de las mechas de las velas",
       "gridSettings": "Configuración de Cuadrícula",
@@ -151,8 +152,8 @@
       "temperatureHelper": "Controla la aleatoriedad (0 = enfocado, 2 = creativo)",
       "maxTokens": "Máx. Tokens: {{value}}",
       "maxTokensHelper": "Longitud máxima de respuesta",
-      "detailedCandles": "Velas Detalladas: {{value}}",
-      "detailedCandlesHelper": "Número de velas recientes enviadas con detalles completos a la IA",
+      "detailedKlines": "Velas Detalladas: {{value}}",
+      "detailedKlinesHelper": "Número de velas recientes enviadas con detalles completos a la IA",
       "patternDetection": {
         "title": "Detección de Patrones",
         "mode": "Modo de Detección",
@@ -236,6 +237,17 @@
         "clearAll": "Borrar Todos los Datos"
       },
       "confirmClearAll": "¿Estás seguro de que quieres borrar todos los datos de trading? Esta acción no se puede deshacer."
+    },
+    "algorithmicAutoTrading": {
+      "title": "Auto-Trading Algorítmico",
+      "description": "Configure la ejecución automática de órdenes basada en setups de trading detectados.",
+      "status": {
+        "title": "Estado del Auto-Trading",
+        "description": "Active o desactive la apertura automática de órdenes cuando se detecten setups de trading en el gráfico.",
+        "active": "Auto-trading está activo - las órdenes se crearán automáticamente",
+        "inactive": "Auto-trading está inactivo - los setups solo se detectarán y mostrarán",
+        "info": "Esta función funciona con el sistema de detección de setups. Asegúrese de activar al menos un tipo de setup en la pestaña Detección de Setups antes de activar el auto-trading."
+      }
     }
   },
   "chat": {
@@ -262,7 +274,7 @@
       "title": "Controles del Gráfico",
       "timeframe": "Marco Temporal",
       "chartType": "Tipo de Gráfico",
-      "candlestickChart": "Gráfico de Velas",
+      "klineChart": "Gráfico de Velas",
       "lineChart": "Gráfico de Línea",
       "display": "Visualización",
       "volume": "Volumen",
@@ -293,15 +305,15 @@
     },
     "navigation": {
       "resetView": "Volver a la vista inicial",
-      "nextCandle": "Siguiente vela",
-      "candleTimer": "Tiempo hasta la próxima vela"
+      "nextKline": "Siguiente vela",
+      "klineTimer": "Tiempo hasta la próxima vela"
     },
     "advanced": {
       "title": "Configuración Avanzada",
       "chartDimensions": "Dimensiones del Gráfico",
       "rightMargin": "Margen Derecho",
       "volumeHeight": "Altura del Volumen %",
-      "candleSettings": "Configuración de Velas",
+      "klineSettings": "Configuración de Velas",
       "spacing": "Espaciado",
       "wickWidth": "Ancho de Mecha",
       "gridSettings": "Configuración de Cuadrícula",
@@ -610,7 +622,7 @@
     "formationPeriod": {
       "label": "Período de Formación",
       "helper": "Período de retrospectiva para detección de patrones",
-      "candles": "velas"
+      "klines": "velas"
     },
     "trendlineAccuracy": {
       "label": "Precisión de Línea de Tendencia (R²)",

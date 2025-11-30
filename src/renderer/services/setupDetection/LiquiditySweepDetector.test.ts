@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../shared/types/candle';
 import { LiquiditySweepDetector, createDefaultLiquiditySweepConfig } from './LiquiditySweepDetector';
 
-const createCandle = (
+const createKline = (
   high: number,
   low: number,
   close: number,
   volume: number = 1000
-): Candle => ({
-  timestamp: Date.now(),
+): Kline => ({
+  openTime: Date.now(),
   open: (high + low) / 2,
   high,
   low,
@@ -53,8 +52,8 @@ describe('LiquiditySweepDetector', () => {
       const config = createDefaultLiquiditySweepConfig();
       const detector = new LiquiditySweepDetector(config);
 
-      const candles = [createCandle(100, 90, 95)];
-      const result = detector.detect(candles, 0);
+      const klines = [createKline(100, 90, 95)];
+      const result = detector.detect(klines, 0);
 
       expect(result.setup).toBeNull();
       expect(result.confidence).toBe(0);
@@ -64,8 +63,8 @@ describe('LiquiditySweepDetector', () => {
       const config = { ...createDefaultLiquiditySweepConfig(), enabled: true };
       const detector = new LiquiditySweepDetector(config);
 
-      const candles = Array.from({ length: 20 }, () => createCandle(100, 90, 95));
-      const result = detector.detect(candles, 10);
+      const klines = Array.from({ length: 20 }, () => createKline(100, 90, 95));
+      const result = detector.detect(klines, 10);
 
       expect(result.setup).toBeNull();
     });
@@ -74,13 +73,13 @@ describe('LiquiditySweepDetector', () => {
       const config = { ...createDefaultLiquiditySweepConfig(), enabled: true };
       const detector = new LiquiditySweepDetector(config);
 
-      const candles = [
-        ...Array.from({ length: 20 }, () => createCandle(110, 100, 105)),
-        createCandle(115, 100.5, 102),
-        createCandle(108, 98, 106),
+      const klines = [
+        ...Array.from({ length: 20 }, () => createKline(110, 100, 105)),
+        createKline(115, 100.5, 102),
+        createKline(108, 98, 106),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
   });
@@ -98,13 +97,13 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const supportLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.5, 100, 2000),
-        createCandle(108, 100.5, 106, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.5, 100, 2000),
+        createKline(108, 100.5, 106, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
 
       expect(result.setup).toBeDefined();
       expect(result.setup?.type).toBe('liquidity-sweep');
@@ -124,13 +123,13 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const supportLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.9, 100, 2000),
-        createCandle(108, 100.5, 106, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.9, 100, 2000),
+        createKline(108, 100.5, 106, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
 
@@ -143,17 +142,17 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const supportLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.5, 100, 2000),
-        createCandle(104, 99.7, 100, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.5, 100, 2000),
+        createKline(104, 99.7, 100, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
 
-    it('should require bullish reversal candle', () => {
+    it('should require bullish reversal kline', () => {
       const config = {
         ...createDefaultLiquiditySweepConfig(),
         enabled: true,
@@ -161,13 +160,13 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const supportLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.5, 101, 2000),
-        createCandle(102, 98, 100, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.5, 101, 2000),
+        createKline(102, 98, 100, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
   });
@@ -185,13 +184,13 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const resistanceLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(resistanceLevel, 90, 95, 1000)),
-        createCandle(100.5, 98, 100, 2000),
-        createCandle(99.5, 92, 94, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(resistanceLevel, 90, 95, 1000)),
+        createKline(100.5, 98, 100, 2000),
+        createKline(99.5, 92, 94, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
 
       expect(result.setup).toBeDefined();
       expect(result.setup?.type).toBe('liquidity-sweep');
@@ -209,17 +208,17 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const resistanceLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(resistanceLevel, 90, 95, 1000)),
-        createCandle(99.5, 98, 99, 2000),
-        createCandle(99, 92, 94, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(resistanceLevel, 90, 95, 1000)),
+        createKline(99.5, 98, 99, 2000),
+        createKline(99, 92, 94, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
 
-    it('should require bearish reversal candle', () => {
+    it('should require bearish reversal kline', () => {
       const config = {
         ...createDefaultLiquiditySweepConfig(),
         enabled: true,
@@ -227,13 +226,13 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const resistanceLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(resistanceLevel, 90, 95, 1000)),
-        createCandle(100.5, 98, 99, 2000),
-        createCandle(102, 99, 101, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(resistanceLevel, 90, 95, 1000)),
+        createKline(100.5, 98, 99, 2000),
+        createKline(102, 99, 101, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
   });
@@ -248,20 +247,20 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const supportLevel = 100;
-      const candlesWithSpike = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.5, 100, 2000),
-        createCandle(108, 100.5, 106, 1000),
+      const klinesWithSpike = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.5, 100, 2000),
+        createKline(108, 100.5, 106, 1000),
       ];
 
-      const candlesWithoutSpike = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.5, 100, 1000),
-        createCandle(108, 100.5, 106, 1000),
+      const klinesWithoutSpike = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.5, 100, 1000),
+        createKline(108, 100.5, 106, 1000),
       ];
 
-      const resultWithSpike = detector.detect(candlesWithSpike, candlesWithSpike.length - 1);
-      const resultWithoutSpike = detector.detect(candlesWithoutSpike, candlesWithoutSpike.length - 1);
+      const resultWithSpike = detector.detect(klinesWithSpike, klinesWithSpike.length - 1);
+      const resultWithoutSpike = detector.detect(klinesWithoutSpike, klinesWithoutSpike.length - 1);
 
       if (resultWithSpike.setup && resultWithoutSpike.setup) {
         expect(resultWithSpike.confidence).toBeGreaterThan(resultWithoutSpike.confidence);
@@ -277,13 +276,13 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const supportLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.5, 100, 1000),
-        createCandle(108, 100.5, 106, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.5, 100, 1000),
+        createKline(108, 100.5, 106, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeDefined();
     });
   });
@@ -297,13 +296,13 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const supportLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.5, 100, 1000),
-        createCandle(108, 100.5, 106, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.5, 100, 1000),
+        createKline(108, 100.5, 106, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.confidence).toBeGreaterThanOrEqual(70);
       expect(result.confidence).toBeLessThanOrEqual(95);
     });
@@ -316,13 +315,13 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const supportLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.5, 100, 5000),
-        createCandle(108, 100.5, 106, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.5, 100, 5000),
+        createKline(108, 100.5, 106, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.confidence).toBeLessThanOrEqual(95);
     });
   });
@@ -336,8 +335,8 @@ describe('LiquiditySweepDetector', () => {
       };
       const detector = new LiquiditySweepDetector(config);
 
-      const candles = Array.from({ length: 15 }, () => createCandle(100, 90, 95));
-      const result = detector.detect(candles, candles.length - 1);
+      const klines = Array.from({ length: 15 }, () => createKline(100, 90, 95));
+      const result = detector.detect(klines, klines.length - 1);
       expect(result).toBeDefined();
     });
 
@@ -350,13 +349,13 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const supportLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.7, 100, 2000),
-        createCandle(108, 100.5, 106, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.7, 100, 2000),
+        createKline(108, 100.5, 106, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
 
@@ -369,13 +368,13 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const supportLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.0, 100, 2000),
-        createCandle(108, 100.5, 106, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.0, 100, 2000),
+        createKline(108, 100.5, 106, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
 
@@ -388,13 +387,13 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const supportLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.5, 100, 2000),
-        createCandle(108, 100.5, 100.2, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.5, 100, 2000),
+        createKline(108, 100.5, 100.2, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
 
@@ -407,13 +406,13 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const supportLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.5, 100, 2000),
-        createCandle(108, 100.5, 106, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.5, 100, 2000),
+        createKline(108, 100.5, 106, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
 
       if (result.setup) {
         const risk = result.setup.entryPrice - result.setup.stopLoss;
@@ -434,14 +433,14 @@ describe('LiquiditySweepDetector', () => {
 
       const supportLevel = 100;
       const resistanceLevel = 120;
-      const candles = [
-        ...Array.from({ length: 15 }, () => createCandle(resistanceLevel, supportLevel, 110, 1000)),
-        ...Array.from({ length: 10 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.5, 100, 2000),
-        createCandle(108, 100.5, 106, 1000),
+      const klines = [
+        ...Array.from({ length: 15 }, () => createKline(resistanceLevel, supportLevel, 110, 1000)),
+        ...Array.from({ length: 10 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.5, 100, 2000),
+        createKline(108, 100.5, 106, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
 
       if (result.setup) {
         expect(result.setup.takeProfit).toBeLessThanOrEqual(resistanceLevel);
@@ -457,14 +456,14 @@ describe('LiquiditySweepDetector', () => {
 
       const supportLevel = 80;
       const resistanceLevel = 100;
-      const candles = [
-        ...Array.from({ length: 15 }, () => createCandle(resistanceLevel, supportLevel, 90, 1000)),
-        ...Array.from({ length: 10 }, () => createCandle(resistanceLevel, 90, 95, 1000)),
-        createCandle(100.5, 98, 100, 2000),
-        createCandle(99.5, 92, 94, 1000),
+      const klines = [
+        ...Array.from({ length: 15 }, () => createKline(resistanceLevel, supportLevel, 90, 1000)),
+        ...Array.from({ length: 10 }, () => createKline(resistanceLevel, 90, 95, 1000)),
+        createKline(100.5, 98, 100, 2000),
+        createKline(99.5, 92, 94, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
 
       if (result.setup) {
         expect(result.setup.takeProfit).toBeGreaterThanOrEqual(supportLevel);
@@ -480,13 +479,13 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const supportLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.5, 100, 2000),
-        createCandle(108, 100.5, 106, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.5, 100, 2000),
+        createKline(108, 100.5, 106, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
 
       if (result.setup) {
         const risk = result.setup.entryPrice - result.setup.stopLoss;
@@ -505,13 +504,13 @@ describe('LiquiditySweepDetector', () => {
       const detector = new LiquiditySweepDetector(config);
 
       const supportLevel = 100;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, 99.5, 100, 2000),
-        createCandle(108, 100.5, 106, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, 99.5, 100, 2000),
+        createKline(108, 100.5, 106, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
 
       if (result.setup) {
         const risk = Math.abs(result.setup.entryPrice - result.setup.stopLoss);
@@ -532,13 +531,13 @@ describe('LiquiditySweepDetector', () => {
 
       const supportLevel = 100;
       const sweepLow = 99.5;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(110, supportLevel, 105, 1000)),
-        createCandle(102, sweepLow, 100, 2000),
-        createCandle(108, 100.5, 106, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(110, supportLevel, 105, 1000)),
+        createKline(102, sweepLow, 100, 2000),
+        createKline(108, 100.5, 106, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
 
       if (result.setup) {
         expect(result.setup.stopLoss).toBe(sweepLow);
@@ -554,13 +553,13 @@ describe('LiquiditySweepDetector', () => {
 
       const resistanceLevel = 100;
       const sweepHigh = 100.5;
-      const candles = [
-        ...Array.from({ length: 25 }, () => createCandle(resistanceLevel, 90, 95, 1000)),
-        createCandle(sweepHigh, 98, 100, 2000),
-        createCandle(99.5, 92, 94, 1000),
+      const klines = [
+        ...Array.from({ length: 25 }, () => createKline(resistanceLevel, 90, 95, 1000)),
+        createKline(sweepHigh, 98, 100, 2000),
+        createKline(99.5, 92, 94, 1000),
       ];
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
 
       if (result.setup) {
         expect(result.setup.stopLoss).toBe(sweepHigh);

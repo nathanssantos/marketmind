@@ -16,7 +16,7 @@ const client = new OpenAI({
 
 async function testBasicChat() {
   console.log('1️⃣  Testing basic chat...');
-  
+
   try {
     const completion = await client.chat.completions.create({
       model: 'gpt-4o',
@@ -38,7 +38,7 @@ async function testBasicChat() {
     console.log('✅ Basic chat works!\n');
     console.log('Response:', response);
     console.log('\n' + '='.repeat(60) + '\n');
-    
+
     return true;
   } catch (error) {
     console.error('❌ Basic chat failed:', error.message);
@@ -48,10 +48,10 @@ async function testBasicChat() {
 
 async function testChartAnalysis() {
   console.log('2️⃣  Testing chart analysis prompt...');
-  
+
   const mockChartAnalysisPrompt = `You are an expert technical analyst with deep knowledge of financial markets, chart patterns, and trading strategies. Your role is to analyze charts and provide actionable insights based on:
 
-1. **Candlestick Patterns**: Identify formations like doji, hammer, engulfing, shooting star, etc.
+1. **Kline Patterns**: Identify formations like doji, hammer, engulfing, shooting star, etc.
 2. **Trend Analysis**: Determine if the market is bullish, bearish, or sideways
 3. **Support & Resistance**: Identify key price levels
 4. **Technical Indicators**: Analyze moving averages, volume, and other visible indicators
@@ -74,7 +74,7 @@ Format your response with:
         },
         {
           role: 'user',
-          content: `Analyze this scenario: Bitcoin is trading at $45,000. The price has formed a bullish hammer candle on the daily chart after a downtrend. The 50-day MA is at $43,000 and the 200-day MA is at $40,000. Volume is increasing.`
+          content: `Analyze this scenario: Bitcoin is trading at $45,000. The price has formed a bullish hammer kline on the daily chart after a downtrend. The 50-day MA is at $43,000 and the 200-day MA is at $40,000. Volume is increasing.`
         }
       ],
       temperature: 0.7,
@@ -85,7 +85,7 @@ Format your response with:
     console.log('✅ Chart analysis works!\n');
     console.log('Analysis:', response);
     console.log('\n' + '='.repeat(60) + '\n');
-    
+
     return true;
   } catch (error) {
     console.error('❌ Chart analysis failed:', error.message);
@@ -95,7 +95,7 @@ Format your response with:
 
 async function testSignalParsing() {
   console.log('3️⃣  Testing signal parsing...');
-  
+
   const mockResponse = `**Summary**
 The chart shows bullish momentum with strong support.
 
@@ -124,28 +124,28 @@ The chart shows bullish momentum with strong support.
 async function runTests() {
   console.log('Starting AI Integration Tests...\n');
   console.log('='.repeat(60) + '\n');
-  
+
   const results = [];
-  
+
   results.push(await testBasicChat());
   results.push(await testChartAnalysis());
   results.push(await testSignalParsing());
-  
+
   console.log('\n' + '='.repeat(60));
   console.log('Test Results:');
   console.log('='.repeat(60));
-  
+
   const passed = results.filter(r => r).length;
   const total = results.length;
-  
+
   console.log(`\n✅ Passed: ${passed}/${total}`);
   console.log(`${passed === total ? '🎉' : '⚠️ '} ${passed === total ? 'All tests passed!' : 'Some tests failed'}\n`);
-  
+
   if (passed === total) {
     console.log('✨ AI Integration is working correctly!');
     console.log('📝 Next: Add your API key to the app and test with the UI\n');
   }
-  
+
   process.exit(passed === total ? 0 : 1);
 }
 

@@ -37,7 +37,7 @@ Phase 19: Calendar & Performance Optimizations  ██████████�
 
 **Latest Development (v0.31.0):**
 - ✅ **Larry Williams EMA9 Setups:** Complete implementation of 3 new trading setups
-  - Setup 9.2 (EMA9 Pullback): Single candle pullback with 14 tests
+  - Setup 9.2 (EMA9 Pullback): Single kline pullback with 14 tests
   - Setup 9.3 (EMA9 Double Pullback): Conservative 2-close confirmation with 14 tests
   - Setup 9.4 (EMA9 Continuation): Temporary EMA9 failure pattern with 16 tests
   - Total: 8 algorithmic setups (10 original + 3 new Larry Williams)
@@ -55,10 +55,10 @@ Phase 19: Calendar & Performance Optimizations  ██████████�
   - Moving averages (3 duplicate implementations unified)
   - RSI (2 implementations consolidated)
   - 4 duplicate files removed
-- ✅ **Setup Detection Reliability:** Fixed minimum candle requirements
-  - Setup91: 29→32 candles (+10%)
-  - BullTrap/BearTrap: 40→70 candles (+75%)
-  - Pattern123: 15→30 candles (+100%)
+- ✅ **Setup Detection Reliability:** Fixed minimum kline requirements
+  - Setup91: 29→32 klines (+10%)
+  - BullTrap/BearTrap: 40→70 klines (+75%)
+  - Pattern123: 15→30 klines (+100%)
 - ✅ All 1,864 tests passing (100% pass rate)
 - ✅ 92.15% code coverage maintained
 
@@ -103,13 +103,13 @@ Phase 19: Calendar & Performance Optimizations  ██████████�
 **Completed:** November 14, 2025
 
 ### Deliverables
-- ✅ Candle data types (`Candle`, `CandleData`, `TimeInterval`)
+- ✅ Kline data types (`Kline`, `KlineData`, `TimeInterval`)
 - ✅ Chart types (`ChartType`, `ChartConfig`, `MovingAverage`, `Viewport`)
 - ✅ AI types (`AIProvider`, `AIMessage`, `AIAnalysisRequest`, `TradingSignal`)
 - ✅ Constants for chart configuration
 
 ### Key Files Created
-- `src/shared/types/candle.ts` - Market data types
+- `src/shared/types/kline.ts` - Market data types
 - `src/shared/types/chart.ts` - Chart configuration types
 - `src/shared/types/ai.ts` - AI integration types
 - `src/shared/types/index.ts` - Type exports
@@ -136,8 +136,8 @@ Phase 19: Calendar & Performance Optimizations  ██████████�
   - Dynamic right margin support
 
 #### Renderers
-- ✅ **CandlestickRenderer** - Full candlestick chart implementation
-  - Configurable candle spacing and wick width
+- ✅ **KlineRenderer** - Full kline chart implementation
+  - Configurable kline spacing and wick width
   - Bullish/bearish color logic
   - Optimized rendering (only visible area)
   
@@ -148,8 +148,8 @@ Phase 19: Calendar & Performance Optimizations  ██████████�
   
 - ✅ **VolumeRenderer** - Volume bars overlay
   - Configurable height ratio
-  - Color based on candle direction
-  - Synchronized with candles
+  - Color based on kline direction
+  - Synchronized with klines
   
 - ✅ **GridRenderer** - Grid and scales
   - Background grid with configurable line width
@@ -166,7 +166,7 @@ Phase 19: Calendar & Performance Optimizations  ██████████�
 #### User Interface
 - ✅ **ChartControls** - Main control panel
   - Timeframe selector (1m to 1M)
-  - Chart type toggle (candlestick/line)
+  - Chart type toggle (kline/line)
   - Volume/Grid display toggles
   - Moving averages toggles (5 MAs)
   - Collapsible panel with expand/collapse
@@ -175,7 +175,7 @@ Phase 19: Calendar & Performance Optimizations  ██████████�
 - ✅ **AdvancedControls** - Advanced settings panel
   - Right margin adjustment
   - Volume height ratio
-  - Candle spacing and wick width
+  - Kline spacing and wick width
   - Grid line width
   - Canvas padding (all sides)
   - Pin functionality for quick access
@@ -244,7 +244,7 @@ src/renderer/
 │   ├── PinnedControlsContext.tsx       ✅
 │   ├── TimeframeSelector.tsx           ✅
 │   ├── useChartCanvas.ts               ✅
-│   ├── useCandlestickRenderer.ts       ✅
+│   ├── useKlineRenderer.ts       ✅
 │   ├── useLineChartRenderer.ts         ✅
 │   ├── useGridRenderer.ts              ✅
 │   ├── useVolumeRenderer.ts            ✅
@@ -283,7 +283,7 @@ src/renderer/
 - ✅ **Market Types** - Complete TypeScript definitions
   - Symbol, SymbolInfo interfaces
   - MarketProviderConfig
-  - FetchCandlesOptions
+  - FetchKlinesOptions
   - MarketDataError type
   - BaseMarketProvider abstract class
 
@@ -291,11 +291,11 @@ src/renderer/
 - ✅ **BinanceProvider** - Primary cryptocurrency data source
   - REST API integration (`/api/v3/klines`, `/api/v3/exchangeInfo`)
   - **WebSocket integration** (`wss://stream.binance.com:9443/ws`)
-  - Real-time candle updates via WebSocket streams
+  - Real-time kline updates via WebSocket streams
   - No API key required for public data
   - Rate limiting (20 req/s)
   - Symbol search and normalization
-  - Complete OHLCV candlestick data
+  - Complete OHLCV kline data
   - Supports all timeframes (1m to 1M)
   - Exchange info caching (5min)
   - **Live updates with sub-second latency**
@@ -305,7 +305,7 @@ src/renderer/
   - No API key required
   - Rate limiting (10 req/s)
   - Coin search functionality
-  - Simplified candlestick data
+  - Simplified kline data
   - Automatic days mapping per interval
 
 #### Service Layer
@@ -327,16 +327,16 @@ src/renderer/
   - Manual refetch function
   - Enable/disable functionality
 
-- ✅ **useRealtimeCandle Hook** - WebSocket subscriptions
-  - Real-time candle updates
+- ✅ **useRealtimeKline Hook** - WebSocket subscriptions
+  - Real-time kline updates
   - Automatic subscription/unsubscription
-  - isFinal flag for closed candles
+  - isFinal flag for closed klines
   - Callback-based update handling
   
 - ✅ **App.tsx Integration**
   - MarketDataService instantiation
   - Real-time data fetching
-  - **Live candle updates via WebSocket**
+  - **Live kline updates via WebSocket**
   - **Smart merging of historical + live data**
   - Loading state display
   - Error message display
@@ -626,12 +626,12 @@ package.json                           ✅ (added @anthropic-ai/sdk, @google/gen
   - ChartContext for data sharing
   - Automatic chart data capture
   - Structured data sent to AI (not images)
-  - 100 candles historical data
+  - 100 klines historical data
   - Statistical analysis (highs, lows, trends)
-  - Price action summary (last 20 candles)
+  - Price action summary (last 20 klines)
   - Active indicators list
   - Volume analysis
-  - Bullish/bearish candle counts
+  - Bullish/bearish kline counts
   - Data formatted as text context
   - Clean chat UI (data not displayed)
 
@@ -664,7 +664,7 @@ package.json                           ✅ (added @anthropic-ai/sdk, @google/gen
   - **24 chart semantic tokens** (chart.background, chart.bullish, chart.bearish, etc.)
   - **getChartColors() helper** - Single source of truth for chart colors
   - **useChartColors() hook** - Reactive theme-aware chart rendering
-  - **Light theme palette** for all chart elements (candlesticks, volume, grid, MAs)
+  - **Light theme palette** for all chart elements (klines, volume, grid, MAs)
   - **AI pattern colors** with light/dark variants (8 pattern types)
   
 - ✅ **ColorModeProvider**
@@ -1183,7 +1183,7 @@ src/renderer/utils/
 
 - ✅ **Hook Tests (161 tests, 87.27% coverage)**
   - useDebounce, useLocalStorage, useChartData
-  - useMarketData, useSymbolSearch, useRealtimeCandle
+  - useMarketData, useSymbolSearch, useRealtimeKline
   - useAI (67 tests), useNews
   - useAutoUpdate (18 tests)
 
@@ -1403,7 +1403,7 @@ src/tests/
   - 300ms delay for better UX
   - Platform-aware tooltip positioning
   - Integrated throughout interface
-  - Chart controls (candlestick/line buttons)
+  - Chart controls (kline/line buttons)
   - Header buttons (theme, shortcuts, settings)
   
 - ✅ **ARIA Labels**
@@ -1575,12 +1575,12 @@ package.json                                  ✅ (version 0.12.0)
 - ✅ **Chart Renderer Fixes**
   - Fixed excessive re-renders in useGridRenderer
   - Fixed excessive re-renders in useVolumeRenderer
-  - Fixed excessive re-renders in useCandlestickRenderer
-  - Removed `manager?.getCandles()` from useCallback dependencies
-  - Stable callback functions that don't recreate on candle updates
+  - Fixed excessive re-renders in useKlineRenderer
+  - Removed `manager?.getKlines()` from useCallback dependencies
+  - Stable callback functions that don't recreate on kline updates
   
 - ✅ **Hook Optimizations**
-  - Fixed stale data in useMovingAverageRenderer (calls getCandles() inside render)
+  - Fixed stale data in useMovingAverageRenderer (calls getKlines() inside render)
   - Optimized useNews with useMemo for optionsKey (prevents JSON.stringify on every render)
   - Optimized ChartCanvas with useRef for interactionTimeoutRef
   - useChartData optimization with useRef tracking for params
@@ -1591,7 +1591,7 @@ package.json                                  ✅ (version 0.12.0)
   - Proper cleanup in all chart renderer hooks
   
 - ✅ **Other Fixes**
-  - CanvasManager zoom fix (added missing updateCandleWidth call)
+  - CanvasManager zoom fix (added missing updateKlineWidth call)
   - Prevents visual glitches during zoom operations
 
 #### Trading Simulator Improvements
@@ -1629,7 +1629,7 @@ package.json                                  ✅ (version 0.12.0)
 #### Code Quality
 - ✅ **Import Organization**
   - Consistent import ordering across worker hooks
-  - useBoundsWorker, useCandleOptimizerWorker, useConversationWorker, useMovingAverageWorker
+  - useBoundsWorker, useKlineOptimizerWorker, useConversationWorker, useMovingAverageWorker
   - Utilities imported before types
   
 - ✅ **Translations**
@@ -1659,7 +1659,7 @@ package.json                                  ✅ (version 0.12.0)
 ### Key Files Modified
 - `src/renderer/components/Chart/useGridRenderer.ts` - Performance fix
 - `src/renderer/components/Chart/useVolumeRenderer.ts` - Performance fix
-- `src/renderer/components/Chart/useCandlestickRenderer.ts` - Performance fix
+- `src/renderer/components/Chart/useKlineRenderer.ts` - Performance fix
 - `src/renderer/components/Chart/useMovingAverageRenderer.ts` - Stale data fix
 - `src/renderer/components/Chart/ChartCanvas.tsx` - useRef optimization
 - `src/renderer/hooks/useNews.ts` - useMemo optimization
@@ -1676,7 +1676,7 @@ package.json                                  ✅ (version 0.12.0)
 - ✅ All existing tests updated for new features
 
 ### Performance Impact
-- Chart renderers no longer recreate on every candle update
+- Chart renderers no longer recreate on every kline update
 - JSON.stringify eliminated from useNews hot path
 - Timeout state changes no longer cause re-renders
 - Memory leaks eliminated from NewsConfigTab
@@ -1696,14 +1696,14 @@ package.json                                  ✅ (version 0.12.0)
 ## 📈 MVP Progress (v1.0)
 
 ### Essential Features
-- [x] Candlestick chart rendering
+- [x] Kline chart rendering
 - [x] Line chart rendering
 - [x] Volume chart
 - [x] Grid and price labels
 - [x] Time labels
 - [x] Interactive tooltip
 - [x] 5 moving averages (EMA-9, SMA-20, SMA-50, SMA-100, SMA-200)
-- [x] Chart type switcher (candlestick/line)
+- [x] Chart type switcher (kline/line)
 - [x] Interactive controls for display options
 - [x] Advanced settings panel with pin functionality
 - [x] Timeframe selector
@@ -1741,7 +1741,7 @@ package.json                                  ✅ (version 0.12.0)
 **Completed:** November 15, 2025  
 **Progress:** 100%
 - ✅ Complete chart rendering system
-- ✅ Multiple chart types (candlestick, line)
+- ✅ Multiple chart types (kline, line)
 - ✅ Interactive features (zoom, pan, vertical zoom)
 - ✅ 5 moving averages with calculations
 - ✅ Advanced chart controls UI
@@ -1793,7 +1793,7 @@ package.json                                  ✅ (version 0.12.0)
 - ✅ Theme system with semantic tokens
 - ✅ MainLayout with side-by-side design
 - ✅ Chart context for data sharing
-- ✅ 100 candles + statistics sent to AI
+- ✅ 100 klines + statistics sent to AI
 - ✅ Clean chat UI (data not displayed)
 
 ### ⏳ Milestone 6: News & Polish (COMPLETED)
@@ -1886,8 +1886,8 @@ package.json                                  ✅ (version 0.12.0)
 - Full WebSocket test coverage for BinanceProvider
 - Integration tests for chart interactions
 - E2E tests with Playwright or Cypress
-- Data virtualization for large datasets (10k+ candles)
-- Lazy loading of historical candles
+- Data virtualization for large datasets (10k+ klines)
+- Lazy loading of historical klines
 - Data compression for storage
 - Conversation export/import functionality
 - Rate limiting for AI requests
@@ -1975,7 +1975,7 @@ package.json                                  ✅ (version 0.12.0)
   
 - 🎨 **Light Theme Development**
   - Designed complete light theme color palette for charts
-  - Light theme candlesticks (bullish: #16a34a, bearish: #dc2626)
+  - Light theme klines (bullish: #16a34a, bearish: #dc2626)
   - Light theme volume bars with transparency
   - Light theme grid, axes, and labels
   - Light theme moving averages (3 colors)
@@ -2088,8 +2088,8 @@ package.json                                  ✅ (version 0.12.0)
   - Fixed chat send button getting stuck
   
 - ✨ **Chart Rendering Improvements**
-  - Added `manager?.getCandles()` dependency to all renderer hooks
-  - Chart now responds correctly to candle data changes
+  - Added `manager?.getKlines()` dependency to all renderer hooks
+  - Chart now responds correctly to kline data changes
   - Smart viewport management (10% threshold for reset detection)
   - Vertical zoom reset on timeframe/symbol change
   - Preserves user's zoom/pan during realtime updates
@@ -2103,7 +2103,7 @@ package.json                                  ✅ (version 0.12.0)
   - Fixed `useCurrentPriceLineRenderer` callback structure
   - Improved state management in `useMessageInput`
   - Added `resetVerticalZoom()` method to CanvasManager
-  - Smart candle count comparison for viewport logic
+  - Smart kline count comparison for viewport logic
   
 - 📝 **Files Modified**
   - 11 renderer hooks and components updated
@@ -2132,7 +2132,7 @@ package.json                                  ✅ (version 0.12.0)
 - ✅ **Tooltips & Help**
   - TooltipWrapper component
   - 300ms delay for better UX
-  - Chart controls tooltips (candlestick/line)
+  - Chart controls tooltips (kline/line)
   - Header tooltips (theme, shortcuts, settings)
   - Contextual help throughout interface
   
@@ -2261,7 +2261,7 @@ package.json                                  ✅ (version 0.12.0)
   
 - ✅ **Hook Tests (161 tests, 87.27% coverage)**
   - All core hooks tested (useDebounce, useLocalStorage, useChartData)
-  - Market data hooks (useMarketData, useSymbolSearch, useRealtimeCandle)
+  - Market data hooks (useMarketData, useSymbolSearch, useRealtimeKline)
   - AI hooks (useAI with 67 tests)
   - News hooks (useNews)
   - Update hooks (useAutoUpdate)
@@ -2444,7 +2444,7 @@ package.json                                  ✅ (version 0.12.0)
 - ✅ Fixed Claude model IDs to correct API format (with dates)
 - ✅ Removed 3 older Claude models (keeping only v4 series)
 - ✅ Integrated ChartContext for data sharing
-- ✅ Implemented chart data formatting (100 candles, stats, trends)
+- ✅ Implemented chart data formatting (100 klines, stats, trends)
 - ✅ Added structured data to AI calls (not images)
 - ✅ Kept chat UI clean (data sent to API only)
 - ✅ Created ColorModeProvider with localStorage
@@ -2508,7 +2508,7 @@ package.json                                  ✅ (version 0.12.0)
 - ✅ Added dynamic cursor (ns-resize on price scale)
 - ✅ Fixed tooltip to hide on scales
 - ✅ Updated CanvasManager to support dynamic rightMargin
-- ✅ Fixed rightMargin to push candles instead of hiding
+- ✅ Fixed rightMargin to push klines instead of hiding
 - ✅ Added 5 moving averages (9, 20, 50, 100, 200)
 - ✅ Created TimeframeSelector component
 - ✅ Added vertical pan and zoom on price scale
@@ -2536,7 +2536,7 @@ package.json                                  ✅ (version 0.12.0)
 ### November 14, 2025 - Morning
 - ✅ Implemented complete chart rendering system
 - ✅ Created CanvasManager with zoom/pan
-- ✅ Added CandlestickRenderer
+- ✅ Added KlineRenderer
 - ✅ Added GridRenderer with price labels
 - ✅ Added VolumeRenderer
 - ✅ Completed AI type definitions
@@ -2546,7 +2546,7 @@ package.json                                  ✅ (version 0.12.0)
 - ✅ Initial project setup
 - ✅ Configured Electron + Vite + React
 - ✅ Set up Chakra UI with themes
-- ✅ Created type system for candles and charts
+- ✅ Created type system for klines and charts
 - ✅ Configured ESLint and Prettier
 
 ---
@@ -2648,7 +2648,7 @@ Detects when the 9-period EMA changes direction, signaling potential trend rever
 **Average R:R:** 2.8:1  
 **Tests:** 14 unit tests
 
-Single-candle pullback strategy for trending markets. Entry when price closes below previous low (uptrend) or above previous high (downtrend) while EMA9 maintains trend.
+Single-kline pullback strategy for trending markets. Entry when price closes below previous low (uptrend) or above previous high (downtrend) while EMA9 maintains trend.
 
 **Features:**
 - EMA9 uptrend/downtrend validation
@@ -2666,13 +2666,13 @@ Single-candle pullback strategy for trending markets. Entry when price closes be
 **Average R:R:** 2.5:1  
 **Tests:** 14 unit tests
 
-More conservative version requiring TWO consecutive closes below/above reference candle for stronger confirmation.
+More conservative version requiring TWO consecutive closes below/above reference kline for stronger confirmation.
 
 **Features:**
 - Requires 2 consecutive pullback closes
 - EMA9 trend validation
-- Entry after last pullback candle
-- Stop at signal candle low/high
+- Entry after last pullback kline
+- Stop at signal kline low/high
 - Volume confirmation bonus
 
 ---
@@ -2684,13 +2684,13 @@ More conservative version requiring TWO consecutive closes below/above reference
 **Average R:R:** 3.0:1  
 **Tests:** 16 unit tests
 
-Detects temporary 1-candle EMA9 failure followed by trend resumption, allowing late entry into established trends.
+Detects temporary 1-kline EMA9 failure followed by trend resumption, allowing late entry into established trends.
 
 **Features:**
-- Detects EMA9 temporary reversal (1 candle)
+- Detects EMA9 temporary reversal (1 kline)
 - Validates previous extreme not lost
-- Entry on continuation candle
-- Stop at failure candle extreme
+- Entry on continuation kline
+- Stop at failure kline extreme
 - Volume confirmation bonus
 
 ---
@@ -2745,7 +2745,7 @@ Breakout of key level followed by successful retest as new support/resistance.
 ### Setup Detection Features
 
 **Global Settings:**
-- ✅ **Cooldown System** - Prevents duplicate detections (default: 10 candles)
+- ✅ **Cooldown System** - Prevents duplicate detections (default: 10 klines)
 - ✅ **Trend Filter** - EMA 200-based major trend detection
 - ✅ **Per-Setup Config** - Independent confidence/R:R thresholds
 - ✅ **Visual Rendering** - Canvas-based entry/SL/TP markers

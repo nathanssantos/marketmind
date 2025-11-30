@@ -1,18 +1,17 @@
-import type { Candle } from '@shared/types';
 import { describe, expect, it } from 'vitest';
 import {
     SetupDetectionService,
     createDefaultSetupDetectionConfig,
 } from './SetupDetectionService';
 
-const createCandle = (
+const createKline = (
   close: number,
   high?: number,
   low?: number,
   open?: number,
   volume = 1000,
   timestamp = Date.now(),
-): Candle => ({
+): Kline => ({
   timestamp,
   open: open ?? close,
   high: high ?? close,
@@ -32,11 +31,11 @@ describe('SetupDetectionService', () => {
     expect(config.pattern123.enabled).toBe(false);
   });
 
-  it('should return empty array for insufficient candles', () => {
+  it('should return empty array for insufficient klines', () => {
     const service = new SetupDetectionService();
-    const candles = [createCandle(100), createCandle(101)];
+    const klines = [createKline(100), createKline(101)];
 
-    const setups = service.detectSetups(candles);
+    const setups = service.detectSetups(klines);
     expect(setups).toEqual([]);
   });
 
@@ -46,13 +45,13 @@ describe('SetupDetectionService', () => {
       pattern123: { ...createDefaultSetupDetectionConfig().pattern123, enabled: true },
     });
     
-    const candles = Array.from({ length: 100 }, (_, i) => {
+    const klines = Array.from({ length: 100 }, (_, i) => {
       const base = 100;
       const price = base + Math.sin(i / 10) * 5;
-      return createCandle(price, price + 1, price - 1, price, 1000 * (1 + Math.random()));
+      return createKline(price, price + 1, price - 1, price, 1000 * (1 + Math.random()));
     });
 
-    const setups = service.detectSetups(candles);
+    const setups = service.detectSetups(klines);
     
     expect(Array.isArray(setups)).toBe(true);
   });
@@ -71,14 +70,14 @@ describe('SetupDetectionService', () => {
   it('should sort setups by confidence', () => {
     const service = new SetupDetectionService();
     
-    const candles = Array.from({ length: 200 }, (_, i) => {
+    const klines = Array.from({ length: 200 }, (_, i) => {
       const base = 100;
       const trend = i * 0.1;
       const price = base + trend + Math.sin(i / 5) * 3;
-      return createCandle(price, price + 2, price - 2, price, 2000 + Math.random() * 1000);
+      return createKline(price, price + 2, price - 2, price, 2000 + Math.random() * 1000);
     });
 
-    const setups = service.detectSetups(candles);
+    const setups = service.detectSetups(klines);
     
     for (let i = 0; i < setups.length - 1; i++) {
       expect(setups[i]!.confidence).toBeGreaterThanOrEqual(setups[i + 1]!.confidence);
@@ -88,13 +87,13 @@ describe('SetupDetectionService', () => {
   it('should detect setups in range', () => {
     const service = new SetupDetectionService();
     
-    const candles = Array.from({ length: 150 }, (_, i) => {
+    const klines = Array.from({ length: 150 }, (_, i) => {
       const base = 100;
       const price = base + Math.sin(i / 8) * 4;
-      return createCandle(price, price + 1.5, price - 1.5, price, 1500);
+      return createKline(price, price + 1.5, price - 1.5, price, 1500);
     });
 
-    const setups = service.detectSetupsInRange(candles, 50, 100);
+    const setups = service.detectSetupsInRange(klines, 50, 100);
     
     expect(Array.isArray(setups)).toBe(true);
   });
@@ -105,11 +104,11 @@ describe('SetupDetectionService', () => {
       pattern123: { ...createDefaultSetupDetectionConfig().pattern123, enabled: false },
     });
     
-    const candles = Array.from({ length: 100 }, (_, i) =>
-      createCandle(100 + i * 0.5, 100 + i * 0.5 + 2, 100 + i * 0.5 - 2),
+    const klines = Array.from({ length: 100 }, (_, i) =>
+      createKline(100 + i * 0.5, 100 + i * 0.5 + 2, 100 + i * 0.5 - 2),
     );
 
-    const setups = service.detectSetups(candles);
+    const setups = service.detectSetups(klines);
     
     expect(setups).toEqual([]);
   });
@@ -120,11 +119,11 @@ describe('SetupDetectionService', () => {
       pattern123: { ...createDefaultSetupDetectionConfig().pattern123, minConfidence: 90 },
     });
     
-    const candles = Array.from({ length: 100 }, () =>
-      createCandle(100 + Math.random() * 10, 100 + Math.random() * 10 + 1, 100 + Math.random() * 10 - 1),
+    const klines = Array.from({ length: 100 }, () =>
+      createKline(100 + Math.random() * 10, 100 + Math.random() * 10 + 1, 100 + Math.random() * 10 - 1),
     );
 
-    const setups = service.detectSetups(candles);
+    const setups = service.detectSetups(klines);
     
     setups.forEach((setup) => {
       expect(setup.confidence).toBeGreaterThanOrEqual(90);
@@ -138,27 +137,27 @@ describe('SetupDetectionService', () => {
       setupCooldownPeriod: 5,
     });
     
-    const baseCandles = Array.from({ length: 50 }, (_, i) => 
-      createCandle(100 + i * 0.1, 100 + i * 0.1 + 1, 100 + i * 0.1 - 1, 100 + i * 0.1, 1000)
+    const baseKlines = Array.from({ length: 50 }, (_, i) => 
+      createKline(100 + i * 0.1, 100 + i * 0.1 + 1, 100 + i * 0.1 - 1, 100 + i * 0.1, 1000)
     );
 
-    const firstDetection = service.detectSetups(baseCandles);
+    const firstDetection = service.detectSetups(baseKlines);
     const firstCount = firstDetection.filter(s => s.type === 'setup-9-1').length;
 
     for (let i = 0; i < 4; i++) {
-      const newCandle = createCandle(100 + (50 + i) * 0.1, 100 + (50 + i) * 0.1 + 1, 100 + (50 + i) * 0.1 - 1, 100 + (50 + i) * 0.1, 1000);
-      baseCandles.push(newCandle);
-      const setups = service.detectSetups(baseCandles);
+      const newKline = createKline(100 + (50 + i) * 0.1, 100 + (50 + i) * 0.1 + 1, 100 + (50 + i) * 0.1 - 1, 100 + (50 + i) * 0.1, 1000);
+      baseKlines.push(newKline);
+      const setups = service.detectSetups(baseKlines);
       const setup91Count = setups.filter(s => s.type === 'setup-9-1').length;
       expect(setup91Count).toBe(firstCount);
     }
 
     for (let i = 4; i < 10; i++) {
-      const newCandle = createCandle(100 + (50 + i) * 0.1, 100 + (50 + i) * 0.1 + 1, 100 + (50 + i) * 0.1 - 1, 100 + (50 + i) * 0.1, 1000);
-      baseCandles.push(newCandle);
+      const newKline = createKline(100 + (50 + i) * 0.1, 100 + (50 + i) * 0.1 + 1, 100 + (50 + i) * 0.1 - 1, 100 + (50 + i) * 0.1, 1000);
+      baseKlines.push(newKline);
     }
     
-    const afterCooldown = service.detectSetups(baseCandles);
+    const afterCooldown = service.detectSetups(baseKlines);
     expect(afterCooldown.length).toBeGreaterThanOrEqual(0);
   });
 
@@ -170,11 +169,11 @@ describe('SetupDetectionService', () => {
       setup91: { ...createDefaultSetupDetectionConfig().setup91, enabled: true, minConfidence: 50 },
     });
 
-    const candles = Array.from({ length: 250 }, (_, i) => 
-      createCandle(100 + i * 0.5, 100 + i * 0.5 + 1, 100 + i * 0.5 - 1, 100 + i * 0.5, 2000)
+    const klines = Array.from({ length: 250 }, (_, i) => 
+      createKline(100 + i * 0.5, 100 + i * 0.5 + 1, 100 + i * 0.5 - 1, 100 + i * 0.5, 2000)
     );
 
-    const setups = service.detectSetups(candles);
+    const setups = service.detectSetups(klines);
     
     setups.forEach((setup) => {
       if (setup.type === 'setup-9-1') {
@@ -191,11 +190,11 @@ describe('SetupDetectionService', () => {
       setup91: { ...createDefaultSetupDetectionConfig().setup91, enabled: true, minConfidence: 50 },
     });
 
-    const candles = Array.from({ length: 250 }, (_, i) => 
-      createCandle(200 - i * 0.3, 200 - i * 0.3 + 1, 200 - i * 0.3 - 1, 200 - i * 0.3, 2000)
+    const klines = Array.from({ length: 250 }, (_, i) => 
+      createKline(200 - i * 0.3, 200 - i * 0.3 + 1, 200 - i * 0.3 - 1, 200 - i * 0.3, 2000)
     );
 
-    const setups = service.detectSetups(candles);
+    const setups = service.detectSetups(klines);
     
     setups.forEach((setup) => {
       if (setup.type === 'setup-9-1') {
@@ -211,11 +210,11 @@ describe('SetupDetectionService', () => {
       setup91: { ...createDefaultSetupDetectionConfig().setup91, enabled: true, minConfidence: 50 },
     });
 
-    const candles = Array.from({ length: 250 }, (_, i) => 
-      createCandle(100 + Math.sin(i / 10) * 20, 100 + Math.sin(i / 10) * 20 + 2, 100 + Math.sin(i / 10) * 20 - 2, 100 + Math.sin(i / 10) * 20, 2000)
+    const klines = Array.from({ length: 250 }, (_, i) => 
+      createKline(100 + Math.sin(i / 10) * 20, 100 + Math.sin(i / 10) * 20 + 2, 100 + Math.sin(i / 10) * 20 - 2, 100 + Math.sin(i / 10) * 20, 2000)
     );
 
-    const setups = service.detectSetups(candles);
+    const setups = service.detectSetups(klines);
     
     expect(Array.isArray(setups)).toBe(true);
   });
@@ -228,11 +227,11 @@ describe('SetupDetectionService', () => {
       setup91: { ...createDefaultSetupDetectionConfig().setup91, enabled: true, minConfidence: 50 },
     });
 
-    const candles = Array.from({ length: 250 }, (_, i) => 
-      createCandle(100 + Math.sin(i / 10) * 15, 100 + Math.sin(i / 10) * 15 + 1.5, 100 + Math.sin(i / 10) * 15 - 1.5, 100 + Math.sin(i / 10) * 15, 2000)
+    const klines = Array.from({ length: 250 }, (_, i) => 
+      createKline(100 + Math.sin(i / 10) * 15, 100 + Math.sin(i / 10) * 15 + 1.5, 100 + Math.sin(i / 10) * 15 - 1.5, 100 + Math.sin(i / 10) * 15, 2000)
     );
 
-    const setups = service.detectSetups(candles);
+    const setups = service.detectSetups(klines);
     
     expect(Array.isArray(setups)).toBe(true);
   });
@@ -245,15 +244,15 @@ describe('SetupDetectionService', () => {
       setupCooldownPeriod: customCooldown,
     });
 
-    const candles = Array.from({ length: 100 }, (_, i) => 
-      createCandle(100 + i * 0.1, 100 + i * 0.1 + 1, 100 + i * 0.1 - 1, 100 + i * 0.1, 1500)
+    const klines = Array.from({ length: 100 }, (_, i) => 
+      createKline(100 + i * 0.1, 100 + i * 0.1 + 1, 100 + i * 0.1 - 1, 100 + i * 0.1, 1500)
     );
 
-    service.detectSetups(candles);
+    service.detectSetups(klines);
 
     for (let i = 0; i < customCooldown - 1; i++) {
-      candles.push(createCandle(100 + (100 + i) * 0.1, 100 + (100 + i) * 0.1 + 1, 100 + (100 + i) * 0.1 - 1, 100 + (100 + i) * 0.1, 1500));
-      const setups = service.detectSetups(candles);
+      klines.push(createKline(100 + (100 + i) * 0.1, 100 + (100 + i) * 0.1 + 1, 100 + (100 + i) * 0.1 - 1, 100 + (100 + i) * 0.1, 1500));
+      const setups = service.detectSetups(klines);
       expect(Array.isArray(setups)).toBe(true);
     }
   });

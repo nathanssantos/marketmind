@@ -49,19 +49,19 @@ export const useMovingAverageRenderer = ({
     const dimensions = manager.getDimensions();
     const viewport = manager.getViewport();
     const bounds = manager.getBounds();
-    const candles = manager.getCandles();
+    const klines = manager.getKlines();
 
-    if (!ctx || !dimensions || !bounds || !candles) return;
+    if (!ctx || !dimensions || !bounds || !klines) return;
 
     const { width, chartWidth } = dimensions;
     const startIndex = Math.max(0, Math.floor(viewport.start));
-    const endIndex = Math.min(candles.length, Math.ceil(viewport.end));
+    const endIndex = Math.min(klines.length, Math.ceil(viewport.end));
     const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
     
     const visibleRange = viewport.end - viewport.start;
-    const widthPerCandle = effectiveWidth / visibleRange;
-    const { candleWidth } = viewport;
-    const candleCenterOffset = (widthPerCandle - candleWidth) / 2 + candleWidth / 2;
+    const widthPerKline = effectiveWidth / visibleRange;
+    const { klineWidth } = viewport;
+    const klineCenterOffset = (widthPerKline - klineWidth) / 2 + klineWidth / 2;
 
     const priceTags: Array<{ priceText: string; y: number; fillColor: string; index: number }> = [];
 
@@ -73,7 +73,7 @@ export const useMovingAverageRenderer = ({
     movingAverages.forEach((ma, index) => {
       if (ma.visible === false) return;
 
-      const values = calculateMovingAverage(candles, ma.period, ma.type);
+      const values = calculateMovingAverage(klines, ma.period, ma.type);
       const isHovered = hoveredMAIndex === index;
 
       ctx.strokeStyle = ma.color;
@@ -98,7 +98,7 @@ export const useMovingAverageRenderer = ({
         
         if (x > effectiveWidth) break;
 
-        const centerX = x + candleCenterOffset;
+        const centerX = x + klineCenterOffset;
         const y = manager.priceToY(value);
 
         if (!hasMovedTo) {
@@ -122,7 +122,7 @@ export const useMovingAverageRenderer = ({
     movingAverages.forEach((ma, index) => {
       if (ma.visible === false) return;
 
-      const values = calculateMovingAverage(candles, ma.period, ma.type);
+      const values = calculateMovingAverage(klines, ma.period, ma.type);
       const lastVisibleIndex = endIndex - 1;
       const lastVisibleValue = values[lastVisibleIndex];
       

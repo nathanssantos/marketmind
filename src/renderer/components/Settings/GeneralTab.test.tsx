@@ -21,8 +21,8 @@ vi.mock('./LanguageSelector', () => ({
 }));
 
 const mockConversations = [
-    { id: '1', messages: [], timestamp: Date.now() },
-    { id: '2', messages: [], timestamp: Date.now() },
+    { id: '1', messages: [], openTime: Date.now() },
+    { id: '2', messages: [], openTime: Date.now() },
 ];
 
 const mockUseAIStore = vi.fn();

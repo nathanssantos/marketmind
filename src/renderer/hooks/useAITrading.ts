@@ -3,14 +3,14 @@ import { AIService } from '@/renderer/services/ai/AIService';
 import { AITradingAgent, type AITradingAgentConfig } from '@/renderer/services/ai/AITradingAgent';
 import { useAIStore } from '@/renderer/store/aiStore';
 import { useTradingStore } from '@/renderer/store/tradingStore';
-import type { AITradingDecision, Candle } from '@shared/types';
+import type { AITradingDecision, Kline } from '@shared/types';
 import { useCallback, useEffect, useRef } from 'react';
 
 interface UseAITradingOptions {
   symbol: string;
   timeframe: Timeframe;
-  chartType: 'candlestick' | 'line';
-  candles: Candle[];
+  chartType: 'kline' | 'line';
+  klines: Kline[];
   getCurrentPrice: () => number | null;
 }
 
@@ -39,7 +39,7 @@ export const useAITrading = (options: UseAITradingOptions) => {
   } = useTradingStore();
 
   const getChartData = useCallback(() => {
-    if (!options.symbol || options.candles.length === 0) return null;
+    if (!options.symbol || options.klines.length === 0) return null;
     
     return {
       symbol: options.symbol,
@@ -47,7 +47,7 @@ export const useAITrading = (options: UseAITradingOptions) => {
       chartType: options.chartType,
       showVolume: true,
       movingAverages: [],
-      candles: options.candles,
+      klines: options.klines,
     };
   }, [options]);
 
@@ -65,13 +65,13 @@ export const useAITrading = (options: UseAITradingOptions) => {
         const order = {
           walletId: wallet.id,
           symbol: options.symbol,
-          type: decision.action === 'buy' ? ('long' as const) : ('short' as const),
+          orderDirection: decision.action === 'buy' ? ('long' as const) : ('short' as const),
           subType: 'limit' as const,
           quantity,
           entryPrice: decision.entryPrice,
           stopLoss: decision.stopLoss,
           takeProfit: decision.takeProfit,
-          status: 'active' as const,
+          status: 'FILLED' as const,
           expiration: {
             type: 'gtc' as const,
           },
@@ -182,7 +182,7 @@ export const useAITrading = (options: UseAITradingOptions) => {
   }, [tradingConfig, updateAgentConfig]);
 
   useEffect(() => {
-    if (!options.candles || options.candles.length === 0) return;
+    if (!options.klines || options.klines.length === 0) return;
     
     const openTrades = trades.filter((trade) => trade.status === 'open');
 
@@ -225,7 +225,7 @@ export const useAITrading = (options: UseAITradingOptions) => {
         calculateTradingStats();
       }
     });
-  }, [options.candles, trades, options.getCurrentPrice, updateTrade, calculateTradingStats]);
+  }, [options.klines, trades, options.getCurrentPrice, updateTrade, calculateTradingStats]);
 
   useEffect(() => {
     return () => {

@@ -32,9 +32,9 @@ describe('TradingSimulatorTab', () => {
         mockUseTradingStore.mockReturnValue({
             wallets: [{ id: '1', name: 'Wallet 1', balance: 10000 }],
             orders: [
-                { id: '1', status: 'active', symbol: 'BTCUSDT' },
-                { id: '2', status: 'pending', symbol: 'ETHUSDT' },
-                { id: '3', status: 'closed', symbol: 'BNBUSDT' },
+                { id: '1', status: 'FILLED', symbol: 'BTCUSDT' },
+                { id: '2', status: 'NEW', symbol: 'ETHUSDT' },
+                { id: '3', status: 'FILLED', symbol: 'BNBUSDT', closedAt: new Date() },
             ],
             clearAllData: mockClearAllData,
         });
@@ -146,7 +146,7 @@ describe('TradingSimulatorTab', () => {
     it('enables clear button when orders exist', () => {
         mockUseTradingStore.mockReturnValue({
             wallets: [],
-            orders: [{ id: '1', status: 'active', symbol: 'BTCUSDT' }],
+            orders: [{ id: '1', status: 'FILLED', symbol: 'BTCUSDT' }],
             clearAllData: mockClearAllData,
         });
 
@@ -173,9 +173,9 @@ describe('TradingSimulatorTab', () => {
         mockUseTradingStore.mockReturnValue({
             wallets: [],
             orders: [
-                { id: '1', status: 'active', symbol: 'BTCUSDT' },
-                { id: '2', status: 'active', symbol: 'ETHUSDT' },
-                { id: '3', status: 'closed', symbol: 'BNBUSDT' },
+                { id: '1', status: 'FILLED', symbol: 'BTCUSDT' },
+                { id: '2', status: 'FILLED', symbol: 'ETHUSDT' },
+                { id: '3', status: 'FILLED', closedAt: new Date(), symbol: 'BNBUSDT' },
             ],
             clearAllData: mockClearAllData,
         });
@@ -189,9 +189,9 @@ describe('TradingSimulatorTab', () => {
         mockUseTradingStore.mockReturnValue({
             wallets: [],
             orders: [
-                { id: '1', status: 'pending', symbol: 'BTCUSDT' },
-                { id: '2', status: 'pending', symbol: 'ETHUSDT' },
-                { id: '3', status: 'pending', symbol: 'BNBUSDT' },
+                { id: '1', status: 'NEW', symbol: 'BTCUSDT' },
+                { id: '2', status: 'NEW', symbol: 'ETHUSDT' },
+                { id: '3', status: 'NEW', symbol: 'BNBUSDT' },
             ],
             clearAllData: mockClearAllData,
         });

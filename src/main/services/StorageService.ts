@@ -20,7 +20,7 @@ interface AISettings {
   model?: string;
   temperature?: number;
   maxTokens?: number;
-  detailedCandlesCount?: number;
+  detailedKlinesCount?: number;
 }
 
 interface SecureStoreSchema {
@@ -60,7 +60,7 @@ interface SecureStoreSchema {
 
 export class StorageService {
   private store: ElectronStore<SecureStoreSchema>;
-  private keyCache: Map<string, { key: string; timestamp: number }> = new Map();
+  private keyCache: Map<string, { key: string; openTime: number }> = new Map();
   private readonly CACHE_DURATION = 30 * 60 * 1000;
 
   constructor() {
@@ -98,7 +98,7 @@ export class StorageService {
 
       this.keyCache.set(provider, {
         key: apiKey,
-        timestamp: Date.now(),
+        openTime: Date.now(),
       });
     } catch (error) {
       console.error(`Failed to encrypt ${provider} API key:`, error);
@@ -108,7 +108,7 @@ export class StorageService {
 
   getApiKey(provider: 'openai' | 'anthropic' | 'gemini' | 'newsapi' | 'cryptopanic'): string | null {
     const cached = this.keyCache.get(provider);
-    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+    if (cached && Date.now() - cached.openTime < this.CACHE_DURATION) {
       return cached.key;
     }
 
@@ -130,7 +130,7 @@ export class StorageService {
       
       this.keyCache.set(provider, {
         key: decrypted,
-        timestamp: Date.now(),
+        openTime: Date.now(),
       });
       
       return decrypted;
