@@ -7,6 +7,7 @@
 ![Version](https://img.shields.io/badge/version-0.31.0-blue.svg)
 ![Tests](https://img.shields.io/badge/tests-1,864%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-92.15%25-brightgreen.svg)
+![Code Quality](https://img.shields.io/badge/code%20quality-A--_(8.5%2F10)-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 ![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES%20%7C%20FR-success.svg)
@@ -621,7 +622,10 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 <div align="center">
 
+**[Quick Start](./QUICK_START.md)** • 
+**[Contributing](./CONTRIBUTING.md)** • 
 **[Documentation](./docs/IMPLEMENTATION_PLAN.md)** • 
+**[Code Audit](./docs/CODE_AUDIT_REPORT.md)** • 
 **[Report Bug](https://github.com/nathanssantos/marketmind/issues)** • 
 **[Request Feature](https://github.com/nathanssantos/marketmind/issues)**
 
