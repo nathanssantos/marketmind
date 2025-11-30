@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { useSetupStore } from './setupStore';
 import type { TradingSetup } from '@shared/types';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { useSetupStore } from './setupStore';
 
 const createMockSetup = (overrides?: Partial<TradingSetup>): TradingSetup => ({
   id: `setup-${Date.now()}-${Math.random()}`,

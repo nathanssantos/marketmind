@@ -1,14 +1,14 @@
-import { describe, it, expect } from 'vitest';
 import type { Candle, PivotPoint } from '@shared/types';
+import { describe, expect, it } from 'vitest';
 import {
-  findPivotPoints,
-  detectSupportResistance,
-  isNearLevel,
-  findBreakouts,
-  findRecentSwingLow,
-  findRecentSwingHigh,
-  findLowestSwingLow,
-  findHighestSwingHigh,
+    detectSupportResistance,
+    findBreakouts,
+    findHighestSwingHigh,
+    findLowestSwingLow,
+    findPivotPoints,
+    findRecentSwingHigh,
+    findRecentSwingLow,
+    isNearLevel,
 } from './supportResistance';
 
 const createCandle = (

@@ -45,6 +45,7 @@ export {
 export type { PinInsideConfig } from './PinInsideDetector';
 export { Setup91Detector, createDefault91Config } from './Setup91Detector';
 export type { Setup91Config } from './Setup91Detector';
+export { SetupCancellationDetector, setupCancellationDetector } from './SetupCancellationDetector';
 export { SetupDetectionService, createDefaultSetupDetectionConfig } from './SetupDetectionService';
 export type { SetupDetectionConfig } from './SetupDetectionService';
 export {

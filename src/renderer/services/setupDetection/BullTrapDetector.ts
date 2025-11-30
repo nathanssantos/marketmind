@@ -1,5 +1,5 @@
-import { calculateEMA } from '@renderer/utils/movingAverages';
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
+import { calculateEMA } from '@renderer/utils/movingAverages';
 import type { Candle } from '@shared/types';
 import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
 

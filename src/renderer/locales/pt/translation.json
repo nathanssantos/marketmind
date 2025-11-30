@@ -274,7 +274,11 @@
       "deletePattern": "Deletar Padrão",
       "hidePatterns": "Ocultar Padrões Detectados",
       "showPatterns": "Mostrar Padrões Detectados",
-      "deleteAllPatterns": "Remover Todos os Padrões Detectados"
+      "deleteAllPatterns": "Remover Todos os Padrões Detectados",
+      "deleteSetup": "Deletar Setup",
+      "hideSetups": "Ocultar Setups Detectados",
+      "showSetups": "Mostrar Setups Detectados",
+      "deleteAllSetups": "Remover Todos os Setups Detectados"
     },
     "navigation": {
       "resetView": "Voltar à visualização inicial",

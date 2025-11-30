@@ -285,7 +285,11 @@
       "deletePattern": "Eliminar Patrón",
       "hidePatterns": "Ocultar Patrones Detectados",
       "showPatterns": "Mostrar Patrones Detectados",
-      "deleteAllPatterns": "Eliminar Todos los Patrones Detectados"
+      "deleteAllPatterns": "Eliminar Todos los Patrones Detectados",
+      "deleteSetup": "Eliminar Setup",
+      "hideSetups": "Ocultar Setups Detectados",
+      "showSetups": "Mostrar Setups Detectados",
+      "deleteAllSetups": "Eliminar Todos los Setups Detectados"
     },
     "navigation": {
       "resetView": "Volver a la vista inicial",

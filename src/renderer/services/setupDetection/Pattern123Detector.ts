@@ -1,9 +1,9 @@
-import type { Candle } from '@shared/types';
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
+import type { Candle } from '@shared/types';
 import {
-  BaseSetupDetector,
-  type SetupDetectorConfig,
-  type SetupDetectorResult,
+    BaseSetupDetector,
+    type SetupDetectorConfig,
+    type SetupDetectorResult,
 } from './BaseSetupDetector';
 
 const DEFAULT_PIVOT_LOOKBACK = 5;

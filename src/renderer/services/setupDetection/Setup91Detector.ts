@@ -1,11 +1,11 @@
-import type { Candle } from '@shared/types';
-import { calculateEMA } from '@renderer/utils/movingAverages';
 import { calculateATR } from '@renderer/utils/indicators/atr';
-import { findLowestSwingLow, findHighestSwingHigh } from '@renderer/utils/indicators/supportResistance';
+import { findHighestSwingHigh, findLowestSwingLow } from '@renderer/utils/indicators/supportResistance';
+import { calculateEMA } from '@renderer/utils/movingAverages';
+import type { Candle } from '@shared/types';
 import {
-  BaseSetupDetector,
-  type SetupDetectorConfig,
-  type SetupDetectorResult,
+    BaseSetupDetector,
+    type SetupDetectorConfig,
+    type SetupDetectorResult,
 } from './BaseSetupDetector';
 
 const DEFAULT_EMA_PERIOD = 9;

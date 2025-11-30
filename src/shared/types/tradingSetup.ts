@@ -20,6 +20,20 @@ export interface SetupSpecificData {
   [key: string]: unknown;
 }
 
+export type SetupCancellationReason =
+  | 'ema-reversal'
+  | 'trend-broken'
+  | 'structure-broken'
+  | 'swing-lost'
+  | 'pullback-exceeded'
+  | 'failure-exceeded'
+  | 'extreme-lost'
+  | 'pattern-invalidated'
+  | 'trap-invalidated'
+  | 'breakout-failed'
+  | 'retest-failed'
+  | 'manual';
+
 export interface TradingSetup {
   id: string;
   type: SetupType;
@@ -37,6 +51,11 @@ export interface TradingSetup {
   visible: boolean;
   source: 'algorithm';
   label?: string;
+  isCancelled?: boolean;
+  cancelledAt?: number;
+  cancellationReason?: SetupCancellationReason;
+  isTriggered?: boolean;
+  triggeredAt?: number;
 }
 
 export interface PivotPoint {

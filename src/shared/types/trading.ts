@@ -49,6 +49,10 @@ export interface Order {
   pnl?: number;
   pnlPercent?: number;
   commission?: number;
+  setupId?: string;
+  setupType?: string;
+  setupDirection?: 'LONG' | 'SHORT';
+  setupConfidence?: number;
   metadata?: {
     isPosition?: boolean;
     positionData?: {

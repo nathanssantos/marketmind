@@ -1,9 +1,9 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import type { Candle } from '@shared/types';
 import {
-    BaseSetupDetector,
-    type SetupDetectorConfig,
-    type SetupDetectorResult,
+  BaseSetupDetector,
+  type SetupDetectorConfig,
+  type SetupDetectorResult,
 } from './BaseSetupDetector';
 
 const VOLUME_LOOKBACK = 20;
@@ -14,6 +14,7 @@ const TARGET_BUFFER_LONG = 0.998;
 const TARGET_BUFFER_SHORT = 1.002;
 const SR_CONFLUENCE_WEIGHT = 2;
 const NO_CONFLUENCE_WEIGHT = 1;
+const MIN_RISK_THRESHOLD = 0.005;
 const LOW_RISK_THRESHOLD = 0.01;
 const MEDIUM_RISK_THRESHOLD = 0.02;
 const LOW_RISK_BONUS = 5;
@@ -204,6 +205,9 @@ export class PinInsideDetector extends BaseSetupDetector {
 
     if (risk <= 0) return null;
 
+    const riskPercent = risk / entry;
+    if (riskPercent < MIN_RISK_THRESHOLD) return null;
+
     const resistance = this.findNearestResistance(candles, currentIndex, entry);
     const rrTarget = entry + risk * this.pinInsideConfig.targetMultiplier;
     const structuralTarget = resistance && resistance < rrTarget ? resistance * TARGET_BUFFER_LONG : rrTarget;
@@ -257,6 +261,9 @@ export class PinInsideDetector extends BaseSetupDetector {
     const risk = stopLoss - entry;
 
     if (risk <= 0) return null;
+
+    const riskPercent = risk / entry;
+    if (riskPercent < MIN_RISK_THRESHOLD) return null;
 
     const support = this.findNearestSupport(candles, currentIndex, entry);
     const rrTarget = entry - risk * this.pinInsideConfig.targetMultiplier;

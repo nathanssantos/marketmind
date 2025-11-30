@@ -274,7 +274,11 @@
       "deletePattern": "Supprimer le Motif",
       "hidePatterns": "Masquer les Motifs Détectés",
       "showPatterns": "Afficher les Motifs Détectés",
-      "deleteAllPatterns": "Supprimer Tous les Motifs Détectés"
+      "deleteAllPatterns": "Supprimer Tous les Motifs Détectés",
+      "deleteSetup": "Supprimer le Setup",
+      "hideSetups": "Masquer les Setups Détectés",
+      "showSetups": "Afficher les Setups Détectés",
+      "deleteAllSetups": "Supprimer Tous les Setups Détectés"
     },
     "navigation": {
       "resetView": "Retour à la vue initiale",

@@ -17,7 +17,7 @@ import { useRSIWorker } from '@renderer/hooks/useRSIWorker';
 import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
-import { SetupDetectionService } from '@renderer/services/setupDetection';
+import { SetupDetectionService, setupCancellationDetector } from '@renderer/services/setupDetection';
 import { useSetupStore } from '@renderer/store';
 import { useTradingStore } from '@renderer/store/tradingStore';
 import { calculateMovingAverage } from '@renderer/utils/movingAverages';
@@ -76,6 +76,8 @@ export interface ChartCanvasProps {
   onToggleAIPatternsVisibility?: () => void;
   aiPatternsVisible?: boolean;
   onDeletePattern?: (patternId: number) => void;
+  onToggleSetupsVisibility?: () => void;
+  setupsVisible?: boolean;
   timeframe?: string;
 }
 
@@ -103,6 +105,8 @@ export const ChartCanvas = ({
   onToggleAIPatternsVisibility,
   aiPatternsVisible = true,
   onDeletePattern,
+  onToggleSetupsVisibility,
+  setupsVisible = true,
   timeframe = '1h',
 }: ChartCanvasProps): ReactElement => {
   const { t } = useTranslation();
@@ -118,6 +122,8 @@ export const ChartCanvas = ({
 
   const detectedSetups = useSetupStore((state) => state.detectedSetups);
   const addDetectedSetup = useSetupStore((state) => state.addDetectedSetup);
+  const removeDetectedSetup = useSetupStore((state) => state.removeDetectedSetup);
+  const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
   const setupConfig = useSetupStore((state) => state.config);
   const [setupService] = useState(() => new SetupDetectionService(setupConfig));
   const [hoveredSetup, setHoveredSetup] = useState<ReturnType<typeof useSetupStore.getState>['detectedSetups'][0] | null>(null);
@@ -820,6 +826,18 @@ export const ChartCanvas = ({
     onToggleAIPatternsVisibility?.();
   };
 
+  const handleToggleSetupsVisibility = (): void => {
+    onToggleSetupsVisibility?.();
+  };
+
+  const handleDeleteSingleSetup = (setupId: string): void => {
+    removeDetectedSetup(setupId);
+  };
+
+  const handleDeleteAllSetups = (): void => {
+    clearDetectedSetups();
+  };
+
   const startInteraction = (): void => {
     setIsInteracting(true);
     if (interactionTimeoutRef.current) {
@@ -1008,9 +1026,20 @@ export const ChartCanvas = ({
   }, [symbol]);
 
   useEffect(() => {
-    const { isAutoTradingActive } = useSetupStore.getState();
+    const { isAutoTradingActive, detectedSetups: activeSetups, cancelSetup } = useSetupStore.getState();
 
     if (!isAutoTradingActive || candles.length < 50) return;
+
+    activeSetups.forEach((setup) => {
+      if (setup.isTriggered || setup.isCancelled) return;
+
+      const currentIndex = candles.length - 1;
+      const cancellationResult = setupCancellationDetector.checkCancellation(setup, candles, currentIndex);
+
+      if (cancellationResult.isCancelled && cancellationResult.reason) {
+        cancelSetup(setup.id, cancellationResult.reason);
+      }
+    });
 
     setupService.updateConfig(setupConfig);
     const detectedSetups = setupService.detectSetups(candles);
@@ -1047,6 +1076,10 @@ export const ChartCanvas = ({
         walletId,
         stopLoss: setup.stopLoss,
         takeProfit: setup.takeProfit,
+        setupId: setup.id,
+        setupType: setup.type,
+        setupDirection: setup.direction,
+        setupConfidence: setup.confidence,
         ...(currentPrice !== undefined && { currentPrice }),
       });
 
@@ -1399,12 +1432,18 @@ export const ChartCanvas = ({
       >
         <ChartContextMenuManager
           hoveredPattern={contextMenuPattern ?? hoveredAIPattern}
+          hoveredSetup={hoveredSetup}
           onDeletePattern={handleDeleteSinglePattern}
           onDeleteDetectedPattern={onDeletePattern ?? (() => { })}
           onDeleteAllPatterns={handleDeletePatterns}
+          onDeleteSetup={handleDeleteSingleSetup}
+          onDeleteAllSetups={handleDeleteAllSetups}
           onTogglePatternsVisibility={handleTogglePatternsVisibility}
+          onToggleSetupsVisibility={handleToggleSetupsVisibility}
           hasPatterns={aiPatterns.length > 0}
+          hasSetups={detectedSetups.length > 0}
           patternsVisible={aiPatternsVisible}
+          setupsVisible={setupsVisible}
           onOpenChange={handleContextMenuOpenChange}
         >
           <canvas
