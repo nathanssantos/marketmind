@@ -1,0 +1,218 @@
+import WebSocket from 'ws';
+import { db } from '../db';
+import { klines } from '../db/schema';
+import { eq, and, desc } from 'drizzle-orm';
+import type { Interval } from '@marketmind/types';
+
+interface BinanceKlineData {
+  t: number;
+  o: string;
+  h: string;
+  l: string;
+  c: string;
+  v: string;
+  T: number;
+  q: string;
+  n: number;
+  V: string;
+  Q: string;
+  B: string;
+}
+
+interface BinanceKlineMessage {
+  e: string;
+  E: number;
+  s: string;
+  k: BinanceKlineData;
+}
+
+const BINANCE_WS_BASE = 'wss://stream.binance.com:9443/ws';
+const RECONNECT_DELAY = 5000;
+const PING_INTERVAL = 30000;
+
+class BinanceKlineSync {
+  private connections = new Map<string, WebSocket>();
+  private pingIntervals = new Map<string, NodeJS.Timeout>();
+  private reconnectTimeouts = new Map<string, NodeJS.Timeout>();
+
+  subscribe(symbol: string, interval: Interval): void {
+    const key = `${symbol}@${interval}`;
+    
+    if (this.connections.has(key)) {
+      console.log(`Already subscribed to ${key}`);
+      return;
+    }
+
+    this.connect(symbol, interval);
+  }
+
+  private connect(symbol: string, interval: Interval): void {
+    const key = `${symbol}@${interval}`;
+    const stream = `${symbol.toLowerCase()}@kline_${interval}`;
+    const url = `${BINANCE_WS_BASE}/${stream}`;
+
+    console.log(`Connecting to Binance WebSocket: ${stream}`);
+
+    const ws = new WebSocket(url);
+
+    ws.on('open', () => {
+      console.log(`Connected to ${stream}`);
+      this.startPing(key, ws);
+    });
+
+    ws.on('message', (data: Buffer) => {
+      try {
+        const message = JSON.parse(data.toString()) as BinanceKlineMessage;
+        
+        if (message.e === 'kline') {
+          this.processKline(symbol, interval, message.k);
+        }
+      } catch (error) {
+        console.error(`Error processing message for ${key}:`, error);
+      }
+    });
+
+    ws.on('error', (error: Error) => {
+      console.error(`WebSocket error for ${key}:`, error);
+    });
+
+    ws.on('close', () => {
+      console.log(`Disconnected from ${stream}`);
+      this.cleanup(key);
+      this.scheduleReconnect(symbol, interval);
+    });
+
+    this.connections.set(key, ws);
+  }
+
+  private async processKline(symbol: string, interval: Interval, kline: BinanceKlineData): Promise<void> {
+    try {
+      const klineData = {
+        symbol,
+        interval,
+        openTime: new Date(kline.t),
+        open: parseFloat(kline.o),
+        high: parseFloat(kline.h),
+        low: parseFloat(kline.l),
+        close: parseFloat(kline.c),
+        volume: parseFloat(kline.v),
+        closeTime: new Date(kline.T),
+        quoteVolume: parseFloat(kline.q),
+        trades: kline.n,
+        takerBuyBaseVolume: parseFloat(kline.V),
+        takerBuyQuoteVolume: parseFloat(kline.Q),
+      };
+
+      const existing = await db.query.klines.findFirst({
+        where: and(
+          eq(klines.symbol, symbol),
+          eq(klines.interval, interval),
+          eq(klines.openTime, klineData.openTime)
+        ),
+      });
+
+      if (existing) {
+        await db
+          .update(klines)
+          .set(klineData)
+          .where(
+            and(
+              eq(klines.symbol, symbol),
+              eq(klines.interval, interval),
+              eq(klines.openTime, klineData.openTime)
+            )
+          );
+      } else {
+        await db.insert(klines).values(klineData);
+      }
+    } catch (error) {
+      console.error(`Error persisting kline for ${symbol}@${interval}:`, error);
+    }
+  }
+
+  private startPing(key: string, ws: WebSocket): void {
+    const interval = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.ping();
+      }
+    }, PING_INTERVAL);
+
+    this.pingIntervals.set(key, interval);
+  }
+
+  private cleanup(key: string): void {
+    const pingInterval = this.pingIntervals.get(key);
+    if (pingInterval) {
+      clearInterval(pingInterval);
+      this.pingIntervals.delete(key);
+    }
+
+    this.connections.delete(key);
+  }
+
+  private scheduleReconnect(symbol: string, interval: Interval): void {
+    const key = `${symbol}@${interval}`;
+    
+    const timeout = setTimeout(() => {
+      console.log(`Reconnecting to ${key}...`);
+      this.connect(symbol, interval);
+      this.reconnectTimeouts.delete(key);
+    }, RECONNECT_DELAY);
+
+    this.reconnectTimeouts.set(key, timeout);
+  }
+
+  unsubscribe(symbol: string, interval: Interval): void {
+    const key = `${symbol}@${interval}`;
+    const ws = this.connections.get(key);
+
+    if (ws) {
+      ws.close();
+      this.cleanup(key);
+    }
+
+    const reconnectTimeout = this.reconnectTimeouts.get(key);
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout);
+      this.reconnectTimeouts.delete(key);
+    }
+  }
+
+  async getLatestKline(symbol: string, interval: Interval): Promise<Date | null> {
+    const latest = await db.query.klines.findFirst({
+      where: and(eq(klines.symbol, symbol), eq(klines.interval, interval)),
+      orderBy: [desc(klines.openTime)],
+    });
+
+    return latest?.openTime || null;
+  }
+
+  shutdown(): void {
+    console.log('Shutting down Binance WebSocket connections...');
+    
+    for (const [key, ws] of this.connections.entries()) {
+      ws.close();
+      this.cleanup(key);
+    }
+
+    for (const timeout of this.reconnectTimeouts.values()) {
+      clearTimeout(timeout);
+    }
+    
+    this.reconnectTimeouts.clear();
+  }
+}
+
+let binanceKlineSync: BinanceKlineSync | null = null;
+
+export const getBinanceKlineSync = (): BinanceKlineSync => {
+  if (!binanceKlineSync) {
+    binanceKlineSync = new BinanceKlineSync();
+  }
+  return binanceKlineSync;
+};
+
+export const initializeBinanceKlineSync = (): BinanceKlineSync => {
+  binanceKlineSync = new BinanceKlineSync();
+  return binanceKlineSync;
+};

@@ -1,6 +1,7 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import { env } from '../env';
+import * as schema from './schema';
 
 const { Pool } = pg;
 
@@ -11,4 +12,4 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
-export const db = drizzle(pool);
+export const db = drizzle(pool, { schema });

@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import Fastify from 'fastify';
 import { env } from './env';
+import { initializeBinanceKlineSync } from './services/binance-kline-sync';
 import { initializeWebSocket } from './services/websocket';
 import { createContext } from './trpc/context';
 import { appRouter } from './trpc/router';
@@ -45,10 +46,12 @@ const start = async (): Promise<void> => {
     await fastify.listen({ port, host: '0.0.0.0' });
 
     initializeWebSocket(fastify.server);
+    initializeBinanceKlineSync();
 
     fastify.log.info(`🚀 Backend server running on http://localhost:${port}`);
     fastify.log.info(`📡 tRPC endpoint: http://localhost:${port}/trpc`);
     fastify.log.info(`🔌 WebSocket server initialized`);
+    fastify.log.info(`📊 Binance kline sync initialized`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
