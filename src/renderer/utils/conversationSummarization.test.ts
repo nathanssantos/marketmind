@@ -11,7 +11,7 @@ describe('conversationSummarization', () => {
     id,
     role,
     content,
-    timestamp: Date.now(),
+    openTime: Date.now(),
   });
 
   describe('summarizeOldMessages', () => {

@@ -9,13 +9,13 @@ import {
 } from '../patterns/continuationPatterns';
 import type { PivotPoint } from '../types';
 
-const createTestCandles = (count: number, basePrice = 100): Kline[] => {
-  const candles: Kline[] = [];
+const createTestKlines = (count: number, basePrice = 100): Kline[] => {
+  const klines: Kline[] = [];
   const now = Date.now();
 
   for (let i = 0; i < count; i++) {
-    candles.push({
-      timestamp: now + i * 60000,
+    klines.push({
+      openTime: now + i * 60000,
       open: basePrice,
       high: basePrice + 5,
       low: basePrice - 5,
@@ -24,7 +24,7 @@ const createTestCandles = (count: number, basePrice = 100): Kline[] => {
     });
   }
 
-  return candles;
+  return klines;
 };
 
 const createPivot = (
@@ -35,7 +35,7 @@ const createPivot = (
 ): PivotPoint => ({
   index,
   price,
-  timestamp: baseTimestamp + index * 60000,
+  openTime: baseTimestamp + index * 60000,
   type,
   strength: 1,
   volume: 1000,
@@ -44,7 +44,7 @@ const createPivot = (
 describe('continuationPatterns', () => {
   describe('detectBullishFlags', () => {
     it('should detect bullish flag pattern with valid flagpole and declining flag', () => {
-      const candles = createTestCandles(50, 100);
+      const klines = createTestKlines(50, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -56,7 +56,7 @@ describe('continuationPatterns', () => {
         createPivot(15, 106, 'low', now),
       ];
 
-      const patterns = detectBullishFlags(candles, pivots);
+      const patterns = detectBullishFlags(klines, pivots);
 
       expect(patterns.length).toBeGreaterThanOrEqual(0);
       if (patterns.length > 0) {
@@ -68,7 +68,7 @@ describe('continuationPatterns', () => {
     });
 
     it('should reject pattern with insufficient pole height', () => {
-      const candles = createTestCandles(50, 100);
+      const klines = createTestKlines(50, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -80,13 +80,13 @@ describe('continuationPatterns', () => {
         createPivot(15, 100, 'low', now),
       ];
 
-      const patterns = detectBullishFlags(candles, pivots);
+      const patterns = detectBullishFlags(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
 
     it('should reject pattern with insufficient pivots', () => {
-      const candles = createTestCandles(50, 100);
+      const klines = createTestKlines(50, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -94,22 +94,22 @@ describe('continuationPatterns', () => {
         createPivot(10, 115, 'high', now),
       ];
 
-      const patterns = detectBullishFlags(candles, pivots);
+      const patterns = detectBullishFlags(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
 
-    it('should return empty array for insufficient candles', () => {
-      const candles = createTestCandles(10, 100);
+    it('should return empty array for insufficient klines', () => {
+      const klines = createTestKlines(10, 100);
       const pivots: PivotPoint[] = [];
 
-      const patterns = detectBullishFlags(candles, pivots);
+      const patterns = detectBullishFlags(klines, pivots);
 
       expect(patterns).toEqual([]);
     });
 
     it('should limit results to MAX_PATTERNS_PER_TYPE', () => {
-      const candles = createTestCandles(200, 100);
+      const klines = createTestKlines(200, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [];
@@ -125,7 +125,7 @@ describe('continuationPatterns', () => {
         );
       }
 
-      const patterns = detectBullishFlags(candles, pivots);
+      const patterns = detectBullishFlags(klines, pivots);
 
       expect(patterns.length).toBeLessThanOrEqual(5);
     });
@@ -133,7 +133,7 @@ describe('continuationPatterns', () => {
 
   describe('detectBearishFlags', () => {
     it('should detect bearish flag pattern with valid flagpole and rising flag', () => {
-      const candles = createTestCandles(50, 100);
+      const klines = createTestKlines(50, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -145,7 +145,7 @@ describe('continuationPatterns', () => {
         createPivot(15, 108, 'high', now),
       ];
 
-      const patterns = detectBearishFlags(candles, pivots);
+      const patterns = detectBearishFlags(klines, pivots);
 
       expect(patterns.length).toBeGreaterThanOrEqual(0);
       if (patterns.length > 0) {
@@ -157,7 +157,7 @@ describe('continuationPatterns', () => {
     });
 
     it('should reject pattern with insufficient pole height', () => {
-      const candles = createTestCandles(50, 100);
+      const klines = createTestKlines(50, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -169,22 +169,22 @@ describe('continuationPatterns', () => {
         createPivot(15, 102, 'high', now),
       ];
 
-      const patterns = detectBearishFlags(candles, pivots);
+      const patterns = detectBearishFlags(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
 
-    it('should return empty array for insufficient candles', () => {
-      const candles = createTestCandles(10, 100);
+    it('should return empty array for insufficient klines', () => {
+      const klines = createTestKlines(10, 100);
       const pivots: PivotPoint[] = [];
 
-      const patterns = detectBearishFlags(candles, pivots);
+      const patterns = detectBearishFlags(klines, pivots);
 
       expect(patterns).toEqual([]);
     });
 
     it('should assign confidence scores between 0 and 1', () => {
-      const candles = createTestCandles(50, 100);
+      const klines = createTestKlines(50, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -196,7 +196,7 @@ describe('continuationPatterns', () => {
         createPivot(15, 108, 'high', now),
       ];
 
-      const patterns = detectBearishFlags(candles, pivots);
+      const patterns = detectBearishFlags(klines, pivots);
 
       patterns.forEach((pattern) => {
         expect(pattern.confidence).toBeGreaterThanOrEqual(0);
@@ -207,7 +207,7 @@ describe('continuationPatterns', () => {
 
   describe('detectPennants', () => {
     it('should detect pennant pattern with converging trendlines', () => {
-      const candles = createTestCandles(50, 100);
+      const klines = createTestKlines(50, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -219,7 +219,7 @@ describe('continuationPatterns', () => {
         createPivot(18, 107, 'low', now),
       ];
 
-      const patterns = detectPennants(candles, pivots);
+      const patterns = detectPennants(klines, pivots);
 
       expect(patterns.length).toBeGreaterThanOrEqual(0);
       if (patterns.length > 0) {
@@ -232,7 +232,7 @@ describe('continuationPatterns', () => {
     });
 
     it('should reject pattern with parallel lines instead of converging', () => {
-      const candles = createTestCandles(50, 100);
+      const klines = createTestKlines(50, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -244,22 +244,22 @@ describe('continuationPatterns', () => {
         createPivot(18, 105, 'low', now),
       ];
 
-      const patterns = detectPennants(candles, pivots);
+      const patterns = detectPennants(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
 
     it('should return empty array for insufficient pivots', () => {
-      const candles = createTestCandles(50, 100);
+      const klines = createTestKlines(50, 100);
       const pivots: PivotPoint[] = [createPivot(0, 100, 'low')];
 
-      const patterns = detectPennants(candles, pivots);
+      const patterns = detectPennants(klines, pivots);
 
       expect(patterns).toEqual([]);
     });
 
     it('should set direction as bullish for pennants', () => {
-      const candles = createTestCandles(50, 100);
+      const klines = createTestKlines(50, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -271,7 +271,7 @@ describe('continuationPatterns', () => {
         createPivot(18, 107, 'low', now),
       ];
 
-      const patterns = detectPennants(candles, pivots);
+      const patterns = detectPennants(klines, pivots);
 
       patterns.forEach((pattern) => {
         expect(pattern.direction).toBe('bullish');
@@ -281,7 +281,7 @@ describe('continuationPatterns', () => {
 
   describe('detectCupAndHandle', () => {
     it('should detect cup and handle pattern with valid structure', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -293,7 +293,7 @@ describe('continuationPatterns', () => {
         createPivot(52, 108, 'high', now),
       ];
 
-      const patterns = detectCupAndHandle(candles, pivots);
+      const patterns = detectCupAndHandle(klines, pivots);
 
       expect(patterns.length).toBeGreaterThanOrEqual(0);
       if (patterns.length > 0) {
@@ -308,7 +308,7 @@ describe('continuationPatterns', () => {
     });
 
     it('should reject pattern with insufficient cup depth', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -320,13 +320,13 @@ describe('continuationPatterns', () => {
         createPivot(52, 100, 'high', now),
       ];
 
-      const patterns = detectCupAndHandle(candles, pivots);
+      const patterns = detectCupAndHandle(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
 
     it('should reject pattern with handle too deep', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -338,34 +338,34 @@ describe('continuationPatterns', () => {
         createPivot(52, 108, 'high', now),
       ];
 
-      const patterns = detectCupAndHandle(candles, pivots);
+      const patterns = detectCupAndHandle(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
 
-    it('should return empty array for insufficient candles', () => {
-      const candles = createTestCandles(30, 100);
+    it('should return empty array for insufficient klines', () => {
+      const klines = createTestKlines(30, 100);
       const pivots: PivotPoint[] = [];
 
-      const patterns = detectCupAndHandle(candles, pivots);
+      const patterns = detectCupAndHandle(klines, pivots);
 
       expect(patterns).toEqual([]);
     });
 
     it('should return empty array for insufficient pivots', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const pivots: PivotPoint[] = [
         createPivot(0, 110, 'high'),
         createPivot(20, 95, 'low'),
       ];
 
-      const patterns = detectCupAndHandle(candles, pivots);
+      const patterns = detectCupAndHandle(klines, pivots);
 
       expect(patterns).toEqual([]);
     });
 
     it('should assign confidence scores properly', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -377,7 +377,7 @@ describe('continuationPatterns', () => {
         createPivot(52, 108, 'high', now),
       ];
 
-      const patterns = detectCupAndHandle(candles, pivots);
+      const patterns = detectCupAndHandle(klines, pivots);
 
       patterns.forEach((pattern) => {
         expect(pattern.confidence).toBeGreaterThan(0);
@@ -388,7 +388,7 @@ describe('continuationPatterns', () => {
 
   describe('detectRoundingBottom', () => {
     it('should detect rounding bottom pattern with U-shape', () => {
-      const candles = createTestCandles(60, 100);
+      const klines = createTestKlines(60, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -397,7 +397,7 @@ describe('continuationPatterns', () => {
         createPivot(50, 104, 'high', now),
       ];
 
-      const patterns = detectRoundingBottom(candles, pivots);
+      const patterns = detectRoundingBottom(klines, pivots);
 
       expect(patterns.length).toBeGreaterThanOrEqual(0);
       if (patterns.length > 0) {
@@ -409,7 +409,7 @@ describe('continuationPatterns', () => {
     });
 
     it('should reject pattern with insufficient depth', () => {
-      const candles = createTestCandles(60, 100);
+      const klines = createTestKlines(60, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -418,13 +418,13 @@ describe('continuationPatterns', () => {
         createPivot(50, 100, 'high', now),
       ];
 
-      const patterns = detectRoundingBottom(candles, pivots);
+      const patterns = detectRoundingBottom(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
 
     it('should reject pattern with asymmetric start and end prices', () => {
-      const candles = createTestCandles(60, 100);
+      const klines = createTestKlines(60, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -433,34 +433,34 @@ describe('continuationPatterns', () => {
         createPivot(50, 115, 'high', now),
       ];
 
-      const patterns = detectRoundingBottom(candles, pivots);
+      const patterns = detectRoundingBottom(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
 
-    it('should return empty array for insufficient candles', () => {
-      const candles = createTestCandles(20, 100);
+    it('should return empty array for insufficient klines', () => {
+      const klines = createTestKlines(20, 100);
       const pivots: PivotPoint[] = [];
 
-      const patterns = detectRoundingBottom(candles, pivots);
+      const patterns = detectRoundingBottom(klines, pivots);
 
       expect(patterns).toEqual([]);
     });
 
     it('should return empty array for insufficient pivots', () => {
-      const candles = createTestCandles(60, 100);
+      const klines = createTestKlines(60, 100);
       const pivots: PivotPoint[] = [
         createPivot(0, 105, 'high'),
         createPivot(25, 92, 'low'),
       ];
 
-      const patterns = detectRoundingBottom(candles, pivots);
+      const patterns = detectRoundingBottom(klines, pivots);
 
       expect(patterns).toEqual([]);
     });
 
     it('should reject pattern with insufficient time in formation', () => {
-      const candles = createTestCandles(60, 100);
+      const klines = createTestKlines(60, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -469,13 +469,13 @@ describe('continuationPatterns', () => {
         createPivot(10, 104, 'high', now),
       ];
 
-      const patterns = detectRoundingBottom(candles, pivots);
+      const patterns = detectRoundingBottom(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
 
     it('should sort patterns by confidence', () => {
-      const candles = createTestCandles(150, 100);
+      const klines = createTestKlines(150, 100);
       const now = Date.now();
 
       const pivots: PivotPoint[] = [
@@ -487,7 +487,7 @@ describe('continuationPatterns', () => {
         createPivot(110, 107, 'high', now),
       ];
 
-      const patterns = detectRoundingBottom(candles, pivots);
+      const patterns = detectRoundingBottom(klines, pivots);
 
       for (let i = 1; i < patterns.length; i++) {
         const prev = patterns[i - 1];
@@ -500,36 +500,36 @@ describe('continuationPatterns', () => {
   });
 
   describe('edge cases', () => {
-    it('should handle empty candles array', () => {
-      const candles: Kline[] = [];
+    it('should handle empty klines array', () => {
+      const klines: Kline[] = [];
       const pivots: PivotPoint[] = [];
 
-      expect(detectBullishFlags(candles, pivots)).toEqual([]);
-      expect(detectBearishFlags(candles, pivots)).toEqual([]);
-      expect(detectPennants(candles, pivots)).toEqual([]);
-      expect(detectCupAndHandle(candles, pivots)).toEqual([]);
-      expect(detectRoundingBottom(candles, pivots)).toEqual([]);
+      expect(detectBullishFlags(klines, pivots)).toEqual([]);
+      expect(detectBearishFlags(klines, pivots)).toEqual([]);
+      expect(detectPennants(klines, pivots)).toEqual([]);
+      expect(detectCupAndHandle(klines, pivots)).toEqual([]);
+      expect(detectRoundingBottom(klines, pivots)).toEqual([]);
     });
 
-    it('should handle null/undefined candles gracefully', () => {
+    it('should handle null/undefined klines gracefully', () => {
       const pivots: PivotPoint[] = [];
 
-      expect(detectBullishFlags(null as unknown as Candle[], pivots)).toEqual([]);
-      expect(detectBearishFlags(undefined as unknown as Candle[], pivots)).toEqual([]);
-      expect(detectPennants(null as unknown as Candle[], pivots)).toEqual([]);
-      expect(detectCupAndHandle(undefined as unknown as Candle[], pivots)).toEqual([]);
-      expect(detectRoundingBottom(null as unknown as Candle[], pivots)).toEqual([]);
+      expect(detectBullishFlags(null as unknown as Kline[], pivots)).toEqual([]);
+      expect(detectBearishFlags(undefined as unknown as Kline[], pivots)).toEqual([]);
+      expect(detectPennants(null as unknown as Kline[], pivots)).toEqual([]);
+      expect(detectCupAndHandle(undefined as unknown as Kline[], pivots)).toEqual([]);
+      expect(detectRoundingBottom(null as unknown as Kline[], pivots)).toEqual([]);
     });
 
     it('should handle empty pivots array', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const pivots: PivotPoint[] = [];
 
-      expect(detectBullishFlags(candles, pivots)).toEqual([]);
-      expect(detectBearishFlags(candles, pivots)).toEqual([]);
-      expect(detectPennants(candles, pivots)).toEqual([]);
-      expect(detectCupAndHandle(candles, pivots)).toEqual([]);
-      expect(detectRoundingBottom(candles, pivots)).toEqual([]);
+      expect(detectBullishFlags(klines, pivots)).toEqual([]);
+      expect(detectBearishFlags(klines, pivots)).toEqual([]);
+      expect(detectPennants(klines, pivots)).toEqual([]);
+      expect(detectCupAndHandle(klines, pivots)).toEqual([]);
+      expect(detectRoundingBottom(klines, pivots)).toEqual([]);
     });
   });
 });

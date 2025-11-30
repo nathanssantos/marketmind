@@ -3,8 +3,8 @@ import type { Kline } from '../../shared/types';
 import { calculateEMA, calculateMovingAverages, calculateSMA } from './movingAverages';
 
 describe('movingAveragesCalculation', () => {
-  const createCandle = (close: number): Candle => ({
-    timestamp: Date.now(),
+  const createKline = (close: number): Kline => ({
+    openTime: Date.now(),
     open: close,
     high: close + 1,
     low: close - 1,
@@ -13,28 +13,28 @@ describe('movingAveragesCalculation', () => {
   });
 
   describe('calculateSMA', () => {
-    it('should return empty array for empty candles', () => {
+    it('should return empty array for empty klines', () => {
       const result = calculateSMA([], 5);
       expect(result).toEqual([]);
     });
 
     it('should return nulls when not enough data points', () => {
-      const candles = [createCandle(100), createCandle(101), createCandle(102)];
-      const result = calculateSMA(candles, 5);
+      const klines = [createKline(100), createKline(101), createKline(102)];
+      const result = calculateSMA(klines, 5);
 
       expect(result).toHaveLength(3);
       expect(result).toEqual([null, null, null]);
     });
 
     it('should calculate SMA correctly with exact period', () => {
-      const candles = [
-        createCandle(100),
-        createCandle(102),
-        createCandle(104),
-        createCandle(106),
-        createCandle(108),
+      const klines = [
+        createKline(100),
+        createKline(102),
+        createKline(104),
+        createKline(106),
+        createKline(108),
       ];
-      const result = calculateSMA(candles, 5);
+      const result = calculateSMA(klines, 5);
 
       expect(result).toHaveLength(5);
       expect(result[0]).toBe(null);
@@ -45,14 +45,14 @@ describe('movingAveragesCalculation', () => {
     });
 
     it('should calculate SMA for period of 3', () => {
-      const candles = [
-        createCandle(10),
-        createCandle(20),
-        createCandle(30),
-        createCandle(40),
-        createCandle(50),
+      const klines = [
+        createKline(10),
+        createKline(20),
+        createKline(30),
+        createKline(40),
+        createKline(50),
       ];
-      const result = calculateSMA(candles, 3);
+      const result = calculateSMA(klines, 3);
 
       expect(result).toEqual([
         null,
@@ -64,19 +64,19 @@ describe('movingAveragesCalculation', () => {
     });
 
     it('should calculate SMA with period of 1', () => {
-      const candles = [createCandle(100), createCandle(200), createCandle(300)];
-      const result = calculateSMA(candles, 1);
+      const klines = [createKline(100), createKline(200), createKline(300)];
+      const result = calculateSMA(klines, 1);
 
       expect(result).toEqual([100, 200, 300]);
     });
 
     it('should handle large datasets efficiently', () => {
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
       for (let i = 0; i < 1000; i++) {
-        candles.push(createCandle(100 + i));
+        klines.push(createKline(100 + i));
       }
 
-      const result = calculateSMA(candles, 20);
+      const result = calculateSMA(klines, 20);
 
       expect(result).toHaveLength(1000);
       expect(result[19]).not.toBe(null);
@@ -85,28 +85,28 @@ describe('movingAveragesCalculation', () => {
   });
 
   describe('calculateEMA', () => {
-    it('should return empty array for empty candles', () => {
+    it('should return empty array for empty klines', () => {
       const result = calculateEMA([], 5);
       expect(result).toEqual([]);
     });
 
     it('should return nulls when not enough data points', () => {
-      const candles = [createCandle(100), createCandle(101), createCandle(102)];
-      const result = calculateEMA(candles, 5);
+      const klines = [createKline(100), createKline(101), createKline(102)];
+      const result = calculateEMA(klines, 5);
 
       expect(result).toHaveLength(3);
       expect(result).toEqual([null, null, null]);
     });
 
     it('should calculate EMA with initial SMA', () => {
-      const candles = [
-        createCandle(10),
-        createCandle(20),
-        createCandle(30),
-        createCandle(40),
-        createCandle(50),
+      const klines = [
+        createKline(10),
+        createKline(20),
+        createKline(30),
+        createKline(40),
+        createKline(50),
       ];
-      const result = calculateEMA(candles, 3);
+      const result = calculateEMA(klines, 3);
 
       expect(result).toHaveLength(5);
       expect(result[0]).toBe(null);
@@ -122,24 +122,24 @@ describe('movingAveragesCalculation', () => {
     });
 
     it('should calculate EMA with period of 1', () => {
-      const candles = [createCandle(100), createCandle(200), createCandle(300)];
-      const result = calculateEMA(candles, 1);
+      const klines = [createKline(100), createKline(200), createKline(300)];
+      const result = calculateEMA(klines, 1);
 
       expect(result).toEqual([100, 200, 300]);
     });
 
     it('should react faster than SMA to price changes', () => {
-      const candles = [
-        createCandle(100),
-        createCandle(100),
-        createCandle(100),
-        createCandle(100),
-        createCandle(100),
-        createCandle(150),
+      const klines = [
+        createKline(100),
+        createKline(100),
+        createKline(100),
+        createKline(100),
+        createKline(100),
+        createKline(150),
       ];
 
-      const sma = calculateSMA(candles, 5);
-      const ema = calculateEMA(candles, 5);
+      const sma = calculateSMA(klines, 5);
+      const ema = calculateEMA(klines, 5);
 
       const smaLast = sma[5]!;
       const emaLast = ema[5]!;
@@ -148,12 +148,12 @@ describe('movingAveragesCalculation', () => {
     });
 
     it('should handle large datasets efficiently', () => {
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
       for (let i = 0; i < 1000; i++) {
-        candles.push(createCandle(100 + i * 0.5));
+        klines.push(createKline(100 + i * 0.5));
       }
 
-      const result = calculateEMA(candles, 20);
+      const result = calculateEMA(klines, 20);
 
       expect(result).toHaveLength(1000);
       expect(result[19]).not.toBe(null);
@@ -161,20 +161,20 @@ describe('movingAveragesCalculation', () => {
     });
 
     it('should produce smooth values in trending market', () => {
-      const candles = [
-        createCandle(100),
-        createCandle(101),
-        createCandle(102),
-        createCandle(103),
-        createCandle(104),
-        createCandle(105),
-        createCandle(106),
-        createCandle(107),
-        createCandle(108),
-        createCandle(109),
+      const klines = [
+        createKline(100),
+        createKline(101),
+        createKline(102),
+        createKline(103),
+        createKline(104),
+        createKline(105),
+        createKline(106),
+        createKline(107),
+        createKline(108),
+        createKline(109),
       ];
 
-      const result = calculateEMA(candles, 3);
+      const result = calculateEMA(klines, 3);
 
       for (let i = 3; i < result.length; i++) {
         expect(result[i]).toBeGreaterThan(result[i - 1]!);
@@ -184,19 +184,19 @@ describe('movingAveragesCalculation', () => {
 
   describe('calculateMovingAverages', () => {
     it('should return empty array when no configs provided', () => {
-      const candles = [createCandle(100)];
-      const result = calculateMovingAverages(candles, []);
+      const klines = [createKline(100)];
+      const result = calculateMovingAverages(klines, []);
 
       expect(result).toEqual([]);
     });
 
     it('should filter out disabled configs', () => {
-      const candles = [
-        createCandle(10),
-        createCandle(20),
-        createCandle(30),
-        createCandle(40),
-        createCandle(50),
+      const klines = [
+        createKline(10),
+        createKline(20),
+        createKline(30),
+        createKline(40),
+        createKline(50),
       ];
 
       const configs = [
@@ -205,7 +205,7 @@ describe('movingAveragesCalculation', () => {
         { period: 7, type: 'EMA' as const, color: '#0000ff', enabled: false },
       ];
 
-      const result = calculateMovingAverages(candles, configs);
+      const result = calculateMovingAverages(klines, configs);
 
       expect(result).toHaveLength(1);
       expect(result[0].period).toBe(3);
@@ -213,12 +213,12 @@ describe('movingAveragesCalculation', () => {
     });
 
     it('should calculate multiple SMAs', () => {
-      const candles = [
-        createCandle(10),
-        createCandle(20),
-        createCandle(30),
-        createCandle(40),
-        createCandle(50),
+      const klines = [
+        createKline(10),
+        createKline(20),
+        createKline(30),
+        createKline(40),
+        createKline(50),
       ];
 
       const configs = [
@@ -226,7 +226,7 @@ describe('movingAveragesCalculation', () => {
         { period: 5, type: 'SMA' as const, color: '#00ff00', enabled: true },
       ];
 
-      const result = calculateMovingAverages(candles, configs);
+      const result = calculateMovingAverages(klines, configs);
 
       expect(result).toHaveLength(2);
       expect(result[0].period).toBe(3);
@@ -241,13 +241,13 @@ describe('movingAveragesCalculation', () => {
     });
 
     it('should calculate multiple EMAs', () => {
-      const candles = [
-        createCandle(10),
-        createCandle(20),
-        createCandle(30),
-        createCandle(40),
-        createCandle(50),
-        createCandle(60),
+      const klines = [
+        createKline(10),
+        createKline(20),
+        createKline(30),
+        createKline(40),
+        createKline(50),
+        createKline(60),
       ];
 
       const configs = [
@@ -255,7 +255,7 @@ describe('movingAveragesCalculation', () => {
         { period: 5, type: 'EMA' as const, color: '#00ff00', enabled: true },
       ];
 
-      const result = calculateMovingAverages(candles, configs);
+      const result = calculateMovingAverages(klines, configs);
 
       expect(result).toHaveLength(2);
       expect(result[0].period).toBe(3);
@@ -265,13 +265,13 @@ describe('movingAveragesCalculation', () => {
     });
 
     it('should calculate mixed SMA and EMA', () => {
-      const candles = [
-        createCandle(10),
-        createCandle(20),
-        createCandle(30),
-        createCandle(40),
-        createCandle(50),
-        createCandle(100),
+      const klines = [
+        createKline(10),
+        createKline(20),
+        createKline(30),
+        createKline(40),
+        createKline(50),
+        createKline(100),
       ];
 
       const configs = [
@@ -279,7 +279,7 @@ describe('movingAveragesCalculation', () => {
         { period: 3, type: 'EMA' as const, color: '#00ff00', enabled: true },
       ];
 
-      const result = calculateMovingAverages(candles, configs);
+      const result = calculateMovingAverages(klines, configs);
 
       expect(result).toHaveLength(2);
       expect(result[0].type).toBe('SMA');
@@ -291,12 +291,12 @@ describe('movingAveragesCalculation', () => {
     });
 
     it('should preserve config properties in results', () => {
-      const candles = [
-        createCandle(10),
-        createCandle(20),
-        createCandle(30),
-        createCandle(40),
-        createCandle(50),
+      const klines = [
+        createKline(10),
+        createKline(20),
+        createKline(30),
+        createKline(40),
+        createKline(50),
       ];
 
       const configs = [
@@ -304,7 +304,7 @@ describe('movingAveragesCalculation', () => {
         { period: 50, type: 'EMA' as const, color: '#abcdef', enabled: true },
       ];
 
-      const result = calculateMovingAverages(candles, configs);
+      const result = calculateMovingAverages(klines, configs);
 
       expect(result[0]).toMatchObject({
         period: 20,

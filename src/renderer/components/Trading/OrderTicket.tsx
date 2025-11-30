@@ -15,8 +15,8 @@ export const OrderTicket = () => {
   const { t } = useTranslation();
   const { chartData } = useChartContext();
 
-  const lastCandle = chartData?.candles[chartData.candles.length - 1];
-  const currentPrice = lastCandle ? getKlineClose(lastCandle) : undefined;
+  const lastKline = chartData?.klines[chartData.klines.length - 1];
+  const currentPrice = lastKline ? getKlineClose(lastKline) : undefined;
   const symbol = chartData?.symbol || 'UNKNOWN';
 
   const wallets = useTradingStore((state) => state.wallets);

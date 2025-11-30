@@ -4,12 +4,12 @@ import { calculateATR } from './atr';
 
 const ATR_PERIOD = 14;
 
-const createCandle = (
+const createKline = (
   high: number,
   low: number,
   close: number,
   timestamp = Date.now(),
-): Candle => ({
+): Kline => ({
   timestamp,
   open: close,
   high,
@@ -20,20 +20,20 @@ const createCandle = (
 
 describe('calculateATR', () => {
   it('should calculate ATR correctly with Wilders smoothing', () => {
-    const candles: Kline[] = [];
+    const klines: Kline[] = [];
     let prevClose = 100;
 
     for (let i = 0; i < 20; i++) {
       const high = prevClose + 5;
       const low = prevClose - 5;
       const close = prevClose + (i % 2 === 0 ? 2 : -2);
-      candles.push(createCandle(high, low, close));
+      klines.push(createKline(high, low, close));
       prevClose = close;
     }
 
-    const result = calculateATR(candles, ATR_PERIOD);
+    const result = calculateATR(klines, ATR_PERIOD);
 
-    expect(result.length).toBe(candles.length);
+    expect(result.length).toBe(klines.length);
     expect(isNaN(result[0] ?? NaN)).toBe(true);
     expect(result[13]).not.toBeNull();
     expect(result[13]).toBeGreaterThan(0);
@@ -46,43 +46,43 @@ describe('calculateATR', () => {
   });
 
   it('should return all nulls for insufficient data', () => {
-    const candles: Kline[] = Array.from({ length: 5 }, (_, i) =>
-      createCandle(105, 95, 100 + i, Date.now() + i),
+    const klines: Kline[] = Array.from({ length: 5 }, (_, i) =>
+      createKline(105, 95, 100 + i, Date.now() + i),
     );
 
-    const result = calculateATR(candles, ATR_PERIOD);
+    const result = calculateATR(klines, ATR_PERIOD);
 
     expect(result).toHaveLength(5);
     expect(result.every((val) => isNaN(val ?? NaN))).toBe(true);
   });
 
   it('should use default period of 14', () => {
-    const candles: Kline[] = Array.from({ length: 20 }, (_, i) =>
-      createCandle(105 + i, 95 + i, 100 + i, Date.now() + i),
+    const klines: Kline[] = Array.from({ length: 20 }, (_, i) =>
+      createKline(105 + i, 95 + i, 100 + i, Date.now() + i),
     );
 
-    const defaultResult = calculateATR(candles);
-    const explicitResult = calculateATR(candles, ATR_PERIOD);
+    const defaultResult = calculateATR(klines);
+    const explicitResult = calculateATR(klines, ATR_PERIOD);
 
     expect(defaultResult).toEqual(explicitResult);
   });
 
-  it('should handle single candle', () => {
-    const candles: Kline[] = [createCandle(105, 95, 100)];
-    const result = calculateATR(candles, ATR_PERIOD);
+  it('should handle single kline', () => {
+    const klines: Kline[] = [createKline(105, 95, 100)];
+    const result = calculateATR(klines, ATR_PERIOD);
 
     expect(result).toHaveLength(1);
     expect(isNaN(result[0] ?? NaN)).toBe(true);
   });
 
   it('should calculate True Range correctly', () => {
-    const candles: Kline[] = [
-      createCandle(110, 90, 100),
-      createCandle(115, 95, 105),
-      createCandle(120, 100, 110),
+    const klines: Kline[] = [
+      createKline(110, 90, 100),
+      createKline(115, 95, 105),
+      createKline(120, 100, 110),
     ];
 
-    const result = calculateATR(candles, 2);
+    const result = calculateATR(klines, 2);
 
     expect(isNaN(result[0] ?? NaN)).toBe(true);
     expect(result[1]).toBeCloseTo(20, 0);
@@ -90,12 +90,12 @@ describe('calculateATR', () => {
   });
 
   it('should apply Wilders smoothing correctly', () => {
-    const candles: Kline[] = Array.from({ length: 30 }, (_, i) => {
+    const klines: Kline[] = Array.from({ length: 30 }, (_, i) => {
       const base = 100 + i;
-      return createCandle(base + 10, base - 10, base, Date.now() + i);
+      return createKline(base + 10, base - 10, base, Date.now() + i);
     });
 
-    const result = calculateATR(candles, ATR_PERIOD);
+    const result = calculateATR(klines, ATR_PERIOD);
 
     expect(result[13]).toBeCloseTo(20, 0);
     
@@ -108,23 +108,23 @@ describe('calculateATR', () => {
   });
 
   it('should handle high volatility scenarios', () => {
-    const candles: Kline[] = Array.from({ length: 20 }, (_, i) => {
+    const klines: Kline[] = Array.from({ length: 20 }, (_, i) => {
       const volatility = i % 2 === 0 ? 50 : 10;
-      return createCandle(100 + volatility, 100 - volatility, 100, Date.now() + i);
+      return createKline(100 + volatility, 100 - volatility, 100, Date.now() + i);
     });
 
-    const result = calculateATR(candles, ATR_PERIOD);
+    const result = calculateATR(klines, ATR_PERIOD);
 
     expect(result[13]).toBeGreaterThan(20);
   });
 
   it('should handle low volatility scenarios', () => {
-    const candles: Kline[] = Array.from({ length: 20 }, (_, i) => {
+    const klines: Kline[] = Array.from({ length: 20 }, (_, i) => {
       const base = 100;
-      return createCandle(base + 1, base - 1, base, Date.now() + i);
+      return createKline(base + 1, base - 1, base, Date.now() + i);
     });
 
-    const result = calculateATR(candles, ATR_PERIOD);
+    const result = calculateATR(klines, ATR_PERIOD);
 
     expect(result[13]).toBeLessThan(5);
   });

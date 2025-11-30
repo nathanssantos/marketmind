@@ -1,17 +1,18 @@
 import type { Kline } from '@shared/types';
+import { getKlineClose } from '@shared/utils';
 
 export interface RSIResult {
   values: (number | null)[];
 }
 
-export const calculateRSI = (candles: Kline[], period: number = 2): RSIResult => {
-  if (candles.length < period + 1) {
-    return { values: Array(candles.length).fill(null) };
+export const calculateRSI = (klines: Kline[], period: number = 2): RSIResult => {
+  if (klines.length < period + 1) {
+    return { values: Array(klines.length).fill(null) };
   }
 
   const values: (number | null)[] = [];
   
-  for (let i = 0; i < candles.length; i++) {
+  for (let i = 0; i < klines.length; i++) {
     if (i < period) {
       values.push(null);
       continue;
@@ -22,7 +23,10 @@ export const calculateRSI = (candles: Kline[], period: number = 2): RSIResult =>
 
     for (let j = i - period + 1; j <= i; j++) {
       if (j === 0) continue;
-      const change = candles[j]!.close - candles[j - 1]!.close;
+      const currentKline = klines[j];
+      const prevKline = klines[j - 1];
+      if (!currentKline || !prevKline) continue;
+      const change = getKlineClose(currentKline) - getKlineClose(prevKline);
       if (change > 0) {
         gains += change;
       } else {

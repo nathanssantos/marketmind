@@ -1,6 +1,6 @@
 import type { AIAnalysisResponse, AIMessage, AIProviderType, Kline } from '@shared/types';
 import { act, renderHook } from '@testing-library/react';
-import React, { type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChartProvider } from '../context/ChartContext';
 import type { AIService } from '../services/ai';
@@ -12,7 +12,7 @@ vi.mock('../store/aiStore');
 describe('useAI', () => {
   const mockConversationId = 'conv-1';
   const mockMessages: AIMessage[] = [
-    { id: '1', role: 'user', content: 'Hello', timestamp: Date.now() },
+    { id: '1', role: 'user', content: 'Hello', openTime: Date.now() },
   ];
 
   const mockSettings: AISettings = {
@@ -55,8 +55,8 @@ describe('useAI', () => {
   beforeEach(() => {
     const sendMessageMock = vi.fn<(messages: AIMessage[], images?: string[]) => Promise<AIAnalysisResponse>>()
       .mockResolvedValue({ text: 'AI response' });
-    
-    const analyzeChartMock = vi.fn<(candles: Kline[], symbol?: string) => Promise<AIAnalysisResponse>>()
+
+    const analyzeChartMock = vi.fn<(klines: Kline[], symbol?: string) => Promise<AIAnalysisResponse>>()
       .mockResolvedValue({ text: 'Chart analysis' });
 
     mockAIService = {
@@ -186,7 +186,7 @@ describe('useAI', () => {
   it('should analyze chart successfully', async () => {
     const chartRequest = {
       chartImage: 'data:image/png;base64,chart',
-      candles: [],
+      klines: [],
       context: 'Analyze this chart',
     };
 
@@ -205,7 +205,7 @@ describe('useAI', () => {
   it('should analyze chart and add to conversation', async () => {
     const chartRequest = {
       chartImage: 'data:image/png;base64,chart',
-      candles: [],
+      klines: [],
     };
 
     const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
@@ -234,7 +234,7 @@ describe('useAI', () => {
   it('should analyzeChartSilent without adding to conversation', async () => {
     const chartRequest = {
       chartImage: 'data:image/png;base64,chart',
-      candles: [],
+      klines: [],
     };
 
     const { result } = renderHook(() => useAI({ service: mockAIService }), { wrapper });
@@ -245,7 +245,7 @@ describe('useAI', () => {
 
     expect(mockAIService.analyzeChart).toHaveBeenCalledWith(chartRequest);
     expect(mockStore.setLastAnalysis).toHaveBeenCalled();
-    
+
     const addMessageCalls = (mockStore.addMessage as ReturnType<typeof vi.fn>).mock.calls;
     expect(addMessageCalls.length).toBe(0);
   });
@@ -259,7 +259,7 @@ describe('useAI', () => {
 
     expect(mockAIService.analyzeChart).toHaveBeenCalledWith({
       chartImage: 'data:image/png;base64,chart',
-      candles: expect.any(Array),
+      klines: expect.any(Array),
       news: undefined,
       context: 'Quick analysis',
     });
@@ -478,7 +478,7 @@ describe('useAI', () => {
     await act(async () => {
       const response = await result.current.analyzeChart({
         chartImage: 'data:image/png;base64,chart',
-        candles: [],
+        klines: [],
       });
       expect(response).toBe(null);
     });
@@ -502,7 +502,7 @@ describe('useAI', () => {
     await act(async () => {
       await result.current.analyzeChart({
         chartImage: 'data:image/png;base64,chart',
-        candles: [],
+        klines: [],
       });
     });
 
@@ -522,7 +522,7 @@ describe('useAI', () => {
     await act(async () => {
       const response = await result.current.analyzeChartSilent({
         chartImage: 'data:image/png;base64,chart',
-        candles: [],
+        klines: [],
       });
       expect(response).toBe(null);
     });

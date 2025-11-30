@@ -169,10 +169,10 @@ interface OrderList {
 - `order.entryPrice` → `order.price` (as string)
 - All prices/quantities are **strings**, not numbers
 
-#### 2. Candle/Kline Types (No Changes)
+#### 2. Kline/Kline Types (No Changes)
 
 ```typescript
-interface Candle {
+interface Kline {
   timestamp: number;
   open: number;
   high: number;
@@ -644,7 +644,7 @@ const display = parsePrice(order.price).toFixed(2);
 - `docs/STORAGE_GUIDE.md` - Storage patterns
 - `src/shared/utils/priceUtils.ts` - Price utilities
 - `src/shared/types/trading.ts` - Trading types (Order, OrderList)
-- `src/shared/types/candle.ts` - Candle/Kline types
+- `src/shared/types/kline.ts` - Kline/Kline types
 
 ### Binance API Documentation
 - [Binance REST API](https://developers.binance.com/docs/binance-spot-api-docs/rest-api)

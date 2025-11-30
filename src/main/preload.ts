@@ -21,7 +21,7 @@ interface AISettings {
   model?: string;
   temperature?: number;
   maxTokens?: number;
-  detailedCandlesCount?: number;
+  detailedKlinesCount?: number;
 }
 
 interface AIData {

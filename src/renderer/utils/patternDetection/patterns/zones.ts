@@ -1,4 +1,5 @@
 import type { AIPatternZone, Kline } from '@shared/types';
+import { getKlineClose, getKlineVolume } from '@shared/utils';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -8,10 +9,10 @@ import {
 import type { PivotPoint } from '../types';
 
 export const detectBuyZones = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternZone[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const zones: AIPatternZone[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.price - b.price);
@@ -31,26 +32,26 @@ export const detectBuyZones = (
     const bottomPrice = Math.min(...prices);
     const topPrice = Math.max(...prices);
 
-    const startTimestamp = Math.min(...clusteredPivots.map(p => p.timestamp));
-    const endTimestamp = Math.max(...clusteredPivots.map(p => p.timestamp));
+    const startOpenTime = Math.min(...clusteredPivots.map(p => p.openTime));
+    const endOpenTime = Math.max(...clusteredPivots.map(p => p.openTime));
 
-    const startIndex = candles.findIndex(c => c.openTime >= startTimestamp);
-    const endIndex = candles.findIndex(c => c.openTime >= endTimestamp);
+    const startIndex = klines.findIndex(c => c.openTime >= startOpenTime);
+    const endIndex = klines.findIndex(c => c.openTime >= endOpenTime);
 
     if (startIndex === -1 || endIndex === -1) continue;
 
-    const candlesBetween = endIndex - startIndex;
-    if (candlesBetween < PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES) continue;
+    const klinesBetween = endIndex - startIndex;
+    if (klinesBetween < PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES) continue;
 
-    const zoneCandles = candles.slice(startIndex, endIndex + 1);
-    const avgVolume = zoneCandles.reduce((sum, c) => sum + c.volume, 0) / zoneCandles.length;
+    const zoneKlines = klines.slice(startIndex, endIndex + 1);
+    const avgVolume = zoneKlines.reduce((sum, c) => sum + getKlineVolume(c), 0) / zoneKlines.length;
     const volumeScore = avgVolume > 0 ? 0.6 : 0.5;
 
     const touchPointsScore = normalizeTouchPoints(clusteredPivots.length, 5);
     const timeScore = normalizeTimeInPattern(
-      candlesBetween,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+      klinesBetween,
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
     );
 
     const confidence = calculateConfidence({
@@ -68,14 +69,14 @@ export const detectBuyZones = (
     zones.push({
       id: zones.length + 1,
       type: 'buy-zone',
-      startTimestamp,
-      endTimestamp,
+      startOpenTime,
+      endOpenTime,
       topPrice,
       bottomPrice,
       label: `Buy Zone · ${zoneHeight}% range · ${clusteredPivots.length} touches · ${confidencePercent}% confidence`,
       confidence,
       visible: true,
-      timestamp: startTimestamp,
+      openTime: startOpenTime,
     });
   }
 
@@ -85,10 +86,10 @@ export const detectBuyZones = (
 };
 
 export const detectSellZones = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternZone[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const zones: AIPatternZone[] = [];
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => b.price - a.price);
@@ -108,26 +109,26 @@ export const detectSellZones = (
     const bottomPrice = Math.min(...prices);
     const topPrice = Math.max(...prices);
 
-    const startTimestamp = Math.min(...clusteredPivots.map(p => p.timestamp));
-    const endTimestamp = Math.max(...clusteredPivots.map(p => p.timestamp));
+    const startOpenTime = Math.min(...clusteredPivots.map(p => p.openTime));
+    const endOpenTime = Math.max(...clusteredPivots.map(p => p.openTime));
 
-    const startIndex = candles.findIndex(c => c.openTime >= startTimestamp);
-    const endIndex = candles.findIndex(c => c.openTime >= endTimestamp);
+    const startIndex = klines.findIndex(c => c.openTime >= startOpenTime);
+    const endIndex = klines.findIndex(c => c.openTime >= endOpenTime);
 
     if (startIndex === -1 || endIndex === -1) continue;
 
-    const candlesBetween = endIndex - startIndex;
-    if (candlesBetween < PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES) continue;
+    const klinesBetween = endIndex - startIndex;
+    if (klinesBetween < PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES) continue;
 
-    const zoneCandles = candles.slice(startIndex, endIndex + 1);
-    const avgVolume = zoneCandles.reduce((sum, c) => sum + c.volume, 0) / zoneCandles.length;
+    const zoneKlines = klines.slice(startIndex, endIndex + 1);
+    const avgVolume = zoneKlines.reduce((sum, c) => sum + getKlineVolume(c), 0) / zoneKlines.length;
     const volumeScore = avgVolume > 0 ? 0.6 : 0.5;
 
     const touchPointsScore = normalizeTouchPoints(clusteredPivots.length, 5);
     const timeScore = normalizeTimeInPattern(
-      candlesBetween,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+      klinesBetween,
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
     );
 
     const confidence = calculateConfidence({
@@ -145,14 +146,14 @@ export const detectSellZones = (
     zones.push({
       id: zones.length + 1,
       type: 'sell-zone',
-      startTimestamp,
-      endTimestamp,
+      startOpenTime,
+      endOpenTime,
       topPrice,
       bottomPrice,
       label: `Sell Zone · ${zoneHeight}% range · ${clusteredPivots.length} touches · ${confidencePercent}% confidence`,
       confidence,
       visible: true,
-      timestamp: startTimestamp,
+      openTime: startOpenTime,
     });
   }
 
@@ -162,10 +163,10 @@ export const detectSellZones = (
 };
 
 export const detectLiquidityZones = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternZone[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const zones: AIPatternZone[] = [];
   const allPivots = [...pivots].sort((a, b) => a.index - b.index);
@@ -187,26 +188,26 @@ export const detectLiquidityZones = (
     const startIndex = Math.min(...clusteredPivots.map(p => p.index));
     const endIndex = Math.max(...clusteredPivots.map(p => p.index));
 
-    const zoneCandles = candles.slice(startIndex, endIndex + 1);
-    const totalVolume = zoneCandles.reduce((sum, c) => sum + c.volume, 0);
-    const avgVolume = candles.reduce((sum, c) => sum + c.volume, 0) / candles.length;
+    const zoneKlines = klines.slice(startIndex, endIndex + 1);
+    const totalVolume = zoneKlines.reduce((sum, c) => sum + getKlineVolume(c), 0);
+    const avgVolume = klines.reduce((sum, c) => sum + getKlineVolume(c), 0) / klines.length;
 
-    if (totalVolume / zoneCandles.length < avgVolume * 1.5) continue;
+    if (totalVolume / zoneKlines.length < avgVolume * 1.5) continue;
 
     const prices = clusteredPivots.map(p => p.price);
     const bottomPrice = Math.min(...prices);
     const topPrice = Math.max(...prices);
 
-    const startTimestamp = candles[startIndex]?.timestamp || Date.now();
-    const endTimestamp = candles[endIndex]?.timestamp || Date.now();
+    const startOpenTime = klines[startIndex]?.openTime || Date.now();
+    const endOpenTime = klines[endIndex]?.openTime || Date.now();
 
-    const candlesBetween = endIndex - startIndex;
+    const klinesBetween = endIndex - startIndex;
 
     const touchPointsScore = normalizeTouchPoints(clusteredPivots.length, 6);
     const timeScore = normalizeTimeInPattern(
-      candlesBetween,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+      klinesBetween,
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
     );
 
     const confidence = calculateConfidence({
@@ -224,14 +225,14 @@ export const detectLiquidityZones = (
     zones.push({
       id: zones.length + 1,
       type: 'liquidity-zone',
-      startTimestamp,
-      endTimestamp,
+      startOpenTime,
+      endOpenTime,
       topPrice,
       bottomPrice,
       label: `Liquidity Zone · ${zoneHeight}% range · High volume · ${confidencePercent}% confidence`,
       confidence,
       visible: true,
-      timestamp: startTimestamp,
+      openTime: startOpenTime,
     });
   }
 
@@ -241,30 +242,31 @@ export const detectLiquidityZones = (
 };
 
 export const detectAccumulationZones = (
-  candles: Kline[],
+  klines: Kline[],
   _pivots: PivotPoint[]
 ): AIPatternZone[] => {
-  if (!candles || candles.length < 30) return [];
+  if (!klines || klines.length < 30) return [];
 
   const zones: AIPatternZone[] = [];
 
-  for (let i = 20; i < candles.length - 10; i++) {
-    const window = candles.slice(i - 20, i);
-    const futureWindow = candles.slice(i, i + 10);
+  for (let i = 20; i < klines.length - 10; i++) {
+    const window = klines.slice(i - 20, i);
+    const futureWindow = klines.slice(i, i + 10);
 
-    const prices = window.map(c => c.close);
+    const prices = window.map(c => getKlineClose(c));
     const avgPrice = prices.reduce((sum, p) => sum + p, 0) / prices.length;
     const priceVolatility = Math.max(...prices) / Math.min(...prices) - 1;
 
     if (priceVolatility > 0.05) continue;
 
-    const avgVolume = window.reduce((sum, c) => sum + c.volume, 0) / window.length;
-    const recentAvgVolume = candles.slice(Math.max(0, i - 50), i - 20)
-      .reduce((sum, c) => sum + c.volume, 0) / 30;
+    const avgVolume = window.reduce((sum, c) => sum + getKlineVolume(c), 0) / window.length;
+    const recentAvgVolume = klines.slice(Math.max(0, i - 50), i - 20)
+      .reduce((sum, c) => sum + getKlineVolume(c), 0) / 30;
 
     if (avgVolume <= recentAvgVolume * 1.1) continue;
 
-    const futurePriceMove = futureWindow[futureWindow.length - 1]?.close || avgPrice;
+    const lastFutureKline = futureWindow[futureWindow.length - 1];
+    const futurePriceMove = lastFutureKline ? getKlineClose(lastFutureKline) : avgPrice;
     const priceIncrease = (futurePriceMove - avgPrice) / avgPrice;
 
     if (priceIncrease < 0.02) continue;
@@ -272,14 +274,14 @@ export const detectAccumulationZones = (
     const bottomPrice = Math.min(...prices);
     const topPrice = Math.max(...prices);
 
-    const startTimestamp = window[0]?.timestamp || Date.now();
-    const endTimestamp = window[window.length - 1]?.timestamp || Date.now();
+    const startOpenTime = window[0]?.openTime || Date.now();
+    const endOpenTime = window[window.length - 1]?.openTime || Date.now();
 
     const touchPointsScore = normalizeTouchPoints(4, 6);
     const timeScore = normalizeTimeInPattern(
       20,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
     );
 
     const confidence = calculateConfidence({
@@ -297,14 +299,14 @@ export const detectAccumulationZones = (
     zones.push({
       id: zones.length + 1,
       type: 'accumulation-zone',
-      startTimestamp,
-      endTimestamp,
+      startOpenTime,
+      endOpenTime,
       topPrice,
       bottomPrice,
       label: `Accumulation Zone · ${zoneHeight}% range · Rising volume · ${confidencePercent}% confidence`,
       confidence,
       visible: true,
-      timestamp: startTimestamp,
+      openTime: startOpenTime,
     });
   }
 

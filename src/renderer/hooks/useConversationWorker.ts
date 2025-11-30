@@ -51,7 +51,7 @@ export const useConversationWorker = (): UseConversationWorkerReturn => {
         pendingCallbacksRef.current.clear();
 
         callbacks.forEach((callback) => {
-          callback(result as SummarizedConversation);
+          callback(result as unknown as SummarizedConversation);
         });
       }
     };
@@ -92,7 +92,7 @@ export const useConversationWorker = (): UseConversationWorkerReturn => {
             id: msg.id,
             role: msg.role,
             content: msg.content,
-            timestamp: msg.timestamp,
+            timestamp: msg.openTime,
           })),
           ...(messagesToKeepFull !== undefined && { messagesToKeepFull }),
         };

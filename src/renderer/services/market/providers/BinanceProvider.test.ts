@@ -1,4 +1,3 @@
-import type { FetchKlinesOptions } from '@shared/types';
 import axios from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BinanceProvider } from './BinanceProvider';
@@ -95,19 +94,19 @@ describe('BinanceProvider', () => {
     });
   });
 
-  describe('fetchCandles', () => {
-    it('should fetch candles successfully', async () => {
+  describe('fetchKlines', () => {
+    it('should fetch klines successfully', async () => {
       mockAxiosInstance.get.mockResolvedValue({
         data: [mockBinanceKline],
       });
 
       const provider = new BinanceProvider();
-      const options: FetchCandlesOptions = {
+      const options: FetchKlinesOptions = {
         symbol: 'BTCUSDT',
         interval: '1h',
       };
 
-      const result = await provider.fetchCandles(options);
+      const result = await provider.fetchKlines(options);
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/v3/klines', {
         params: {
@@ -119,14 +118,19 @@ describe('BinanceProvider', () => {
 
       expect(result.symbol).toBe('BTCUSDT');
       expect(result.interval).toBe('1h');
-      expect(result.candles).toHaveLength(1);
-      expect(result.candles[0]).toEqual({
-        timestamp: 1704067200000,
-        open: 42000,
-        high: 42500,
-        low: 41800,
-        close: 42300,
-        volume: 100.5,
+      expect(result.klines).toHaveLength(1);
+      expect(result.klines[0]).toEqual({
+        openTime: 1704067200000,
+        closeTime: 1704070799999,
+        open: '42000.00',
+        high: '42500.00',
+        low: '41800.00',
+        close: '42300.00',
+        volume: '100.50',
+        quoteVolume: '4200000.00',
+        trades: 1000,
+        takerBuyBaseVolume: '50.25',
+        takerBuyQuoteVolume: '2100000.00',
       });
     });
 
@@ -136,7 +140,7 @@ describe('BinanceProvider', () => {
       });
 
       const provider = new BinanceProvider();
-      await provider.fetchCandles({
+      await provider.fetchKlines({
         symbol: 'BTC/USDT',
         interval: '1h',
       });
@@ -154,7 +158,7 @@ describe('BinanceProvider', () => {
       });
 
       const provider = new BinanceProvider();
-      await provider.fetchCandles({
+      await provider.fetchKlines({
         symbol: 'BTCUSDT',
         interval: '1h',
         limit: 100,
@@ -173,7 +177,7 @@ describe('BinanceProvider', () => {
       });
 
       const provider = new BinanceProvider();
-      await provider.fetchCandles({
+      await provider.fetchKlines({
         symbol: 'BTCUSDT',
         interval: '1h',
         limit: 5000,
@@ -195,7 +199,7 @@ describe('BinanceProvider', () => {
       const startTime = 1704067200000;
       const endTime = 1704070799999;
 
-      await provider.fetchCandles({
+      await provider.fetchKlines({
         symbol: 'BTCUSDT',
         interval: '1h',
         startTime,
@@ -229,7 +233,7 @@ describe('BinanceProvider', () => {
       ];
 
       for (const [interval, expected] of intervals) {
-        await provider.fetchCandles({
+        await provider.fetchKlines({
           symbol: 'BTCUSDT',
           interval: interval as never,
         });
@@ -248,7 +252,7 @@ describe('BinanceProvider', () => {
       const provider = new BinanceProvider();
 
       await expect(
-        provider.fetchCandles({
+        provider.fetchKlines({
           symbol: 'BTCUSDT',
           interval: '1h',
         })
@@ -504,11 +508,16 @@ describe('BinanceProvider', () => {
         e: 'kline',
         k: {
           t: 1704067200000,
+          T: 1704070799999,
           o: '42000.00',
           h: '42500.00',
           l: '41800.00',
           c: '42300.00',
           v: '100.50',
+          q: '4200000.00',
+          n: 1000,
+          V: '50.25',
+          Q: '2100000.00',
           x: true,
         },
       };
@@ -523,13 +532,18 @@ describe('BinanceProvider', () => {
       expect(callback).toHaveBeenCalledWith({
         symbol: 'BTCUSDT',
         interval: '1h',
-        candle: {
-          timestamp: 1704067200000,
-          open: 42000,
-          high: 42500,
-          low: 41800,
-          close: 42300,
-          volume: 100.5,
+        kline: {
+          openTime: 1704067200000,
+          closeTime: 1704070799999,
+          open: '42000.00',
+          high: '42500.00',
+          low: '41800.00',
+          close: '42300.00',
+          volume: '100.50',
+          quoteVolume: '4200000.00',
+          trades: 1000,
+          takerBuyBaseVolume: '50.25',
+          takerBuyQuoteVolume: '2100000.00',
         },
         isFinal: true,
       });

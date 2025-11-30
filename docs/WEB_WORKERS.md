@@ -10,7 +10,7 @@ MarketMind usa **Web Workers** para mover cálculos pesados para threads separad
 |--------|------|--------|---------|----------|
 | Moving Averages | `useMovingAverageWorker` | ✅ Active | 3.5x | SMA/EMA calculation |
 | Bounds Calculator | `useBoundsWorker` | ✅ Active | 4x | Viewport min/max prices |
-| Candle Optimizer | `useCandleOptimizerWorker` | ✅ Active | 3.4x | AI data preparation |
+| Kline Optimizer | `useKlineOptimizerWorker` | ✅ Active | 3.4x | AI data preparation |
 | Conversation | `useConversationWorker` | ✅ Active | 3.6x | AI context summarization |
 | Coordinates | *(direct use)* | ✅ Active | ~3x | Batch coordinate transforms |
 
@@ -39,7 +39,7 @@ const configs = [
   { period: 50, type: 'EMA', color: '#00ff00', enabled: true },
 ];
 
-const results = await calculateMovingAverages(candles, configs);
+const results = await calculateMovingAverages(klines, configs);
 ```
 
 ### 2. **Bounds Calculator Worker** 🆕
@@ -56,32 +56,32 @@ import { useBoundsWorker } from '@/renderer/hooks/useBoundsWorker';
 
 const { calculateBounds } = useBoundsWorker();
 
-const bounds = await calculateBounds(candles, viewport.start, viewport.end);
+const bounds = await calculateBounds(klines, viewport.start, viewport.end);
 // { minPrice, maxPrice, minVolume, maxVolume }
 ```
 
 **Benefício:** Executado em cada mudança de viewport (zoom/pan), remove cálculo pesado da thread principal.
 
-### 3. **Candle Optimizer Worker** 🆕
-**Arquivo:** `src/renderer/workers/candleOptimizer.worker.ts`  
-**Hook:** `useCandleOptimizerWorker`
+### 3. **Kline Optimizer Worker** 🆕
+**Arquivo:** `src/renderer/workers/klineOptimizer.worker.ts`  
+**Hook:** `useKlineOptimizerWorker`
 
 **Processamento:**
 - Detecção de timeframe
-- Simplificação de candles históricos
+- Simplificação de klines históricos
 - Otimização de dados para AI
 
 **Uso:**
 ```typescript
-import { useCandleOptimizerWorker } from '@/renderer/hooks/useCandleOptimizerWorker';
+import { useKlineOptimizerWorker } from '@/renderer/hooks/useKlineOptimizerWorker';
 
-const { optimizeCandles } = useCandleOptimizerWorker();
+const { optimizeKlines } = useKlineOptimizerWorker();
 
-const optimized = await optimizeCandles(candles, 32);
+const optimized = await optimizeKlines(klines, 32);
 // { detailed, simplified, timestampInfo }
 ```
 
-**Benefício:** Processa milhares de candles sem bloquear UI, especialmente útil antes de enviar para AI.
+**Benefício:** Processa milhares de klines sem bloquear UI, especialmente útil antes de enviar para AI.
 
 ### 4. **Conversation Summarizer Worker** 🆕
 **Arquivo:** `src/renderer/workers/conversation.worker.ts`  
@@ -163,33 +163,33 @@ const { calculateBounds } = useBoundsWorker();
 
 useEffect(() => {
   const compute = async () => {
-    const bounds1 = await calculateBounds(candles1, 0, 100);
-    const bounds2 = await calculateBounds(candles2, 0, 100);
+    const bounds1 = await calculateBounds(klines1, 0, 100);
+    const bounds2 = await calculateBounds(klines2, 0, 100);
   };
   compute();
-}, [candles]);
+}, [klines]);
 
 // ❌ Ruim - Cria novo worker toda vez
 useEffect(() => {
   const worker = new Worker(/*...*/);
   // ...
   worker.terminate();
-}, [candles]);
+}, [klines]);
 ```
 
 ### 2. **Debouncing de Operações Pesadas**
 ```typescript
 import { useDebounce } from '@/renderer/hooks/useDebounce';
 
-const debouncedCandles = useDebounce(candles, 150);
+const debouncedKlines = useDebounce(klines, 150);
 
 useEffect(() => {
   const compute = async () => {
-    const optimized = await optimizeCandles(debouncedCandles);
+    const optimized = await optimizeKlines(debouncedKlines);
     setOptimizedData(optimized);
   };
   compute();
-}, [debouncedCandles]);
+}, [debouncedKlines]);
 ```
 
 ### 3. **Cancelamento de Requests Pendentes**
@@ -202,7 +202,7 @@ useEffect(() => {
 
   const compute = async () => {
     try {
-      const result = await calculateBounds(candles, start, end);
+      const result = await calculateBounds(klines, start, end);
       if (!abortControllerRef.current.signal.aborted) {
         setBounds(result);
       }
@@ -213,36 +213,36 @@ useEffect(() => {
   compute();
 
   return () => abortControllerRef.current?.abort();
-}, [candles, start, end]);
+}, [klines, start, end]);
 ```
 
 ### 4. **Batching de Requests**
 ```typescript
 // ✅ Bom - Uma request com array
-const results = await calculateMovingAverages(candles, [
+const results = await calculateMovingAverages(klines, [
   { period: 20, type: 'SMA', color: '#f00', enabled: true },
   { period: 50, type: 'SMA', color: '#0f0', enabled: true },
   { period: 200, type: 'SMA', color: '#00f', enabled: true },
 ]);
 
 // ❌ Ruim - Múltiplas requests
-const sma20 = await calculateMovingAverage(candles, 20, 'SMA');
-const sma50 = await calculateMovingAverage(candles, 50, 'SMA');
-const sma200 = await calculateMovingAverage(candles, 200, 'SMA');
+const sma20 = await calculateMovingAverage(klines, 20, 'SMA');
+const sma50 = await calculateMovingAverage(klines, 50, 'SMA');
+const sma200 = await calculateMovingAverage(klines, 200, 'SMA');
 ```
 
 ---
 
 ## Performance Metrics
 
-### Benchmarks (macOS M1, 10.000 candles)
+### Benchmarks (macOS M1, 10.000 klines)
 
 | Operação | Main Thread | Web Worker | Speedup |
 |----------|-------------|------------|---------|
 | SMA(200) | ~45ms | ~12ms | **3.75x** |
 | EMA(200) | ~52ms | ~15ms | **3.47x** |
 | Bounds Calc | ~8ms | ~2ms | **4x** |
-| Candle Optimizer | ~120ms | ~35ms | **3.43x** |
+| Kline Optimizer | ~120ms | ~35ms | **3.43x** |
 | Conversation Summary (100 msgs) | ~25ms | ~7ms | **3.57x** |
 
 ### Memory Usage
@@ -266,7 +266,7 @@ Workers consomem ~2-5MB cada quando ativos. O overhead é mínimo comparado aos 
 ```typescript
 // Dentro do worker
 const start = performance.now();
-const result = calculateSMA(candles, period);
+const result = calculateSMA(klines, period);
 const duration = performance.now() - start;
 console.log(`SMA(${period}) took ${duration.toFixed(2)}ms`);
 ```
@@ -280,21 +280,21 @@ console.log(`SMA(${period}) took ${duration.toFixed(2)}ms`);
 **Antes:**
 ```typescript
 // utils/calculations.ts
-export const calculateSMA = (candles: Candle[], period: number) => {
+export const calculateSMA = (klines: Kline[], period: number) => {
   // ... lógica pesada
   return result;
 };
 
 // Component
-const sma = calculateSMA(candles, 200); // Bloqueia UI
+const sma = calculateSMA(klines, 200); // Bloqueia UI
 ```
 
 **Depois:**
 ```typescript
 // workers/calculations.worker.ts
 self.onmessage = (event) => {
-  const { candles, period } = event.data;
-  const result = calculateSMA(candles, period);
+  const { klines, period } = event.data;
+  const result = calculateSMA(klines, period);
   self.postMessage({ result });
 };
 
@@ -310,10 +310,10 @@ export const useCalculationWorker = () => {
     return () => workerRef.current?.terminate();
   }, []);
   
-  const calculate = useCallback((candles, period) => {
+  const calculate = useCallback((klines, period) => {
     return new Promise((resolve) => {
       workerRef.current.onmessage = (e) => resolve(e.data.result);
-      workerRef.current.postMessage({ candles, period });
+      workerRef.current.postMessage({ klines, period });
     });
   }, []);
   
@@ -322,7 +322,7 @@ export const useCalculationWorker = () => {
 
 // Component
 const { calculate } = useCalculationWorker();
-const sma = await calculate(candles, 200); // Non-blocking!
+const sma = await calculate(klines, 200); // Non-blocking!
 ```
 
 ---
@@ -334,14 +334,14 @@ const sma = await calculate(candles, 200); // Non-blocking!
 - [ ] **MACD Calculator** (Moving Average Convergence Divergence)
 - [ ] **Bollinger Bands**
 - [ ] **Chart Image Compression** (reduzir tamanho antes de enviar para AI)
-- [ ] **Pattern Detection** (candlestick patterns)
+- [ ] **Pattern Detection** (kline patterns)
 
 ---
 
 ## Conclusão
 
 Web Workers são essenciais para manter a MarketMind performática, especialmente com:
-- **Datasets grandes** (>5000 candles)
+- **Datasets grandes** (>5000 klines)
 - **Múltiplos indicadores** (3+ MAs)
 - **Real-time updates** (websocket + cálculos)
 - **AI processing** (otimização de contexto)

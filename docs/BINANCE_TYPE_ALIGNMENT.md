@@ -3,7 +3,7 @@
 ## Executive Summary
 This document maps MarketMind's current data structures to Binance API standards to facilitate future backend integration and ensure end-to-end type safety.
 
-## 1. Kline/Candlestick Data
+## 1. Kline/Kline Data
 
 ### Binance API Response Format
 ```typescript
@@ -25,7 +25,7 @@ This document maps MarketMind's current data structures to Binance API standards
 
 ### Current MarketMind Structure
 ```typescript
-interface Candle {
+interface Kline {
   timestamp: number;
   open: number;
   high: number;
@@ -52,7 +52,7 @@ interface Kline {
 }
 
 // Keep internal representation for performance
-interface CandleInternal {
+interface KlineInternal {
   timestamp: number;
   open: number;
   high: number;

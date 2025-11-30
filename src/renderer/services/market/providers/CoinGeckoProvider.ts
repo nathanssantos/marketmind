@@ -1,10 +1,10 @@
 import type { Kline, KlineData, TimeInterval } from '@shared/types';
 import {
-    BaseMarketProvider,
-    type FetchCandlesOptions,
-    type MarketProviderConfig,
-    type Symbol,
-    type SymbolInfo,
+  BaseMarketProvider,
+  type FetchKlinesOptions,
+  type MarketProviderConfig,
+  type Symbol,
+  type SymbolInfo,
 } from '@shared/types';
 import type { AxiosInstance } from 'axios';
 import axios from 'axios';
@@ -40,6 +40,25 @@ const COINGECKO_DAYS_MAP: Record<TimeInterval, number> = {
   '1M': 365,
 };
 
+const INTERVAL_MS: Record<TimeInterval, number> = {
+  '1s': 1000,
+  '1m': 60 * 1000,
+  '3m': 3 * 60 * 1000,
+  '5m': 5 * 60 * 1000,
+  '15m': 15 * 60 * 1000,
+  '30m': 30 * 60 * 1000,
+  '1h': 60 * 60 * 1000,
+  '2h': 2 * 60 * 60 * 1000,
+  '4h': 4 * 60 * 60 * 1000,
+  '6h': 6 * 60 * 60 * 1000,
+  '8h': 8 * 60 * 60 * 1000,
+  '12h': 12 * 60 * 60 * 1000,
+  '1d': 24 * 60 * 60 * 1000,
+  '3d': 3 * 24 * 60 * 60 * 1000,
+  '1w': 7 * 24 * 60 * 60 * 1000,
+  '1M': 30 * 24 * 60 * 60 * 1000,
+};
+
 export class CoinGeckoProvider extends BaseMarketProvider {
   private client: AxiosInstance;
   private coinsCache: CoinGeckoCoin[] | null = null;
@@ -67,7 +86,7 @@ export class CoinGeckoProvider extends BaseMarketProvider {
     });
   }
 
-  async fetchCandles(options: FetchCandlesOptions): Promise<KlineData> {
+  async fetchKlines(options: FetchKlinesOptions): Promise<KlineData> {
     const { symbol, interval, limit = 500 } = options;
 
     return this.rateLimitedFetch(async () => {
@@ -95,6 +114,7 @@ export class CoinGeckoProvider extends BaseMarketProvider {
 
           const priceStr = closePrice.toString();
           const volumeStr = volume.toString();
+          const intervalDuration = INTERVAL_MS[interval] || 60000;
 
           return {
             openTime,
@@ -103,8 +123,8 @@ export class CoinGeckoProvider extends BaseMarketProvider {
             low: priceStr,
             close: priceStr,
             volume: volumeStr,
-            closeTime: openTime,
-            quoteVolume: volumeStr,
+            closeTime: openTime + intervalDuration,
+            quoteVolume: '0',
             trades: 0,
             takerBuyBaseVolume: '0',
             takerBuyQuoteVolume: '0',
@@ -117,7 +137,7 @@ export class CoinGeckoProvider extends BaseMarketProvider {
           klines,
         };
       } catch (error) {
-        this.handleError(error, `Failed to fetch candles for ${symbol}`);
+        this.handleError(error, `Failed to fetch klines for ${symbol}`);
       }
     });
   }

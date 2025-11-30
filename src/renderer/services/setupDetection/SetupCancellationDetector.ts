@@ -1,5 +1,6 @@
 import { calculateEMA } from '@renderer/utils/movingAverages';
 import type { Kline, SetupCancellationReason, TradingSetup } from '@shared/types';
+import { getKlineClose, getKlineHigh, getKlineLow } from '@shared/utils';
 
 const EMA_PERIOD = 9;
 const LOOKBACK_TWO = 2;
@@ -11,7 +12,7 @@ const PULLBACK_BUFFER_SHORT = 1.01;
 export class SetupCancellationDetector {
   checkCancellation(
     setup: TradingSetup,
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
     if (setup.isTriggered) return { isCancelled: false };
@@ -21,21 +22,21 @@ export class SetupCancellationDetector {
 
     switch (setup.type) {
       case 'setup-9-1':
-        return this.checkSetup91Cancellation(setup, candles, currentIndex);
+        return this.checkSetup91Cancellation(setup, klines, currentIndex);
       case 'setup-9-2':
-        return this.checkSetup92Cancellation(setup, candles, currentIndex);
+        return this.checkSetup92Cancellation(setup, klines, currentIndex);
       case 'setup-9-3':
-        return this.checkSetup93Cancellation(setup, candles, currentIndex);
+        return this.checkSetup93Cancellation(setup, klines, currentIndex);
       case 'setup-9-4':
-        return this.checkSetup94Cancellation(setup, candles, currentIndex);
+        return this.checkSetup94Cancellation(setup, klines, currentIndex);
       case '123-reversal':
-        return this.checkPattern123Cancellation(setup, candles, currentIndex);
+        return this.checkPattern123Cancellation(setup, klines, currentIndex);
       case 'bull-trap':
-        return this.checkBullTrapCancellation(setup, candles, currentIndex);
+        return this.checkBullTrapCancellation(setup, klines, currentIndex);
       case 'bear-trap':
-        return this.checkBearTrapCancellation(setup, candles, currentIndex);
+        return this.checkBearTrapCancellation(setup, klines, currentIndex);
       case 'breakout-retest':
-        return this.checkBreakoutRetestCancellation(setup, candles, currentIndex);
+        return this.checkBreakoutRetestCancellation(setup, klines, currentIndex);
       default:
         return { isCancelled: false };
     }
@@ -43,11 +44,11 @@ export class SetupCancellationDetector {
 
   private checkSetup91Cancellation(
     setup: TradingSetup,
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
-    const ema9 = calculateEMA(candles, EMA_PERIOD);
-    const current = candles[currentIndex];
+    const ema9 = calculateEMA(klines, EMA_PERIOD);
+    const current = klines[currentIndex];
     const ema9Current = ema9[currentIndex];
     const ema9Prev = ema9[currentIndex - 1];
     const ema9PrevPrev = ema9[currentIndex - LOOKBACK_TWO];
@@ -87,7 +88,7 @@ export class SetupCancellationDetector {
 
   private checkSetup91LongCancellation(
     setup: TradingSetup,
-    current: Candle,
+    current: Kline,
     ema9Current: number,
     ema9Prev: number,
     ema9PrevPrev: number,
@@ -95,10 +96,10 @@ export class SetupCancellationDetector {
     if (ema9PrevPrev > ema9Prev && ema9Current < ema9Prev) {
       return { isCancelled: true, reason: 'ema-reversal' };
     }
-    if (current.close < ema9Current) {
+    if (getKlineClose(current) < ema9Current) {
       return { isCancelled: true, reason: 'ema-reversal' };
     }
-    if (current.low < setup.stopLoss) {
+    if (getKlineLow(current) < setup.stopLoss) {
       return { isCancelled: true, reason: 'swing-lost' };
     }
     return { isCancelled: false };
@@ -106,7 +107,7 @@ export class SetupCancellationDetector {
 
   private checkSetup91ShortCancellation(
     setup: TradingSetup,
-    current: Candle,
+    current: Kline,
     ema9Current: number,
     ema9Prev: number,
     ema9PrevPrev: number,
@@ -114,10 +115,10 @@ export class SetupCancellationDetector {
     if (ema9PrevPrev < ema9Prev && ema9Current > ema9Prev) {
       return { isCancelled: true, reason: 'ema-reversal' };
     }
-    if (current.close > ema9Current) {
+    if (getKlineClose(current) > ema9Current) {
       return { isCancelled: true, reason: 'ema-reversal' };
     }
-    if (current.high > setup.stopLoss) {
+    if (getKlineHigh(current) > setup.stopLoss) {
       return { isCancelled: true, reason: 'swing-lost' };
     }
     return { isCancelled: false };
@@ -125,11 +126,11 @@ export class SetupCancellationDetector {
 
   private checkSetup92Cancellation(
     setup: TradingSetup,
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
-    const ema9 = calculateEMA(candles, EMA_PERIOD);
-    const current = candles[currentIndex];
+    const ema9 = calculateEMA(klines, EMA_PERIOD);
+    const current = klines[currentIndex];
     const ema9Current = ema9[currentIndex];
     const ema9Prev = ema9[currentIndex - 1];
 
@@ -146,16 +147,16 @@ export class SetupCancellationDetector {
       if (ema9Current < ema9Prev) {
         return { isCancelled: true, reason: 'trend-broken' };
       }
-      const setupCandle = candles[setup.candleIndex];
-      if (setupCandle && current.low < setupCandle.low * STRUCTURE_BUFFER_LONG) {
+      const setupKline = klines[setup.klineIndex];
+      if (setupKline && getKlineLow(current) < getKlineLow(setupKline) * STRUCTURE_BUFFER_LONG) {
         return { isCancelled: true, reason: 'structure-broken' };
       }
     } else {
       if (ema9Current > ema9Prev) {
         return { isCancelled: true, reason: 'trend-broken' };
       }
-      const setupCandle = candles[setup.candleIndex];
-      if (setupCandle && current.high > setupCandle.high * STRUCTURE_BUFFER_SHORT) {
+      const setupKline = klines[setup.klineIndex];
+      if (setupKline && getKlineHigh(current) > getKlineHigh(setupKline) * STRUCTURE_BUFFER_SHORT) {
         return { isCancelled: true, reason: 'structure-broken' };
       }
     }
@@ -165,11 +166,11 @@ export class SetupCancellationDetector {
 
   private checkSetup93Cancellation(
     setup: TradingSetup,
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
-    const ema9 = calculateEMA(candles, EMA_PERIOD);
-    const current = candles[currentIndex];
+    const ema9 = calculateEMA(klines, EMA_PERIOD);
+    const current = klines[currentIndex];
     const ema9Current = ema9[currentIndex];
     const ema9Prev = ema9[currentIndex - 1];
 
@@ -186,16 +187,16 @@ export class SetupCancellationDetector {
       if (ema9Current < ema9Prev) {
         return { isCancelled: true, reason: 'trend-broken' };
       }
-      const setupCandle = candles[setup.candleIndex];
-      if (setupCandle && current.low < setupCandle.low * PULLBACK_BUFFER_LONG) {
+      const setupKline = klines[setup.klineIndex];
+      if (setupKline && getKlineLow(current) < getKlineLow(setupKline) * PULLBACK_BUFFER_LONG) {
         return { isCancelled: true, reason: 'pullback-exceeded' };
       }
     } else {
       if (ema9Current > ema9Prev) {
         return { isCancelled: true, reason: 'trend-broken' };
       }
-      const setupCandle = candles[setup.candleIndex];
-      if (setupCandle && current.high > setupCandle.high * PULLBACK_BUFFER_SHORT) {
+      const setupKline = klines[setup.klineIndex];
+      if (setupKline && getKlineHigh(current) > getKlineHigh(setupKline) * PULLBACK_BUFFER_SHORT) {
         return { isCancelled: true, reason: 'pullback-exceeded' };
       }
     }
@@ -205,11 +206,11 @@ export class SetupCancellationDetector {
 
   private checkSetup94Cancellation(
     setup: TradingSetup,
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
-    const ema9 = calculateEMA(candles, EMA_PERIOD);
-    const current = candles[currentIndex];
+    const ema9 = calculateEMA(klines, EMA_PERIOD);
+    const current = klines[currentIndex];
     const ema9Current = ema9[currentIndex];
     const ema9Prev = ema9[currentIndex - 1];
     const ema9TwoPrev = ema9[currentIndex - LOOKBACK_TWO];
@@ -225,16 +226,16 @@ export class SetupCancellationDetector {
     }
 
     if (setup.direction === 'LONG') {
-      return this.checkSetup94LongCancellation(setup, candles, current, ema9Current, ema9Prev, ema9TwoPrev);
+      return this.checkSetup94LongCancellation(setup, klines, current, ema9Current, ema9Prev, ema9TwoPrev);
     }
     
-    return this.checkSetup94ShortCancellation(setup, candles, current, ema9Current, ema9Prev, ema9TwoPrev);
+    return this.checkSetup94ShortCancellation(setup, klines, current, ema9Current, ema9Prev, ema9TwoPrev);
   }
 
   private checkSetup94LongCancellation(
     setup: TradingSetup,
-    candles: Kline[],
-    current: Candle,
+    klines: Kline[],
+    current: Kline,
     ema9Current: number,
     ema9Prev: number,
     ema9TwoPrev: number,
@@ -244,10 +245,10 @@ export class SetupCancellationDetector {
       return { isCancelled: true, reason: 'failure-exceeded' };
     }
     
-    const setupData = setup.setupData as { failureCandle?: boolean };
-    if (setupData.failureCandle) {
-      const failureCandle = candles[setup.candleIndex - 1];
-      if (failureCandle && current.low < failureCandle.low) {
+    const setupData = setup.setupData as { failureKline?: boolean };
+    if (setupData.failureKline) {
+      const failureKline = klines[setup.klineIndex - 1];
+      if (failureKline && getKlineLow(current) < getKlineLow(failureKline)) {
         return { isCancelled: true, reason: 'extreme-lost' };
       }
     }
@@ -261,8 +262,8 @@ export class SetupCancellationDetector {
 
   private checkSetup94ShortCancellation(
     setup: TradingSetup,
-    candles: Kline[],
-    current: Candle,
+    klines: Kline[],
+    current: Kline,
     ema9Current: number,
     ema9Prev: number,
     ema9TwoPrev: number,
@@ -272,10 +273,10 @@ export class SetupCancellationDetector {
       return { isCancelled: true, reason: 'failure-exceeded' };
     }
     
-    const setupData = setup.setupData as { failureCandle?: boolean };
-    if (setupData.failureCandle) {
-      const failureCandle = candles[setup.candleIndex - 1];
-      if (failureCandle && current.high > failureCandle.high) {
+    const setupData = setup.setupData as { failureKline?: boolean };
+    if (setupData.failureKline) {
+      const failureKline = klines[setup.klineIndex - 1];
+      if (failureKline && getKlineHigh(current) > getKlineHigh(failureKline)) {
         return { isCancelled: true, reason: 'extreme-lost' };
       }
     }
@@ -289,10 +290,10 @@ export class SetupCancellationDetector {
 
   private checkPattern123Cancellation(
     setup: TradingSetup,
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
-    const current = candles[currentIndex];
+    const current = klines[currentIndex];
     if (!current) return { isCancelled: false };
 
     const setupData = setup.setupData as { 
@@ -304,17 +305,17 @@ export class SetupCancellationDetector {
     if (!setupData.p3) return { isCancelled: false };
 
     if (setup.direction === 'LONG') {
-      if (current.low < setupData.p3.price) {
+      if (getKlineLow(current) < setupData.p3.price) {
         return { isCancelled: true, reason: 'pattern-invalidated' };
       }
-      if (setupData.p2 && current.close < setupData.p2.price) {
+      if (setupData.p2 && getKlineClose(current) < setupData.p2.price) {
         return { isCancelled: true, reason: 'breakout-failed' };
       }
     } else {
-      if (current.high > setupData.p3.price) {
+      if (getKlineHigh(current) > setupData.p3.price) {
         return { isCancelled: true, reason: 'pattern-invalidated' };
       }
-      if (setupData.p2 && current.close > setupData.p2.price) {
+      if (setupData.p2 && getKlineClose(current) > setupData.p2.price) {
         return { isCancelled: true, reason: 'breakout-failed' };
       }
     }
@@ -324,19 +325,19 @@ export class SetupCancellationDetector {
 
   private checkBullTrapCancellation(
     setup: TradingSetup,
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
-    const current = candles[currentIndex];
+    const current = klines[currentIndex];
     if (!current) return { isCancelled: false };
 
     const setupData = setup.setupData as { trapHighPrice?: number; supportPrice?: number };
     
-    if (setupData.trapHighPrice && current.close > setupData.trapHighPrice) {
+    if (setupData.trapHighPrice && getKlineClose(current) > setupData.trapHighPrice) {
       return { isCancelled: true, reason: 'trap-invalidated' };
     }
 
-    if (setupData.supportPrice && current.low < setupData.supportPrice * STRUCTURE_BUFFER_LONG) {
+    if (setupData.supportPrice && getKlineLow(current) < setupData.supportPrice * STRUCTURE_BUFFER_LONG) {
       return { isCancelled: true, reason: 'structure-broken' };
     }
 
@@ -345,19 +346,19 @@ export class SetupCancellationDetector {
 
   private checkBearTrapCancellation(
     setup: TradingSetup,
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
-    const current = candles[currentIndex];
+    const current = klines[currentIndex];
     if (!current) return { isCancelled: false };
 
     const setupData = setup.setupData as { trapLowPrice?: number; supportPrice?: number };
     
-    if (setupData.trapLowPrice && current.close < setupData.trapLowPrice) {
+    if (setupData.trapLowPrice && getKlineClose(current) < setupData.trapLowPrice) {
       return { isCancelled: true, reason: 'trap-invalidated' };
     }
 
-    if (setupData.supportPrice && current.high > setupData.supportPrice * STRUCTURE_BUFFER_SHORT) {
+    if (setupData.supportPrice && getKlineHigh(current) > setupData.supportPrice * STRUCTURE_BUFFER_SHORT) {
       return { isCancelled: true, reason: 'structure-broken' };
     }
 
@@ -366,20 +367,20 @@ export class SetupCancellationDetector {
 
   private checkBreakoutRetestCancellation(
     setup: TradingSetup,
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
-    const current = candles[currentIndex];
+    const current = klines[currentIndex];
     if (!current) return { isCancelled: false };
 
     const setupData = setup.setupData as { resistanceLevel?: number; supportLevel?: number };
 
     if (setup.direction === 'LONG' && setupData.resistanceLevel) {
-      if (current.close < setupData.resistanceLevel * STRUCTURE_BUFFER_LONG) {
+      if (getKlineClose(current) < setupData.resistanceLevel * STRUCTURE_BUFFER_LONG) {
         return { isCancelled: true, reason: 'retest-failed' };
       }
     } else if (setup.direction === 'SHORT' && setupData.supportLevel) {
-      if (current.close > setupData.supportLevel * STRUCTURE_BUFFER_SHORT) {
+      if (getKlineClose(current) > setupData.supportLevel * STRUCTURE_BUFFER_SHORT) {
         return { isCancelled: true, reason: 'retest-failed' };
       }
     }

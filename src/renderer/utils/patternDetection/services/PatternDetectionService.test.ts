@@ -4,34 +4,39 @@ import { PatternDetectionService } from './PatternDetectionService';
 
 describe('PatternDetectionService', () => {
   let service: PatternDetectionService;
-  let mockCandles: Kline[];
+  let mockKlines: Kline[];
 
   beforeEach(() => {
     service = new PatternDetectionService();
     
-    mockCandles = Array.from({ length: 100 }, (_, i) => ({
-      timestamp: 1000000 + i * 60000,
-      open: 100 + Math.sin(i / 10) * 10,
-      high: 105 + Math.sin(i / 10) * 10,
-      low: 95 + Math.sin(i / 10) * 10,
-      close: 102 + Math.sin(i / 10) * 10,
-      volume: 1000 + Math.random() * 500,
+    mockKlines = Array.from({ length: 100 }, (_, i) => ({
+      openTime: 1000000 + i * 60000,
+      closeTime: 1000000 + (i + 1) * 60000,
+      open: (100 + Math.sin(i / 10) * 10).toString(),
+      high: (105 + Math.sin(i / 10) * 10).toString(),
+      low: (95 + Math.sin(i / 10) * 10).toString(),
+      close: (102 + Math.sin(i / 10) * 10).toString(),
+      volume: (1000 + Math.random() * 500).toString(),
+      quoteVolume: '102000',
+      trades: 100,
+      takerBuyBaseVolume: '500',
+      takerBuyQuoteVolume: '51000',
     }));
   });
 
   describe('detectPatterns', () => {
     it('should detect patterns with default options', async () => {
-      const result = await service.detectPatterns(mockCandles);
+      const result = await service.detectPatterns(mockKlines);
 
       expect(result).toBeDefined();
       expect(result.patterns).toBeInstanceOf(Array);
       expect(result.metadata).toBeDefined();
-      expect(result.metadata.candlesAnalyzed).toBe(100);
+      expect(result.metadata.klinesAnalyzed).toBe(100);
       expect(result.metadata.executionTime).toBeGreaterThan(0);
     });
 
     it('should respect minConfidence threshold', async () => {
-      const result = await service.detectPatterns(mockCandles, {
+      const result = await service.detectPatterns(mockKlines, {
         minConfidence: 0.9,
       });
 
@@ -43,7 +48,7 @@ describe('PatternDetectionService', () => {
     });
 
     it('should only detect enabled patterns', async () => {
-      const result = await service.detectPatterns(mockCandles, {
+      const result = await service.detectPatterns(mockKlines, {
         enabledPatterns: ['support', 'resistance'],
       });
 
@@ -55,7 +60,7 @@ describe('PatternDetectionService', () => {
     });
 
     it('should assign unique IDs to patterns', async () => {
-      const result = await service.detectPatterns(mockCandles);
+      const result = await service.detectPatterns(mockKlines);
 
       const ids = result.patterns.map(s => s.id);
       const uniqueIds = new Set(ids);
@@ -68,7 +73,7 @@ describe('PatternDetectionService', () => {
     });
 
     it('should sort patterns by confidence descending', async () => {
-      const result = await service.detectPatterns(mockCandles);
+      const result = await service.detectPatterns(mockKlines);
 
       for (let i = 0; i < result.patterns.length - 1; i++) {
         const currentConf = result.patterns[i]?.confidence || 0;
@@ -77,15 +82,15 @@ describe('PatternDetectionService', () => {
       }
     });
 
-    it('should return empty array for insufficient candles', async () => {
-      const fewCandles: Kline[] = mockCandles.slice(0, 5);
-      const result = await service.detectPatterns(fewCandles);
+    it('should return empty array for insufficient klines', async () => {
+      const fewKlines: Kline[] = mockKlines.slice(0, 5);
+      const result = await service.detectPatterns(fewKlines);
 
       expect(result.patterns).toEqual([]);
     });
 
     it('should detect support patterns when enabled', async () => {
-      const result = await service.detectPatterns(mockCandles, {
+      const result = await service.detectPatterns(mockKlines, {
         enabledPatterns: ['support'],
         minConfidence: 0.5,
       });
@@ -95,7 +100,7 @@ describe('PatternDetectionService', () => {
     });
 
     it('should detect resistance patterns when enabled', async () => {
-      const result = await service.detectPatterns(mockCandles, {
+      const result = await service.detectPatterns(mockKlines, {
         enabledPatterns: ['resistance'],
         minConfidence: 0.5,
       });
@@ -105,7 +110,7 @@ describe('PatternDetectionService', () => {
     });
 
     it('should use custom pivot sensitivity', async () => {
-      const result = await service.detectPatterns(mockCandles, {
+      const result = await service.detectPatterns(mockKlines, {
         pivotSensitivity: 3,
       });
 
@@ -113,7 +118,7 @@ describe('PatternDetectionService', () => {
     });
 
     it('should handle enabledPatterns being undefined', async () => {
-      const result = await service.detectPatterns(mockCandles, {
+      const result = await service.detectPatterns(mockKlines, {
         enabledPatterns: undefined,
       });
 
@@ -123,10 +128,10 @@ describe('PatternDetectionService', () => {
 
   describe('detectPatternsIncremental', () => {
     it('should detect patterns incrementally', async () => {
-      const existingPatterns = (await service.detectPatterns(mockCandles.slice(0, 50))).patterns;
-      const newCandles = mockCandles.slice(50);
+      const existingPatterns = (await service.detectPatterns(mockKlines.slice(0, 50))).patterns;
+      const newKlines = mockKlines.slice(50);
 
-      const result = await service.detectPatternsIncremental(existingPatterns, newCandles);
+      const result = await service.detectPatternsIncremental(existingPatterns, newKlines);
 
       expect(result).toBeDefined();
       expect(result.patterns).toBeInstanceOf(Array);
@@ -135,14 +140,14 @@ describe('PatternDetectionService', () => {
 
   describe('cache management', () => {
     it('should cache pivots after detection', async () => {
-      await service.detectPatterns(mockCandles);
+      await service.detectPatterns(mockKlines);
       const cachedPivots = service.getCachedPivots();
 
       expect(cachedPivots).toBeNull();
     });
 
     it('should clear cache', async () => {
-      await service.detectPatterns(mockCandles);
+      await service.detectPatterns(mockKlines);
       service.clearCache();
       const cachedPivots = service.getCachedPivots();
 
@@ -152,7 +157,7 @@ describe('PatternDetectionService', () => {
 
   describe('pattern types', () => {
     it('should detect trendlines when enabled', async () => {
-      const result = await service.detectPatterns(mockCandles, {
+      const result = await service.detectPatterns(mockKlines, {
         enabledPatterns: ['trendline-bullish', 'trendline-bearish'],
         minConfidence: 0.5,
       });
@@ -164,7 +169,7 @@ describe('PatternDetectionService', () => {
     });
 
     it('should detect channels when enabled', async () => {
-      const result = await service.detectPatterns(mockCandles, {
+      const result = await service.detectPatterns(mockKlines, {
         enabledPatterns: ['channel-ascending', 'channel-descending'],
         minConfidence: 0.5,
       });
@@ -176,7 +181,7 @@ describe('PatternDetectionService', () => {
     });
 
     it('should detect triangles when enabled', async () => {
-      const result = await service.detectPatterns(mockCandles, {
+      const result = await service.detectPatterns(mockKlines, {
         enabledPatterns: ['triangle-ascending', 'triangle-descending', 'triangle-symmetrical'],
         minConfidence: 0.5,
       });
@@ -188,7 +193,7 @@ describe('PatternDetectionService', () => {
     });
 
     it('should detect wedges when enabled', async () => {
-      const result = await service.detectPatterns(mockCandles, {
+      const result = await service.detectPatterns(mockKlines, {
         enabledPatterns: ['wedge-rising', 'wedge-falling'],
         minConfidence: 0.5,
       });
@@ -202,20 +207,20 @@ describe('PatternDetectionService', () => {
 
   describe('metadata', () => {
     it('should include execution time in metadata', async () => {
-      const result = await service.detectPatterns(mockCandles);
+      const result = await service.detectPatterns(mockKlines);
 
       expect(result.metadata.executionTime).toBeGreaterThan(0);
       expect(result.metadata.executionTime).toBeLessThan(5000);
     });
 
-    it('should include correct candles analyzed count', async () => {
-      const result = await service.detectPatterns(mockCandles);
+    it('should include correct klines analyzed count', async () => {
+      const result = await service.detectPatterns(mockKlines);
 
-      expect(result.metadata.candlesAnalyzed).toBe(mockCandles.length);
+      expect(result.metadata.klinesAnalyzed).toBe(mockKlines.length);
     });
 
     it('should include patterns detected count', async () => {
-      const result = await service.detectPatterns(mockCandles);
+      const result = await service.detectPatterns(mockKlines);
 
       expect(result.metadata.patternsDetected).toBe(result.patterns.length);
     });

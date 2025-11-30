@@ -1,4 +1,5 @@
 import type { AIPatternGap, Kline } from '@shared/types';
+import { getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -7,28 +8,28 @@ import {
 import type { PivotPoint } from '../types';
 
 const detectGapsBase = (
-  candles: Kline[],
+  klines: Kline[],
   _pivots: PivotPoint[],
   type: 'gap-common' | 'gap-breakaway' | 'gap-runaway' | 'gap-exhaustion'
 ): AIPatternGap[] => {
-  if (!candles || candles.length < 10) return [];
+  if (!klines || klines.length < 10) return [];
 
   const patterns: AIPatternGap[] = [];
 
-  for (let i = 1; i < candles.length; i++) {
-    const prevCandle = candles[i - 1];
-    const currentCandle = candles[i];
+  for (let i = 1; i < klines.length; i++) {
+    const prevKline = klines[i - 1];
+    const currentKline = klines[i];
 
-    if (!prevCandle || !currentCandle) continue;
+    if (!prevKline || !currentKline) continue;
 
-    const isGapUp = currentCandle.low > prevCandle.high;
-    const isGapDown = currentCandle.high < prevCandle.low;
+    const isGapUp = getKlineLow(currentKline) > getKlineHigh(prevKline);
+    const isGapDown = getKlineHigh(currentKline) < getKlineLow(prevKline);
 
     if (!isGapUp && !isGapDown) continue;
 
     const gapSize = isGapUp
-      ? (currentCandle.low - prevCandle.high) / prevCandle.high
-      : (prevCandle.low - currentCandle.high) / currentCandle.high;
+      ? (getKlineLow(currentKline) - getKlineHigh(prevKline)) / getKlineHigh(prevKline)
+      : (getKlineLow(prevKline) - getKlineHigh(currentKline)) / getKlineHigh(currentKline);
 
     if (gapSize < PATTERN_DETECTION_CONFIG.GAP_MIN_PERCENT / 100) continue;
 
@@ -38,24 +39,24 @@ const detectGapsBase = (
     const patternType = type;
 
     if (type === 'gap-common') {
-      if (gapSize < 0.01 && currentCandle.volume < prevCandle.volume) {
+      if (gapSize < 0.01 && getKlineVolume(currentKline) < getKlineVolume(prevKline)) {
         confidence = 0.6;
       } else {
         continue;
       }
     } else if (type === 'gap-breakaway') {
-      const recentHigh = Math.max(...candles.slice(Math.max(0, i - 20), i).map(c => c.high));
-      const recentLow = Math.min(...candles.slice(Math.max(0, i - 20), i).map(c => c.low));
-      const nearResistance = isGapUp && prevCandle.high >= recentHigh * 0.98;
-      const nearSupport = isGapDown && prevCandle.low <= recentLow * 1.02;
+      const recentHigh = Math.max(...klines.slice(Math.max(0, i - 20), i).map(c => getKlineHigh(c)));
+      const recentLow = Math.min(...klines.slice(Math.max(0, i - 20), i).map(c => getKlineLow(c)));
+      const nearResistance = isGapUp && getKlineHigh(prevKline) >= recentHigh * 0.98;
+      const nearSupport = isGapDown && getKlineLow(prevKline) <= recentLow * 1.02;
 
-      if ((nearResistance || nearSupport) && gapSize > 0.01 && currentCandle.volume > prevCandle.volume) {
+      if ((nearResistance || nearSupport) && gapSize > 0.01 && getKlineVolume(currentKline) > getKlineVolume(prevKline)) {
         confidence = 0.7;
       } else {
         continue;
       }
     } else if (type === 'gap-runaway') {
-      const trend = candles.slice(Math.max(0, i - 10), i);
+      const trend = klines.slice(Math.max(0, i - 10), i);
       const trendDirection = trend[trend.length - 1]!.close > trend[0]!.close ? 'up' : 'down';
 
       if ((trendDirection === 'up' && isGapUp) || (trendDirection === 'down' && isGapDown)) {
@@ -68,12 +69,12 @@ const detectGapsBase = (
         continue;
       }
     } else if (type === 'gap-exhaustion') {
-      const lookAhead = candles.slice(i, Math.min(candles.length, i + 5));
+      const lookAhead = klines.slice(i, Math.min(klines.length, i + 5));
       if (lookAhead.length < 3) continue;
 
       const reversal = isGapUp
-        ? lookAhead.every(c => c.close < currentCandle.close)
-        : lookAhead.every(c => c.close > currentCandle.close);
+        ? lookAhead.every(c => c.close < currentKline.close)
+        : lookAhead.every(c => c.close > currentKline.close);
 
       if (reversal && gapSize > 0.015) {
         confidence = 0.7;
@@ -86,8 +87,8 @@ const detectGapsBase = (
 
     const timeScore = normalizeTimeInPattern(
       5,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
     );
 
     confidence = calculateConfidence({
@@ -100,19 +101,19 @@ const detectGapsBase = (
     const confidencePercent = Math.round(confidence * 100);
     const gapPercent = (gapSize * 100).toFixed(2);
 
-    const gapStart = isGapUp ? prevCandle.high : prevCandle.low;
-    const gapEnd = isGapUp ? currentCandle.low : currentCandle.high;
+    const gapStart = isGapUp ? getKlineHigh(prevKline) : getKlineLow(prevKline);
+    const gapEnd = isGapUp ? getKlineLow(currentKline) : getKlineHigh(currentKline);
 
     patterns.push({
       id: patterns.length + 1,
       type: patternType,
-      gapStart: { timestamp: prevCandle.timestamp, price: gapStart },
-      gapEnd: { timestamp: currentCandle.timestamp, price: gapEnd },
+      gapStart: { openTime: prevKline.openTime, price: gapStart },
+      gapEnd: { openTime: currentKline.openTime, price: gapEnd },
       direction,
       label: `${getGapLabel(patternType)} · ${gapPercent}% gap · ${direction === 'bullish' ? '↑' : '↓'} · ${confidencePercent}% confidence`,
       confidence,
       visible: true,
-      timestamp: currentCandle.timestamp,
+      openTime: currentKline.openTime,
     });
   }
 
@@ -137,29 +138,29 @@ const getGapLabel = (type: string): string => {
 };
 
 export const detectCommonGaps = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternGap[] => {
-  return detectGapsBase(candles, pivots, 'gap-common');
+  return detectGapsBase(klines, pivots, 'gap-common');
 };
 
 export const detectBreakawayGaps = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternGap[] => {
-  return detectGapsBase(candles, pivots, 'gap-breakaway');
+  return detectGapsBase(klines, pivots, 'gap-breakaway');
 };
 
 export const detectRunawayGaps = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternGap[] => {
-  return detectGapsBase(candles, pivots, 'gap-runaway');
+  return detectGapsBase(klines, pivots, 'gap-runaway');
 };
 
 export const detectExhaustionGaps = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternGap[] => {
-  return detectGapsBase(candles, pivots, 'gap-exhaustion');
+  return detectGapsBase(klines, pivots, 'gap-exhaustion');
 };

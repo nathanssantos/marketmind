@@ -46,7 +46,7 @@ gh repo edit --add-topic react
 gh repo edit --add-topic typescript
 gh repo edit --add-topic trading
 gh repo edit --add-topic ai
-gh repo edit --add-topic candlestick-chart
+gh repo edit --add-topic kline-chart
 gh repo edit --add-topic technical-analysis
 gh repo edit --add-topic cryptocurrency
 gh repo edit --add-topic stock-market
@@ -70,7 +70,7 @@ git checkout -b feature/chart-rendering
 
 # 4. Commit
 git add .
-git commit -m "feat: add candlestick rendering"
+git commit -m "feat: add kline rendering"
 
 # 5. Push
 git push -u origin feature/chart-rendering
@@ -78,8 +78,8 @@ git push -u origin feature/chart-rendering
 # 6. Create Pull Request
 gh pr create \
   --base develop \
-  --title "Add candlestick rendering" \
-  --body "Implements candlestick chart rendering with Canvas API"
+  --title "Add kline rendering" \
+  --body "Implements kline chart rendering with Canvas API"
 ```
 
 ### Review Pull Request
@@ -151,7 +151,7 @@ gh release create v1.0.0 \
 ## 🎉 First Release
 
 ### Features
-- ✅ Candlestick chart rendering
+- ✅ Kline chart rendering
 - ✅ AI integration
 - ✅ Interactive chat
 - ✅ Auto-update

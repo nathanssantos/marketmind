@@ -80,7 +80,7 @@ export const MessageList = () => {
                     {message.role === 'user' ? 'You' : message.model || 'AI'}
                   </Text>
                   <Text fontSize="xs" color="fg.muted">
-                    {new Date(message.timestamp).toLocaleTimeString()}
+                    {new Date(message.openTime).toLocaleTimeString()}
                   </Text>
                 </Flex>
               </Flex>

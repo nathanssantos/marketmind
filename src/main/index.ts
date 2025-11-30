@@ -64,9 +64,9 @@ const createWindow = (): void => {
   
   if (devServerUrl) {
     console.log('Loading dev server URL...');
-    mainWindow.loadURL(devServerUrl);
+    void mainWindow.loadURL(devServerUrl);
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+    void mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
   
   mainWindow.webContents.on('before-input-event', (_event, input) => {

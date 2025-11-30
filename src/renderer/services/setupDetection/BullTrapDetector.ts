@@ -1,6 +1,7 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
 import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineLow, getKlineVolume } from '@shared/utils';
 import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
 
 const VOLUME_LOOKBACK = 20;
@@ -58,7 +59,7 @@ export class BullTrapDetector extends BaseSetupDetector {
     return this.bullTrapConfig;
   }
 
-  detect(candles: Kline[], currentIndex: number): SetupDetectorResult {
+  detect(klines: Kline[], currentIndex: number): SetupDetectorResult {
     const minIndex = Math.max(
       this.bullTrapConfig.lookbackPeriod + this.bullTrapConfig.emaPeriod,
       SUPPORT_LOOKBACK + VOLUME_LOOKBACK,
@@ -68,7 +69,7 @@ export class BullTrapDetector extends BaseSetupDetector {
       return { setup: null, confidence: 0 };
     }
 
-    const trapSetup = this.detectTrapPattern(candles, currentIndex);
+    const trapSetup = this.detectTrapPattern(klines, currentIndex);
     if (!trapSetup) {
       return { setup: null, confidence: 0 };
     }
@@ -76,9 +77,9 @@ export class BullTrapDetector extends BaseSetupDetector {
     return trapSetup;
   }
 
-  private detectTrapPattern(candles: Kline[], currentIndex: number): SetupDetectorResult | null {
+  private detectTrapPattern(klines: Kline[], currentIndex: number): SetupDetectorResult | null {
     const pivots = findPivotPoints(
-      candles.slice(0, currentIndex + 1),
+      klines.slice(0, currentIndex + 1),
       this.bullTrapConfig.lookbackPeriod,
     );
 
@@ -87,12 +88,12 @@ export class BullTrapDetector extends BaseSetupDetector {
       return null;
     }
 
-    const trap = this.validateTrapStructure(recentHighPivots, candles, currentIndex);
+    const trap = this.validateTrapStructure(recentHighPivots, klines, currentIndex);
     if (!trap) {
       return null;
     }
 
-    return this.createTrapSetup(trap, candles, currentIndex);
+    return this.createTrapSetup(trap, klines, currentIndex);
   }
 
   private getRecentHighPivots(
@@ -107,18 +108,18 @@ export class BullTrapDetector extends BaseSetupDetector {
 
   private validateTrapStructure(
     highPivots: ReturnType<typeof findPivotPoints>,
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
   ): {
     trapHigh: { price: number; index: number };
     resistanceHigh: { price: number };
     breakoutDistance: number;
     reversalStrength: number;
-    current: Candle;
+    current: Kline;
   } | null {
     const trapHigh = highPivots[0];
     const resistanceHigh = highPivots[1];
-    const current = candles[currentIndex];
+    const current = klines[currentIndex];
 
     if (!trapHigh || !resistanceHigh || !current) {
       return null;
@@ -126,9 +127,9 @@ export class BullTrapDetector extends BaseSetupDetector {
 
     const fakeBreakout = trapHigh.price > resistanceHigh.price;
     const breakoutDistance = (trapHigh.price - resistanceHigh.price) / resistanceHigh.price;
-    const reversalInProgress = current.close < resistanceHigh.price;
+    const reversalInProgress = getKlineClose(current) < resistanceHigh.price;
     const reversalStrength =
-      (trapHigh.price - current.close) / (trapHigh.price - current.low);
+      (trapHigh.price - getKlineClose(current)) / (trapHigh.price - getKlineLow(current));
 
     const validBreakoutDistance =
       breakoutDistance >= MIN_TRAP_DISTANCE_PERCENT &&
@@ -149,27 +150,27 @@ export class BullTrapDetector extends BaseSetupDetector {
       resistanceHigh: { price: number };
       breakoutDistance: number;
       reversalStrength: number;
-      current: Candle;
+      current: Kline;
     },
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
   ): SetupDetectorResult | null {
-    const volumeData = candles.slice(Math.max(0, currentIndex - VOLUME_LOOKBACK), currentIndex);
-    const avgVolume = volumeData.reduce((sum, c) => sum + c.volume, 0) / volumeData.length;
+    const volumeData = klines.slice(Math.max(0, currentIndex - VOLUME_LOOKBACK), currentIndex);
+    const avgVolume = volumeData.reduce((sum, c) => sum + getKlineVolume(c), 0) / volumeData.length;
     const volumeConfirmation =
-      trap.current.volume > avgVolume * this.bullTrapConfig.volumeMultiplier;
+      getKlineVolume(trap.current) > avgVolume * this.bullTrapConfig.volumeMultiplier;
 
-    const ema = calculateEMA(candles, this.bullTrapConfig.emaPeriod);
+    const ema = calculateEMA(klines, this.bullTrapConfig.emaPeriod);
     const emaCurrent = ema[currentIndex];
 
     if (emaCurrent === null || emaCurrent === undefined) {
       return null;
     }
 
-    const belowEMA = trap.current.close < emaCurrent;
-    const entry = trap.current.close;
+    const belowEMA = getKlineClose(trap.current) < emaCurrent;
+    const entry = getKlineClose(trap.current);
     const stopLoss = trap.trapHigh.price * STOP_LOSS_BUFFER;
-    const supportLevel = this.findNearestSupport(candles, currentIndex, entry);
+    const supportLevel = this.findNearestSupport(klines, currentIndex, entry);
     const takeProfit = supportLevel ?? entry - (stopLoss - entry) * DEFAULT_RR_MULTIPLIER;
     const rr = this.calculateRR(entry, stopLoss, takeProfit);
 
@@ -191,7 +192,7 @@ export class BullTrapDetector extends BaseSetupDetector {
     const setup = this.createSetup(
       'bull-trap',
       'SHORT',
-      candles,
+      klines,
       currentIndex,
       entry,
       stopLoss,
@@ -213,15 +214,15 @@ export class BullTrapDetector extends BaseSetupDetector {
   }
 
   private findNearestSupport(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
     currentPrice: number,
   ): number | null {
     const lookback = Math.min(SUPPORT_LOOKBACK, currentIndex);
-    const recentCandles = candles.slice(Math.max(0, currentIndex - lookback), currentIndex);
+    const recentKlines = klines.slice(Math.max(0, currentIndex - lookback), currentIndex);
 
-    const lows = recentCandles
-      .map((c) => c.low)
+    const lows = recentKlines
+      .map((c) => getKlineLow(c))
       .filter((low) => low < currentPrice)
       .sort((a, b) => b - a);
 

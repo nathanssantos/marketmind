@@ -3,13 +3,13 @@ import type { Kline } from '../../../../shared/types';
 import { detectResistance, detectSupport } from '../patterns/supportResistance';
 import type { PivotPoint } from '../types';
 
-const createTestCandles = (count: number, basePrice: number): Kline[] => {
-  const candles: Kline[] = [];
+const createTestKlines = (count: number, basePrice: number): Kline[] => {
+  const klines: Kline[] = [];
   const now = Date.now();
   
   for (let i = 0; i < count; i++) {
-    candles.push({
-      timestamp: now + i * 60000,
+    klines.push({
+      openTime: now + i * 60000,
       open: basePrice,
       high: basePrice + 10,
       low: basePrice - 10,
@@ -18,14 +18,14 @@ const createTestCandles = (count: number, basePrice: number): Kline[] => {
     });
   }
   
-  return candles;
+  return klines;
 };
 
 const createTestPivots = (type: 'high' | 'low', prices: number[], timestamps: number[]): PivotPoint[] => {
   return prices.map((price, index) => ({
     index,
     price,
-    timestamp: timestamps[index] || Date.now() + index * 60000,
+    openTime: timestamps[index] || Date.now() + index * 60000,
     type,
     strength: 1,
     volume: 1000,
@@ -35,7 +35,7 @@ const createTestPivots = (type: 'high' | 'low', prices: number[], timestamps: nu
 describe('supportResistance', () => {
   describe('detectSupport', () => {
     it('should detect support from clustered low pivots', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const lowPivots = createTestPivots('low', [99, 100, 101, 99.5, 100.5], [
         Date.now(),
         Date.now() + 60000,
@@ -44,7 +44,7 @@ describe('supportResistance', () => {
         Date.now() + 240000,
       ]);
       
-      const supports = detectSupport(candles, lowPivots);
+      const supports = detectSupport(klines, lowPivots);
       
       expect(supports.length).toBeGreaterThan(0);
       expect(supports[0]?.type).toBe('support');
@@ -52,16 +52,16 @@ describe('supportResistance', () => {
     });
 
     it('should not detect support with insufficient touches', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const lowPivots = createTestPivots('low', [100], [Date.now()]);
       
-      const supports = detectSupport(candles, lowPivots);
+      const supports = detectSupport(klines, lowPivots);
       
       expect(supports.length).toBe(0);
     });
 
     it('should assign confidence scores to detected supports', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const lowPivots = createTestPivots('low', [100, 100.5, 99.5, 100.2], [
         Date.now(),
         Date.now() + 60000,
@@ -69,7 +69,7 @@ describe('supportResistance', () => {
         Date.now() + 180000,
       ]);
       
-      const supports = detectSupport(candles, lowPivots);
+      const supports = detectSupport(klines, lowPivots);
       
       if (supports[0]) {
         expect(supports[0].confidence).toBeGreaterThan(0);
@@ -78,20 +78,20 @@ describe('supportResistance', () => {
     });
 
     it('should filter high pivots and only use low pivots', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const highPivots = createTestPivots('high', [110, 111, 110.5], [
         Date.now(),
         Date.now() + 60000,
         Date.now() + 120000,
       ]);
       
-      const supports = detectSupport(candles, highPivots);
+      const supports = detectSupport(klines, highPivots);
       
       expect(supports.length).toBe(0);
     });
 
     it('should sort supports by confidence (highest first)', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const lowPivots = createTestPivots('low', [
         100, 100.5, 99.5, 100.2,
         90, 90.5, 89.5, 90.3, 90.1, 89.8,
@@ -108,7 +108,7 @@ describe('supportResistance', () => {
         Date.now() + 540000,
       ]);
       
-      const supports = detectSupport(candles, lowPivots);
+      const supports = detectSupport(klines, lowPivots);
       
       if (supports.length >= 2) {
         expect(supports[0]!.confidence).toBeGreaterThanOrEqual(supports[1]!.confidence!);
@@ -116,7 +116,7 @@ describe('supportResistance', () => {
     });
 
     it('should limit results to max patterns per type', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const lowPivots: PivotPoint[] = [];
       
       for (let i = 0; i < 20; i++) {
@@ -133,7 +133,7 @@ describe('supportResistance', () => {
         ]));
       }
       
-      const supports = detectSupport(candles, lowPivots);
+      const supports = detectSupport(klines, lowPivots);
       
       expect(supports.length).toBeLessThanOrEqual(5);
     });
@@ -141,7 +141,7 @@ describe('supportResistance', () => {
 
   describe('detectResistance', () => {
     it('should detect resistance from clustered high pivots', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const highPivots = createTestPivots('high', [110, 111, 110.5, 111.2], [
         Date.now(),
         Date.now() + 60000,
@@ -149,7 +149,7 @@ describe('supportResistance', () => {
         Date.now() + 180000,
       ]);
       
-      const resistances = detectResistance(candles, highPivots);
+      const resistances = detectResistance(klines, highPivots);
       
       expect(resistances.length).toBeGreaterThan(0);
       expect(resistances[0]?.type).toBe('resistance');
@@ -157,29 +157,29 @@ describe('supportResistance', () => {
     });
 
     it('should not detect resistance with insufficient touches', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const highPivots = createTestPivots('high', [110], [Date.now()]);
       
-      const resistances = detectResistance(candles, highPivots);
+      const resistances = detectResistance(klines, highPivots);
       
       expect(resistances.length).toBe(0);
     });
 
     it('should filter low pivots and only use high pivots', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const lowPivots = createTestPivots('low', [90, 91, 90.5], [
         Date.now(),
         Date.now() + 60000,
         Date.now() + 120000,
       ]);
       
-      const resistances = detectResistance(candles, lowPivots);
+      const resistances = detectResistance(klines, lowPivots);
       
       expect(resistances.length).toBe(0);
     });
 
     it('should assign confidence scores to detected resistances', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const highPivots = createTestPivots('high', [110, 110.5, 109.5, 110.2], [
         Date.now(),
         Date.now() + 60000,
@@ -187,7 +187,7 @@ describe('supportResistance', () => {
         Date.now() + 180000,
       ]);
       
-      const resistances = detectResistance(candles, highPivots);
+      const resistances = detectResistance(klines, highPivots);
       
       if (resistances[0]) {
         expect(resistances[0].confidence).toBeGreaterThan(0);
@@ -196,7 +196,7 @@ describe('supportResistance', () => {
     });
 
     it('should create labels with price and touch count', () => {
-      const candles = createTestCandles(100, 100);
+      const klines = createTestKlines(100, 100);
       const highPivots = createTestPivots('high', [110, 110.5, 109.5, 110.2], [
         Date.now(),
         Date.now() + 60000,
@@ -204,7 +204,7 @@ describe('supportResistance', () => {
         Date.now() + 180000,
       ]);
       
-      const resistances = detectResistance(candles, highPivots);
+      const resistances = detectResistance(klines, highPivots);
       
       if (resistances[0]) {
         expect(resistances[0].label).toContain('Resistance at');

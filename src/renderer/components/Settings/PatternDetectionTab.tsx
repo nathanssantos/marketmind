@@ -10,9 +10,9 @@ import type React from 'react';
 import { useTranslation } from 'react-i18next';
 
 const PERCENT_MULTIPLIER = 100;
-const MIN_CANDLES = 20;
-const MAX_CANDLES = 200;
-const CANDLES_STEP = 10;
+const MIN_KLINES = 20;
+const MAX_KLINES = 200;
+const KLINES_STEP = 10;
 const MIN_R2 = 50;
 const MAX_VOLUME_WEIGHT = 50;
 const CONFIDENCE_STEP = 5;
@@ -173,13 +173,13 @@ export const PatternDetectionTab = (): React.ReactElement => {
                         <Slider
                             value={[config.formationPeriod]}
                             onValueChange={(e) => setConfig({ formationPeriod: e[0]! })}
-                            min={MIN_CANDLES}
-                            max={MAX_CANDLES}
-                            step={CANDLES_STEP}
+                            min={MIN_KLINES}
+                            max={MAX_KLINES}
+                            step={KLINES_STEP}
                             width="full"
                         />
                         <Text fontSize="sm" color="fg.muted" mt={1}>
-                            {config.formationPeriod} {t('patternDetection.formationPeriod.candles')}
+                            {config.formationPeriod} {t('patternDetection.formationPeriod.klines')}
                         </Text>
                     </Field>
 

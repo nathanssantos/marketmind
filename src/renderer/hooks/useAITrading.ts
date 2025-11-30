@@ -9,8 +9,8 @@ import { useCallback, useEffect, useRef } from 'react';
 interface UseAITradingOptions {
   symbol: string;
   timeframe: Timeframe;
-  chartType: 'candlestick' | 'line';
-  candles: Kline[];
+  chartType: 'kline' | 'line';
+  klines: Kline[];
   getCurrentPrice: () => number | null;
 }
 
@@ -39,7 +39,7 @@ export const useAITrading = (options: UseAITradingOptions) => {
   } = useTradingStore();
 
   const getChartData = useCallback(() => {
-    if (!options.symbol || options.candles.length === 0) return null;
+    if (!options.symbol || options.klines.length === 0) return null;
     
     return {
       symbol: options.symbol,
@@ -47,7 +47,7 @@ export const useAITrading = (options: UseAITradingOptions) => {
       chartType: options.chartType,
       showVolume: true,
       movingAverages: [],
-      candles: options.candles,
+      klines: options.klines,
     };
   }, [options]);
 
@@ -182,7 +182,7 @@ export const useAITrading = (options: UseAITradingOptions) => {
   }, [tradingConfig, updateAgentConfig]);
 
   useEffect(() => {
-    if (!options.candles || options.candles.length === 0) return;
+    if (!options.klines || options.klines.length === 0) return;
     
     const openTrades = trades.filter((trade) => trade.status === 'open');
 
@@ -225,7 +225,7 @@ export const useAITrading = (options: UseAITradingOptions) => {
         calculateTradingStats();
       }
     });
-  }, [options.candles, trades, options.getCurrentPrice, updateTrade, calculateTradingStats]);
+  }, [options.klines, trades, options.getCurrentPrice, updateTrade, calculateTradingStats]);
 
   useEffect(() => {
     return () => {

@@ -4,7 +4,7 @@ import type { Kline } from '@shared/types';
 
 import { calculateMACD } from './macd';
 
-const createCandle = (close: number, timestamp = Date.now()): Candle => ({
+const createKline = (close: number, timestamp = Date.now()): Kline => ({
   timestamp,
   open: close,
   high: close,
@@ -15,45 +15,45 @@ const createCandle = (close: number, timestamp = Date.now()): Candle => ({
 
 describe('calculateMACD', () => {
   it('should calculate MACD, signal, and histogram correctly', () => {
-    const candles: Kline[] = [
-      createCandle(100),
-      createCandle(101),
-      createCandle(102),
-      createCandle(103),
-      createCandle(104),
-      createCandle(105),
-      createCandle(106),
-      createCandle(107),
-      createCandle(108),
-      createCandle(109),
-      createCandle(110),
-      createCandle(111),
-      createCandle(112),
-      createCandle(113),
-      createCandle(114),
-      createCandle(115),
-      createCandle(116),
-      createCandle(117),
-      createCandle(118),
-      createCandle(119),
-      createCandle(120),
-      createCandle(121),
-      createCandle(122),
-      createCandle(123),
-      createCandle(124),
-      createCandle(125),
-      createCandle(126),
-      createCandle(127),
-      createCandle(128),
-      createCandle(129),
-      createCandle(130),
+    const klines: Kline[] = [
+      createKline(100),
+      createKline(101),
+      createKline(102),
+      createKline(103),
+      createKline(104),
+      createKline(105),
+      createKline(106),
+      createKline(107),
+      createKline(108),
+      createKline(109),
+      createKline(110),
+      createKline(111),
+      createKline(112),
+      createKline(113),
+      createKline(114),
+      createKline(115),
+      createKline(116),
+      createKline(117),
+      createKline(118),
+      createKline(119),
+      createKline(120),
+      createKline(121),
+      createKline(122),
+      createKline(123),
+      createKline(124),
+      createKline(125),
+      createKline(126),
+      createKline(127),
+      createKline(128),
+      createKline(129),
+      createKline(130),
     ];
 
-    const result = calculateMACD(candles, 12, 26, 9);
+    const result = calculateMACD(klines, 12, 26, 9);
 
-    expect(result.macd).toHaveLength(candles.length);
-    expect(result.signal).toHaveLength(candles.length);
-    expect(result.histogram).toHaveLength(candles.length);
+    expect(result.macd).toHaveLength(klines.length);
+    expect(result.signal).toHaveLength(klines.length);
+    expect(result.histogram).toHaveLength(klines.length);
 
     const lastMACD = result.macd[result.macd.length - 1];
     const lastSignal = result.signal[result.signal.length - 1];
@@ -77,7 +77,7 @@ describe('calculateMACD', () => {
     }
   });
 
-  it('should handle empty candle array', () => {
+  it('should handle empty kline array', () => {
     const result = calculateMACD([], 12, 26, 9);
 
     expect(result.macd).toHaveLength(0);
@@ -85,41 +85,41 @@ describe('calculateMACD', () => {
     expect(result.histogram).toHaveLength(0);
   });
 
-  it('should handle candles with insufficient data', () => {
-    const candles: Kline[] = [
-      createCandle(100),
-      createCandle(101),
-      createCandle(102),
+  it('should handle klines with insufficient data', () => {
+    const klines: Kline[] = [
+      createKline(100),
+      createKline(101),
+      createKline(102),
     ];
 
-    const result = calculateMACD(candles, 12, 26, 9);
+    const result = calculateMACD(klines, 12, 26, 9);
 
-    expect(result.macd).toHaveLength(candles.length);
-    expect(result.signal).toHaveLength(candles.length);
-    expect(result.histogram).toHaveLength(candles.length);
+    expect(result.macd).toHaveLength(klines.length);
+    expect(result.signal).toHaveLength(klines.length);
+    expect(result.histogram).toHaveLength(klines.length);
 
     const firstMACD = result.macd[0];
     expect(isNaN(firstMACD)).toBe(true);
   });
 
   it('should use default parameters when not provided', () => {
-    const candles: Kline[] = Array.from({ length: 30 }, (_, i) =>
-      createCandle(100 + i),
+    const klines: Kline[] = Array.from({ length: 30 }, (_, i) =>
+      createKline(100 + i),
     );
 
-    const result = calculateMACD(candles);
+    const result = calculateMACD(klines);
 
-    expect(result.macd).toHaveLength(candles.length);
-    expect(result.signal).toHaveLength(candles.length);
-    expect(result.histogram).toHaveLength(candles.length);
+    expect(result.macd).toHaveLength(klines.length);
+    expect(result.signal).toHaveLength(klines.length);
+    expect(result.histogram).toHaveLength(klines.length);
   });
 
   it('should have histogram equal to MACD minus signal', () => {
-    const candles: Kline[] = Array.from({ length: 30 }, (_, i) =>
-      createCandle(100 + i),
+    const klines: Kline[] = Array.from({ length: 30 }, (_, i) =>
+      createKline(100 + i),
     );
 
-    const result = calculateMACD(candles, 12, 26, 9);
+    const result = calculateMACD(klines, 12, 26, 9);
 
     for (let i = 0; i < result.macd.length; i++) {
       const macd = result.macd[i];
@@ -133,11 +133,11 @@ describe('calculateMACD', () => {
   });
 
   it('should show bullish signal in uptrend', () => {
-    const candles: Kline[] = Array.from({ length: 50 }, (_, i) =>
-      createCandle(100 + i * 2),
+    const klines: Kline[] = Array.from({ length: 50 }, (_, i) =>
+      createKline(100 + i * 2),
     );
 
-    const result = calculateMACD(candles, 12, 26, 9);
+    const result = calculateMACD(klines, 12, 26, 9);
 
     const lastIndex = result.macd.length - 1;
     const lastMACD = result.macd[lastIndex];
@@ -149,11 +149,11 @@ describe('calculateMACD', () => {
   });
 
   it('should show bearish signal in downtrend', () => {
-    const candles: Kline[] = Array.from({ length: 50 }, (_, i) =>
-      createCandle(200 - i * 2),
+    const klines: Kline[] = Array.from({ length: 50 }, (_, i) =>
+      createKline(200 - i * 2),
     );
 
-    const result = calculateMACD(candles, 12, 26, 9);
+    const result = calculateMACD(klines, 12, 26, 9);
 
     const lastIndex = result.macd.length - 1;
     const lastMACD = result.macd[lastIndex];

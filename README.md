@@ -15,20 +15,20 @@
 
 ## 🎯 About the Project
 
-**MarketMind** is a desktop application developed in Electron that combines advanced financial chart visualization (candlesticks) with artificial intelligence analysis. The goal is to provide insights on cryptocurrencies, stocks, and other tradable assets, assisting traders and investors in decision-making.
+**MarketMind** is a desktop application developed in Electron that combines advanced financial chart visualization (klines) with artificial intelligence analysis. The goal is to provide insights on cryptocurrencies, stocks, and other tradable assets, assisting traders and investors in decision-making.
 
 ### Key Features
 
 **Currently Implemented:**
-- 📈 **Candlestick Charts**: High-performance Canvas rendering with zoom and pan
+- 📈 **Kline Charts**: High-performance Canvas rendering with zoom and pan
 - 📊 **Line Charts**: Alternative visualization with area fill
-- 📊 **Volume Visualization**: Volume bars synchronized with candlesticks
+- 📊 **Volume Visualization**: Volume bars synchronized with klines
 - 📉 **Moving Averages**: MA-9, MA-20, MA-50, MA-100, MA-200 (configurable)
 - 🎨 **Grid System**: Dynamic grid with price and time labels
 - 🎛️ **Application Toolbar**: Centralized chart controls with professional design
 - 🔤 **Symbol Selector**: Compact search with borderless design
 - ⏱️ **Timeframe Selector**: 9 square icon buttons (1m to 1M)
-- 📊 **Chart Type Switcher**: Toggle between candlestick and line
+- 📊 **Chart Type Switcher**: Toggle between kline and line
 - 🔢 **Display Toggles**: Volume, grid, and current price line controls
 - 📈 **Indicator Buttons**: Moving averages with color-coded borders
 - 🖱️ **Interactive Controls**: Advanced chart settings panel with pin functionality
@@ -46,14 +46,14 @@
 - 💾 **Data Caching**: Smart caching system to reduce API calls
 - 🤖 **AI Chat Interface**: Full chat system with 10 AI models (OpenAI, Claude, Gemini)
 - 💬 **Interactive Sidebar**: Resizable chat sidebar (300-800px) with markdown rendering
-- 📊 **Chart Data Integration**: Sends structured data (1020 candles optimized) instead of images
+- 📊 **Chart Data Integration**: Sends structured data (1020 klines optimized) instead of images
 - 🎨 **Theme System**: Enhanced dark mode with semantic tokens
 - ⚙️ **AI Selector**: Provider and model selection with pricing info
 - 📝 **Message History**: Clean UI with auto-scroll and loading states
 - 🎨 **AI Patterns System**: Visual indicators (arrows, zones, lines) with toggle control
 - 🔄 **Smart Prompt Selection**: Automatic switching between full/simple modes based on user intent
-- ⚙️ **Configurable AI Settings**: Adjustable detailed candles count (10-100, default: 32)
-- 🚀 **Performance Optimized**: Conversation summarization, candle optimization, AI caching
+- ⚙️ **Configurable AI Settings**: Adjustable detailed klines count (10-100, default: 32)
+- 🚀 **Performance Optimized**: Conversation summarization, kline optimization, AI caching
 - 📉 **Token Reduction**: ~60% reduction in token usage for long conversations
 - 🔐 **Secure Storage**: Platform-native encryption for API keys (Keychain/DPAPI/libsecret)
 - ⚙️ **Settings System**: Comprehensive settings with AI, news, and general configuration
@@ -68,7 +68,7 @@
 - ⚡ **Web Workers System**: 5 workers for maximum performance (3.5x-4x speedup)
   - Moving Averages Worker (SMA/EMA calculations)
   - Bounds Calculator Worker (viewport optimization)
-  - Candle Optimizer Worker (AI data preparation)
+  - Kline Optimizer Worker (AI data preparation)
   - Conversation Worker (AI context summarization)
   - Coordinates Worker (batch transformations)
 - 🚀 **Multi-core Utilization**: ~17x combined performance gain on heavy workloads
@@ -85,7 +85,7 @@
   - Bear Trap (Fake Breakdown)
   - Breakout Retest (Continuation)
 - 🤖 **Auto-Trading System**: Algorithmic trade execution with OCO orders
-- ⏱️ **Setup Cooldown**: Prevents duplicate detections (configurable, default: 10 candles)
+- ⏱️ **Setup Cooldown**: Prevents duplicate detections (configurable, default: 10 klines)
 - 📈 **Trend Filter**: EMA 200-based major trend detection
   - Filters counter-trend trades (optional)
   - Configurable trend alignment (enable/disable)
@@ -102,7 +102,7 @@
 **Planned:**
 - 📰 **News Sentiment Analysis**: AI-powered sentiment analysis of financial news
 - 📊 **Technical Indicators**: RSI, MACD, Bollinger Bands, and more
-- 📡 **WebSocket**: Real-time candle updates via WebSocket
+- 📡 **WebSocket**: Real-time kline updates via WebSocket
 - 🧪 **Testing**: Comprehensive unit and integration tests
 - 🌐 **More Languages**: German, Japanese, Chinese support
 - 🎯 **5 Additional Setups**: Pin+Inside, OB+FVG, VWAP+EMA, Divergence, Liquidity Sweep
@@ -302,7 +302,7 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] ESLint and Prettier setup
 
 **Phase 2: Type System** ✅ COMPLETED (100%)
-- [x] Candle data types
+- [x] Kline data types
 - [x] Chart configuration types
 - [x] AI integration types
 - [x] Market provider types
@@ -310,7 +310,7 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 **Phase 3: Chart Rendering** ✅ COMPLETED (100%)
 - [x] CanvasManager with zoom/pan system
 - [x] Coordinate system utilities
-- [x] Candlestick renderer
+- [x] Kline renderer
 - [x] Grid renderer with price and time labels
 - [x] Volume renderer
 - [x] Line chart renderer
@@ -355,7 +355,7 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] MessageList with markdown rendering
 - [x] MessageInput with chart data integration
 - [x] ChartContext for data sharing
-- [x] Chart data formatting (100 candles + statistics)
+- [x] Chart data formatting (100 klines + statistics)
 - [x] Theme system with semantic tokens
 - [x] UI polish (padding, colors, backgrounds)
 - [x] Correct Claude API model IDs
@@ -449,7 +449,7 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] Toolbar component with horizontal layout (56px height)
 - [x] Symbol selector with compact size and borderless design
 - [x] Timeframe selector with square IconButtons and tooltips
-- [x] Chart type switcher (candlestick/line icons)
+- [x] Chart type switcher (kline/line icons)
 - [x] Display toggles (volume, grid, current price line)
 - [x] Moving averages indicators with color-coded borders
 - [x] Portal-based dropdown rendering
@@ -461,7 +461,7 @@ See the [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) file for the det
 - [x] MainLayout adjusted to 116px offset (header + toolbar)
 
 ### MVP (v1.0) - Target Q1 2025
-- [x] Candlestick chart rendering
+- [x] Kline chart rendering
 - [x] Line chart rendering
 - [x] Volume chart
 - [x] Grid and labels

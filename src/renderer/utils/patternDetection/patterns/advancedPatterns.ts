@@ -1,18 +1,17 @@
 import type { AIPatternDoublePattern, AIPatternHeadAndShoulders, AIPatternTriplePattern, Kline } from '@shared/types';
-import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
-    calculateConfidence,
-    normalizeTimeInPattern,
-    normalizeTouchPoints,
+  calculateConfidence,
+  normalizeTimeInPattern,
+  normalizeTouchPoints,
 } from '../core/confidenceScoring';
 import type { PivotPoint } from '../types';
 
 export const detectHeadAndShoulders = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternHeadAndShoulders[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const patterns: AIPatternHeadAndShoulders[] = [];
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
@@ -47,13 +46,13 @@ export const detectHeadAndShoulders = (
     if (necklineDiff > 0.03) continue;
 
     const patternHeight = ((head.price - neckLow1.price) / neckLow1.price * 100).toFixed(1);
-    const candlesBetween = rightShoulder.index - leftShoulder.index;
+    const klinesBetween = rightShoulder.index - leftShoulder.index;
 
     const touchPointsScore = normalizeTouchPoints(5, 7);
     const timeScore = normalizeTimeInPattern(
-      candlesBetween,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES * 2,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES * 2
+      klinesBetween,
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES * 2,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES * 2
     );
 
     const symmetryScore = 1 - Math.min(shoulderDiff / 0.05, 1);
@@ -72,17 +71,17 @@ export const detectHeadAndShoulders = (
     patterns.push({
       id: patterns.length + 1,
       type: 'head-and-shoulders',
-      leftShoulder: { timestamp: leftShoulder.timestamp, price: leftShoulder.price },
-      head: { timestamp: head.timestamp, price: head.price },
-      rightShoulder: { timestamp: rightShoulder.timestamp, price: rightShoulder.price },
+      leftShoulder: { openTime: leftShoulder.openTime, price: leftShoulder.price },
+      head: { openTime: head.openTime, price: head.price },
+      rightShoulder: { openTime: rightShoulder.openTime, price: rightShoulder.price },
       neckline: [
-        { timestamp: neckLow1.timestamp, price: neckLow1.price },
-        { timestamp: neckLow2.timestamp, price: neckLow2.price },
+        { openTime: neckLow1.openTime, price: neckLow1.price },
+        { openTime: neckLow2.openTime, price: neckLow2.price },
       ],
       label: `H&S (Bearish) · ${patternHeight}% · ${confidencePercent}%`,
       confidence,
       visible: true,
-      timestamp: leftShoulder.timestamp,
+      openTime: leftShoulder.openTime,
     });
   }
 
@@ -93,10 +92,10 @@ export const detectHeadAndShoulders = (
 };
 
 export const detectInverseHeadAndShoulders = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternHeadAndShoulders[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const patterns: AIPatternHeadAndShoulders[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -131,13 +130,13 @@ export const detectInverseHeadAndShoulders = (
     if (necklineDiff > 0.03) continue;
 
     const patternHeight = ((neckHigh1.price - head.price) / head.price * 100).toFixed(1);
-    const candlesBetween = rightShoulder.index - leftShoulder.index;
+    const klinesBetween = rightShoulder.index - leftShoulder.index;
 
     const touchPointsScore = normalizeTouchPoints(5, 7);
     const timeScore = normalizeTimeInPattern(
-      candlesBetween,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES * 2,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES * 2
+      klinesBetween,
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES * 2,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES * 2
     );
 
     const symmetryScore = 1 - Math.min(shoulderDiff / 0.05, 1);
@@ -156,17 +155,17 @@ export const detectInverseHeadAndShoulders = (
     patterns.push({
       id: patterns.length + 1,
       type: 'inverse-head-and-shoulders',
-      leftShoulder: { timestamp: leftShoulder.timestamp, price: leftShoulder.price },
-      head: { timestamp: head.timestamp, price: head.price },
-      rightShoulder: { timestamp: rightShoulder.timestamp, price: rightShoulder.price },
+      leftShoulder: { openTime: leftShoulder.openTime, price: leftShoulder.price },
+      head: { openTime: head.openTime, price: head.price },
+      rightShoulder: { openTime: rightShoulder.openTime, price: rightShoulder.price },
       neckline: [
-        { timestamp: neckHigh1.timestamp, price: neckHigh1.price },
-        { timestamp: neckHigh2.timestamp, price: neckHigh2.price },
+        { openTime: neckHigh1.openTime, price: neckHigh1.price },
+        { openTime: neckHigh2.openTime, price: neckHigh2.price },
       ],
       label: `Inv H&S (Bullish) · ${patternHeight}% · ${confidencePercent}%`,
       confidence,
       visible: true,
-      timestamp: leftShoulder.timestamp,
+      openTime: leftShoulder.openTime,
     });
   }
 
@@ -177,10 +176,10 @@ export const detectInverseHeadAndShoulders = (
 };
 
 export const detectDoubleTops = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternDoublePattern[] => {
-  if (!candles || candles.length < 15) return [];
+  if (!klines || klines.length < 15) return [];
 
   const patterns: AIPatternDoublePattern[] = [];
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
@@ -205,15 +204,15 @@ export const detectDoubleTops = (
     );
 
     const patternHeight = ((firstPeak.price - neckline.price) / neckline.price * 100).toFixed(1);
-    const candlesBetween = secondPeak.index - firstPeak.index;
+    const klinesBetween = secondPeak.index - firstPeak.index;
 
-    if (candlesBetween < 3) continue;
+    if (klinesBetween < 3) continue;
 
     const touchPointsScore = normalizeTouchPoints(3, 5);
     const timeScore = normalizeTimeInPattern(
-      candlesBetween,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+      klinesBetween,
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
     );
 
     const symmetryScore = 1 - Math.min(peakDiff / 0.02, 1);
@@ -232,13 +231,13 @@ export const detectDoubleTops = (
     patterns.push({
       id: patterns.length + 1,
       type: 'double-top',
-      firstPeak: { timestamp: firstPeak.timestamp, price: firstPeak.price },
-      secondPeak: { timestamp: secondPeak.timestamp, price: secondPeak.price },
-      neckline: { timestamp: neckline.openTime, price: neckline.price },
+      firstPeak: { openTime: firstPeak.openTime, price: firstPeak.price },
+      secondPeak: { openTime: secondPeak.openTime, price: secondPeak.price },
+      neckline: { openTime: neckline.openTime, price: neckline.price },
       label: `Double Top (Bearish) · ${patternHeight}% · ${confidencePercent}%`,
       confidence,
       visible: true,
-      timestamp: firstPeak.timestamp,
+      openTime: firstPeak.openTime,
     });
   }
 
@@ -249,10 +248,10 @@ export const detectDoubleTops = (
 };
 
 export const detectDoubleBottoms = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternDoublePattern[] => {
-  if (!candles || candles.length < 15) return [];
+  if (!klines || klines.length < 15) return [];
 
   const patterns: AIPatternDoublePattern[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -277,15 +276,15 @@ export const detectDoubleBottoms = (
     );
 
     const patternHeight = ((neckline.price - firstPeak.price) / firstPeak.price * 100).toFixed(1);
-    const candlesBetween = secondPeak.index - firstPeak.index;
+    const klinesBetween = secondPeak.index - firstPeak.index;
 
-    if (candlesBetween < 3) continue;
+    if (klinesBetween < 3) continue;
 
     const touchPointsScore = normalizeTouchPoints(3, 5);
     const timeScore = normalizeTimeInPattern(
-      candlesBetween,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+      klinesBetween,
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
     );
 
     const symmetryScore = 1 - Math.min(peakDiff / 0.02, 1);
@@ -304,13 +303,13 @@ export const detectDoubleBottoms = (
     patterns.push({
       id: patterns.length + 1,
       type: 'double-bottom',
-      firstPeak: { timestamp: firstPeak.timestamp, price: firstPeak.price },
-      secondPeak: { timestamp: secondPeak.timestamp, price: secondPeak.price },
-      neckline: { timestamp: neckline.openTime, price: neckline.price },
+      firstPeak: { openTime: firstPeak.openTime, price: firstPeak.price },
+      secondPeak: { openTime: secondPeak.openTime, price: secondPeak.price },
+      neckline: { openTime: neckline.openTime, price: neckline.price },
       label: `Double Bottom (Bullish) · ${patternHeight}% · ${confidencePercent}%`,
       confidence,
       visible: true,
-      timestamp: firstPeak.timestamp,
+      openTime: firstPeak.openTime,
     });
   }
 
@@ -320,10 +319,10 @@ export const detectDoubleBottoms = (
 };
 
 export const detectTripleTops = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternTriplePattern[] => {
-  if (!candles || candles.length < 30) return [];
+  if (!klines || klines.length < 30) return [];
 
   const patterns: AIPatternTriplePattern[] = [];
   const highPivots = pivots.filter(p => p.type === 'high').sort((a, b) => a.index - b.index);
@@ -359,13 +358,13 @@ export const detectTripleTops = (
     if (necklineDiff > 0.04) continue;
 
     const patternHeight = ((avgPrice - neckline1.price) / neckline1.price * 100).toFixed(1);
-    const candlesBetween = peak3.index - peak1.index;
+    const klinesBetween = peak3.index - peak1.index;
 
     const touchPointsScore = normalizeTouchPoints(5, 7);
     const timeScore = normalizeTimeInPattern(
-      candlesBetween,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES * 2,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES * 2
+      klinesBetween,
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES * 2,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES * 2
     );
 
     const symmetryScore = 1 - Math.min(maxDiff / PATTERN_DETECTION_CONFIG.TRIPLE_TOP_TOLERANCE, 1);
@@ -384,17 +383,17 @@ export const detectTripleTops = (
     patterns.push({
       id: patterns.length + 1,
       type: 'triple-top',
-      peak1: { timestamp: peak1.timestamp, price: peak1.price },
-      peak2: { timestamp: peak2.timestamp, price: peak2.price },
-      peak3: { timestamp: peak3.timestamp, price: peak3.price },
+      peak1: { openTime: peak1.openTime, price: peak1.price },
+      peak2: { openTime: peak2.openTime, price: peak2.price },
+      peak3: { openTime: peak3.openTime, price: peak3.price },
       neckline: [
-        { timestamp: neckline1.timestamp, price: neckline1.price },
-        { timestamp: neckline2.timestamp, price: neckline2.price },
+        { openTime: neckline1.openTime, price: neckline1.price },
+        { openTime: neckline2.openTime, price: neckline2.price },
       ],
       label: `Triple Top (Very Bearish) · ${patternHeight}% · ${confidencePercent}%`,
       confidence,
       visible: true,
-      timestamp: peak1.timestamp,
+      openTime: peak1.openTime,
     });
   }
 
@@ -404,10 +403,10 @@ export const detectTripleTops = (
 };
 
 export const detectTripleBottoms = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternTriplePattern[] => {
-  if (!candles || candles.length < 30) return [];
+  if (!klines || klines.length < 30) return [];
 
   const patterns: AIPatternTriplePattern[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -443,13 +442,13 @@ export const detectTripleBottoms = (
     if (necklineDiff > 0.04) continue;
 
     const patternHeight = ((neckline1.price - avgPrice) / avgPrice * 100).toFixed(1);
-    const candlesBetween = peak3.index - peak1.index;
+    const klinesBetween = peak3.index - peak1.index;
 
     const touchPointsScore = normalizeTouchPoints(5, 7);
     const timeScore = normalizeTimeInPattern(
-      candlesBetween,
-      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES * 2,
-      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES * 2
+      klinesBetween,
+      PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES * 2,
+      PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES * 2
     );
 
     const symmetryScore = 1 - Math.min(maxDiff / PATTERN_DETECTION_CONFIG.TRIPLE_TOP_TOLERANCE, 1);
@@ -468,17 +467,17 @@ export const detectTripleBottoms = (
     patterns.push({
       id: patterns.length + 1,
       type: 'triple-bottom',
-      peak1: { timestamp: peak1.timestamp, price: peak1.price },
-      peak2: { timestamp: peak2.timestamp, price: peak2.price },
-      peak3: { timestamp: peak3.timestamp, price: peak3.price },
+      peak1: { openTime: peak1.openTime, price: peak1.price },
+      peak2: { openTime: peak2.openTime, price: peak2.price },
+      peak3: { openTime: peak3.openTime, price: peak3.price },
       neckline: [
-        { timestamp: neckline1.timestamp, price: neckline1.price },
-        { timestamp: neckline2.timestamp, price: neckline2.price },
+        { openTime: neckline1.openTime, price: neckline1.price },
+        { openTime: neckline2.openTime, price: neckline2.price },
       ],
       label: `Triple Bottom (Very Bullish) · ${patternHeight}% · ${confidencePercent}%`,
       confidence,
       visible: true,
-      timestamp: peak1.timestamp,
+      openTime: peak1.openTime,
     });
   }
 

@@ -43,9 +43,9 @@ describe('useCurrentPriceLineRenderer', () => {
         minPrice: 90,
         maxPrice: 110,
       })),
-      getCandles: vi.fn(() => [
-        { open: 100, high: 105, low: 95, close: 102, volume: 1000, time: 1000 },
-        { open: 102, high: 108, low: 101, close: 105, volume: 1200, time: 2000 },
+      getKlines: vi.fn(() => [
+        { openTime: 1000, closeTime: 2000, open: '100', high: '105', low: '95', close: '102', volume: '1000', quoteVolume: '102000', trades: 100, takerBuyBaseVolume: '500', takerBuyQuoteVolume: '51000' },
+        { openTime: 2000, closeTime: 3000, open: '102', high: '108', low: '101', close: '105', volume: '1200', quoteVolume: '126000', trades: 120, takerBuyBaseVolume: '600', takerBuyQuoteVolume: '63000' },
       ]),
       priceToY: vi.fn((price: number) => 300 - (price - 100) * 10),
     } as unknown as CanvasManager;
@@ -103,8 +103,8 @@ describe('useCurrentPriceLineRenderer', () => {
       expect(mockCtx.stroke).not.toHaveBeenCalled();
     });
 
-    it('should not render when no candles', () => {
-      mockManager.getCandles = vi.fn(() => []);
+    it('should not render when no klines', () => {
+      mockManager.getKlines = vi.fn(() => []);
 
       const { result } = renderHook(() =>
         useCurrentPriceLineRenderer({
@@ -225,8 +225,8 @@ describe('useCurrentPriceLineRenderer', () => {
       expect(mockCtx.fill).not.toHaveBeenCalled();
     });
 
-    it('should not render when no candles', () => {
-      mockManager.getCandles = vi.fn(() => []);
+    it('should not render when no klines', () => {
+      mockManager.getKlines = vi.fn(() => []);
 
       const { result } = renderHook(() =>
         useCurrentPriceLineRenderer({

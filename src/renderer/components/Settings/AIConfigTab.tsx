@@ -90,7 +90,7 @@ export const AIConfigTab = () => {
   const model = settings?.model || DEFAULT_MODELS[provider];
   const temperature = settings?.temperature ?? DEFAULT_AI_SETTINGS.temperature;
   const maxTokens = settings?.maxTokens ?? DEFAULT_AI_SETTINGS.maxTokens;
-  const detailedCandlesCount = settings?.detailedCandlesCount ?? DEFAULT_AI_SETTINGS.detailedCandlesCount;
+  const detailedKlinesCount = settings?.detailedKlinesCount ?? DEFAULT_AI_SETTINGS.detailedKlinesCount;
 
   const debouncedUpdateSettings = useDebounceCallback(updateSettings, 300);
 
@@ -167,9 +167,9 @@ export const AIConfigTab = () => {
     }
   };
 
-  const handleDetailedCandlesCountChange = (value: number[]) => {
+  const handleDetailedKlinesCountChange = (value: number[]) => {
     if (value[0] !== undefined) {
-      debouncedUpdateSettings({ detailedCandlesCount: value[0] });
+      debouncedUpdateSettings({ detailedKlinesCount: value[0] });
     }
   };
 
@@ -177,7 +177,7 @@ export const AIConfigTab = () => {
     updateSettings({
       temperature: DEFAULT_AI_SETTINGS.temperature,
       maxTokens: DEFAULT_AI_SETTINGS.maxTokens,
-      detailedCandlesCount: DEFAULT_AI_SETTINGS.detailedCandlesCount,
+      detailedKlinesCount: DEFAULT_AI_SETTINGS.detailedKlinesCount,
     });
   };
 
@@ -338,10 +338,10 @@ export const AIConfigTab = () => {
       </Box>
 
       <Box>
-        <Field label={t('settings.ai.detailedCandles', { value: detailedCandlesCount })} helperText={t('settings.ai.detailedCandlesHelper')}>
+        <Field label={t('settings.ai.detailedKlines', { value: detailedKlinesCount })} helperText={t('settings.ai.detailedKlinesHelper')}>
           <Slider
-            value={[detailedCandlesCount]}
-            onValueChange={handleDetailedCandlesCountChange}
+            value={[detailedKlinesCount]}
+            onValueChange={handleDetailedKlinesCountChange}
             min={10}
             max={100}
             step={1}

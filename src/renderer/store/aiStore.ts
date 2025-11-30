@@ -2,7 +2,7 @@ import type { Timeframe } from '@/renderer/components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '@/renderer/components/Chart/useMovingAverageRenderer';
 import { AIService } from '@/renderer/services/ai';
 import type { AIAnalysisResponse, AIMessage, AIProviderType, AITrade, AITradingConfig, AITradingStats, Kline } from '@shared/types';
-import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '@shared/utils';
 import { create } from 'zustand';
 
 export const DEFAULT_MODELS: Record<AIProviderType, string> = {
@@ -61,10 +61,10 @@ const DEFAULT_TRADING_STATS: AITradingStats = {
 };
 
 export interface ChartData {
-  candles: Kline[];
+  klines: Kline[];
   symbol: string;
   timeframe: Timeframe;
-  chartType: 'candlestick' | 'line';
+  chartType: 'kline' | 'line';
   showVolume: boolean;
   movingAverages: MovingAverageConfig[];
 }
@@ -84,7 +84,7 @@ export interface AISettings {
   model?: string;
   temperature?: number;
   maxTokens?: number;
-  detailedCandlesCount?: number;
+  detailedKlinesCount?: number;
 }
 
 interface AIState {
@@ -124,7 +124,7 @@ interface AIState {
   updateConversationTitle: (id: string, title: string) => void;
   updateConversationPatternDataId: (id: string, patternDataId: string | undefined) => void;
 
-  addMessage: (conversationId: string, message: Omit<AIMessage, 'id' | 'timestamp'>) => void;
+  addMessage: (conversationId: string, message: Omit<AIMessage, 'id' | 'openTime'>) => void;
   updateMessage: (conversationId: string, messageId: string, content: string) => void;
   deleteMessage: (conversationId: string, messageId: string) => void;
   clearMessages: (conversationId: string) => void;
@@ -289,57 +289,57 @@ const formatAIError = (error: Error, provider?: AIProviderType, model?: string):
 };
 
 const formatChartDataContext = (chartData: ChartData): string => {
-  const recentCandles = chartData.candles.slice(-100);
-  const lastCandle = recentCandles[recentCandles.length - 1];
+  const recentKlines = chartData.klines.slice(-100);
+  const lastKline = recentKlines[recentKlines.length - 1];
   
-  if (!lastCandle) return '';
+  if (!lastKline) return '';
 
   const visibleMAs = chartData.movingAverages.filter(ma => ma.visible);
   
-  const highs = recentCandles.map(c => c.high);
-  const lows = recentCandles.map(c => c.low);
-  const volumes = recentCandles.map(c => c.volume);
+  const highs = recentKlines.map(c => getKlineHigh(c));
+  const lows = recentKlines.map(c => getKlineLow(c));
+  const volumes = recentKlines.map(c => getKlineVolume(c));
   
   const highestPrice = Math.max(...highs);
   const lowestPrice = Math.min(...lows);
   const avgVolume = volumes.reduce((a, b) => a + b, 0) / volumes.length;
   const priceRange = ((highestPrice - lowestPrice) / lowestPrice * 100).toFixed(2);
   
-  const first = recentCandles[0];
-  const last = recentCandles[recentCandles.length - 1];
-  const overallChange = first && last ? ((last.close - first.close) / first.close * 100).toFixed(2) : '0';
+  const first = recentKlines[0];
+  const last = recentKlines[recentKlines.length - 1];
+  const overallChange = first && last ? ((getKlineClose(last) - getKlineClose(first)) / getKlineClose(first) * 100).toFixed(2) : '0';
   
-  const bullishCount = recentCandles.filter(c => c.close > c.open).length;
-  const bearishCount = recentCandles.length - bullishCount;
+  const bullishCount = recentKlines.filter(c => getKlineClose(c) > getKlineOpen(c)).length;
+  const bearishCount = recentKlines.length - bullishCount;
   
   let context = `\n\n--- CHART DATA CONTEXT ---\n`;
   context += `Market: ${chartData.symbol}\n`;
   context += `Timeframe: ${chartData.timeframe}\n`;
   context += `Chart Type: ${chartData.chartType}\n`;
-  context += `Data Points: ${chartData.candles.length} candles\n`;
+  context += `Data Points: ${chartData.klines.length} klines\n`;
   context += `\n=== CURRENT MARKET STATE ===\n`;
-  context += `Current Price: $${lastCandle.close.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}\n`;
-  context += `Open: $${lastCandle.open.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}\n`;
-  context += `High: $${lastCandle.high.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}\n`;
-  context += `Low: $${lastCandle.low.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}\n`;
-  context += `Volume: ${lastCandle.volume.toLocaleString()}\n`;
-  context += `Current Candle Change: ${((lastCandle.close - lastCandle.open) / lastCandle.open * 100).toFixed(2)}%\n`;
+  context += `Current Price: $${getKlineClose(lastKline).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}\n`;
+  context += `Open: $${getKlineOpen(lastKline).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}\n`;
+  context += `High: $${getKlineHigh(lastKline).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}\n`;
+  context += `Low: $${getKlineLow(lastKline).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}\n`;
+  context += `Volume: ${getKlineVolume(lastKline).toLocaleString()}\n`;
+  context += `Current Kline Change: ${((getKlineClose(lastKline) - getKlineOpen(lastKline)) / getKlineOpen(lastKline) * 100).toFixed(2)}%\n`;
   
-  context += `\n=== STATISTICAL ANALYSIS (Last 100 candles) ===\n`;
+  context += `\n=== STATISTICAL ANALYSIS (Last 100 klines) ===\n`;
   context += `Highest Price: $${highestPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}\n`;
   context += `Lowest Price: $${lowestPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}\n`;
   context += `Price Range: ${priceRange}%\n`;
   context += `Overall Trend: ${parseFloat(overallChange) > 0 ? '📈 Bullish' : '📉 Bearish'} (${overallChange}%)\n`;
   context += `Average Volume: ${avgVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })}\n`;
-  context += `Bullish Candles: ${bullishCount} (${(bullishCount / recentCandles.length * 100).toFixed(1)}%)\n`;
-  context += `Bearish Candles: ${bearishCount} (${(bearishCount / recentCandles.length * 100).toFixed(1)}%)\n`;
+  context += `Bullish Klines: ${bullishCount} (${(bullishCount / recentKlines.length * 100).toFixed(1)}%)\n`;
+  context += `Bearish Klines: ${bearishCount} (${(bearishCount / recentKlines.length * 100).toFixed(1)}%)\n`;
   
   context += `\n=== TIMESTAMP INFORMATION FOR DRAWING PATTERNS ===\n`;
   context += `⚠️ IMPORTANT: When creating patterns (support, resistance, zones), use these timestamps:\n`;
-  context += `First Candle Timestamp: ${recentCandles[0]?.timestamp} (${new Date(recentCandles[0]?.timestamp || 0).toISOString()})\n`;
-  context += `Last Candle Timestamp: ${lastCandle.openTime} (${new Date(lastCandle.openTime).toISOString()})\n`;
+  context += `First Kline Timestamp: ${recentKlines[0]?.openTime} (${new Date(recentKlines[0]?.openTime || 0).toISOString()})\n`;
+  context += `Last Kline Timestamp: ${lastKline.openTime} (${new Date(lastKline.openTime).toISOString()})\n`;
   context += `Timeframe: ${chartData.timeframe} (use appropriate timestamps based on this interval)\n`;
-  context += `Total Visible Candles: ${chartData.candles.length}\n`;
+  context += `Total Visible Klines: ${chartData.klines.length}\n`;
   
   if (visibleMAs.length > 0) {
     context += `\n=== ACTIVE INDICATORS ===\n`;
@@ -348,18 +348,18 @@ const formatChartDataContext = (chartData: ChartData): string => {
     });
   }
   
-  context += `\n=== RECENT PRICE ACTION (Last 20 candles) ===\n`;
-  recentCandles.slice(-20).forEach((candle, i) => {
-    const change = ((getKlineClose(candle) - getKlineOpen(candle)) / getKlineOpen(candle) * 100).toFixed(2);
-    const trend = getKlineClose(candle) > getKlineOpen(candle) ? '�' : '�';
-    const volumeRatio = (getKlineVolume(candle) / avgVolume).toFixed(2);
-    const timestamp = new Date(candle.openTime).toLocaleString('en-US', { 
+  context += `\n=== RECENT PRICE ACTION (Last 20 klines) ===\n`;
+  recentKlines.slice(-20).forEach((kline, i) => {
+    const change = ((getKlineClose(kline) - getKlineOpen(kline)) / getKlineOpen(kline) * 100).toFixed(2);
+    const trend = getKlineClose(kline) > getKlineOpen(kline) ? '�' : '�';
+    const volumeRatio = (getKlineVolume(kline) / avgVolume).toFixed(2);
+    const timestamp = new Date(kline.openTime).toLocaleString('en-US', { 
       month: 'short', 
       day: 'numeric', 
       hour: '2-digit', 
       minute: '2-digit' 
     });
-    context += `${i + 1}. ${trend} ${timestamp} | O: $${getKlineOpen(candle).toFixed(2)} H: $${getKlineHigh(candle).toFixed(2)} L: $${getKlineLow(candle).toFixed(2)} C: $${getKlineClose(candle).toFixed(2)} | Δ${change}% | Vol: ${volumeRatio}x avg\n`;
+    context += `${i + 1}. ${trend} ${timestamp} | O: $${getKlineOpen(kline).toFixed(2)} H: $${getKlineHigh(kline).toFixed(2)} L: $${getKlineLow(kline).toFixed(2)} C: $${getKlineClose(kline).toFixed(2)} | Δ${change}% | Vol: ${volumeRatio}x avg\n`;
   });
   
   context += `\n--- END CHART DATA ---\n\n`;
@@ -539,7 +539,7 @@ export const useAIStore = create<AIState>((set, get) => {
           const newMessage: AIMessage = {
             ...message,
             id: generateId(),
-            timestamp: Date.now(),
+            openTime: Date.now(),
           };
 
           let updatedMessages = [...c.messages, newMessage];
@@ -689,7 +689,7 @@ export const useAIStore = create<AIState>((set, get) => {
         };
         if (settings.model) userMessage.model = settings.model;
         
-        get().addMessage(conversationId, userMessage as Omit<AIMessage, 'id' | 'timestamp'>);
+        get().addMessage(conversationId, userMessage as Omit<AIMessage, 'id' | 'openTime'>);
 
         const conversation = get().getActiveConversation();
         if (!conversation) return;
@@ -729,7 +729,7 @@ export const useAIStore = create<AIState>((set, get) => {
           };
           if (settings.model) assistantMessage.model = settings.model;
           
-          get().addMessage(conversationId, assistantMessage as Omit<AIMessage, 'id' | 'timestamp'>);
+          get().addMessage(conversationId, assistantMessage as Omit<AIMessage, 'id' | 'openTime'>);
 
           const updatedConversation = get().getActiveConversation();
           
@@ -820,7 +820,7 @@ export const useAIStore = create<AIState>((set, get) => {
         
         const totalHoldingTime = closedTrades.reduce((sum, trade) => {
           if (trade.closedAt) {
-            return sum + (trade.closedAt.getTime() - trade.timestamp.getTime());
+            return sum + (trade.closedAt.getTime() - trade.openTime.getTime());
           }
           return sum;
         }, 0);

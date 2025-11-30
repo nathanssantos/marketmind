@@ -3,7 +3,7 @@ import { calculateStochastic } from '../utils/stochastic';
 
 export interface StochasticWorkerRequest {
   type: 'calculateStochastic';
-  candles: Kline[];
+  klines: Kline[];
   kPeriod: number;
   dPeriod: number;
 }
@@ -15,11 +15,11 @@ export interface StochasticWorkerResponse {
 }
 
 self.onmessage = (event: MessageEvent<StochasticWorkerRequest>) => {
-  const { type, candles, kPeriod, dPeriod } = event.data;
+  const { type, klines, kPeriod, dPeriod } = event.data;
 
   if (type !== 'calculateStochastic') return;
 
-  const result = calculateStochastic(candles, kPeriod, dPeriod);
+  const result = calculateStochastic(klines, kPeriod, dPeriod);
 
   const response: StochasticWorkerResponse = {
     type: 'stochasticResult',

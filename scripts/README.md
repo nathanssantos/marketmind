@@ -267,7 +267,7 @@ Use prefixos nos commits para melhor organização:
 
 **Exemplos:**
 ```bash
-git commit -m "feat: adiciona renderização de candlestick"
+git commit -m "feat: adiciona renderização de kline"
 git commit -m "fix: corrige cálculo de média móvel"
 git commit -m "docs: atualiza README com instruções"
 git commit -m "perf: otimiza renderização de canvas"

@@ -11,13 +11,18 @@ vi.mock('../store/uiStore');
 vi.mock('../utils/patternDetection');
 
 describe('useAutoPatternDetection', () => {
-  const mockCandles: Kline[] = Array.from({ length: 100 }, (_, i) => ({
-    timestamp: 1000000 + i * 60000,
-    open: 100 + i,
-    high: 105 + i,
-    low: 95 + i,
-    close: 102 + i,
-    volume: 1000,
+  const mockKlines: Kline[] = Array.from({ length: 100 }, (_, i) => ({
+    openTime: 1000000 + i * 60000,
+    closeTime: 1000000 + (i + 1) * 60000,
+    open: (100 + i).toString(),
+    high: (105 + i).toString(),
+    low: (95 + i).toString(),
+    close: (102 + i).toString(),
+    volume: '1000',
+    quoteVolume: '102000',
+    trades: 100,
+    takerBuyBaseVolume: '500',
+    takerBuyQuoteVolume: '51000',
   }));
 
   const mockSetDetectedPatterns = vi.fn();
@@ -29,9 +34,9 @@ describe('useAutoPatternDetection', () => {
     vi.mocked(useChartContext).mockReturnValue({
       chartData: {
         symbol: 'BTCUSDT',
-        candles: mockCandles,
+        klines: mockKlines,
         timeframe: '1h',
-        chartType: 'candlestick',
+        chartType: 'kline',
         showVolume: true,
         movingAverages: [],
       },
@@ -66,8 +71,8 @@ describe('useAutoPatternDetection', () => {
         {
           type: 'support',
           points: [
-            { timestamp: 1000000, price: 100 },
-            { timestamp: 1060000, price: 100 },
+            { openTime: 1000000, price: 100 },
+            { openTime: 1060000, price: 100 },
           ],
           confidence: 0.8,
         },
@@ -76,7 +81,7 @@ describe('useAutoPatternDetection', () => {
         pivotsFound: 10,
         patternsDetected: 1,
         executionTime: 50,
-        candlesAnalyzed: 100,
+        klinesAnalyzed: 100,
       },
     });
   });

@@ -7,15 +7,15 @@ import { PinnableControl } from './PinnableControl';
 export interface AdvancedControlsConfig {
   rightMargin: number;
   volumeHeightRatio: number;
-  
-  candleSpacing: number;
-  candleWickWidth: number;
-  
+
+  klineSpacing: number;
+  klineWickWidth: number;
+
   gridLineWidth: number;
-  
+
   currentPriceLineWidth: number;
   currentPriceLineStyle: 'solid' | 'dashed' | 'dotted';
-  
+
   paddingTop: number;
   paddingBottom: number;
   paddingLeft: number;
@@ -41,8 +41,8 @@ export const AdvancedControls = ({
   };
 
   return (
-    <ControlPanel 
-      title={t('chart.advanced.title')} 
+    <ControlPanel
+      title={t('chart.advanced.title')}
       defaultExpanded={false}
     >
       <Box>
@@ -72,21 +72,21 @@ export const AdvancedControls = ({
 
       <Box>
         <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
-          {t('chart.advanced.candleSettings')}
+          {t('chart.advanced.klineSettings')}
         </Text>
         <Box>
           <PinnableControl
             label={t('chart.advanced.spacing')}
-            value={config.candleSpacing}
-            onChange={(value) => handleChange('candleSpacing', value)}
-            controlKey="candleSpacing"
+            value={config.klineSpacing}
+            onChange={(value) => handleChange('klineSpacing', value)}
+            controlKey="klineSpacing"
           />
           <Box mt={2}>
             <PinnableControl
               label={t('chart.advanced.wickWidth')}
-              value={config.candleWickWidth}
-              onChange={(value) => handleChange('candleWickWidth', value)}
-              controlKey="candleWickWidth"
+              value={config.klineWickWidth}
+              onChange={(value) => handleChange('klineWickWidth', value)}
+              controlKey="klineWickWidth"
             />
           </Box>
         </Box>

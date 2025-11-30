@@ -1,24 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import type { Kline } from '../../../shared/types/candle';
+import type { Kline } from '../../../shared/types/kline';
 import {
     createDefault94Config,
     Setup94Detector,
 } from './Setup94Detector';
 
-const createCandle = (
+const createKline = (
   open: number,
   high: number,
   low: number,
   close: number,
   volume: number = 1000000,
-  timestamp: number = Date.now()
-): Candle => ({
-  timestamp,
-  open,
-  high,
-  low,
-  close,
-  volume,
+  openTime: number = Date.now()
+): Kline => ({
+  openTime,
+  closeTime: openTime + 60000,
+  open: open.toString(),
+  high: high.toString(),
+  low: low.toString(),
+  close: close.toString(),
+  volume: volume.toString(),
+  quoteVolume: (volume * close).toString(),
+  trades: 100,
+  takerBuyBaseVolume: (volume * 0.5).toString(),
+  takerBuyQuoteVolume: (volume * close * 0.5).toString(),
 });
 
 describe('Setup94Detector', () => {
@@ -42,44 +47,44 @@ describe('Setup94Detector', () => {
       const config = { ...createDefault94Config(), enabled: false };
       const detector = new Setup94Detector(config);
 
-      const candles = [
-        createCandle(100, 110, 95, 105),
-        createCandle(105, 108, 103, 107),
-        createCandle(107, 109, 106, 108),
+      const klines = [
+        createKline(100, 110, 95, 105),
+        createKline(105, 108, 103, 107),
+        createKline(107, 109, 106, 108),
       ];
 
-      const result = detector.detect(candles, 2);
+      const result = detector.detect(klines, 2);
       expect(result.setup).toBeNull();
       expect(result.confidence).toBe(0);
     });
 
-    it('should return null when not enough candles', () => {
+    it('should return null when not enough klines', () => {
       const config = { ...createDefault94Config(), enabled: true };
       const detector = new Setup94Detector(config);
 
-      const candles = [createCandle(100, 110, 95, 105)];
+      const klines = [createKline(100, 110, 95, 105)];
 
-      const result = detector.detect(candles, 0);
+      const result = detector.detect(klines, 0);
       expect(result.setup).toBeNull();
       expect(result.confidence).toBe(0);
     });
 
-    it('should require minimum candles for detection', () => {
+    it('should require minimum klines for detection', () => {
       const config = { ...createDefault94Config(), enabled: true };
       const detector = new Setup94Detector(config);
 
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
       for (let i = 0; i < 35; i += 1) {
-        candles.push(createCandle(100, 101, 99, 100));
+        klines.push(createKline(100, 101, 99, 100));
       }
 
-      const result = detector.detect(candles, 34);
+      const result = detector.detect(klines, 34);
       expect(result).toBeDefined();
     });
   });
 
   describe('Long setup detection (continuation)', () => {
-    it('should detect long continuation when EMA9 turns down 1 candle then resumes up', () => {
+    it('should detect long continuation when EMA9 turns down 1 kline then resumes up', () => {
       const config = {
         ...createDefault94Config(),
         enabled: true,
@@ -89,18 +94,18 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.5;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
       }
 
-      const lastPrice = candles[candles.length - 1]?.close ?? 100;
-      candles.push(createCandle(lastPrice - 0.5, lastPrice + 0.5, lastPrice - 1.5, lastPrice - 0.3, 1500000, baseTime + 35 * 60000));
-      candles.push(createCandle(lastPrice, lastPrice + 2, lastPrice - 0.5, lastPrice + 1, 2000000, baseTime + 36 * 60000));
+      const lastPrice = klines[klines.length - 1]?.close ?? 100;
+      klines.push(createKline(lastPrice - 0.5, lastPrice + 0.5, lastPrice - 1.5, lastPrice - 0.3, 1500000, baseTime + 35 * 60000));
+      klines.push(createKline(lastPrice, lastPrice + 2, lastPrice - 0.5, lastPrice + 1, 2000000, baseTime + 36 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       
       if (result.setup) {
         expect(result.setup.type).toBe('setup-9-4');
@@ -120,14 +125,14 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 - i * 0.3;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
       }
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
 
@@ -140,23 +145,23 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.5;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
       }
 
-      const lastPrice = candles[candles.length - 1]?.close ?? 100;
-      const twoPrevLow = candles[candles.length - 2]?.low ?? 100;
-      candles.push(createCandle(lastPrice - 0.5, lastPrice + 0.5, twoPrevLow - 2, lastPrice - 0.3, 1500000, baseTime + 35 * 60000));
-      candles.push(createCandle(lastPrice, lastPrice + 2, lastPrice - 0.5, lastPrice + 1, 1500000, baseTime + 36 * 60000));
+      const lastPrice = klines[klines.length - 1]?.close ?? 100;
+      const twoPrevLow = klines[klines.length - 2]?.low ?? 100;
+      klines.push(createKline(lastPrice - 0.5, lastPrice + 0.5, twoPrevLow - 2, lastPrice - 0.3, 1500000, baseTime + 35 * 60000));
+      klines.push(createKline(lastPrice, lastPrice + 2, lastPrice - 0.5, lastPrice + 1, 1500000, baseTime + 36 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
 
-    it('should validate EMA9 resumes upward after 1-candle failure', () => {
+    it('should validate EMA9 resumes upward after 1-kline failure', () => {
       const config = {
         ...createDefault94Config(),
         enabled: true,
@@ -165,24 +170,24 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.5;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
       }
 
-      const lastPrice = candles[candles.length - 1]?.close ?? 100;
-      candles.push(createCandle(lastPrice - 0.5, lastPrice + 0.5, lastPrice - 1.5, lastPrice - 0.3, 1500000, baseTime + 35 * 60000));
-      candles.push(createCandle(lastPrice - 1, lastPrice, lastPrice - 2, lastPrice - 1.5, 1500000, baseTime + 36 * 60000));
+      const lastPrice = klines[klines.length - 1]?.close ?? 100;
+      klines.push(createKline(lastPrice - 0.5, lastPrice + 0.5, lastPrice - 1.5, lastPrice - 0.3, 1500000, baseTime + 35 * 60000));
+      klines.push(createKline(lastPrice - 1, lastPrice, lastPrice - 2, lastPrice - 1.5, 1500000, baseTime + 36 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
   });
 
   describe('Short setup detection (continuation)', () => {
-    it('should detect short continuation when EMA9 turns up 1 candle then resumes down', () => {
+    it('should detect short continuation when EMA9 turns up 1 kline then resumes down', () => {
       const config = {
         ...createDefault94Config(),
         enabled: true,
@@ -192,18 +197,18 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 - i * 0.5;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
       }
 
-      const lastPrice = candles[candles.length - 1]?.close ?? 100;
-      candles.push(createCandle(lastPrice + 0.5, lastPrice + 1.5, lastPrice - 0.5, lastPrice + 0.3, 1500000, baseTime + 35 * 60000));
-      candles.push(createCandle(lastPrice, lastPrice + 0.5, lastPrice - 2, lastPrice - 1, 2000000, baseTime + 36 * 60000));
+      const lastPrice = klines[klines.length - 1]?.close ?? 100;
+      klines.push(createKline(lastPrice + 0.5, lastPrice + 1.5, lastPrice - 0.5, lastPrice + 0.3, 1500000, baseTime + 35 * 60000));
+      klines.push(createKline(lastPrice, lastPrice + 0.5, lastPrice - 2, lastPrice - 1, 2000000, baseTime + 36 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       
       if (result.setup) {
         expect(result.setup.type).toBe('setup-9-4');
@@ -223,14 +228,14 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.3;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
       }
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
 
@@ -243,23 +248,23 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 - i * 0.5;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
       }
 
-      const lastPrice = candles[candles.length - 1]?.close ?? 100;
-      const twoPrevHigh = candles[candles.length - 2]?.high ?? 100;
-      candles.push(createCandle(lastPrice + 0.5, twoPrevHigh + 2, lastPrice - 0.5, lastPrice + 0.3, 1500000, baseTime + 35 * 60000));
-      candles.push(createCandle(lastPrice, lastPrice + 0.5, lastPrice - 2, lastPrice - 1, 1500000, baseTime + 36 * 60000));
+      const lastPrice = klines[klines.length - 1]?.close ?? 100;
+      const twoPrevHigh = klines[klines.length - 2]?.high ?? 100;
+      klines.push(createKline(lastPrice + 0.5, twoPrevHigh + 2, lastPrice - 0.5, lastPrice + 0.3, 1500000, baseTime + 35 * 60000));
+      klines.push(createKline(lastPrice, lastPrice + 0.5, lastPrice - 2, lastPrice - 1, 1500000, baseTime + 36 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
 
-    it('should validate EMA9 resumes downward after 1-candle failure', () => {
+    it('should validate EMA9 resumes downward after 1-kline failure', () => {
       const config = {
         ...createDefault94Config(),
         enabled: true,
@@ -268,18 +273,18 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 - i * 0.5;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
       }
 
-      const lastPrice = candles[candles.length - 1]?.close ?? 100;
-      candles.push(createCandle(lastPrice + 0.5, lastPrice + 1.5, lastPrice - 0.5, lastPrice + 0.3, 1500000, baseTime + 35 * 60000));
-      candles.push(createCandle(lastPrice + 1, lastPrice + 2, lastPrice, lastPrice + 1.5, 1500000, baseTime + 36 * 60000));
+      const lastPrice = klines[klines.length - 1]?.close ?? 100;
+      klines.push(createKline(lastPrice + 0.5, lastPrice + 1.5, lastPrice - 0.5, lastPrice + 0.3, 1500000, baseTime + 35 * 60000));
+      klines.push(createKline(lastPrice + 1, lastPrice + 2, lastPrice, lastPrice + 1.5, 1500000, baseTime + 36 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
   });
@@ -295,18 +300,18 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.5;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
       }
 
-      const lastPrice = candles[candles.length - 1]?.close ?? 100;
-      candles.push(createCandle(lastPrice - 0.5, lastPrice + 0.5, lastPrice - 1.5, lastPrice - 0.3, 1500000, baseTime + 35 * 60000));
-      candles.push(createCandle(lastPrice, lastPrice + 2, lastPrice - 0.5, lastPrice + 1, 2000000, baseTime + 36 * 60000));
+      const lastPrice = klines[klines.length - 1]?.close ?? 100;
+      klines.push(createKline(lastPrice - 0.5, lastPrice + 0.5, lastPrice - 1.5, lastPrice - 0.3, 1500000, baseTime + 35 * 60000));
+      klines.push(createKline(lastPrice, lastPrice + 2, lastPrice - 0.5, lastPrice + 1, 2000000, baseTime + 36 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.setup).toBeNull();
     });
 
@@ -320,14 +325,14 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.5;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
       }
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       expect(result.confidence).toBeLessThan(95);
     });
   });
@@ -343,18 +348,18 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.5;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1000000, baseTime + i * 60000));
       }
 
-      const lastPrice = candles[candles.length - 1]?.close ?? 100;
-      candles.push(createCandle(lastPrice - 0.5, lastPrice + 0.5, lastPrice - 1.5, lastPrice - 0.3, 1000000, baseTime + 35 * 60000));
-      candles.push(createCandle(lastPrice, lastPrice + 2, lastPrice - 0.5, lastPrice + 1, 2000000, baseTime + 36 * 60000));
+      const lastPrice = klines[klines.length - 1]?.close ?? 100;
+      klines.push(createKline(lastPrice - 0.5, lastPrice + 0.5, lastPrice - 1.5, lastPrice - 0.3, 1000000, baseTime + 35 * 60000));
+      klines.push(createKline(lastPrice, lastPrice + 2, lastPrice - 0.5, lastPrice + 1, 2000000, baseTime + 36 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       
       if (result.setup) {
         expect(result.setup.volumeConfirmation).toBe(true);
@@ -374,25 +379,25 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.5;
-        candles.push(createCandle(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
+        klines.push(createKline(price, price + 1, price - 1, price, 1500000, baseTime + i * 60000));
       }
 
-      const lastPrice = candles[candles.length - 1]?.close ?? 100;
-      candles.push(createCandle(lastPrice - 0.5, lastPrice + 0.5, lastPrice - 1.5, lastPrice - 0.3, 1500000, baseTime + 35 * 60000));
-      candles.push(createCandle(lastPrice, lastPrice + 2, lastPrice - 0.5, lastPrice + 1, 2000000, baseTime + 36 * 60000));
+      const lastPrice = klines[klines.length - 1]?.close ?? 100;
+      klines.push(createKline(lastPrice - 0.5, lastPrice + 0.5, lastPrice - 1.5, lastPrice - 0.3, 1500000, baseTime + 35 * 60000));
+      klines.push(createKline(lastPrice, lastPrice + 2, lastPrice - 0.5, lastPrice + 1, 2000000, baseTime + 36 * 60000));
 
-      const result = detector.detect(candles, candles.length - 1);
+      const result = detector.detect(klines, klines.length - 1);
       
       if (result.setup) {
         expect(result.setup.setupData.ema9).toBeDefined();
         expect(result.setup.setupData.atr).toBeDefined();
         expect(result.setup.setupData.volumeRatio).toBeDefined();
         expect(result.setup.setupData.continuationPattern).toBe(true);
-        expect(result.setup.setupData.failureCandle).toBe(true);
+        expect(result.setup.setupData.failureKline).toBe(true);
       }
     });
   });

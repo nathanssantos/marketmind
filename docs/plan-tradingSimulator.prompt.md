@@ -1282,10 +1282,10 @@ export const useTradingPriceUpdater = () => {
   const { chartData } = useChartContext();
   
   useEffect(() => {
-    if (!chartData?.candles.length) return;
+    if (!chartData?.klines.length) return;
     
-    const latestCandle = chartData.candles[chartData.candles.length - 1];
-    const currentPrice = latestCandle.close;
+    const latestKline = chartData.klines[chartData.klines.length - 1];
+    const currentPrice = latestKline.close;
     
     // Update all orders for this symbol
     updatePrices(chartData.symbol, currentPrice);
@@ -1553,7 +1553,7 @@ Create test files:
 ### Historical Replay Mode
 1. Date selector to choose replay start date
 2. Playback controls (play, pause, speed)
-3. Step forward/backward candle-by-candle
+3. Step forward/backward kline-by-kline
 4. Simulate real-time price updates from historical data
 5. Order execution based on historical prices
 
@@ -1698,7 +1698,7 @@ git push origin feature/trading-simulator
 
 ## Notes & Considerations
 
-1. **Real-time Price Updates**: Currently using latest candle close. For true real-time, integrate WebSocket updates.
+1. **Real-time Price Updates**: Currently using latest kline close. For true real-time, integrate WebSocket updates.
 
 2. **Order Execution**: Currently instant execution. Could add slippage simulation or market depth.
 

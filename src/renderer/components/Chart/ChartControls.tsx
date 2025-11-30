@@ -2,12 +2,12 @@ import { Box, Flex, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    LuChartBar,
-    LuChartCandlestick,
-    LuChartLine,
-    LuCrosshair,
-    LuDollarSign,
-    LuGrid3X3
+  LuChartBar,
+  LuChartCandlestick,
+  LuChartLine,
+  LuCrosshair,
+  LuDollarSign,
+  LuGrid3X3
 } from 'react-icons/lu';
 import { TooltipWrapper } from '../ui/Tooltip';
 import type { AdvancedControlsConfig } from './AdvancedControls';
@@ -22,7 +22,7 @@ export interface ChartControlsProps {
   showGrid: boolean;
   showCurrentPriceLine: boolean;
   showCrosshair: boolean;
-  chartType: 'candlestick' | 'line';
+  chartType: 'kline' | 'line';
   movingAverages: MovingAverageConfig[];
   advancedConfig?: AdvancedControlsConfig;
   timeframe: Timeframe;
@@ -30,7 +30,7 @@ export interface ChartControlsProps {
   onShowGridChange: (show: boolean) => void;
   onShowCurrentPriceLineChange: (show: boolean) => void;
   onShowCrosshairChange: (show: boolean) => void;
-  onChartTypeChange: (type: 'candlestick' | 'line') => void;
+  onChartTypeChange: (type: 'kline' | 'line') => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onAdvancedConfigChange?: (config: AdvancedControlsConfig) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
@@ -56,10 +56,10 @@ export const ChartControls = ({
 }: ChartControlsProps): ReactElement => {
   const { t } = useTranslation();
   const { pinnedControls } = usePinnedControls();
-  
+
   const toggleMA = (index: number): void => {
-    const updated = movingAverages.map((ma, i) => 
-      i === index 
+    const updated = movingAverages.map((ma, i) =>
+      i === index
         ? { ...ma, visible: ma.visible === false ? true : false }
         : ma
     );
@@ -78,8 +78,8 @@ export const ChartControls = ({
   const controlLabels: Record<string, string> = {
     rightMargin: t('chart.advanced.rightMargin'),
     volumeHeightRatio: t('chart.advanced.volumeHeight'),
-    candleSpacing: t('chart.advanced.spacing'),
-    candleWickWidth: t('chart.advanced.wickWidth'),
+    klineSpacing: t('chart.advanced.spacing'),
+    klineWickWidth: t('chart.advanced.wickWidth'),
     gridLineWidth: t('chart.advanced.lineWidth'),
     paddingTop: t('chart.advanced.top'),
     paddingBottom: t('chart.advanced.bottom'),
@@ -105,13 +105,13 @@ export const ChartControls = ({
             {t('chart.controls.chartType')}
           </Text>
           <HStack gap={2}>
-            <TooltipWrapper label={t('chart.controls.candlestickChart')}>
+            <TooltipWrapper label={t('chart.controls.klineChart')}>
               <IconButton
                 size="sm"
-                aria-label={t('chart.controls.candlestickChart')}
-                onClick={() => onChartTypeChange('candlestick')}
-                colorPalette={chartType === 'candlestick' ? 'blue' : 'gray'}
-                variant={chartType === 'candlestick' ? 'solid' : 'ghost'}
+                aria-label={t('chart.controls.klineChart')}
+                onClick={() => onChartTypeChange('kline')}
+                colorPalette={chartType === 'kline' ? 'blue' : 'gray'}
+                variant={chartType === 'kline' ? 'solid' : 'ghost'}
               >
                 <LuChartCandlestick />
               </IconButton>
@@ -196,7 +196,7 @@ export const ChartControls = ({
                     onClick={() => toggleMA(index)}
                     colorPalette={ma.visible !== false ? 'blue' : 'gray'}
                     variant={ma.visible !== false ? 'solid' : 'ghost'}
-                    style={{ 
+                    style={{
                       position: 'relative',
                       borderLeft: ma.visible !== false ? `3px solid ${ma.color}` : undefined
                     }}
@@ -212,27 +212,27 @@ export const ChartControls = ({
         )}
       </Flex>
 
-        {pinnedControls.size > 0 && advancedConfig && (
-          <Box>
-            <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="semibold">
-              {t('chart.controls.quickSettings')}
-            </Text>
-            <Stack gap={2}>
-              {Array.from(pinnedControls).map((controlKey) => (
-                <PinnableControl
-                  key={controlKey}
-                  label={controlLabels[controlKey] || controlKey}
-                  value={advancedConfig[controlKey]}
-                  onChange={(value) => handleAdvancedChange(controlKey, value)}
-                  controlKey={controlKey}
-                  step={controlKey === 'volumeHeightRatio' ? '0.05' : undefined}
-                  min={controlKey === 'volumeHeightRatio' ? '0' : undefined}
-                  max={controlKey === 'volumeHeightRatio' ? '1' : undefined}
-                />
-              ))}
-            </Stack>
-          </Box>
-        )}
+      {pinnedControls.size > 0 && advancedConfig && (
+        <Box>
+          <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="semibold">
+            {t('chart.controls.quickSettings')}
+          </Text>
+          <Stack gap={2}>
+            {Array.from(pinnedControls).map((controlKey) => (
+              <PinnableControl
+                key={controlKey}
+                label={controlLabels[controlKey] || controlKey}
+                value={advancedConfig[controlKey]}
+                onChange={(value) => handleAdvancedChange(controlKey, value)}
+                controlKey={controlKey}
+                step={controlKey === 'volumeHeightRatio' ? '0.05' : undefined}
+                min={controlKey === 'volumeHeightRatio' ? '0' : undefined}
+                max={controlKey === 'volumeHeightRatio' ? '1' : undefined}
+              />
+            ))}
+          </Stack>
+        </Box>
+      )}
     </ControlPanel>
   );
 };

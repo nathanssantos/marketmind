@@ -7,7 +7,7 @@ const WORKER_KEY = 'stochastic';
 
 export interface UseStochasticWorkerReturn {
   calculateStochastic: (
-    candles: Kline[],
+    klines: Kline[],
     kPeriod: number,
     dPeriod: number
   ) => Promise<StochasticResult>;
@@ -31,7 +31,7 @@ export const useStochasticWorker = (): UseStochasticWorkerReturn => {
   }, []);
 
   const calculateStochastic = (
-    candles: Kline[],
+    klines: Kline[],
     kPeriod: number,
     dPeriod: number
   ): Promise<StochasticResult> => {
@@ -60,7 +60,7 @@ export const useStochasticWorker = (): UseStochasticWorkerReturn => {
 
       workerRef.current.postMessage({
         type: 'calculateStochastic',
-        candles,
+        klines,
         kPeriod,
         dPeriod,
       });

@@ -84,20 +84,20 @@ The project is configured to:
 ### Magic Numbers
 ```typescript
 // ❌ Bad
-if (candles.length > 100) { }
+if (klines.length > 100) { }
 
 // ✅ Good
-const MAX_CANDLES = 100;
-if (candles.length > MAX_CANDLES) { }
+const MAX_KLINES = 100;
+if (klines.length > MAX_KLINES) { }
 ```
 
 ### Type Imports
 ```typescript
 // ❌ Bad
-import { Candle } from '@shared/types';
+import { Kline } from '@shared/types';
 
 // ✅ Good
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 ```
 
 ### Early Returns

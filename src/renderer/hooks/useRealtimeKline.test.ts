@@ -1,19 +1,23 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useRealtimeCandle } from './useRealtimeCandle';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MarketDataService } from '../services/market/MarketDataService';
-import type { Kline } from '@shared/types';
+import { useRealtimeKline } from './useRealtimeKline';
 
-describe('useRealtimeCandle', () => {
+describe('useRealtimeKline', () => {
   let mockService: MarketDataService;
   let unsubscribeMock: ReturnType<typeof vi.fn>;
-  const mockCandle: Candle = {
-    timestamp: 1000,
-    open: 100,
-    high: 110,
-    low: 95,
-    close: 105,
-    volume: 1000,
+  const mockKline: Kline = {
+    openTime: 1000,
+    closeTime: 2000,
+    open: '100',
+    high: '110',
+    low: '95',
+    close: '105',
+    volume: '1000',
+    quoteVolume: '105000',
+    trades: 100,
+    takerBuyBaseVolume: '500',
+    takerBuyQuoteVolume: '52500',
   };
 
   beforeEach(() => {
@@ -25,7 +29,7 @@ describe('useRealtimeCandle', () => {
 
   it('should subscribe to updates on mount', () => {
     renderHook(() =>
-      useRealtimeCandle(mockService, {
+      useRealtimeKline(mockService, {
         symbol: 'BTCUSDT',
         interval: '1h',
       })
@@ -42,7 +46,7 @@ describe('useRealtimeCandle', () => {
     const onUpdate = vi.fn();
 
     renderHook(() =>
-      useRealtimeCandle(mockService, {
+      useRealtimeKline(mockService, {
         symbol: 'BTCUSDT',
         interval: '1h',
         onUpdate,
@@ -54,16 +58,16 @@ describe('useRealtimeCandle', () => {
 
     if (!callback) throw new Error('Callback not found');
 
-    callback({ candle: mockCandle, isFinal: false, symbol: 'BTCUSDT', interval: '1h' });
+    callback({ kline: mockKline, isFinal: false, symbol: 'BTCUSDT', interval: '1h' });
 
-    expect(onUpdate).toHaveBeenCalledWith(mockCandle, false);
+    expect(onUpdate).toHaveBeenCalledWith(mockKline, false);
   });
 
   it('should call onUpdate with isFinal flag', () => {
     const onUpdate = vi.fn();
 
     renderHook(() =>
-      useRealtimeCandle(mockService, {
+      useRealtimeKline(mockService, {
         symbol: 'BTCUSDT',
         interval: '1h',
         onUpdate,
@@ -75,14 +79,14 @@ describe('useRealtimeCandle', () => {
 
     if (!callback) throw new Error('Callback not found');
 
-    callback({ candle: mockCandle, isFinal: true, symbol: 'BTCUSDT', interval: '1h' });
+    callback({ kline: mockKline, isFinal: true, symbol: 'BTCUSDT', interval: '1h' });
 
-    expect(onUpdate).toHaveBeenCalledWith(mockCandle, true);
+    expect(onUpdate).toHaveBeenCalledWith(mockKline, true);
   });
 
   it('should not call onUpdate if not provided', () => {
     renderHook(() =>
-      useRealtimeCandle(mockService, {
+      useRealtimeKline(mockService, {
         symbol: 'BTCUSDT',
         interval: '1h',
       })
@@ -94,13 +98,13 @@ describe('useRealtimeCandle', () => {
     if (!callback) throw new Error('Callback not found');
 
     expect(() => {
-      callback({ candle: mockCandle, isFinal: false, symbol: 'BTCUSDT', interval: '1h' });
+      callback({ kline: mockKline, isFinal: false, symbol: 'BTCUSDT', interval: '1h' });
     }).not.toThrow();
   });
 
   it('should unsubscribe on unmount', () => {
     const { unmount } = renderHook(() =>
-      useRealtimeCandle(mockService, {
+      useRealtimeKline(mockService, {
         symbol: 'BTCUSDT',
         interval: '1h',
       })
@@ -116,7 +120,7 @@ describe('useRealtimeCandle', () => {
   it('should resubscribe when symbol changes', () => {
     const { rerender } = renderHook(
       ({ symbol }) =>
-        useRealtimeCandle(mockService, {
+        useRealtimeKline(mockService, {
           symbol,
           interval: '1h',
         }),
@@ -146,7 +150,7 @@ describe('useRealtimeCandle', () => {
     
     const { rerender } = renderHook(
       ({ interval }: { interval: IntervalType }) =>
-        useRealtimeCandle(mockService, {
+        useRealtimeKline(mockService, {
           symbol: 'BTCUSDT',
           interval,
         }),
@@ -168,7 +172,7 @@ describe('useRealtimeCandle', () => {
 
   it('should not subscribe when enabled is false', () => {
     renderHook(() =>
-      useRealtimeCandle(mockService, {
+      useRealtimeKline(mockService, {
         symbol: 'BTCUSDT',
         interval: '1h',
         enabled: false,
@@ -181,7 +185,7 @@ describe('useRealtimeCandle', () => {
   it('should subscribe when enabled changes to true', () => {
     const { rerender } = renderHook(
       ({ enabled }) =>
-        useRealtimeCandle(mockService, {
+        useRealtimeKline(mockService, {
           symbol: 'BTCUSDT',
           interval: '1h',
           enabled,
@@ -199,7 +203,7 @@ describe('useRealtimeCandle', () => {
   it('should unsubscribe when enabled changes to false', () => {
     const { rerender } = renderHook(
       ({ enabled }) =>
-        useRealtimeCandle(mockService, {
+        useRealtimeKline(mockService, {
           symbol: 'BTCUSDT',
           interval: '1h',
           enabled,
@@ -220,7 +224,7 @@ describe('useRealtimeCandle', () => {
 
     const { rerender } = renderHook(
       ({ onUpdate }) =>
-        useRealtimeCandle(mockService, {
+        useRealtimeKline(mockService, {
           symbol: 'BTCUSDT',
           interval: '1h',
           onUpdate,
@@ -233,18 +237,18 @@ describe('useRealtimeCandle', () => {
 
     if (!callback) throw new Error('Callback not found');
 
-    callback({ candle: mockCandle, isFinal: false, symbol: 'BTCUSDT', interval: '1h' });
+    callback({ kline: mockKline, isFinal: false, symbol: 'BTCUSDT', interval: '1h' });
 
-    expect(onUpdate1).toHaveBeenCalledWith(mockCandle, false);
+    expect(onUpdate1).toHaveBeenCalledWith(mockKline, false);
     expect(mockService.subscribeToUpdates).toHaveBeenCalledTimes(1);
 
     rerender({ onUpdate: onUpdate2 });
 
     expect(mockService.subscribeToUpdates).toHaveBeenCalledTimes(1);
 
-    callback({ candle: mockCandle, isFinal: true, symbol: 'BTCUSDT', interval: '1h' });
+    callback({ kline: mockKline, isFinal: true, symbol: 'BTCUSDT', interval: '1h' });
 
-    expect(onUpdate2).toHaveBeenCalledWith(mockCandle, true);
+    expect(onUpdate2).toHaveBeenCalledWith(mockKline, true);
     expect(onUpdate1).toHaveBeenCalledTimes(1);
   });
 });

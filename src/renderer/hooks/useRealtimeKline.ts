@@ -1,17 +1,17 @@
-import { useEffect, useCallback, useRef } from 'react';
-import type { TimeInterval, Kline } from '@shared/types';
+import type { Kline, TimeInterval } from '@shared/types';
+import { useCallback, useEffect, useRef } from 'react';
 import type { MarketDataService } from '../services/market/MarketDataService';
 
-interface UseRealtimeCandleOptions {
+interface UseRealtimeKlineOptions {
   symbol: string;
   interval: TimeInterval;
   enabled?: boolean;
-  onUpdate?: (candle: Kline, isFinal: boolean) => void;
+  onUpdate?: (kline: Kline, isFinal: boolean) => void;
 }
 
-export const useRealtimeCandle = (
+export const useRealtimeKline = (
   service: MarketDataService,
-  options: UseRealtimeCandleOptions
+  options: UseRealtimeKlineOptions
 ): void => {
   const { symbol, interval, enabled = true, onUpdate } = options;
   const onUpdateRef = useRef(onUpdate);
@@ -20,9 +20,9 @@ export const useRealtimeCandle = (
     onUpdateRef.current = onUpdate;
   }, [onUpdate]);
 
-  const handleUpdate = useCallback((candle: Kline, isFinal: boolean) => {
+  const handleUpdate = useCallback((kline: Kline, isFinal: boolean) => {
     if (onUpdateRef.current) {
-      onUpdateRef.current(candle, isFinal);
+      onUpdateRef.current(kline, isFinal);
     }
   }, []);
 

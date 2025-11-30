@@ -1,7 +1,7 @@
 import { findHighestSwingHigh, findLowestSwingLow, findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
 import type { Kline } from '@shared/types';
-import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
 
 const VOLUME_LOOKBACK = 20;
@@ -59,7 +59,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
     return this.breakoutRetestConfig;
   }
 
-  detect(candles: Kline[], currentIndex: number): SetupDetectorResult {
+  detect(klines: Kline[], currentIndex: number): SetupDetectorResult {
     const minIndex = Math.max(
       this.breakoutRetestConfig.lookbackPeriod + this.breakoutRetestConfig.emaPeriod,
       PIVOT_LOOKBACK + VOLUME_LOOKBACK,
@@ -69,52 +69,52 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
       return { setup: null, confidence: 0 };
     }
 
-    const bullishSetup = this.detectBullishBreakoutRetest(candles, currentIndex);
+    const bullishSetup = this.detectBullishBreakoutRetest(klines, currentIndex);
     if (bullishSetup) return bullishSetup;
 
-    const bearishSetup = this.detectBearishBreakoutRetest(candles, currentIndex);
+    const bearishSetup = this.detectBearishBreakoutRetest(klines, currentIndex);
     if (bearishSetup) return bearishSetup;
 
     return { setup: null, confidence: 0 };
   }
 
   private detectBullishBreakoutRetest(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
   ): SetupDetectorResult | null {
     const pivots = findPivotPoints(
-      candles.slice(0, currentIndex + 1),
+      klines.slice(0, currentIndex + 1),
       PIVOT_LOOKBACK,
     );
 
-    const resistanceLevels = this.findResistanceLevels(pivots, candles, currentIndex);
+    const resistanceLevels = this.findResistanceLevels(pivots, klines, currentIndex);
     if (resistanceLevels.length === 0) return null;
 
     for (const resistance of resistanceLevels) {
-      const breakoutCandle = this.findBreakoutCandle(candles, resistance, currentIndex, 'bullish');
-      if (!breakoutCandle) continue;
+      const breakoutKline = this.findBreakoutKline(klines, resistance, currentIndex, 'bullish');
+      if (!breakoutKline) continue;
 
       const retestQuality = this.validateRetest(
-        candles,
+        klines,
         resistance,
-        breakoutCandle.index,
+        breakoutKline.index,
         currentIndex,
         'bullish',
       );
 
       if (!retestQuality) continue;
 
-      const current = candles[currentIndex];
+      const current = klines[currentIndex];
       if (!current) continue;
 
-      const continuationConfirmed = current.close > resistance * (1 + MIN_CONTINUATION_STRENGTH * CONTINUATION_PERCENT_MULTIPLIER);
+      const continuationConfirmed = getKlineClose(current) > resistance * (1 + MIN_CONTINUATION_STRENGTH * CONTINUATION_PERCENT_MULTIPLIER);
       if (!continuationConfirmed) continue;
 
       return this.createBullishSetup(
-        candles,
+        klines,
         currentIndex,
         resistance,
-        breakoutCandle,
+        breakoutKline,
         retestQuality,
       );
     }
@@ -123,42 +123,42 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
   }
 
   private detectBearishBreakoutRetest(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
   ): SetupDetectorResult | null {
     const pivots = findPivotPoints(
-      candles.slice(0, currentIndex + 1),
+      klines.slice(0, currentIndex + 1),
       PIVOT_LOOKBACK,
     );
 
-    const supportLevels = this.findSupportLevels(pivots, candles, currentIndex);
+    const supportLevels = this.findSupportLevels(pivots, klines, currentIndex);
     if (supportLevels.length === 0) return null;
 
     for (const support of supportLevels) {
-      const breakoutCandle = this.findBreakoutCandle(candles, support, currentIndex, 'bearish');
-      if (!breakoutCandle) continue;
+      const breakoutKline = this.findBreakoutKline(klines, support, currentIndex, 'bearish');
+      if (!breakoutKline) continue;
 
       const retestQuality = this.validateRetest(
-        candles,
+        klines,
         support,
-        breakoutCandle.index,
+        breakoutKline.index,
         currentIndex,
         'bearish',
       );
 
       if (!retestQuality) continue;
 
-      const current = candles[currentIndex];
+      const current = klines[currentIndex];
       if (!current) continue;
 
-      const continuationConfirmed = current.close < support * (1 - MIN_CONTINUATION_STRENGTH * CONTINUATION_PERCENT_MULTIPLIER);
+      const continuationConfirmed = getKlineClose(current) < support * (1 - MIN_CONTINUATION_STRENGTH * CONTINUATION_PERCENT_MULTIPLIER);
       if (!continuationConfirmed) continue;
 
       return this.createBearishSetup(
-        candles,
+        klines,
         currentIndex,
         support,
-        breakoutCandle,
+        breakoutKline,
         retestQuality,
       );
     }
@@ -168,7 +168,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
 
   private findResistanceLevels(
     pivots: ReturnType<typeof findPivotPoints>,
-    _candles: Kline[],
+    _klines: Kline[],
     currentIndex: number,
   ): number[] {
     const lookbackStart = Math.max(0, currentIndex - this.breakoutRetestConfig.lookbackPeriod);
@@ -181,7 +181,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
 
   private findSupportLevels(
     pivots: ReturnType<typeof findPivotPoints>,
-    _candles: Kline[],
+    _klines: Kline[],
     currentIndex: number,
   ): number[] {
     const lookbackStart = Math.max(0, currentIndex - this.breakoutRetestConfig.lookbackPeriod);
@@ -192,8 +192,8 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
     return lowPivots.map((p) => p.price).filter((price, index, arr) => arr.indexOf(price) === index);
   }
 
-  private findBreakoutCandle(
-    candles: Kline[],
+  private findBreakoutKline(
+    klines: Kline[],
     level: number,
     currentIndex: number,
     direction: 'bullish' | 'bearish',
@@ -201,16 +201,16 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
     const lookbackStart = Math.max(0, currentIndex - this.breakoutRetestConfig.lookbackPeriod);
 
     for (let i = lookbackStart; i < currentIndex; i++) {
-      const candle = candles[i];
-      if (!candle) continue;
+      const kline = klines[i];
+      if (!kline) continue;
 
-      const isBullishBreakout = direction === 'bullish' && getKlineClose(candle) > level;
-      const isBearishBreakout = direction === 'bearish' && getKlineClose(candle) < level;
+      const isBullishBreakout = direction === 'bullish' && getKlineClose(kline) > level;
+      const isBearishBreakout = direction === 'bearish' && getKlineClose(kline) < level;
 
       if (isBullishBreakout || isBearishBreakout) {
-        const breakoutDistance = Math.abs(getKlineClose(candle) - level) / level;
+        const breakoutDistance = Math.abs(getKlineClose(kline) - level) / level;
         if (breakoutDistance >= MIN_BREAKOUT_DISTANCE_PERCENT) {
-          return { index: i, volume: getKlineVolume(candle) };
+          return { index: i, volume: getKlineVolume(kline) };
         }
       }
     }
@@ -219,7 +219,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
   }
 
   private validateRetest(
-    candles: Kline[],
+    klines: Kline[],
     level: number,
     breakoutIndex: number,
     currentIndex: number,
@@ -229,21 +229,21 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
     let totalRetestQuality = 0;
 
     for (let i = breakoutIndex + 1; i <= currentIndex; i++) {
-      const candle = candles[i];
-      if (!candle) continue;
+      const kline = klines[i];
+      if (!kline) continue;
 
       const tolerance = level * RETEST_TOLERANCE_PERCENT;
       const isRetestTouch =
         direction === 'bullish'
-          ? getKlineLow(candle) <= level + tolerance && getKlineLow(candle) >= level - tolerance
-          : getKlineHigh(candle) >= level - tolerance && getKlineHigh(candle) <= level + tolerance;
+          ? getKlineLow(kline) <= level + tolerance && getKlineLow(kline) >= level - tolerance
+          : getKlineHigh(kline) >= level - tolerance && getKlineHigh(kline) <= level + tolerance;
 
       if (isRetestTouch) {
         retestTouches++;
         const holdQuality =
           direction === 'bullish'
-            ? (getKlineClose(candle) - getKlineLow(candle)) / (getKlineHigh(candle) - getKlineLow(candle))
-            : (getKlineHigh(candle) - getKlineClose(candle)) / (getKlineHigh(candle) - getKlineLow(candle));
+            ? (getKlineClose(kline) - getKlineLow(kline)) / (getKlineHigh(kline) - getKlineLow(kline))
+            : (getKlineHigh(kline) - getKlineClose(kline)) / (getKlineHigh(kline) - getKlineLow(kline));
         totalRetestQuality += holdQuality;
       }
     }
@@ -255,30 +255,30 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
   }
 
   private createBullishSetup(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
     resistance: number,
     breakout: { index: number; volume: number },
     retestQuality: { touches: number; quality: number },
   ): SetupDetectorResult | null {
-    const current = candles[currentIndex];
+    const current = klines[currentIndex];
     if (!current) return null;
 
-    const volumeData = candles.slice(Math.max(0, currentIndex - VOLUME_LOOKBACK), currentIndex);
-    const avgVolume = volumeData.reduce((sum, c) => sum + c.volume, 0) / volumeData.length;
+    const volumeData = klines.slice(Math.max(0, currentIndex - VOLUME_LOOKBACK), currentIndex);
+    const avgVolume = volumeData.reduce((sum, c) => sum + getKlineVolume(c), 0) / volumeData.length;
     const volumeConfirmation =
-      current.volume > avgVolume * this.breakoutRetestConfig.volumeMultiplier;
+      getKlineVolume(current) > avgVolume * this.breakoutRetestConfig.volumeMultiplier;
 
-    const ema = calculateEMA(candles, this.breakoutRetestConfig.emaPeriod);
+    const ema = calculateEMA(klines, this.breakoutRetestConfig.emaPeriod);
     const emaCurrent = ema[currentIndex];
 
     if (emaCurrent === null || emaCurrent === undefined) return null;
 
-    const aboveEMA = current.close > emaCurrent;
-    const entry = current.close;
+    const aboveEMA = getKlineClose(current) > emaCurrent;
+    const entry = getKlineClose(current);
     
     let stopLoss = resistance * (1 - STOP_LOSS_BUFFER_PERCENT);
-    const swingLow = findLowestSwingLow(candles, currentIndex, this.breakoutRetestConfig.lookbackPeriod, 3);
+    const swingLow = findLowestSwingLow(klines, currentIndex, this.breakoutRetestConfig.lookbackPeriod, 3);
     if (swingLow && swingLow > stopLoss && swingLow < entry) {
       stopLoss = swingLow * 0.997;
     }
@@ -289,7 +289,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
 
     if (!this.meetsMinimumCriteria(MIN_CONFIDENCE_THRESHOLD, rr)) return null;
 
-    const breakoutStrength = (current.close - resistance) / resistance;
+    const breakoutStrength = (getKlineClose(current) - resistance) / resistance;
     const confidence = this.calculateConfidence(
       breakoutStrength,
       retestQuality,
@@ -302,7 +302,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
     const setup = this.createSetup(
       'breakout-retest',
       'LONG',
-      candles,
+      klines,
       currentIndex,
       entry,
       stopLoss,
@@ -324,30 +324,30 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
   }
 
   private createBearishSetup(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
     support: number,
     breakout: { index: number; volume: number },
     retestQuality: { touches: number; quality: number },
   ): SetupDetectorResult | null {
-    const current = candles[currentIndex];
+    const current = klines[currentIndex];
     if (!current) return null;
 
-    const volumeData = candles.slice(Math.max(0, currentIndex - VOLUME_LOOKBACK), currentIndex);
-    const avgVolume = volumeData.reduce((sum, c) => sum + c.volume, 0) / volumeData.length;
+    const volumeData = klines.slice(Math.max(0, currentIndex - VOLUME_LOOKBACK), currentIndex);
+    const avgVolume = volumeData.reduce((sum, c) => sum + getKlineVolume(c), 0) / volumeData.length;
     const volumeConfirmation =
-      current.volume > avgVolume * this.breakoutRetestConfig.volumeMultiplier;
+      getKlineVolume(current) > avgVolume * this.breakoutRetestConfig.volumeMultiplier;
 
-    const ema = calculateEMA(candles, this.breakoutRetestConfig.emaPeriod);
+    const ema = calculateEMA(klines, this.breakoutRetestConfig.emaPeriod);
     const emaCurrent = ema[currentIndex];
 
     if (emaCurrent === null || emaCurrent === undefined) return null;
 
-    const belowEMA = current.close < emaCurrent;
-    const entry = current.close;
+    const belowEMA = getKlineClose(current) < emaCurrent;
+    const entry = getKlineClose(current);
     
     let stopLoss = support * (1 + STOP_LOSS_BUFFER_PERCENT);
-    const swingHigh = findHighestSwingHigh(candles, currentIndex, this.breakoutRetestConfig.lookbackPeriod, 3);
+    const swingHigh = findHighestSwingHigh(klines, currentIndex, this.breakoutRetestConfig.lookbackPeriod, 3);
     if (swingHigh && swingHigh < stopLoss && swingHigh > entry) {
       stopLoss = swingHigh * 1.003;
     }
@@ -358,7 +358,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
 
     if (!this.meetsMinimumCriteria(MIN_CONFIDENCE_THRESHOLD, rr)) return null;
 
-    const breakoutStrength = (support - current.close) / support;
+    const breakoutStrength = (support - getKlineClose(current)) / support;
     const confidence = this.calculateConfidence(
       breakoutStrength,
       retestQuality,
@@ -371,7 +371,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
     const setup = this.createSetup(
       'breakout-retest',
       'SHORT',
-      candles,
+      klines,
       currentIndex,
       entry,
       stopLoss,

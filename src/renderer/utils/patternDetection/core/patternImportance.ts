@@ -1,4 +1,5 @@
 import type { AIPattern, Kline } from '@shared/types';
+import { getKlineClose } from '@shared/utils';
 import {
     IMPORTANCE_NORMALIZATION,
     IMPORTANCE_WEIGHTS,
@@ -14,7 +15,7 @@ import {
 
 export function normalizeFormationPeriod(period: number): number {
   if (period <= 0) return 0;
-  if (period >= IMPORTANCE_NORMALIZATION.FORMATION_PERIOD_MAX_CANDLES) return 1.0;
+  if (period >= IMPORTANCE_NORMALIZATION.FORMATION_PERIOD_MAX_KLINES) return 1.0;
 
   return Math.min(
     1.0,
@@ -25,9 +26,9 @@ export function normalizeFormationPeriod(period: number): number {
 
 export function normalizePriceMovement(
   pattern: AIPattern,
-  candles: Kline[]
+  klines: Kline[]
 ): number {
-  if (candles.length === 0) return 0;
+  if (klines.length === 0) return 0;
 
   const minPrice = getPatternMinPrice(pattern);
   const maxPrice = getPatternMaxPrice(pattern);
@@ -35,7 +36,7 @@ export function normalizePriceMovement(
 
   if (priceRange <= 0) return 0;
 
-  const avgPrice = candles.reduce((sum, c) => sum + c.close, 0) / candles.length;
+  const avgPrice = klines.reduce((sum, c) => sum + getKlineClose(c), 0) / klines.length;
   const percentMultiplier = 100;
   const priceMovementPercent = (priceRange / avgPrice) * percentMultiplier;
 
@@ -54,39 +55,39 @@ export function normalizePriceMovement(
   );
 }
 
-export function normalizeRecency(pattern: AIPattern, candles: Kline[]): number {
-  if (candles.length === 0) return 0;
+export function normalizeRecency(pattern: AIPattern, klines: Kline[]): number {
+  if (klines.length === 0) return 0;
 
-  const latestCandle = candles[candles.length - 1];
-  if (!latestCandle) return 0;
+  const latestKline = klines[klines.length - 1];
+  if (!latestKline) return 0;
 
-  const latestTimestamp = latestCandle.openTime;
+  const latestTimestamp = latestKline.openTime;
   const patternEndTime = getPatternEndTimestamp(pattern);
   const timeSincePattern = latestTimestamp - patternEndTime;
 
   if (timeSincePattern <= 0) return 1.0;
 
-  const firstCandle = candles[0];
-  const lastCandle = candles[candles.length - 1];
+  const firstKline = klines[0];
+  const lastKline = klines[klines.length - 1];
 
-  const avgCandleInterval =
-    candles.length > 1 && firstCandle && lastCandle
-      ? (lastCandle.openTime - firstCandle.openTime) / (candles.length - 1)
+  const avgKlineInterval =
+    klines.length > 1 && firstKline && lastKline
+      ? (lastKline.openTime - firstKline.openTime) / (klines.length - 1)
       : 1;
 
-  const candlesSincePattern = timeSincePattern / avgCandleInterval;
+  const klinesSincePattern = timeSincePattern / avgKlineInterval;
 
-  if (candlesSincePattern >= IMPORTANCE_NORMALIZATION.RECENCY_MAX_CANDLES) {
+  if (klinesSincePattern >= IMPORTANCE_NORMALIZATION.RECENCY_MAX_KLINES) {
     return IMPORTANCE_NORMALIZATION.RECENCY_MIN_SCORE;
   }
 
-  if (candlesSincePattern <= 1) return 1.0;
+  if (klinesSincePattern <= 1) return 1.0;
 
   return Math.max(
     IMPORTANCE_NORMALIZATION.RECENCY_MIN_SCORE,
     1.0 -
-      Math.log(candlesSincePattern) /
-        Math.log(IMPORTANCE_NORMALIZATION.RECENCY_MAX_CANDLES)
+      Math.log(klinesSincePattern) /
+        Math.log(IMPORTANCE_NORMALIZATION.RECENCY_MAX_KLINES)
   );
 }
 
@@ -99,23 +100,23 @@ export function getVolumeConfirmation(pattern: AIPattern): number {
 
 export function calculateImportanceFactors(
   pattern: AIPattern,
-  candles: Kline[]
+  klines: Kline[]
 ): ImportanceFactors {
   const patternType = pattern.type;
   const patternReliability =
     PATTERN_RELIABILITY_WEIGHTS[patternType] ??
     IMPORTANCE_NORMALIZATION.DEFAULT_RELIABILITY;
 
-  const formationPeriodCandles = calculateFormationPeriod(pattern, candles);
-  const formationPeriod = normalizeFormationPeriod(formationPeriodCandles);
+  const formationPeriodKlines = calculateFormationPeriod(pattern, klines);
+  const formationPeriod = normalizeFormationPeriod(formationPeriodKlines);
 
   const volumeConfirmation = getVolumeConfirmation(pattern);
 
   const confidence = pattern.confidence ?? IMPORTANCE_NORMALIZATION.DEFAULT_CONFIDENCE;
 
-  const priceMovement = normalizePriceMovement(pattern, candles);
+  const priceMovement = normalizePriceMovement(pattern, klines);
 
-  const recency = normalizeRecency(pattern, candles);
+  const recency = normalizeRecency(pattern, klines);
 
   return {
     patternReliability,
@@ -129,9 +130,9 @@ export function calculateImportanceFactors(
 
 export function calculateImportanceScore(
   pattern: AIPattern,
-  candles: Kline[]
+  klines: Kline[]
 ): number {
-  const factors = calculateImportanceFactors(pattern, candles);
+  const factors = calculateImportanceFactors(pattern, klines);
 
   const importance =
     factors.patternReliability * IMPORTANCE_WEIGHTS.PATTERN_RELIABILITY +

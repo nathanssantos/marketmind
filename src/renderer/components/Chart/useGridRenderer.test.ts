@@ -14,7 +14,7 @@ vi.mock('../../utils/canvas/drawingUtils', () => ({
 
 vi.mock('../../utils/formatters', () => ({
   formatPrice: vi.fn((price: number) => price.toFixed(2)),
-  formatTimestamp: vi.fn((timestamp: number) => new Date(timestamp).toLocaleTimeString()),
+  formatTimestamp: vi.fn((openTime: number) => new Date(openTime).toLocaleTimeString()),
 }));
 
 describe('useGridRenderer', () => {
@@ -32,12 +32,12 @@ describe('useGridRenderer', () => {
       fillRect: vi.fn(),
     } as unknown as CanvasRenderingContext2D;
 
-    const candles = [
-      { timestamp: 1000000, open: 100, high: 105, low: 95, close: 102, volume: 1000 },
-      { timestamp: 2000000, open: 102, high: 106, low: 96, close: 98, volume: 1100 },
-      { timestamp: 3000000, open: 98, high: 108, low: 97, close: 105, volume: 1200 },
-      { timestamp: 4000000, open: 105, high: 110, low: 104, close: 103, volume: 1300 },
-      { timestamp: 5000000, open: 103, high: 112, low: 102, close: 110, volume: 1400 },
+    const klines = [
+      { openTime: 1000000, closeTime: 1000000, open: '100', high: '105', low: '95', close: '102', volume: '1000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+      { openTime: 2000000, closeTime: 2000000, open: '102', high: '106', low: '96', close: '98', volume: '1100', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+      { openTime: 3000000, closeTime: 3000000, open: '98', high: '108', low: '97', close: '105', volume: '1200', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+      { openTime: 4000000, closeTime: 4000000, open: '105', high: '110', low: '104', close: '103', volume: '1300', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+      { openTime: 5000000, closeTime: 5000000, open: '103', high: '112', low: '102', close: '110', volume: '1400', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
     ];
 
     mockManager = {
@@ -58,10 +58,10 @@ describe('useGridRenderer', () => {
       getViewport: vi.fn(() => ({
         start: 0,
         end: 5,
-        candleWidth: 10,
-        candleSpacing: 2,
+        klineWidth: 10,
+        klineSpacing: 2,
       })),
-      getVisibleCandles: vi.fn(() => candles),
+      getVisibleKlines: vi.fn(() => klines),
       indexToX: vi.fn((index: number) => index * 145.6),
       priceToY: vi.fn((price: number) => 575 - (price - 90) * 19),
     } as unknown as CanvasManager;
@@ -342,8 +342,8 @@ describe('useGridRenderer', () => {
       expect(drawingUtils.drawText).toHaveBeenCalled();
     });
 
-    it('should handle empty candles array', () => {
-      mockManager.getVisibleCandles = vi.fn(() => []);
+    it('should handle empty klines array', () => {
+      mockManager.getVisibleKlines = vi.fn(() => []);
 
       const { result } = renderHook(() =>
         useGridRenderer({

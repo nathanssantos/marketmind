@@ -8,7 +8,7 @@ import { usePatternHover } from '../../context/PatternHoverContext';
 
 interface PatternRendererProps {
   canvasManager: CanvasManager | null;
-  candles: Kline[];
+  klines: Kline[];
   patterns: AIPattern[];
   width: number;
   height: number;
@@ -24,7 +24,7 @@ interface PatternRendererProps {
 
 export const PatternRenderer = ({
   canvasManager,
-  candles,
+  klines,
   patterns,
   width,
   height,
@@ -51,7 +51,7 @@ export const PatternRenderer = ({
   };
 
   useEffect(() => {
-    if (!canvasManager || candles.length === 0 || !mousePosition) {
+    if (!canvasManager || klines.length === 0 || !mousePosition) {
       setHoveredPattern(null);
       return;
     }
@@ -69,7 +69,7 @@ export const PatternRenderer = ({
         pattern,
         { x: mouseX, y: mouseY },
         canvasManager,
-        candles,
+        klines,
         tagBounds
       );
 
@@ -85,7 +85,7 @@ export const PatternRenderer = ({
     } else {
       setHoveredPatternId(null);
     }
-  }, [canvasManager, candles, patterns, mousePosition, setHoveredPatternId]);
+  }, [canvasManager, klines, patterns, mousePosition, setHoveredPatternId]);
 
   useEffect(() => {
     if (hoveredPatternId !== null) {
@@ -100,7 +100,7 @@ export const PatternRenderer = ({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !canvasManager || candles.length === 0) {
+    if (!canvas || !canvasManager || klines.length === 0) {
       return;
     }
 
@@ -136,7 +136,7 @@ export const PatternRenderer = ({
         case 'trendline-bullish':
         case 'trendline-bearish':
           if ('points' in pattern) {
-            drawLine(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
+            drawLine(ctx, pattern, canvasManager, klines, isHovered, patternNumber);
           }
           break;
 
@@ -144,35 +144,35 @@ export const PatternRenderer = ({
         case 'channel-descending':
         case 'channel-horizontal':
           if ('upperLine' in pattern) {
-            drawChannel(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
+            drawChannel(ctx, pattern, canvasManager, klines, isHovered, patternNumber);
           }
           break;
 
         case 'fibonacci-retracement':
         case 'fibonacci-extension':
           if ('startPoint' in pattern) {
-            drawFibonacci(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
+            drawFibonacci(ctx, pattern, canvasManager, klines, isHovered, patternNumber);
           }
           break;
 
         case 'head-and-shoulders':
         case 'inverse-head-and-shoulders':
           if ('leftShoulder' in pattern) {
-            drawHeadAndShoulders(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
+            drawHeadAndShoulders(ctx, pattern, canvasManager, klines, isHovered, patternNumber);
           }
           break;
 
         case 'double-top':
         case 'double-bottom':
           if ('firstPeak' in pattern) {
-            drawDoublePattern(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
+            drawDoublePattern(ctx, pattern, canvasManager, klines, isHovered, patternNumber);
           }
           break;
 
         case 'triple-top':
         case 'triple-bottom':
           if ('peak1' in pattern) {
-            drawTriplePattern(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
+            drawTriplePattern(ctx, pattern, canvasManager, klines, isHovered, patternNumber);
           }
           break;
 
@@ -180,39 +180,39 @@ export const PatternRenderer = ({
         case 'triangle-descending':
         case 'triangle-symmetrical':
           if ('upperTrendline' in pattern) {
-            drawTriangle(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
+            drawTriangle(ctx, pattern, canvasManager, klines, isHovered, patternNumber);
           }
           break;
 
         case 'wedge-rising':
         case 'wedge-falling':
           if ('upperTrendline' in pattern) {
-            drawWedge(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
+            drawWedge(ctx, pattern, canvasManager, klines, isHovered, patternNumber);
           }
           break;
 
         case 'flag-bullish':
         case 'flag-bearish':
           if ('flagpole' in pattern) {
-            drawFlag(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
+            drawFlag(ctx, pattern, canvasManager, klines, isHovered, patternNumber);
           }
           break;
 
         case 'pennant':
           if ('flagpole' in pattern) {
-            drawPennant(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
+            drawPennant(ctx, pattern, canvasManager, klines, isHovered, patternNumber);
           }
           break;
 
         case 'cup-and-handle':
           if ('cupBottom' in pattern) {
-            drawCupAndHandle(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
+            drawCupAndHandle(ctx, pattern, canvasManager, klines, isHovered, patternNumber);
           }
           break;
 
         case 'rounding-bottom':
           if ('bottom' in pattern) {
-            drawRoundingBottom(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
+            drawRoundingBottom(ctx, pattern, canvasManager, klines, isHovered, patternNumber);
           }
           break;
 
@@ -221,7 +221,7 @@ export const PatternRenderer = ({
         case 'gap-runaway':
         case 'gap-exhaustion':
           if ('gapStart' in pattern) {
-            drawGap(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
+            drawGap(ctx, pattern, canvasManager, klines, isHovered, patternNumber);
           }
           break;
 
@@ -230,14 +230,14 @@ export const PatternRenderer = ({
         case 'buy-zone':
         case 'accumulation-zone':
           if ('topPrice' in pattern) {
-            drawZone(ctx, pattern, canvasManager, candles, isHovered, patternNumber);
+            drawZone(ctx, pattern, canvasManager, klines, isHovered, patternNumber);
           }
           break;
       }
     });
 
     ctx.restore();
-  }, [canvasManager, candles, patterns, width, height, hoveredPattern, advancedConfig]);
+  }, [canvasManager, klines, patterns, width, height, hoveredPattern, advancedConfig]);
 
   useEffect(() => {
     onPatternHover(hoveredPattern);
@@ -247,14 +247,14 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternLine,
     manager: CanvasManager,
-    candles: Kline[],
+    klines: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
     const [point1, point2] = pattern.points;
 
-    const index1 = candles.findIndex(c => c.openTime >= point1.timestamp);
-    const index2 = candles.findIndex(c => c.openTime >= point2.timestamp);
+    const index1 = klines.findIndex(c => c.openTime >= point1.openTime);
+    const index2 = klines.findIndex(c => c.openTime >= point2.openTime);
 
     if (index1 === -1 || index2 === -1) return;
 
@@ -273,9 +273,9 @@ export const PatternRenderer = ({
     );
 
     if (shouldExtend) {
-      const lastCandleX = manager.indexToX(candles.length - 1);
+      const lastKlineX = manager.indexToX(klines.length - 1);
       const extensionDistance = 36;
-      const targetX = lastCandleX + extensionDistance;
+      const targetX = lastKlineX + extensionDistance;
 
       if (x2 < targetX) {
         finalX2 = targetX;
@@ -312,7 +312,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternChannel,
     manager: CanvasManager,
-    candles: Kline[],
+    klines: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -324,10 +324,10 @@ export const PatternRenderer = ({
     const lowerPoint1 = pattern.lowerLine[0];
     const lowerPoint2 = pattern.lowerLine[1];
 
-    const upperIndex1 = candles.findIndex(c => c.openTime >= upperPoint1.timestamp);
-    const upperIndex2 = candles.findIndex(c => c.openTime >= upperPoint2.timestamp);
-    const lowerIndex1 = candles.findIndex(c => c.openTime >= lowerPoint1.timestamp);
-    const lowerIndex2 = candles.findIndex(c => c.openTime >= lowerPoint2.timestamp);
+    const upperIndex1 = klines.findIndex(c => c.openTime >= upperPoint1.openTime);
+    const upperIndex2 = klines.findIndex(c => c.openTime >= upperPoint2.openTime);
+    const lowerIndex1 = klines.findIndex(c => c.openTime >= lowerPoint1.openTime);
+    const lowerIndex2 = klines.findIndex(c => c.openTime >= lowerPoint2.openTime);
 
     if (upperIndex1 === -1 || upperIndex2 === -1 || lowerIndex1 === -1 || lowerIndex2 === -1) return;
 
@@ -347,9 +347,9 @@ export const PatternRenderer = ({
     let finalLowerY2 = lowerY2;
 
     if (patternConfig.showExtensions && (patternConfig.extendChannels ?? true)) {
-      const lastCandleX = manager.indexToX(candles.length - 1);
+      const lastKlineX = manager.indexToX(klines.length - 1);
       const extensionDistance = 36;
-      const targetX = lastCandleX + extensionDistance;
+      const targetX = lastKlineX + extensionDistance;
 
       if (upperX2 < targetX) {
         finalUpperX2 = targetX;
@@ -422,12 +422,12 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternFibonacci,
     manager: CanvasManager,
-    candles: Kline[],
+    klines: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
-    const startIndex = candles.findIndex(c => c.openTime >= pattern.startPoint.timestamp);
-    const endIndex = candles.findIndex(c => c.openTime >= pattern.endPoint.timestamp);
+    const startIndex = klines.findIndex(c => c.openTime >= pattern.startPoint.openTime);
+    const endIndex = klines.findIndex(c => c.openTime >= pattern.endPoint.openTime);
 
     if (startIndex === -1 || endIndex === -1) return;
 
@@ -524,7 +524,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternHeadAndShoulders,
     manager: CanvasManager,
-    candles: Kline[],
+    klines: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -532,7 +532,7 @@ export const PatternRenderer = ({
     const lineWidth = isHovered ? 3 : 2;
 
     const points = [pattern.leftShoulder, pattern.head, pattern.rightShoulder];
-    const indices = points.map(p => candles.findIndex(c => c.openTime >= p.timestamp));
+    const indices = points.map(p => klines.findIndex(c => c.openTime >= p.openTime));
 
     if (indices.some(i => i === -1)) return;
 
@@ -557,8 +557,8 @@ export const PatternRenderer = ({
     if (pattern.neckline) {
       ctx.setLineDash([5, 5]);
       const [neck1, neck2] = pattern.neckline;
-      const neckIndex1 = candles.findIndex(c => c.openTime >= neck1.timestamp);
-      const neckIndex2 = candles.findIndex(c => c.openTime >= neck2.timestamp);
+      const neckIndex1 = klines.findIndex(c => c.openTime >= neck1.openTime);
+      const neckIndex2 = klines.findIndex(c => c.openTime >= neck2.openTime);
 
       if (neckIndex1 !== -1 && neckIndex2 !== -1) {
         ctx.beginPath();
@@ -582,7 +582,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternDoublePattern,
     manager: CanvasManager,
-    candles: Kline[],
+    klines: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -590,7 +590,7 @@ export const PatternRenderer = ({
     const lineWidth = isHovered ? 3 : 2;
 
     const points = [pattern.firstPeak, pattern.secondPeak];
-    const indices = points.map(p => candles.findIndex(c => c.openTime >= p.timestamp));
+    const indices = points.map(p => klines.findIndex(c => c.openTime >= p.openTime));
 
     if (indices.some(i => i === -1)) return;
 
@@ -637,7 +637,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternTriplePattern,
     manager: CanvasManager,
-    candles: Kline[],
+    klines: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -645,7 +645,7 @@ export const PatternRenderer = ({
     const lineWidth = isHovered ? 3 : 2;
 
     const points = [pattern.peak1, pattern.peak2, pattern.peak3];
-    const indices = points.map(p => candles.findIndex(c => c.openTime >= p.timestamp));
+    const indices = points.map(p => klines.findIndex(c => c.openTime >= p.openTime));
 
     if (indices.some(i => i === -1)) return;
 
@@ -665,8 +665,8 @@ export const PatternRenderer = ({
     if (pattern.neckline) {
       ctx.setLineDash([5, 5]);
       const [neck1, neck2] = pattern.neckline;
-      const neckIndex1 = candles.findIndex(c => c.openTime >= neck1.timestamp);
-      const neckIndex2 = candles.findIndex(c => c.openTime >= neck2.timestamp);
+      const neckIndex1 = klines.findIndex(c => c.openTime >= neck1.openTime);
+      const neckIndex2 = klines.findIndex(c => c.openTime >= neck2.openTime);
 
       if (neckIndex1 !== -1 && neckIndex2 !== -1) {
         ctx.beginPath();
@@ -690,7 +690,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternTriangle,
     manager: CanvasManager,
-    candles: Kline[],
+    klines: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -702,10 +702,10 @@ export const PatternRenderer = ({
     const lowerPoint1 = pattern.lowerTrendline[0];
     const lowerPoint2 = pattern.lowerTrendline[1];
 
-    const upperIndex1 = candles.findIndex(c => c.openTime >= upperPoint1.timestamp);
-    const upperIndex2 = candles.findIndex(c => c.openTime >= upperPoint2.timestamp);
-    const lowerIndex1 = candles.findIndex(c => c.openTime >= lowerPoint1.timestamp);
-    const lowerIndex2 = candles.findIndex(c => c.openTime >= lowerPoint2.timestamp);
+    const upperIndex1 = klines.findIndex(c => c.openTime >= upperPoint1.openTime);
+    const upperIndex2 = klines.findIndex(c => c.openTime >= upperPoint2.openTime);
+    const lowerIndex1 = klines.findIndex(c => c.openTime >= lowerPoint1.openTime);
+    const lowerIndex2 = klines.findIndex(c => c.openTime >= lowerPoint2.openTime);
 
     if (upperIndex1 === -1 || upperIndex2 === -1 || lowerIndex1 === -1 || lowerIndex2 === -1) return;
 
@@ -726,7 +726,7 @@ export const PatternRenderer = ({
     ctx.moveTo(upperX1, upperY1);
     ctx.lineTo(upperX2, upperY2);
     if (pattern.apex) {
-      const apexIndex = candles.findIndex(c => c.openTime >= pattern.apex!.timestamp);
+      const apexIndex = klines.findIndex(c => c.openTime >= pattern.apex!.openTime);
       if (apexIndex !== -1) {
         const apexX = manager.indexToCenterX(apexIndex);
         const apexY = manager.priceToY(pattern.apex.price);
@@ -761,7 +761,7 @@ export const PatternRenderer = ({
     ctx.restore();
 
     const firstPoint = pattern.upperTrendline[0];
-    const index = candles.findIndex(c => c.openTime >= firstPoint.timestamp);
+    const index = klines.findIndex(c => c.openTime >= firstPoint.openTime);
     if (index !== -1) {
       const x = manager.indexToCenterX(index);
       const y = manager.priceToY(firstPoint.price);
@@ -773,7 +773,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternWedge,
     manager: CanvasManager,
-    candles: Kline[],
+    klines: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -785,10 +785,10 @@ export const PatternRenderer = ({
     const lowerPoint1 = pattern.lowerTrendline[0];
     const lowerPoint2 = pattern.lowerTrendline[1];
 
-    const upperIndex1 = candles.findIndex(c => c.openTime >= upperPoint1.timestamp);
-    const upperIndex2 = candles.findIndex(c => c.openTime >= upperPoint2.timestamp);
-    const lowerIndex1 = candles.findIndex(c => c.openTime >= lowerPoint1.timestamp);
-    const lowerIndex2 = candles.findIndex(c => c.openTime >= lowerPoint2.timestamp);
+    const upperIndex1 = klines.findIndex(c => c.openTime >= upperPoint1.openTime);
+    const upperIndex2 = klines.findIndex(c => c.openTime >= upperPoint2.openTime);
+    const lowerIndex1 = klines.findIndex(c => c.openTime >= lowerPoint1.openTime);
+    const lowerIndex2 = klines.findIndex(c => c.openTime >= lowerPoint2.openTime);
 
     if (upperIndex1 === -1 || upperIndex2 === -1 || lowerIndex1 === -1 || lowerIndex2 === -1) return;
 
@@ -809,7 +809,7 @@ export const PatternRenderer = ({
     ctx.moveTo(upperX1, upperY1);
     ctx.lineTo(upperX2, upperY2);
     if (pattern.convergencePoint) {
-      const convIndex = candles.findIndex(c => c.openTime >= pattern.convergencePoint!.timestamp);
+      const convIndex = klines.findIndex(c => c.openTime >= pattern.convergencePoint!.openTime);
       if (convIndex !== -1) {
         const convX = manager.indexToCenterX(convIndex);
         const convY = manager.priceToY(pattern.convergencePoint.price);
@@ -844,7 +844,7 @@ export const PatternRenderer = ({
     ctx.restore();
 
     const firstPoint = pattern.upperTrendline[0];
-    const index = candles.findIndex(c => c.openTime >= firstPoint.timestamp);
+    const index = klines.findIndex(c => c.openTime >= firstPoint.openTime);
     if (index !== -1) {
       const x = manager.indexToCenterX(index);
       const y = manager.priceToY(firstPoint.price);
@@ -856,7 +856,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternFlag,
     manager: CanvasManager,
-    candles: Kline[],
+    klines: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -872,8 +872,8 @@ export const PatternRenderer = ({
       ctx.shadowBlur = 8;
     }
 
-    const poleStartIndex = candles.findIndex(c => c.openTime >= pattern.flagpole.start.timestamp);
-    const poleEndIndex = candles.findIndex(c => c.openTime >= pattern.flagpole.end.timestamp);
+    const poleStartIndex = klines.findIndex(c => c.openTime >= pattern.flagpole.start.openTime);
+    const poleEndIndex = klines.findIndex(c => c.openTime >= pattern.flagpole.end.openTime);
 
     if (poleStartIndex !== -1 && poleEndIndex !== -1) {
       ctx.beginPath();
@@ -885,8 +885,8 @@ export const PatternRenderer = ({
     ctx.setLineDash([5, 5]);
     [pattern.flag.upperTrendline, pattern.flag.lowerTrendline].forEach((line) => {
       const [point1, point2] = line;
-      const index1 = candles.findIndex(c => c.openTime >= point1.timestamp);
-      const index2 = candles.findIndex(c => c.openTime >= point2.timestamp);
+      const index1 = klines.findIndex(c => c.openTime >= point1.openTime);
+      const index2 = klines.findIndex(c => c.openTime >= point2.openTime);
 
       if (index1 === -1 || index2 === -1) return;
 
@@ -910,7 +910,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternPennant,
     manager: CanvasManager,
-    candles: Kline[],
+    klines: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -926,8 +926,8 @@ export const PatternRenderer = ({
       ctx.shadowBlur = 8;
     }
 
-    const poleStartIndex = candles.findIndex(c => c.openTime >= pattern.flagpole.start.timestamp);
-    const poleEndIndex = candles.findIndex(c => c.openTime >= pattern.flagpole.end.timestamp);
+    const poleStartIndex = klines.findIndex(c => c.openTime >= pattern.flagpole.start.openTime);
+    const poleEndIndex = klines.findIndex(c => c.openTime >= pattern.flagpole.end.openTime);
 
     if (poleStartIndex !== -1 && poleEndIndex !== -1) {
       ctx.beginPath();
@@ -939,8 +939,8 @@ export const PatternRenderer = ({
     ctx.setLineDash([5, 5]);
     [pattern.pennant.upperTrendline, pattern.pennant.lowerTrendline].forEach((line) => {
       const [point1, point2] = line;
-      const index1 = candles.findIndex(c => c.openTime >= point1.timestamp);
-      const index2 = candles.findIndex(c => c.openTime >= point2.timestamp);
+      const index1 = klines.findIndex(c => c.openTime >= point1.openTime);
+      const index2 = klines.findIndex(c => c.openTime >= point2.openTime);
 
       if (index1 === -1 || index2 === -1) return;
 
@@ -964,16 +964,16 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternCupAndHandle,
     manager: CanvasManager,
-    candles: Kline[],
+    klines: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
     const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 2 : 1;
 
-    const cupStartIndex = candles.findIndex(c => c.openTime >= pattern.cupStart.timestamp);
-    const cupBottomIndex = candles.findIndex(c => c.openTime >= pattern.cupBottom.timestamp);
-    const cupEndIndex = candles.findIndex(c => c.openTime >= pattern.cupEnd.timestamp);
+    const cupStartIndex = klines.findIndex(c => c.openTime >= pattern.cupStart.openTime);
+    const cupBottomIndex = klines.findIndex(c => c.openTime >= pattern.cupBottom.openTime);
+    const cupEndIndex = klines.findIndex(c => c.openTime >= pattern.cupEnd.openTime);
 
     if (cupStartIndex === -1 || cupBottomIndex === -1 || cupEndIndex === -1) return;
 
@@ -996,9 +996,9 @@ export const PatternRenderer = ({
     );
     ctx.stroke();
 
-    const handleStartIndex = candles.findIndex(c => c.openTime >= pattern.handleStart.timestamp);
-    const handleLowIndex = candles.findIndex(c => c.openTime >= pattern.handleLow.timestamp);
-    const handleEndIndex = candles.findIndex(c => c.openTime >= pattern.handleEnd.timestamp);
+    const handleStartIndex = klines.findIndex(c => c.openTime >= pattern.handleStart.openTime);
+    const handleLowIndex = klines.findIndex(c => c.openTime >= pattern.handleLow.openTime);
+    const handleEndIndex = klines.findIndex(c => c.openTime >= pattern.handleEnd.openTime);
 
     if (handleStartIndex !== -1 && handleLowIndex !== -1 && handleEndIndex !== -1) {
       ctx.beginPath();
@@ -1019,16 +1019,16 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternRoundingBottom,
     manager: CanvasManager,
-    candles: Kline[],
+    klines: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
     const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 2 : 1;
 
-    const startIndex = candles.findIndex(c => c.openTime >= pattern.start.timestamp);
-    const bottomIndex = candles.findIndex(c => c.openTime >= pattern.bottom.timestamp);
-    const endIndex = candles.findIndex(c => c.openTime >= pattern.end.timestamp);
+    const startIndex = klines.findIndex(c => c.openTime >= pattern.start.openTime);
+    const bottomIndex = klines.findIndex(c => c.openTime >= pattern.bottom.openTime);
+    const endIndex = klines.findIndex(c => c.openTime >= pattern.end.openTime);
 
     if (startIndex === -1 || bottomIndex === -1 || endIndex === -1) return;
 
@@ -1062,12 +1062,12 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternGap,
     manager: CanvasManager,
-    candles: Kline[],
+    klines: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
-    const startIndex = candles.findIndex(c => c.openTime >= pattern.gapStart.timestamp);
-    const endIndex = candles.findIndex(c => c.openTime >= pattern.gapEnd.timestamp);
+    const startIndex = klines.findIndex(c => c.openTime >= pattern.gapStart.openTime);
+    const endIndex = klines.findIndex(c => c.openTime >= pattern.gapEnd.openTime);
 
     if (startIndex === -1 || endIndex === -1) return;
 
@@ -1107,12 +1107,12 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternZone,
     manager: CanvasManager,
-    candles: Kline[],
+    klines: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
-    const startIndex = candles.findIndex(c => c.openTime >= pattern.startTimestamp);
-    const endIndex = candles.findIndex(c => c.openTime >= pattern.endTimestamp);
+    const startIndex = klines.findIndex(c => c.openTime >= pattern.startOpenTime);
+    const endIndex = klines.findIndex(c => c.openTime >= pattern.endOpenTime);
 
     if (startIndex === -1 || endIndex === -1) return;
 
@@ -1122,9 +1122,9 @@ export const PatternRenderer = ({
     const y2 = manager.priceToY(pattern.bottomPrice);
 
     if (pattern.type === 'buy-zone' || pattern.type === 'sell-zone' || pattern.type === 'liquidity-zone' || pattern.type === 'accumulation-zone') {
-      const lastCandleX = manager.indexToX(candles.length - 1);
+      const lastKlineX = manager.indexToX(klines.length - 1);
       const extensionDistance = 36;
-      const targetX = lastCandleX + extensionDistance;
+      const targetX = lastKlineX + extensionDistance;
 
       if (x2 < targetX) {
         x2 = targetX;

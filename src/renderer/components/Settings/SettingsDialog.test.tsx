@@ -55,8 +55,8 @@ describe('SettingsDialog', () => {
     const mockAdvancedConfig = {
         rightMargin: 72,
         volumeHeightRatio: 0.2,
-        candleSpacing: 0.3,
-        candleWickWidth: 1,
+        klineSpacing: 0.3,
+        klineWickWidth: 1,
         gridLineWidth: 1,
         currentPriceLineWidth: 2,
         currentPriceLineStyle: 'dashed' as const,

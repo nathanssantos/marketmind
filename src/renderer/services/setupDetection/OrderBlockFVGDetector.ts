@@ -1,6 +1,6 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
-import type { Kline, FVG, OrderBlock } from '@shared/types';
-import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
+import type { FVG, Kline, OrderBlock } from '@shared/types';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '@shared/utils';
 import {
     BaseSetupDetector,
     type SetupDetectorConfig,
@@ -42,39 +42,39 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
     this.orderBlockFVGConfig = config;
   }
 
-  detect(candles: Kline[], currentIndex: number): SetupDetectorResult {
+  detect(klines: Kline[], currentIndex: number): SetupDetectorResult {
     const minIndex = this.orderBlockFVGConfig.lookbackPeriod + VOLUME_LOOKBACK;
 
     if (!this.config.enabled || currentIndex < minIndex) {
       return { setup: null, confidence: 0 };
     }
 
-    const bullishSetup = this.detectBullishOrderBlockFVG(candles, currentIndex);
+    const bullishSetup = this.detectBullishOrderBlockFVG(klines, currentIndex);
     if (bullishSetup) return bullishSetup;
 
-    const bearishSetup = this.detectBearishOrderBlockFVG(candles, currentIndex);
+    const bearishSetup = this.detectBearishOrderBlockFVG(klines, currentIndex);
     if (bearishSetup) return bearishSetup;
 
     return { setup: null, confidence: 0 };
   }
 
   private detectBullishOrderBlockFVG(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number
   ): SetupDetectorResult | null {
-    const orderBlock = this.findBullishOrderBlock(candles, currentIndex);
+    const orderBlock = this.findBullishOrderBlock(klines, currentIndex);
     if (!orderBlock) return null;
 
-    const fvg = this.findBullishFVG(candles, currentIndex);
+    const fvg = this.findBullishFVG(klines, currentIndex);
     if (!fvg) return null;
 
     const volumeConfirmation = this.hasVolumeConfirmation(
-      candles,
+      klines,
       orderBlock.index
     );
 
     return this.createBullishSetup(
-      candles,
+      klines,
       currentIndex,
       orderBlock,
       fvg,
@@ -83,22 +83,22 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
   }
 
   private detectBearishOrderBlockFVG(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number
   ): SetupDetectorResult | null {
-    const orderBlock = this.findBearishOrderBlock(candles, currentIndex);
+    const orderBlock = this.findBearishOrderBlock(klines, currentIndex);
     if (!orderBlock) return null;
 
-    const fvg = this.findBearishFVG(candles, currentIndex);
+    const fvg = this.findBearishFVG(klines, currentIndex);
     if (!fvg) return null;
 
     const volumeConfirmation = this.hasVolumeConfirmation(
-      candles,
+      klines,
       orderBlock.index
     );
 
     return this.createBearishSetup(
-      candles,
+      klines,
       currentIndex,
       orderBlock,
       fvg,
@@ -107,35 +107,35 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
   }
 
   private findBullishOrderBlock(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number
   ): (OrderBlock & { index: number }) | null {
     const lookbackStart = Math.max(
       0,
       currentIndex - this.orderBlockFVGConfig.lookbackPeriod
     );
-    const avgVolume = this.calculateAverageVolume(candles, currentIndex);
+    const avgVolume = this.calculateAverageVolume(klines, currentIndex);
 
     for (let i = currentIndex - 1; i >= lookbackStart; i -= 1) {
-      const candle = candles[i];
-      if (!candle) continue;
+      const kline = klines[i];
+      if (!kline) continue;
 
-      const isBullish = getKlineClose(candle) > getKlineOpen(candle);
+      const isBullish = getKlineClose(kline) > getKlineOpen(kline);
       const hasHighVolume =
-        getKlineVolume(candle) >=
+        getKlineVolume(kline) >=
         avgVolume * this.orderBlockFVGConfig.orderBlockVolumeMultiplier;
 
       if (isBullish && hasHighVolume) {
-        const currentCandle = candles[currentIndex];
-        if (!currentCandle) continue;
+        const currentKline = klines[currentIndex];
+        if (!currentKline) continue;
 
-        const currentPrice = currentCandle.close;
-        if (currentPrice >= getKlineLow(candle) && currentPrice <= getKlineHigh(candle)) {
+        const currentPrice = getKlineClose(currentKline);
+        if (currentPrice >= getKlineLow(kline) && currentPrice <= getKlineHigh(kline)) {
           return {
             type: 'bullish',
-            high: getKlineHigh(candle),
-            low: getKlineLow(candle),
-            timestamp: candle.openTime,
+            high: getKlineHigh(kline),
+            low: getKlineLow(kline),
+            openTime: kline.openTime,
             index: i,
           };
         }
@@ -146,35 +146,35 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
   }
 
   private findBearishOrderBlock(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number
   ): (OrderBlock & { index: number }) | null {
     const lookbackStart = Math.max(
       0,
       currentIndex - this.orderBlockFVGConfig.lookbackPeriod
     );
-    const avgVolume = this.calculateAverageVolume(candles, currentIndex);
+    const avgVolume = this.calculateAverageVolume(klines, currentIndex);
 
     for (let i = currentIndex - 1; i >= lookbackStart; i -= 1) {
-      const candle = candles[i];
-      if (!candle) continue;
+      const kline = klines[i];
+      if (!kline) continue;
 
-      const isBearish = getKlineClose(candle) < getKlineOpen(candle);
+      const isBearish = getKlineClose(kline) < getKlineOpen(kline);
       const hasHighVolume =
-        getKlineVolume(candle) >=
+        getKlineVolume(kline) >=
         avgVolume * this.orderBlockFVGConfig.orderBlockVolumeMultiplier;
 
       if (isBearish && hasHighVolume) {
-        const currentCandle = candles[currentIndex];
-        if (!currentCandle) continue;
+        const currentKline = klines[currentIndex];
+        if (!currentKline) continue;
 
-        const currentPrice = currentCandle.close;
-        if (currentPrice >= getKlineLow(candle) && currentPrice <= getKlineHigh(candle)) {
+        const currentPrice = getKlineClose(currentKline);
+        if (currentPrice >= getKlineLow(kline) && currentPrice <= getKlineHigh(kline)) {
           return {
             type: 'bearish',
-            high: getKlineHigh(candle),
-            low: getKlineLow(candle),
-            timestamp: candle.openTime,
+            high: getKlineHigh(kline),
+            low: getKlineLow(kline),
+            openTime: kline.openTime,
             index: i,
           };
         }
@@ -185,7 +185,7 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
   }
 
   private findBullishFVG(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number
   ): FVG | null {
     const minIndex = 2;
@@ -197,35 +197,35 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
     );
 
     for (let i = currentIndex - 1; i >= lookbackStart; i -= 1) {
-      const prevCandle = candles[i - 1];
-      const nextCandle = candles[i + 1];
+      const prevKline = klines[i - 1];
+      const nextKline = klines[i + 1];
 
-      if (!prevCandle || !nextCandle) continue;
+      if (!prevKline || !nextKline) continue;
 
-      const gapBottom = prevCandle.high;
-      const gapTop = nextCandle.low;
+      const gapBottom = getKlineHigh(prevKline);
+      const gapTop = getKlineLow(nextKline);
 
       if (gapTop <= gapBottom) continue;
 
       const gapSize = gapTop - gapBottom;
-      const gapPercent = gapSize / prevCandle.close;
+      const gapPercent = gapSize / getKlineClose(prevKline);
 
       if (gapPercent < this.orderBlockFVGConfig.fvgMinSize / PERCENT_DIVISOR) continue;
 
-      const currentCandle = candles[currentIndex];
-      if (!currentCandle) continue;
+      const currentKline = klines[currentIndex];
+      if (!currentKline) continue;
 
-      const currentPrice = currentCandle.close;
+      const currentPrice = getKlineClose(currentKline);
       if (currentPrice < gapBottom || currentPrice > gapTop) continue;
 
-      const middleCandle = candles[i];
-      if (!middleCandle) continue;
+      const middleKline = klines[i];
+      if (!middleKline) continue;
 
       return {
         type: 'bullish',
         top: gapTop,
         bottom: gapBottom,
-        timestamp: middleCandle.timestamp,
+        openTime: middleKline.openTime,
       };
     }
 
@@ -233,7 +233,7 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
   }
 
   private findBearishFVG(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number
   ): FVG | null {
     const minIndex = 2;
@@ -245,35 +245,35 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
     );
 
     for (let i = currentIndex - 1; i >= lookbackStart; i -= 1) {
-      const prevCandle = candles[i - 1];
-      const nextCandle = candles[i + 1];
+      const prevKline = klines[i - 1];
+      const nextKline = klines[i + 1];
 
-      if (!prevCandle || !nextCandle) continue;
+      if (!prevKline || !nextKline) continue;
 
-      const gapTop = prevCandle.low;
-      const gapBottom = nextCandle.high;
+      const gapTop = getKlineLow(prevKline);
+      const gapBottom = getKlineHigh(nextKline);
 
       if (gapTop <= gapBottom) continue;
 
       const gapSize = gapTop - gapBottom;
-      const gapPercent = gapSize / prevCandle.close;
+      const gapPercent = gapSize / getKlineClose(prevKline);
 
       if (gapPercent < this.orderBlockFVGConfig.fvgMinSize / PERCENT_DIVISOR) continue;
 
-      const currentCandle = candles[currentIndex];
-      if (!currentCandle) continue;
+      const currentKline = klines[currentIndex];
+      if (!currentKline) continue;
 
-      const currentPrice = currentCandle.close;
+      const currentPrice = getKlineClose(currentKline);
       if (currentPrice < gapBottom || currentPrice > gapTop) continue;
 
-      const middleCandle = candles[i];
-      if (!middleCandle) continue;
+      const middleKline = klines[i];
+      if (!middleKline) continue;
 
       return {
         type: 'bearish',
         top: gapTop,
         bottom: gapBottom,
-        timestamp: middleCandle.timestamp,
+        openTime: middleKline.openTime,
       };
     }
 
@@ -281,7 +281,7 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
   }
 
   private createBullishSetup(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
     orderBlock: OrderBlock & { index: number },
     fvg: FVG,
@@ -293,7 +293,7 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
 
     if (risk <= 0) return null;
 
-    const resistance = this.findNearestResistance(candles, currentIndex, entry);
+    const resistance = this.findNearestResistance(klines, currentIndex, entry);
     const rrTarget = entry + risk * this.orderBlockFVGConfig.targetMultiplier;
     const takeProfit = resistance && resistance < rrTarget ? resistance : rrTarget;
 
@@ -312,7 +312,7 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
     const setup = this.createSetup(
       'order-block-fvg',
       'LONG',
-      candles,
+      klines,
       currentIndex,
       entry,
       stopLoss,
@@ -333,7 +333,7 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
   }
 
   private createBearishSetup(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
     orderBlock: OrderBlock & { index: number },
     fvg: FVG,
@@ -345,7 +345,7 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
 
     if (risk <= 0) return null;
 
-    const support = this.findNearestSupport(candles, currentIndex, entry);
+    const support = this.findNearestSupport(klines, currentIndex, entry);
     const rrTarget = entry - risk * this.orderBlockFVGConfig.targetMultiplier;
     const takeProfit = support && support > rrTarget ? support : rrTarget;
 
@@ -364,7 +364,7 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
     const setup = this.createSetup(
       'order-block-fvg',
       'SHORT',
-      candles,
+      klines,
       currentIndex,
       entry,
       stopLoss,
@@ -385,7 +385,7 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
   }
 
   private findNearestResistance(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
     currentPrice: number
   ): number | null {
@@ -394,7 +394,7 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
       currentIndex
     );
     const pivots = findPivotPoints(
-      candles.slice(Math.max(0, currentIndex - lookback), currentIndex + 1),
+      klines.slice(Math.max(0, currentIndex - lookback), currentIndex + 1),
       PIVOT_LOOKBACK
     );
 
@@ -407,7 +407,7 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
   }
 
   private findNearestSupport(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
     currentPrice: number
   ): number | null {
@@ -416,7 +416,7 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
       currentIndex
     );
     const pivots = findPivotPoints(
-      candles.slice(Math.max(0, currentIndex - lookback), currentIndex + 1),
+      klines.slice(Math.max(0, currentIndex - lookback), currentIndex + 1),
       PIVOT_LOOKBACK
     );
 
@@ -458,24 +458,24 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
   }
 
   private calculateAverageVolume(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number
   ): number {
     const lookbackStart = Math.max(0, currentIndex - VOLUME_LOOKBACK);
-    const volumeSum = candles
+    const volumeSum = klines
       .slice(lookbackStart, currentIndex + 1)
-      .reduce((sum, c) => sum + c.volume, 0);
+      .reduce((sum, c) => sum + getKlineVolume(c), 0);
     const count = currentIndex - lookbackStart + 1;
     return volumeSum / count;
   }
 
   private hasVolumeConfirmation(
-    candles: Kline[],
-    candleIndex: number
+    klines: Kline[],
+    klineIndex: number
   ): boolean {
-    const avgVolume = this.calculateAverageVolume(candles, candleIndex);
-    const candle = candles[candleIndex];
-    if (!candle) return false;
-    return getKlineVolume(candle) > avgVolume;
+    const avgVolume = this.calculateAverageVolume(klines, klineIndex);
+    const kline = klines[klineIndex];
+    if (!kline) return false;
+    return getKlineVolume(kline) > avgVolume;
   }
 }

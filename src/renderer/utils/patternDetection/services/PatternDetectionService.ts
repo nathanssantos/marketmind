@@ -27,7 +27,7 @@ export class PatternDetectionService {
   }
 
   async detectPatterns(
-    candles: Kline[],
+    klines: Kline[],
     options: DetectionOptions = {}
   ): Promise<DetectionResult> {
     const startTime = performance.now();
@@ -38,140 +38,140 @@ export class PatternDetectionService {
       enabledPatterns,
     } = options;
 
-    const pivots = findPivotPoints(candles, pivotSensitivity, pivotSensitivity);
+    const pivots = findPivotPoints(klines, pivotSensitivity, pivotSensitivity);
     
     const allPatterns: AIPattern[] = [];
 
     if (!enabledPatterns || enabledPatterns.includes('support')) {
-      allPatterns.push(...detectSupport(candles, pivots));
+      allPatterns.push(...detectSupport(klines, pivots));
     }
     
     if (!enabledPatterns || enabledPatterns.includes('resistance')) {
-      allPatterns.push(...detectResistance(candles, pivots));
+      allPatterns.push(...detectResistance(klines, pivots));
     }
     
     if (!enabledPatterns || enabledPatterns.includes('trendline-bullish')) {
-      allPatterns.push(...detectBullishTrendlines(candles, pivots));
+      allPatterns.push(...detectBullishTrendlines(klines, pivots));
     }
     
     if (!enabledPatterns || enabledPatterns.includes('trendline-bearish')) {
-      allPatterns.push(...detectBearishTrendlines(candles, pivots));
+      allPatterns.push(...detectBearishTrendlines(klines, pivots));
     }
     
     if (!enabledPatterns || enabledPatterns.includes('fibonacci-retracement')) {
-      allPatterns.push(...detectFibonacciRetracements(candles, pivots));
+      allPatterns.push(...detectFibonacciRetracements(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('fibonacci-extension')) {
-      allPatterns.push(...detectFibonacciExtensions(candles, pivots));
+      allPatterns.push(...detectFibonacciExtensions(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('channel-ascending')) {
-      allPatterns.push(...detectAscendingChannels(candles, pivots));
+      allPatterns.push(...detectAscendingChannels(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('channel-descending')) {
-      allPatterns.push(...detectDescendingChannels(candles, pivots));
+      allPatterns.push(...detectDescendingChannels(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('channel-horizontal')) {
-      allPatterns.push(...detectHorizontalChannels(candles, pivots));
+      allPatterns.push(...detectHorizontalChannels(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('triangle-ascending')) {
-      allPatterns.push(...detectAscendingTriangles(candles, pivots));
+      allPatterns.push(...detectAscendingTriangles(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('triangle-descending')) {
-      allPatterns.push(...detectDescendingTriangles(candles, pivots));
+      allPatterns.push(...detectDescendingTriangles(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('triangle-symmetrical')) {
-      allPatterns.push(...detectSymmetricalTriangles(candles, pivots));
+      allPatterns.push(...detectSymmetricalTriangles(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('wedge-rising')) {
-      allPatterns.push(...detectRisingWedges(candles, pivots));
+      allPatterns.push(...detectRisingWedges(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('wedge-falling')) {
-      allPatterns.push(...detectFallingWedges(candles, pivots));
+      allPatterns.push(...detectFallingWedges(klines, pivots));
     }
     
     if (!enabledPatterns || enabledPatterns.includes('head-and-shoulders')) {
-      allPatterns.push(...detectHeadAndShoulders(candles, pivots));
+      allPatterns.push(...detectHeadAndShoulders(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('inverse-head-and-shoulders')) {
-      allPatterns.push(...detectInverseHeadAndShoulders(candles, pivots));
+      allPatterns.push(...detectInverseHeadAndShoulders(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('double-top')) {
-      allPatterns.push(...detectDoubleTops(candles, pivots));
+      allPatterns.push(...detectDoubleTops(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('double-bottom')) {
-      allPatterns.push(...detectDoubleBottoms(candles, pivots));
+      allPatterns.push(...detectDoubleBottoms(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('triple-top')) {
-      allPatterns.push(...detectTripleTops(candles, pivots));
+      allPatterns.push(...detectTripleTops(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('triple-bottom')) {
-      allPatterns.push(...detectTripleBottoms(candles, pivots));
+      allPatterns.push(...detectTripleBottoms(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('flag-bullish')) {
-      allPatterns.push(...detectBullishFlags(candles, pivots));
+      allPatterns.push(...detectBullishFlags(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('flag-bearish')) {
-      allPatterns.push(...detectBearishFlags(candles, pivots));
+      allPatterns.push(...detectBearishFlags(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('pennant')) {
-      allPatterns.push(...detectPennants(candles, pivots));
+      allPatterns.push(...detectPennants(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('cup-and-handle')) {
-      allPatterns.push(...detectCupAndHandle(candles, pivots));
+      allPatterns.push(...detectCupAndHandle(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('rounding-bottom')) {
-      allPatterns.push(...detectRoundingBottom(candles, pivots));
+      allPatterns.push(...detectRoundingBottom(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('gap-common')) {
-      allPatterns.push(...detectCommonGaps(candles, pivots));
+      allPatterns.push(...detectCommonGaps(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('gap-breakaway')) {
-      allPatterns.push(...detectBreakawayGaps(candles, pivots));
+      allPatterns.push(...detectBreakawayGaps(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('gap-runaway')) {
-      allPatterns.push(...detectRunawayGaps(candles, pivots));
+      allPatterns.push(...detectRunawayGaps(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('gap-exhaustion')) {
-      allPatterns.push(...detectExhaustionGaps(candles, pivots));
+      allPatterns.push(...detectExhaustionGaps(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('buy-zone')) {
-      allPatterns.push(...detectBuyZones(candles, pivots));
+      allPatterns.push(...detectBuyZones(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('sell-zone')) {
-      allPatterns.push(...detectSellZones(candles, pivots));
+      allPatterns.push(...detectSellZones(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('liquidity-zone')) {
-      allPatterns.push(...detectLiquidityZones(candles, pivots));
+      allPatterns.push(...detectLiquidityZones(klines, pivots));
     }
 
     if (!enabledPatterns || enabledPatterns.includes('accumulation-zone')) {
-      allPatterns.push(...detectAccumulationZones(candles, pivots));
+      allPatterns.push(...detectAccumulationZones(klines, pivots));
     }
 
     const filteredPatterns = allPatterns.filter(
@@ -193,8 +193,8 @@ export class PatternDetectionService {
       console.log('[PatternDetection] Before filtering:', sortedPatterns.length, 'patterns');
       
       sortedPatterns.forEach(pattern => {
-        pattern.importanceScore = calculateImportanceScore(pattern, candles);
-        pattern.tier = classifyPatternTier(pattern, candles);
+        pattern.importanceScore = calculateImportanceScore(pattern, klines);
+        pattern.tier = classifyPatternTier(pattern, klines);
       });
 
       let relationships: PatternRelationship[];
@@ -235,21 +235,21 @@ export class PatternDetectionService {
         pivotsFound: pivots.length,
         patternsDetected: finalPatterns.length,
         executionTime,
-        candlesAnalyzed: candles.length,
+        klinesAnalyzed: klines.length,
       },
     };
   }
 
   async detectPatternsIncremental(
     _existingPatterns: AIPattern[],
-    newCandles: Kline[],
+    newKlines: Kline[],
     options: DetectionOptions = {}
   ): Promise<DetectionResult> {
-    return this.detectPatterns(newCandles, options);
+    return this.detectPatterns(newKlines, options);
   }
 
   private lastDetection: {
-    candles: Kline[];
+    klines: Kline[];
     pivots: PivotPoint[];
     patterns: AIPattern[];
   } | null = null;

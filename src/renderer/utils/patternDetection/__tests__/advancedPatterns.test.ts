@@ -6,20 +6,25 @@ import {
 } from '../patterns/advancedPatterns';
 import type { PivotPoint } from '../types';
 
-const createCandle = (
-  timestamp: number,
+const createKline = (
+  openTime: number,
   open: number,
   high: number,
   low: number,
   close: number,
   volume = 1000
-): Candle => ({
-  timestamp,
-  open,
-  high,
-  low,
-  close,
-  volume,
+): Kline => ({
+  openTime,
+  closeTime: openTime + 60000,
+  open: open.toString(),
+  high: high.toString(),
+  low: low.toString(),
+  close: close.toString(),
+  volume: volume.toString(),
+  quoteVolume: (volume * close).toString(),
+  trades: 100,
+  takerBuyBaseVolume: (volume * 0.5).toString(),
+  takerBuyQuoteVolume: (volume * close * 0.5).toString(),
 });
 
 const createPivot = (
@@ -30,7 +35,7 @@ const createPivot = (
 ): PivotPoint => ({
   index,
   price,
-  timestamp: baseTimestamp + index * 60000,
+  openTime: baseTimestamp + index * 60000,
   type,
   strength: 1,
   volume: 1000,
@@ -40,14 +45,14 @@ describe('detectTripleTops', () => {
   describe('valid patterns', () => {
     it('should detect triple top with three peaks at same level', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
         const isPeak = i === 5 || i === 15 || i === 25;
         const high = isPeak ? 110 : 95;
         const low = isPeak ? 95 : 90;
-        candles.push(
-          createCandle(now + i * 60000, 100, high, low, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, high, low, 100, 1000)
         );
       }
 
@@ -59,7 +64,7 @@ describe('detectTripleTops', () => {
         createPivot(25, 110, 'high', now),
       ];
 
-      const patterns = detectTripleTops(candles, pivots);
+      const patterns = detectTripleTops(klines, pivots);
 
       expect(patterns.length).toBeGreaterThan(0);
       expect(patterns[0].type).toBe('triple-top');
@@ -69,11 +74,11 @@ describe('detectTripleTops', () => {
 
     it('should detect triple top within ±8% tolerance', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 95, 110, 90, 95, 1000)
+        klines.push(
+          createKline(now + i * 60000, 95, 110, 90, 95, 1000)
         );
       }
 
@@ -85,7 +90,7 @@ describe('detectTripleTops', () => {
         createPivot(25, 103, 'high', now),
       ];
 
-      const patterns = detectTripleTops(candles, pivots);
+      const patterns = detectTripleTops(klines, pivots);
 
       expect(patterns.length).toBeGreaterThan(0);
       expect(patterns[0].type).toBe('triple-top');
@@ -93,11 +98,11 @@ describe('detectTripleTops', () => {
 
     it('should require minimum 3 peaks', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 20; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 100, 110, 90, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, 110, 90, 100, 1000)
         );
       }
 
@@ -107,18 +112,18 @@ describe('detectTripleTops', () => {
         createPivot(15, 110, 'high', now),
       ];
 
-      const patterns = detectTripleTops(candles, pivots);
+      const patterns = detectTripleTops(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
 
     it('should calculate confidence based on peak alignment', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 100, 110, 90, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, 110, 90, 100, 1000)
         );
       }
 
@@ -130,7 +135,7 @@ describe('detectTripleTops', () => {
         createPivot(25, 110, 'high', now),
       ];
 
-      const patterns = detectTripleTops(candles, pivots);
+      const patterns = detectTripleTops(klines, pivots);
 
       expect(patterns.length).toBeGreaterThan(0);
       expect(patterns[0].confidence).toBeGreaterThan(0.5);
@@ -138,11 +143,11 @@ describe('detectTripleTops', () => {
 
     it('should include neckline and peaks in pattern data', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 100, 110, 90, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, 110, 90, 100, 1000)
         );
       }
 
@@ -154,7 +159,7 @@ describe('detectTripleTops', () => {
         createPivot(25, 110, 'high', now),
       ];
 
-      const patterns = detectTripleTops(candles, pivots);
+      const patterns = detectTripleTops(klines, pivots);
 
       expect(patterns.length).toBeGreaterThan(0);
       expect(patterns[0].peak1).toBeDefined();
@@ -166,46 +171,46 @@ describe('detectTripleTops', () => {
   });
 
   describe('rejection cases', () => {
-    it('should reject when null candles', () => {
-      const patterns = detectTripleTops(null as unknown as Candle[], []);
+    it('should reject when null klines', () => {
+      const patterns = detectTripleTops(null as unknown as Kline[], []);
       expect(patterns).toEqual([]);
     });
 
-    it('should reject when undefined candles', () => {
+    it('should reject when undefined klines', () => {
       const patterns = detectTripleTops(
-        undefined as unknown as Candle[],
+        undefined as unknown as Kline[],
         []
       );
       expect(patterns).toEqual([]);
     });
 
-    it('should reject when empty candles', () => {
+    it('should reject when empty klines', () => {
       const patterns = detectTripleTops([], []);
       expect(patterns).toEqual([]);
     });
 
-    it('should reject when insufficient candles', () => {
+    it('should reject when insufficient klines', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 10; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 100, 110, 90, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, 110, 90, 100, 1000)
         );
       }
 
-      const patterns = detectTripleTops(candles, []);
+      const patterns = detectTripleTops(klines, []);
 
       expect(patterns).toEqual([]);
     });
 
     it('should reject peaks outside ±8% tolerance', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 95, 120, 90, 95, 1000)
+        klines.push(
+          createKline(now + i * 60000, 95, 120, 90, 95, 1000)
         );
       }
 
@@ -217,18 +222,18 @@ describe('detectTripleTops', () => {
         createPivot(25, 105, 'high', now),
       ];
 
-      const patterns = detectTripleTops(candles, pivots);
+      const patterns = detectTripleTops(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
 
     it('should reject when insufficient low pivots between peaks', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 100, 110, 90, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, 110, 90, 100, 1000)
         );
       }
 
@@ -238,7 +243,7 @@ describe('detectTripleTops', () => {
         createPivot(25, 110, 'high', now),
       ];
 
-      const patterns = detectTripleTops(candles, pivots);
+      const patterns = detectTripleTops(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
@@ -247,11 +252,11 @@ describe('detectTripleTops', () => {
   describe('sorting and limits', () => {
     it('should sort patterns by confidence descending', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 100; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 100, 110, 90, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, 110, 90, 100, 1000)
         );
       }
 
@@ -268,7 +273,7 @@ describe('detectTripleTops', () => {
         createPivot(95, 108, 'high', now),
       ];
 
-      const patterns = detectTripleTops(candles, pivots);
+      const patterns = detectTripleTops(klines, pivots);
 
       if (patterns.length > 1) {
         for (let i = 1; i < patterns.length; i++) {
@@ -281,11 +286,11 @@ describe('detectTripleTops', () => {
 
     it('should respect MAX_PATTERNS_PER_TYPE limit', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 200; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 100, 110, 90, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, 110, 90, 100, 1000)
         );
       }
 
@@ -295,7 +300,7 @@ describe('detectTripleTops', () => {
         pivots.push(createPivot(i * 4 + 2, 90, 'low', now));
       }
 
-      const patterns = detectTripleTops(candles, pivots);
+      const patterns = detectTripleTops(klines, pivots);
 
       expect(patterns.length).toBeLessThanOrEqual(5);
     });
@@ -306,14 +311,14 @@ describe('detectTripleBottoms', () => {
   describe('valid patterns', () => {
     it('should detect triple bottom with three troughs at same level', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
         const isTrough = i === 5 || i === 15 || i === 25;
         const low = isTrough ? 90 : 105;
         const high = isTrough ? 105 : 110;
-        candles.push(
-          createCandle(now + i * 60000, 100, high, low, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, high, low, 100, 1000)
         );
       }
 
@@ -325,7 +330,7 @@ describe('detectTripleBottoms', () => {
         createPivot(25, 90, 'low', now),
       ];
 
-      const patterns = detectTripleBottoms(candles, pivots);
+      const patterns = detectTripleBottoms(klines, pivots);
 
       expect(patterns.length).toBeGreaterThan(0);
       expect(patterns[0].type).toBe('triple-bottom');
@@ -335,11 +340,11 @@ describe('detectTripleBottoms', () => {
 
     it('should detect triple bottom within ±8% tolerance', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 105, 110, 90, 105, 1000)
+        klines.push(
+          createKline(now + i * 60000, 105, 110, 90, 105, 1000)
         );
       }
 
@@ -351,7 +356,7 @@ describe('detectTripleBottoms', () => {
         createPivot(25, 97, 'low', now),
       ];
 
-      const patterns = detectTripleBottoms(candles, pivots);
+      const patterns = detectTripleBottoms(klines, pivots);
 
       expect(patterns.length).toBeGreaterThan(0);
       expect(patterns[0].type).toBe('triple-bottom');
@@ -359,11 +364,11 @@ describe('detectTripleBottoms', () => {
 
     it('should require minimum 3 troughs', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 20; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 100, 110, 90, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, 110, 90, 100, 1000)
         );
       }
 
@@ -373,18 +378,18 @@ describe('detectTripleBottoms', () => {
         createPivot(15, 90, 'low', now),
       ];
 
-      const patterns = detectTripleBottoms(candles, pivots);
+      const patterns = detectTripleBottoms(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
 
     it('should calculate confidence based on trough alignment', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 100, 110, 90, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, 110, 90, 100, 1000)
         );
       }
 
@@ -396,7 +401,7 @@ describe('detectTripleBottoms', () => {
         createPivot(25, 90, 'low', now),
       ];
 
-      const patterns = detectTripleBottoms(candles, pivots);
+      const patterns = detectTripleBottoms(klines, pivots);
 
       expect(patterns.length).toBeGreaterThan(0);
       expect(patterns[0].confidence).toBeGreaterThan(0.5);
@@ -404,11 +409,11 @@ describe('detectTripleBottoms', () => {
 
     it('should include neckline and troughs in pattern data', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 100, 110, 90, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, 110, 90, 100, 1000)
         );
       }
 
@@ -420,7 +425,7 @@ describe('detectTripleBottoms', () => {
         createPivot(25, 90, 'low', now),
       ];
 
-      const patterns = detectTripleBottoms(candles, pivots);
+      const patterns = detectTripleBottoms(klines, pivots);
 
       expect(patterns.length).toBeGreaterThan(0);
       expect(patterns[0].peak1).toBeDefined();
@@ -432,46 +437,46 @@ describe('detectTripleBottoms', () => {
   });
 
   describe('rejection cases', () => {
-    it('should reject when null candles', () => {
-      const patterns = detectTripleBottoms(null as unknown as Candle[], []);
+    it('should reject when null klines', () => {
+      const patterns = detectTripleBottoms(null as unknown as Kline[], []);
       expect(patterns).toEqual([]);
     });
 
-    it('should reject when undefined candles', () => {
+    it('should reject when undefined klines', () => {
       const patterns = detectTripleBottoms(
-        undefined as unknown as Candle[],
+        undefined as unknown as Kline[],
         []
       );
       expect(patterns).toEqual([]);
     });
 
-    it('should reject when empty candles', () => {
+    it('should reject when empty klines', () => {
       const patterns = detectTripleBottoms([], []);
       expect(patterns).toEqual([]);
     });
 
-    it('should reject when insufficient candles', () => {
+    it('should reject when insufficient klines', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 10; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 100, 110, 90, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, 110, 90, 100, 1000)
         );
       }
 
-      const patterns = detectTripleBottoms(candles, []);
+      const patterns = detectTripleBottoms(klines, []);
 
       expect(patterns).toEqual([]);
     });
 
     it('should reject troughs outside ±8% tolerance', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 105, 110, 80, 105, 1000)
+        klines.push(
+          createKline(now + i * 60000, 105, 110, 80, 105, 1000)
         );
       }
 
@@ -483,18 +488,18 @@ describe('detectTripleBottoms', () => {
         createPivot(25, 95, 'low', now),
       ];
 
-      const patterns = detectTripleBottoms(candles, pivots);
+      const patterns = detectTripleBottoms(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
 
     it('should reject when insufficient high pivots between troughs', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 100, 110, 90, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, 110, 90, 100, 1000)
         );
       }
 
@@ -504,7 +509,7 @@ describe('detectTripleBottoms', () => {
         createPivot(25, 90, 'low', now),
       ];
 
-      const patterns = detectTripleBottoms(candles, pivots);
+      const patterns = detectTripleBottoms(klines, pivots);
 
       expect(patterns.length).toBe(0);
     });
@@ -513,11 +518,11 @@ describe('detectTripleBottoms', () => {
   describe('sorting and limits', () => {
     it('should sort patterns by confidence descending', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 100; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 100, 110, 90, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, 110, 90, 100, 1000)
         );
       }
 
@@ -534,7 +539,7 @@ describe('detectTripleBottoms', () => {
         createPivot(95, 92, 'low', now),
       ];
 
-      const patterns = detectTripleBottoms(candles, pivots);
+      const patterns = detectTripleBottoms(klines, pivots);
 
       if (patterns.length > 1) {
         for (let i = 1; i < patterns.length; i++) {
@@ -547,11 +552,11 @@ describe('detectTripleBottoms', () => {
 
     it('should respect MAX_PATTERNS_PER_TYPE limit', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 200; i++) {
-        candles.push(
-          createCandle(now + i * 60000, 100, 110, 90, 100, 1000)
+        klines.push(
+          createKline(now + i * 60000, 100, 110, 90, 100, 1000)
         );
       }
 
@@ -561,7 +566,7 @@ describe('detectTripleBottoms', () => {
         pivots.push(createPivot(i * 4 + 2, 110, 'high', now));
       }
 
-      const patterns = detectTripleBottoms(candles, pivots);
+      const patterns = detectTripleBottoms(klines, pivots);
 
       expect(patterns.length).toBeLessThanOrEqual(5);
     });

@@ -1,7 +1,7 @@
 import type { Kline, KlineData, TimeInterval } from '@shared/types';
 import {
     BaseMarketProvider,
-    type FetchCandlesOptions,
+    type FetchKlinesOptions,
     type MarketProviderConfig,
     type Symbol,
     type SymbolInfo,
@@ -119,7 +119,7 @@ export class BinanceProvider extends BaseMarketProvider {
     });
   }
 
-  async fetchCandles(options: FetchCandlesOptions): Promise<KlineData> {
+  async fetchKlines(options: FetchKlinesOptions): Promise<KlineData> {
     const { symbol, interval, limit = 500, startTime, endTime } = options;
 
     return this.rateLimitedFetch(async () => {
@@ -155,7 +155,7 @@ export class BinanceProvider extends BaseMarketProvider {
           klines,
         };
       } catch (error) {
-        this.handleError(error, `Failed to fetch candles for ${symbol}`);
+        this.handleError(error, `Failed to fetch klines for ${symbol}`);
       }
     });
   }

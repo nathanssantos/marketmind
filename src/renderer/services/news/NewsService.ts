@@ -54,7 +54,7 @@ export class NewsService {
 
     this.cache.set(key, {
       data,
-      timestamp: now,
+      openTime: now,
       expiresAt: now + cacheDuration,
     });
   }

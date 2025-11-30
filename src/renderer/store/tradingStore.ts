@@ -80,7 +80,7 @@ const loadFromElectron = async (): Promise<Partial<TradingState>> => {
         createdAt: new Date(wallet.createdAt),
         performance: wallet.performance.map((p) => ({
           ...p,
-          timestamp: new Date(p.timestamp),
+          openTime: new Date(p.openTime),
         })),
       }));
 
@@ -183,7 +183,7 @@ export const useTradingStore = create<TradingState>((set, get) => {
             createdAt: new Date(),
             performance: [
               {
-                timestamp: new Date(),
+                openTime: new Date(),
                 balance: initialBalance,
                 pnl: 0,
                 pnlPercent: 0,
@@ -263,7 +263,7 @@ export const useTradingStore = create<TradingState>((set, get) => {
           const pnlPercent = (pnl / wallet.initialBalance) * 100;
 
           const newPerformance: WalletPerformancePoint = {
-            timestamp: new Date(),
+            openTime: new Date(),
             balance: wallet.balance,
             pnl,
             pnlPercent,

@@ -107,14 +107,14 @@ export const useManualPatternDetection = (
 
   const detectPatterns = useCallback(
     async (viewport?: { start: number; end: number }) => {
-      if (!chartData?.candles || chartData.candles.length === 0) {
+      if (!chartData?.klines || chartData.klines.length === 0) {
         return;
       }
 
       const visibleStart = viewport ? Math.floor(viewport.start) : 0;
       const visibleEnd = viewport
         ? Math.ceil(viewport.end)
-        : chartData.candles.length;
+        : chartData.klines.length;
 
       const detectionOptions = {
         sensitivity: patternConfig.sensitivity,
@@ -141,9 +141,9 @@ export const useManualPatternDetection = (
       };
 
       try {
-        const visibleCandles = chartData.candles.slice(visibleStart, visibleEnd);
+        const visibleKlines = chartData.klines.slice(visibleStart, visibleEnd);
         const detectionResult = await patternDetectionService.detectPatterns(
-          visibleCandles,
+          visibleKlines,
           detectionOptions
         );
 

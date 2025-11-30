@@ -1,10 +1,10 @@
-import { createContext, useContext, useState, type ReactNode, type ReactElement } from 'react';
+import { createContext, useContext, useState, type ReactElement, type ReactNode } from 'react';
 
-export type PinnedControl = 
+export type PinnedControl =
   | 'rightMargin'
   | 'volumeHeightRatio'
-  | 'candleSpacing'
-  | 'candleWickWidth'
+  | 'klineSpacing'
+  | 'klineWickWidth'
   | 'gridLineWidth'
   | 'paddingTop'
   | 'paddingBottom'

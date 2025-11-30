@@ -1,4 +1,4 @@
-import type { Kline, KlineData, TimeInterval } from './candle';
+import type { Kline, KlineData, TimeInterval } from './kline';
 
 export type SymbolStatus = 'TRADING' | 'HALT' | 'BREAK';
 
@@ -56,7 +56,7 @@ export interface MarketProviderConfig {
   enabled: boolean;
 }
 
-export interface FetchCandlesOptions {
+export interface FetchKlinesOptions {
   symbol: string;
   interval: TimeInterval;
   limit?: number;
@@ -97,7 +97,7 @@ export abstract class BaseMarketProvider {
     this.config = config;
   }
 
-  abstract fetchCandles(options: FetchCandlesOptions): Promise<KlineData>;
+  abstract fetchKlines(options: FetchKlinesOptions): Promise<KlineData>;
   abstract searchSymbols(query: string): Promise<Symbol[]>;
   abstract getSymbolInfo(symbol: string): Promise<SymbolInfo>;
   abstract normalizeSymbol(symbol: string): string;

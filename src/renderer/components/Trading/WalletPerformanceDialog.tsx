@@ -32,7 +32,7 @@ export const WalletPerformanceDialog = ({ isOpen, onClose, walletId }: WalletPer
     if (!wallet) return null;
 
     const chartData = wallet.performance.map(p => ({
-        date: new Date(p.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: new Date(p.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         balance: p.balance,
         initialBalance: wallet.initialBalance,
         pnl: p.pnl,

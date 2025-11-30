@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface SetupRendererProps {
   canvasManager: CanvasManager | null;
-  candles: Kline[];
+  klines: Kline[];
   setups: TradingSetup[];
   width: number;
   height: number;
@@ -50,7 +50,7 @@ const DIRECTION_COLORS = {
 
 export const SetupRenderer = ({
   canvasManager,
-  candles,
+  klines,
   setups,
   width,
   height,
@@ -67,12 +67,12 @@ export const SetupRenderer = ({
     return mouseX >= tagBounds.x && mouseX <= tagBounds.x + tagBounds.width && mouseY >= tagBounds.y && mouseY <= tagBounds.y + tagBounds.height;
   }, []);
 
-  const checkSetupHit = useCallback((setup: TradingSetup, mouseX: number, mouseY: number, manager: CanvasManager, candlesData: Kline[]): boolean => {
-    const candleIndex = setup.candleIndex;
-    const candle = candlesData[candleIndex];
-    if (!candle) return false;
+  const checkSetupHit = useCallback((setup: TradingSetup, mouseX: number, mouseY: number, manager: CanvasManager, klinesData: Kline[]): boolean => {
+    const klineIndex = setup.klineIndex;
+    const kline = klinesData[klineIndex];
+    if (!kline) return false;
 
-    const x = manager.indexToCenterX(candleIndex);
+    const x = manager.indexToCenterX(klineIndex);
     const yEntry = manager.priceToY(setup.entryPrice);
     const ySL = manager.priceToY(setup.stopLoss);
     const yTP = manager.priceToY(setup.takeProfit);
@@ -86,7 +86,7 @@ export const SetupRenderer = ({
   }, []);
 
   useEffect(() => {
-    if (!canvasManager || candles.length === 0 || !mousePosition) {
+    if (!canvasManager || klines.length === 0 || !mousePosition) {
       const newId = null;
       if (lastHoveredIdRef.current !== newId) {
         lastHoveredIdRef.current = newId;
@@ -108,7 +108,7 @@ export const SetupRenderer = ({
         break;
       }
 
-      if (checkSetupHit(setup, mouseX, mouseY, canvasManager, candles)) {
+      if (checkSetupHit(setup, mouseX, mouseY, canvasManager, klines)) {
         found = setup;
         break;
       }
@@ -120,7 +120,7 @@ export const SetupRenderer = ({
       setHoveredSetup(found);
       onSetupHover(found);
     }
-  }, [canvasManager, candles, setups, mousePosition, onSetupHover, checkTagHit, checkSetupHit]);
+  }, [canvasManager, klines, setups, mousePosition, onSetupHover, checkTagHit, checkSetupHit]);
 
   const drawSetupTag = useCallback((ctx: CanvasRenderingContext2D, setup: TradingSetup, x: number, y: number, color: string): void => {
     ctx.font = SETUP_TAG_FONT;
@@ -153,12 +153,12 @@ export const SetupRenderer = ({
     });
   }, []);
 
-  const drawSetup = useCallback((ctx: CanvasRenderingContext2D, setup: TradingSetup, manager: CanvasManager, candlesData: Kline[], isHovered: boolean): void => {
-    const candleIndex = setup.candleIndex;
-    const candle = candlesData[candleIndex];
-    if (!candle) return;
+  const drawSetup = useCallback((ctx: CanvasRenderingContext2D, setup: TradingSetup, manager: CanvasManager, klinesData: Kline[], isHovered: boolean): void => {
+    const klineIndex = setup.klineIndex;
+    const kline = klinesData[klineIndex];
+    if (!kline) return;
 
-    const x = manager.indexToCenterX(candleIndex);
+    const x = manager.indexToCenterX(klineIndex);
     const yEntry = manager.priceToY(setup.entryPrice);
     const ySL = manager.priceToY(setup.stopLoss);
     const yTP = manager.priceToY(setup.takeProfit);
@@ -211,7 +211,7 @@ export const SetupRenderer = ({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !canvasManager || candles.length === 0) {
+    if (!canvas || !canvasManager || klines.length === 0) {
       return;
     }
 
@@ -241,11 +241,11 @@ export const SetupRenderer = ({
       if (!setup.visible) return;
 
       const isHovered = hoveredSetup?.id === setup.id;
-      drawSetup(ctx, setup, canvasManager, candles, isHovered);
+      drawSetup(ctx, setup, canvasManager, klines, isHovered);
     });
 
     ctx.restore();
-  }, [canvasManager, candles, setups, width, height, hoveredSetup, drawSetup]);
+  }, [canvasManager, klines, setups, width, height, hoveredSetup, drawSetup]);
 
   return (
     <canvas

@@ -37,13 +37,13 @@ describe('useLineRenderer', () => {
     
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Kline[] = [
-      { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
+    const klines: Kline[] = [
+      { openTime: Date.now(), closeTime: Date.now() + 60000, open: '100', high: '110', low: '90', close: '105', volume: '1000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
     ];
     
     result.current.renderLine({
-      candles,
-      viewport: { start: 0, end: 10, candleWidth: 10 },
+      klines,
+      viewport: { start: 0, end: 10, klineWidth: 10 },
       canvas: mockCanvas,
       bounds: { min: 0, max: 200 },
       dimensions: { width: 800, height: 600, chartWidth: 800, chartHeight: 600 },
@@ -52,12 +52,12 @@ describe('useLineRenderer', () => {
     expect(mockCtx.beginPath).not.toHaveBeenCalled();
   });
 
-  it('should not render when no candles', () => {
+  it('should not render when no klines', () => {
     const { result } = renderHook(() => useLineRenderer());
     
     result.current.renderLine({
-      candles: [],
-      viewport: { start: 0, end: 10, candleWidth: 10 },
+      klines: [],
+      viewport: { start: 0, end: 10, klineWidth: 10 },
       canvas: mockCanvas,
       bounds: { min: 0, max: 200 },
       dimensions: { width: 800, height: 600, chartWidth: 800, chartHeight: 600 },
@@ -69,14 +69,14 @@ describe('useLineRenderer', () => {
   it('should render line with default color', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Kline[] = [
-      { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
-      { open: 105, high: 115, low: 95, close: 110, volume: 1100, timestamp: Date.now() },
+    const klines: Kline[] = [
+      { openTime: Date.now(), closeTime: Date.now() + 60000, open: '100', high: '110', low: '90', close: '105', volume: '1000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+      { openTime: Date.now(), closeTime: Date.now() + 60000, open: '105', high: '115', low: '95', close: '110', volume: '1100', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
     ];
     
     result.current.renderLine({
-      candles,
-      viewport: { start: 0, end: 10, candleWidth: 10 },
+      klines,
+      viewport: { start: 0, end: 10, klineWidth: 10 },
       canvas: mockCanvas,
       bounds: { min: 0, max: 200 },
       dimensions: { width: 800, height: 600, chartWidth: 800, chartHeight: 600 },
@@ -88,13 +88,13 @@ describe('useLineRenderer', () => {
   it('should render line with custom color', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Kline[] = [
-      { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
+    const klines: Kline[] = [
+      { openTime: Date.now(), closeTime: Date.now() + 60000, open: '100', high: '110', low: '90', close: '105', volume: '1000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
     ];
     
     result.current.renderLine({
-      candles,
-      viewport: { start: 0, end: 10, candleWidth: 10 },
+      klines,
+      viewport: { start: 0, end: 10, klineWidth: 10 },
       canvas: mockCanvas,
       bounds: { min: 0, max: 200 },
       dimensions: { width: 800, height: 600, chartWidth: 800, chartHeight: 600 },
@@ -107,13 +107,13 @@ describe('useLineRenderer', () => {
   it('should apply custom line width', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Kline[] = [
-      { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
+    const klines: Kline[] = [
+      { openTime: Date.now(), closeTime: Date.now() + 60000, open: '100', high: '110', low: '90', close: '105', volume: '1000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
     ];
     
     result.current.renderLine({
-      candles,
-      viewport: { start: 0, end: 10, candleWidth: 10 },
+      klines,
+      viewport: { start: 0, end: 10, klineWidth: 10 },
       canvas: mockCanvas,
       bounds: { min: 0, max: 200 },
       dimensions: { width: 800, height: 600, chartWidth: 800, chartHeight: 600 },
@@ -126,14 +126,14 @@ describe('useLineRenderer', () => {
   it('should render area when showArea is true', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Kline[] = [
-      { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
-      { open: 105, high: 115, low: 95, close: 110, volume: 1100, timestamp: Date.now() },
+    const klines: Kline[] = [
+      { openTime: Date.now(), closeTime: Date.now() + 60000, open: '100', high: '110', low: '90', close: '105', volume: '1000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+      { openTime: Date.now(), closeTime: Date.now() + 60000, open: '105', high: '115', low: '95', close: '110', volume: '1100', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
     ];
     
     result.current.renderLine({
-      candles,
-      viewport: { start: 0, end: 10, candleWidth: 10 },
+      klines,
+      viewport: { start: 0, end: 10, klineWidth: 10 },
       canvas: mockCanvas,
       bounds: { min: 0, max: 200 },
       dimensions: { width: 800, height: 600, chartWidth: 800, chartHeight: 600 },
@@ -147,13 +147,13 @@ describe('useLineRenderer', () => {
   it('should not render area when showArea is false', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Kline[] = [
-      { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
+    const klines: Kline[] = [
+      { openTime: Date.now(), closeTime: Date.now() + 60000, open: '100', high: '110', low: '90', close: '105', volume: '1000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
     ];
     
     result.current.renderLine({
-      candles,
-      viewport: { start: 0, end: 10, candleWidth: 10 },
+      klines,
+      viewport: { start: 0, end: 10, klineWidth: 10 },
       canvas: mockCanvas,
       bounds: { min: 0, max: 200 },
       dimensions: { width: 800, height: 600, chartWidth: 800, chartHeight: 600 },
@@ -163,18 +163,18 @@ describe('useLineRenderer', () => {
     expect(mockCtx.fill).not.toHaveBeenCalled();
   });
 
-  it('should call moveTo for first candle and lineTo for subsequent candles', () => {
+  it('should call moveTo for first kline and lineTo for subsequent klines', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Kline[] = [
-      { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
-      { open: 105, high: 115, low: 95, close: 110, volume: 1100, timestamp: Date.now() },
-      { open: 110, high: 120, low: 100, close: 115, volume: 1200, timestamp: Date.now() },
+    const klines: Kline[] = [
+      { openTime: Date.now(), closeTime: Date.now() + 60000, open: '100', high: '110', low: '90', close: '105', volume: '1000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+      { openTime: Date.now(), closeTime: Date.now() + 60000, open: '105', high: '115', low: '95', close: '110', volume: '1100', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+      { openTime: Date.now(), closeTime: Date.now() + 60000, open: '110', high: '120', low: '100', close: '115', volume: '1200', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
     ];
     
     result.current.renderLine({
-      candles,
-      viewport: { start: 0, end: 10, candleWidth: 10 },
+      klines,
+      viewport: { start: 0, end: 10, klineWidth: 10 },
       canvas: mockCanvas,
       bounds: { min: 0, max: 200 },
       dimensions: { width: 800, height: 600, chartWidth: 800, chartHeight: 600 },
@@ -187,13 +187,13 @@ describe('useLineRenderer', () => {
   it('should use close price for line points', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Kline[] = [
-      { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
+    const klines: Kline[] = [
+      { openTime: Date.now(), closeTime: Date.now() + 60000, open: '100', high: '110', low: '90', close: '105', volume: '1000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
     ];
     
     result.current.renderLine({
-      candles,
-      viewport: { start: 0, end: 10, candleWidth: 10 },
+      klines,
+      viewport: { start: 0, end: 10, klineWidth: 10 },
       canvas: mockCanvas,
       bounds: { min: 0, max: 200 },
       dimensions: { width: 800, height: 600, chartWidth: 800, chartHeight: 600 },
@@ -206,18 +206,23 @@ describe('useLineRenderer', () => {
   it('should handle viewport slicing correctly', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Kline[] = Array.from({ length: 100 }, (_, i) => ({
-      open: 100 + i,
-      high: 110 + i,
-      low: 90 + i,
-      close: 105 + i,
-      volume: 1000,
-      timestamp: Date.now() + i * 60000,
+    const klines: Kline[] = Array.from({ length: 100 }, (_, i) => ({
+      openTime: Date.now() + i * 60000,
+      closeTime: Date.now() + (i + 1) * 60000,
+      open: (100 + i).toString(),
+      high: (110 + i).toString(),
+      low: (90 + i).toString(),
+      close: (105 + i).toString(),
+      volume: '1000',
+      quoteVolume: '105000',
+      trades: 100,
+      takerBuyBaseVolume: '500',
+      takerBuyQuoteVolume: '52500',
     }));
     
     result.current.renderLine({
-      candles,
-      viewport: { start: 10, end: 20, candleWidth: 10 },
+      klines,
+      viewport: { start: 10, end: 20, klineWidth: 10 },
       canvas: mockCanvas,
       bounds: { min: 0, max: 300 },
       dimensions: { width: 800, height: 600, chartWidth: 800, chartHeight: 600 },

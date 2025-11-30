@@ -193,7 +193,7 @@ interface AITradingConfig {
    - Use existing `aiContextCache.ts`
 
 3. **Optimized Data**
-   - Use `candleOptimizer.ts` (20 detailed + 1000 simplified)
+   - Use `klineOptimizer.ts` (20 detailed + 1000 simplified)
    - Send only relevant technical indicators
    - Exclude news if market hours closed
 
@@ -444,7 +444,7 @@ interface AITradingStats {
 
 4. **AI Services**
    - `src/renderer/services/ai/AIService.ts` - AI integration
-   - `src/renderer/utils/candleOptimizer.ts` - Data optimization
+   - `src/renderer/utils/klineOptimizer.ts` - Data optimization
    - `src/renderer/utils/intentDetection.ts` - Smart prompts
 
 ---

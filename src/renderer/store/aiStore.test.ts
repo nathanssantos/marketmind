@@ -1,5 +1,5 @@
 import { AIService } from '@/renderer/services/ai';
-import type { AIProviderType, Kline } from '@shared/types';
+import type { AIProviderType } from '@shared/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChartData } from './aiStore';
 import { useAIStore } from './aiStore';
@@ -216,7 +216,7 @@ describe('aiStore', () => {
       expect(state.conversations[0]?.messages).toHaveLength(1);
       expect(state.conversations[0]?.messages[0]?.content).toBe('Hello');
       expect(state.conversations[0]?.messages[0]?.id).toBeDefined();
-      expect(state.conversations[0]?.messages[0]?.timestamp).toBeDefined();
+      expect(state.conversations[0]?.messages[0]?.openTime).toBeDefined();
     });
 
     it('should update conversation title based on first user message', () => {
@@ -477,19 +477,24 @@ describe('aiStore', () => {
 
     it('should include chart data in API call but not in stored message', async () => {
       const chartData: ChartData = {
-        candles: [
+        klines: [
           {
-            timestamp: Date.now(),
-            open: 100,
-            high: 110,
-            low: 90,
-            close: 105,
-            volume: 1000,
-          } as Candle,
+            openTime: Date.now(),
+            closeTime: Date.now() + 3600000,
+            open: '100',
+            high: '110',
+            low: '90',
+            close: '105',
+            volume: '1000',
+            quoteVolume: '105000',
+            trades: 100,
+            takerBuyBaseVolume: '500',
+            takerBuyQuoteVolume: '52500',
+          } as Kline,
         ],
         symbol: 'BTCUSDT',
         timeframe: '1h',
-        chartType: 'candlestick',
+        chartType: 'kline',
         showVolume: true,
         movingAverages: [],
       };
@@ -601,17 +606,22 @@ describe('aiStore', () => {
       useAIStore.getState().setSettings({ provider: 'openai', model: 'gpt-4o' });
       
       const chartData1: ChartData = {
-        candles: [{
-          timestamp: Date.now(),
-          open: 100,
-          high: 110,
-          low: 90,
-          close: 105,
-          volume: 1000,
-        } as Candle],
+        klines: [{
+          openTime: Date.now(),
+          closeTime: Date.now() + 3600000,
+          open: '100',
+          high: '110',
+          low: '90',
+          close: '105',
+          volume: '1000',
+          quoteVolume: '105000',
+          trades: 100,
+          takerBuyBaseVolume: '500',
+          takerBuyQuoteVolume: '52500',
+        } as Kline],
         symbol: 'BTCUSDT',
         timeframe: '1h',
-        chartType: 'candlestick',
+        chartType: 'kline',
         showVolume: true,
         movingAverages: [],
       };

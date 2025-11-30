@@ -11,13 +11,13 @@ import {
     PatternTier,
 } from '../core/patternRelationships';
 
-const createTestCandles = (count: number, basePrice: number, intervalMs: number = 60000): Kline[] => {
-  const candles: Kline[] = [];
+const createTestKlines = (count: number, basePrice: number, intervalMs: number = 60000): Kline[] => {
+  const klines: Kline[] = [];
   const now = Date.now();
 
   for (let i = 0; i < count; i++) {
-    candles.push({
-      timestamp: now + i * intervalMs,
+    klines.push({
+      openTime: now + i * intervalMs,
       open: basePrice,
       high: basePrice + 10,
       low: basePrice - 10,
@@ -26,7 +26,7 @@ const createTestCandles = (count: number, basePrice: number, intervalMs: number 
     });
   }
 
-  return candles;
+  return klines;
 };
 
 const createTestSupportPattern = (
@@ -38,12 +38,12 @@ const createTestSupportPattern = (
   id,
   type: 'support',
   points: [
-    { timestamp: startTime, price },
-    { timestamp: endTime, price },
+    { openTime: startTime, price },
+    { openTime: endTime, price },
   ],
   confidence: 0.8,
   visible: true,
-  timestamp: startTime,
+  openTime: startTime,
 });
 
 const createTestTrianglePattern = (
@@ -56,16 +56,16 @@ const createTestTrianglePattern = (
   id,
   type: 'triangle-ascending',
   upperTrendline: [
-    { timestamp: startTime, price: maxPrice },
-    { timestamp: endTime, price: maxPrice },
+    { openTime: startTime, price: maxPrice },
+    { openTime: endTime, price: maxPrice },
   ],
   lowerTrendline: [
-    { timestamp: startTime, price: minPrice },
-    { timestamp: endTime, price: minPrice + 20 },
+    { openTime: startTime, price: minPrice },
+    { openTime: endTime, price: minPrice + 20 },
   ],
   confidence: 0.7,
   visible: true,
-  timestamp: startTime,
+  openTime: startTime,
 });
 
 const createTestHeadAndShouldersPattern = (
@@ -74,16 +74,16 @@ const createTestHeadAndShouldersPattern = (
 ): AIPattern => ({
   id: 3,
   type: 'head-and-shoulders',
-  leftShoulder: { timestamp: baseTime, price: basePrice + 10 },
-  head: { timestamp: baseTime + 20000, price: basePrice + 20 },
-  rightShoulder: { timestamp: baseTime + 40000, price: basePrice + 10 },
+  leftShoulder: { openTime: baseTime, price: basePrice + 10 },
+  head: { openTime: baseTime + 20000, price: basePrice + 20 },
+  rightShoulder: { openTime: baseTime + 40000, price: basePrice + 10 },
   neckline: [
-    { timestamp: baseTime, price: basePrice },
-    { timestamp: baseTime + 40000, price: basePrice },
+    { openTime: baseTime, price: basePrice },
+    { openTime: baseTime + 40000, price: basePrice },
   ],
   confidence: 0.9,
   visible: true,
-  timestamp: baseTime,
+  openTime: baseTime,
 });
 
 describe('Pattern Relationships', () => {
@@ -232,23 +232,23 @@ describe('Pattern Relationships', () => {
       const bullishPattern: AIPattern = {
         id: 1,
         type: 'double-bottom',
-        firstPeak: { timestamp: 1000, price: 90 },
-        secondPeak: { timestamp: 5000, price: 90 },
-        neckline: { timestamp: 3000, price: 105 },
+        firstPeak: { openTime: 1000, price: 90 },
+        secondPeak: { openTime: 5000, price: 90 },
+        neckline: { openTime: 3000, price: 105 },
         confidence: 0.8,
         visible: true,
-        timestamp: 1000,
+        openTime: 1000,
       };
 
       const bearishPattern: AIPattern = {
         id: 2,
         type: 'double-top',
-        firstPeak: { timestamp: 1500, price: 110 },
-        secondPeak: { timestamp: 4500, price: 110 },
-        neckline: { timestamp: 3000, price: 95 },
+        firstPeak: { openTime: 1500, price: 110 },
+        secondPeak: { openTime: 4500, price: 110 },
+        neckline: { openTime: 3000, price: 95 },
         confidence: 0.7,
         visible: true,
-        timestamp: 1500,
+        openTime: 1500,
       };
 
       const relationships = buildPatternRelationships([bullishPattern, bearishPattern]);
@@ -268,30 +268,30 @@ describe('Pattern Relationships', () => {
   });
 
   describe('calculateFormationPeriod', () => {
-    it('should calculate formation period in number of candles', () => {
-      const candles = createTestCandles(100, 100, 60000); // 1-minute candles
+    it('should calculate formation period in number of klines', () => {
+      const klines = createTestKlines(100, 100, 60000); // 1-minute klines
       const pattern = createTestSupportPattern(
-        candles[10].timestamp,
-        candles[60].timestamp,
+        klines[10].openTime,
+        klines[60].openTime,
         100
       );
 
-      const formationPeriod = calculateFormationPeriod(pattern, candles);
+      const formationPeriod = calculateFormationPeriod(pattern, klines);
 
       expect(formationPeriod).toBeGreaterThanOrEqual(48);
       expect(formationPeriod).toBeLessThanOrEqual(52);
     });
 
-    it('should return 1 for patterns shorter than one candle interval', () => {
-      const candles = createTestCandles(100, 100, 60000);
+    it('should return 1 for patterns shorter than one kline interval', () => {
+      const klines = createTestKlines(100, 100, 60000);
       const pattern = createTestSupportPattern(1000, 1100, 100);
 
-      const formationPeriod = calculateFormationPeriod(pattern, candles);
+      const formationPeriod = calculateFormationPeriod(pattern, klines);
 
       expect(formationPeriod).toBe(1);
     });
 
-    it('should handle empty candle array', () => {
+    it('should handle empty kline array', () => {
       const pattern = createTestSupportPattern(1000, 5000, 100);
 
       const formationPeriod = calculateFormationPeriod(pattern, []);
@@ -301,67 +301,67 @@ describe('Pattern Relationships', () => {
   });
 
   describe('classifyPatternTier', () => {
-    it('should classify pattern with 100+ candles as MACRO', () => {
-      const candles = createTestCandles(200, 100, 60000);
+    it('should classify pattern with 100+ klines as MACRO', () => {
+      const klines = createTestKlines(200, 100, 60000);
       const pattern = createTestSupportPattern(
-        candles[0].timestamp,
-        candles[150].timestamp,
+        klines[0].openTime,
+        klines[150].openTime,
         100
       );
 
-      const tier = classifyPatternTier(pattern, candles);
+      const tier = classifyPatternTier(pattern, klines);
 
       expect(tier).toBe(PatternTier.MACRO);
     });
 
-    it('should classify pattern with 50-100 candles as MAJOR', () => {
-      const candles = createTestCandles(200, 100, 60000);
+    it('should classify pattern with 50-100 klines as MAJOR', () => {
+      const klines = createTestKlines(200, 100, 60000);
       const pattern = createTestSupportPattern(
-        candles[0].timestamp,
-        candles[75].timestamp,
+        klines[0].openTime,
+        klines[75].openTime,
         100
       );
 
-      const tier = classifyPatternTier(pattern, candles);
+      const tier = classifyPatternTier(pattern, klines);
 
       expect(tier).toBe(PatternTier.MAJOR);
     });
 
-    it('should classify pattern with 20-50 candles as INTERMEDIATE', () => {
-      const candles = createTestCandles(200, 100, 60000);
+    it('should classify pattern with 20-50 klines as INTERMEDIATE', () => {
+      const klines = createTestKlines(200, 100, 60000);
       const pattern = createTestSupportPattern(
-        candles[0].timestamp,
-        candles[35].timestamp,
+        klines[0].openTime,
+        klines[35].openTime,
         100
       );
 
-      const tier = classifyPatternTier(pattern, candles);
+      const tier = classifyPatternTier(pattern, klines);
 
       expect(tier).toBe(PatternTier.INTERMEDIATE);
     });
 
-    it('should classify pattern with 10-20 candles as MINOR', () => {
-      const candles = createTestCandles(200, 100, 60000);
+    it('should classify pattern with 10-20 klines as MINOR', () => {
+      const klines = createTestKlines(200, 100, 60000);
       const pattern = createTestSupportPattern(
-        candles[0].timestamp,
-        candles[15].timestamp,
+        klines[0].openTime,
+        klines[15].openTime,
         100
       );
 
-      const tier = classifyPatternTier(pattern, candles);
+      const tier = classifyPatternTier(pattern, klines);
 
       expect(tier).toBe(PatternTier.MINOR);
     });
 
-    it('should classify pattern with <10 candles as MICRO', () => {
-      const candles = createTestCandles(200, 100, 60000);
+    it('should classify pattern with <10 klines as MICRO', () => {
+      const klines = createTestKlines(200, 100, 60000);
       const pattern = createTestSupportPattern(
-        candles[0].timestamp,
-        candles[5].timestamp,
+        klines[0].openTime,
+        klines[5].openTime,
         100
       );
 
-      const tier = classifyPatternTier(pattern, candles);
+      const tier = classifyPatternTier(pattern, klines);
 
       expect(tier).toBe(PatternTier.MICRO);
     });
@@ -380,11 +380,11 @@ describe('Pattern Relationships', () => {
     });
 
     it('should handle Head and Shoulders pattern correctly', () => {
-      const candles = createTestCandles(100, 100, 60000);
-      const pattern = createTestHeadAndShouldersPattern(candles[10].timestamp, 100);
+      const klines = createTestKlines(100, 100, 60000);
+      const pattern = createTestHeadAndShouldersPattern(klines[10].openTime, 100);
 
-      const formationPeriod = calculateFormationPeriod(pattern, candles);
-      const tier = classifyPatternTier(pattern, candles);
+      const formationPeriod = calculateFormationPeriod(pattern, klines);
+      const tier = classifyPatternTier(pattern, klines);
 
       expect(formationPeriod).toBeGreaterThan(0);
       expect(tier).toBeDefined();
@@ -397,12 +397,12 @@ describe('Pattern Relationships', () => {
         id: 3,
         type: 'resistance',
         points: [
-          { timestamp: 20000, price: 110 },
-          { timestamp: 30000, price: 110 },
+          { openTime: 20000, price: 110 },
+          { openTime: 30000, price: 110 },
         ],
         confidence: 0.6,
         visible: true,
-        timestamp: 20000,
+        openTime: 20000,
       };
 
       const relationships = buildPatternRelationships([

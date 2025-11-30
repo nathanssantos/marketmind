@@ -243,7 +243,7 @@ News articles are automatically included in AI chart analysis for sentiment-awar
 ### Integration Flow
 
 1. **News Fetching:** `useNews` hook fetches news for current symbol
-2. **Context Storage:** News stored in `ChartContext` alongside candles
+2. **Context Storage:** News stored in `ChartContext` alongside klines
 3. **AI Prompt:** `formatChartDataContext` includes news in AI prompts
 4. **Analysis:** AI considers news sentiment when providing trading signals
 
@@ -255,9 +255,9 @@ News articles are automatically included in AI chart analysis for sentiment-awar
 ## Asset Information
 - Symbol: BTCUSDT
 - Timeframe: 1d
-- Chart Type: candlestick
+- Chart Type: kline
 
-## Price Statistics (Last 100 Candles)
+## Price Statistics (Last 100 Klines)
 - Current Price: $43,250.00
 - Price Change: +$1,230.00 (+2.93%)
 - High: $44,100.00
@@ -304,7 +304,7 @@ const response = await aiService.sendMessage(messages);
 Based on the chart analysis and recent news:
 
 Technical Analysis:
-- Strong upward trend with 65% bullish candles
+- Strong upward trend with 65% bullish klines
 - Price broke resistance at $42K
 - Volume increasing on up moves
 

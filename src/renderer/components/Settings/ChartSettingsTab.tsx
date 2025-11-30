@@ -103,13 +103,13 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
 
       <Box>
         <Text fontSize="sm" fontWeight="bold" mb={4}>
-          {t('settings.chart.candleSettings')}
+          {t('settings.chart.klineSettings')}
         </Text>
         <Stack gap={4}>
-          <Field label={t('settings.chart.candleSpacing')} helperText={t('settings.chart.candleSpacingHelper')}>
+          <Field label={t('settings.chart.klineSpacing')} helperText={t('settings.chart.klineSpacingHelper')}>
             <NumberInput
-              value={config.candleSpacing}
-              onChange={(e) => handleChange('candleSpacing', e.target.value)}
+              value={config.klineSpacing}
+              onChange={(e) => handleChange('klineSpacing', e.target.value)}
               min={2}
               max={30}
             />
@@ -117,8 +117,8 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
 
           <Field label={t('settings.chart.wickWidth')} helperText={t('settings.chart.wickWidthHelper')}>
             <NumberInput
-              value={config.candleWickWidth}
-              onChange={(e) => handleChange('candleWickWidth', e.target.value)}
+              value={config.klineWickWidth}
+              onChange={(e) => handleChange('klineWickWidth', e.target.value)}
               min={1}
               max={10}
             />

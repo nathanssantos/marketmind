@@ -16,7 +16,7 @@ export const useAutoPatternDetection = (viewport?: Viewport): void => {
   const { config: patternConfig } = usePatternDetectionConfigStore();
   const lastDetectionRef = useRef<{
     symbol: string;
-    candleCount: number;
+    klineCount: number;
     viewportStart: number;
     viewportEnd: number;
     enabledPatterns: string;
@@ -26,7 +26,7 @@ export const useAutoPatternDetection = (viewport?: Viewport): void => {
   const interactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const visibleStart = viewport ? Math.floor(viewport.start) : 0;
-  const visibleEnd = viewport ? Math.ceil(viewport.end) : (chartData?.candles.length ?? 0);
+  const visibleEnd = viewport ? Math.ceil(viewport.end) : (chartData?.klines.length ?? 0);
 
   const detectionOptions = useMemo(
     () => ({
@@ -60,18 +60,18 @@ export const useAutoPatternDetection = (viewport?: Viewport): void => {
   );
 
   const detectPatterns = useCallback(
-    async (candles: Kline[], symbol: string, candleCount: number, start: number, end: number) => {
+    async (klines: Kline[], symbol: string, klineCount: number, start: number, end: number) => {
       try {
-        const visibleCandles = candles.slice(start, end);
+        const visibleKlines = klines.slice(start, end);
         const detectionResult = await patternDetectionService.detectPatterns(
-          visibleCandles,
+          visibleKlines,
           detectionOptions
         );
 
         setDetectedPatterns(detectionResult.patterns);
         lastDetectionRef.current = {
           symbol,
-          candleCount,
+          klineCount,
           viewportStart: start,
           viewportEnd: end,
           enabledPatterns: JSON.stringify(detectionOptions.enabledPatterns),
@@ -101,14 +101,14 @@ export const useAutoPatternDetection = (viewport?: Viewport): void => {
   const shouldSkipDetection = useCallback(
     (
       currentSymbol: string,
-      currentCandleCount: number,
+      currentKlineCount: number,
       currentEnabledPatterns: string
     ): boolean => {
       if (!lastDetectionRef.current) return false;
 
       return (
         lastDetectionRef.current.symbol === currentSymbol &&
-        lastDetectionRef.current.candleCount === currentCandleCount &&
+        lastDetectionRef.current.klineCount === currentKlineCount &&
         lastDetectionRef.current.viewportStart === visibleStart &&
         lastDetectionRef.current.viewportEnd === visibleEnd &&
         lastDetectionRef.current.enabledPatterns === currentEnabledPatterns
@@ -120,8 +120,8 @@ export const useAutoPatternDetection = (viewport?: Viewport): void => {
   useEffect(() => {
     const shouldDetect =
       algorithmicDetectionSettings.autoDisplayPatterns &&
-      chartData?.candles &&
-      chartData.candles.length > 0 &&
+      chartData?.klines &&
+      chartData.klines.length > 0 &&
       !isInteracting;
 
     if (!shouldDetect) {
@@ -136,21 +136,21 @@ export const useAutoPatternDetection = (viewport?: Viewport): void => {
     }
 
     const currentSymbol = chartData.symbol;
-    const currentCandleCount = chartData.candles.length;
+    const currentKlineCount = chartData.klines.length;
     const currentEnabledPatterns = JSON.stringify(algorithmicDetectionSettings.enabledPatterns);
 
-    if (shouldSkipDetection(currentSymbol, currentCandleCount, currentEnabledPatterns)) return;
+    if (shouldSkipDetection(currentSymbol, currentKlineCount, currentEnabledPatterns)) return;
 
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
     debounceTimerRef.current = setTimeout(() => {
-      void detectPatterns(chartData.candles, currentSymbol, currentCandleCount, visibleStart, visibleEnd);
+      void detectPatterns(chartData.klines, currentSymbol, currentKlineCount, visibleStart, visibleEnd);
       debounceTimerRef.current = null;
     }, DETECTION_DEBOUNCE_MS);
   }, [
-    chartData?.candles,
+    chartData?.klines,
     chartData?.symbol,
     algorithmicDetectionSettings.autoDisplayPatterns,
     algorithmicDetectionSettings.enabledPatterns,

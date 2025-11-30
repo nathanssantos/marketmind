@@ -1,7 +1,6 @@
 import { useChartContext } from '@renderer/context/ChartContext';
 import { useTradingStore } from '@renderer/store/tradingStore';
-import { getKlineClose } from '@shared/utils';
-import { getOrderId, isOrderActive, isOrderLong } from '@shared/utils';
+import { getKlineClose, getOrderId, isOrderActive, isOrderLong } from '@shared/utils';
 import { useEffect, useRef } from 'react';
 
 export const usePriceUpdates = () => {
@@ -11,22 +10,22 @@ export const usePriceUpdates = () => {
   const expireOrders = useTradingStore((state) => state.expireOrders);
   const recordWalletPerformance = useTradingStore((state) => state.recordWalletPerformance);
   
-  const lastCandleTimeRef = useRef<number | null>(null);
+  const lastKlineTimeRef = useRef<number | null>(null);
   const previousPriceRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!isSimulatorActive || !chartData?.candles.length) return;
+    if (!isSimulatorActive || !chartData?.klines.length) return;
 
-    const lastCandle = chartData.candles[chartData.candles.length - 1];
-    if (!lastCandle) return;
+    const lastKline = chartData.klines[chartData.klines.length - 1];
+    if (!lastKline) return;
 
-    const currentPrice = getKlineClose(lastCandle);
+    const currentPrice = getKlineClose(lastKline);
     const previousPrice = previousPriceRef.current;
-    const candleTime = lastCandle.openTime;
+    const klineTime = lastKline.openTime;
 
-    const candleChanged = lastCandleTimeRef.current !== null && lastCandleTimeRef.current !== candleTime;
+    const klineChanged = lastKlineTimeRef.current !== null && lastKlineTimeRef.current !== klineTime;
     
-    if (candleChanged) {
+    if (klineChanged) {
       const currentState = useTradingStore.getState();
       const { wallets } = currentState;
       
@@ -37,7 +36,7 @@ export const usePriceUpdates = () => {
       expireOrders();
     }
     
-    lastCandleTimeRef.current = candleTime;
+    lastKlineTimeRef.current = klineTime;
     previousPriceRef.current = currentPrice;
 
     if (previousPrice === null) return;

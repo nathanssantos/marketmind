@@ -1,4 +1,4 @@
-import type { Kline, TradingSetup, SetupDirection } from '@shared/types';
+import type { Kline, SetupDirection, TradingSetup } from '@shared/types';
 
 export interface SetupDetectorConfig {
   enabled: boolean;
@@ -19,14 +19,14 @@ export abstract class BaseSetupDetector {
   }
 
   abstract detect(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
   ): SetupDetectorResult;
 
   protected createSetup(
     type: TradingSetup['type'],
     direction: SetupDirection,
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
     entryPrice: number,
     stopLoss: number,
@@ -36,9 +36,9 @@ export abstract class BaseSetupDetector {
     indicatorConfluence: number,
     setupData: Record<string, unknown>,
   ): TradingSetup {
-    const current = candles[currentIndex];
+    const current = klines[currentIndex];
     if (!current) {
-      throw new Error('Invalid current candle index');
+      throw new Error('Invalid current kline index');
     }
 
     const riskRewardRatio = this.calculateRR(entryPrice, stopLoss, takeProfit);
@@ -47,7 +47,7 @@ export abstract class BaseSetupDetector {
       id: `${type}-${currentIndex}-${Date.now()}`,
       type,
       direction,
-      timestamp: current.timestamp,
+      openTime: current.openTime,
       entryPrice,
       stopLoss,
       takeProfit,
@@ -55,7 +55,7 @@ export abstract class BaseSetupDetector {
       confidence,
       volumeConfirmation,
       indicatorConfluence,
-      candleIndex: currentIndex,
+      klineIndex: currentIndex,
       setupData,
       visible: true,
       source: 'algorithm',

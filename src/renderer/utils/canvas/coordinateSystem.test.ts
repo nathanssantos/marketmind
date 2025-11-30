@@ -1,31 +1,31 @@
+import type { Kline, Viewport } from '@shared/types';
 import { describe, expect, it } from 'vitest';
 import {
-  calculateBounds,
-  priceToY,
-  yToPrice,
-  volumeToHeight,
-  indexToX,
-  xToIndex,
-  clampViewport,
-  type Bounds,
-  type Dimensions,
+    calculateBounds,
+    clampViewport,
+    indexToX,
+    priceToY,
+    volumeToHeight,
+    xToIndex,
+    yToPrice,
+    type Bounds,
+    type Dimensions,
 } from './coordinateSystem';
-import type { Kline, Viewport } from '@shared/types';
 
 const createViewport = (start: number, end: number): Viewport => ({
   start,
   end,
-  candleWidth: 8,
-  candleSpacing: 2,
+  klineWidth: 8,
+  klineSpacing: 2,
 });
 
 describe('coordinateSystem', () => {
-  const mockCandles: Kline[] = [
-    { timestamp: 1000, open: 100, high: 110, low: 95, close: 105, volume: 1000 },
-    { timestamp: 2000, open: 105, high: 115, low: 100, close: 110, volume: 1500 },
-    { timestamp: 3000, open: 110, high: 120, low: 105, close: 115, volume: 2000 },
-    { timestamp: 4000, open: 115, high: 125, low: 110, close: 120, volume: 1800 },
-    { timestamp: 5000, open: 120, high: 130, low: 115, close: 125, volume: 1200 },
+  const mockKlines: Kline[] = [
+    { openTime: 1000, closeTime: 2000, open: '100', high: '110', low: '95', close: '105', volume: '1000', quoteVolume: '105000', trades: 100, takerBuyBaseVolume: '500', takerBuyQuoteVolume: '52500' },
+    { openTime: 2000, closeTime: 3000, open: '105', high: '115', low: '100', close: '110', volume: '1500', quoteVolume: '165000', trades: 150, takerBuyBaseVolume: '750', takerBuyQuoteVolume: '82500' },
+    { openTime: 3000, closeTime: 4000, open: '110', high: '120', low: '105', close: '115', volume: '2000', quoteVolume: '230000', trades: 200, takerBuyBaseVolume: '1000', takerBuyQuoteVolume: '115000' },
+    { openTime: 4000, closeTime: 5000, open: '115', high: '125', low: '110', close: '120', volume: '1800', quoteVolume: '216000', trades: 180, takerBuyBaseVolume: '900', takerBuyQuoteVolume: '108000' },
+    { openTime: 5000, closeTime: 6000, open: '120', high: '130', low: '115', close: '125', volume: '1200', quoteVolume: '150000', trades: 120, takerBuyBaseVolume: '600', takerBuyQuoteVolume: '75000' },
   ];
 
   const mockDimensions: Dimensions = {
@@ -37,8 +37,8 @@ describe('coordinateSystem', () => {
   };
 
   describe('calculateBounds', () => {
-    it('should calculate bounds correctly for all visible candles', () => {
-      const bounds = calculateBounds(mockCandles, createViewport(0, 5));
+    it('should calculate bounds correctly for all visible klines', () => {
+      const bounds = calculateBounds(mockKlines, createViewport(0, 5));
 
       expect(bounds.minPrice).toBe(95);
       expect(bounds.maxPrice).toBe(130);
@@ -47,20 +47,20 @@ describe('coordinateSystem', () => {
     });
 
     it('should handle partial viewport', () => {
-      const bounds = calculateBounds(mockCandles, createViewport(1, 3));
+      const bounds = calculateBounds(mockKlines, createViewport(1, 3));
 
       expect(bounds.minPrice).toBe(100);
       expect(bounds.maxPrice).toBe(120);
     });
 
-    it('should return zeros for empty visible candles', () => {
-      const bounds = calculateBounds(mockCandles, createViewport(10, 20));
+    it('should return zeros for empty visible klines', () => {
+      const bounds = calculateBounds(mockKlines, createViewport(10, 20));
 
       expect(bounds.minPrice).toBe(0);
       expect(bounds.maxPrice).toBe(0);
     });
 
-    it('should handle empty candles array', () => {
+    it('should handle empty klines array', () => {
       const bounds = calculateBounds([], createViewport(0, 5));
 
       expect(bounds.minPrice).toBe(0);
@@ -162,14 +162,14 @@ describe('coordinateSystem', () => {
   });
 
   describe('clampViewport', () => {
-    it('should clamp viewport within candle bounds', () => {
+    it('should clamp viewport within kline bounds', () => {
       const clamped = clampViewport(createViewport(-10, 100), 50, 10);
 
       expect(clamped.start).toBeGreaterThanOrEqual(0);
       expect(clamped.end).toBeLessThanOrEqual(50);
     });
 
-    it('should enforce minimum visible candles', () => {
+    it('should enforce minimum visible klines', () => {
       const clamped = clampViewport(createViewport(10, 12), 50, 10);
 
       expect(clamped.end - clamped.start).toBeGreaterThanOrEqual(10);
@@ -181,7 +181,7 @@ describe('coordinateSystem', () => {
       expect(clamped.start).toBe(0);
     });
 
-    it('should handle viewport ending beyond candles', () => {
+    it('should handle viewport ending beyond klines', () => {
       const clamped = clampViewport(createViewport(40, 60), 50, 10);
 
       expect(clamped.end).toBe(50);

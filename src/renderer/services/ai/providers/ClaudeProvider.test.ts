@@ -50,8 +50,8 @@ describe('ClaudeProvider', () => {
         {
           id: '1',
           role: 'user',
-          content: 'What is a hammer candlestick?',
-          timestamp: Date.now(),
+          content: 'What is a hammer kline?',
+          openTime: Date.now(),
         },
       ];
 
@@ -81,7 +81,7 @@ describe('ClaudeProvider', () => {
         messages: [
           {
             role: 'user',
-            content: 'What is a hammer candlestick?',
+            content: 'What is a hammer kline?',
           },
         ],
         system: expect.any(String),
@@ -94,19 +94,19 @@ describe('ClaudeProvider', () => {
           id: '1',
           role: 'user',
           content: 'What is MACD?',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
         {
           id: '2',
           role: 'assistant',
           content: 'MACD is a trend-following momentum indicator...',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
         {
           id: '3',
           role: 'user',
           content: 'How do I interpret it?',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -144,7 +144,7 @@ describe('ClaudeProvider', () => {
           id: '1',
           role: 'user',
           content: 'Analyze this pattern',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -195,7 +195,7 @@ describe('ClaudeProvider', () => {
           id: '1',
           role: 'user',
           content: 'Compare these patterns',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -255,7 +255,7 @@ describe('ClaudeProvider', () => {
           id: '1',
           role: 'user',
           content: 'Hello',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -287,7 +287,7 @@ describe('ClaudeProvider', () => {
           id: '1',
           role: 'user',
           content: 'Hello',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -310,7 +310,7 @@ describe('ClaudeProvider', () => {
           id: '1',
           role: 'user',
           content: 'Hello',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -331,7 +331,7 @@ describe('ClaudeProvider', () => {
           id: '1',
           role: 'user',
           content: 'Hello',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -351,14 +351,19 @@ describe('ClaudeProvider', () => {
     it('should analyze chart successfully', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,chartdata123',
-        candles: [
+        klines: [
           {
-            timestamp: Date.now(),
-            open: 100,
-            high: 110,
-            low: 95,
-            close: 105,
-            volume: 1000,
+            openTime: Date.now(),
+            closeTime: Date.now() + 3600000,
+            open: '100',
+            high: '110',
+            low: '95',
+            close: '105',
+            volume: '1000',
+            quoteVolume: '105000',
+            trades: 100,
+            takerBuyBaseVolume: '500',
+            takerBuyQuoteVolume: '52500',
           },
         ],
       };
@@ -390,7 +395,7 @@ describe('ClaudeProvider', () => {
     it('should include context in analysis', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz',
-        candles: [],
+        klines: [],
         context: 'Ethereum 4-hour chart showing potential reversal',
       };
 
@@ -418,17 +423,22 @@ describe('ClaudeProvider', () => {
       expect(textContent?.text).toContain('Ethereum 4-hour chart showing potential reversal');
     });
 
-    it('should include latest candle data', async () => {
+    it('should include latest kline data', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz',
-        candles: [
+        klines: [
           {
-            timestamp: Date.now(),
-            open: 3000,
-            high: 3100,
-            low: 2950,
-            close: 3050,
-            volume: 987654,
+            openTime: Date.now(),
+            closeTime: Date.now() + 14400000,
+            open: '3000',
+            high: '3100',
+            low: '2950',
+            close: '3050',
+            volume: '987654',
+            quoteVolume: '3012342700',
+            trades: 9876,
+            takerBuyBaseVolume: '493827',
+            takerBuyQuoteVolume: '1506171350',
           },
         ],
       };
@@ -461,7 +471,7 @@ describe('ClaudeProvider', () => {
     it('should include news items', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz',
-        candles: [],
+        klines: [],
         news: [
           {
             id: '1',
@@ -501,7 +511,7 @@ describe('ClaudeProvider', () => {
     it('should parse BUY signal from response', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz',
-        candles: [],
+        klines: [],
       };
 
       mockCreate.mockResolvedValue({
@@ -531,7 +541,7 @@ describe('ClaudeProvider', () => {
     it('should parse STRONG_SELL signal', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz',
-        candles: [],
+        klines: [],
       };
 
       mockCreate.mockResolvedValue({
@@ -556,7 +566,7 @@ describe('ClaudeProvider', () => {
     it('should parse HOLD signal', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz',
-        candles: [],
+        klines: [],
       };
 
       mockCreate.mockResolvedValue({
@@ -581,7 +591,7 @@ describe('ClaudeProvider', () => {
     it('should handle response without signal', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz',
-        candles: [],
+        klines: [],
       };
 
       mockCreate.mockResolvedValue({
@@ -607,7 +617,7 @@ describe('ClaudeProvider', () => {
     it('should handle API errors during chart analysis', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz',
-        candles: [],
+        klines: [],
       };
 
       mockCreate.mockRejectedValue(new Error('Image too large'));
@@ -624,7 +634,7 @@ describe('ClaudeProvider', () => {
     it('should use custom configuration for chart analysis', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz',
-        candles: [],
+        klines: [],
       };
 
       mockCreate.mockResolvedValue({
@@ -652,7 +662,7 @@ describe('ClaudeProvider', () => {
     it('should convert image URLs to base64 format', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,rawImageData',
-        candles: [],
+        klines: [],
       };
 
       mockCreate.mockResolvedValue({

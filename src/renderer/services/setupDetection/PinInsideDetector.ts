@@ -1,10 +1,10 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import type { Kline } from '@shared/types';
-import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '@shared/utils';
 import {
-  BaseSetupDetector,
-  type SetupDetectorConfig,
-  type SetupDetectorResult,
+    BaseSetupDetector,
+    type SetupDetectorConfig,
+    type SetupDetectorResult,
 } from './BaseSetupDetector';
 
 const VOLUME_LOOKBACK = 20;
@@ -59,14 +59,14 @@ export class PinInsideDetector extends BaseSetupDetector {
     return this.pinInsideConfig;
   }
 
-  detect(candles: Kline[], currentIndex: number): SetupDetectorResult {
+  detect(klines: Kline[], currentIndex: number): SetupDetectorResult {
     const minIndex = this.pinInsideConfig.lookbackPeriod + VOLUME_LOOKBACK;
     
     if (!this.config.enabled || currentIndex < minIndex || currentIndex < MIN_INDEX_OFFSET) {
       return { setup: null, confidence: 0 };
     }
 
-    const comboSetup = this.detectPinInsideCombo(candles, currentIndex);
+    const comboSetup = this.detectPinInsideCombo(klines, currentIndex);
     if (!comboSetup) {
       return { setup: null, confidence: 0 };
     }
@@ -74,62 +74,62 @@ export class PinInsideDetector extends BaseSetupDetector {
     return comboSetup;
   }
 
-  private detectPinInsideCombo(candles: Kline[], currentIndex: number): SetupDetectorResult | null {
-    const pinBarCandle = candles[currentIndex - 1];
-    const insideBarCandle = candles[currentIndex];
+  private detectPinInsideCombo(klines: Kline[], currentIndex: number): SetupDetectorResult | null {
+    const pinBarKline = klines[currentIndex - 1];
+    const insideBarKline = klines[currentIndex];
 
-    if (!pinBarCandle || !insideBarCandle) {
+    if (!pinBarKline || !insideBarKline) {
       return null;
     }
 
-    const pinBarAnalysis = this.isPinBar(pinBarCandle);
+    const pinBarAnalysis = this.isPinBar(pinBarKline);
     if (!pinBarAnalysis.isPinBar) {
       return null;
     }
 
-    const isInsideBar = this.isInsideBar(pinBarCandle, insideBarCandle);
+    const isInsideBar = this.isInsideBar(pinBarKline, insideBarKline);
     if (!isInsideBar) {
       return null;
     }
 
     const supportResistanceLevels = this.findNearbySupportResistance(
-      candles,
+      klines,
       currentIndex - 1,
-      pinBarCandle
+      pinBarKline
     );
 
     if (!supportResistanceLevels.nearLevel) {
       return null;
     }
 
-    const volumeConfirmation = this.checkVolumeConfirmation(candles, currentIndex - 1);
+    const volumeConfirmation = this.checkVolumeConfirmation(klines, currentIndex - 1);
 
     if (pinBarAnalysis.type === 'bullish') {
       return this.createBullishSetup(
-        candles,
+        klines,
         currentIndex,
-        pinBarCandle,
-        insideBarCandle,
+        pinBarKline,
+        insideBarKline,
         supportResistanceLevels,
         volumeConfirmation
       );
     } else {
       return this.createBearishSetup(
-        candles,
+        klines,
         currentIndex,
-        pinBarCandle,
-        insideBarCandle,
+        pinBarKline,
+        insideBarKline,
         supportResistanceLevels,
         volumeConfirmation
       );
     }
   }
 
-  private isPinBar(candle: Kline): { isPinBar: boolean; type: 'bullish' | 'bearish' | null } {
-    const body = Math.abs(getKlineClose(candle) - getKlineOpen(candle));
-    const wickLow = Math.abs(getKlineLow(candle) - Math.min(getKlineOpen(candle), getKlineClose(candle)));
-    const wickHigh = Math.abs(getKlineHigh(candle) - Math.max(getKlineOpen(candle), getKlineClose(candle)));
-    const totalRange = getKlineHigh(candle) - getKlineLow(candle);
+  private isPinBar(kline: Kline): { isPinBar: boolean; type: 'bullish' | 'bearish' | null } {
+    const body = Math.abs(getKlineClose(kline) - getKlineOpen(kline));
+    const wickLow = Math.abs(getKlineLow(kline) - Math.min(getKlineOpen(kline), getKlineClose(kline)));
+    const wickHigh = Math.abs(getKlineHigh(kline) - Math.max(getKlineOpen(kline), getKlineClose(kline)));
+    const totalRange = getKlineHigh(kline) - getKlineLow(kline);
 
     if (totalRange === 0) {
       return { isPinBar: false, type: null };
@@ -149,28 +149,28 @@ export class PinInsideDetector extends BaseSetupDetector {
     return { isPinBar: false, type: null };
   }
 
-  private isInsideBar(motherCandle: Candle, insideCandle: Candle): boolean {
+  private isInsideBar(motherKline: Kline, insideKline: Kline): boolean {
     return (
-      insideCandle.high <= motherCandle.high &&
-      insideCandle.low >= motherCandle.low
+      insideKline.high <= motherKline.high &&
+      insideKline.low >= motherKline.low
     );
   }
 
   private findNearbySupportResistance(
-    candles: Kline[],
+    klines: Kline[],
     pinBarIndex: number,
-    pinBarCandle: Candle
+    pinBarKline: Kline
   ): { nearLevel: boolean; level: number | null } {
     const lookbackStart = Math.max(0, pinBarIndex - this.pinInsideConfig.lookbackPeriod);
-    const recentCandles = candles.slice(lookbackStart, pinBarIndex + 1);
+    const recentKlines = klines.slice(lookbackStart, pinBarIndex + 1);
     
-    const pivots = findPivotPoints(recentCandles, PIVOT_LOOKBACK);
+    const pivots = findPivotPoints(recentKlines, PIVOT_LOOKBACK);
     
-    const tolerance = pinBarCandle.close * (this.pinInsideConfig.srTolerance / PERCENT_DIVISOR);
+    const tolerance = getKlineClose(pinBarKline) * (this.pinInsideConfig.srTolerance / PERCENT_DIVISOR);
 
     for (const pivot of pivots) {
-      const isNearLow = Math.abs(pinBarCandle.low - pivot.price) < tolerance;
-      const isNearHigh = Math.abs(pinBarCandle.high - pivot.price) < tolerance;
+      const isNearLow = Math.abs(getKlineLow(pinBarKline) - pivot.price) < tolerance;
+      const isNearHigh = Math.abs(getKlineHigh(pinBarKline) - pivot.price) < tolerance;
 
       if (isNearLow || isNearHigh) {
         return { nearLevel: true, level: pivot.price };
@@ -180,28 +180,30 @@ export class PinInsideDetector extends BaseSetupDetector {
     return { nearLevel: false, level: null };
   }
 
-  private checkVolumeConfirmation(candles: Kline[], pinBarIndex: number): boolean {
+  private checkVolumeConfirmation(klines: Kline[], pinBarIndex: number): boolean {
     const lookbackStart = Math.max(0, pinBarIndex - VOLUME_LOOKBACK);
-    const recentCandles = candles.slice(lookbackStart, pinBarIndex);
+    const recentKlines = klines.slice(lookbackStart, pinBarIndex);
     
-    if (recentCandles.length === 0) return false;
+    if (recentKlines.length === 0) return false;
 
-    const avgVolume = recentCandles.reduce((sum, c) => sum + c.volume, 0) / recentCandles.length;
-    const pinBarVolume = candles[pinBarIndex]?.volume ?? 0;
+    const avgVolume = recentKlines.reduce((sum, c) => sum + getKlineVolume(c), 0) / recentKlines.length;
+    const pinBarKline = klines[pinBarIndex];
+    if (!pinBarKline) return false;
+    const pinBarVolume = getKlineVolume(pinBarKline);
 
     return pinBarVolume > avgVolume;
   }
 
   private createBullishSetup(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
-    pinBarCandle: Candle,
-    insideBarCandle: Candle,
+    pinBarKline: Kline,
+    insideBarKline: Kline,
     srLevels: { nearLevel: boolean; level: number | null },
     volumeConfirmation: boolean
   ): SetupDetectorResult | null {
-    const entry = insideBarCandle.high;
-    const stopLoss = pinBarCandle.low;
+    const entry = getKlineHigh(insideBarKline);
+    const stopLoss = getKlineLow(pinBarKline);
     const risk = entry - stopLoss;
 
     if (risk <= 0) return null;
@@ -209,7 +211,7 @@ export class PinInsideDetector extends BaseSetupDetector {
     const riskPercent = risk / entry;
     if (riskPercent < MIN_RISK_THRESHOLD) return null;
 
-    const resistance = this.findNearestResistance(candles, currentIndex, entry);
+    const resistance = this.findNearestResistance(klines, currentIndex, entry);
     const rrTarget = entry + risk * this.pinInsideConfig.targetMultiplier;
     const structuralTarget = resistance && resistance < rrTarget ? resistance * TARGET_BUFFER_LONG : rrTarget;
     const takeProfit = Math.max(structuralTarget, entry + risk * this.pinInsideConfig.targetMultiplier);
@@ -229,7 +231,7 @@ export class PinInsideDetector extends BaseSetupDetector {
     const setup = this.createSetup(
       'pin-inside-combo',
       'LONG',
-      candles,
+      klines,
       currentIndex,
       entry,
       stopLoss,
@@ -241,8 +243,8 @@ export class PinInsideDetector extends BaseSetupDetector {
         pinBarIndex: currentIndex - 1,
         insideBarIndex: currentIndex,
         srLevel: srLevels.level,
-        pinBarLow: pinBarCandle.low,
-        insideBarHigh: insideBarCandle.high,
+        pinBarLow: pinBarKline.low,
+        insideBarHigh: insideBarKline.high,
       },
     );
 
@@ -250,15 +252,15 @@ export class PinInsideDetector extends BaseSetupDetector {
   }
 
   private createBearishSetup(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
-    pinBarCandle: Candle,
-    insideBarCandle: Candle,
+    pinBarKline: Kline,
+    insideBarKline: Kline,
     srLevels: { nearLevel: boolean; level: number | null },
     volumeConfirmation: boolean
   ): SetupDetectorResult | null {
-    const entry = insideBarCandle.low;
-    const stopLoss = pinBarCandle.high;
+    const entry = getKlineLow(insideBarKline);
+    const stopLoss = getKlineHigh(pinBarKline);
     const risk = stopLoss - entry;
 
     if (risk <= 0) return null;
@@ -266,7 +268,7 @@ export class PinInsideDetector extends BaseSetupDetector {
     const riskPercent = risk / entry;
     if (riskPercent < MIN_RISK_THRESHOLD) return null;
 
-    const support = this.findNearestSupport(candles, currentIndex, entry);
+    const support = this.findNearestSupport(klines, currentIndex, entry);
     const rrTarget = entry - risk * this.pinInsideConfig.targetMultiplier;
     const structuralTarget = support && support > rrTarget ? support * TARGET_BUFFER_SHORT : rrTarget;
     const takeProfit = Math.min(structuralTarget, entry - risk * this.pinInsideConfig.targetMultiplier);
@@ -286,7 +288,7 @@ export class PinInsideDetector extends BaseSetupDetector {
     const setup = this.createSetup(
       'pin-inside-combo',
       'SHORT',
-      candles,
+      klines,
       currentIndex,
       entry,
       stopLoss,
@@ -298,8 +300,8 @@ export class PinInsideDetector extends BaseSetupDetector {
         pinBarIndex: currentIndex - 1,
         insideBarIndex: currentIndex,
         srLevel: srLevels.level,
-        pinBarHigh: pinBarCandle.high,
-        insideBarLow: insideBarCandle.low,
+        pinBarHigh: pinBarKline.high,
+        insideBarLow: insideBarKline.low,
       },
     );
 
@@ -307,12 +309,12 @@ export class PinInsideDetector extends BaseSetupDetector {
   }
 
   private findNearestResistance(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
     currentPrice: number
   ): number | null {
     const lookback = Math.min(this.pinInsideConfig.lookbackPeriod, currentIndex);
-    const pivots = findPivotPoints(candles.slice(Math.max(0, currentIndex - lookback), currentIndex + 1), PIVOT_LOOKBACK);
+    const pivots = findPivotPoints(klines.slice(Math.max(0, currentIndex - lookback), currentIndex + 1), PIVOT_LOOKBACK);
     
     const resistances = pivots
       .filter((p) => p.type === 'high' && p.price > currentPrice)
@@ -323,12 +325,12 @@ export class PinInsideDetector extends BaseSetupDetector {
   }
 
   private findNearestSupport(
-    candles: Kline[],
+    klines: Kline[],
     currentIndex: number,
     currentPrice: number
   ): number | null {
     const lookback = Math.min(this.pinInsideConfig.lookbackPeriod, currentIndex);
-    const pivots = findPivotPoints(candles.slice(Math.max(0, currentIndex - lookback), currentIndex + 1), PIVOT_LOOKBACK);
+    const pivots = findPivotPoints(klines.slice(Math.max(0, currentIndex - lookback), currentIndex + 1), PIVOT_LOOKBACK);
     
     const supports = pivots
       .filter((p) => p.type === 'low' && p.price < currentPrice)

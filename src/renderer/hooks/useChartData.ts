@@ -5,10 +5,10 @@ import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRe
 import { useChartContext } from '../context/ChartContext';
 
 interface UseChartDataParams {
-  candles: Kline[];
+  klines: Kline[];
   symbol: string;
   timeframe: Timeframe;
-  chartType: 'candlestick' | 'line';
+  chartType: 'kline' | 'line';
   showVolume: boolean;
   movingAverages: MovingAverageConfig[];
   news?: NewsArticle[] | undefined;
@@ -21,9 +21,9 @@ export const useChartData = (params: UseChartDataParams) => {
 
   useEffect(() => {
     const currentParams = JSON.stringify({
-      candlesLength: params.candles.length,
-      firstCandle: params.candles[0]?.openTime,
-      lastCandle: params.candles[params.candles.length - 1]?.openTime,
+      klinesLength: params.klines.length,
+      firstKline: params.klines[0]?.openTime,
+      lastKline: params.klines[params.klines.length - 1]?.openTime,
       symbol: params.symbol,
       timeframe: params.timeframe,
       chartType: params.chartType,

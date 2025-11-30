@@ -30,7 +30,7 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
     <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="xl">
       <Dialog.Backdrop />
       <Dialog.Positioner>
-        <Dialog.Content maxH="90vh" maxW="1200px">
+        <Dialog.Content maxH="90vh" maxW="1400px">
           <CloseButton
             position="absolute"
             top={4}

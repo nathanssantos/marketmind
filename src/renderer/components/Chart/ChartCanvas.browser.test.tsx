@@ -1,26 +1,26 @@
-import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen } from '@shared/utils';
 
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import type { Kline, Viewport } from '../../../shared/types';
 import { CanvasManager } from '../../utils/canvas/CanvasManager';
 import { calculateBounds, priceToY, yToPrice } from '../../utils/canvas/coordinateSystem';
-import type { Kline, drawLine, drawRect, drawText } from '../../utils/canvas/drawingUtils';
+import { clearCanvas, drawKline, drawLine, drawRect, drawText } from '../../utils/canvas/drawingUtils';
 
 describe('Canvas Manager - Real Browser Tests', () => {
     let canvas: HTMLCanvasElement;
     let manager: CanvasManager;
 
-    const mockCandles: Kline[] = [
-        { timestamp: 1700000000000, open: 40000, high: 42000, low: 39000, close: 41000, volume: 1000 },
-        { timestamp: 1700003600000, open: 41000, high: 43000, low: 40000, close: 42000, volume: 1200 },
-        { timestamp: 1700007200000, open: 42000, high: 42500, low: 41000, close: 41500, volume: 900 },
+    const mockKlines: Kline[] = [
+        { openTime: 1700000000000, closeTime: 1700000000000, open: '40000', high: '42000', low: '39000', close: '41000', volume: '1000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+        { openTime: 1700003600000, closeTime: 1700003600000, open: '41000', high: '43000', low: '40000', close: '42000', volume: '1200', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+        { openTime: 1700007200000, closeTime: 1700007200000, open: '42000', high: '42500', low: '41000', close: '41500', volume: '900', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
     ];
 
     const mockViewport: Viewport = {
         start: 0,
         end: 3,
-        candleWidth: 10,
-        candleSpacing: 2,
+        klineWidth: 10,
+        klineSpacing: 2,
     };
 
     beforeEach(() => {
@@ -30,7 +30,7 @@ describe('Canvas Manager - Real Browser Tests', () => {
         document.body.appendChild(canvas);
 
         manager = new CanvasManager(canvas, mockViewport, 40);
-        manager.setCandles(mockCandles);
+        manager.setKlines(mockKlines);
     });
 
     afterEach(() => {
@@ -58,8 +58,8 @@ describe('Canvas Manager - Real Browser Tests', () => {
         expect(viewport).toBeDefined();
         expect(viewport.start).toBe(0);
         expect(viewport.end).toBe(3);
-        expect(viewport.candleWidth).toBeGreaterThan(0);
-        expect(viewport.candleSpacing).toBe(2);
+        expect(viewport.klineWidth).toBeGreaterThan(0);
+        expect(viewport.klineSpacing).toBe(2);
     });
 
     test('Price to Y coordinate conversion works correctly', () => {
@@ -81,11 +81,11 @@ describe('Canvas Manager - Real Browser Tests', () => {
         expect(typeof x).toBe('number');
     });
 
-    test('Visible candles are correctly filtered', () => {
-        const visible = manager.getVisibleCandles();
+    test('Visible klines are correctly filtered', () => {
+        const visible = manager.getVisibleKlines();
         expect(Array.isArray(visible)).toBe(true);
         expect(visible.length).toBeGreaterThanOrEqual(0);
-        expect(visible.length).toBeLessThanOrEqual(mockCandles.length);
+        expect(visible.length).toBeLessThanOrEqual(mockKlines.length);
     });
 
     test('Canvas can be resized correctly', () => {
@@ -100,8 +100,8 @@ describe('Canvas Manager - Real Browser Tests', () => {
         const newViewport: Viewport = {
             start: 1,
             end: 2,
-            candleWidth: 15,
-            candleSpacing: 3,
+            klineWidth: 15,
+            klineSpacing: 3,
         };
 
         manager.setViewport(newViewport);
@@ -109,7 +109,7 @@ describe('Canvas Manager - Real Browser Tests', () => {
 
         expect(viewport.start).toBeGreaterThanOrEqual(0);
         expect(viewport.end).toBeGreaterThan(viewport.start);
-        expect(viewport.candleWidth).toBeGreaterThan(0);
+        expect(viewport.klineWidth).toBeGreaterThan(0);
     });
 });
 
@@ -170,25 +170,25 @@ describe('Canvas Drawing Functions - Real Browser Tests', () => {
         expect(metrics.width).toBeGreaterThan(0);
     });
 
-    test('drawCandle renders bullish candle correctly', () => {
+    test('drawKline renders bullish kline correctly', () => {
         const openY = 400;
         const closeY = 300;
         const highY = 250;
         const lowY = 450;
 
         expect(() => {
-            drawCandle(ctx, 100, openY, closeY, highY, lowY, 10, 1, '#26a69a', '#ef5350', false);
+            drawKline(ctx, 100, openY, closeY, highY, lowY, 10, 1, '#26a69a', '#ef5350', false);
         }).not.toThrow();
     });
 
-    test('drawCandle renders bearish candle correctly', () => {
+    test('drawKline renders bearish kline correctly', () => {
         const openY = 300;
         const closeY = 400;
         const highY = 250;
         const lowY = 450;
 
         expect(() => {
-            drawCandle(ctx, 200, openY, closeY, highY, lowY, 10, 1, '#26a69a', '#ef5350', false);
+            drawKline(ctx, 200, openY, closeY, highY, lowY, 10, 1, '#26a69a', '#ef5350', false);
         }).not.toThrow();
     });
 
@@ -209,21 +209,21 @@ describe('Canvas Drawing Functions - Real Browser Tests', () => {
 });
 
 describe('Coordinate System Functions - Real Browser Tests', () => {
-    const mockCandles: Kline[] = [
-        { timestamp: 1700000000000, open: 40000, high: 42000, low: 39000, close: 41000, volume: 1000 },
-        { timestamp: 1700003600000, open: 41000, high: 43000, low: 40000, close: 42000, volume: 1200 },
-        { timestamp: 1700007200000, open: 42000, high: 42500, low: 41000, close: 41500, volume: 900 },
+    const mockKlines: Kline[] = [
+        { openTime: 1700000000000, closeTime: 1700000000000, open: '40000', high: '42000', low: '39000', close: '41000', volume: '1000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+        { openTime: 1700003600000, closeTime: 1700003600000, open: '41000', high: '43000', low: '40000', close: '42000', volume: '1200', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+        { openTime: 1700007200000, closeTime: 1700007200000, open: '42000', high: '42500', low: '41000', close: '41500', volume: '900', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
     ];
 
     const mockViewport: Viewport = {
         start: 0,
         end: 3,
-        candleWidth: 10,
-        candleSpacing: 2,
+        klineWidth: 10,
+        klineSpacing: 2,
     };
 
     test('calculateBounds computes correct price bounds', () => {
-        const bounds = calculateBounds(mockCandles, mockViewport);
+        const bounds = calculateBounds(mockKlines, mockViewport);
 
         expect(bounds).toBeDefined();
         expect(bounds.minPrice).toBe(39000);
@@ -232,7 +232,7 @@ describe('Coordinate System Functions - Real Browser Tests', () => {
     });
 
     test('priceToY converts price to Y coordinate', () => {
-        const bounds = calculateBounds(mockCandles, mockViewport);
+        const bounds = calculateBounds(mockKlines, mockViewport);
         const dimensions = { width: 800, height: 600, chartHeight: 600, volumeHeight: 0, chartWidth: 800 };
         const paddingTop = 40;
         const paddingBottom = 40;
@@ -245,7 +245,7 @@ describe('Coordinate System Functions - Real Browser Tests', () => {
     });
 
     test('yToPrice converts Y coordinate back to price', () => {
-        const bounds = calculateBounds(mockCandles, mockViewport);
+        const bounds = calculateBounds(mockKlines, mockViewport);
         const dimensions = { width: 800, height: 600, chartHeight: 600, volumeHeight: 0, chartWidth: 800 };
         const paddingTop = 40;
         const paddingBottom = 40;
@@ -258,7 +258,7 @@ describe('Coordinate System Functions - Real Browser Tests', () => {
     });
 
     test('Coordinate conversions are reversible', () => {
-        const bounds = calculateBounds(mockCandles, mockViewport);
+        const bounds = calculateBounds(mockKlines, mockViewport);
         const dimensions = { width: 800, height: 600, chartHeight: 600, volumeHeight: 0, chartWidth: 800 };
         const paddingTop = 40;
         const paddingBottom = 40;
@@ -361,8 +361,8 @@ describe('Canvas Advanced Features - Real Browser Tests', () => {
         }).not.toThrow();
     });
 
-    test('Canvas can render multiple candlesticks', () => {
-        const candlesticks = [
+    test('Canvas can render multiple klines', () => {
+        const klines = [
             { x: 100, open: 400, close: 300, high: 250, low: 450 },
             { x: 150, open: 300, close: 350, high: 280, low: 380 },
             { x: 200, open: 350, close: 280, high: 260, low: 400 },
@@ -370,14 +370,14 @@ describe('Canvas Advanced Features - Real Browser Tests', () => {
         ];
 
         expect(() => {
-            candlesticks.forEach(candle => {
-                drawCandle(
+            klines.forEach(kline => {
+                drawKline(
                     ctx,
-                    candle.x,
-                    getKlineOpen(candle),
-                    getKlineClose(candle),
-                    getKlineHigh(candle),
-                    getKlineLow(candle),
+                    kline.x,
+                    getKlineOpen(kline),
+                    getKlineClose(kline),
+                    getKlineHigh(kline),
+                    getKlineLow(kline),
                     10,
                     1,
                     '#26a69a',

@@ -125,7 +125,7 @@ Migrating from legacy Order structure to Binance-aligned types while maintaining
     - ✅ Fixed order.id access with `getOrderId()`
 
 16. **useVolumeRenderer.ts** - ✅ COMPLETED:
-    - ✅ Removed unused `candle` parameter
+    - ✅ Removed unused `kline` parameter
 
 ---
 

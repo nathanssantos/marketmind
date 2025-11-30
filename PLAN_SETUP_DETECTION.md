@@ -98,7 +98,7 @@ export interface TradingSetup {
   indicatorConfluence: number; // quantos indicadores confirmam
 
   // Context
-  candleIndex: number;
+  klineIndex: number;
   setupData: SetupSpecificData;
 
   // Metadata
@@ -111,7 +111,7 @@ export interface TradingSetup {
 ### 2. Fluxo de Dados
 
 ```
-[Candles]
+[Klines]
     ↓
 [Technical Indicators] (MACD, VWAP, ATR, Volume, ZigZag)
     ↓
@@ -146,14 +146,14 @@ export interface TradingSetup {
 private async getAIDecision(chartData: ChartData): Promise<AITradingDecision> {
   // NOVO: Detectar setups algoritmicamente
   const detectedSetups = await setupDetectionService.detectSetups(
-    chartData.candles,
+    chartData.klines,
     setupConfigStore.getState().config
   );
 
   // Incluir setups no prompt AI
   const prompt = this.buildTradingPrompt(
     chartData,
-    optimizedCandles,
+    optimizedKlines,
     detectedSetups // NOVO PARÂMETRO
   );
 
@@ -174,16 +174,16 @@ private async getAIDecision(chartData: ChartData): Promise<AITradingDecision> {
 **Lógica de Detecção:**
 ```typescript
 // Calcular EMA9
-const ema9 = calculateEMA(candles, 9);
+const ema9 = calculateEMA(klines, 9);
 
 // LONG: EMA9 vira para cima
 if (ema9[i-1] < ema9[i-2] && ema9[i] > ema9[i-1]) {
   // Confirmações:
   // - Volume > média 20 períodos
-  // - Candle fechou acima da EMA9
+  // - Kline fechou acima da EMA9
 
-  const entry = candles[i].close;
-  const atr = calculateATR(candles, 12);
+  const entry = klines[i].close;
+  const atr = calculateATR(klines, 12);
   const stopLoss = entry - (atr[i] * 2);
   const takeProfit = entry + (atr[i] * 4);
   // R:R = 1:2
@@ -207,7 +207,7 @@ if (ema9[i-1] < ema9[i-2] && ema9[i] > ema9[i-1]) {
 **Lógica de Detecção:**
 ```typescript
 // Identificar 3 pontos usando pivot points
-const pivots = findPivotPoints(candles, sensitivity);
+const pivots = findPivotPoints(klines, sensitivity);
 
 // LONG: P1 (lowest low) → P2 (resistance) → P3 (higher low > P1)
 // Entrada quando rompe P2
@@ -248,30 +248,30 @@ for (let i = 0; i < pivots.length - 2; i++) {
 // 1. Preço rompe resistência
 // 2. Volume BAIXO no rompimento (< média)
 // 3. RSI divergence (preço new high, RSI lower high)
-// 4. Reversão rápida (dentro de 3 candles)
+// 4. Reversão rápida (dentro de 3 klines)
 
-const resistance = detectResistance(candles, pivots);
-const rsi = calculateRSI(candles, 14);
+const resistance = detectResistance(klines, pivots);
+const rsi = calculateRSI(klines, 14);
 const volumeAvg = calculateSMA(volumes, 20);
 
-for (let i = 50; i < candles.length; i++) {
+for (let i = 50; i < klines.length; i++) {
   // Rompimento de resistência
-  if (candles[i].high > resistance.price) {
+  if (klines[i].high > resistance.price) {
     // Volume baixo?
-    if (candles[i].volume < volumeAvg[i]) {
+    if (klines[i].volume < volumeAvg[i]) {
       // RSI divergence?
-      const priceHighs = findLocalHighs(candles.slice(i-10, i+1));
+      const priceHighs = findLocalHighs(klines.slice(i-10, i+1));
       const rsiHighs = findLocalHighs(rsi.slice(i-10, i+1));
 
       if (priceHighs[1] > priceHighs[0] && rsiHighs[1] < rsiHighs[0]) {
         // Reversão confirmada?
-        if (candles[i+1].close < resistance.price ||
-            candles[i+2].close < resistance.price ||
-            candles[i+3].close < resistance.price) {
+        if (klines[i+1].close < resistance.price ||
+            klines[i+2].close < resistance.price ||
+            klines[i+3].close < resistance.price) {
 
           // TRAP CONFIRMADO - Setup SHORT
-          const entry = candles[i+3].close;
-          const stopLoss = candles[i].high * 1.002;
+          const entry = klines[i+3].close;
+          const stopLoss = klines[i].high * 1.002;
           const takeProfit = resistance.price - (stopLoss - entry);
           // R:R >= 1:1
         }
@@ -286,7 +286,7 @@ for (let i = 50; i < candles.length; i++) {
 **Configurações:**
 - Volume Threshold: 1.0 (média)
 - RSI Period: 14
-- Reversal Candles: 3
+- Reversal Klines: 3
 - Min R:R: 1.5
 
 ---
@@ -307,27 +307,27 @@ const supportResistance = [...detectSupport(), ...detectResistance()];
 
 for (const level of supportResistance) {
   // Breakout com volume
-  const breakoutCandle = findBreakout(candles, level, volumeAvg);
+  const breakoutKline = findBreakout(klines, level, volumeAvg);
 
-  if (breakoutCandle && breakoutCandle.volume > volumeAvg * 1.5) {
-    // Esperar reteste (5-15 candles após breakout)
-    const retestWindow = candles.slice(breakoutCandle.index + 1, breakoutCandle.index + 16);
+  if (breakoutKline && breakoutKline.volume > volumeAvg * 1.5) {
+    // Esperar reteste (5-15 klines após breakout)
+    const retestWindow = klines.slice(breakoutKline.index + 1, breakoutKline.index + 16);
 
     for (let j = 0; j < retestWindow.length; j++) {
-      const candle = retestWindow[j];
+      const kline = retestWindow[j];
 
       // Preço retestou o nível?
-      if (Math.abs(candle.low - level.price) / level.price < 0.005) { // 0.5%
+      if (Math.abs(kline.low - level.price) / level.price < 0.005) { // 0.5%
 
         // Rejeição? (pin bar, engulfing)
-        const isPinBar = isPinBarPattern(candle);
-        const isEngulfing = isEngulfingPattern(retestWindow[j-1], candle);
+        const isPinBar = isPinBarPattern(kline);
+        const isEngulfing = isEngulfingPattern(retestWindow[j-1], kline);
 
         if (isPinBar || isEngulfing) {
           // SETUP CONFIRMADO
-          const entry = candle.close;
+          const entry = kline.close;
           const stopLoss = level.price * 0.998; // 0.2% abaixo do nível
-          const prevRange = calculateRangeBeforeBreakout(candles, level);
+          const prevRange = calculateRangeBeforeBreakout(klines, level);
           const takeProfit = entry + prevRange;
           // R:R dinâmico baseado no range
         }
@@ -339,7 +339,7 @@ for (const level of supportResistance) {
 
 **Configurações:**
 - Volume Multiplier: 1.5x média
-- Retest Window: 5-15 candles
+- Retest Window: 5-15 klines
 - Retest Tolerance: 0.5%
 - Min R:R: 2.0
 
@@ -358,28 +358,28 @@ for (const level of supportResistance) {
 
 const supportResistance = [...detectSupport(), ...detectResistance()];
 
-for (let i = 1; i < candles.length; i++) {
-  const prevCandle = candles[i-1];
-  const currentCandle = candles[i];
+for (let i = 1; i < klines.length; i++) {
+  const prevKline = klines[i-1];
+  const currentKline = klines[i];
 
   // Pin bar?
-  const body = Math.abs(prevCandle.close - prevCandle.open);
-  const wickLow = Math.abs(prevCandle.low - Math.min(prevCandle.open, prevCandle.close));
-  const wickHigh = Math.abs(prevCandle.high - Math.max(prevCandle.open, prevCandle.close));
+  const body = Math.abs(prevKline.close - prevKline.open);
+  const wickLow = Math.abs(prevKline.low - Math.min(prevKline.open, prevKline.close));
+  const wickHigh = Math.abs(prevKline.high - Math.max(prevKline.open, prevKline.close));
 
   const isPinBar = (wickLow > body * 2) || (wickHigh > body * 2);
 
   // Inside bar?
   const isInsideBar = (
-    currentCandle.high <= prevCandle.high &&
-    currentCandle.low >= prevCandle.low
+    currentKline.high <= prevKline.high &&
+    currentKline.low >= prevKline.low
   );
 
   if (isPinBar && isInsideBar) {
     // Está em S/R?
     const nearSR = supportResistance.find(level =>
-      Math.abs(prevCandle.low - level.price) / level.price < 0.01 ||
-      Math.abs(prevCandle.high - level.price) / level.price < 0.01
+      Math.abs(prevKline.low - level.price) / level.price < 0.01 ||
+      Math.abs(prevKline.high - level.price) / level.price < 0.01
     );
 
     if (nearSR) {
@@ -390,8 +390,8 @@ for (let i = 1; i < candles.length; i++) {
       const isBullish = wickLow > body * 2;
 
       if (isBullish) {
-        const entry = currentCandle.high;
-        const stopLoss = prevCandle.low;
+        const entry = currentKline.high;
+        const stopLoss = prevKline.low;
         const risk = entry - stopLoss;
         const takeProfit = entry + (risk * 2);
         // R:R = 1:2
@@ -415,18 +415,18 @@ for (let i = 1; i < candles.length; i++) {
 
 **Lógica de Detecção:**
 ```typescript
-// Order Block: última candle antes de movimento forte
-// FVG: gap de 3 candles (middle candle não preenche gap entre 1ª e 3ª)
+// Order Block: última kline antes de movimento forte
+// FVG: gap de 3 klines (middle kline não preenche gap entre 1ª e 3ª)
 // Confluência = alta probabilidade
 
 // Detectar FVGs
-function detectFVG(candles: Candle[]): FVG[] {
+function detectFVG(klines: Kline[]): FVG[] {
   const fvgs: FVG[] = [];
 
-  for (let i = 1; i < candles.length - 1; i++) {
-    const prev = candles[i-1];
-    const current = candles[i];
-    const next = candles[i+1];
+  for (let i = 1; i < klines.length - 1; i++) {
+    const prev = klines[i-1];
+    const current = klines[i];
+    const next = klines[i+1];
 
     // Bullish FVG: gap entre prev.high e next.low
     if (prev.high < next.low) {
@@ -453,18 +453,18 @@ function detectFVG(candles: Candle[]): FVG[] {
 }
 
 // Detectar Order Blocks
-function detectOrderBlocks(candles: Candle[]): OrderBlock[] {
+function detectOrderBlocks(klines: Kline[]): OrderBlock[] {
   const blocks: OrderBlock[] = [];
 
-  for (let i = 1; i < candles.length; i++) {
-    const current = candles[i];
-    const prev = candles[i-1];
+  for (let i = 1; i < klines.length; i++) {
+    const current = klines[i];
+    const prev = klines[i-1];
 
-    // Movimento forte? (> 2% em 1 candle)
+    // Movimento forte? (> 2% em 1 kline)
     const priceChange = Math.abs(current.close - current.open) / current.open;
 
     if (priceChange > 0.02) {
-      // Order block = candle anterior ao movimento
+      // Order block = kline anterior ao movimento
       blocks.push({
         type: current.close > current.open ? 'bullish' : 'bearish',
         high: prev.high,
@@ -478,8 +478,8 @@ function detectOrderBlocks(candles: Candle[]): OrderBlock[] {
 }
 
 // Confluência OB + FVG
-const fvgs = detectFVG(candles);
-const orderBlocks = detectOrderBlocks(candles);
+const fvgs = detectFVG(klines);
+const orderBlocks = detectOrderBlocks(klines);
 
 for (const fvg of fvgs) {
   for (const ob of orderBlocks) {
@@ -525,12 +525,12 @@ for (const fvg of fvgs) {
 // 3. EMA55 como filtro de tendência
 // 4. Entrada no crossover
 
-const ema8 = calculateEMA(candles, 8);
-const ema21 = calculateEMA(candles, 21);
-const ema55 = calculateEMA(candles, 55);
-const vwap = calculateVWAP(candles);
+const ema8 = calculateEMA(klines, 8);
+const ema21 = calculateEMA(klines, 21);
+const ema55 = calculateEMA(klines, 55);
+const vwap = calculateVWAP(klines);
 
-for (let i = 55; i < candles.length; i++) {
+for (let i = 55; i < klines.length; i++) {
   // EMA8 cruza EMA21 para cima?
   const bullishCross = ema8[i-1] <= ema21[i-1] && ema8[i] > ema21[i];
 
@@ -542,9 +542,9 @@ for (let i = 55; i < candles.length; i++) {
     // - Preço acima VWAP
     // - Preço acima EMA55 (filtro de tendência)
 
-    if (candles[i].close > vwap[i] && candles[i].close > ema55[i]) {
+    if (klines[i].close > vwap[i] && klines[i].close > ema55[i]) {
       // LONG SETUP
-      const entry = candles[i].close;
+      const entry = klines[i].close;
       const stopLoss = entry * 0.995;  // 0.5% fixo
       const takeProfit = entry * 1.015; // 1.5% fixo
       // R:R = 1:3
@@ -553,8 +553,8 @@ for (let i = 55; i < candles.length; i++) {
 
   if (bearishCross) {
     // SHORT: inverso
-    if (candles[i].close < vwap[i] && candles[i].close < ema55[i]) {
-      const entry = candles[i].close;
+    if (klines[i].close < vwap[i] && klines[i].close < ema55[i]) {
+      const entry = klines[i].close;
       const stopLoss = entry * 1.005;
       const takeProfit = entry * 0.985;
     }
@@ -582,13 +582,13 @@ for (let i = 55; i < candles.length; i++) {
 // Bearish: preço higher high, RSI/MACD lower high
 // Ambos devem divergir para setup válido
 
-const rsi = calculateRSI(candles, 14);
-const macd = calculateMACD(candles, 12, 26, 9);
+const rsi = calculateRSI(klines, 14);
+const macd = calculateMACD(klines, 12, 26, 9);
 
 // Encontrar divergências
-function findDivergences(candles, rsi, macd) {
+function findDivergences(klines, rsi, macd) {
   const divergences = [];
-  const pivots = findPivotPoints(candles, 5);
+  const pivots = findPivotPoints(klines, 5);
 
   for (let i = 1; i < pivots.length; i++) {
     const p1 = pivots[i-1];
@@ -637,7 +637,7 @@ function findDivergences(candles, rsi, macd) {
 for (const div of divergences) {
   const startIndex = div.priceIndex;
 
-  for (let i = startIndex; i < Math.min(startIndex + 10, candles.length); i++) {
+  for (let i = startIndex; i < Math.min(startIndex + 10, klines.length); i++) {
     if (div.type === 'bullish') {
       // MACD cruza signal para cima?
       const macdCross = macd.macd[i-1] <= macd.signal[i-1] &&
@@ -647,7 +647,7 @@ for (const div of divergences) {
 
       if (macdCross && rsiExit) {
         // LONG SETUP
-        const entry = candles[i].close;
+        const entry = klines[i].close;
         const stopLoss = pivots.find(p => p.index < i && p.type === 'low').price;
         const risk = entry - stopLoss;
         const takeProfit = entry + (risk * 2);
@@ -676,15 +676,15 @@ for (const div of divergences) {
 ```typescript
 // 1. Preço rompe swing high/low brevemente
 // 2. Volume spike + reversão rápida
-// 3. Candle fecha de volta no range (wick longo)
+// 3. Kline fecha de volta no range (wick longo)
 // 4. Setup = trade contra o sweep
 
-const swingHighs = findPivotPoints(candles, 10).filter(p => p.type === 'high');
-const swingLows = findPivotPoints(candles, 10).filter(p => p.type === 'low');
+const swingHighs = findPivotPoints(klines, 10).filter(p => p.type === 'high');
+const swingLows = findPivotPoints(klines, 10).filter(p => p.type === 'low');
 
 // Detectar sweeps
-for (let i = 20; i < candles.length; i++) {
-  const currentCandle = candles[i];
+for (let i = 20; i < klines.length; i++) {
+  const currentKline = klines[i];
 
   // Sweep de swing high (bull trap)
   const nearestHigh = swingHighs
@@ -693,21 +693,21 @@ for (let i = 20; i < candles.length; i++) {
 
   if (nearestHigh) {
     // Preço ultrapassou o swing high?
-    const swept = currentCandle.high > nearestHigh.price;
+    const swept = currentKline.high > nearestHigh.price;
 
     // Volume spike?
-    const avgVolume = calculateSMA(candles.slice(i-20, i).map(c => c.volume), 20);
-    const volumeSpike = currentCandle.volume > avgVolume[0] * 1.5;
+    const avgVolume = calculateSMA(klines.slice(i-20, i).map(c => c.volume), 20);
+    const volumeSpike = currentKline.volume > avgVolume[0] * 1.5;
 
-    // Candle fechou DE VOLTA no range? (wick longo)
-    const closedInRange = currentCandle.close < nearestHigh.price;
-    const wickLarge = (currentCandle.high - currentCandle.close) /
-                     (currentCandle.high - currentCandle.low) > 0.6;
+    // Kline fechou DE VOLTA no range? (wick longo)
+    const closedInRange = currentKline.close < nearestHigh.price;
+    const wickLarge = (currentKline.high - currentKline.close) /
+                     (currentKline.high - currentKline.low) > 0.6;
 
     if (swept && volumeSpike && closedInRange && wickLarge) {
       // LIQUIDITY SWEEP CONFIRMADO - SHORT SETUP
-      const entry = currentCandle.close;
-      const stopLoss = currentCandle.high * 1.002;
+      const entry = currentKline.close;
+      const stopLoss = currentKline.high * 1.002;
 
       // Target: lado oposto do range (swing low anterior)
       const targetLow = swingLows
@@ -723,7 +723,7 @@ for (let i = 20; i < candles.length; i++) {
 ```
 
 **Configurações:**
-- Swing Lookback: 10-20 candles
+- Swing Lookback: 10-20 klines
 - Volume Multiplier: 1.5x
 - Wick Ratio: 60%
 - Min R:R: 1.5
@@ -743,7 +743,7 @@ for (let i = 20; i < candles.length; i++) {
 // 4. Stop no último swing point
 
 // Usar ZigZag para identificar structure
-const zigzag = calculateZigZag(candles, 5); // 5% deviation
+const zigzag = calculateZigZag(klines, 5); // 5% deviation
 
 // Analisar structure
 function analyzeMarketStructure(zigzag) {
@@ -779,10 +779,10 @@ if (structure.isUptrend) {
   const lastHL = zigzag.lows[zigzag.lows.length - 1];
 
   // Preço atual rompeu o HL?
-  for (let i = lastHL.index + 1; i < candles.length; i++) {
-    if (candles[i].close > lastHL.price * 1.01) { // 1% acima
+  for (let i = lastHL.index + 1; i < klines.length; i++) {
+    if (klines[i].close > lastHL.price * 1.01) { // 1% acima
       // BREAK OF STRUCTURE (BOS) - LONG
-      const entry = candles[i].close;
+      const entry = klines[i].close;
       const stopLoss = zigzag.lows[zigzag.lows.length - 2].price; // Penúltimo low
 
       // Target: próxima zona de liquidez (swing high anterior + extensão)
@@ -813,7 +813,7 @@ if (structure.isUptrend) {
 ```typescript
 // /src/renderer/utils/indicators/macd.ts
 
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { calculateEMA } from './ema';
 
 export interface MACDResult {
@@ -823,12 +823,12 @@ export interface MACDResult {
 }
 
 export function calculateMACD(
-  candles: Candle[],
+  klines: Kline[],
   fastPeriod = 12,
   slowPeriod = 26,
   signalPeriod = 9
 ): MACDResult {
-  const closes = candles.map(c => c.close);
+  const closes = klines.map(c => c.close);
 
   // EMA rápida e lenta
   const emaFast = calculateEMA(closes, fastPeriod);
@@ -852,18 +852,18 @@ export function calculateMACD(
 ```typescript
 // /src/renderer/utils/indicators/vwap.ts
 
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 
-export function calculateVWAP(candles: Candle[]): number[] {
+export function calculateVWAP(klines: Kline[]): number[] {
   const vwap: number[] = [];
   let cumulativeTPV = 0; // Typical Price × Volume
   let cumulativeVolume = 0;
 
-  for (const candle of candles) {
-    const typicalPrice = (candle.high + candle.low + candle.close) / 3;
+  for (const kline of klines) {
+    const typicalPrice = (kline.high + kline.low + kline.close) / 3;
 
-    cumulativeTPV += typicalPrice * candle.volume;
-    cumulativeVolume += candle.volume;
+    cumulativeTPV += typicalPrice * kline.volume;
+    cumulativeVolume += kline.volume;
 
     vwap.push(cumulativeTPV / cumulativeVolume);
   }
@@ -872,25 +872,25 @@ export function calculateVWAP(candles: Candle[]): number[] {
 }
 
 // VWAP Intraday (reset diariamente)
-export function calculateIntradayVWAP(candles: Candle[]): number[] {
+export function calculateIntradayVWAP(klines: Kline[]): number[] {
   const vwap: number[] = [];
   let cumulativeTPV = 0;
   let cumulativeVolume = 0;
-  let currentDay = new Date(candles[0].timestamp).getDate();
+  let currentDay = new Date(klines[0].timestamp).getDate();
 
-  for (const candle of candles) {
-    const candleDay = new Date(candle.timestamp).getDate();
+  for (const kline of klines) {
+    const klineDay = new Date(kline.timestamp).getDate();
 
     // Novo dia? Reset
-    if (candleDay !== currentDay) {
+    if (klineDay !== currentDay) {
       cumulativeTPV = 0;
       cumulativeVolume = 0;
-      currentDay = candleDay;
+      currentDay = klineDay;
     }
 
-    const typicalPrice = (candle.high + candle.low + candle.close) / 3;
-    cumulativeTPV += typicalPrice * candle.volume;
-    cumulativeVolume += candle.volume;
+    const typicalPrice = (kline.high + kline.low + kline.close) / 3;
+    cumulativeTPV += typicalPrice * kline.volume;
+    cumulativeVolume += kline.volume;
 
     vwap.push(cumulativeTPV / cumulativeVolume);
   }
@@ -904,24 +904,24 @@ export function calculateIntradayVWAP(candles: Candle[]): number[] {
 ```typescript
 // /src/renderer/utils/indicators/atr.ts
 
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { calculateSMA } from './sma';
 
 export function calculateATR(
-  candles: Candle[],
+  klines: Kline[],
   period = 14
 ): number[] {
   const trueRanges: number[] = [];
 
-  // Calcular True Range para cada candle
-  for (let i = 0; i < candles.length; i++) {
-    const current = candles[i];
+  // Calcular True Range para cada kline
+  for (let i = 0; i < klines.length; i++) {
+    const current = klines[i];
 
     if (i === 0) {
-      // Primeiro candle: TR = high - low
+      // Primeiro kline: TR = high - low
       trueRanges.push(current.high - current.low);
     } else {
-      const prev = candles[i - 1];
+      const prev = klines[i - 1];
 
       // TR = max(high-low, |high-prevClose|, |low-prevClose|)
       const tr = Math.max(
@@ -958,7 +958,7 @@ export function calculateATR(
 ```typescript
 // /src/renderer/utils/indicators/volume.ts
 
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { calculateSMA } from './sma';
 
 export interface VolumeAnalysis {
@@ -969,19 +969,19 @@ export interface VolumeAnalysis {
 }
 
 export function analyzeVolume(
-  candles: Candle[],
+  klines: Kline[],
   period = 20,
   spikeThreshold = 1.5
 ): VolumeAnalysis {
-  const volumes = candles.map(c => c.volume);
+  const volumes = klines.map(c => c.volume);
   const average = calculateSMA(volumes, period);
 
   const spikes: number[] = [];
   const isAboveAverage: boolean[] = [];
   const relativeVolume: number[] = [];
 
-  for (let i = 0; i < candles.length; i++) {
-    const volume = candles[i].volume;
+  for (let i = 0; i < klines.length; i++) {
+    const volume = klines[i].volume;
     const avg = average[i];
 
     const relative = avg > 0 ? volume / avg : 1;
@@ -1006,18 +1006,18 @@ export function analyzeVolume(
 
 // Detectar clusters de volume (acumulação/distribuição)
 export function detectVolumeClusters(
-  candles: Candle[],
+  klines: Kline[],
   threshold = 0.02 // 2% de tolerância de preço
 ): VolumeCluster[] {
   const clusters: Map<number, { volume: number; count: number }> = new Map();
 
   // Agrupar volume por níveis de preço
-  for (const candle of candles) {
-    const priceLevel = Math.round(candle.close / threshold) * threshold;
+  for (const kline of klines) {
+    const priceLevel = Math.round(kline.close / threshold) * threshold;
 
     const existing = clusters.get(priceLevel) || { volume: 0, count: 0 };
     clusters.set(priceLevel, {
-      volume: existing.volume + candle.volume,
+      volume: existing.volume + kline.volume,
       count: existing.count + 1
     });
   }
@@ -1046,7 +1046,7 @@ interface VolumeCluster {
 ```typescript
 // /src/renderer/utils/indicators/zigzag.ts
 
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 
 export interface PivotPoint {
   index: number;
@@ -1062,29 +1062,29 @@ export interface ZigZagResult {
 }
 
 export function calculateZigZag(
-  candles: Candle[],
+  klines: Kline[],
   deviation = 5  // % mínimo para mudar direção
 ): ZigZagResult {
   const highs: PivotPoint[] = [];
   const lows: PivotPoint[] = [];
 
-  if (candles.length < 3) {
+  if (klines.length < 3) {
     return { highs, lows, trend: 'neutral' };
   }
 
   let lastPivot: PivotPoint = {
     index: 0,
-    timestamp: candles[0].timestamp,
-    price: candles[0].close,
-    type: candles[0].close > candles[1].close ? 'high' : 'low'
+    timestamp: klines[0].timestamp,
+    price: klines[0].close,
+    type: klines[0].close > klines[1].close ? 'high' : 'low'
   };
 
   let currentDirection = lastPivot.type === 'high' ? 'down' : 'up';
   let extremePrice = lastPivot.price;
   let extremeIndex = 0;
 
-  for (let i = 1; i < candles.length; i++) {
-    const current = candles[i];
+  for (let i = 1; i < klines.length; i++) {
+    const current = klines[i];
 
     // Procurando um HIGH
     if (currentDirection === 'up') {
@@ -1099,7 +1099,7 @@ export function calculateZigZag(
         // Confirmar HIGH
         const pivot: PivotPoint = {
           index: extremeIndex,
-          timestamp: candles[extremeIndex].timestamp,
+          timestamp: klines[extremeIndex].timestamp,
           price: extremePrice,
           type: 'high'
         };
@@ -1126,7 +1126,7 @@ export function calculateZigZag(
         // Confirmar LOW
         const pivot: PivotPoint = {
           index: extremeIndex,
-          timestamp: candles[extremeIndex].timestamp,
+          timestamp: klines[extremeIndex].timestamp,
           price: extremePrice,
           type: 'low'
         };
@@ -1182,7 +1182,7 @@ O MarketMind já possui implementações de:
 ```typescript
 // /src/renderer/utils/riskManagement/atrStops.ts
 
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { calculateATR } from '../indicators/atr';
 
 export interface ATRStopsResult {
@@ -1193,14 +1193,14 @@ export interface ATRStopsResult {
 }
 
 export function calculateATRStops(
-  candles: Candle[],
+  klines: Kline[],
   entry: number,
   direction: 'LONG' | 'SHORT',
   atrPeriod = 12,    // Research: 12 períodos
   atrMultiplier = 2, // 2x ATR para stop
   rrRatio = 2        // 1:2 risk/reward
 ): ATRStopsResult {
-  const atr = calculateATR(candles, atrPeriod);
+  const atr = calculateATR(klines, atrPeriod);
   const currentATR = atr[atr.length - 1];
 
   const stopDistance = currentATR * atrMultiplier;
@@ -1227,14 +1227,14 @@ export function calculateATRStops(
 
 // Trailing stop baseado em ATR
 export function calculateTrailingATRStop(
-  candles: Candle[],
+  klines: Kline[],
   entryPrice: number,
   currentPrice: number,
   direction: 'LONG' | 'SHORT',
   atrPeriod = 12,
   atrMultiplier = 2
 ): number {
-  const atr = calculateATR(candles, atrPeriod);
+  const atr = calculateATR(klines, atrPeriod);
   const currentATR = atr[atr.length - 1];
 
   if (direction === 'LONG') {
@@ -1478,7 +1478,7 @@ interface SetupConfig {
   traps: {
     volumeThreshold: number;
     rsiPeriod: number;
-    reversalCandles: number;
+    reversalKlines: number;
     minRR: number;
   };
 
@@ -1579,7 +1579,7 @@ const DEFAULT_CONFIG: SetupConfig = {
   traps: {
     volumeThreshold: 1.0,
     rsiPeriod: 14,
-    reversalCandles: 3,
+    reversalKlines: 3,
     minRR: 1.5,
   },
 
@@ -1849,7 +1849,7 @@ vs
 **Implementação:**
 ```typescript
 const volumeAvg = calculateSMA(volumes, 20);
-const volumeConfirmation = candle.volume > volumeAvg * 1.5;
+const volumeConfirmation = kline.volume > volumeAvg * 1.5;
 
 if (breakout && !volumeConfirmation) {
   confidence -= 30; // Penalizar falta de volume
@@ -2002,7 +2002,7 @@ SETUPS (Novo):
 - Cores: Verde #22c55e / Vermelho #ef4444 (vibrantes)
 
 LAYERS:
-- Layer 1: Candlesticks
+- Layer 1: Kline
 - Layer 2: Patterns (fundo)
 - Layer 3: Setups (frente)
 - Layer 4: Crosshair + Tooltips
@@ -2097,7 +2097,7 @@ class RLTradingAgent {
   private model: NeuralNetwork;
   private replayBuffer: ExperienceBuffer;
   
-  async train(historicalData: Candle[]): Promise<void> {
+  async train(historicalData: Kline[]): Promise<void> {
     // Treinar modelo com dados históricos
   }
   
@@ -2146,13 +2146,13 @@ Sistema baseado em regras matemáticas explícitas para detectar 10 setups (já 
 // /src/renderer/services/setupDetection/SetupDetectionService.ts
 
 class SetupDetectionService {
-  detectSetups(candles: Candle[]): TradingSetup[] {
+  detectSetups(klines: Kline[]): TradingSetup[] {
     const setups: TradingSetup[] = [];
     
     // Detectar cada setup com regras específicas
-    setups.push(...this.detect91Setup(candles));
-    setups.push(...this.detect123Reversal(candles));
-    setups.push(...this.detectBreakoutRetest(candles));
+    setups.push(...this.detect91Setup(klines));
+    setups.push(...this.detect123Reversal(klines));
+    setups.push(...this.detectBreakoutRetest(klines));
     // ... outros 7 setups
     
     // Filtrar por confidence e risk/reward
@@ -2186,9 +2186,9 @@ class HybridTradingSystem {
   private rlAgent: RLTradingAgent;
   private setupDetector: SetupDetectionService;
   
-  async analyzeMarket(candles: Candle[]): Promise<TradeSignal> {
+  async analyzeMarket(klines: Kline[]): Promise<TradeSignal> {
     // Passo 1: Detectar setups algorítmicos
-    const setups = this.setupDetector.detectSetups(candles);
+    const setups = this.setupDetector.detectSetups(klines);
     
     // Passo 2: Filtrar setups de alta qualidade
     const highQualitySetups = setups.filter(s => 
@@ -2197,7 +2197,7 @@ class HybridTradingSystem {
     
     // Passo 3: RL Agent decide qual setup executar
     if (highQualitySetups.length > 0) {
-      const state = this.buildState(candles, highQualitySetups);
+      const state = this.buildState(klines, highQualitySetups);
       const action = await this.rlAgent.predict(state);
       
       return {
@@ -2546,7 +2546,7 @@ interface BacktestResult {
   startTime: number;
   endTime: number;
   duration: number; // execution time in ms
-  candlesProcessed: number;
+  klinesProcessed: number;
 }
 
 interface EquityPoint {
@@ -2578,7 +2578,7 @@ class BacktestEngine {
     const startTime = Date.now();
     
     // 1. Load historical data
-    const candles = await this.loadHistoricalData(
+    const klines = await this.loadHistoricalData(
       config.symbol,
       config.timeframe,
       config.startDate,
@@ -2598,18 +2598,18 @@ class BacktestEngine {
     const trades: BacktestTrade[] = [];
     const equityCurve: EquityPoint[] = [];
     
-    for (let i = 0; i < candles.length; i++) {
-      const currentCandle = candles[i];
-      const historicalCandles = candles.slice(0, i + 1);
+    for (let i = 0; i < klines.length; i++) {
+      const currentKline = klines[i];
+      const historicalKlines = klines.slice(0, i + 1);
       
       // Update existing positions
-      simulator.updatePositions(currentCandle);
+      simulator.updatePositions(currentKline);
       
       // Check for new setups
       let setups: TradingSetup[] = [];
       
       if (config.mode === 'ALGORITHM' || config.mode === 'HYBRID') {
-        setups = this.setupDetector.detectSetups(historicalCandles);
+        setups = this.setupDetector.detectSetups(historicalKlines);
         
         // Filter by config
         setups = setups.filter(s => 
@@ -2623,7 +2623,7 @@ class BacktestEngine {
         // AI validates/chooses setup
         const aiDecision = await this.aiService.validateSetups(
           setups,
-          historicalCandles,
+          historicalKlines,
           config.aiProvider!,
         );
         
@@ -2632,7 +2632,7 @@ class BacktestEngine {
       
       // Execute trades
       for (const setup of setups) {
-        const trade = simulator.executeSetup(setup, currentCandle);
+        const trade = simulator.executeSetup(setup, currentKline);
         if (trade) {
           trades.push(trade);
         }
@@ -2640,18 +2640,18 @@ class BacktestEngine {
       
       // Record equity point
       equityCurve.push({
-        timestamp: currentCandle.time,
+        timestamp: currentKline.time,
         equity: simulator.getEquity(),
         drawdown: simulator.getCurrentDrawdown(),
         drawdownPercent: simulator.getCurrentDrawdownPercent(),
       });
       
       // Progress callback
-      this.onProgress?.(i / candles.length);
+      this.onProgress?.(i / klines.length);
     }
     
     // 4. Close all remaining positions
-    simulator.closeAllPositions(candles[candles.length - 1]);
+    simulator.closeAllPositions(klines[klines.length - 1]);
     
     // 5. Calculate metrics
     const metrics = this.metricsCalculator.calculate(
@@ -2674,7 +2674,7 @@ class BacktestEngine {
       startTime,
       endTime,
       duration: endTime - startTime,
-      candlesProcessed: candles.length,
+      klinesProcessed: klines.length,
     };
   }
   
@@ -2683,7 +2683,7 @@ class BacktestEngine {
     timeframe: string,
     startDate: number,
     endDate: number,
-  ): Promise<Candle[]> {
+  ): Promise<Kline[]> {
     // Load from Binance API or local cache
     // Implementation depends on data source
     return [];
@@ -2752,7 +2752,7 @@ class BacktestSimulator {
     this.config = config;
   }
   
-  executeSetup(setup: TradingSetup, currentCandle: Candle): BacktestTrade | null {
+  executeSetup(setup: TradingSetup, currentKline: Kline): BacktestTrade | null {
     // Check if we can open new position
     if (this.openPositions.length >= this.config.maxOpenTrades) {
       return null;
@@ -2774,7 +2774,7 @@ class BacktestSimulator {
     const position: Position = {
       id: `pos-${Date.now()}-${Math.random()}`,
       setup,
-      entryTime: currentCandle.time,
+      entryTime: currentKline.time,
       entryPrice,
       quantity,
       stopLoss: setup.stopLoss,
@@ -2792,24 +2792,24 @@ class BacktestSimulator {
     return null; // Trade not closed yet
   }
   
-  updatePositions(currentCandle: Candle): void {
+  updatePositions(currentKline: Kline): void {
     const toClose: Position[] = [];
     
     for (const position of this.openPositions) {
       // Update MAE/MFE
-      const currentProfit = this.calculateProfit(position, currentCandle.close);
+      const currentProfit = this.calculateProfit(position, currentKline.close);
       position.mfe = Math.max(position.mfe, currentProfit);
       position.mae = Math.min(position.mae, currentProfit);
       
       // Check stop loss
-      if (this.hitStopLoss(position, currentCandle)) {
+      if (this.hitStopLoss(position, currentKline)) {
         toClose.push(position);
         position.setup.exitReason = 'STOP_LOSS';
         continue;
       }
       
       // Check take profit
-      if (this.hitTakeProfit(position, currentCandle)) {
+      if (this.hitTakeProfit(position, currentKline)) {
         toClose.push(position);
         position.setup.exitReason = 'TAKE_PROFIT';
         continue;
@@ -2818,13 +2818,13 @@ class BacktestSimulator {
     
     // Close positions
     for (const position of toClose) {
-      this.closePosition(position, currentCandle);
+      this.closePosition(position, currentKline);
     }
   }
   
-  private closePosition(position: Position, currentCandle: Candle): void {
+  private closePosition(position: Position, currentKline: Kline): void {
     const exitPrice = this.applySlippage(
-      currentCandle.close,
+      currentKline.close,
       position.setup.direction,
       'EXIT',
     );
@@ -2840,7 +2840,7 @@ class BacktestSimulator {
       setupType: position.setup.type,
       entryTime: position.entryTime,
       entryPrice: position.entryPrice,
-      exitTime: currentCandle.time,
+      exitTime: currentKline.time,
       exitPrice,
       direction: position.setup.direction,
       quantity: position.quantity,
@@ -2850,9 +2850,9 @@ class BacktestSimulator {
       profitPercent: (netProfit / (position.entryPrice * position.quantity)) * 100,
       mae: position.mae,
       mfe: position.mfe,
-      duration: currentCandle.time - position.entryTime,
+      duration: currentKline.time - position.entryTime,
       commission,
-      slippage: Math.abs(exitPrice - currentCandle.close),
+      slippage: Math.abs(exitPrice - currentKline.close),
       exitReason: position.setup.exitReason ?? 'MANUAL',
     };
     
@@ -2868,18 +2868,18 @@ class BacktestSimulator {
     return priceDiff * position.quantity;
   }
   
-  private hitStopLoss(position: Position, candle: Candle): boolean {
+  private hitStopLoss(position: Position, kline: Kline): boolean {
     if (position.setup.direction === 'LONG') {
-      return candle.low <= position.stopLoss;
+      return kline.low <= position.stopLoss;
     }
-    return candle.high >= position.stopLoss;
+    return kline.high >= position.stopLoss;
   }
   
-  private hitTakeProfit(position: Position, candle: Candle): boolean {
+  private hitTakeProfit(position: Position, kline: Kline): boolean {
     if (position.setup.direction === 'LONG') {
-      return candle.high >= position.takeProfit;
+      return kline.high >= position.takeProfit;
     }
-    return candle.low <= position.takeProfit;
+    return kline.low <= position.takeProfit;
   }
   
   private applySlippage(
@@ -2900,9 +2900,9 @@ class BacktestSimulator {
       : price * (1 + slippagePercent); // Cover higher
   }
   
-  closeAllPositions(finalCandle: Candle): void {
+  closeAllPositions(finalKline: Kline): void {
     for (const position of this.openPositions) {
-      this.closePosition(position, finalCandle);
+      this.closePosition(position, finalKline);
     }
   }
   
@@ -3250,12 +3250,12 @@ self.onmessage = async (event: MessageEvent<BacktestConfig>) => {
 // Anti-patterns a evitar:
 
 // ❌ Look-ahead bias (usar dados futuros)
-const futureCandles = candles.slice(i + 1, i + 10);
-const setup = detectSetup(currentCandle, futureCandles); // ERRADO
+const futureKlines = klines.slice(i + 1, i + 10);
+const setup = detectSetup(currentKline, futureKlines); // ERRADO
 
 // ✅ Usar apenas dados passados
-const historicalCandles = candles.slice(0, i + 1);
-const setup = detectSetup(historicalCandles); // CORRETO
+const historicalKlines = klines.slice(0, i + 1);
+const setup = detectSetup(historicalKlines); // CORRETO
 
 // ❌ Survivorship bias (apenas símbolos que ainda existem)
 const symbols = ['BTC', 'ETH', 'SOL']; // ERRADO
@@ -3269,8 +3269,8 @@ for (let period = 5; period < 200; period++) {
 }
 
 // ✅ Split in-sample / out-of-sample
-const inSample = candles.slice(0, candles.length * 0.7);
-const outOfSample = candles.slice(candles.length * 0.7);
+const inSample = klines.slice(0, klines.length * 0.7);
+const outOfSample = klines.slice(klines.length * 0.7);
 optimizeOn(inSample);
 validateOn(outOfSample); // CORRETO
 ```
@@ -3372,7 +3372,7 @@ O sistema de backtesting será implementado em paralelo com as fases de desenvol
 3. Clica "Run Backtest"
    - Worker inicia processamento
    - Barra de progresso atualiza
-   - ~30s para 8760 candles (1 ano de dados horários)
+   - ~30s para 8760 klines (1 ano de dados horários)
    
 4. Resultados exibidos:
    - Net Profit: +$3,245 (+32.45%)

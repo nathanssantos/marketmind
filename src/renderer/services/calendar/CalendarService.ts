@@ -47,7 +47,7 @@ export class CalendarService {
   private setCache(key: string, data: EventsResponse): void {
     const entry: CalendarCacheEntry = {
       data,
-      timestamp: Date.now(),
+      openTime: Date.now(),
       expiresAt: Date.now() + this.defaultCacheDuration,
     };
     this.cache.set(key, entry);

@@ -5,12 +5,12 @@ import { LuChevronRight, LuChevronsRight } from 'react-icons/lu';
 
 export interface ChartNavigationProps {
     onResetView: () => void;
-    onNextCandle: () => void;
+    onNextKline: () => void;
     stochasticPanelHeight?: number;
     rsiPanelHeight?: number;
 }
 
-export const ChartNavigation = ({ onResetView, onNextCandle, stochasticPanelHeight = 0, rsiPanelHeight = 0 }: ChartNavigationProps): ReactElement => {
+export const ChartNavigation = ({ onResetView, onNextKline, stochasticPanelHeight = 0, rsiPanelHeight = 0 }: ChartNavigationProps): ReactElement => {
     const { t } = useTranslation();
 
     return (
@@ -22,8 +22,8 @@ export const ChartNavigation = ({ onResetView, onNextCandle, stochasticPanelHeig
             zIndex={10}
         >
             <IconButton
-                aria-label={t('chart.navigation.nextCandle')}
-                onClick={onNextCandle}
+                aria-label={t('chart.navigation.nextKline')}
+                onClick={onNextKline}
                 size="2xs"
                 variant="ghost"
                 bg="blackAlpha.600"

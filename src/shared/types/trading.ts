@@ -163,7 +163,7 @@ export interface Wallet extends Account {
 }
 
 export interface WalletPerformancePoint {
-  timestamp: number | Date;
+  openTime: number | Date;
   balance: number;
   pnl: number;
   pnlPercent: number;

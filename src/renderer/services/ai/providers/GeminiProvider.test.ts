@@ -59,7 +59,7 @@ describe('GeminiProvider', () => {
           id: '1',
           role: 'user',
           content: 'What is a shooting star pattern?',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -101,19 +101,19 @@ describe('GeminiProvider', () => {
           id: '1',
           role: 'user',
           content: 'What is Fibonacci retracement?',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
         {
           id: '2',
           role: 'assistant',
           content: 'Fibonacci retracement is a technical analysis tool...',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
         {
           id: '3',
           role: 'user',
           content: 'What are the key levels?',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -155,7 +155,7 @@ describe('GeminiProvider', () => {
           id: '1',
           role: 'user',
           content: 'Analyze this chart',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -192,7 +192,7 @@ describe('GeminiProvider', () => {
           id: '1',
           role: 'user',
           content: 'Compare these charts',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -236,7 +236,7 @@ describe('GeminiProvider', () => {
           id: '1',
           role: 'user',
           content: 'Hello',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -271,7 +271,7 @@ describe('GeminiProvider', () => {
           id: '1',
           role: 'user',
           content: 'Hello',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -292,7 +292,7 @@ describe('GeminiProvider', () => {
           id: '1',
           role: 'user',
           content: 'Hello',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -320,14 +320,19 @@ describe('GeminiProvider', () => {
     it('should analyze chart successfully', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,chartdata',
-        candles: [
+        klines: [
           {
-            timestamp: Date.now(),
-            open: 100,
-            high: 110,
-            low: 95,
-            close: 105,
-            volume: 1000,
+            openTime: Date.now(),
+            closeTime: Date.now() + 3600000,
+            open: '100',
+            high: '110',
+            low: '95',
+            close: '105',
+            volume: '1000',
+            quoteVolume: '105000',
+            trades: 100,
+            takerBuyBaseVolume: '500',
+            takerBuyQuoteVolume: '52500',
           },
         ],
       };
@@ -362,7 +367,7 @@ describe('GeminiProvider', () => {
     it('should include context in analysis', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz',
-        candles: [],
+        klines: [],
         context: 'SOL/USD daily chart with support at 100',
       };
 
@@ -385,17 +390,22 @@ describe('GeminiProvider', () => {
       expect(combinedText).toContain('SOL/USD daily chart with support at 100');
     });
 
-    it('should include latest candle data', async () => {
+    it('should include latest kline data', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz',
-        candles: [
+        klines: [
           {
-            timestamp: Date.now(),
-            open: 42000,
-            high: 43000,
-            low: 41500,
-            close: 42500,
-            volume: 5000000,
+            openTime: Date.now(),
+            closeTime: Date.now() + 86400000,
+            open: '42000',
+            high: '43000',
+            low: '41500',
+            close: '42500',
+            volume: '5000000',
+            quoteVolume: '212500000000',
+            trades: 5000,
+            takerBuyBaseVolume: '2500000',
+            takerBuyQuoteVolume: '106250000000',
           },
         ],
       };
@@ -425,7 +435,7 @@ describe('GeminiProvider', () => {
     it('should include news items', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz',
-        candles: [],
+        klines: [],
         news: [
           {
             id: '1',
@@ -462,7 +472,7 @@ describe('GeminiProvider', () => {
     it('should use custom configuration for chart analysis', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz',
-        candles: [],
+        klines: [],
       };
 
       mockGenerateContent.mockResolvedValue({
@@ -492,7 +502,7 @@ describe('GeminiProvider', () => {
     it('should handle API errors during chart analysis', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/png;base64,xyz',
-        candles: [],
+        klines: [],
       };
 
       mockGenerateContent.mockRejectedValue(new Error('Invalid request format'));
@@ -509,7 +519,7 @@ describe('GeminiProvider', () => {
     it('should convert image data URL to base64', async () => {
       const request: AIAnalysisRequest = {
         chartImage: 'data:image/jpeg;base64,jpegdata123',
-        candles: [],
+        klines: [],
       };
 
       mockGenerateContent.mockResolvedValue({

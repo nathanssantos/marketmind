@@ -3,9 +3,9 @@ import { useChartColors } from '@renderer/hooks/useChartColors';
 import type { ReactElement } from 'react';
 import { useEffect, useState } from 'react';
 
-export interface CandleTimerProps {
+export interface KlineTimerProps {
     timeframe: string;
-    lastCandleTime?: number | undefined;
+    lastKlineTime?: number | undefined;
     stochasticPanelHeight?: number;
     rsiPanelHeight?: number;
 }
@@ -42,27 +42,27 @@ const formatTime = (seconds: number): string => {
     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
-export const CandleTimer = ({ timeframe, lastCandleTime, stochasticPanelHeight = 0, rsiPanelHeight = 0 }: CandleTimerProps): ReactElement | null => {
+export const KlineTimer = ({ timeframe, lastKlineTime, stochasticPanelHeight = 0, rsiPanelHeight = 0 }: KlineTimerProps): ReactElement | null => {
     const colors = useChartColors();
     const [timeRemaining, setTimeRemaining] = useState<number>(0);
 
     useEffect(() => {
         const intervalMinutes = TIMEFRAME_MINUTES[timeframe];
-        if (!intervalMinutes || !lastCandleTime) {
+        if (!intervalMinutes || !lastKlineTime) {
             setTimeRemaining(0);
             return;
         }
 
         const updateTimer = (): void => {
             const now = Date.now();
-            const nextCandleTime = lastCandleTime + (intervalMinutes * 60 * 1000);
-            const remaining = Math.max(0, Math.floor((nextCandleTime - now) / 1000));
+            const nextKlineTime = lastKlineTime + (intervalMinutes * 60 * 1000);
+            const remaining = Math.max(0, Math.floor((nextKlineTime - now) / 1000));
 
             if (remaining === 0) {
-                const periodsElapsed = Math.floor((now - lastCandleTime) / (intervalMinutes * 60 * 1000));
+                const periodsElapsed = Math.floor((now - lastKlineTime) / (intervalMinutes * 60 * 1000));
                 if (periodsElapsed > 0) {
-                    const adjustedNextCandleTime = lastCandleTime + ((periodsElapsed + 1) * intervalMinutes * 60 * 1000);
-                    const adjustedRemaining = Math.max(0, Math.floor((adjustedNextCandleTime - now) / 1000));
+                    const adjustedNextKlineTime = lastKlineTime + ((periodsElapsed + 1) * intervalMinutes * 60 * 1000);
+                    const adjustedRemaining = Math.max(0, Math.floor((adjustedNextKlineTime - now) / 1000));
                     setTimeRemaining(adjustedRemaining);
                     return;
                 }
@@ -75,9 +75,9 @@ export const CandleTimer = ({ timeframe, lastCandleTime, stochasticPanelHeight =
         const interval = setInterval(updateTimer, 1000);
 
         return () => clearInterval(interval);
-    }, [timeframe, lastCandleTime]);
+    }, [timeframe, lastKlineTime]);
 
-    if (!TIMEFRAME_MINUTES[timeframe] || !lastCandleTime) {
+    if (!TIMEFRAME_MINUTES[timeframe] || !lastKlineTime) {
         return null;
     }
 

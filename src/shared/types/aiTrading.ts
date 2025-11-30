@@ -18,7 +18,7 @@ export interface AITradingDecision {
 
 export interface AITrade {
   id: string;
-  timestamp: Date;
+  openTime: Date;
   symbol: string;
   timeframe: string;
   action: 'buy' | 'sell';

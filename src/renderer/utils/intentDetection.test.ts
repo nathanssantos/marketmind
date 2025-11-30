@@ -44,7 +44,7 @@ describe('intentDetection', () => {
           role: 'user',
           content: 'Check this out',
           images: ['data:image/png;base64,abc123'],
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -57,19 +57,19 @@ describe('intentDetection', () => {
           id: 'msg-1',
           role: 'user',
           content: 'Analyze the chart',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
         {
           id: 'msg-2',
           role: 'assistant',
           content: 'Here is the analysis',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
         {
           id: 'msg-3',
           role: 'user',
           content: 'What is the price?',
-          timestamp: Date.now(),
+          openTime: Date.now(),
         },
       ];
 
@@ -81,7 +81,7 @@ describe('intentDetection', () => {
         id: `msg-${i}`,
         role: i % 2 === 0 ? ('user' as const) : ('assistant' as const),
         content: i === 8 ? 'Quick question' : 'Some message',
-        timestamp: Date.now(),
+        openTime: Date.now(),
       }));
 
       expect(detectIntentFromConversation(messages)).toBe('simple');

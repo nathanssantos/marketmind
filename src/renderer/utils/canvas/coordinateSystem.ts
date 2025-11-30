@@ -1,5 +1,6 @@
-import type { Kline, Viewport } from '@shared/types';
 import { CHART_CONFIG } from '@shared/constants';
+import type { Kline, Viewport } from '@shared/types';
+import { getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 
 export interface Bounds {
   minPrice: number;
@@ -16,12 +17,12 @@ export interface Dimensions {
   chartWidth: number;
 }
 
-export const calculateBounds = (candles: Kline[], viewport: Viewport): Bounds => {
+export const calculateBounds = (klines: Kline[], viewport: Viewport): Bounds => {
   const visibleStart = Math.floor(viewport.start);
-  const visibleEnd = Math.min(Math.ceil(viewport.end), candles.length);
-  const visibleCandles = candles.slice(visibleStart, visibleEnd);
+  const visibleEnd = Math.min(Math.ceil(viewport.end), klines.length);
+  const visibleKlines = klines.slice(visibleStart, visibleEnd);
 
-  if (visibleCandles.length === 0) {
+  if (visibleKlines.length === 0) {
     return {
       minPrice: 0,
       maxPrice: 0,
@@ -30,8 +31,8 @@ export const calculateBounds = (candles: Kline[], viewport: Viewport): Bounds =>
     };
   }
 
-  const prices = visibleCandles.flatMap((c) => [c.high, c.low]);
-  const volumes = visibleCandles.map((c) => c.volume);
+  const prices = visibleKlines.flatMap((c) => [getKlineHigh(c), getKlineLow(c)]);
+  const volumes = visibleKlines.map((c) => getKlineVolume(c));
 
   return {
     minPrice: Math.min(...prices),
@@ -114,16 +115,16 @@ export const xToIndex = (
 
 export const clampViewport = (
   viewport: Viewport,
-  candleCount: number,
-  minCandlesVisible: number = 10,
+  klineCount: number,
+  minKlinesVisible: number = 10,
 ): Viewport => {
   let { start, end } = viewport;
   const visibleCount = end - start;
 
-  if (visibleCount < minCandlesVisible) {
+  if (visibleCount < minKlinesVisible) {
     const center = (start + end) / 2;
-    start = center - minCandlesVisible / 2;
-    end = center + minCandlesVisible / 2;
+    start = center - minKlinesVisible / 2;
+    end = center + minKlinesVisible / 2;
   }
 
   if (start < 0) {
@@ -131,9 +132,9 @@ export const clampViewport = (
     start = 0;
   }
 
-  if (end > candleCount) {
-    start -= end - candleCount;
-    end = candleCount;
+  if (end > klineCount) {
+    start -= end - klineCount;
+    end = klineCount;
   }
 
   if (start < 0) {
@@ -143,6 +144,6 @@ export const clampViewport = (
   return {
     ...viewport,
     start: Math.max(0, start),
-    end: Math.min(candleCount, end),
+    end: Math.min(klineCount, end),
   };
 };

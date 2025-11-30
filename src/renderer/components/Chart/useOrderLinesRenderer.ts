@@ -206,14 +206,14 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
 
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
-    const candles = manager.getCandles();
-    if (!ctx || !dimensions || !candles.length) return;
+    const klines = manager.getKlines();
+    if (!ctx || !dimensions || !klines.length) return;
 
     const { width, chartWidth, chartHeight } = dimensions;
-    const lastCandle = candles[candles.length - 1];
-    if (!lastCandle) return;
+    const lastKline = klines[klines.length - 1];
+    if (!lastKline) return;
 
-    const currentPrice = getKlineClose(lastCandle);
+    const currentPrice = getKlineClose(lastKline);
 
     closeButtonsRef.current = [];
     orderHitboxesRef.current = [];

@@ -34,7 +34,7 @@ describe('CanvasManager', () => {
   let canvas: HTMLCanvasElement;
   let viewport: Viewport;
   let manager: CanvasManager;
-  let mockCandles: Kline[];
+  let mockKlines: Kline[];
 
   beforeEach(() => {
     canvas = document.createElement('canvas');
@@ -56,17 +56,22 @@ describe('CanvasManager', () => {
     viewport = {
       start: 0,
       end: 100,
-      candleWidth: 8,
-      candleSpacing: 2,
+      klineWidth: 8,
+      klineSpacing: 2,
     };
 
-    mockCandles = Array.from({ length: 200 }, (_, i) => ({
-      timestamp: Date.now() + i * 60000,
-      open: 100 + Math.random() * 10,
-      high: 105 + Math.random() * 10,
-      low: 95 + Math.random() * 10,
-      close: 100 + Math.random() * 10,
-      volume: 1000 + Math.random() * 1000,
+    mockKlines = Array.from({ length: 200 }, (_, i) => ({
+      openTime: Date.now() + i * 60000,
+      closeTime: Date.now() + (i + 1) * 60000,
+      open: (100 + Math.random() * 10).toString(),
+      high: (105 + Math.random() * 10).toString(),
+      low: (95 + Math.random() * 10).toString(),
+      close: (100 + Math.random() * 10).toString(),
+      volume: (1000 + Math.random() * 1000).toString(),
+      quoteVolume: '100000',
+      trades: 100,
+      takerBuyBaseVolume: '500',
+      takerBuyQuoteVolume: '50000',
     }));
 
     manager = new CanvasManager(canvas, viewport);
@@ -87,16 +92,16 @@ describe('CanvasManager', () => {
     });
   });
 
-  describe('candles management', () => {
-    it('should set and get candles', () => {
-      manager.setCandles(mockCandles);
+  describe('klines management', () => {
+    it('should set and get klines', () => {
+      manager.setKlines(mockKlines);
       
-      expect(manager.getCandles()).toEqual(mockCandles);
+      expect(manager.getKlines()).toEqual(mockKlines);
       expect(manager.getBounds()).not.toBeNull();
     });
 
-    it('should have null bounds with no candles', () => {
-      manager.setCandles([]);
+    it('should have null bounds with no klines', () => {
+      manager.setKlines([]);
       
       expect(manager.getBounds()).toBeNull();
     });
@@ -104,30 +109,30 @@ describe('CanvasManager', () => {
 
   describe('viewport management', () => {
     it('should update viewport', () => {
-      manager.setCandles(mockCandles);
+      manager.setKlines(mockKlines);
       const newViewport = { ...viewport, start: 10, end: 110 };
       manager.setViewport(newViewport);
       
       const updated = manager.getViewport();
       expect(updated.start).toBeGreaterThanOrEqual(0);
-      expect(updated.end).toBeLessThanOrEqual(mockCandles.length);
+      expect(updated.end).toBeLessThanOrEqual(mockKlines.length);
     });
 
-    it('should clamp viewport to candle range', () => {
-      manager.setCandles(mockCandles);
+    it('should clamp viewport to kline range', () => {
+      manager.setKlines(mockKlines);
       
       const invalidViewport = { ...viewport, start: -10, end: 250 };
       manager.setViewport(invalidViewport);
       
       const clamped = manager.getViewport();
       expect(clamped.start).toBeGreaterThanOrEqual(0);
-      expect(clamped.end).toBeLessThanOrEqual(mockCandles.length);
+      expect(clamped.end).toBeLessThanOrEqual(mockKlines.length);
     });
   });
 
   describe('coordinate conversion', () => {
     beforeEach(() => {
-      manager.setCandles(mockCandles);
+      manager.setKlines(mockKlines);
     });
 
     it('should convert price to y coordinate', () => {
@@ -172,29 +177,29 @@ describe('CanvasManager', () => {
     });
   });
 
-  describe('visible candles', () => {
+  describe('visible klines', () => {
     beforeEach(() => {
-      manager.setCandles(mockCandles);
+      manager.setKlines(mockKlines);
     });
 
-    it('should return visible candles within viewport', () => {
+    it('should return visible klines within viewport', () => {
       manager.setViewport({ ...viewport, start: 0, end: 50 });
-      const visible = manager.getVisibleCandles();
+      const visible = manager.getVisibleKlines();
       
       expect(visible.length).toBeLessThanOrEqual(50);
     });
 
-    it('should handle viewport exceeding candle length', () => {
+    it('should handle viewport exceeding kline length', () => {
       manager.setViewport({ ...viewport, start: 150, end: 250 });
-      const visible = manager.getVisibleCandles();
+      const visible = manager.getVisibleKlines();
       
       expect(visible.length).toBeGreaterThan(0);
-      expect(visible.length).toBeLessThanOrEqual(mockCandles.length);
+      expect(visible.length).toBeLessThanOrEqual(mockKlines.length);
     });
 
-    it('should return empty array when no candles', () => {
-      manager.setCandles([]);
-      const visible = manager.getVisibleCandles();
+    it('should return empty array when no klines', () => {
+      manager.setKlines([]);
+      const visible = manager.getVisibleKlines();
       
       expect(visible).toEqual([]);
     });
@@ -202,7 +207,7 @@ describe('CanvasManager', () => {
 
   describe('zoom', () => {
     beforeEach(() => {
-      manager.setCandles(mockCandles);
+      manager.setKlines(mockKlines);
     });
 
     it('should zoom in when delta is positive', () => {
@@ -226,15 +231,15 @@ describe('CanvasManager', () => {
       
       const newViewport = manager.getViewport();
       expect(newViewport.start).toBeGreaterThanOrEqual(0);
-      expect(newViewport.end).toBeLessThanOrEqual(mockCandles.length);
+      expect(newViewport.end).toBeLessThanOrEqual(mockKlines.length);
     });
 
-    it('should update candle width after zoom', () => {
+    it('should update kline width after zoom', () => {
       manager.zoom(2);
       
-      const newWidth = manager.getViewport().candleWidth;
-      expect(newWidth).toBeGreaterThanOrEqual(CHART_CONFIG.MIN_CANDLE_WIDTH);
-      expect(newWidth).toBeLessThanOrEqual(CHART_CONFIG.MAX_CANDLE_WIDTH);
+      const newWidth = manager.getViewport().klineWidth;
+      expect(newWidth).toBeGreaterThanOrEqual(CHART_CONFIG.MIN_KLINE_WIDTH);
+      expect(newWidth).toBeLessThanOrEqual(CHART_CONFIG.MAX_KLINE_WIDTH);
     });
 
     it('should trigger render callback on zoom', async () => {
@@ -252,7 +257,7 @@ describe('CanvasManager', () => {
 
   describe('pan', () => {
     beforeEach(() => {
-      manager.setCandles(mockCandles);
+      manager.setKlines(mockKlines);
     });
 
     it('should pan left when deltaX is positive', () => {
@@ -294,7 +299,7 @@ describe('CanvasManager', () => {
 
   describe('vertical pan and zoom', () => {
     beforeEach(() => {
-      manager.setCandles(mockCandles);
+      manager.setKlines(mockKlines);
     });
 
     it('should pan vertically', () => {
@@ -343,21 +348,21 @@ describe('CanvasManager', () => {
     });
   });
 
-  describe('candle at position', () => {
+  describe('kline at position', () => {
     beforeEach(() => {
-      manager.setCandles(mockCandles);
+      manager.setKlines(mockKlines);
     });
 
-    it('should get candle at x position', () => {
-      const candle = manager.getCandleAtX(400);
+    it('should get kline at x position', () => {
+      const kline = manager.getKlineAtX(400);
       
-      expect(candle).toBeDefined();
+      expect(kline).toBeDefined();
     });
 
     it('should return null for invalid position', () => {
-      const candle = manager.getCandleAtX(10000);
+      const kline = manager.getKlineAtX(10000);
       
-      expect(candle).toBeNull();
+      expect(kline).toBeNull();
     });
   });
 
@@ -432,12 +437,12 @@ describe('CanvasManager', () => {
 
   describe('destroy', () => {
     it('should clean up resources', () => {
-      manager.setCandles(mockCandles);
+      manager.setKlines(mockKlines);
       manager.setRenderCallback(vi.fn());
       
       manager.destroy();
       
-      expect(manager.getCandles()).toEqual([]);
+      expect(manager.getKlines()).toEqual([]);
       expect(manager.getBounds()).toBeNull();
       expect(manager.getDimensions()).toBeNull();
     });
@@ -459,7 +464,7 @@ describe('CanvasManager', () => {
 
   describe('resetVerticalZoom', () => {
     beforeEach(() => {
-      manager.setCandles(mockCandles);
+      manager.setKlines(mockKlines);
     });
 
     it('should reset price offset and scale', async () => {
@@ -482,8 +487,8 @@ describe('CanvasManager', () => {
   });
 
   describe('resetToInitialView', () => {
-    it('should reset to initial candle count', async () => {
-      manager.setCandles(mockCandles);
+    it('should reset to initial kline count', async () => {
+      manager.setKlines(mockKlines);
       const callback = vi.fn();
       manager.setRenderCallback(callback);
       callback.mockClear();
@@ -492,7 +497,7 @@ describe('CanvasManager', () => {
       manager.resetToInitialView();
       
       const viewport = manager.getViewport();
-      expect(viewport.end).toBe(mockCandles.length);
+      expect(viewport.end).toBe(mockKlines.length);
       
       await vi.waitFor(() => {
         expect(callback).toHaveBeenCalled();
@@ -500,33 +505,33 @@ describe('CanvasManager', () => {
     });
   });
 
-  describe('panToNextCandle', () => {
+  describe('panToNextKline', () => {
     beforeEach(() => {
-      manager.setCandles(mockCandles);
+      manager.setKlines(mockKlines);
       manager.setViewport({ ...viewport, start: 0, end: 50 });
     });
 
-    it('should pan forward by one candle', () => {
+    it('should pan forward by one kline', () => {
       const initialStart = manager.getViewport().start;
-      manager.panToNextCandle();
+      manager.panToNextKline();
       
       const newStart = manager.getViewport().start;
       expect(newStart).toBe(initialStart + 1);
     });
 
-    it('should not pan beyond candle length', () => {
-      manager.setViewport({ ...viewport, start: mockCandles.length - 50, end: mockCandles.length });
-      manager.panToNextCandle();
+    it('should not pan beyond kline length', () => {
+      manager.setViewport({ ...viewport, start: mockKlines.length - 50, end: mockKlines.length });
+      manager.panToNextKline();
       
       const currentViewport = manager.getViewport();
-      expect(currentViewport.end).toBe(mockCandles.length);
+      expect(currentViewport.end).toBe(mockKlines.length);
     });
 
-    it('should do nothing with empty candles', () => {
-      manager.setCandles([]);
+    it('should do nothing with empty klines', () => {
+      manager.setKlines([]);
       const initialViewport = manager.getViewport();
       
-      manager.panToNextCandle();
+      manager.panToNextKline();
       
       expect(manager.getViewport()).toEqual(initialViewport);
     });

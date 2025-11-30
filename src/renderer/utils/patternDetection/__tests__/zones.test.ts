@@ -8,20 +8,25 @@ import {
 } from '../patterns/zones';
 import type { PivotPoint } from '../types';
 
-const createCandle = (
-  timestamp: number,
+const createKline = (
+  openTime: number,
   open: number,
   high: number,
   low: number,
   close: number,
   volume = 1000
-): Candle => ({
-  timestamp,
-  open,
-  high,
-  low,
-  close,
-  volume,
+): Kline => ({
+  openTime,
+  closeTime: openTime + 60000,
+  open: open.toString(),
+  high: high.toString(),
+  low: low.toString(),
+  close: close.toString(),
+  volume: volume.toString(),
+  quoteVolume: (volume * close).toString(),
+  trades: 100,
+  takerBuyBaseVolume: (volume * 0.5).toString(),
+  takerBuyQuoteVolume: (volume * close * 0.5).toString(),
 });
 
 const createPivot = (
@@ -32,7 +37,7 @@ const createPivot = (
 ): PivotPoint => ({
   index,
   price,
-  timestamp: baseTimestamp + index * 60000,
+  openTime: baseTimestamp + index * 60000,
   type,
   strength: 1,
   volume: 1000,
@@ -42,10 +47,10 @@ describe('zones', () => {
   describe('detectBuyZones', () => {
     it('should detect buy zone with clustered low pivots', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, 1000));
       }
 
       const pivots: PivotPoint[] = [
@@ -55,7 +60,7 @@ describe('zones', () => {
         createPivot(35, 98.2, 'low', now),
       ];
 
-      const zones = detectBuyZones(candles, pivots);
+      const zones = detectBuyZones(klines, pivots);
 
       expect(zones.length).toBeGreaterThan(0);
       expect(zones[0]?.type).toBe('buy-zone');
@@ -66,10 +71,10 @@ describe('zones', () => {
 
     it('should reject zones with insufficient touches', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, 1000));
       }
 
       const pivots: PivotPoint[] = [
@@ -77,17 +82,17 @@ describe('zones', () => {
         createPivot(35, 98.2, 'low', now),
       ];
 
-      const zones = detectBuyZones(candles, pivots);
+      const zones = detectBuyZones(klines, pivots);
 
       expect(zones.length).toBe(0);
     });
 
     it('should reject zones with widely dispersed prices', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, 1000));
       }
 
       const pivots: PivotPoint[] = [
@@ -97,26 +102,26 @@ describe('zones', () => {
         createPivot(35, 105, 'low', now),
       ];
 
-      const zones = detectBuyZones(candles, pivots);
+      const zones = detectBuyZones(klines, pivots);
 
       expect(zones.length).toBe(0);
     });
 
-    it('should return empty array for insufficient candles', () => {
-      const candles: Kline[] = [createCandle(Date.now(), 100, 102, 98, 100)];
+    it('should return empty array for insufficient klines', () => {
+      const klines: Kline[] = [createKline(Date.now(), 100, 102, 98, 100)];
       const pivots: PivotPoint[] = [];
 
-      const zones = detectBuyZones(candles, pivots);
+      const zones = detectBuyZones(klines, pivots);
 
       expect(zones).toEqual([]);
     });
 
     it('should return empty array for insufficient pivots', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, 1000));
       }
 
       const pivots: PivotPoint[] = [
@@ -124,17 +129,17 @@ describe('zones', () => {
         createPivot(15, 98.5, 'low', now),
       ];
 
-      const zones = detectBuyZones(candles, pivots);
+      const zones = detectBuyZones(klines, pivots);
 
       expect(zones.length).toBe(0);
     });
 
     it('should assign confidence scores between 0 and 1', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, 1000));
       }
 
       const pivots: PivotPoint[] = [
@@ -144,7 +149,7 @@ describe('zones', () => {
         createPivot(35, 98.2, 'low', now),
       ];
 
-      const zones = detectBuyZones(candles, pivots);
+      const zones = detectBuyZones(klines, pivots);
 
       zones.forEach((zone) => {
         expect(zone.confidence).toBeGreaterThan(0);
@@ -156,10 +161,10 @@ describe('zones', () => {
   describe('detectSellZones', () => {
     it('should detect sell zone with clustered high pivots', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, 1000));
       }
 
       const pivots: PivotPoint[] = [
@@ -169,7 +174,7 @@ describe('zones', () => {
         createPivot(35, 101.8, 'high', now),
       ];
 
-      const zones = detectSellZones(candles, pivots);
+      const zones = detectSellZones(klines, pivots);
 
       expect(zones.length).toBeGreaterThan(0);
       expect(zones[0]?.type).toBe('sell-zone');
@@ -180,10 +185,10 @@ describe('zones', () => {
 
     it('should reject zones with insufficient touches', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, 1000));
       }
 
       const pivots: PivotPoint[] = [
@@ -191,17 +196,17 @@ describe('zones', () => {
         createPivot(35, 101.8, 'high', now),
       ];
 
-      const zones = detectSellZones(candles, pivots);
+      const zones = detectSellZones(klines, pivots);
 
       expect(zones.length).toBe(0);
     });
 
     it('should return empty array for insufficient pivots', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, 1000));
       }
 
       const pivots: PivotPoint[] = [
@@ -209,17 +214,17 @@ describe('zones', () => {
         createPivot(15, 101.5, 'high', now),
       ];
 
-      const zones = detectSellZones(candles, pivots);
+      const zones = detectSellZones(klines, pivots);
 
       expect(zones.length).toBe(0);
     });
 
     it('should assign proper zone height', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, 1000));
       }
 
       const pivots: PivotPoint[] = [
@@ -229,7 +234,7 @@ describe('zones', () => {
         createPivot(35, 101.8, 'high', now),
       ];
 
-      const zones = detectSellZones(candles, pivots);
+      const zones = detectSellZones(klines, pivots);
 
       if (zones.length > 0) {
         const zone = zones[0];
@@ -243,11 +248,11 @@ describe('zones', () => {
   describe('detectLiquidityZones', () => {
     it('should detect liquidity zone with high volume and clustered pivots', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         const volume = i >= 10 && i <= 20 ? 1600 : 1000;
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, volume));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, volume));
       }
 
       const pivots: PivotPoint[] = [
@@ -257,7 +262,7 @@ describe('zones', () => {
         createPivot(18, 101, 'high', now),
       ];
 
-      const zones = detectLiquidityZones(candles, pivots);
+      const zones = detectLiquidityZones(klines, pivots);
 
       expect(zones.length).toBeGreaterThanOrEqual(0);
       if (zones.length > 0) {
@@ -268,11 +273,11 @@ describe('zones', () => {
 
     it('should reject zones with low volume', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         const volume = i >= 10 && i <= 20 ? 1100 : 1000;
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, volume));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, volume));
       }
 
       const pivots: PivotPoint[] = [
@@ -282,17 +287,17 @@ describe('zones', () => {
         createPivot(18, 101, 'high', now),
       ];
 
-      const zones = detectLiquidityZones(candles, pivots);
+      const zones = detectLiquidityZones(klines, pivots);
 
       expect(zones.length).toBe(0);
     });
 
     it('should reject zones with insufficient pivots', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 3000));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, 3000));
       }
 
       const pivots: PivotPoint[] = [
@@ -300,27 +305,27 @@ describe('zones', () => {
         createPivot(15, 99, 'low', now),
       ];
 
-      const zones = detectLiquidityZones(candles, pivots);
+      const zones = detectLiquidityZones(klines, pivots);
 
       expect(zones.length).toBe(0);
     });
 
-    it('should return empty array for insufficient candles', () => {
-      const candles: Kline[] = [createCandle(Date.now(), 100, 102, 98, 100)];
+    it('should return empty array for insufficient klines', () => {
+      const klines: Kline[] = [createKline(Date.now(), 100, 102, 98, 100)];
       const pivots: PivotPoint[] = [];
 
-      const zones = detectLiquidityZones(candles, pivots);
+      const zones = detectLiquidityZones(klines, pivots);
 
       expect(zones).toEqual([]);
     });
 
     it('should detect zones with mixed high and low pivots', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         const volume = i >= 10 && i <= 20 ? 1600 : 1000;
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, volume));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, volume));
       }
 
       const pivots: PivotPoint[] = [
@@ -331,7 +336,7 @@ describe('zones', () => {
         createPivot(20, 99.5, 'low', now),
       ];
 
-      const zones = detectLiquidityZones(candles, pivots);
+      const zones = detectLiquidityZones(klines, pivots);
 
       expect(zones.length).toBeGreaterThanOrEqual(0);
     });
@@ -340,17 +345,17 @@ describe('zones', () => {
   describe('detectAccumulationZones', () => {
     it('should detect accumulation zone with low volatility and rising volume', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 60; i++) {
         const volume = i >= 20 && i < 40 ? 1500 : 1000;
         const price = i < 40 ? 100 : 105;
-        candles.push(createCandle(now + i * 60000, price, price + 1, price - 1, price, volume));
+        klines.push(createKline(now + i * 60000, price, price + 1, price - 1, price, volume));
       }
 
       const pivots: PivotPoint[] = [];
 
-      const zones = detectAccumulationZones(candles, pivots);
+      const zones = detectAccumulationZones(klines, pivots);
 
       expect(zones.length).toBeGreaterThanOrEqual(0);
       if (zones.length > 0) {
@@ -361,73 +366,73 @@ describe('zones', () => {
 
     it('should reject zones with high volatility', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 60; i++) {
         const price = 100 + (i % 2 === 0 ? 10 : -10);
-        candles.push(createCandle(now + i * 60000, price, price + 5, price - 5, price, 1500));
+        klines.push(createKline(now + i * 60000, price, price + 5, price - 5, price, 1500));
       }
 
       const pivots: PivotPoint[] = [];
 
-      const zones = detectAccumulationZones(candles, pivots);
+      const zones = detectAccumulationZones(klines, pivots);
 
       expect(zones.length).toBe(0);
     });
 
     it('should reject zones without volume increase', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 60; i++) {
-        candles.push(createCandle(now + i * 60000, 100, 101, 99, 100, 1000));
+        klines.push(createKline(now + i * 60000, 100, 101, 99, 100, 1000));
       }
 
       const pivots: PivotPoint[] = [];
 
-      const zones = detectAccumulationZones(candles, pivots);
+      const zones = detectAccumulationZones(klines, pivots);
 
       expect(zones.length).toBe(0);
     });
 
     it('should reject zones without future price increase', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 60; i++) {
         const volume = i >= 20 && i < 40 ? 1500 : 1000;
-        candles.push(createCandle(now + i * 60000, 100, 101, 99, 100, volume));
+        klines.push(createKline(now + i * 60000, 100, 101, 99, 100, volume));
       }
 
       const pivots: PivotPoint[] = [];
 
-      const zones = detectAccumulationZones(candles, pivots);
+      const zones = detectAccumulationZones(klines, pivots);
 
       expect(zones.length).toBe(0);
     });
 
-    it('should return empty array for insufficient candles', () => {
-      const candles: Kline[] = [createCandle(Date.now(), 100, 102, 98, 100)];
+    it('should return empty array for insufficient klines', () => {
+      const klines: Kline[] = [createKline(Date.now(), 100, 102, 98, 100)];
       const pivots: PivotPoint[] = [];
 
-      const zones = detectAccumulationZones(candles, pivots);
+      const zones = detectAccumulationZones(klines, pivots);
 
       expect(zones).toEqual([]);
     });
 
     it('should assign confidence scores properly', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 60; i++) {
         const volume = i >= 20 && i < 40 ? 1500 : 1000;
         const price = i < 40 ? 100 : 105;
-        candles.push(createCandle(now + i * 60000, price, price + 1, price - 1, price, volume));
+        klines.push(createKline(now + i * 60000, price, price + 1, price - 1, price, volume));
       }
 
       const pivots: PivotPoint[] = [];
 
-      const zones = detectAccumulationZones(candles, pivots);
+      const zones = detectAccumulationZones(klines, pivots);
 
       zones.forEach((zone) => {
         expect(zone.confidence).toBeGreaterThan(0);
@@ -437,31 +442,31 @@ describe('zones', () => {
   });
 
   describe('edge cases', () => {
-    it('should handle empty candles array', () => {
-      const candles: Kline[] = [];
+    it('should handle empty klines array', () => {
+      const klines: Kline[] = [];
       const pivots: PivotPoint[] = [];
 
-      expect(detectBuyZones(candles, pivots)).toEqual([]);
-      expect(detectSellZones(candles, pivots)).toEqual([]);
-      expect(detectLiquidityZones(candles, pivots)).toEqual([]);
-      expect(detectAccumulationZones(candles, pivots)).toEqual([]);
+      expect(detectBuyZones(klines, pivots)).toEqual([]);
+      expect(detectSellZones(klines, pivots)).toEqual([]);
+      expect(detectLiquidityZones(klines, pivots)).toEqual([]);
+      expect(detectAccumulationZones(klines, pivots)).toEqual([]);
     });
 
-    it('should handle null/undefined candles gracefully', () => {
+    it('should handle null/undefined klines gracefully', () => {
       const pivots: PivotPoint[] = [];
 
-      expect(detectBuyZones(null as unknown as Candle[], pivots)).toEqual([]);
-      expect(detectSellZones(undefined as unknown as Candle[], pivots)).toEqual([]);
-      expect(detectLiquidityZones(null as unknown as Candle[], pivots)).toEqual([]);
-      expect(detectAccumulationZones(undefined as unknown as Candle[], pivots)).toEqual([]);
+      expect(detectBuyZones(null as unknown as Kline[], pivots)).toEqual([]);
+      expect(detectSellZones(undefined as unknown as Kline[], pivots)).toEqual([]);
+      expect(detectLiquidityZones(null as unknown as Kline[], pivots)).toEqual([]);
+      expect(detectAccumulationZones(undefined as unknown as Kline[], pivots)).toEqual([]);
     });
 
     it('should limit results to MAX_PATTERNS_PER_TYPE', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 200; i++) {
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, 1000));
       }
 
       const pivots: PivotPoint[] = [];
@@ -469,17 +474,17 @@ describe('zones', () => {
         pivots.push(createPivot(i * 2, 98 + (i % 3), 'low', now));
       }
 
-      const zones = detectBuyZones(candles, pivots);
+      const zones = detectBuyZones(klines, pivots);
 
       expect(zones.length).toBeLessThanOrEqual(5);
     });
 
     it('should sort zones by confidence', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 100; i++) {
-        candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
+        klines.push(createKline(now + i * 60000, 100, 102, 98, 100, 1000));
       }
 
       const pivots: PivotPoint[] = [
@@ -493,7 +498,7 @@ describe('zones', () => {
         createPivot(75, 98.6, 'low', now),
       ];
 
-      const zones = detectBuyZones(candles, pivots);
+      const zones = detectBuyZones(klines, pivots);
 
       for (let i = 1; i < zones.length; i++) {
         const prev = zones[i - 1];
@@ -504,13 +509,13 @@ describe('zones', () => {
       }
     });
 
-    it('should handle zones with missing candle data', () => {
+    it('should handle zones with missing kline data', () => {
       const now = Date.now();
-      const candles: Kline[] = [];
+      const klines: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         if (i % 5 !== 0) {
-          candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
+          klines.push(createKline(now + i * 60000, 100, 102, 98, 100, 1000));
         }
       }
 
@@ -521,7 +526,7 @@ describe('zones', () => {
         createPivot(35, 98.2, 'low', now),
       ];
 
-      const zones = detectBuyZones(candles, pivots);
+      const zones = detectBuyZones(klines, pivots);
 
       expect(zones).toBeDefined();
       expect(Array.isArray(zones)).toBe(true);

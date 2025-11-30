@@ -43,7 +43,7 @@ export const useGridRenderer = ({
 
     const { width, chartHeight } = dimensions;
     const { minPrice, maxPrice } = bounds;
-    const candles = manager.getVisibleCandles();
+    const klines = manager.getVisibleKlines();
 
     drawGrid(
       ctx,
@@ -96,19 +96,19 @@ export const useGridRenderer = ({
       }
     }
 
-    if (candles.length > 0) {
+    if (klines.length > 0) {
       const visibleIndices = Math.floor(viewport.end - viewport.start);
       const step = Math.max(1, Math.floor(visibleIndices / verticalLines));
 
-      for (let i = 0; i < candles.length; i += step) {
-        const candle = candles[i];
-        if (!candle) continue;
+      for (let i = 0; i < klines.length; i += step) {
+        const kline = klines[i];
+        if (!kline) continue;
 
         const index = Math.floor(viewport.start) + i;
         const x = manager.indexToX(index);
 
         if (x >= 0 && x <= chartRightBoundary - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN)) {
-          const timeLabel = formatTimestamp(candle.openTime);
+          const timeLabel = formatTimestamp(kline.openTime);
           
           drawText(
             ctx,

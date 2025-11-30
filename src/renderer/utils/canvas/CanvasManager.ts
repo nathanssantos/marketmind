@@ -1,18 +1,18 @@
 import { CHART_CONFIG } from '@shared/constants';
 import type { Kline, Viewport } from '@shared/types';
 import {
-    calculateBounds,
-    clampViewport,
-    priceToY,
-    volumeToHeight,
-    yToPrice,
-    type Bounds,
-    type Dimensions,
+  calculateBounds,
+  clampViewport,
+  priceToY,
+  volumeToHeight,
+  yToPrice,
+  type Bounds,
+  type Dimensions,
 } from './coordinateSystem';
 import { clearCanvas, setupCanvas } from './drawingUtils';
 
 export interface DirtyFlags {
-  candles: boolean;
+  klines: boolean;
   viewport: boolean;
   dimensions: boolean;
   overlays: boolean;
@@ -22,7 +22,7 @@ export interface DirtyFlags {
 export class CanvasManager {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D | null = null;
-  private candles: Kline[] = [];
+  private klines: Kline[] = [];
   private viewport: Viewport;
   private bounds: Bounds | null = null;
   private dimensions: Dimensions | null = null;
@@ -36,7 +36,7 @@ export class CanvasManager {
   private animationFrameId: number | null = null;
   private isAnimating: boolean = false;
   private dirtyFlags: DirtyFlags = {
-    candles: true,
+    klines: true,
     viewport: true,
     dimensions: true,
     overlays: true,
@@ -96,7 +96,7 @@ export class CanvasManager {
   
   public isDirty(): boolean {
     return this.dirtyFlags.all || 
-           this.dirtyFlags.candles || 
+           this.dirtyFlags.klines || 
            this.dirtyFlags.viewport || 
            this.dirtyFlags.dimensions || 
            this.dirtyFlags.overlays;
@@ -109,7 +109,7 @@ export class CanvasManager {
   
   public clearDirtyFlags(): void {
     this.dirtyFlags = {
-      candles: false,
+      klines: false,
       viewport: false,
       dimensions: false,
       overlays: false,
@@ -124,7 +124,7 @@ export class CanvasManager {
   private initialize(): void {
     this.ctx = setupCanvas(this.canvas);
     this.updateDimensions();
-    this.updateCandleWidth();
+    this.updateKlineWidth();
   }
 
   private updateDimensions(): void {
@@ -143,40 +143,40 @@ export class CanvasManager {
     this.markDirty('dimensions');
   }
 
-  public setCandles(candles: Kline[]): void {
-    const oldLastCandle = this.candles[this.candles.length - 1];
-    const newLastCandle = candles[candles.length - 1];
+  public setKlines(klines: Kline[]): void {
+    const oldLastKline = this.klines[this.klines.length - 1];
+    const newLastKline = klines[klines.length - 1];
     
-    const candlesChanged = 
-      this.candles.length !== candles.length ||
-      !oldLastCandle ||
-      !newLastCandle ||
-      oldLastCandle.timestamp !== newLastCandle.timestamp ||
-      oldLastCandle.open !== newLastCandle.open ||
-      oldLastCandle.high !== newLastCandle.high ||
-      oldLastCandle.low !== newLastCandle.low ||
-      oldLastCandle.close !== newLastCandle.close ||
-      oldLastCandle.volume !== newLastCandle.volume;
+    const klinesChanged = 
+      this.klines.length !== klines.length ||
+      !oldLastKline ||
+      !newLastKline ||
+      oldLastKline.openTime !== newLastKline.openTime ||
+      oldLastKline.open !== newLastKline.open ||
+      oldLastKline.high !== newLastKline.high ||
+      oldLastKline.low !== newLastKline.low ||
+      oldLastKline.close !== newLastKline.close ||
+      oldLastKline.volume !== newLastKline.volume;
     
-    this.candles = candles;
+    this.klines = klines;
     this.updateBounds();
     
-    if (candlesChanged) {
-      this.markDirty('candles');
+    if (klinesChanged) {
+      this.markDirty('klines');
     }
   }
 
-  public getCandles(): Kline[] {
-    return this.candles;
+  public getKlines(): Kline[] {
+    return this.klines;
   }
 
   public setViewport(viewport: Viewport): void {
     const viewportChanged = 
       this.viewport.start !== viewport.start ||
       this.viewport.end !== viewport.end ||
-      this.viewport.candleWidth !== viewport.candleWidth;
+      this.viewport.klineWidth !== viewport.klineWidth;
       
-    this.viewport = clampViewport(viewport, this.candles.length);
+    this.viewport = clampViewport(viewport, this.klines.length);
     this.updateBounds();
     
     if (viewportChanged) {
@@ -189,12 +189,12 @@ export class CanvasManager {
   }
 
   private updateBounds(): void {
-    if (this.candles.length === 0) {
+    if (this.klines.length === 0) {
       this.bounds = null;
       return;
     }
 
-    const baseBounds = calculateBounds(this.candles, this.viewport);
+    const baseBounds = calculateBounds(this.klines, this.viewport);
     
     const center = (baseBounds.minPrice + baseBounds.maxPrice) / 2;
     const range = (baseBounds.maxPrice - baseBounds.minPrice) * this.priceScale;
@@ -289,33 +289,33 @@ export class CanvasManager {
     if (!this.dimensions) return 0;
     const effectiveWidth = this.dimensions.chartWidth - this.rightMargin;
     const visibleRange = this.viewport.end - this.viewport.start;
-    const widthPerCandle = effectiveWidth / visibleRange;
+    const widthPerKline = effectiveWidth / visibleRange;
     const relativeIndex = index - this.viewport.start;
-    return relativeIndex * widthPerCandle;
+    return relativeIndex * widthPerKline;
   }
 
   public indexToCenterX(index: number): number {
     if (!this.dimensions) return 0;
     const effectiveWidth = this.dimensions.chartWidth - this.rightMargin;
     const visibleRange = this.viewport.end - this.viewport.start;
-    const widthPerCandle = effectiveWidth / visibleRange;
+    const widthPerKline = effectiveWidth / visibleRange;
     const relativeIndex = index - this.viewport.start;
-    return relativeIndex * widthPerCandle + widthPerCandle / 2;
+    return relativeIndex * widthPerKline + widthPerKline / 2;
   }
 
   public xToIndex(x: number): number {
     if (!this.dimensions) return 0;
     const effectiveWidth = this.dimensions.chartWidth - this.rightMargin;
     const visibleRange = this.viewport.end - this.viewport.start;
-    const widthPerCandle = effectiveWidth / visibleRange;
-    const relativeIndex = x / widthPerCandle;
+    const widthPerKline = effectiveWidth / visibleRange;
+    const relativeIndex = x / widthPerKline;
     return this.viewport.start + relativeIndex;
   }
 
-  public getVisibleCandles(): Kline[] {
+  public getVisibleKlines(): Kline[] {
     const start = Math.floor(this.viewport.start);
-    const end = Math.min(Math.ceil(this.viewport.end), this.candles.length);
-    return this.candles.slice(start, end);
+    const end = Math.min(Math.ceil(this.viewport.end), this.klines.length);
+    return this.klines.slice(start, end);
   }
 
   public zoom(delta: number, centerX?: number): void {
@@ -337,9 +337,9 @@ export class CanvasManager {
       this.viewport.end = center + newRange / 2;
     }
 
-    this.viewport = clampViewport(this.viewport, this.candles.length);
+    this.viewport = clampViewport(this.viewport, this.klines.length);
     
-    this.updateCandleWidth();
+    this.updateKlineWidth();
     
     this.updateBounds();
     this.markDirty('viewport');
@@ -354,7 +354,7 @@ export class CanvasManager {
     this.viewport.start -= indexDelta;
     this.viewport.end -= indexDelta;
 
-    this.viewport = clampViewport(this.viewport, this.candles.length);
+    this.viewport = clampViewport(this.viewport, this.klines.length);
     this.updateBounds();
     this.markDirty('viewport');
   }
@@ -362,7 +362,7 @@ export class CanvasManager {
   public panVertical(deltaY: number): void {
     if (!this.dimensions) return;
 
-    const baseBounds = this.candles.length > 0 ? calculateBounds(this.candles, this.viewport) : null;
+    const baseBounds = this.klines.length > 0 ? calculateBounds(this.klines, this.viewport) : null;
     if (!baseBounds) return;
 
     const baseRange = baseBounds.maxPrice - baseBounds.minPrice;
@@ -396,58 +396,58 @@ export class CanvasManager {
   }
 
   public resetToInitialView(): void {
-    const initialCandleCount = Math.min(CHART_CONFIG.INITIAL_CANDLES_VISIBLE, this.candles.length);
+    const initialKlineCount = Math.min(CHART_CONFIG.INITIAL_KLINES_VISIBLE, this.klines.length);
     
     this.viewport = {
       ...this.viewport,
-      start: Math.max(0, this.candles.length - initialCandleCount),
-      end: this.candles.length,
+      start: Math.max(0, this.klines.length - initialKlineCount),
+      end: this.klines.length,
     };
     
     this.resetVerticalZoom();
-    this.updateCandleWidth();
+    this.updateKlineWidth();
     this.markDirty('all');
   }
 
-  public panToNextCandle(): void {
-    if (this.candles.length === 0) return;
+  public panToNextKline(): void {
+    if (this.klines.length === 0) return;
     
     const newStart = this.viewport.start + 1;
     const newEnd = this.viewport.end + 1;
     
-    if (newEnd <= this.candles.length) {
+    if (newEnd <= this.klines.length) {
       this.viewport = {
         ...this.viewport,
         start: newStart,
         end: newEnd,
       };
       
-      this.updateCandleWidth();
+      this.updateKlineWidth();
       this.updateBounds();
       this.markDirty('viewport');
     }
   }
 
-  private updateCandleWidth(): void {
+  private updateKlineWidth(): void {
     if (!this.dimensions) return;
 
     const visibleRange = this.viewport.end - this.viewport.start;
     const availableWidth = this.dimensions.chartWidth;
     
-    const widthPerCandle = availableWidth / visibleRange;
+    const widthPerKline = availableWidth / visibleRange;
     
-    const candleWidthRatio = 0.8;
-    const calculatedWidth = widthPerCandle * candleWidthRatio;
+    const klineWidthRatio = 0.8;
+    const calculatedWidth = widthPerKline * klineWidthRatio;
     
-    this.viewport.candleWidth = Math.max(
-      CHART_CONFIG.MIN_CANDLE_WIDTH,
-      Math.min(CHART_CONFIG.MAX_CANDLE_WIDTH, calculatedWidth)
+    this.viewport.klineWidth = Math.max(
+      CHART_CONFIG.MIN_KLINE_WIDTH,
+      Math.min(CHART_CONFIG.MAX_KLINE_WIDTH, calculatedWidth)
     );
   }
 
-  public getCandleAtX(x: number): Kline | null {
+  public getKlineAtX(x: number): Kline | null {
     const index = Math.floor(this.xToIndex(x));
-    return this.candles[index] ?? null;
+    return this.klines[index] ?? null;
   }
 
   public getPadding(): number {
@@ -467,7 +467,7 @@ export class CanvasManager {
       this.ctx = null;
     }
     
-    this.candles = [];
+    this.klines = [];
     this.bounds = null;
     this.dimensions = null;
     

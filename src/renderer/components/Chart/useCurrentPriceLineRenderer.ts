@@ -33,14 +33,14 @@ export const useCurrentPriceLineRenderer = ({
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
     const bounds = manager.getBounds();
-    const candles = manager.getCandles();
+    const klines = manager.getKlines();
 
-    if (!candles.length || !ctx || !dimensions || !bounds) return;
+    if (!klines.length || !ctx || !dimensions || !bounds) return;
 
-    const lastCandle = candles[candles.length - 1];
-    if (!lastCandle) return;
+    const lastKline = klines[klines.length - 1];
+    if (!lastKline) return;
 
-    const currentPrice = getKlineClose(lastCandle);
+    const currentPrice = getKlineClose(lastKline);
     const { width } = dimensions;
     const y = manager.priceToY(currentPrice);
 
@@ -63,7 +63,7 @@ export const useCurrentPriceLineRenderer = ({
     ctx.lineTo(lineEndX, y);
     ctx.stroke();
     ctx.restore();
-  }, [enabled, manager, colors, lineWidth, lineStyle, rightMargin, manager?.getCandles()]);
+  }, [enabled, manager, colors, lineWidth, lineStyle, rightMargin, manager?.getKlines()]);
 
   const renderLabel = useCallback((): void => {
     if (!manager) return;
@@ -71,14 +71,14 @@ export const useCurrentPriceLineRenderer = ({
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
     const bounds = manager.getBounds();
-    const candles = manager.getCandles();
+    const klines = manager.getKlines();
     
-    if (!candles.length || !ctx || !dimensions || !bounds) return;
+    if (!klines.length || !ctx || !dimensions || !bounds) return;
 
-    const lastCandle = candles[candles.length - 1];
-    if (!lastCandle) return;
+    const lastKline = klines[klines.length - 1];
+    if (!lastKline) return;
 
-    const currentPrice = getKlineClose(lastCandle);
+    const currentPrice = getKlineClose(lastKline);
     const { width } = dimensions;
     const y = manager.priceToY(currentPrice);
 
@@ -93,7 +93,7 @@ export const useCurrentPriceLineRenderer = ({
     drawPriceTag(ctx, priceText, y, lineEndX, colors.currentPriceLabel.bg);
 
     ctx.restore();
-  }, [manager, colors, rightMargin, manager?.getCandles()]);
+  }, [manager, colors, rightMargin, manager?.getKlines()]);
 
   const render = useCallback((): void => {
     renderLine();

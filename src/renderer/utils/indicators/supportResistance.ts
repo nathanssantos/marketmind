@@ -1,30 +1,31 @@
 import type { Kline, PivotPoint } from '@shared/types';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 
 const DEFAULT_PIVOT_LOOKBACK = 5;
 const DEFAULT_CLUSTER_THRESHOLD = 0.01;
 const PIVOT_SIDES = 2;
 const MIN_CLUSTER_SIZE = 2;
-const MIN_CANDLES_FOR_BREAKOUT = 20;
+const MIN_KLINES_FOR_BREAKOUT = 20;
 const VOLUME_LOOKBACK = 20;
 
 export const findPivotPoints = (
-  candles: Kline[],
+  klines: Kline[],
   lookback = DEFAULT_PIVOT_LOOKBACK,
 ): PivotPoint[] => {
-  if (candles.length < lookback * PIVOT_SIDES + 1) return [];
+  if (klines.length < lookback * PIVOT_SIDES + 1) return [];
 
   const pivots: PivotPoint[] = [];
 
-  for (let i = lookback; i < candles.length - lookback; i++) {
-    const current = candles[i];
+  for (let i = lookback; i < klines.length - lookback; i++) {
+    const current = klines[i];
     if (!current) continue;
 
     let isHigh = true;
     let isLow = true;
 
     for (let j = 1; j <= lookback; j++) {
-      const left = candles[i - j];
-      const right = candles[i + j];
+      const left = klines[i - j];
+      const right = klines[i + j];
 
       if (!left || !right) {
         isHigh = false;
@@ -32,11 +33,18 @@ export const findPivotPoints = (
         break;
       }
 
-      if (current.high <= left.high || current.high <= right.high) {
+      const currentHigh = getKlineHigh(current);
+      const leftHigh = getKlineHigh(left);
+      const rightHigh = getKlineHigh(right);
+      const currentLow = getKlineLow(current);
+      const leftLow = getKlineLow(left);
+      const rightLow = getKlineLow(right);
+
+      if (currentHigh <= leftHigh || currentHigh <= rightHigh) {
         isHigh = false;
       }
 
-      if (current.low >= left.low || current.low >= right.low) {
+      if (currentLow >= leftLow || currentLow >= rightLow) {
         isLow = false;
       }
 
@@ -46,8 +54,8 @@ export const findPivotPoints = (
     if (isHigh) {
       pivots.push({
         index: i,
-        timestamp: current.openTime,
-        price: current.high,
+        openTime: current.openTime,
+        price: getKlineHigh(current),
         type: 'high',
       });
     }
@@ -55,8 +63,8 @@ export const findPivotPoints = (
     if (isLow) {
       pivots.push({
         index: i,
-        timestamp: current.openTime,
-        price: current.low,
+        openTime: current.openTime,
+        price: getKlineLow(current),
         type: 'low',
       });
     }
@@ -134,7 +142,7 @@ export const isNearLevel = (
 };
 
 export const findBreakouts = (
-  candles: Kline[],
+  klines: Kline[],
   levels: SupportResistanceLevel[],
   volumeThreshold = 1.5,
 ): Array<{
@@ -150,34 +158,38 @@ export const findBreakouts = (
     volumeConfirmation: boolean;
   }> = [];
 
-  if (candles.length < MIN_CANDLES_FOR_BREAKOUT) return breakouts;
+  if (klines.length < MIN_KLINES_FOR_BREAKOUT) return breakouts;
 
   const avgVolume =
-    candles.slice(-VOLUME_LOOKBACK).reduce((sum, c) => sum + c.volume, 0) / VOLUME_LOOKBACK;
+    klines.slice(-VOLUME_LOOKBACK).reduce((sum, c) => sum + getKlineVolume(c), 0) / VOLUME_LOOKBACK;
 
-  for (let i = 1; i < candles.length; i++) {
-    const current = candles[i];
-    const previous = candles[i - 1];
+  for (let i = 1; i < klines.length; i++) {
+    const current = klines[i];
+    const previous = klines[i - 1];
 
     if (!current || !previous) continue;
 
+    const currentClose = getKlineClose(current);
+    const previousClose = getKlineClose(previous);
+    const currentVolume = getKlineVolume(current);
+
     for (const level of levels) {
       if (level.type === 'resistance') {
-        if (previous.close < level.price && current.close > level.price) {
+        if (previousClose < level.price && currentClose > level.price) {
           breakouts.push({
             index: i,
             level,
             direction: 'up',
-            volumeConfirmation: current.volume > avgVolume * volumeThreshold,
+            volumeConfirmation: currentVolume > avgVolume * volumeThreshold,
           });
         }
       } else {
-        if (previous.close > level.price && current.close < level.price) {
+        if (previousClose > level.price && currentClose < level.price) {
           breakouts.push({
             index: i,
             level,
             direction: 'down',
-            volumeConfirmation: current.volume > avgVolume * volumeThreshold,
+            volumeConfirmation: currentVolume > avgVolume * volumeThreshold,
           });
         }
       }
@@ -188,7 +200,7 @@ export const findBreakouts = (
 };
 
 export const findRecentSwingLow = (
-  candles: Kline[],
+  klines: Kline[],
   currentIndex: number,
   lookback: number = 20,
   pivotStrength: number = 3,
@@ -196,8 +208,8 @@ export const findRecentSwingLow = (
   if (currentIndex < lookback) return null;
 
   const startIndex = Math.max(0, currentIndex - lookback);
-  const recentCandles = candles.slice(startIndex, currentIndex + 1);
-  const pivots = findPivotPoints(recentCandles, pivotStrength);
+  const recentKlines = klines.slice(startIndex, currentIndex + 1);
+  const pivots = findPivotPoints(recentKlines, pivotStrength);
 
   const lows = pivots
     .filter((p) => p.type === 'low')
@@ -207,7 +219,7 @@ export const findRecentSwingLow = (
 };
 
 export const findRecentSwingHigh = (
-  candles: Kline[],
+  klines: Kline[],
   currentIndex: number,
   lookback: number = 20,
   pivotStrength: number = 3,
@@ -215,8 +227,8 @@ export const findRecentSwingHigh = (
   if (currentIndex < lookback) return null;
 
   const startIndex = Math.max(0, currentIndex - lookback);
-  const recentCandles = candles.slice(startIndex, currentIndex + 1);
-  const pivots = findPivotPoints(recentCandles, pivotStrength);
+  const recentKlines = klines.slice(startIndex, currentIndex + 1);
+  const pivots = findPivotPoints(recentKlines, pivotStrength);
 
   const highs = pivots
     .filter((p) => p.type === 'high')
@@ -226,7 +238,7 @@ export const findRecentSwingHigh = (
 };
 
 export const findLowestSwingLow = (
-  candles: Kline[],
+  klines: Kline[],
   currentIndex: number,
   lookback: number = 20,
   pivotStrength: number = 3,
@@ -234,8 +246,8 @@ export const findLowestSwingLow = (
   if (currentIndex < lookback) return null;
 
   const startIndex = Math.max(0, currentIndex - lookback);
-  const recentCandles = candles.slice(startIndex, currentIndex + 1);
-  const pivots = findPivotPoints(recentCandles, pivotStrength);
+  const recentKlines = klines.slice(startIndex, currentIndex + 1);
+  const pivots = findPivotPoints(recentKlines, pivotStrength);
 
   const lows = pivots
     .filter((p) => p.type === 'low')
@@ -245,7 +257,7 @@ export const findLowestSwingLow = (
 };
 
 export const findHighestSwingHigh = (
-  candles: Kline[],
+  klines: Kline[],
   currentIndex: number,
   lookback: number = 20,
   pivotStrength: number = 3,
@@ -253,8 +265,8 @@ export const findHighestSwingHigh = (
   if (currentIndex < lookback) return null;
 
   const startIndex = Math.max(0, currentIndex - lookback);
-  const recentCandles = candles.slice(startIndex, currentIndex + 1);
-  const pivots = findPivotPoints(recentCandles, pivotStrength);
+  const recentKlines = klines.slice(startIndex, currentIndex + 1);
+  const pivots = findPivotPoints(recentKlines, pivotStrength);
 
   const highs = pivots
     .filter((p) => p.type === 'high')

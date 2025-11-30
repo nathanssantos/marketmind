@@ -59,7 +59,7 @@ A **trading setup** is a specific price pattern or market condition that histori
 **Average R:R:** 2.5:1
 
 **Description:**  
-Detects when the 9-period Exponential Moving Average (EMA) changes direction, signaling a potential trend reversal. Confirmed with volume and candle strength.
+Detects when the 9-period Exponential Moving Average (EMA) changes direction, signaling a potential trend reversal. Confirmed with volume and kline strength.
 
 **Entry Criteria:**
 - EMA9 changes from downtrend to uptrend (LONG) or uptrend to downtrend (SHORT)
@@ -70,13 +70,13 @@ Detects when the 9-period Exponential Moving Average (EMA) changes direction, si
 **Confidence Factors:**
 - Distance from EMA9 (closer = higher confidence)
 - Volume spike (higher = higher confidence)
-- Candle strength (larger body = higher confidence)
+- Kline strength (larger body = higher confidence)
 
 **Example:**
 ```
 LONG Setup 9.1:
 - EMA9 was falling, now rising
-- Current candle closes above EMA9
+- Current kline closes above EMA9
 - Volume 1.5x average
 - Confidence: 85%
 - Entry: $50.25
@@ -98,7 +98,7 @@ Classic 123 reversal pattern with three pivot points forming higher lows (bullis
 **Entry Criteria:**
 - **Bullish:** P1 (low) → P2 (higher low) → P3 (even higher low) → breakout above P2 high
 - **Bearish:** P1 (high) → P2 (lower high) → P3 (even lower high) → breakout below P2 low
-- Pivot points within 5-15 candles of each other
+- Pivot points within 5-15 klines of each other
 - Breakout confirmation with volume
 
 **Confidence Factors:**
@@ -128,12 +128,12 @@ LONG Pattern 123:
 **Average R:R:** 2.8:1
 
 **Description:**  
-Detects pullback opportunities in trending markets when price briefly retraces below/above the previous candle's low/high while EMA9 maintains trend direction.
+Detects pullback opportunities in trending markets when price briefly retraces below/above the previous kline's low/high while EMA9 maintains trend direction.
 
 **Entry Criteria:**
 - EMA9 in clear uptrend (LONG) or downtrend (SHORT)
-- Current candle closes below previous low (LONG) or above previous high (SHORT)
-- Entry on breakout of current candle's high (LONG) or low (SHORT)
+- Current kline closes below previous low (LONG) or above previous high (SHORT)
+- Entry on breakout of current kline's high (LONG) or low (SHORT)
 - Volume confirmation (above average)
 
 **Confidence Factors:**
@@ -145,7 +145,7 @@ Detects pullback opportunities in trending markets when price briefly retraces b
 ```
 LONG Setup 9.2:
 - EMA9 rising from 109.5 → 110.2 → 111.0
-- Previous candle low: $110.50
+- Previous kline low: $110.50
 - Current close: $110.30 (below previous low)
 - Confidence: 72%
 - Entry: $111.20 (on high breakout)
@@ -162,31 +162,31 @@ LONG Setup 9.2:
 **Average R:R:** 2.5:1
 
 **Description:**  
-More conservative version of 9.2 requiring TWO consecutive closes below/above reference candle, providing stronger confirmation before entry.
+More conservative version of 9.2 requiring TWO consecutive closes below/above reference kline, providing stronger confirmation before entry.
 
 **Entry Criteria:**
 - EMA9 in clear trend
-- Reference candle close noted
-- Candle -2 closes below reference (LONG) or above (SHORT)
-- Candle -1 also closes below reference (LONG) or above (SHORT)
-- Current candle breaks previous high/low for entry
+- Reference kline close noted
+- Kline -2 closes below reference (LONG) or above (SHORT)
+- Kline -1 also closes below reference (LONG) or above (SHORT)
+- Current kline breaks previous high/low for entry
 - Volume confirmation
 
 **Confidence Factors:**
 - Deeper pullback (more retracement = higher confidence)
-- Tight candle spacing (faster formation = higher confidence)
+- Tight kline spacing (faster formation = higher confidence)
 - Volume spike on reversal
 
 **Example:**
 ```
 LONG Setup 9.3:
-- Reference candle close: $52.00
-- Candle -2 close: $51.60 (below reference)
-- Candle -1 close: $51.30 (still below reference)
-- Current candle high: $52.50
+- Reference kline close: $52.00
+- Kline -2 close: $51.60 (below reference)
+- Kline -1 close: $51.30 (still below reference)
+- Current kline high: $52.50
 - Confidence: 76%
 - Entry: $52.55 (on breakout)
-- Stop Loss: $51.00 (signal candle low)
+- Stop Loss: $51.00 (signal kline low)
 - Take Profit: $54.80 (2.5:1 R:R)
 ```
 
@@ -199,14 +199,14 @@ LONG Setup 9.3:
 **Average R:R:** 3.0:1
 
 **Description:**  
-Detects temporary EMA9 failure (1 candle reversal) followed by trend resumption, allowing late entry into established trends.
+Detects temporary EMA9 failure (1 kline reversal) followed by trend resumption, allowing late entry into established trends.
 
 **Entry Criteria:**
-- EMA9 was in clear trend (3+ candles)
-- EMA9 turns against trend for exactly 1 candle
+- EMA9 was in clear trend (3+ klines)
+- EMA9 turns against trend for exactly 1 kline
 - Previous extreme (low/high) NOT lost during failure
 - EMA9 resumes original trend direction
-- Entry on continuation candle breakout
+- Entry on continuation kline breakout
 
 **Confidence Factors:**
 - Strong prior trend (longer = higher confidence)
@@ -217,12 +217,12 @@ Detects temporary EMA9 failure (1 candle reversal) followed by trend resumption,
 ```
 LONG Setup 9.4:
 - EMA9: 108.5 → 109.8 → 111.2 (uptrend)
-- EMA9 failure: 111.2 → 110.8 (1 candle down)
+- EMA9 failure: 111.2 → 110.8 (1 kline down)
 - Previous low: $109.50 preserved
 - EMA9 resumes: 110.8 → 111.5 (back up)
 - Confidence: 68%
 - Entry: $112.00 (on high breakout)
-- Stop Loss: $110.50 (failure candle low)
+- Stop Loss: $110.50 (failure kline low)
 - Take Profit: $116.50 (3:1 R:R)
 ```
 
@@ -272,7 +272,7 @@ Breakout of key level followed by successful retest as new support/resistance be
 
 ### Detection Process
 
-1. **Candle Analysis** - System analyzes last 50+ candles
+1. **Kline Analysis** - System analyzes last 50+ klines
 2. **Indicator Calculation** - Computes EMA, RSI, Support/Resistance levels
 3. **Pattern Recognition** - Scans for setup formations
 4. **Confidence Scoring** - Evaluates confluence factors
@@ -281,14 +281,14 @@ Breakout of key level followed by successful retest as new support/resistance be
 
 ### Minimum Requirements
 
-- **Candles:** 50+ candles loaded
+- **Klines:** 50+ klines loaded
 - **Confidence:** 60%+ (configurable)
 - **Risk:Reward:** 2:1 minimum
 - **Setup Enabled:** Toggle must be ON in settings
 
 ### Update Frequency
 
-- **Real-time:** Detects setups as new candles form
+- **Real-time:** Detects setups as new klines form
 - **Re-scan:** Triggered on timeframe change
 - **Performance:** < 50ms detection time
 
@@ -303,7 +303,7 @@ Each detected setup shows:
 **Entry Line (Solid)**
 - Green for LONG
 - Red for SHORT
-- Marker dot at entry candle
+- Marker dot at entry kline
 
 **Stop Loss Line (Dashed)**
 - Red for LONG (below entry)
@@ -431,7 +431,7 @@ console.log(`Expectancy: $${stats.expectancy}`);
 **Problem:** No setups detected on chart
 
 **Solutions:**
-1. Ensure 50+ candles loaded (zoom out)
+1. Ensure 50+ klines loaded (zoom out)
 2. Check setup is enabled in settings
 3. Lower confidence threshold temporarily
 4. Verify indicator data (EMA, RSI) is calculating
@@ -446,8 +446,8 @@ console.log(`Expectancy: $${stats.expectancy}`);
 **Solutions:**
 1. Verify ATR multipliers in settings
 2. Check if using correct timeframe
-3. Ensure candle data is complete (no gaps)
-4. Review indicator values (hover over candles)
+3. Ensure kline data is complete (no gaps)
+4. Review indicator values (hover over klines)
 
 ---
 
@@ -497,7 +497,7 @@ console.log(`Expectancy: $${stats.expectancy}`);
 
 **Performance Issues?**
 - Limit to 2-3 setup types simultaneously
-- Reduce candle count (use higher timeframes)
+- Reduce kline count (use higher timeframes)
 - Disable auto-detect if CPU usage high
 
 ---

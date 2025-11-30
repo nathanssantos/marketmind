@@ -32,20 +32,20 @@ export const useSimulatorSync = (marketService: MarketDataService | null) => {
 
       const syncPromises = symbolsToSync.map(async (symbol) => {
         try {
-          const candleData = await marketService.fetchCandles({
+          const klineData = await marketService.fetchKlines({
             symbol,
             interval: '1h',
             limit: 2,
           });
           
-          if (!candleData?.klines || candleData.klines.length === 0) return;
+          if (!klineData?.klines || klineData.klines.length === 0) return;
 
-          const lastCandle = candleData.klines[candleData.klines.length - 1];
-          if (!lastCandle) return;
+          const lastKline = klineData.klines[klineData.klines.length - 1];
+          if (!lastKline) return;
 
-          const currentPrice = parseFloat(lastCandle.close);
-          const highPrice = parseFloat(lastCandle.high);
-          const lowPrice = parseFloat(lastCandle.low);
+          const currentPrice = parseFloat(lastKline.close);
+          const highPrice = parseFloat(lastKline.high);
+          const lowPrice = parseFloat(lastKline.low);
 
           updatePrices(symbol, currentPrice);
 

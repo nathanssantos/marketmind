@@ -1,9 +1,10 @@
 import type { AIPatternChannel, Kline } from '@shared/types';
+import { getKlineClose } from '@shared/utils';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
-  calculateConfidence,
-  normalizeTimeInPattern,
-  normalizeTouchPoints,
+    calculateConfidence,
+    normalizeTimeInPattern,
+    normalizeTouchPoints,
 } from '../core/confidenceScoring';
 import type { PivotPoint, Point, TrendlineData } from '../types';
 
@@ -57,10 +58,10 @@ const fitTrendline = (points: Point[]): TrendlineData => {
 };
 
 export const detectAscendingChannels = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternChannel[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const channels: AIPatternChannel[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -108,17 +109,18 @@ export const detectAscendingChannels = (
           if (parallelScore < 0.7) continue;
 
           const channelWidth = Math.abs(high1.price - low1.price);
-          const priceRange = candles[candles.length - 1]?.close || 1;
+          const lastKline = klines[klines.length - 1];
+          const priceRange = lastKline ? getKlineClose(lastKline) : 1;
           if (channelWidth / priceRange < 0.02) continue;
 
           const touches = 4;
-          const candlesBetween = low2.index - low1.index;
+          const klinesBetween = low2.index - low1.index;
 
           const touchPointsScore = normalizeTouchPoints(touches, 6);
           const timeScore = normalizeTimeInPattern(
-            candlesBetween,
-            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+            klinesBetween,
+            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
           );
 
           const confidence = calculateConfidence({
@@ -131,25 +133,25 @@ export const detectAscendingChannels = (
           if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) continue;
 
           const channelHeight = ((high1.price - low1.price) / low1.price * 100).toFixed(1);
-          const startDate = new Date(low1.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          const endDate = new Date(low2.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const startDate = new Date(low1.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const endDate = new Date(low2.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
           const confidencePercent = Math.round(confidence * 100);
 
           channels.push({
             id: channels.length + 1,
             type: 'channel-ascending',
             upperLine: [
-              { timestamp: high1.timestamp, price: high1.price },
-              { timestamp: high2.timestamp, price: high2.price },
+              { openTime: high1.openTime, price: high1.price },
+              { openTime: high2.openTime, price: high2.price },
             ],
             lowerLine: [
-              { timestamp: low1.timestamp, price: low1.price },
-              { timestamp: low2.timestamp, price: low2.price },
+              { openTime: low1.openTime, price: low1.price },
+              { openTime: low2.openTime, price: low2.price },
             ],
             label: `Ascending Channel · ${channelHeight}% height · ${lowerLine.angle.toFixed(1)}° angle · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
             confidence,
             visible: true,
-            timestamp: low1.timestamp,
+            openTime: low1.openTime,
           });
         }
       }
@@ -162,10 +164,10 @@ export const detectAscendingChannels = (
 };
 
 export const detectDescendingChannels = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternChannel[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const channels: AIPatternChannel[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -213,17 +215,18 @@ export const detectDescendingChannels = (
           if (parallelScore < 0.7) continue;
 
           const channelWidth = Math.abs(high1.price - low1.price);
-          const priceRange = candles[candles.length - 1]?.close || 1;
+          const lastKline = klines[klines.length - 1];
+          const priceRange = lastKline ? getKlineClose(lastKline) : 1;
           if (channelWidth / priceRange < 0.02) continue;
 
           const touches = 4;
-          const candlesBetween = high2.index - high1.index;
+          const klinesBetween = high2.index - high1.index;
 
           const touchPointsScore = normalizeTouchPoints(touches, 6);
           const timeScore = normalizeTimeInPattern(
-            candlesBetween,
-            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+            klinesBetween,
+            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
           );
 
           const confidence = calculateConfidence({
@@ -236,25 +239,25 @@ export const detectDescendingChannels = (
           if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) continue;
 
           const channelHeight = ((high1.price - low1.price) / low1.price * 100).toFixed(1);
-          const startDate = new Date(high1.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          const endDate = new Date(high2.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const startDate = new Date(high1.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const endDate = new Date(high2.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
           const confidencePercent = Math.round(confidence * 100);
 
           channels.push({
             id: channels.length + 1,
             type: 'channel-descending',
             upperLine: [
-              { timestamp: high1.timestamp, price: high1.price },
-              { timestamp: high2.timestamp, price: high2.price },
+              { openTime: high1.openTime, price: high1.price },
+              { openTime: high2.openTime, price: high2.price },
             ],
             lowerLine: [
-              { timestamp: low1.timestamp, price: low1.price },
-              { timestamp: low2.timestamp, price: low2.price },
+              { openTime: low1.openTime, price: low1.price },
+              { openTime: low2.openTime, price: low2.price },
             ],
             label: `Descending Channel · ${channelHeight}% height · ${Math.abs(upperLine.angle).toFixed(1)}° angle · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
             confidence,
             visible: true,
-            timestamp: high1.timestamp,
+            openTime: high1.openTime,
           });
         }
       }
@@ -267,10 +270,10 @@ export const detectDescendingChannels = (
 };
 
 export const detectHorizontalChannels = (
-  candles: Kline[],
+  klines: Kline[],
   pivots: PivotPoint[]
 ): AIPatternChannel[] => {
-  if (!candles || candles.length < 20) return [];
+  if (!klines || klines.length < 20) return [];
 
   const channels: AIPatternChannel[] = [];
   const lowPivots = pivots.filter(p => p.type === 'low').sort((a, b) => a.index - b.index);
@@ -302,19 +305,20 @@ export const detectHorizontalChannels = (
           if (highDiff > 0.02) continue;
 
           const channelWidth = Math.abs(high1.price - low1.price);
-          const priceRange = candles[candles.length - 1]?.close || 1;
+          const lastKline = klines[klines.length - 1];
+          const priceRange = lastKline ? getKlineClose(lastKline) : 1;
           if (channelWidth / priceRange < 0.02) continue;
 
           const touches = 4;
-          const candlesBetween = low2.index - low1.index;
+          const klinesBetween = low2.index - low1.index;
 
-          if (candlesBetween < PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES) continue;
+          if (klinesBetween < PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES) continue;
 
           const touchPointsScore = normalizeTouchPoints(touches, 6);
           const timeScore = normalizeTimeInPattern(
-            candlesBetween,
-            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_CANDLES,
-            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_CANDLES
+            klinesBetween,
+            PATTERN_DETECTION_CONFIG.MIN_PATTERN_FORMATION_KLINES,
+            PATTERN_DETECTION_CONFIG.IDEAL_PATTERN_FORMATION_KLINES
           );
 
           const symmetryScore = 1 - Math.min((lowDiff + highDiff) / 0.04, 1);
@@ -329,25 +333,25 @@ export const detectHorizontalChannels = (
           if (confidence < PATTERN_DETECTION_CONFIG.MIN_CONFIDENCE_THRESHOLD) continue;
 
           const channelHeight = ((high1.price - low1.price) / low1.price * 100).toFixed(1);
-          const startDate = new Date(low1.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          const endDate = new Date(low2.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const startDate = new Date(low1.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const endDate = new Date(low2.openTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
           const confidencePercent = Math.round(confidence * 100);
 
           channels.push({
             id: channels.length + 1,
             type: 'channel-horizontal',
             upperLine: [
-              { timestamp: high1.timestamp, price: high1.price },
-              { timestamp: high2.timestamp, price: high2.price },
+              { openTime: high1.openTime, price: high1.price },
+              { openTime: high2.openTime, price: high2.price },
             ],
             lowerLine: [
-              { timestamp: low1.timestamp, price: low1.price },
-              { timestamp: low2.timestamp, price: low2.price },
+              { openTime: low1.openTime, price: low1.price },
+              { openTime: low2.openTime, price: low2.price },
             ],
             label: `Horizontal Channel · ${channelHeight}% range · ${startDate} to ${endDate} · ${confidencePercent}% confidence`,
             confidence,
             visible: true,
-            timestamp: low1.timestamp,
+            openTime: low1.openTime,
           });
         }
       }

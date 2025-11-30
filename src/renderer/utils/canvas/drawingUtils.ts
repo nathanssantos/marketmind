@@ -56,7 +56,7 @@ export const drawText = (
   ctx.restore();
 };
 
-export const drawCandle = (
+export const drawKline = (
   ctx: CanvasRenderingContext2D,
   x: number,
   openY: number,

@@ -1,44 +1,45 @@
 import { calculateEMA } from '@renderer/utils/movingAverages';
 import type { Kline, TradingSetup } from '@shared/types';
+import { getKlineClose } from '@shared/utils';
 import {
-  BearTrapDetector,
-  createDefaultBearTrapConfig,
+    BearTrapDetector,
+    createDefaultBearTrapConfig,
 } from './BearTrapDetector';
 import {
-  BreakoutRetestDetector,
-  createDefaultBreakoutRetestConfig,
+    BreakoutRetestDetector,
+    createDefaultBreakoutRetestConfig,
 } from './BreakoutRetestDetector';
 import {
-  BullTrapDetector,
-  createDefaultBullTrapConfig,
+    BullTrapDetector,
+    createDefaultBullTrapConfig,
 } from './BullTrapDetector';
 import {
-  DivergenceDetector,
-  createDefaultDivergenceConfig,
+    DivergenceDetector,
+    createDefaultDivergenceConfig,
 } from './DivergenceDetector';
 import {
-  LiquiditySweepDetector,
-  createDefaultLiquiditySweepConfig,
+    LiquiditySweepDetector,
+    createDefaultLiquiditySweepConfig,
 } from './LiquiditySweepDetector';
 import {
-  OrderBlockFVGDetector,
-  createDefaultOrderBlockFVGConfig,
+    OrderBlockFVGDetector,
+    createDefaultOrderBlockFVGConfig,
 } from './OrderBlockFVGDetector';
 import {
-  Pattern123Detector,
-  createDefault123Config,
+    Pattern123Detector,
+    createDefault123Config,
 } from './Pattern123Detector';
 import {
-  PinInsideDetector,
-  createDefaultPinInsideConfig,
+    PinInsideDetector,
+    createDefaultPinInsideConfig,
 } from './PinInsideDetector';
 import { Setup91Detector, createDefault91Config } from './Setup91Detector';
 import { Setup92Detector, createDefault92Config } from './Setup92Detector';
 import { Setup93Detector, createDefault93Config } from './Setup93Detector';
 import { Setup94Detector, createDefault94Config } from './Setup94Detector';
 import {
-  VWAPEMACrossDetector,
-  createDefaultVWAPEMACrossConfig,
+    VWAPEMACrossDetector,
+    createDefaultVWAPEMACrossConfig,
 } from './VWAPEMACrossDetector';
 
 export interface SetupDetectionConfig {
@@ -135,21 +136,21 @@ export class SetupDetectionService {
     this.lastDetectionIndex.set(setupType, currentIndex);
   }
 
-  private getTrend(candles: Kline[], currentIndex: number): 'bullish' | 'bearish' | 'neutral' {
+  private getTrend(klines: Kline[], currentIndex: number): 'bullish' | 'bearish' | 'neutral' {
     if (!this.config.enableTrendFilter || currentIndex < this.config.trendEmaPeriod) {
       return 'neutral';
     }
 
-    const ema200 = calculateEMA(candles, this.config.trendEmaPeriod);
-    const current = candles[currentIndex];
+    const ema200 = calculateEMA(klines, this.config.trendEmaPeriod);
+    const current = klines[currentIndex];
     const ema200Current = ema200[currentIndex];
 
     if (!current || ema200Current === null || ema200Current === undefined) {
       return 'neutral';
     }
 
-    if (current.close > ema200Current) return 'bullish';
-    if (current.close < ema200Current) return 'bearish';
+    if (getKlineClose(current) > ema200Current) return 'bullish';
+    if (getKlineClose(current) < ema200Current) return 'bearish';
     return 'neutral';
   }
 
@@ -164,16 +165,16 @@ export class SetupDetectionService {
     return false;
   }
 
-  detectSetups(candles: Kline[]): TradingSetup[] {
-    if (candles.length === 0) return [];
+  detectSetups(klines: Kline[]): TradingSetup[] {
+    if (klines.length === 0) return [];
 
     const setups: TradingSetup[] = [];
-    const MIN_CANDLES_FOR_DETECTION = 50;
+    const MIN_KLINES_FOR_DETECTION = 50;
 
-    if (candles.length < MIN_CANDLES_FOR_DETECTION) return [];
+    if (klines.length < MIN_KLINES_FOR_DETECTION) return [];
 
-    const currentIndex = candles.length - 1;
-    const trend = this.getTrend(candles, currentIndex);
+    const currentIndex = klines.length - 1;
+    const trend = this.getTrend(klines, currentIndex);
 
     if (this.config.setup91.enabled) {
       this.debugLog('\n--- Setup 9.1 ---');
@@ -181,7 +182,7 @@ export class SetupDetectionService {
       this.debugLog('Can Detect (Cooldown):', canDetect);
       
       if (canDetect) {
-        const result = this.setup91Detector.detect(candles, currentIndex);
+        const result = this.setup91Detector.detect(klines, currentIndex);
         this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
         
         if (result.setup) {
@@ -200,7 +201,7 @@ export class SetupDetectionService {
         }
       } else {
         const lastDetection = this.lastDetectionIndex.get('setup91');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} candles)`);
+        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
       }
     } else {
       this.debugLog('\n--- Setup 9.1 ---');
@@ -213,7 +214,7 @@ export class SetupDetectionService {
       this.debugLog('Can Detect (Cooldown):', canDetect);
       
       if (canDetect) {
-        const result = this.setup92Detector.detect(candles, currentIndex);
+        const result = this.setup92Detector.detect(klines, currentIndex);
         this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
         
         if (result.setup) {
@@ -232,7 +233,7 @@ export class SetupDetectionService {
         }
       } else {
         const lastDetection = this.lastDetectionIndex.get('setup92');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} candles)`);
+        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
       }
     } else {
       this.debugLog('\n--- Setup 9.2 ---');
@@ -245,7 +246,7 @@ export class SetupDetectionService {
       this.debugLog('Can Detect (Cooldown):', canDetect);
       
       if (canDetect) {
-        const result = this.setup93Detector.detect(candles, currentIndex);
+        const result = this.setup93Detector.detect(klines, currentIndex);
         this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
         
         if (result.setup) {
@@ -264,7 +265,7 @@ export class SetupDetectionService {
         }
       } else {
         const lastDetection = this.lastDetectionIndex.get('setup93');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} candles)`);
+        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
       }
     } else {
       this.debugLog('\n--- Setup 9.3 ---');
@@ -277,7 +278,7 @@ export class SetupDetectionService {
       this.debugLog('Can Detect (Cooldown):', canDetect);
       
       if (canDetect) {
-        const result = this.setup94Detector.detect(candles, currentIndex);
+        const result = this.setup94Detector.detect(klines, currentIndex);
         this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
         
         if (result.setup) {
@@ -296,7 +297,7 @@ export class SetupDetectionService {
         }
       } else {
         const lastDetection = this.lastDetectionIndex.get('setup94');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} candles)`);
+        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
       }
     } else {
       this.debugLog('\n--- Setup 9.4 ---');
@@ -309,7 +310,7 @@ export class SetupDetectionService {
       this.debugLog('Can Detect (Cooldown):', canDetect);
       
       if (canDetect) {
-        const result = this.pattern123Detector.detect(candles, currentIndex);
+        const result = this.pattern123Detector.detect(klines, currentIndex);
         this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
         
         if (result.setup) {
@@ -328,7 +329,7 @@ export class SetupDetectionService {
         }
       } else {
         const lastDetection = this.lastDetectionIndex.get('pattern123');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} candles)`);
+        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
       }
     } else {
       this.debugLog('\n--- Pattern 1-2-3 ---');
@@ -341,7 +342,7 @@ export class SetupDetectionService {
       this.debugLog('Can Detect (Cooldown):', canDetect);
       
       if (canDetect) {
-        const result = this.bullTrapDetector.detect(candles, currentIndex);
+        const result = this.bullTrapDetector.detect(klines, currentIndex);
         this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
         
         if (result.setup) {
@@ -360,7 +361,7 @@ export class SetupDetectionService {
         }
       } else {
         const lastDetection = this.lastDetectionIndex.get('bullTrap');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} candles)`);
+        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
       }
     } else {
       this.debugLog('\n--- Bull Trap ---');
@@ -373,7 +374,7 @@ export class SetupDetectionService {
       this.debugLog('Can Detect (Cooldown):', canDetect);
       
       if (canDetect) {
-        const result = this.bearTrapDetector.detect(candles, currentIndex);
+        const result = this.bearTrapDetector.detect(klines, currentIndex);
         this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
         
         if (result.setup) {
@@ -392,7 +393,7 @@ export class SetupDetectionService {
         }
       } else {
         const lastDetection = this.lastDetectionIndex.get('bearTrap');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} candles)`);
+        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
       }
     } else {
       this.debugLog('\n--- Bear Trap ---');
@@ -405,7 +406,7 @@ export class SetupDetectionService {
       this.debugLog('Can Detect (Cooldown):', canDetect);
       
       if (canDetect) {
-        const result = this.breakoutRetestDetector.detect(candles, currentIndex);
+        const result = this.breakoutRetestDetector.detect(klines, currentIndex);
         this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
         
         if (result.setup) {
@@ -424,7 +425,7 @@ export class SetupDetectionService {
         }
       } else {
         const lastDetection = this.lastDetectionIndex.get('breakoutRetest');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} candles)`);
+        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
       }
     } else {
       this.debugLog('\n--- Breakout Retest ---');
@@ -437,7 +438,7 @@ export class SetupDetectionService {
       this.debugLog('Can Detect (Cooldown):', canDetect);
       
       if (canDetect) {
-        const result = this.pinInsideDetector.detect(candles, currentIndex);
+        const result = this.pinInsideDetector.detect(klines, currentIndex);
         this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
         
         if (result.setup) {
@@ -456,7 +457,7 @@ export class SetupDetectionService {
         }
       } else {
         const lastDetection = this.lastDetectionIndex.get('pinInside');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} candles)`);
+        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
       }
     } else {
       this.debugLog('\n--- Pin + Inside Bar Combo ---');
@@ -469,7 +470,7 @@ export class SetupDetectionService {
       this.debugLog('Can Detect (Cooldown):', canDetect);
       
       if (canDetect) {
-        const result = this.orderBlockFVGDetector.detect(candles, currentIndex);
+        const result = this.orderBlockFVGDetector.detect(klines, currentIndex);
         this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
         
         if (result.setup) {
@@ -488,7 +489,7 @@ export class SetupDetectionService {
         }
       } else {
         const lastDetection = this.lastDetectionIndex.get('orderBlockFVG');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} candles)`);
+        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
       }
     } else {
       this.debugLog('\n--- Order Block + FVG ---');
@@ -501,7 +502,7 @@ export class SetupDetectionService {
       this.debugLog('Can Detect (Cooldown):', canDetect);
       
       if (canDetect) {
-        const result = this.vwapEmaCrossDetector.detect(candles, currentIndex);
+        const result = this.vwapEmaCrossDetector.detect(klines, currentIndex);
         this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
         
         if (result.setup) {
@@ -520,7 +521,7 @@ export class SetupDetectionService {
         }
       } else {
         const lastDetection = this.lastDetectionIndex.get('vwapEmaCross');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} candles)`);
+        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
       }
     } else {
       this.debugLog('\n--- VWAP + EMA Cross ---');
@@ -533,7 +534,7 @@ export class SetupDetectionService {
       this.debugLog('Can Detect (Cooldown):', canDetect);
       
       if (canDetect) {
-        const result = this.divergenceDetector.detect(candles, currentIndex);
+        const result = this.divergenceDetector.detect(klines, currentIndex);
         this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
         
         if (result.setup) {
@@ -552,7 +553,7 @@ export class SetupDetectionService {
         }
       } else {
         const lastDetection = this.lastDetectionIndex.get('divergence');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} candles)`);
+        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
       }
     } else {
       this.debugLog('\n--- RSI/MACD Divergence ---');
@@ -565,7 +566,7 @@ export class SetupDetectionService {
       this.debugLog('Can Detect (Cooldown):', canDetect);
       
       if (canDetect) {
-        const result = this.liquiditySweepDetector.detect(candles, currentIndex);
+        const result = this.liquiditySweepDetector.detect(klines, currentIndex);
         this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
         
         if (result.setup) {
@@ -584,7 +585,7 @@ export class SetupDetectionService {
         }
       } else {
         const lastDetection = this.lastDetectionIndex.get('liquiditySweep');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} candles)`);
+        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
       }
     } else {
       this.debugLog('\n--- Liquidity Sweep ---');
@@ -597,7 +598,7 @@ export class SetupDetectionService {
   }
 
   detectSetupsInRange(
-    candles: Kline[],
+    klines: Kline[],
     startIndex: number,
     endIndex: number,
   ): TradingSetup[] {
@@ -605,27 +606,27 @@ export class SetupDetectionService {
 
     for (let i = startIndex; i <= endIndex; i++) {
       if (this.config.setup91.enabled) {
-        const result = this.setup91Detector.detect(candles, i);
+        const result = this.setup91Detector.detect(klines, i);
         if (result.setup) setups.push(result.setup);
       }
 
       if (this.config.pattern123.enabled) {
-        const result = this.pattern123Detector.detect(candles, i);
+        const result = this.pattern123Detector.detect(klines, i);
         if (result.setup) setups.push(result.setup);
       }
 
       if (this.config.bullTrap.enabled) {
-        const result = this.bullTrapDetector.detect(candles, i);
+        const result = this.bullTrapDetector.detect(klines, i);
         if (result.setup) setups.push(result.setup);
       }
 
       if (this.config.bearTrap.enabled) {
-        const result = this.bearTrapDetector.detect(candles, i);
+        const result = this.bearTrapDetector.detect(klines, i);
         if (result.setup) setups.push(result.setup);
       }
 
       if (this.config.breakoutRetest.enabled) {
-        const result = this.breakoutRetestDetector.detect(candles, i);
+        const result = this.breakoutRetestDetector.detect(klines, i);
         if (result.setup) setups.push(result.setup);
       }
     }

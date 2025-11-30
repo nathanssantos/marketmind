@@ -8,7 +8,7 @@ Comprehensive implementation plan to complete algorithmic detection for all 33 c
 - **Elliott Wave**: Removed (too subjective for reliable algorithmic detection)
 - **Completed Enhancements**: 
   - Fibonacci extension with 0%/100% levels and reference lines ✅
-  - Updated tolerance configurations (10-50 candle formations) ✅
+  - Updated tolerance configurations (10-50 kline formations) ✅
   - Triple top/bottom, continuation patterns, gap patterns, zone patterns ✅
   - All detectors registered in PatternDetectionService ✅
 
@@ -25,13 +25,13 @@ Comprehensive implementation plan to complete algorithmic detection for all 33 c
    - File: `src/renderer/components/Chart/AIPatternRenderer.tsx`
    - Add 0% and 100% levels to both retracement and extension
    - Draw dashed reference lines connecting start/end points
-   - Show measurement candles (similar to TradingView)
+   - Show measurement klines (similar to TradingView)
 
 ### Phase 2: Tolerance Configuration Adjustments ✅
 1. **Update Pattern Detection Constants**
    - File: `src/renderer/utils/patternDetection/constants.ts`
-   - Increase `MIN_PATTERN_FORMATION_CANDLES`: 5 → 10
-   - Increase `IDEAL_PATTERN_FORMATION_CANDLES`: 20 → 50
+   - Increase `MIN_PATTERN_FORMATION_KLINES`: 5 → 10
+   - Increase `IDEAL_PATTERN_FORMATION_KLINES`: 20 → 50
    - Increase `MAX_TRENDLINE_DEVIATION`: 0.02 → 0.04 (2% → 4%)
    - Increase `PARALLEL_TOLERANCE`: 0.1 → 0.2 (stricter → more forgiving)
    - Add `MIN_PATTERN_PRICE_RANGE`: 3% (minimum price movement)
@@ -93,7 +93,7 @@ Update `AIPatternRenderer.tsx` to handle all new patterns:
 1. **Unit Tests** for all new detectors
 2. **Integration Tests** with real market data
 3. **Visual Regression Tests** for rendering
-4. **Performance Tests** with large datasets (1000+ candles)
+4. **Performance Tests** with large datasets (1000+ klines)
 
 ### Phase 7: Configuration UI ✅
 Create settings tab in chart configuration modal for pattern detection parameters:
@@ -108,7 +108,7 @@ Create settings tab in chart configuration modal for pattern detection parameter
    - Implemented as `sensitivity` config (default: 50)
 
 2. **Pattern Formation** ✅
-   - Formation Period (20-200 candles slider) - lookback period
+   - Formation Period (20-200 klines slider) - lookback period
    - Implemented as `formationPeriod` config (default: 50)
 
 3. **Confidence Thresholds** ✅
@@ -216,10 +216,10 @@ Create settings tab in chart configuration modal for pattern detection parameter
 - ✅ All 33 pattern types have complete rendering implementation
 - ✅ All 33 pattern types have unit tests written (>80% coverage each)
 - ✅ All 33 pattern types available in enable/disable checkboxes
-- ✅ Patterns span 10+ candles on average (up from ~2-3)
+- ✅ Patterns span 10+ klines on average (up from ~2-3)
 - ✅ Fibonacci has 0%, 100% levels with reference lines
 - ✅ Confidence scores remain above 30% threshold
-- ✅ Detection completes in <200ms for 500 candles
+- ✅ Detection completes in <200ms for 500 klines
 - ✅ All tests passing with >80% coverage
 - ✅ **All important parameters configurable via settings modal - COMPLETE**
 - ✅ **Configuration storage and real-time updates - COMPLETE**
@@ -278,6 +278,6 @@ Create settings tab in chart configuration modal for pattern detection parameter
 - AI providers (OpenAI, Anthropic, Gemini) analyze detected patterns for market insights, not pattern detection
 - All patterns must respect the updated tolerance configurations
 - Drawing helpers should be unit tested independently
-- Performance monitoring for detection with 500+ candles
+- Performance monitoring for detection with 500+ klines
 - Configuration UI planned for Phase 7 (user-adjustable sensitivity, thresholds, tolerances)
 - Elliott Wave removed from scope (too subjective for reliable programmatic detection)

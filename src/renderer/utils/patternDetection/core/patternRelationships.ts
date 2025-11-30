@@ -25,84 +25,84 @@ export function getPatternStartTimestamp(pattern: AIPattern): number {
     case 'resistance':
     case 'trendline-bullish':
     case 'trendline-bearish':
-      return Math.min(pattern.points[0].timestamp, pattern.points[1].timestamp);
+      return Math.min(pattern.points[0].openTime, pattern.points[1].openTime);
 
     case 'channel-ascending':
     case 'channel-descending':
     case 'channel-horizontal':
       return Math.min(
-        pattern.upperLine[0].timestamp,
-        pattern.upperLine[1].timestamp,
-        pattern.lowerLine[0].timestamp,
-        pattern.lowerLine[1].timestamp
+        pattern.upperLine[0].openTime,
+        pattern.upperLine[1].openTime,
+        pattern.lowerLine[0].openTime,
+        pattern.lowerLine[1].openTime
       );
 
     case 'fibonacci-retracement':
     case 'fibonacci-extension':
-      return Math.min(pattern.startPoint.timestamp, pattern.endPoint.timestamp);
+      return Math.min(pattern.startPoint.openTime, pattern.endPoint.openTime);
 
     case 'head-and-shoulders':
     case 'inverse-head-and-shoulders':
       return Math.min(
-        pattern.leftShoulder.timestamp,
-        pattern.head.timestamp,
-        pattern.rightShoulder.timestamp
+        pattern.leftShoulder.openTime,
+        pattern.head.openTime,
+        pattern.rightShoulder.openTime
       );
 
     case 'double-top':
     case 'double-bottom':
-      return Math.min(pattern.firstPeak.timestamp, pattern.secondPeak.timestamp);
+      return Math.min(pattern.firstPeak.openTime, pattern.secondPeak.openTime);
 
     case 'triple-top':
     case 'triple-bottom':
       return Math.min(
-        pattern.peak1.timestamp,
-        pattern.peak2.timestamp,
-        pattern.peak3.timestamp
+        pattern.peak1.openTime,
+        pattern.peak2.openTime,
+        pattern.peak3.openTime
       );
 
     case 'triangle-ascending':
     case 'triangle-descending':
     case 'triangle-symmetrical':
       return Math.min(
-        pattern.upperTrendline[0].timestamp,
-        pattern.lowerTrendline[0].timestamp
+        pattern.upperTrendline[0].openTime,
+        pattern.lowerTrendline[0].openTime
       );
 
     case 'wedge-rising':
     case 'wedge-falling':
       return Math.min(
-        pattern.upperTrendline[0].timestamp,
-        pattern.lowerTrendline[0].timestamp
+        pattern.upperTrendline[0].openTime,
+        pattern.lowerTrendline[0].openTime
       );
 
     case 'flag-bullish':
     case 'flag-bearish':
-      return pattern.flagpole.start.timestamp;
+      return pattern.flagpole.start.openTime;
 
     case 'pennant':
-      return pattern.flagpole.start.timestamp;
+      return pattern.flagpole.start.openTime;
 
     case 'cup-and-handle':
-      return pattern.cupStart.timestamp;
+      return pattern.cupStart.openTime;
 
     case 'rounding-bottom':
-      return pattern.start.timestamp;
+      return pattern.start.openTime;
 
     case 'gap-common':
     case 'gap-breakaway':
     case 'gap-runaway':
     case 'gap-exhaustion':
-      return Math.min(pattern.gapStart.timestamp, pattern.gapEnd.timestamp);
+      return Math.min(pattern.gapStart.openTime, pattern.gapEnd.openTime);
 
     case 'liquidity-zone':
     case 'sell-zone':
     case 'buy-zone':
     case 'accumulation-zone':
-      return pattern.startTimestamp;
+      return pattern.startOpenTime;
 
     default:
-      return (pattern as { timestamp?: number }).timestamp ?? 0;
+      return (pattern as { openTime?: number }).openTime ?? 0;
   }
 }
 
@@ -112,92 +112,92 @@ export function getPatternEndTimestamp(pattern: AIPattern): number {
     case 'resistance':
     case 'trendline-bullish':
     case 'trendline-bearish':
-      return Math.max(pattern.points[0].timestamp, pattern.points[1].timestamp);
+      return Math.max(pattern.points[0].openTime, pattern.points[1].openTime);
 
     case 'channel-ascending':
     case 'channel-descending':
     case 'channel-horizontal':
       return Math.max(
-        pattern.upperLine[0].timestamp,
-        pattern.upperLine[1].timestamp,
-        pattern.lowerLine[0].timestamp,
-        pattern.lowerLine[1].timestamp
+        pattern.upperLine[0].openTime,
+        pattern.upperLine[1].openTime,
+        pattern.lowerLine[0].openTime,
+        pattern.lowerLine[1].openTime
       );
 
     case 'fibonacci-retracement':
     case 'fibonacci-extension':
-      return Math.max(pattern.startPoint.timestamp, pattern.endPoint.timestamp);
+      return Math.max(pattern.startPoint.openTime, pattern.endPoint.openTime);
 
     case 'head-and-shoulders':
     case 'inverse-head-and-shoulders':
       return Math.max(
-        pattern.leftShoulder.timestamp,
-        pattern.head.timestamp,
-        pattern.rightShoulder.timestamp,
-        pattern.neckline[0].timestamp,
-        pattern.neckline[1].timestamp
+        pattern.leftShoulder.openTime,
+        pattern.head.openTime,
+        pattern.rightShoulder.openTime,
+        pattern.neckline[0].openTime,
+        pattern.neckline[1].openTime
       );
 
     case 'double-top':
     case 'double-bottom':
-      return Math.max(pattern.firstPeak.timestamp, pattern.secondPeak.timestamp);
+      return Math.max(pattern.firstPeak.openTime, pattern.secondPeak.openTime);
 
     case 'triple-top':
     case 'triple-bottom':
       return Math.max(
-        pattern.peak1.timestamp,
-        pattern.peak2.timestamp,
-        pattern.peak3.timestamp
+        pattern.peak1.openTime,
+        pattern.peak2.openTime,
+        pattern.peak3.openTime
       );
 
     case 'triangle-ascending':
     case 'triangle-descending':
     case 'triangle-symmetrical':
       return Math.max(
-        pattern.upperTrendline[1].timestamp,
-        pattern.lowerTrendline[1].timestamp
+        pattern.upperTrendline[1].openTime,
+        pattern.lowerTrendline[1].openTime
       );
 
     case 'wedge-rising':
     case 'wedge-falling':
       return Math.max(
-        pattern.upperTrendline[1].timestamp,
-        pattern.lowerTrendline[1].timestamp
+        pattern.upperTrendline[1].openTime,
+        pattern.lowerTrendline[1].openTime
       );
 
     case 'flag-bullish':
     case 'flag-bearish':
       return Math.max(
-        pattern.flag.upperTrendline[1].timestamp,
-        pattern.flag.lowerTrendline[1].timestamp
+        pattern.flag.upperTrendline[1].openTime,
+        pattern.flag.lowerTrendline[1].openTime
       );
 
     case 'pennant':
       return Math.max(
-        pattern.pennant.upperTrendline[1].timestamp,
-        pattern.pennant.lowerTrendline[1].timestamp
+        pattern.pennant.upperTrendline[1].openTime,
+        pattern.pennant.lowerTrendline[1].openTime
       );
 
     case 'cup-and-handle':
-      return pattern.handleEnd.timestamp;
+      return pattern.handleEnd.openTime;
 
     case 'rounding-bottom':
-      return pattern.end.timestamp;
+      return pattern.end.openTime;
 
     case 'gap-common':
     case 'gap-breakaway':
     case 'gap-runaway':
     case 'gap-exhaustion':
-      return Math.max(pattern.gapStart.timestamp, pattern.gapEnd.timestamp);
+      return Math.max(pattern.gapStart.openTime, pattern.gapEnd.openTime);
 
     case 'liquidity-zone':
     case 'sell-zone':
     case 'buy-zone':
     case 'accumulation-zone':
-      return pattern.endTimestamp;
+      return pattern.endOpenTime;
 
     default:
-      return (pattern as { timestamp?: number }).timestamp ?? 0;
+      return (pattern as { openTime?: number }).openTime ?? 0;
   }
 }
 
@@ -602,34 +602,34 @@ export function buildPatternRelationships(
 
 export function calculateFormationPeriod(
   pattern: AIPattern,
-  candles: Kline[]
+  klines: Kline[]
 ): number {
-  if (candles.length === 0) return 0;
+  if (klines.length === 0) return 0;
 
   const startTime = getPatternStartTimestamp(pattern);
   const endTime = getPatternEndTimestamp(pattern);
   const duration = endTime - startTime;
 
-  if (candles.length < 2) return 1;
+  if (klines.length < 2) return 1;
 
-  const firstCandle = candles[0];
-  const lastCandle = candles[candles.length - 1];
-  if (!firstCandle || !lastCandle) return 1;
+  const firstKline = klines[0];
+  const lastKline = klines[klines.length - 1];
+  if (!firstKline || !lastKline) return 1;
 
-  const avgCandleInterval =
-    (lastCandle.openTime - firstCandle.openTime) /
-    (candles.length - 1);
+  const avgKlineInterval =
+    (lastKline.openTime - firstKline.openTime) /
+    (klines.length - 1);
 
-  const candleCount = Math.max(1, Math.round(duration / avgCandleInterval));
+  const klineCount = Math.max(1, Math.round(duration / avgKlineInterval));
 
-  return candleCount;
+  return klineCount;
 }
 
 export function classifyPatternTier(
   pattern: AIPattern,
-  candles: Kline[]
+  klines: Kline[]
 ): PatternTier {
-  const formationPeriod = calculateFormationPeriod(pattern, candles);
+  const formationPeriod = calculateFormationPeriod(pattern, klines);
 
   if (formationPeriod >= 100) return PatternTier.MACRO;
   if (formationPeriod >= 50) return PatternTier.MAJOR;

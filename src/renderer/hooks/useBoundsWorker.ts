@@ -15,7 +15,7 @@ export interface Bounds {
 
 export interface UseBoundsWorkerReturn {
   calculateBounds: (
-    candles: Kline[],
+    klines: Kline[],
     viewportStart: number,
     viewportEnd: number
   ) => Promise<Bounds>;
@@ -70,7 +70,7 @@ export const useBoundsWorker = (): UseBoundsWorkerReturn => {
 
   const calculateBounds = useCallback(
     (
-      candles: Kline[],
+      klines: Kline[],
       viewportStart: number,
       viewportEnd: number
     ): Promise<Bounds> => {
@@ -90,7 +90,7 @@ export const useBoundsWorker = (): UseBoundsWorkerReturn => {
 
         const request: BoundsWorkerRequest = {
           type: 'calculateBounds',
-          candles,
+          klines,
           viewportStart,
           viewportEnd,
         };

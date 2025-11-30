@@ -32,7 +32,7 @@ export const useMarketData = (
     setError(null);
 
     try {
-      const result = await service.fetchCandles({
+      const result = await service.fetchKlines({
         symbol,
         interval,
         limit,

@@ -1,29 +1,29 @@
 import type { Kline } from '@shared/types';
-import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
+import { getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import type { PivotPoint } from '../types';
 
 export const findPivotHighs = (
-  candles: Kline[],
+  klines: Kline[],
   lookback: number = PATTERN_DETECTION_CONFIG.PIVOT_LOOKBACK_DEFAULT,
   lookahead: number = PATTERN_DETECTION_CONFIG.PIVOT_LOOKAHEAD_DEFAULT
 ): PivotPoint[] => {
   const pivots: PivotPoint[] = [];
 
-  for (let i = lookback; i < candles.length - lookahead; i++) {
-    const currentCandle = candles[i];
-    if (!currentCandle) continue;
+  for (let i = lookback; i < klines.length - lookahead; i++) {
+    const currentKline = klines[i];
+    if (!currentKline) continue;
     
-    const currentHigh = currentCandle.high;
+    const currentHigh = getKlineHigh(currentKline);
     
     let isPivot = true;
     let strength = 0;
 
     for (let j = i - lookback; j < i; j++) {
-      const candle = candles[j];
-      if (!candle) continue;
+      const kline = klines[j];
+      if (!kline) continue;
       
-      if (getKlineHigh(candle) >= currentHigh) {
+      if (getKlineHigh(kline) >= currentHigh) {
         isPivot = false;
         break;
       }
@@ -33,10 +33,10 @@ export const findPivotHighs = (
     if (!isPivot) continue;
 
     for (let j = i + 1; j <= i + lookahead; j++) {
-      const candle = candles[j];
-      if (!candle) continue;
+      const kline = klines[j];
+      if (!kline) continue;
       
-      if (getKlineHigh(candle) >= currentHigh) {
+      if (getKlineHigh(kline) >= currentHigh) {
         isPivot = false;
         break;
       }
@@ -47,10 +47,10 @@ export const findPivotHighs = (
       pivots.push({
         index: i,
         price: currentHigh,
-        timestamp: currentCandle.timestamp,
+        openTime: currentKline.openTime,
         type: 'high',
         strength,
-        volume: currentCandle.volume,
+        volume: getKlineVolume(currentKline),
       });
     }
   }
@@ -59,26 +59,26 @@ export const findPivotHighs = (
 };
 
 export const findPivotLows = (
-  candles: Kline[],
+  klines: Kline[],
   lookback: number = PATTERN_DETECTION_CONFIG.PIVOT_LOOKBACK_DEFAULT,
   lookahead: number = PATTERN_DETECTION_CONFIG.PIVOT_LOOKAHEAD_DEFAULT
 ): PivotPoint[] => {
   const pivots: PivotPoint[] = [];
 
-  for (let i = lookback; i < candles.length - lookahead; i++) {
-    const currentCandle = candles[i];
-    if (!currentCandle) continue;
+  for (let i = lookback; i < klines.length - lookahead; i++) {
+    const currentKline = klines[i];
+    if (!currentKline) continue;
     
-    const currentLow = currentCandle.low;
+    const currentLow = getKlineLow(currentKline);
     
     let isPivot = true;
     let strength = 0;
 
     for (let j = i - lookback; j < i; j++) {
-      const candle = candles[j];
-      if (!candle) continue;
+      const kline = klines[j];
+      if (!kline) continue;
       
-      if (getKlineLow(candle) <= currentLow) {
+      if (getKlineLow(kline) <= currentLow) {
         isPivot = false;
         break;
       }
@@ -88,10 +88,10 @@ export const findPivotLows = (
     if (!isPivot) continue;
 
     for (let j = i + 1; j <= i + lookahead; j++) {
-      const candle = candles[j];
-      if (!candle) continue;
+      const kline = klines[j];
+      if (!kline) continue;
       
-      if (getKlineLow(candle) <= currentLow) {
+      if (getKlineLow(kline) <= currentLow) {
         isPivot = false;
         break;
       }
@@ -102,10 +102,10 @@ export const findPivotLows = (
       pivots.push({
         index: i,
         price: currentLow,
-        timestamp: currentCandle.timestamp,
+        openTime: currentKline.openTime,
         type: 'low',
         strength,
-        volume: currentCandle.volume,
+        volume: getKlineVolume(currentKline),
       });
     }
   }
@@ -114,12 +114,12 @@ export const findPivotLows = (
 };
 
 export const findPivotPoints = (
-  candles: Kline[],
+  klines: Kline[],
   lookback?: number,
   lookahead?: number
 ): PivotPoint[] => {
-  const highs = findPivotHighs(candles, lookback, lookahead);
-  const lows = findPivotLows(candles, lookback, lookahead);
+  const highs = findPivotHighs(klines, lookback, lookahead);
+  const lows = findPivotLows(klines, lookback, lookahead);
   
   return [...highs, ...lows].sort((a, b) => a.index - b.index);
 };

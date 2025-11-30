@@ -35,7 +35,7 @@ export interface ToolbarProps {
   marketService: MarketDataService;
   symbol: string;
   timeframe: Timeframe;
-  chartType: 'candlestick' | 'line';
+  chartType: 'kline' | 'line';
   showVolume: boolean;
   showGrid: boolean;
   showCurrentPriceLine: boolean;
@@ -51,7 +51,7 @@ export interface ToolbarProps {
   isNewsOpen: boolean;
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
-  onChartTypeChange: (type: 'candlestick' | 'line') => void;
+  onChartTypeChange: (type: 'kline' | 'line') => void;
   onShowVolumeChange: (show: boolean) => void;
   onShowGridChange: (show: boolean) => void;
   onShowCurrentPriceLineChange: (show: boolean) => void;
@@ -215,13 +215,13 @@ export const Toolbar = memo(({
 
       <Flex gap={3} align="center" flexShrink={0}>
         <HStack gap={1}>
-          <TooltipWrapper label={t('chart.controls.candlestickChart')} showArrow>
+          <TooltipWrapper label={t('chart.controls.klineChart')} showArrow>
             <IconButton
               size="2xs"
-              aria-label={t('chart.controls.candlestickChart')}
-              onClick={() => onChartTypeChange('candlestick')}
-              colorPalette={chartType === 'candlestick' ? 'blue' : 'gray'}
-              variant={chartType === 'candlestick' ? 'solid' : 'ghost'}
+              aria-label={t('chart.controls.klineChart')}
+              onClick={() => onChartTypeChange('kline')}
+              colorPalette={chartType === 'kline' ? 'blue' : 'gray'}
+              variant={chartType === 'kline' ? 'solid' : 'ghost'}
             >
               <LuChartCandlestick />
             </IconButton>

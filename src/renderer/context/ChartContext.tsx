@@ -4,10 +4,10 @@ import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
 
 export interface ChartContextData {
-  candles: Kline[];
+  klines: Kline[];
   symbol: string;
   timeframe: Timeframe;
-  chartType: 'candlestick' | 'line';
+  chartType: 'kline' | 'line';
   showVolume: boolean;
   movingAverages: MovingAverageConfig[];
   news?: NewsArticle[] | undefined;

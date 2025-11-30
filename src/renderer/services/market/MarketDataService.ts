@@ -1,7 +1,7 @@
 import type {
     BaseMarketProvider,
+    FetchKlinesOptions,
     KlineData,
-    FetchCandlesOptions,
     MarketDataError,
     Symbol,
     SymbolInfo,
@@ -18,7 +18,7 @@ export interface MarketDataServiceConfig {
 
 interface CacheEntry<T> {
   data: T;
-  timestamp: number;
+  openTime: number;
 }
 
 export class MarketDataService {
@@ -36,7 +36,7 @@ export class MarketDataService {
     this.cacheDuration = config.cacheDuration ?? 60 * 1000;
   }
 
-  async fetchCandles(options: FetchCandlesOptions): Promise<KlineData> {
+  async fetchKlines(options: FetchKlinesOptions): Promise<KlineData> {
     const cacheKey = this.getCacheKey(options);
 
     if (this.enableCache) {
@@ -52,7 +52,7 @@ export class MarketDataService {
 
     for (const provider of providers) {
       try {
-        const data = await provider.fetchCandles(options);
+        const data = await provider.fetchKlines(options);
         
         if (this.enableCache) {
           await this.setCache(cacheKey, data);
@@ -66,7 +66,7 @@ export class MarketDataService {
     }
 
     throw new Error(
-      `All providers failed to fetch candles. Errors: ${errors
+      `All providers failed to fetch klines. Errors: ${errors
         .map(e => `[${e.provider}] ${e.message}`)
         .join(', ')}`
     );
@@ -164,7 +164,7 @@ export class MarketDataService {
     this.wsUnsubscribe.clear();
   }
 
-  private getCacheKey(options: FetchCandlesOptions): string {
+  private getCacheKey(options: FetchKlinesOptions): string {
     return `${options.symbol}_${options.interval}_${options.limit || 500}_${
       options.startTime || 'latest'
     }`;
@@ -173,7 +173,7 @@ export class MarketDataService {
   private async getFromCache(key: string): Promise<KlineData | null> {
     try {
       const memCached = this.cache.get(key);
-      if (memCached && Date.now() - memCached.timestamp <= this.cacheDuration) {
+      if (memCached && Date.now() - memCached.openTime <= this.cacheDuration) {
         return memCached.data;
       }
 
@@ -181,7 +181,7 @@ export class MarketDataService {
       if (dbCached) {
         this.cache.set(key, {
           data: dbCached,
-          timestamp: Date.now(),
+          openTime: Date.now(),
         });
         return dbCached;
       }
@@ -195,7 +195,7 @@ export class MarketDataService {
   private async setCache(key: string, data: KlineData): Promise<void> {
     this.cache.set(key, {
       data,
-      timestamp: Date.now(),
+      openTime: Date.now(),
     });
 
     try {
