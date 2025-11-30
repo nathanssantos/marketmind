@@ -8,6 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Enhanced Kline Data Visualization** 📊
+  - **Chart Tooltip Enhancements**:
+    - Quote Volume display (total value in quote asset)
+    - Number of trades executed
+    - Average trade value calculation
+    - Buy/Sell pressure indicator with percentage and color coding
+  - **Volume Bar Enhancements**:
+    - Color-coded based on buy/sell pressure (green for buy pressure >55%, red for sell pressure <45%)
+    - Gradient intensity based on pressure strength
+    - 2.5x opacity increase on hover for better visibility
+  - **Activity Indicators on Klines**:
+    - Bright green dots for high activity klines (>150% avg trades AND >150% avg volume)
+    - Deep pink dots for low activity klines (<30% avg trades AND <50% avg volume)
+    - Positioned 4px above kline wick for clear visibility
+    - Size adapts to kline width (max 3px)
+    - 90% opacity with stroke outline for better contrast
+  - **New Kline Utility Functions** (`klineUtils.ts`):
+    - `getKlineQuoteVolume()`: Extract quote volume from kline
+    - `getKlineTrades()`: Get number of trades
+    - `getKlineTakerBuyBaseVolume()`: Get taker buy volume
+    - `getKlineTakerBuyQuoteVolume()`: Get taker buy quote volume
+    - `getKlineBuyPressure()`: Calculate buy pressure ratio (0-1)
+    - `getKlineSellPressure()`: Calculate sell pressure ratio (0-1)
+    - `getKlinePressureType()`: Determine 'buy' | 'sell' | 'neutral' pressure
+    - `getKlineAverageTradeSize()`: Calculate avg trade size in base asset
+    - `getKlineAverageTradeValue()`: Calculate avg trade value in quote asset
+
 - **Algorithmic Auto-Trading Settings Tab** 🤖
   - New settings section for algorithmic auto-trading configuration
   - Toggle switch to enable/disable algorithmic auto-trading
@@ -16,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Unit tests with 100% coverage
 
 ### Changed
+- **Settings Dialog Width** 💻
+  - Increased modal width from 1200px to 1400px for better UX
+  - Improved readability and content organization
+
 - **Type System Refactored to Exchange API Format** 🔄
   - **BREAKING**: Complete type system overhaul to align with exchange API standards
   - **Order Interface**: 
@@ -123,6 +154,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Uses 0.3% buffer from swing points for safety
 
 ### Fixed
+- **React Infinite Loop** 🔄
+  - Fixed "Maximum update depth exceeded" error in App.tsx
+  - Removed `startTrading` and `stopTrading` from useEffect dependency array
+  - Only `isAutoTradingActive` triggers the effect now
+  - Added eslint-disable comment for intentional dependency exclusion
+- **TypeScript Errors in Main Process** 🔧
+  - Fixed `Timeout` import error in UpdateManager.ts (changed to `NodeJS.Timeout`)
+  - Fixed `Timeout` import error in WindowStateManager.ts (changed to `NodeJS.Timeout`)
+  - Removed `node:timers` imports in favor of built-in NodeJS types
+- **Test Failures** ✅
+  - Fixed 18 failing tests in `useKlineRenderer.test.ts`
+  - Added missing `getKlines()` mock method to CanvasManager mock
+  - All 1867 tests now passing (105 test files)
 - Volume MA calculation: Removed redundant internal `calculateSMA`, now uses centralized implementation
 - TypeScript errors in setup detectors after EMA consolidation (proper null handling for `(number | null)[]`)
 - Missing `calculateMovingAverages` export in `movingAverages.ts`
