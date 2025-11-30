@@ -29,6 +29,7 @@ import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { SymbolSelector } from '../SymbolSelector';
 import { TooltipWrapper } from '../ui/Tooltip';
 import { PatternTogglePopover } from './PatternTogglePopover';
+import { SetupTogglePopover } from './SetupTogglePopover';
 
 export interface ToolbarProps {
   marketService: MarketDataService;
@@ -388,6 +389,7 @@ export const Toolbar = memo(({
                   <LuTarget />
                 </IconButton>
               </TooltipWrapper>
+              <SetupTogglePopover />
               <TooltipWrapper label={t('setupConfig.status.autoTrading')} showArrow placement="top">
                 <IconButton
                   size="2xs"

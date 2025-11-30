@@ -7,6 +7,12 @@
 ### Main Objective
 Create an "AI consultant" that assists traders and investors in technical chart analysis and news interpretation for buy/sell decision making on assets.
 
+### Latest Updates (November 2025)
+- **8 Algorithmic Trading Setups**: Complete Larry Williams EMA9 suite (9.1, 9.2, 9.3, 9.4) + 4 pattern-based setups
+- **44 New Unit Tests**: Full coverage for Setup 9.2, 9.3, and 9.4 detectors
+- **Multi-language Support**: All setups translated to EN/PT/ES/FR
+- **Test Suite**: 1,864 passing tests with 92.15% code coverage
+
 ---
 
 ## 🛠 Technology Stack

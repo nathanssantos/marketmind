@@ -925,6 +925,9 @@
     "copyright": "© 2025 MarketMind. Built with ❤️ for traders and investors."
   },
   "setupConfig": {
+    "configureSetups": "Configure Trading Setups",
+    "enabledSetups": "Enabled Setups",
+    "toggleAll": "Toggle All Setups",
     "tips": {
       "confidence": "Higher confidence filters show only the strongest setups",
       "algorithmic": "Algorithmic detection is faster and more consistent than AI",
@@ -950,8 +953,20 @@
     "noSetupsEnabledDescription": "Cannot enable auto-trading without active setups. Please enable at least one setup in Settings.",
     "setups": {
       "setup91": {
-        "title": "Setup 9.1 (EMA9 Reversals)",
-        "description": "Detects EMA9 trend changes with volume confirmation"
+        "title": "Setup 9.1 (EMA9 Reversal)",
+        "description": "Detects EMA9 trend changes with volume confirmation - entry on candle that turns EMA9"
+      },
+      "setup92": {
+        "title": "Setup 9.2 (EMA9 Pullback)",
+        "description": "EMA9 trend follower - entry after candle closes below/above previous low/high during uptrend/downtrend"
+      },
+      "setup93": {
+        "title": "Setup 9.3 (EMA9 Double Pullback)",
+        "description": "EMA9 trend follower - entry after 2 consecutive lower/higher closes from reference candle"
+      },
+      "setup94": {
+        "title": "Setup 9.4 (EMA9 Continuation)",
+        "description": "EMA9 continuation - temporary 1-candle EMA9 failure followed by resumption of original trend"
       },
       "pattern123": {
         "title": "Pattern 123 (Reversal Pattern)",
@@ -968,6 +983,26 @@
       "breakoutRetest": {
         "title": "Breakout Retest (Continuation)",
         "description": "Valid breakout followed by successful retest and continuation"
+      },
+      "pinInside": {
+        "title": "Pin + Inside Bar Combo (Rejection + Consolidation)",
+        "description": "Pin bar rejection followed by inside bar consolidation at support/resistance levels"
+      },
+      "orderBlockFVG": {
+        "title": "Order Block + FVG (ICT/SMC Pattern)",
+        "description": "High-volume order block combined with fair value gap for institutional entry zones"
+      },
+      "vwapEmaCross": {
+        "title": "VWAP + EMA Cross (Momentum + Mean Reversion)",
+        "description": "EMA crossover of VWAP with pullback entry for momentum and mean reversion trades"
+      },
+      "divergence": {
+        "title": "RSI/MACD Divergence (Reversal Indicator)",
+        "description": "Detects bullish/bearish divergence between price and RSI/MACD indicators for high-probability reversals"
+      },
+      "liquiditySweep": {
+        "title": "Liquidity Sweep (Smart Money Stop Hunt)",
+        "description": "Detects false breakouts designed to trigger stop losses before reversing - classic institutional behavior pattern"
       }
     },
     "parameters": {

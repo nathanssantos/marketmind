@@ -12,7 +12,7 @@ const MAX_CONFIDENCE = 100;
 const CONFIDENCE_STEP = 5;
 
 interface SetupSection {
-    setupKey: 'setup91' | 'pattern123' | 'bullTrap' | 'bearTrap' | 'breakoutRetest';
+    setupKey: 'setup91' | 'setup92' | 'setup93' | 'setup94' | 'pattern123' | 'bullTrap' | 'bearTrap' | 'breakoutRetest' | 'pinInside' | 'orderBlockFVG' | 'vwapEmaCross' | 'divergence' | 'liquiditySweep';
     titleKey: string;
     descriptionKey: string;
 }
@@ -22,6 +22,21 @@ const useSetupSections = (): SetupSection[] => [
         setupKey: 'setup91',
         titleKey: 'setupConfig.setups.setup91.title',
         descriptionKey: 'setupConfig.setups.setup91.description',
+    },
+    {
+        setupKey: 'setup92',
+        titleKey: 'setupConfig.setups.setup92.title',
+        descriptionKey: 'setupConfig.setups.setup92.description',
+    },
+    {
+        setupKey: 'setup93',
+        titleKey: 'setupConfig.setups.setup93.title',
+        descriptionKey: 'setupConfig.setups.setup93.description',
+    },
+    {
+        setupKey: 'setup94',
+        titleKey: 'setupConfig.setups.setup94.title',
+        descriptionKey: 'setupConfig.setups.setup94.description',
     },
     {
         setupKey: 'pattern123',
@@ -43,6 +58,31 @@ const useSetupSections = (): SetupSection[] => [
         titleKey: 'setupConfig.setups.breakoutRetest.title',
         descriptionKey: 'setupConfig.setups.breakoutRetest.description',
     },
+    {
+        setupKey: 'pinInside',
+        titleKey: 'setupConfig.setups.pinInside.title',
+        descriptionKey: 'setupConfig.setups.pinInside.description',
+    },
+    {
+        setupKey: 'orderBlockFVG',
+        titleKey: 'setupConfig.setups.orderBlockFVG.title',
+        descriptionKey: 'setupConfig.setups.orderBlockFVG.description',
+    },
+    {
+        setupKey: 'vwapEmaCross',
+        titleKey: 'setupConfig.setups.vwapEmaCross.title',
+        descriptionKey: 'setupConfig.setups.vwapEmaCross.description',
+    },
+    {
+        setupKey: 'divergence',
+        titleKey: 'setupConfig.setups.divergence.title',
+        descriptionKey: 'setupConfig.setups.divergence.description',
+    },
+    {
+        setupKey: 'liquiditySweep',
+        titleKey: 'setupConfig.setups.liquiditySweep.title',
+        descriptionKey: 'setupConfig.setups.liquiditySweep.description',
+    },
 ];
 
 export const SetupConfigTab = (): React.ReactElement => {
@@ -50,14 +90,14 @@ export const SetupConfigTab = (): React.ReactElement => {
     const { config, updateSetupConfig, setConfig, resetConfigToDefaults, isAutoTradingActive } = useSetupStore();
     const sections = useSetupSections();
 
-    const handleToggleSetup = (setupKey: 'setup91' | 'pattern123' | 'bullTrap' | 'bearTrap' | 'breakoutRetest'): void => {
+    const handleToggleSetup = (setupKey: 'setup91' | 'setup92' | 'setup93' | 'setup94' | 'pattern123' | 'bullTrap' | 'bearTrap' | 'breakoutRetest' | 'pinInside' | 'orderBlockFVG' | 'vwapEmaCross' | 'divergence' | 'liquiditySweep'): void => {
         updateSetupConfig(setupKey, {
             enabled: !config[setupKey].enabled,
         });
     };
 
     const handleConfigChange = (
-        setupKey: 'setup91' | 'pattern123' | 'bullTrap' | 'bearTrap' | 'breakoutRetest',
+        setupKey: 'setup91' | 'setup92' | 'setup93' | 'setup94' | 'pattern123' | 'bullTrap' | 'bearTrap' | 'breakoutRetest' | 'pinInside' | 'orderBlockFVG' | 'vwapEmaCross' | 'divergence' | 'liquiditySweep',
         field: string,
         value: number,
     ): void => {

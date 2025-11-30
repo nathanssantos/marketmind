@@ -4,8 +4,8 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.30.0-blue.svg)
-![Tests](https://img.shields.io/badge/tests-1,764%20passing-brightgreen.svg)
+![Version](https://img.shields.io/badge/version-0.31.0-blue.svg)
+![Tests](https://img.shields.io/badge/tests-1,864%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-92.15%25-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
@@ -75,8 +75,11 @@
 - 🌍 **Internationalization**: Multi-language support (English, Portuguese, Spanish, French)
 - 🔄 **Language Detection**: Automatic language detection from browser/system
 - ⚙️ **Language Selector**: Manual language switching in settings
-- 🎯 **Algorithmic Setup Detection**: 5 trading setups with mathematical precision
+- 🎯 **Algorithmic Setup Detection**: 8 trading setups with mathematical precision
   - Setup 9.1 (EMA9 Reversals)
+  - Setup 9.2 (EMA9 Pullback)
+  - Setup 9.3 (EMA9 Double Pullback)
+  - Setup 9.4 (EMA9 Continuation)
   - Pattern 123 (Reversal Pattern)
   - Bull Trap (Fake Breakout)
   - Bear Trap (Fake Breakdown)

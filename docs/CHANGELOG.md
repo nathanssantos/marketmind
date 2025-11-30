@@ -8,6 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Larry Williams EMA9 Trading Setups** 📊
+  - **Setup 9.2 (EMA9 Pullback)**: Trend continuation after single candle pullback below/above previous low/high
+    - Entry on high/low breakout after EMA9 pullback
+    - Stop loss at swing low/high or ATR-based
+    - Target at ATR * 4 from entry
+    - 14 comprehensive tests covering all scenarios
+  - **Setup 9.3 (EMA9 Double Pullback)**: Conservative entry requiring 2 consecutive pullback closes
+    - Entry after 2 closes below/above reference candle
+    - Stronger confirmation than 9.2
+    - Stop at signal candle low/high
+    - 14 comprehensive tests with edge cases
+  - **Setup 9.4 (EMA9 Continuation)**: Late-trend entry after temporary EMA9 failure
+    - Detects 1-candle EMA9 reversal followed by resumption
+    - Validates previous extreme (low/high) not lost
+    - Entry on continuation candle breakout
+    - 16 comprehensive tests including pattern validation
+  - All setups integrated to SetupDetectionService with cooldown and trend filter
+  - Complete translations in 4 languages (EN/PT/ES/FR)
+  - UI updated to show 13 total setups (10 original + 3 new)
+  - 44 unit tests total (100% pass rate)
+
 - **Volume Moving Average** 📊
   - Timeframe-adaptive SMA calculation for volume
   - `getVolumeMAPeriod(timeframe)`: Returns optimal periods (1m-12h=20, 1d=20, 3d=14, 1w/1M=10)
