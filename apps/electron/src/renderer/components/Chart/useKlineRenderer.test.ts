@@ -48,6 +48,7 @@ describe('useKlineRenderer', () => {
         klineWidth: 10,
       })),
       getVisibleKlines: vi.fn(() => klines),
+      getKlines: vi.fn(() => klines),
       indexToX: vi.fn((index: number) => index * 145.6),
       priceToY: vi.fn((price: number) => 575 - (price - 90) * 19),
     } as unknown as CanvasManager;
