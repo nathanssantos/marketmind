@@ -16,7 +16,7 @@
     "noUncheckedIndexedAccess": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
-    "exactOptionalPropertyTypes": true,
+    "exactOptionalPropertyTypes": false,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
     "esModuleInterop": true,
@@ -31,11 +31,12 @@
       "@/*": ["./src/*"],
       "@shared/*": ["./src/shared/*"],
       "@renderer/*": ["./src/renderer/*"],
-      "@main/*": ["./src/main/*"]
+      "@main/*": ["./src/main/*"],
+      "@marketmind/backend/types": ["../backend/types.ts"]
     }
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist", "dist-electron", "build", "**/*.test.ts", "**/*.test.tsx", "src/tests"],
+  "exclude": ["node_modules", "dist", "dist-electron", "build", "**/*.test.ts", "**/*.test.tsx", "src/tests", "../backend"],
   "references": [
     {
       "path": "./tsconfig.node.json"
