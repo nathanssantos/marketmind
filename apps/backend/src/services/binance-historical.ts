@@ -2,6 +2,7 @@ import Binance from 'binance-api-node';
 import { db } from '../db';
 import { klines } from '../db/schema';
 import type { Interval } from '@marketmind/types';
+import { logger } from './logger';
 
 const BATCH_SIZE = 1000;
 const RATE_LIMIT_DELAY = 200;
@@ -30,7 +31,10 @@ export const backfillHistoricalKlines = async (
   startTime: Date,
   endTime: Date = new Date()
 ): Promise<number> => {
-  console.log(`Starting backfill for ${symbol}@${interval} from ${startTime.toISOString()} to ${endTime.toISOString()}`);
+  logger.info(
+    { symbol, interval, startTime: startTime.toISOString(), endTime: endTime.toISOString() },
+    'Starting historical klines backfill'
+  );
 
   let totalInserted = 0;
   let currentStartTime = startTime.getTime();
@@ -71,16 +75,16 @@ export const backfillHistoricalKlines = async (
       totalInserted += klinesData.length;
       currentStartTime = lastCandle.closeTime + 1;
 
-      console.log(`Inserted ${klinesData.length} klines (total: ${totalInserted})`);
+      logger.debug({ inserted: klinesData.length, total: totalInserted }, 'Inserted klines batch');
 
       await sleep(RATE_LIMIT_DELAY);
     } catch (error) {
-      console.error(`Error fetching historical klines:`, error);
+      logger.error({ error }, 'Error fetching historical klines');
       throw error;
     }
   }
 
-  console.log(`Backfill complete: ${totalInserted} klines inserted for ${symbol}@${interval}`);
+  logger.info({ symbol, interval, totalInserted }, 'Historical klines backfill complete');
   return totalInserted;
 };
 

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { orders, positions, wallets } from '../db/schema';
 import { decryptApiKey } from '../services/encryption';
 import { protectedProcedure, router } from '../trpc';
+import type { BinanceNewOrderResult, BinanceOrderQueryResult } from '../types/binance';
 
 const generateId = (length: number): string => {
   return randomBytes(length).toString('base64url').slice(0, length);
@@ -73,7 +74,7 @@ export const tradingRouter = router({
           timeInForce: input.type.includes('LIMIT') ? 'GTC' : undefined,
         });
 
-        const orderData = binanceOrder as any;
+        const orderData = binanceOrder as BinanceNewOrderResult;
 
         await ctx.db.insert(orders).values({
           orderId: orderData.orderId,
@@ -264,7 +265,7 @@ export const tradingRouter = router({
         });
 
         for (const binanceOrder of binanceOrders) {
-          const orderData = binanceOrder as any;
+          const orderData = binanceOrder as BinanceOrderQueryResult;
 
           const [existingOrder] = await ctx.db
             .select()

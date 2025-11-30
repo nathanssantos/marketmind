@@ -1,5 +1,6 @@
 import type { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import { logger } from './logger';
 
 export interface SocketData {
   userId?: number;
@@ -36,40 +37,40 @@ export class WebSocketService {
 
   private setupEventHandlers(): void {
     this.io.on('connection', (socket) => {
-      console.log('Client connected:', socket.id);
+      logger.info({ socketId: socket.id }, 'Client connected');
 
       socket.on('subscribe:orders', (walletId: string) => {
         socket.join(`orders:${walletId}`);
-        console.log(`Client ${socket.id} subscribed to orders:${walletId}`);
+        logger.info({ socketId: socket.id, walletId }, 'Subscribed to orders');
       });
 
       socket.on('subscribe:positions', (walletId: string) => {
         socket.join(`positions:${walletId}`);
-        console.log(`Client ${socket.id} subscribed to positions:${walletId}`);
+        logger.info({ socketId: socket.id, walletId }, 'Subscribed to positions');
       });
 
       socket.on('subscribe:prices', (symbol: string) => {
         socket.join(`prices:${symbol}`);
-        console.log(`Client ${socket.id} subscribed to prices:${symbol}`);
+        logger.info({ socketId: socket.id, symbol }, 'Subscribed to prices');
       });
 
       socket.on('unsubscribe:orders', (walletId: string) => {
         socket.leave(`orders:${walletId}`);
-        console.log(`Client ${socket.id} unsubscribed from orders:${walletId}`);
+        logger.info({ socketId: socket.id, walletId }, 'Unsubscribed from orders');
       });
 
       socket.on('unsubscribe:positions', (walletId: string) => {
         socket.leave(`positions:${walletId}`);
-        console.log(`Client ${socket.id} unsubscribed from positions:${walletId}`);
+        logger.info({ socketId: socket.id, walletId }, 'Unsubscribed from positions');
       });
 
       socket.on('unsubscribe:prices', (symbol: string) => {
         socket.leave(`prices:${symbol}`);
-        console.log(`Client ${socket.id} unsubscribed from prices:${symbol}`);
+        logger.info({ socketId: socket.id, symbol }, 'Unsubscribed from prices');
       });
 
       socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
+        logger.info({ socketId: socket.id }, 'Client disconnected');
       });
     });
   }

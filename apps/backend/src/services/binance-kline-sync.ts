@@ -3,6 +3,7 @@ import { db } from '../db';
 import { klines } from '../db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import type { Interval } from '@marketmind/types';
+import { logger } from './logger';
 
 interface BinanceKlineData {
   t: number;
@@ -39,7 +40,7 @@ class BinanceKlineSync {
     const key = `${symbol}@${interval}`;
     
     if (this.connections.has(key)) {
-      console.log(`Already subscribed to ${key}`);
+      logger.debug({ key }, 'Already subscribed to stream');
       return;
     }
 
@@ -51,12 +52,12 @@ class BinanceKlineSync {
     const stream = `${symbol.toLowerCase()}@kline_${interval}`;
     const url = `${BINANCE_WS_BASE}/${stream}`;
 
-    console.log(`Connecting to Binance WebSocket: ${stream}`);
+    logger.info({ stream }, 'Connecting to Binance WebSocket');
 
     const ws = new WebSocket(url);
 
     ws.on('open', () => {
-      console.log(`Connected to ${stream}`);
+      logger.info({ stream }, 'Connected to Binance WebSocket');
       this.startPing(key, ws);
     });
 
@@ -68,16 +69,16 @@ class BinanceKlineSync {
           this.processKline(symbol, interval, message.k);
         }
       } catch (error) {
-        console.error(`Error processing message for ${key}:`, error);
+        logger.error({ key, error }, 'Error processing WebSocket message');
       }
     });
 
     ws.on('error', (error: Error) => {
-      console.error(`WebSocket error for ${key}:`, error);
+      logger.error({ key, error }, 'WebSocket error');
     });
 
     ws.on('close', () => {
-      console.log(`Disconnected from ${stream}`);
+      logger.info({ stream }, 'Disconnected from Binance WebSocket');
       this.cleanup(key);
       this.scheduleReconnect(symbol, interval);
     });
@@ -126,7 +127,7 @@ class BinanceKlineSync {
         await db.insert(klines).values(klineData);
       }
     } catch (error) {
-      console.error(`Error persisting kline for ${symbol}@${interval}:`, error);
+      logger.error({ symbol, interval, error }, 'Error persisting kline');
     }
   }
 
@@ -154,7 +155,7 @@ class BinanceKlineSync {
     const key = `${symbol}@${interval}`;
     
     const timeout = setTimeout(() => {
-      console.log(`Reconnecting to ${key}...`);
+      logger.info({ key }, 'Reconnecting to Binance WebSocket');
       this.connect(symbol, interval);
       this.reconnectTimeouts.delete(key);
     }, RECONNECT_DELAY);
@@ -188,7 +189,7 @@ class BinanceKlineSync {
   }
 
   shutdown(): void {
-    console.log('Shutting down Binance WebSocket connections...');
+    logger.info('Shutting down Binance WebSocket connections');
     
     for (const [key, ws] of this.connections.entries()) {
       ws.close();
