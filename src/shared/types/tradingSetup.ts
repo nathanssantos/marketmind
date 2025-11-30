@@ -1,5 +1,8 @@
 export type SetupType =
   | 'setup-9-1'
+  | 'setup-9-2'
+  | 'setup-9-3'
+  | 'setup-9-4'
   | '123-reversal'
   | 'bull-trap'
   | 'bear-trap'

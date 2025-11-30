@@ -366,22 +366,22 @@ Track progress in `IMPLEMENTATION_PLAN.md`. Update this section when starting ne
 
 **Current Phase:** All Phases Complete! 🎉
 **Overall Progress:** 100% (14/14 phases complete)
-**Current Tasks:** Production ready, v0.14.0 released to main
-**Recent Release:** v0.14.0 - Complete internationalization with 250+ translation keys
+**Current Tasks:** Production ready, v0.31.0 with 8 trading setups
+**Recent Updates:** Larry Williams EMA9 setups (9.2, 9.3, 9.4) fully implemented
 **Blockers:** None
 
-### v0.14.0 Release Highlights
-- Complete i18n coverage (all components internationalized)
-- 250+ translation keys in EN/PT/ES/FR
-- ChartSettingsTab, NewsConfigTab, AIConfigTab fully translated
-- All selectors and aria-labels internationalized
-- All JSX comments removed for cleaner codebase
-- Test suite updated for English error messages
-- Merged to main branch with annotated tag
+### v0.31.0 Latest Updates
+- **8 Trading Setups**: Complete Larry Williams suite (9.1, 9.2, 9.3, 9.4) + 4 pattern-based setups
+- **Setup 9.2 (EMA9 Pullback)**: Single candle pullback with 14 tests
+- **Setup 9.3 (EMA9 Double Pullback)**: Conservative 2-close confirmation with 14 tests  
+- **Setup 9.4 (EMA9 Continuation)**: Temporary EMA9 failure pattern with 16 tests
+- **44 New Tests**: All 3 new detectors with 100% pass rate
+- **Translations**: Complete EN/PT/ES/FR support for all setups
+- **UI Updates**: 13 total setups in configuration and toggle popover
 
 ### Overall Project Status
-- 581 passing tests (100% pass rate)
-- 90.62% code coverage (exceeded 80% target!)
+- 1,864 passing tests (100% pass rate)
+- 92.15% code coverage (exceeded 80% target!)
 - All MVP features implemented
 - Complete multi-language support (EN, PT, ES, FR)
 - Production-ready builds (macOS, Windows)

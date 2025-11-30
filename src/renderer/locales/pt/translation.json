@@ -914,6 +914,9 @@
     "copyright": "© 2025 MarketMind. Feito com ❤️ para traders e investidores."
   },
   "setupConfig": {
+    "configureSetups": "Configurar Setups de Trading",
+    "enabledSetups": "Setups Habilitados",
+    "toggleAll": "Alternar Todos os Setups",
     "tips": {
       "confidence": "Filtros de confiança mais altos mostram apenas os setups mais fortes",
       "algorithmic": "Detecção algorítmica é mais rápida e consistente que IA",
@@ -939,8 +942,20 @@
     "noSetupsEnabledDescription": "Não é possível habilitar o auto-trading sem setups ativos. Por favor, habilite pelo menos um setup nas Configurações.",
     "setups": {
       "setup91": {
-        "title": "Setup 9.1 (Reversões EMA9)",
-        "description": "Detecta mudanças de tendência na EMA9 com confirmação de volume"
+        "title": "Setup 9.1 (Reversão EMA9)",
+        "description": "Detecta mudanças de tendência da EMA9 com confirmação de volume - entrada no candle que vira a EMA9"
+      },
+      "setup92": {
+        "title": "Setup 9.2 (Pullback EMA9)",
+        "description": "Seguidor de tendência EMA9 - entrada após candle fechar abaixo/acima da mínima/máxima anterior em tendência de alta/baixa"
+      },
+      "setup93": {
+        "title": "Setup 9.3 (Pullback Duplo EMA9)",
+        "description": "Seguidor de tendência EMA9 - entrada após 2 fechamentos consecutivos abaixo/acima do candle de referência"
+      },
+      "setup94": {
+        "title": "Setup 9.4 (Continuação EMA9)",
+        "description": "Continuação EMA9 - falha temporária de 1 candle na EMA9 seguida por retomada da tendência original"
       },
       "pattern123": {
         "title": "Padrão 123 (Padrão de Reversão)",
@@ -957,6 +972,26 @@
       "breakoutRetest": {
         "title": "Reteste de Rompimento (Continuação)",
         "description": "Rompimento válido seguido de reteste bem-sucedido e continuação"
+      },
+      "pinInside": {
+        "title": "Combo Pin + Inside Bar (Rejeição + Consolidação)",
+        "description": "Rejeição com pin bar seguida de consolidação com inside bar em níveis de suporte/resistência"
+      },
+      "orderBlockFVG": {
+        "title": "Order Block + FVG (Padrão ICT/SMC)",
+        "description": "Order block de alto volume combinado com fair value gap para zonas de entrada institucional"
+      },
+      "vwapEmaCross": {
+        "title": "VWAP + Cruzamento EMA (Momentum + Reversão à Média)",
+        "description": "Cruzamento da EMA com VWAP e entrada no pullback para operações de momentum e reversão à média"
+      },
+      "divergence": {
+        "title": "Divergência RSI/MACD (Indicador de Reversão)",
+        "description": "Detecta divergência altista/baixista entre preço e indicadores RSI/MACD para reversões de alta probabilidade"
+      },
+      "liquiditySweep": {
+        "title": "Varredura de Liquidez (Caça aos Stops)",
+        "description": "Detecta rompimentos falsos projetados para acionar stop losses antes de reverter - padrão clássico de comportamento institucional"
       }
     },
     "parameters": {
