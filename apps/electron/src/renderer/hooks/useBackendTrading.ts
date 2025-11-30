@@ -1,11 +1,17 @@
 import { useCallback } from 'react';
 import { trpc } from '../utils/trpc';
 
-export const useBackendTrading = () => {
+export const useBackendTrading = (walletId: string, symbol?: string) => {
   const utils = trpc.useUtils();
   
-  const { data: orders, isLoading: isLoadingOrders } = trpc.trading.getOrders.useQuery();
-  const { data: positions, isLoading: isLoadingPositions } = trpc.trading.getPositions.useQuery();
+  const { data: orders, isLoading: isLoadingOrders } = trpc.trading.getOrders.useQuery(
+    { walletId, symbol, limit: 50 },
+    { enabled: !!walletId }
+  );
+  const { data: positions, isLoading: isLoadingPositions } = trpc.trading.getPositions.useQuery(
+    { walletId, limit: 50 },
+    { enabled: !!walletId }
+  );
   
   const createOrderMutation = trpc.trading.createOrder.useMutation({
     onSuccess: () => {
@@ -40,13 +46,15 @@ export const useBackendTrading = () => {
   
   const createOrder = useCallback(
     async (data: {
-      walletId: number;
+      walletId: string;
       symbol: string;
       side: 'BUY' | 'SELL';
       type: 'MARKET' | 'LIMIT' | 'STOP_LOSS' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT' | 'TAKE_PROFIT_LIMIT';
-      quantity: number;
-      price?: number;
-      stopPrice?: number;
+      quantity: string;
+      price?: string;
+      stopPrice?: string;
+      setupId?: string;
+      setupType?: string;
     }) => {
       return createOrderMutation.mutateAsync(data);
     },
@@ -54,28 +62,29 @@ export const useBackendTrading = () => {
   );
   
   const cancelOrder = useCallback(
-    async (id: number) => {
-      return cancelOrderMutation.mutateAsync({ id });
+    async (data: { walletId: string; symbol: string; orderId: number }) => {
+      return cancelOrderMutation.mutateAsync(data);
     },
     [cancelOrderMutation]
   );
   
   const syncOrders = useCallback(
-    async (walletId: number) => {
-      return syncOrdersMutation.mutateAsync({ walletId });
+    async (walletId: string, symbol: string) => {
+      return syncOrdersMutation.mutateAsync({ walletId, symbol });
     },
     [syncOrdersMutation]
   );
   
   const createPosition = useCallback(
     async (data: {
-      walletId: number;
+      walletId: string;
       symbol: string;
       side: 'LONG' | 'SHORT';
-      entryPrice: number;
-      quantity: number;
-      stopLoss?: number;
-      takeProfit?: number;
+      entryPrice: string;
+      entryQty: string;
+      stopLoss?: string;
+      takeProfit?: string;
+      setupId?: string;
     }) => {
       return createPositionMutation.mutateAsync(data);
     },
@@ -83,7 +92,7 @@ export const useBackendTrading = () => {
   );
   
   const closePosition = useCallback(
-    async (id: number, exitPrice: number) => {
+    async (id: string, exitPrice: string) => {
       return closePositionMutation.mutateAsync({ id, exitPrice });
     },
     [closePositionMutation]

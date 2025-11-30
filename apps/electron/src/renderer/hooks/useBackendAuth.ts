@@ -20,8 +20,8 @@ export const useBackendAuth = () => {
   );
 
   const register = useCallback(
-    async (email: string, password: string, name: string) => {
-      const result = await registerMutation.mutateAsync({ email, password, name });
+    async (email: string, password: string) => {
+      const result = await registerMutation.mutateAsync({ email, password });
       await refetch();
       return result;
     },

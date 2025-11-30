@@ -30,8 +30,6 @@ export const useBackendWallet = () => {
     },
   });
   
-  const testConnectionMutation = trpc.wallet.testConnection.useMutation();
-  
   const createWallet = useCallback(
     async (data: { name: string; exchange: string; apiKey: string; apiSecret: string }) => {
       return createMutation.mutateAsync(data);
@@ -60,13 +58,6 @@ export const useBackendWallet = () => {
     [syncBalanceMutation]
   );
   
-  const testConnection = useCallback(
-    async (apiKey: string, apiSecret: string) => {
-      return testConnectionMutation.mutateAsync({ apiKey, apiSecret });
-    },
-    [testConnectionMutation]
-  );
-  
   return {
     wallets: wallets ?? [],
     isLoading,
@@ -74,16 +65,13 @@ export const useBackendWallet = () => {
     updateWallet,
     deleteWallet,
     syncBalance,
-    testConnection,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isSyncing: syncBalanceMutation.isPending,
-    isTesting: testConnectionMutation.isPending,
     createError: createMutation.error,
     updateError: updateMutation.error,
     deleteError: deleteMutation.error,
     syncError: syncBalanceMutation.error,
-    testError: testConnectionMutation.error,
   };
 };

@@ -1,7 +1,7 @@
 import pino from 'pino';
 
-const isDevelopment = process.env.NODE_ENV === 'development';
-const logLevel = process.env.LOG_LEVEL ?? (isDevelopment ? 'debug' : 'info');
+const isDevelopment = process.env['NODE_ENV'] === 'development';
+const logLevel = process.env['LOG_LEVEL'] ?? (isDevelopment ? 'debug' : 'info');
 
 export const logger = pino({
   level: logLevel,
@@ -19,7 +19,7 @@ export const logger = pino({
     level: (label) => ({ level: label }),
   },
   base: {
-    env: process.env.NODE_ENV ?? 'development',
+    env: process.env['NODE_ENV'] ?? 'development',
   },
 });
 

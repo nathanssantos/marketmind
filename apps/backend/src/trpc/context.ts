@@ -4,7 +4,7 @@ import { db } from '../db/client';
 import { validateSession } from '../services/auth';
 
 export const createContext = async ({ req }: CreateFastifyContextOptions) => {
-  const sessionId = req.cookies.session_id;
+  const sessionId = req.headers.cookie?.split(';').find(c => c.trim().startsWith('session='))?.split('=')[1];
 
   if (!sessionId) {
     return {

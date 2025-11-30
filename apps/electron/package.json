@@ -32,6 +32,7 @@
     "@chakra-ui/react": "^3.30.0",
     "@emotion/react": "^11.14.0",
     "@google/generative-ai": "^0.24.1",
+    "@marketmind/types": "workspace:*",
     "@tanstack/react-query": "^5.90.11",
     "@trpc/client": "^11.7.2",
     "@trpc/react-query": "^11.7.2",
