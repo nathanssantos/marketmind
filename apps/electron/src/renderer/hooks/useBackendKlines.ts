@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { trpc } from '../services/trpc';
+import { trpc } from '../utils/trpc';
 import type { Interval } from '@marketmind/types';
 
 interface SubscribeParams {
