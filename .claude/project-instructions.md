@@ -5,12 +5,30 @@
 **MarketMind** is an Electron-based desktop application that combines advanced financial chart visualization (klines) with AI analysis to provide insights on cryptocurrencies, stocks, and other tradeable assets.
 
 ### Tech Stack
+
+**Frontend:**
 - **TypeScript** (end-to-end with unified typing)
 - **Electron** (desktop framework)
 - **React 19** (UI framework)
 - **Chakra UI** (component library with light/dark mode)
 - **Canvas API** (high-performance chart rendering)
 - **Vite** (build tool)
+
+**Backend:**
+- **Fastify 5.6.2** (high-performance HTTP server)
+- **tRPC 11.7.2** (type-safe RPC framework)
+- **Drizzle ORM 0.44.7** (TypeScript SQL ORM)
+- **PostgreSQL 17** (relational database)
+- **TimescaleDB 2.23.1** (time-series extension)
+- **Argon2** (password hashing - OWASP compliant)
+- **Binance SDK 3.1.5** (trading integration)
+
+**Architecture:**
+- **Monorepo** (pnpm workspaces)
+- **Shared Packages** (@marketmind/types, @marketmind/indicators)
+- **Real-time API** (tRPC endpoints with React Query)
+- **Session Auth** (secure cookie-based authentication)
+- **Encrypted Storage** (AES-256-CBC for API keys)
 
 ### Repository Info
 - **Name:** nathanssantos/marketmind
@@ -56,8 +74,9 @@ git checkout -b feature/new-feature
 # ... work and commits ...
 
 # 🔴 MANDATORY: Run tests before EVERY commit
-npm run test:run       # ALL tests must pass
-npm run test:browser:run  # Browser tests must pass
+pnpm test                                      # ALL tests (frontend + backend)
+pnpm --filter @marketmind/electron test        # Frontend tests
+pnpm --filter @marketmind/backend test         # Backend tests (when available)
 
 # Only commit if all tests pass
 git add .
@@ -67,10 +86,10 @@ git push origin feature/new-feature
 ```
 
 ### 🔴 Pre-Commit Checklist (MANDATORY)
-- [ ] `npm run test:run` - ALL unit tests passing
-- [ ] `npm run test:browser:run` - ALL browser tests passing  
-- [ ] `npm run type-check` - No TypeScript errors
-- [ ] `npm run lint` - No linting errors
+- [ ] `pnpm test` - ALL tests passing (frontend + backend)
+- [ ] `pnpm --filter @marketmind/electron type-check` - No TypeScript errors (frontend)
+- [ ] `pnpm --filter @marketmind/backend type-check` - No TypeScript errors (backend)
+- [ ] `pnpm --filter @marketmind/electron lint` - No linting errors
 - [ ] Tests cover new/changed code
 - [ ] No console.log or debugging code left
 - [ ] No comments in code (use README files instead)
@@ -118,21 +137,39 @@ import { calculateSMA } from './utils';
 ## 📁 Project Structure
 
 ```
-marketmind/
-├── src/
-│   ├── main/                      # Electron main process
-│   ├── renderer/                  # React app
-│   │   ├── components/
-│   │   ├── services/
-│   │   ├── hooks/
-│   │   ├── store/
-│   │   └── theme/
-│   └── shared/                    # Shared code (types, constants)
-│       ├── types/
-│       └── constants/
-├── scripts/                       # Build and utility scripts
-├── docs/                          # Documentation
-└── IMPLEMENTATION_PLAN.md         # Implementation roadmap
+marketmind/                        # Monorepo root
+├── apps/
+│   ├── electron/                  # Electron desktop app
+│   │   ├── src/
+│   │   │   ├── main/             # Electron main process
+│   │   │   ├── renderer/         # React app
+│   │   │   │   ├── components/
+│   │   │   │   ├── services/
+│   │   │   │   ├── hooks/       # Including backend hooks
+│   │   │   │   ├── store/
+│   │   │   │   └── theme/
+│   │   │   └── shared/          # Frontend shared code
+│   │   └── package.json
+│   │
+│   └── backend/                  # Backend server
+│       ├── src/
+│       │   ├── db/              # Database (schema, migrations)
+│       │   ├── routers/         # tRPC routers (health, auth, wallet, trading)
+│       │   ├── services/        # Business logic (auth, encryption)
+│       │   └── trpc/            # tRPC setup (context, router)
+│       └── package.json
+│
+├── packages/                     # Shared packages
+│   ├── types/                   # Shared TypeScript types
+│   └── indicators/              # Technical analysis utilities
+│
+├── scripts/                     # Build and utility scripts
+├── docs/                        # Documentation
+│   ├── BACKEND_QUICKSTART.md   # Backend developer guide
+│   ├── COMPONENT_MIGRATION.md  # Component migration guide
+│   └── IMPLEMENTATION_PLAN.md  # Implementation roadmap
+├── pnpm-workspace.yaml         # Monorepo configuration
+└── package.json                # Root package
 ```
 
 ---
@@ -349,14 +386,19 @@ describe('calculateSMA', () => {
 - `IMPLEMENTATION_PLAN.md` - Full implementation roadmap
 - `project-instructions.md` - This file
 - `README.md` - Project overview
+- `apps/backend/.env` - Backend environment variables (gitignored)
 
 ### Documentation
 - `docs/GIT_COMMANDS.md` - Git and GitHub CLI reference
+- `docs/BACKEND_QUICKSTART.md` - Backend developer guide
+- `docs/COMPONENT_MIGRATION.md` - Component migration guide
+- `docs/BACKEND_INTEGRATION_STATUS.md` - Backend progress tracker
 - `scripts/README.md` - Available scripts documentation
 
 ### Scripts
 - `scripts/setup-github.sh` - GitHub repository setup
 - `scripts/install-hooks.sh` - Git hooks installation
+- `apps/backend/test-integration.mjs` - Backend integration tests
 
 ---
 
@@ -364,25 +406,34 @@ describe('calculateSMA', () => {
 
 Track progress in `IMPLEMENTATION_PLAN.md`. Update this section when starting new chats:
 
-**Current Phase:** All Phases Complete! 🎉
-**Overall Progress:** 100% (14/14 phases complete)
-**Current Tasks:** Production ready, v0.14.0 released to main
-**Recent Release:** v0.14.0 - Complete internationalization with 250+ translation keys
+**Current Phase:** Backend Integration (Phase 5)
+**Overall Progress:** 65% (Backend infrastructure complete, component migration in progress)
+**Current Tasks:** Migrating components from localStorage to backend API
+**Recent Updates:** Complete backend with tRPC, PostgreSQL, TimescaleDB, authentication
 **Blockers:** None
 
-### v0.14.0 Release Highlights
-- Complete i18n coverage (all components internationalized)
-- 250+ translation keys in EN/PT/ES/FR
-- ChartSettingsTab, NewsConfigTab, AIConfigTab fully translated
-- All selectors and aria-labels internationalized
-- All JSX comments removed for cleaner codebase
-- Test suite updated for English error messages
-- Merged to main branch with annotated tag
+### Backend Integration Status (v0.31.0+)
+- **✅ Backend Infrastructure**: Fastify 5.6.2 + tRPC 11.7.2 operational
+- **✅ Database**: PostgreSQL 17 + TimescaleDB 2.23.1 with 9 tables
+- **✅ Authentication**: Argon2 password hashing + session management
+- **✅ API Routers**: health, auth, wallet, trading endpoints implemented
+- **✅ Frontend Hooks**: useBackendWallets, useBackendOrders created
+- **🟡 Component Migration**: In progress (TradingSidebar, WalletManager pending)
+- **⏳ Real Trading**: Pending (Phases 6-10)
+
+### Frontend Status (Production Ready)
+- **8 Trading Setups**: Complete Larry Williams suite (9.1, 9.2, 9.3, 9.4) + 4 pattern-based setups
+- **Setup 9.2 (EMA9 Pullback)**: Single kline pullback with 14 tests
+- **Setup 9.3 (EMA9 Double Pullback)**: Conservative 2-close confirmation with 14 tests  
+- **Setup 9.4 (EMA9 Continuation)**: Temporary EMA9 failure pattern with 16 tests
+- **44 New Tests**: All 3 new detectors with 100% pass rate
+- **Translations**: Complete EN/PT/ES/FR support for all setups
+- **UI Updates**: 13 total setups in configuration and toggle popover
 
 ### Overall Project Status
-- 581 passing tests (100% pass rate)
-- 90.62% code coverage (exceeded 80% target!)
-- All MVP features implemented
+- 1,864 passing tests (100% pass rate)
+- 92.15% code coverage (exceeded 80% target!)
+- Backend + Frontend integration complete
 - Complete multi-language support (EN, PT, ES, FR)
 - Production-ready builds (macOS, Windows)
 - Auto-update system functional
@@ -519,6 +570,149 @@ useEffect(() => {
     setApiKey('openai', envKey); // Store securely
   }
 }, []);
+```
+
+---
+
+## 🔌 Backend Integration
+
+### tRPC Client Setup
+
+```typescript
+// ✅ apps/electron/src/renderer/services/trpc.ts
+import { createTRPCClient, httpBatchLink } from '@trpc/client';
+import type { AppRouter } from '@marketmind/backend';
+
+export const trpc = createTRPCClient<AppRouter>({
+  links: [
+    httpBatchLink({
+      url: 'http://localhost:3001/trpc',
+      credentials: 'include',
+    }),
+  ],
+});
+```
+
+### Backend Hooks Pattern
+
+```typescript
+// ✅ apps/electron/src/renderer/hooks/useBackendWallets.ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { trpc } from '../services/trpc';
+import type { CreateWalletInput, UpdateWalletInput } from '@marketmind/types';
+
+export const useBackendWallets = () => {
+  const queryClient = useQueryClient();
+
+  const wallets = useQuery({
+    queryKey: ['wallets'],
+    queryFn: () => trpc.wallet.list.query(),
+  });
+
+  const createWallet = useMutation({
+    mutationFn: (data: CreateWalletInput) => trpc.wallet.create.mutate(data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['wallets'] }),
+  });
+
+  const updateWallet = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateWalletInput }) =>
+      trpc.wallet.update.mutate({ id, ...data }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['wallets'] }),
+  });
+
+  return { wallets, createWallet, updateWallet };
+};
+```
+
+### Component Migration Example
+
+```typescript
+// ❌ OLD: Using localStorage directly
+const [wallets, setWallets] = useState<Wallet[]>([]);
+
+useEffect(() => {
+  const stored = localStorage.getItem('wallets');
+  if (stored) setWallets(JSON.parse(stored));
+}, []);
+
+const addWallet = (wallet: Wallet) => {
+  const updated = [...wallets, wallet];
+  setWallets(updated);
+  localStorage.setItem('wallets', JSON.stringify(updated));
+};
+
+// ✅ NEW: Using backend hooks
+const { wallets, createWallet } = useBackendWallets();
+
+const addWallet = async (wallet: CreateWalletInput) => {
+  await createWallet.mutateAsync(wallet);
+};
+```
+
+### Development Commands
+
+```bash
+# Start backend server (development with auto-reload)
+cd apps/backend
+pnpm dev
+
+# Start frontend (separate terminal)
+cd apps/electron
+pnpm dev
+
+# Run all tests (monorepo root)
+pnpm test
+
+# Run frontend tests only
+pnpm --filter @marketmind/electron test
+
+# Run backend tests only (when available)
+pnpm --filter @marketmind/backend test
+
+# Database migrations
+cd apps/backend
+pnpm db:generate    # Generate migration from schema changes
+pnpm db:migrate     # Apply migrations
+pnpm db:push        # Push schema to DB (dev only)
+pnpm db:studio      # Open Drizzle Studio GUI
+
+# Type checking
+pnpm --filter @marketmind/electron type-check
+pnpm --filter @marketmind/backend type-check
+
+# Install dependencies (from monorepo root)
+pnpm install
+
+# Add dependency to specific workspace
+pnpm --filter @marketmind/backend add fastify
+pnpm --filter @marketmind/electron add react-query
+
+# Clean and rebuild
+pnpm clean          # Clean all build artifacts
+pnpm build          # Build all packages
+```
+
+### Backend Environment Setup
+
+```bash
+# .env (apps/backend/.env) - NEVER commit to git
+DATABASE_URL=postgresql://user:password@localhost:5432/marketmind
+NODE_ENV=development
+ENCRYPTION_KEY=your-32-byte-hex-key
+
+# PostgreSQL with TimescaleDB (Docker)
+docker run -d \
+  --name marketmind-postgres \
+  -e POSTGRES_PASSWORD=your-password \
+  -e POSTGRES_DB=marketmind \
+  -p 5432:5432 \
+  timescale/timescaledb:latest-pg17
+
+# Or using PostgreSQL 17 directly
+brew install postgresql@17
+brew services start postgresql@17
+psql postgres -c "CREATE DATABASE marketmind;"
+psql marketmind -c "CREATE EXTENSION IF NOT EXISTS timescaledb;"
 ```
 
 ---
