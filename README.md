@@ -110,6 +110,7 @@
 
 ## 🛠 Technology Stack
 
+### Frontend
 - **TypeScript** - End-to-end typing
 - **Electron 39** - Cross-platform desktop framework
 - **React 19** - User interface
@@ -118,33 +119,73 @@
 - **react-icons** - HeroIcons for UI elements
 - **Vite 7** - Optimized build tool
 
+### Backend (New!)
+- **Fastify 5.6.2** - High-performance HTTP server
+- **tRPC 11.7.2** - Type-safe RPC framework
+- **Drizzle ORM 0.44.7** - TypeScript SQL ORM
+- **PostgreSQL 17** - Relational database
+- **TimescaleDB 2.23.1** - Time-series extension
+- **Argon2** - Password hashing (OWASP compliant)
+- **Binance SDK 3.1.5** - Trading integration
+
+### Architecture
+- **Monorepo** - pnpm workspaces
+- **Shared Packages** - @marketmind/types, @marketmind/indicators
+- **Real-time API** - Backend server with tRPC endpoints
+- **Session Auth** - Secure cookie-based authentication
+- **Encrypted Storage** - AES-256-CBC for API keys
+
 ## 📋 Prerequisites
 
 - Node.js >= 18.x
-- npm >= 9.x (or pnpm/yarn)
+- pnpm >= 9.x (monorepo package manager)
 - macOS 10.15+ or Windows 10+
+- PostgreSQL 17 + TimescaleDB 2.23.1 (for backend)
 
 ## 🚀 Development Setup
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/marketmind.git
+git clone https://github.com/nathanssantos/marketmind.git
 cd marketmind
 ```
 
 ### 2. Install dependencies
 
 ```bash
-npm install
+pnpm install
 ```
 
-### 3. Configure environment variables
-
-Create a `.env` file from the template:
+### 3. Setup PostgreSQL + TimescaleDB (Backend)
 
 ```bash
-cp .env.example .env
+# Install PostgreSQL 17 and TimescaleDB
+brew install postgresql@17 timescaledb
+
+# Create database
+psql postgres
+CREATE DATABASE marketmind;
+CREATE USER marketmind WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE marketmind TO marketmind;
+\c marketmind
+CREATE EXTENSION IF NOT EXISTS timescaledb;
+\q
+
+# Configure backend environment
+cp apps/backend/.env.example apps/backend/.env
+# Edit apps/backend/.env with your database credentials
+
+# Run migrations
+pnpm --filter @marketmind/backend db:migrate
+```
+
+### 4. Configure environment variables
+
+Create a `.env` file in the Electron app:
+
+```bash
+cp apps/electron/.env.example apps/electron/.env
 ```
 
 Then add your API keys:
@@ -153,39 +194,56 @@ Then add your API keys:
 # AI Providers (Vite requires VITE_ prefix)
 VITE_ANTHROPIC_API_KEY=sk-ant-...
 VITE_OPENAI_API_KEY=sk-proj-...
+VITE_GEMINI_API_KEY=...
 
 # Market APIs (optional)
 BINANCE_API_KEY=your_key_here
-ALPHA_VANTAGE_API_KEY=your_key_here
 ```
 
-> 🔒 **Security**: The `.env` file is automatically ignored by Git and will never be committed.  
-> 📖 See [docs/API_KEYS_SECURITY.md](docs/API_KEYS_SECURITY.md) for detailed security information.
+> 🔒 **Security**: The `.env` files are automatically ignored by Git and will never be committed.  
+> 📖 See [docs/STORAGE_GUIDE.md](docs/STORAGE_GUIDE.md) for detailed security information.
 
-### 4. Run in development mode
+### 5. Run in development mode
 
 ```bash
-npm run dev
+# Terminal 1: Start backend server
+pnpm --filter @marketmind/backend dev
+
+# Terminal 2: Start Electron app
+pnpm --filter @marketmind/electron dev
+```
+
+Or use the root workspace command:
+
+```bash
+# Starts both backend and electron concurrently
+pnpm dev
 ```
 
 ## 🧪 Testing
 
-The project has a comprehensive test infrastructure with 592 passing tests:
+The project has a comprehensive test infrastructure with 1,864 passing tests:
 
 ```bash
-# Run all tests
-npm test
+# Run all tests (unit + integration)
+pnpm test
 
-# Run tests in watch mode
-npm run test:ui
+# Run Electron app tests only
+pnpm --filter @marketmind/electron test
+
+# Run backend tests only
+pnpm --filter @marketmind/backend test
 
 # Run with coverage report
-npm run test:coverage
+pnpm --filter @marketmind/electron test:coverage
+
+# Integration tests
+node apps/backend/test-integration.mjs
 ```
 
-**Test Coverage:** ✅ EXCELLENT (Phase 11 - 100% complete)
-- **592 tests** passing (100% pass rate)
-- **90.62%** overall coverage (exceeded 80% target! 🎉)
+**Test Coverage:** ✅ EXCELLENT (92.15% overall)
+- **1,864 tests** passing (100% pass rate)
+- **92.15%** overall coverage (exceeded 80% target! 🎉)
 - **69 tests** for utility functions (96.3% coverage ✅)
 - **161 tests** for React hooks (87.27% coverage ✅)
 - **277 tests** for service layer (91.3% coverage ✅)
@@ -198,10 +256,56 @@ npm run test:coverage
 - ✅ Service layer (AI providers, market data, news aggregation)
 - ✅ Component tests (SymbolSelector, ChartContext)
 - ✅ Cache layer (IndexedDB integration)
+- ✅ Backend integration tests (all endpoints verified)
 
 **Production Ready:** All features tested and verified! 🚀
 
 See [Testing Documentation](./docs/IMPLEMENTATION_PLAN.md#phase-11-testing--quality-assurance-) for details.
+
+## 🔌 Backend API
+
+MarketMind now includes a full-featured backend server with tRPC API:
+
+### Quick Start
+
+```bash
+# Start backend server
+pnpm --filter @marketmind/backend dev
+
+# Server runs on http://localhost:3001
+# tRPC endpoint: http://localhost:3001/trpc
+```
+
+### Features
+
+- **Authentication**: Argon2 password hashing, session-based auth
+- **Wallet Management**: Encrypted API keys, Binance integration
+- **Trading Operations**: Order management, position tracking
+- **Database**: PostgreSQL 17 + TimescaleDB for time-series data
+- **Type Safety**: Full TypeScript types shared between frontend and backend
+
+### Frontend Integration
+
+```typescript
+import { useBackendAuth, useBackendWallet, useBackendTrading } from '@/hooks';
+
+const MyComponent = () => {
+  const { login, currentUser, isAuthenticated } = useBackendAuth();
+  const { wallets, createWallet, syncBalance } = useBackendWallet();
+  const { orders, positions, createOrder } = useBackendTrading();
+  
+  // All hooks include loading states, error handling, and auto-refresh
+};
+```
+
+### Documentation
+
+- [Backend README](./apps/backend/README.md) - Complete setup guide
+- [Backend Quick Start](./docs/BACKEND_QUICKSTART.md) - Developer reference
+- [Authentication Guide](./docs/AUTHENTICATION.md) - Security details
+- [Integration Status](./docs/BACKEND_INTEGRATION_STATUS.md) - Progress overview
+
+**Status:** 🟢 Operational (65% complete) - Core features implemented, component migration in progress.
 
 ## 🎨 Theme System
 
