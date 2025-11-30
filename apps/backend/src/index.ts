@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import Fastify from 'fastify';
 import { env } from './env';
+import { initializeWebSocket } from './services/websocket';
 import { createContext } from './trpc/context';
 import { appRouter } from './trpc/router';
 
@@ -13,7 +14,7 @@ const fastify = Fastify({
   maxParamLength: 5000,
 });
 
-const start = async () => {
+const start = async (): Promise<void> => {
   try {
     await fastify.register(cors, {
       origin: env.CORS_ORIGIN,
@@ -43,8 +44,11 @@ const start = async () => {
     const port = parseInt(env.PORT, 10);
     await fastify.listen({ port, host: '0.0.0.0' });
 
+    initializeWebSocket(fastify.server);
+
     fastify.log.info(`🚀 Backend server running on http://localhost:${port}`);
     fastify.log.info(`📡 tRPC endpoint: http://localhost:${port}/trpc`);
+    fastify.log.info(`🔌 WebSocket server initialized`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
