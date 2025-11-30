@@ -1,7 +1,8 @@
 import type { Timeframe } from '@/renderer/components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '@/renderer/components/Chart/useMovingAverageRenderer';
 import { AIService } from '@/renderer/services/ai';
-import type { AIAnalysisResponse, AIMessage, AIProviderType, AITrade, AITradingConfig, AITradingStats, Candle } from '@shared/types';
+import type { AIAnalysisResponse, AIMessage, AIProviderType, AITrade, AITradingConfig, AITradingStats, Kline } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { create } from 'zustand';
 
 export const DEFAULT_MODELS: Record<AIProviderType, string> = {
@@ -60,7 +61,7 @@ const DEFAULT_TRADING_STATS: AITradingStats = {
 };
 
 export interface ChartData {
-  candles: Candle[];
+  candles: Kline[];
   symbol: string;
   timeframe: Timeframe;
   chartType: 'candlestick' | 'line';
@@ -336,7 +337,7 @@ const formatChartDataContext = (chartData: ChartData): string => {
   context += `\n=== TIMESTAMP INFORMATION FOR DRAWING PATTERNS ===\n`;
   context += `⚠️ IMPORTANT: When creating patterns (support, resistance, zones), use these timestamps:\n`;
   context += `First Candle Timestamp: ${recentCandles[0]?.timestamp} (${new Date(recentCandles[0]?.timestamp || 0).toISOString()})\n`;
-  context += `Last Candle Timestamp: ${lastCandle.timestamp} (${new Date(lastCandle.timestamp).toISOString()})\n`;
+  context += `Last Candle Timestamp: ${lastCandle.openTime} (${new Date(lastCandle.openTime).toISOString()})\n`;
   context += `Timeframe: ${chartData.timeframe} (use appropriate timestamps based on this interval)\n`;
   context += `Total Visible Candles: ${chartData.candles.length}\n`;
   
@@ -349,16 +350,16 @@ const formatChartDataContext = (chartData: ChartData): string => {
   
   context += `\n=== RECENT PRICE ACTION (Last 20 candles) ===\n`;
   recentCandles.slice(-20).forEach((candle, i) => {
-    const change = ((candle.close - candle.open) / candle.open * 100).toFixed(2);
-    const trend = candle.close > candle.open ? '�' : '�';
-    const volumeRatio = (candle.volume / avgVolume).toFixed(2);
-    const timestamp = new Date(candle.timestamp).toLocaleString('en-US', { 
+    const change = ((getKlineClose(candle) - getKlineOpen(candle)) / getKlineOpen(candle) * 100).toFixed(2);
+    const trend = getKlineClose(candle) > getKlineOpen(candle) ? '�' : '�';
+    const volumeRatio = (getKlineVolume(candle) / avgVolume).toFixed(2);
+    const timestamp = new Date(candle.openTime).toLocaleString('en-US', { 
       month: 'short', 
       day: 'numeric', 
       hour: '2-digit', 
       minute: '2-digit' 
     });
-    context += `${i + 1}. ${trend} ${timestamp} | O: $${candle.open.toFixed(2)} H: $${candle.high.toFixed(2)} L: $${candle.low.toFixed(2)} C: $${candle.close.toFixed(2)} | Δ${change}% | Vol: ${volumeRatio}x avg\n`;
+    context += `${i + 1}. ${trend} ${timestamp} | O: $${getKlineOpen(candle).toFixed(2)} H: $${getKlineHigh(candle).toFixed(2)} L: $${getKlineLow(candle).toFixed(2)} C: $${getKlineClose(candle).toFixed(2)} | Δ${change}% | Vol: ${volumeRatio}x avg\n`;
   });
   
   context += `\n--- END CHART DATA ---\n\n`;

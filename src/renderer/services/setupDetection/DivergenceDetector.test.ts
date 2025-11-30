@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../shared/types/candle';
+import type { Kline } from '../../../shared/types/candle';
 import {
     createDefaultDivergenceConfig,
     DivergenceDetector,
@@ -77,7 +77,7 @@ describe('DivergenceDetector', () => {
       const detector = new DivergenceDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i += 1) {
         candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
@@ -102,7 +102,7 @@ describe('DivergenceDetector', () => {
       const _detector = new DivergenceDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 30; i += 1) {
         const price = 100 - i * 0.5;
@@ -126,7 +126,7 @@ describe('DivergenceDetector', () => {
       const _detector = new DivergenceDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 30; i += 1) {
         const price = 100 + i * 0.5;
@@ -168,7 +168,7 @@ describe('DivergenceDetector', () => {
       const _detector = new DivergenceDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 40; i += 1) {
         const price = 100 - i * 0.3;
@@ -193,7 +193,7 @@ describe('DivergenceDetector', () => {
       const _detector = new DivergenceDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 40; i += 1) {
         const price = 100 + i * 0.3;

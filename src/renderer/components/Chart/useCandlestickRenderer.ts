@@ -2,6 +2,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawCandle } from '@renderer/utils/canvas/drawingUtils';
 import { CHART_CONFIG } from '@shared/constants';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow } from '@shared/utils';
 import { useCallback } from 'react';
 
 export interface UseCandlestickRendererProps {
@@ -55,10 +56,10 @@ export const useCandlestickRenderer = ({
 
       const candleX = x + (widthPerCandle - candleWidth) / 2;
 
-      const openY = manager.priceToY(candle.open);
-      const closeY = manager.priceToY(candle.close);
-      const highY = manager.priceToY(candle.high);
-      const lowY = manager.priceToY(candle.low);
+      const openY = manager.priceToY(getKlineOpen(candle));
+      const closeY = manager.priceToY(getKlineClose(candle));
+      const highY = manager.priceToY(getKlineHigh(candle));
+      const lowY = manager.priceToY(getKlineLow(candle));
 
       const isHovered = hoveredCandleIndex === actualIndex;
 

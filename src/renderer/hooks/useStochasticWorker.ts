@@ -1,5 +1,5 @@
 import { workerPool } from '@/renderer/utils/WorkerPool';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { useEffect, useRef } from 'react';
 import type { StochasticResult } from '../utils/stochastic';
 
@@ -7,7 +7,7 @@ const WORKER_KEY = 'stochastic';
 
 export interface UseStochasticWorkerReturn {
   calculateStochastic: (
-    candles: Candle[],
+    candles: Kline[],
     kPeriod: number,
     dPeriod: number
   ) => Promise<StochasticResult>;
@@ -31,7 +31,7 @@ export const useStochasticWorker = (): UseStochasticWorkerReturn => {
   }, []);
 
   const calculateStochastic = (
-    candles: Candle[],
+    candles: Kline[],
     kPeriod: number,
     dPeriod: number
   ): Promise<StochasticResult> => {

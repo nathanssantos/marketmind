@@ -1,7 +1,8 @@
 import { calculateATR } from '@renderer/utils/indicators/atr';
 import { findHighestSwingHigh, findLowestSwingLow } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import {
     BaseSetupDetector,
     type SetupDetectorConfig,
@@ -41,7 +42,7 @@ export class Setup91Detector extends BaseSetupDetector {
     this.setup91Config = config;
   }
 
-  detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
+  detect(candles: Kline[], currentIndex: number): SetupDetectorResult {
     const minIndex = Math.max(
       this.setup91Config.emaPeriod,
       this.setup91Config.atrPeriod,
@@ -181,13 +182,13 @@ export class Setup91Detector extends BaseSetupDetector {
     const confidence = BASE_CONFIDENCE;
     let boost = 0;
 
-    const distanceFromEMA = Math.abs(candle.close - ema) / ema;
+    const distanceFromEMA = Math.abs(getKlineClose(candle) - ema) / ema;
     if (distanceFromEMA < DISTANCE_CLOSE_THRESHOLD) boost += CONFIDENCE_BOOST_MEDIUM;
     else if (distanceFromEMA < DISTANCE_NEAR_THRESHOLD) boost += CONFIDENCE_BOOST_SMALL;
 
     if (volumeConfirmed) boost += CONFIDENCE_BOOST_LARGE;
 
-    const candleStrength = Math.abs(candle.close - candle.open) / candle.open;
+    const candleStrength = Math.abs(getKlineClose(candle) - getKlineOpen(candle)) / getKlineOpen(candle);
     if (candleStrength > CANDLE_STRONG_THRESHOLD) boost += CONFIDENCE_BOOST_MEDIUM;
     else if (candleStrength > CANDLE_MODERATE_THRESHOLD) boost += CONFIDENCE_BOOST_SMALL;
 

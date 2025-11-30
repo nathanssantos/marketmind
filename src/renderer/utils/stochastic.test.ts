@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../shared/types';
+import type { Kline } from '../../shared/types';
 import { calculateStochastic, DEFAULT_STOCHASTIC_CONFIG } from './stochastic';
 
 describe('stochastic', () => {

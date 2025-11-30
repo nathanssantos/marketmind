@@ -4,11 +4,11 @@ import type {
     OptimizerWorkerResponse,
     SimplifiedCandle,
 } from '@/renderer/workers/candleOptimizer.worker';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { useCallback, useEffect, useRef } from 'react';
 
-export interface OptimizedCandleData {
-  detailed: Candle[];
+export interface OptimizedKlineData {
+  detailed: Kline[];
   simplified: SimplifiedCandle[];
   timestampInfo: {
     first: number;
@@ -20,16 +20,16 @@ export interface OptimizedCandleData {
 
 export interface UseCandleOptimizerWorkerReturn {
   optimizeCandles: (
-    candles: Candle[],
+    candles: Kline[],
     detailedCount?: number
-  ) => Promise<OptimizedCandleData>;
+  ) => Promise<OptimizedKlineData>;
   terminate: () => void;
 }
 
 export const useCandleOptimizerWorker = (): UseCandleOptimizerWorkerReturn => {
   const workerRef = useRef<Worker | null>(null);
   const pendingCallbacksRef = useRef<
-    Map<number, (result: OptimizedCandleData) => void>
+    Map<number, (result: OptimizedKlineData) => void>
   >(new Map());
   const requestIdRef = useRef(0);
 
@@ -75,7 +75,7 @@ export const useCandleOptimizerWorker = (): UseCandleOptimizerWorkerReturn => {
   }, []);
 
   const optimizeCandles = useCallback(
-    (candles: Candle[], detailedCount?: number): Promise<OptimizedCandleData> => {
+    (candles: Kline[], detailedCount?: number): Promise<OptimizedKlineData> => {
       return new Promise((resolve) => {
         if (!workerRef.current) {
           resolve({

@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useMarketData } from './useMarketData';
 import { MarketDataService } from '../services/market/MarketDataService';
-import type { CandleData } from '@shared/types';
+import type { KlineData } from '@shared/types';
 
 describe('useMarketData', () => {
   let mockService: MarketDataService;

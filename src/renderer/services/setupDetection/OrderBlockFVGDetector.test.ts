@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../shared/types/candle';
+import type { Kline } from '../../../shared/types/candle';
 import {
     createDefaultOrderBlockFVGConfig,
     OrderBlockFVGDetector,
@@ -73,7 +73,7 @@ describe('OrderBlockFVGDetector', () => {
       const detector = new OrderBlockFVGDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
         candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
@@ -96,7 +96,7 @@ describe('OrderBlockFVGDetector', () => {
       const detector = new OrderBlockFVGDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
         candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
@@ -120,7 +120,7 @@ describe('OrderBlockFVGDetector', () => {
       const _detector = new OrderBlockFVGDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
         candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
@@ -144,7 +144,7 @@ describe('OrderBlockFVGDetector', () => {
       const _detector = new OrderBlockFVGDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
         candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));

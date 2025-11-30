@@ -1,4 +1,4 @@
-import type { AIPatternZone, Candle } from '@shared/types';
+import type { AIPatternZone, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -8,7 +8,7 @@ import {
 import type { PivotPoint } from '../types';
 
 export const detectBuyZones = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternZone[] => {
   if (!candles || candles.length < 20) return [];
@@ -34,8 +34,8 @@ export const detectBuyZones = (
     const startTimestamp = Math.min(...clusteredPivots.map(p => p.timestamp));
     const endTimestamp = Math.max(...clusteredPivots.map(p => p.timestamp));
 
-    const startIndex = candles.findIndex(c => c.timestamp >= startTimestamp);
-    const endIndex = candles.findIndex(c => c.timestamp >= endTimestamp);
+    const startIndex = candles.findIndex(c => c.openTime >= startTimestamp);
+    const endIndex = candles.findIndex(c => c.openTime >= endTimestamp);
 
     if (startIndex === -1 || endIndex === -1) continue;
 
@@ -85,7 +85,7 @@ export const detectBuyZones = (
 };
 
 export const detectSellZones = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternZone[] => {
   if (!candles || candles.length < 20) return [];
@@ -111,8 +111,8 @@ export const detectSellZones = (
     const startTimestamp = Math.min(...clusteredPivots.map(p => p.timestamp));
     const endTimestamp = Math.max(...clusteredPivots.map(p => p.timestamp));
 
-    const startIndex = candles.findIndex(c => c.timestamp >= startTimestamp);
-    const endIndex = candles.findIndex(c => c.timestamp >= endTimestamp);
+    const startIndex = candles.findIndex(c => c.openTime >= startTimestamp);
+    const endIndex = candles.findIndex(c => c.openTime >= endTimestamp);
 
     if (startIndex === -1 || endIndex === -1) continue;
 
@@ -162,7 +162,7 @@ export const detectSellZones = (
 };
 
 export const detectLiquidityZones = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternZone[] => {
   if (!candles || candles.length < 20) return [];
@@ -241,7 +241,7 @@ export const detectLiquidityZones = (
 };
 
 export const detectAccumulationZones = (
-  candles: Candle[],
+  candles: Kline[],
   _pivots: PivotPoint[]
 ): AIPatternZone[] => {
   if (!candles || candles.length < 30) return [];

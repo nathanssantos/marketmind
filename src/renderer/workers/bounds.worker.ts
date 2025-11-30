@@ -1,9 +1,9 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { calculateBounds as calculate } from '../utils/boundsCalculation';
 
 export interface BoundsWorkerRequest {
   type: 'calculateBounds';
-  candles: Candle[];
+  candles: Kline[];
   viewportStart: number;
   viewportEnd: number;
 }

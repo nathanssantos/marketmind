@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { AITradingConfig, Candle } from '../../../../shared/types';
+import type { AITradingConfig, Kline } from '../../../../shared/types';
 import { AITradingAgent, type AITradingAgentConfig } from '../AITradingAgent';
 
-const mockCandles: Candle[] = [
+const mockCandles: Kline[] = [
   { timestamp: 1700000000, open: 100, high: 105, low: 99, close: 103, volume: 1000000 },
   { timestamp: 1700000060, open: 103, high: 107, low: 102, close: 106, volume: 1200000 },
   { timestamp: 1700000120, open: 106, high: 110, low: 105, close: 109, volume: 1500000 },

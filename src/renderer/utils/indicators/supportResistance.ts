@@ -1,4 +1,4 @@
-import type { Candle, PivotPoint } from '@shared/types';
+import type { Kline, PivotPoint } from '@shared/types';
 
 const DEFAULT_PIVOT_LOOKBACK = 5;
 const DEFAULT_CLUSTER_THRESHOLD = 0.01;
@@ -8,7 +8,7 @@ const MIN_CANDLES_FOR_BREAKOUT = 20;
 const VOLUME_LOOKBACK = 20;
 
 export const findPivotPoints = (
-  candles: Candle[],
+  candles: Kline[],
   lookback = DEFAULT_PIVOT_LOOKBACK,
 ): PivotPoint[] => {
   if (candles.length < lookback * PIVOT_SIDES + 1) return [];
@@ -46,7 +46,7 @@ export const findPivotPoints = (
     if (isHigh) {
       pivots.push({
         index: i,
-        timestamp: current.timestamp,
+        timestamp: current.openTime,
         price: current.high,
         type: 'high',
       });
@@ -55,7 +55,7 @@ export const findPivotPoints = (
     if (isLow) {
       pivots.push({
         index: i,
-        timestamp: current.timestamp,
+        timestamp: current.openTime,
         price: current.low,
         type: 'low',
       });
@@ -134,7 +134,7 @@ export const isNearLevel = (
 };
 
 export const findBreakouts = (
-  candles: Candle[],
+  candles: Kline[],
   levels: SupportResistanceLevel[],
   volumeThreshold = 1.5,
 ): Array<{
@@ -188,7 +188,7 @@ export const findBreakouts = (
 };
 
 export const findRecentSwingLow = (
-  candles: Candle[],
+  candles: Kline[],
   currentIndex: number,
   lookback: number = 20,
   pivotStrength: number = 3,
@@ -207,7 +207,7 @@ export const findRecentSwingLow = (
 };
 
 export const findRecentSwingHigh = (
-  candles: Candle[],
+  candles: Kline[],
   currentIndex: number,
   lookback: number = 20,
   pivotStrength: number = 3,
@@ -226,7 +226,7 @@ export const findRecentSwingHigh = (
 };
 
 export const findLowestSwingLow = (
-  candles: Candle[],
+  candles: Kline[],
   currentIndex: number,
   lookback: number = 20,
   pivotStrength: number = 3,
@@ -245,7 +245,7 @@ export const findLowestSwingLow = (
 };
 
 export const findHighestSwingHigh = (
-  candles: Candle[],
+  candles: Kline[],
   currentIndex: number,
   lookback: number = 20,
   pivotStrength: number = 3,

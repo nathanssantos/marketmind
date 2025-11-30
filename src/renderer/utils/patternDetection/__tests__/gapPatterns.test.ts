@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../../shared/types';
+import type { Kline } from '../../../../shared/types';
 import {
     detectBreakawayGaps,
     detectCommonGaps,
@@ -28,7 +28,7 @@ describe('gapPatterns', () => {
   describe('detectCommonGaps', () => {
     it('should detect small gap with low volume (gap up)', () => {
       const now = Date.now();
-      const candles: Candle[] = [
+      const candles: Kline[] = [
         createCandle(now, 100, 102, 100, 101, 2000),
         createCandle(now + 60000, 102, 104, 101.5, 103, 1000),
       ];
@@ -47,7 +47,7 @@ describe('gapPatterns', () => {
 
     it('should detect small gap with low volume (gap down)', () => {
       const now = Date.now();
-      const candles: Candle[] = [
+      const candles: Kline[] = [
         createCandle(now, 100, 102, 100, 101, 2000),
         createCandle(now + 60000, 98, 99.5, 98, 99, 1000),
       ];
@@ -64,7 +64,7 @@ describe('gapPatterns', () => {
 
     it('should reject large gaps (not common)', () => {
       const now = Date.now();
-      const candles: Candle[] = [
+      const candles: Kline[] = [
         createCandle(now, 100, 102, 100, 101, 2000),
         createCandle(now + 60000, 110, 112, 108, 111, 3000),
       ];
@@ -77,7 +77,7 @@ describe('gapPatterns', () => {
 
     it('should reject gaps with high volume', () => {
       const now = Date.now();
-      const candles: Candle[] = [
+      const candles: Kline[] = [
         createCandle(now, 100, 102, 100, 101, 1000),
         createCandle(now + 60000, 102, 104, 101.5, 103, 5000),
       ];
@@ -89,7 +89,7 @@ describe('gapPatterns', () => {
     });
 
     it('should return empty array for insufficient candles', () => {
-      const candles: Candle[] = [createCandle(Date.now(), 100, 102, 100, 101)];
+      const candles: Kline[] = [createCandle(Date.now(), 100, 102, 100, 101)];
       const pivots: PivotPoint[] = [];
 
       const patterns = detectCommonGaps(candles, pivots);
@@ -101,7 +101,7 @@ describe('gapPatterns', () => {
   describe('detectBreakawayGaps', () => {
     it('should detect gap at resistance breakout with high volume', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 20; i++) {
         candles.push(createCandle(now + i * 60000, 98, 100, 98, 99, 1000));
@@ -123,7 +123,7 @@ describe('gapPatterns', () => {
 
     it('should detect gap at support breakdown with high volume', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 20; i++) {
         candles.push(createCandle(now + i * 60000, 98, 100, 98, 99, 1000));
@@ -145,7 +145,7 @@ describe('gapPatterns', () => {
 
     it('should reject gaps not near support/resistance', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 20; i++) {
         candles.push(createCandle(now + i * 60000, 90 + i, 92 + i, 90 + i, 91 + i, 1000));
@@ -163,7 +163,7 @@ describe('gapPatterns', () => {
 
     it('should reject gaps with low volume', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 20; i++) {
         candles.push(createCandle(now + i * 60000, 98, 100, 98, 99, 1000));
@@ -183,7 +183,7 @@ describe('gapPatterns', () => {
   describe('detectRunawayGaps', () => {
     it('should detect gap in uptrend (bullish)', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 10; i++) {
         candles.push(createCandle(now + i * 60000, 100 + i, 102 + i, 100 + i, 101 + i, 1000));
@@ -205,7 +205,7 @@ describe('gapPatterns', () => {
 
     it('should detect gap in downtrend (bearish)', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 10; i++) {
         candles.push(createCandle(now + i * 60000, 110 - i, 112 - i, 110 - i, 111 - i, 1000));
@@ -227,7 +227,7 @@ describe('gapPatterns', () => {
 
     it('should reject gap against trend direction', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 10; i++) {
         candles.push(createCandle(now + i * 60000, 100 + i, 102 + i, 100 + i, 101 + i, 1000));
@@ -245,7 +245,7 @@ describe('gapPatterns', () => {
 
     it('should reject small gaps in trend', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 10; i++) {
         candles.push(createCandle(now + i * 60000, 100 + i, 102 + i, 100 + i, 101 + i, 1000));
@@ -265,7 +265,7 @@ describe('gapPatterns', () => {
   describe('detectExhaustionGaps', () => {
     it('should detect gap followed by reversal (bullish to bearish)', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 10; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 100, 101, 1000));
@@ -290,7 +290,7 @@ describe('gapPatterns', () => {
 
     it('should detect gap followed by reversal (bearish to bullish)', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 10; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 100, 101, 1000));
@@ -315,7 +315,7 @@ describe('gapPatterns', () => {
 
     it('should reject gap without reversal', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 10; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 100, 101, 1000));
@@ -336,7 +336,7 @@ describe('gapPatterns', () => {
 
     it('should reject gap at end of data (insufficient lookahead)', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 10; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 100, 101, 1000));
@@ -354,7 +354,7 @@ describe('gapPatterns', () => {
 
     it('should reject small gaps', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 10; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 100, 101, 1000));
@@ -376,7 +376,7 @@ describe('gapPatterns', () => {
 
   describe('edge cases', () => {
     it('should handle empty candles array', () => {
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
       const pivots: PivotPoint[] = [];
 
       expect(detectCommonGaps(candles, pivots)).toEqual([]);
@@ -396,7 +396,7 @@ describe('gapPatterns', () => {
 
     it('should handle candles without gaps', () => {
       const now = Date.now();
-      const candles: Candle[] = [
+      const candles: Kline[] = [
         createCandle(now, 100, 102, 100, 101),
         createCandle(now + 60000, 101, 103, 100.5, 102),
         createCandle(now + 120000, 102, 104, 101.5, 103),
@@ -411,7 +411,7 @@ describe('gapPatterns', () => {
 
     it('should limit results to MAX_PATTERNS_PER_TYPE', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 100; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 100, 101, 2000));
@@ -427,7 +427,7 @@ describe('gapPatterns', () => {
 
     it('should assign confidence scores properly', () => {
       const now = Date.now();
-      const candles: Candle[] = [
+      const candles: Kline[] = [
         createCandle(now, 100, 102, 100, 101, 2000),
         createCandle(now + 60000, 102, 104, 101.5, 103, 1000),
       ];
@@ -443,7 +443,7 @@ describe('gapPatterns', () => {
 
     it('should sort patterns by confidence', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 20; i++) {
         candles.push(createCandle(now + i * 60000, 98, 100, 98, 99, 1000));

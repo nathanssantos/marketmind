@@ -1,9 +1,9 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { calculateStochastic } from '../utils/stochastic';
 
 export interface StochasticWorkerRequest {
   type: 'calculateStochastic';
-  candles: Candle[];
+  candles: Kline[];
   kPeriod: number;
   dPeriod: number;
 }

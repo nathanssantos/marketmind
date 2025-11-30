@@ -1,5 +1,6 @@
 import type { MarketDataService } from '@renderer/services/market/MarketDataService';
 import { useTradingStore } from '@renderer/store/tradingStore';
+import { getOrderId, isOrderActive, isOrderLong, isOrderPending } from '@shared/utils';
 import { useEffect, useRef } from 'react';
 
 export const useSimulatorSync = (marketService: MarketDataService | null) => {
@@ -21,7 +22,7 @@ export const useSimulatorSync = (marketService: MarketDataService | null) => {
 
       expireOrders();
 
-      const activeOrders = orders.filter((o) => o.status === 'active' || o.status === 'pending');
+      const activeOrders = orders.filter((o) => isOrderActive(o) || isOrderPending(o));
       if (activeOrders.length === 0) {
         hasSyncedRef.current = true;
         return;
@@ -37,21 +38,21 @@ export const useSimulatorSync = (marketService: MarketDataService | null) => {
             limit: 2,
           });
           
-          if (!candleData?.candles || candleData.candles.length === 0) return;
+          if (!candleData?.klines || candleData.klines.length === 0) return;
 
-          const lastCandle = candleData.candles[candleData.candles.length - 1];
+          const lastCandle = candleData.klines[candleData.klines.length - 1];
           if (!lastCandle) return;
 
-          const currentPrice = lastCandle.close;
-          const highPrice = lastCandle.high;
-          const lowPrice = lastCandle.low;
+          const currentPrice = parseFloat(lastCandle.close);
+          const highPrice = parseFloat(lastCandle.high);
+          const lowPrice = parseFloat(lastCandle.low);
 
           updatePrices(symbol, currentPrice);
 
           fillPendingOrders(symbol, currentPrice, highPrice, lowPrice);
 
           const symbolOrders = orders.filter(
-            (o) => o.symbol === symbol && o.status === 'active'
+            (o) => o.symbol === symbol && isOrderActive(o)
           );
 
           const previousPrice = previousPricesRef.current.get(symbol);
@@ -60,9 +61,9 @@ export const useSimulatorSync = (marketService: MarketDataService | null) => {
           previousPricesRef.current.set(symbol, currentPrice);
 
           symbolOrders.forEach((order) => {
-            const isLong = order.type === 'long';
+            const isLong = isOrderLong(order);
 
-            updateOrder(order.id, { currentPrice });
+            updateOrder(getOrderId(order), { currentPrice });
 
             if (!hasHistoricalData) {
               return;
@@ -81,20 +82,20 @@ export const useSimulatorSync = (marketService: MarketDataService | null) => {
               const targetDistance = Math.abs(currentPrice - (order.takeProfit || 0));
               
               if (stopDistance < targetDistance) {
-                closeOrder(order.id, order.stopLoss!);
+                closeOrder(getOrderId(order), order.stopLoss!);
               } else {
-                closeOrder(order.id, order.takeProfit!);
+                closeOrder(getOrderId(order), order.takeProfit!);
               }
               return;
             }
 
             if (stopHit) {
-              closeOrder(order.id, order.stopLoss!);
+              closeOrder(getOrderId(order), order.stopLoss!);
               return;
             }
 
             if (targetHit) {
-              closeOrder(order.id, order.takeProfit!);
+              closeOrder(getOrderId(order), order.takeProfit!);
               return;
             }
           });

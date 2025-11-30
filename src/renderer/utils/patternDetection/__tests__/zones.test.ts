@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../../shared/types';
+import type { Kline } from '../../../../shared/types';
 import {
     detectAccumulationZones,
     detectBuyZones,
@@ -42,7 +42,7 @@ describe('zones', () => {
   describe('detectBuyZones', () => {
     it('should detect buy zone with clustered low pivots', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
@@ -66,7 +66,7 @@ describe('zones', () => {
 
     it('should reject zones with insufficient touches', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
@@ -84,7 +84,7 @@ describe('zones', () => {
 
     it('should reject zones with widely dispersed prices', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
@@ -103,7 +103,7 @@ describe('zones', () => {
     });
 
     it('should return empty array for insufficient candles', () => {
-      const candles: Candle[] = [createCandle(Date.now(), 100, 102, 98, 100)];
+      const candles: Kline[] = [createCandle(Date.now(), 100, 102, 98, 100)];
       const pivots: PivotPoint[] = [];
 
       const zones = detectBuyZones(candles, pivots);
@@ -113,7 +113,7 @@ describe('zones', () => {
 
     it('should return empty array for insufficient pivots', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
@@ -131,7 +131,7 @@ describe('zones', () => {
 
     it('should assign confidence scores between 0 and 1', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
@@ -156,7 +156,7 @@ describe('zones', () => {
   describe('detectSellZones', () => {
     it('should detect sell zone with clustered high pivots', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
@@ -180,7 +180,7 @@ describe('zones', () => {
 
     it('should reject zones with insufficient touches', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
@@ -198,7 +198,7 @@ describe('zones', () => {
 
     it('should return empty array for insufficient pivots', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
@@ -216,7 +216,7 @@ describe('zones', () => {
 
     it('should assign proper zone height', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
@@ -243,7 +243,7 @@ describe('zones', () => {
   describe('detectLiquidityZones', () => {
     it('should detect liquidity zone with high volume and clustered pivots', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         const volume = i >= 10 && i <= 20 ? 1600 : 1000;
@@ -268,7 +268,7 @@ describe('zones', () => {
 
     it('should reject zones with low volume', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         const volume = i >= 10 && i <= 20 ? 1100 : 1000;
@@ -289,7 +289,7 @@ describe('zones', () => {
 
     it('should reject zones with insufficient pivots', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 3000));
@@ -306,7 +306,7 @@ describe('zones', () => {
     });
 
     it('should return empty array for insufficient candles', () => {
-      const candles: Candle[] = [createCandle(Date.now(), 100, 102, 98, 100)];
+      const candles: Kline[] = [createCandle(Date.now(), 100, 102, 98, 100)];
       const pivots: PivotPoint[] = [];
 
       const zones = detectLiquidityZones(candles, pivots);
@@ -316,7 +316,7 @@ describe('zones', () => {
 
     it('should detect zones with mixed high and low pivots', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         const volume = i >= 10 && i <= 20 ? 1600 : 1000;
@@ -340,7 +340,7 @@ describe('zones', () => {
   describe('detectAccumulationZones', () => {
     it('should detect accumulation zone with low volatility and rising volume', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 60; i++) {
         const volume = i >= 20 && i < 40 ? 1500 : 1000;
@@ -361,7 +361,7 @@ describe('zones', () => {
 
     it('should reject zones with high volatility', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 60; i++) {
         const price = 100 + (i % 2 === 0 ? 10 : -10);
@@ -377,7 +377,7 @@ describe('zones', () => {
 
     it('should reject zones without volume increase', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 60; i++) {
         candles.push(createCandle(now + i * 60000, 100, 101, 99, 100, 1000));
@@ -392,7 +392,7 @@ describe('zones', () => {
 
     it('should reject zones without future price increase', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 60; i++) {
         const volume = i >= 20 && i < 40 ? 1500 : 1000;
@@ -407,7 +407,7 @@ describe('zones', () => {
     });
 
     it('should return empty array for insufficient candles', () => {
-      const candles: Candle[] = [createCandle(Date.now(), 100, 102, 98, 100)];
+      const candles: Kline[] = [createCandle(Date.now(), 100, 102, 98, 100)];
       const pivots: PivotPoint[] = [];
 
       const zones = detectAccumulationZones(candles, pivots);
@@ -417,7 +417,7 @@ describe('zones', () => {
 
     it('should assign confidence scores properly', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 60; i++) {
         const volume = i >= 20 && i < 40 ? 1500 : 1000;
@@ -438,7 +438,7 @@ describe('zones', () => {
 
   describe('edge cases', () => {
     it('should handle empty candles array', () => {
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
       const pivots: PivotPoint[] = [];
 
       expect(detectBuyZones(candles, pivots)).toEqual([]);
@@ -458,7 +458,7 @@ describe('zones', () => {
 
     it('should limit results to MAX_PATTERNS_PER_TYPE', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 200; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
@@ -476,7 +476,7 @@ describe('zones', () => {
 
     it('should sort zones by confidence', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 100; i++) {
         candles.push(createCandle(now + i * 60000, 100, 102, 98, 100, 1000));
@@ -506,7 +506,7 @@ describe('zones', () => {
 
     it('should handle zones with missing candle data', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i++) {
         if (i % 5 !== 0) {

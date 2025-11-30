@@ -1,4 +1,4 @@
-import type { Candle, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@shared/types';
 import { CHART_CONFIG } from '@shared/constants';
 
 export interface Bounds {
@@ -16,7 +16,7 @@ export interface Dimensions {
   chartWidth: number;
 }
 
-export const calculateBounds = (candles: Candle[], viewport: Viewport): Bounds => {
+export const calculateBounds = (candles: Kline[], viewport: Viewport): Bounds => {
   const visibleStart = Math.floor(viewport.start);
   const visibleEnd = Math.min(Math.ceil(viewport.end), candles.length);
   const visibleCandles = candles.slice(visibleStart, visibleEnd);

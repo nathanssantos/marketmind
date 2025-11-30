@@ -33,6 +33,10 @@ vi.mock('./TradingSimulatorTab', () => ({
     TradingSimulatorTab: () => <div>TradingSimulatorTab Content</div>,
 }));
 
+vi.mock('./AlgorithmicAutoTradingTab', () => ({
+    AlgorithmicAutoTradingTab: () => <div>AlgorithmicAutoTradingTab Content</div>,
+}));
+
 vi.mock('./AboutTab', () => ({
     AboutTab: () => <div>AboutTab Content</div>,
 }));

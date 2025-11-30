@@ -1,4 +1,4 @@
-import type { AIPatternTriangle, Candle } from '@shared/types';
+import type { AIPatternTriangle, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -66,7 +66,7 @@ const findApex = (upperLine: TrendlineData, lowerLine: TrendlineData): { x: numb
 };
 
 export const detectAscendingTriangles = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternTriangle[] => {
   if (!candles || candles.length < 20) return [];
@@ -172,7 +172,7 @@ export const detectAscendingTriangles = (
 };
 
 export const detectDescendingTriangles = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternTriangle[] => {
   if (!candles || candles.length < 20) return [];
@@ -278,7 +278,7 @@ export const detectDescendingTriangles = (
 };
 
 export const detectSymmetricalTriangles = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternTriangle[] => {
   if (!candles || candles.length < 20) return [];

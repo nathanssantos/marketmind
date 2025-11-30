@@ -1,4 +1,4 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { describe, expect, it } from 'vitest';
 import { calculateZigZag } from './zigzag';
 
@@ -20,7 +20,7 @@ const createCandle = (
 
 describe('calculateZigZag', () => {
   it('should detect pivot highs and lows', () => {
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       createCandle(100, 90, 95),
       createCandle(110, 100, 105),
       createCandle(115, 105, 110),
@@ -37,7 +37,7 @@ describe('calculateZigZag', () => {
   });
 
   it('should filter pivots by deviation threshold', () => {
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       createCandle(100, 90, 95),
       createCandle(200, 190, 195),
       createCandle(100, 90, 95),
@@ -61,7 +61,7 @@ describe('calculateZigZag', () => {
   });
 
   it('should return empty result for insufficient data', () => {
-    const candles: Candle[] = [createCandle(100, 90, 95), createCandle(110, 100, 105)];
+    const candles: Kline[] = [createCandle(100, 90, 95), createCandle(110, 100, 105)];
 
     const result = calculateZigZag(candles, DEVIATION);
 
@@ -71,7 +71,7 @@ describe('calculateZigZag', () => {
   });
 
   it('should use default deviation of 5%', () => {
-    const candles: Candle[] = Array.from({ length: 20 }, (_, i) => {
+    const candles: Kline[] = Array.from({ length: 20 }, (_, i) => {
       const base = 100 + i * 10 * (i % 2 === 0 ? 1 : -1);
       return createCandle(base + 5, base - 5, base, Date.now() + i);
     });
@@ -84,7 +84,7 @@ describe('calculateZigZag', () => {
   });
 
   it('should detect uptrend correctly', () => {
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       createCandle(100, 90, 95),
       createCandle(110, 100, 105),
       createCandle(105, 95, 100),
@@ -99,7 +99,7 @@ describe('calculateZigZag', () => {
   });
 
   it('should detect downtrend correctly', () => {
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       createCandle(130, 120, 125),
       createCandle(120, 110, 115),
       createCandle(125, 115, 120),
@@ -114,7 +114,7 @@ describe('calculateZigZag', () => {
   });
 
   it('should include price and index in pivot points', () => {
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       createCandle(100, 90, 95),
       createCandle(110, 100, 105),
       createCandle(115, 105, 110),

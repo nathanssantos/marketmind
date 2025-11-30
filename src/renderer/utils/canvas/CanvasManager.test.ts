@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 import { CHART_CONFIG } from '@shared/constants';
-import type { Candle, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@shared/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CanvasManager } from './CanvasManager';
 
@@ -34,7 +34,7 @@ describe('CanvasManager', () => {
   let canvas: HTMLCanvasElement;
   let viewport: Viewport;
   let manager: CanvasManager;
-  let mockCandles: Candle[];
+  let mockCandles: Kline[];
 
   beforeEach(() => {
     canvas = document.createElement('canvas');

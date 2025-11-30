@@ -54,6 +54,7 @@
       "chart": "Chart",
       "ai": "AI Configuration",
       "aiTrading": "AI Auto-Trading",
+      "algorithmicAutoTrading": "Algorithmic Auto-Trading",
       "setupDetection": "Setup Detection",
       "patternDetection": "Pattern Detection",
       "news": "News",
@@ -236,6 +237,17 @@
         "clearAll": "Clear All Data"
       },
       "confirmClearAll": "Are you sure you want to clear all trading data? This action cannot be undone."
+    },
+    "algorithmicAutoTrading": {
+      "title": "Algorithmic Auto-Trading",
+      "description": "Configure automatic order execution based on detected trading setups.",
+      "status": {
+        "title": "Auto-Trading Status",
+        "description": "Enable or disable automatic order placement when trading setups are detected on the chart.",
+        "active": "Auto-trading is currently active - orders will be created automatically",
+        "inactive": "Auto-trading is currently inactive - setups will only be detected and displayed",
+        "info": "This feature works with the setup detection system. Make sure to enable at least one setup type in the Setup Detection tab before activating auto-trading."
+      }
     }
   },
   "chat": {

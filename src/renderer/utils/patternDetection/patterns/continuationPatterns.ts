@@ -1,4 +1,4 @@
-import type { AIPatternCupAndHandle, AIPatternFlag, AIPatternPennant, AIPatternRoundingBottom, Candle } from '@shared/types';
+import type { AIPatternCupAndHandle, AIPatternFlag, AIPatternPennant, AIPatternRoundingBottom, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -57,7 +57,7 @@ const fitTrendline = (points: Point[]): TrendlineData => {
 };
 
 export const detectBullishFlags = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternFlag[] => {
   if (!candles || candles.length < 20) return [];
@@ -166,7 +166,7 @@ export const detectBullishFlags = (
 };
 
 export const detectBearishFlags = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternFlag[] => {
   if (!candles || candles.length < 20) return [];
@@ -275,7 +275,7 @@ export const detectBearishFlags = (
 };
 
 export const detectPennants = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternPennant[] => {
   if (!candles || candles.length < 20) return [];
@@ -379,7 +379,7 @@ export const detectPennants = (
 };
 
 export const detectCupAndHandle = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternCupAndHandle[] => {
   if (!candles || candles.length < 40) return [];
@@ -480,7 +480,7 @@ export const detectCupAndHandle = (
 };
 
 export const detectRoundingBottom = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternRoundingBottom[] => {
   if (!candles || candles.length < 30) return [];

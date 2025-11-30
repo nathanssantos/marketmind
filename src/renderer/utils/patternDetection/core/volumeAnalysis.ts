@@ -1,15 +1,16 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import type { VolumeAnalysis } from '../types';
 
 export const calculateAverageVolume = (
-  candles: Candle[],
+  candles: Kline[],
   period: number = PATTERN_DETECTION_CONFIG.VOLUME_PERIOD
 ): number => {
   if (candles.length === 0) return 0;
   
   const recentCandles = candles.slice(-period);
-  const sum = recentCandles.reduce((total, candle) => total + candle.volume, 0);
+  const sum = recentCandles.reduce((total, candle) => total + getKlineVolume(candle), 0);
   
   return sum / recentCandles.length;
 };
@@ -20,11 +21,11 @@ export const detectVolumeSpike = (
   threshold: number = PATTERN_DETECTION_CONFIG.VOLUME_SPIKE_THRESHOLD
 ): boolean => {
   if (avgVolume === 0) return false;
-  return candle.volume >= avgVolume * threshold;
+  return getKlineVolume(candle) >= avgVolume * threshold;
 };
 
 export const getVolumePattern = (
-  candles: Candle[]
+  candles: Kline[]
 ): 'increasing' | 'decreasing' | 'stable' => {
   if (candles.length < 3) return 'stable';
   
@@ -43,7 +44,7 @@ export const getVolumePattern = (
 };
 
 export const validateVolumeConfirmation = (
-  candles: Candle[],
+  candles: Kline[],
   indices: number[]
 ): boolean => {
   if (indices.length === 0) return false;
@@ -63,7 +64,7 @@ export const validateVolumeConfirmation = (
   return confirmedTouches >= Math.ceil(indices.length * 0.5);
 };
 
-export const analyzeVolume = (candles: Candle[]): VolumeAnalysis => {
+export const analyzeVolume = (candles: Kline[]): VolumeAnalysis => {
   const average = calculateAverageVolume(candles);
   const trend = getVolumePattern(candles);
   

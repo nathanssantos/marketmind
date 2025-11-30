@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../shared/types';
+import type { Kline } from '../../shared/types';
 import { detectTimeframe, optimizeCandles, simplifyCandle } from './candleOptimization';
 
 describe('candleOptimization', () => {
@@ -169,7 +169,7 @@ describe('candleOptimization', () => {
     });
 
     it('should split candles into detailed and simplified', () => {
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
       for (let i = 0; i < 100; i++) {
         candles.push(createCandle(1000000 + i * 60000, 100 + i, 1000 + i));
       }
@@ -184,7 +184,7 @@ describe('candleOptimization', () => {
     });
 
     it('should downsample when simplified count exceeds MAX_SIMPLIFIED_CANDLES', () => {
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
       for (let i = 0; i < 2000; i++) {
         candles.push(createCandle(1000000 + i * 60000, 100 + i, 1000 + i));
       }
@@ -197,7 +197,7 @@ describe('candleOptimization', () => {
     });
 
     it('should use custom detailedCount parameter', () => {
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
       for (let i = 0; i < 100; i++) {
         candles.push(createCandle(1000000 + i * 60000, 100 + i, 1000 + i));
       }
@@ -209,7 +209,7 @@ describe('candleOptimization', () => {
     });
 
     it('should correctly simplify candles with rounding', () => {
-      const candles: Candle[] = [
+      const candles: Kline[] = [
         {
           timestamp: 1000000,
           open: 100.123,
@@ -242,7 +242,7 @@ describe('candleOptimization', () => {
     });
 
     it('should handle edge case with exactly MAX_SIMPLIFIED_CANDLES remaining', () => {
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
       for (let i = 0; i < 1032; i++) {
         candles.push(createCandle(1000000 + i * 60000, 100 + i, 1000 + i));
       }

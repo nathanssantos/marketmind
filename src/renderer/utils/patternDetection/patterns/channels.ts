@@ -1,4 +1,4 @@
-import type { AIPatternChannel, Candle } from '@shared/types';
+import type { AIPatternChannel, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
   calculateConfidence,
@@ -57,7 +57,7 @@ const fitTrendline = (points: Point[]): TrendlineData => {
 };
 
 export const detectAscendingChannels = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternChannel[] => {
   if (!candles || candles.length < 20) return [];
@@ -162,7 +162,7 @@ export const detectAscendingChannels = (
 };
 
 export const detectDescendingChannels = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternChannel[] => {
   if (!candles || candles.length < 20) return [];
@@ -267,7 +267,7 @@ export const detectDescendingChannels = (
 };
 
 export const detectHorizontalChannels = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternChannel[] => {
   if (!candles || candles.length < 20) return [];

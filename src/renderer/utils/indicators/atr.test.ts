@@ -1,4 +1,4 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { describe, expect, it } from 'vitest';
 import { calculateATR } from './atr';
 
@@ -20,7 +20,7 @@ const createCandle = (
 
 describe('calculateATR', () => {
   it('should calculate ATR correctly with Wilders smoothing', () => {
-    const candles: Candle[] = [];
+    const candles: Kline[] = [];
     let prevClose = 100;
 
     for (let i = 0; i < 20; i++) {
@@ -46,7 +46,7 @@ describe('calculateATR', () => {
   });
 
   it('should return all nulls for insufficient data', () => {
-    const candles: Candle[] = Array.from({ length: 5 }, (_, i) =>
+    const candles: Kline[] = Array.from({ length: 5 }, (_, i) =>
       createCandle(105, 95, 100 + i, Date.now() + i),
     );
 
@@ -57,7 +57,7 @@ describe('calculateATR', () => {
   });
 
   it('should use default period of 14', () => {
-    const candles: Candle[] = Array.from({ length: 20 }, (_, i) =>
+    const candles: Kline[] = Array.from({ length: 20 }, (_, i) =>
       createCandle(105 + i, 95 + i, 100 + i, Date.now() + i),
     );
 
@@ -68,7 +68,7 @@ describe('calculateATR', () => {
   });
 
   it('should handle single candle', () => {
-    const candles: Candle[] = [createCandle(105, 95, 100)];
+    const candles: Kline[] = [createCandle(105, 95, 100)];
     const result = calculateATR(candles, ATR_PERIOD);
 
     expect(result).toHaveLength(1);
@@ -76,7 +76,7 @@ describe('calculateATR', () => {
   });
 
   it('should calculate True Range correctly', () => {
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       createCandle(110, 90, 100),
       createCandle(115, 95, 105),
       createCandle(120, 100, 110),
@@ -90,7 +90,7 @@ describe('calculateATR', () => {
   });
 
   it('should apply Wilders smoothing correctly', () => {
-    const candles: Candle[] = Array.from({ length: 30 }, (_, i) => {
+    const candles: Kline[] = Array.from({ length: 30 }, (_, i) => {
       const base = 100 + i;
       return createCandle(base + 10, base - 10, base, Date.now() + i);
     });
@@ -108,7 +108,7 @@ describe('calculateATR', () => {
   });
 
   it('should handle high volatility scenarios', () => {
-    const candles: Candle[] = Array.from({ length: 20 }, (_, i) => {
+    const candles: Kline[] = Array.from({ length: 20 }, (_, i) => {
       const volatility = i % 2 === 0 ? 50 : 10;
       return createCandle(100 + volatility, 100 - volatility, 100, Date.now() + i);
     });
@@ -119,7 +119,7 @@ describe('calculateATR', () => {
   });
 
   it('should handle low volatility scenarios', () => {
-    const candles: Candle[] = Array.from({ length: 20 }, (_, i) => {
+    const candles: Kline[] = Array.from({ length: 20 }, (_, i) => {
       const base = 100;
       return createCandle(base + 1, base - 1, base, Date.now() + i);
     });

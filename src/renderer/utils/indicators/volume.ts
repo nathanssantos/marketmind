@@ -1,4 +1,5 @@
-import type { Candle, VolumeCluster } from '@shared/types';
+import type { Kline, VolumeCluster } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { calculateSMA } from '../movingAverages';
 
 const DEFAULT_VOLUME_PERIOD = 20;
@@ -36,12 +37,12 @@ export interface VolumeMovingAverage {
 }
 
 export const analyzeVolume = (
-  candles: Candle[],
+  candles: Kline[],
   period = DEFAULT_VOLUME_PERIOD,
   spikeThreshold = DEFAULT_SPIKE_THRESHOLD,
 ): VolumeAnalysis => {
   const volumeCandles = candles.map((c) => ({
-    timestamp: c.timestamp,
+    timestamp: c.openTime,
     open: c.volume,
     high: c.volume,
     low: c.volume,
@@ -65,7 +66,7 @@ export const analyzeVolume = (
       continue;
     }
 
-    const volume = candle.volume;
+    const volume = getKlineVolume(candle);
     const relative = avg > 0 ? volume / avg : 1;
     relativeVolume.push(relative);
 
@@ -86,17 +87,17 @@ export const analyzeVolume = (
 };
 
 export const detectVolumeClusters = (
-  candles: Candle[],
+  candles: Kline[],
   threshold = DEFAULT_PRICE_TOLERANCE,
 ): VolumeCluster[] => {
   const clusters: Map<number, { volume: number; count: number }> = new Map();
 
   for (const candle of candles) {
-    const priceLevel = Math.round(candle.close / threshold) * threshold;
+    const priceLevel = Math.round(getKlineClose(candle) / threshold) * threshold;
 
     const existing = clusters.get(priceLevel) ?? { volume: 0, count: 0 };
     clusters.set(priceLevel, {
-      volume: existing.volume + candle.volume,
+      volume: existing.volume + getKlineVolume(candle),
       count: existing.count + 1,
     });
   }
@@ -116,7 +117,7 @@ export const getVolumeMAPeriod = (timeframe: string): number => {
 };
 
 export const calculateVolumeMA = (
-  candles: Candle[],
+  candles: Kline[],
   period: number = DEFAULT_VOLUME_PERIOD,
 ): VolumeMovingAverage => {
   if (candles.length === 0 || period <= 0) {
@@ -124,7 +125,7 @@ export const calculateVolumeMA = (
   }
 
   const volumeCandles = candles.map((c) => ({
-    timestamp: c.timestamp,
+    timestamp: c.openTime,
     open: c.volume,
     high: c.volume,
     low: c.volume,

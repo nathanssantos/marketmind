@@ -1,6 +1,7 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 
-export const calculateSMA = (candles: Candle[], period: number): (number | null)[] => {
+export const calculateSMA = (candles: Kline[], period: number): (number | null)[] => {
   if (period <= 0 || candles.length === 0) {
     return [];
   }
@@ -17,7 +18,7 @@ export const calculateSMA = (candles: Candle[], period: number): (number | null)
     for (let j = 0; j < period; j++) {
       const candle = candles[i - j];
       if (!candle) continue;
-      sum += candle.close;
+      sum += getKlineClose(candle);
     }
 
     result.push(sum / period);
@@ -26,7 +27,7 @@ export const calculateSMA = (candles: Candle[], period: number): (number | null)
   return result;
 };
 
-export const calculateEMA = (candles: Candle[], period: number): (number | null)[] => {
+export const calculateEMA = (candles: Kline[], period: number): (number | null)[] => {
   if (period <= 0 || candles.length === 0) {
     return [];
   }
@@ -45,7 +46,7 @@ export const calculateEMA = (candles: Candle[], period: number): (number | null)
       for (let j = 0; j < period; j++) {
         const candle = candles[i - j];
         if (!candle) continue;
-        sum += candle.close;
+        sum += getKlineClose(candle);
       }
       result.push(sum / period);
       continue;
@@ -92,14 +93,14 @@ export interface MAResult {
 }
 
 export const calculateMovingAverage = (
-  candles: Candle[],
+  candles: Kline[],
   period: number,
   type: 'SMA' | 'EMA',
 ): (number | null)[] => {
   return type === 'SMA' ? calculateSMA(candles, period) : calculateEMA(candles, period);
 };
 
-export const calculateMovingAverages = (candles: Candle[], configs: MAConfig[]): MAResult[] => {
+export const calculateMovingAverages = (candles: Kline[], configs: MAConfig[]): MAResult[] => {
   return configs
     .filter((config) => config.enabled)
     .map((config) => ({

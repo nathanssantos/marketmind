@@ -1,6 +1,6 @@
 import type { AIPattern } from './aiPattern';
 import type { CalendarEvent } from './calendar';
-import type { Candle } from './candle';
+import type { Kline } from './candle';
 
 export interface AIProvider {
   id: string;
@@ -37,7 +37,7 @@ export interface NewsArticle {
 
 export interface AIAnalysisRequest {
   chartImage: string;
-  candles: Candle[];
+  candles: Kline[];
   news?: NewsArticle[];
   events?: CalendarEvent[];
   context?: string;

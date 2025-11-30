@@ -1,4 +1,4 @@
-import type { Candle, TradingSetup, SetupDirection } from '@shared/types';
+import type { Kline, TradingSetup, SetupDirection } from '@shared/types';
 
 export interface SetupDetectorConfig {
   enabled: boolean;
@@ -19,14 +19,14 @@ export abstract class BaseSetupDetector {
   }
 
   abstract detect(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
   ): SetupDetectorResult;
 
   protected createSetup(
     type: TradingSetup['type'],
     direction: SetupDirection,
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     entryPrice: number,
     stopLoss: number,

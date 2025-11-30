@@ -1,4 +1,4 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useLineRenderer } from './useLineRenderer';
@@ -37,7 +37,7 @@ describe('useLineRenderer', () => {
     
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
     ];
     
@@ -69,7 +69,7 @@ describe('useLineRenderer', () => {
   it('should render line with default color', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
       { open: 105, high: 115, low: 95, close: 110, volume: 1100, timestamp: Date.now() },
     ];
@@ -88,7 +88,7 @@ describe('useLineRenderer', () => {
   it('should render line with custom color', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
     ];
     
@@ -107,7 +107,7 @@ describe('useLineRenderer', () => {
   it('should apply custom line width', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
     ];
     
@@ -126,7 +126,7 @@ describe('useLineRenderer', () => {
   it('should render area when showArea is true', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
       { open: 105, high: 115, low: 95, close: 110, volume: 1100, timestamp: Date.now() },
     ];
@@ -147,7 +147,7 @@ describe('useLineRenderer', () => {
   it('should not render area when showArea is false', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
     ];
     
@@ -166,7 +166,7 @@ describe('useLineRenderer', () => {
   it('should call moveTo for first candle and lineTo for subsequent candles', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
       { open: 105, high: 115, low: 95, close: 110, volume: 1100, timestamp: Date.now() },
       { open: 110, high: 120, low: 100, close: 115, volume: 1200, timestamp: Date.now() },
@@ -187,7 +187,7 @@ describe('useLineRenderer', () => {
   it('should use close price for line points', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       { open: 100, high: 110, low: 90, close: 105, volume: 1000, timestamp: Date.now() },
     ];
     
@@ -206,7 +206,7 @@ describe('useLineRenderer', () => {
   it('should handle viewport slicing correctly', () => {
     const { result } = renderHook(() => useLineRenderer());
     
-    const candles: Candle[] = Array.from({ length: 100 }, (_, i) => ({
+    const candles: Kline[] = Array.from({ length: 100 }, (_, i) => ({
       open: 100 + i,
       high: 110 + i,
       low: 90 + i,

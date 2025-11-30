@@ -1,11 +1,11 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import type { Candle, TradingSetup } from '@shared/types';
+import type { Kline, TradingSetup } from '@shared/types';
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface SetupRendererProps {
   canvasManager: CanvasManager | null;
-  candles: Candle[];
+  candles: Kline[];
   setups: TradingSetup[];
   width: number;
   height: number;
@@ -67,7 +67,7 @@ export const SetupRenderer = ({
     return mouseX >= tagBounds.x && mouseX <= tagBounds.x + tagBounds.width && mouseY >= tagBounds.y && mouseY <= tagBounds.y + tagBounds.height;
   }, []);
 
-  const checkSetupHit = useCallback((setup: TradingSetup, mouseX: number, mouseY: number, manager: CanvasManager, candlesData: Candle[]): boolean => {
+  const checkSetupHit = useCallback((setup: TradingSetup, mouseX: number, mouseY: number, manager: CanvasManager, candlesData: Kline[]): boolean => {
     const candleIndex = setup.candleIndex;
     const candle = candlesData[candleIndex];
     if (!candle) return false;
@@ -153,7 +153,7 @@ export const SetupRenderer = ({
     });
   }, []);
 
-  const drawSetup = useCallback((ctx: CanvasRenderingContext2D, setup: TradingSetup, manager: CanvasManager, candlesData: Candle[], isHovered: boolean): void => {
+  const drawSetup = useCallback((ctx: CanvasRenderingContext2D, setup: TradingSetup, manager: CanvasManager, candlesData: Kline[], isHovered: boolean): void => {
     const candleIndex = setup.candleIndex;
     const candle = candlesData[candleIndex];
     if (!candle) return;

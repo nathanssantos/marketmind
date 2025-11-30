@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../../shared/types';
+import type { Kline } from '../../../../shared/types';
 import { detectBearishTrendlines, detectBullishTrendlines } from '../patterns/trendlines';
 import type { PivotPoint } from '../types';
 
-const createTestCandles = (count: number, basePrice: number): Candle[] => {
-  const candles: Candle[] = [];
+const createTestCandles = (count: number, basePrice: number): Kline[] => {
+  const candles: Kline[] = [];
   const now = Date.now();
   
   for (let i = 0; i < count; i++) {

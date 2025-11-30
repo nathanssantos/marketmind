@@ -1,11 +1,11 @@
 import { workerPool } from '@/renderer/utils/WorkerPool';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { useEffect, useRef, useState } from 'react';
 import type { RSIResult } from '../utils/rsi';
 
 const WORKER_KEY = 'rsi';
 
-export const useRSIWorker = (candles: Candle[], period: number = 2, enabled: boolean = false) => {
+export const useRSIWorker = (candles: Kline[], period: number = 2, enabled: boolean = false) => {
   const [rsiData, setRSIData] = useState<RSIResult | null>(null);
   const workerRef = useRef<Worker | null>(null);
 

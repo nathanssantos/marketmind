@@ -1,5 +1,5 @@
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Candle, TradingSetup } from '@shared/types';
+import type { Kline, TradingSetup } from '@shared/types';
 import {
   BearTrapDetector,
   createDefaultBearTrapConfig,
@@ -135,7 +135,7 @@ export class SetupDetectionService {
     this.lastDetectionIndex.set(setupType, currentIndex);
   }
 
-  private getTrend(candles: Candle[], currentIndex: number): 'bullish' | 'bearish' | 'neutral' {
+  private getTrend(candles: Kline[], currentIndex: number): 'bullish' | 'bearish' | 'neutral' {
     if (!this.config.enableTrendFilter || currentIndex < this.config.trendEmaPeriod) {
       return 'neutral';
     }
@@ -164,7 +164,7 @@ export class SetupDetectionService {
     return false;
   }
 
-  detectSetups(candles: Candle[]): TradingSetup[] {
+  detectSetups(candles: Kline[]): TradingSetup[] {
     if (candles.length === 0) return [];
 
     const setups: TradingSetup[] = [];
@@ -597,7 +597,7 @@ export class SetupDetectionService {
   }
 
   detectSetupsInRange(
-    candles: Candle[],
+    candles: Kline[],
     startIndex: number,
     endIndex: number,
   ): TradingSetup[] {

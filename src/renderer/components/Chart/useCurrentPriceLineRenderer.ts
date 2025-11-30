@@ -1,6 +1,7 @@
 import type { CanvasManager } from '@/renderer/utils/canvas/CanvasManager';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import { getKlineClose } from '@shared/utils';
 import { useCallback } from 'react';
 
 interface UseCurrentPriceLineRendererProps {
@@ -33,13 +34,13 @@ export const useCurrentPriceLineRenderer = ({
     const dimensions = manager.getDimensions();
     const bounds = manager.getBounds();
     const candles = manager.getCandles();
-    
+
     if (!candles.length || !ctx || !dimensions || !bounds) return;
 
     const lastCandle = candles[candles.length - 1];
     if (!lastCandle) return;
 
-    const currentPrice = lastCandle.close;
+    const currentPrice = getKlineClose(lastCandle);
     const { width } = dimensions;
     const y = manager.priceToY(currentPrice);
 
@@ -77,7 +78,7 @@ export const useCurrentPriceLineRenderer = ({
     const lastCandle = candles[candles.length - 1];
     if (!lastCandle) return;
 
-    const currentPrice = lastCandle.close;
+    const currentPrice = getKlineClose(lastCandle);
     const { width } = dimensions;
     const y = manager.priceToY(currentPrice);
 
@@ -85,7 +86,7 @@ export const useCurrentPriceLineRenderer = ({
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    
+
     const priceText = currentPrice.toFixed(2);
     const lineEndX = width - rightMargin;
     

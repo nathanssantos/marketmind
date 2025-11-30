@@ -2,13 +2,13 @@ import { usePatternDetectionConfigStore } from '@renderer/store/patternDetection
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { testPatternHit } from '@renderer/utils/canvas/hitTesting';
 import { LINE_STYLES, PATTERN_COLORS } from '@shared/constants';
-import type { AIPattern, AIPatternChannel, AIPatternCupAndHandle, AIPatternDoublePattern, AIPatternFibonacci, AIPatternFlag, AIPatternGap, AIPatternHeadAndShoulders, AIPatternLine, AIPatternPennant, AIPatternRoundingBottom, AIPatternTriangle, AIPatternTriplePattern, AIPatternWedge, AIPatternZone, Candle } from '@shared/types';
+import type { AIPattern, AIPatternChannel, AIPatternCupAndHandle, AIPatternDoublePattern, AIPatternFibonacci, AIPatternFlag, AIPatternGap, AIPatternHeadAndShoulders, AIPatternLine, AIPatternPennant, AIPatternRoundingBottom, AIPatternTriangle, AIPatternTriplePattern, AIPatternWedge, AIPatternZone, Kline } from '@shared/types';
 import { useEffect, useRef, useState } from 'react';
 import { usePatternHover } from '../../context/PatternHoverContext';
 
 interface PatternRendererProps {
   canvasManager: CanvasManager | null;
-  candles: Candle[];
+  candles: Kline[];
   patterns: AIPattern[];
   width: number;
   height: number;
@@ -247,14 +247,14 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternLine,
     manager: CanvasManager,
-    candles: Candle[],
+    candles: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
     const [point1, point2] = pattern.points;
 
-    const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
-    const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
+    const index1 = candles.findIndex(c => c.openTime >= point1.timestamp);
+    const index2 = candles.findIndex(c => c.openTime >= point2.timestamp);
 
     if (index1 === -1 || index2 === -1) return;
 
@@ -312,7 +312,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternChannel,
     manager: CanvasManager,
-    candles: Candle[],
+    candles: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -324,10 +324,10 @@ export const PatternRenderer = ({
     const lowerPoint1 = pattern.lowerLine[0];
     const lowerPoint2 = pattern.lowerLine[1];
 
-    const upperIndex1 = candles.findIndex(c => c.timestamp >= upperPoint1.timestamp);
-    const upperIndex2 = candles.findIndex(c => c.timestamp >= upperPoint2.timestamp);
-    const lowerIndex1 = candles.findIndex(c => c.timestamp >= lowerPoint1.timestamp);
-    const lowerIndex2 = candles.findIndex(c => c.timestamp >= lowerPoint2.timestamp);
+    const upperIndex1 = candles.findIndex(c => c.openTime >= upperPoint1.timestamp);
+    const upperIndex2 = candles.findIndex(c => c.openTime >= upperPoint2.timestamp);
+    const lowerIndex1 = candles.findIndex(c => c.openTime >= lowerPoint1.timestamp);
+    const lowerIndex2 = candles.findIndex(c => c.openTime >= lowerPoint2.timestamp);
 
     if (upperIndex1 === -1 || upperIndex2 === -1 || lowerIndex1 === -1 || lowerIndex2 === -1) return;
 
@@ -422,12 +422,12 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternFibonacci,
     manager: CanvasManager,
-    candles: Candle[],
+    candles: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
-    const startIndex = candles.findIndex(c => c.timestamp >= pattern.startPoint.timestamp);
-    const endIndex = candles.findIndex(c => c.timestamp >= pattern.endPoint.timestamp);
+    const startIndex = candles.findIndex(c => c.openTime >= pattern.startPoint.timestamp);
+    const endIndex = candles.findIndex(c => c.openTime >= pattern.endPoint.timestamp);
 
     if (startIndex === -1 || endIndex === -1) return;
 
@@ -524,7 +524,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternHeadAndShoulders,
     manager: CanvasManager,
-    candles: Candle[],
+    candles: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -532,7 +532,7 @@ export const PatternRenderer = ({
     const lineWidth = isHovered ? 3 : 2;
 
     const points = [pattern.leftShoulder, pattern.head, pattern.rightShoulder];
-    const indices = points.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
+    const indices = points.map(p => candles.findIndex(c => c.openTime >= p.timestamp));
 
     if (indices.some(i => i === -1)) return;
 
@@ -557,8 +557,8 @@ export const PatternRenderer = ({
     if (pattern.neckline) {
       ctx.setLineDash([5, 5]);
       const [neck1, neck2] = pattern.neckline;
-      const neckIndex1 = candles.findIndex(c => c.timestamp >= neck1.timestamp);
-      const neckIndex2 = candles.findIndex(c => c.timestamp >= neck2.timestamp);
+      const neckIndex1 = candles.findIndex(c => c.openTime >= neck1.timestamp);
+      const neckIndex2 = candles.findIndex(c => c.openTime >= neck2.timestamp);
 
       if (neckIndex1 !== -1 && neckIndex2 !== -1) {
         ctx.beginPath();
@@ -582,7 +582,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternDoublePattern,
     manager: CanvasManager,
-    candles: Candle[],
+    candles: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -590,7 +590,7 @@ export const PatternRenderer = ({
     const lineWidth = isHovered ? 3 : 2;
 
     const points = [pattern.firstPeak, pattern.secondPeak];
-    const indices = points.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
+    const indices = points.map(p => candles.findIndex(c => c.openTime >= p.timestamp));
 
     if (indices.some(i => i === -1)) return;
 
@@ -637,7 +637,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternTriplePattern,
     manager: CanvasManager,
-    candles: Candle[],
+    candles: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -645,7 +645,7 @@ export const PatternRenderer = ({
     const lineWidth = isHovered ? 3 : 2;
 
     const points = [pattern.peak1, pattern.peak2, pattern.peak3];
-    const indices = points.map(p => candles.findIndex(c => c.timestamp >= p.timestamp));
+    const indices = points.map(p => candles.findIndex(c => c.openTime >= p.timestamp));
 
     if (indices.some(i => i === -1)) return;
 
@@ -665,8 +665,8 @@ export const PatternRenderer = ({
     if (pattern.neckline) {
       ctx.setLineDash([5, 5]);
       const [neck1, neck2] = pattern.neckline;
-      const neckIndex1 = candles.findIndex(c => c.timestamp >= neck1.timestamp);
-      const neckIndex2 = candles.findIndex(c => c.timestamp >= neck2.timestamp);
+      const neckIndex1 = candles.findIndex(c => c.openTime >= neck1.timestamp);
+      const neckIndex2 = candles.findIndex(c => c.openTime >= neck2.timestamp);
 
       if (neckIndex1 !== -1 && neckIndex2 !== -1) {
         ctx.beginPath();
@@ -690,7 +690,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternTriangle,
     manager: CanvasManager,
-    candles: Candle[],
+    candles: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -702,10 +702,10 @@ export const PatternRenderer = ({
     const lowerPoint1 = pattern.lowerTrendline[0];
     const lowerPoint2 = pattern.lowerTrendline[1];
 
-    const upperIndex1 = candles.findIndex(c => c.timestamp >= upperPoint1.timestamp);
-    const upperIndex2 = candles.findIndex(c => c.timestamp >= upperPoint2.timestamp);
-    const lowerIndex1 = candles.findIndex(c => c.timestamp >= lowerPoint1.timestamp);
-    const lowerIndex2 = candles.findIndex(c => c.timestamp >= lowerPoint2.timestamp);
+    const upperIndex1 = candles.findIndex(c => c.openTime >= upperPoint1.timestamp);
+    const upperIndex2 = candles.findIndex(c => c.openTime >= upperPoint2.timestamp);
+    const lowerIndex1 = candles.findIndex(c => c.openTime >= lowerPoint1.timestamp);
+    const lowerIndex2 = candles.findIndex(c => c.openTime >= lowerPoint2.timestamp);
 
     if (upperIndex1 === -1 || upperIndex2 === -1 || lowerIndex1 === -1 || lowerIndex2 === -1) return;
 
@@ -726,7 +726,7 @@ export const PatternRenderer = ({
     ctx.moveTo(upperX1, upperY1);
     ctx.lineTo(upperX2, upperY2);
     if (pattern.apex) {
-      const apexIndex = candles.findIndex(c => c.timestamp >= pattern.apex!.timestamp);
+      const apexIndex = candles.findIndex(c => c.openTime >= pattern.apex!.timestamp);
       if (apexIndex !== -1) {
         const apexX = manager.indexToCenterX(apexIndex);
         const apexY = manager.priceToY(pattern.apex.price);
@@ -761,7 +761,7 @@ export const PatternRenderer = ({
     ctx.restore();
 
     const firstPoint = pattern.upperTrendline[0];
-    const index = candles.findIndex(c => c.timestamp >= firstPoint.timestamp);
+    const index = candles.findIndex(c => c.openTime >= firstPoint.timestamp);
     if (index !== -1) {
       const x = manager.indexToCenterX(index);
       const y = manager.priceToY(firstPoint.price);
@@ -773,7 +773,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternWedge,
     manager: CanvasManager,
-    candles: Candle[],
+    candles: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -785,10 +785,10 @@ export const PatternRenderer = ({
     const lowerPoint1 = pattern.lowerTrendline[0];
     const lowerPoint2 = pattern.lowerTrendline[1];
 
-    const upperIndex1 = candles.findIndex(c => c.timestamp >= upperPoint1.timestamp);
-    const upperIndex2 = candles.findIndex(c => c.timestamp >= upperPoint2.timestamp);
-    const lowerIndex1 = candles.findIndex(c => c.timestamp >= lowerPoint1.timestamp);
-    const lowerIndex2 = candles.findIndex(c => c.timestamp >= lowerPoint2.timestamp);
+    const upperIndex1 = candles.findIndex(c => c.openTime >= upperPoint1.timestamp);
+    const upperIndex2 = candles.findIndex(c => c.openTime >= upperPoint2.timestamp);
+    const lowerIndex1 = candles.findIndex(c => c.openTime >= lowerPoint1.timestamp);
+    const lowerIndex2 = candles.findIndex(c => c.openTime >= lowerPoint2.timestamp);
 
     if (upperIndex1 === -1 || upperIndex2 === -1 || lowerIndex1 === -1 || lowerIndex2 === -1) return;
 
@@ -809,7 +809,7 @@ export const PatternRenderer = ({
     ctx.moveTo(upperX1, upperY1);
     ctx.lineTo(upperX2, upperY2);
     if (pattern.convergencePoint) {
-      const convIndex = candles.findIndex(c => c.timestamp >= pattern.convergencePoint!.timestamp);
+      const convIndex = candles.findIndex(c => c.openTime >= pattern.convergencePoint!.timestamp);
       if (convIndex !== -1) {
         const convX = manager.indexToCenterX(convIndex);
         const convY = manager.priceToY(pattern.convergencePoint.price);
@@ -844,7 +844,7 @@ export const PatternRenderer = ({
     ctx.restore();
 
     const firstPoint = pattern.upperTrendline[0];
-    const index = candles.findIndex(c => c.timestamp >= firstPoint.timestamp);
+    const index = candles.findIndex(c => c.openTime >= firstPoint.timestamp);
     if (index !== -1) {
       const x = manager.indexToCenterX(index);
       const y = manager.priceToY(firstPoint.price);
@@ -856,7 +856,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternFlag,
     manager: CanvasManager,
-    candles: Candle[],
+    candles: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -872,8 +872,8 @@ export const PatternRenderer = ({
       ctx.shadowBlur = 8;
     }
 
-    const poleStartIndex = candles.findIndex(c => c.timestamp >= pattern.flagpole.start.timestamp);
-    const poleEndIndex = candles.findIndex(c => c.timestamp >= pattern.flagpole.end.timestamp);
+    const poleStartIndex = candles.findIndex(c => c.openTime >= pattern.flagpole.start.timestamp);
+    const poleEndIndex = candles.findIndex(c => c.openTime >= pattern.flagpole.end.timestamp);
 
     if (poleStartIndex !== -1 && poleEndIndex !== -1) {
       ctx.beginPath();
@@ -885,8 +885,8 @@ export const PatternRenderer = ({
     ctx.setLineDash([5, 5]);
     [pattern.flag.upperTrendline, pattern.flag.lowerTrendline].forEach((line) => {
       const [point1, point2] = line;
-      const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
-      const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
+      const index1 = candles.findIndex(c => c.openTime >= point1.timestamp);
+      const index2 = candles.findIndex(c => c.openTime >= point2.timestamp);
 
       if (index1 === -1 || index2 === -1) return;
 
@@ -910,7 +910,7 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternPennant,
     manager: CanvasManager,
-    candles: Candle[],
+    candles: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
@@ -926,8 +926,8 @@ export const PatternRenderer = ({
       ctx.shadowBlur = 8;
     }
 
-    const poleStartIndex = candles.findIndex(c => c.timestamp >= pattern.flagpole.start.timestamp);
-    const poleEndIndex = candles.findIndex(c => c.timestamp >= pattern.flagpole.end.timestamp);
+    const poleStartIndex = candles.findIndex(c => c.openTime >= pattern.flagpole.start.timestamp);
+    const poleEndIndex = candles.findIndex(c => c.openTime >= pattern.flagpole.end.timestamp);
 
     if (poleStartIndex !== -1 && poleEndIndex !== -1) {
       ctx.beginPath();
@@ -939,8 +939,8 @@ export const PatternRenderer = ({
     ctx.setLineDash([5, 5]);
     [pattern.pennant.upperTrendline, pattern.pennant.lowerTrendline].forEach((line) => {
       const [point1, point2] = line;
-      const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
-      const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
+      const index1 = candles.findIndex(c => c.openTime >= point1.timestamp);
+      const index2 = candles.findIndex(c => c.openTime >= point2.timestamp);
 
       if (index1 === -1 || index2 === -1) return;
 
@@ -964,16 +964,16 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternCupAndHandle,
     manager: CanvasManager,
-    candles: Candle[],
+    candles: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
     const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 2 : 1;
 
-    const cupStartIndex = candles.findIndex(c => c.timestamp >= pattern.cupStart.timestamp);
-    const cupBottomIndex = candles.findIndex(c => c.timestamp >= pattern.cupBottom.timestamp);
-    const cupEndIndex = candles.findIndex(c => c.timestamp >= pattern.cupEnd.timestamp);
+    const cupStartIndex = candles.findIndex(c => c.openTime >= pattern.cupStart.timestamp);
+    const cupBottomIndex = candles.findIndex(c => c.openTime >= pattern.cupBottom.timestamp);
+    const cupEndIndex = candles.findIndex(c => c.openTime >= pattern.cupEnd.timestamp);
 
     if (cupStartIndex === -1 || cupBottomIndex === -1 || cupEndIndex === -1) return;
 
@@ -996,9 +996,9 @@ export const PatternRenderer = ({
     );
     ctx.stroke();
 
-    const handleStartIndex = candles.findIndex(c => c.timestamp >= pattern.handleStart.timestamp);
-    const handleLowIndex = candles.findIndex(c => c.timestamp >= pattern.handleLow.timestamp);
-    const handleEndIndex = candles.findIndex(c => c.timestamp >= pattern.handleEnd.timestamp);
+    const handleStartIndex = candles.findIndex(c => c.openTime >= pattern.handleStart.timestamp);
+    const handleLowIndex = candles.findIndex(c => c.openTime >= pattern.handleLow.timestamp);
+    const handleEndIndex = candles.findIndex(c => c.openTime >= pattern.handleEnd.timestamp);
 
     if (handleStartIndex !== -1 && handleLowIndex !== -1 && handleEndIndex !== -1) {
       ctx.beginPath();
@@ -1019,16 +1019,16 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternRoundingBottom,
     manager: CanvasManager,
-    candles: Candle[],
+    candles: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
     const color = getPatternColor(pattern.type);
     const lineWidth = isHovered ? 2 : 1;
 
-    const startIndex = candles.findIndex(c => c.timestamp >= pattern.start.timestamp);
-    const bottomIndex = candles.findIndex(c => c.timestamp >= pattern.bottom.timestamp);
-    const endIndex = candles.findIndex(c => c.timestamp >= pattern.end.timestamp);
+    const startIndex = candles.findIndex(c => c.openTime >= pattern.start.timestamp);
+    const bottomIndex = candles.findIndex(c => c.openTime >= pattern.bottom.timestamp);
+    const endIndex = candles.findIndex(c => c.openTime >= pattern.end.timestamp);
 
     if (startIndex === -1 || bottomIndex === -1 || endIndex === -1) return;
 
@@ -1062,12 +1062,12 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternGap,
     manager: CanvasManager,
-    candles: Candle[],
+    candles: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
-    const startIndex = candles.findIndex(c => c.timestamp >= pattern.gapStart.timestamp);
-    const endIndex = candles.findIndex(c => c.timestamp >= pattern.gapEnd.timestamp);
+    const startIndex = candles.findIndex(c => c.openTime >= pattern.gapStart.timestamp);
+    const endIndex = candles.findIndex(c => c.openTime >= pattern.gapEnd.timestamp);
 
     if (startIndex === -1 || endIndex === -1) return;
 
@@ -1107,12 +1107,12 @@ export const PatternRenderer = ({
     ctx: CanvasRenderingContext2D,
     pattern: AIPatternZone,
     manager: CanvasManager,
-    candles: Candle[],
+    candles: Kline[],
     isHovered: boolean,
     patternNumber: number
   ) => {
-    const startIndex = candles.findIndex(c => c.timestamp >= pattern.startTimestamp);
-    const endIndex = candles.findIndex(c => c.timestamp >= pattern.endTimestamp);
+    const startIndex = candles.findIndex(c => c.openTime >= pattern.startTimestamp);
+    const endIndex = candles.findIndex(c => c.openTime >= pattern.endTimestamp);
 
     if (startIndex === -1 || endIndex === -1) return;
 

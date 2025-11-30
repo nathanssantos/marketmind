@@ -1,4 +1,4 @@
-import type { OptimizedCandleData } from './candleOptimizer';
+import type { OptimizedKlineData } from './candleOptimizer';
 
 interface CacheEntry<T> {
   data: T;
@@ -14,7 +14,7 @@ interface CandleCacheKey {
 const CACHE_DURATION = 5 * 60 * 1000;
 
 class AIContextCache {
-  private candleCache: Map<string, CacheEntry<OptimizedCandleData>>;
+  private candleCache: Map<string, CacheEntry<OptimizedKlineData>>;
   private summaryCache: Map<string, CacheEntry<string>>;
   
   constructor() {
@@ -30,7 +30,7 @@ class AIContextCache {
     return Date.now() - timestamp > CACHE_DURATION;
   }
   
-  getCachedCandles(key: CandleCacheKey): OptimizedCandleData | null {
+  getCachedCandles(key: CandleCacheKey): OptimizedKlineData | null {
     const cacheKey = this.createCandleCacheKey(key);
     const entry = this.candleCache.get(cacheKey);
     
@@ -44,7 +44,7 @@ class AIContextCache {
     return entry.data;
   }
   
-  setCachedCandles(key: CandleCacheKey, data: OptimizedCandleData): void {
+  setCachedCandles(key: CandleCacheKey, data: OptimizedKlineData): void {
     const cacheKey = this.createCandleCacheKey(key);
     this.candleCache.set(cacheKey, {
       data,

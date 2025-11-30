@@ -1,6 +1,8 @@
 import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import type { AIPattern, Candle, Viewport } from '@shared/types';
+import type { AIPattern, Kline, Viewport } from '@shared/types';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
+import { getOrderId, isOrderActive, isOrderLong, isOrderPending } from '@shared/utils';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
@@ -267,10 +269,10 @@ function AppContent(): ReactElement {
     enabled: true,
   });
 
-  const [liveCandles, setLiveCandles] = useState<Candle[]>([]);
+  const [liveCandles, setLiveCandles] = useState<Kline[]>([]);
   const previousPriceRef = useRef<number | null>(null);
   const appLoadTimeRef = useRef(Date.now());
-  const pendingUpdateRef = useRef<{ candle: Candle; isFinal: boolean } | null>(null);
+  const pendingUpdateRef = useRef<{ candle: Kline; isFinal: boolean } | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const lastOrderUpdateRef = useRef<number>(0);
 
@@ -284,7 +286,7 @@ function AppContent(): ReactElement {
     pendingUpdateRef.current = null;
   }, [symbol, timeframe]);
 
-  const handleRealtimeUpdate = useCallback((candle: Candle, isFinal: boolean) => {
+  const handleRealtimeUpdate = useCallback((candle: Kline, isFinal: boolean) => {
     pendingUpdateRef.current = { candle, isFinal };
 
     if (rafIdRef.current !== null) {
@@ -296,7 +298,7 @@ function AppContent(): ReactElement {
       if (!update) return;
 
       const { candle: latestCandle, isFinal: finalFlag } = update;
-      const currentPrice = latestCandle.close;
+      const currentPrice = getKlineClose(latestCandle);
       const previousPrice = previousPriceRef.current;
 
       const now = Date.now();
@@ -305,37 +307,39 @@ function AppContent(): ReactElement {
       if (previousPrice !== null && previousPrice !== currentPrice && shouldUpdateOrders) {
         const state = useTradingStore.getState();
         if (state.isSimulatorActive) {
-          const hasPendingOrders = state.orders.some(o => o.status === 'pending' && o.symbol === symbol);
+          const hasPendingOrders = state.orders.some(o => isOrderPending(o) && o.symbol === symbol);
           if (hasPendingOrders) {
             state.fillPendingOrders(symbol, currentPrice, previousPrice, appLoadTimeRef.current);
           }
 
-          const activeOrders = state.orders.filter(o => o.status === 'active' && o.symbol === symbol);
+          const activeOrders = state.orders.filter(o => isOrderActive(o) && o.symbol === symbol);
           activeOrders.forEach(order => {
-            const isLong = order.type === 'long';
+            const isLong = isOrderLong(order);
 
-            state.updateOrder(order.id, { currentPrice });
+            state.updateOrder(getOrderId(order), { currentPrice });
 
             if (order.stopLoss) {
               const stopHit = isLong
-                ? latestCandle.low <= order.stopLoss
-                : latestCandle.high >= order.stopLoss;
+                ? getKlineLow(latestCandle) <= order.stopLoss
+                : getKlineHigh(latestCandle) >= order.stopLoss;
 
               if (stopHit) {
-                console.log(`[OCO] Stop Loss hit for order ${order.id.slice(0, 8)}... at ${order.stopLoss} (${isLong ? 'LONG' : 'SHORT'})`);
-                state.closeOrder(order.id, order.stopLoss);
+                const orderId = getOrderId(order);
+                console.log(`[OCO] Stop Loss hit for order ${orderId.slice(0, 8)}... at ${order.stopLoss} (${isLong ? 'LONG' : 'SHORT'})`);
+                state.closeOrder(orderId, order.stopLoss);
                 return;
               }
             }
 
             if (order.takeProfit) {
               const targetHit = isLong
-                ? latestCandle.high >= order.takeProfit
-                : latestCandle.low <= order.takeProfit;
+                ? getKlineHigh(latestCandle) >= order.takeProfit
+                : getKlineLow(latestCandle) <= order.takeProfit;
 
               if (targetHit) {
-                console.log(`[OCO] Take Profit hit for order ${order.id.slice(0, 8)}... at ${order.takeProfit} (${isLong ? 'LONG' : 'SHORT'})`);
-                state.closeOrder(order.id, order.takeProfit);
+                const orderId = getOrderId(order);
+                console.log(`[OCO] Take Profit hit for order ${orderId.slice(0, 8)}... at ${order.takeProfit} (${isLong ? 'LONG' : 'SHORT'})`);
+                state.closeOrder(orderId, order.takeProfit);
                 return;
               }
             }
@@ -352,15 +356,15 @@ function AppContent(): ReactElement {
         const lastCandle = prev[prev.length - 1];
         if (!lastCandle) return [latestCandle];
 
-        if (latestCandle.timestamp === lastCandle.timestamp) {
-          if (latestCandle.close === lastCandle.close &&
-            latestCandle.high === lastCandle.high &&
-            latestCandle.low === lastCandle.low &&
-            latestCandle.volume === lastCandle.volume) return prev;
+        if (latestCandle.openTime === lastCandle.openTime) {
+          if (getKlineClose(latestCandle) === getKlineClose(lastCandle) &&
+            getKlineHigh(latestCandle) === getKlineHigh(lastCandle) &&
+            getKlineLow(latestCandle) === getKlineLow(lastCandle) &&
+            getKlineVolume(latestCandle) === getKlineVolume(lastCandle)) return prev;
           return [...prev.slice(0, -1), latestCandle];
         }
 
-        if (latestCandle.timestamp > lastCandle.timestamp) {
+        if (latestCandle.openTime > lastCandle.openTime) {
           previousPriceRef.current = null;
           if (finalFlag) return [...prev, latestCandle];
           return [...prev, latestCandle];
@@ -390,19 +394,19 @@ function AppContent(): ReactElement {
   }, []);
 
   const displayCandles = useMemo(() => {
-    if (!marketData?.candles) return [];
-    if (liveCandles.length === 0) return marketData.candles;
+    if (!marketData?.klines) return [];
+    if (liveCandles.length === 0) return marketData.klines;
 
-    const baseCandles = marketData.candles;
+    const baseCandles = marketData.klines;
     const lastBaseCandle = baseCandles[baseCandles.length - 1];
     const firstLiveCandle = liveCandles[0];
 
-    if (lastBaseCandle && firstLiveCandle && firstLiveCandle.timestamp === lastBaseCandle.timestamp) {
+    if (lastBaseCandle && firstLiveCandle && firstLiveCandle.openTime === lastBaseCandle.openTime) {
       return [...baseCandles.slice(0, -1), ...liveCandles];
     }
 
     return [...baseCandles, ...liveCandles];
-  }, [marketData?.candles, liveCandles]);
+  }, [marketData?.klines, liveCandles]);
 
   const debouncedAdvancedConfig = useDebounce(advancedConfig, 300);
 
@@ -471,7 +475,8 @@ function AppContent(): ReactElement {
 
   const getCurrentPrice = useCallback(() => {
     if (displayCandles.length === 0) return null;
-    return displayCandles[displayCandles.length - 1]?.close ?? null;
+    const lastCandle = displayCandles[displayCandles.length - 1];
+    return lastCandle ? getKlineClose(lastCandle) : null;
   }, [displayCandles]);
 
   const isAutoTradingActive = useAIStore((state) => state.isAutoTradingActive);

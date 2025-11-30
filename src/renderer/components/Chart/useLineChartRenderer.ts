@@ -1,6 +1,7 @@
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
+import { getKlineClose } from '@shared/utils';
 import { useCallback } from 'react';
 
 export interface UseLineChartRendererProps {
@@ -47,7 +48,7 @@ export const useLineChartRenderer = ({
     visibleCandles.forEach((candle, index) => {
       const actualIndex = Math.floor(viewport.start) + index;
       const x = manager.indexToX(actualIndex);
-      const y = manager.priceToY(candle.close);
+      const y = manager.priceToY(getKlineClose(candle));
 
       if (x < -10 || x > effectiveWidth + 10) return;
 

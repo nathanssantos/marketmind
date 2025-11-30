@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../shared/types/candle';
+import type { Kline } from '../../../shared/types/candle';
 import { LiquiditySweepDetector, createDefaultLiquiditySweepConfig } from './LiquiditySweepDetector';
 
 const createCandle = (

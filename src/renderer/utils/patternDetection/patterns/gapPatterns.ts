@@ -1,4 +1,4 @@
-import type { AIPatternGap, Candle } from '@shared/types';
+import type { AIPatternGap, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -7,7 +7,7 @@ import {
 import type { PivotPoint } from '../types';
 
 const detectGapsBase = (
-  candles: Candle[],
+  candles: Kline[],
   _pivots: PivotPoint[],
   type: 'gap-common' | 'gap-breakaway' | 'gap-runaway' | 'gap-exhaustion'
 ): AIPatternGap[] => {
@@ -137,28 +137,28 @@ const getGapLabel = (type: string): string => {
 };
 
 export const detectCommonGaps = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternGap[] => {
   return detectGapsBase(candles, pivots, 'gap-common');
 };
 
 export const detectBreakawayGaps = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternGap[] => {
   return detectGapsBase(candles, pivots, 'gap-breakaway');
 };
 
 export const detectRunawayGaps = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternGap[] => {
   return detectGapsBase(candles, pivots, 'gap-runaway');
 };
 
 export const detectExhaustionGaps = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternGap[] => {
   return detectGapsBase(candles, pivots, 'gap-exhaustion');

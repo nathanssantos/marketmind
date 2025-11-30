@@ -3,7 +3,7 @@ import { renderHook } from '@testing-library/react';
 import { createElement } from 'react';
 import { useChartData } from './useChartData';
 import { ChartProvider } from '../context/ChartContext';
-import type { Candle, NewsArticle } from '@shared/types';
+import type { Kline, NewsArticle } from '@shared/types';
 import type { ReactNode } from 'react';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
@@ -12,7 +12,7 @@ const wrapper = ({ children }: { children: ReactNode }) =>
   createElement(ChartProvider, null, children);
 
 describe('useChartData', () => {
-  const mockCandles: Candle[] = [
+  const mockCandles: Kline[] = [
     { timestamp: 1000, open: 100, high: 110, low: 95, close: 105, volume: 1000 },
     { timestamp: 2000, open: 105, high: 115, low: 100, close: 110, volume: 1500 },
   ];

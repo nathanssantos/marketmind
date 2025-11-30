@@ -1,14 +1,16 @@
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
+
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
-import type { Candle, Viewport } from '../../../shared/types';
+import type { Kline, Viewport } from '../../../shared/types';
 import { CanvasManager } from '../../utils/canvas/CanvasManager';
 import { calculateBounds, priceToY, yToPrice } from '../../utils/canvas/coordinateSystem';
-import { clearCanvas, drawCandle, drawLine, drawRect, drawText } from '../../utils/canvas/drawingUtils';
+import type { Kline, drawLine, drawRect, drawText } from '../../utils/canvas/drawingUtils';
 
 describe('Canvas Manager - Real Browser Tests', () => {
     let canvas: HTMLCanvasElement;
     let manager: CanvasManager;
 
-    const mockCandles: Candle[] = [
+    const mockCandles: Kline[] = [
         { timestamp: 1700000000000, open: 40000, high: 42000, low: 39000, close: 41000, volume: 1000 },
         { timestamp: 1700003600000, open: 41000, high: 43000, low: 40000, close: 42000, volume: 1200 },
         { timestamp: 1700007200000, open: 42000, high: 42500, low: 41000, close: 41500, volume: 900 },
@@ -207,7 +209,7 @@ describe('Canvas Drawing Functions - Real Browser Tests', () => {
 });
 
 describe('Coordinate System Functions - Real Browser Tests', () => {
-    const mockCandles: Candle[] = [
+    const mockCandles: Kline[] = [
         { timestamp: 1700000000000, open: 40000, high: 42000, low: 39000, close: 41000, volume: 1000 },
         { timestamp: 1700003600000, open: 41000, high: 43000, low: 40000, close: 42000, volume: 1200 },
         { timestamp: 1700007200000, open: 42000, high: 42500, low: 41000, close: 41500, volume: 900 },
@@ -372,10 +374,10 @@ describe('Canvas Advanced Features - Real Browser Tests', () => {
                 drawCandle(
                     ctx,
                     candle.x,
-                    candle.open,
-                    candle.close,
-                    candle.high,
-                    candle.low,
+                    getKlineOpen(candle),
+                    getKlineClose(candle),
+                    getKlineHigh(candle),
+                    getKlineLow(candle),
                     10,
                     1,
                     '#26a69a',

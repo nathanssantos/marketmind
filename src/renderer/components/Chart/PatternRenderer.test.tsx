@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Candle } from '../../../shared/types';
+import type { Kline } from '../../../shared/types';
 import { PatternHoverProvider } from '../../context/PatternHoverContext';
 import type { CanvasManager } from '../../utils/canvas/CanvasManager';
 import { PatternRenderer } from './PatternRenderer';
@@ -41,7 +41,7 @@ const createMockContext = () => ({
 });
 
 describe('PatternRenderer', () => {
-    const mockCandles: Candle[] = Array.from({ length: 50 }, (_, i) => ({
+    const mockCandles: Kline[] = Array.from({ length: 50 }, (_, i) => ({
         timestamp: 1000000 + i * 60000,
         open: 100 + i,
         high: 105 + i,

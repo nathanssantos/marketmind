@@ -1,5 +1,5 @@
 import { CHART_CONFIG } from '@shared/constants';
-import type { AIPattern, Candle } from '@shared/types';
+import type { AIPattern, Kline } from '@shared/types';
 import type { CanvasManager } from './CanvasManager';
 
 export interface HitTestPoint {
@@ -106,13 +106,13 @@ export const testLinePatternHit = (
   pattern: AIPattern,
   mousePoint: HitTestPoint,
   canvasManager: CanvasManager,
-  candles: Candle[]
+  candles: Kline[]
 ): boolean => {
   if (!('points' in pattern)) return false;
 
   const [point1, point2] = pattern.points;
-  const index1 = candles.findIndex(c => c.timestamp >= point1.timestamp);
-  const index2 = candles.findIndex(c => c.timestamp >= point2.timestamp);
+  const index1 = candles.findIndex(c => c.openTime >= point1.timestamp);
+  const index2 = candles.findIndex(c => c.openTime >= point2.timestamp);
 
   if (index1 === -1 || index2 === -1) return false;
 
@@ -147,12 +147,12 @@ export const testZonePatternHit = (
   pattern: AIPattern,
   mousePoint: HitTestPoint,
   canvasManager: CanvasManager,
-  candles: Candle[]
+  candles: Kline[]
 ): boolean => {
   if (!('topPrice' in pattern)) return false;
 
-  const startIndex = candles.findIndex(c => c.timestamp >= pattern.startTimestamp);
-  const endIndex = candles.findIndex(c => c.timestamp >= pattern.endTimestamp);
+  const startIndex = candles.findIndex(c => c.openTime >= pattern.startTimestamp);
+  const endIndex = candles.findIndex(c => c.openTime >= pattern.endTimestamp);
 
   if (startIndex === -1 || endIndex === -1) return false;
 
@@ -184,7 +184,7 @@ export const testChannelPatternHit = (
   pattern: AIPattern,
   mousePoint: HitTestPoint,
   canvasManager: CanvasManager,
-  candles: Candle[]
+  candles: Kline[]
 ): boolean => {
   if (!('upperLine' in pattern) || !('lowerLine' in pattern)) return false;
 
@@ -193,10 +193,10 @@ export const testChannelPatternHit = (
   const lowerPoint1 = pattern.lowerLine[0];
   const lowerPoint2 = pattern.lowerLine[1];
 
-  const upperIndex1 = candles.findIndex(c => c.timestamp >= upperPoint1.timestamp);
-  const upperIndex2 = candles.findIndex(c => c.timestamp >= upperPoint2.timestamp);
-  const lowerIndex1 = candles.findIndex(c => c.timestamp >= lowerPoint1.timestamp);
-  const lowerIndex2 = candles.findIndex(c => c.timestamp >= lowerPoint2.timestamp);
+  const upperIndex1 = candles.findIndex(c => c.openTime >= upperPoint1.timestamp);
+  const upperIndex2 = candles.findIndex(c => c.openTime >= upperPoint2.timestamp);
+  const lowerIndex1 = candles.findIndex(c => c.openTime >= lowerPoint1.timestamp);
+  const lowerIndex2 = candles.findIndex(c => c.openTime >= lowerPoint2.timestamp);
 
   if (upperIndex1 === -1 || upperIndex2 === -1 || lowerIndex1 === -1 || lowerIndex2 === -1) return false;
 
@@ -214,7 +214,7 @@ export const testTrianglePatternHit = (
   pattern: AIPattern,
   mousePoint: HitTestPoint,
   canvasManager: CanvasManager,
-  candles: Candle[]
+  candles: Kline[]
 ): boolean => {
   if (!('upperTrendline' in pattern) || !('lowerTrendline' in pattern)) return false;
 
@@ -223,7 +223,7 @@ export const testTrianglePatternHit = (
 
   const coords = allPoints
     .map(p => {
-      const idx = candles.findIndex(c => c.timestamp >= p.timestamp);
+      const idx = candles.findIndex(c => c.openTime >= p.timestamp);
       if (idx === -ONE) return null;
       return {
         x: canvasManager.indexToCenterX(idx),
@@ -258,12 +258,12 @@ export const testFibonacciPatternHit = (
   pattern: AIPattern,
   mousePoint: HitTestPoint,
   canvasManager: CanvasManager,
-  candles: Candle[]
+  candles: Kline[]
 ): boolean => {
   if (!('startPoint' in pattern) || !('endPoint' in pattern) || !('levels' in pattern)) return false;
 
-  const startIndex = candles.findIndex(c => c.timestamp >= pattern.startPoint.timestamp);
-  const endIndex = candles.findIndex(c => c.timestamp >= pattern.endPoint.timestamp);
+  const startIndex = candles.findIndex(c => c.openTime >= pattern.startPoint.timestamp);
+  const endIndex = candles.findIndex(c => c.openTime >= pattern.endPoint.timestamp);
 
   if (startIndex === -1 || endIndex === -1) return false;
 
@@ -289,7 +289,7 @@ export const testPatternFormationHit = (
   pattern: AIPattern,
   mousePoint: HitTestPoint,
   canvasManager: CanvasManager,
-  candles: Candle[]
+  candles: Kline[]
   // eslint-disable-next-line complexity
 ): boolean => {
   let allPoints: { timestamp: number; price: number }[] = [];
@@ -370,7 +370,7 @@ export const testPatternFormationHit = (
 
   const coords = allPoints
     .map(p => {
-      const idx = candles.findIndex(c => c.timestamp >= p.timestamp);
+      const idx = candles.findIndex(c => c.openTime >= p.timestamp);
       if (idx === -1) return null;
       return {
         x: canvasManager.indexToCenterX(idx),
@@ -400,7 +400,7 @@ export const testPatternHit = (
   pattern: AIPattern,
   mousePoint: HitTestPoint,
   canvasManager: CanvasManager,
-  candles: Candle[],
+  candles: Kline[],
   tagBounds?: { x: number; y: number; width: number; height: number }
 ): boolean => {
   if (tagBounds && isPointInRect(mousePoint, {

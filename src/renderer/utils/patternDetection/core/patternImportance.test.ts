@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AIPattern, Candle } from '../../../../shared/types';
+import type { AIPattern, Kline } from '../../../../shared/types';
 import {
     calculateImportanceFactors,
     calculateImportanceScore,
@@ -9,7 +9,7 @@ import {
     normalizeRecency,
 } from './patternImportance';
 
-const createMockCandles = (count: number, startTime = 1000000): Candle[] => {
+const createMockCandles = (count: number, startTime = 1000000): Kline[] => {
   const interval = 60000;
   return Array.from({ length: count }, (_, i) => ({
     timestamp: startTime + i * interval,
@@ -25,7 +25,7 @@ const createMockPattern = (
   type: AIPattern['type'],
   startIdx: number,
   endIdx: number,
-  candles: Candle[]
+  candles: Kline[]
 ): AIPattern => {
   const start = candles[startIdx];
   const end = candles[endIdx];

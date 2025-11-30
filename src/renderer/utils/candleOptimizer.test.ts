@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../shared/types';
+import type { Kline } from '../../shared/types';
 import {
     detectTimeframe,
     formatCandlesForPrompt,
@@ -19,7 +19,7 @@ describe('candleOptimizer', () => {
 
   describe('detectTimeframe', () => {
     it('should detect 1m timeframe', () => {
-      const candles: Candle[] = [
+      const candles: Kline[] = [
         createCandle(1000, 100),
         createCandle(1000 + 60 * 1000, 110),
       ];
@@ -27,7 +27,7 @@ describe('candleOptimizer', () => {
     });
 
     it('should detect 1h timeframe', () => {
-      const candles: Candle[] = [
+      const candles: Kline[] = [
         createCandle(1000, 100),
         createCandle(1000 + 60 * 60 * 1000, 110),
       ];
@@ -35,7 +35,7 @@ describe('candleOptimizer', () => {
     });
 
     it('should detect 1d timeframe', () => {
-      const candles: Candle[] = [
+      const candles: Kline[] = [
         createCandle(1000, 100),
         createCandle(1000 + 24 * 60 * 60 * 1000, 110),
       ];
@@ -47,7 +47,7 @@ describe('candleOptimizer', () => {
     });
 
     it('should return unknown for single candle', () => {
-      const candles: Candle[] = [createCandle(1000, 100)];
+      const candles: Kline[] = [createCandle(1000, 100)];
       expect(detectTimeframe(candles)).toBe('unknown');
     });
   });
@@ -87,7 +87,7 @@ describe('candleOptimizer', () => {
     });
 
     it('should keep last 32 candles detailed', () => {
-      const candles: Candle[] = Array.from({ length: 100 }, (_, i) =>
+      const candles: Kline[] = Array.from({ length: 100 }, (_, i) =>
         createCandle(i * 60000, 100 + i)
       );
 
@@ -97,7 +97,7 @@ describe('candleOptimizer', () => {
     });
 
     it('should simplify remaining candles', () => {
-      const candles: Candle[] = Array.from({ length: 100 }, (_, i) =>
+      const candles: Kline[] = Array.from({ length: 100 }, (_, i) =>
         createCandle(i * 60000, 100 + i)
       );
 
@@ -106,7 +106,7 @@ describe('candleOptimizer', () => {
     });
 
     it('should downsample if too many candles', () => {
-      const candles: Candle[] = Array.from({ length: 2000 }, (_, i) =>
+      const candles: Kline[] = Array.from({ length: 2000 }, (_, i) =>
         createCandle(i * 60000, 100 + i)
       );
 
@@ -115,7 +115,7 @@ describe('candleOptimizer', () => {
     });
 
     it('should set correct timestamp info', () => {
-      const candles: Candle[] = [
+      const candles: Kline[] = [
         createCandle(1000, 100),
         createCandle(61000, 110),
         createCandle(121000, 120),
@@ -131,7 +131,7 @@ describe('candleOptimizer', () => {
 
   describe('formatCandlesForPrompt', () => {
     it('should format detailed candles', () => {
-      const candles: Candle[] = Array.from({ length: 25 }, (_, i) =>
+      const candles: Kline[] = Array.from({ length: 25 }, (_, i) =>
         createCandle(i * 60000, 100 + i)
       );
 
@@ -148,7 +148,7 @@ describe('candleOptimizer', () => {
     });
 
     it('should format simplified candles with range', () => {
-      const candles: Candle[] = Array.from({ length: 100 }, (_, i) =>
+      const candles: Kline[] = Array.from({ length: 100 }, (_, i) =>
         createCandle(i * 60000, 100 + i)
       );
 
@@ -167,7 +167,7 @@ describe('candleOptimizer', () => {
     });
 
     it('should show samples from simplified data', () => {
-      const candles: Candle[] = Array.from({ length: 100 }, (_, i) =>
+      const candles: Kline[] = Array.from({ length: 100 }, (_, i) =>
         createCandle(i * 60000, 100 + i)
       );
 
@@ -179,7 +179,7 @@ describe('candleOptimizer', () => {
     });
 
     it('should handle data with only detailed candles', () => {
-      const candles: Candle[] = Array.from({ length: 5 }, (_, i) =>
+      const candles: Kline[] = Array.from({ length: 5 }, (_, i) =>
         createCandle(i * 60000, 100 + i)
       );
 
@@ -191,7 +191,7 @@ describe('candleOptimizer', () => {
     });
 
     it('should format timestamps in ISO format', () => {
-      const candles: Candle[] = [
+      const candles: Kline[] = [
         createCandle(1609459200000, 100),
         createCandle(1609545600000, 110),
       ];

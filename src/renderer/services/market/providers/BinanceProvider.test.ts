@@ -1,4 +1,4 @@
-import type { FetchCandlesOptions } from '@shared/types';
+import type { FetchKlinesOptions } from '@shared/types';
 import axios from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BinanceProvider } from './BinanceProvider';
@@ -268,7 +268,7 @@ describe('BinanceProvider', () => {
       const results = await provider.searchSymbols('BTC');
 
       expect(results).toHaveLength(1);
-      expect(results[0]).toEqual({
+      expect(results[0]).toMatchObject({
         symbol: 'BTCUSDT',
         baseAsset: 'BTC',
         quoteAsset: 'USDT',

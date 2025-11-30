@@ -1,5 +1,6 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
-import type { Candle, TradingSetup } from '@shared/types';
+import type { Kline, TradingSetup } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import type { SetupDetectorConfig } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';
 
@@ -43,7 +44,7 @@ export class LiquiditySweepDetector extends BaseSetupDetector {
     super(config);
   }
 
-  detect(candles: Candle[], currentIndex: number): { setup: TradingSetup | null; confidence: number } {
+  detect(candles: Kline[], currentIndex: number): { setup: TradingSetup | null; confidence: number } {
     if (!this.config.enabled) {
       return { setup: null, confidence: 0 };
     }
@@ -87,7 +88,7 @@ export class LiquiditySweepDetector extends BaseSetupDetector {
   }
 
   private detectBullishLiquiditySweep(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number
   ): { supportLevel: number; sweepCandle: Candle; reversalCandle: Candle; hasVolumeSpike: boolean } | null {
     const sweepConfig = this.config as LiquiditySweepConfig;
@@ -101,8 +102,8 @@ export class LiquiditySweepDetector extends BaseSetupDetector {
       const candle = recentCandles[i];
       if (!candle) continue;
 
-      if (candle.low < supportLevel) {
-        supportLevel = candle.low;
+      if (getKlineLow(candle) < supportLevel) {
+        supportLevel = getKlineLow(candle);
         supportIndex = i;
       }
     }
@@ -140,7 +141,7 @@ export class LiquiditySweepDetector extends BaseSetupDetector {
   }
 
   private detectBearishLiquiditySweep(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number
   ): { resistanceLevel: number; sweepCandle: Candle; reversalCandle: Candle; hasVolumeSpike: boolean } | null {
     const sweepConfig = this.config as LiquiditySweepConfig;
@@ -154,8 +155,8 @@ export class LiquiditySweepDetector extends BaseSetupDetector {
       const candle = recentCandles[i];
       if (!candle) continue;
 
-      if (candle.high > resistanceLevel) {
-        resistanceLevel = candle.high;
+      if (getKlineHigh(candle) > resistanceLevel) {
+        resistanceLevel = getKlineHigh(candle);
         resistanceIndex = i;
       }
     }
@@ -192,17 +193,17 @@ export class LiquiditySweepDetector extends BaseSetupDetector {
     };
   }
 
-  private hasVolumeSpikeAtIndex(candles: Candle[], index: number): boolean {
+  private hasVolumeSpikeAtIndex(candles: Kline[], index: number): boolean {
     const sweepConfig = this.config as LiquiditySweepConfig;
     const avgVolume = this.calculateAverageVolume(candles, index);
     const candle = candles[index];
     
     if (!candle || !avgVolume) return false;
     
-    return candle.volume > avgVolume * sweepConfig.volumeMultiplier;
+    return getKlineVolume(candle) > avgVolume * sweepConfig.volumeMultiplier;
   }
 
-  private calculateAverageVolume(candles: Candle[], currentIndex: number): number | null {
+  private calculateAverageVolume(candles: Kline[], currentIndex: number): number | null {
     const startIndex = Math.max(0, currentIndex - VOLUME_LOOKBACK);
     const volumeCandles = candles.slice(startIndex, currentIndex);
 
@@ -213,7 +214,7 @@ export class LiquiditySweepDetector extends BaseSetupDetector {
   }
 
   private createBullishSetup(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     sweep: { supportLevel: number; sweepCandle: Candle; reversalCandle: Candle; hasVolumeSpike: boolean }
   ): TradingSetup | null {
@@ -256,7 +257,7 @@ export class LiquiditySweepDetector extends BaseSetupDetector {
   }
 
   private createBearishSetup(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     sweep: { resistanceLevel: number; sweepCandle: Candle; reversalCandle: Candle; hasVolumeSpike: boolean }
   ): TradingSetup | null {

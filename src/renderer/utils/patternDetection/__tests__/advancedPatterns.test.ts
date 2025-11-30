@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../../shared/types';
+import type { Kline } from '../../../../shared/types';
 import {
     detectTripleBottoms,
     detectTripleTops,
@@ -40,7 +40,7 @@ describe('detectTripleTops', () => {
   describe('valid patterns', () => {
     it('should detect triple top with three peaks at same level', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
         const isPeak = i === 5 || i === 15 || i === 25;
@@ -69,7 +69,7 @@ describe('detectTripleTops', () => {
 
     it('should detect triple top within ±8% tolerance', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
         candles.push(
@@ -93,7 +93,7 @@ describe('detectTripleTops', () => {
 
     it('should require minimum 3 peaks', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 20; i++) {
         candles.push(
@@ -114,7 +114,7 @@ describe('detectTripleTops', () => {
 
     it('should calculate confidence based on peak alignment', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
         candles.push(
@@ -138,7 +138,7 @@ describe('detectTripleTops', () => {
 
     it('should include neckline and peaks in pattern data', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
         candles.push(
@@ -186,7 +186,7 @@ describe('detectTripleTops', () => {
 
     it('should reject when insufficient candles', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 10; i++) {
         candles.push(
@@ -201,7 +201,7 @@ describe('detectTripleTops', () => {
 
     it('should reject peaks outside ±8% tolerance', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
         candles.push(
@@ -224,7 +224,7 @@ describe('detectTripleTops', () => {
 
     it('should reject when insufficient low pivots between peaks', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
         candles.push(
@@ -247,7 +247,7 @@ describe('detectTripleTops', () => {
   describe('sorting and limits', () => {
     it('should sort patterns by confidence descending', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 100; i++) {
         candles.push(
@@ -281,7 +281,7 @@ describe('detectTripleTops', () => {
 
     it('should respect MAX_PATTERNS_PER_TYPE limit', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 200; i++) {
         candles.push(
@@ -306,7 +306,7 @@ describe('detectTripleBottoms', () => {
   describe('valid patterns', () => {
     it('should detect triple bottom with three troughs at same level', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
         const isTrough = i === 5 || i === 15 || i === 25;
@@ -335,7 +335,7 @@ describe('detectTripleBottoms', () => {
 
     it('should detect triple bottom within ±8% tolerance', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
         candles.push(
@@ -359,7 +359,7 @@ describe('detectTripleBottoms', () => {
 
     it('should require minimum 3 troughs', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 20; i++) {
         candles.push(
@@ -380,7 +380,7 @@ describe('detectTripleBottoms', () => {
 
     it('should calculate confidence based on trough alignment', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
         candles.push(
@@ -404,7 +404,7 @@ describe('detectTripleBottoms', () => {
 
     it('should include neckline and troughs in pattern data', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
         candles.push(
@@ -452,7 +452,7 @@ describe('detectTripleBottoms', () => {
 
     it('should reject when insufficient candles', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 10; i++) {
         candles.push(
@@ -467,7 +467,7 @@ describe('detectTripleBottoms', () => {
 
     it('should reject troughs outside ±8% tolerance', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
         candles.push(
@@ -490,7 +490,7 @@ describe('detectTripleBottoms', () => {
 
     it('should reject when insufficient high pivots between troughs', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 30; i++) {
         candles.push(
@@ -513,7 +513,7 @@ describe('detectTripleBottoms', () => {
   describe('sorting and limits', () => {
     it('should sort patterns by confidence descending', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 100; i++) {
         candles.push(
@@ -547,7 +547,7 @@ describe('detectTripleBottoms', () => {
 
     it('should respect MAX_PATTERNS_PER_TYPE limit', () => {
       const now = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 200; i++) {
         candles.push(

@@ -1,6 +1,7 @@
 import { findHighestSwingHigh, findLowestSwingLow, findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
 
 const VOLUME_LOOKBACK = 20;
@@ -58,7 +59,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
     return this.breakoutRetestConfig;
   }
 
-  detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
+  detect(candles: Kline[], currentIndex: number): SetupDetectorResult {
     const minIndex = Math.max(
       this.breakoutRetestConfig.lookbackPeriod + this.breakoutRetestConfig.emaPeriod,
       PIVOT_LOOKBACK + VOLUME_LOOKBACK,
@@ -78,7 +79,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
   }
 
   private detectBullishBreakoutRetest(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
   ): SetupDetectorResult | null {
     const pivots = findPivotPoints(
@@ -122,7 +123,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
   }
 
   private detectBearishBreakoutRetest(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
   ): SetupDetectorResult | null {
     const pivots = findPivotPoints(
@@ -167,7 +168,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
 
   private findResistanceLevels(
     pivots: ReturnType<typeof findPivotPoints>,
-    _candles: Candle[],
+    _candles: Kline[],
     currentIndex: number,
   ): number[] {
     const lookbackStart = Math.max(0, currentIndex - this.breakoutRetestConfig.lookbackPeriod);
@@ -180,7 +181,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
 
   private findSupportLevels(
     pivots: ReturnType<typeof findPivotPoints>,
-    _candles: Candle[],
+    _candles: Kline[],
     currentIndex: number,
   ): number[] {
     const lookbackStart = Math.max(0, currentIndex - this.breakoutRetestConfig.lookbackPeriod);
@@ -192,7 +193,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
   }
 
   private findBreakoutCandle(
-    candles: Candle[],
+    candles: Kline[],
     level: number,
     currentIndex: number,
     direction: 'bullish' | 'bearish',
@@ -203,13 +204,13 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
       const candle = candles[i];
       if (!candle) continue;
 
-      const isBullishBreakout = direction === 'bullish' && candle.close > level;
-      const isBearishBreakout = direction === 'bearish' && candle.close < level;
+      const isBullishBreakout = direction === 'bullish' && getKlineClose(candle) > level;
+      const isBearishBreakout = direction === 'bearish' && getKlineClose(candle) < level;
 
       if (isBullishBreakout || isBearishBreakout) {
-        const breakoutDistance = Math.abs(candle.close - level) / level;
+        const breakoutDistance = Math.abs(getKlineClose(candle) - level) / level;
         if (breakoutDistance >= MIN_BREAKOUT_DISTANCE_PERCENT) {
-          return { index: i, volume: candle.volume };
+          return { index: i, volume: getKlineVolume(candle) };
         }
       }
     }
@@ -218,7 +219,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
   }
 
   private validateRetest(
-    candles: Candle[],
+    candles: Kline[],
     level: number,
     breakoutIndex: number,
     currentIndex: number,
@@ -234,15 +235,15 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
       const tolerance = level * RETEST_TOLERANCE_PERCENT;
       const isRetestTouch =
         direction === 'bullish'
-          ? candle.low <= level + tolerance && candle.low >= level - tolerance
-          : candle.high >= level - tolerance && candle.high <= level + tolerance;
+          ? getKlineLow(candle) <= level + tolerance && getKlineLow(candle) >= level - tolerance
+          : getKlineHigh(candle) >= level - tolerance && getKlineHigh(candle) <= level + tolerance;
 
       if (isRetestTouch) {
         retestTouches++;
         const holdQuality =
           direction === 'bullish'
-            ? (candle.close - candle.low) / (candle.high - candle.low)
-            : (candle.high - candle.close) / (candle.high - candle.low);
+            ? (getKlineClose(candle) - getKlineLow(candle)) / (getKlineHigh(candle) - getKlineLow(candle))
+            : (getKlineHigh(candle) - getKlineClose(candle)) / (getKlineHigh(candle) - getKlineLow(candle));
         totalRetestQuality += holdQuality;
       }
     }
@@ -254,7 +255,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
   }
 
   private createBullishSetup(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     resistance: number,
     breakout: { index: number; volume: number },
@@ -323,7 +324,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
   }
 
   private createBearishSetup(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     support: number,
     breakout: { index: number; volume: number },

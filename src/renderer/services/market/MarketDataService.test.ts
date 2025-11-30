@@ -1,4 +1,4 @@
-import type { BaseMarketProvider, CandleData, FetchCandlesOptions, MarketProviderConfig, Symbol, SymbolInfo, WebSocketSubscription } from '@shared/types';
+import type { BaseMarketProvider, CandleData, FetchKlinesOptions, MarketProviderConfig, Symbol, SymbolInfo, WebSocketSubscription } from '@shared/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MarketDataService } from './MarketDataService';
 

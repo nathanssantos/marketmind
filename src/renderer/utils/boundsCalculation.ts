@@ -1,4 +1,5 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 
 export interface Bounds {
   minPrice: number;
@@ -8,7 +9,7 @@ export interface Bounds {
 }
 
 export const calculateBounds = (
-  candles: Candle[],
+  candles: Kline[],
   viewportStart: number,
   viewportEnd: number
 ): Bounds => {
@@ -40,10 +41,10 @@ export const calculateBounds = (
   let maxVolume = -Infinity;
 
   for (const candle of visibleCandles) {
-    minPrice = Math.min(minPrice, candle.low);
-    maxPrice = Math.max(maxPrice, candle.high);
-    minVolume = Math.min(minVolume, candle.volume);
-    maxVolume = Math.max(maxVolume, candle.volume);
+    minPrice = Math.min(minPrice, getKlineLow(candle));
+    maxPrice = Math.max(maxPrice, getKlineHigh(candle));
+    minVolume = Math.min(minVolume, getKlineVolume(candle));
+    maxVolume = Math.max(maxVolume, getKlineVolume(candle));
   }
 
   return {

@@ -1,4 +1,4 @@
-import type { AIPatternWedge, Candle } from '@shared/types';
+import type { AIPatternWedge, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -66,7 +66,7 @@ const findConvergence = (upperLine: TrendlineData, lowerLine: TrendlineData): { 
 };
 
 export const detectRisingWedges = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternWedge[] => {
   if (!candles || candles.length < 20) return [];
@@ -182,7 +182,7 @@ export const detectRisingWedges = (
 };
 
 export const detectFallingWedges = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternWedge[] => {
   if (!candles || candles.length < 20) return [];

@@ -1,4 +1,4 @@
-import type { AIPattern, Candle } from '@shared/types';
+import type { AIPattern, Kline } from '@shared/types';
 import {
     IMPORTANCE_NORMALIZATION,
     IMPORTANCE_WEIGHTS,
@@ -25,7 +25,7 @@ export function normalizeFormationPeriod(period: number): number {
 
 export function normalizePriceMovement(
   pattern: AIPattern,
-  candles: Candle[]
+  candles: Kline[]
 ): number {
   if (candles.length === 0) return 0;
 
@@ -54,13 +54,13 @@ export function normalizePriceMovement(
   );
 }
 
-export function normalizeRecency(pattern: AIPattern, candles: Candle[]): number {
+export function normalizeRecency(pattern: AIPattern, candles: Kline[]): number {
   if (candles.length === 0) return 0;
 
   const latestCandle = candles[candles.length - 1];
   if (!latestCandle) return 0;
 
-  const latestTimestamp = latestCandle.timestamp;
+  const latestTimestamp = latestCandle.openTime;
   const patternEndTime = getPatternEndTimestamp(pattern);
   const timeSincePattern = latestTimestamp - patternEndTime;
 
@@ -71,7 +71,7 @@ export function normalizeRecency(pattern: AIPattern, candles: Candle[]): number 
 
   const avgCandleInterval =
     candles.length > 1 && firstCandle && lastCandle
-      ? (lastCandle.timestamp - firstCandle.timestamp) / (candles.length - 1)
+      ? (lastCandle.openTime - firstCandle.openTime) / (candles.length - 1)
       : 1;
 
   const candlesSincePattern = timeSincePattern / avgCandleInterval;
@@ -99,7 +99,7 @@ export function getVolumeConfirmation(pattern: AIPattern): number {
 
 export function calculateImportanceFactors(
   pattern: AIPattern,
-  candles: Candle[]
+  candles: Kline[]
 ): ImportanceFactors {
   const patternType = pattern.type;
   const patternReliability =
@@ -129,7 +129,7 @@ export function calculateImportanceFactors(
 
 export function calculateImportanceScore(
   pattern: AIPattern,
-  candles: Candle[]
+  candles: Kline[]
 ): number {
   const factors = calculateImportanceFactors(pattern, candles);
 

@@ -1,4 +1,5 @@
-import type { AIPatternDoublePattern, AIPatternHeadAndShoulders, AIPatternTriplePattern, Candle } from '@shared/types';
+import type { AIPatternDoublePattern, AIPatternHeadAndShoulders, AIPatternTriplePattern, Kline } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -8,7 +9,7 @@ import {
 import type { PivotPoint } from '../types';
 
 export const detectHeadAndShoulders = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternHeadAndShoulders[] => {
   if (!candles || candles.length < 20) return [];
@@ -92,7 +93,7 @@ export const detectHeadAndShoulders = (
 };
 
 export const detectInverseHeadAndShoulders = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternHeadAndShoulders[] => {
   if (!candles || candles.length < 20) return [];
@@ -176,7 +177,7 @@ export const detectInverseHeadAndShoulders = (
 };
 
 export const detectDoubleTops = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternDoublePattern[] => {
   if (!candles || candles.length < 15) return [];
@@ -233,7 +234,7 @@ export const detectDoubleTops = (
       type: 'double-top',
       firstPeak: { timestamp: firstPeak.timestamp, price: firstPeak.price },
       secondPeak: { timestamp: secondPeak.timestamp, price: secondPeak.price },
-      neckline: { timestamp: neckline.timestamp, price: neckline.price },
+      neckline: { timestamp: neckline.openTime, price: neckline.price },
       label: `Double Top (Bearish) · ${patternHeight}% · ${confidencePercent}%`,
       confidence,
       visible: true,
@@ -248,7 +249,7 @@ export const detectDoubleTops = (
 };
 
 export const detectDoubleBottoms = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternDoublePattern[] => {
   if (!candles || candles.length < 15) return [];
@@ -305,7 +306,7 @@ export const detectDoubleBottoms = (
       type: 'double-bottom',
       firstPeak: { timestamp: firstPeak.timestamp, price: firstPeak.price },
       secondPeak: { timestamp: secondPeak.timestamp, price: secondPeak.price },
-      neckline: { timestamp: neckline.timestamp, price: neckline.price },
+      neckline: { timestamp: neckline.openTime, price: neckline.price },
       label: `Double Bottom (Bullish) · ${patternHeight}% · ${confidencePercent}%`,
       confidence,
       visible: true,
@@ -319,7 +320,7 @@ export const detectDoubleBottoms = (
 };
 
 export const detectTripleTops = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternTriplePattern[] => {
   if (!candles || candles.length < 30) return [];
@@ -403,7 +404,7 @@ export const detectTripleTops = (
 };
 
 export const detectTripleBottoms = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternTriplePattern[] => {
   if (!candles || candles.length < 30) return [];

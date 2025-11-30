@@ -1,7 +1,8 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 
-export interface OptimizedCandleData {
-  detailed: Candle[];
+export interface OptimizedKlineData {
+  detailed: Kline[];
   simplified: SimplifiedCandle[];
   timestampInfo: TimestampInfo;
 }
@@ -25,14 +26,14 @@ export interface TimestampInfo {
 const DETAILED_CANDLES_COUNT = 32;
 const MAX_SIMPLIFIED_CANDLES = 1000;
 
-export const detectTimeframe = (candles: Candle[]): string => {
+export const detectTimeframe = (candles: Kline[]): string => {
   if (candles.length < 2) return 'unknown';
   
   const firstCandle = candles[0];
   const secondCandle = candles[1];
   if (!firstCandle || !secondCandle) return 'unknown';
   
-  const diff = secondCandle.timestamp - firstCandle.timestamp;
+  const diff = secondCandle.openTime - firstCandle.openTime;
   
   const minute = 60 * 1000;
   const hour = 60 * minute;
@@ -50,18 +51,18 @@ export const detectTimeframe = (candles: Candle[]): string => {
   return 'unknown';
 };
 
-export const simplifyCandle = (candle: Candle): SimplifiedCandle => {
+export const simplifyCandle = (candle: Kline): SimplifiedCandle => {
   return {
-    timestamp: candle.timestamp,
-    open: Math.round(candle.open * 100) / 100,
-    high: Math.round(candle.high * 100) / 100,
-    low: Math.round(candle.low * 100) / 100,
-    close: Math.round(candle.close * 100) / 100,
-    volume: Math.round(candle.volume),
+    timestamp: candle.openTime,
+    open: Math.round(getKlineOpen(candle) * 100) / 100,
+    high: Math.round(getKlineHigh(candle) * 100) / 100,
+    low: Math.round(getKlineLow(candle) * 100) / 100,
+    close: Math.round(getKlineClose(candle) * 100) / 100,
+    volume: Math.round(getKlineVolume(candle)),
   };
 };
 
-export const optimizeCandles = (candles: Candle[], detailedCount: number = DETAILED_CANDLES_COUNT): OptimizedCandleData => {
+export const optimizeCandles = (candles: Kline[], detailedCount: number = DETAILED_CANDLES_COUNT): OptimizedKlineData => {
   if (candles.length === 0) {
     return {
       detailed: [],
@@ -106,18 +107,18 @@ export const optimizeCandles = (candles: Candle[], detailedCount: number = DETAI
   };
 };
 
-export const formatCandlesForPrompt = (optimized: OptimizedCandleData): string => {
+export const formatCandlesForPrompt = (optimized: OptimizedKlineData): string => {
   const parts: string[] = [];
   
   if (optimized.detailed.length > 0) {
     parts.push('📊 Recent Candles (MOST CURRENT - Use these timestamps for current price levels):');
     optimized.detailed.forEach((candle, index) => {
-      const date = new Date(candle.timestamp).toISOString();
+      const date = new Date(candle.openTime).toISOString();
       const isMostRecent = index === optimized.detailed.length - 1;
       const marker = isMostRecent ? ' ← CURRENT/LATEST' : '';
       parts.push(
-        `${index + 1}. [${date}] O:$${candle.open.toFixed(2)} H:$${candle.high.toFixed(2)} ` +
-        `L:$${candle.low.toFixed(2)} C:$${candle.close.toFixed(2)} V:${candle.volume.toLocaleString()}${marker}`
+        `${index + 1}. [${date}] O:$${getKlineOpen(candle).toFixed(2)} H:$${getKlineHigh(candle).toFixed(2)} ` +
+        `L:$${getKlineLow(candle).toFixed(2)} C:$${getKlineClose(candle).toFixed(2)} V:${getKlineVolume(candle).toLocaleString()}${marker}`
       );
     });
   }
@@ -136,8 +137,8 @@ export const formatCandlesForPrompt = (optimized: OptimizedCandleData): string =
     
     const sample = optimized.simplified.filter((_, i) => i % Math.ceil(optimized.simplified.length / 5) === 0);
     sample.forEach((candle) => {
-      const date = new Date(candle.timestamp).toISOString().split('T')[0];
-      parts.push(`  ${date}: $${candle.close.toFixed(2)}`);
+      const date = new Date(candle.openTime).toISOString().split('T')[0];
+      parts.push(`  ${date}: $${getKlineClose(candle).toFixed(2)}`);
     });
   }
   

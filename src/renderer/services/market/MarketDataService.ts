@@ -1,6 +1,6 @@
 import type {
     BaseMarketProvider,
-    CandleData,
+    KlineData,
     FetchCandlesOptions,
     MarketDataError,
     Symbol,
@@ -24,7 +24,7 @@ interface CacheEntry<T> {
 export class MarketDataService {
   private primaryProvider: BaseMarketProvider;
   private fallbackProviders: BaseMarketProvider[];
-  private cache: Map<string, CacheEntry<CandleData>> = new Map();
+  private cache: Map<string, CacheEntry<KlineData>> = new Map();
   private cacheDuration: number;
   private enableCache: boolean;
   private wsUnsubscribe: Map<string, () => void> = new Map();
@@ -36,7 +36,7 @@ export class MarketDataService {
     this.cacheDuration = config.cacheDuration ?? 60 * 1000;
   }
 
-  async fetchCandles(options: FetchCandlesOptions): Promise<CandleData> {
+  async fetchCandles(options: FetchCandlesOptions): Promise<KlineData> {
     const cacheKey = this.getCacheKey(options);
 
     if (this.enableCache) {
@@ -170,14 +170,14 @@ export class MarketDataService {
     }`;
   }
 
-  private async getFromCache(key: string): Promise<CandleData | null> {
+  private async getFromCache(key: string): Promise<KlineData | null> {
     try {
       const memCached = this.cache.get(key);
       if (memCached && Date.now() - memCached.timestamp <= this.cacheDuration) {
         return memCached.data;
       }
 
-      const dbCached = await indexedDBCache.get<CandleData>(key);
+      const dbCached = await indexedDBCache.get<KlineData>(key);
       if (dbCached) {
         this.cache.set(key, {
           data: dbCached,
@@ -192,7 +192,7 @@ export class MarketDataService {
     return null;
   }
 
-  private async setCache(key: string, data: CandleData): Promise<void> {
+  private async setCache(key: string, data: KlineData): Promise<void> {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),

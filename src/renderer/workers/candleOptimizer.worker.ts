@@ -1,4 +1,4 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import {
     optimizeCandles,
     type OptimizationResult,
@@ -7,7 +7,7 @@ import {
 
 export interface OptimizerWorkerRequest {
   type: 'optimizeCandles';
-  candles: Candle[];
+  candles: Kline[];
   detailedCount?: number;
 }
 

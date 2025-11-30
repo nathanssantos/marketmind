@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../shared/types';
+import type { Kline } from '../../shared/types';
 import { calculateEMA, calculateMovingAverages, calculateSMA } from './movingAverages';
 
 describe('movingAveragesCalculation', () => {
@@ -71,7 +71,7 @@ describe('movingAveragesCalculation', () => {
     });
 
     it('should handle large datasets efficiently', () => {
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
       for (let i = 0; i < 1000; i++) {
         candles.push(createCandle(100 + i));
       }
@@ -148,7 +148,7 @@ describe('movingAveragesCalculation', () => {
     });
 
     it('should handle large datasets efficiently', () => {
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
       for (let i = 0; i < 1000; i++) {
         candles.push(createCandle(100 + i * 0.5));
       }

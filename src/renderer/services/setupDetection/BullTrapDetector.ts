@@ -1,6 +1,6 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
 
 const VOLUME_LOOKBACK = 20;
@@ -58,7 +58,7 @@ export class BullTrapDetector extends BaseSetupDetector {
     return this.bullTrapConfig;
   }
 
-  detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
+  detect(candles: Kline[], currentIndex: number): SetupDetectorResult {
     const minIndex = Math.max(
       this.bullTrapConfig.lookbackPeriod + this.bullTrapConfig.emaPeriod,
       SUPPORT_LOOKBACK + VOLUME_LOOKBACK,
@@ -76,7 +76,7 @@ export class BullTrapDetector extends BaseSetupDetector {
     return trapSetup;
   }
 
-  private detectTrapPattern(candles: Candle[], currentIndex: number): SetupDetectorResult | null {
+  private detectTrapPattern(candles: Kline[], currentIndex: number): SetupDetectorResult | null {
     const pivots = findPivotPoints(
       candles.slice(0, currentIndex + 1),
       this.bullTrapConfig.lookbackPeriod,
@@ -107,7 +107,7 @@ export class BullTrapDetector extends BaseSetupDetector {
 
   private validateTrapStructure(
     highPivots: ReturnType<typeof findPivotPoints>,
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
   ): {
     trapHigh: { price: number; index: number };
@@ -151,7 +151,7 @@ export class BullTrapDetector extends BaseSetupDetector {
       reversalStrength: number;
       current: Candle;
     },
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
   ): SetupDetectorResult | null {
     const volumeData = candles.slice(Math.max(0, currentIndex - VOLUME_LOOKBACK), currentIndex);
@@ -213,7 +213,7 @@ export class BullTrapDetector extends BaseSetupDetector {
   }
 
   private findNearestSupport(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     currentPrice: number,
   ): number | null {

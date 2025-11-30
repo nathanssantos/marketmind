@@ -1,6 +1,7 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Candle, TradingSetup } from '@shared/types';
+import type { Kline, TradingSetup } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import type { SetupDetectorConfig } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';
 
@@ -38,7 +39,7 @@ export class VWAPEMACrossDetector extends BaseSetupDetector {
     super(config);
   }
 
-  detect(candles: Candle[], currentIndex: number): { setup: TradingSetup | null; confidence: number } {
+  detect(candles: Kline[], currentIndex: number): { setup: TradingSetup | null; confidence: number } {
     if (!this.config.enabled) {
       return { setup: null, confidence: 0 };
     }
@@ -97,16 +98,16 @@ export class VWAPEMACrossDetector extends BaseSetupDetector {
     return { setup: null, confidence: 0 };
   }
 
-  private calculateVWAP(candles: Candle[]): number | null {
+  private calculateVWAP(candles: Kline[]): number | null {
     if (candles.length === 0) return null;
 
     let cumulativeTPV = 0;
     let cumulativeVolume = 0;
 
     for (const candle of candles) {
-      const typicalPrice = (candle.high + candle.low + candle.close) / MIN_INDEX_OFFSET;
-      cumulativeTPV += typicalPrice * candle.volume;
-      cumulativeVolume += candle.volume;
+      const typicalPrice = (getKlineHigh(candle) + getKlineLow(candle) + getKlineClose(candle)) / MIN_INDEX_OFFSET;
+      cumulativeTPV += typicalPrice * getKlineVolume(candle);
+      cumulativeVolume += getKlineVolume(candle);
     }
 
     if (cumulativeVolume === 0) return null;
@@ -115,11 +116,11 @@ export class VWAPEMACrossDetector extends BaseSetupDetector {
   }
 
   private detectBullishCross(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     vwap: number,
     _currentEMA: number
-  ): { crossIndex: number; hasVolumeConfirmation: boolean; pullbackCandle: Candle } | null {
+  ): { crossIndex: number; hasVolumeConfirmation: boolean; pullbackCandle: Kline } | null {
     const vwapConfig = this.config as VWAPEMACrossConfig;
 
     for (let i = currentIndex - 1; i >= Math.max(0, currentIndex - CROSS_LOOKBACK); i -= 1) {
@@ -149,11 +150,11 @@ export class VWAPEMACrossDetector extends BaseSetupDetector {
   }
 
   private detectBearishCross(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     vwap: number,
     _currentEMA: number
-  ): { crossIndex: number; hasVolumeConfirmation: boolean; pullbackCandle: Candle } | null {
+  ): { crossIndex: number; hasVolumeConfirmation: boolean; pullbackCandle: Kline } | null {
     const vwapConfig = this.config as VWAPEMACrossConfig;
 
     for (let i = currentIndex - 1; i >= Math.max(0, currentIndex - CROSS_LOOKBACK); i -= 1) {
@@ -183,11 +184,11 @@ export class VWAPEMACrossDetector extends BaseSetupDetector {
   }
 
   private findBullishPullback(
-    candles: Candle[],
+    candles: Kline[],
     crossIndex: number,
     currentIndex: number,
     vwap: number
-  ): Candle | null {
+  ): Kline | null {
     const vwapConfig = this.config as VWAPEMACrossConfig;
     const toleranceAmount = vwap * (vwapConfig.pullbackTolerance / PERCENT_DIVISOR);
     const pullbackTarget = vwap - toleranceAmount;
@@ -196,9 +197,9 @@ export class VWAPEMACrossDetector extends BaseSetupDetector {
       const candle = candles[i];
       if (!candle) continue;
 
-      const touchedVWAP = candle.low <= vwap + toleranceAmount && candle.low >= pullbackTarget;
+      const touchedVWAP = getKlineLow(candle) <= vwap + toleranceAmount && getKlineLow(candle) >= pullbackTarget;
 
-      if (touchedVWAP && candle.close > candle.open) {
+      if (touchedVWAP && getKlineClose(candle) > getKlineOpen(candle)) {
         return candle;
       }
     }
@@ -207,11 +208,11 @@ export class VWAPEMACrossDetector extends BaseSetupDetector {
   }
 
   private findBearishPullback(
-    candles: Candle[],
+    candles: Kline[],
     crossIndex: number,
     currentIndex: number,
     vwap: number
-  ): Candle | null {
+  ): Kline | null {
     const vwapConfig = this.config as VWAPEMACrossConfig;
     const toleranceAmount = vwap * (vwapConfig.pullbackTolerance / PERCENT_DIVISOR);
     const pullbackTarget = vwap + toleranceAmount;
@@ -220,9 +221,9 @@ export class VWAPEMACrossDetector extends BaseSetupDetector {
       const candle = candles[i];
       if (!candle) continue;
 
-      const touchedVWAP = candle.high >= vwap - toleranceAmount && candle.high <= pullbackTarget;
+      const touchedVWAP = getKlineHigh(candle) >= vwap - toleranceAmount && getKlineHigh(candle) <= pullbackTarget;
 
-      if (touchedVWAP && candle.close < candle.open) {
+      if (touchedVWAP && getKlineClose(candle) < getKlineOpen(candle)) {
         return candle;
       }
     }
@@ -230,14 +231,14 @@ export class VWAPEMACrossDetector extends BaseSetupDetector {
     return null;
   }
 
-  private hasVolumeConfirmation(candles: Candle[], currentIndex: number): boolean {
+  private hasVolumeConfirmation(candles: Kline[], currentIndex: number): boolean {
     const avgVolume = this.calculateAverageVolume(candles, currentIndex);
     const currentCandle = candles[currentIndex];
     if (!currentCandle || !avgVolume) return false;
     return currentCandle.volume > avgVolume;
   }
 
-  private calculateAverageVolume(candles: Candle[], currentIndex: number): number | null {
+  private calculateAverageVolume(candles: Kline[], currentIndex: number): number | null {
     const startIndex = Math.max(0, currentIndex - VOLUME_LOOKBACK);
     const volumeCandles = candles.slice(startIndex, currentIndex);
 
@@ -248,11 +249,11 @@ export class VWAPEMACrossDetector extends BaseSetupDetector {
   }
 
   private createBullishSetup(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     _vwap: number,
     _ema: number,
-    crossData: { crossIndex: number; hasVolumeConfirmation: boolean; pullbackCandle: Candle }
+    crossData: { crossIndex: number; hasVolumeConfirmation: boolean; pullbackCandle: Kline }
   ): TradingSetup | null {
     const { pullbackCandle, hasVolumeConfirmation } = crossData;
 
@@ -291,11 +292,11 @@ export class VWAPEMACrossDetector extends BaseSetupDetector {
   }
 
   private createBearishSetup(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     _vwap: number,
     _ema: number,
-    crossData: { crossIndex: number; hasVolumeConfirmation: boolean; pullbackCandle: Candle }
+    crossData: { crossIndex: number; hasVolumeConfirmation: boolean; pullbackCandle: Kline }
   ): TradingSetup | null {
     const { pullbackCandle, hasVolumeConfirmation } = crossData;
 
@@ -334,7 +335,7 @@ export class VWAPEMACrossDetector extends BaseSetupDetector {
   }
 
   private calculateConfidence(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     hasVolumeConfirmation: boolean
   ): number {
@@ -357,7 +358,7 @@ export class VWAPEMACrossDetector extends BaseSetupDetector {
     return Math.min(confidence, MAX_CONFIDENCE);
   }
 
-  private calculateATR(candles: Candle[], currentIndex: number, period: number): number | null {
+  private calculateATR(candles: Kline[], currentIndex: number, period: number): number | null {
     if (currentIndex < period) return null;
 
     const trueRanges: number[] = [];

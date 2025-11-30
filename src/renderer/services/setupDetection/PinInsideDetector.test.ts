@@ -1,4 +1,4 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { describe, expect, it } from 'vitest';
 import {
   createDefaultPinInsideConfig,
@@ -73,7 +73,7 @@ describe('PinInsideDetector', () => {
       const detector = new PinInsideDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
         candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
@@ -99,7 +99,7 @@ describe('PinInsideDetector', () => {
       const detector = new PinInsideDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
         candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
@@ -125,7 +125,7 @@ describe('PinInsideDetector', () => {
       const detector = new PinInsideDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
         candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));

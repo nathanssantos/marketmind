@@ -1,4 +1,5 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 
 export interface SimplifiedCandle {
   timestamp: number;
@@ -10,7 +11,7 @@ export interface SimplifiedCandle {
 }
 
 export interface OptimizationResult {
-  detailed: Candle[];
+  detailed: Kline[];
   simplified: SimplifiedCandle[];
   timestampInfo: {
     first: number;
@@ -23,14 +24,14 @@ export interface OptimizationResult {
 const DETAILED_CANDLES_COUNT = 32;
 const MAX_SIMPLIFIED_CANDLES = 1000;
 
-export const detectTimeframe = (candles: Candle[]): string => {
+export const detectTimeframe = (candles: Kline[]): string => {
   if (candles.length < 2) return 'unknown';
 
   const firstCandle = candles[0];
   const secondCandle = candles[1];
   if (!firstCandle || !secondCandle) return 'unknown';
 
-  const diff = secondCandle.timestamp - firstCandle.timestamp;
+  const diff = secondCandle.openTime - firstCandle.openTime;
 
   const minute = 60 * 1000;
   const hour = 60 * minute;
@@ -48,19 +49,19 @@ export const detectTimeframe = (candles: Candle[]): string => {
   return 'unknown';
 };
 
-export const simplifyCandle = (candle: Candle): SimplifiedCandle => {
+export const simplifyCandle = (candle: Kline): SimplifiedCandle => {
   return {
-    timestamp: candle.timestamp,
-    open: Math.round(candle.open * 100) / 100,
-    high: Math.round(candle.high * 100) / 100,
-    low: Math.round(candle.low * 100) / 100,
-    close: Math.round(candle.close * 100) / 100,
-    volume: Math.round(candle.volume),
+    timestamp: candle.openTime,
+    open: Math.round(getKlineOpen(candle) * 100) / 100,
+    high: Math.round(getKlineHigh(candle) * 100) / 100,
+    low: Math.round(getKlineLow(candle) * 100) / 100,
+    close: Math.round(getKlineClose(candle) * 100) / 100,
+    volume: Math.round(getKlineVolume(candle)),
   };
 };
 
 export const optimizeCandles = (
-  candles: Candle[],
+  candles: Kline[],
   detailedCount: number = DETAILED_CANDLES_COUNT
 ): OptimizationResult => {
   if (candles.length === 0) {

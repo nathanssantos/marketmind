@@ -350,7 +350,7 @@ ${candlesData}${setupsInfo}
     return 0.5;
   }
 
-  private shouldAnalyze(candles: Candle[]): boolean {
+  private shouldAnalyze(candles: Kline[]): boolean {
     if (candles.length < 20) {
       console.log('[AITradingAgent] Not enough candles:', candles.length);
       return false;

@@ -1,10 +1,10 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 
 export interface RSIResult {
   values: (number | null)[];
 }
 
-export const calculateRSI = (candles: Candle[], period: number = 2): RSIResult => {
+export const calculateRSI = (candles: Kline[], period: number = 2): RSIResult => {
   if (candles.length < period + 1) {
     return { values: Array(candles.length).fill(null) };
   }

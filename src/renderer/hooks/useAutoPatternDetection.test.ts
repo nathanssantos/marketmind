@@ -1,6 +1,6 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Candle } from '../../shared/types';
+import type { Kline } from '../../shared/types';
 import { useChartContext } from '../context/ChartContext';
 import { useUIStore } from '../store/uiStore';
 import { patternDetectionService } from '../utils/patternDetection';
@@ -11,7 +11,7 @@ vi.mock('../store/uiStore');
 vi.mock('../utils/patternDetection');
 
 describe('useAutoPatternDetection', () => {
-  const mockCandles: Candle[] = Array.from({ length: 100 }, (_, i) => ({
+  const mockCandles: Kline[] = Array.from({ length: 100 }, (_, i) => ({
     timestamp: 1000000 + i * 60000,
     open: 100 + i,
     high: 105 + i,

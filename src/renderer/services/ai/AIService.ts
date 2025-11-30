@@ -1,5 +1,5 @@
 import { patternDetectionService } from '@renderer/utils/patternDetection';
-import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage, AIPattern, AIProviderType, Candle } from '@shared/types';
+import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage, AIPattern, AIProviderType, Kline } from '@shared/types';
 import defaultPrompts from './prompts.json';
 import { ClaudeProvider, GeminiProvider, OpenAIProvider } from './providers';
 import type { AIProviderConfig, BaseAIProvider } from './types';
@@ -150,7 +150,7 @@ export class AIService {
 
   private buildInterpretationPrompt(
     patterns: AIPattern[],
-    recentCandles: Candle[],
+    recentCandles: Kline[],
     context?: string
   ): string {
     const patternsSummary = patterns.map((pattern, index) => {
@@ -169,7 +169,7 @@ export class AIService {
     }).join('\n');
 
     const recentCandlesData = recentCandles.slice(-20).map(c => 
-      `${new Date(c.timestamp).toISOString()}: O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`
+      `${new Date(c.openTime).toISOString()}: O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`
     ).join('\n');
 
     return `

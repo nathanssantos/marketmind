@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../../shared/types';
+import type { Kline } from '../../../../shared/types';
 import {
     detectBearishFlags,
     detectBullishFlags,
@@ -9,8 +9,8 @@ import {
 } from '../patterns/continuationPatterns';
 import type { PivotPoint } from '../types';
 
-const createTestCandles = (count: number, basePrice = 100): Candle[] => {
-  const candles: Candle[] = [];
+const createTestCandles = (count: number, basePrice = 100): Kline[] => {
+  const candles: Kline[] = [];
   const now = Date.now();
 
   for (let i = 0; i < count; i++) {
@@ -501,7 +501,7 @@ describe('continuationPatterns', () => {
 
   describe('edge cases', () => {
     it('should handle empty candles array', () => {
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
       const pivots: PivotPoint[] = [];
 
       expect(detectBullishFlags(candles, pivots)).toEqual([]);

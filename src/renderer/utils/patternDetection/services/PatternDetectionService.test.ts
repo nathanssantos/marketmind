@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { Candle } from '../../../../shared/types';
+import type { Kline } from '../../../../shared/types';
 import { PatternDetectionService } from './PatternDetectionService';
 
 describe('PatternDetectionService', () => {
   let service: PatternDetectionService;
-  let mockCandles: Candle[];
+  let mockCandles: Kline[];
 
   beforeEach(() => {
     service = new PatternDetectionService();
@@ -78,7 +78,7 @@ describe('PatternDetectionService', () => {
     });
 
     it('should return empty array for insufficient candles', async () => {
-      const fewCandles: Candle[] = mockCandles.slice(0, 5);
+      const fewCandles: Kline[] = mockCandles.slice(0, 5);
       const result = await service.detectPatterns(fewCandles);
 
       expect(result.patterns).toEqual([]);

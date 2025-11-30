@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Candle } from '../../../shared/types';
+import type { Kline } from '../../../shared/types';
 import type { ChartThemeColors } from '../../hooks/useChartColors';
 import type { CanvasManager } from '../../utils/canvas/CanvasManager';
 import { useLineChartRenderer } from './useLineChartRenderer';
@@ -13,7 +13,7 @@ describe('useLineChartRenderer', () => {
   let mockManager: CanvasManager;
   let mockColors: ChartThemeColors;
   let mockCtx: CanvasRenderingContext2D;
-  let mockCandles: Candle[];
+  let mockCandles: Kline[];
 
   beforeEach(() => {
     mockCtx = {

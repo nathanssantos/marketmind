@@ -1,4 +1,4 @@
-import type { Candle, PivotPoint } from '@shared/types';
+import type { Kline, PivotPoint } from '@shared/types';
 import { describe, expect, it } from 'vitest';
 import {
     detectSupportResistance,

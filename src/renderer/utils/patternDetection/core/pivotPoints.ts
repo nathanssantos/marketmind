@@ -1,9 +1,10 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import type { PivotPoint } from '../types';
 
 export const findPivotHighs = (
-  candles: Candle[],
+  candles: Kline[],
   lookback: number = PATTERN_DETECTION_CONFIG.PIVOT_LOOKBACK_DEFAULT,
   lookahead: number = PATTERN_DETECTION_CONFIG.PIVOT_LOOKAHEAD_DEFAULT
 ): PivotPoint[] => {
@@ -22,7 +23,7 @@ export const findPivotHighs = (
       const candle = candles[j];
       if (!candle) continue;
       
-      if (candle.high >= currentHigh) {
+      if (getKlineHigh(candle) >= currentHigh) {
         isPivot = false;
         break;
       }
@@ -35,7 +36,7 @@ export const findPivotHighs = (
       const candle = candles[j];
       if (!candle) continue;
       
-      if (candle.high >= currentHigh) {
+      if (getKlineHigh(candle) >= currentHigh) {
         isPivot = false;
         break;
       }
@@ -58,7 +59,7 @@ export const findPivotHighs = (
 };
 
 export const findPivotLows = (
-  candles: Candle[],
+  candles: Kline[],
   lookback: number = PATTERN_DETECTION_CONFIG.PIVOT_LOOKBACK_DEFAULT,
   lookahead: number = PATTERN_DETECTION_CONFIG.PIVOT_LOOKAHEAD_DEFAULT
 ): PivotPoint[] => {
@@ -77,7 +78,7 @@ export const findPivotLows = (
       const candle = candles[j];
       if (!candle) continue;
       
-      if (candle.low <= currentLow) {
+      if (getKlineLow(candle) <= currentLow) {
         isPivot = false;
         break;
       }
@@ -90,7 +91,7 @@ export const findPivotLows = (
       const candle = candles[j];
       if (!candle) continue;
       
-      if (candle.low <= currentLow) {
+      if (getKlineLow(candle) <= currentLow) {
         isPivot = false;
         break;
       }
@@ -113,7 +114,7 @@ export const findPivotLows = (
 };
 
 export const findPivotPoints = (
-  candles: Candle[],
+  candles: Kline[],
   lookback?: number,
   lookahead?: number
 ): PivotPoint[] => {

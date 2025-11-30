@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { calculateVolumeMA, getVolumeMAPeriod } from './volume';
-import type { Candle } from '../../../shared/types';
+import type { Kline } from '../../../shared/types';
 
 const createCandle = (volume: number, index: number): Candle => ({
   timestamp: 1000000 + index * 60000,

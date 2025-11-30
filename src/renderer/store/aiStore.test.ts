@@ -1,5 +1,5 @@
 import { AIService } from '@/renderer/services/ai';
-import type { AIProviderType, Candle } from '@shared/types';
+import type { AIProviderType, Kline } from '@shared/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChartData } from './aiStore';
 import { useAIStore } from './aiStore';

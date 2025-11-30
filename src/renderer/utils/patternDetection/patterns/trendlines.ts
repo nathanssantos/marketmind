@@ -1,4 +1,4 @@
-import type { AIPatternLine, AIPatternPoint, Candle } from '@shared/types';
+import type { AIPatternLine, AIPatternPoint, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -75,7 +75,7 @@ const validateTrendlineBounces = (
 };
 
 export const detectBullishTrendlines = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternLine[] => {
   if (!candles) return [];
@@ -160,7 +160,7 @@ export const detectBullishTrendlines = (
 };
 
 export const detectBearishTrendlines = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternLine[] => {
   if (!candles) return [];

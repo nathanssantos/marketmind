@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 
 import { calculateMACD } from './macd';
 
@@ -15,7 +15,7 @@ const createCandle = (close: number, timestamp = Date.now()): Candle => ({
 
 describe('calculateMACD', () => {
   it('should calculate MACD, signal, and histogram correctly', () => {
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       createCandle(100),
       createCandle(101),
       createCandle(102),
@@ -86,7 +86,7 @@ describe('calculateMACD', () => {
   });
 
   it('should handle candles with insufficient data', () => {
-    const candles: Candle[] = [
+    const candles: Kline[] = [
       createCandle(100),
       createCandle(101),
       createCandle(102),
@@ -103,7 +103,7 @@ describe('calculateMACD', () => {
   });
 
   it('should use default parameters when not provided', () => {
-    const candles: Candle[] = Array.from({ length: 30 }, (_, i) =>
+    const candles: Kline[] = Array.from({ length: 30 }, (_, i) =>
       createCandle(100 + i),
     );
 
@@ -115,7 +115,7 @@ describe('calculateMACD', () => {
   });
 
   it('should have histogram equal to MACD minus signal', () => {
-    const candles: Candle[] = Array.from({ length: 30 }, (_, i) =>
+    const candles: Kline[] = Array.from({ length: 30 }, (_, i) =>
       createCandle(100 + i),
     );
 
@@ -133,7 +133,7 @@ describe('calculateMACD', () => {
   });
 
   it('should show bullish signal in uptrend', () => {
-    const candles: Candle[] = Array.from({ length: 50 }, (_, i) =>
+    const candles: Kline[] = Array.from({ length: 50 }, (_, i) =>
       createCandle(100 + i * 2),
     );
 
@@ -149,7 +149,7 @@ describe('calculateMACD', () => {
   });
 
   it('should show bearish signal in downtrend', () => {
-    const candles: Candle[] = Array.from({ length: 50 }, (_, i) =>
+    const candles: Kline[] = Array.from({ length: 50 }, (_, i) =>
       createCandle(200 - i * 2),
     );
 

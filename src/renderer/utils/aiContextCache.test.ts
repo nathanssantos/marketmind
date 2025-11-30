@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { aiContextCache } from './aiContextCache';
-import type { OptimizedCandleData } from './candleOptimizer';
+import type { OptimizedKlineData } from './candleOptimizer';
 
 describe('aiContextCache', () => {
   beforeEach(() => {

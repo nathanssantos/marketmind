@@ -1,4 +1,4 @@
-import type { AIPattern, Candle } from '@shared/types';
+import type { AIPattern, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import { filterAndPrioritizePatterns } from '../core/patternFilter';
 import { calculateImportanceScore } from '../core/patternImportance';
@@ -27,7 +27,7 @@ export class PatternDetectionService {
   }
 
   async detectPatterns(
-    candles: Candle[],
+    candles: Kline[],
     options: DetectionOptions = {}
   ): Promise<DetectionResult> {
     const startTime = performance.now();
@@ -242,14 +242,14 @@ export class PatternDetectionService {
 
   async detectPatternsIncremental(
     _existingPatterns: AIPattern[],
-    newCandles: Candle[],
+    newCandles: Kline[],
     options: DetectionOptions = {}
   ): Promise<DetectionResult> {
     return this.detectPatterns(newCandles, options);
   }
 
   private lastDetection: {
-    candles: Candle[];
+    candles: Kline[];
     pivots: PivotPoint[];
     patterns: AIPattern[];
   } | null = null;

@@ -1,4 +1,4 @@
-import type { AIPatternLine, AIPatternPoint, Candle } from '@shared/types';
+import type { AIPatternLine, AIPatternPoint, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
     calculateConfidence,
@@ -58,7 +58,7 @@ const clusterPivotsByPrice = (
 };
 
 export const detectSupport = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternLine[] => {
   const supports: AIPatternLine[] = [];
@@ -129,7 +129,7 @@ export const detectSupport = (
 };
 
 export const detectResistance = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternLine[] => {
   const resistances: AIPatternLine[] = [];

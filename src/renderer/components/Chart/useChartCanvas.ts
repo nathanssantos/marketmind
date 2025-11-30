@@ -1,6 +1,6 @@
 import { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants';
-import type { Candle, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@shared/types';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -9,7 +9,7 @@ const DEFAULT_VISIBLE_CANDLES = 100;
 const SIGNIFICANT_CHANGE_THRESHOLD = 0.1;
 
 export interface UseChartCanvasProps {
-  candles: Candle[];
+  candles: Kline[];
   initialViewport?: Viewport;
   onViewportChange?: (viewport: Viewport) => void;
 }
@@ -111,13 +111,13 @@ export const useChartCanvas = ({
 
   const prevCandleCountRef = useRef<number>(candles.length);
   const wasAtEndRef = useRef<boolean>(true);
-  const prevFirstCandleTimestampRef = useRef<number>(candles[0]?.timestamp ?? 0);
+  const prevFirstCandleTimestampRef = useRef<number>(candles[0]?.openTime ?? 0);
 
   useEffect(() => {
     if (managerRef.current) {
       const prevCount = prevCandleCountRef.current;
       const currentCount = candles.length;
-      const firstCandleTimestamp = candles[0]?.timestamp ?? 0;
+      const firstCandleTimestamp = candles[0]?.openTime ?? 0;
       const prevFirstCandleTimestamp = prevFirstCandleTimestampRef.current;
       
       const currentViewport = managerRef.current.getViewport();

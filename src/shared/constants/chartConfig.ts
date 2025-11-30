@@ -19,6 +19,7 @@ export const CHART_CONFIG = {
   AXIS_LABEL_FONT: '11px monospace',
   PATTERN_EXTENSION_DISTANCE: 36,
   INITIAL_CANDLES_VISIBLE: 100,
+  PERCENT_MULTIPLIER: 100,
 } as const;
 
 export const DEFAULT_MA_PERIODS = [20, 50, 200] as const;

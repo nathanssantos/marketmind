@@ -1,7 +1,7 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 
-const generateRandomCandles = (count: number, basePrice: number = 50000): Candle[] => {
-  const candles: Candle[] = [];
+const generateRandomCandles = (count: number, basePrice: number = 50000): Kline[] => {
+  const candles: Kline[] = [];
   let currentPrice = basePrice;
   const startTime = Date.now() - count * 60000;
 
@@ -30,4 +30,4 @@ const generateRandomCandles = (count: number, basePrice: number = 50000): Candle
   return candles;
 };
 
-export const SAMPLE_CANDLES: Candle[] = generateRandomCandles(200, 50000);
+export const SAMPLE_CANDLES: Kline[] = generateRandomCandles(200, 50000);

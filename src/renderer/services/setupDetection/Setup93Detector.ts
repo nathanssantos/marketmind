@@ -1,7 +1,7 @@
 import { calculateATR } from '@renderer/utils/indicators/atr';
 import { findHighestSwingHigh, findLowestSwingLow } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import {
     BaseSetupDetector,
     type SetupDetectorConfig,
@@ -47,10 +47,10 @@ export class Setup93Detector extends BaseSetupDetector {
   }
 
   private validateInputs(
-    current: Candle | undefined,
-    prev1: Candle | undefined,
-    prev2: Candle | undefined,
-    reference: Candle | undefined,
+    current: Kline | undefined,
+    prev1: Kline | undefined,
+    prev2: Kline | undefined,
+    reference: Kline | undefined,
     ema9Current: number | null | undefined,
     ema9Prev: number | null | undefined,
     atrCurrent: number | undefined,
@@ -70,7 +70,7 @@ export class Setup93Detector extends BaseSetupDetector {
   }
 
   private calculateVolumeConfirmation(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     current: Candle,
   ): { avgVolume: number; volumeConfirmation: boolean } {
@@ -86,7 +86,7 @@ export class Setup93Detector extends BaseSetupDetector {
   }
 
   private createLongSetup(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     current: Candle,
     ema9Current: number,
@@ -130,7 +130,7 @@ export class Setup93Detector extends BaseSetupDetector {
   }
 
   private createShortSetup(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     current: Candle,
     ema9Current: number,
@@ -173,7 +173,7 @@ export class Setup93Detector extends BaseSetupDetector {
     return { setup, confidence };
   }
 
-  detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
+  detect(candles: Kline[], currentIndex: number): SetupDetectorResult {
     const minIndex = Math.max(
       this.setup93Config.emaPeriod,
       this.setup93Config.atrPeriod,

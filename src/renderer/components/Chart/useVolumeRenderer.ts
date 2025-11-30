@@ -3,6 +3,7 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawRect } from '@renderer/utils/canvas/drawingUtils';
 import { calculateVolumeMA, getVolumeMAPeriod } from '@renderer/utils/indicators/volume';
 import { CHART_CONFIG } from '@shared/constants';
+import { getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
 import { useCallback } from 'react';
 
 export interface UseVolumeRendererProps {
@@ -64,10 +65,10 @@ export const useVolumeRenderer = ({
 
       const barX = x + (widthPerCandle - candleWidth) / 2;
 
-      const volumeRatio = candle.volume / bounds.maxVolume;
+      const volumeRatio = getKlineVolume(candle) / bounds.maxVolume;
       const barHeight = volumeRatio * volumeOverlayHeight;
 
-      const isBullish = candle.close >= candle.open;
+      const isBullish = getKlineClose(candle) >= getKlineOpen(candle);
       const baseColor = isBullish ? colors.bullish : colors.bearish;
       const isHovered = hoveredCandleIndex === actualIndex;
       
@@ -101,7 +102,7 @@ export const useVolumeRenderer = ({
 
       let hasMovedTo = false;
 
-      visibleCandles.forEach((candle, index) => {
+      visibleCandles.forEach((_, index) => {
         const actualIndex = Math.floor(viewport.start) + index;
         const maValue = volumeMA.values[actualIndex];
         

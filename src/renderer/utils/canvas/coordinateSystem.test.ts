@@ -10,7 +10,7 @@ import {
   type Bounds,
   type Dimensions,
 } from './coordinateSystem';
-import type { Candle, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@shared/types';
 
 const createViewport = (start: number, end: number): Viewport => ({
   start,
@@ -20,7 +20,7 @@ const createViewport = (start: number, end: number): Viewport => ({
 });
 
 describe('coordinateSystem', () => {
-  const mockCandles: Candle[] = [
+  const mockCandles: Kline[] = [
     { timestamp: 1000, open: 100, high: 110, low: 95, close: 105, volume: 1000 },
     { timestamp: 2000, open: 105, high: 115, low: 100, close: 110, volume: 1500 },
     { timestamp: 3000, open: 110, high: 120, low: 105, close: 115, volume: 2000 },

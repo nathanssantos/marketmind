@@ -54,6 +54,7 @@
       "chart": "Gráfico",
       "ai": "Configuração de IA",
       "aiTrading": "Auto-Trading IA",
+      "algorithmicAutoTrading": "Auto-Trading Algorítmico",
       "setupDetection": "Detecção de Setups",
       "patternDetection": "Detecção de Padrões",
       "news": "Notícias",
@@ -225,6 +226,17 @@
         "clearAll": "Limpar Todos os Dados"
       },
       "confirmClearAll": "Tem certeza que deseja limpar todos os dados de trading? Esta ação não pode ser desfeita."
+    },
+    "algorithmicAutoTrading": {
+      "title": "Auto-Trading Algorítmico",
+      "description": "Configure a execução automática de ordens baseada em setups de trading detectados.",
+      "status": {
+        "title": "Status do Auto-Trading",
+        "description": "Ative ou desative a abertura automática de ordens quando setups de trading forem detectados no gráfico.",
+        "active": "Auto-trading está ativo - ordens serão criadas automaticamente",
+        "inactive": "Auto-trading está inativo - setups serão apenas detectados e exibidos",
+        "info": "Este recurso funciona com o sistema de detecção de setups. Certifique-se de ativar pelo menos um tipo de setup na aba Detecção de Setups antes de ativar o auto-trading."
+      }
     }
   },
   "chat": {

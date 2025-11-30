@@ -1,4 +1,4 @@
-import type { Candle, PivotPoint } from '@shared/types';
+import type { Kline, PivotPoint } from '@shared/types';
 
 const DEFAULT_ZIGZAG_DEVIATION = 5;
 const PERCENT_DIVISOR = 100;
@@ -40,7 +40,7 @@ const determineTrend = (
 };
 
 const processUpDirection = (
-  candles: Candle[],
+  candles: Kline[],
   current: Candle,
   i: number,
   extremePrice: number,
@@ -67,7 +67,7 @@ const processUpDirection = (
       foundPivot: true,
       pivot: {
         index: newExtremeIndex,
-        timestamp: candles[newExtremeIndex]?.timestamp ?? current.timestamp,
+        timestamp: candles[newExtremeIndex]?.timestamp ?? current.openTime,
         price: newExtremePrice,
         type: 'high',
       },
@@ -84,7 +84,7 @@ const processUpDirection = (
 };
 
 const processDownDirection = (
-  candles: Candle[],
+  candles: Kline[],
   current: Candle,
   i: number,
   extremePrice: number,
@@ -111,7 +111,7 @@ const processDownDirection = (
       foundPivot: true,
       pivot: {
         index: newExtremeIndex,
-        timestamp: candles[newExtremeIndex]?.timestamp ?? current.timestamp,
+        timestamp: candles[newExtremeIndex]?.timestamp ?? current.openTime,
         price: newExtremePrice,
         type: 'low',
       },
@@ -128,7 +128,7 @@ const processDownDirection = (
 };
 
 export const calculateZigZag = (
-  candles: Candle[],
+  candles: Kline[],
   deviation = DEFAULT_ZIGZAG_DEVIATION,
 ): ZigZagResult => {
   const highs: PivotPoint[] = [];

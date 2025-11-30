@@ -18,13 +18,16 @@ import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
 import { SetupDetectionService, setupCancellationDetector } from '@renderer/services/setupDetection';
+import { TradingFeeService } from '@renderer/services/TradingFeeService';
 import { useSetupStore } from '@renderer/store';
 import { useTradingStore } from '@renderer/store/tradingStore';
 import { calculateMovingAverage } from '@renderer/utils/movingAverages';
 import type { StochasticResult } from '@renderer/utils/stochastic';
 import { CHART_CONFIG } from '@shared/constants';
-import type { AIPattern, Candle, Viewport } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
+import type { AIPattern, Kline, Viewport } from '@shared/types';
 import type { Order } from '@shared/types/trading';
+import { getOrderPrice, getOrderType, isOrderLong, isOrderPending } from '@shared/utils';
 import type React from 'react';
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -53,7 +56,7 @@ const MOUSE_POSITION_THROTTLE_MS = 16;
 const RIGHT_MOUSE_BUTTON = 2;
 
 export interface ChartCanvasProps {
-  candles: Candle[];
+  candles: Kline[];
   symbol?: string;
   width?: string | number;
   height?: string | number;
@@ -129,6 +132,17 @@ export const ChartCanvas = ({
   const [hoveredSetup, setHoveredSetup] = useState<ReturnType<typeof useSetupStore.getState>['detectedSetups'][0] | null>(null);
   const executedSetupsRef = useRef<Set<string>>(new Set());
 
+  const tradingFees = useTradingStore((state) => state.tradingFees);
+  const [feeService] = useState(() => {
+    const service = new TradingFeeService();
+    service.setFees(tradingFees);
+    return service;
+  });
+
+  useEffect(() => {
+    feeService.setFees(tradingFees);
+  }, [tradingFees, feeService]);
+
   const handleLongEntry = useCallback((price: number) => {
     const state = useTradingStore.getState();
     const activeWallet = state.wallets.find((w) => w.id === state.activeWalletId);
@@ -139,14 +153,13 @@ export const ChartCanvas = ({
     }
     if (!symbol) return;
 
-    const currentPrice = candles[candles.length - 1]?.close;
-    const subType: 'limit' | 'stop' = currentPrice !== undefined && price < currentPrice ? 'limit' : 'stop';
+    const lastCandle = candles[candles.length - 1];
+    const currentPrice = lastCandle ? getKlineClose(lastCandle) : undefined;
 
     addOrder({
       symbol,
-      type: 'long',
-      subType,
-      status: 'pending',
+      side: 'BUY' as const,
+      status: 'NEW' as const,
       entryPrice: price,
       quantity: getQuantityForSymbol(symbol) ?? 1,
       walletId: activeWallet.id,
@@ -164,14 +177,13 @@ export const ChartCanvas = ({
     }
     if (!symbol) return;
 
-    const currentPrice = candles[candles.length - 1]?.close;
-    const subType: 'limit' | 'stop' = currentPrice !== undefined && price > currentPrice ? 'limit' : 'stop';
+    const lastCandle = candles[candles.length - 1];
+    const currentPrice = lastCandle ? getKlineClose(lastCandle) : undefined;
 
     addOrder({
       symbol,
-      type: 'short',
-      subType,
-      status: 'pending',
+      side: 'SELL' as const,
+      status: 'NEW' as const,
       entryPrice: price,
       quantity: getQuantityForSymbol(symbol) ?? 1,
       walletId: activeWallet.id,
@@ -186,7 +198,7 @@ export const ChartCanvas = ({
   });
 
   const [tooltipData, setTooltipData] = useState<{
-    candle: Candle | null;
+    candle: Kline | null;
     x: number;
     y: number;
     visible: boolean;
@@ -288,8 +300,10 @@ export const ChartCanvas = ({
     const currentCandles = manager.getCandles();
     if (!currentCandles.length) return;
 
-    const currentPrice = currentCandles[currentCandles.length - 1]?.close;
-    if (!currentPrice) return;
+    const lastCandle = currentCandles[currentCandles.length - 1];
+    if (!lastCandle) return;
+
+    const currentPrice = getKlineClose(lastCandle);
 
     closeOrder(orderToClose, currentPrice);
     setOrderToClose(null);
@@ -375,7 +389,8 @@ export const ChartCanvas = ({
   const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, isSimulatorActive, hoveredOrderId);
 
   const currentCandles = manager?.getCandles() ?? [];
-  const currentPrice = currentCandles[currentCandles.length - 1]?.close ?? 0;
+  const lastCandle = currentCandles[currentCandles.length - 1];
+  const currentPrice = lastCandle ? getKlineClose(lastCandle) : 0;
 
   const activeOrders = useMemo(
     () => activeWalletId ? orders.filter(o => o.walletId === activeWalletId) : [],
@@ -558,7 +573,8 @@ export const ChartCanvas = ({
     if (hoveredOrderForTooltip && candles.length > 0) {
       if (hoveredOrderIdForTooltip !== lastTooltipOrderRef.current) {
         lastTooltipOrderRef.current = hoveredOrderIdForTooltip;
-        const currentPrice = candles[candles.length - 1]?.close;
+        const lastCandle = candles[candles.length - 1];
+        const currentPrice = lastCandle ? getKlineClose(lastCandle) : undefined;
         const rect = canvasRef.current?.getBoundingClientRect();
         setTooltipData({
           candle: null,
@@ -717,10 +733,10 @@ export const ChartCanvas = ({
         const widthPerCandle = chartAreaRight / visibleRange;
         const candleX = x + (widthPerCandle - candleWidth) / 2;
 
-        const openY = manager.priceToY(candle.open);
-        const closeY = manager.priceToY(candle.close);
-        const highY = manager.priceToY(candle.high);
-        const lowY = manager.priceToY(candle.low);
+        const openY = manager.priceToY(getKlineOpen(candle));
+        const closeY = manager.priceToY(getKlineClose(candle));
+        const highY = manager.priceToY(getKlineHigh(candle));
+        const lowY = manager.priceToY(getKlineLow(candle));
 
         const bodyLeft = candleX;
         const bodyRight = candleX + candleWidth;
@@ -730,7 +746,7 @@ export const ChartCanvas = ({
         const volumeHeightRatio = advancedConfig?.volumeHeightRatio ?? CHART_CONFIG.VOLUME_HEIGHT_RATIO;
         const volumeOverlayHeight = dimensions.chartHeight * volumeHeightRatio;
         const volumeBaseY = dimensions.chartHeight;
-        const volumeRatio = candle.volume / bounds.maxVolume;
+        const volumeRatio = getKlineVolume(candle) / bounds.maxVolume;
         const barHeight = volumeRatio * volumeOverlayHeight;
         const volumeTop = volumeBaseY - barHeight;
 
@@ -1060,19 +1076,33 @@ export const ChartCanvas = ({
       const activeWallet = wallets.find(w => w.id === walletId);
       if (!activeWallet) return;
 
-      const currentPrice = candles[candles.length - 1]?.close;
+      const lastCandle = candles[candles.length - 1];
+      const currentPrice = lastCandle ? getKlineClose(lastCandle) : undefined;
+      const quantity = getQuantityForSymbol(symbol) ?? 1;
+
+      const viability = feeService.evaluateTradeViability(
+        setup.entryPrice,
+        setup.stopLoss,
+        setup.takeProfit,
+        quantity,
+      );
+
+      if (!viability.isViable) {
+        console.warn(`[ChartCanvas] Setup ${setup.type} rejected due to fees:`, viability.reason);
+        warning(`Trade Rejected: ${viability.reason ?? 'Trade not viable after fees'}`);
+        return;
+      }
+
       const isLong = setup.direction === 'LONG';
-      const subType: 'limit' | 'stop' = currentPrice !== undefined &&
-        ((isLong && setup.entryPrice < currentPrice) || (!isLong && setup.entryPrice > currentPrice))
-        ? 'limit' : 'stop';
+
+      const fees = viability.fees;
 
       addOrder({
         symbol,
-        type: isLong ? 'long' : 'short',
-        subType,
-        status: 'pending',
+        side: isLong ? 'BUY' : 'SELL',
+        status: 'NEW' as const,
         entryPrice: setup.entryPrice,
-        quantity: getQuantityForSymbol(symbol) ?? 1,
+        quantity,
         walletId,
         stopLoss: setup.stopLoss,
         takeProfit: setup.takeProfit,
@@ -1080,12 +1110,15 @@ export const ChartCanvas = ({
         setupType: setup.type,
         setupDirection: setup.direction,
         setupConfidence: setup.confidence,
+        entryFee: fees.entryFee.toString(),
+        exitFee: fees.exitFee.toString(),
+        totalFees: fees.totalFees.toString(),
         ...(currentPrice !== undefined && { currentPrice }),
       });
 
       useSetupStore.getState().executeSetup(setup.id);
     });
-  }, [candles, setupConfig, setupService, addDetectedSetup, addOrder, getQuantityForSymbol, symbol]);
+  }, [candles, setupConfig, setupService, addDetectedSetup, addOrder, getQuantityForSymbol, symbol, feeService, warning]);
 
   useEffect(() => {
     if (!shiftPressed && !altPressed) {
@@ -1139,18 +1172,19 @@ export const ChartCanvas = ({
         let label: string;
         let isDashed = true;
 
-        if (dragType === 'entry' && draggedOrder.status === 'pending') {
+        if (dragType === 'entry' && isOrderPending(draggedOrder)) {
+          const isLong = isOrderLong(draggedOrder);
           const willExecuteImmediately =
-            (draggedOrder.type === 'long' && previewPrice <= currentPrice) ||
-            (draggedOrder.type === 'short' && previewPrice >= currentPrice);
+            (isLong && previewPrice <= currentPrice) ||
+            (!isLong && previewPrice >= currentPrice);
 
           if (willExecuteImmediately) {
             color = 'rgba(59, 130, 246, 0.9)';
-            label = `${draggedOrder.type === 'long' ? 'L' : 'S'} ${currentPrice.toFixed(2)} [MARKET]`;
+            label = `${isLong ? 'L' : 'S'} ${currentPrice.toFixed(2)} [MARKET]`;
             isDashed = false;
           } else {
             color = 'rgba(100, 116, 139, 0.7)';
-            label = `${draggedOrder.type === 'long' ? 'L' : 'S'} ${previewPrice.toFixed(2)} [PENDING]`;
+            label = `${isLong ? 'L' : 'S'} ${previewPrice.toFixed(2)} [PENDING]`;
           }
         } else {
           const isStopLoss = dragType === 'stopLoss';
@@ -1379,20 +1413,21 @@ export const ChartCanvas = ({
                   const lastCandle = candles[candles.length - 1];
                   if (!lastCandle) return null;
 
-                  const currentPrice = lastCandle.close;
-                  const isLong = order.type === 'long';
-                  const priceChange = currentPrice - order.entryPrice;
+                  const currentPrice = getKlineClose(lastCandle);
+                  const isLong = isOrderLong(order);
+                  const entryPrice = getOrderPrice(order);
+                  const priceChange = currentPrice - entryPrice;
                   const percentChange = isLong
-                    ? (priceChange / order.entryPrice) * 100
-                    : (-priceChange / order.entryPrice) * 100;
+                    ? (priceChange / entryPrice) * 100
+                    : (-priceChange / entryPrice) * 100;
                   const isProfit = percentChange >= 0;
 
                   return (
                     <Box>
                       <Box mb={4}>
                         {t('trading.closeOrderConfirm', {
-                          type: order.type.toUpperCase(),
-                          entry: order.entryPrice.toFixed(2),
+                          type: getOrderType(order).toUpperCase(),
+                          entry: entryPrice.toFixed(2),
                           current: currentPrice.toFixed(2),
                         })}
                       </Box>
@@ -1492,7 +1527,7 @@ export const ChartCanvas = ({
         />
         <CandleTimer
           timeframe={timeframe}
-          lastCandleTime={candles[candles.length - 1]?.timestamp}
+          lastCandleTime={candles[candles.length - 1]?.openTime}
           stochasticPanelHeight={showStochastic ? CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT : 0}
           rsiPanelHeight={showRSI ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0}
         />

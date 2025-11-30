@@ -1,5 +1,5 @@
 import { CHART_CONFIG } from '@shared/constants';
-import type { Candle, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@shared/types';
 import {
     calculateBounds,
     clampViewport,
@@ -22,7 +22,7 @@ export interface DirtyFlags {
 export class CanvasManager {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D | null = null;
-  private candles: Candle[] = [];
+  private candles: Kline[] = [];
   private viewport: Viewport;
   private bounds: Bounds | null = null;
   private dimensions: Dimensions | null = null;
@@ -143,7 +143,7 @@ export class CanvasManager {
     this.markDirty('dimensions');
   }
 
-  public setCandles(candles: Candle[]): void {
+  public setCandles(candles: Kline[]): void {
     const oldLastCandle = this.candles[this.candles.length - 1];
     const newLastCandle = candles[candles.length - 1];
     
@@ -166,7 +166,7 @@ export class CanvasManager {
     }
   }
 
-  public getCandles(): Candle[] {
+  public getCandles(): Kline[] {
     return this.candles;
   }
 
@@ -312,7 +312,7 @@ export class CanvasManager {
     return this.viewport.start + relativeIndex;
   }
 
-  public getVisibleCandles(): Candle[] {
+  public getVisibleCandles(): Kline[] {
     const start = Math.floor(this.viewport.start);
     const end = Math.min(Math.ceil(this.viewport.end), this.candles.length);
     return this.candles.slice(start, end);
@@ -445,7 +445,7 @@ export class CanvasManager {
     );
   }
 
-  public getCandleAtX(x: number): Candle | null {
+  public getCandleAtX(x: number): Kline | null {
     const index = Math.floor(this.xToIndex(x));
     return this.candles[index] ?? null;
   }

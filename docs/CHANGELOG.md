@@ -8,6 +8,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Algorithmic Auto-Trading Settings Tab** 🤖
+  - New settings section for algorithmic auto-trading configuration
+  - Toggle switch to enable/disable algorithmic auto-trading
+  - Complete translations in 4 languages (EN, PT, ES, FR)
+  - Integration with setupStore for state management
+  - Unit tests with 100% coverage
+
+### Changed
+- **Type System Refactored to Exchange API Format** 🔄
+  - **BREAKING**: Complete type system overhaul to align with exchange API standards
+  - **Order Interface**: 
+    - `id` → `clientOrderId`
+    - `type` ('long'/'short') → `side` ('BUY'/'SELL')
+    - `status` ('pending'/'active') → OrderStatus enum ('NEW'/'PARTIALLY_FILLED'/'FILLED')
+    - `quantity` (number) → `origQty` (string)
+    - `entryPrice` (number) → `price` (string)
+    - `createdAt` (Date) → `time` (number timestamp)
+  - **New Type Definitions**:
+    - `OrderStatus`: 'NEW' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELED' | 'PENDING_CANCEL' | 'REJECTED' | 'EXPIRED' | 'EXPIRED_IN_MATCH'
+    - `OrderSide`: 'BUY' | 'SELL'
+    - `OrderType`: 'LIMIT' | 'MARKET' | 'STOP_LOSS' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT' | 'TAKE_PROFIT_LIMIT' | 'LIMIT_MAKER'
+    - `TimeInForce`: 'GTC' | 'IOC' | 'FOK'
+  - **Kline Interface**: Added alongside Candle for API compatibility with string prices
+  - **Symbol Interface**: Updated to full exchange info structure with filters, permissions, precision
+  - **Price Utilities**: Added `parsePrice`, `formatPrice`, `parseQty`, `formatQty`, `calculatePnL`, `calculatePnLPercent`
+
+### Removed
+- **Deprecated Types Cleaned Up** 🧹
+  - Removed all `@deprecated` tags and legacy type definitions
+  - Removed `LegacyOrderType`, `LegacyOrderStatus`, `LegacyOrderSubType`
+  - Removed legacy type mapper functions (`orderSideToLegacy`, etc.)
+  - Removed deprecated `SymbolInfo` interface comments
+  - Cleaned all type files of migration artifacts
+
+### Documentation
+- **TYPE_MIGRATION_CONTINUATION.md** 📚
+  - Comprehensive guide for completing type system migration
+  - Detailed breaking changes documentation
+  - Component-by-component migration strategy
+  - Common error patterns and fixes
+  - priceUtils usage examples
+  - Complete migration checklist
+  - Success criteria and validation steps
+
 - **Larry Williams EMA9 Trading Setups** 📊
   - **Setup 9.2 (EMA9 Pullback)**: Trend continuation after single candle pullback below/above previous low/high
     - Entry on high/low breakout after EMA9 pullback

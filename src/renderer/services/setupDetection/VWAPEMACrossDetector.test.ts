@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../shared/types/candle';
+import type { Kline } from '../../../shared/types/candle';
 import {
     createDefaultVWAPEMACrossConfig,
     VWAPEMACrossDetector,
@@ -73,7 +73,7 @@ describe('VWAPEMACrossDetector', () => {
       const detector = new VWAPEMACrossDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 70; i += 1) {
         candles.push(createCandle(100, 101, 99, 100, 1000000, baseTime + i * 60000));
@@ -92,7 +92,7 @@ describe('VWAPEMACrossDetector', () => {
       };
       const detector = new VWAPEMACrossDetector(config);
 
-      const candles: Candle[] = [
+      const candles: Kline[] = [
         createCandle(100, 105, 95, 103, 1000000),
         createCandle(103, 108, 102, 106, 1500000),
         createCandle(106, 110, 105, 108, 2000000),
@@ -115,7 +115,7 @@ describe('VWAPEMACrossDetector', () => {
       };
       const detector = new VWAPEMACrossDetector(config);
 
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
       for (let i = 0; i < 70; i += 1) {
         candles.push(createCandle(100, 101, 99, 100, 0));
       }
@@ -137,7 +137,7 @@ describe('VWAPEMACrossDetector', () => {
       const _detector = new VWAPEMACrossDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i += 1) {
         candles.push(createCandle(98, 99, 97, 98, 1000000, baseTime + i * 60000));
@@ -162,7 +162,7 @@ describe('VWAPEMACrossDetector', () => {
       const _detector = new VWAPEMACrossDetector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 50; i += 1) {
         candles.push(createCandle(102, 103, 101, 102, 1000000, baseTime + i * 60000));

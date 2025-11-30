@@ -1,4 +1,4 @@
-import type { AIPattern, Candle } from '@shared/types';
+import type { AIPattern, Kline } from '@shared/types';
 
 export enum PatternTier {
   MACRO = 'macro',
@@ -602,7 +602,7 @@ export function buildPatternRelationships(
 
 export function calculateFormationPeriod(
   pattern: AIPattern,
-  candles: Candle[]
+  candles: Kline[]
 ): number {
   if (candles.length === 0) return 0;
 
@@ -617,7 +617,7 @@ export function calculateFormationPeriod(
   if (!firstCandle || !lastCandle) return 1;
 
   const avgCandleInterval =
-    (lastCandle.timestamp - firstCandle.timestamp) /
+    (lastCandle.openTime - firstCandle.openTime) /
     (candles.length - 1);
 
   const candleCount = Math.max(1, Math.round(duration / avgCandleInterval));
@@ -627,7 +627,7 @@ export function calculateFormationPeriod(
 
 export function classifyPatternTier(
   pattern: AIPattern,
-  candles: Candle[]
+  candles: Kline[]
 ): PatternTier {
   const formationPeriod = calculateFormationPeriod(pattern, candles);
 

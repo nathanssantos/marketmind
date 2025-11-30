@@ -1,4 +1,4 @@
-import type { FetchCandlesOptions } from '@shared/types';
+import type { FetchKlinesOptions } from '@shared/types';
 import axios from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CoinGeckoProvider } from './CoinGeckoProvider';
@@ -94,8 +94,8 @@ describe('CoinGeckoProvider', () => {
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/coins/bitcoin/market_chart', {
         params: {
           vs_currency: 'usd',
-          days: 1,
-          interval: '5m',
+          days: 7,
+          interval: 'hourly',
         },
       });
 
@@ -171,10 +171,10 @@ describe('CoinGeckoProvider', () => {
         ['5m', 1, '5m'],
         ['15m', 1, '5m'],
         ['30m', 1, '5m'],
-        ['1h', 1, '5m'],
+        ['1h', 7, 'hourly'],
         ['4h', 7, 'hourly'],
         ['1d', 90, 'daily'],
-        ['1w', 365, 'daily'],
+        ['1w', 90, 'daily'],
         ['1M', 365, 'daily'],
       ];
 
@@ -238,11 +238,12 @@ describe('CoinGeckoProvider', () => {
       const results = await provider.searchSymbols('bitcoin');
 
       expect(results).toHaveLength(1);
-      expect(results[0]).toEqual({
+      expect(results[0]).toMatchObject({
         symbol: 'BITCOIN',
         baseAsset: 'BTC',
         quoteAsset: 'USD',
         displayName: 'Bitcoin (BTC)',
+        status: 'TRADING',
       });
     });
 

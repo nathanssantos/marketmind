@@ -1,4 +1,4 @@
-import type { AIPatternFibonacci, AIPatternPoint, Candle } from '@shared/types';
+import type { AIPatternFibonacci, AIPatternPoint, Kline } from '@shared/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
   calculateConfidence,
@@ -7,7 +7,7 @@ import {
 import type { PivotPoint } from '../types';
 
 export const detectFibonacciRetracements = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternFibonacci[] => {
   if (!candles || candles.length === 0) return [];
@@ -87,7 +87,7 @@ export const detectFibonacciRetracements = (
 };
 
 export const detectFibonacciExtensions = (
-  candles: Candle[],
+  candles: Kline[],
   pivots: PivotPoint[]
 ): AIPatternFibonacci[] => {
   if (!candles || candles.length === 0) return [];

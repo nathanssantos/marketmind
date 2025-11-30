@@ -1,9 +1,9 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { calculateMovingAverages, type MAConfig, type MAResult } from '../utils/movingAverages';
 
 export interface MAWorkerRequest {
   type: 'calculate';
-  candles: Candle[];
+  candles: Kline[];
   configs: MAConfig[];
 }
 

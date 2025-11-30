@@ -1,4 +1,4 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 
 export interface StochasticResult {
   k: (number | null)[];
@@ -6,7 +6,7 @@ export interface StochasticResult {
 }
 
 export const calculateStochastic = (
-  candles: Candle[],
+  candles: Kline[],
   kPeriod: number = 14,
   dPeriod: number = 3
 ): StochasticResult => {

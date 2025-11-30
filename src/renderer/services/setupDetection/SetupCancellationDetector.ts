@@ -1,5 +1,5 @@
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Candle, SetupCancellationReason, TradingSetup } from '@shared/types';
+import type { Kline, SetupCancellationReason, TradingSetup } from '@shared/types';
 
 const EMA_PERIOD = 9;
 const LOOKBACK_TWO = 2;
@@ -11,7 +11,7 @@ const PULLBACK_BUFFER_SHORT = 1.01;
 export class SetupCancellationDetector {
   checkCancellation(
     setup: TradingSetup,
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
     if (setup.isTriggered) return { isCancelled: false };
@@ -43,7 +43,7 @@ export class SetupCancellationDetector {
 
   private checkSetup91Cancellation(
     setup: TradingSetup,
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
     const ema9 = calculateEMA(candles, EMA_PERIOD);
@@ -70,7 +70,7 @@ export class SetupCancellationDetector {
   }
 
   private hasValidEmaData(
-    current: Candle | undefined,
+    current: Kline | undefined,
     ema9Current: number | null | undefined,
     ema9Prev: number | null | undefined,
     ema9PrevPrev?: number | null | undefined,
@@ -125,7 +125,7 @@ export class SetupCancellationDetector {
 
   private checkSetup92Cancellation(
     setup: TradingSetup,
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
     const ema9 = calculateEMA(candles, EMA_PERIOD);
@@ -165,7 +165,7 @@ export class SetupCancellationDetector {
 
   private checkSetup93Cancellation(
     setup: TradingSetup,
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
     const ema9 = calculateEMA(candles, EMA_PERIOD);
@@ -205,7 +205,7 @@ export class SetupCancellationDetector {
 
   private checkSetup94Cancellation(
     setup: TradingSetup,
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
     const ema9 = calculateEMA(candles, EMA_PERIOD);
@@ -233,7 +233,7 @@ export class SetupCancellationDetector {
 
   private checkSetup94LongCancellation(
     setup: TradingSetup,
-    candles: Candle[],
+    candles: Kline[],
     current: Candle,
     ema9Current: number,
     ema9Prev: number,
@@ -261,7 +261,7 @@ export class SetupCancellationDetector {
 
   private checkSetup94ShortCancellation(
     setup: TradingSetup,
-    candles: Candle[],
+    candles: Kline[],
     current: Candle,
     ema9Current: number,
     ema9Prev: number,
@@ -289,7 +289,7 @@ export class SetupCancellationDetector {
 
   private checkPattern123Cancellation(
     setup: TradingSetup,
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
     const current = candles[currentIndex];
@@ -324,7 +324,7 @@ export class SetupCancellationDetector {
 
   private checkBullTrapCancellation(
     setup: TradingSetup,
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
     const current = candles[currentIndex];
@@ -345,7 +345,7 @@ export class SetupCancellationDetector {
 
   private checkBearTrapCancellation(
     setup: TradingSetup,
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
     const current = candles[currentIndex];
@@ -366,7 +366,7 @@ export class SetupCancellationDetector {
 
   private checkBreakoutRetestCancellation(
     setup: TradingSetup,
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
   ): { isCancelled: boolean; reason?: SetupCancellationReason } {
     const current = candles[currentIndex];

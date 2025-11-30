@@ -1,4 +1,4 @@
-import type { Candle, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@shared/types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChartContext } from '../context/ChartContext';
 import { usePatternDetectionConfigStore } from '../store/patternDetectionConfigStore';
@@ -60,7 +60,7 @@ export const useAutoPatternDetection = (viewport?: Viewport): void => {
   );
 
   const detectPatterns = useCallback(
-    async (candles: Candle[], symbol: string, candleCount: number, start: number, end: number) => {
+    async (candles: Kline[], symbol: string, candleCount: number, start: number, end: number) => {
       try {
         const visibleCandles = candles.slice(start, end);
         const detectionResult = await patternDetectionService.detectPatterns(

@@ -1,5 +1,5 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import {
     BaseSetupDetector,
     type SetupDetectorConfig,
@@ -24,7 +24,7 @@ export class Pattern123Detector extends BaseSetupDetector {
     this.pattern123Config = config;
   }
 
-  detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
+  detect(candles: Kline[], currentIndex: number): SetupDetectorResult {
     const minIndex = this.pattern123Config.pivotLookback * 6;
     
     if (!this.config.enabled || currentIndex < minIndex) {
@@ -63,7 +63,7 @@ export class Pattern123Detector extends BaseSetupDetector {
   }
 
   private detectBullish123(
-    candles: Candle[],
+    candles: Kline[],
     pivots: ReturnType<typeof findPivotPoints>,
     currentIndex: number,
   ): SetupDetectorResult | null {
@@ -138,7 +138,7 @@ export class Pattern123Detector extends BaseSetupDetector {
   }
 
   private detectBearish123(
-    candles: Candle[],
+    candles: Kline[],
     pivots: ReturnType<typeof findPivotPoints>,
     currentIndex: number,
   ): SetupDetectorResult | null {

@@ -1,4 +1,4 @@
-import type { Candle, CandleData, TimeInterval } from '@shared/types';
+import type { Kline, KlineData, TimeInterval } from '@shared/types';
 import {
     BaseMarketProvider,
     type FetchCandlesOptions,
@@ -22,14 +22,21 @@ interface CoinGeckoCoin {
 }
 
 const COINGECKO_DAYS_MAP: Record<TimeInterval, number> = {
+  '1s': 1,
   '1m': 1,
+  '3m': 1,
   '5m': 1,
   '15m': 1,
   '30m': 1,
-  '1h': 1,
+  '1h': 7,
+  '2h': 7,
   '4h': 7,
+  '6h': 7,
+  '8h': 7,
+  '12h': 7,
   '1d': 90,
-  '1w': 365,
+  '3d': 90,
+  '1w': 90,
   '1M': 365,
 };
 
@@ -60,7 +67,7 @@ export class CoinGeckoProvider extends BaseMarketProvider {
     });
   }
 
-  async fetchCandles(options: FetchCandlesOptions): Promise<CandleData> {
+  async fetchCandles(options: FetchCandlesOptions): Promise<KlineData> {
     const { symbol, interval, limit = 500 } = options;
 
     return this.rateLimitedFetch(async () => {
@@ -81,25 +88,33 @@ export class CoinGeckoProvider extends BaseMarketProvider {
 
         const { prices, total_volumes } = response.data;
 
-        const candles: Candle[] = prices.slice(-limit).map((price, index) => {
-          const timestamp = price[0];
-          const closePrice = price[1];
+        const klines: Kline[] = prices.slice(-limit).map((price, index) => {
+          const openTime = price[0] || Date.now();
+          const closePrice = price[1] || 0;
           const volume = total_volumes[index]?.[1] || 0;
 
+          const priceStr = closePrice.toString();
+          const volumeStr = volume.toString();
+
           return {
-            timestamp: timestamp || Date.now(),
-            open: closePrice || 0,
-            high: closePrice || 0,
-            low: closePrice || 0,
-            close: closePrice || 0,
-            volume,
+            openTime,
+            open: priceStr,
+            high: priceStr,
+            low: priceStr,
+            close: priceStr,
+            volume: volumeStr,
+            closeTime: openTime,
+            quoteVolume: volumeStr,
+            trades: 0,
+            takerBuyBaseVolume: '0',
+            takerBuyQuoteVolume: '0',
           };
         });
 
         return {
           symbol,
           interval,
-          candles,
+          klines,
         };
       } catch (error) {
         this.handleError(error, `Failed to fetch candles for ${symbol}`);
@@ -124,8 +139,24 @@ export class CoinGeckoProvider extends BaseMarketProvider {
       .slice(0, 50)
       .map(coin => ({
         symbol: coin.id.toUpperCase(),
+        status: 'TRADING' as const,
         baseAsset: coin.symbol.toUpperCase(),
+        baseAssetPrecision: 8,
         quoteAsset: 'USD',
+        quotePrecision: 2,
+        quoteAssetPrecision: 2,
+        baseCommissionPrecision: 8,
+        quoteCommissionPrecision: 2,
+        orderTypes: ['LIMIT', 'MARKET'],
+        icebergAllowed: false,
+        ocoAllowed: false,
+        quoteOrderQtyMarketAllowed: true,
+        allowTrailingStop: false,
+        cancelReplaceAllowed: false,
+        isSpotTradingAllowed: true,
+        isMarginTradingAllowed: false,
+        filters: [],
+        permissions: ['SPOT'],
         displayName: `${coin.name} (${coin.symbol.toUpperCase()})`,
       }));
   }

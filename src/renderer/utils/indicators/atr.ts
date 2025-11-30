@@ -1,9 +1,9 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 
 const DEFAULT_ATR_PERIOD = 14;
 
 export const calculateATR = (
-  candles: Candle[],
+  candles: Kline[],
   period = DEFAULT_ATR_PERIOD,
 ): number[] => {
   if (candles.length === 0) return [];

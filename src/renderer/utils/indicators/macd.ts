@@ -1,4 +1,4 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 
 const EMA_MULTIPLIER_NUMERATOR = 2;
 
@@ -36,7 +36,7 @@ const calculateEMA = (data: number[], period: number): number[] => {
 };
 
 export const calculateMACD = (
-  candles: Candle[],
+  candles: Kline[],
   fastPeriod = 12,
   slowPeriod = 26,
   signalPeriod = 9,

@@ -1,21 +1,22 @@
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 
 const TYPICAL_PRICE_DIVISOR = 3;
 
-export const calculateVWAP = (candles: Candle[]): number[] => {
+export const calculateVWAP = (candles: Kline[]): number[] => {
   const vwap: number[] = [];
   let cumulativeTPV = 0;
   let cumulativeVolume = 0;
 
   for (const candle of candles) {
     const typicalPrice =
-      (candle.high + candle.low + candle.close) / TYPICAL_PRICE_DIVISOR;
+      (getKlineHigh(candle) + getKlineLow(candle) + getKlineClose(candle)) / TYPICAL_PRICE_DIVISOR;
 
-    cumulativeTPV += typicalPrice * candle.volume;
-    cumulativeVolume += candle.volume;
+    cumulativeTPV += typicalPrice * getKlineVolume(candle);
+    cumulativeVolume += getKlineVolume(candle);
 
     if (cumulativeVolume === 0) {
-      vwap.push(candle.close);
+      vwap.push(getKlineClose(candle));
     } else {
       vwap.push(cumulativeTPV / cumulativeVolume);
     }
@@ -24,7 +25,7 @@ export const calculateVWAP = (candles: Candle[]): number[] => {
   return vwap;
 };
 
-export const calculateIntradayVWAP = (candles: Candle[]): number[] => {
+export const calculateIntradayVWAP = (candles: Kline[]): number[] => {
   if (candles.length === 0) return [];
 
   const firstCandle = candles[0];
@@ -33,10 +34,10 @@ export const calculateIntradayVWAP = (candles: Candle[]): number[] => {
   const vwap: number[] = [];
   let cumulativeTPV = 0;
   let cumulativeVolume = 0;
-  let currentDay = new Date(firstCandle.timestamp).getDate();
+  let currentDay = new Date(firstCandle.openTime).getDate();
 
   for (const candle of candles) {
-    const candleDay = new Date(candle.timestamp).getDate();
+    const candleDay = new Date(candle.openTime).getDate();
 
     if (candleDay !== currentDay) {
       cumulativeTPV = 0;
@@ -45,12 +46,12 @@ export const calculateIntradayVWAP = (candles: Candle[]): number[] => {
     }
 
     const typicalPrice =
-      (candle.high + candle.low + candle.close) / TYPICAL_PRICE_DIVISOR;
-    cumulativeTPV += typicalPrice * candle.volume;
-    cumulativeVolume += candle.volume;
+      (getKlineHigh(candle) + getKlineLow(candle) + getKlineClose(candle)) / TYPICAL_PRICE_DIVISOR;
+    cumulativeTPV += typicalPrice * getKlineVolume(candle);
+    cumulativeVolume += getKlineVolume(candle);
 
     if (cumulativeVolume === 0) {
-      vwap.push(candle.close);
+      vwap.push(getKlineClose(candle));
     } else {
       vwap.push(cumulativeTPV / cumulativeVolume);
     }

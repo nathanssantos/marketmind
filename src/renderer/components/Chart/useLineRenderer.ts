@@ -1,12 +1,13 @@
 import { useCallback } from 'react';
-import type { Candle, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@shared/types';
+import { getKlineClose } from '@shared/utils';
 import type { Bounds, Dimensions } from '@/renderer/utils/canvas/coordinateSystem';
 import { priceToY } from '@/renderer/utils/canvas/coordinateSystem';
 
 const DEFAULT_LINE_COLOR = '#2196f3';
 
 interface LineRendererConfig {
-  candles: Candle[];
+  candles: Kline[];
   viewport: Viewport;
   canvas: HTMLCanvasElement;
   bounds: Bounds;
@@ -49,7 +50,7 @@ export const useLineRenderer = () => {
 
     visibleCandles.forEach((candle, i) => {
       const x = (startIndex + i - viewport.start) * candleWidth + candleWidth / 2;
-      const y = priceToY(candle.close, bounds, dimensions, 10, 10);
+      const y = priceToY(getKlineClose(candle), bounds, dimensions, 10, 10);
 
       if (i === 0) {
         ctx.moveTo(x, y);

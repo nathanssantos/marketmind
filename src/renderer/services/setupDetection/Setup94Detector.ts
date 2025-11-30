@@ -1,7 +1,7 @@
 import { calculateATR } from '@renderer/utils/indicators/atr';
 import { findHighestSwingHigh, findLowestSwingLow } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Candle } from '@shared/types';
+import type { Kline } from '@shared/types';
 import {
     BaseSetupDetector,
     type SetupDetectorConfig,
@@ -47,9 +47,9 @@ export class Setup94Detector extends BaseSetupDetector {
   }
 
   private validateInputs(
-    current: Candle | undefined,
-    previous: Candle | undefined,
-    twoPrev: Candle | undefined,
+    current: Kline | undefined,
+    previous: Kline | undefined,
+    twoPrev: Kline | undefined,
     ema9Current: number | null | undefined,
     ema9Prev: number | null | undefined,
     ema9TwoPrev: number | null | undefined,
@@ -74,7 +74,7 @@ export class Setup94Detector extends BaseSetupDetector {
   }
 
   private calculateVolumeConfirmation(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     current: Candle,
   ): { avgVolume: number; volumeConfirmation: boolean } {
@@ -85,7 +85,7 @@ export class Setup94Detector extends BaseSetupDetector {
   }
 
   private createLongSetup(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     current: Candle,
     previous: Candle,
@@ -129,7 +129,7 @@ export class Setup94Detector extends BaseSetupDetector {
   }
 
   private createShortSetup(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     current: Candle,
     previous: Candle,
@@ -172,7 +172,7 @@ export class Setup94Detector extends BaseSetupDetector {
     return { setup, confidence };
   }
 
-  detect(candles: Candle[], currentIndex: number): SetupDetectorResult {
+  detect(candles: Kline[], currentIndex: number): SetupDetectorResult {
     const minIndex = Math.max(this.setup94Config.emaPeriod, this.setup94Config.atrPeriod) + VOLUME_LOOKBACK + EMA_LOOKBACK;
     if (!this.config.enabled || currentIndex < minIndex) return { setup: null, confidence: 0 };
 

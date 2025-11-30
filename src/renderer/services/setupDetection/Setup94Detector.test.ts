@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../shared/types/candle';
+import type { Kline } from '../../../shared/types/candle';
 import {
     createDefault94Config,
     Setup94Detector,
@@ -68,7 +68,7 @@ describe('Setup94Detector', () => {
       const config = { ...createDefault94Config(), enabled: true };
       const detector = new Setup94Detector(config);
 
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
       for (let i = 0; i < 35; i += 1) {
         candles.push(createCandle(100, 101, 99, 100));
       }
@@ -89,7 +89,7 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.5;
@@ -120,7 +120,7 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 - i * 0.3;
@@ -140,7 +140,7 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.5;
@@ -165,7 +165,7 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.5;
@@ -192,7 +192,7 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 - i * 0.5;
@@ -223,7 +223,7 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.3;
@@ -243,7 +243,7 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 - i * 0.5;
@@ -268,7 +268,7 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 - i * 0.5;
@@ -295,7 +295,7 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.5;
@@ -320,7 +320,7 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.5;
@@ -343,7 +343,7 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.5;
@@ -374,7 +374,7 @@ describe('Setup94Detector', () => {
       const detector = new Setup94Detector(config);
 
       const baseTime = Date.now();
-      const candles: Candle[] = [];
+      const candles: Kline[] = [];
 
       for (let i = 0; i < 35; i += 1) {
         const price = 100 + i * 0.5;

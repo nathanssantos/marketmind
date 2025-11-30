@@ -1,7 +1,8 @@
 import { calculateMACD } from '@renderer/utils/indicators/macd';
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { calculateRSI } from '@renderer/utils/rsi';
-import type { Candle, TradingSetup } from '@shared/types';
+import type { Kline, TradingSetup } from '@shared/types';
+import { getKlineClose, getKlineOpen, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import type { SetupDetectorConfig } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';
 
@@ -48,7 +49,7 @@ export class DivergenceDetector extends BaseSetupDetector {
     super(config);
   }
 
-  detect(candles: Candle[], currentIndex: number): { setup: TradingSetup | null; confidence: number } {
+  detect(candles: Kline[], currentIndex: number): { setup: TradingSetup | null; confidence: number } {
     if (!this.config.enabled) {
       return { setup: null, confidence: 0 };
     }
@@ -78,7 +79,7 @@ export class DivergenceDetector extends BaseSetupDetector {
   }
 
   private tryDetectRSIDivergence(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number
   ): { setup: TradingSetup | null; confidence: number } | null {
     const bullishRSIDivergence = this.detectBullishRSIDivergence(candles, currentIndex);
@@ -109,7 +110,7 @@ export class DivergenceDetector extends BaseSetupDetector {
   }
 
   private tryDetectMACDDivergence(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number
   ): { setup: TradingSetup | null; confidence: number } | null {
     const bullishMACDDivergence = this.detectBullishMACDDivergence(candles, currentIndex);
@@ -140,7 +141,7 @@ export class DivergenceDetector extends BaseSetupDetector {
   }
 
   private detectBullishRSIDivergence(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number
   ): { firstLowIndex: number; secondLowIndex: number; firstRSI: number; secondRSI: number } | null {
     const divConfig = this.config as DivergenceConfig;
@@ -156,8 +157,8 @@ export class DivergenceDetector extends BaseSetupDetector {
       const candle = recentCandles[i];
       if (!candle) continue;
       
-      if (candle.low < firstLowPrice) {
-        firstLowPrice = candle.low;
+      if (getKlineLow(candle) < firstLowPrice) {
+        firstLowPrice = getKlineLow(candle);
         firstLowIndex = startIndex + i;
       }
     }
@@ -185,7 +186,7 @@ export class DivergenceDetector extends BaseSetupDetector {
   }
 
   private detectBearishRSIDivergence(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number
   ): { firstHighIndex: number; secondHighIndex: number; firstRSI: number; secondRSI: number } | null {
     const divConfig = this.config as DivergenceConfig;
@@ -201,8 +202,8 @@ export class DivergenceDetector extends BaseSetupDetector {
       const candle = recentCandles[i];
       if (!candle) continue;
       
-      if (candle.high > firstHighPrice) {
-        firstHighPrice = candle.high;
+      if (getKlineHigh(candle) > firstHighPrice) {
+        firstHighPrice = getKlineHigh(candle);
         firstHighIndex = startIndex + i;
       }
     }
@@ -230,7 +231,7 @@ export class DivergenceDetector extends BaseSetupDetector {
   }
 
   private detectBullishMACDDivergence(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number
   ): { firstLowIndex: number; secondLowIndex: number; firstMACD: number; secondMACD: number } | null {
     const divConfig = this.config as DivergenceConfig;
@@ -246,8 +247,8 @@ export class DivergenceDetector extends BaseSetupDetector {
       const candle = recentCandles[i];
       if (!candle) continue;
       
-      if (candle.low < firstLowPrice) {
-        firstLowPrice = candle.low;
+      if (getKlineLow(candle) < firstLowPrice) {
+        firstLowPrice = getKlineLow(candle);
         firstLowIndex = startIndex + i;
       }
     }
@@ -276,7 +277,7 @@ export class DivergenceDetector extends BaseSetupDetector {
   }
 
   private detectBearishMACDDivergence(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number
   ): { firstHighIndex: number; secondHighIndex: number; firstMACD: number; secondMACD: number } | null {
     const divConfig = this.config as DivergenceConfig;
@@ -292,8 +293,8 @@ export class DivergenceDetector extends BaseSetupDetector {
       const candle = recentCandles[i];
       if (!candle) continue;
       
-      if (candle.high > firstHighPrice) {
-        firstHighPrice = candle.high;
+      if (getKlineHigh(candle) > firstHighPrice) {
+        firstHighPrice = getKlineHigh(candle);
         firstHighIndex = startIndex + i;
       }
     }
@@ -322,7 +323,7 @@ export class DivergenceDetector extends BaseSetupDetector {
   }
 
   private createBullishSetup(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     _indicator: 'rsi' | 'macd',
     divergence: { firstLowIndex: number; secondLowIndex: number }
@@ -370,7 +371,7 @@ export class DivergenceDetector extends BaseSetupDetector {
   }
 
   private createBearishSetup(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     _indicator: 'rsi' | 'macd',
     divergence: { firstHighIndex: number; secondHighIndex: number }
@@ -417,14 +418,14 @@ export class DivergenceDetector extends BaseSetupDetector {
     );
   }
 
-  private hasVolumeConfirmation(candles: Candle[], currentIndex: number): boolean {
+  private hasVolumeConfirmation(candles: Kline[], currentIndex: number): boolean {
     const avgVolume = this.calculateAverageVolume(candles, currentIndex);
     const currentCandle = candles[currentIndex];
     if (!currentCandle || !avgVolume) return false;
     return currentCandle.volume > avgVolume;
   }
 
-  private calculateAverageVolume(candles: Candle[], currentIndex: number): number | null {
+  private calculateAverageVolume(candles: Kline[], currentIndex: number): number | null {
     const startIndex = Math.max(0, currentIndex - VOLUME_LOOKBACK);
     const volumeCandles = candles.slice(startIndex, currentIndex);
 
@@ -435,7 +436,7 @@ export class DivergenceDetector extends BaseSetupDetector {
   }
 
   private calculateConfidence(
-    candles: Candle[],
+    candles: Kline[],
     currentIndex: number,
     hasDivergence: boolean
   ): number {

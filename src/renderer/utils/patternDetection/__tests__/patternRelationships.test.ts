@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Candle } from '../../../../shared/types';
+import type { Kline } from '../../../../shared/types';
 import type { AIPattern } from '../../../../shared/types/aiPattern';
 import {
     buildPatternRelationships,
@@ -11,8 +11,8 @@ import {
     PatternTier,
 } from '../core/patternRelationships';
 
-const createTestCandles = (count: number, basePrice: number, intervalMs: number = 60000): Candle[] => {
-  const candles: Candle[] = [];
+const createTestCandles = (count: number, basePrice: number, intervalMs: number = 60000): Kline[] => {
+  const candles: Kline[] = [];
   const now = Date.now();
 
   for (let i = 0; i < count; i++) {
