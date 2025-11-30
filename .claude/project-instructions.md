@@ -4,6 +4,12 @@
 
 **MarketMind** is an Electron-based desktop application that combines advanced financial chart visualization (klines) with AI analysis to provide insights on cryptocurrencies, stocks, and other tradeable assets.
 
+**🚀 QUICK START FOR NEW AGENTS:**
+1. Read this file completely
+2. Check `QUICK_START.md` for setup
+3. Review `AI_AGENT_GUIDE.md` for workflow patterns
+4. Run `pnpm test` to verify setup
+
 ### Tech Stack
 
 **Frontend:**
@@ -178,7 +184,7 @@ marketmind/                        # Monorepo root
 
 When starting a new chat due to context limits, provide:
 
-1. **This document** (`project-instructions.md`)
+1. **This document** (`copilot-instructions.md`)
 2. **Current phase** from `IMPLEMENTATION_PLAN.md`
 3. **Current branch** and feature being worked on
 4. **Files already created** (list main ones)
@@ -186,7 +192,7 @@ When starting a new chat due to context limits, provide:
 
 Example:
 ```
-Working on MarketMind following project-instructions.md.
+Working on MarketMind following copilot-instructions.md.
 
 Status:
 - Phase: 3 (Chart Rendering)
@@ -384,7 +390,7 @@ describe('calculateSMA', () => {
 
 ### Configuration
 - `IMPLEMENTATION_PLAN.md` - Full implementation roadmap
-- `project-instructions.md` - This file
+- `copilot-instructions.md` - This file
 - `README.md` - Project overview
 - `apps/backend/.env` - Backend environment variables (gitignored)
 
@@ -647,6 +653,160 @@ const { wallets, createWallet } = useBackendWallets();
 const addWallet = async (wallet: CreateWalletInput) => {
   await createWallet.mutateAsync(wallet);
 };
+```
+
+### tRPC Router Pattern
+
+```typescript
+// ✅ apps/backend/src/routers/wallet.ts
+import { router, protectedProcedure } from '../trpc';
+import { z } from 'zod';
+import { createWalletSchema, updateWalletSchema } from '@marketmind/types';
+
+export const walletRouter = router({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    return ctx.db.query.wallets.findMany({
+      where: eq(wallets.userId, ctx.session.userId),
+    });
+  }),
+
+  create: protectedProcedure
+    .input(createWalletSchema)
+    .mutation(async ({ ctx, input }) => {
+      const encryptedApiKey = encrypt(input.apiKey);
+      const encryptedSecret = encrypt(input.apiSecret);
+
+      const [wallet] = await ctx.db.insert(wallets).values({
+        userId: ctx.session.userId,
+        name: input.name,
+        exchange: input.exchange,
+        apiKey: encryptedApiKey,
+        apiSecret: encryptedSecret,
+      }).returning();
+
+      return wallet;
+    }),
+
+  update: protectedProcedure
+    .input(z.object({ id: z.number(), ...updateWalletSchema.shape }))
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      
+      const [wallet] = await ctx.db
+        .update(wallets)
+        .set({ ...data, updatedAt: new Date() })
+        .where(and(eq(wallets.id, id), eq(wallets.userId, ctx.session.userId)))
+        .returning();
+
+      if (!wallet) throw new Error('Wallet not found');
+      return wallet;
+    }),
+});
+```
+
+### Database Queries with Drizzle
+
+```typescript
+// ✅ apps/backend/src/db/schema.ts
+import { pgTable, serial, text, timestamp, integer } from 'drizzle-orm/pg-core';
+
+export const wallets = pgTable('wallets', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  name: text('name').notNull(),
+  exchange: text('exchange').notNull(),
+  apiKey: text('api_key').notNull(),
+  apiSecret: text('api_secret').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// ✅ Query examples
+import { eq, and, desc } from 'drizzle-orm';
+
+// Find all wallets for a user
+const userWallets = await db.query.wallets.findMany({
+  where: eq(wallets.userId, userId),
+  orderBy: [desc(wallets.createdAt)],
+});
+
+// Find specific wallet
+const wallet = await db.query.wallets.findFirst({
+  where: and(eq(wallets.id, id), eq(wallets.userId, userId)),
+});
+
+// Update wallet
+const [updated] = await db
+  .update(wallets)
+  .set({ name: 'New Name', updatedAt: new Date() })
+  .where(eq(wallets.id, id))
+  .returning();
+```
+
+### Authentication Flow
+
+```typescript
+// ✅ apps/backend/src/routers/auth.ts
+import { router, publicProcedure, protectedProcedure } from '../trpc';
+import { hash, verify } from '@node-rs/argon2';
+import { z } from 'zod';
+
+export const authRouter = router({
+  register: publicProcedure
+    .input(z.object({ email: z.string().email(), password: z.string().min(8) }))
+    .mutation(async ({ ctx, input }) => {
+      const hashedPassword = await hash(input.password, {
+        memoryCost: 19456,
+        timeCost: 2,
+        outputLen: 32,
+        parallelism: 1,
+      });
+
+      const [user] = await ctx.db.insert(users).values({
+        email: input.email,
+        password: hashedPassword,
+      }).returning({ id: users.id, email: users.email });
+
+      const sessionToken = generateToken();
+      await ctx.db.insert(sessions).values({
+        userId: user.id,
+        token: sessionToken,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      });
+
+      ctx.res.setCookie('session', sessionToken, { httpOnly: true, secure: true });
+      return user;
+    }),
+
+  login: publicProcedure
+    .input(z.object({ email: z.string(), password: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.email, input.email),
+      });
+
+      if (!user || !(await verify(user.password, input.password))) {
+        throw new Error('Invalid credentials');
+      }
+
+      const sessionToken = generateToken();
+      await ctx.db.insert(sessions).values({
+        userId: user.id,
+        token: sessionToken,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      });
+
+      ctx.res.setCookie('session', sessionToken, { httpOnly: true, secure: true });
+      return { id: user.id, email: user.email };
+    }),
+
+  me: protectedProcedure.query(({ ctx }) => ctx.user),
+
+  logout: protectedProcedure.mutation(async ({ ctx }) => {
+    await ctx.db.delete(sessions).where(eq(sessions.token, ctx.session.token));
+    ctx.res.clearCookie('session');
+  }),
+});
 ```
 
 ### Development Commands
