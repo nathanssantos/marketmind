@@ -8,6 +8,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Backend Infrastructure with tRPC Integration** 🚀
+  - Monorepo structure with pnpm workspaces (apps/backend, apps/electron, packages/*)
+  - Backend server with Fastify 5.6.2 + tRPC 11.7.2 + Drizzle ORM 0.44.7
+  - PostgreSQL 17 + TimescaleDB 2.23.1 for time-series data
+  - Argon2 password hashing for authentication (OWASP parameters)
+  - Session-based authentication with 30-day expiration
+  - AES-256-CBC encryption for API keys
+  - Complete tRPC routers:
+    - **health**: ping, check endpoints
+    - **auth**: register, login, logout, me endpoints
+    - **wallet**: CRUD operations, Binance integration, balance sync
+    - **trading**: order management, position tracking, Binance sync
+  - Database schema with 9 tables (users, sessions, wallets, orders, positions, klines, trading_setups, ai_conversations, ai_trades)
+  - Klines table converted to TimescaleDB hypertable for performance
+  - Shared packages: `@marketmind/types`, `@marketmind/indicators`
+  - Comprehensive backend documentation (BACKEND_STATUS, BACKEND_PROGRESS, AUTHENTICATION guides)
+
+- **Frontend tRPC Hooks** 🎣
+  - `useBackendAuth`: register, login, logout, session management with error handling
+  - `useBackendWallet`: CRUD operations, balance sync, connection testing
+  - `useBackendTrading`: order/position management with auto-refresh
+  - TrpcProvider component with React Query integration
+  - HTTP-only cookie-based session transport
+  - Automatic cache invalidation after mutations
+
 - **Algorithmic Auto-Trading Settings Tab** 🤖
   - New settings section for algorithmic auto-trading configuration
   - Toggle switch to enable/disable algorithmic auto-trading
