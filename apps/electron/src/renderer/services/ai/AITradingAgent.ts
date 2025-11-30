@@ -70,12 +70,14 @@ export class AITradingAgent {
     const intervalMs = this.getIntervalMs();
     console.log('[AITradingAgent] Analysis interval:', intervalMs, 'ms');
     
-    this.analysisInterval = setInterval(() => {
+    this.analysisInterval = setInterval(async () => {
       console.log('[AITradingAgent] Interval tick - analyzing...');
-      this.analyze().catch((error) => {
+      try {
+        await this.analyze();
+      } catch (error) {
         console.error('[AITradingAgent] Analysis error:', error);
         this.onError?.(error instanceof Error ? error : new Error(String(error)));
-      });
+      }
     }, intervalMs);
 
     console.log('[AITradingAgent] Running first analysis...');
@@ -97,11 +99,13 @@ export class AITradingAgent {
     if (this.isRunning && this.analysisInterval) {
       clearInterval(this.analysisInterval);
       const intervalMs = this.getIntervalMs();
-      this.analysisInterval = setInterval(() => {
-        this.analyze().catch((error) => {
+      this.analysisInterval = setInterval(async () => {
+        try {
+          await this.analyze();
+        } catch (error) {
           console.error('Analysis error:', error);
           this.onError?.(error instanceof Error ? error : new Error(String(error)));
-        });
+        }
       }, intervalMs);
     }
   }

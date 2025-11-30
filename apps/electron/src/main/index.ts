@@ -469,22 +469,27 @@ const setupNotificationHandlers = (): void => {
   });
 };
 
-app.whenReady().then(() => {
-  console.log('App ready, setting up IPC handlers...');
-  setupIpcHandlers();
-  setupNotificationHandlers();
-  console.log('IPC handlers set up, creating window...');
-  createWindow();
-  console.log('Window created');
+const initializeApp = async (): Promise<void> => {
+  try {
+    await app.whenReady();
+    console.log('App ready, setting up IPC handlers...');
+    setupIpcHandlers();
+    setupNotificationHandlers();
+    console.log('IPC handlers set up, creating window...');
+    createWindow();
+    console.log('Window created');
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-}).catch((error) => {
-  console.error('Error during app initialization:', error);
-});
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+      }
+    });
+  } catch (error) {
+    console.error('Error during app initialization:', error);
+  }
+};
+
+void initializeApp();
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

@@ -140,14 +140,24 @@ export class UpdateManager {
     const intervalMs = intervalHours * 60 * 60 * 1000;
     
     this.updateCheckInterval = setInterval(() => {
-      this.checkForUpdates().catch((error) => {
-        log.error('Auto update check failed:', error);
-      });
+      void (async () => {
+        try {
+          await this.checkForUpdates();
+        } catch (error) {
+          log.error('Auto update check failed:', error);
+        }
+      })();
     }, intervalMs);
 
-    this.checkForUpdates().catch((error) => {
-      log.error('Initial update check failed:', error);
-    });
+    const runInitialCheck = async (): Promise<void> => {
+      try {
+        await this.checkForUpdates();
+      } catch (error) {
+        log.error('Initial update check failed:', error);
+      }
+    };
+
+    void runInitialCheck();
   }
 
   stopAutoCheckInterval(): void {

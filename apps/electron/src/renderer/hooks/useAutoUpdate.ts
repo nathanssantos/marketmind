@@ -35,9 +35,12 @@ export const useAutoUpdate = () => {
   const [currentVersion, setCurrentVersion] = useState<string>('');
 
   useEffect(() => {
-    window.electron.update.getInfo().then((info) => {
+    const loadUpdateInfo = async () => {
+      const info = await window.electron.update.getInfo();
       setCurrentVersion(info.currentVersion);
-    });
+    };
+
+    loadUpdateInfo();
 
     window.electron.update.onChecking(() => {
       setStatus('checking');

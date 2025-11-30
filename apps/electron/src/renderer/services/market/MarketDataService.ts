@@ -113,9 +113,16 @@ export class MarketDataService {
 
   clearCache(): void {
     this.cache.clear();
-    indexedDBCache.clear().catch(error => {
-      console.error('Failed to clear IndexedDB cache:', error);
-    });
+    
+    const clearIndexedDB = async () => {
+      try {
+        await indexedDBCache.clear();
+      } catch (error) {
+        console.error('Failed to clear IndexedDB cache:', error);
+      }
+    };
+
+    clearIndexedDB();
   }
 
   setPrimaryProvider(provider: BaseMarketProvider): void {

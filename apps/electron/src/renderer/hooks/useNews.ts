@@ -81,9 +81,11 @@ const getDefaultNewsService = (): NewsService => {
     defaultCacheDuration: 300000,
   });
 
-  initializeNewsService().then((service) => {
-    defaultNewsService = service;
-  });
+  const initService = async () => {
+    defaultNewsService = await initializeNewsService();
+  };
+
+  initService();
 
   return defaultNewsService;
 };
