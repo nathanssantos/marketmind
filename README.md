@@ -5,7 +5,7 @@
 <div align="center">
 
 ![Version](https://img.shields.io/badge/version-0.31.0-blue.svg)
-![Tests](https://img.shields.io/badge/tests-1,867%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-1,864%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-92.15%25-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
@@ -34,18 +34,7 @@
 - 🖱️ **Interactive Controls**: Advanced chart settings panel with pin functionality
 - ⚙️ **Advanced Settings**: 9 configurable parameters (margins, spacing, grid, etc.)
 - 💾 **Persistent Settings**: All configurations saved with localStorage
-- 🎯 **Enhanced Smart Tooltip**: Hover to see comprehensive kline data
-  - OHLCV values with intelligent positioning
-  - Quote volume (total value in quote asset)
-  - Number of trades and average trade value
-  - Buy/sell pressure indicator with color coding
-- 📊 **Advanced Volume Bars**: Pressure-based coloring with gradient intensity
-  - Green for buy pressure (>55%), red for sell pressure (<45%)
-  - Neutral gray for balanced pressure (45-55%)
-  - 2.5x opacity boost on hover
-- 🔔 **Activity Indicators**: Visual dots on klines
-  - Bright green for high activity (>150% avg trades & volume)
-  - Deep pink for low activity (<30% avg trades, <50% volume)
+- 🎯 **Smart Tooltip**: Hover to see OHLCV data with intelligent positioning
 - 💬 **Contextual Tooltips**: All buttons have arrows for better UX
 - 🖱️ **Pan & Zoom**: Mouse wheel zoom, drag to pan (horizontal and vertical)
 - 🎨 **Dynamic Cursors**: Context-aware cursor feedback

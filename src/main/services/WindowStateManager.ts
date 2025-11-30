@@ -1,6 +1,7 @@
 import type { BrowserWindow } from 'electron';
 import { screen } from 'electron';
 import Store from 'electron-store';
+import type { Timeout } from 'node:timers';
 
 interface WindowState {
   x?: number;
@@ -132,8 +133,8 @@ export class WindowStateManager {
     func: T,
     wait: number
   ): (...args: Parameters<T>) => void {
-    let timeout: NodeJS.Timeout | null = null;
-
+    let timeout: Timeout | null = null;
+    
     return (...args: Parameters<T>): void => {
       if (timeout) {
         clearTimeout(timeout);
