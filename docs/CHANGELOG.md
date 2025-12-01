@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.32.0] - 2025-01-01
+
 ### Added
 - **Backend Setup Detection Integration Complete** ✅
   - All 13 algorithmic trading setup detectors migrated to backend
