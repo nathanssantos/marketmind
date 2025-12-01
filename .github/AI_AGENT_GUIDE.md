@@ -1,6 +1,6 @@
 # 🤖 AI Agent Development Guide - MarketMind
 
-Comprehensive guide for AI agents (GitHub Copilot, Cursor, Cline, etc.) working on MarketMind monorepo.
+Comprehensive guide for AI agents (GitHub Copilot, Cursor, Cline, Claude, etc.) working on MarketMind monorepo.
 
 ## 🎯 Core Principles
 

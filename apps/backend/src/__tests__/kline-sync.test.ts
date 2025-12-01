@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { getBinanceKlineSync } from '../services/binance-kline-sync';
 import type { Interval } from '@marketmind/types';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { getBinanceKlineSync } from '../services/binance-kline-sync';
 
 describe('BinanceKlineSync', () => {
   let sync: ReturnType<typeof getBinanceKlineSync>;

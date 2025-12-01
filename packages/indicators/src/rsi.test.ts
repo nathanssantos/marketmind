@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { calculateRSI } from './rsi';
 import type { Kline } from '@marketmind/types';
+import { describe, expect, it } from 'vitest';
+import { calculateRSI } from './rsi';
 
 const createMockKline = (close: number, index: number): Kline => ({
   openTime: new Date(2024, 0, index + 1).getTime(),

@@ -1,11 +1,11 @@
-import { router, protectedProcedure } from '../trpc';
+import type { Interval } from '@marketmind/types';
+import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db';
 import { klines } from '../db/schema';
-import { eq, and, gte, lte, desc } from 'drizzle-orm';
-import { getBinanceKlineSync } from '../services/binance-kline-sync';
 import { backfillHistoricalKlines, calculateStartTime } from '../services/binance-historical';
-import type { Interval } from '@marketmind/types';
+import { getBinanceKlineSync } from '../services/binance-kline-sync';
+import { protectedProcedure, router } from '../trpc';
 
 const intervalSchema = z.enum([
   '1s', '1m', '3m', '5m', '15m', '30m',

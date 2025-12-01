@@ -1,12 +1,13 @@
-import Binance from 'binance-api-node';
+import type { Interval } from '@marketmind/types';
+import BinanceModule from 'binance-api-node';
 import { db } from '../db';
 import { klines } from '../db/schema';
-import type { Interval } from '@marketmind/types';
 import { logger } from './logger';
 
 const BATCH_SIZE = 1000;
 const RATE_LIMIT_DELAY = 200;
 
+const Binance = (BinanceModule as any).default;
 const binanceClient = Binance();
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
@@ -40,7 +41,7 @@ export const backfillHistoricalKlines = async (
       const lastCandle = candles[candles.length - 1];
       if (!lastCandle) break;
 
-      const klinesData = candles.map((candle) => ({
+      const klinesData = candles.map((candle: any) => ({
         symbol,
         interval,
         openTime: new Date(candle.openTime),

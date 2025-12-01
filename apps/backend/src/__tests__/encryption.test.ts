@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 describe('Encryption Service', () => {
   describe('AES-256-CBC Encryption', () => {

@@ -14,10 +14,11 @@ import {
 import { Box, Portal } from '@chakra-ui/react';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useRSIWorker } from '@renderer/hooks/useRSIWorker';
+import { useSetupDetection } from '@renderer/hooks/useSetupDetection';
 import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
-import { SetupDetectionService, setupCancellationDetector } from '@renderer/services/setupDetection';
+import { setupCancellationDetector } from '@renderer/services/setupDetection';
 import { TradingFeeService } from '@renderer/services/TradingFeeService';
 import { useSetupStore } from '@renderer/store';
 import { useTradingStore } from '@renderer/store/tradingStore';
@@ -127,7 +128,11 @@ export const ChartCanvas = ({
   const removeDetectedSetup = useSetupStore((state) => state.removeDetectedSetup);
   const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
   const setupConfig = useSetupStore((state) => state.config);
-  const [setupService] = useState(() => new SetupDetectionService(setupConfig));
+  const setupDetector = useSetupDetection({
+    symbol,
+    interval: timeframe as any,
+    enableRealtimeUpdates: true,
+  });
   const [hoveredSetup, setHoveredSetup] = useState<ReturnType<typeof useSetupStore.getState>['detectedSetups'][0] | null>(null);
   const executedSetupsRef = useRef<Set<string>>(new Set());
 
@@ -1056,8 +1061,7 @@ export const ChartCanvas = ({
       }
     });
 
-    setupService.updateConfig(setupConfig);
-    const detectedSetups = setupService.detectSetups(klines);
+    const detectedSetups = setupDetector.detectSetups(klines);
 
     detectedSetups.forEach((setup) => {
       if (executedSetupsRef.current.has(setup.id)) return;
@@ -1117,7 +1121,7 @@ export const ChartCanvas = ({
 
       useSetupStore.getState().executeSetup(setup.id);
     });
-  }, [klines, setupConfig, setupService, addDetectedSetup, addOrder, getQuantityForSymbol, symbol, feeService, warning]);
+  }, [klines, setupConfig, setupDetector, addDetectedSetup, addOrder, getQuantityForSymbol, symbol, feeService, warning]);
 
   useEffect(() => {
     if (!shiftPressed && !altPressed) {

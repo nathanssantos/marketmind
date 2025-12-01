@@ -1,7 +1,7 @@
 import type { KlineData } from '@shared/types';
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MarketDataService } from '../services/market/MarketDataService';
+import type { MarketDataService } from '../services/market/MarketDataService';
 import { useMarketData } from './useMarketData';
 
 describe('useMarketData', () => {

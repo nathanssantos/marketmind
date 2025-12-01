@@ -13,7 +13,7 @@ export class WebSocketService {
   constructor(httpServer: HTTPServer) {
     this.io = new SocketIOServer(httpServer, {
       cors: {
-        origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+        origin: process.env['CORS_ORIGIN'] ?? 'http://localhost:5173',
         credentials: true,
       },
       transports: ['websocket', 'polling'],
@@ -25,7 +25,7 @@ export class WebSocketService {
 
   private setupMiddleware(): void {
     this.io.use((socket, next) => {
-      const sessionToken = socket.handshake.auth.token;
+      const sessionToken = socket.handshake.auth['token'];
       
       if (sessionToken) {
         (socket.data as SocketData).sessionToken = sessionToken;
@@ -69,6 +69,16 @@ export class WebSocketService {
         logger.info({ socketId: socket.id, symbol }, 'Unsubscribed from prices');
       });
 
+      socket.on('subscribe:setups', (userId: string) => {
+        socket.join(`user:${userId}`);
+        logger.info({ socketId: socket.id, userId }, 'Subscribed to setups');
+      });
+
+      socket.on('unsubscribe:setups', (userId: string) => {
+        socket.leave(`user:${userId}`);
+        logger.info({ socketId: socket.id, userId }, 'Unsubscribed from setups');
+      });
+
       socket.on('disconnect', () => {
         logger.info({ socketId: socket.id }, 'Client disconnected');
       });
@@ -93,6 +103,10 @@ export class WebSocketService {
 
   public emitPriceUpdate(symbol: string, price: number, timestamp: number): void {
     this.io.to(`prices:${symbol}`).emit('price:update', { symbol, price, timestamp });
+  }
+
+  public emitSetupDetected(userId: string, data: unknown): void {
+    this.io.to(`user:${userId}`).emit('setup-detected', data);
   }
 
   public getIO(): SocketIOServer {

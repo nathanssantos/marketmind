@@ -4,63 +4,63 @@ import tsParser from '@typescript-eslint/parser';
 import globals from 'globals';
 
 export default [
-  {
-    ignores: [
-      '**/dist/**',
-      '**/dist-electron/**',
-      '**/node_modules/**',
-      '**/build/**',
-      '**/coverage/**',
-      '**/*.config.js',
-      '**/*.config.ts',
-      '.eslintrc.cjs',
-    ],
-  },
-  js.configs.recommended,
-  {
-    files: ['**/*.{js,mjs,cjs,ts}'],
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      parser: tsParser,
-      globals: {
-        ...globals.es2021,
-        ...globals.node,
-      },
+    {
+        ignores: [
+            '**/dist/**',
+            '**/dist-electron/**',
+            '**/node_modules/**',
+            '**/build/**',
+            '**/coverage/**',
+            '**/*.config.js',
+            '**/*.config.ts',
+            '.eslintrc.cjs',
+        ],
     },
-    plugins: {
-      '@typescript-eslint': tsPlugin,
+    js.configs.recommended,
+    {
+        files: ['**/*.{js,mjs,cjs,ts}'],
+        languageOptions: {
+            ecmaVersion: 'latest',
+            sourceType: 'module',
+            parser: tsParser,
+            globals: {
+                ...globals.es2021,
+                ...globals.node,
+            },
+        },
+        plugins: {
+            '@typescript-eslint': tsPlugin,
+        },
+        rules: {
+            '@typescript-eslint/no-explicit-any': 'error',
+            'no-unused-vars': 'off',
+            '@typescript-eslint/no-unused-vars': [
+                'error',
+                {
+                    argsIgnorePattern: '^_',
+                    varsIgnorePattern: '^_',
+                },
+            ],
+            '@typescript-eslint/consistent-type-imports': [
+                'error',
+                {
+                    prefer: 'type-imports',
+                },
+            ],
+            'no-console': [
+                'warn',
+                {
+                    allow: ['warn', 'error', 'log'],
+                },
+            ],
+            'prefer-const': 'error',
+            'no-var': 'error',
+            'eqeqeq': ['error', 'always'],
+            'curly': ['error', 'multi-line'],
+            'prefer-arrow-callback': 'warn',
+            'prefer-template': 'warn',
+            'complexity': ['warn', 15],
+            'max-depth': ['warn', 4],
+        },
     },
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'error',
-      'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-        },
-      ],
-      '@typescript-eslint/consistent-type-imports': [
-        'error',
-        {
-          prefer: 'type-imports',
-        },
-      ],
-      'no-console': [
-        'warn',
-        {
-          allow: ['warn', 'error', 'log'],
-        },
-      ],
-      'prefer-const': 'error',
-      'no-var': 'error',
-      'eqeqeq': ['error', 'always'],
-      'curly': ['error', 'multi-line'],
-      'prefer-arrow-callback': 'warn',
-      'prefer-template': 'warn',
-      'complexity': ['warn', 15],
-      'max-depth': ['warn', 4],
-    },
-  },
 ];

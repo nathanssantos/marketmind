@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { calculateStochastic } from './stochastic';
 import type { Kline } from '@marketmind/types';
+import { describe, expect, it } from 'vitest';
+import { calculateStochastic } from './stochastic';
 
 const createMockKline = (high: number, low: number, close: number, index: number): Kline => ({
   openTime: new Date(2024, 0, index + 1).getTime(),

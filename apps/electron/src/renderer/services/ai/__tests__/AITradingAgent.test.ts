@@ -44,6 +44,7 @@ describe('AITradingAgent', () => {
       }),
       getWalletBalance: () => 10000,
       executeTrade: async () => 'trade-id-123',
+      detectSetups: () => [],
     };
     return new AITradingAgent(agentConfig);
   };

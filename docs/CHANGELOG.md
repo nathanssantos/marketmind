@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Backend Setup Detection Integration Complete** ✅
+  - All 13 algorithmic trading setup detectors migrated to backend
+  - SetupDetectionService orchestration layer (569 lines, trend filter, cooldown)
+  - Setup tRPC router with 6 endpoints: detectCurrent, detectRange, getConfig, updateConfig, getHistory, getStats
+  - Database schema: setup_detections table (17 columns, 5 indices)
+  - Auto-save detected setups with 24-hour expiration
+  - Setup caching with filters (symbol, setupType, direction, date range)
+  - Analytics endpoint (aggregations by type, direction, avg confidence/RR)
+  - Frontend hook: useBackendSetups (React Query integration)
+  - All 47 backend tests passing (100%)
+  - All 1,894 frontend tests passing (100%)
+  - **Backend Integration: 100% Complete** 🎉
+
 - **Backend Infrastructure with tRPC Integration** 🚀
   - Monorepo structure with pnpm workspaces (apps/backend, apps/electron, packages/*)
   - Backend server with Fastify 5.6.2 + tRPC 11.7.2 + Drizzle ORM 0.44.7

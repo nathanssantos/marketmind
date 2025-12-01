@@ -1,5 +1,5 @@
-import { trpc } from '../utils/trpc';
 import type { Interval } from '@marketmind/types';
+import { trpc } from '../utils/trpc';
 
 interface ListParams {
   symbol: string;

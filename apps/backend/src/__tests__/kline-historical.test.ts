@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { getIntervalMilliseconds, calculateStartTime } from '../services/binance-historical';
 import type { Interval } from '@marketmind/types';
+import { describe, expect, it } from 'vitest';
+import { calculateStartTime, getIntervalMilliseconds } from '../services/binance-historical';
 
 describe('Binance Historical Klines', () => {
   describe('getIntervalMilliseconds', () => {

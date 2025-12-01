@@ -5,6 +5,7 @@ import { useAIStore } from '@/renderer/store/aiStore';
 import { useTradingStore } from '@/renderer/store/tradingStore';
 import type { AITradingDecision, Kline } from '@shared/types';
 import { useCallback, useEffect, useRef } from 'react';
+import { useSetupDetection } from './useSetupDetection';
 
 interface UseAITradingOptions {
   symbol: string;
@@ -17,6 +18,12 @@ interface UseAITradingOptions {
 export const useAITrading = (options: UseAITradingOptions) => {
   const agentRef = useRef<AITradingAgent | null>(null);
   const aiServiceRef = useRef<AIService | null>(null);
+
+  const setupDetector = useSetupDetection({
+    symbol: options.symbol,
+    interval: options.timeframe as any,
+    enableRealtimeUpdates: false,
+  });
 
   const {
     isAutoTradingActive,
@@ -133,6 +140,7 @@ export const useAITrading = (options: UseAITradingOptions) => {
         getChartData,
         getWalletBalance,
         executeTrade,
+        detectSetups: setupDetector.detectSetups,
       };
 
       console.log('[useAITrading] Creating agent with config:', agentConfig);

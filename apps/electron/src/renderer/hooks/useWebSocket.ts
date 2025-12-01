@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 
 interface UseWebSocketOptions {
   url?: string;
@@ -15,6 +16,21 @@ interface WebSocketEvents {
   'order:cancelled': (data: { orderId: string }) => void;
   'position:update': (position: unknown) => void;
   'price:update': (data: { symbol: string; price: number; timestamp: number }) => void;
+  'setup-detected': (data: {
+    symbol: string;
+    interval: string;
+    setup: {
+      id: string;
+      setupType: string;
+      direction: 'LONG' | 'SHORT';
+      entryPrice: number;
+      stopLoss: number;
+      takeProfit: number;
+      confidence: number;
+      riskRewardRatio: number;
+      detectedAt: Date;
+    };
+  }) => void;
 }
 
 export const useWebSocket = (options: UseWebSocketOptions = {}) => {
@@ -75,6 +91,9 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     prices: (symbol: string) => {
       socketRef.current?.emit('subscribe:prices', symbol);
     },
+    setups: (userId: string) => {
+      socketRef.current?.emit('subscribe:setups', userId);
+    },
   };
 
   const unsubscribe = {
@@ -86,6 +105,9 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     },
     prices: (symbol: string) => {
       socketRef.current?.emit('unsubscribe:prices', symbol);
+    },
+    setups: (userId: string) => {
+      socketRef.current?.emit('unsubscribe:setups', userId);
     },
   };
 

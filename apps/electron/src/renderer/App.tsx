@@ -15,6 +15,7 @@ import { Toolbar } from './components/Layout/Toolbar';
 import { NewsDialog } from './components/News/NewsDialog';
 import { OnboardingDialog } from './components/Onboarding/OnboardingDialog';
 import { TrpcProvider } from './components/TrpcProvider';
+import { AutoAuth } from './components/Auth/AutoAuth';
 import { ErrorMessage } from './components/ui/ErrorMessage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
@@ -88,60 +89,62 @@ const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
 function App(): ReactElement {
   return (
     <TrpcProvider>
-      <ChakraProvider value={system}>
-        <Toaster toaster={toaster}>
-          {(toast) => {
-            const { t } = useTranslation();
-            return (
-              <Box
-                key={toast.id}
-                p={4}
-                bg={
-                  toast.type === 'error'
-                    ? 'red.500'
-                    : toast.type === 'success'
-                      ? 'green.500'
-                      : toast.type === 'warning'
-                        ? 'orange.500'
-                        : 'blue.500'
-                }
-                color="white"
-                borderRadius="md"
-                boxShadow="lg"
-                maxW="400px"
-                position="relative"
-              >
-                <IconButton
-                  aria-label={t('common.close')}
-                  size="xs"
-                  position="absolute"
-                  top={2}
-                  right={2}
-                  onClick={() => toaster.dismiss(toast.id)}
-                  variant="ghost"
+      <AutoAuth>
+        <ChakraProvider value={system}>
+          <Toaster toaster={toaster}>
+            {(toast) => {
+              const { t } = useTranslation();
+              return (
+                <Box
+                  key={toast.id}
+                  p={4}
+                  bg={
+                    toast.type === 'error'
+                      ? 'red.500'
+                      : toast.type === 'success'
+                        ? 'green.500'
+                        : toast.type === 'warning'
+                          ? 'orange.500'
+                          : 'blue.500'
+                  }
                   color="white"
-                  _hover={{ bg: 'whiteAlpha.200' }}
+                  borderRadius="md"
+                  boxShadow="lg"
+                  maxW="400px"
+                  position="relative"
                 >
-                  <LuX />
-                </IconButton>
-                <ChakraText fontWeight="bold" mb={1} pr={6}>
-                  {toast.title}
-                </ChakraText>
-                {toast.description && (
-                  <ChakraText fontSize="sm">{toast.description}</ChakraText>
-                )}
-              </Box>
-            );
-          }}
-        </Toaster>
-        <PatternHoverProvider>
-          <ChartProvider>
-            <PinnedControlsProvider>
-              <AppContent />
-            </PinnedControlsProvider>
-          </ChartProvider>
-        </PatternHoverProvider>
-      </ChakraProvider>
+                  <IconButton
+                    aria-label={t('common.close')}
+                    size="xs"
+                    position="absolute"
+                    top={2}
+                    right={2}
+                    onClick={() => toaster.dismiss(toast.id)}
+                    variant="ghost"
+                    color="white"
+                    _hover={{ bg: 'whiteAlpha.200' }}
+                  >
+                    <LuX />
+                  </IconButton>
+                  <ChakraText fontWeight="bold" mb={1} pr={6}>
+                    {toast.title}
+                  </ChakraText>
+                  {toast.description && (
+                    <ChakraText fontSize="sm">{toast.description}</ChakraText>
+                  )}
+                </Box>
+              );
+            }}
+          </Toaster>
+          <PatternHoverProvider>
+            <ChartProvider>
+              <PinnedControlsProvider>
+                <AppContent />
+              </PinnedControlsProvider>
+            </ChartProvider>
+          </PatternHoverProvider>
+        </ChakraProvider>
+      </AutoAuth>
     </TrpcProvider>
   );
 }

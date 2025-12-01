@@ -1,8 +1,8 @@
+import type { Interval } from '@marketmind/types';
+import { and, desc, eq } from 'drizzle-orm';
 import WebSocket from 'ws';
 import { db } from '../db';
 import { klines } from '../db/schema';
-import { eq, and, desc } from 'drizzle-orm';
-import type { Interval } from '@marketmind/types';
 import { logger } from './logger';
 
 interface BinanceKlineData {

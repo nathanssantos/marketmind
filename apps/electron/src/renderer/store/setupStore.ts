@@ -1,10 +1,8 @@
-import type { SetupDetectionConfig } from '@renderer/services/setupDetection';
-import {
-    createDefaultSetupDetectionConfig,
-} from '@renderer/services/setupDetection';
 import type { SetupType, TradingSetup } from '@shared/types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { SetupDetectionConfig } from './setupConfig';
+import { createDefaultSetupDetectionConfig } from './setupConfig';
 
 const PERCENTAGE_MULTIPLIER = 100;
 

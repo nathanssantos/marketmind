@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import { hash, verify } from '@node-rs/argon2';
+import { describe, expect, it } from 'vitest';
 
 describe('Auth Service', () => {
   describe('Password Hashing', () => {

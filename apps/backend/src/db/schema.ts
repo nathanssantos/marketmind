@@ -1,6 +1,7 @@
 import {
     bigint,
     boolean,
+    index,
     integer,
     numeric,
     pgTable,
@@ -163,6 +164,34 @@ export const aiTrades = pgTable('ai_trades', {
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
 });
 
+export const setupDetections = pgTable('setup_detections', {
+  id: varchar({ length: 255 }).primaryKey(),
+  userId: varchar('user_id', { length: 255 })
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  symbol: varchar({ length: 20 }).notNull(),
+  interval: varchar({ length: 5 }).notNull(),
+  setupType: varchar('setup_type', { length: 100 }).notNull(),
+  direction: varchar({ length: 10 }).$type<'LONG' | 'SHORT'>().notNull(),
+  entryPrice: numeric('entry_price', { precision: 20, scale: 8 }).notNull(),
+  stopLoss: numeric('stop_loss', { precision: 20, scale: 8 }).notNull(),
+  takeProfit: numeric('take_profit', { precision: 20, scale: 8 }).notNull(),
+  confidence: integer().notNull(),
+  riskReward: numeric('risk_reward', { precision: 10, scale: 2 }),
+  metadata: text(),
+  detectedAt: timestamp('detected_at', { mode: 'date' }).defaultNow().notNull(),
+  expiresAt: timestamp('expires_at', { mode: 'date' }).notNull(),
+  viewed: boolean().default(false),
+  notified: boolean().default(false),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('setup_detections_user_id_idx').on(table.userId),
+  symbolIntervalIdx: index('setup_detections_symbol_interval_idx').on(table.symbol, table.interval),
+  setupTypeIdx: index('setup_detections_setup_type_idx').on(table.setupType),
+  detectedAtIdx: index('setup_detections_detected_at_idx').on(table.detectedAt),
+  expiresAtIdx: index('setup_detections_expires_at_idx').on(table.expiresAt),
+}));
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
@@ -186,3 +215,6 @@ export type NewAIConversation = typeof aiConversations.$inferInsert;
 
 export type AITrade = typeof aiTrades.$inferSelect;
 export type NewAITrade = typeof aiTrades.$inferInsert;
+
+export type SetupDetection = typeof setupDetections.$inferSelect;
+export type NewSetupDetection = typeof setupDetections.$inferInsert;

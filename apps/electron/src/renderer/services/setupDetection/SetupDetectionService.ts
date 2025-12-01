@@ -90,6 +90,31 @@ export class SetupDetectionService {
     console.log(`[SetupDetection ${timestamp}]`, ...args);
   }
 
+  /**
+   * @deprecated Use useSetupDetection hook instead for backend-powered setup detection with real-time updates.
+   * 
+   * Migration Guide:
+   * ```typescript
+   * // Old approach (deprecated):
+   * const setupService = new SetupDetectionService(setupConfig);
+   * const setups = setupService.detectSetups(klines);
+   * 
+   * // New approach (recommended):
+   * const setupDetector = useSetupDetection({
+   *   symbol: 'BTCUSDT',
+   *   interval: '1h',
+   *   enableRealtimeUpdates: true,
+   * });
+   * const setups = setupDetector.detectSetups(klines);
+   * ```
+   * 
+   * Benefits of migration:
+   * - Real-time WebSocket updates when new setups are detected
+   * - Persistent storage in PostgreSQL + TimescaleDB
+   * - Automatic cache invalidation with React Query
+   * - Type-safe tRPC API integration
+   * - Historical setup tracking and analytics
+   */
   constructor(config?: Partial<SetupDetectionConfig>) {
     this.config = {
       setup91: config?.setup91 ?? createDefault91Config(),

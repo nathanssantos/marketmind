@@ -1,4 +1,4 @@
-import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest';
 
 beforeAll(async () => {
   console.log('🧪 Backend test suite starting...');
@@ -14,4 +14,5 @@ beforeEach(() => {
 afterEach(() => {
 });
 
-export {};
+export { };
+

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useSymbolSearch } from './useSymbolSearch';
-import { MarketDataService } from '../services/market/MarketDataService';
+import type { MarketDataService } from '../services/market/MarketDataService';
 import type { Symbol } from '@shared/types';
 
 describe('useSymbolSearch', () => {

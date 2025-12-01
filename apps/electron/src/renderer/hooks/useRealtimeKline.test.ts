@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MarketDataService } from '../services/market/MarketDataService';
+import type { MarketDataService } from '../services/market/MarketDataService';
 import { useRealtimeKline } from './useRealtimeKline';
 
 describe('useRealtimeKline', () => {

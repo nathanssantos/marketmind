@@ -1,12 +1,11 @@
-import { SetupDetectionService } from '@/renderer/services/setupDetection';
 import type { ChartData } from '@/renderer/store/aiStore';
 import { optimizeKlines } from '@/renderer/utils/klineOptimizer';
 import type {
-    AITrade,
-    AITradingConfig,
-    AITradingDecision,
-    Kline,
-    TradingSetup,
+  AITrade,
+  AITradingConfig,
+  AITradingDecision,
+  Kline,
+  TradingSetup,
 } from '@shared/types';
 import { getKlineClose } from '@shared/utils';
 import { nanoid } from 'nanoid';
@@ -21,12 +20,13 @@ export interface AITradingAgentConfig {
   getChartData: () => ChartData | null;
   getWalletBalance: () => number;
   executeTrade: (decision: AITradingDecision, quantity: number) => Promise<string | null>;
+  detectSetups?: (klines: Kline[]) => TradingSetup[];
 }
 
 export class AITradingAgent {
   private config: AITradingConfig;
   private aiService: AIService | null = null;
-  private setupDetectionService: SetupDetectionService;
+  private detectSetups: (klines: Kline[]) => TradingSetup[];
   private analysisInterval: NodeJS.Timeout | null = null;
   private lastAnalysisTime: Date | null = null;
   private tradesCountToday: number = 0;
@@ -45,7 +45,7 @@ export class AITradingAgent {
 
   constructor(agentConfig: AITradingAgentConfig) {
     this.config = agentConfig.config;
-    this.setupDetectionService = new SetupDetectionService();
+    this.detectSetups = agentConfig.detectSetups ?? (() => []);
     if (agentConfig.onTrade) this.onTrade = agentConfig.onTrade;
     if (agentConfig.onError) this.onError = agentConfig.onError;
     this.getCurrentPrice = agentConfig.getCurrentPrice;
@@ -204,7 +204,7 @@ export class AITradingAgent {
     const optimizedKlines = optimizeKlines(chartData.klines);
     
     const detectedSetups = chartData.klines.length >= 50 
-      ? this.setupDetectionService.detectSetups(chartData.klines)
+      ? this.detectSetups(chartData.klines)
       : [];
     
     const prompt = this.buildTradingPrompt(chartData, optimizedKlines, detectedSetups);
