@@ -2,7 +2,37 @@
 
 Scripts úteis para gerenciamento do repositório e desenvolvimento.
 
+## ⚡ Setup Rápido (RECOMENDADO)
+
+```bash
+./scripts/setup.sh
+```
+
+**Setup automático completo que:**
+- ✅ Verifica Node.js 20+ e pnpm 9+
+- ✅ Instala dependências do monorepo
+- ✅ Cria arquivos .env (frontend + backend)
+- ✅ Gera keys de segurança automaticamente
+- ✅ Configura PostgreSQL (se disponível)
+- ✅ Executa migrations do banco
+- ✅ Compila packages compartilhados
+- ✅ Roda testes para validar setup
+- ✅ Mostra checklist e próximos passos
+
+**Após executar:**
+1. Configure pelo menos 1 API key de IA em `.env`
+2. Inicie backend: `pnpm --filter @marketmind/backend dev`
+3. Inicie frontend: `pnpm --filter @marketmind/electron dev`
+
+📚 Documentação completa: [docs/SETUP_GUIDE.md](../docs/SETUP_GUIDE.md)
+
+---
+
 ## 📜 Scripts Disponíveis
+
+### `setup.sh` ⭐
+
+Script de setup automático completo do projeto.
 
 ### `clear-storage.mjs`
 

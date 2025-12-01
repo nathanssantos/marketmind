@@ -1,9 +1,6 @@
 import js from '@eslint/js';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
-import reactPlugin from 'eslint-plugin-react';
-import reactHooksPlugin from 'eslint-plugin-react-hooks';
-import reactRefreshPlugin from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 
 export default [
@@ -13,46 +10,28 @@ export default [
             '**/dist-electron/**',
             '**/node_modules/**',
             '**/build/**',
+            '**/coverage/**',
             '**/*.config.js',
             '**/*.config.ts',
             '.eslintrc.cjs',
-            'coverage/**',
-            'scripts/**',
         ],
     },
     js.configs.recommended,
     {
-        files: ['**/*.{js,jsx,mjs,cjs,ts,tsx}'],
-        ignores: ['**/*.test.{ts,tsx}', '**/*.browser.test.{ts,tsx}', 'src/tests/**'],
+        files: ['**/*.{js,mjs,cjs,ts}'],
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',
             parser: tsParser,
-            parserOptions: {
-                project: ['./tsconfig.json', './tsconfig.node.json'],
-                ecmaFeatures: {
-                    jsx: true,
-                },
-            },
             globals: {
-                ...globals.browser,
                 ...globals.es2021,
                 ...globals.node,
             },
         },
         plugins: {
             '@typescript-eslint': tsPlugin,
-            'react': reactPlugin,
-            'react-hooks': reactHooksPlugin,
-            'react-refresh': reactRefreshPlugin,
-        },
-        settings: {
-            react: {
-                version: 'detect',
-            },
         },
         rules: {
-            // TypeScript specific rules
             '@typescript-eslint/no-explicit-any': 'error',
             'no-unused-vars': 'off',
             '@typescript-eslint/no-unused-vars': [
@@ -62,39 +41,12 @@ export default [
                     varsIgnorePattern: '^_',
                 },
             ],
-            '@typescript-eslint/explicit-function-return-type': [
-                'warn',
-                {
-                    allowExpressions: true,
-                    allowTypedFunctionExpressions: true,
-                },
-            ],
-            '@typescript-eslint/no-floating-promises': 'error',
-            '@typescript-eslint/no-misused-promises': 'error',
-            '@typescript-eslint/await-thenable': 'error',
-            '@typescript-eslint/no-unnecessary-type-assertion': 'error',
-            '@typescript-eslint/prefer-nullish-coalescing': 'warn',
-            '@typescript-eslint/prefer-optional-chain': 'warn',
             '@typescript-eslint/consistent-type-imports': [
                 'error',
                 {
                     prefer: 'type-imports',
                 },
             ],
-
-            // React specific rules
-            'react/react-in-jsx-scope': 'off',
-            'react/prop-types': 'off',
-            'react-hooks/rules-of-hooks': 'error',
-            'react-hooks/exhaustive-deps': 'warn',
-            'react-refresh/only-export-components': [
-                'warn',
-                {
-                    allowConstantExport: true,
-                },
-            ],
-
-            // General rules
             'no-console': [
                 'warn',
                 {
@@ -107,60 +59,8 @@ export default [
             'curly': ['error', 'multi-line'],
             'prefer-arrow-callback': 'warn',
             'prefer-template': 'warn',
-            'no-magic-numbers': [
-                'warn',
-                {
-                    ignore: [0, 1, -1],
-                    ignoreArrayIndexes: true,
-                    ignoreDefaultValues: true,
-                    enforceConst: true,
-                },
-            ],
-            'max-lines-per-function': 'off',
             'complexity': ['warn', 15],
             'max-depth': ['warn', 4],
-        },
-    },
-    {
-        files: ['**/*.test.{ts,tsx}', '**/*.browser.test.{ts,tsx}', 'src/tests/**'],
-        languageOptions: {
-            ecmaVersion: 'latest',
-            sourceType: 'module',
-            parser: tsParser,
-            parserOptions: {
-                ecmaFeatures: {
-                    jsx: true,
-                },
-            },
-            globals: {
-                ...globals.browser,
-                ...globals.es2021,
-                ...globals.node,
-            },
-        },
-        plugins: {
-            '@typescript-eslint': tsPlugin,
-            'react': reactPlugin,
-            'react-hooks': reactHooksPlugin,
-        },
-        settings: {
-            react: {
-                version: 'detect',
-            },
-        },
-        rules: {
-            'no-unused-vars': 'off',
-            '@typescript-eslint/no-unused-vars': [
-                'error',
-                {
-                    argsIgnorePattern: '^_',
-                    varsIgnorePattern: '^_',
-                },
-            ],
-            '@typescript-eslint/no-explicit-any': 'warn',
-            'no-console': 'off',
-            'react/react-in-jsx-scope': 'off',
-            'react/prop-types': 'off',
         },
     },
 ];
