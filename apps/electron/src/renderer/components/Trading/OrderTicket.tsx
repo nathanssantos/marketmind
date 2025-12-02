@@ -4,6 +4,8 @@ import { Button } from '@renderer/components/ui/button';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { Select } from '@renderer/components/ui/select';
 import { useChartContext } from '@renderer/context/ChartContext';
+import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
+import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useTradingStore } from '@renderer/store/tradingStore';
 import { getKlineClose } from '@shared/utils';
 import { useEffect, useState } from 'react';
@@ -19,12 +21,47 @@ export const OrderTicket = () => {
   const currentPrice = lastKline ? getKlineClose(lastKline) : undefined;
   const symbol = chartData?.symbol || 'UNKNOWN';
 
-  const wallets = useTradingStore((state) => state.wallets);
-  const activeWalletId = useTradingStore((state) => state.activeWalletId);
-  const addOrder = useTradingStore((state) => state.addOrder);
+  const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
+
+  const simulatorWallets = useTradingStore((state) => state.wallets);
+  const simulatorActiveWalletId = useTradingStore((state) => state.activeWalletId);
+  const addSimulatorOrder = useTradingStore((state) => state.addOrder);
   const getQuantityForSymbol = useTradingStore((state) => state.getQuantityForSymbol);
   const setQuantityForSymbol = useTradingStore((state) => state.setQuantityForSymbol);
 
+  const { wallets: backendWallets } = useBackendWallet();
+  const backendActiveWalletId = backendWallets[0]?.id;
+  const { createOrder: createBackendOrder } = useBackendTrading(
+    backendActiveWalletId || '',
+    symbol
+  );
+
+  const wallets = isSimulatorActive ? simulatorWallets : backendWallets.map((w) => ({
+    id: w.id,
+    name: w.name,
+    balance: parseFloat(w.currentBalance || '0'),
+    initialBalance: parseFloat(w.initialBalance || '0'),
+    currency: (w.currency || 'USDT') as any,
+    createdAt: new Date(w.createdAt),
+    performance: [],
+    makerCommission: 0,
+    takerCommission: 0,
+    buyerCommission: 0,
+    sellerCommission: 0,
+    commissionRates: { maker: '0', taker: '0', buyer: '0', seller: '0' },
+    canTrade: true,
+    canWithdraw: true,
+    canDeposit: true,
+    brokered: false,
+    requireSelfTradePrevention: false,
+    preventSor: false,
+    updateTime: Date.now(),
+    accountType: 'SPOT' as const,
+    balances: [],
+    permissions: ['SPOT'],
+  }));
+
+  const activeWalletId = isSimulatorActive ? simulatorActiveWalletId : backendActiveWalletId;
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
   const symbolQuantity = getQuantityForSymbol(symbol);
 
@@ -46,7 +83,7 @@ export const OrderTicket = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!activeWallet || !quantity || !entryPrice) return;
 
     const qty = Number(quantity);
@@ -62,26 +99,40 @@ export const OrderTicket = () => {
     const cost = qty * entry;
     if (cost > activeWallet.balance) return;
 
-    const subType: 'limit' | 'stop' = currentPrice !== undefined
-      ? (orderType === 'long'
-        ? (entry < currentPrice ? 'limit' : 'stop')
-        : (entry > currentPrice ? 'limit' : 'stop'))
-      : 'limit';
+    if (isSimulatorActive) {
+      const subType: 'limit' | 'stop' = currentPrice !== undefined
+        ? (orderType === 'long'
+          ? (entry < currentPrice ? 'limit' : 'stop')
+          : (entry > currentPrice ? 'limit' : 'stop'))
+        : 'limit';
 
-    const orderData = {
-      walletId: activeWallet.id,
-      symbol,
-      orderDirection: orderType,
-      subType,
-      status: 'NEW' as const,
-      quantity: qty,
-      entryPrice: entry,
-      ...(stop !== undefined && { stopLoss: stop }),
-      ...(target !== undefined && { takeProfit: target }),
-      ...(currentPrice !== undefined && { currentPrice }),
-    };
+      const orderData = {
+        walletId: activeWallet.id,
+        symbol,
+        orderDirection: orderType,
+        subType,
+        status: 'NEW' as const,
+        quantity: qty,
+        entryPrice: entry,
+        ...(stop !== undefined && { stopLoss: stop }),
+        ...(target !== undefined && { takeProfit: target }),
+        ...(currentPrice !== undefined && { currentPrice }),
+      };
 
-    addOrder(orderData);
+      addSimulatorOrder(orderData);
+    } else {
+      if (!activeWalletId) return;
+
+      await createBackendOrder({
+        walletId: activeWalletId,
+        symbol,
+        side: orderType === 'long' ? 'BUY' : 'SELL',
+        type: 'LIMIT',
+        quantity: qty.toString(),
+        price: entry.toString(),
+        ...(stop !== undefined && { stopPrice: stop.toString() }),
+      });
+    }
 
     setEntryPrice('');
     setStopLoss('');

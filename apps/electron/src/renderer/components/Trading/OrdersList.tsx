@@ -2,8 +2,10 @@ import { Badge, Box, Flex, IconButton, Portal, Stack, Text } from '@chakra-ui/re
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import { Select } from '@renderer/components/ui/select';
+import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
+import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useTradingStore } from '@renderer/store/tradingStore';
-import type { OrderStatus } from '@shared/types/trading';
+import type { Order, OrderStatus } from '@shared/types/trading';
 import {
   getOrderId,
   getOrderPrice,
@@ -12,18 +14,101 @@ import {
   isOrderLong,
   isOrderPending,
 } from '@shared/utils';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import { LuX } from 'react-icons/lu';
 
 export const OrdersList = () => {
   const { t } = useTranslation();
-  const wallets = useTradingStore((state) => state.wallets);
-  const activeWalletId = useTradingStore((state) => state.activeWalletId);
-  const orders = useTradingStore((state) => state.orders);
-  const cancelOrder = useTradingStore((state) => state.cancelOrder);
-  const closeOrder = useTradingStore((state) => state.closeOrder);
+  const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
+
+  const simulatorWallets = useTradingStore((state) => state.wallets);
+  const simulatorActiveWalletId = useTradingStore((state) => state.activeWalletId);
+  const simulatorOrders = useTradingStore((state) => state.orders);
+  const cancelSimulatorOrder = useTradingStore((state) => state.cancelOrder);
+  const closeSimulatorOrder = useTradingStore((state) => state.closeOrder);
+
+  const { wallets: backendWallets } = useBackendWallet();
+  const backendActiveWalletId = backendWallets[0]?.id;
+  const { orders: backendOrdersData, cancelOrder: cancelBackendOrder } = useBackendTrading(
+    backendActiveWalletId || '',
+    undefined
+  );
+
+  const backendOrders: Order[] = useMemo(() => {
+    return backendOrdersData.map((o): Order => ({
+      symbol: o.symbol,
+      orderId: o.orderId,
+      orderListId: 0,
+      clientOrderId: '',
+      price: o.price || '0',
+      origQty: o.origQty || '0',
+      executedQty: o.executedQty || '0',
+      cummulativeQuoteQty: '0',
+      status: (o.status || 'NEW') as any,
+      timeInForce: (o.timeInForce || 'GTC') as any,
+      type: (o.type || 'LIMIT') as any,
+      side: o.side as any,
+      time: typeof o.time === 'number' ? o.time : Date.now(),
+      updateTime: typeof o.updateTime === 'number' ? o.updateTime : Date.now(),
+      isWorking: o.status === 'NEW' || o.status === 'PARTIALLY_FILLED',
+      origQuoteOrderQty: '0',
+      id: o.orderId.toString(),
+      walletId: o.walletId,
+      orderDirection: o.side === 'BUY' ? ('long' as const) : ('short' as const),
+      entryPrice: parseFloat(o.price || '0'),
+      quantity: parseFloat(o.origQty || '0'),
+      createdAt: new Date(o.createdAt),
+    }));
+  }, [backendOrdersData]);
+
+  const wallets = isSimulatorActive ? simulatorWallets : backendWallets.map((w) => ({
+    id: w.id,
+    name: w.name,
+    balance: parseFloat(w.currentBalance || '0'),
+    initialBalance: parseFloat(w.initialBalance || '0'),
+    currency: (w.currency || 'USDT') as any,
+    createdAt: new Date(w.createdAt),
+    performance: [],
+    makerCommission: 0,
+    takerCommission: 0,
+    buyerCommission: 0,
+    sellerCommission: 0,
+    commissionRates: { maker: '0', taker: '0', buyer: '0', seller: '0' },
+    canTrade: true,
+    canWithdraw: true,
+    canDeposit: true,
+    brokered: false,
+    requireSelfTradePrevention: false,
+    preventSor: false,
+    updateTime: Date.now(),
+    accountType: 'SPOT' as const,
+    balances: [],
+    permissions: ['SPOT'],
+  }));
+
+  const activeWalletId = isSimulatorActive ? simulatorActiveWalletId : backendActiveWalletId;
+  const orders = isSimulatorActive ? simulatorOrders : backendOrders;
+  const cancelOrder = async (id: string) => {
+    if (isSimulatorActive) {
+      cancelSimulatorOrder(id);
+    } else {
+      const order = orders.find(o => o.id === id);
+      if (order && activeWalletId) {
+        await cancelBackendOrder({
+          walletId: activeWalletId,
+          symbol: order.symbol,
+          orderId: order.orderId || 0,
+        });
+      }
+    }
+  };
+  const closeOrder = (id: string, price: number) => {
+    if (isSimulatorActive) {
+      closeSimulatorOrder(id, price);
+    }
+  };
 
   const [filterStatus, setFilterStatus] = useState<OrderStatus | 'all'>('all');
 

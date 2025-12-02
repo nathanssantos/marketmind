@@ -5,6 +5,7 @@ import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume, getOrderId, i
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
+import { AutoAuth } from './components/Auth/AutoAuth';
 import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
@@ -14,8 +15,8 @@ import { MainLayout } from './components/Layout/MainLayout';
 import { Toolbar } from './components/Layout/Toolbar';
 import { NewsDialog } from './components/News/NewsDialog';
 import { OnboardingDialog } from './components/Onboarding/OnboardingDialog';
+import { BacktestDialog } from './components/Trading/BacktestDialog';
 import { TrpcProvider } from './components/TrpcProvider';
-import { AutoAuth } from './components/Auth/AutoAuth';
 import { ErrorMessage } from './components/ui/ErrorMessage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
@@ -188,6 +189,7 @@ function AppContent(): ReactElement {
   const [isChatOpen, setIsChatOpen] = useLocalStorage('chat-sidebar-open', true);
   const [isTradingOpen, setIsTradingOpen] = useLocalStorage('trading-sidebar-open', false);
   const [isNewsOpen, setIsNewsOpen] = useLocalStorage('news-sidebar-open', false);
+  const [isBacktestOpen, setIsBacktestOpen] = useState(false);
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
     'marketmind:movingAverages',
     DEFAULT_MOVING_AVERAGES
@@ -231,6 +233,10 @@ function AppContent(): ReactElement {
   const toggleTrading = useCallback(() => {
     setIsTradingOpen((prev) => !prev);
   }, [setIsTradingOpen]);
+
+  const toggleBacktest = useCallback(() => {
+    setIsBacktestOpen((prev) => !prev);
+  }, []);
 
   const toggleNews = useCallback(() => {
     setIsNewsOpen((prev) => !prev);
@@ -529,6 +535,7 @@ function AppContent(): ReactElement {
         isTradingOpen={isTradingOpen}
         isChatOpen={isChatOpen}
         isNewsOpen={isNewsOpen}
+        isBacktestOpen={isBacktestOpen}
         onSymbolChange={setSymbol}
         onTimeframeChange={setTimeframe}
         onChartTypeChange={setChartType}
@@ -542,6 +549,7 @@ function AppContent(): ReactElement {
         onShowRSIChange={setShowRSI}
         onMovingAveragesChange={setMovingAverages}
         onToggleSimulator={toggleSimulator}
+        onToggleBacktest={toggleBacktest}
         onToggleTrading={toggleTrading}
         onToggleChat={toggleChat}
         onToggleNews={toggleNews}
@@ -614,6 +622,11 @@ function AppContent(): ReactElement {
         onClose={toggleNews}
         symbols={[extractSymbolCode(symbol)]}
         marketService={marketService}
+      />
+
+      <BacktestDialog
+        isOpen={isBacktestOpen}
+        onClose={toggleBacktest}
       />
 
       <UpdateNotification />

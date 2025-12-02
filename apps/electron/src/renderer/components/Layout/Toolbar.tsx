@@ -15,6 +15,7 @@ import {
   LuCrosshair,
   LuDollarSign,
   LuGrid3X3,
+  LuHistory,
   LuLightbulb,
   LuMessageSquare,
   LuNewspaper,
@@ -49,6 +50,7 @@ export interface ToolbarProps {
   isTradingOpen: boolean;
   isChatOpen: boolean;
   isNewsOpen: boolean;
+  isBacktestOpen: boolean;
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
   onChartTypeChange: (type: 'kline' | 'line') => void;
@@ -65,6 +67,7 @@ export interface ToolbarProps {
   onToggleTrading: () => void;
   onToggleChat: () => void;
   onToggleNews: () => void;
+  onToggleBacktest: () => void;
   onDetectPatterns: () => void;
 }
 
@@ -86,6 +89,7 @@ export const Toolbar = memo(({
   isTradingOpen,
   isChatOpen,
   isNewsOpen,
+  isBacktestOpen,
   onSymbolChange,
   onTimeframeChange,
   onChartTypeChange,
@@ -102,6 +106,7 @@ export const Toolbar = memo(({
   onToggleTrading,
   onToggleChat,
   onToggleNews,
+  onToggleBacktest,
   onDetectPatterns,
 }: ToolbarProps) => {
   const { t } = useTranslation();
@@ -399,6 +404,17 @@ export const Toolbar = memo(({
                   variant={isAutoTradingActive ? 'solid' : 'ghost'}
                 >
                   <LuBot />
+                </IconButton>
+              </TooltipWrapper>
+              <TooltipWrapper label="Backtest Strategy" showArrow placement="top">
+                <IconButton
+                  size="2xs"
+                  aria-label="Backtest Strategy"
+                  onClick={onToggleBacktest}
+                  colorPalette={isBacktestOpen ? 'purple' : 'gray'}
+                  variant={isBacktestOpen ? 'solid' : 'ghost'}
+                >
+                  <LuHistory />
                 </IconButton>
               </TooltipWrapper>
             </HStack>

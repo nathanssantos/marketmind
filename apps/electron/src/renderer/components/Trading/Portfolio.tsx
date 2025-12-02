@@ -1,15 +1,67 @@
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
+import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useTradingStore } from '@renderer/store/tradingStore';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const Portfolio = () => {
   const { t } = useTranslation();
-  const wallets = useTradingStore((state) => state.wallets);
-  const activeWalletId = useTradingStore((state) => state.activeWalletId);
-  const getPositions = useTradingStore((state) => state.getPositions);
+  const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
 
+  const simulatorWallets = useTradingStore((state) => state.wallets);
+  const simulatorActiveWalletId = useTradingStore((state) => state.activeWalletId);
+  const getSimulatorPositions = useTradingStore((state) => state.getPositions);
+
+  const { wallets: backendWallets } = useBackendWallet();
+  const backendActiveWalletId = backendWallets[0]?.id;
+  const { positions: backendPositionsData } = useBackendTrading(
+    backendActiveWalletId || '',
+    undefined
+  );
+
+  const backendPositions = useMemo(() => {
+    return backendPositionsData.map((p) => ({
+      symbol: p.symbol,
+      quantity: parseFloat(p.entryQty || '0'),
+      avgPrice: parseFloat(p.entryPrice || '0'),
+      currentPrice: parseFloat(p.currentPrice || p.entryPrice || '0'),
+      pnl: 0,
+      pnlPercent: 0,
+      orders: [p.id],
+    }));
+  }, [backendPositionsData]);
+
+  const wallets = isSimulatorActive ? simulatorWallets : backendWallets.map((w) => ({
+    id: w.id,
+    name: w.name,
+    balance: parseFloat(w.currentBalance || '0'),
+    initialBalance: parseFloat(w.initialBalance || '0'),
+    currency: (w.currency || 'USDT') as any,
+    createdAt: new Date(w.createdAt),
+    performance: [],
+    makerCommission: 0,
+    takerCommission: 0,
+    buyerCommission: 0,
+    sellerCommission: 0,
+    commissionRates: { maker: '0', taker: '0', buyer: '0', seller: '0' },
+    canTrade: true,
+    canWithdraw: true,
+    canDeposit: true,
+    brokered: false,
+    requireSelfTradePrevention: false,
+    preventSor: false,
+    updateTime: Date.now(),
+    accountType: 'SPOT' as const,
+    balances: [],
+    permissions: ['SPOT'],
+  }));
+
+  const activeWalletId = isSimulatorActive ? simulatorActiveWalletId : backendActiveWalletId;
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
-  const positions = activeWallet ? getPositions(activeWallet.id) : [];
+  const positions = isSimulatorActive
+    ? (activeWallet ? getSimulatorPositions(activeWallet.id) : [])
+    : backendPositions;
 
   const totalPnL = positions.reduce((sum, pos) => sum + pos.pnl, 0);
   const totalPnLPercent = positions.reduce((sum, pos) => sum + pos.pnlPercent, 0) / (positions.length || 1);

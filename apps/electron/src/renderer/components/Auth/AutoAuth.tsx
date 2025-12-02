@@ -5,7 +5,7 @@ const DEV_USER_EMAIL = 'dev@marketmind.local';
 const DEV_USER_PASSWORD = 'dev123456';
 
 export const AutoAuth = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser, isLoading, isAuthenticated, register, login } = useBackendAuth();
+  const { isLoading, isAuthenticated, register, login } = useBackendAuth();
 
   useEffect(() => {
     const autoLogin = async () => {

@@ -1,9 +1,10 @@
 import { Box, Flex, IconButton, Portal, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import { Button } from '@renderer/components/ui/button';
+import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useTradingStore } from '@renderer/store/tradingStore';
 import type { Wallet } from '@shared/types/trading';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import { LuPlus, LuTrash2, LuTrendingUp } from 'react-icons/lu';
@@ -12,11 +13,80 @@ import { WalletPerformanceDialog } from './WalletPerformanceDialog';
 
 export const WalletManager = () => {
   const { t } = useTranslation();
-  const wallets = useTradingStore((state) => state.wallets);
-  const activeWalletId = useTradingStore((state) => state.activeWalletId);
-  const addWallet = useTradingStore((state) => state.addWallet);
-  const setActiveWallet = useTradingStore((state) => state.setActiveWallet);
-  const deleteWallet = useTradingStore((state) => state.deleteWallet);
+  const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
+
+  const simulatorWallets = useTradingStore((state) => state.wallets);
+  const simulatorActiveWalletId = useTradingStore((state) => state.activeWalletId);
+  const addSimulatorWallet = useTradingStore((state) => state.addWallet);
+  const setSimulatorActiveWallet = useTradingStore((state) => state.setActiveWallet);
+  const deleteSimulatorWallet = useTradingStore((state) => state.deleteWallet);
+
+  const {
+    wallets: backendWalletsData,
+    isLoading: isLoadingBackendWallets,
+    deleteWallet: deleteBackendWallet,
+    isDeleting: isDeletingBackendWallet
+  } = useBackendWallet();
+
+  const backendWallets = useMemo(() => {
+    return backendWalletsData.map((w): Wallet => ({
+      id: w.id,
+      name: w.name,
+      balance: parseFloat(w.currentBalance || '0'),
+      initialBalance: parseFloat(w.initialBalance || '0'),
+      currency: (w.currency || 'USDT') as 'USD' | 'BRL' | 'EUR' | 'USDT' | 'BTC' | 'ETH',
+      createdAt: new Date(w.createdAt),
+      performance: [],
+      makerCommission: 0,
+      takerCommission: 0,
+      buyerCommission: 0,
+      sellerCommission: 0,
+      commissionRates: {
+        maker: '0',
+        taker: '0',
+        buyer: '0',
+        seller: '0',
+      },
+      canTrade: true,
+      canWithdraw: true,
+      canDeposit: true,
+      brokered: false,
+      requireSelfTradePrevention: false,
+      preventSor: false,
+      updateTime: Date.now(),
+      accountType: 'SPOT',
+      balances: [],
+      permissions: ['SPOT'],
+    }));
+  }, [backendWalletsData]);
+
+  const wallets = isSimulatorActive ? simulatorWallets : backendWallets;
+  const activeWalletId = isSimulatorActive ? simulatorActiveWalletId : null;
+  const isLoading = !isSimulatorActive && isLoadingBackendWallets;
+
+  const handleAddWallet = (params: {
+    name: string;
+    initialBalance: number;
+    currency: 'USD' | 'BRL' | 'EUR' | 'USDT' | 'BTC' | 'ETH';
+  }) => {
+    if (isSimulatorActive) {
+      addSimulatorWallet(params);
+    }
+  };
+
+  const handleSetActiveWallet = (id: string) => {
+    if (isSimulatorActive) {
+      setSimulatorActiveWallet(id);
+    }
+  };
+
+  const handleDeleteWallet = async (id: string) => {
+    if (isSimulatorActive) {
+      deleteSimulatorWallet(id);
+    } else {
+      await deleteBackendWallet(id);
+    }
+  };
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showPerformanceDialog, setShowPerformanceDialog] = useState(false);
@@ -28,21 +98,39 @@ export const WalletManager = () => {
         <Text fontSize="sm" fontWeight="bold">
           {t('trading.wallets.title')}
         </Text>
-        <Button
-          size="2xs"
-          colorPalette="blue"
-          onClick={() => setShowCreateDialog(true)}
-        >
-          <LuPlus />
-          {t('trading.wallets.create')}
-        </Button>
+        {isSimulatorActive && (
+          <Button
+            size="2xs"
+            colorPalette="blue"
+            onClick={() => setShowCreateDialog(true)}
+          >
+            <LuPlus />
+            {t('trading.wallets.create')}
+          </Button>
+        )}
       </Flex>
 
+      {!isSimulatorActive && (
+        <Box p={3} bg="blue.50" borderRadius="md" mb={2} _dark={{ bg: 'blue.900' }}>
+          <Text fontSize="xs" color="blue.600" _dark={{ color: 'blue.300' }}>
+            {t('trading.wallets.realMode')}
+          </Text>
+        </Box>
+      )}
+
       <Box maxH="calc(100vh - 250px)" overflowY="auto">
-        {wallets.length === 0 ? (
+        {isLoading ? (
           <Box p={4} textAlign="center">
             <Text fontSize="sm" color="fg.muted">
-              {t('trading.wallets.empty')}
+              {t('common.loading')}
+            </Text>
+          </Box>
+        ) : wallets.length === 0 ? (
+          <Box p={4} textAlign="center">
+            <Text fontSize="sm" color="fg.muted">
+              {isSimulatorActive
+                ? t('trading.wallets.empty')
+                : t('trading.wallets.emptyReal')}
             </Text>
           </Box>
         ) : (
@@ -52,32 +140,38 @@ export const WalletManager = () => {
                 key={wallet.id}
                 wallet={wallet}
                 isActive={wallet.id === activeWalletId}
-                onSelect={() => setActiveWallet(wallet.id)}
-                onDelete={() => deleteWallet(wallet.id)}
+                onSelect={() => handleSetActiveWallet(wallet.id)}
+                onDelete={() => handleDeleteWallet(wallet.id)}
                 onViewPerformance={() => {
                   setSelectedWalletId(wallet.id);
                   setShowPerformanceDialog(true);
                 }}
+                isSimulatorMode={isSimulatorActive}
+                isDeleting={!isSimulatorActive && isDeletingBackendWallet}
               />
             ))}
           </Stack>
         )}
       </Box>
 
-      <CreateWalletDialog
-        isOpen={showCreateDialog}
-        onClose={() => setShowCreateDialog(false)}
-        onCreate={addWallet}
-      />
+      {isSimulatorActive && (
+        <CreateWalletDialog
+          isOpen={showCreateDialog}
+          onClose={() => setShowCreateDialog(false)}
+          onCreate={handleAddWallet}
+        />
+      )}
 
-      <WalletPerformanceDialog
-        isOpen={showPerformanceDialog}
-        onClose={() => {
-          setShowPerformanceDialog(false);
-          setSelectedWalletId(null);
-        }}
-        walletId={selectedWalletId}
-      />
+      {isSimulatorActive && (
+        <WalletPerformanceDialog
+          isOpen={showPerformanceDialog}
+          onClose={() => {
+            setShowPerformanceDialog(false);
+            setSelectedWalletId(null);
+          }}
+          walletId={selectedWalletId}
+        />
+      )}
     </Stack>
   );
 };
@@ -88,9 +182,11 @@ interface WalletCardProps {
   onSelect: () => void;
   onDelete: () => void;
   onViewPerformance: () => void;
+  isSimulatorMode?: boolean;
+  isDeleting?: boolean;
 }
 
-const WalletCard = ({ wallet, isActive, onSelect, onDelete, onViewPerformance }: WalletCardProps) => {
+const WalletCard = ({ wallet, isActive, onSelect, onDelete, onViewPerformance, isSimulatorMode = true, isDeleting = false }: WalletCardProps) => {
   const { t } = useTranslation();
   const totalPnL = wallet.balance - wallet.initialBalance;
   const totalPnLPercent = (totalPnL / wallet.initialBalance) * 100;
@@ -122,6 +218,7 @@ const WalletCard = ({ wallet, isActive, onSelect, onDelete, onViewPerformance }:
               variant="ghost"
               aria-label="Wallet options"
               onClick={(e) => e.stopPropagation()}
+              disabled={isDeleting}
             >
               <BsThreeDotsVertical />
             </IconButton>
@@ -136,18 +233,20 @@ const WalletCard = ({ wallet, isActive, onSelect, onDelete, onViewPerformance }:
                 zIndex={99999}
                 p={0}
               >
-                <MenuItem
-                  value="performance"
-                  onClick={onViewPerformance}
-                  px={4}
-                  py={2.5}
-                  _hover={{ bg: 'bg.muted' }}
-                  borderBottomWidth="1px"
-                  borderColor="border"
-                >
-                  <LuTrendingUp />
-                  <Text>{t('trading.wallets.viewPerformance')}</Text>
-                </MenuItem>
+                {isSimulatorMode && (
+                  <MenuItem
+                    value="performance"
+                    onClick={onViewPerformance}
+                    px={4}
+                    py={2.5}
+                    _hover={{ bg: 'bg.muted' }}
+                    borderBottomWidth="1px"
+                    borderColor="border"
+                  >
+                    <LuTrendingUp />
+                    <Text>{t('trading.wallets.viewPerformance')}</Text>
+                  </MenuItem>
+                )}
                 <MenuItem
                   value="delete"
                   onClick={onDelete}
@@ -155,6 +254,7 @@ const WalletCard = ({ wallet, isActive, onSelect, onDelete, onViewPerformance }:
                   px={4}
                   py={2.5}
                   _hover={{ bg: 'bg.muted' }}
+                  disabled={isDeleting}
                 >
                   <LuTrash2 />
                   <Text>{t('trading.wallets.delete')}</Text>
