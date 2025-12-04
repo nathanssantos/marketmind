@@ -1,4 +1,6 @@
+import { analyticsRouter } from '../routers/analytics';
 import { authRouter } from '../routers/auth';
+import { autoTradingRouter } from '../routers/auto-trading';
 import { backtestRouter } from '../routers/backtest';
 import { healthRouter } from '../routers/health';
 import { klineRouter } from '../routers/kline';
@@ -12,6 +14,8 @@ export const appRouter = router({
   auth: authRouter,
   wallet: walletRouter,
   trading: tradingRouter,
+  autoTrading: autoTradingRouter,
+  analytics: analyticsRouter,
   kline: klineRouter,
   setup: setupRouter,
   backtest: backtestRouter,

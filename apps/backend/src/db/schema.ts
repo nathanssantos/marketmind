@@ -216,5 +216,79 @@ export type NewAIConversation = typeof aiConversations.$inferInsert;
 export type AITrade = typeof aiTrades.$inferSelect;
 export type NewAITrade = typeof aiTrades.$inferInsert;
 
+export const autoTradingConfig = pgTable('auto_trading_config', {
+  id: varchar({ length: 255 }).primaryKey(),
+  userId: varchar('user_id', { length: 255 })
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  walletId: varchar('wallet_id', { length: 255 })
+    .notNull()
+    .references(() => wallets.id, { onDelete: 'cascade' }),
+  isEnabled: boolean('is_enabled').default(false).notNull(),
+  maxConcurrentPositions: integer('max_concurrent_positions').default(3).notNull(),
+  maxPositionSize: numeric('max_position_size', { precision: 10, scale: 2 }).default('10').notNull(), // % of wallet balance
+  dailyLossLimit: numeric('daily_loss_limit', { precision: 10, scale: 2 }).default('5').notNull(), // % of wallet balance
+  enabledSetupTypes: text('enabled_setup_types').notNull(), // JSON array of setup types
+  positionSizing: varchar('position_sizing', { length: 20 }).default('percentage'), // 'fixed' | 'percentage' | 'kelly'
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('auto_trading_config_user_id_idx').on(table.userId),
+  walletIdIdx: index('auto_trading_config_wallet_id_idx').on(table.walletId),
+}));
+
+export const tradeExecutions = pgTable('trade_executions', {
+  id: varchar({ length: 255 }).primaryKey(),
+  userId: varchar('user_id', { length: 255 })
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  walletId: varchar('wallet_id', { length: 255 })
+    .notNull()
+    .references(() => wallets.id, { onDelete: 'cascade' }),
+  setupId: varchar('setup_id', { length: 255 }),
+  setupType: varchar('setup_type', { length: 100 }),
+  symbol: varchar({ length: 20 }).notNull(),
+  side: varchar({ length: 10 }).$type<'LONG' | 'SHORT'>().notNull(),
+  entryOrderId: bigint('entry_order_id', { mode: 'number' }).references(() => orders.orderId),
+  exitOrderId: bigint('exit_order_id', { mode: 'number' }).references(() => orders.orderId),
+  entryPrice: numeric('entry_price', { precision: 20, scale: 8 }).notNull(),
+  exitPrice: numeric('exit_price', { precision: 20, scale: 8 }),
+  quantity: numeric({ precision: 20, scale: 8 }).notNull(),
+  stopLoss: numeric('stop_loss', { precision: 20, scale: 8 }),
+  takeProfit: numeric('take_profit', { precision: 20, scale: 8 }),
+  pnl: numeric({ precision: 20, scale: 8 }),
+  pnlPercent: numeric('pnl_percent', { precision: 10, scale: 2 }),
+  fees: numeric({ precision: 20, scale: 8 }).default('0'),
+  openedAt: timestamp('opened_at', { mode: 'date' }).notNull(),
+  closedAt: timestamp('closed_at', { mode: 'date' }),
+  status: varchar({ length: 20 }).default('open'), // 'open' | 'closed' | 'cancelled'
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('trade_executions_user_id_idx').on(table.userId),
+  walletIdIdx: index('trade_executions_wallet_id_idx').on(table.walletId),
+  statusIdx: index('trade_executions_status_idx').on(table.status),
+  openedAtIdx: index('trade_executions_opened_at_idx').on(table.openedAt),
+  setupTypeIdx: index('trade_executions_setup_type_idx').on(table.setupType),
+}));
+
+export const priceCache = pgTable('price_cache', {
+  symbol: varchar({ length: 20 }).primaryKey(),
+  price: numeric({ precision: 20, scale: 8 }).notNull(),
+  timestamp: timestamp({ mode: 'date' }).notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  timestampIdx: index('price_cache_timestamp_idx').on(table.timestamp),
+}));
+
 export type SetupDetection = typeof setupDetections.$inferSelect;
 export type NewSetupDetection = typeof setupDetections.$inferInsert;
+
+export type AutoTradingConfig = typeof autoTradingConfig.$inferSelect;
+export type NewAutoTradingConfig = typeof autoTradingConfig.$inferInsert;
+
+export type TradeExecution = typeof tradeExecutions.$inferSelect;
+export type NewTradeExecution = typeof tradeExecutions.$inferInsert;
+
+export type PriceCache = typeof priceCache.$inferSelect;
+export type NewPriceCache = typeof priceCache.$inferInsert;
