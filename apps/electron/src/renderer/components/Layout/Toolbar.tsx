@@ -33,7 +33,7 @@ import { PatternTogglePopover } from './PatternTogglePopover';
 import { SetupTogglePopover } from './SetupTogglePopover';
 
 export interface ToolbarProps {
-  marketService: MarketDataService;
+  marketService?: MarketDataService;
   symbol: string;
   timeframe: Timeframe;
   chartType: 'kline' | 'line';
@@ -111,9 +111,14 @@ export const Toolbar = memo(({
 }: ToolbarProps) => {
   const { t } = useTranslation();
   const toast = useToast();
-  const { algorithmicDetectionSettings, setAlgorithmicDetectionSettings } = useUIStore();
-  const { config: patternConfig, setConfig: setPatternConfig } = usePatternDetectionConfigStore();
-  const { isAutoTradingActive, toggleAutoTrading, config: setupConfig, setConfig: setSetupConfig } = useSetupStore();
+  const algorithmicDetectionSettings = useUIStore((state) => state.algorithmicDetectionSettings);
+  const setAlgorithmicDetectionSettings = useUIStore((state) => state.setAlgorithmicDetectionSettings);
+  const patternConfig = usePatternDetectionConfigStore((state) => state.config);
+  const setPatternConfig = usePatternDetectionConfigStore((state) => state.setConfig);
+  const isAutoTradingActive = useSetupStore((state) => state.isAutoTradingActive);
+  const toggleAutoTrading = useSetupStore((state) => state.toggleAutoTrading);
+  const setupConfig = useSetupStore((state) => state.config);
+  const setSetupConfig = useSetupStore((state) => state.setConfig);
 
   const isPatternDetectionActive = algorithmicDetectionSettings.autoDisplayPatterns;
   const isExtensionsActive = patternConfig.showExtensions;

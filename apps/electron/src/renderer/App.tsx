@@ -23,27 +23,15 @@ import { UpdateNotification } from './components/Update/UpdateNotification';
 import { ChartProvider, useChartContext } from './context/ChartContext';
 import { useGlobalActions } from './context/GlobalActionsContext';
 import { PatternHoverProvider } from './context/PatternHoverContext';
-import { useAITrading } from './hooks/useAITrading';
 import { useAppSettings } from './hooks/useAppSettings';
-import { useAutoPatternDetection } from './hooks/useAutoPatternDetection';
+import { useBackendKlines, useKlineStream } from './hooks/useBackendKlines';
 import { useCalendar } from './hooks/useCalendar';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
 import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { useManualPatternDetection } from './hooks/useManualPatternDetection';
-import { useMarketData } from './hooks/useMarketData';
 import { useNews } from './hooks/useNews';
-import { useOrderNotifications } from './hooks/useOrderNotifications';
-import { usePatternDetectionWorker } from './hooks/usePatternDetectionWorker';
 import { usePatterns } from './hooks/usePatterns';
-import { usePriceUpdates } from './hooks/usePriceUpdates';
-import { useRealtimeKline } from './hooks/useRealtimeKline';
-import { useSimulatorLayout } from './hooks/useSimulatorLayout';
-import { useSimulatorSync } from './hooks/useSimulatorSync';
-import { MarketDataService } from './services/market/MarketDataService';
-import { BinanceProvider } from './services/market/providers/BinanceProvider';
-import { CoinGeckoProvider } from './services/market/providers/CoinGeckoProvider';
 import { useAIStore } from './store/aiStore';
 import { useTradingStore } from './store/tradingStore';
 import { system } from './theme';
@@ -90,8 +78,8 @@ const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
 function App(): ReactElement {
   return (
     <TrpcProvider>
-      <AutoAuth>
-        <ChakraProvider value={system}>
+      <ChakraProvider value={system}>
+        <AutoAuth>
           <Toaster toaster={toaster}>
             {(toast) => {
               const { t } = useTranslation();
@@ -144,8 +132,8 @@ function App(): ReactElement {
               </PinnedControlsProvider>
             </ChartProvider>
           </PatternHoverProvider>
-        </ChakraProvider>
-      </AutoAuth>
+        </AutoAuth>
+      </ChakraProvider>
     </TrpcProvider>
   );
 }
@@ -168,12 +156,13 @@ function AppContent(): ReactElement {
     addPatterns
   } = usePatterns({ symbol, conversationId: activeConversationId });
 
-  usePatternDetectionWorker();
-  useAutoPatternDetection(viewport);
-  const { detectPatterns } = useManualPatternDetection(addPatterns);
-  useSimulatorLayout();
-  usePriceUpdates();
-  useOrderNotifications();
+  // TEMPORARY: Disabled to debug infinite loop
+  // usePatternDetectionWorker();
+  // useAutoPatternDetection(viewport);
+  // const { detectPatterns } = useManualPatternDetection(addPatterns);
+  // useSimulatorLayout();
+  // usePriceUpdates();
+  // useOrderNotifications();
 
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
@@ -217,7 +206,7 @@ function AppContent(): ReactElement {
   useEffect(() => {
     void syncWithElectron();
     void syncAIStore();
-  }, [syncWithElectron, syncAIStore]);
+  }, []);
 
   const restoreActiveConversation = useAIStore((state) => state.restoreActiveConversation);
   const setActiveConversationBySymbol = useAIStore((state) => state.setActiveConversationBySymbol);
@@ -242,43 +231,128 @@ function AppContent(): ReactElement {
     setIsNewsOpen((prev) => !prev);
   }, []);
 
-  const handleDetectPatterns = useCallback((): void => {
-    if (viewport) {
-      void detectPatterns(viewport);
-    }
-  }, [detectPatterns, viewport]);
+  const viewportRef = useRef<Viewport | undefined>(undefined);
+
+  useEffect(() => {
+    viewportRef.current = viewport;
+  }, [viewport]);
+
+  // TEMPORARY: Disabled to debug infinite loop
+  // const handleDetectPatterns = useCallback((): void => {
+  //   if (viewportRef.current) {
+  //     void detectPatterns(viewportRef.current);
+  //   }
+  // }, [detectPatterns]);
 
   useEffect(() => {
     restoreActiveConversation();
-  }, [restoreActiveConversation]);
+  }, []);
 
   useEffect(() => {
     const activeConv = getActiveConversation();
     if (activeConv?.symbol !== symbol) {
       setActiveConversationBySymbol(symbol);
     }
-  }, [symbol, setActiveConversationBySymbol, getActiveConversation]);
+  }, [symbol]);
 
-  const marketService = useMemo(() => {
-    const binance = new BinanceProvider();
-    const coingecko = new CoinGeckoProvider();
-
-    return new MarketDataService({
-      primaryProvider: binance,
-      fallbackProviders: [coingecko],
-      enableCache: true,
-      cacheDuration: 60 * 1000,
-    });
-  }, []);
-
-  useSimulatorSync(marketService);
-
-  const { data: marketData, loading, error } = useMarketData(marketService, {
+  const { useKlineList } = useBackendKlines();
+  const backendKlinesQuery = useKlineList({
     symbol,
-    interval: timeframe,
+    interval: timeframe as any,
     limit: 500,
-    enabled: true,
   });
+
+  useEffect(() => {
+    console.log('[App] Backend klines query state:', {
+      isLoading: backendKlinesQuery.isLoading,
+      dataLength: backendKlinesQuery.data?.length ?? 0,
+      error: backendKlinesQuery.error?.message,
+      symbol,
+      timeframe,
+    });
+  }, [backendKlinesQuery.isLoading, backendKlinesQuery.data, backendKlinesQuery.error, symbol, timeframe]);
+
+  const marketData = useMemo(() => {
+    if (!backendKlinesQuery.data || backendKlinesQuery.data.length === 0) {
+      console.log('[App] No market data:', {
+        hasData: !!backendKlinesQuery.data,
+        length: backendKlinesQuery.data?.length
+      });
+      return null;
+    }
+
+    console.log('[App] Processing market data:', backendKlinesQuery.data.length, 'klines');
+
+    const getIntervalMs = (interval: string): number => {
+      const units: Record<string, number> = {
+        s: 1000,
+        m: 60 * 1000,
+        h: 60 * 60 * 1000,
+        d: 24 * 60 * 60 * 1000,
+        w: 7 * 24 * 60 * 60 * 1000,
+        M: 30 * 24 * 60 * 60 * 1000,
+      };
+      const match = interval.match(/(\d+)([smhdwM])/);
+      if (!match?.[1] || !match[2]) return 60 * 60 * 1000;
+      const value = Number.parseInt(match[1], 10);
+      const unit = match[2];
+      return value * (units[unit] ?? 60 * 60 * 1000) - 1;
+    };
+
+    const parseOpenTime = (time: unknown): number => {
+      if (typeof time === 'string') return new Date(time).getTime();
+      if (time instanceof Date) return time.getTime();
+      return Number(time);
+    };
+
+    const klines: Kline[] = backendKlinesQuery.data.map((k, index, arr) => {
+      const openTime = parseOpenTime(k.openTime);
+
+      let closeTime: number;
+      if (index < arr.length - 1) {
+        const nextKline = arr[index + 1];
+        if (nextKline) {
+          closeTime = parseOpenTime(nextKline.openTime) - 1;
+        } else {
+          closeTime = openTime + getIntervalMs(timeframe);
+        }
+      } else {
+        closeTime = openTime + getIntervalMs(timeframe);
+      }
+
+      if (index === 0) {
+        console.log('[App] First kline from backend:', {
+          takerBuyBaseVolume: k.takerBuyBaseVolume,
+          volume: k.volume,
+          quoteVolume: k.quoteVolume,
+          trades: k.trades,
+        });
+      }
+
+      return {
+        openTime,
+        closeTime,
+        open: k.open,
+        high: k.high,
+        low: k.low,
+        close: k.close,
+        volume: k.volume,
+        quoteVolume: k.quoteVolume || '0',
+        trades: k.trades || 0,
+        takerBuyBaseVolume: k.takerBuyBaseVolume || '0',
+        takerBuyQuoteVolume: k.takerBuyQuoteVolume || '0',
+      };
+    });
+
+    return {
+      symbol,
+      interval: timeframe,
+      klines,
+    };
+  }, [backendKlinesQuery.data, symbol, timeframe]);
+
+  const loading = backendKlinesQuery.isLoading;
+  const error = backendKlinesQuery.error ? new Error(backendKlinesQuery.error.message) : null;
 
   const [liveKlines, setLiveKlines] = useState<Kline[]>([]);
   const previousPriceRef = useRef<number | null>(null);
@@ -389,12 +463,35 @@ function AppContent(): ReactElement {
     });
   }, [symbol]);
 
-  useRealtimeKline(marketService, {
+  const handleKlineStreamUpdate = useCallback((backendKline: any) => {
+    console.log('[App] WebSocket kline update:', {
+      close: backendKline.close,
+      volume: backendKline.volume,
+      isClosed: backendKline.isClosed,
+    });
+
+    const kline: Kline = {
+      openTime: backendKline.openTime,
+      closeTime: backendKline.closeTime,
+      open: backendKline.open,
+      high: backendKline.high,
+      low: backendKline.low,
+      close: backendKline.close,
+      volume: backendKline.volume,
+      quoteVolume: backendKline.quoteVolume || '0',
+      trades: backendKline.trades || 0,
+      takerBuyBaseVolume: backendKline.takerBuyBaseVolume || '0',
+      takerBuyQuoteVolume: backendKline.takerBuyQuoteVolume || '0',
+    };
+    handleRealtimeUpdate(kline, backendKline.isClosed);
+  }, [handleRealtimeUpdate]);
+
+  useKlineStream(
     symbol,
-    interval: timeframe,
-    enabled: !!marketData,
-    onUpdate: handleRealtimeUpdate,
-  });
+    timeframe as any,
+    handleKlineStreamUpdate,
+    !!marketData
+  );
 
   useEffect(() => {
     return () => {
@@ -431,21 +528,34 @@ function AppContent(): ReactElement {
     return fullSymbol;
   };
 
-  const setResponseProcessor = useAIStore(state => state.setResponseProcessor);
-  const enableAIPatterns = useAIStore(state => state.enableAIPatterns);
+  // TEMPORARY: Disabled to debug infinite loop
+  // const setResponseProcessor = useAIStore(state => state.setResponseProcessor);
+  // const enableAIPatterns = useAIStore(state => state.enableAIPatterns);
+  const processAIResponseRef = useRef(processAIResponse);
+
+  useEffect(() => {
+    processAIResponseRef.current = processAIResponse;
+  }, [processAIResponse]);
 
   const handleDeletePattern = useCallback((patternId: number): void => {
     void deletePattern(patternId);
-  }, [deletePattern]);
+  }, []);
 
-  useEffect(() => {
-    if (enableAIPatterns && processAIResponse) {
-      setResponseProcessor(processAIResponse);
-    } else {
-      setResponseProcessor(null);
-    }
-    return () => setResponseProcessor(null);
-  }, [processAIResponse, setResponseProcessor, enableAIPatterns]);
+  // TEMPORARY: Disabled to debug infinite loop
+  // useEffect(() => {
+  //   if (enableAIPatterns && processAIResponseRef.current) {
+  //     const stableProcessor = async (response: string) => {
+  //       if (processAIResponseRef.current) {
+  //         return processAIResponseRef.current(response);
+  //       }
+  //       return response;
+  //     };
+  //     setResponseProcessor(stableProcessor);
+  //   } else {
+  //     setResponseProcessor(null);
+  //   }
+  //   return () => setResponseProcessor(null);
+  // }, [enableAIPatterns]);
 
   const currentSymbolCode = extractSymbolCode(symbol);
   const isCrypto = symbol.endsWith('USDT') || symbol.endsWith('USD');
@@ -492,15 +602,18 @@ function AppContent(): ReactElement {
 
   const isAutoTradingActive = useAIStore((state) => state.isAutoTradingActive);
 
-  const aiTrading = useAITrading({
-    symbol,
-    timeframe,
-    chartType,
-    klines: displayKlines,
-    getCurrentPrice,
-  });
+  // TEMPORARY: Disabled to debug infinite loop
+  // const aiTrading = useAITrading({
+  //   symbol,
+  //   timeframe,
+  //   chartType,
+  //   klines: displayKlines,
+  //   getCurrentPrice,
+  // });
 
-  const { startTrading, stopTrading } = aiTrading;
+  // const { startTrading, stopTrading } = aiTrading;
+  const startTrading = async () => { };
+  const stopTrading = async () => { };
 
   useEffect(() => {
     console.log('[App] isAutoTradingActive changed:', isAutoTradingActive);
@@ -512,13 +625,12 @@ function AppContent(): ReactElement {
       console.log('[App] Calling stopTrading()...');
       void stopTrading();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [isAutoTradingActive]);
 
   return (
     <>
       <Toolbar
-        marketService={marketService}
         symbol={symbol}
         timeframe={timeframe}
         chartType={chartType}
@@ -553,7 +665,7 @@ function AppContent(): ReactElement {
         onToggleTrading={toggleTrading}
         onToggleChat={toggleChat}
         onToggleNews={toggleNews}
-        onDetectPatterns={handleDetectPatterns}
+        onDetectPatterns={() => { }}
       />      <MainLayout
         onOpenSymbolSelector={() => { }}
         advancedConfig={advancedConfig}
@@ -621,7 +733,6 @@ function AppContent(): ReactElement {
         open={isNewsOpen}
         onClose={toggleNews}
         symbols={[extractSymbolCode(symbol)]}
-        marketService={marketService}
       />
 
       <BacktestDialog

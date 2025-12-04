@@ -1,5 +1,5 @@
 import type { AIPattern, CalendarEvent, Kline, NewsArticle } from '@shared/types';
-import React, { createContext, useContext, type ReactNode } from 'react';
+import React, { createContext, useContext, useMemo, type ReactNode } from 'react';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
 
@@ -28,8 +28,13 @@ export const ChartProvider = ({ children }: { children: ReactNode }) => {
   const [chartData, setChartData] = React.useState<ChartContextData | null>(null);
   const [detectedPatterns, setDetectedPatterns] = React.useState<AIPattern[]>([]);
 
+  const value = useMemo(
+    () => ({ chartData, setChartData, detectedPatterns, setDetectedPatterns }),
+    [chartData, detectedPatterns]
+  );
+
   return (
-    <ChartContext.Provider value={{ chartData, setChartData, detectedPatterns, setDetectedPatterns }}>
+    <ChartContext.Provider value={value}>
       {children}
     </ChartContext.Provider>
   );

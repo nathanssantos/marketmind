@@ -4,11 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { LuCoins } from 'react-icons/lu';
 import { useSymbolSearch } from '../hooks/useSymbolSearch';
 import type { MarketDataService } from '../services/market/MarketDataService';
+import { MarketDataService as MarketDataServiceClass } from '../services/market/MarketDataService';
+import { BinanceProvider } from '../services/market/providers/BinanceProvider';
 import { Popover } from './ui/popover';
 import { TooltipWrapper } from './ui/Tooltip';
 
 interface SymbolSelectorProps {
-  marketService: MarketDataService;
+  marketService?: MarketDataService;
   value: string;
   onChange: (symbol: string) => void;
 }
@@ -24,10 +26,22 @@ const POPULAR_SYMBOLS = [
   { symbol: 'DOTUSDT', displayName: 'Polkadot / USDT', baseAsset: 'DOT', quoteAsset: 'USDT' },
 ];
 
-export function SymbolSelector({ marketService, value, onChange }: SymbolSelectorProps) {
+const createDefaultMarketService = (): MarketDataService => {
+  const binance = new BinanceProvider();
+  return new MarketDataServiceClass({
+    primaryProvider: binance,
+    fallbackProviders: [],
+    enableCache: true,
+    cacheDuration: 60 * 1000,
+  });
+};
+
+export function SymbolSelector({ marketService: providedMarketService, value, onChange }: SymbolSelectorProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const marketService = useMemo(() => providedMarketService || createDefaultMarketService(), [providedMarketService]);
 
   const { symbols, loading, search } = useSymbolSearch(marketService, {
     minQueryLength: 2,

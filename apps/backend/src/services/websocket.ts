@@ -54,6 +54,18 @@ export class WebSocketService {
         logger.info({ socketId: socket.id, symbol }, 'Subscribed to prices');
       });
 
+      socket.on('subscribe:klines', (data: { symbol: string; interval: string }) => {
+        const room = `klines:${data.symbol}:${data.interval}`;
+        socket.join(room);
+        logger.info({ socketId: socket.id, symbol: data.symbol, interval: data.interval }, 'Subscribed to klines');
+      });
+
+      socket.on('unsubscribe:klines', (data: { symbol: string; interval: string }) => {
+        const room = `klines:${data.symbol}:${data.interval}`;
+        socket.leave(room);
+        logger.info({ socketId: socket.id, symbol: data.symbol, interval: data.interval }, 'Unsubscribed from klines');
+      });
+
       socket.on('unsubscribe:orders', (walletId: string) => {
         socket.leave(`orders:${walletId}`);
         logger.info({ socketId: socket.id, walletId }, 'Unsubscribed from orders');
@@ -103,6 +115,23 @@ export class WebSocketService {
 
   public emitPriceUpdate(symbol: string, price: number, timestamp: number): void {
     this.io.to(`prices:${symbol}`).emit('price:update', { symbol, price, timestamp });
+  }
+
+  public emitKlineUpdate(kline: {
+    symbol: string;
+    interval: string;
+    openTime: number;
+    closeTime: number;
+    open: string;
+    high: string;
+    low: string;
+    close: string;
+    volume: string;
+    isClosed: boolean;
+    timestamp: number;
+  }): void {
+    const room = `klines:${kline.symbol}:${kline.interval}`;
+    this.io.to(room).emit('kline:update', kline);
   }
 
   public emitSetupDetected(userId: string, data: unknown): void {

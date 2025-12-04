@@ -10,7 +10,7 @@ interface MarkdownWithPatternRefsProps {
 }
 
 export const MarkdownWithPatternRefs = ({ content, onPatternHover }: MarkdownWithPatternRefsProps) => {
-  const { activeConversationId } = useAIStore();
+  const activeConversationId = useAIStore((state) => state.activeConversationId);
   const { patterns } = usePatterns({
     symbol: activeConversationId || 'default',
     conversationId: activeConversationId || null

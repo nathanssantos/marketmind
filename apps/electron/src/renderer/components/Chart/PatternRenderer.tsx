@@ -34,9 +34,10 @@ export const PatternRenderer = ({
 }: PatternRendererProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredPattern, setHoveredPattern] = useState<AIPattern | null>(null);
+  const lastHoveredIdRef = useRef<number | null>(null);
   const { hoveredPatternId, setHoveredPatternId } = usePatternHover();
   const patternTagsRef = useRef<Map<number, { x: number; y: number; width: number; height: number }>>(new Map());
-  const { config: patternConfig } = usePatternDetectionConfigStore();
+  const patternConfig = usePatternDetectionConfigStore((state) => state.config);
 
   const getPatternColor = (type: AIPattern['type']): string => {
     return PATTERN_COLORS[type] || '#6366f1';
@@ -52,7 +53,10 @@ export const PatternRenderer = ({
 
   useEffect(() => {
     if (!canvasManager || klines.length === 0 || !mousePosition) {
-      setHoveredPattern(null);
+      if (lastHoveredIdRef.current !== null) {
+        lastHoveredIdRef.current = null;
+        setHoveredPattern(null);
+      }
       return;
     }
 
@@ -79,24 +83,13 @@ export const PatternRenderer = ({
       }
     }
 
-    setHoveredPattern(found);
-    if (found?.id) {
-      setHoveredPatternId(found.id);
-    } else {
-      setHoveredPatternId(null);
+    const foundId = found?.id ?? null;
+    if (foundId !== lastHoveredIdRef.current) {
+      lastHoveredIdRef.current = foundId;
+      setHoveredPattern(found);
+      setHoveredPatternId(foundId);
     }
   }, [canvasManager, klines, patterns, mousePosition, setHoveredPatternId]);
-
-  useEffect(() => {
-    if (hoveredPatternId !== null) {
-      const patternById = patterns.find(s => s.id === hoveredPatternId);
-      if (patternById && patternById !== hoveredPattern) {
-        setHoveredPattern(patternById);
-      }
-    } else if (!mousePosition) {
-      setHoveredPattern(null);
-    }
-  }, [hoveredPatternId, patterns, mousePosition, hoveredPattern]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

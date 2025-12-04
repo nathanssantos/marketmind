@@ -375,7 +375,15 @@ import { RiskDisplay } from '@renderer/components/Trading/RiskDisplay';
   - `trade_executions` (56 kB, 7 índices)
   - `price_cache` (16 kB, 2 índices)
 - ✅ **Backend Reiniciado**: Serviços carregados com sucesso
-- ✅ **tRPC Endpoints**: Funcionando (autoTrading, analytics)
+- ✅ **tRPC Endpoints**: Funcionando (autoTrading, analytics, kline stream)
+
+### Klines Streaming Centralization:
+- ✅ **BinanceKlineStreamService**: Serviço backend para stream de klines
+- ✅ **WebSocket Integration**: Eventos `kline:update` via Socket.io
+- ✅ **tRPC Endpoints**: `subscribeStream`, `unsubscribeStream`, `getActiveStreams`
+- ✅ **Frontend Hook**: `useKlineStream` para consumir streams
+- ✅ **Subscription Management**: Ref counting para múltiplos clientes
+- ✅ **Reconnection Logic**: Auto-resubscribe após reconexão
 
 ### Próximos Passos:
 1. ✅ ~~Rodar migrations do banco~~ **CONCLUÍDO**

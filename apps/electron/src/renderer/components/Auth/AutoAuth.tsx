@@ -1,3 +1,4 @@
+import { Box, Spinner, Text } from '@chakra-ui/react';
 import { useEffect } from 'react';
 import { useBackendAuth } from '../../hooks/useBackendAuth';
 
@@ -30,8 +31,20 @@ export const AutoAuth = ({ children }: { children: React.ReactNode }) => {
     autoLogin();
   }, [isLoading, isAuthenticated, login, register]);
 
-  if (!isAuthenticated) {
-    return null;
+  if (isLoading || !isAuthenticated) {
+    return (
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        height="100vh"
+        flexDirection="column"
+        gap={4}
+      >
+        <Spinner size="xl" />
+        <Text>Authenticating...</Text>
+      </Box>
+    );
   }
 
   return <>{children}</>;

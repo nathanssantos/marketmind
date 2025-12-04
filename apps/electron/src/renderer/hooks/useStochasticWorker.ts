@@ -1,6 +1,6 @@
 import { workerPool } from '@/renderer/utils/WorkerPool';
 import type { Kline } from '@shared/types';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { StochasticResult } from '../utils/stochastic';
 
 const WORKER_KEY = 'stochastic';
@@ -30,7 +30,7 @@ export const useStochasticWorker = (): UseStochasticWorkerReturn => {
     workerRef.current = workerPool.get(WORKER_KEY);
   }, []);
 
-  const calculateStochastic = (
+  const calculateStochastic = useCallback((
     klines: Kline[],
     kPeriod: number,
     dPeriod: number
@@ -65,11 +65,11 @@ export const useStochasticWorker = (): UseStochasticWorkerReturn => {
         dPeriod,
       });
     });
-  };
+  }, []);
 
-  const terminate = (): void => {
+  const terminate = useCallback((): void => {
     workerPool.terminate(WORKER_KEY);
-  };
+  }, []);
 
   return { calculateStochastic, terminate };
 };

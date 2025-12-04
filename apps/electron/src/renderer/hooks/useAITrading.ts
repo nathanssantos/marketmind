@@ -25,25 +25,21 @@ export const useAITrading = (options: UseAITradingOptions) => {
     enableRealtimeUpdates: false,
   });
 
-  const {
-    isAutoTradingActive,
-    tradingConfig,
-    trades,
-    tradingStats,
-    analysisInProgress,
-    tradingError,
-    addTrade,
-    updateTrade,
-    setTradingAnalysisProgress,
-    setTradingError,
-    calculateTradingStats,
-    settings,
-  } = useAIStore();
+  const isAutoTradingActive = useAIStore((state) => state.isAutoTradingActive);
+  const tradingConfig = useAIStore((state) => state.tradingConfig);
+  const trades = useAIStore((state) => state.trades);
+  const tradingStats = useAIStore((state) => state.tradingStats);
+  const analysisInProgress = useAIStore((state) => state.analysisInProgress);
+  const tradingError = useAIStore((state) => state.tradingError);
+  const addTrade = useAIStore((state) => state.addTrade);
+  const updateTrade = useAIStore((state) => state.updateTrade);
+  const setTradingAnalysisProgress = useAIStore((state) => state.setTradingAnalysisProgress);
+  const setTradingError = useAIStore((state) => state.setTradingError);
+  const calculateTradingStats = useAIStore((state) => state.calculateTradingStats);
+  const settings = useAIStore((state) => state.settings);
 
-  const { 
-    addOrder, 
-    getActiveWallet,
-  } = useTradingStore();
+  const addOrder = useTradingStore((state) => state.addOrder);
+  const getActiveWallet = useTradingStore((state) => state.getActiveWallet);
 
   const getChartData = useCallback(() => {
     if (!options.symbol || options.klines.length === 0) return null;

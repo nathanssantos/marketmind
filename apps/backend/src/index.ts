@@ -95,12 +95,16 @@ const start = async (): Promise<void> => {
     const { binancePriceStreamService } = await import('./services/binance-price-stream');
     binancePriceStreamService.start();
 
+    const { binanceKlineStreamService } = await import('./services/binance-kline-stream');
+    binanceKlineStreamService.start();
+
     fastify.log.info(`🚀 Backend server running on http://localhost:${port}`);
     fastify.log.info(`📡 tRPC endpoint: http://localhost:${port}/trpc`);
     fastify.log.info(`🔌 WebSocket server initialized`);
     fastify.log.info(`📊 Binance kline sync initialized`);
     fastify.log.info(`📈 Position monitor service started`);
     fastify.log.info(`💹 Binance price stream service started`);
+    fastify.log.info(`📉 Binance kline stream service started`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

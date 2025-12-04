@@ -53,8 +53,8 @@ export const backfillHistoricalKlines = async (
         closeTime: new Date(candle.closeTime),
         quoteVolume: candle.quoteVolume,
         trades: candle.trades,
-        takerBuyBaseVolume: '0',
-        takerBuyQuoteVolume: '0',
+        takerBuyBaseVolume: candle.takerBuyBaseVolume || candle.buyVolume || '0',
+        takerBuyQuoteVolume: candle.takerBuyQuoteVolume || candle.buyQuoteVolume || '0',
       }));
 
       await db.insert(klines).values(klinesData).onConflictDoNothing();
@@ -121,34 +121,41 @@ export const fetchHistoricalKlinesFromAPI = async (
 
   while (currentStartTime < finalEndTime) {
     try {
-      const candles = await binanceClient.candles({
-        symbol,
-        interval,
-        startTime: currentStartTime,
-        limit: BATCH_SIZE,
-      });
+      // Use Binance REST API directly to get full kline data including taker buy volumes
+      const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&startTime=${currentStartTime}&limit=${BATCH_SIZE}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Binance API error: ${response.status} ${response.statusText}`);
+      }
+      
+      const candles = await response.json();
 
       if (candles.length === 0) break;
 
       const lastCandle = candles[candles.length - 1];
       if (!lastCandle) break;
 
+      // Binance kline array format:
+      // [0] Open time, [1] Open, [2] High, [3] Low, [4] Close, [5] Volume,
+      // [6] Close time, [7] Quote asset volume, [8] Number of trades,
+      // [9] Taker buy base asset volume, [10] Taker buy quote asset volume, [11] Ignore
       const klinesData = candles.map((candle: any) => ({
-        openTime: candle.openTime,
-        open: candle.open,
-        high: candle.high,
-        low: candle.low,
-        close: candle.close,
-        volume: candle.volume,
-        closeTime: candle.closeTime,
-        quoteVolume: candle.quoteVolume,
-        trades: candle.trades,
-        takerBuyBaseVolume: '0',
-        takerBuyQuoteVolume: '0',
+        openTime: candle[0],
+        open: candle[1],
+        high: candle[2],
+        low: candle[3],
+        close: candle[4],
+        volume: candle[5],
+        closeTime: candle[6],
+        quoteVolume: candle[7],
+        trades: candle[8],
+        takerBuyBaseVolume: candle[9],
+        takerBuyQuoteVolume: candle[10],
       }));
 
       allKlines.push(...klinesData);
-      currentStartTime = lastCandle.closeTime + 1;
+      currentStartTime = lastCandle[6] + 1; // Use closeTime from array
 
       logger.debug({ fetched: klinesData.length, total: allKlines.length }, 'Fetched klines batch');
 

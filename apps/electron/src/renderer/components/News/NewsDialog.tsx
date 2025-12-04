@@ -22,7 +22,7 @@ export interface NewsDialogProps {
     open: boolean;
     onClose: () => void;
     symbols?: string[];
-    marketService: MarketDataService;
+    marketService?: MarketDataService;
 }
 
 export const NewsDialog = ({ open, onClose, symbols: initialSymbols, marketService }: NewsDialogProps) => {

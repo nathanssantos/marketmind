@@ -59,32 +59,30 @@ export interface UseAIOptions {
 }
 
 export const useAI = (options?: UseAIOptions) => {
-  const {
-    conversations,
-    activeConversationId,
-    settings,
-    isLoading,
-    error,
-    lastAnalysis,
-    enableAIPatterns,
-    setSettings,
-    updateSettings,
-    createConversation,
-    deleteConversation,
-    setActiveConversation,
-    updateConversationTitle,
-    addMessage,
-    clearMessages,
-    setLoading,
-    setError,
-    setLastAnalysis,
-    getActiveConversation,
-    exportConversation,
-    importConversation,
-  } = useAIStore();
+  const conversations = useAIStore((state) => state.conversations);
+  const activeConversationId = useAIStore((state) => state.activeConversationId);
+  const settings = useAIStore((state) => state.settings);
+  const isLoading = useAIStore((state) => state.isLoading);
+  const error = useAIStore((state) => state.error);
+  const lastAnalysis = useAIStore((state) => state.lastAnalysis);
+  const enableAIPatterns = useAIStore((state) => state.enableAIPatterns);
+  const setSettings = useAIStore((state) => state.setSettings);
+  const updateSettings = useAIStore((state) => state.updateSettings);
+  const createConversation = useAIStore((state) => state.createConversation);
+  const deleteConversation = useAIStore((state) => state.deleteConversation);
+  const setActiveConversation = useAIStore((state) => state.setActiveConversation);
+  const updateConversationTitle = useAIStore((state) => state.updateConversationTitle);
+  const addMessage = useAIStore((state) => state.addMessage);
+  const clearMessages = useAIStore((state) => state.clearMessages);
+  const setLoading = useAIStore((state) => state.setLoading);
+  const setError = useAIStore((state) => state.setError);
+  const setLastAnalysis = useAIStore((state) => state.setLastAnalysis);
+  const getActiveConversation = useAIStore((state) => state.getActiveConversation);
+  const exportConversation = useAIStore((state) => state.exportConversation);
+  const importConversation = useAIStore((state) => state.importConversation);
 
   const { chartData } = useChartContext();
-  const { patternDetectionMode } = useUIStore();
+  const patternDetectionMode = useUIStore((state) => state.patternDetectionMode);
 
   const aiService = useMemo(() => {
     if (options?.service) {

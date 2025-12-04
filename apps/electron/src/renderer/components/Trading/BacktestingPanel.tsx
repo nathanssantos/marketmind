@@ -7,7 +7,7 @@ import { BacktestConfig } from './BacktestConfig';
 import { BacktestResults } from './BacktestResults';
 
 interface BacktestingPanelProps {
-  marketService: MarketDataService;
+  marketService?: MarketDataService;
 }
 
 export const BacktestingPanel = ({ marketService }: BacktestingPanelProps) => {

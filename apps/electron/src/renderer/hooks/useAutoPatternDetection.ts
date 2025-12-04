@@ -81,7 +81,7 @@ export const useAutoPatternDetection = (viewport?: Viewport): void => {
         setDetectedPatterns([]);
       }
     },
-    [detectionOptions, setDetectedPatterns]
+    [detectionOptions]
   );
 
   useEffect(() => {
@@ -96,7 +96,7 @@ export const useAutoPatternDetection = (viewport?: Viewport): void => {
         setIsInteracting(false);
       }, INTERACTION_DEBOUNCE_MS);
     }
-  }, [viewport?.start, viewport?.end, viewport]);
+  }, [viewport?.start, viewport?.end]);
 
   const shouldSkipDetection = useCallback(
     (
@@ -158,8 +158,6 @@ export const useAutoPatternDetection = (viewport?: Viewport): void => {
     visibleStart,
     visibleEnd,
     isInteracting,
-    setDetectedPatterns,
-    shouldSkipDetection,
   ]);
 
   useEffect(() => {

@@ -6,7 +6,7 @@ import { BacktestingPanel } from './BacktestingPanel';
 interface BacktestDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  marketService: MarketDataService;
+  marketService?: MarketDataService;
 }
 
 export const BacktestDialog = ({ isOpen, onClose, marketService }: BacktestDialogProps) => {

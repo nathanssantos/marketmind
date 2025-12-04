@@ -16,6 +16,19 @@ interface WebSocketEvents {
   'order:cancelled': (data: { orderId: string }) => void;
   'position:update': (position: unknown) => void;
   'price:update': (data: { symbol: string; price: number; timestamp: number }) => void;
+  'kline:update': (kline: {
+    symbol: string;
+    interval: string;
+    openTime: number;
+    closeTime: number;
+    open: string;
+    high: string;
+    low: string;
+    close: string;
+    volume: string;
+    isClosed: boolean;
+    timestamp: number;
+  }) => void;
   'setup-detected': (data: {
     symbol: string;
     interval: string;
@@ -91,6 +104,9 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     prices: (symbol: string) => {
       socketRef.current?.emit('subscribe:prices', symbol);
     },
+    klines: (data: { symbol: string; interval: string }) => {
+      socketRef.current?.emit('subscribe:klines', data);
+    },
     setups: (userId: string) => {
       socketRef.current?.emit('subscribe:setups', userId);
     },
@@ -105,6 +121,9 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     },
     prices: (symbol: string) => {
       socketRef.current?.emit('unsubscribe:prices', symbol);
+    },
+    klines: (data: { symbol: string; interval: string }) => {
+      socketRef.current?.emit('unsubscribe:klines', data);
     },
     setups: (userId: string) => {
       socketRef.current?.emit('unsubscribe:setups', userId);
