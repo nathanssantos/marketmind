@@ -9,10 +9,13 @@ export interface BacktestConfig {
   startDate: string; // ISO date
   endDate: string; // ISO date
   initialCapital: number;
+  minProfitPercent?: number; // Min expected profit % per trade after fees (filters out low R:R setups)
   setupTypes?: string[]; // Which setups to trade (empty = all)
   minConfidence?: number; // Minimum confidence to enter trade
-  stopLossPercent?: number; // SL as % of entry
-  takeProfitPercent?: number; // TP as % of entry
+  onlyWithTrend?: boolean; // Only trade setups aligned with higher timeframe trend
+  useAlgorithmicLevels?: boolean; // Use setup's calculated SL/TP instead of fixed percentages
+  stopLossPercent?: number; // SL as % of entry (ignored if useAlgorithmicLevels = true)
+  takeProfitPercent?: number; // TP as % of entry (ignored if useAlgorithmicLevels = true)
   maxPositionSize?: number; // Max % of capital per trade
   commission?: number; // Trading fee % (default 0.1%)
 }

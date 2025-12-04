@@ -4,11 +4,12 @@ import { TimeframeSelector, type Timeframe } from '@renderer/components/Chart/Ti
 import { SetupTogglePopover } from '@renderer/components/Layout/SetupTogglePopover';
 import { SymbolSelector } from '@renderer/components/SymbolSelector';
 import { Button } from '@renderer/components/ui/button';
+import { Checkbox } from '@renderer/components/ui/checkbox';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { useChartContext } from '@renderer/context/ChartContext';
 import { useBacktesting } from '@renderer/hooks/useBacktesting';
-import { useSetupStore } from '@renderer/store/setupStore';
 import type { MarketDataService } from '@renderer/services/market/MarketDataService';
+import { useSetupStore } from '@renderer/store/setupStore';
 import type { BacktestConfig as BacktestConfigType } from '@shared/types/backtesting';
 import { useState } from 'react';
 
@@ -22,16 +23,33 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
   const { runBacktest, isRunningBacktest, runBacktestError } = useBacktesting();
   const { config: setupConfig } = useSetupStore();
 
+  // Calculate last month's date range
+  const getLastMonthRange = () => {
+    const now = new Date();
+    const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastDayLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    return {
+      start: firstDayLastMonth.toISOString().split('T')[0],
+      end: lastDayLastMonth.toISOString().split('T')[0],
+    };
+  };
+
+  const lastMonthRange = getLastMonthRange();
+
   const [symbol, setSymbol] = useState(chartData?.symbol || 'BTCUSDT');
   const [interval, setInterval] = useState<Timeframe>('1h');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(lastMonthRange.start);
+  const [endDate, setEndDate] = useState(lastMonthRange.end);
   const [initialCapital, setInitialCapital] = useState('10000');
+  const [minProfitPercent, setMinProfitPercent] = useState('2');
+  const [onlyWithTrend, setOnlyWithTrend] = useState(true);
+  const [useAlgorithmicLevels, setUseAlgorithmicLevels] = useState(true);
   const [stopLossPercent, setStopLossPercent] = useState('2');
   const [takeProfitPercent, setTakeProfitPercent] = useState('4');
   const [maxPositionSize, setMaxPositionSize] = useState('10');
   const [commission, setCommission] = useState('0.1');
-  const [minConfidence, setMinConfidence] = useState('70');
+  const [minConfidence, setMinConfidence] = useState('0');
 
   // Get enabled setups from setup config
   const enabledSetups = Object.entries(setupConfig)
@@ -50,6 +68,9 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
       startDate,
       endDate,
       initialCapital: Number(initialCapital),
+      minProfitPercent: Number(minProfitPercent),
+      onlyWithTrend,
+      useAlgorithmicLevels,
       stopLossPercent: Number(stopLossPercent),
       takeProfitPercent: Number(takeProfitPercent),
       maxPositionSize: Number(maxPositionSize),
@@ -145,6 +166,21 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
         </ChakraField.Root>
 
         <ChakraField.Root>
+          <ChakraField.Label fontSize="xs">Min Profit per Trade (%)</ChakraField.Label>
+          <NumberInput
+            size="xs"
+            value={minProfitPercent}
+            onChange={(e) => setMinProfitPercent(e.target.value)}
+            placeholder="1"
+            step={0.5}
+            min={0}
+          />
+          <ChakraField.HelperText fontSize="2xs">
+            Skip trades where expected profit after fees is below this percentage
+          </ChakraField.HelperText>
+        </ChakraField.Root>
+
+        <ChakraField.Root>
           <ChakraField.Label fontSize="xs">Min Confidence (%)</ChakraField.Label>
           <NumberInput
             size="xs"
@@ -157,6 +193,30 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
           />
         </ChakraField.Root>
 
+        <Box p={3} bg="blue.50" _dark={{ bg: "blue.950" }} borderRadius="md" borderWidth="2px" borderColor="blue.500">
+          <Checkbox
+            checked={onlyWithTrend}
+            onCheckedChange={setOnlyWithTrend}
+          >
+            <Text fontSize="xs" fontWeight="medium">Only Trade With Trend</Text>
+          </Checkbox>
+          <Text fontSize="2xs" color="fg.muted" mt={1} ml={6}>
+            Only execute setups aligned with higher timeframe trend (filters counter-trend trades)
+          </Text>
+        </Box>
+
+        <Box p={3} bg="blue.50" _dark={{ bg: "blue.950" }} borderRadius="md" borderWidth="2px" borderColor="blue.500">
+          <Checkbox
+            checked={useAlgorithmicLevels}
+            onCheckedChange={setUseAlgorithmicLevels}
+          >
+            <Text fontSize="xs" fontWeight="medium">Use Algorithmic SL/TP</Text>
+          </Checkbox>
+          <Text fontSize="2xs" color="fg.muted" mt={1} ml={6}>
+            When enabled, uses setup's calculated stop-loss and take-profit levels (based on previous highs/lows) instead of fixed percentages
+          </Text>
+        </Box>
+
         <ChakraField.Root>
           <ChakraField.Label fontSize="xs">Stop Loss (%)</ChakraField.Label>
           <NumberInput
@@ -166,7 +226,13 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
             placeholder="2"
             step={0.5}
             min={0}
+            disabled={useAlgorithmicLevels}
           />
+          {useAlgorithmicLevels && (
+            <ChakraField.HelperText fontSize="2xs" color="fg.muted">
+              Disabled when using algorithmic levels
+            </ChakraField.HelperText>
+          )}
         </ChakraField.Root>
 
         <ChakraField.Root>
@@ -178,7 +244,13 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
             placeholder="4"
             step={0.5}
             min={0}
+            disabled={useAlgorithmicLevels}
           />
+          {useAlgorithmicLevels && (
+            <ChakraField.HelperText fontSize="2xs" color="fg.muted">
+              Disabled when using algorithmic levels
+            </ChakraField.HelperText>
+          )}
         </ChakraField.Root>
 
         <ChakraField.Root>

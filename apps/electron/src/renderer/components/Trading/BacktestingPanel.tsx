@@ -1,4 +1,4 @@
-import { Box, Flex, Stack, Text, Tabs } from '@chakra-ui/react';
+import { Box, Flex, Stack, Tabs, Text } from '@chakra-ui/react';
 import { Button } from '@renderer/components/ui/button';
 import { useBacktesting } from '@renderer/hooks/useBacktesting';
 import type { MarketDataService } from '@renderer/services/market/MarketDataService';
@@ -64,141 +64,140 @@ export const BacktestingPanel = ({ marketService }: BacktestingPanelProps) => {
         )}
       </Flex>
 
-      <Tabs.Root
-        value={activeView}
-        onValueChange={(e) => setActiveView(e.value as 'config' | 'results')}
-        variant="enclosed"
-        size="sm"
-      >
-        <Tabs.List px={4} pt={2}>
-          <Tabs.Trigger value="config">
-            <Text fontSize="xs">Configure</Text>
-          </Tabs.Trigger>
-          <Tabs.Trigger value="results">
-            <Text fontSize="xs">Results</Text>
-          </Tabs.Trigger>
-        </Tabs.List>
+      <Box p={4} overflowY="auto" flex={1}>
+        <Tabs.Root
+          value={activeView}
+          onValueChange={(e) => setActiveView(e.value as 'config' | 'results')}
+          variant="enclosed"
+        >
+          <Tabs.List mx={4}>
+            <Tabs.Trigger value="config" px={4}>Configure</Tabs.Trigger>
+            <Tabs.Trigger value="results" px={4}>Results</Tabs.Trigger>
+          </Tabs.List>
 
-        <Tabs.Content value="config">
-          <BacktestConfig onBacktestComplete={handleBacktestComplete} marketService={marketService} />
-        </Tabs.Content>
+          <Box mt={4}>
+            <Tabs.Content value="config">
+              <BacktestConfig onBacktestComplete={handleBacktestComplete} marketService={marketService} />
+            </Tabs.Content>
 
-        <Tabs.Content value="results">
-          {selectedBacktestId ? (
-            <BacktestResults
-              backtestId={selectedBacktestId}
-              onClose={() => setSelectedBacktestId(null)}
-            />
-          ) : (
-            <Stack gap={3} p={4}>
-              <Text fontSize="xs" fontWeight="medium" mb={1}>
-                Backtest History
-              </Text>
-
-              {isLoadingBacktests ? (
-                <Text fontSize="xs" color="fg.muted">Loading...</Text>
-              ) : backtests.length === 0 ? (
-                <Box p={4} textAlign="center" bg="bg.muted" borderRadius="md">
-                  <Text fontSize="sm" color="fg.muted" mb={2}>
-                    No backtests yet
-                  </Text>
-                  <Text fontSize="xs" color="fg.muted">
-                    Configure and run your first backtest
-                  </Text>
-                </Box>
+            <Tabs.Content value="results">
+              {selectedBacktestId ? (
+                <BacktestResults
+                  backtestId={selectedBacktestId}
+                  onClose={() => setSelectedBacktestId(null)}
+                />
               ) : (
-                <Stack gap={2} maxH="500px" overflowY="auto">
-                  {backtests.map((backtest) => (
-                    <Box
-                      key={backtest.id}
-                      p={3}
-                      bg="bg.muted"
-                      borderRadius="md"
-                      borderLeft="4px solid"
-                      borderColor={
-                        backtest.status === 'COMPLETED'
-                          ? backtest.totalPnl >= 0
-                            ? 'green.500'
-                            : 'red.500'
-                          : backtest.status === 'RUNNING'
-                          ? 'blue.500'
-                          : 'orange.500'
-                      }
-                      cursor={backtest.status === 'COMPLETED' ? 'pointer' : 'default'}
-                      _hover={
-                        backtest.status === 'COMPLETED'
-                          ? { bg: 'bg.subtle' }
-                          : {}
-                      }
-                      onClick={() =>
-                        backtest.status === 'COMPLETED' && handleViewBacktest(backtest.id)
-                      }
-                    >
-                      <Flex justify="space-between" align="start" mb={2}>
-                        <Box flex="1">
-                          <Text fontSize="xs" fontWeight="medium" mb={1}>
-                            {backtest.symbol} - {backtest.interval}
-                          </Text>
-                          <Text fontSize="2xs" color="fg.muted">
-                            {formatDate(backtest.startDate)} - {formatDate(backtest.endDate)}
-                          </Text>
-                        </Box>
-                        <Box textAlign="right">
-                          {backtest.status === 'COMPLETED' && (
-                            <>
-                              <Text
-                                fontSize="xs"
-                                fontWeight="bold"
-                                color={backtest.totalPnl >= 0 ? 'green.500' : 'red.500'}
-                              >
-                                {backtest.totalPnl >= 0 ? '+' : ''}
-                                {formatNumber(backtest.totalPnlPercent)}%
+                <Stack gap={3}>
+                  <Text fontSize="xs" fontWeight="medium" mb={1}>
+                    Backtest History
+                  </Text>
+
+                  {isLoadingBacktests ? (
+                    <Text fontSize="xs" color="fg.muted">Loading...</Text>
+                  ) : backtests.length === 0 ? (
+                    <Box p={4} textAlign="center" bg="bg.muted" borderRadius="md">
+                      <Text fontSize="sm" color="fg.muted" mb={2}>
+                        No backtests yet
+                      </Text>
+                      <Text fontSize="xs" color="fg.muted">
+                        Configure and run your first backtest
+                      </Text>
+                    </Box>
+                  ) : (
+                    <Stack gap={2} maxH="500px" overflowY="auto">
+                      {backtests.map((backtest) => (
+                        <Box
+                          key={backtest.id}
+                          p={3}
+                          bg="bg.muted"
+                          borderRadius="md"
+                          borderLeft="4px solid"
+                          borderColor={
+                            backtest.status === 'COMPLETED'
+                              ? backtest.totalPnl >= 0
+                                ? 'green.500'
+                                : 'red.500'
+                              : backtest.status === 'RUNNING'
+                                ? 'blue.500'
+                                : 'orange.500'
+                          }
+                          cursor={backtest.status === 'COMPLETED' ? 'pointer' : 'default'}
+                          _hover={
+                            backtest.status === 'COMPLETED'
+                              ? { bg: 'bg.subtle' }
+                              : {}
+                          }
+                          onClick={() =>
+                            backtest.status === 'COMPLETED' && handleViewBacktest(backtest.id)
+                          }
+                        >
+                          <Flex justify="space-between" align="start" mb={2}>
+                            <Box flex="1">
+                              <Text fontSize="xs" fontWeight="medium" mb={1}>
+                                {backtest.symbol} - {backtest.interval}
                               </Text>
                               <Text fontSize="2xs" color="fg.muted">
-                                ${formatNumber(backtest.totalPnl)}
+                                {formatDate(backtest.startDate)} - {formatDate(backtest.endDate)}
                               </Text>
-                            </>
-                          )}
-                          {backtest.status === 'RUNNING' && (
-                            <Text fontSize="xs" color="blue.500">
-                              Running...
-                            </Text>
-                          )}
-                          {backtest.status === 'FAILED' && (
-                            <Text fontSize="xs" color="red.500">
-                              Failed
-                            </Text>
+                            </Box>
+                            <Box textAlign="right">
+                              {backtest.status === 'COMPLETED' && (
+                                <>
+                                  <Text
+                                    fontSize="xs"
+                                    fontWeight="bold"
+                                    color={backtest.totalPnl >= 0 ? 'green.500' : 'red.500'}
+                                  >
+                                    {backtest.totalPnl >= 0 ? '+' : ''}
+                                    {formatNumber(backtest.totalPnlPercent)}%
+                                  </Text>
+                                  <Text fontSize="2xs" color="fg.muted">
+                                    ${formatNumber(backtest.totalPnl)}
+                                  </Text>
+                                </>
+                              )}
+                              {backtest.status === 'RUNNING' && (
+                                <Text fontSize="xs" color="blue.500">
+                                  Running...
+                                </Text>
+                              )}
+                              {backtest.status === 'FAILED' && (
+                                <Text fontSize="xs" color="red.500">
+                                  Failed
+                                </Text>
+                              )}
+                            </Box>
+                          </Flex>
+
+                          {backtest.status === 'COMPLETED' && (
+                            <Flex justify="space-between" align="center" fontSize="2xs" color="fg.muted">
+                              <Text>
+                                {backtest.totalTrades} trades • {formatNumber(backtest.winRate)}% win rate
+                              </Text>
+                              <Button
+                                size="2xs"
+                                variant="ghost"
+                                colorPalette="red"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteBacktest(backtest.id);
+                                }}
+                                loading={isDeletingBacktest}
+                              >
+                                Delete
+                              </Button>
+                            </Flex>
                           )}
                         </Box>
-                      </Flex>
-
-                      {backtest.status === 'COMPLETED' && (
-                        <Flex justify="space-between" align="center" fontSize="2xs" color="fg.muted">
-                          <Text>
-                            {backtest.totalTrades} trades • {formatNumber(backtest.winRate)}% win rate
-                          </Text>
-                          <Button
-                            size="2xs"
-                            variant="ghost"
-                            colorPalette="red"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteBacktest(backtest.id);
-                            }}
-                            loading={isDeletingBacktest}
-                          >
-                            Delete
-                          </Button>
-                        </Flex>
-                      )}
-                    </Box>
-                  ))}
+                      ))}
+                    </Stack>
+                  )}
                 </Stack>
               )}
-            </Stack>
-          )}
-        </Tabs.Content>
-      </Tabs.Root>
+            </Tabs.Content>
+          </Box>
+        </Tabs.Root>
+      </Box>
     </Stack>
   );
 };

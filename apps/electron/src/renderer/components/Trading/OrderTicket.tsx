@@ -63,17 +63,28 @@ export const OrderTicket = () => {
 
   const activeWalletId = isSimulatorActive ? simulatorActiveWalletId : backendActiveWalletId;
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
+
+  // Calculate default quantity as 10% of wallet balance divided by current price
+  const calculateDefaultQuantity = () => {
+    if (!activeWallet || !currentPrice) return 0;
+    const tenPercentBalance = activeWallet.balance * 0.1;
+    return tenPercentBalance / currentPrice;
+  };
+
   const symbolQuantity = getQuantityForSymbol(symbol);
+  const defaultQuantity = symbolQuantity > 0 ? symbolQuantity : calculateDefaultQuantity();
 
   const [orderType, setOrderType] = useState<OrderDirection>('long');
-  const [quantity, setQuantity] = useState(symbolQuantity.toString());
+  const [quantity, setQuantity] = useState(defaultQuantity.toFixed(8));
   const [entryPrice, setEntryPrice] = useState('');
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
 
   useEffect(() => {
-    setQuantity(getQuantityForSymbol(symbol).toString());
-  }, [symbol, getQuantityForSymbol]);
+    const storedQty = getQuantityForSymbol(symbol);
+    const newQty = storedQty > 0 ? storedQty : calculateDefaultQuantity();
+    setQuantity(newQty.toFixed(8));
+  }, [symbol, getQuantityForSymbol, activeWallet?.balance, currentPrice]);
 
   const handleQuantityChange = (value: string) => {
     setQuantity(value);

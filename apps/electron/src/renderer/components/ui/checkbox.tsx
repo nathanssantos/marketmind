@@ -6,10 +6,11 @@ export interface CheckboxProps {
     onCheckedChange: (checked: boolean) => void;
     children?: ReactNode;
     disabled?: boolean;
+    variant?: 'outline' | 'subtle';
 }
 
 export const Checkbox = (props: CheckboxProps): ReactElement => {
-    const { checked, onCheckedChange, children, disabled = false } = props;
+    const { checked, onCheckedChange, children, disabled = false, variant = 'outline' } = props;
 
     return (
         <ChakraCheckbox.Root
@@ -19,9 +20,10 @@ export const Checkbox = (props: CheckboxProps): ReactElement => {
                 onCheckedChange(isChecked);
             }}
             disabled={disabled}
+            variant={variant}
         >
             <ChakraCheckbox.HiddenInput />
-            <ChakraCheckbox.Control>
+            <ChakraCheckbox.Control borderWidth="1px" borderColor="border.emphasized">
                 <ChakraCheckbox.Indicator />
             </ChakraCheckbox.Control>
             {children && <ChakraCheckbox.Label>{children}</ChakraCheckbox.Label>}

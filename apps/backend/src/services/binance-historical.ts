@@ -103,3 +103,62 @@ export const calculateStartTime = (interval: Interval, periodsBack: number): Dat
   const intervalMs = getIntervalMilliseconds(interval);
   return new Date(now - intervalMs * periodsBack);
 };
+
+export const fetchHistoricalKlinesFromAPI = async (
+  symbol: string,
+  interval: Interval,
+  startTime: Date,
+  endTime: Date = new Date()
+): Promise<any[]> => {
+  logger.info(
+    { symbol, interval, startTime: startTime.toISOString(), endTime: endTime.toISOString() },
+    'Fetching historical klines from Binance API (not saving to DB)'
+  );
+
+  const allKlines: any[] = [];
+  let currentStartTime = startTime.getTime();
+  const finalEndTime = endTime.getTime();
+
+  while (currentStartTime < finalEndTime) {
+    try {
+      const candles = await binanceClient.candles({
+        symbol,
+        interval,
+        startTime: currentStartTime,
+        limit: BATCH_SIZE,
+      });
+
+      if (candles.length === 0) break;
+
+      const lastCandle = candles[candles.length - 1];
+      if (!lastCandle) break;
+
+      const klinesData = candles.map((candle: any) => ({
+        openTime: candle.openTime,
+        open: candle.open,
+        high: candle.high,
+        low: candle.low,
+        close: candle.close,
+        volume: candle.volume,
+        closeTime: candle.closeTime,
+        quoteVolume: candle.quoteVolume,
+        trades: candle.trades,
+        takerBuyBaseVolume: '0',
+        takerBuyQuoteVolume: '0',
+      }));
+
+      allKlines.push(...klinesData);
+      currentStartTime = lastCandle.closeTime + 1;
+
+      logger.debug({ fetched: klinesData.length, total: allKlines.length }, 'Fetched klines batch');
+
+      await sleep(RATE_LIMIT_DELAY);
+    } catch (error) {
+      logger.error({ error }, 'Error fetching historical klines from API');
+      throw error;
+    }
+  }
+
+  logger.info({ symbol, interval, totalFetched: allKlines.length }, 'Historical klines fetch complete');
+  return allKlines;
+};
