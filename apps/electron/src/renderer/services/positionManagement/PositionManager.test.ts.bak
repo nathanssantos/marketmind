@@ -1,0 +1,557 @@
+import { describe, it, expect } from 'vitest';
+import {
+    PositionManager,
+    createPositionManager,
+    createDefaultPositionConfig,
+    type Position,
+} from './PositionManager';
+import type { Kline } from '@marketmind/types';
+
+const createKline = (close: number, high?: number, low?: number, open?: number): Kline => ({
+    openTime: Date.now(),
+    open: open ?? close - 0.5,
+    high: high ?? close + 1.0,
+    low: low ?? close - 1.0,
+    close,
+    volume: 1000,
+    closeTime: Date.now(),
+    quoteVolume: close * 1000,
+    trades: 100,
+    takerBuyBaseVolume: 500,
+    takerBuyQuoteVolume: close * 500,
+});
+
+describe('PositionManager', () => {
+    const createHistoricalKlines = (startPrice: number, count: number = 20): Kline[] => {
+        const klines: Kline[] = [];
+        for (let i = 0; i < count; i++) {
+            const price = startPrice + (Math.random() * 4 - 2);
+            klines.push(createKline(price));
+        }
+        return klines;
+    };
+
+    describe('Position Opening', () => {
+        it('should open LONG position', () => {
+            const manager = createPositionManager();
+            const historicalKlines = createHistoricalKlines(100);
+
+            const position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'LONG',
+                102,
+                historicalKlines.length - 1,
+                1.0,
+                historicalKlines
+            );
+
+            expect(position.id).toBe('pos-1');
+            expect(position.symbol).toBe('BTCUSDT');
+            expect(position.direction).toBe('LONG');
+            expect(position.entryPrice).toBe(102);
+            expect(position.quantity).toBe(1.0);
+            expect(position.status).toBe('OPEN');
+            expect(position.trailingStopState).toBeDefined();
+            expect(position.partialExitState).toBeDefined();
+            expect(position.partialExitState.remainingPercentage).toBe(1.0);
+        });
+
+        it('should open SHORT position', () => {
+            const manager = createPositionManager();
+            const historicalKlines = [
+                createKline(102),
+                createKline(101),
+                createKline(100),
+            ];
+
+            const position = manager.openPosition(
+                'pos-2',
+                'ETHUSDT',
+                'SHORT',
+                100,
+                2,
+                2.0,
+                historicalKlines
+            );
+
+            expect(position.direction).toBe('SHORT');
+            expect(position.entryPrice).toBe(100);
+            expect(position.quantity).toBe(2.0);
+            expect(position.status).toBe('OPEN');
+        });
+    });
+
+    describe('Trailing Stop Updates', () => {
+        it('should update trailing stop as price moves favorably', () => {
+            const manager = createPositionManager();
+            const historicalKlines = [
+                createKline(100),
+                createKline(101),
+                createKline(102),
+            ];
+
+            const position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'LONG',
+                102,
+                2,
+                1.0,
+                historicalKlines
+            );
+
+            const initialStop = position.trailingStopState!.currentStop;
+
+            // Price rises significantly
+            const newKlines = [
+                ...historicalKlines,
+                createKline(110),
+                createKline(111),
+                createKline(112),
+            ];
+
+            const { position: updatedPosition, update } = manager.updatePosition(
+                position,
+                newKlines
+            );
+
+            expect(update.stopMoved).toBe(true);
+            expect(updatedPosition.trailingStopState!.currentStop).toBeGreaterThan(initialStop);
+        });
+
+        it('should detect stop hit', () => {
+            const manager = createPositionManager();
+            const historicalKlines = [
+                createKline(100),
+                createKline(101),
+                createKline(102),
+            ];
+
+            const position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'LONG',
+                102,
+                2,
+                1.0,
+                historicalKlines
+            );
+
+            // Price drops below stop
+            const newKlines = [
+                ...historicalKlines,
+                createKline(95),
+            ];
+
+            const { position: updatedPosition, update } = manager.updatePosition(
+                position,
+                newKlines
+            );
+
+            expect(update.stopHit).toBe(true);
+            expect(update.shouldClose).toBe(true);
+            expect(updatedPosition.status).toBe('CLOSED');
+            expect(updatedPosition.closeReason).toBe('Trailing stop hit');
+        });
+    });
+
+    describe('Partial Exits', () => {
+        it('should trigger first partial exit at target', () => {
+            const manager = createPositionManager();
+            const historicalKlines = [
+                createKline(98),
+                createKline(99),
+                createKline(100),
+            ];
+
+            const position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'LONG',
+                100,
+                2,
+                1.0,
+                historicalKlines
+            );
+
+            // Price reaches 1.5R (assuming ~2 ATR for stop, 1.5R = 103)
+            const newKlines = [
+                ...historicalKlines,
+                createKline(103),
+            ];
+
+            const { position: updatedPosition, update } = manager.updatePosition(
+                position,
+                newKlines
+            );
+
+            expect(update.partialExitTriggered).toBe(true);
+            expect(update.partialExitDetails).toBeDefined();
+            expect(updatedPosition.status).toBe('PARTIAL');
+            expect(updatedPosition.partialExitState.remainingPercentage).toBeCloseTo(0.67, 2);
+        });
+
+        it('should move stop to break-even after first partial exit', () => {
+            const manager = createPositionManager();
+            const historicalKlines = [
+                createKline(98),
+                createKline(99),
+                createKline(100),
+            ];
+
+            const position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'LONG',
+                100,
+                2,
+                1.0,
+                historicalKlines
+            );
+
+            const newKlines = [
+                ...historicalKlines,
+                createKline(103),
+            ];
+
+            const { position: updatedPosition } = manager.updatePosition(
+                position,
+                newKlines
+            );
+
+            // After first partial exit, stop should be at entry (break-even)
+            expect(updatedPosition.trailingStopState!.currentStop).toBe(100);
+            expect(updatedPosition.trailingStopState!.isAtBreakEven).toBe(true);
+        });
+
+        it('should close position after all partial exits complete', () => {
+            const manager = createPositionManager({
+                partialExit: {
+                    enabled: true,
+                    levels: [{ percentage: 1.0, rMultiple: 1.5 }],
+                    lockInProfitsAfterFirstExit: false,
+                },
+            });
+
+            const historicalKlines = [
+                createKline(98),
+                createKline(99),
+                createKline(100),
+            ];
+
+            const position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'LONG',
+                100,
+                2,
+                1.0,
+                historicalKlines
+            );
+
+            const newKlines = [
+                ...historicalKlines,
+                createKline(103),
+            ];
+
+            const { position: updatedPosition } = manager.updatePosition(
+                position,
+                newKlines
+            );
+
+            expect(updatedPosition.status).toBe('CLOSED');
+            expect(updatedPosition.closeReason).toBe('All partial exits completed');
+            expect(updatedPosition.partialExitState.remainingPercentage).toBe(0);
+        });
+    });
+
+    describe('PnL Calculation', () => {
+        it('should calculate PnL for open LONG position', () => {
+            const manager = createPositionManager();
+            const historicalKlines = [
+                createKline(98),
+                createKline(99),
+                createKline(100),
+            ];
+
+            const position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'LONG',
+                100,
+                2,
+                1.0,
+                historicalKlines
+            );
+
+            const newKlines = [
+                ...historicalKlines,
+                createKline(105),
+            ];
+
+            const pnl = manager.calculatePnL(position, newKlines);
+
+            expect(pnl.realized).toBe(0);
+            expect(pnl.unrealized).toBe(5); // (105 - 100) * 1.0
+            expect(pnl.total).toBe(5);
+        });
+
+        it('should calculate PnL for SHORT position', () => {
+            const manager = createPositionManager();
+            const historicalKlines = [
+                createKline(102),
+                createKline(101),
+                createKline(100),
+            ];
+
+            const position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'SHORT',
+                100,
+                2,
+                1.0,
+                historicalKlines
+            );
+
+            const newKlines = [
+                ...historicalKlines,
+                createKline(95),
+            ];
+
+            const pnl = manager.calculatePnL(position, newKlines);
+
+            expect(pnl.unrealized).toBe(5); // (100 - 95) * 1.0
+            expect(pnl.total).toBe(5);
+        });
+
+        it('should calculate final PnL for closed position', () => {
+            const manager = createPositionManager();
+            const historicalKlines = [
+                createKline(98),
+                createKline(99),
+                createKline(100),
+            ];
+
+            let position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'LONG',
+                100,
+                2,
+                2.0,
+                historicalKlines
+            );
+
+            position = manager.closePosition(position, 110, 3, 'Manual close');
+
+            const pnl = manager.calculatePnL(position, historicalKlines);
+
+            expect(pnl.realized).toBe(20); // (110 - 100) * 2.0
+            expect(pnl.unrealized).toBe(0);
+            expect(pnl.total).toBe(20);
+        });
+    });
+
+    describe('Position Summary', () => {
+        it('should generate position summary', () => {
+            const manager = createPositionManager();
+            const historicalKlines = [
+                createKline(98),
+                createKline(99),
+                createKline(100),
+            ];
+
+            const position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'LONG',
+                100,
+                2,
+                1.0,
+                historicalKlines
+            );
+
+            const summary = manager.getPositionSummary(position, historicalKlines);
+
+            expect(summary).toContain('pos-1');
+            expect(summary).toContain('BTCUSDT');
+            expect(summary).toContain('LONG');
+            expect(summary).toContain('OPEN');
+            expect(summary).toContain('100.00');
+        });
+    });
+
+    describe('Manual Close', () => {
+        it('should manually close position', () => {
+            const manager = createPositionManager();
+            const historicalKlines = [
+                createKline(98),
+                createKline(99),
+                createKline(100),
+            ];
+
+            let position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'LONG',
+                100,
+                2,
+                1.0,
+                historicalKlines
+            );
+
+            position = manager.closePosition(position, 105, 3, 'Take profit');
+
+            expect(position.status).toBe('CLOSED');
+            expect(position.closePrice).toBe(105);
+            expect(position.closeIndex).toBe(3);
+            expect(position.closeReason).toBe('Take profit');
+        });
+    });
+
+    describe('Integration Scenarios', () => {
+        it('should handle complete position lifecycle with partial exits and trailing stop', () => {
+            const manager = createPositionManager();
+            const historicalKlines = [
+                createKline(98),
+                createKline(99),
+                createKline(100),
+            ];
+
+            // Open position
+            let position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'LONG',
+                100,
+                2,
+                1.0,
+                historicalKlines
+            );
+
+            expect(position.status).toBe('OPEN');
+
+            // First partial exit at 1.5R
+            let newKlines = [...historicalKlines, createKline(103)];
+            let result = manager.updatePosition(position, newKlines);
+            position = result.position;
+
+            expect(result.update.partialExitTriggered).toBe(true);
+            expect(position.status).toBe('PARTIAL');
+            expect(position.partialExitState.remainingPercentage).toBeCloseTo(0.67, 2);
+
+            // Second partial exit at 2.5R
+            newKlines = [...newKlines, createKline(105)];
+            result = manager.updatePosition(position, newKlines);
+            position = result.position;
+
+            expect(position.partialExitState.remainingPercentage).toBeCloseTo(0.34, 2);
+
+            // Trailing stop continues to move up
+            newKlines = [...newKlines, createKline(108)];
+            result = manager.updatePosition(position, newKlines);
+            position = result.position;
+
+            expect(result.update.stopMoved).toBe(true);
+
+            // Eventually stop is hit
+            newKlines = [...newKlines, createKline(101)];
+            result = manager.updatePosition(position, newKlines);
+            position = result.position;
+
+            expect(result.update.stopHit).toBe(true);
+            expect(position.status).toBe('CLOSED');
+        });
+
+        it('should not update closed positions', () => {
+            const manager = createPositionManager();
+            const historicalKlines = [
+                createKline(98),
+                createKline(99),
+                createKline(100),
+            ];
+
+            let position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'LONG',
+                100,
+                2,
+                1.0,
+                historicalKlines
+            );
+
+            position = manager.closePosition(position, 105, 3, 'Manual close');
+
+            const newKlines = [...historicalKlines, createKline(110)];
+            const { position: updatedPosition, update } = manager.updatePosition(
+                position,
+                newKlines
+            );
+
+            expect(updatedPosition.status).toBe('CLOSED');
+            expect(update).toEqual({});
+        });
+    });
+
+    describe('Custom Configuration', () => {
+        it('should use custom trailing stop config', () => {
+            const manager = createPositionManager({
+                trailingStop: {
+                    atrMultiplier: 3.0,
+                },
+            });
+
+            const historicalKlines = [
+                createKline(98),
+                createKline(99),
+                createKline(100),
+            ];
+
+            const position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'LONG',
+                100,
+                2,
+                1.0,
+                historicalKlines
+            );
+
+            expect(position.trailingStopState).toBeDefined();
+        });
+
+        it('should use custom partial exit config', () => {
+            const manager = createPositionManager({
+                partialExit: {
+                    enabled: true,
+                    levels: [
+                        { percentage: 0.5, rMultiple: 2.0 },
+                        { percentage: 0.5, rMultiple: 0 },
+                    ],
+                    lockInProfitsAfterFirstExit: false,
+                },
+            });
+
+            const historicalKlines = [
+                createKline(98),
+                createKline(99),
+                createKline(100),
+            ];
+
+            const position = manager.openPosition(
+                'pos-1',
+                'BTCUSDT',
+                'LONG',
+                100,
+                2,
+                1.0,
+                historicalKlines
+            );
+
+            expect(position.partialExitState.remainingPercentage).toBe(1.0);
+        });
+    });
+});
