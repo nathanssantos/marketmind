@@ -240,21 +240,21 @@ global.IDBKeyRange = {
 let rafId = 0;
 const pendingRafCallbacks = new Map<number, FrameRequestCallback>();
 
-global.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
+global.requestAnimationFrame = (callback: FrameRequestCallback) => {
   const id = ++rafId;
   pendingRafCallbacks.set(id, callback);
-  queueMicrotask(() => {
+  setTimeout(() => {
     if (pendingRafCallbacks.has(id)) {
-      callback(Date.now());
+      callback(performance.now());
       pendingRafCallbacks.delete(id);
     }
-  });
+  }, 16);
   return id;
-});
+};
 
-global.cancelAnimationFrame = vi.fn((id: number) => {
+global.cancelAnimationFrame = (id: number) => {
   pendingRafCallbacks.delete(id);
-});
+};
 
 class MockWorker {
   url: string;
@@ -284,3 +284,92 @@ class MockWorker {
 }
 
 global.Worker = MockWorker as any;
+
+const originalCreateElement = document.createElement.bind(document);
+document.createElement = function (tagName: string, options?: any) {
+  if (tagName.toLowerCase() === 'canvas') {
+    const canvas = originalCreateElement('canvas', options);
+    
+    const mockContext = {
+      canvas,
+      fillStyle: '',
+      strokeStyle: '',
+      lineWidth: 1,
+      globalAlpha: 1,
+      globalCompositeOperation: 'source-over',
+      imageSmoothingEnabled: true,
+      font: '10px sans-serif',
+      textAlign: 'start',
+      textBaseline: 'alphabetic',
+      lineCap: 'butt',
+      lineJoin: 'miter',
+      miterLimit: 10,
+      shadowBlur: 0,
+      shadowColor: 'rgba(0, 0, 0, 0)',
+      shadowOffsetX: 0,
+      shadowOffsetY: 0,
+      
+      fillRect: vi.fn(),
+      strokeRect: vi.fn(),
+      clearRect: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      closePath: vi.fn(),
+      stroke: vi.fn(),
+      fill: vi.fn(),
+      arc: vi.fn(),
+      ellipse: vi.fn(),
+      quadraticCurveTo: vi.fn(),
+      bezierCurveTo: vi.fn(),
+      rect: vi.fn(),
+      fillText: vi.fn(),
+      strokeText: vi.fn(),
+      measureText: vi.fn(() => ({ width: 0 })),
+      drawImage: vi.fn(),
+      createLinearGradient: vi.fn(() => ({
+        addColorStop: vi.fn(),
+      })),
+      createRadialGradient: vi.fn(() => ({
+        addColorStop: vi.fn(),
+      })),
+      createPattern: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      scale: vi.fn(),
+      rotate: vi.fn(),
+      translate: vi.fn(),
+      transform: vi.fn(),
+      setTransform: vi.fn(),
+      resetTransform: vi.fn(),
+      clip: vi.fn(),
+      isPointInPath: vi.fn(() => false),
+      isPointInStroke: vi.fn(() => false),
+      getImageData: vi.fn(() => ({
+        data: new Uint8ClampedArray(),
+        width: 0,
+        height: 0,
+      })),
+      putImageData: vi.fn(),
+      createImageData: vi.fn(() => ({
+        data: new Uint8ClampedArray(),
+        width: 0,
+        height: 0,
+      })),
+      setLineDash: vi.fn(),
+      getLineDash: vi.fn(() => []),
+      lineDashOffset: 0,
+    };
+    
+    const originalGetContext = canvas.getContext.bind(canvas);
+    canvas.getContext = function(contextId: string, options?: any) {
+      if (contextId === '2d') {
+        return mockContext as any;
+      }
+      return originalGetContext(contextId, options);
+    };
+    
+    return canvas;
+  }
+  return originalCreateElement(tagName, options);
+};

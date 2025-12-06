@@ -69,6 +69,7 @@
     "@vitest/browser-playwright": "^4.0.14",
     "@vitest/coverage-v8": "^4.0.14",
     "@vitest/ui": "^4.0.14",
+    "canvas": "^3.2.0",
     "electron": "^39.2.4",
     "electron-builder": "^26.0.12",
     "eslint": "^9.39.1",

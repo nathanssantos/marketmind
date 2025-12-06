@@ -4,10 +4,15 @@ import { type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChartProvider } from '../context/ChartContext';
 import type { AIService } from '../services/ai';
-import { useAIStore, type AISettings, type Conversation } from '../store/aiStore';
+import type { AISettings, Conversation } from '../store/aiStore';
 import { useAI } from './useAI';
 
-vi.mock('../store/aiStore');
+vi.mock('../store/aiStore', () => ({
+  useAIStore: vi.fn(),
+}));
+
+import { useAIStore } from '../store/aiStore';
+const mockUseAIStore = vi.mocked(useAIStore);
 
 describe('useAI', () => {
   const mockConversationId = 'conv-1';
@@ -66,15 +71,22 @@ describe('useAI', () => {
       getProviderType: vi.fn().mockReturnValue('openai'),
     } as unknown as AIService;
 
+    const mockActiveConversation = {
+      id: mockConversationId,
+      title: 'Test',
+      messages: mockMessages,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
     mockStore = {
-      conversations: [
-        { id: mockConversationId, title: 'Test', messages: mockMessages, createdAt: Date.now(), updatedAt: Date.now() },
-      ],
+      conversations: [mockActiveConversation],
       activeConversationId: mockConversationId,
       settings: mockSettings,
       isLoading: false,
       error: null,
       lastAnalysis: null,
+      enableAIPatterns: false,
       setSettings: vi.fn(),
       updateSettings: vi.fn(),
       createConversation: vi.fn().mockReturnValue('new-conv-id'),
@@ -86,18 +98,12 @@ describe('useAI', () => {
       setLoading: vi.fn(),
       setError: vi.fn(),
       setLastAnalysis: vi.fn(),
-      getActiveConversation: vi.fn().mockReturnValue({
-        id: mockConversationId,
-        title: 'Test',
-        messages: mockMessages,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      }),
+      getActiveConversation: vi.fn(() => mockActiveConversation),
       exportConversation: vi.fn(),
       importConversation: vi.fn(),
     };
 
-    vi.mocked(useAIStore).mockReturnValue(mockStore);
+    mockUseAIStore.mockImplementation((selector: any) => selector(mockStore));
   });
 
   it('should return store state', () => {

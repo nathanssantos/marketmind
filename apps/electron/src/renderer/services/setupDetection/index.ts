@@ -29,6 +29,11 @@ export {
 } from './LiquiditySweepDetector';
 export type { LiquiditySweepConfig } from './LiquiditySweepDetector';
 export {
+    MeanReversionDetector,
+    createDefaultMeanReversionConfig
+} from './MeanReversionDetector';
+export type { MeanReversionConfig } from './MeanReversionDetector';
+export {
     OrderBlockFVGDetector,
     createDefaultOrderBlockFVGConfig
 } from './OrderBlockFVGDetector';

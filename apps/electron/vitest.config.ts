@@ -38,6 +38,8 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, './src/shared'),
       '@renderer': path.resolve(__dirname, './src/renderer'),
       '@main': path.resolve(__dirname, './src/main'),
+      '@marketmind/indicators': path.resolve(__dirname, '../../packages/indicators/src/index.ts'),
+      '@marketmind/types': path.resolve(__dirname, '../../packages/types/src/index.ts'),
     },
   },
 });

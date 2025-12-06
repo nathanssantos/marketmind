@@ -40,6 +40,8 @@ export default defineConfig({
       '@shared': resolve(__dirname, './src/shared'),
       '@renderer': resolve(__dirname, './src/renderer'),
       '@main': resolve(__dirname, './src/main'),
+      '@marketmind/types': resolve(__dirname, '../../packages/types/src'),
+      '@marketmind/indicators': resolve(__dirname, '../../packages/indicators/src'),
     },
   },
   build: {

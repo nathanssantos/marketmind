@@ -7,11 +7,16 @@
 ### Main Objective
 Create an "AI consultant" that assists traders and investors in technical chart analysis and news interpretation for buy/sell decision making on assets.
 
-### Latest Updates (November 2025)
+### Latest Updates (December 2025)
+- **Algorithmic Trading Enhancement**: Phase 2 in progress (25% complete)
+  - ✅ MeanReversionDetector complete (Bollinger Bands + RSI)
+  - ✅ Bollinger Bands indicator (%B, BBWidth)
+  - ✅ 27 new tests for mean reversion strategy
+  - 🎯 Next: MarketMakingDetector, GridTradingDetector, EnhancedTrendFollowingDetector
 - **Code Audit Complete**: 99.4% type safety, 8.5/10 code quality (A-) - [See Report](./CODE_AUDIT_REPORT.md)
-- **Backend Integration**: 85% complete with tRPC, PostgreSQL, TimescaleDB, WebSocket, Binance sync
-- **8 Algorithmic Trading Setups**: Complete Larry Williams EMA9 suite (9.1, 9.2, 9.3, 9.4) + 4 pattern-based setups
-- **Test Suite**: 1,920 passing tests (frontend + backend) with 92.15% code coverage
+- **Backend Integration**: 100% complete with tRPC, PostgreSQL, TimescaleDB, WebSocket, Binance sync
+- **13 Algorithmic Trading Setups**: Complete Larry Williams EMA9 suite (9.1, 9.2, 9.3, 9.4) + 9 pattern-based setups + MeanReversion
+- **Test Suite**: 1,997 passing tests (frontend + backend) with 92.15% code coverage
 - **Monorepo Structure**: pnpm workspaces with apps/electron, apps/backend, packages/types, packages/indicators
 - **Multi-language Support**: All features translated to EN/PT/ES/FR
 

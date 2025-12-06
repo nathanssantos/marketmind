@@ -108,6 +108,12 @@ git push origin feature/new-feature
 
 **NEVER skip this checklist. Broken tests = DO NOT COMMIT. Code comments = DO NOT COMMIT. Hardcoded text = DO NOT COMMIT. Main branch commits = FORBIDDEN.**
 
+**TEST COMMANDS:**
+- Run all tests: `pnpm test`
+- Run specific test file: `cd apps/electron && npx vitest run <file-path>`
+- Run multiple specific files: `cd apps/electron && npx vitest run <file1> <file2> <file3>`
+- Example: `cd apps/electron && npx vitest run src/renderer/components/Chart/core/BacktestChart.test.tsx`
+
 ### Conventional Commits (English)
 - `feat:` - New feature
 - `fix:` - Bug fix

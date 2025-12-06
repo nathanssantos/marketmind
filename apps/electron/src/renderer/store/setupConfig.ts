@@ -4,6 +4,7 @@ import type {
     BullTrapConfig,
     DivergenceConfig,
     LiquiditySweepConfig,
+    MeanReversionConfig,
     OrderBlockFVGConfig,
     Pattern123Config,
     PinInsideConfig,
@@ -24,6 +25,7 @@ import {
     createDefaultBullTrapConfig,
     createDefaultDivergenceConfig,
     createDefaultLiquiditySweepConfig,
+    createDefaultMeanReversionConfig,
     createDefaultOrderBlockFVGConfig,
     createDefaultPinInsideConfig,
     createDefaultVWAPEMACrossConfig,
@@ -46,6 +48,7 @@ export interface SetupDetectionConfig {
   vwapEmaCross: VWAPEMACrossConfig;
   divergence: DivergenceConfig;
   liquiditySweep: LiquiditySweepConfig;
+  meanReversion: MeanReversionConfig;
   enableTrendFilter: boolean;
   allowCounterTrend: boolean;
   trendEmaPeriod: number;
@@ -66,6 +69,7 @@ export const createDefaultSetupDetectionConfig = (): SetupDetectionConfig => ({
   vwapEmaCross: createDefaultVWAPEMACrossConfig(),
   divergence: createDefaultDivergenceConfig(),
   liquiditySweep: createDefaultLiquiditySweepConfig(),
+  meanReversion: createDefaultMeanReversionConfig(),
   enableTrendFilter: false,
   allowCounterTrend: true,
   trendEmaPeriod: DEFAULT_TREND_EMA_PERIOD,

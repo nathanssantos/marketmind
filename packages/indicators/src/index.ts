@@ -1,4 +1,5 @@
 export * from './atr';
+export * from './bollingerBands';
 export * from './macd';
 export * from './movingAverages';
 export * from './pivotPoints';
