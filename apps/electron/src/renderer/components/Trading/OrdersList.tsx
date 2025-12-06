@@ -204,8 +204,8 @@ export const OrdersList = () => {
 };
 
 interface OrderCardProps {
-  order: import('@shared/types/trading').Order;
-  currency: import('@shared/types/trading').WalletCurrency;
+  order: import('@marketmind/types').Order;
+  currency: import('@marketmind/types').WalletCurrency;
   onCancel: () => void;
   onClose: (price: number) => void;
 }

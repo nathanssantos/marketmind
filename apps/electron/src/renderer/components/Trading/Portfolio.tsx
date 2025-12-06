@@ -124,8 +124,8 @@ export const Portfolio = () => {
 };
 
 interface PositionCardProps {
-  position: import('@shared/types/trading').Position;
-  currency: import('@shared/types/trading').WalletCurrency;
+  position: import('@marketmind/types').Position;
+  currency: import('@marketmind/types').WalletCurrency;
 }
 
 const PositionCard = ({ position, currency }: PositionCardProps) => {

@@ -120,7 +120,7 @@ function MyComponent() {
 
 ```typescript
 // src/renderer/services/market/providers/NewProvider.ts
-import { BaseMarketProvider, type MarketProviderConfig } from '@shared/types';
+import { BaseMarketProvider, type MarketProviderConfig } from '@marketmind/types';
 
 export class NewProvider extends BaseMarketProvider {
   constructor(config?: Partial<MarketProviderConfig>) {

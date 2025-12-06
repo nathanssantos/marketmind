@@ -773,7 +773,7 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
     return null;
   };
 
-  const getOrderAtPosition = (_x: number, y: number): import('@shared/types/trading').Order | null => {
+  const getOrderAtPosition = (_x: number, y: number): import('@marketmind/types').Order | null => {
     if (!manager || !isSimulatorActive) return null;
 
     const activeOrders = orders.filter(

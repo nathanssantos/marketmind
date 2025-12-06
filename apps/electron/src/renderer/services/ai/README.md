@@ -65,7 +65,7 @@ console.log(response.text);
 ### Chart Analysis
 
 ```typescript
-import type { AIAnalysisRequest } from '@shared/types';
+import type { AIAnalysisRequest } from '@marketmind/types';
 
 // Analyze a chart with image
 const request: AIAnalysisRequest = {
@@ -264,7 +264,7 @@ To add a new AI provider (e.g., Google Gemini):
 // providers/GeminiProvider.ts
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { BaseAIProvider, type AIProviderConfig } from '../types';
-import type { AIMessage, AIAnalysisRequest, AIAnalysisResponse } from '@shared/types';
+import type { AIMessage, AIAnalysisRequest, AIAnalysisResponse } from '@marketmind/types';
 
 export class GeminiProvider extends BaseAIProvider {
   private client: GoogleGenerativeAI;
