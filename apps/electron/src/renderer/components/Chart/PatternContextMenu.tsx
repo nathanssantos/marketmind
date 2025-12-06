@@ -1,5 +1,5 @@
 import { Menu, Portal } from '@chakra-ui/react';
-import type { AIPattern } from '@shared/types';
+import type { AIPattern } from '@marketmind/types';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuTrash2 } from 'react-icons/lu';

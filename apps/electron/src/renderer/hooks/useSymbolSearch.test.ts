@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useSymbolSearch } from './useSymbolSearch';
 import type { MarketDataService } from '../services/market/MarketDataService';
-import type { Symbol } from '@shared/types';
+import type { Symbol } from '@marketmind/types';
 
 describe('useSymbolSearch', () => {
   let mockService: MarketDataService;

@@ -1,4 +1,4 @@
-import type { Kline, NewsArticle } from '@shared/types';
+import type { Kline, NewsArticle } from '@marketmind/types';
 import { renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { createElement } from 'react';

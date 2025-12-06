@@ -1,4 +1,4 @@
-import type { SetupType, TradingSetup } from '@shared/types';
+import type { SetupType, TradingSetup } from '@marketmind/types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { SetupDetectionConfig } from './setupConfig';

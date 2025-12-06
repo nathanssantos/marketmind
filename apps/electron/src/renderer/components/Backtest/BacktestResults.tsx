@@ -1,5 +1,5 @@
 import { Badge, Box, Grid, Heading, HStack, Separator, Stack, Text } from '@chakra-ui/react';
-import type { BacktestResult } from '@shared/types/backtesting';
+import type { BacktestResult } from '@marketmind/types';
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBacktestMetrics } from '../../hooks/useBacktestMetrics';

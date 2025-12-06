@@ -1,4 +1,4 @@
-import type { Order, OrderStatus } from '@shared/types/trading';
+import type { Order, OrderStatus } from '@marketmind/types';
 import { getOrderId, getOrderPrice, getOrderQuantity, isOrderActive, isOrderLong, isOrderPending } from '@shared/utils';
 import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';

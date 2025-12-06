@@ -1,5 +1,5 @@
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Kline, TradingSetup } from '@shared/types';
+import type { Kline, TradingSetup } from '@marketmind/types';
 import { getKlineClose } from '@shared/utils';
 import {
     BearTrapDetector,

@@ -1,4 +1,4 @@
-export { BINANCE_DEFAULT_FEES, TRADING_THRESHOLDS } from '@shared/types/fees';
-export type { FeeCalculation, TradeViability, TradingFees } from '@shared/types/fees';
+export { BINANCE_DEFAULT_FEES, TRADING_THRESHOLDS } from '@marketmind/types';
+export type { FeeCalculation, TradeViability, TradingFees } from '@marketmind/types';
 export { TradingFeeService, tradingFeeService } from './TradingFeeService';
 

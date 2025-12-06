@@ -1,5 +1,5 @@
 import { Box, Text, useToken } from '@chakra-ui/react';
-import type { BacktestEquityPoint } from '@shared/types/backtesting';
+import type { BacktestEquityPoint } from '@marketmind/types';
 import {
   Area,
   AreaChart,

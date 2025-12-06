@@ -1,4 +1,4 @@
-import type { AIAnalysisWithPatterns, AIPattern } from '@shared/types';
+import type { AIAnalysisWithPatterns, AIPattern } from '@marketmind/types';
 
 export const parseAIResponse = (response: string): AIAnalysisWithPatterns => {
   const jsonBlockRegex = /```json\s*\n([\s\S]*?)\n```/;

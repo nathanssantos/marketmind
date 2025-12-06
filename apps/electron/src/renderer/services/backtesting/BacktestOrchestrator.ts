@@ -1,10 +1,10 @@
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import type {
   BacktestConfig,
   BacktestEquityPoint,
   BacktestResult,
   BacktestTrade,
-} from '@shared/types/backtesting';
+} from '@marketmind/types';
 import { PositionManager } from '../positionManagement/PositionManager';
 import { GridTradingDetector } from '../setupDetection/GridTradingDetector';
 import { MeanReversionDetector } from '../setupDetection/MeanReversionDetector';

@@ -1,5 +1,5 @@
-import type { Kline, Viewport } from '@shared/types';
-import type { Order } from '@shared/types/trading';
+import type { Kline, Viewport } from '@marketmind/types';
+import type { Order } from '@marketmind/types';
 import { useMemo } from 'react';
 import type { LayerConfig } from '../core/LayeredCanvas';
 import { createSetupMarkerRenderer, type SetupMarker } from '../layers/AnnotationLayer';

@@ -1,4 +1,4 @@
-import type { NewsProviderConfig } from '@shared/types';
+import type { NewsProviderConfig } from '@marketmind/types';
 import axios from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NewsAPIProvider } from './NewsAPIProvider';

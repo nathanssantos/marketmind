@@ -4,7 +4,7 @@ import type {
   OptimizerWorkerResponse,
   SimplifiedKline,
 } from '@/renderer/workers/klineOptimizer.worker';
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { useCallback, useEffect, useRef } from 'react';
 
 export interface OptimizedKlineData {

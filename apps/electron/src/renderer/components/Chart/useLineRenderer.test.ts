@@ -1,4 +1,4 @@
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useLineRenderer } from './useLineRenderer';

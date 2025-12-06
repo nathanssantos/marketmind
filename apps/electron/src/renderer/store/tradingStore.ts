@@ -1,6 +1,6 @@
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import type { TradingFees } from '@shared/types/fees';
-import { BINANCE_DEFAULT_FEES } from '@shared/types/fees';
+import type { TradingFees } from '@marketmind/types';
+import { BINANCE_DEFAULT_FEES } from '@marketmind/types';
 import type {
   ExpirationType,
   Order,
@@ -10,7 +10,7 @@ import type {
   Wallet,
   WalletCurrency,
   WalletPerformancePoint,
-} from '@shared/types/trading';
+} from '@marketmind/types';
 import { getOrderId, getOrderPrice, getOrderQuantity, isOrderActive, isOrderLong, isOrderPending } from '@shared/utils';
 import { nanoid } from 'nanoid';
 import { create } from 'zustand';

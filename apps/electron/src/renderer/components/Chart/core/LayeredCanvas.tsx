@@ -1,4 +1,4 @@
-import type { Viewport } from '@shared/types';
+import type { Viewport } from '@marketmind/types';
 import { useCallback, useEffect, useRef } from 'react';
 
 export type LayerUpdateFrequency = 'static' | 'low' | 'medium' | 'high';

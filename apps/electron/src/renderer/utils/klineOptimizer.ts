@@ -1,4 +1,4 @@
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '@shared/utils';
 
 export interface OptimizedKlineData {

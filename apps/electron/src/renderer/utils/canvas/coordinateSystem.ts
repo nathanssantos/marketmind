@@ -1,5 +1,5 @@
 import { CHART_CONFIG } from '@shared/constants';
-import type { Kline, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@marketmind/types';
 import { getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 
 export interface Bounds {

@@ -1,6 +1,6 @@
 import { Box } from '@chakra-ui/react';
-import type { Kline } from '@shared/types';
-import type { BacktestTrade } from '@shared/types/backtesting';
+import type { Kline } from '@marketmind/types';
+import type { BacktestTrade } from '@marketmind/types';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 

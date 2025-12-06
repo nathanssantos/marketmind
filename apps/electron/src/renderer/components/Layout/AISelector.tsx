@@ -1,7 +1,7 @@
 import { Select as CustomSelect, type SelectOption } from '@/renderer/components/ui/select';
 import { useAIStore } from '@/renderer/store/aiStore';
 import { Badge, Flex } from '@chakra-ui/react';
-import type { AIProviderType } from '@shared/types';
+import type { AIProviderType } from '@marketmind/types';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 

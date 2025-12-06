@@ -19,7 +19,7 @@ import {
   Stack,
   Text,
 } from '@chakra-ui/react';
-import type { AIProviderType } from '@shared/types';
+import type { AIProviderType } from '@marketmind/types';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw } from 'react-icons/lu';

@@ -19,7 +19,7 @@
  * - Tharp, V. K. (1998) "Trade Your Way to Financial Freedom"
  */
 
-import type { BacktestTrade } from '@shared/types/backtesting';
+import type { BacktestTrade } from '@marketmind/types';
 
 export interface MonteCarloConfig {
   numSimulations: number;

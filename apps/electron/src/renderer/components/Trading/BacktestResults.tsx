@@ -1,11 +1,12 @@
-import { Box, Flex, Grid, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Grid, Stack, Text, Tabs } from '@chakra-ui/react';
 import { Button } from '@renderer/components/ui/button';
 import { useBacktesting } from '@renderer/hooks/useBacktesting';
-import type { Kline } from '@shared/types';
-import type { BacktestResult } from '@shared/types/backtesting';
+import type { Kline } from '@marketmind/types';
+import type { BacktestResult } from '@marketmind/types';
 import { useEffect, useState } from 'react';
 import { BacktestChart } from './BacktestChart';
 import { EquityCurveChart } from './EquityCurveChart';
+import { TradeListTable } from '../Backtest/TradeListTable';
 
 interface BacktestResultsProps {
   backtestId: string;
@@ -185,76 +186,68 @@ export const BacktestResults = ({ backtestId, onClose, marketService }: Backtest
         </Grid>
       </Box>
 
-      {/* Equity Curve */}
-      {result.equityCurve.length > 0 && (
-        <Box p={3} bg="bg.muted" borderRadius="md">
-          <Text fontSize="xs" fontWeight="medium" mb={2}>Equity Curve</Text>
-          <EquityCurveChart
-            equityCurve={result.equityCurve}
-            initialCapital={config.initialCapital}
-            currency="USDT"
-          />
-        </Box>
-      )}
+      {/* Tabs for Charts and Trades */}
+      <Tabs.Root defaultValue="overview" variant="enclosed">
+        <Tabs.List>
+          <Tabs.Trigger value="overview">Overview</Tabs.Trigger>
+          <Tabs.Trigger value="chart">Chart</Tabs.Trigger>
+          <Tabs.Trigger value="trades">All Trades</Tabs.Trigger>
+        </Tabs.List>
 
-      {/* Backtest Chart with Trade Markers */}
-      {klines.length > 0 && result.trades.length > 0 && (
-        <Box p={3} bg="bg.muted" borderRadius="md">
-          <Text fontSize="xs" fontWeight="medium" mb={2}>
-            Trades on Chart
-          </Text>
-          <BacktestChart
-            klines={klines}
-            trades={result.trades}
-            width={Math.min(window.innerWidth - 100, 1000)}
-            height={400}
-          />
-          <Text fontSize="2xs" color="fg.muted" mt={2}>
-            🔺 Green triangle = Profitable LONG entry | 🔻 Red triangle = Losing SHORT entry
-            <br />
-            Dotted lines connect entry to exit. Circles mark exit points.
-          </Text>
-        </Box>
-      )}
+        {/* Overview Tab */}
+        <Tabs.Content value="overview">
+          {/* Equity Curve (moved here for better organization) */}
+          {result.equityCurve.length > 0 && (
+            <Box p={3} bg="bg.muted" borderRadius="md" mt={3}>
+              <Text fontSize="xs" fontWeight="medium" mb={2}>Equity Curve</Text>
+              <EquityCurveChart
+                equityCurve={result.equityCurve}
+                initialCapital={config.initialCapital}
+                currency="USDT"
+              />
+            </Box>
+          )}
+        </Tabs.Content>
 
-      {/* Recent Trades */}
-      {result.trades.length > 0 && (
-        <Box p={3} bg="bg.muted" borderRadius="md">
-          <Text fontSize="xs" fontWeight="medium" mb={2}>
-            Recent Trades ({result.trades.length} total)
-          </Text>
-          <Stack gap={2} maxH="200px" overflowY="auto">
-            {result.trades.slice(-10).reverse().map((trade) => (
-              <Box
-                key={trade.id}
-                p={2}
-                bg="bg.default"
-                borderRadius="sm"
-                borderLeft="3px solid"
-                borderColor={(trade.netPnl ?? 0) >= 0 ? 'green.500' : 'red.500'}
-              >
-                <Flex justify="space-between" fontSize="2xs" mb={1}>
-                  <Text fontWeight="medium">
-                    {trade.side} {trade.setupType}
-                  </Text>
-                  <Text color={(trade.netPnl ?? 0) >= 0 ? 'green.500' : 'red.500'} fontWeight="medium">
-                    {formatCurrency(trade.netPnl ?? 0)}
-                  </Text>
-                </Flex>
-                <Grid templateColumns="1fr 1fr 1fr" gap={1} fontSize="3xs" color="fg.muted">
-                  <Text>Entry: {formatNumber(trade.entryPrice)}</Text>
-                  <Text>Exit: {formatNumber(trade.exitPrice || 0)}</Text>
-                  <Text>Qty: {formatNumber(trade.quantity, 4)}</Text>
-                </Grid>
-                <Flex justify="space-between" fontSize="3xs" color="fg.muted" mt={1}>
-                  <Text>{trade.exitReason}</Text>
-                  <Text>Confidence: {trade.setupConfidence}%</Text>
-                </Flex>
-              </Box>
-            ))}
-          </Stack>
-        </Box>
-      )}
+        {/* Chart Tab */}
+        <Tabs.Content value="chart">
+          {klines.length > 0 && result.trades.length > 0 ? (
+            <Box p={3} bg="bg.muted" borderRadius="md" mt={3}>
+              <Text fontSize="xs" fontWeight="medium" mb={2}>
+                Trades on Chart
+              </Text>
+              <BacktestChart
+                klines={klines}
+                trades={result.trades}
+                width={Math.min(window.innerWidth - 100, 1000)}
+                height={500}
+              />
+              <Text fontSize="2xs" color="fg.muted" mt={2}>
+                🔺 Green triangle = Profitable LONG entry | 🔻 Red triangle = Losing SHORT entry
+                <br />
+                Dotted lines connect entry to exit. Circles mark exit points.
+              </Text>
+            </Box>
+          ) : (
+            <Box p={4} textAlign="center" color="fg.muted" fontSize="sm" mt={3}>
+              {klines.length === 0 ? 'No chart data available' : 'No trades to display'}
+            </Box>
+          )}
+        </Tabs.Content>
+
+        {/* Trades Tab */}
+        <Tabs.Content value="trades">
+          {result.trades.length > 0 ? (
+            <Box mt={3}>
+              <TradeListTable trades={result.trades} />
+            </Box>
+          ) : (
+            <Box p={4} textAlign="center" color="fg.muted" fontSize="sm" mt={3}>
+              No trades executed in this backtest
+            </Box>
+          )}
+        </Tabs.Content>
+      </Tabs.Root>
 
       {/* Duration */}
       <Box p={2} bg="bg.subtle" borderRadius="md">

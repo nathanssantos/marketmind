@@ -3,7 +3,7 @@ import type {
     ConversationWorkerRequest,
     ConversationWorkerResponse,
 } from '@/renderer/workers/conversation.worker';
-import type { AIMessage } from '@shared/types';
+import type { AIMessage } from '@marketmind/types';
 import { useCallback, useEffect, useRef } from 'react';
 
 export interface SummarizedConversation {

@@ -1,6 +1,6 @@
 import type { DialogOpenChangeDetails } from '@chakra-ui/react';
 import { Button, HStack, Input, Stack } from '@chakra-ui/react';
-import type { BacktestConfig } from '@shared/types/backtesting';
+import type { BacktestConfig } from '@marketmind/types';
 import { useState, type ChangeEvent, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DialogBackdrop, DialogBody, DialogCloseTrigger, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTitle } from '../ui/dialog';

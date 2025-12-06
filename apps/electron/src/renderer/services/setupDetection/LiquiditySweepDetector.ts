@@ -1,5 +1,5 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
-import type { Kline, TradingSetup } from '@shared/types';
+import type { Kline, TradingSetup } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import type { SetupDetectorConfig } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';

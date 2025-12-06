@@ -1,4 +1,4 @@
-import type { AIPatternDoublePattern, AIPatternHeadAndShoulders, AIPatternTriplePattern, Kline } from '@shared/types';
+import type { AIPatternDoublePattern, AIPatternHeadAndShoulders, AIPatternTriplePattern, Kline } from '@marketmind/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
   calculateConfidence,

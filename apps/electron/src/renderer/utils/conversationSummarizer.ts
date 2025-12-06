@@ -1,4 +1,4 @@
-import type { AIMessage } from '@shared/types';
+import type { AIMessage } from '@marketmind/types';
 
 export interface SummarizedConversation {
   summary: string;

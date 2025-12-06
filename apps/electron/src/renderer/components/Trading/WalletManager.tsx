@@ -3,7 +3,7 @@ import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@c
 import { Button } from '@renderer/components/ui/button';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useTradingStore } from '@renderer/store/tradingStore';
-import type { Wallet } from '@shared/types/trading';
+import type { Wallet } from '@marketmind/types';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';

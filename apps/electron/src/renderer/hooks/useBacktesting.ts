@@ -3,7 +3,7 @@ import type {
   BacktestConfig,
   BacktestResult,
   BacktestSummary,
-} from '@shared/types/backtesting';
+} from '@marketmind/types';
 import { trpc } from '../utils/trpc';
 
 export const useBacktesting = () => {

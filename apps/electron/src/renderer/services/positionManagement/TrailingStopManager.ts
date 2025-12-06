@@ -1,5 +1,5 @@
 import { calculateATR } from '@marketmind/indicators';
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 
 export interface TrailingStopConfig {
     initialATRMultiplier: number;

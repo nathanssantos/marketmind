@@ -1,4 +1,4 @@
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 
 const TYPICAL_PRICE_DIVISOR = 3;

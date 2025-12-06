@@ -2,7 +2,7 @@ import { usePatternDetectionConfigStore } from '@renderer/store/patternDetection
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { testPatternHit } from '@renderer/utils/canvas/hitTesting';
 import { LINE_STYLES, PATTERN_COLORS } from '@shared/constants';
-import type { AIPattern, AIPatternChannel, AIPatternCupAndHandle, AIPatternDoublePattern, AIPatternFibonacci, AIPatternFlag, AIPatternGap, AIPatternHeadAndShoulders, AIPatternLine, AIPatternPennant, AIPatternRoundingBottom, AIPatternTriangle, AIPatternTriplePattern, AIPatternWedge, AIPatternZone, Kline } from '@shared/types';
+import type { AIPattern, AIPatternChannel, AIPatternCupAndHandle, AIPatternDoublePattern, AIPatternFibonacci, AIPatternFlag, AIPatternGap, AIPatternHeadAndShoulders, AIPatternLine, AIPatternPennant, AIPatternRoundingBottom, AIPatternTriangle, AIPatternTriplePattern, AIPatternWedge, AIPatternZone, Kline } from '@marketmind/types';
 import { useEffect, useRef, useState } from 'react';
 import { usePatternHover } from '../../context/PatternHoverContext';
 

@@ -1,4 +1,4 @@
-import type { AIPattern, AIPatternType } from '@shared/types';
+import type { AIPattern, AIPatternType } from '@marketmind/types';
 
 export enum PatternTier {
   MACRO = 'macro',

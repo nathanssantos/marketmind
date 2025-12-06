@@ -1,7 +1,7 @@
 import { Card } from '@/renderer/components/ui/card';
 import { useColorMode } from '@/renderer/components/ui/color-mode';
 import { Box, Heading, Text } from '@chakra-ui/react';
-import type { BacktestEquityPoint } from '@shared/types/backtesting';
+import type { BacktestEquityPoint } from '@marketmind/types';
 import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 

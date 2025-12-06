@@ -1,5 +1,5 @@
 import { workerPool } from '@/renderer/utils/WorkerPool';
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { useEffect, useRef, useState } from 'react';
 import type { RSIResult } from '../utils/rsi';
 

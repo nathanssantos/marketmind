@@ -1,5 +1,5 @@
 import { AIService } from '@/renderer/services/ai';
-import type { AIProviderType } from '@shared/types';
+import type { AIProviderType } from '@marketmind/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChartData } from './aiStore';
 import { useAIStore } from './aiStore';

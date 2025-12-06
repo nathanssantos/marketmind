@@ -1,4 +1,4 @@
-import type { Viewport } from '@shared/types';
+import type { Viewport } from '@marketmind/types';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LayerManager } from './LayeredCanvas';
 

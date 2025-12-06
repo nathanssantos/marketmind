@@ -1,5 +1,5 @@
 import type { Interval } from '@marketmind/types';
-import type { Kline, TradingSetup } from '@shared/types';
+import type { Kline, TradingSetup } from '@marketmind/types';
 import { useBackendSetups } from './useBackendSetups';
 
 export interface UseSetupDetectionOptions {

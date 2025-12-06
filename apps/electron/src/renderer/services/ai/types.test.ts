@@ -1,4 +1,4 @@
-import type { AIAnalysisResponse, AIMessage } from '@shared/types';
+import type { AIAnalysisResponse, AIMessage } from '@marketmind/types';
 import { describe, expect, it } from 'vitest';
 import { BaseAIProvider } from './types';
 

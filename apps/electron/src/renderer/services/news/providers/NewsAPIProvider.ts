@@ -5,7 +5,7 @@ import {
   type NewsProviderConfig,
   type NewsResponse,
   type NewsArticle,
-} from '@shared/types';
+} from '@marketmind/types';
 
 interface NewsAPIArticle {
   source: {

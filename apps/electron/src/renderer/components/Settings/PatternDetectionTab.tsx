@@ -5,7 +5,7 @@ import { Switch } from '@/renderer/components/ui/switch';
 import { usePatternDetectionConfigStore } from '@/renderer/store/patternDetectionConfigStore';
 import { useUIStore, type PatternDetectionMode } from '@/renderer/store/uiStore';
 import { Box, Button, Grid, HStack, Separator, Stack, Text, VStack } from '@chakra-ui/react';
-import type { AIPatternType } from '@shared/types';
+import type { AIPatternType } from '@marketmind/types';
 import type React from 'react';
 import { useTranslation } from 'react-i18next';
 

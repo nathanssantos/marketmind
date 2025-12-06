@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 
 import { calculateMACD } from './macd';
 

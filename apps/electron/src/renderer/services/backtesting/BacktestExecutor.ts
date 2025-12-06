@@ -1,5 +1,5 @@
-import type { Kline } from '@shared/types';
-import type { BacktestConfig, BacktestTrade } from '@shared/types/backtesting';
+import type { Kline } from '@marketmind/types';
+import type { BacktestConfig, BacktestTrade } from '@marketmind/types';
 import { RiskManagementService } from '../risk/RiskManagementService';
 import type { SetupDetectorResult } from '../setupDetection';
 

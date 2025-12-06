@@ -1,6 +1,6 @@
-import type { AIMessage, AIPatternData, AIProviderType, AITrade, AITradingConfig, AITradingStats } from '@shared/types';
-import type { TradingFees } from '@shared/types/fees';
-import type { Order, Wallet } from '@shared/types/trading';
+import type { AIMessage, AIPatternData, AIProviderType, AITrade, AITradingConfig, AITradingStats } from '@marketmind/types';
+import type { TradingFees } from '@marketmind/types';
+import type { Order, Wallet } from '@marketmind/types';
 import { contextBridge, ipcRenderer } from 'electron';
 
 type AIProvider = 'openai' | 'anthropic' | 'gemini';

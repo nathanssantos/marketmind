@@ -1,6 +1,6 @@
 import { useAIStore } from '@/renderer/store/aiStore';
 import { Box, Flex, IconButton, Input, Text, VStack } from '@chakra-ui/react';
-import type { AIProviderType } from '@shared/types';
+import type { AIProviderType } from '@marketmind/types';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuSparkles } from 'react-icons/lu';

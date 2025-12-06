@@ -3,7 +3,7 @@ import { AIService } from '@/renderer/services/ai/AIService';
 import { AITradingAgent, type AITradingAgentConfig } from '@/renderer/services/ai/AITradingAgent';
 import { useAIStore } from '@/renderer/store/aiStore';
 import { useTradingStore } from '@/renderer/store/tradingStore';
-import type { AITradingDecision, Kline } from '@shared/types';
+import type { AITradingDecision, Kline } from '@marketmind/types';
 import { useCallback, useEffect, useRef } from 'react';
 import { useSetupDetection } from './useSetupDetection';
 

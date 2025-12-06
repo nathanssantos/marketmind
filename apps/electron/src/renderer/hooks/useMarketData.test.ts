@@ -1,4 +1,4 @@
-import type { KlineData } from '@shared/types';
+import type { KlineData } from '@marketmind/types';
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MarketDataService } from '../services/market/MarketDataService';

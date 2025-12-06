@@ -1,4 +1,4 @@
-import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage } from '@shared/types';
+import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage } from '@marketmind/types';
 import OpenAI from 'openai';
 import { BaseAIProvider, type AIProviderConfig } from '../types';
 

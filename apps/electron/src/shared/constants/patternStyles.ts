@@ -1,4 +1,4 @@
-import type { AIPatternType } from '@shared/types';
+import type { AIPatternType } from '@marketmind/types';
 
 export const PATTERN_COLORS: Record<AIPatternType, string> = {
   support: '#22c55e',

@@ -1,4 +1,4 @@
-import type { Order, OrderSide, OrderStatus } from '@shared/types/trading';
+import type { Order, OrderSide, OrderStatus } from '@marketmind/types';
 import { parsePrice, parseQty } from './priceUtils';
 
 export const getOrderId = (order: Order): string => 

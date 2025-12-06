@@ -1,4 +1,4 @@
-import type { BacktestResult } from '@shared/types/backtesting';
+import type { BacktestResult } from '@marketmind/types';
 import { useColorMode } from '../components/ui/color-mode';
 
 const DECIMAL_PLACES = 2;

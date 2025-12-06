@@ -1,7 +1,7 @@
 import { formatDateTimeTooltip, formatPrice } from '@/renderer/utils/formatters';
 import { Box, HStack, Stack, Text } from '@chakra-ui/react';
-import type { AIPattern, Kline } from '@shared/types';
-import type { Order } from '@shared/types/trading';
+import type { AIPattern, Kline } from '@marketmind/types';
+import type { Order } from '@marketmind/types';
 import {
   getKlineClose,
   getKlineHigh,

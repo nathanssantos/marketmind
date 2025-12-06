@@ -1,6 +1,6 @@
 import type { Bounds, Dimensions } from '@/renderer/utils/canvas/coordinateSystem';
 import { priceToY } from '@/renderer/utils/canvas/coordinateSystem';
-import type { Kline, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@marketmind/types';
 import { getKlineClose } from '@shared/utils';
 import { useCallback } from 'react';
 

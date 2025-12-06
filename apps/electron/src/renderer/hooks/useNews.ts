@@ -1,4 +1,4 @@
-import type { FetchNewsOptions, NewsArticle, NewsFilter } from '@shared/types';
+import type { FetchNewsOptions, NewsArticle, NewsFilter } from '@marketmind/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { NewsService } from '../services/news/NewsService';
 import { CryptoPanicProvider } from '../services/news/providers/CryptoPanicProvider';

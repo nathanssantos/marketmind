@@ -4,7 +4,7 @@ import { Field } from '@/renderer/components/ui/field';
 import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Select } from '@/renderer/components/ui/select';
 import { Box, Separator, Text, VStack } from '@chakra-ui/react';
-import type { EventImportance } from '@shared/types';
+import type { EventImportance } from '@marketmind/types';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';

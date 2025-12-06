@@ -1,7 +1,7 @@
 import { calculateMACD } from '@renderer/utils/indicators/macd';
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { calculateRSI } from '@renderer/utils/rsi';
-import type { Kline, TradingSetup } from '@shared/types';
+import type { Kline, TradingSetup } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import type { SetupDetectorConfig } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';

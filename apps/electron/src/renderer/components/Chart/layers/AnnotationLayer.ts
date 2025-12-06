@@ -1,4 +1,4 @@
-import type { Viewport } from '@shared/types';
+import type { Viewport } from '@marketmind/types';
 
 export interface SetupMarker {
   klineIndex: number;

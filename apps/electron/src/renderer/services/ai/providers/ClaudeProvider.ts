@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage } from '@shared/types';
+import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage } from '@marketmind/types';
 import { BaseAIProvider, type AIProviderConfig } from '../types';
 
 export class ClaudeProvider extends BaseAIProvider {

@@ -1,4 +1,4 @@
-import type { Kline, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@marketmind/types';
 import { describe, expect, it } from 'vitest';
 import {
     calculateBounds,

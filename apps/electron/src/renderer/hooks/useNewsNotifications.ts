@@ -1,5 +1,5 @@
 import { toaster } from '@/renderer/utils/toaster';
-import type { NewsArticle } from '@shared/types';
+import type { NewsArticle } from '@marketmind/types';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 

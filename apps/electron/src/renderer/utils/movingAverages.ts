@@ -1,4 +1,4 @@
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { getKlineClose } from '@shared/utils';
 
 export const calculateSMA = (klines: Kline[], period: number): (number | null)[] => {

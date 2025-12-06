@@ -6,7 +6,7 @@ import type {
   AITradingDecision,
   Kline,
   TradingSetup,
-} from '@shared/types';
+} from '@marketmind/types';
 import { getKlineClose } from '@shared/utils';
 import { nanoid } from 'nanoid';
 import type { AIService } from './AIService';

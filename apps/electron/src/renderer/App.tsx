@@ -1,6 +1,6 @@
 import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import type { AIPattern, Kline, Viewport } from '@shared/types';
+import type { AIPattern, Kline, Viewport } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume, getOrderId, isOrderActive, isOrderLong, isOrderPending } from '@shared/utils';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';

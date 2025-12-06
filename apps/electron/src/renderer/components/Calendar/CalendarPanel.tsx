@@ -1,5 +1,5 @@
 import { Badge, Box, HStack, Link, Spinner, Stack, Text, VStack } from '@chakra-ui/react';
-import type { CalendarEvent } from '@shared/types';
+import type { CalendarEvent } from '@marketmind/types';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';

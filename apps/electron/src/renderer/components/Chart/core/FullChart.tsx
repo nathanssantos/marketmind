@@ -1,6 +1,6 @@
 import { Box } from '@chakra-ui/react';
 import { useChartColors } from '@renderer/hooks/useChartColors';
-import type { Kline, Order } from '@shared/types';
+import type { Kline, Order } from '@marketmind/types';
 import { useEffect, useRef, useState } from 'react';
 import type { AdvancedControlsConfig } from '../AdvancedControls';
 import { ChartControls } from '../ChartControls';

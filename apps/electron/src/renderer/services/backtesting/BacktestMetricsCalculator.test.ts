@@ -1,4 +1,4 @@
-import type { BacktestTrade } from '@shared/types/backtesting';
+import type { BacktestTrade } from '@marketmind/types';
 import { describe, expect, it } from 'vitest';
 import { BacktestMetricsCalculator } from './BacktestMetricsCalculator';
 

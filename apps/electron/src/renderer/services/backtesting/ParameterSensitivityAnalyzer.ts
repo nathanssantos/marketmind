@@ -19,7 +19,7 @@
  * - Aronson, D. (2006) "Evidence-Based Technical Analysis"
  */
 
-import type { BacktestConfig, BacktestResult } from '@shared/types/backtesting';
+import type { BacktestConfig, BacktestResult } from '@marketmind/types';
 
 export interface ParameterRange {
   name: string;

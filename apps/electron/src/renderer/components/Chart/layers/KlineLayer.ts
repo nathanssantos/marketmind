@@ -1,4 +1,4 @@
-import type { Kline, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen } from '@shared/utils';
 
 export interface KlineLayerConfig {

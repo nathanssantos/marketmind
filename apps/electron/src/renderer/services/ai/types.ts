@@ -1,4 +1,4 @@
-import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage } from '@shared/types';
+import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage } from '@marketmind/types';
 import { buildOptimizedMessages } from '../../utils/conversationSummarizer';
 import { detectIntentFromConversation, getSystemPrompt as getOptimizedSystemPrompt } from '../../utils/intentDetection';
 import { formatKlinesForPrompt, optimizeKlines } from '../../utils/klineOptimizer';

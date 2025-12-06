@@ -1,4 +1,4 @@
-import type { AIPattern } from '@shared/types';
+import type { AIPattern } from '@marketmind/types';
 import { buildPatternRelationships, type PatternRelationship } from '../utils/patternDetection/core/patternRelationships';
 
 interface WorkerInput {

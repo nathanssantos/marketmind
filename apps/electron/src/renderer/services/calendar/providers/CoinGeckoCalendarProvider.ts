@@ -4,7 +4,7 @@ import {
     type CalendarProviderConfig,
     type EventsResponse,
     type FetchEventsOptions,
-} from '@shared/types';
+} from '@marketmind/types';
 
 interface CoinGeckoEvent {
   type: string;

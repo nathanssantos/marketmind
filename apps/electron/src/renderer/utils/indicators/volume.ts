@@ -1,4 +1,4 @@
-import type { Kline, VolumeCluster } from '@shared/types';
+import type { Kline, VolumeCluster } from '@marketmind/types';
 import { getKlineClose, getKlineVolume } from '@shared/utils';
 import { calculateSMA } from '../movingAverages';
 

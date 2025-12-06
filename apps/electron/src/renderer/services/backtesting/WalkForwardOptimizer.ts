@@ -16,8 +16,8 @@
  * - Aronson, D. (2006) "Evidence-Based Technical Analysis"
  */
 
-import type { Kline } from '@shared/types';
-import type { BacktestConfig, BacktestResult } from '@shared/types/backtesting';
+import type { Kline } from '@marketmind/types';
+import type { BacktestConfig, BacktestResult } from '@marketmind/types';
 import { BacktestOrchestrator } from './BacktestOrchestrator';
 
 export interface WalkForwardConfig {

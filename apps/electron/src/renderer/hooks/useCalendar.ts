@@ -5,7 +5,7 @@ import type {
     CalendarSettings,
     EventImportance,
     EventsFilter,
-} from '@shared/types';
+} from '@marketmind/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 let defaultCalendarService: CalendarService | null = null;

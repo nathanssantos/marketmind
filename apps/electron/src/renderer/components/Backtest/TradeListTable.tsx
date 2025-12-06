@@ -1,6 +1,6 @@
 import { useColorMode } from '@/renderer/components/ui/color-mode';
 import { Badge, Box, Heading, Text } from '@chakra-ui/react';
-import type { BacktestTrade } from '@shared/types/backtesting';
+import type { BacktestTrade } from '@marketmind/types';
 import type { ReactElement } from 'react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';

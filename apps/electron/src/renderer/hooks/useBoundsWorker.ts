@@ -3,7 +3,7 @@ import type {
     BoundsWorkerRequest,
     BoundsWorkerResponse,
 } from '@/renderer/workers/bounds.worker';
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { useCallback, useEffect, useRef } from 'react';
 
 export interface Bounds {

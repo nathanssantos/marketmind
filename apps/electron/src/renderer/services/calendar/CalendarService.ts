@@ -6,7 +6,7 @@ import type {
     EventsFilter,
     EventsResponse,
     FetchEventsOptions,
-} from '@shared/types';
+} from '@marketmind/types';
 
 export class CalendarService {
   private primaryProvider: BaseCalendarProvider;

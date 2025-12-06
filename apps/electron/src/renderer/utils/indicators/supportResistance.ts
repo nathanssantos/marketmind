@@ -1,4 +1,4 @@
-import type { Kline, PivotPoint } from '@shared/types';
+import type { Kline, PivotPoint } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 
 const DEFAULT_PIVOT_LOOKBACK = 5;

@@ -1,4 +1,4 @@
-import type { Kline, PivotPoint } from '@shared/types';
+import type { Kline, PivotPoint } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow } from '@shared/utils';
 
 const DEFAULT_ZIGZAG_DEVIATION = 5;

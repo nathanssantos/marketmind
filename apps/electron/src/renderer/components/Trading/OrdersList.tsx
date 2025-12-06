@@ -5,7 +5,7 @@ import { Select } from '@renderer/components/ui/select';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useTradingStore } from '@renderer/store/tradingStore';
-import type { Order, OrderStatus } from '@shared/types/trading';
+import type { Order, OrderStatus } from '@marketmind/types';
 import {
   getOrderId,
   getOrderPrice,

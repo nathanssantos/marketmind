@@ -1,4 +1,4 @@
-import type { BacktestMetrics, BacktestTrade } from '@shared/types/backtesting';
+import type { BacktestMetrics, BacktestTrade } from '@marketmind/types';
 
 export class BacktestMetricsCalculator {
   calculate(trades: BacktestTrade[], initialCapital: number): BacktestMetrics {

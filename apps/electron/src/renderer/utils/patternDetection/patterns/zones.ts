@@ -1,4 +1,4 @@
-import type { AIPatternZone, Kline } from '@shared/types';
+import type { AIPatternZone, Kline } from '@marketmind/types';
 import { getKlineClose, getKlineVolume } from '@shared/utils';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {

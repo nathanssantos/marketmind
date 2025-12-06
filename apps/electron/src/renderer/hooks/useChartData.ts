@@ -1,4 +1,4 @@
-import type { CalendarEvent, Kline, NewsArticle } from '@shared/types';
+import type { CalendarEvent, Kline, NewsArticle } from '@marketmind/types';
 import { useEffect, useRef } from 'react';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';

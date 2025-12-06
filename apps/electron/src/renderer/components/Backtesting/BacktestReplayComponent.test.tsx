@@ -1,5 +1,5 @@
-import type { Kline } from '@shared/types';
-import type { BacktestResult, BacktestTrade } from '@shared/types/backtesting';
+import type { Kline } from '@marketmind/types';
+import type { BacktestResult, BacktestTrade } from '@marketmind/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '../../../tests/test-utils';
 import { BacktestReplayComponent } from './BacktestReplayComponent';

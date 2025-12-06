@@ -1,5 +1,5 @@
 import { calculateMovingAverage } from '@renderer/utils/movingAverages';
-import type { Kline, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@marketmind/types';
 
 export interface MovingAverageLayerConfig {
   period: number;

@@ -1,4 +1,4 @@
-import type { Pattern, PatternStorage } from '@shared/types/pattern';
+import type { Pattern, PatternStorage } from '@marketmind/types';
 
 const STORAGE_PREFIX = 'marketmind:patterns';
 

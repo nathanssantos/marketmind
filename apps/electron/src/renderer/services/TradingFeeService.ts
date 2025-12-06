@@ -1,5 +1,5 @@
-import type { FeeCalculation, TradeViability, TradingFees } from '@shared/types/fees';
-import { BINANCE_DEFAULT_FEES, TRADING_THRESHOLDS } from '@shared/types/fees';
+import type { FeeCalculation, TradeViability, TradingFees } from '@marketmind/types';
+import { BINANCE_DEFAULT_FEES, TRADING_THRESHOLDS } from '@marketmind/types';
 
 const PERCENTAGE_MULTIPLIER = 100;
 const DECIMAL_PLACES = 2;

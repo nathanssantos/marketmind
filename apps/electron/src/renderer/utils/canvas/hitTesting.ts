@@ -1,5 +1,5 @@
 import { CHART_CONFIG } from '@shared/constants';
-import type { AIPattern, Kline } from '@shared/types';
+import type { AIPattern, Kline } from '@marketmind/types';
 import type { CanvasManager } from './CanvasManager';
 
 export interface HitTestPoint {

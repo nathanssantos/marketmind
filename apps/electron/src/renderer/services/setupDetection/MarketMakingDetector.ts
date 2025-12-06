@@ -1,5 +1,5 @@
 import { calculateATR, calculateEMA } from '@marketmind/indicators';
-import type { Kline, SetupType } from '@shared/types';
+import type { Kline, SetupType } from '@marketmind/types';
 import {
     BaseSetupDetector,
     type SetupDetectorConfig,

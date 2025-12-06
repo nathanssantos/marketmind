@@ -1,4 +1,4 @@
-import type { AIPattern } from '@shared/types';
+import type { AIPattern } from '@marketmind/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseAIResponse, validateAIPattern } from './AIResponseParser';
 

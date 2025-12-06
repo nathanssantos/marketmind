@@ -5,7 +5,7 @@ import {
     Stack,
     Text,
 } from '@chakra-ui/react';
-import type { AIPatternType } from '@shared/types';
+import type { AIPatternType } from '@marketmind/types';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HiAdjustmentsHorizontal } from 'react-icons/hi2';

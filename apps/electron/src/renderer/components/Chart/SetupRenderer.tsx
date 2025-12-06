@@ -1,5 +1,5 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import type { Kline, TradingSetup } from '@shared/types';
+import type { Kline, TradingSetup } from '@marketmind/types';
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 

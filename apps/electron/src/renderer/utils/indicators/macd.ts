@@ -1,4 +1,4 @@
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { getKlineClose } from '@shared/utils';
 
 const EMA_MULTIPLIER_NUMERATOR = 2;

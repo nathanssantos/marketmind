@@ -12,7 +12,7 @@ import {
   Stack,
   Text,
 } from '@chakra-ui/react';
-import type { RiskProfile, TradingInterval } from '@shared/types';
+import type { RiskProfile, TradingInterval } from '@marketmind/types';
 import type React from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';

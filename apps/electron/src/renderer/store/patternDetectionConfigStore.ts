@@ -1,4 +1,4 @@
-import type { AIPatternType } from '@shared/types';
+import type { AIPatternType } from '@marketmind/types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 

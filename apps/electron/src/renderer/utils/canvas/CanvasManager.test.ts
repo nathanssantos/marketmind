@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 import { CHART_CONFIG } from '@shared/constants';
-import type { Kline, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@marketmind/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CanvasManager } from './CanvasManager';
 

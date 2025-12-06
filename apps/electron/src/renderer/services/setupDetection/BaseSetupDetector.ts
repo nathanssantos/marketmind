@@ -1,4 +1,4 @@
-import type { Kline, SetupDirection, TradingSetup } from '@shared/types';
+import type { Kline, SetupDirection, TradingSetup } from '@marketmind/types';
 
 export interface SetupDetectorConfig {
   enabled: boolean;

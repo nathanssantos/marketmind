@@ -1,5 +1,5 @@
-import type { Kline } from '@shared/types';
-import type { BacktestConfig, BacktestResult } from '@shared/types/backtesting';
+import type { Kline } from '@marketmind/types';
+import type { BacktestConfig, BacktestResult } from '@marketmind/types';
 import { useCallback, useState } from 'react';
 import { BacktestOrchestrator } from '../services/backtesting';
 

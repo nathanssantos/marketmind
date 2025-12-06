@@ -1,4 +1,4 @@
-import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage } from '@shared/types';
+import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage } from '@marketmind/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AIService } from './AIService';
 

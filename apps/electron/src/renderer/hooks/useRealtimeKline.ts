@@ -1,4 +1,4 @@
-import type { Kline, TimeInterval } from '@shared/types';
+import type { Kline, TimeInterval } from '@marketmind/types';
 import { useCallback, useEffect, useRef } from 'react';
 import type { MarketDataService } from '../services/market/MarketDataService';
 

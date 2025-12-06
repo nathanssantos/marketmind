@@ -1,4 +1,4 @@
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { useChartViewport } from './useChartViewport';

@@ -1,4 +1,4 @@
-import type { AIPattern, Kline } from '@shared/types';
+import type { AIPattern, Kline } from '@marketmind/types';
 import { getKlineClose } from '@shared/utils';
 import {
     IMPORTANCE_NORMALIZATION,

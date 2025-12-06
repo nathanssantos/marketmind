@@ -4,7 +4,7 @@ import {
     type NewsArticle,
     type NewsProviderConfig,
     type NewsResponse,
-} from '@shared/types';
+} from '@marketmind/types';
 
 interface CryptoPanicPost {
   id: number;

@@ -3,7 +3,7 @@ import { Field as ChakraField } from '@chakra-ui/react/field';
 import { Input } from '@renderer/components/ui/input';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { Select } from '@renderer/components/ui/select';
-import type { WalletCurrency } from '@shared/types/trading';
+import type { WalletCurrency } from '@marketmind/types';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

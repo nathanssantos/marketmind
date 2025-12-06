@@ -1,4 +1,4 @@
-import type { TradingSetup } from '@shared/types';
+import type { TradingSetup } from '@marketmind/types';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useSetupStore } from './setupStore';
 

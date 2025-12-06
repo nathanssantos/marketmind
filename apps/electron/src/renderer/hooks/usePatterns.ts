@@ -1,5 +1,5 @@
 import { patternStorage } from '@renderer/services/patternStorage';
-import type { Pattern, PatternSource } from '@shared/types/pattern';
+import type { Pattern, PatternSource } from '@marketmind/types';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UsePatternsProps {

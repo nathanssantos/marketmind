@@ -1,4 +1,4 @@
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 
 const generateRandomKlines = (count: number, basePrice: number = 50000): Kline[] => {
   const klines: Kline[] = [];

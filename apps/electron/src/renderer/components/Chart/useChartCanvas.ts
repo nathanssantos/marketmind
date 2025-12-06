@@ -1,6 +1,6 @@
 import { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants';
-import type { Kline, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@marketmind/types';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 

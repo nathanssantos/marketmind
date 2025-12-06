@@ -1,6 +1,6 @@
 import { Box, HStack, IconButton, Text, VStack } from '@chakra-ui/react';
 import { useChartColors } from '@renderer/hooks/useChartColors';
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { useCallback, useState } from 'react';
 import { FaPause, FaPlay, FaStepBackward, FaStepForward } from 'react-icons/fa';
 import { useBacktestPlayback, type PlaybackSpeed } from '../hooks/useBacktestPlayback';

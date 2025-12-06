@@ -1,4 +1,4 @@
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { describe, expect, it } from 'vitest';
 import {
     createDefaultPinInsideConfig,

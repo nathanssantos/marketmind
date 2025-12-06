@@ -1,5 +1,5 @@
-import type { AIMessage, AIPatternData, AIProviderType, AITrade, AITradingConfig, AITradingStats } from '@shared/types';
-import type { Order, Wallet } from '@shared/types/trading';
+import type { AIMessage, AIPatternData, AIProviderType, AITrade, AITradingConfig, AITradingStats } from '@marketmind/types';
+import type { Order, Wallet } from '@marketmind/types';
 import * as electron from 'electron';
 import ElectronStore from 'electron-store';
 

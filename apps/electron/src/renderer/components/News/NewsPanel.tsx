@@ -1,5 +1,5 @@
 import { Badge, Box, HStack, Link, Spinner, Stack, Text, VStack } from '@chakra-ui/react';
-import type { NewsArticle } from '@shared/types';
+import type { NewsArticle } from '@marketmind/types';
 import { formatDistanceToNow } from 'date-fns';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';

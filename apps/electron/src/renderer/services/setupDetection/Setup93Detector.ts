@@ -1,7 +1,7 @@
 import { calculateATR } from '@renderer/utils/indicators/atr';
 import { findHighestSwingHigh, findLowestSwingLow } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '@shared/utils';
 import {
     BaseSetupDetector,

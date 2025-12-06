@@ -1,5 +1,5 @@
-import type { FetchNewsOptions, NewsArticle, NewsResponse } from '@shared/types';
-import { BaseNewsProvider } from '@shared/types';
+import type { FetchNewsOptions, NewsArticle, NewsResponse } from '@marketmind/types';
+import { BaseNewsProvider } from '@marketmind/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NewsService } from './NewsService';
 

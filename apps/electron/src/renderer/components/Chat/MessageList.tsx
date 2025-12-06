@@ -1,5 +1,5 @@
 import { Avatar, Box, Flex, Spinner, Text } from '@chakra-ui/react';
-import type { AIMessage } from '@shared/types';
+import type { AIMessage } from '@marketmind/types';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuSparkles, LuUser } from 'react-icons/lu';

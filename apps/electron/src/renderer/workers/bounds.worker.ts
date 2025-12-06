@@ -1,4 +1,4 @@
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { calculateBounds as calculate } from '../utils/boundsCalculation';
 
 export interface BoundsWorkerRequest {

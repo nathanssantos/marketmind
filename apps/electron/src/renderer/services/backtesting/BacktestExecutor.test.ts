@@ -1,5 +1,5 @@
-import type { Kline, TradingSetup } from '@shared/types';
-import type { BacktestConfig, BacktestTrade } from '@shared/types/backtesting';
+import type { Kline, TradingSetup } from '@marketmind/types';
+import type { BacktestConfig, BacktestTrade } from '@marketmind/types';
 import { describe, expect, it } from 'vitest';
 import { BacktestExecutor } from './BacktestExecutor';
 

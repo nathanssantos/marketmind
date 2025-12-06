@@ -1,5 +1,5 @@
-import type { AIPattern } from '@shared/types';
-import type { Pattern } from '@shared/types/pattern';
+import type { AIPattern } from '@marketmind/types';
+import type { Pattern } from '@marketmind/types';
 import { useCallback } from 'react';
 import { useChartContext } from '../context/ChartContext';
 import { usePatternDetectionConfigStore } from '../store/patternDetectionConfigStore';

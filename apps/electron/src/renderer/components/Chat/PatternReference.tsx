@@ -1,7 +1,7 @@
 import { Box } from '@chakra-ui/react';
 import { PATTERN_COLORS } from '@shared/constants';
-import type { AIPattern } from '@shared/types';
-import type { Pattern } from '@shared/types/pattern';
+import type { AIPattern } from '@marketmind/types';
+import type { Pattern } from '@marketmind/types';
 import { useMemo } from 'react';
 
 interface PatternReferenceProps {

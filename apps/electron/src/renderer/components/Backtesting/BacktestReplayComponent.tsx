@@ -14,8 +14,8 @@
  */
 
 import { Box, Button, HStack, Text, VStack } from '@chakra-ui/react';
-import type { Kline } from '@shared/types';
-import type { BacktestResult, BacktestTrade } from '@shared/types/backtesting';
+import type { Kline } from '@marketmind/types';
+import type { BacktestResult, BacktestTrade } from '@marketmind/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface BacktestReplayProps {

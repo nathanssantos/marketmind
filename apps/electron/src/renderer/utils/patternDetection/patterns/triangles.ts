@@ -1,4 +1,4 @@
-import type { AIPatternTriangle, Kline } from '@shared/types';
+import type { AIPatternTriangle, Kline } from '@marketmind/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
   calculateConfidence,

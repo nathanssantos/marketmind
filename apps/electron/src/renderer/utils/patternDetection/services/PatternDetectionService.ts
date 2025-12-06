@@ -1,4 +1,4 @@
-import type { AIPattern, Kline } from '@shared/types';
+import type { AIPattern, Kline } from '@marketmind/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import { filterAndPrioritizePatterns } from '../core/patternFilter';
 import { calculateImportanceScore } from '../core/patternImportance';

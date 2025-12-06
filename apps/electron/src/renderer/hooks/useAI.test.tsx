@@ -1,4 +1,4 @@
-import type { AIAnalysisResponse, AIMessage, AIProviderType, Kline } from '@shared/types';
+import type { AIAnalysisResponse, AIMessage, AIProviderType, Kline } from '@marketmind/types';
 import { act, renderHook } from '@testing-library/react';
 import { type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

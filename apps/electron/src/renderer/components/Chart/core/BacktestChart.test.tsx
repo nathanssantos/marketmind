@@ -1,5 +1,5 @@
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
-import type { Kline, Trade } from '@shared/types';
+import type { Kline, Trade } from '@marketmind/types';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ChartProvider } from '../../../context/ChartContext';

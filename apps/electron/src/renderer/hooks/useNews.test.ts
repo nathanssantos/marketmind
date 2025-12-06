@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useNews } from './useNews';
-import type { NewsArticle } from '@shared/types';
+import type { NewsArticle } from '@marketmind/types';
 import type { NewsService } from '../services/news/NewsService';
 
 describe('useNews', () => {

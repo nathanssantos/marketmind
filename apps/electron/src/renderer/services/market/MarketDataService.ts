@@ -6,7 +6,7 @@ import type {
     Symbol,
     SymbolInfo,
     WebSocketSubscription,
-} from '@shared/types';
+} from '@marketmind/types';
 import { indexedDBCache } from '../cache/IndexedDBCache';
 
 export interface MarketDataServiceConfig {

@@ -1,4 +1,4 @@
-import type { PivotPoint } from '@shared/types';
+import type { PivotPoint } from '@marketmind/types';
 import { describe, expect, it } from 'vitest';
 import {
     detectSupportResistance,

@@ -1,5 +1,5 @@
 import { workerPool } from '@/renderer/utils/WorkerPool';
-import type { AIPattern } from '@shared/types';
+import type { AIPattern } from '@marketmind/types';
 import { useCallback, useEffect, useRef } from 'react';
 import type { PatternRelationship } from '../utils/patternDetection/core/patternRelationships';
 import { buildPatternRelationships } from '../utils/patternDetection/core/patternRelationships';

@@ -1,7 +1,7 @@
 import type { Timeframe } from '@/renderer/components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '@/renderer/components/Chart/useMovingAverageRenderer';
 import { AIService } from '@/renderer/services/ai';
-import type { AIAnalysisResponse, AIMessage, AIProviderType, AITrade, AITradingConfig, AITradingStats, Kline } from '@shared/types';
+import type { AIAnalysisResponse, AIMessage, AIProviderType, AITrade, AITradingConfig, AITradingStats, Kline } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '@shared/utils';
 import { create } from 'zustand';
 

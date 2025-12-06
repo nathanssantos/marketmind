@@ -1,5 +1,5 @@
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Kline, SetupCancellationReason, TradingSetup } from '@shared/types';
+import type { Kline, SetupCancellationReason, TradingSetup } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow } from '@shared/utils';
 
 const EMA_PERIOD = 9;

@@ -1,4 +1,4 @@
-import type { Order } from '@shared/types/trading';
+import type { Order } from '@marketmind/types';
 import { getOrderId, getOrderPrice, isOrderActive, isOrderLong, isOrderPending, isOrderShort } from '@shared/utils';
 import { useCallback, useState } from 'react';
 

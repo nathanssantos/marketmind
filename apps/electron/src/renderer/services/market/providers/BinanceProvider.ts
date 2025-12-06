@@ -1,4 +1,4 @@
-import type { Kline, KlineData, TimeInterval } from '@shared/types';
+import type { Kline, KlineData, TimeInterval } from '@marketmind/types';
 import {
     BaseMarketProvider,
     type FetchKlinesOptions,
@@ -7,7 +7,7 @@ import {
     type SymbolInfo,
     type WebSocketSubscription,
     type WebSocketUpdate,
-} from '@shared/types';
+} from '@marketmind/types';
 import type { AxiosInstance } from 'axios';
 import axios from 'axios';
 

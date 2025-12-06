@@ -1,5 +1,5 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
-import type { FVG, Kline, OrderBlock } from '@shared/types';
+import type { FVG, Kline, OrderBlock } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '@shared/utils';
 import {
     BaseSetupDetector,

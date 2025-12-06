@@ -1,7 +1,7 @@
 import { useTradingStore } from '@renderer/store/tradingStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants';
-import type { Order } from '@shared/types/trading';
+import type { Order } from '@marketmind/types';
 import {
     getKlineClose,
     getOrderId,

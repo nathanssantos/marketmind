@@ -1,4 +1,4 @@
-import type { AIAnalysisRequest } from '@shared/types';
+import type { AIAnalysisRequest } from '@marketmind/types';
 import { useCallback, useMemo } from 'react';
 import { useChartContext } from '../context/ChartContext';
 import { AIService, type AIServiceConfig } from '../services/ai';

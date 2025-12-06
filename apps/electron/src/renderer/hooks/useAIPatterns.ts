@@ -1,4 +1,4 @@
-import type { AIPattern, AIPatternData } from '@shared/types';
+import type { AIPattern, AIPatternData } from '@marketmind/types';
 import { useCallback, useEffect, useState } from 'react';
 import { parseAIResponse } from '../services/ai/AIResponseParser';
 

@@ -1,4 +1,4 @@
-import type { AIPatternFibonacci, AIPatternPoint, Kline } from '@shared/types';
+import type { AIPatternFibonacci, AIPatternPoint, Kline } from '@marketmind/types';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
   calculateConfidence,

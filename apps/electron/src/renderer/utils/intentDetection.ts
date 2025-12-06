@@ -1,4 +1,4 @@
-import type { AIMessage } from '@shared/types';
+import type { AIMessage } from '@marketmind/types';
 import optimizedPrompts from '../services/ai/prompts-optimized.json';
 
 export type PromptMode = 'simple' | 'full';

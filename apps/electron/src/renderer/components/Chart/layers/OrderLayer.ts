@@ -1,5 +1,5 @@
-import type { Viewport } from '@shared/types';
-import type { Order } from '@shared/types/trading';
+import type { Viewport } from '@marketmind/types';
+import type { Order } from '@marketmind/types';
 import { getOrderPrice, getOrderType, isOrderLong, isOrderPending } from '@shared/utils';
 
 export interface OrderLayerConfig {

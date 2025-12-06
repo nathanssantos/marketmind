@@ -1,4 +1,4 @@
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import type { PivotPoint } from '../types';

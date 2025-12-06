@@ -1,5 +1,5 @@
 import { useChartColors } from '@renderer/hooks/useChartColors';
-import type { Kline, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@marketmind/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createSetupMarkerRenderer, type SetupMarker } from '../layers/AnnotationLayer';
 import { createGridRenderer } from '../layers/GridLayer';

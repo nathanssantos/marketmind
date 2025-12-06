@@ -1,6 +1,6 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineVolume } from '@shared/utils/klineUtils';
 import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
 

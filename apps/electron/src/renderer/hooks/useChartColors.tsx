@@ -1,6 +1,6 @@
 import { useColorMode } from '@/renderer/components/ui/color-mode';
 import { getChartColors } from '@/renderer/theme';
-import type { ChartColors } from '@shared/types';
+import type { ChartColors } from '@marketmind/types';
 import { useMemo } from 'react';
 
 export interface ChartThemeColors extends ChartColors {

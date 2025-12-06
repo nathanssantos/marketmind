@@ -7,11 +7,13 @@ import { Button } from '@renderer/components/ui/button';
 import { Checkbox } from '@renderer/components/ui/checkbox';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { useChartContext } from '@renderer/context/ChartContext';
-import { useBacktesting } from '@renderer/hooks/useBacktesting';
+import { useBacktestLocal } from '@renderer/hooks/useBacktestLocal';
 import type { MarketDataService } from '@renderer/services/market/MarketDataService';
 import { useSetupStore } from '@renderer/store/setupStore';
-import type { BacktestConfig as BacktestConfigType } from '@shared/types/backtesting';
+import type { BacktestConfig as BacktestConfigType } from '@marketmind/types';
 import { useState } from 'react';
+import { BacktestProgress } from './BacktestProgress';
+import { trpc } from '@renderer/utils/trpc';
 
 interface BacktestConfigProps {
   onBacktestComplete?: (resultId: string) => void;
@@ -20,8 +22,14 @@ interface BacktestConfigProps {
 
 export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestConfigProps) => {
   const { chartData } = useChartContext();
-  const { runBacktest, isRunningBacktest, runBacktestError } = useBacktesting();
+  const { runBacktest: runBacktestLocal, isRunning, progress, error: backtestError } = useBacktestLocal();
   const { config: setupConfig } = useSetupStore();
+  const utils = trpc.useUtils();
+  const saveBacktestMutation = trpc.backtest.run.useMutation({
+    onSuccess: () => {
+      utils.backtest.list.invalidate();
+    },
+  });
 
   // Calculate last month's date range
   const getLastMonthRange = () => {
@@ -122,9 +130,30 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
     };
 
     try {
-      const result = await runBacktest(config);
-      if (result && onBacktestComplete) {
-        onBacktestComplete(result.id);
+      // Buscar klines do período
+      const klinesResponse = await marketService.fetchKlines({
+        symbol,
+        interval,
+        startTime: new Date(startDate).getTime(),
+        endTime: new Date(endDate).getTime(),
+        limit: 1000,
+      });
+
+      if (!klinesResponse.klines || klinesResponse.klines.length === 0) {
+        alert('No klines found for the specified period');
+        return;
+      }
+
+      // Rodar backtest localmente com progresso em tempo real
+      const result = await runBacktestLocal(config, klinesResponse.klines);
+
+      if (result) {
+        // Salvar resultado no backend para histórico
+        await saveBacktestMutation.mutateAsync(config);
+
+        if (onBacktestComplete) {
+          onBacktestComplete(result.id);
+        }
       }
     } catch (error) {
       console.error('Backtest failed:', error);
@@ -571,10 +600,22 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
           </Text>
         </Box>
 
-        {runBacktestError && (
+        {/* Progress Bar */}
+        {isRunning && progress && (
+          <BacktestProgress
+            progress={progress.percent}
+            currentKline={progress.currentKline}
+            totalKlines={progress.totalKlines}
+            tradesFound={progress.tradesFound}
+            currentEquity={progress.currentEquity}
+            estimatedTimeRemaining={progress.estimatedTimeRemaining}
+          />
+        )}
+
+        {backtestError && (
           <Box p={3} bg="red.50" borderRadius="md" _dark={{ bg: 'red.900' }}>
             <Text fontSize="xs" color="red.600" _dark={{ color: 'red.300' }}>
-              {runBacktestError.message}
+              {backtestError}
             </Text>
           </Box>
         )}
@@ -583,11 +624,11 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
           size="xs"
           colorPalette="blue"
           onClick={handleRunBacktest}
-          disabled={!isValid || isRunningBacktest}
+          disabled={!isValid || isRunning}
           width="full"
-          loading={isRunningBacktest}
+          loading={isRunning}
         >
-          {isRunningBacktest ? 'Running Backtest...' : 'Run Backtest'}
+          {isRunning ? 'Running Backtest...' : 'Run Backtest'}
         </Button>
       </Stack>
     </Stack>

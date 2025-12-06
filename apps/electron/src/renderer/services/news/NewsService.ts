@@ -6,7 +6,7 @@ import type {
     NewsFilter,
     NewsResponse,
     NewsServiceConfig,
-} from '@shared/types';
+} from '@marketmind/types';
 
 export class NewsService {
   private primaryProvider: BaseNewsProvider;

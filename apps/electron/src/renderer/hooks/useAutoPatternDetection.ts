@@ -1,4 +1,4 @@
-import type { Kline, Viewport } from '@shared/types';
+import type { Kline, Viewport } from '@marketmind/types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChartContext } from '../context/ChartContext';
 import { usePatternDetectionConfigStore } from '../store/patternDetectionConfigStore';

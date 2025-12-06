@@ -1,4 +1,4 @@
-import type { BaseMarketProvider, KlineData, MarketProviderConfig, Symbol, SymbolInfo, WebSocketSubscription } from '@shared/types';
+import type { BaseMarketProvider, KlineData, MarketProviderConfig, Symbol, SymbolInfo, WebSocketSubscription } from '@marketmind/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MarketDataService } from './MarketDataService';
 

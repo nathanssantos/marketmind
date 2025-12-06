@@ -28,4 +28,8 @@ export interface Viewport {
   end: number;
   klineWidth: number;
   klineSpacing: number;
+  width: number;
+  height: number;
+  priceMin: number;
+  priceMax: number;
 }
