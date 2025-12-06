@@ -1,4 +1,4 @@
-import { Box, Button, ButtonGroup, Flex, Stack, Table, Text, Spinner } from '@chakra-ui/react';
+import { Box, Button, ButtonGroup, Flex, Spinner, Stack, Table, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useBackendAnalytics, type AnalyticsPeriod } from '../../hooks/useBackendAnalytics';
 
@@ -55,12 +55,11 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
         <Text fontSize="lg" fontWeight="bold">
           Setup Performance
         </Text>
-        <ButtonGroup size="sm" isAttached variant="outline">
+        <ButtonGroup size="sm" variant="outline">
           {periods.map((p) => (
             <Button
               key={p.value}
               onClick={() => setPeriod(p.value)}
-              colorScheme={period === p.value ? 'blue' : 'gray'}
               variant={period === p.value ? 'solid' : 'outline'}
             >
               {p.label}
@@ -70,7 +69,7 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
       </Flex>
 
       <Box overflowX="auto">
-        <Table.Root variant="simple" size="sm">
+        <Table.Root variant="outline" size="sm">
           <Table.Header>
             <Table.Row>
               <Table.ColumnHeader>Setup Type</Table.ColumnHeader>

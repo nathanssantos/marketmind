@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Backtest Chart Visualization** 📊 🆕
+  - Complete BacktestChart component (171 lines) with visual trade markers
+  - Candlestick chart rendering with Canvas API
+  - Trade entry markers: Green/red triangles (▲ LONG, ▼ SHORT)
+  - Trade exit markers: Circles connected to entries via dotted lines
+  - Color-coded by profitability (green = winning, red = losing trades)
+  - Price scale and grid for reference
+  - Win rate display at bottom
+  - Auto-scaling based on klines data range
+  - Integrated into BacktestResults component
+  - MarketDataService integration for historical klines fetching
+  - Legend explaining marker meanings
+  - Purpose: Visual validation showing exactly where and when trades occurred
+
 - **Phase 2: Mean Reversion Strategy Detector** 🎯
   - Complete MeanReversionDetector implementation (225 lines)
   - Bollinger Bands (BB) + RSI strategy (oversold/overbought detection)

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
+import type { SetupDetectorResult } from '../services/setupDetection';
 import { useTradingStore } from '../store/tradingStore';
 import { useBackendAutoTrading } from './useBackendAutoTrading';
-import type { DetectedSetup } from '../services/setupDetection/types';
 
 interface UseAutoTradingOptions {
   walletId: string;
@@ -10,7 +10,6 @@ interface UseAutoTradingOptions {
 
 export const useAutoTrading = ({ walletId, isSimulatorMode }: UseAutoTradingOptions) => {
   const addOrder = useTradingStore((state) => state.addOrder);
-  const getQuantityForSymbol = useTradingStore((state) => state.getQuantityForSymbol);
 
   const {
     config: backendConfig,
@@ -21,7 +20,7 @@ export const useAutoTrading = ({ walletId, isSimulatorMode }: UseAutoTradingOpti
 
   const executeSetup = useCallback(
     async (
-      setup: DetectedSetup,
+      setup: SetupDetectorResult['setup'],
       symbol: string,
       quantity: number,
       fees: {
@@ -31,6 +30,10 @@ export const useAutoTrading = ({ walletId, isSimulatorMode }: UseAutoTradingOpti
       },
       currentPrice?: number
     ) => {
+      if (!setup) {
+        return { success: false, error: 'Invalid setup' };
+      }
+
       if (isSimulatorMode) {
         const isLong = setup.direction === 'LONG';
 

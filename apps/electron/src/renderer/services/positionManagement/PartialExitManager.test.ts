@@ -1,10 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
     PartialExitManager,
     createPartialExitManager,
-    createDefaultPartialExitConfig,
-    type PartialExitConfig,
-    type PartialExitState,
+    type PartialExitConfig
 } from './PartialExitManager';
 
 describe('PartialExitManager', () => {

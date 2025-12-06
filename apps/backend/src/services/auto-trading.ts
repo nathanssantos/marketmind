@@ -32,7 +32,6 @@ export class AutoTradingService {
   ): OrderParams {
     const entryPrice = parseFloat(setup.entryPrice);
     const stopLoss = parseFloat(setup.stopLoss);
-    const takeProfit = parseFloat(setup.takeProfit);
 
     const positionSize = this.calculatePositionSize(
       config,
@@ -98,7 +97,7 @@ export class AutoTradingService {
     };
   }
 
-  private calculateKellyCriterion(riskPercent: number): number {
+  private calculateKellyCriterion(_riskPercent: number): number {
     const winRate = 0.55;
     const avgWin = 2.0;
     const avgLoss = 1.0;
@@ -184,24 +183,24 @@ export class AutoTradingService {
         timeInForce: orderParams.timeInForce,
       });
 
-      logger.info('Binance order executed', {
+      logger.info({
         orderId: order.orderId,
         symbol: order.symbol,
-        side: order.side,
-        quantity: order.origQty,
-        price: order.price,
-      });
+        side: 'side' in order ? order.side : 'unknown',
+        quantity: 'origQty' in order ? order.origQty : '0',
+        price: 'price' in order ? order.price : '0',
+      }, 'Binance order executed');
 
       return {
         orderId: order.orderId,
-        executedQty: order.executedQty?.toString() || '0',
-        price: order.price?.toString() || '0',
+        executedQty: 'executedQty' in order ? order.executedQty?.toString() || '0' : '0',
+        price: 'price' in order ? order.price?.toString() || '0' : '0',
       };
     } catch (error) {
-      logger.error('Failed to execute Binance order', {
+      logger.error({
         error: error instanceof Error ? error.message : String(error),
         orderParams,
-      });
+      }, 'Failed to execute Binance order');
       throw error;
     }
   }

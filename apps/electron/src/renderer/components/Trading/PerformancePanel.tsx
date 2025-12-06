@@ -5,9 +5,9 @@ import {
   Flex,
   Grid,
   GridItem,
+  Spinner,
   Stack,
   Text,
-  Spinner,
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useBackendAnalytics, type AnalyticsPeriod } from '../../hooks/useBackendAnalytics';
@@ -69,12 +69,11 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
         <Text fontSize="lg" fontWeight="bold">
           Performance
         </Text>
-        <ButtonGroup size="sm" isAttached variant="outline">
+        <ButtonGroup size="sm" variant="outline">
           {periods.map((p) => (
             <Button
               key={p.value}
               onClick={() => setPeriod(p.value)}
-              colorScheme={period === p.value ? 'blue' : 'gray'}
               variant={period === p.value ? 'solid' : 'outline'}
             >
               {p.label}

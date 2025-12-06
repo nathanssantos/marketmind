@@ -15,7 +15,7 @@ export interface PriceUpdate {
 export class BinancePriceStreamService {
   private client: WebsocketClient | null = null;
   private subscribedSymbols: Set<string> = new Set();
-  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly RECONNECT_DELAY_MS = 5000;
 
   start(): void {
@@ -35,10 +35,12 @@ export class BinancePriceStreamService {
       this.handleMessage(data);
     });
 
-    this.client.on('error', (error) => {
-      logger.error('Binance WebSocket error', {
+    // WebsocketClient types don't properly expose error event handler
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (this.client as any).on('error', (error: unknown) => {
+      logger.error({
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Binance WebSocket error');
     });
 
     this.client.on('reconnected', () => {
@@ -46,10 +48,10 @@ export class BinancePriceStreamService {
       this.resubscribeAll();
     });
 
-    this.subscribeToActivePositions();
+    void this.subscribeToActivePositions();
 
     setInterval(() => {
-      this.subscribeToActivePositions();
+      void this.subscribeToActivePositions();
     }, 60000);
   }
 
@@ -76,20 +78,20 @@ export class BinancePriceStreamService {
       const message = data as Record<string, unknown>;
 
       if (message['e'] === 'trade' && typeof message['s'] === 'string') {
-        const symbol = message['s'] as string;
+        const symbol = message['s'];
         const price = parseFloat(message['p'] as string);
         const timestamp = message['T'] as number;
 
-        this.processPriceUpdate({
+        void this.processPriceUpdate({
           symbol,
           price,
           timestamp,
         });
       }
     } catch (error) {
-      logger.error('Error handling Binance message', {
+      logger.error({
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Error handling Binance message');
     }
   }
 
@@ -113,11 +115,11 @@ export class BinancePriceStreamService {
         }
       }
     } catch (error) {
-      logger.error('Error processing price update', {
+      logger.error({
         symbol: update.symbol,
         price: update.price,
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Error processing price update');
     }
   }
 
@@ -152,9 +154,9 @@ export class BinancePriceStreamService {
         );
       }
     } catch (error) {
-      logger.error('Error subscribing to active positions', {
+      logger.error({
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Error subscribing to active positions');
     }
   }
 
@@ -164,13 +166,13 @@ export class BinancePriceStreamService {
     }
 
     try {
-      this.client.subscribeTrades(symbol, 'spot');
+      void this.client.subscribeTrades(symbol, 'spot');
       this.subscribedSymbols.add(symbol);
       logger.info(`Subscribed to trades for ${symbol}`);
     } catch (error) {
-      logger.error(`Failed to subscribe to ${symbol}`, {
+      logger.error({
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, `Failed to subscribe to ${symbol}`);
     }
   }
 
@@ -183,9 +185,9 @@ export class BinancePriceStreamService {
       this.subscribedSymbols.delete(symbol);
       logger.info(`Unsubscribed from trades for ${symbol}`);
     } catch (error) {
-      logger.error(`Failed to unsubscribe from ${symbol}`, {
+      logger.error({
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, `Failed to unsubscribe from ${symbol}`);
     }
   }
 

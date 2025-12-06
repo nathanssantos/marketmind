@@ -18,6 +18,23 @@ export interface BacktestConfig {
   takeProfitPercent?: number; // TP as % of entry (ignored if useAlgorithmicLevels = true)
   maxPositionSize?: number; // Max % of capital per trade
   commission?: number; // Trading fee % (default 0.1%)
+  
+  // Risk Management (Kelly Criterion)
+  useKellyCriterion?: boolean; // Use Kelly Criterion for position sizing
+  kellyFraction?: number; // Kelly fraction to use (0.25 = quarter Kelly, 0.5 = half Kelly, 1.0 = full Kelly)
+  riskProfile?: 'conservative' | 'moderate' | 'aggressive'; // Preset risk profiles
+  
+  // Trailing Stop
+  useTrailingStop?: boolean; // Enable ATR-based trailing stop
+  trailingStopATRMultiplier?: number; // ATR multiplier for initial stop (default 2.0)
+  trailingATRMultiplier?: number; // ATR multiplier for trailing (default 1.5)
+  breakEvenAfterR?: number; // Move to break-even after this R-multiple (default 1.0)
+  breakEvenBuffer?: number; // Buffer above/below entry for break-even (default 0.1%)
+  
+  // Partial Exits
+  usePartialExits?: boolean; // Enable scaled exits at profit targets
+  partialExitLevels?: Array<{ percentage: number; rMultiple: number }>; // Exit levels
+  lockProfitsAfterFirstExit?: boolean; // Move stop to break-even after first partial exit
 }
 
 export interface BacktestTrade {

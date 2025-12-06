@@ -1,4 +1,3 @@
-import type { Trade } from '@marketmind/types';
 import { useMemo } from 'react';
 
 export interface SetupMarker {
@@ -12,7 +11,7 @@ export interface SetupMarker {
 }
 
 export interface UseTradeVisualizationProps {
-  trades: Trade[];
+  trades: any[];
   viewport: {
     start: number;
     end: number;
@@ -28,6 +27,9 @@ export interface UseTradeVisualizationProps {
 export interface UseTradeVisualizationResult {
   markers: SetupMarker[];
   visibleMarkers: SetupMarker[];
+  tradeMarkers: SetupMarker[];
+  slLines: any[];
+  tpLines: any[];
   profitableCount: number;
   losingCount: number;
   totalProfit: number;
@@ -170,6 +172,9 @@ export const useTradeVisualization = ({
   return {
     markers,
     visibleMarkers,
+    tradeMarkers: markers,
+    slLines: [],
+    tpLines: [],
     profitableCount: stats.profitableCount,
     losingCount: stats.losingCount,
     totalProfit: stats.totalProfit,

@@ -1,5 +1,5 @@
 import { calculateATR, calculateEMA } from '@marketmind/indicators';
-import type { Kline } from '@shared/types';
+import type { Kline, SetupType } from '@shared/types';
 import {
     BaseSetupDetector,
     type SetupDetectorConfig,
@@ -56,8 +56,9 @@ export class GridTradingDetector extends BaseSetupDetector {
         }
 
         // Calculate ATR for grid spacing
-        const atr = calculateATR(klinesUpToCurrent, this.gridConfig.atrPeriod);
-        if (atr === null) {
+        const atrArray = calculateATR(klinesUpToCurrent, this.gridConfig.atrPeriod);
+        const atr = atrArray[atrArray.length - 1];
+        if (atr === null || atr === undefined || isNaN(atr)) {
             return { setup: null, confidence: 0 };
         }
 
@@ -68,19 +69,19 @@ export class GridTradingDetector extends BaseSetupDetector {
 
         // Check volume
         const avgVolume = this.calculateAverageVolume(klines, currentIndex, 20);
-        if (current.volume < avgVolume * this.gridConfig.volumeThreshold) {
+        if (Number(current.volume) < avgVolume * this.gridConfig.volumeThreshold) {
             return { setup: null, confidence: 0 };
         }
 
         // Calculate grid levels
-        const gridSpacing = this.calculateGridSpacing(current.close, atr);
-        const gridLevels = this.createGridLevels(fairValue, gridSpacing);
+        const gridSpacing = this.calculateGridSpacing(Number(current.close), atr);
+        const gridLevels = this.createGridLevels(fairValue as unknown as number, gridSpacing);
 
         // Determine which grid level we're at
-        const currentGridLevel = this.findCurrentGridLevel(current.close, gridLevels);
+        const currentGridLevel = this.findCurrentGridLevel(Number(current.close), gridLevels);
 
         // Create setup based on position relative to grid
-        return this.createGridSetup(klines, currentIndex, fairValue, gridLevels, currentGridLevel);
+        return this.createGridSetup(klines, currentIndex, fairValue as unknown as number, gridLevels, currentGridLevel);
     }
 
     private isMarketRanging(klines: Kline[], currentIndex: number): boolean {
@@ -92,12 +93,14 @@ export class GridTradingDetector extends BaseSetupDetector {
         for (let i = 0; i < 10; i++) {
             const idx = currentIndex - i;
             const klinesUpToCurrent = klines.slice(0, idx + 1);
-            const currentEMA = calculateEMA(klinesUpToCurrent, emaPeriod);
+            const currentEMAArray = calculateEMA(klinesUpToCurrent, emaPeriod);
+            const currentEMA = currentEMAArray[currentEMAArray.length - 1];
             
             const klinesUpToPrevious = klines.slice(0, idx);
-            const previousEMA = calculateEMA(klinesUpToPrevious, emaPeriod);
+            const previousEMAArray = calculateEMA(klinesUpToPrevious, emaPeriod);
+            const previousEMA = previousEMAArray[previousEMAArray.length - 1];
 
-            if (currentEMA === null || previousEMA === null) continue;
+            if (currentEMA === null || previousEMA === null || currentEMA === undefined || previousEMA === undefined) continue;
 
             const emaChange = Math.abs((currentEMA - previousEMA) / previousEMA);
             emaChanges += emaChange;
@@ -180,21 +183,22 @@ export class GridTradingDetector extends BaseSetupDetector {
         gridLevels: Array<{ level: number; price: number; type: 'BUY' | 'SELL' }>,
         currentLevel: number
     ): SetupDetectorResult {
-        const current = klines[currentIndex];
+        const current = klines[currentIndex]!;
         
         // If below fair value, BUY setup
         // If above fair value, SELL setup
-        const direction = current.close < fairValue ? 'LONG' : 'SHORT';
+        const direction = Number(current.close) < fairValue ? 'LONG' : 'SHORT';
 
         // Find next grid levels
-        const nextLevelUp = gridLevels.find(g => g.price > current.close);
-        const nextLevelDown = gridLevels.findLast(g => g.price < current.close);
+        const closePrice = Number(current.close);
+        const nextLevelUp = gridLevels.find(g => g.price > closePrice);
+        const nextLevelDown = [...gridLevels].reverse().find(g => g.price < closePrice);
 
         if (!nextLevelUp || !nextLevelDown) {
             return { setup: null, confidence: 0 };
         }
 
-        const entryPrice = current.close;
+        const entryPrice = Number(current.close);
         const stopLoss = direction === 'LONG' 
             ? nextLevelDown.price - (nextLevelUp.price - nextLevelDown.price) * 0.5
             : nextLevelUp.price + (nextLevelUp.price - nextLevelDown.price) * 0.5;
@@ -205,20 +209,29 @@ export class GridTradingDetector extends BaseSetupDetector {
         const confidence = this.calculateConfidence(
             klines,
             currentIndex,
-            current.close,
-            fairValue,
-            gridLevels
+            Number(current.close),
+            fairValue
         );
 
         return {
             setup: {
-                type: 'GRID_TRADING',
+                type: 'GRID_TRADING' as SetupType,
                 direction,
                 entryPrice,
                 stopLoss,
                 takeProfit,
+                riskRewardRatio: direction === 'LONG' 
+                    ? (takeProfit - entryPrice) / (entryPrice - stopLoss)
+                    : (entryPrice - takeProfit) / (stopLoss - entryPrice),
                 confidence,
-                metadata: {
+                volumeConfirmation: true,
+                indicatorConfluence: 0.65,
+                klineIndex: currentIndex,
+                openTime: klines[currentIndex]!.openTime,
+                id: `GRID_TRADING-${direction}-${currentIndex}-${Date.now()}`,
+                visible: true,
+                source: 'algorithm' as const,
+                setupData: {
                     fairValue,
                     currentLevel,
                     gridLevels: gridLevels.map(g => ({
@@ -226,7 +239,7 @@ export class GridTradingDetector extends BaseSetupDetector {
                         price: g.price,
                         type: g.type,
                     })),
-                    gridSpacing: gridLevels[1].price - gridLevels[0].price,
+                    gridSpacing: gridLevels[1]!.price - gridLevels[0]!.price,
                     totalLevels: this.gridConfig.gridLevels,
                 },
             },
@@ -238,8 +251,7 @@ export class GridTradingDetector extends BaseSetupDetector {
         klines: Kline[],
         currentIndex: number,
         currentPrice: number,
-        fairValue: number,
-        gridLevels: Array<{ level: number; price: number; type: 'BUY' | 'SELL' }>
+        fairValue: number
     ): number {
         let confidence = 0.65; // Base confidence for grid trading
 
@@ -254,8 +266,8 @@ export class GridTradingDetector extends BaseSetupDetector {
 
         // Higher confidence with higher volume
         const avgVolume = this.calculateAverageVolume(klines, currentIndex, 20);
-        const current = klines[currentIndex];
-        const volumeRatio = current.volume / avgVolume;
+        const current = klines[currentIndex]!;
+        const volumeRatio = Number(current.volume) / avgVolume;
         if (volumeRatio > 1.5) confidence += 0.05;
         else if (volumeRatio > 1.2) confidence += 0.03;
 
@@ -269,25 +281,27 @@ export class GridTradingDetector extends BaseSetupDetector {
     ): number {
         const start = Math.max(0, currentIndex - period + 1);
         const slice = klines.slice(start, currentIndex + 1);
-        const sum = slice.reduce((acc, k) => acc + k.volume, 0);
+        const sum = slice.reduce((acc, k) => acc + Number(k.volume), 0);
         return sum / slice.length;
     }
 }
 
-export const createGridTradingDetector = (
+export const createDefaultGridTradingConfig = (
     config?: Partial<GridTradingConfig>
-): GridTradingDetector => {
+): GridTradingConfig => {
     const defaultConfig: GridTradingConfig = {
         enabled: true,
+        minConfidence: 60,
+        minRiskReward: 1.5,
         emaPeriod: 20,
         atrPeriod: 14,
-        gridLevels: 7, // 3 buy, 1 center, 3 sell
-        gridSpacingATR: 1.0, // 1x ATR spacing
-        minGridSpacing: 0.005, // 0.5% minimum
-        maxGridSpacing: 0.02, // 2.0% maximum
+        gridLevels: 7,
+        gridSpacingATR: 1.0,
+        minGridSpacing: 0.005,
+        maxGridSpacing: 0.02,
         requireRanging: true,
-        volumeThreshold: 0.8, // Accept lower volume for grid
+        volumeThreshold: 0.8,
     };
 
-    return new GridTradingDetector({ ...defaultConfig, ...config });
+    return { ...defaultConfig, ...config };
 };

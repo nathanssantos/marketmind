@@ -1,6 +1,6 @@
 import { MainClient } from 'binance';
-import { and, eq } from 'drizzle-orm';
-import type { TradeExecution, Wallet, PriceCache } from '../db/schema';
+import { eq } from 'drizzle-orm';
+import type { TradeExecution, Wallet } from '../db/schema';
 import { tradeExecutions, priceCache, wallets } from '../db/schema';
 import { db } from '../db';
 import { decryptApiKey } from './encryption';
@@ -27,16 +27,16 @@ export class PositionMonitorService {
     logger.info('Starting position monitor service');
     this.monitoringInterval = setInterval(() => {
       this.checkAllPositions().catch((error) => {
-        logger.error('Error in position monitoring loop', {
+        logger.error({
           error: error instanceof Error ? error.message : String(error),
-        });
+        }, 'Error in position monitoring loop');
       });
     }, this.CHECK_INTERVAL_MS);
 
     this.checkAllPositions().catch((error) => {
-      logger.error('Error in initial position check', {
+      logger.error({
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Error in initial position check');
     });
   }
 
@@ -64,10 +64,10 @@ export class PositionMonitorService {
       try {
         await this.checkPosition(execution);
       } catch (error) {
-        logger.error('Error checking position', {
+        logger.error({
           executionId: execution.id,
           error: error instanceof Error ? error.message : String(error),
-        });
+        }, 'Error checking position');
       }
     }
   }
@@ -86,7 +86,6 @@ export class PositionMonitorService {
       return result;
     }
 
-    const entryPrice = parseFloat(execution.entryPrice);
     const stopLoss = execution.stopLoss ? parseFloat(execution.stopLoss) : null;
     const takeProfit = execution.takeProfit ? parseFloat(execution.takeProfit) : null;
 
@@ -133,9 +132,9 @@ export class PositionMonitorService {
 
       const quantity = parseFloat(execution.quantity);
       if (quantity === 0) {
-        logger.warn('Cannot execute exit for zero quantity position', {
+        logger.warn({
           executionId: execution.id,
-        });
+        }, 'Cannot execute exit for zero quantity position');
         return;
       }
 
@@ -171,20 +170,20 @@ export class PositionMonitorService {
         })
         .where(eq(tradeExecutions.id, execution.id));
 
-      logger.info('Position exit executed', {
+      logger.info({
         executionId: execution.id,
         symbol: execution.symbol,
         reason,
         exitPrice,
         pnl: pnl.toFixed(2),
         pnlPercent: adjustedPnlPercent.toFixed(2),
-      });
+      }, 'Position exit executed');
     } catch (error) {
-      logger.error('Failed to execute exit', {
+      logger.error({
         executionId: execution.id,
         reason,
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Failed to execute exit');
       throw error;
     }
   }
@@ -193,7 +192,7 @@ export class PositionMonitorService {
     wallet: Wallet,
     symbol: string,
     quantity: number,
-    price: number,
+    _price: number,
     side: 'LONG' | 'SHORT'
   ): Promise<number> {
     const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
@@ -213,12 +212,12 @@ export class PositionMonitorService {
       quantity,
     });
 
-    logger.info('Exit order created on Binance', {
+    logger.info({
       orderId: order.orderId,
       symbol,
       side: orderSide,
       quantity,
-    });
+    }, 'Exit order created on Binance');
 
     return order.orderId;
   }
@@ -240,7 +239,7 @@ export class PositionMonitorService {
       }
 
       const client = new MainClient();
-      const ticker = await client.get24hrChangeStatististics({ symbol });
+      const ticker = await client.get24hrChangeStatistics({ symbol });
 
       const price = parseFloat(ticker.lastPrice);
 
@@ -262,10 +261,10 @@ export class PositionMonitorService {
 
       return price;
     } catch (error) {
-      logger.error('Failed to get current price', {
+      logger.error({
         symbol,
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Failed to get current price');
       throw error;
     }
   }
@@ -288,11 +287,11 @@ export class PositionMonitorService {
           },
         });
     } catch (error) {
-      logger.error('Failed to update price cache', {
+      logger.error({
         symbol,
         price,
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Failed to update price cache');
     }
   }
 

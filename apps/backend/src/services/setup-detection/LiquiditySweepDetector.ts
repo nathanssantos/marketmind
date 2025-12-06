@@ -123,7 +123,7 @@ export class LiquiditySweepDetector extends BaseSetupDetector {
           sweepDistance < sweepConfig.minSweepDistance ||
           sweepDistance > sweepConfig.maxSweepDistance
         )
-          continue;
+          {continue;}
 
         if (close <= support) continue;
 
@@ -177,7 +177,7 @@ export class LiquiditySweepDetector extends BaseSetupDetector {
           sweepDistance < sweepConfig.minSweepDistance ||
           sweepDistance > sweepConfig.maxSweepDistance
         )
-          continue;
+          {continue;}
 
         if (close >= resistance) continue;
 

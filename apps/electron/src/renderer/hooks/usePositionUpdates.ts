@@ -13,7 +13,7 @@ export const usePositionUpdates = (walletId: string, enabled = true) => {
 
     subscribe.positions(walletId);
 
-    const handlePositionUpdate = (position: unknown) => {
+    const handlePositionUpdate = (_position: unknown) => {
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.trading.getPositions.invalidate();
     };

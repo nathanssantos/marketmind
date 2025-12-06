@@ -73,7 +73,7 @@ export const analyticsRouter = router({
 
       if (input.period !== 'all') {
         const now = new Date();
-        let startDate = new Date();
+        const startDate = new Date();
 
         switch (input.period) {
           case 'day':
@@ -205,7 +205,7 @@ export const analyticsRouter = router({
 
       if (input.period !== 'all') {
         const now = new Date();
-        let startDate = new Date();
+        const startDate = new Date();
 
         switch (input.period) {
           case 'day':

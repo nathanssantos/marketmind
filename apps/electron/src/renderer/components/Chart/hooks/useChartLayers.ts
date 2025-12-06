@@ -34,7 +34,7 @@ export interface UseChartLayersProps {
 
 export const useChartLayers = ({
   klines,
-  viewport,
+  viewport: _viewport,
   theme,
   showGrid = true,
   showVolume = false,

@@ -3,7 +3,9 @@ import type {
     BreakoutRetestConfig,
     BullTrapConfig,
     DivergenceConfig,
+    GridTradingConfig,
     LiquiditySweepConfig,
+    MarketMakingConfig,
     MeanReversionConfig,
     OrderBlockFVGConfig,
     Pattern123Config,
@@ -24,7 +26,9 @@ import {
     createDefaultBreakoutRetestConfig,
     createDefaultBullTrapConfig,
     createDefaultDivergenceConfig,
+    createDefaultGridTradingConfig,
     createDefaultLiquiditySweepConfig,
+    createDefaultMarketMakingConfig,
     createDefaultMeanReversionConfig,
     createDefaultOrderBlockFVGConfig,
     createDefaultPinInsideConfig,
@@ -49,6 +53,8 @@ export interface SetupDetectionConfig {
   divergence: DivergenceConfig;
   liquiditySweep: LiquiditySweepConfig;
   meanReversion: MeanReversionConfig;
+  gridTrading: GridTradingConfig;
+  marketMaking: MarketMakingConfig;
   enableTrendFilter: boolean;
   allowCounterTrend: boolean;
   trendEmaPeriod: number;
@@ -70,6 +76,8 @@ export const createDefaultSetupDetectionConfig = (): SetupDetectionConfig => ({
   divergence: createDefaultDivergenceConfig(),
   liquiditySweep: createDefaultLiquiditySweepConfig(),
   meanReversion: createDefaultMeanReversionConfig(),
+  gridTrading: createDefaultGridTradingConfig(),
+  marketMaking: createDefaultMarketMakingConfig(),
   enableTrendFilter: false,
   allowCounterTrend: true,
   trendEmaPeriod: DEFAULT_TREND_EMA_PERIOD,

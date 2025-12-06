@@ -51,16 +51,41 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
   const [commission, setCommission] = useState('0.1');
   const [minConfidence, setMinConfidence] = useState('0');
 
+  // Risk Management
+  const [useKellyCriterion, setUseKellyCriterion] = useState(false);
+  const [kellyFraction, setKellyFraction] = useState('0.25'); // Quarter Kelly
+  const [riskProfile, setRiskProfile] = useState<'conservative' | 'moderate' | 'aggressive'>('moderate');
+
+  // Trailing Stop
+  const [useTrailingStop, setUseTrailingStop] = useState(true);
+  const [trailingStopATRMultiplier, setTrailingStopATRMultiplier] = useState('2.0');
+  const [trailingATRMultiplier, setTrailingATRMultiplier] = useState('1.5');
+  const [breakEvenAfterR, setBreakEvenAfterR] = useState('1.0');
+  const [breakEvenBuffer, setBreakEvenBuffer] = useState('0.1');
+
+  // Partial Exits
+  const [usePartialExits, setUsePartialExits] = useState(true);
+  const [partialExit1Percent, setPartialExit1Percent] = useState('33');
+  const [partialExit1R, setPartialExit1R] = useState('1.5');
+  const [partialExit2Percent, setPartialExit2Percent] = useState('33');
+  const [partialExit2R, setPartialExit2R] = useState('2.5');
+  const [lockProfitsAfterFirstExit, setLockProfitsAfterFirstExit] = useState(true);
+
   // Get enabled setups from setup config
   const enabledSetups = Object.entries(setupConfig)
-    .filter(([key, value]) => {
-      // Check if this is a setup config object (has 'enabled' property)
+    .filter(([_key, value]) => {
       return typeof value === 'object' && value !== null && 'enabled' in value && value.enabled === true;
     })
     .map(([key]) => key);
 
   const handleRunBacktest = async () => {
     if (!startDate || !endDate) return;
+
+    const partialExitLevels = usePartialExits ? [
+      { percentage: Number(partialExit1Percent) / 100, rMultiple: Number(partialExit1R) },
+      { percentage: Number(partialExit2Percent) / 100, rMultiple: Number(partialExit2R) },
+      { percentage: (100 - Number(partialExit1Percent) - Number(partialExit2Percent)) / 100, rMultiple: 0 },
+    ] : undefined;
 
     const config: BacktestConfigType = {
       symbol,
@@ -77,6 +102,23 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
       commission: Number(commission) / 100,
       minConfidence: Number(minConfidence),
       setupTypes: enabledSetups.length > 0 ? enabledSetups : undefined,
+
+      // Risk Management
+      useKellyCriterion,
+      kellyFraction: Number(kellyFraction),
+      riskProfile,
+
+      // Trailing Stop
+      useTrailingStop,
+      trailingStopATRMultiplier: Number(trailingStopATRMultiplier),
+      trailingATRMultiplier: Number(trailingATRMultiplier),
+      breakEvenAfterR: Number(breakEvenAfterR),
+      breakEvenBuffer: Number(breakEvenBuffer),
+
+      // Partial Exits
+      usePartialExits,
+      partialExitLevels,
+      lockProfitsAfterFirstExit,
     };
 
     try {
@@ -284,6 +326,250 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
             Trading fee per side
           </ChakraField.HelperText>
         </ChakraField.Root>
+
+        {/* Risk Management Section */}
+        <Box p={3} bg="purple.50" _dark={{ bg: "purple.950" }} borderRadius="md" borderWidth="2px" borderColor="purple.500">
+          <Text fontSize="xs" fontWeight="bold" mb={2}>💰 Risk Management (Kelly Criterion)</Text>
+
+          <Box mb={2}>
+            <Checkbox
+              checked={useKellyCriterion}
+              onCheckedChange={setUseKellyCriterion}
+            >
+              <Text fontSize="xs" fontWeight="medium">Enable Kelly Criterion Position Sizing</Text>
+            </Checkbox>
+          </Box>
+
+          {useKellyCriterion && (
+            <Stack gap={2} ml={6}>
+              <ChakraField.Root>
+                <ChakraField.Label fontSize="2xs">Risk Profile</ChakraField.Label>
+                <select
+                  value={riskProfile}
+                  onChange={(e) => setRiskProfile(e.target.value as 'conservative' | 'moderate' | 'aggressive')}
+                  style={{
+                    width: '100%',
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--chakra-colors-border-default)',
+                    backgroundColor: 'var(--chakra-colors-bg-default)',
+                    color: 'var(--chakra-colors-fg-default)',
+                  }}
+                >
+                  <option value="conservative">Conservative (Low Risk)</option>
+                  <option value="moderate">Moderate (Balanced)</option>
+                  <option value="aggressive">Aggressive (High Risk)</option>
+                </select>
+                <ChakraField.HelperText fontSize="2xs">
+                  Presets: Conservative (¼ Kelly), Moderate (½ Kelly), Aggressive (Full Kelly)
+                </ChakraField.HelperText>
+              </ChakraField.Root>
+
+              <ChakraField.Root>
+                <ChakraField.Label fontSize="2xs">Kelly Fraction</ChakraField.Label>
+                <NumberInput
+                  size="xs"
+                  value={kellyFraction}
+                  onChange={(e) => setKellyFraction(e.target.value)}
+                  placeholder="0.25"
+                  step={0.05}
+                  min={0.01}
+                  max={1.0}
+                />
+                <ChakraField.HelperText fontSize="2xs">
+                  0.25 = Quarter Kelly (Safest), 0.5 = Half Kelly, 1.0 = Full Kelly (Aggressive)
+                </ChakraField.HelperText>
+              </ChakraField.Root>
+            </Stack>
+          )}
+
+          <Text fontSize="2xs" color="fg.muted" mt={2}>
+            Uses statistical analysis of past trades to optimize position sizes based on win rate and risk/reward
+          </Text>
+        </Box>
+
+        {/* Trailing Stop Section */}
+        <Box p={3} bg="green.50" _dark={{ bg: "green.950" }} borderRadius="md" borderWidth="2px" borderColor="green.500">
+          <Text fontSize="xs" fontWeight="bold" mb={2}>📈 ATR-Based Trailing Stop</Text>
+
+          <Box mb={2}>
+            <Checkbox
+              checked={useTrailingStop}
+              onCheckedChange={setUseTrailingStop}
+            >
+              <Text fontSize="xs" fontWeight="medium">Enable Trailing Stop</Text>
+            </Checkbox>
+          </Box>
+
+          {useTrailingStop && (
+            <Stack gap={2} ml={6}>
+              <ChakraField.Root>
+                <ChakraField.Label fontSize="2xs">Initial Stop ATR Multiplier</ChakraField.Label>
+                <NumberInput
+                  size="xs"
+                  value={trailingStopATRMultiplier}
+                  onChange={(e) => setTrailingStopATRMultiplier(e.target.value)}
+                  placeholder="2.0"
+                  step={0.1}
+                  min={0.5}
+                  max={5.0}
+                />
+                <ChakraField.HelperText fontSize="2xs">
+                  Initial stop loss distance from entry (in ATR units)
+                </ChakraField.HelperText>
+              </ChakraField.Root>
+
+              <ChakraField.Root>
+                <ChakraField.Label fontSize="2xs">Trailing ATR Multiplier</ChakraField.Label>
+                <NumberInput
+                  size="xs"
+                  value={trailingATRMultiplier}
+                  onChange={(e) => setTrailingATRMultiplier(e.target.value)}
+                  placeholder="1.5"
+                  step={0.1}
+                  min={0.5}
+                  max={5.0}
+                />
+                <ChakraField.HelperText fontSize="2xs">
+                  Distance to maintain when trailing behind price
+                </ChakraField.HelperText>
+              </ChakraField.Root>
+
+              <ChakraField.Root>
+                <ChakraField.Label fontSize="2xs">Break-Even After (R-Multiple)</ChakraField.Label>
+                <NumberInput
+                  size="xs"
+                  value={breakEvenAfterR}
+                  onChange={(e) => setBreakEvenAfterR(e.target.value)}
+                  placeholder="1.0"
+                  step={0.1}
+                  min={0.1}
+                  max={5.0}
+                />
+                <ChakraField.HelperText fontSize="2xs">
+                  Move stop to entry + buffer after this profit (1.0 = 1R profit)
+                </ChakraField.HelperText>
+              </ChakraField.Root>
+
+              <ChakraField.Root>
+                <ChakraField.Label fontSize="2xs">Break-Even Buffer (%)</ChakraField.Label>
+                <NumberInput
+                  size="xs"
+                  value={breakEvenBuffer}
+                  onChange={(e) => setBreakEvenBuffer(e.target.value)}
+                  placeholder="0.1"
+                  step={0.05}
+                  min={0}
+                  max={1.0}
+                />
+                <ChakraField.HelperText fontSize="2xs">
+                  Small buffer above entry for break-even stop
+                </ChakraField.HelperText>
+              </ChakraField.Root>
+            </Stack>
+          )}
+
+          <Text fontSize="2xs" color="fg.muted" mt={2}>
+            Automatically adjusts stop loss based on volatility (ATR), locks in profits as price moves favorably
+          </Text>
+        </Box>
+
+        {/* Partial Exits Section */}
+        <Box p={3} bg="orange.50" _dark={{ bg: "orange.950" }} borderRadius="md" borderWidth="2px" borderColor="orange.500">
+          <Text fontSize="xs" fontWeight="bold" mb={2}>🎯 Partial Exits (Scale Out)</Text>
+
+          <Box mb={2}>
+            <Checkbox
+              checked={usePartialExits}
+              onCheckedChange={setUsePartialExits}
+            >
+              <Text fontSize="xs" fontWeight="medium">Enable Partial Exits</Text>
+            </Checkbox>
+          </Box>
+
+          {usePartialExits && (
+            <Stack gap={2} ml={6}>
+              <Box p={2} bg="bg.default" borderRadius="md" borderWidth="1px">
+                <Text fontSize="2xs" fontWeight="medium" mb={1}>First Exit Level</Text>
+                <HStack gap={2}>
+                  <ChakraField.Root flex={1}>
+                    <ChakraField.Label fontSize="2xs">Exit %</ChakraField.Label>
+                    <NumberInput
+                      size="xs"
+                      value={partialExit1Percent}
+                      onChange={(e) => setPartialExit1Percent(e.target.value)}
+                      placeholder="33"
+                      step={5}
+                      min={0}
+                      max={100}
+                    />
+                  </ChakraField.Root>
+                  <ChakraField.Root flex={1}>
+                    <ChakraField.Label fontSize="2xs">At R-Multiple</ChakraField.Label>
+                    <NumberInput
+                      size="xs"
+                      value={partialExit1R}
+                      onChange={(e) => setPartialExit1R(e.target.value)}
+                      placeholder="1.5"
+                      step={0.1}
+                      min={0.1}
+                      max={10.0}
+                    />
+                  </ChakraField.Root>
+                </HStack>
+              </Box>
+
+              <Box p={2} bg="bg.default" borderRadius="md" borderWidth="1px">
+                <Text fontSize="2xs" fontWeight="medium" mb={1}>Second Exit Level</Text>
+                <HStack gap={2}>
+                  <ChakraField.Root flex={1}>
+                    <ChakraField.Label fontSize="2xs">Exit %</ChakraField.Label>
+                    <NumberInput
+                      size="xs"
+                      value={partialExit2Percent}
+                      onChange={(e) => setPartialExit2Percent(e.target.value)}
+                      placeholder="33"
+                      step={5}
+                      min={0}
+                      max={100}
+                    />
+                  </ChakraField.Root>
+                  <ChakraField.Root flex={1}>
+                    <ChakraField.Label fontSize="2xs">At R-Multiple</ChakraField.Label>
+                    <NumberInput
+                      size="xs"
+                      value={partialExit2R}
+                      onChange={(e) => setPartialExit2R(e.target.value)}
+                      placeholder="2.5"
+                      step={0.1}
+                      min={0.1}
+                      max={10.0}
+                    />
+                  </ChakraField.Root>
+                </HStack>
+              </Box>
+
+              <Text fontSize="2xs" color="fg.muted">
+                Remaining {100 - Number(partialExit1Percent) - Number(partialExit2Percent)}% trails with stop
+              </Text>
+
+              <Checkbox
+                checked={lockProfitsAfterFirstExit}
+                onCheckedChange={setLockProfitsAfterFirstExit}
+              >
+                <Text fontSize="2xs" fontWeight="medium">Lock Profits After First Exit</Text>
+              </Checkbox>
+              <Text fontSize="2xs" color="fg.muted" ml={6}>
+                Move stop to break-even after first partial exit is triggered
+              </Text>
+            </Stack>
+          )}
+
+          <Text fontSize="2xs" color="fg.muted" mt={2}>
+            Take profits at multiple levels to lock in gains while letting winners run
+          </Text>
+        </Box>
 
         {runBacktestError && (
           <Box p={3} bg="red.50" borderRadius="md" _dark={{ bg: 'red.900' }}>

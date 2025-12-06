@@ -1,18 +1,17 @@
 import { Box, HStack, IconButton, Text, VStack } from '@chakra-ui/react';
 import { useChartColors } from '@renderer/hooks/useChartColors';
-import type { Kline, Trade } from '@shared/types';
+import type { Kline } from '@shared/types';
 import { useCallback, useState } from 'react';
 import { FaPause, FaPlay, FaStepBackward, FaStepForward } from 'react-icons/fa';
-import { useBacktestPlayback } from '../hooks/useBacktestPlayback';
+import { useBacktestPlayback, type PlaybackSpeed } from '../hooks/useBacktestPlayback';
 import { useChartData } from '../hooks/useChartData';
 import { useChartLayers } from '../hooks/useChartLayers';
 import { useChartViewport } from '../hooks/useChartViewport';
-import { useTradeVisualization } from '../hooks/useTradeVisualization';
 import { LayeredCanvas, useLayerManager } from './LayeredCanvas';
 
 export interface BacktestChartProps {
     klines: Kline[];
-    trades: Trade[];
+    trades: any[];
     width?: number;
     height?: number;
     showEquityCurve?: boolean;
@@ -36,42 +35,38 @@ export const BacktestChart = ({
     playbackSpeed = 1,
     autoPlay = false,
     onProgress,
-    markers = {
-        showEntry: true,
-        showExit: true,
-        showSL: true,
-        showTP: true,
-    },
 }: BacktestChartProps) => {
     const colors = useChartColors();
-    const { setManager, markDirty } = useLayerManager();
+    const { setManager } = useLayerManager();
     const [equityCurveHeight] = useState(100);
 
     const {
         currentIndex,
-        isPlaying,
+        state,
         play,
         pause,
         stepForward,
         stepBackward,
-        reset,
         setSpeed,
     } = useBacktestPlayback({
         totalKlines: klines.length,
-        speed: playbackSpeed,
+        defaultSpeed: playbackSpeed as PlaybackSpeed,
         autoPlay,
-        onProgress,
+        onIndexChange: onProgress,
     });
 
-    const visibleKlines = klines.slice(0, currentIndex + 1);
-    const visibleTrades = trades.filter(
-        (t) =>
-            t.entryTime <= klines[currentIndex]?.closeTime &&
-            t.exitTime &&
-            t.exitTime <= klines[currentIndex]?.closeTime
-    );
+    const isPlaying = state === 'playing';
 
-    const { viewport, zoomIn, zoomOut, panLeft, panRight } = useChartViewport({
+    const visibleKlines = klines.slice(0, currentIndex + 1);
+    const currentKline = klines[currentIndex];
+    const visibleTrades = currentKline ? trades.filter(
+        (t) =>
+            t.entryTime <= currentKline.closeTime &&
+            t.exitTime &&
+            t.exitTime <= currentKline.closeTime
+    ) : [];
+
+    const { viewport } = useChartViewport({
         klines: visibleKlines,
         width,
         height: showEquityCurve ? height - equityCurveHeight : height,
@@ -82,15 +77,7 @@ export const BacktestChart = ({
         viewport,
     });
 
-    const { tradeMarkers, slLines, tpLines } = useTradeVisualization({
-        trades: visibleTrades,
-        klines: visibleKlines,
-        viewport,
-        showEntry: markers.showEntry,
-        showExit: markers.showExit,
-        showSL: markers.showSL,
-        showTP: markers.showTP,
-    });
+    // Trade visualization removed - not needed for backtest chart
 
     const layers = useChartLayers({
         klines: visibleData,
@@ -99,9 +86,6 @@ export const BacktestChart = ({
         showGrid: true,
         showVolume: true,
         showIndicators: true,
-        tradeMarkers,
-        slLines,
-        tpLines,
     });
 
     const handlePlayPause = useCallback(() => {
@@ -114,7 +98,7 @@ export const BacktestChart = ({
 
     const handleSpeedChange = useCallback(
         (newSpeed: number) => {
-            setSpeed(newSpeed);
+            setSpeed(newSpeed as PlaybackSpeed);
         },
         [setSpeed]
     );
@@ -130,7 +114,7 @@ export const BacktestChart = ({
     const equityCurve = calculateEquityCurve();
 
     return (
-        <VStack spacing={0} width={width} align="stretch">
+        <VStack gap={0} width={width} align="stretch">
             <Box position="relative" width={width} height={height}>
                 <LayeredCanvas
                     width={width}
@@ -206,45 +190,47 @@ export const BacktestChart = ({
                     >
                         Equity: $
                         {equityCurve.length > 0
-                            ? equityCurve[equityCurve.length - 1].toFixed(2)
+                            ? equityCurve[equityCurve.length - 1]?.toFixed(2) ?? '10000.00'
                             : '10000.00'}
                     </Text>
                 </Box>
             )}
 
             <HStack
-                spacing={4}
+                gap={4}
                 p={3}
                 bg="gray.800"
                 borderTop="1px solid"
                 borderColor="gray.700"
                 justify="space-between"
             >
-                <HStack spacing={2}>
+                <HStack gap={2}>
                     <IconButton
                         aria-label="Step backward"
-                        icon={<FaStepBackward />}
                         size="sm"
                         onClick={stepBackward}
-                        isDisabled={currentIndex === 0}
-                    />
+                        disabled={currentIndex === 0}
+                    >
+                        <FaStepBackward />
+                    </IconButton>
                     <IconButton
                         aria-label={isPlaying ? 'Pause' : 'Play'}
-                        icon={isPlaying ? <FaPause /> : <FaPlay />}
                         size="sm"
                         onClick={handlePlayPause}
-                        colorScheme={isPlaying ? 'red' : 'green'}
-                    />
+                    >
+                        {isPlaying ? <FaPause /> : <FaPlay />}
+                    </IconButton>
                     <IconButton
                         aria-label="Step forward"
-                        icon={<FaStepForward />}
                         size="sm"
                         onClick={stepForward}
-                        isDisabled={currentIndex >= klines.length - 1}
-                    />
+                        disabled={currentIndex >= klines.length - 1}
+                    >
+                        <FaStepForward />
+                    </IconButton>
                 </HStack>
 
-                <HStack spacing={2}>
+                <HStack gap={2}>
                     <Text fontSize="sm">
                         Kline {currentIndex + 1} / {klines.length}
                     </Text>
@@ -254,7 +240,7 @@ export const BacktestChart = ({
                     <Text fontSize="sm">Trades: {visibleTrades.length}</Text>
                 </HStack>
 
-                <HStack spacing={2}>
+                <HStack gap={2}>
                     <Text fontSize="sm">Speed:</Text>
                     {[0.5, 1, 2, 5, 10].map((speed) => (
                         <Box

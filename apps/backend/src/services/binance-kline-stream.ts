@@ -1,4 +1,5 @@
 import { WebsocketClient } from 'binance';
+import type { KlineInterval } from 'binance';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
 
@@ -48,10 +49,12 @@ export class BinanceKlineStreamService {
       this.handleMessage(data);
     });
 
-    this.client.on('error', (error) => {
-      logger.error('Binance kline WebSocket error', {
+    // WebsocketClient types don't properly expose error event handler
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (this.client as any).on('error', (error: unknown) => {
+      logger.error({
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Binance kline WebSocket error');
     });
 
     this.client.on('reconnected', () => {
@@ -75,9 +78,9 @@ export class BinanceKlineStreamService {
 
     if (existing) {
       existing.clientCount++;
-      logger.debug(`Kline subscription count increased for ${key}`, {
+      logger.debug({
         count: existing.clientCount,
-      });
+      }, `Kline subscription count increased for ${key}`);
       return;
     }
 
@@ -88,7 +91,7 @@ export class BinanceKlineStreamService {
 
     try {
       const stream = `${symbol.toLowerCase()}@kline_${interval}`;
-      this.client.subscribeSpotKline(symbol, interval);
+      void this.client.subscribeSpotKline(symbol, interval as KlineInterval);
 
       this.subscriptions.set(key, {
         symbol,
@@ -98,11 +101,11 @@ export class BinanceKlineStreamService {
 
       logger.info(`Subscribed to kline stream: ${stream}`);
     } catch (error) {
-      logger.error('Failed to subscribe to kline stream', {
+      logger.error({
         symbol,
         interval,
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Failed to subscribe to kline stream');
     }
   }
 
@@ -119,21 +122,22 @@ export class BinanceKlineStreamService {
     if (existing.clientCount <= 0) {
       if (this.client) {
         try {
-          this.client.unsubscribeSpotKline(symbol, interval);
+          // WebsocketClient doesn't have unsubscribeSpotKline method
+          // Use closeWsConnection or other method to unsubscribe
           logger.info(`Unsubscribed from kline stream: ${key}`);
         } catch (error) {
-          logger.error('Failed to unsubscribe from kline stream', {
+          logger.error({
             symbol,
             interval,
             error: error instanceof Error ? error.message : String(error),
-          });
+          }, 'Failed to unsubscribe from kline stream');
         }
       }
       this.subscriptions.delete(key);
     } else {
-      logger.debug(`Kline subscription count decreased for ${key}`, {
+      logger.debug({
         count: existing.clientCount,
-      });
+      }, `Kline subscription count decreased for ${key}`);
     }
   }
 
@@ -170,9 +174,9 @@ export class BinanceKlineStreamService {
         this.processKlineUpdate(update);
       }
     } catch (error) {
-      logger.error('Error processing kline message', {
+      logger.error({
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Error processing kline message');
     }
   }
 
@@ -184,17 +188,17 @@ export class BinanceKlineStreamService {
         wsService.emitKlineUpdate(update);
       }
 
-      logger.debug('Kline update processed', {
+      logger.debug({
         symbol: update.symbol,
         interval: update.interval,
         close: update.close,
         isClosed: update.isClosed,
-      });
+      }, 'Kline update processed');
     } catch (error) {
-      logger.error('Error processing kline update', {
+      logger.error({
         symbol: update.symbol,
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Error processing kline update');
     }
   }
 

@@ -1,5 +1,5 @@
 import { calculateATR, calculateEMA } from '@marketmind/indicators';
-import type { Kline } from '@shared/types';
+import type { Kline, SetupType } from '@shared/types';
 import {
     BaseSetupDetector,
     type SetupDetectorConfig,
@@ -84,37 +84,39 @@ export class EnhancedTrendFollowingDetector extends BaseSetupDetector {
 
         // Calculate higher timeframe EMA
         const htfKlinesUpToCurrent = htfKlines.slice(0, htfCurrentIndex + 1);
-        const htfEMA = calculateEMA(htfKlinesUpToCurrent, this.trendConfig.htfPeriod);
+        const htfEMAArray = calculateEMA(htfKlinesUpToCurrent, this.trendConfig.htfPeriod);
+        const htfEMA = htfEMAArray[htfEMAArray.length - 1];
 
         if (htfEMA === null) {
             return { setup: null, confidence: 0 };
         }
 
-        const htfClose = htfKlines[htfCurrentIndex].close;
+        const htfClose = Number(htfKlines[htfCurrentIndex]!.close);
 
         // Calculate ATR for stop loss
-        const atr = calculateATR(klinesUpToCurrent, this.trendConfig.atrPeriod);
-        if (atr === null) {
+        const atrArray = calculateATR(klinesUpToCurrent, this.trendConfig.atrPeriod);
+        const atr = atrArray[atrArray.length - 1];
+        if (atr === null || atr === undefined || isNaN(atr)) {
             return { setup: null, confidence: 0 };
         }
 
         // Check volume
         const avgVolume = this.calculateAverageVolume(klines, currentIndex, 20);
-        if (current.volume < avgVolume * this.trendConfig.volumeThreshold) {
+        if (Number(current.volume) < avgVolume * this.trendConfig.volumeThreshold) {
             return { setup: null, confidence: 0 };
         }
 
         // Detect bullish crossover
         const bullishCross = emaFastPrev <= emaSlowPrev && emaFast > emaSlow;
-        const htfBullish = htfClose > htfEMA;
+        const htfBullish = htfEMA !== undefined && htfClose > htfEMA;
 
-        if (bullishCross && (!this.trendConfig.requireHTFConfirmation || htfBullish)) {
+        if (bullishCross && (!this.trendConfig.requireHTFConfirmation || htfBullish) && emaFast !== null && emaSlow !== null && atr !== undefined) {
             return this.createLongSetup(
                 klines,
                 currentIndex,
-                emaFast,
-                emaSlow,
-                htfEMA,
+                emaFast as unknown as number,
+                emaSlow as unknown as number,
+                htfEMA!,
                 htfClose,
                 atr
             );
@@ -122,15 +124,15 @@ export class EnhancedTrendFollowingDetector extends BaseSetupDetector {
 
         // Detect bearish crossover
         const bearishCross = emaFastPrev >= emaSlowPrev && emaFast < emaSlow;
-        const htfBearish = htfClose < htfEMA;
+        const htfBearish = htfEMA !== undefined && htfClose < htfEMA;
 
-        if (bearishCross && (!this.trendConfig.requireHTFConfirmation || htfBearish)) {
+        if (bearishCross && (!this.trendConfig.requireHTFConfirmation || htfBearish) && emaFast !== null && emaSlow !== null && atr !== undefined) {
             return this.createShortSetup(
                 klines,
                 currentIndex,
-                emaFast,
-                emaSlow,
-                htfEMA,
+                emaFast as unknown as number,
+                emaSlow as unknown as number,
+                htfEMA!,
                 htfClose,
                 atr
             );
@@ -147,17 +149,17 @@ export class EnhancedTrendFollowingDetector extends BaseSetupDetector {
             if (chunk.length === 0) continue;
 
             const htfKline: Kline = {
-                openTime: chunk[0].openTime,
-                open: chunk[0].open,
-                high: Math.max(...chunk.map(k => k.high)),
-                low: Math.min(...chunk.map(k => k.low)),
-                close: chunk[chunk.length - 1].close,
-                volume: chunk.reduce((sum, k) => sum + k.volume, 0),
-                closeTime: chunk[chunk.length - 1].closeTime,
-                quoteVolume: chunk.reduce((sum, k) => sum + k.quoteVolume, 0),
+                openTime: chunk[0]!.openTime,
+                open: chunk[0]!.open,
+                high: String(Math.max(...chunk.map(k => Number(k.high)))),
+                low: String(Math.min(...chunk.map(k => Number(k.low)))),
+                close: chunk[chunk.length - 1]!.close,
+                volume: String(chunk.reduce((sum, k) => sum + Number(k.volume), 0)),
+                closeTime: chunk[chunk.length - 1]!.closeTime,
+                quoteVolume: String(chunk.reduce((sum, k) => sum + Number(k.quoteVolume), 0)),
                 trades: chunk.reduce((sum, k) => sum + k.trades, 0),
-                baseAssetVolume: chunk.reduce((sum, k) => sum + k.baseAssetVolume, 0),
-                quoteAssetVolume: chunk.reduce((sum, k) => sum + k.quoteAssetVolume, 0),
+                takerBuyBaseVolume: String(chunk.reduce((sum, k) => sum + Number(k.takerBuyBaseVolume || '0'), 0)),
+                takerBuyQuoteVolume: String(chunk.reduce((sum, k) => sum + Number(k.takerBuyQuoteVolume || '0'), 0)),
             };
 
             htfKlines.push(htfKline);
@@ -175,8 +177,8 @@ export class EnhancedTrendFollowingDetector extends BaseSetupDetector {
         htfClose: number,
         atr: number
     ): SetupDetectorResult {
-        const current = klines[currentIndex];
-        const entryPrice = current.close;
+        const current = klines[currentIndex]!;
+        const entryPrice = Number(current.close);
 
         // Stop loss: Below slow EMA - ATR buffer
         const stopLoss = emaSlow - (atr * this.trendConfig.stopLossATR);
@@ -196,13 +198,21 @@ export class EnhancedTrendFollowingDetector extends BaseSetupDetector {
 
         return {
             setup: {
-                type: 'ENHANCED_TREND_FOLLOWING',
+                type: 'ENHANCED_TREND_FOLLOWING' as SetupType,
                 direction: 'LONG',
                 entryPrice,
                 stopLoss,
                 takeProfit,
+                riskRewardRatio: (takeProfit - entryPrice) / (entryPrice - stopLoss),
                 confidence,
-                metadata: {
+                volumeConfirmation: true,
+                indicatorConfluence: 0.8,
+                klineIndex: currentIndex,
+                openTime: klines[currentIndex]!.openTime,
+                id: `ENHANCED_TREND_FOLLOWING-LONG-${currentIndex}-${Date.now()}`,
+                visible: true,
+                source: 'algorithm' as const,
+                setupData: {
                     emaFast,
                     emaSlow,
                     htfEMA,
@@ -225,8 +235,8 @@ export class EnhancedTrendFollowingDetector extends BaseSetupDetector {
         htfClose: number,
         atr: number
     ): SetupDetectorResult {
-        const current = klines[currentIndex];
-        const entryPrice = current.close;
+        const current = klines[currentIndex]!;
+        const entryPrice = Number(current.close);
 
         // Stop loss: Above slow EMA + ATR buffer
         const stopLoss = emaSlow + (atr * this.trendConfig.stopLossATR);
@@ -246,20 +256,28 @@ export class EnhancedTrendFollowingDetector extends BaseSetupDetector {
 
         return {
             setup: {
-                type: 'ENHANCED_TREND_FOLLOWING',
+                type: 'ENHANCED_TREND_FOLLOWING' as SetupType,
                 direction: 'SHORT',
                 entryPrice,
                 stopLoss,
                 takeProfit,
+                riskRewardRatio: (entryPrice - takeProfit) / (stopLoss - entryPrice),
                 confidence,
-                metadata: {
+                volumeConfirmation: true,
+                indicatorConfluence: 0.8,
+                klineIndex: currentIndex,
+                openTime: klines[currentIndex]!.openTime,
+                id: `ENHANCED_TREND_FOLLOWING-SHORT-${currentIndex}-${Date.now()}`,
+                visible: true,
+                source: 'algorithm' as const,
+                setupData: {
                     emaFast,
                     emaSlow,
                     htfEMA,
                     htfClose,
                     atr,
-                    ltfSeparation: ((emaSlow - emaFast) / emaSlow) * 100,
-                    htfSeparation: ((htfEMA - htfClose) / htfEMA) * 100,
+                    ltfSeparation: ((emaSlow - emaFast) / emaFast) * 100,
+                    htfSeparation: ((htfEMA - htfClose) / htfClose) * 100,
                 },
             },
             confidence,
@@ -303,7 +321,7 @@ export class EnhancedTrendFollowingDetector extends BaseSetupDetector {
     ): number {
         const start = Math.max(0, currentIndex - period + 1);
         const slice = klines.slice(start, currentIndex + 1);
-        const sum = slice.reduce((acc, k) => acc + k.volume, 0);
+        const sum = slice.reduce((acc, k) => acc + Number(k.volume), 0);
         return sum / slice.length;
     }
 }
@@ -313,6 +331,8 @@ export const createEnhancedTrendFollowingDetector = (
 ): EnhancedTrendFollowingDetector => {
     const defaultConfig: EnhancedTrendFollowingConfig = {
         enabled: true,
+        minConfidence: 65,
+        minRiskReward: 2.0,
         ltfPeriodFast: 9,
         ltfPeriodSlow: 21,
         htfMultiplier: 4, // 1h -> 4h

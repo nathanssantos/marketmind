@@ -1,11 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import {
-    PositionManager,
-    createPositionManager,
-    createDefaultPositionConfig,
-    type Position,
-} from './PositionManager';
 import type { Kline } from '@marketmind/types';
+import { describe, expect, it } from 'vitest';
+import {
+    createPositionManager
+} from './PositionManager';
 
 const createKline = (close: number, high?: number, low?: number, open?: number): Kline => ({
     openTime: Date.now(),

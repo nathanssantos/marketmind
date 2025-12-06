@@ -29,6 +29,10 @@ const DEFAULT_VIEWPORT: Viewport = {
   end: 100,
   klineWidth: CHART_CONFIG.DEFAULT_KLINE_WIDTH,
   klineSpacing: CHART_CONFIG.KLINE_SPACING,
+  width: 0,
+  height: 0,
+  priceMin: 0,
+  priceMax: 0,
 };
 
 export const useChartCanvas = ({

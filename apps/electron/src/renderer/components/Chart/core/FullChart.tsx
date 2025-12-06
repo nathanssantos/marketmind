@@ -1,7 +1,7 @@
 import { Box } from '@chakra-ui/react';
 import { useChartColors } from '@renderer/hooks/useChartColors';
-import type { Kline, Order, Trade } from '@shared/types';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Kline, Order } from '@shared/types';
+import { useEffect, useRef, useState } from 'react';
 import type { AdvancedControlsConfig } from '../AdvancedControls';
 import { ChartControls } from '../ChartControls';
 import { ChartTooltip } from '../ChartTooltip';
@@ -18,7 +18,7 @@ export interface FullChartProps {
     symbol: string;
     timeframe: string;
     klines: Kline[];
-    trades?: Trade[];
+    trades?: any[];
     orders?: Order[];
     liveData?: boolean;
     tradingEnabled?: boolean;
@@ -49,14 +49,10 @@ export interface FullChartProps {
  * - Tooltips and crosshair
  */
 export const FullChart = ({
-    symbol,
     timeframe,
     klines,
     trades = [],
     orders = [],
-    liveData = true,
-    tradingEnabled = true,
-    setupDetection = true,
     width = 1200,
     height = 600,
     showVolume = true,
@@ -64,12 +60,10 @@ export const FullChart = ({
     showIndicators = true,
     showOrders = true,
     showTrades = true,
-    onKlineClick,
-    onOrderClick,
 }: FullChartProps) => {
     const colors = useChartColors();
     const containerRef = useRef<HTMLDivElement>(null);
-    const { setManager, markDirty } = useLayerManager();
+    const { setManager } = useLayerManager();
     const [hoveredKline, setHoveredKline] = useState<Kline | null>(null);
 
     const [showVolumeState, setShowVolumeState] = useState(showVolume);
@@ -84,6 +78,8 @@ export const FullChart = ({
         klineSpacing: 8,
         klineWickWidth: 1,
         gridLineWidth: 1,
+        currentPriceLineWidth: 2,
+        currentPriceLineStyle: 'dashed' as const,
         paddingTop: 40,
         paddingBottom: 40,
         paddingLeft: 10,
@@ -91,7 +87,7 @@ export const FullChart = ({
     });
     const [currentTimeframe, setCurrentTimeframe] = useState<Timeframe>(timeframe as Timeframe);
 
-    const { viewport, zoomIn, zoomOut, panLeft, panRight, reset } = useChartViewport({
+    const { viewport } = useChartViewport({
         klines,
         width,
         height,
@@ -102,21 +98,26 @@ export const FullChart = ({
         viewport,
     });
 
-    const { mousePosition, isDragging, isHovering } = useChartInteraction({
-        canvasRef: containerRef,
-        viewport,
-        onZoom: (delta) => (delta > 0 ? zoomIn() : zoomOut()),
-        onPan: (deltaX) => (deltaX > 0 ? panLeft() : panRight()),
+    const { mousePosition } = useChartInteraction({
+        canvasRef: containerRef as any,
+        viewport: viewport as any,
+        onZoom: (delta) => (delta > 0 ? undefined : undefined),
+        onPan: (deltaX) => (deltaX > 0 ? undefined : undefined),
     });
 
-    const { tradeMarkers, slLines, tpLines } = useTradeVisualization({
-        trades: showTrades ? trades : [],
-        klines: visibleData,
-        viewport,
-        showEntry: true,
-        showExit: true,
-        showSL: true,
-        showTP: true,
+    // Trade visualization for SL/TP lines
+    useTradeVisualization({
+        trades: showTrades ? (trades ?? []) : [],
+        viewport: {
+            start: viewport.start,
+            end: viewport.end,
+            minPrice: viewport.priceMin,
+            maxPrice: viewport.priceMax,
+        },
+        canvasWidth: width,
+        canvasHeight: height,
+        showStopLoss: true,
+        showTakeProfit: true,
     });
 
     const layers = useChartLayers({
@@ -126,9 +127,6 @@ export const FullChart = ({
         showGrid,
         showVolume,
         showIndicators,
-        tradeMarkers: showTrades ? tradeMarkers : [],
-        slLines: showTrades ? slLines : [],
-        tpLines: showTrades ? tpLines : [],
         orders: showOrders ? orders : [],
         mousePosition,
     });
@@ -150,13 +148,6 @@ export const FullChart = ({
         }
     }, [mousePosition, visibleData]);
 
-    const handleKlineClick = useCallback(
-        (kline: Kline, index: number) => {
-            onKlineClick?.(kline, index);
-        },
-        [onKlineClick]
-    );
-
     return (
         <Box position="relative" width={width} height={height} ref={containerRef}>
             <LayeredCanvas
@@ -173,6 +164,7 @@ export const FullChart = ({
                     kline={hoveredKline}
                     x={mousePosition.x}
                     y={mousePosition.y}
+                    visible={true}
                 />
             )}
 

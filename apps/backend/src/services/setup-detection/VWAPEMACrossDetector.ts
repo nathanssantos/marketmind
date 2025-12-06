@@ -507,7 +507,7 @@ export class VWAPEMACrossDetector extends BaseSetupDetector {
 }
 
 export const createDefaultVWAPEMACrossConfig = (): VWAPEMACrossConfig => ({
-  enabled: false,
+  enabled: true,
   minConfidence: 75,
   minRiskReward: 2.0,
   emaPeriod: EMA_PERIOD,

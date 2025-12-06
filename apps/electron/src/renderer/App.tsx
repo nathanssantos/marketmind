@@ -153,7 +153,6 @@ function AppContent(): ReactElement {
     deleteAllPatterns,
     togglePatternsVisibility,
     processAIResponse,
-    addPatterns
   } = usePatterns({ symbol, conversationId: activeConversationId });
 
   // TEMPORARY: Disabled to debug infinite loop
@@ -593,12 +592,6 @@ function AppContent(): ReactElement {
     news: newsArticles,
     events: relevantEvents,
   });
-
-  const getCurrentPrice = useCallback(() => {
-    if (displayKlines.length === 0) return null;
-    const lastKline = displayKlines[displayKlines.length - 1];
-    return lastKline ? getKlineClose(lastKline) : null;
-  }, [displayKlines]);
 
   const isAutoTradingActive = useAIStore((state) => state.isAutoTradingActive);
 

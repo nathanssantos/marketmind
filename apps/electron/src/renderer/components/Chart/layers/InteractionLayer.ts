@@ -72,6 +72,7 @@ export const createCrosshairRenderer = (
       const klineIndex = Math.floor(start + (x / width) * (end - start));
       if (klineIndex >= 0 && klineIndex < klines.length) {
         const kline = klines[klineIndex];
+        if (!kline) return;
         const date = new Date(kline.openTime);
         const timeText = date.toLocaleTimeString();
 
@@ -128,6 +129,7 @@ export const createTooltipRenderer = (
     if (klineIndex < 0 || klineIndex >= klines.length) return;
 
     const kline = klines[klineIndex];
+    if (!kline) return;
     const open = getKlineOpen(kline);
     const high = getKlineHigh(kline);
     const low = getKlineLow(kline);

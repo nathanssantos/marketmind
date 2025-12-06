@@ -8,6 +8,7 @@ export interface UseChartDataProps {
 
 export interface UseChartDataResult {
   visibleKlines: Kline[];
+  visibleData: Kline[];
   visibleStart: number;
   visibleEnd: number;
   priceRange: number;
@@ -23,6 +24,7 @@ export const useChartData = ({
     if (klines.length === 0) {
       return {
         visibleKlines: [],
+        visibleData: [],
         visibleStart: 0,
         visibleEnd: 0,
         priceRange: 0,
@@ -40,6 +42,7 @@ export const useChartData = ({
 
     return {
       visibleKlines,
+      visibleData: visibleKlines,
       visibleStart,
       visibleEnd,
       priceRange,

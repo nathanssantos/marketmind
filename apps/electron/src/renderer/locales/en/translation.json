@@ -1019,6 +1019,18 @@
       "liquiditySweep": {
         "title": "Liquidity Sweep (Smart Money Stop Hunt)",
         "description": "Detects false breakouts designed to trigger stop losses before reversing - classic institutional behavior pattern"
+      },
+      "meanReversion": {
+        "title": "Mean Reversion (Bollinger Bands + RSI)",
+        "description": "Trades price extremes expecting return to average - buys oversold (BB lower + RSI <30), sells overbought (BB upper + RSI >70)"
+      },
+      "gridTrading": {
+        "title": "Grid Trading (Multi-Level Orders)",
+        "description": "Places multiple buy/sell orders at predetermined price levels - profits from price oscillations in ranging markets"
+      },
+      "marketMaking": {
+        "title": "Market Making (Bid-Ask Spread Capture)",
+        "description": "Simultaneous buy and sell orders to capture spread - high frequency strategy requiring tight spreads and liquidity"
       }
     },
     "parameters": {
@@ -1032,5 +1044,116 @@
       "enabledSetups": "Enabled Setups",
       "avgConfidence": "Avg. Confidence"
     }
+  },
+  "backtesting": {
+    "results": {
+      "title": "Backtest Results"
+    },
+    "chart": {
+      "trades": "Trades",
+      "winRate": "Win Rate"
+    },
+    "equityCurve": {
+      "title": "Equity Curve",
+      "description": "Performance over time with drawdown overlay",
+      "equity": "Equity",
+      "drawdown": "Drawdown"
+    },
+    "config": {
+      "title": "Backtest Configuration",
+      "symbol": "Symbol",
+      "interval": "Interval",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "initialCapital": "Initial Capital ($)",
+      "initialCapitalHelper": "Starting balance for backtesting",
+      "maxPosition": "Max Position Size (%)",
+      "maxPositionHelper": "Maximum percentage of capital per trade",
+      "commission": "Commission (%)",
+      "commissionHelper": "Trading commission fee per transaction",
+      "useAlgorithmicLevels": "Use Algorithmic Stop/Take Levels",
+      "useAlgorithmicLevelsHelper": "Calculate levels based on setup algorithm",
+      "stopLoss": "Stop Loss (%)",
+      "takeProfit": "Take Profit (%)",
+      "minProfit": "Minimum Profit (%)",
+      "minProfitHelper": "Filter out setups with R:R below this threshold",
+      "minConfidence": "Minimum Confidence (%)",
+      "minConfidenceHelper": "Only trade setups with confidence above this level",
+      "runBacktest": "Run Backtest"
+    },
+    "trades": {
+      "title": "Trade List",
+      "count": "{{count}} trades",
+      "columns": {
+        "side": "Side",
+        "setup": "Setup",
+        "entry": "Entry",
+        "exit": "Exit",
+        "entryTime": "Entry Time",
+        "exitTime": "Exit Time",
+        "duration": "Duration",
+        "pnl": "P&L",
+        "pnlPercent": "P&L %",
+        "exitReason": "Exit Reason"
+      }
+    },
+    "metrics": {
+      "totalPnl": "Total P&L",
+      "winRate": "Win Rate",
+      "wins": "W",
+      "losses": "L",
+      "profitFactor": "Profit Factor",
+      "totalTrades": "Total Trades",
+      "avgDuration": "Avg Duration",
+      "duration": "Duration",
+      "avgWin": "Average Win",
+      "avgLoss": "Average Loss",
+      "largestWin": "Largest Win",
+      "largestLoss": "Largest Loss",
+      "maxDrawdown": "Max Drawdown",
+      "sharpeRatio": "Sharpe Ratio",
+      "sortinoRatio": "Sortino Ratio",
+      "downsideRisk": "Downside Risk",
+      "totalCommission": "Total Commission"
+    },
+    "quality": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair"
+    },
+    "configuration": {
+      "title": "Configuration",
+      "initialCapital": "Initial Capital",
+      "maxPosition": "Max Position",
+      "commission": "Commission",
+      "setups": "Setups"
+    }
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "saveChanges": "Save Changes",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "search": "Search",
+    "noResults": "No results found",
+    "typeToSearch": "Type to search...",
+    "dismiss": "Dismiss",
+    "skip": "Skip",
+    "next": "Next",
+    "previous": "Previous",
+    "selectAiModel": "Select AI Model",
+    "selectAi": "Select AI",
+    "selectModel": "Select Model",
+    "openChat": "Open chat",
+    "deleteConversation": "Delete conversation",
+    "conversationHistory": "Conversation history",
+    "tips": "Tips",
+    "to": "to",
+    "hours": "h"
   }
 }

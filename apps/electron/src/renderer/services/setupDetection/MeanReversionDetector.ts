@@ -1,5 +1,5 @@
 import { calculateBollingerBands, calculatePercentB, calculateRSI } from '@marketmind/indicators';
-import type { Kline } from '@shared/types';
+import type { Kline, SetupType } from '@shared/types';
 import {
     BaseSetupDetector,
     type SetupDetectorConfig,
@@ -60,26 +60,27 @@ export class MeanReversionDetector extends BaseSetupDetector {
         }
 
         // Calculate RSI
-        const rsi = calculateRSI(klinesUpToCurrent, this.meanRevConfig.rsiPeriod);
+        const rsiResult = calculateRSI(klinesUpToCurrent, this.meanRevConfig.rsiPeriod);
+        const rsi = rsiResult.values[rsiResult.values.length - 1];
         if (rsi === null) {
             return { setup: null, confidence: 0 };
         }
 
         // Check volume confirmation
         const avgVolume = this.calculateAverageVolume(klines, currentIndex, 20);
-        const volumeConfirmed = current.volume >= avgVolume * this.meanRevConfig.minVolume;
+        const volumeConfirmed = Number(current.volume) >= avgVolume * this.meanRevConfig.minVolume;
 
         if (!volumeConfirmed) {
             return { setup: null, confidence: 0 };
         }
 
         // Check for LONG setup (oversold)
-        if (current.close < bb.lower && rsi < this.meanRevConfig.rsiOversold) {
+        if (rsi !== undefined && Number(current!.close) < bb.lower && rsi < this.meanRevConfig.rsiOversold) {
             return this.createLongSetup(klines, currentIndex, bb, rsi);
         }
 
         // Check for SHORT setup (overbought)
-        if (current.close > bb.upper && rsi > this.meanRevConfig.rsiOverbought) {
+        if (rsi !== undefined && Number(current!.close) > bb.upper && rsi > this.meanRevConfig.rsiOverbought) {
             return this.createShortSetup(klines, currentIndex, bb, rsi);
         }
 
@@ -92,8 +93,8 @@ export class MeanReversionDetector extends BaseSetupDetector {
         bb: { upper: number; middle: number; lower: number },
         rsi: number
     ): SetupDetectorResult {
-        const current = klines[currentIndex];
-        const entryPrice = current.close;
+        const current = klines[currentIndex]!;
+        const entryPrice = Number(current.close);
 
         // Stop loss: Below lower band
         const stopDistance = bb.middle - bb.lower;
@@ -103,7 +104,7 @@ export class MeanReversionDetector extends BaseSetupDetector {
         const takeProfit = bb.middle;
 
         // Calculate confidence
-        const confidence = this.calculateConfidence(current.close, bb, rsi, 'LONG');
+        const confidence = this.calculateConfidence(Number(current.close), bb, rsi, 'LONG');
 
         // Check minimum criteria
         const riskReward = this.calculateRR(entryPrice, stopLoss, takeProfit);
@@ -112,7 +113,7 @@ export class MeanReversionDetector extends BaseSetupDetector {
         }
 
         const setup = this.createSetup(
-            'MEAN_REVERSION',
+            'MEAN_REVERSION' as SetupType,
             'LONG',
             klines,
             currentIndex,
@@ -127,7 +128,7 @@ export class MeanReversionDetector extends BaseSetupDetector {
                 bbMiddle: bb.middle,
                 bbLower: bb.lower,
                 rsi,
-                percentB: calculatePercentB(current.close, bb),
+                percentB: calculatePercentB(Number(current!.close), bb),
                 strategy: 'oversold',
             }
         );
@@ -141,8 +142,8 @@ export class MeanReversionDetector extends BaseSetupDetector {
         bb: { upper: number; middle: number; lower: number },
         rsi: number
     ): SetupDetectorResult {
-        const current = klines[currentIndex];
-        const entryPrice = current.close;
+        const current = klines[currentIndex]!;
+        const entryPrice = Number(current.close);
 
         // Stop loss: Above upper band
         const stopDistance = bb.upper - bb.middle;
@@ -152,7 +153,7 @@ export class MeanReversionDetector extends BaseSetupDetector {
         const takeProfit = bb.middle;
 
         // Calculate confidence
-        const confidence = this.calculateConfidence(current.close, bb, rsi, 'SHORT');
+        const confidence = this.calculateConfidence(Number(current.close), bb, rsi, 'SHORT');
 
         // Check minimum criteria
         const riskReward = this.calculateRR(entryPrice, stopLoss, takeProfit);
@@ -161,7 +162,7 @@ export class MeanReversionDetector extends BaseSetupDetector {
         }
 
         const setup = this.createSetup(
-            'MEAN_REVERSION',
+            'MEAN_REVERSION' as SetupType,
             'SHORT',
             klines,
             currentIndex,
@@ -176,7 +177,7 @@ export class MeanReversionDetector extends BaseSetupDetector {
                 bbMiddle: bb.middle,
                 bbLower: bb.lower,
                 rsi,
-                percentB: calculatePercentB(current.close, bb),
+                percentB: calculatePercentB(Number(current.close), bb),
                 strategy: 'overbought',
             }
         );
@@ -218,19 +219,20 @@ export class MeanReversionDetector extends BaseSetupDetector {
     ): number {
         const start = Math.max(0, currentIndex - period + 1);
         const slice = klines.slice(start, currentIndex + 1);
-        const sum = slice.reduce((acc, k) => acc + k.volume, 0);
+        const sum = slice.reduce((acc, k) => acc + Number(k.volume), 0);
         return sum / slice.length;
     }
 }
 
 export const createDefaultMeanReversionConfig = (): MeanReversionConfig => ({
     enabled: true,
-    minConfidence: 70,
+    minConfidence: 65,
+    minRiskReward: 1.5,
     bbPeriod: 20,
     bbStdDev: 2,
     rsiPeriod: 14,
     rsiOversold: 30,
     rsiOverbought: 70,
-    minVolume: 1.2,
+    minVolume: 1.0,
     maxHoldBars: 10,
 });

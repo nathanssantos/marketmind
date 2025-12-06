@@ -35,7 +35,7 @@ export const PatternRenderer = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredPattern, setHoveredPattern] = useState<AIPattern | null>(null);
   const lastHoveredIdRef = useRef<number | null>(null);
-  const { hoveredPatternId, setHoveredPatternId } = usePatternHover();
+  const { setHoveredPatternId } = usePatternHover();
   const patternTagsRef = useRef<Map<number, { x: number; y: number; width: number; height: number }>>(new Map());
   const patternConfig = usePatternDetectionConfigStore((state) => state.config);
 

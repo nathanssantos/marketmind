@@ -3,7 +3,6 @@ import {
   Flex,
   Grid,
   GridItem,
-  Progress,
   Stack,
   Text,
 } from '@chakra-ui/react';
@@ -80,14 +79,6 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
     return null;
   }
 
-  const getProgressColorScheme = (percent: number) => {
-    if (percent < 50) return 'green';
-    if (percent < 80) return 'yellow';
-    return 'red';
-  };
-
-  const positionPercent = (metrics.positions.open / metrics.positions.max) * 100;
-
   return (
     <Stack gap={4} p={4} bg="gray.50" _dark={{ bg: 'gray.800' }} borderRadius="md" borderWidth="1px">
       <Flex justify="space-between" align="center">
@@ -114,12 +105,12 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
                 / {metrics.positions.max}
               </Text>
             </Flex>
-            <Progress
+            {/* <Progress
               value={positionPercent}
               size="sm"
               colorScheme={getProgressColorScheme(positionPercent)}
               borderRadius="full"
-            />
+            /> */}
           </Stack>
         </GridItem>
 
@@ -135,12 +126,12 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
             <Text fontSize="xs" color="gray.500">
               {metrics.exposure.percent.toFixed(1)}% of max
             </Text>
-            <Progress
+            {/* <Progress
               value={Math.min(metrics.exposure.percent, 100)}
               size="sm"
               colorScheme={getProgressColorScheme(metrics.exposure.percent)}
               borderRadius="full"
-            />
+            /> */}
           </Stack>
         </GridItem>
 
@@ -191,14 +182,12 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
           <Flex
             p={3}
             bg="orange.50"
-            _dark={{ bg: 'orange.900' }}
+            _dark={{ bg: 'orange.900', borderColor: 'orange.700', color: 'orange.200' }}
             borderRadius="md"
             borderWidth="1px"
             borderColor="orange.200"
-            _dark={{ borderColor: 'orange.700' }}
             fontSize="sm"
             color="orange.800"
-            _dark={{ color: 'orange.200' }}
             align="center"
             gap={2}
           >
@@ -211,14 +200,12 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
           <Flex
             p={3}
             bg="orange.50"
-            _dark={{ bg: 'orange.900' }}
+            _dark={{ bg: 'orange.900', borderColor: 'orange.700', color: 'orange.200' }}
             borderRadius="md"
             borderWidth="1px"
             borderColor="orange.200"
-            _dark={{ borderColor: 'orange.700' }}
             fontSize="sm"
             color="orange.800"
-            _dark={{ color: 'orange.200' }}
             align="center"
             gap={2}
           >

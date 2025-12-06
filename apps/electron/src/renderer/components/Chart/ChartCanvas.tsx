@@ -129,9 +129,8 @@ export const ChartCanvas = ({
   const { wallets: backendWallets } = useBackendWallet();
   const backendWalletId = backendWallets[0]?.id;
 
-  // Unified auto-trading hook (supports simulator and backend modes)
   const { executeSetup: executeAutoTradingSetup } = useAutoTrading({
-    walletId: isSimulatorActive ? activeWalletId : backendWalletId,
+    walletId: isSimulatorActive ? (activeWalletId ?? '') : (backendWalletId ?? ''),
     isSimulatorMode: isSimulatorActive,
   });
 
@@ -1091,15 +1090,16 @@ export const ChartCanvas = ({
 
       if (!shouldExecute) return;
 
+      if (!symbol) return;
+
       const lastKline = klines[klines.length - 1];
       const currentPrice = lastKline ? getKlineClose(lastKline) : undefined;
       const quantity = getQuantityForSymbol(symbol) ?? 1;
 
-      // Unified execution using useAutoTrading hook
       executeAutoTradingSetup(setup, symbol, quantity, {
-        entryFee: tradingFees.maker,
-        exitFee: tradingFees.maker,
-        totalFees: tradingFees.maker * 2,
+        entryFee: tradingFees.makerFeeRate,
+        exitFee: tradingFees.makerFeeRate,
+        totalFees: tradingFees.makerFeeRate * 2,
       }, currentPrice).then((result) => {
         if (result.success) {
           useSetupStore.getState().executeSetup(setup.id);

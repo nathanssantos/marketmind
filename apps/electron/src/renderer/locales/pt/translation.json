@@ -1008,6 +1008,18 @@
       "liquiditySweep": {
         "title": "Varredura de Liquidez (Caça aos Stops)",
         "description": "Detecta rompimentos falsos projetados para acionar stop losses antes de reverter - padrão clássico de comportamento institucional"
+      },
+      "meanReversion": {
+        "title": "Reversão à Média (Bandas de Bollinger + RSI)",
+        "description": "Opera extremos de preço esperando retorno à média - compra sobrevendido (BB inferior + RSI <30), vende sobrecomprado (BB superior + RSI >70)"
+      },
+      "gridTrading": {
+        "title": "Grid Trading (Ordens em Múltiplos Níveis)",
+        "description": "Coloca múltiplas ordens de compra/venda em níveis de preço predeterminados - lucra com oscilações em mercados laterais"
+      },
+      "marketMaking": {
+        "title": "Market Making (Captura de Spread)",
+        "description": "Ordens simultâneas de compra e venda para capturar spread - estratégia de alta frequência que requer spreads apertados e liquidez"
       }
     },
     "parameters": {
@@ -1020,6 +1032,90 @@
       "title": "Resumo",
       "enabledSetups": "Setups Habilitados",
       "avgConfidence": "Confiança Média"
+    }
+  },
+  "backtesting": {
+    "results": {
+      "title": "Resultados do Backtest"
+    },
+    "chart": {
+      "trades": "Operações",
+      "winRate": "Taxa de Acerto"
+    },
+    "equityCurve": {
+      "title": "Curva de Equity",
+      "description": "Desempenho ao longo do tempo com sobreposição de drawdown",
+      "equity": "Equity",
+      "drawdown": "Drawdown"
+    },
+    "config": {
+      "title": "Configuração do Backtest",
+      "symbol": "Símbolo",
+      "interval": "Intervalo",
+      "startDate": "Data Inicial",
+      "endDate": "Data Final",
+      "initialCapital": "Capital Inicial ($)",
+      "initialCapitalHelper": "Saldo inicial para backtesting",
+      "maxPosition": "Tamanho Máximo da Posição (%)",
+      "maxPositionHelper": "Percentual máximo do capital por operação",
+      "commission": "Comissão (%)",
+      "commissionHelper": "Taxa de comissão por transação",
+      "useAlgorithmicLevels": "Usar Níveis Algorítmicos de Stop/Take",
+      "useAlgorithmicLevelsHelper": "Calcular níveis baseados no algoritmo do setup",
+      "stopLoss": "Stop Loss (%)",
+      "takeProfit": "Take Profit (%)",
+      "minProfit": "Lucro Mínimo (%)",
+      "minProfitHelper": "Filtrar setups com R:R abaixo deste limite",
+      "minConfidence": "Confiança Mínima (%)",
+      "minConfidenceHelper": "Operar apenas setups com confiança acima deste nível",
+      "runBacktest": "Executar Backtest"
+    },
+    "trades": {
+      "title": "Lista de Operações",
+      "count": "{{count}} operações",
+      "columns": {
+        "side": "Lado",
+        "setup": "Setup",
+        "entry": "Entrada",
+        "exit": "Saída",
+        "entryTime": "Hora de Entrada",
+        "exitTime": "Hora de Saída",
+        "duration": "Duração",
+        "pnl": "Lucro/Prejuízo",
+        "pnlPercent": "L/P %",
+        "exitReason": "Motivo da Saída"
+      }
+    },
+    "metrics": {
+      "totalPnl": "Lucro/Prejuízo Total",
+      "winRate": "Taxa de Acerto",
+      "wins": "G",
+      "losses": "P",
+      "profitFactor": "Fator de Lucro",
+      "totalTrades": "Total de Operações",
+      "avgDuration": "Duração Média",
+      "duration": "Duração",
+      "avgWin": "Ganho Médio",
+      "avgLoss": "Perda Média",
+      "largestWin": "Maior Ganho",
+      "largestLoss": "Maior Perda",
+      "maxDrawdown": "Drawdown Máximo",
+      "sharpeRatio": "Índice de Sharpe",
+      "sortinoRatio": "Índice de Sortino",
+      "downsideRisk": "Risco de Queda",
+      "totalCommission": "Comissão Total"
+    },
+    "quality": {
+      "excellent": "Excelente",
+      "good": "Bom",
+      "fair": "Razoável"
+    },
+    "configuration": {
+      "title": "Configuração",
+      "initialCapital": "Capital Inicial",
+      "maxPosition": "Posição Máxima",
+      "commission": "Comissão",
+      "setups": "Setups"
     }
   }
 }

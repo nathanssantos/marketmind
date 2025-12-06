@@ -114,7 +114,7 @@ export class PartialExitManager {
         entryPrice: number,
         stopLoss: number,
         direction: 'LONG' | 'SHORT',
-        currentIndex: number
+        _currentIndex: number
     ): PartialExitResult | null {
         if (!this.config.enabled || state.remainingPercentage <= 0) {
             return null;
@@ -134,12 +134,12 @@ export class PartialExitManager {
         // Find the highest untriggered level that should execute
         for (let i = 0; i < exitLevels.length; i++) {
             const level = exitLevels[i];
+            if (!level) continue;
             const alreadyExecuted = state.executedExits.some(exit => exit.level === i);
 
             if (alreadyExecuted) continue;
-            if (level.rMultiple === 0) continue; // Skip trailing exit level
+            if (level.rMultiple === 0) continue;
 
-            // Check if target is hit
             const targetHit = direction === 'LONG'
                 ? currentPrice >= (level.price ?? Infinity)
                 : currentPrice <= (level.price ?? 0);

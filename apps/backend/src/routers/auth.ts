@@ -31,7 +31,7 @@ export const authRouter = router({
       const userId = await createUser(input.email, input.password);
       const { sessionId, expiresAt } = await createSession(userId);
 
-      ctx.res.setCookie('session', sessionId, {
+      (ctx.res as any).setCookie('session', sessionId, {
         httpOnly: true,
         secure: false,
         sameSite: 'lax',
@@ -78,7 +78,7 @@ export const authRouter = router({
 
       const { sessionId, expiresAt } = await createSession(user.id);
 
-      ctx.res.setCookie('session', sessionId, {
+      (ctx.res as any).setCookie('session', sessionId, {
         httpOnly: true,
         secure: false,
         sameSite: 'lax',
@@ -103,7 +103,7 @@ export const authRouter = router({
 
     await invalidateSession(ctx.sessionId);
 
-    ctx.res.clearCookie('session', { path: '/' });
+    (ctx.res as any).clearCookie('session', { path: '/' });
 
     return { success: true };
   }),

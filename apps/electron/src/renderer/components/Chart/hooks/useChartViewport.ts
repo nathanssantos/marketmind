@@ -42,6 +42,8 @@ export const useChartViewport = ({
         priceMax: 100,
         width,
         height,
+        klineWidth: 8,
+        klineSpacing: 2,
       };
     }
 
@@ -50,10 +52,13 @@ export const useChartViewport = ({
     const end = Math.min(klines.length, start + visibleCount);
 
     const visibleKlines = klines.slice(Math.floor(start), Math.ceil(end));
-    const prices = visibleKlines.flatMap((k) => [k.open, k.high, k.low, k.close]);
+    const prices = visibleKlines.flatMap((k) => [Number(k.open), Number(k.high), Number(k.low), Number(k.close)]);
     const priceMin = Math.min(...prices);
     const priceMax = Math.max(...prices);
     const priceRange = priceMax - priceMin;
+
+    const klineWidth = Math.max(1, Math.min(20, width / visibleCount * 0.8));
+    const klineSpacing = Math.max(0.5, klineWidth * 0.25);
 
     return {
       start,
@@ -62,6 +67,8 @@ export const useChartViewport = ({
       priceMax: priceMax + priceRange * padding,
       width,
       height,
+      klineWidth,
+      klineSpacing,
     };
   }, [klines, width, height, zoom, pan, padding]);
 

@@ -1,5 +1,5 @@
 import { calculateATR, calculateEMA } from '@marketmind/indicators';
-import type { Kline } from '@shared/types';
+import type { Kline, SetupType } from '@shared/types';
 import {
     BaseSetupDetector,
     type SetupDetectorConfig,
@@ -50,26 +50,28 @@ export class MarketMakingDetector extends BaseSetupDetector {
 
         // Calculate mid price (EMA as fair value)
         const klinesUpToCurrent = klines.slice(0, currentIndex + 1);
-        const midPrice = calculateEMA(klinesUpToCurrent, this.mmConfig.emaPeriod);
+        const midPriceArray = calculateEMA(klinesUpToCurrent, this.mmConfig.emaPeriod);
+        const midPrice = midPriceArray[midPriceArray.length - 1];
         if (midPrice === null) {
             return { setup: null, confidence: 0 };
         }
 
         // Calculate ATR for dynamic spread
-        const atr = calculateATR(klinesUpToCurrent, this.mmConfig.atrPeriod);
-        if (atr === null) {
+        const atrArray = calculateATR(klinesUpToCurrent, this.mmConfig.atrPeriod);
+        const atr = atrArray[atrArray.length - 1];
+        if (atr === null || atr === undefined || isNaN(atr)) {
             return { setup: null, confidence: 0 };
         }
 
         // Calculate spread
-        const spread = this.calculateSpread(current.close, atr);
-        if (!this.isSpreadValid(spread, current.close)) {
+        const spread = this.calculateSpread(Number(current.close), atr as number);
+        if (!this.isSpreadValid(spread, Number(current.close))) {
             return { setup: null, confidence: 0 };
         }
 
         // Check volume (need liquidity for market making)
         const avgVolume = this.calculateAverageVolume(klines, currentIndex, 20);
-        if (current.volume < avgVolume * this.mmConfig.volumeThreshold) {
+        if (Number(current.volume) < avgVolume * this.mmConfig.volumeThreshold) {
             return { setup: null, confidence: 0 };
         }
 
@@ -79,7 +81,7 @@ export class MarketMakingDetector extends BaseSetupDetector {
         }
 
         // Create market making setup (LONG side)
-        return this.createMarketMakingSetup(klines, currentIndex, midPrice, spread);
+        return this.createMarketMakingSetup(klines, currentIndex, midPrice as number, spread);
     }
 
     private calculateSpread(price: number, atr: number): number {
@@ -100,21 +102,33 @@ export class MarketMakingDetector extends BaseSetupDetector {
     }
 
     private isMarketRanging(klines: Kline[], currentIndex: number): boolean {
-        // Check if EMA is flat (not trending)
         const emaPeriod = this.mmConfig.emaPeriod;
-        if (currentIndex < emaPeriod + 5) return false;
-
-        const klinesUpToCurrent = klines.slice(0, currentIndex + 1);
-        const currentEMA = calculateEMA(klinesUpToCurrent, emaPeriod);
+        const lookbackPeriod = 10;
         
-        const klinesUpToPrevious = klines.slice(0, currentIndex);
-        const previousEMA = calculateEMA(klinesUpToPrevious, emaPeriod);
+        if (currentIndex < emaPeriod + lookbackPeriod) return false;
 
-        if (currentEMA === null || previousEMA === null) return false;
-
-        // EMA should be relatively flat (< 1% change - more permissive)
-        const emaChange = Math.abs((currentEMA - previousEMA) / previousEMA);
-        return emaChange < 0.01;
+        const emaChanges: number[] = [];
+        
+        for (let i = currentIndex - lookbackPeriod; i <= currentIndex; i++) {
+            const klinesUpToCurrent = klines.slice(0, i + 1);
+            const currentEMAArray = calculateEMA(klinesUpToCurrent, emaPeriod);
+            const currentEMA = currentEMAArray[currentEMAArray.length - 1];
+            
+            const klinesUpToPrevious = klines.slice(0, i);
+            const previousEMAArray = calculateEMA(klinesUpToPrevious, emaPeriod);
+            const previousEMA = previousEMAArray[previousEMAArray.length - 1];
+            
+            if (currentEMA === null || previousEMA === null || currentEMA === undefined || previousEMA === undefined) {
+                return false;
+            }
+            
+            const change = Math.abs((currentEMA - previousEMA) / previousEMA);
+            emaChanges.push(change);
+        }
+        
+        const avgChange = emaChanges.reduce((sum, change) => sum + change, 0) / emaChanges.length;
+        
+        return avgChange < 0.0015;
     }
 
     private createMarketMakingSetup(
@@ -123,7 +137,7 @@ export class MarketMakingDetector extends BaseSetupDetector {
         midPrice: number,
         spread: number
     ): SetupDetectorResult {
-        const current = klines[currentIndex];
+        const current = klines[currentIndex]!;
         const halfSpread = spread / 2;
 
         // Entry prices
@@ -140,18 +154,26 @@ export class MarketMakingDetector extends BaseSetupDetector {
             klines,
             currentIndex,
             spread,
-            current.close
+            Number(current.close)
         );
 
         return {
             setup: {
-                type: 'MARKET_MAKING',
+                type: 'MARKET_MAKING' as SetupType,
                 direction: 'LONG',
                 entryPrice,
                 stopLoss,
                 takeProfit,
+                riskRewardRatio: (takeProfit - entryPrice) / (entryPrice - stopLoss),
                 confidence,
-                metadata: {
+                volumeConfirmation: true,
+                indicatorConfluence: 0.7,
+                klineIndex: currentIndex,
+                openTime: klines[currentIndex]!.openTime,
+                id: `MARKET_MAKING-LONG-${currentIndex}-${Date.now()}`,
+                visible: true,
+                source: 'algorithm' as const,
+                setupData: {
                     midPrice,
                     spread,
                     spreadPercent: (spread / midPrice) * 100,
@@ -180,8 +202,8 @@ export class MarketMakingDetector extends BaseSetupDetector {
 
         // Higher confidence with higher volume
         const avgVolume = this.calculateAverageVolume(klines, currentIndex, 20);
-        const current = klines[currentIndex];
-        const volumeRatio = current.volume / avgVolume;
+        const current = klines[currentIndex]!;
+        const volumeRatio = Number(current.volume) / avgVolume;
         if (volumeRatio > 1.5) confidence += 0.10;
         else if (volumeRatio > 1.2) confidence += 0.05;
 
@@ -199,25 +221,27 @@ export class MarketMakingDetector extends BaseSetupDetector {
     ): number {
         const start = Math.max(0, currentIndex - period + 1);
         const slice = klines.slice(start, currentIndex + 1);
-        const sum = slice.reduce((acc, k) => acc + k.volume, 0);
+        const sum = slice.reduce((acc, k) => acc + Number(k.volume), 0);
         return sum / slice.length;
     }
 }
 
-export const createMarketMakingDetector = (
+export const createDefaultMarketMakingConfig = (
     config?: Partial<MarketMakingConfig>
-): MarketMakingDetector => {
+): MarketMakingConfig => {
     const defaultConfig: MarketMakingConfig = {
         enabled: true,
+        minConfidence: 60,
+        minRiskReward: 1.2,
         atrPeriod: 14,
         emaPeriod: 20,
-        spreadMultiplier: 1.0, // 1x ATR as spread
-        minSpreadPercent: 0.002, // 0.2% minimum
-        maxSpreadPercent: 0.01, // 1.0% maximum
-        gridLevels: 3, // Number of grid levels (future enhancement)
-        volumeThreshold: 1.0, // 1x average volume
-        timeInForce: 5, // Max klines to hold position
+        spreadMultiplier: 1.0,
+        minSpreadPercent: 0.002,
+        maxSpreadPercent: 0.01,
+        gridLevels: 3,
+        volumeThreshold: 1.0,
+        timeInForce: 5,
     };
 
-    return new MarketMakingDetector({ ...defaultConfig, ...config });
+    return { ...defaultConfig, ...config };
 };

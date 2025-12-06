@@ -13,7 +13,7 @@ import { Checkbox } from '../ui/checkbox';
 import { Popover } from '../ui/popover';
 import { TooltipWrapper } from '../ui/Tooltip';
 
-type SetupKey = 'setup91' | 'setup92' | 'setup93' | 'setup94' | 'pattern123' | 'bullTrap' | 'bearTrap' | 'breakoutRetest' | 'pinInside' | 'orderBlockFVG' | 'vwapEmaCross' | 'divergence' | 'liquiditySweep';
+type SetupKey = 'setup91' | 'setup92' | 'setup93' | 'setup94' | 'pattern123' | 'bullTrap' | 'bearTrap' | 'breakoutRetest' | 'pinInside' | 'orderBlockFVG' | 'vwapEmaCross' | 'divergence' | 'liquiditySweep' | 'meanReversion' | 'gridTrading' | 'marketMaking';
 
 const SETUP_LIST: Array<{ value: SetupKey; titleKey: string }> = [
     { value: 'setup91', titleKey: 'setupConfig.setups.setup91.title' },
@@ -29,6 +29,9 @@ const SETUP_LIST: Array<{ value: SetupKey; titleKey: string }> = [
     { value: 'vwapEmaCross', titleKey: 'setupConfig.setups.vwapEmaCross.title' },
     { value: 'divergence', titleKey: 'setupConfig.setups.divergence.title' },
     { value: 'liquiditySweep', titleKey: 'setupConfig.setups.liquiditySweep.title' },
+    { value: 'meanReversion', titleKey: 'setupConfig.setups.meanReversion.title' },
+    { value: 'gridTrading', titleKey: 'setupConfig.setups.gridTrading.title' },
+    { value: 'marketMaking', titleKey: 'setupConfig.setups.marketMaking.title' },
 ];
 
 export const SetupTogglePopover = memo(() => {

@@ -1,6 +1,6 @@
-import { and, eq, gte, sql } from 'drizzle-orm';
+import { and, eq, gte } from 'drizzle-orm';
 import { db } from '../db';
-import type { AutoTradingConfig, Wallet } from '../db/schema';
+import type { AutoTradingConfig } from '../db/schema';
 import { tradeExecutions, wallets } from '../db/schema';
 import { logger } from './logger';
 
@@ -111,10 +111,10 @@ export class RiskManagerService {
 
       return { isValid: true };
     } catch (error) {
-      logger.error('Error validating new position', {
+      logger.error({
         walletId,
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Error validating new position');
       return {
         isValid: false,
         reason: 'Error validating position',
@@ -152,10 +152,10 @@ export class RiskManagerService {
         openPositionsCount: openPositions.length,
       };
     } catch (error) {
-      logger.error('Error getting current exposure', {
+      logger.error({
         walletId,
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Error getting current exposure');
       return {
         totalValue: 0,
         maxAllowed: 0,
@@ -191,10 +191,10 @@ export class RiskManagerService {
         percentUsed: limit > 0 ? Math.abs(dailyPnL / limit) * 100 : 0,
       };
     } catch (error) {
-      logger.error('Error getting daily PnL', {
+      logger.error({
         walletId,
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Error getting daily PnL');
       return {
         pnl: 0,
         limit: 0,
@@ -273,10 +273,10 @@ export class RiskManagerService {
         isExceeded: drawdown > maxDrawdownPercent,
       };
     } catch (error) {
-      logger.error('Error checking drawdown', {
+      logger.error({
         walletId,
         error: error instanceof Error ? error.message : String(error),
-      });
+      }, 'Error checking drawdown');
       return {
         currentDrawdown: 0,
         maxDrawdown: maxDrawdownPercent,

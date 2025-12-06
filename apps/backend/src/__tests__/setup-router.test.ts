@@ -34,6 +34,8 @@ describe('Setup Router', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
+      req: {} as any,
+      res: {} as any,
       websocket: null,
     };
 

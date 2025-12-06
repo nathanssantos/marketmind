@@ -141,7 +141,7 @@ export const printBenchmarkResults = (results: BenchmarkResult[]) => {
  */
 export const runChartBenchmark = async (
     klines: any[],
-    viewport: any
+    _viewport: any
 ): Promise<void> => {
     const operations = {
         singleCanvas: () => {

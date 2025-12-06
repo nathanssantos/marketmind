@@ -99,7 +99,17 @@ export class TrailingStopManager {
             };
         }
 
-        const currentPrice = klines[currentIndex].close;
+        const currentKline = klines[currentIndex];
+        if (!currentKline) {
+            return {
+                newStopLoss: state.currentStopLoss,
+                moved: false,
+                reason: 'Invalid kline at current index',
+                rMultiples: state.rMultiples,
+            };
+        }
+
+        const currentPrice = Number(currentKline.close);
         const atrArray = calculateATR(klines.slice(0, currentIndex + 1), 14);
         const atr = atrArray[atrArray.length - 1];
         
@@ -182,9 +192,9 @@ export class TrailingStopManager {
         kline: Kline
     ): boolean {
         if (direction === 'LONG') {
-            return kline.low <= stopLoss;
+            return Number(kline.low) <= stopLoss;
         }
-        return kline.high >= stopLoss;
+        return Number(kline.high) >= stopLoss;
     }
 
     /**
@@ -198,7 +208,7 @@ export class TrailingStopManager {
         if (this.isStopHit(stopLoss, direction, kline)) {
             return stopLoss;
         }
-        return kline.close;
+        return Number(kline.close);
     }
 }
 

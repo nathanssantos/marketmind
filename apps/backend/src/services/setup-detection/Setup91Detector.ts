@@ -177,7 +177,7 @@ export class Setup91Detector extends BaseSetupDetector {
     ema: number,
     volumeConfirmed: boolean,
   ): number {
-    let confidence = BASE_CONFIDENCE;
+    const confidence = BASE_CONFIDENCE;
     let boost = 0;
 
     const distanceFromEMA = Math.abs(getKlineClose(kline) - ema) / ema;

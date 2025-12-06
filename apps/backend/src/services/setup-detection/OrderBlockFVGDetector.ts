@@ -216,7 +216,7 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
         gapPercent <
         this.orderBlockFVGConfig.fvgMinSize / PERCENT_DIVISOR
       )
-        continue;
+        {continue;}
 
       const currentKline = klines[currentIndex];
       if (!currentKline) continue;
@@ -268,7 +268,7 @@ export class OrderBlockFVGDetector extends BaseSetupDetector {
         gapPercent <
         this.orderBlockFVGConfig.fvgMinSize / PERCENT_DIVISOR
       )
-        continue;
+        {continue;}
 
       const currentKline = klines[currentIndex];
       if (!currentKline) continue;

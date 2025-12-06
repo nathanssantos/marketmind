@@ -28,10 +28,10 @@ const createKline = (
 
 describe('VWAPEMACrossDetector', () => {
   describe('createDefaultVWAPEMACrossConfig', () => {
-    it('should create default config with disabled state', () => {
+    it('should create default config with enabled state', () => {
       const config = createDefaultVWAPEMACrossConfig();
 
-      expect(config.enabled).toBe(false);
+      expect(config.enabled).toBe(true);
       expect(config.minConfidence).toBe(75);
       expect(config.minRiskReward).toBe(2.0);
       expect(config.emaPeriod).toBe(20);

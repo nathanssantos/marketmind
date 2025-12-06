@@ -1,17 +1,21 @@
 import type { Kline } from '@marketmind/types';
+import type {
+    PartialExitManager
+} from './PartialExitManager';
 import {
-    TrailingStopManager,
+    createPartialExitManager,
+    type PartialExitConfig,
+    type PartialExitResult,
+    type PartialExitState,
+} from './PartialExitManager';
+import type {
+    TrailingStopManager
+} from './TrailingStopManager';
+import {
     createTrailingStopManager,
     type TrailingStopConfig,
     type TrailingStopState,
 } from './TrailingStopManager';
-import {
-    PartialExitManager,
-    createPartialExitManager,
-    type PartialExitConfig,
-    type PartialExitState,
-    type PartialExitResult,
-} from './PartialExitManager';
 
 export interface PositionConfig {
     trailingStop: TrailingStopConfig;
@@ -125,16 +129,17 @@ export class PositionManager {
             throw new Error('Position has no trailing stop state');
         }
 
-        let currentPosition = { ...position };
+        const currentPosition = { ...position };
         const update: PositionUpdate = {};
 
         // Check for partial exits first
         if (this.config.partialExit.enabled && currentPosition.partialExitState.remainingPercentage > 0) {
             const currentKline = allKlines[currentIndex];
+            if (!currentKline || !currentPosition.trailingStopState) return { position: currentPosition, update };
             
             const exitResult = this.partialExit.checkForExit(
                 currentPosition.partialExitState,
-                currentKline.close,
+                Number(currentKline.close),
                 currentPosition.entryPrice,
                 currentPosition.trailingStopState.currentStopLoss,
                 currentPosition.direction,
@@ -166,7 +171,10 @@ export class PositionManager {
         }
 
         // Update trailing stop
-        const previousStop = currentPosition.trailingStopState.currentStopLoss;
+        if (!currentPosition.trailingStopState) {
+            return { position: currentPosition, update };
+        }
+        
         const trailingUpdate = this.trailingStop.update(
             currentPosition.trailingStopState,
             currentPosition.entryPrice,
@@ -176,7 +184,9 @@ export class PositionManager {
         );
 
         // Update all state fields
-        const currentPrice = allKlines[currentIndex].close;
+        const currentKlinePrice = allKlines[currentIndex];
+        if (!currentKlinePrice) return { position: currentPosition, update };
+        const currentPrice = Number(currentKlinePrice.close);
         currentPosition.trailingStopState.currentStopLoss = trailingUpdate.newStopLoss;
         currentPosition.trailingStopState.rMultiples = trailingUpdate.rMultiples;
         currentPosition.trailingStopState.lastUpdateKlineIndex = currentIndex;
@@ -211,10 +221,11 @@ export class PositionManager {
         }
 
         // Check for stop hit
-        const currentKline = allKlines[currentIndex];
+        const stopCheckKline = allKlines[currentIndex];
+        if (!stopCheckKline) return { position: currentPosition, update };
         const stopHit = currentPosition.direction === 'LONG'
-            ? currentKline.low <= currentPosition.trailingStopState.currentStopLoss
-            : currentKline.high >= currentPosition.trailingStopState.currentStopLoss;
+            ? Number(stopCheckKline.low) <= currentPosition.trailingStopState.currentStopLoss
+            : Number(stopCheckKline.high) >= currentPosition.trailingStopState.currentStopLoss;
 
         if (stopHit) {
             update.stopHit = true;
@@ -254,7 +265,9 @@ export class PositionManager {
         }
 
         const idx = currentIndex ?? klines.length - 1;
-        const currentPrice = klines[idx].close;
+        const currentKline = klines[idx];
+        if (!currentKline) return { realized: 0, unrealized: 0, total: 0 };
+        const currentPrice = Number(currentKline.close);
         
         return this.partialExit.calculateTotalPnL(
             position.partialExitState,
@@ -270,7 +283,9 @@ export class PositionManager {
     getPositionSummary(position: Position, klines: Kline[], currentIndex?: number): string {
         const idx = currentIndex ?? klines.length - 1;
         const pnl = this.calculatePnL(position, klines, idx);
-        const currentPrice = klines[idx].close;
+        const currentKline = klines[idx];
+        if (!currentKline) return `Position ${position.id} - Invalid kline index`;
+        const currentPrice = Number(currentKline.close);
         const r = position.trailingStopState
             ? position.trailingStopState.rMultiples
             : 0;

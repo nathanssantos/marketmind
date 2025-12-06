@@ -337,7 +337,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
     const rr = this.calculateRR(entry, stopLoss, takeProfit);
 
     if (!this.meetsMinimumRequirements(MIN_CONFIDENCE_THRESHOLD, rr))
-      return null;
+      {return null;}
 
     const breakoutStrength = (getKlineClose(current) - resistance) / resistance;
     const confidence = this.calculateConfidence(
@@ -418,7 +418,7 @@ export class BreakoutRetestDetector extends BaseSetupDetector {
     const rr = this.calculateRR(entry, stopLoss, takeProfit);
 
     if (!this.meetsMinimumRequirements(MIN_CONFIDENCE_THRESHOLD, rr))
-      return null;
+      {return null;}
 
     const breakoutStrength = (support - getKlineClose(current)) / support;
     const confidence = this.calculateConfidence(

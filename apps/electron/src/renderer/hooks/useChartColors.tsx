@@ -4,6 +4,7 @@ import type { ChartColors } from '@shared/types';
 import { useMemo } from 'react';
 
 export interface ChartThemeColors extends ChartColors {
+  text: string;
   axisLabel: string;
   axisLine: string;
   crosshair: string;

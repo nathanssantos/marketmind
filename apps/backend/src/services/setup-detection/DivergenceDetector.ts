@@ -232,7 +232,7 @@ export class DivergenceDetector extends BaseSetupDetector {
       currentRSI === null ||
       currentRSI === undefined
     )
-      return null;
+      {return null;}
 
     if (currentRSI <= firstRSI) return null;
 
@@ -292,7 +292,7 @@ export class DivergenceDetector extends BaseSetupDetector {
       currentRSI === null ||
       currentRSI === undefined
     )
-      return null;
+      {return null;}
 
     if (currentRSI >= firstRSI) return null;
 

@@ -35,7 +35,6 @@ export const MiniChart = ({
     trades = [],
     width = 600,
     height = 400,
-    showVolume = false,
     showIndicators = false,
     showGrid = true,
     interactive = false,
@@ -55,13 +54,18 @@ export const MiniChart = ({
                 priceMax: 100,
                 width,
                 height,
+                klineWidth: 2,
+                klineSpacing: 1,
             };
         }
 
-        const prices = klines.flatMap((k) => [k.open, k.high, k.low, k.close]);
+        const prices = klines.flatMap((k) => [Number(k.open), Number(k.high), Number(k.low), Number(k.close)]);
         const priceMin = Math.min(...prices);
         const priceMax = Math.max(...prices);
         const priceRange = priceMax - priceMin;
+
+        const klineWidth = Math.max(1, width / klines.length * 0.7);
+        const klineSpacing = Math.max(0.5, klineWidth * 0.2);
 
         return {
             start: 0,
@@ -70,6 +74,8 @@ export const MiniChart = ({
             priceMax: priceMax + priceRange * 0.05,
             width,
             height,
+            klineWidth,
+            klineSpacing,
         };
     }, [klines, width, height]);
 

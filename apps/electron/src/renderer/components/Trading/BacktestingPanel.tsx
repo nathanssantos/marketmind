@@ -77,7 +77,7 @@ export const BacktestingPanel = ({ marketService }: BacktestingPanelProps) => {
 
           <Box mt={4}>
             <Tabs.Content value="config">
-              <BacktestConfig onBacktestComplete={handleBacktestComplete} marketService={marketService} />
+              {marketService && <BacktestConfig onBacktestComplete={handleBacktestComplete} marketService={marketService} />}
             </Tabs.Content>
 
             <Tabs.Content value="results">
@@ -85,6 +85,7 @@ export const BacktestingPanel = ({ marketService }: BacktestingPanelProps) => {
                 <BacktestResults
                   backtestId={selectedBacktestId}
                   onClose={() => setSelectedBacktestId(null)}
+                  marketService={marketService}
                 />
               ) : (
                 <Stack gap={3}>

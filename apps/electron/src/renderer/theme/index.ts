@@ -250,6 +250,7 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
     bearish: resolveValue(tokens['chart.bearish']),
     volume: resolveValue(tokens['chart.volume']),
     grid: resolveValue(tokens['chart.grid']),
+    text: resolveValue(tokens['chart.axis.label']),
     axisLabel: resolveValue(tokens['chart.axis.label']),
     axisLine: resolveValue(tokens['chart.axis.line']),
     crosshair: resolveValue(tokens['chart.crosshair']),

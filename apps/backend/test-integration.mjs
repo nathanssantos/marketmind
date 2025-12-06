@@ -69,7 +69,7 @@ const runTests = async () => {
         name: 'Test User',
     });
 
-    let sessionCookie = null;
+    const sessionCookie = null;
     if (registerResult.success) {
         // Extract session cookie (would be in headers in real test)
         console.log('  ℹ️  User registered successfully');
@@ -103,7 +103,7 @@ const runTests = async () => {
     await testTRPCQuery('trading.getOrders (unauthenticated)', 'trading.getOrders');
     await testTRPCQuery('trading.getPositions (unauthenticated)', 'trading.getPositions');
 
-    console.log('\n' + '='.repeat(50));
+    console.log(`\n${  '='.repeat(50)}`);
     console.log('✨ Integration tests completed!\n');
     console.log('Note: Authenticated endpoints require valid session cookies.');
     console.log('Use Postman or similar tool to test with authentication.\n');

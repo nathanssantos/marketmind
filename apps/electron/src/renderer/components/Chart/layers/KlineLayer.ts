@@ -39,7 +39,6 @@ export const createKlineRenderer = (
       maxKlineWidth,
       Math.max(minKlineWidth, (width / visibleCount) * 0.8)
     );
-    const klineSpacing = width / visibleCount;
 
     ctx.save();
     ctx.lineWidth = lineWidth;

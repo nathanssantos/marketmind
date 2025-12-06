@@ -15,22 +15,6 @@ const intervalSchema = z.enum([
   '1d', '3d', '1w', '1M',
 ]);
 
-const klineSchema = z.object({
-  symbol: z.string(),
-  interval: z.string(),
-  openTime: z.date(),
-  open: z.string(),
-  high: z.string(),
-  low: z.string(),
-  close: z.string(),
-  volume: z.string(),
-  quoteVolume: z.string(),
-  trades: z.number(),
-  takerBuyBaseVolume: z.string(),
-  takerBuyQuoteVolume: z.string(),
-  createdAt: z.string(),
-});
-
 export const klineRouter = router({
   subscribe: protectedProcedure
     .input(

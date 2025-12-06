@@ -194,7 +194,7 @@ export class Setup94Detector extends BaseSetupDetector {
     volumeConfirmed: boolean,
     isLong: boolean,
   ): number {
-    let confidence = BASE_CONFIDENCE;
+    const confidence = BASE_CONFIDENCE;
     let boost = 0;
 
     const distanceFromEMA = Math.abs(getKlineClose(current) - ema) / ema;

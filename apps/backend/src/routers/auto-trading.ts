@@ -75,6 +75,10 @@ export const autoTradingRouter = router({
           .limit(1);
       }
 
+      if (!config) {
+        throw new Error('Config not found');
+      }
+
       return {
         ...config,
         enabledSetupTypes: JSON.parse(config.enabledSetupTypes) as string[],
@@ -118,15 +122,15 @@ export const autoTradingRouter = router({
 
       if (input.isEnabled !== undefined) updateData.isEnabled = input.isEnabled;
       if (input.maxConcurrentPositions !== undefined)
-        updateData.maxConcurrentPositions = input.maxConcurrentPositions;
+        {updateData.maxConcurrentPositions = input.maxConcurrentPositions;}
       if (input.maxPositionSize !== undefined)
-        updateData.maxPositionSize = input.maxPositionSize;
+        {updateData.maxPositionSize = input.maxPositionSize;}
       if (input.dailyLossLimit !== undefined)
-        updateData.dailyLossLimit = input.dailyLossLimit;
+        {updateData.dailyLossLimit = input.dailyLossLimit;}
       if (input.enabledSetupTypes !== undefined)
-        updateData.enabledSetupTypes = JSON.stringify(input.enabledSetupTypes);
+        {updateData.enabledSetupTypes = JSON.stringify(input.enabledSetupTypes);}
       if (input.positionSizing !== undefined)
-        updateData.positionSizing = input.positionSizing;
+        {updateData.positionSizing = input.positionSizing;}
 
       await ctx.db
         .update(autoTradingConfig)
@@ -225,7 +229,6 @@ export const autoTradingRouter = router({
         });
       }
 
-      const entryPrice = parseFloat(setup.entryPrice);
       const walletBalance = parseFloat(wallet.currentBalance || '0');
       const maxPositionSizePercent = parseFloat(config.maxPositionSize);
       const positionValue = (walletBalance * maxPositionSizePercent) / 100;

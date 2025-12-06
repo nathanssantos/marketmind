@@ -1,18 +1,22 @@
 import { Box, Flex, Grid, Stack, Text } from '@chakra-ui/react';
 import { Button } from '@renderer/components/ui/button';
 import { useBacktesting } from '@renderer/hooks/useBacktesting';
+import type { Kline } from '@shared/types';
 import type { BacktestResult } from '@shared/types/backtesting';
 import { useEffect, useState } from 'react';
+import { BacktestChart } from './BacktestChart';
 import { EquityCurveChart } from './EquityCurveChart';
 
 interface BacktestResultsProps {
   backtestId: string;
   onClose?: () => void;
+  marketService?: any;
 }
 
-export const BacktestResults = ({ backtestId, onClose }: BacktestResultsProps) => {
+export const BacktestResults = ({ backtestId, onClose, marketService }: BacktestResultsProps) => {
   const { getBacktestResult } = useBacktesting();
   const [result, setResult] = useState<BacktestResult | null>(null);
+  const [klines, setKlines] = useState<Kline[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -20,11 +24,27 @@ export const BacktestResults = ({ backtestId, onClose }: BacktestResultsProps) =
       setIsLoading(true);
       const data = await getBacktestResult(backtestId);
       setResult(data);
+
+      if (data && marketService) {
+        try {
+          const response = await marketService.fetchKlines({
+            symbol: data.config.symbol,
+            interval: data.config.interval,
+            startTime: new Date(data.config.startDate).getTime(),
+            endTime: new Date(data.config.endDate).getTime(),
+            limit: 1000,
+          });
+          setKlines(response.klines || []);
+        } catch (error) {
+          console.error('Failed to load klines for backtest chart:', error);
+        }
+      }
+
       setIsLoading(false);
     };
 
     loadResult();
-  }, [backtestId, getBacktestResult]);
+  }, [backtestId, getBacktestResult, marketService]);
 
   if (isLoading) {
     return (
@@ -174,6 +194,26 @@ export const BacktestResults = ({ backtestId, onClose }: BacktestResultsProps) =
             initialCapital={config.initialCapital}
             currency="USDT"
           />
+        </Box>
+      )}
+
+      {/* Backtest Chart with Trade Markers */}
+      {klines.length > 0 && result.trades.length > 0 && (
+        <Box p={3} bg="bg.muted" borderRadius="md">
+          <Text fontSize="xs" fontWeight="medium" mb={2}>
+            Trades on Chart
+          </Text>
+          <BacktestChart
+            klines={klines}
+            trades={result.trades}
+            width={Math.min(window.innerWidth - 100, 1000)}
+            height={400}
+          />
+          <Text fontSize="2xs" color="fg.muted" mt={2}>
+            🔺 Green triangle = Profitable LONG entry | 🔻 Red triangle = Losing SHORT entry
+            <br />
+            Dotted lines connect entry to exit. Circles mark exit points.
+          </Text>
         </Box>
       )}
 
