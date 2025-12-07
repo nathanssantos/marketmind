@@ -397,12 +397,6 @@ npm run backtest:sensitivity -- \
 | Bull Trap | `bullTrap` | Reversal SHORT | 1h, 4h |
 | Bear Trap | `bearTrap` | Reversal LONG | 1h, 4h |
 | Breakout Retest | `breakoutRetest` | Momentum + Retest | 1h, 4h |
-| Pinbar | `pinbar` | Consolidation Breakout | 1h, 4h |
-| Inside Bar | `insidebar` | Consolidation Breakout | 1h, 4h |
-| Order Block + FVG | `orderBlockFVG` | Smart Money Concepts | 4h, 1d |
-| VWAP EMA Cross | `vwapEma` | Volume-Weighted | 15m, 1h |
-| Divergence | `divergence` | RSI/MACD Reversals | 1h, 4h |
-| Liquidity Sweep | `liquiditySweep` | Smart Money Liquidity | 1h, 4h |
 
 ---
 

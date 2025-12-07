@@ -49,11 +49,10 @@ export class BacktestEngine {
 
       console.log('[Backtest] Sample kline:', historicalKlines[0]);
 
-      // 2. Setup detection configuration
+      // 2. Setup detection configuration - only profitable setups
       const setupsToEnable = config.setupTypes?.length ? config.setupTypes : [
         'setup91', 'setup92', 'setup93', 'setup94', 'pattern123',
-        'bullTrap', 'bearTrap', 'breakoutRetest', 'pinInside',
-        'orderBlockFVG', 'vwapEmaCross', 'divergence', 'liquiditySweep'
+        'bullTrap', 'bearTrap', 'breakoutRetest'
       ];
 
       // Import default configs from individual files
@@ -65,30 +64,42 @@ export class BacktestEngine {
       const { createDefaultBullTrapConfig } = await import('../setup-detection/BullTrapDetector');
       const { createDefaultBearTrapConfig } = await import('../setup-detection/BearTrapDetector');
       const { createDefaultBreakoutRetestConfig } = await import('../setup-detection/BreakoutRetestDetector');
-      const { createDefaultPinInsideConfig } = await import('../setup-detection/PinInsideDetector');
-      const { createDefaultOrderBlockFVGConfig } = await import('../setup-detection/OrderBlockFVGDetector');
-      const { createDefaultVWAPEMACrossConfig } = await import('../setup-detection/VWAPEMACrossDetector');
-      const { createDefaultDivergenceConfig } = await import('../setup-detection/DivergenceDetector');
-      const { createDefaultLiquiditySweepConfig } = await import('../setup-detection/LiquiditySweepDetector');
 
       // Create setup config with defaults + relaxed settings for backtesting
+      // Apply strategyParams overrides to matching enabled strategies (for parameter optimization)
+      const strategyOverrides = config.strategyParams || {};
+
+      // Helper to apply overrides to the currently enabled strategy
+      const applyOverrides = (strategyKey: string, defaultConfig: any) => {
+        // Apply strategyOverrides if this strategy is the only one enabled
+        // OR if it's one of the enabled strategies and we have overrides
+        const isEnabledStrategy = setupsToEnable.includes(strategyKey);
+        const shouldApplyOverrides = isEnabledStrategy && Object.keys(strategyOverrides).length > 0;
+
+        return shouldApplyOverrides
+          ? { ...defaultConfig, ...strategyOverrides }
+          : defaultConfig;
+      };
+
       const setupConfig: any = {
-        setup91: { ...createDefault91Config(), enabled: setupsToEnable.includes('setup91'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        setup92: { ...createDefault92Config(), enabled: setupsToEnable.includes('setup92'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        setup93: { ...createDefault93Config(), enabled: setupsToEnable.includes('setup93'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        setup94: { ...createDefault94Config(), enabled: setupsToEnable.includes('setup94'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        pattern123: { ...createDefault123Config(), enabled: setupsToEnable.includes('pattern123'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        bullTrap: { ...createDefaultBullTrapConfig(), enabled: setupsToEnable.includes('bullTrap'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        bearTrap: { ...createDefaultBearTrapConfig(), enabled: setupsToEnable.includes('bearTrap'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        breakoutRetest: { ...createDefaultBreakoutRetestConfig(), enabled: setupsToEnable.includes('breakoutRetest'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        pinInside: { ...createDefaultPinInsideConfig(), enabled: setupsToEnable.includes('pinInside'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        orderBlockFVG: { ...createDefaultOrderBlockFVGConfig(), enabled: setupsToEnable.includes('orderBlockFVG'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        vwapEmaCross: { ...createDefaultVWAPEMACrossConfig(), enabled: setupsToEnable.includes('vwapEmaCross'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        divergence: { ...createDefaultDivergenceConfig(), enabled: setupsToEnable.includes('divergence'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        liquiditySweep: { ...createDefaultLiquiditySweepConfig(), enabled: setupsToEnable.includes('liquiditySweep'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
+        setup91: { ...applyOverrides('setup91', createDefault91Config()), enabled: setupsToEnable.includes('setup91'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
+        setup92: { ...applyOverrides('setup92', createDefault92Config()), enabled: setupsToEnable.includes('setup92'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
+        setup93: { ...applyOverrides('setup93', createDefault93Config()), enabled: setupsToEnable.includes('setup93'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
+        setup94: { ...applyOverrides('setup94', createDefault94Config()), enabled: setupsToEnable.includes('setup94'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
+        pattern123: { ...applyOverrides('pattern123', createDefault123Config()), enabled: setupsToEnable.includes('pattern123'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
+        bullTrap: { ...applyOverrides('bullTrap', createDefaultBullTrapConfig()), enabled: setupsToEnable.includes('bullTrap'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
+        bearTrap: { ...applyOverrides('bearTrap', createDefaultBearTrapConfig()), enabled: setupsToEnable.includes('bearTrap'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
+        breakoutRetest: { ...applyOverrides('breakoutRetest', createDefaultBreakoutRetestConfig()), enabled: setupsToEnable.includes('breakoutRetest'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
       };
 
       console.log('[Backtest] Enabled setups:', Object.keys(setupConfig).filter(k => setupConfig[k].enabled));
+
+      // DEBUG: Verify strategyParams are being applied
+      const enabledStrategies = Object.keys(setupConfig).filter(k => setupConfig[k].enabled);
+      enabledStrategies.forEach(key => {
+        console.log(`[Backtest] ${key} config:`, JSON.stringify(setupConfig[key], null, 2));
+      });
+
       const setupDetectionService = new SetupDetectionService(setupConfig);
 
       // 3. Detect setups

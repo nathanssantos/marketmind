@@ -14,33 +14,13 @@ import {
     createDefaultBullTrapConfig,
 } from './BullTrapDetector';
 import {
-    DivergenceDetector,
-    createDefaultDivergenceConfig,
-} from './DivergenceDetector';
-import {
-    LiquiditySweepDetector,
-    createDefaultLiquiditySweepConfig,
-} from './LiquiditySweepDetector';
-import {
-    OrderBlockFVGDetector,
-    createDefaultOrderBlockFVGConfig,
-} from './OrderBlockFVGDetector';
-import {
     Pattern123Detector,
     createDefault123Config,
 } from './Pattern123Detector';
-import {
-    PinInsideDetector,
-    createDefaultPinInsideConfig,
-} from './PinInsideDetector';
 import { Setup91Detector, createDefault91Config } from './Setup91Detector';
 import { Setup92Detector, createDefault92Config } from './Setup92Detector';
 import { Setup93Detector, createDefault93Config } from './Setup93Detector';
 import { Setup94Detector, createDefault94Config } from './Setup94Detector';
-import {
-    VWAPEMACrossDetector,
-    createDefaultVWAPEMACrossConfig,
-} from './VWAPEMACrossDetector';
 
 export interface SetupDetectionConfig {
   setup91: ReturnType<typeof createDefault91Config>;
@@ -51,11 +31,6 @@ export interface SetupDetectionConfig {
   bullTrap: ReturnType<typeof createDefaultBullTrapConfig>;
   bearTrap: ReturnType<typeof createDefaultBearTrapConfig>;
   breakoutRetest: ReturnType<typeof createDefaultBreakoutRetestConfig>;
-  pinInside: ReturnType<typeof createDefaultPinInsideConfig>;
-  orderBlockFVG: ReturnType<typeof createDefaultOrderBlockFVGConfig>;
-  vwapEmaCross: ReturnType<typeof createDefaultVWAPEMACrossConfig>;
-  divergence: ReturnType<typeof createDefaultDivergenceConfig>;
-  liquiditySweep: ReturnType<typeof createDefaultLiquiditySweepConfig>;
   enableTrendFilter: boolean;
   allowCounterTrend: boolean;
   trendEmaPeriod: number;
@@ -78,11 +53,6 @@ export class SetupDetectionService {
   private bullTrapDetector: BullTrapDetector;
   private bearTrapDetector: BearTrapDetector;
   private breakoutRetestDetector: BreakoutRetestDetector;
-  private pinInsideDetector: PinInsideDetector;
-  private orderBlockFVGDetector: OrderBlockFVGDetector;
-  private vwapEmaCrossDetector: VWAPEMACrossDetector;
-  private divergenceDetector: DivergenceDetector;
-  private liquiditySweepDetector: LiquiditySweepDetector;
   private lastDetectionIndex: Map<string, number> = new Map();
 
   private debugLog(...args: unknown[]): void {
@@ -102,12 +72,6 @@ export class SetupDetectionService {
       bearTrap: config?.bearTrap ?? createDefaultBearTrapConfig(),
       breakoutRetest:
         config?.breakoutRetest ?? createDefaultBreakoutRetestConfig(),
-      pinInside: config?.pinInside ?? createDefaultPinInsideConfig(),
-      orderBlockFVG: config?.orderBlockFVG ?? createDefaultOrderBlockFVGConfig(),
-      vwapEmaCross: config?.vwapEmaCross ?? createDefaultVWAPEMACrossConfig(),
-      divergence: config?.divergence ?? createDefaultDivergenceConfig(),
-      liquiditySweep:
-        config?.liquiditySweep ?? createDefaultLiquiditySweepConfig(),
       enableTrendFilter: config?.enableTrendFilter ?? false,
       allowCounterTrend: config?.allowCounterTrend ?? true,
       trendEmaPeriod: config?.trendEmaPeriod ?? DEFAULT_TREND_EMA_PERIOD,
@@ -124,17 +88,6 @@ export class SetupDetectionService {
     this.bearTrapDetector = new BearTrapDetector(this.config.bearTrap);
     this.breakoutRetestDetector = new BreakoutRetestDetector(
       this.config.breakoutRetest,
-    );
-    this.pinInsideDetector = new PinInsideDetector(this.config.pinInside);
-    this.orderBlockFVGDetector = new OrderBlockFVGDetector(
-      this.config.orderBlockFVG,
-    );
-    this.vwapEmaCrossDetector = new VWAPEMACrossDetector(
-      this.config.vwapEmaCross,
-    );
-    this.divergenceDetector = new DivergenceDetector(this.config.divergence);
-    this.liquiditySweepDetector = new LiquiditySweepDetector(
-      this.config.liquiditySweep,
     );
   }
 
@@ -248,43 +201,13 @@ export class SetupDetectionService {
         enabled: this.config.breakoutRetest.enabled,
         label: 'Breakout Retest',
       },
-      {
-        name: 'pinInside',
-        detector: this.pinInsideDetector,
-        enabled: this.config.pinInside.enabled,
-        label: 'Pin + Inside Bar',
-      },
-      {
-        name: 'orderBlockFVG',
-        detector: this.orderBlockFVGDetector,
-        enabled: this.config.orderBlockFVG.enabled,
-        label: 'Order Block + FVG',
-      },
-      {
-        name: 'vwapEmaCross',
-        detector: this.vwapEmaCrossDetector,
-        enabled: this.config.vwapEmaCross.enabled,
-        label: 'VWAP + EMA Cross',
-      },
-      {
-        name: 'divergence',
-        detector: this.divergenceDetector,
-        enabled: this.config.divergence.enabled,
-        label: 'RSI/MACD Divergence',
-      },
-      {
-        name: 'liquiditySweep',
-        detector: this.liquiditySweepDetector,
-        enabled: this.config.liquiditySweep.enabled,
-        label: 'Liquidity Sweep',
-      },
     ];
 
     for (const { name, detector, enabled, label } of detectors) {
       this.debugLog(`\n--- ${label} ---`);
 
       if (!enabled) {
-        this.debugLog('❌ Disabled in config');
+        this.debugLog('Disabled in config');
         continue;
       }
 
@@ -294,7 +217,7 @@ export class SetupDetectionService {
       if (!canDetect) {
         const lastDetection = this.lastDetectionIndex.get(name);
         this.debugLog(
-          `❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`,
+          `Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`,
         );
         continue;
       }
@@ -306,7 +229,7 @@ export class SetupDetectionService {
       });
 
       if (!result.setup) {
-        this.debugLog('❌ No setup found');
+        this.debugLog('No setup found');
         continue;
       }
 
@@ -320,9 +243,9 @@ export class SetupDetectionService {
       if (aligned) {
         setups.push(result.setup);
         this.markSetupDetected(name, currentIndex);
-        this.debugLog(`✅ ${label} DETECTED`);
+        this.debugLog(`${label} DETECTED`);
       } else {
-        this.debugLog('❌ Rejected by Trend Filter');
+        this.debugLog('Rejected by Trend Filter');
       }
     }
 
@@ -381,26 +304,6 @@ export class SetupDetectionService {
       {
         detector: this.breakoutRetestDetector,
         enabled: this.config.breakoutRetest.enabled,
-      },
-      {
-        detector: this.pinInsideDetector,
-        enabled: this.config.pinInside.enabled,
-      },
-      {
-        detector: this.orderBlockFVGDetector,
-        enabled: this.config.orderBlockFVG.enabled,
-      },
-      {
-        detector: this.vwapEmaCrossDetector,
-        enabled: this.config.vwapEmaCross.enabled,
-      },
-      {
-        detector: this.divergenceDetector,
-        enabled: this.config.divergence.enabled,
-      },
-      {
-        detector: this.liquiditySweepDetector,
-        enabled: this.config.liquiditySweep.enabled,
       },
     ];
 
@@ -472,52 +375,6 @@ export class SetupDetectionService {
       );
     }
 
-    if (config.pinInside) {
-      this.config.pinInside = {
-        ...this.config.pinInside,
-        ...config.pinInside,
-      };
-      this.pinInsideDetector = new PinInsideDetector(this.config.pinInside);
-    }
-
-    if (config.orderBlockFVG) {
-      this.config.orderBlockFVG = {
-        ...this.config.orderBlockFVG,
-        ...config.orderBlockFVG,
-      };
-      this.orderBlockFVGDetector = new OrderBlockFVGDetector(
-        this.config.orderBlockFVG,
-      );
-    }
-
-    if (config.vwapEmaCross) {
-      this.config.vwapEmaCross = {
-        ...this.config.vwapEmaCross,
-        ...config.vwapEmaCross,
-      };
-      this.vwapEmaCrossDetector = new VWAPEMACrossDetector(
-        this.config.vwapEmaCross,
-      );
-    }
-
-    if (config.divergence) {
-      this.config.divergence = {
-        ...this.config.divergence,
-        ...config.divergence,
-      };
-      this.divergenceDetector = new DivergenceDetector(this.config.divergence);
-    }
-
-    if (config.liquiditySweep) {
-      this.config.liquiditySweep = {
-        ...this.config.liquiditySweep,
-        ...config.liquiditySweep,
-      };
-      this.liquiditySweepDetector = new LiquiditySweepDetector(
-        this.config.liquiditySweep,
-      );
-    }
-
     if (config.enableTrendFilter !== undefined) {
       this.config.enableTrendFilter = config.enableTrendFilter;
     }
@@ -550,11 +407,6 @@ export const createDefaultSetupDetectionConfig =
     bullTrap: createDefaultBullTrapConfig(),
     bearTrap: createDefaultBearTrapConfig(),
     breakoutRetest: createDefaultBreakoutRetestConfig(),
-    pinInside: createDefaultPinInsideConfig(),
-    orderBlockFVG: createDefaultOrderBlockFVGConfig(),
-    vwapEmaCross: createDefaultVWAPEMACrossConfig(),
-    divergence: createDefaultDivergenceConfig(),
-    liquiditySweep: createDefaultLiquiditySweepConfig(),
     enableTrendFilter: false,
     allowCounterTrend: true,
     trendEmaPeriod: DEFAULT_TREND_EMA_PERIOD,

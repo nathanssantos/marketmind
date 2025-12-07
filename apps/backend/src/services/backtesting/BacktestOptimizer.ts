@@ -114,10 +114,26 @@ export class BacktestOptimizer {
     params: ParameterCombination,
     klines?: any[]
   ): Promise<OptimizationResult> {
+    // Separate BacktestConfig-level params from strategy-specific params
+    const backtestConfigParams: any = {};
+    const strategyParams: Record<string, number> = {};
+
+    for (const [key, value] of Object.entries(params)) {
+      // BacktestConfig direct fields
+      if (['stopLossPercent', 'takeProfitPercent', 'minConfidence', 'maxPositionSize', 'commission'].includes(key)) {
+        backtestConfigParams[key] = value;
+      } else {
+        // Strategy-specific parameters (pivotLookback, volumeMultiplier, etc.)
+        strategyParams[key] = value;
+      }
+    }
+
     // Merge base config with parameter combination
     const config: BacktestConfig = {
       ...baseConfig,
-      ...params,
+      ...backtestConfigParams,
+      // Pass strategy-specific params separately so BacktestEngine can apply them
+      strategyParams: Object.keys(strategyParams).length > 0 ? strategyParams : undefined,
     };
 
     // Run the backtest

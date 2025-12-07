@@ -2,7 +2,7 @@ import type { SetupType, TradingSetup } from '@marketmind/types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { SetupDetectionConfig } from './setupConfig';
-import { createDefaultSetupDetectionConfig } from './setupConfig';
+import { createDefaultSetupDetectionConfig, mergeSetupConfigs } from './setupConfig';
 
 const PERCENTAGE_MULTIPLIER = 100;
 
@@ -406,13 +406,12 @@ export const useSetupStore = create<SetupStoreState>()(
       }),
       merge: (persistedState, currentState) => {
         const defaults = createDefaultSetupDetectionConfig();
+        const persisted = persistedState as Partial<SetupStoreState>;
         return {
           ...currentState,
-          ...(persistedState as Partial<SetupStoreState>),
-          config: {
-            ...defaults,
-            ...(persistedState as Partial<SetupStoreState>).config,
-          },
+          ...persisted,
+          // Use mergeSetupConfigs to apply new optimized defaults while preserving user's enabled states
+          config: mergeSetupConfigs(defaults, persisted.config),
         };
       },
     },

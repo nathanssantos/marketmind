@@ -19,6 +19,10 @@ export interface BacktestConfig {
   maxPositionSize?: number; // Max % of capital per trade
   commission?: number; // Trading fee % (default 0.1%)
 
+  // Strategy-specific parameters (for optimization)
+  // These override default detector config values (e.g., pivotLookback, volumeMultiplier, emaPeriod)
+  strategyParams?: Record<string, number>;
+
   // Risk Management (Kelly Criterion)
   useKellyCriterion?: boolean; // Use Kelly Criterion for position sizing
   kellyFraction?: number; // Kelly fraction to use (0.25 = quarter Kelly, 0.5 = half Kelly, 1.0 = full Kelly)

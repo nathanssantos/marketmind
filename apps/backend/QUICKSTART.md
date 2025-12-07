@@ -285,11 +285,9 @@ npm run backtest:validate -- --strategy breakoutRetest --symbol BTCUSDT --interv
 npm run backtest:validate -- --strategy bullTrap --symbol BTCUSDT --interval 1h ...
 ```
 
-**Estratégias disponíveis:**
+**Estratégias disponíveis (8):**
 - `setup91`, `setup92`, `setup93`, `setup94`
-- `pattern123`, `bullTrap`, `bearTrap`
-- `breakoutRetest`, `pinbar`, `insidebar`
-- `orderBlockFVG`, `vwapEma`, `divergence`, `liquiditySweep`
+- `pattern123`, `bullTrap`, `bearTrap`, `breakoutRetest`
 
 ### Opção B: Testar Outros Símbolos
 

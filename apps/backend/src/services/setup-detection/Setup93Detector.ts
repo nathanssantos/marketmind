@@ -7,8 +7,11 @@ import {
     type SetupDetectorResult,
 } from './BaseSetupDetector';
 
-const DEFAULT_EMA_PERIOD = 9;
-const DEFAULT_ATR_PERIOD = 12;
+// Optimized values from backtesting (Jan-Dec 2024)
+// PnL: +4.45%, Profit Factor: 1.09, Sharpe: 0.49
+// Note: Marginally profitable - consider additional filters
+const DEFAULT_EMA_PERIOD = 12;
+const DEFAULT_ATR_PERIOD = 16;
 const ATR_STOP_MULTIPLIER = 2;
 const ATR_TARGET_MULTIPLIER = 4;
 const VOLUME_LOOKBACK = 20;

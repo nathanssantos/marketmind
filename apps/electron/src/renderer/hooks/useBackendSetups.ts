@@ -11,12 +11,7 @@ type SetupType =
   | 'pattern123'
   | 'bullTrap'
   | 'bearTrap'
-  | 'breakoutRetest'
-  | 'pinInside'
-  | 'orderBlockFVG'
-  | 'vwapEmaCross'
-  | 'divergence'
-  | 'liquiditySweep';
+  | 'breakoutRetest';
 
 interface DetectCurrentParams {
   symbol: string;

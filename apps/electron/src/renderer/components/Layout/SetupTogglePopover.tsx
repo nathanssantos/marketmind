@@ -13,7 +13,7 @@ import { Checkbox } from '../ui/checkbox';
 import { Popover } from '../ui/popover';
 import { TooltipWrapper } from '../ui/Tooltip';
 
-type SetupKey = 'setup91' | 'setup92' | 'setup93' | 'setup94' | 'pattern123' | 'bullTrap' | 'bearTrap' | 'breakoutRetest' | 'pinInside' | 'orderBlockFVG' | 'vwapEmaCross' | 'divergence' | 'liquiditySweep' | 'marketMaking';
+type SetupKey = 'setup91' | 'setup92' | 'setup93' | 'setup94' | 'pattern123' | 'bullTrap' | 'bearTrap' | 'breakoutRetest';
 
 const SETUP_LIST: Array<{ value: SetupKey; titleKey: string }> = [
     { value: 'setup91', titleKey: 'setupConfig.setups.setup91.title' },
@@ -24,12 +24,6 @@ const SETUP_LIST: Array<{ value: SetupKey; titleKey: string }> = [
     { value: 'bullTrap', titleKey: 'setupConfig.setups.bullTrap.title' },
     { value: 'bearTrap', titleKey: 'setupConfig.setups.bearTrap.title' },
     { value: 'breakoutRetest', titleKey: 'setupConfig.setups.breakoutRetest.title' },
-    { value: 'pinInside', titleKey: 'setupConfig.setups.pinInside.title' },
-    { value: 'orderBlockFVG', titleKey: 'setupConfig.setups.orderBlockFVG.title' },
-    { value: 'vwapEmaCross', titleKey: 'setupConfig.setups.vwapEmaCross.title' },
-    { value: 'divergence', titleKey: 'setupConfig.setups.divergence.title' },
-    { value: 'liquiditySweep', titleKey: 'setupConfig.setups.liquiditySweep.title' },
-    { value: 'marketMaking', titleKey: 'setupConfig.setups.marketMaking.title' },
 ];
 
 export const SetupTogglePopover = memo(() => {
@@ -85,7 +79,7 @@ export const SetupTogglePopover = memo(() => {
                             {t('setupConfig.enabledSetups')}
                         </Text>
                         <Text fontSize="xs" color="fg.muted">
-                            {enabledCount}/10
+                            {enabledCount}/8
                         </Text>
                     </Flex>
 

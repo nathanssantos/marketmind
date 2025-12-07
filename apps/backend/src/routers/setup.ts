@@ -18,11 +18,6 @@ const setupTypeSchema = z.enum([
   'bullTrap',
   'bearTrap',
   'breakoutRetest',
-  'pinInside',
-  'orderBlockFVG',
-  'vwapEmaCross',
-  'divergence',
-  'liquiditySweep',
 ]);
 
 const setupDirectionSchema = z.enum(['LONG', 'SHORT']);
@@ -105,43 +100,6 @@ const setupDetectionConfigSchema = z.object({
     minRR: z.number(),
   }).optional(),
 
-  pinInside: z.object({
-    enabled: z.boolean(),
-    lookbackPeriod: z.number(),
-    minInsideBars: z.number(),
-    pinRatio: z.number(),
-    volumeMultiplier: z.number(),
-    minRR: z.number(),
-  }).optional(),
-
-  orderBlockFVG: z.object({
-    enabled: z.boolean(),
-    lookbackPeriod: z.number(),
-    volumeMultiplier: z.number(),
-    fvgMinSize: z.number(),
-    minRR: z.number(),
-  }).optional(),
-
-  vwapEmaCross: z.object({
-    enabled: z.boolean(),
-    emaPeriod: z.number(),
-    vwapPeriod: z.number(),
-    minRR: z.number(),
-  }).optional(),
-
-  divergence: z.object({
-    enabled: z.boolean(),
-    rsiPeriod: z.number(),
-    lookbackPeriod: z.number(),
-    minRR: z.number(),
-  }).optional(),
-
-  liquiditySweep: z.object({
-    enabled: z.boolean(),
-    lookbackPeriod: z.number(),
-    sweepTolerance: z.number(),
-    minRR: z.number(),
-  }).optional(),
 });
 
 export const setupRouter = router({

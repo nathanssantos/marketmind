@@ -185,11 +185,6 @@ Available setup types:
 - `bullTrap` - Bull Trap Pattern
 - `bearTrap` - Bear Trap Pattern
 - `breakoutRetest` - Breakout Retest
-- `pinInside` - Pin Inside Bar
-- `orderBlockFVG` - Order Block + Fair Value Gap
-- `vwapEmaCross` - VWAP/EMA Crossover
-- `divergence` - RSI/MACD Divergence
-- `liquiditySweep` - Liquidity Sweep
 
 ## Backend Endpoints
 

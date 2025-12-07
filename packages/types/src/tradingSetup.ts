@@ -6,16 +6,7 @@ export type SetupType =
   | '123-reversal'
   | 'bull-trap'
   | 'bear-trap'
-  | 'breakout-retest'
-  | 'pin-inside-combo'
-  | 'order-block-fvg'
-  | 'vwap-ema-cross'
-  | 'divergence-reversal'
-  | 'liquidity-sweep'
-  | 'market-structure-break'
-  | 'mean-reversion'
-  | 'grid-trading'
-  | 'trend-following';
+  | 'breakout-retest';
 
 export type SetupDirection = 'LONG' | 'SHORT';
 

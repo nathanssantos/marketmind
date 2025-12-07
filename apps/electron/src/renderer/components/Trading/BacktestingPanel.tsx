@@ -1,19 +1,36 @@
 import { Box, Flex, Stack, Tabs, Text } from '@chakra-ui/react';
 import { Button } from '@renderer/components/ui/button';
 import { useBacktesting } from '@renderer/hooks/useBacktesting';
-import type { MarketDataService } from '@renderer/services/market/MarketDataService';
-import { useState } from 'react';
+import { BinanceProvider } from '@renderer/services/market/providers/BinanceProvider';
+import { MarketDataService } from '@renderer/services/market/MarketDataService';
+import { useMemo, useState } from 'react';
 import { BacktestConfig } from './BacktestConfig';
 import { BacktestResults } from './BacktestResults';
+
+const createDefaultMarketService = (): MarketDataService => {
+  const binance = new BinanceProvider();
+  return new MarketDataService({
+    primaryProvider: binance,
+    fallbackProviders: [],
+    enableCache: true,
+    cacheDuration: 60 * 1000,
+  });
+};
 
 interface BacktestingPanelProps {
   marketService?: MarketDataService;
 }
 
-export const BacktestingPanel = ({ marketService }: BacktestingPanelProps) => {
+export const BacktestingPanel = ({ marketService: providedMarketService }: BacktestingPanelProps) => {
   const { backtests, isLoadingBacktests, deleteBacktest, isDeletingBacktest } = useBacktesting();
   const [selectedBacktestId, setSelectedBacktestId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'config' | 'results'>('config');
+
+  // Create default market service if not provided
+  const marketService = useMemo(
+    () => providedMarketService ?? createDefaultMarketService(),
+    [providedMarketService]
+  );
 
   const handleBacktestComplete = (resultId: string) => {
     setSelectedBacktestId(resultId);
@@ -77,7 +94,7 @@ export const BacktestingPanel = ({ marketService }: BacktestingPanelProps) => {
 
           <Box mt={4}>
             <Tabs.Content value="config">
-              {marketService && <BacktestConfig onBacktestComplete={handleBacktestComplete} marketService={marketService} />}
+              <BacktestConfig onBacktestComplete={handleBacktestComplete} marketService={marketService} />
             </Tabs.Content>
 
             <Tabs.Content value="results">

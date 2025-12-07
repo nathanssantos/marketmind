@@ -999,30 +999,6 @@
       "breakoutRetest": {
         "title": "Breakout Retest (Continuation)",
         "description": "Valid breakout followed by successful retest and continuation"
-      },
-      "pinInside": {
-        "title": "Pin + Inside Bar Combo (Rejection + Consolidation)",
-        "description": "Pin bar rejection followed by inside bar consolidation at support/resistance levels"
-      },
-      "orderBlockFVG": {
-        "title": "Order Block + FVG (ICT/SMC Pattern)",
-        "description": "High-volume order block combined with fair value gap for institutional entry zones"
-      },
-      "vwapEmaCross": {
-        "title": "VWAP + EMA Cross (Momentum + Mean Reversion)",
-        "description": "EMA crossover of VWAP with pullback entry for momentum and mean reversion trades"
-      },
-      "divergence": {
-        "title": "RSI/MACD Divergence (Reversal Indicator)",
-        "description": "Detects bullish/bearish divergence between price and RSI/MACD indicators for high-probability reversals"
-      },
-      "liquiditySweep": {
-        "title": "Liquidity Sweep (Smart Money Stop Hunt)",
-        "description": "Detects false breakouts designed to trigger stop losses before reversing - classic institutional behavior pattern"
-      },
-      "marketMaking": {
-        "title": "Market Making (Bid-Ask Spread Capture)",
-        "description": "Simultaneous buy and sell orders to capture spread - high frequency strategy requiring tight spreads and liquidity"
       }
     },
     "parameters": {

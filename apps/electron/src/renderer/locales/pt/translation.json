@@ -988,30 +988,6 @@
       "breakoutRetest": {
         "title": "Reteste de Rompimento (Continuação)",
         "description": "Rompimento válido seguido de reteste bem-sucedido e continuação"
-      },
-      "pinInside": {
-        "title": "Combo Pin + Inside Bar (Rejeição + Consolidação)",
-        "description": "Rejeição com pin bar seguida de consolidação com inside bar em níveis de suporte/resistência"
-      },
-      "orderBlockFVG": {
-        "title": "Order Block + FVG (Padrão ICT/SMC)",
-        "description": "Order block de alto volume combinado com fair value gap para zonas de entrada institucional"
-      },
-      "vwapEmaCross": {
-        "title": "VWAP + Cruzamento EMA (Momentum + Reversão à Média)",
-        "description": "Cruzamento da EMA com VWAP e entrada no pullback para operações de momentum e reversão à média"
-      },
-      "divergence": {
-        "title": "Divergência RSI/MACD (Indicador de Reversão)",
-        "description": "Detecta divergência altista/baixista entre preço e indicadores RSI/MACD para reversões de alta probabilidade"
-      },
-      "liquiditySweep": {
-        "title": "Varredura de Liquidez (Caça aos Stops)",
-        "description": "Detecta rompimentos falsos projetados para acionar stop losses antes de reverter - padrão clássico de comportamento institucional"
-      },
-      "marketMaking": {
-        "title": "Market Making (Captura de Spread)",
-        "description": "Ordens simultâneas de compra e venda para capturar spread - estratégia de alta frequência que requer spreads apertados e liquidez"
       }
     },
     "parameters": {

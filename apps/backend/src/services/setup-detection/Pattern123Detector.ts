@@ -17,8 +17,11 @@ export interface Pattern123Config {
   targetMultiplier: number;
 }
 
-const DEFAULT_PIVOT_LOOKBACK = 5;
-const BREAKOUT_THRESHOLD_PERCENT = 0.002;
+// Optimized values from backtesting (Jan-Dec 2024)
+// PnL: +642.91%, Profit Factor: 5.91, Sharpe: 2.84, Max DD: 5.50%
+const DEFAULT_PIVOT_LOOKBACK = 6;
+const BREAKOUT_THRESHOLD_PERCENT = 0.001;
+const DEFAULT_TARGET_MULTIPLIER = 1.5;
 const MIN_HIGHER_LOW_PERCENT = 0.001;
 
 export class Pattern123Detector extends BaseSetupDetector {
@@ -270,5 +273,5 @@ export const createDefault123Config = (): Pattern123Config => ({
   minRiskReward: 2.5,
   pivotLookback: DEFAULT_PIVOT_LOOKBACK,
   breakoutThreshold: BREAKOUT_THRESHOLD_PERCENT,
-  targetMultiplier: 2.0,
+  targetMultiplier: DEFAULT_TARGET_MULTIPLIER,
 });

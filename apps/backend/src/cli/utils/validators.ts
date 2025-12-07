@@ -106,12 +106,6 @@ export function validateStrategy(strategy: string): void {
     'bullTrap',
     'bearTrap',
     'breakoutRetest',
-    'pinbar',
-    'insidebar',
-    'orderBlockFVG',
-    'vwapEma',
-    'divergence',
-    'liquiditySweep',
   ];
 
   if (!validStrategies.includes(strategy)) {

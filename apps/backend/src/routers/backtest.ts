@@ -57,8 +57,7 @@ export const backtestRouter = router({
           initialCapital: input.initialCapital,
           setupTypes: input.setupTypes || [
             'setup91', 'setup92', 'setup93', 'setup94', 'pattern123',
-            'bullTrap', 'bearTrap', 'breakoutRetest', 'pinInside',
-            'orderBlockFVG', 'vwapEmaCross', 'divergence', 'liquiditySweep'
+            'bullTrap', 'bearTrap', 'breakoutRetest'
           ],
           minConfidence: input.minConfidence,
           onlyWithTrend: input.onlyWithTrend,
