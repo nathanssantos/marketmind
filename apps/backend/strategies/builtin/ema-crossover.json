@@ -1,0 +1,71 @@
+{
+  "id": "ema-crossover",
+  "name": "EMA Crossover",
+  "version": "1.0.0",
+  "description": "Estratégia clássica de cruzamento de EMAs. Long quando EMA rápida cruza acima da EMA lenta. Short no cruzamento inverso.",
+  "author": "MarketMind",
+  "tags": ["trend-following", "ema", "crossover", "momentum"],
+
+  "parameters": {
+    "fastPeriod": { "default": 9, "min": 5, "max": 21, "step": 1, "description": "Período da EMA rápida" },
+    "slowPeriod": { "default": 21, "min": 15, "max": 50, "step": 1, "description": "Período da EMA lenta" },
+    "atrMultiplier": { "default": 1.5, "min": 1, "max": 3, "step": 0.25, "description": "Multiplicador do ATR para stop loss" },
+    "rrMultiplier": { "default": 2, "min": 1.5, "max": 4, "step": 0.5, "description": "Multiplicador de risk-reward para take profit" }
+  },
+
+  "indicators": {
+    "emaFast": {
+      "type": "ema",
+      "params": { "period": "$fastPeriod" }
+    },
+    "emaSlow": {
+      "type": "ema",
+      "params": { "period": "$slowPeriod" }
+    },
+    "atr": {
+      "type": "atr",
+      "params": { "period": 14 }
+    }
+  },
+
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "emaFast", "op": "crossover", "right": "emaSlow" }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "emaFast", "op": "crossunder", "right": "emaSlow" }
+      ]
+    }
+  },
+
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$rrMultiplier"
+    }
+  },
+
+  "confidence": {
+    "base": 65,
+    "bonuses": [
+      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume acima da média" },
+      { "condition": { "left": "atr", "op": ">", "right": 0 }, "bonus": 5, "description": "Volatilidade presente" }
+    ],
+    "max": 90
+  },
+
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 1.5
+  }
+}

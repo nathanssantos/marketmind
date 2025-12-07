@@ -1,17 +1,33 @@
 import { calculateATR } from '@renderer/utils/indicators/atr';
 import { findHighestSwingHigh, findLowestSwingLow } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Kline, Setup92Config } from '@marketmind/types';
-import { createDefault92Config } from '@marketmind/types';
+import type { Kline } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '@shared/utils';
 import {
     BaseSetupDetector,
     type SetupDetectorResult,
+    type SetupDetectorConfig,
 } from './BaseSetupDetector';
 
-// Re-export for consumers
-export type { Setup92Config };
-export { createDefault92Config };
+// Local type definition (removed from @marketmind/types as strategy was not profitable)
+export interface Setup92Config extends SetupDetectorConfig {
+  emaPeriod: number;
+  atrPeriod: number;
+  atrStopMultiplier: number;
+  atrTargetMultiplier: number;
+  volumeMultiplier: number;
+}
+
+export const createDefault92Config = (): Setup92Config => ({
+  enabled: false,
+  minConfidence: 70,
+  minRiskReward: 2.0,
+  emaPeriod: 9,
+  atrPeriod: 14,
+  atrStopMultiplier: 1.5,
+  atrTargetMultiplier: 2.5,
+  volumeMultiplier: 1.2,
+});
 
 // Internal calculation constants
 const VOLUME_LOOKBACK = 20;

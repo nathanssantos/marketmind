@@ -1,13 +1,24 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Kline, BullTrapConfig } from '@marketmind/types';
-import { createDefaultBullTrapConfig } from '@marketmind/types';
+import type { Kline } from '@marketmind/types';
 import { getKlineClose, getKlineLow, getKlineVolume } from '@shared/utils';
-import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
+import { BaseSetupDetector, type SetupDetectorResult, type SetupDetectorConfig } from './BaseSetupDetector';
 
-// Re-export for consumers
-export type { BullTrapConfig };
-export { createDefaultBullTrapConfig };
+// Local type definition (removed from @marketmind/types as strategy was not profitable)
+export interface BullTrapConfig extends SetupDetectorConfig {
+  volumeMultiplier: number;
+  lookbackPeriod: number;
+  emaPeriod: number;
+}
+
+export const createDefaultBullTrapConfig = (): BullTrapConfig => ({
+  enabled: false,
+  minConfidence: 70,
+  minRiskReward: 2.5,
+  volumeMultiplier: 1.3,
+  lookbackPeriod: 20,
+  emaPeriod: 20,
+});
 
 // Internal calculation constants
 const VOLUME_LOOKBACK = 20;

@@ -49,21 +49,15 @@ export class BacktestEngine {
 
       console.log('[Backtest] Sample kline:', historicalKlines[0]);
 
-      // 2. Setup detection configuration - only profitable setups
+      // 2. Setup detection configuration - only profitable setups (pattern123, bearTrap, meanReversion)
       const setupsToEnable = config.setupTypes?.length ? config.setupTypes : [
-        'setup91', 'setup92', 'setup93', 'setup94', 'pattern123',
-        'bullTrap', 'bearTrap', 'breakoutRetest'
+        'pattern123', 'bearTrap', 'meanReversion'
       ];
 
       // Import default configs from individual files
-      const { createDefault91Config } = await import('../setup-detection/Setup91Detector');
-      const { createDefault92Config } = await import('../setup-detection/Setup92Detector');
-      const { createDefault93Config } = await import('../setup-detection/Setup93Detector');
-      const { createDefault94Config } = await import('../setup-detection/Setup94Detector');
       const { createDefault123Config } = await import('../setup-detection/Pattern123Detector');
-      const { createDefaultBullTrapConfig } = await import('../setup-detection/BullTrapDetector');
       const { createDefaultBearTrapConfig } = await import('../setup-detection/BearTrapDetector');
-      const { createDefaultBreakoutRetestConfig } = await import('../setup-detection/BreakoutRetestDetector');
+      const { createDefaultMeanReversionConfig } = await import('../setup-detection/MeanReversionDetector');
 
       // Create setup config with defaults + relaxed settings for backtesting
       // Apply strategyParams overrides to matching enabled strategies (for parameter optimization)
@@ -100,14 +94,9 @@ export class BacktestEngine {
       };
 
       const setupConfig: any = {
-        setup91: buildSetupConfig('setup91', createDefault91Config),
-        setup92: buildSetupConfig('setup92', createDefault92Config),
-        setup93: buildSetupConfig('setup93', createDefault93Config),
-        setup94: buildSetupConfig('setup94', createDefault94Config),
         pattern123: buildSetupConfig('pattern123', createDefault123Config),
-        bullTrap: buildSetupConfig('bullTrap', createDefaultBullTrapConfig),
         bearTrap: buildSetupConfig('bearTrap', createDefaultBearTrapConfig),
-        breakoutRetest: buildSetupConfig('breakoutRetest', createDefaultBreakoutRetestConfig),
+        meanReversion: buildSetupConfig('meanReversion', createDefaultMeanReversionConfig),
       };
 
       console.log('[Backtest] Enabled setups:', Object.keys(setupConfig).filter(k => setupConfig[k].enabled));

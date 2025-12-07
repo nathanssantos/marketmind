@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import ora from 'ora';
+// @ts-expect-error - cli-progress doesn't have types
 import cliProgress from 'cli-progress';
 import type { BacktestConfig, Interval } from '@marketmind/types';
 import { WalkForwardOptimizer, type ParameterRange, type WalkForwardConfig } from '../../services/backtesting/WalkForwardOptimizer';

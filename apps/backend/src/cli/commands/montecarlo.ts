@@ -232,8 +232,8 @@ function displayResults(
   backtestResult: any,
   mcResult: any,
   confidenceLevel: number,
-  logger: BacktestLogger,
-  verbose: boolean
+  _logger: BacktestLogger,
+  _verbose: boolean
 ) {
   // Display original backtest results
   console.log(chalk.cyan.bold('ORIGINAL BACKTEST:'));
@@ -335,13 +335,13 @@ function displayResults(
   console.log('');
 
   // Interpretation
-  interpretResults(mcResult, logger);
+  interpretResults(mcResult);
 }
 
 /**
  * Interpret and provide feedback on Monte Carlo results
  */
-function interpretResults(mcResult: any, logger: BacktestLogger) {
+function interpretResults(mcResult: any) {
   console.log(chalk.cyan.bold('INTERPRETATION:'));
   console.log('');
 

@@ -1,0 +1,66 @@
+{
+  "id": "rsi-oversold-bounce",
+  "name": "RSI Oversold Bounce",
+  "version": "1.0.0",
+  "description": "Long quando RSI sai da zona de oversold (cruza acima de 30). Ideal para capturar reversões após quedas fortes.",
+  "author": "MarketMind",
+  "tags": ["reversal", "rsi", "oversold", "momentum"],
+
+  "parameters": {
+    "rsiPeriod": { "default": 14, "min": 7, "max": 21, "step": 1, "description": "Período do RSI" },
+    "oversoldLevel": { "default": 30, "min": 20, "max": 35, "step": 5, "description": "Nível de oversold" },
+    "exitLevel": { "default": 50, "min": 40, "max": 60, "step": 5, "description": "Nível de saída (RSI neutro)" },
+    "atrMultiplier": { "default": 2, "min": 1, "max": 3, "step": 0.5, "description": "Multiplicador do ATR para stop loss" }
+  },
+
+  "indicators": {
+    "rsi": {
+      "type": "rsi",
+      "params": { "period": "$rsiPeriod" }
+    },
+    "atr": {
+      "type": "atr",
+      "params": { "period": 14 }
+    },
+    "ema20": {
+      "type": "ema",
+      "params": { "period": 20 }
+    }
+  },
+
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "rsi", "op": "crossover", "right": "$oversoldLevel" }
+      ]
+    }
+  },
+
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2
+    }
+  },
+
+  "confidence": {
+    "base": 60,
+    "bonuses": [
+      { "condition": { "left": "rsi", "op": "<", "right": 25 }, "bonus": 15, "description": "RSI extremamente oversold antes do bounce" },
+      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume acima da média" },
+      { "condition": { "left": "close", "op": ">", "right": "ema20" }, "bonus": 5, "description": "Preço acima da EMA 20" }
+    ],
+    "max": 95
+  },
+
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 1.5
+  }
+}

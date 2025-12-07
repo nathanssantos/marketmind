@@ -1,12 +1,13 @@
-export type SetupType =
-  | 'setup-9-1'
-  | 'setup-9-2'
-  | 'setup-9-3'
-  | 'setup-9-4'
-  | '123-reversal'
-  | 'bull-trap'
-  | 'bear-trap'
-  | 'breakout-retest';
+/**
+ * Built-in setup types (legacy detectors)
+ */
+export type BuiltinSetupType = '123-reversal' | 'bear-trap' | 'mean-reversion';
+
+/**
+ * Setup type - supports both built-in types and dynamic strategy IDs
+ * Dynamic strategies use their strategy ID as the type (e.g., "ema-crossover-9-21")
+ */
+export type SetupType = BuiltinSetupType | string;
 
 export type SetupDirection = 'LONG' | 'SHORT';
 

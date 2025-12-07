@@ -1,8 +1,29 @@
 import type { Kline } from '@marketmind/types';
 
-/**
- * Generate mock klines for testing
- */
+function createKline(
+  currentTime: number,
+  intervalMs: number,
+  open: number,
+  high: number,
+  low: number,
+  close: number,
+  volume: number
+): Kline {
+  return {
+    openTime: currentTime,
+    closeTime: currentTime + intervalMs - 1,
+    open: open.toString(),
+    high: high.toString(),
+    low: low.toString(),
+    close: close.toString(),
+    volume: volume.toString(),
+    quoteVolume: (volume * close).toString(),
+    trades: Math.floor(Math.random() * 1000),
+    takerBuyBaseVolume: (volume * 0.5).toString(),
+    takerBuyQuoteVolume: (volume * close * 0.5).toString(),
+  };
+}
+
 export function generateMockKlines(
   count: number,
   basePrice: number = 50000,
@@ -13,70 +34,14 @@ export function generateMockKlines(
   let currentTime = new Date('2024-01-01T00:00:00Z').getTime();
 
   for (let i = 0; i < count; i++) {
-    // Simulate price movement (random walk with slight upward bias)
-    const change = (Math.random() - 0.48) * basePrice * 0.02; // -2% to +2% with slight upward bias
+    const change = (Math.random() - 0.48) * basePrice * 0.02;
     const open = basePrice;
     const close = basePrice + change;
-    const high = Math.max(open, close) * (1 + Math.random() * 0.01); // Up to 1% above
-    const low = Math.min(open, close) * (1 - Math.random() * 0.01); // Up to 1% below
+    const high = Math.max(open, close) * (1 + Math.random() * 0.01);
+    const low = Math.min(open, close) * (1 - Math.random() * 0.01);
     const volume = 100 + Math.random() * 1000;
 
-    klines.push({
-      openTime: currentTime,
-      closeTime: currentTime + intervalMs - 1,
-      open,
-      high,
-      low,
-      close,
-      volume,
-      symbol: 'BTCUSDT',
-      interval: interval as any,
-    });
-
-    basePrice = close; // Next candle starts at previous close
-    currentTime += intervalMs;
-  }
-
-  return klines;
-}
-
-/**
- * Generate trending klines (uptrend or downtrend)
- */
-export function generateTrendingKlines(
-  count: number,
-  basePrice: number = 50000,
-  trendDirection: 'up' | 'down' = 'up',
-  trendStrength: number = 0.001, // 0.1% per candle
-  interval: string = '1h'
-): Kline[] {
-  const klines: Kline[] = [];
-  const intervalMs = getIntervalMs(interval);
-  let currentTime = new Date('2024-01-01T00:00:00Z').getTime();
-
-  for (let i = 0; i < count; i++) {
-    // Add trend + noise
-    const trend = trendDirection === 'up' ? trendStrength : -trendStrength;
-    const noise = (Math.random() - 0.5) * basePrice * 0.01; // +/- 1% noise
-    const change = basePrice * trend + noise;
-
-    const open = basePrice;
-    const close = basePrice + change;
-    const high = Math.max(open, close) * (1 + Math.random() * 0.005);
-    const low = Math.min(open, close) * (1 - Math.random() * 0.005);
-    const volume = 100 + Math.random() * 1000;
-
-    klines.push({
-      openTime: currentTime,
-      closeTime: currentTime + intervalMs - 1,
-      open,
-      high,
-      low,
-      close,
-      volume,
-      symbol: 'BTCUSDT',
-      interval: interval as any,
-    });
+    klines.push(createKline(currentTime, intervalMs, open, high, low, close, volume));
 
     basePrice = close;
     currentTime += intervalMs;
@@ -85,13 +50,41 @@ export function generateTrendingKlines(
   return klines;
 }
 
-/**
- * Generate ranging (sideways) klines
- */
+export function generateTrendingKlines(
+  count: number,
+  basePrice: number = 50000,
+  trendDirection: 'up' | 'down' = 'up',
+  trendStrength: number = 0.001,
+  interval: string = '1h'
+): Kline[] {
+  const klines: Kline[] = [];
+  const intervalMs = getIntervalMs(interval);
+  let currentTime = new Date('2024-01-01T00:00:00Z').getTime();
+
+  for (let i = 0; i < count; i++) {
+    const trend = trendDirection === 'up' ? trendStrength : -trendStrength;
+    const noise = (Math.random() - 0.5) * basePrice * 0.01;
+    const change = basePrice * trend + noise;
+
+    const open = basePrice;
+    const close = basePrice + change;
+    const high = Math.max(open, close) * (1 + Math.random() * 0.005);
+    const low = Math.min(open, close) * (1 - Math.random() * 0.005);
+    const volume = 100 + Math.random() * 1000;
+
+    klines.push(createKline(currentTime, intervalMs, open, high, low, close, volume));
+
+    basePrice = close;
+    currentTime += intervalMs;
+  }
+
+  return klines;
+}
+
 export function generateRangingKlines(
   count: number,
   basePrice: number = 50000,
-  rangePercent: number = 0.05, // 5% range
+  rangePercent: number = 0.05,
   interval: string = '1h'
 ): Kline[] {
   const klines: Kline[] = [];
@@ -102,8 +95,7 @@ export function generateRangingKlines(
   const rangeBottom = basePrice * (1 - rangePercent / 2);
 
   for (let i = 0; i < count; i++) {
-    // Price oscillates within range
-    const progress = (i % 20) / 20; // Cycle every 20 candles
+    const progress = (i % 20) / 20;
     const targetPrice = rangeBottom + (rangeTop - rangeBottom) * Math.sin(progress * Math.PI * 2);
     const noise = (Math.random() - 0.5) * basePrice * 0.01;
 
@@ -113,17 +105,7 @@ export function generateRangingKlines(
     const low = Math.min(open, close) * (1 - Math.random() * 0.005);
     const volume = 100 + Math.random() * 1000;
 
-    klines.push({
-      openTime: currentTime,
-      closeTime: currentTime + intervalMs - 1,
-      open,
-      high,
-      low,
-      close,
-      volume,
-      symbol: 'BTCUSDT',
-      interval: interval as any,
-    });
+    klines.push(createKline(currentTime, intervalMs, open, high, low, close, volume));
 
     basePrice = close;
     currentTime += intervalMs;
@@ -132,9 +114,6 @@ export function generateRangingKlines(
   return klines;
 }
 
-/**
- * Convert interval string to milliseconds
- */
 function getIntervalMs(interval: string): number {
   const value = parseInt(interval);
   const unit = interval.replace(/[0-9]/g, '');
@@ -146,13 +125,10 @@ function getIntervalMs(interval: string): number {
     'w': 7 * 24 * 60 * 60 * 1000,
   };
 
-  return value * (multipliers[unit] || multipliers['h']);
+  return value * (multipliers[unit] ?? multipliers['h'] ?? 3600000);
 }
 
-/**
- * Create a mock backtest config
- */
-export function createMockBacktestConfig(overrides?: any) {
+export function createMockBacktestConfig(overrides?: Record<string, unknown>) {
   return {
     symbol: 'BTCUSDT',
     interval: '1h',

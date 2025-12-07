@@ -232,10 +232,9 @@ describe('BacktestEngine', () => {
 
       const result = await engine.run(config, klines);
 
-      if (result.detectedSetups && result.detectedSetups.length > 0) {
-        // All detected setups should be setup91
-        for (const setup of result.detectedSetups) {
-          expect(setup.type).toBe('setup91');
+      if (result.trades && result.trades.length > 0) {
+        for (const trade of result.trades) {
+          expect(trade.setupType).toBe('setup91');
         }
       }
     });

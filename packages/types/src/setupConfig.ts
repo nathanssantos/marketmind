@@ -4,6 +4,11 @@
  * Single source of truth for all setup detector default parameters.
  * Used by both frontend (electron) and backend services.
  *
+ * Only includes profitable strategies validated through backtesting:
+ * - pattern123: +7.06% PnL
+ * - bearTrap: +3.53% PnL
+ * - meanReversion: +1.34% PnL
+ *
  * @package @marketmind/types
  */
 
@@ -18,141 +23,8 @@ export interface BaseSetupConfig {
 }
 
 // =============================================================================
-// Setup 9.1 - EMA9 Reversal
-// =============================================================================
-
-export interface Setup91Config extends BaseSetupConfig {
-  emaPeriod: number;
-  atrPeriod: number;
-  atrStopMultiplier: number;
-  atrTargetMultiplier: number;
-  volumeMultiplier: number;
-}
-
-export const SETUP_91_DEFAULTS = {
-  EMA_PERIOD: 9,
-  ATR_PERIOD: 12,
-  ATR_STOP_MULTIPLIER: 2,
-  ATR_TARGET_MULTIPLIER: 4,
-  VOLUME_MULTIPLIER: 1.0,
-  MIN_CONFIDENCE: 70,
-  MIN_RISK_REWARD: 2.5,
-} as const;
-
-export const createDefault91Config = (): Setup91Config => ({
-  enabled: false,
-  minConfidence: SETUP_91_DEFAULTS.MIN_CONFIDENCE,
-  minRiskReward: SETUP_91_DEFAULTS.MIN_RISK_REWARD,
-  emaPeriod: SETUP_91_DEFAULTS.EMA_PERIOD,
-  atrPeriod: SETUP_91_DEFAULTS.ATR_PERIOD,
-  atrStopMultiplier: SETUP_91_DEFAULTS.ATR_STOP_MULTIPLIER,
-  atrTargetMultiplier: SETUP_91_DEFAULTS.ATR_TARGET_MULTIPLIER,
-  volumeMultiplier: SETUP_91_DEFAULTS.VOLUME_MULTIPLIER,
-});
-
-// =============================================================================
-// Setup 9.2 - EMA9 Pullback
-// =============================================================================
-
-export interface Setup92Config extends BaseSetupConfig {
-  emaPeriod: number;
-  atrPeriod: number;
-  atrStopMultiplier: number;
-  atrTargetMultiplier: number;
-  volumeMultiplier: number;
-}
-
-export const SETUP_92_DEFAULTS = {
-  EMA_PERIOD: 9,
-  ATR_PERIOD: 12,
-  ATR_STOP_MULTIPLIER: 2,
-  ATR_TARGET_MULTIPLIER: 4,
-  VOLUME_MULTIPLIER: 1.0,
-  MIN_CONFIDENCE: 70,
-  MIN_RISK_REWARD: 2.0,
-} as const;
-
-export const createDefault92Config = (): Setup92Config => ({
-  enabled: false,
-  minConfidence: SETUP_92_DEFAULTS.MIN_CONFIDENCE,
-  minRiskReward: SETUP_92_DEFAULTS.MIN_RISK_REWARD,
-  emaPeriod: SETUP_92_DEFAULTS.EMA_PERIOD,
-  atrPeriod: SETUP_92_DEFAULTS.ATR_PERIOD,
-  atrStopMultiplier: SETUP_92_DEFAULTS.ATR_STOP_MULTIPLIER,
-  atrTargetMultiplier: SETUP_92_DEFAULTS.ATR_TARGET_MULTIPLIER,
-  volumeMultiplier: SETUP_92_DEFAULTS.VOLUME_MULTIPLIER,
-});
-
-// =============================================================================
-// Setup 9.3 - EMA9 Double Pullback (Optimized from backtesting)
-// PnL: +4.45%, Profit Factor: 1.09, Sharpe: 0.49
-// =============================================================================
-
-export interface Setup93Config extends BaseSetupConfig {
-  emaPeriod: number;
-  atrPeriod: number;
-  atrStopMultiplier: number;
-  atrTargetMultiplier: number;
-  volumeMultiplier: number;
-}
-
-export const SETUP_93_DEFAULTS = {
-  EMA_PERIOD: 12, // Optimized (was 9)
-  ATR_PERIOD: 16, // Optimized (was 12)
-  ATR_STOP_MULTIPLIER: 2,
-  ATR_TARGET_MULTIPLIER: 4,
-  VOLUME_MULTIPLIER: 1.0,
-  MIN_CONFIDENCE: 70,
-  MIN_RISK_REWARD: 2.0,
-} as const;
-
-export const createDefault93Config = (): Setup93Config => ({
-  enabled: false,
-  minConfidence: SETUP_93_DEFAULTS.MIN_CONFIDENCE,
-  minRiskReward: SETUP_93_DEFAULTS.MIN_RISK_REWARD,
-  emaPeriod: SETUP_93_DEFAULTS.EMA_PERIOD,
-  atrPeriod: SETUP_93_DEFAULTS.ATR_PERIOD,
-  atrStopMultiplier: SETUP_93_DEFAULTS.ATR_STOP_MULTIPLIER,
-  atrTargetMultiplier: SETUP_93_DEFAULTS.ATR_TARGET_MULTIPLIER,
-  volumeMultiplier: SETUP_93_DEFAULTS.VOLUME_MULTIPLIER,
-});
-
-// =============================================================================
-// Setup 9.4 - EMA9 Continuation
-// =============================================================================
-
-export interface Setup94Config extends BaseSetupConfig {
-  emaPeriod: number;
-  atrPeriod: number;
-  atrStopMultiplier: number;
-  atrTargetMultiplier: number;
-  volumeMultiplier: number;
-}
-
-export const SETUP_94_DEFAULTS = {
-  EMA_PERIOD: 9,
-  ATR_PERIOD: 12,
-  ATR_STOP_MULTIPLIER: 2,
-  ATR_TARGET_MULTIPLIER: 4,
-  VOLUME_MULTIPLIER: 1.0,
-  MIN_CONFIDENCE: 70,
-  MIN_RISK_REWARD: 2.0,
-} as const;
-
-export const createDefault94Config = (): Setup94Config => ({
-  enabled: false,
-  minConfidence: SETUP_94_DEFAULTS.MIN_CONFIDENCE,
-  minRiskReward: SETUP_94_DEFAULTS.MIN_RISK_REWARD,
-  emaPeriod: SETUP_94_DEFAULTS.EMA_PERIOD,
-  atrPeriod: SETUP_94_DEFAULTS.ATR_PERIOD,
-  atrStopMultiplier: SETUP_94_DEFAULTS.ATR_STOP_MULTIPLIER,
-  atrTargetMultiplier: SETUP_94_DEFAULTS.ATR_TARGET_MULTIPLIER,
-  volumeMultiplier: SETUP_94_DEFAULTS.VOLUME_MULTIPLIER,
-});
-
-// =============================================================================
 // Pattern 123 - Reversal Pattern (Best performer from backtesting)
-// PnL: +642.91%, Profit Factor: 5.91, Sharpe: 2.84, Max DD: 5.50%
+// PnL: +7.06%, Profit Factor: 1.63, Sharpe: 5.00, Max DD: 2.83%
 // =============================================================================
 
 export interface Pattern123Config extends BaseSetupConfig {
@@ -162,12 +34,11 @@ export interface Pattern123Config extends BaseSetupConfig {
 }
 
 export const PATTERN_123_DEFAULTS = {
-  // Optimized values from backtesting (PnL +642.91%, Sharpe 2.84, PF 5.91)
   PIVOT_LOOKBACK: 6,
   BREAKOUT_THRESHOLD: 0.001,
   TARGET_MULTIPLIER: 1.5,
   MIN_CONFIDENCE: 75,
-  MIN_RISK_REWARD: 0, // Set to 0 for backtesting - RR filtering done at trade level
+  MIN_RISK_REWARD: 0,
 } as const;
 
 export const createDefault123Config = (): Pattern123Config => ({
@@ -180,38 +51,8 @@ export const createDefault123Config = (): Pattern123Config => ({
 });
 
 // =============================================================================
-// Bull Trap - Counter-trend reversal (SHORT)
-// =============================================================================
-
-export interface BullTrapConfig extends BaseSetupConfig {
-  volumeMultiplier: number;
-  lookbackPeriod: number;
-  emaPeriod: number;
-}
-
-export const BULL_TRAP_DEFAULTS = {
-  VOLUME_MULTIPLIER: 1.3,
-  LOOKBACK_PERIOD: 20,
-  EMA_PERIOD: 20,
-  MIN_CONFIDENCE: 70,
-  MIN_RISK_REWARD: 2.5,
-  // Internal calculation constants
-  DEFAULT_RR_MULTIPLIER: 2.5,
-  BASE_CONFIDENCE: 60,
-  REVERSAL_CONFIDENCE_WEIGHT: 15,
-} as const;
-
-export const createDefaultBullTrapConfig = (): BullTrapConfig => ({
-  enabled: false,
-  minConfidence: BULL_TRAP_DEFAULTS.MIN_CONFIDENCE,
-  minRiskReward: BULL_TRAP_DEFAULTS.MIN_RISK_REWARD,
-  volumeMultiplier: BULL_TRAP_DEFAULTS.VOLUME_MULTIPLIER,
-  lookbackPeriod: BULL_TRAP_DEFAULTS.LOOKBACK_PERIOD,
-  emaPeriod: BULL_TRAP_DEFAULTS.EMA_PERIOD,
-});
-
-// =============================================================================
 // Bear Trap - Counter-trend reversal (LONG)
+// PnL: +3.53%, Profit Factor: 1.22, Sharpe: 2.61, Max DD: 3.17%
 // =============================================================================
 
 export interface BearTrapConfig extends BaseSetupConfig {
@@ -226,7 +67,6 @@ export const BEAR_TRAP_DEFAULTS = {
   EMA_PERIOD: 20,
   MIN_CONFIDENCE: 70,
   MIN_RISK_REWARD: 2.5,
-  // Internal calculation constants
   DEFAULT_RR_MULTIPLIER: 2.5,
   BASE_CONFIDENCE: 60,
   REVERSAL_CONFIDENCE_WEIGHT: 15,
@@ -242,33 +82,40 @@ export const createDefaultBearTrapConfig = (): BearTrapConfig => ({
 });
 
 // =============================================================================
-// Breakout Retest - Momentum + Retest
+// Mean Reversion - Bollinger Bands + RSI
+// PnL: +1.34%, Profit Factor: 1.39, Sharpe: 2.03, Max DD: 1.40%
 // =============================================================================
 
-export interface BreakoutRetestConfig extends BaseSetupConfig {
+export interface MeanReversionConfig extends BaseSetupConfig {
+  bbPeriod: number;
+  bbStdDev: number;
+  rsiPeriod: number;
+  rsiOversold: number;
+  rsiOverbought: number;
   volumeMultiplier: number;
-  lookbackPeriod: number;
-  emaPeriod: number;
-  retestTolerance: number;
 }
 
-export const BREAKOUT_RETEST_DEFAULTS = {
-  VOLUME_MULTIPLIER: 1.4,
-  LOOKBACK_PERIOD: 30,
-  EMA_PERIOD: 20,
-  RETEST_TOLERANCE: 0.005,
-  MIN_CONFIDENCE: 70,
-  MIN_RISK_REWARD: 2.5,
+export const MEAN_REVERSION_DEFAULTS = {
+  BB_PERIOD: 20,
+  BB_STD_DEV: 2,
+  RSI_PERIOD: 14,
+  RSI_OVERSOLD: 30,
+  RSI_OVERBOUGHT: 70,
+  VOLUME_MULTIPLIER: 1.0,
+  MIN_CONFIDENCE: 65,
+  MIN_RISK_REWARD: 1.5,
 } as const;
 
-export const createDefaultBreakoutRetestConfig = (): BreakoutRetestConfig => ({
+export const createDefaultMeanReversionConfig = (): MeanReversionConfig => ({
   enabled: false,
-  minConfidence: BREAKOUT_RETEST_DEFAULTS.MIN_CONFIDENCE,
-  minRiskReward: BREAKOUT_RETEST_DEFAULTS.MIN_RISK_REWARD,
-  volumeMultiplier: BREAKOUT_RETEST_DEFAULTS.VOLUME_MULTIPLIER,
-  lookbackPeriod: BREAKOUT_RETEST_DEFAULTS.LOOKBACK_PERIOD,
-  emaPeriod: BREAKOUT_RETEST_DEFAULTS.EMA_PERIOD,
-  retestTolerance: BREAKOUT_RETEST_DEFAULTS.RETEST_TOLERANCE,
+  minConfidence: MEAN_REVERSION_DEFAULTS.MIN_CONFIDENCE,
+  minRiskReward: MEAN_REVERSION_DEFAULTS.MIN_RISK_REWARD,
+  bbPeriod: MEAN_REVERSION_DEFAULTS.BB_PERIOD,
+  bbStdDev: MEAN_REVERSION_DEFAULTS.BB_STD_DEV,
+  rsiPeriod: MEAN_REVERSION_DEFAULTS.RSI_PERIOD,
+  rsiOversold: MEAN_REVERSION_DEFAULTS.RSI_OVERSOLD,
+  rsiOverbought: MEAN_REVERSION_DEFAULTS.RSI_OVERBOUGHT,
+  volumeMultiplier: MEAN_REVERSION_DEFAULTS.VOLUME_MULTIPLIER,
 });
 
 // =============================================================================
@@ -276,25 +123,15 @@ export const createDefaultBreakoutRetestConfig = (): BreakoutRetestConfig => ({
 // =============================================================================
 
 export interface SetupDetectionConfig {
-  setup91: Setup91Config;
-  setup92: Setup92Config;
-  setup93: Setup93Config;
-  setup94: Setup94Config;
   pattern123: Pattern123Config;
-  bullTrap: BullTrapConfig;
   bearTrap: BearTrapConfig;
-  breakoutRetest: BreakoutRetestConfig;
+  meanReversion: MeanReversionConfig;
 }
 
 export const createDefaultSetupDetectionConfig = (): SetupDetectionConfig => ({
-  setup91: createDefault91Config(),
-  setup92: createDefault92Config(),
-  setup93: createDefault93Config(),
-  setup94: createDefault94Config(),
   pattern123: createDefault123Config(),
-  bullTrap: createDefaultBullTrapConfig(),
   bearTrap: createDefaultBearTrapConfig(),
-  breakoutRetest: createDefaultBreakoutRetestConfig(),
+  meanReversion: createDefaultMeanReversionConfig(),
 });
 
 // =============================================================================
@@ -302,14 +139,9 @@ export const createDefaultSetupDetectionConfig = (): SetupDetectionConfig => ({
 // =============================================================================
 
 export const SETUP_STRATEGY_KEYS = [
-  'setup91',
-  'setup92',
-  'setup93',
-  'setup94',
   'pattern123',
-  'bullTrap',
   'bearTrap',
-  'breakoutRetest',
+  'meanReversion',
 ] as const;
 
 export type SetupStrategyKey = (typeof SETUP_STRATEGY_KEYS)[number];

@@ -7,7 +7,7 @@
 import chalk from 'chalk';
 import ora from 'ora';
 import Table from 'cli-table3';
-import type { Kline } from '@marketmind/types';
+import type { Kline, TimeInterval } from '@marketmind/types';
 import { BacktestEngine } from '../../services/backtesting/BacktestEngine';
 import { ParameterSensitivityAnalyzer, type ParameterRange, type SensitivityAnalysis } from '../../services/backtesting/ParameterSensitivityAnalyzer';
 import { ResultManager } from '../../services/backtesting/ResultManager';
@@ -123,9 +123,9 @@ export async function sensitivityCommand(options: SensitivityOptions): Promise<v
 
     const klines: Kline[] = await fetchHistoricalKlinesFromAPI(
       symbol,
-      interval,
-      startDate,
-      endDate
+      interval as TimeInterval,
+      new Date(startDate),
+      new Date(endDate)
     );
 
     fetchSpinner.succeed(chalk.green(`✓ Fetched ${klines.length.toLocaleString()} candles`));

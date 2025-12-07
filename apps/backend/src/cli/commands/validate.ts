@@ -159,7 +159,7 @@ export async function validateCommand(options: ValidateOptions) {
 /**
  * Interpret and provide feedback on backtest results
  */
-function interpretResults(metrics: any, logger: BacktestLogger) {
+function interpretResults(metrics: any, _logger: BacktestLogger) {
   const warnings: string[] = [];
   const successes: string[] = [];
 

@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import type { BacktestResult, BacktestMetrics, BacktestTrade } from '@marketmind/types';
+import type { BacktestResult, BacktestMetrics } from '@marketmind/types';
 
 export interface SavedBacktestResult {
   timestamp: string;
@@ -20,6 +20,7 @@ export interface SavedBacktestResult {
 
 export interface OptimizationSummary {
   timestamp: string;
+  type: 'optimization';
   strategy: string;
   symbol: string;
   interval: string;
@@ -101,6 +102,7 @@ export class ResultManager {
 
     const summary: OptimizationSummary = {
       timestamp: new Date().toISOString(),
+      type: 'optimization',
       strategy,
       symbol,
       interval,
@@ -168,10 +170,10 @@ export class ResultManager {
         trade.exitTime || '',
         trade.exitPrice?.toFixed(2) || '',
         trade.exitReason || '',
-        trade.pnl.toFixed(2),
-        trade.pnlPercent.toFixed(2),
+        (trade.pnl ?? 0).toFixed(2),
+        (trade.pnlPercent ?? 0).toFixed(2),
         trade.commission.toFixed(4),
-        trade.netPnl.toFixed(2),
+        (trade.netPnl ?? 0).toFixed(2),
         '', // Equity after - not always available
       ].join(',') + '\n';
     });

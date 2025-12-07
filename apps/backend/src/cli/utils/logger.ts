@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import Table from 'cli-table3';
-import type { BacktestMetrics, BacktestResult, BacktestTrade } from '@marketmind/types';
+import type { BacktestMetrics, BacktestTrade } from '@marketmind/types';
 
 export enum LogLevel {
   SILENT = 0,

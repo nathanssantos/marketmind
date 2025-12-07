@@ -1,13 +1,24 @@
 import { findHighestSwingHigh, findLowestSwingLow, findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Kline, BreakoutRetestConfig } from '@marketmind/types';
-import { createDefaultBreakoutRetestConfig } from '@marketmind/types';
+import type { Kline } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
-import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
+import { BaseSetupDetector, type SetupDetectorResult, type SetupDetectorConfig } from './BaseSetupDetector';
 
-// Re-export for consumers
-export type { BreakoutRetestConfig };
-export { createDefaultBreakoutRetestConfig };
+// Local type definition (removed from @marketmind/types as strategy was not profitable)
+export interface BreakoutRetestConfig extends SetupDetectorConfig {
+  volumeMultiplier: number;
+  lookbackPeriod: number;
+  emaPeriod: number;
+}
+
+export const createDefaultBreakoutRetestConfig = (): BreakoutRetestConfig => ({
+  enabled: false,
+  minConfidence: 70,
+  minRiskReward: 2.0,
+  volumeMultiplier: 1.3,
+  lookbackPeriod: 50,
+  emaPeriod: 20,
+});
 
 // Internal calculation constants
 const VOLUME_LOOKBACK = 20;

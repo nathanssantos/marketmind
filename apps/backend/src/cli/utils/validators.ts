@@ -98,14 +98,9 @@ export function validateDateRange(startDate: string, endDate: string): { startDa
  */
 export function validateStrategy(strategy: string): void {
   const validStrategies = [
-    'setup91',
-    'setup92',
-    'setup93',
-    'setup94',
     'pattern123',
-    'bullTrap',
     'bearTrap',
-    'breakoutRetest',
+    'meanReversion',
   ];
 
   if (!validStrategies.includes(strategy)) {
@@ -270,6 +265,7 @@ export function validateGridSearchSize(params: string[]): void {
 
   for (const param of params) {
     const [, values] = param.split('=');
+    if (!values) continue;
     const valueArray = values.split(',');
     totalCombinations *= valueArray.length;
   }

@@ -1,40 +1,36 @@
 import { calculateEMA } from '@marketmind/indicators';
-import type { Kline, TradingSetup } from '@marketmind/types';
+import type { Kline, TradingSetup, StrategyDefinition } from '@marketmind/types';
 import { getKlineClose } from '../../utils/klineHelpers';
 import {
     BearTrapDetector,
     createDefaultBearTrapConfig,
 } from './BearTrapDetector';
 import {
-    BreakoutRetestDetector,
-    createDefaultBreakoutRetestConfig,
-} from './BreakoutRetestDetector';
-import {
-    BullTrapDetector,
-    createDefaultBullTrapConfig,
-} from './BullTrapDetector';
+    MeanReversionDetector,
+    createDefaultMeanReversionConfig,
+} from './MeanReversionDetector';
 import {
     Pattern123Detector,
     createDefault123Config,
 } from './Pattern123Detector';
-import { Setup91Detector, createDefault91Config } from './Setup91Detector';
-import { Setup92Detector, createDefault92Config } from './Setup92Detector';
-import { Setup93Detector, createDefault93Config } from './Setup93Detector';
-import { Setup94Detector, createDefault94Config } from './Setup94Detector';
+import { StrategyInterpreter, StrategyLoader } from './dynamic';
 
 export interface SetupDetectionConfig {
-  setup91: ReturnType<typeof createDefault91Config>;
-  setup92: ReturnType<typeof createDefault92Config>;
-  setup93: ReturnType<typeof createDefault93Config>;
-  setup94: ReturnType<typeof createDefault94Config>;
+  // Legacy detector configs
   pattern123: ReturnType<typeof createDefault123Config>;
-  bullTrap: ReturnType<typeof createDefaultBullTrapConfig>;
   bearTrap: ReturnType<typeof createDefaultBearTrapConfig>;
-  breakoutRetest: ReturnType<typeof createDefaultBreakoutRetestConfig>;
+  meanReversion: ReturnType<typeof createDefaultMeanReversionConfig>;
+
+  // Global settings
   enableTrendFilter: boolean;
   allowCounterTrend: boolean;
   trendEmaPeriod: number;
   setupCooldownPeriod: number;
+
+  // Dynamic strategy settings
+  enableLegacyDetectors?: boolean;  // Default: true
+  strategyDirectory?: string;
+  dynamicStrategies?: StrategyDefinition[];
 }
 
 const DEBUG_ENABLED = process.env['DEBUG_SETUPS'] === 'true';
@@ -45,15 +41,14 @@ const MIN_KLINES_FOR_DETECTION = 50;
 
 export class SetupDetectionService {
   private config: SetupDetectionConfig;
-  private setup91Detector: Setup91Detector;
-  private setup92Detector: Setup92Detector;
-  private setup93Detector: Setup93Detector;
-  private setup94Detector: Setup94Detector;
   private pattern123Detector: Pattern123Detector;
-  private bullTrapDetector: BullTrapDetector;
   private bearTrapDetector: BearTrapDetector;
-  private breakoutRetestDetector: BreakoutRetestDetector;
+  private meanReversionDetector: MeanReversionDetector;
   private lastDetectionIndex: Map<string, number> = new Map();
+
+  // Dynamic strategy support
+  private dynamicInterpreters: Map<string, StrategyInterpreter> = new Map();
+  private strategyLoader: StrategyLoader | null = null;
 
   private debugLog(...args: unknown[]): void {
     if (!DEBUG_ENABLED) return;
@@ -63,32 +58,103 @@ export class SetupDetectionService {
 
   constructor(config?: Partial<SetupDetectionConfig>) {
     this.config = {
-      setup91: config?.setup91 ?? createDefault91Config(),
-      setup92: config?.setup92 ?? createDefault92Config(),
-      setup93: config?.setup93 ?? createDefault93Config(),
-      setup94: config?.setup94 ?? createDefault94Config(),
       pattern123: config?.pattern123 ?? createDefault123Config(),
-      bullTrap: config?.bullTrap ?? createDefaultBullTrapConfig(),
       bearTrap: config?.bearTrap ?? createDefaultBearTrapConfig(),
-      breakoutRetest:
-        config?.breakoutRetest ?? createDefaultBreakoutRetestConfig(),
+      meanReversion:
+        config?.meanReversion ?? createDefaultMeanReversionConfig(),
       enableTrendFilter: config?.enableTrendFilter ?? false,
       allowCounterTrend: config?.allowCounterTrend ?? true,
       trendEmaPeriod: config?.trendEmaPeriod ?? DEFAULT_TREND_EMA_PERIOD,
       setupCooldownPeriod:
         config?.setupCooldownPeriod ?? DEFAULT_SETUP_COOLDOWN,
+      enableLegacyDetectors: config?.enableLegacyDetectors ?? true,
+      strategyDirectory: config?.strategyDirectory,
+      dynamicStrategies: config?.dynamicStrategies,
     };
 
-    this.setup91Detector = new Setup91Detector(this.config.setup91);
-    this.setup92Detector = new Setup92Detector(this.config.setup92);
-    this.setup93Detector = new Setup93Detector(this.config.setup93);
-    this.setup94Detector = new Setup94Detector(this.config.setup94);
+    // Initialize legacy detectors
     this.pattern123Detector = new Pattern123Detector(this.config.pattern123);
-    this.bullTrapDetector = new BullTrapDetector(this.config.bullTrap);
     this.bearTrapDetector = new BearTrapDetector(this.config.bearTrap);
-    this.breakoutRetestDetector = new BreakoutRetestDetector(
-      this.config.breakoutRetest,
+    this.meanReversionDetector = new MeanReversionDetector(
+      this.config.meanReversion,
     );
+
+    // Initialize dynamic strategies from config
+    if (this.config.dynamicStrategies) {
+      this.loadInlineStrategies(this.config.dynamicStrategies);
+    }
+
+    // Initialize strategy loader if directory is specified
+    if (this.config.strategyDirectory) {
+      this.strategyLoader = new StrategyLoader([this.config.strategyDirectory]);
+    }
+  }
+
+  /**
+   * Load strategies from a directory
+   */
+  async loadStrategiesFromDirectory(directory: string): Promise<void> {
+    this.strategyLoader = new StrategyLoader([directory]);
+    const strategies = await this.strategyLoader.loadAll();
+    for (const strategy of strategies) {
+      this.loadStrategy(strategy);
+    }
+    this.debugLog(`Loaded ${strategies.length} dynamic strategies from ${directory}`);
+  }
+
+  /**
+   * Load a single strategy definition
+   */
+  loadStrategy(definition: StrategyDefinition, params?: Record<string, number>): void {
+    const interpreter = new StrategyInterpreter({
+      enabled: true,
+      minConfidence: definition.filters?.minConfidence ?? 50,
+      minRiskReward: definition.filters?.minRiskReward ?? 1.0,
+      strategy: definition,
+      parameterOverrides: params,
+    });
+
+    this.dynamicInterpreters.set(definition.id, interpreter);
+    this.debugLog(`Loaded dynamic strategy: ${definition.id} (${definition.name})`);
+  }
+
+  /**
+   * Load a strategy from JSON string (for copy/paste support)
+   */
+  loadStrategyFromJson(jsonContent: string, params?: Record<string, number>): StrategyDefinition {
+    if (!this.strategyLoader) {
+      this.strategyLoader = new StrategyLoader([]);
+    }
+    const definition = this.strategyLoader.loadFromString(jsonContent);
+    this.loadStrategy(definition, params);
+    return definition;
+  }
+
+  /**
+   * Unload a dynamic strategy
+   */
+  unloadStrategy(strategyId: string): boolean {
+    const removed = this.dynamicInterpreters.delete(strategyId);
+    if (removed) {
+      this.debugLog(`Unloaded dynamic strategy: ${strategyId}`);
+    }
+    return removed;
+  }
+
+  /**
+   * Get list of loaded strategy IDs
+   */
+  getLoadedStrategies(): string[] {
+    return Array.from(this.dynamicInterpreters.keys());
+  }
+
+  /**
+   * Load inline strategies from config
+   */
+  private loadInlineStrategies(strategies: StrategyDefinition[]): void {
+    for (const strategy of strategies) {
+      this.loadStrategy(strategy);
+    }
   }
 
   private canDetectSetup(setupType: string, currentIndex: number): boolean {
@@ -152,100 +218,101 @@ export class SetupDetectionService {
     const currentIndex = klines.length - 1;
     const trend = this.getTrend(klines, currentIndex);
 
-    const detectors = [
-      {
-        name: 'setup91',
-        detector: this.setup91Detector,
-        enabled: this.config.setup91.enabled,
-        label: 'Setup 9.1',
-      },
-      {
-        name: 'setup92',
-        detector: this.setup92Detector,
-        enabled: this.config.setup92.enabled,
-        label: 'Setup 9.2',
-      },
-      {
-        name: 'setup93',
-        detector: this.setup93Detector,
-        enabled: this.config.setup93.enabled,
-        label: 'Setup 9.3',
-      },
-      {
-        name: 'setup94',
-        detector: this.setup94Detector,
-        enabled: this.config.setup94.enabled,
-        label: 'Setup 9.4',
-      },
-      {
-        name: 'pattern123',
-        detector: this.pattern123Detector,
-        enabled: this.config.pattern123.enabled,
-        label: 'Pattern 1-2-3',
-      },
-      {
-        name: 'bullTrap',
-        detector: this.bullTrapDetector,
-        enabled: this.config.bullTrap.enabled,
-        label: 'Bull Trap',
-      },
-      {
-        name: 'bearTrap',
-        detector: this.bearTrapDetector,
-        enabled: this.config.bearTrap.enabled,
-        label: 'Bear Trap',
-      },
-      {
-        name: 'breakoutRetest',
-        detector: this.breakoutRetestDetector,
-        enabled: this.config.breakoutRetest.enabled,
-        label: 'Breakout Retest',
-      },
-    ];
+    // Run legacy detectors if enabled
+    if (this.config.enableLegacyDetectors !== false) {
+      const detectors = [
+        {
+          name: 'pattern123',
+          detector: this.pattern123Detector,
+          enabled: this.config.pattern123.enabled,
+          label: 'Pattern 1-2-3',
+        },
+        {
+          name: 'bearTrap',
+          detector: this.bearTrapDetector,
+          enabled: this.config.bearTrap.enabled,
+          label: 'Bear Trap',
+        },
+        {
+          name: 'meanReversion',
+          detector: this.meanReversionDetector,
+          enabled: this.config.meanReversion.enabled,
+          label: 'Mean Reversion',
+        },
+      ];
 
-    for (const { name, detector, enabled, label } of detectors) {
-      this.debugLog(`\n--- ${label} ---`);
+      for (const { name, detector, enabled, label } of detectors) {
+        this.debugLog(`\n--- ${label} ---`);
 
-      if (!enabled) {
-        this.debugLog('Disabled in config');
-        continue;
-      }
+        if (!enabled) {
+          this.debugLog('Disabled in config');
+          continue;
+        }
 
-      const canDetect = this.canDetectSetup(name, currentIndex);
-      this.debugLog('Can Detect (Cooldown):', canDetect);
+        const canDetect = this.canDetectSetup(name, currentIndex);
+        this.debugLog('Can Detect (Cooldown):', canDetect);
 
-      if (!canDetect) {
-        const lastDetection = this.lastDetectionIndex.get(name);
+        if (!canDetect) {
+          const lastDetection = this.lastDetectionIndex.get(name);
+          this.debugLog(
+            `Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`,
+          );
+          continue;
+        }
+
+        const result = detector.detect(klines, currentIndex);
+        this.debugLog('Detection Result:', {
+          hasSetup: !!result.setup,
+          confidence: result.confidence,
+        });
+
+        if (!result.setup) {
+          this.debugLog('No setup found');
+          continue;
+        }
+
+        const aligned = this.isTrendAligned(result.setup.direction, trend);
         this.debugLog(
-          `Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`,
+          'Trend Aligned:',
+          aligned,
+          `(${result.setup.direction} vs ${trend})`,
         );
+
+        if (aligned) {
+          setups.push(result.setup);
+          this.markSetupDetected(name, currentIndex);
+          this.debugLog(`${label} DETECTED`);
+        } else {
+          this.debugLog('Rejected by Trend Filter');
+        }
+      }
+    }
+
+    // Run dynamic strategy interpreters
+    for (const [strategyId, interpreter] of this.dynamicInterpreters) {
+      this.debugLog(`\n--- Dynamic: ${strategyId} ---`);
+
+      const canDetect = this.canDetectSetup(strategyId, currentIndex);
+      if (!canDetect) {
+        this.debugLog('Cooldown active');
         continue;
       }
 
-      const result = detector.detect(klines, currentIndex);
+      const result = interpreter.detect(klines, currentIndex);
       this.debugLog('Detection Result:', {
         hasSetup: !!result.setup,
         confidence: result.confidence,
       });
 
       if (!result.setup) {
-        this.debugLog('No setup found');
         continue;
       }
 
       const aligned = this.isTrendAligned(result.setup.direction, trend);
-      this.debugLog(
-        'Trend Aligned:',
-        aligned,
-        `(${result.setup.direction} vs ${trend})`,
-      );
-
       if (aligned) {
         setups.push(result.setup);
-        this.markSetupDetected(name, currentIndex);
-        this.debugLog(`${label} DETECTED`);
-      } else {
-        this.debugLog('Rejected by Trend Filter');
+        this.markSetupDetected(strategyId, currentIndex);
+        this.debugLog(`${strategyId} DETECTED`);
       }
     }
 
@@ -272,45 +339,35 @@ export class SetupDetectionService {
   ): TradingSetup[] {
     const setups: TradingSetup[] = [];
 
-    const detectors = [
-      {
-        detector: this.setup91Detector,
-        enabled: this.config.setup91.enabled,
-      },
-      {
-        detector: this.setup92Detector,
-        enabled: this.config.setup92.enabled,
-      },
-      {
-        detector: this.setup93Detector,
-        enabled: this.config.setup93.enabled,
-      },
-      {
-        detector: this.setup94Detector,
-        enabled: this.config.setup94.enabled,
-      },
-      {
-        detector: this.pattern123Detector,
-        enabled: this.config.pattern123.enabled,
-      },
-      {
-        detector: this.bullTrapDetector,
-        enabled: this.config.bullTrap.enabled,
-      },
-      {
-        detector: this.bearTrapDetector,
-        enabled: this.config.bearTrap.enabled,
-      },
-      {
-        detector: this.breakoutRetestDetector,
-        enabled: this.config.breakoutRetest.enabled,
-      },
-    ];
+    // Legacy detectors
+    const legacyDetectors = this.config.enableLegacyDetectors !== false
+      ? [
+          {
+            detector: this.pattern123Detector,
+            enabled: this.config.pattern123.enabled,
+          },
+          {
+            detector: this.bearTrapDetector,
+            enabled: this.config.bearTrap.enabled,
+          },
+          {
+            detector: this.meanReversionDetector,
+            enabled: this.config.meanReversion.enabled,
+          },
+        ]
+      : [];
 
     for (let i = startIndex; i <= endIndex; i += 1) {
-      for (const { detector, enabled } of detectors) {
+      // Run legacy detectors
+      for (const { detector, enabled } of legacyDetectors) {
         if (!enabled) continue;
         const result = detector.detect(klines, i);
+        if (result.setup) setups.push(result.setup);
+      }
+
+      // Run dynamic interpreters
+      for (const interpreter of this.dynamicInterpreters.values()) {
+        const result = interpreter.detect(klines, i);
         if (result.setup) setups.push(result.setup);
       }
     }
@@ -321,40 +378,12 @@ export class SetupDetectionService {
   }
 
   updateConfig(config: Partial<SetupDetectionConfig>): void {
-    if (config.setup91) {
-      this.config.setup91 = { ...this.config.setup91, ...config.setup91 };
-      this.setup91Detector = new Setup91Detector(this.config.setup91);
-    }
-
-    if (config.setup92) {
-      this.config.setup92 = { ...this.config.setup92, ...config.setup92 };
-      this.setup92Detector = new Setup92Detector(this.config.setup92);
-    }
-
-    if (config.setup93) {
-      this.config.setup93 = { ...this.config.setup93, ...config.setup93 };
-      this.setup93Detector = new Setup93Detector(this.config.setup93);
-    }
-
-    if (config.setup94) {
-      this.config.setup94 = { ...this.config.setup94, ...config.setup94 };
-      this.setup94Detector = new Setup94Detector(this.config.setup94);
-    }
-
     if (config.pattern123) {
       this.config.pattern123 = {
         ...this.config.pattern123,
         ...config.pattern123,
       };
       this.pattern123Detector = new Pattern123Detector(this.config.pattern123);
-    }
-
-    if (config.bullTrap) {
-      this.config.bullTrap = {
-        ...this.config.bullTrap,
-        ...config.bullTrap,
-      };
-      this.bullTrapDetector = new BullTrapDetector(this.config.bullTrap);
     }
 
     if (config.bearTrap) {
@@ -365,13 +394,13 @@ export class SetupDetectionService {
       this.bearTrapDetector = new BearTrapDetector(this.config.bearTrap);
     }
 
-    if (config.breakoutRetest) {
-      this.config.breakoutRetest = {
-        ...this.config.breakoutRetest,
-        ...config.breakoutRetest,
+    if (config.meanReversion) {
+      this.config.meanReversion = {
+        ...this.config.meanReversion,
+        ...config.meanReversion,
       };
-      this.breakoutRetestDetector = new BreakoutRetestDetector(
-        this.config.breakoutRetest,
+      this.meanReversionDetector = new MeanReversionDetector(
+        this.config.meanReversion,
       );
     }
 
@@ -399,14 +428,9 @@ export class SetupDetectionService {
 
 export const createDefaultSetupDetectionConfig =
   (): SetupDetectionConfig => ({
-    setup91: createDefault91Config(),
-    setup92: createDefault92Config(),
-    setup93: createDefault93Config(),
-    setup94: createDefault94Config(),
     pattern123: createDefault123Config(),
-    bullTrap: createDefaultBullTrapConfig(),
     bearTrap: createDefaultBearTrapConfig(),
-    breakoutRetest: createDefaultBreakoutRetestConfig(),
+    meanReversion: createDefaultMeanReversionConfig(),
     enableTrendFilter: false,
     allowCounterTrend: true,
     trendEmaPeriod: DEFAULT_TREND_EMA_PERIOD,

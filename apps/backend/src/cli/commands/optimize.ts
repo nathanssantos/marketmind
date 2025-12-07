@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import ora from 'ora';
+// @ts-expect-error - cli-progress doesn't have types
 import cliProgress from 'cli-progress';
 import type { BacktestConfig, Interval } from '@marketmind/types';
 import { BacktestOptimizer } from '../../services/backtesting/BacktestOptimizer';
@@ -70,6 +71,7 @@ export async function optimizeCommand(options: OptimizeOptions) {
 
     for (const paramStr of options.param) {
       const [name, valuesStr] = paramStr.split('=');
+      if (!name || !valuesStr) continue;
       parameterGrid[name] = ParameterGenerator.parseArray(valuesStr);
     }
 
@@ -147,7 +149,7 @@ export async function optimizeCommand(options: OptimizeOptions) {
         parameterGrid,
         parallelWorkers,
         sortBy: options.sortBy as any,
-        onProgress: (current, total) => {
+        onProgress: (current, _total) => {
           progressBar.update(current);
         },
       },
@@ -248,7 +250,7 @@ export async function optimizeCommand(options: OptimizeOptions) {
 /**
  * Interpret and provide feedback on optimization results
  */
-function interpretResults(best: any, logger: BacktestLogger) {
+function interpretResults(best: any, _logger: BacktestLogger) {
   const m = best.metrics;
 
   console.log(chalk.cyan.bold('BEST CONFIGURATION:'));
