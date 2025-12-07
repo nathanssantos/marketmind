@@ -4,6 +4,16 @@ import type { BacktestConfig } from '@marketmind/types';
 import { BacktestEngine } from '../../services/backtesting/BacktestEngine';
 import { BacktestLogger, LogLevel } from '../utils/logger';
 import { ResultManager } from '../../services/backtesting/ResultManager';
+import {
+  validateSymbol,
+  validateInterval,
+  validateDateRange,
+  validateStrategy,
+  validateCapital,
+  validatePercentage,
+  validateRiskReward,
+  ValidationError,
+} from '../utils/validators';
 
 interface ValidateOptions {
   strategy: string;
@@ -27,12 +37,30 @@ export async function validateCommand(options: ValidateOptions) {
   const logger = new BacktestLogger(options.verbose ? LogLevel.VERBOSE : LogLevel.INFO);
 
   try {
+    // Validate all inputs
+    validateStrategy(options.strategy);
+    validateSymbol(options.symbol);
+    validateInterval(options.interval);
+    validateDateRange(options.start, options.end);
+
+    const capital = validateCapital(options.capital);
+    const stopLoss = validatePercentage(options.stopLoss, 'Stop loss', 0.1, 50);
+    const takeProfit = validatePercentage(options.takeProfit, 'Take profit', 0.1, 100);
+    const minConfidence = validatePercentage(options.minConfidence, 'Min confidence', 0, 100);
+    const maxPosition = validatePercentage(options.maxPosition, 'Max position', 1, 100);
+    const commission = validatePercentage(options.commission, 'Commission', 0, 10);
+
+    // Validate risk/reward ratio
+    if (!options.useAlgorithmicLevels) {
+      validateRiskReward(stopLoss, takeProfit);
+    }
+
     // Display header
     logger.header(`BACKTEST VALIDATION - ${options.strategy.toUpperCase()}`, {
       'Symbol': options.symbol,
       'Interval': options.interval,
       'Period': `${options.start} → ${options.end}`,
-      'Capital': `$${parseFloat(options.capital).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      'Capital': `$${capital.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
     });
 
     // Parse configuration
@@ -41,27 +69,16 @@ export async function validateCommand(options: ValidateOptions) {
       interval: options.interval,
       startDate: options.start,
       endDate: options.end,
-      initialCapital: parseFloat(options.capital),
+      initialCapital: capital,
       setupTypes: [options.strategy],
-      minConfidence: parseFloat(options.minConfidence),
-      stopLossPercent: parseFloat(options.stopLoss),
-      takeProfitPercent: parseFloat(options.takeProfit),
-      maxPositionSize: parseFloat(options.maxPosition),
-      commission: parseFloat(options.commission) / 100, // Convert from % to decimal
+      minConfidence: minConfidence,
+      stopLossPercent: stopLoss,
+      takeProfitPercent: takeProfit,
+      maxPositionSize: maxPosition,
+      commission: commission / 100, // Convert from % to decimal
       useAlgorithmicLevels: options.useAlgorithmicLevels,
       onlyWithTrend: options.onlyWithTrend,
     };
-
-    // Validate inputs
-    if (config.initialCapital <= 0) {
-      throw new Error('Capital must be positive');
-    }
-    if (config.stopLossPercent && config.stopLossPercent <= 0) {
-      throw new Error('Stop loss must be positive');
-    }
-    if (config.takeProfitPercent && config.takeProfitPercent <= 0) {
-      throw new Error('Take profit must be positive');
-    }
 
     // Create backtest engine
     const engine = new BacktestEngine();
@@ -126,7 +143,10 @@ export async function validateCommand(options: ValidateOptions) {
     }
 
   } catch (error) {
-    if (error instanceof Error) {
+    if (error instanceof ValidationError) {
+      logger.error(`Validation failed: ${error.message}`);
+      process.exit(1);
+    } else if (error instanceof Error) {
       logger.error(`Backtest failed: ${error.message}`);
       if (options.verbose) {
         console.error(error.stack);

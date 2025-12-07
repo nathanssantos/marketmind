@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import Table from 'cli-table3';
 import { ResultManager } from '../../services/backtesting/ResultManager';
 import { BacktestLogger, LogLevel } from '../utils/logger';
+import { validateFilePath, ValidationError } from '../utils/validators';
 
 interface CompareOptions {
   files: string[];
@@ -12,12 +13,18 @@ export async function compareCommand(files: string[], options: CompareOptions) {
   const logger = new BacktestLogger(options.verbose ? LogLevel.VERBOSE : LogLevel.INFO);
 
   try {
+    // Validate inputs
     if (!files || files.length === 0) {
-      throw new Error('No result files specified. Usage: compare <file1> <file2> ...');
+      throw new ValidationError('No result files specified. Usage: compare <file1> <file2> ...');
     }
 
     if (files.length < 2) {
-      throw new Error('At least 2 result files are required for comparison');
+      throw new ValidationError('At least 2 result files are required for comparison');
+    }
+
+    // Validate all file paths exist
+    for (const file of files) {
+      await validateFilePath(file);
     }
 
     logger.header(`BACKTEST COMPARISON`, {
@@ -53,7 +60,10 @@ export async function compareCommand(files: string[], options: CompareOptions) {
     displayBestPerformers(comparison);
 
   } catch (error) {
-    if (error instanceof Error) {
+    if (error instanceof ValidationError) {
+      logger.error(`Validation failed: ${error.message}`);
+      process.exit(1);
+    } else if (error instanceof Error) {
       logger.error(`Comparison failed: ${error.message}`);
       if (options.verbose) {
         console.error(error.stack);

@@ -24,11 +24,6 @@ export {
 } from './DivergenceDetector';
 export type { DivergenceConfig } from './DivergenceDetector';
 export {
-    GridTradingDetector,
-    createDefaultGridTradingConfig
-} from './GridTradingDetector';
-export type { GridTradingConfig } from './GridTradingDetector';
-export {
     LiquiditySweepDetector,
     createDefaultLiquiditySweepConfig
 } from './LiquiditySweepDetector';
@@ -38,11 +33,6 @@ export {
     createDefaultMarketMakingConfig
 } from './MarketMakingDetector';
 export type { MarketMakingConfig } from './MarketMakingDetector';
-export {
-    MeanReversionDetector,
-    createDefaultMeanReversionConfig
-} from './MeanReversionDetector';
-export type { MeanReversionConfig } from './MeanReversionDetector';
 export {
     OrderBlockFVGDetector,
     createDefaultOrderBlockFVGConfig

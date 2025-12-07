@@ -3,6 +3,7 @@ import ora from 'ora';
 import path from 'path';
 import { ResultManager, type SavedBacktestResult, type OptimizationSummary } from '../../services/backtesting/ResultManager';
 import { BacktestLogger, LogLevel } from '../utils/logger';
+import { validateFilePath, ValidationError } from '../utils/validators';
 
 interface ExportOptions {
   output?: string;
@@ -13,9 +14,12 @@ export async function exportCommand(inputFile: string, options: ExportOptions) {
   const logger = new BacktestLogger(options.verbose ? LogLevel.VERBOSE : LogLevel.INFO);
 
   try {
+    // Validate inputs
     if (!inputFile) {
-      throw new Error('No input file specified. Usage: export <input-file> --output <output-file>');
+      throw new ValidationError('No input file specified. Usage: export <input-file> --output <output-file>');
     }
+
+    await validateFilePath(inputFile);
 
     logger.header(`EXPORT TO CSV`, {
       'Input': inputFile,
@@ -83,7 +87,10 @@ export async function exportCommand(inputFile: string, options: ExportOptions) {
     logger.success('Export completed successfully');
 
   } catch (error) {
-    if (error instanceof Error) {
+    if (error instanceof ValidationError) {
+      logger.error(`Validation failed: ${error.message}`);
+      process.exit(1);
+    } else if (error instanceof Error) {
       logger.error(`Export failed: ${error.message}`);
       if (options.verbose) {
         console.error(error.stack);

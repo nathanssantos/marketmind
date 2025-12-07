@@ -1009,14 +1009,6 @@
         "title": "Balayage de Liquidité (Chasse aux Stops)",
         "description": "Détecte les fausses cassures conçues pour déclencher les stop loss avant de s'inverser - modèle classique de comportement institutionnel"
       },
-      "meanReversion": {
-        "title": "Retour à la Moyenne (Bandes de Bollinger + RSI)",
-        "description": "Opère sur les extrêmes de prix en attendant un retour à la moyenne - achète survendu (BB inférieur + RSI <30), vend suracheté (BB supérieur + RSI >70)"
-      },
-      "gridTrading": {
-        "title": "Grid Trading (Ordres à Niveaux Multiples)",
-        "description": "Place plusieurs ordres d'achat/vente à des niveaux de prix prédéterminés - profite des oscillations dans les marchés latéraux"
-      },
       "marketMaking": {
         "title": "Market Making (Capture du Spread)",
         "description": "Ordres simultanés d'achat et de vente pour capturer le spread - stratégie haute fréquence nécessitant spreads serrés et liquidité"

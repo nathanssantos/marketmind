@@ -236,6 +236,105 @@ export class ResultManager {
   }
 
   /**
+   * Save a walk-forward analysis result to disk
+   */
+  async saveWalkForward(
+    strategy: string,
+    symbol: string,
+    interval: string,
+    result: any
+  ): Promise<string> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `${strategy}_${symbol}_${interval}_wf_${timestamp}.json`;
+    const filepath = path.join(this.baseDir, 'walkforward', filename);
+
+    // Ensure directory exists
+    await fs.mkdir(path.join(this.baseDir, 'walkforward'), { recursive: true });
+
+    await fs.writeFile(filepath, JSON.stringify(result, null, 2), 'utf-8');
+
+    return filepath;
+  }
+
+  /**
+   * List all walk-forward results
+   */
+  async listWalkForward(): Promise<string[]> {
+    try {
+      const files = await fs.readdir(path.join(this.baseDir, 'walkforward'));
+      return files.filter(f => f.endsWith('.json')).map(f => path.join(this.baseDir, 'walkforward', f));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Save a Monte Carlo analysis result to disk
+   */
+  async saveMonteCarlo(
+    strategy: string,
+    symbol: string,
+    interval: string,
+    result: any
+  ): Promise<string> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `${strategy}_${symbol}_${interval}_mc_${timestamp}.json`;
+    const filepath = path.join(this.baseDir, 'montecarlo', filename);
+
+    // Ensure directory exists
+    await fs.mkdir(path.join(this.baseDir, 'montecarlo'), { recursive: true });
+
+    await fs.writeFile(filepath, JSON.stringify(result, null, 2), 'utf-8');
+
+    return filepath;
+  }
+
+  /**
+   * List all Monte Carlo results
+   */
+  async listMonteCarlo(): Promise<string[]> {
+    try {
+      const files = await fs.readdir(path.join(this.baseDir, 'montecarlo'));
+      return files.filter(f => f.endsWith('.json')).map(f => path.join(this.baseDir, 'montecarlo', f));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Save a sensitivity analysis result to disk
+   */
+  async saveSensitivity(
+    strategy: string,
+    symbol: string,
+    interval: string,
+    result: any
+  ): Promise<string> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `${strategy}_${symbol}_${interval}_sensitivity_${timestamp}.json`;
+    const filepath = path.join(this.baseDir, 'sensitivity', filename);
+
+    // Ensure directory exists
+    await fs.mkdir(path.join(this.baseDir, 'sensitivity'), { recursive: true });
+
+    await fs.writeFile(filepath, JSON.stringify(result, null, 2), 'utf-8');
+
+    return filepath;
+  }
+
+  /**
+   * List all sensitivity analysis results
+   */
+  async listSensitivity(): Promise<string[]> {
+    try {
+      const files = await fs.readdir(path.join(this.baseDir, 'sensitivity'));
+      return files.filter(f => f.endsWith('.json')).map(f => path.join(this.baseDir, 'sensitivity', f));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
    * Compare multiple results and generate comparison table
    */
   compareResults(results: Array<SavedBacktestResult | OptimizationSummary>): any {

@@ -1020,14 +1020,6 @@
         "title": "Liquidity Sweep (Smart Money Stop Hunt)",
         "description": "Detects false breakouts designed to trigger stop losses before reversing - classic institutional behavior pattern"
       },
-      "meanReversion": {
-        "title": "Mean Reversion (Bollinger Bands + RSI)",
-        "description": "Trades price extremes expecting return to average - buys oversold (BB lower + RSI <30), sells overbought (BB upper + RSI >70)"
-      },
-      "gridTrading": {
-        "title": "Grid Trading (Multi-Level Orders)",
-        "description": "Places multiple buy/sell orders at predetermined price levels - profits from price oscillations in ranging markets"
-      },
       "marketMaking": {
         "title": "Market Making (Bid-Ask Spread Capture)",
         "description": "Simultaneous buy and sell orders to capture spread - high frequency strategy requiring tight spreads and liquidity"

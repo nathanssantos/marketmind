@@ -6,8 +6,6 @@ import type {
   BacktestTrade,
 } from '@marketmind/types';
 import { PositionManager } from '../positionManagement/PositionManager';
-import { GridTradingDetector } from '../setupDetection/GridTradingDetector';
-import { MeanReversionDetector } from '../setupDetection/MeanReversionDetector';
 import { BacktestExecutor } from './BacktestExecutor';
 import { BacktestMetricsCalculator } from './BacktestMetricsCalculator';
 export class BacktestOrchestrator {
@@ -92,9 +90,10 @@ export class BacktestOrchestrator {
             config.minConfidence
           );
 
-          if (setupResult?.setup) {
+          // No setups will be detected as all algorithmic detectors were removed
+          if (setupResult) {
             const trade = this.executor.openPosition(
-              setupResult.setup,
+              setupResult,
               currentKline,
               equity,
               config
@@ -178,54 +177,16 @@ export class BacktestOrchestrator {
   }
 
   private initializeDetectors(_config: BacktestConfig) {
-    return {
-      meanReversion: new MeanReversionDetector({
-        enabled: true,
-        minConfidence: 70,
-        minRiskReward: 1.5,
-        bbPeriod: 20,
-        bbStdDev: 2,
-        rsiPeriod: 14,
-        rsiOversold: 30,
-        rsiOverbought: 70,
-        minVolume: 1.2,
-        maxHoldBars: 50,
-      }),
-      gridTrading: new GridTradingDetector({
-        enabled: true,
-        minConfidence: 70,
-        minRiskReward: 1.5,
-        emaPeriod: 50,
-        atrPeriod: 14,
-        gridLevels: 5,
-        gridSpacingATR: 2.0,
-        minGridSpacing: 0.5,
-        maxGridSpacing: 5.0,
-        requireRanging: true,
-        volumeThreshold: 1.0,
-      }),
-    };
+    return {};
   }
 
   private detectSetup(
-    detectors: ReturnType<typeof this.initializeDetectors>,
-    klines: Kline[],
-    setupTypes?: string[],
-    minConfidence?: number
+    _detectors: ReturnType<typeof this.initializeDetectors>,
+    _klines: Kline[],
+    _setupTypes?: string[],
+    _minConfidence?: number
   ) {
-    const enabledDetectors = setupTypes?.length
-      ? Object.entries(detectors).filter(([key, _config]) =>
-          setupTypes.includes(key.replace(/([A-Z])/g, '_$1').toUpperCase())
-        )
-      : Object.entries(detectors);
-
-    for (const [, detector] of enabledDetectors) {
-      const setup = detector.detect(klines, klines.length - 1);
-      if (setup && (!minConfidence || setup.confidence >= minConfidence)) {
-        return setup;
-      }
-    }
-
+    // No detectors available after removing meanReversion, gridTrading, and trendFollowing
     return null;
   }
 

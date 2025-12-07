@@ -1020,14 +1020,6 @@
         "title": "Barrido de Liquidez (Caza de Stops)",
         "description": "Detecta rupturas falsas diseñadas para activar stop losses antes de revertir - patrón clásico de comportamiento institucional"
       },
-      "meanReversion": {
-        "title": "Reversión a la Media (Bandas de Bollinger + RSI)",
-        "description": "Opera extremos de precio esperando retorno a la media - compra sobrevendido (BB inferior + RSI <30), vende sobrecomprado (BB superior + RSI >70)"
-      },
-      "gridTrading": {
-        "title": "Grid Trading (Órdenes en Múltiples Niveles)",
-        "description": "Coloca múltiples órdenes de compra/venta en niveles de precio predeterminados - ganancias por oscilaciones en mercados laterales"
-      },
       "marketMaking": {
         "title": "Market Making (Captura de Spread)",
         "description": "Órdenes simultáneas de compra y venta para capturar spread - estrategia de alta frecuencia que requiere spreads ajustados y liquidez"

@@ -25,6 +25,9 @@
     "backtest": "tsx src/cli/backtest-runner.ts",
     "backtest:validate": "tsx src/cli/backtest-runner.ts validate",
     "backtest:optimize": "tsx src/cli/backtest-runner.ts optimize",
+    "backtest:walkforward": "tsx src/cli/backtest-runner.ts walkforward",
+    "backtest:montecarlo": "tsx src/cli/backtest-runner.ts montecarlo",
+    "backtest:sensitivity": "tsx src/cli/backtest-runner.ts sensitivity",
     "backtest:compare": "tsx src/cli/backtest-runner.ts compare",
     "backtest:export": "tsx src/cli/backtest-runner.ts export"
   },

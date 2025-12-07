@@ -12,7 +12,10 @@ export type SetupType =
   | 'vwap-ema-cross'
   | 'divergence-reversal'
   | 'liquidity-sweep'
-  | 'market-structure-break';
+  | 'market-structure-break'
+  | 'mean-reversion'
+  | 'grid-trading'
+  | 'trend-following';
 
 export type SetupDirection = 'LONG' | 'SHORT';
 

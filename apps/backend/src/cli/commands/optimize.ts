@@ -7,6 +7,18 @@ import { ParameterGenerator } from '../../services/backtesting/ParameterGenerato
 import { fetchHistoricalKlinesFromAPI } from '../../services/binance-historical';
 import { BacktestLogger, LogLevel } from '../utils/logger';
 import { ResultManager } from '../../services/backtesting/ResultManager';
+import {
+  validateSymbol,
+  validateInterval,
+  validateDateRange,
+  validateStrategy,
+  validateCapital,
+  validatePercentage,
+  validateParameterGrid,
+  validateGridSearchSize,
+  validateParallelWorkers,
+  ValidationError,
+} from '../utils/validators';
 
 interface OptimizeOptions {
   strategy: string;
@@ -33,19 +45,31 @@ export async function optimizeCommand(options: OptimizeOptions) {
   const logger = new BacktestLogger(options.verbose ? LogLevel.VERBOSE : LogLevel.INFO);
 
   try {
+    // Validate all inputs
+    validateStrategy(options.strategy);
+    validateSymbol(options.symbol);
+    validateInterval(options.interval);
+    validateDateRange(options.start, options.end);
+    validateParameterGrid(options.param);
+    validateGridSearchSize(options.param);
+
+    const capital = validateCapital(options.capital);
+    const parallelWorkers = validateParallelWorkers(options.parallel);
+    const topN = validatePercentage(options.top, 'Top N', 1, 100);
+    const maxPosition = validatePercentage(options.maxPosition, 'Max position', 1, 100);
+    const commission = validatePercentage(options.commission, 'Commission', 0, 10);
+
+    // Validate optional parameters
+    let minConfidence: number | undefined;
+    if (options.minConfidence) {
+      minConfidence = validatePercentage(options.minConfidence, 'Min confidence', 0, 100);
+    }
+
     // Parse parameter grid from --param flags
     const parameterGrid: Record<string, number[]> = {};
 
-    if (!options.param || options.param.length === 0) {
-      throw new Error('No parameters specified. Use --param <name>=<values>');
-    }
-
     for (const paramStr of options.param) {
       const [name, valuesStr] = paramStr.split('=');
-      if (!name || !valuesStr) {
-        throw new Error(`Invalid parameter format: ${paramStr}. Use --param <name>=<values>`);
-      }
-
       parameterGrid[name] = ParameterGenerator.parseArray(valuesStr);
     }
 
@@ -53,8 +77,6 @@ export async function optimizeCommand(options: OptimizeOptions) {
     ParameterGenerator.validate(parameterGrid);
 
     const totalCombinations = ParameterGenerator.countCombinations(parameterGrid);
-    const parallelWorkers = parseInt(options.parallel);
-    const topN = parseInt(options.top);
 
     // Display header
     const paramSummary = Object.entries(parameterGrid)
@@ -76,17 +98,17 @@ export async function optimizeCommand(options: OptimizeOptions) {
       interval: options.interval,
       startDate: options.start,
       endDate: options.end,
-      initialCapital: parseFloat(options.capital),
+      initialCapital: capital,
       setupTypes: [options.strategy],
-      maxPositionSize: parseFloat(options.maxPosition),
-      commission: parseFloat(options.commission) / 100,
+      maxPositionSize: maxPosition,
+      commission: commission / 100,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
       onlyWithTrend: options.onlyWithTrend,
     };
 
     // Add minConfidence to base config if specified
-    if (options.minConfidence) {
-      baseConfig.minConfidence = parseFloat(options.minConfidence);
+    if (minConfidence !== undefined) {
+      baseConfig.minConfidence = minConfidence;
     }
 
     // Fetch historical data once (reuse for all backtests)
@@ -210,7 +232,10 @@ export async function optimizeCommand(options: OptimizeOptions) {
     console.log('');
 
   } catch (error) {
-    if (error instanceof Error) {
+    if (error instanceof ValidationError) {
+      logger.error(`Validation failed: ${error.message}`);
+      process.exit(1);
+    } else if (error instanceof Error) {
       logger.error(`Optimization failed: ${error.message}`);
       if (options.verbose) {
         console.error(error.stack);

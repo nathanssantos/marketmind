@@ -6,6 +6,9 @@ import { validateCommand } from './commands/validate';
 import { optimizeCommand } from './commands/optimize';
 import { compareCommand } from './commands/compare';
 import { exportCommand } from './commands/export';
+import { walkforwardCommand } from './commands/walkforward';
+import { montecarloCommand } from './commands/montecarlo';
+import { sensitivityCommand } from './commands/sensitivity';
 
 const program = new Command();
 
@@ -80,6 +83,74 @@ program
   .action((file, options) => {
     exportCommand(file, options);
   });
+
+// Walk-forward command
+program
+  .command('walkforward')
+  .description('Run walk-forward analysis to validate strategy robustness')
+  .requiredOption('-s, --strategy <type>', 'Strategy to test (e.g., setup91, setup92)')
+  .requiredOption('--symbol <symbol>', 'Trading symbol (e.g., BTCUSDT, ETHUSDT, SOLUSDT)')
+  .requiredOption('-i, --interval <interval>', 'Timeframe (e.g., 1h, 4h, 1d)')
+  .requiredOption('--start <date>', 'Start date (YYYY-MM-DD)')
+  .requiredOption('--end <date>', 'End date (YYYY-MM-DD)')
+  .requiredOption('--param <param>', 'Parameter to optimize (format: name=val1,val2,val3)', (value, previous) => {
+    return previous ? [...previous, value] : [value];
+  }, [] as string[])
+  .option('-c, --capital <amount>', 'Initial capital in USD', '1000')
+  .option('--min-confidence <level>', 'Minimum confidence level (0-100)')
+  .option('--max-position <percent>', 'Maximum position size as % of capital', '10')
+  .option('--commission <percent>', 'Trading commission percentage', '0.1')
+  .option('--use-algorithmic-levels', 'Use strategy\'s calculated SL/TP', false)
+  .option('--only-with-trend', 'Only trade setups aligned with EMA200 trend', true)
+  .option('--training-months <n>', 'Training window size in months', '6')
+  .option('--testing-months <n>', 'Testing window size in months', '2')
+  .option('--step-months <n>', 'Step size for moving windows in months', '2')
+  .option('-v, --verbose', 'Show detailed logs including all windows', false)
+  .action(walkforwardCommand);
+
+// Monte Carlo command
+program
+  .command('montecarlo')
+  .description('Run Monte Carlo simulation for statistical analysis')
+  .requiredOption('-s, --strategy <type>', 'Strategy to test (e.g., setup91, setup92)')
+  .requiredOption('--symbol <symbol>', 'Trading symbol (e.g., BTCUSDT, ETHUSDT, SOLUSDT)')
+  .requiredOption('-i, --interval <interval>', 'Timeframe (e.g., 1h, 4h, 1d)')
+  .requiredOption('--start <date>', 'Start date (YYYY-MM-DD)')
+  .requiredOption('--end <date>', 'End date (YYYY-MM-DD)')
+  .option('-c, --capital <amount>', 'Initial capital in USD', '1000')
+  .option('--stop-loss <percent>', 'Stop loss percentage', '2')
+  .option('--take-profit <percent>', 'Take profit percentage', '6')
+  .option('--min-confidence <level>', 'Minimum confidence level (0-100)', '70')
+  .option('--max-position <percent>', 'Maximum position size as % of capital', '10')
+  .option('--commission <percent>', 'Trading commission percentage', '0.1')
+  .option('--use-algorithmic-levels', 'Use strategy\'s calculated SL/TP', false)
+  .option('--only-with-trend', 'Only trade setups aligned with EMA200 trend', true)
+  .option('--simulations <n>', 'Number of Monte Carlo simulations (100-100000)', '1000')
+  .option('--confidence-level <level>', 'Confidence level (0.80-0.99)', '0.95')
+  .option('-v, --verbose', 'Show detailed logs', false)
+  .action(montecarloCommand);
+
+// Sensitivity command
+program
+  .command('sensitivity')
+  .description('Analyze parameter sensitivity to detect over-optimization')
+  .requiredOption('-s, --strategy <type>', 'Strategy to test (e.g., setup91, setup92)')
+  .requiredOption('--symbol <symbol>', 'Trading symbol (e.g., BTCUSDT, ETHUSDT, SOLUSDT)')
+  .requiredOption('-i, --interval <interval>', 'Timeframe (e.g., 1h, 4h, 1d)')
+  .requiredOption('--start <date>', 'Start date (YYYY-MM-DD)')
+  .requiredOption('--end <date>', 'End date (YYYY-MM-DD)')
+  .requiredOption('--param <param>', 'Parameter to analyze (format: name=val1,val2,val3)', (value, previous) => {
+    return previous ? [...previous, value] : [value];
+  }, [] as string[])
+  .option('-c, --capital <amount>', 'Initial capital in USD', '1000')
+  .option('--min-confidence <level>', 'Minimum confidence level (0-100)')
+  .option('--max-position <percent>', 'Maximum position size as % of capital', '10')
+  .option('--commission <percent>', 'Trading commission percentage', '0.1')
+  .option('--use-algorithmic-levels', 'Use strategy\'s calculated SL/TP', false)
+  .option('--only-with-trend', 'Only trade setups aligned with EMA200 trend', true)
+  .option('--metric <metric>', 'Metric to analyze (sharpeRatio, totalReturn, profitFactor, winRate)', 'sharpeRatio')
+  .option('-v, --verbose', 'Show detailed parameter-by-parameter results', false)
+  .action(sensitivityCommand);
 
 // Error handling
 program.exitOverride();
