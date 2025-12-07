@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import type {
   BacktestConfig,
   BacktestResult,
@@ -9,8 +9,14 @@ import { trpc } from '../utils/trpc';
 export const useBacktesting = () => {
   const utils = trpc.useUtils();
 
-  // Query: List all backtest results
-  const { data: backtests, isLoading: isLoadingBacktests } = trpc.backtest.list.useQuery();
+  // Track if we should fetch backtests (lazy loading)
+  const [shouldFetchBacktests, setShouldFetchBacktests] = useState(false);
+
+  // Query: List all backtest results - only fetch when explicitly requested
+  const { data: backtests, isLoading: isLoadingBacktests } = trpc.backtest.list.useQuery(
+    undefined,
+    { enabled: shouldFetchBacktests }
+  );
 
   // Mutation: Run backtest
   const runBacktestMutation = trpc.backtest.run.useMutation({
@@ -56,6 +62,11 @@ export const useBacktesting = () => {
     [deleteBacktestMutation]
   );
 
+  // Function: Load backtest history (lazy loading to avoid fetching on modal open)
+  const loadBacktestHistory = useCallback(() => {
+    setShouldFetchBacktests(true);
+  }, []);
+
   return {
     // Data
     backtests: (backtests ?? []) as BacktestSummary[],
@@ -69,6 +80,7 @@ export const useBacktesting = () => {
     runBacktest,
     getBacktestResult,
     deleteBacktest,
+    loadBacktestHistory,
 
     // Errors
     runBacktestError: runBacktestMutation.error,

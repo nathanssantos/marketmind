@@ -81,15 +81,33 @@ export class BacktestEngine {
           : defaultConfig;
       };
 
+      // Build setup config - apply strategyParams overrides and use relaxed minRiskReward for backtesting
+      // This allows the backtest to evaluate all setups and filter by actual trade results
+      const buildSetupConfig = (key: string, createDefault: () => any) => {
+        const defaults = createDefault();
+        const overrides = applyOverrides(key, defaults);
+        return {
+          ...overrides,
+          enabled: setupsToEnable.includes(key),
+          // Only override if config.minConfidence is explicitly set and higher than default
+          minConfidence: config.minConfidence && config.minConfidence > 0
+            ? Math.max(config.minConfidence, defaults.minConfidence)
+            : defaults.minConfidence,
+          // Use minRiskReward: 0 for backtesting to allow all setups through
+          // The actual RR is still calculated and used for SL/TP - this just removes the filter
+          minRiskReward: 0,
+        };
+      };
+
       const setupConfig: any = {
-        setup91: { ...applyOverrides('setup91', createDefault91Config()), enabled: setupsToEnable.includes('setup91'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        setup92: { ...applyOverrides('setup92', createDefault92Config()), enabled: setupsToEnable.includes('setup92'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        setup93: { ...applyOverrides('setup93', createDefault93Config()), enabled: setupsToEnable.includes('setup93'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        setup94: { ...applyOverrides('setup94', createDefault94Config()), enabled: setupsToEnable.includes('setup94'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        pattern123: { ...applyOverrides('pattern123', createDefault123Config()), enabled: setupsToEnable.includes('pattern123'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        bullTrap: { ...applyOverrides('bullTrap', createDefaultBullTrapConfig()), enabled: setupsToEnable.includes('bullTrap'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        bearTrap: { ...applyOverrides('bearTrap', createDefaultBearTrapConfig()), enabled: setupsToEnable.includes('bearTrap'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
-        breakoutRetest: { ...applyOverrides('breakoutRetest', createDefaultBreakoutRetestConfig()), enabled: setupsToEnable.includes('breakoutRetest'), minConfidence: config.minConfidence ?? 0, minRiskReward: 0 },
+        setup91: buildSetupConfig('setup91', createDefault91Config),
+        setup92: buildSetupConfig('setup92', createDefault92Config),
+        setup93: buildSetupConfig('setup93', createDefault93Config),
+        setup94: buildSetupConfig('setup94', createDefault94Config),
+        pattern123: buildSetupConfig('pattern123', createDefault123Config),
+        bullTrap: buildSetupConfig('bullTrap', createDefaultBullTrapConfig),
+        bearTrap: buildSetupConfig('bearTrap', createDefaultBearTrapConfig),
+        breakoutRetest: buildSetupConfig('breakoutRetest', createDefaultBreakoutRetestConfig),
       };
 
       console.log('[Backtest] Enabled setups:', Object.keys(setupConfig).filter(k => setupConfig[k].enabled));
@@ -172,7 +190,15 @@ export class BacktestEngine {
         (a: any, b: any) => a.openTime - b.openTime
       );
 
+      // Track open position to prevent overlapping trades
+      let currentPositionExitTime: number | null = null;
+
       for (const setup of sortedSetups) {
+        // Skip if we have an open position that hasn't exited yet
+        if (currentPositionExitTime !== null && setup.openTime < currentPositionExitTime) {
+          continue;
+        }
+
         const entryKline = klineMap.get(setup.openTime);
 
         if (!entryKline) {
@@ -343,6 +369,11 @@ export class BacktestEngine {
         };
 
         trades.push(trade);
+
+        // Track position exit time to prevent overlapping trades
+        if (exitTime) {
+          currentPositionExitTime = new Date(exitTime).getTime();
+        }
 
         // Update equity curve
         if (exitTime) {

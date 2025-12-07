@@ -1,18 +1,18 @@
 import { calculateATR, calculateEMA, findHighestSwingHigh, findLowestSwingLow } from '@marketmind/indicators';
-import type { Kline } from '@marketmind/types';
+import type { Kline, Setup94Config } from '@marketmind/types';
+import { createDefault94Config } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '../../utils/klineHelpers';
 import {
     BaseSetupDetector,
-    type SetupDetectorConfig,
     type SetupDetectorResult,
 } from './BaseSetupDetector';
 
-const DEFAULT_EMA_PERIOD = 9;
-const DEFAULT_ATR_PERIOD = 12;
-const ATR_STOP_MULTIPLIER = 2;
-const ATR_TARGET_MULTIPLIER = 4;
+// Re-export for consumers
+export type { Setup94Config };
+export { createDefault94Config };
+
+// Internal calculation constants
 const VOLUME_LOOKBACK = 20;
-const MIN_VOLUME_MULTIPLIER = 1.0;
 const EMA_LOOKBACK = 2;
 const BASE_CONFIDENCE = 55;
 const DISTANCE_CLOSE_THRESHOLD = 0.005;
@@ -28,14 +28,6 @@ const STOP_BUFFER_LONG = 0.998;
 const STOP_BUFFER_SHORT = 1.002;
 const LOOKBACK_TWO_PREV = 2;
 const LOOKBACK_THREE_PREV = 3;
-
-export interface Setup94Config extends SetupDetectorConfig {
-  emaPeriod: number;
-  atrPeriod: number;
-  atrStopMultiplier: number;
-  atrTargetMultiplier: number;
-  volumeMultiplier: number;
-}
 
 export class Setup94Detector extends BaseSetupDetector {
   private setup94Config: Setup94Config;
@@ -216,14 +208,3 @@ export class Setup94Detector extends BaseSetupDetector {
     return Math.min(confidence + boost, MAX_CONFIDENCE);
   }
 }
-
-export const createDefault94Config = (): Setup94Config => ({
-  enabled: false,
-  minConfidence: 70,
-  minRiskReward: 2.0,
-  emaPeriod: DEFAULT_EMA_PERIOD,
-  atrPeriod: DEFAULT_ATR_PERIOD,
-  atrStopMultiplier: ATR_STOP_MULTIPLIER,
-  atrTargetMultiplier: ATR_TARGET_MULTIPLIER,
-  volumeMultiplier: MIN_VOLUME_MULTIPLIER,
-});

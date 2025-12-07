@@ -1,5 +1,6 @@
 import { calculateEMA, findPivotPoints } from '@marketmind/indicators';
-import type { Kline } from '@marketmind/types';
+import type { Kline, BullTrapConfig } from '@marketmind/types';
+import { createDefaultBullTrapConfig } from '@marketmind/types';
 import {
     getKlineClose,
     getKlineLow,
@@ -8,14 +9,9 @@ import {
 import type { SetupDetectorResult } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';
 
-export interface BullTrapConfig {
-  enabled: boolean;
-  minConfidence: number;
-  minRiskReward: number;
-  volumeMultiplier: number;
-  lookbackPeriod: number;
-  emaPeriod: number;
-}
+// Re-export for consumers
+export type { BullTrapConfig };
+export { createDefaultBullTrapConfig };
 
 const MIN_HIGH_PIVOTS = 2;
 const MIN_TRAP_DISTANCE_PERCENT = 0.001;
@@ -23,12 +19,12 @@ const MAX_TRAP_DISTANCE_PERCENT = 0.02;
 const MIN_REVERSAL_STRENGTH = 0.5;
 const VOLUME_LOOKBACK = 20;
 const STOP_LOSS_BUFFER = 1.005;
-const DEFAULT_RR_MULTIPLIER = 2.0;
+const DEFAULT_RR_MULTIPLIER = 2.5;
 const SUPPORT_LOOKBACK = 50;
 const CLUSTER_THRESHOLD_PERCENT = 0.005;
 const MIN_CONFIDENCE_THRESHOLD = 70;
-const BASE_CONFIDENCE = 70;
-const REVERSAL_CONFIDENCE_WEIGHT = 20;
+const BASE_CONFIDENCE = 60;
+const REVERSAL_CONFIDENCE_WEIGHT = 15;
 const VOLUME_CONFIDENCE_BONUS = 10;
 const EMA_CONFIRMATION_BONUS = 10;
 const OPTIMAL_BREAKOUT_MIN = 0.001;
@@ -276,12 +272,3 @@ export class BullTrapDetector extends BaseSetupDetector {
     return Math.min(MAX_CONFIDENCE, Math.max(BASE_CONFIDENCE, totalConfidence));
   }
 }
-
-export const createDefaultBullTrapConfig = (): BullTrapConfig => ({
-  enabled: false,
-  minConfidence: 70,
-  minRiskReward: 2.0,
-  volumeMultiplier: 1.3,
-  lookbackPeriod: 20,
-  emaPeriod: 20,
-});

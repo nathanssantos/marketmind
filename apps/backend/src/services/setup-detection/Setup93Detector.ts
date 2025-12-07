@@ -1,21 +1,18 @@
 import { calculateATR, calculateEMA, findHighestSwingHigh, findLowestSwingLow } from '@marketmind/indicators';
-import type { Kline } from '@marketmind/types';
+import type { Kline, Setup93Config } from '@marketmind/types';
+import { createDefault93Config } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '../../utils/klineHelpers';
 import {
     BaseSetupDetector,
-    type SetupDetectorConfig,
     type SetupDetectorResult,
 } from './BaseSetupDetector';
 
-// Optimized values from backtesting (Jan-Dec 2024)
-// PnL: +4.45%, Profit Factor: 1.09, Sharpe: 0.49
-// Note: Marginally profitable - consider additional filters
-const DEFAULT_EMA_PERIOD = 12;
-const DEFAULT_ATR_PERIOD = 16;
-const ATR_STOP_MULTIPLIER = 2;
-const ATR_TARGET_MULTIPLIER = 4;
+// Re-export for consumers
+export type { Setup93Config };
+export { createDefault93Config };
+
+// Internal calculation constants
 const VOLUME_LOOKBACK = 20;
-const MIN_VOLUME_MULTIPLIER = 1.0;
 const BASE_CONFIDENCE = 60;
 const DISTANCE_CLOSE_THRESHOLD = 0.005;
 const DISTANCE_NEAR_THRESHOLD = 0.01;
@@ -31,14 +28,6 @@ const STOP_BUFFER_LONG = 0.998;
 const STOP_BUFFER_SHORT = 1.002;
 const LOOKBACK_PREV2 = 2;
 const LOOKBACK_REFERENCE = 3;
-
-export interface Setup93Config extends SetupDetectorConfig {
-  emaPeriod: number;
-  atrPeriod: number;
-  atrStopMultiplier: number;
-  atrTargetMultiplier: number;
-  volumeMultiplier: number;
-}
 
 export class Setup93Detector extends BaseSetupDetector {
   private setup93Config: Setup93Config;
@@ -219,14 +208,3 @@ export class Setup93Detector extends BaseSetupDetector {
     return Math.min(confidence + boost, MAX_CONFIDENCE);
   }
 }
-
-export const createDefault93Config = (): Setup93Config => ({
-  enabled: false,
-  minConfidence: 70,
-  minRiskReward: 2.0,
-  emaPeriod: DEFAULT_EMA_PERIOD,
-  atrPeriod: DEFAULT_ATR_PERIOD,
-  atrStopMultiplier: ATR_STOP_MULTIPLIER,
-  atrTargetMultiplier: ATR_TARGET_MULTIPLIER,
-  volumeMultiplier: MIN_VOLUME_MULTIPLIER,
-});
