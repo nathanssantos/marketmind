@@ -276,6 +276,7 @@
       "chartType": "Tipo de Gráfico",
       "klineChart": "Gráfico de Velas",
       "lineChart": "Gráfico de Línea",
+      "newWindow": "Abrir Gráfico en Nueva Ventana",
       "display": "Visualización",
       "volume": "Volumen",
       "stochastic": "Estocástico",

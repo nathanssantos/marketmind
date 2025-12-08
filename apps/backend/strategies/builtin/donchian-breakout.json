@@ -1,0 +1,101 @@
+{
+  "id": "donchian-breakout",
+  "name": "Donchian Channel Breakout",
+  "version": "1.0.0",
+  "description": "Classic breakout strategy using Donchian Channels. Long when price breaks above upper channel, short when price breaks below lower channel. Filtered by ADX for trending markets.",
+  "author": "MarketMind",
+  "tags": ["breakout", "donchian", "trend-following", "adx"],
+
+  "status": "unprofitable",
+  "optimizedParams": {
+    "maxPositionSize": 50,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": true,
+    "minConfidence": 60,
+    "commission": 0.1
+  },
+  "backtestSummary": {
+    "profitFactor": 0.40,
+    "winRate": 33.33,
+    "totalTrades": 6,
+    "netPnlPercent": -8.77,
+    "testedAt": "2025-12-07",
+    "testedTimeframe": "4h",
+    "testedSymbol": "BTCUSDT"
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": ["4h"],
+    "avoid": ["1m", "5m", "15m"],
+    "notes": "Donchian breakout works best on daily for trend confirmation"
+  },
+
+  "parameters": {
+    "donchianPeriod": { "default": 20, "min": 10, "max": 50, "step": 5, "description": "Donchian Channel period" },
+    "adxPeriod": { "default": 14, "min": 10, "max": 20, "step": 2, "description": "ADX period" },
+    "adxThreshold": { "default": 20, "min": 15, "max": 35, "step": 5, "description": "Minimum ADX for trend confirmation" },
+    "atrMultiplier": { "default": 2, "min": 1, "max": 3, "step": 0.5, "description": "ATR multiplier for stop loss" },
+    "rrMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "Risk-reward multiplier" }
+  },
+
+  "indicators": {
+    "donchian": {
+      "type": "donchian",
+      "params": { "period": "$donchianPeriod" }
+    },
+    "adx": {
+      "type": "adx",
+      "params": { "period": "$adxPeriod" }
+    },
+    "atr": {
+      "type": "atr",
+      "params": { "period": 14 }
+    }
+  },
+
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "high", "op": ">", "right": "donchian.upper.prev" },
+        { "left": "close", "op": ">", "right": "donchian.middle" },
+        { "left": "adx.adx", "op": ">", "right": "$adxThreshold" }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "low", "op": "<", "right": "donchian.lower.prev" },
+        { "left": "close", "op": "<", "right": "donchian.middle" },
+        { "left": "adx.adx", "op": ">", "right": "$adxThreshold" }
+      ]
+    }
+  },
+
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$rrMultiplier"
+    }
+  },
+
+  "confidence": {
+    "base": 60,
+    "bonuses": [
+      { "condition": { "left": "adx.adx", "op": ">", "right": 30 }, "bonus": 10, "description": "Strong trend (ADX > 30)" },
+      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume above average" },
+      { "condition": { "left": "adx.plusDI", "op": ">", "right": "adx.minusDI" }, "bonus": 5, "description": "Bullish DI alignment (for longs)" }
+    ],
+    "max": 90
+  },
+
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 1.5
+  }
+}

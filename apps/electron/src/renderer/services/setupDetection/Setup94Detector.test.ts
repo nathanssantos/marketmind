@@ -35,10 +35,10 @@ describe('Setup94Detector', () => {
       expect(config.minConfidence).toBe(70);
       expect(config.minRiskReward).toBe(2.0);
       expect(config.emaPeriod).toBe(9);
-      expect(config.atrPeriod).toBe(12);
-      expect(config.atrStopMultiplier).toBe(2);
-      expect(config.atrTargetMultiplier).toBe(4);
-      expect(config.volumeMultiplier).toBe(1.0);
+      expect(config.atrPeriod).toBe(14);
+      expect(config.atrStopMultiplier).toBe(1.5);
+      expect(config.atrTargetMultiplier).toBe(2.5);
+      expect(config.volumeMultiplier).toBe(1.2);
     });
   });
 

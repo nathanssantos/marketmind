@@ -19,11 +19,13 @@ import {
   LuLightbulb,
   LuMessageSquare,
   LuNewspaper,
+  LuPlus,
   LuRadar,
   LuRuler,
   LuScan,
   LuTarget
 } from 'react-icons/lu';
+import { useChartWindows } from '../../hooks/useChartWindows';
 import type { MarketDataService } from '../../services/market/MarketDataService';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
@@ -51,6 +53,9 @@ export interface ToolbarProps {
   isChatOpen: boolean;
   isNewsOpen: boolean;
   isBacktestOpen: boolean;
+  showNewWindowButton?: boolean;
+  showSidebarButtons?: boolean;
+  hideTopOffset?: boolean;
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
   onChartTypeChange: (type: 'kline' | 'line') => void;
@@ -90,6 +95,9 @@ export const Toolbar = memo(({
   isChatOpen,
   isNewsOpen,
   isBacktestOpen,
+  showNewWindowButton = true,
+  showSidebarButtons = true,
+  hideTopOffset = false,
   onSymbolChange,
   onTimeframeChange,
   onChartTypeChange,
@@ -111,6 +119,7 @@ export const Toolbar = memo(({
 }: ToolbarProps) => {
   const { t } = useTranslation();
   const toast = useToast();
+  const { openChartWindow } = useChartWindows();
   const algorithmicDetectionSettings = useUIStore((state) => state.algorithmicDetectionSettings);
   const setAlgorithmicDetectionSettings = useUIStore((state) => state.setAlgorithmicDetectionSettings);
   const patternConfig = usePatternDetectionConfigStore((state) => state.config);
@@ -123,6 +132,10 @@ export const Toolbar = memo(({
   const isPatternDetectionActive = algorithmicDetectionSettings.autoDisplayPatterns;
   const isExtensionsActive = patternConfig.showExtensions;
   const isSetupDetectionActive = setupConfig.setup91.enabled || setupConfig.pattern123.enabled;
+
+  const handleOpenNewWindow = (): void => {
+    void openChartWindow(symbol);
+  };
 
   const togglePatternDetection = (): void => {
     setAlgorithmicDetectionSettings({
@@ -177,7 +190,7 @@ export const Toolbar = memo(({
   return (
     <Flex
       position="fixed"
-      top="48px"
+      top={hideTopOffset ? 0 : "48px"}
       left={0}
       right={0}
       height="48px"
@@ -211,6 +224,24 @@ export const Toolbar = memo(({
           onChange={onSymbolChange}
         />
       </Box>
+
+      {showNewWindowButton && (
+        <>
+          <Box w="1px" h="32px" bg="border" flexShrink={0} />
+
+          <TooltipWrapper label={t('chart.controls.newWindow')} showArrow>
+            <IconButton
+              size="2xs"
+              aria-label={t('chart.controls.newWindow')}
+              onClick={handleOpenNewWindow}
+              colorPalette="blue"
+              variant="ghost"
+            >
+              <LuPlus />
+            </IconButton>
+          </TooltipWrapper>
+        </>
+      )}
 
       <Box w="1px" h="32px" bg="border" flexShrink={0} />
 
@@ -457,41 +488,43 @@ export const Toolbar = memo(({
 
       <Box flex={1} />
 
-      <Flex gap={1} align="center" flexShrink={0}>
-        <TooltipWrapper label={t('news.title')} showArrow>
-          <IconButton
-            size="2xs"
-            aria-label={t('news.title')}
-            onClick={onToggleNews}
-            colorPalette={isNewsOpen ? 'blue' : 'gray'}
-            variant={isNewsOpen ? 'solid' : 'ghost'}
-          >
-            <LuNewspaper />
-          </IconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('common.openChat')} showArrow>
-          <IconButton
-            size="2xs"
-            aria-label={t('common.openChat')}
-            onClick={onToggleChat}
-            colorPalette={isChatOpen ? 'blue' : 'gray'}
-            variant={isChatOpen ? 'solid' : 'ghost'}
-          >
-            <LuMessageSquare />
-          </IconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
-          <IconButton
-            size="2xs"
-            aria-label={t('trading.sidebar.title')}
-            onClick={onToggleTrading}
-            colorPalette={isTradingOpen ? 'green' : 'gray'}
-            variant={isTradingOpen ? 'solid' : 'ghost'}
-          >
-            <LuDollarSign />
-          </IconButton>
-        </TooltipWrapper>
-      </Flex>
+      {showSidebarButtons && (
+        <Flex gap={1} align="center" flexShrink={0}>
+          <TooltipWrapper label={t('news.title')} showArrow>
+            <IconButton
+              size="2xs"
+              aria-label={t('news.title')}
+              onClick={onToggleNews}
+              colorPalette={isNewsOpen ? 'blue' : 'gray'}
+              variant={isNewsOpen ? 'solid' : 'ghost'}
+            >
+              <LuNewspaper />
+            </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label={t('common.openChat')} showArrow>
+            <IconButton
+              size="2xs"
+              aria-label={t('common.openChat')}
+              onClick={onToggleChat}
+              colorPalette={isChatOpen ? 'blue' : 'gray'}
+              variant={isChatOpen ? 'solid' : 'ghost'}
+            >
+              <LuMessageSquare />
+            </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
+            <IconButton
+              size="2xs"
+              aria-label={t('trading.sidebar.title')}
+              onClick={onToggleTrading}
+              colorPalette={isTradingOpen ? 'green' : 'gray'}
+              variant={isTradingOpen ? 'solid' : 'ghost'}
+            >
+              <LuDollarSign />
+            </IconButton>
+          </TooltipWrapper>
+        </Flex>
+      )}
     </Flex>
   );
 });

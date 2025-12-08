@@ -265,6 +265,7 @@
       "chartType": "Type de Graphique",
       "klineChart": "Graphique en Chandeliers",
       "lineChart": "Graphique Linéaire",
+      "newWindow": "Ouvrir le Graphique dans une Nouvelle Fenêtre",
       "display": "Affichage",
       "volume": "Volume",
       "stochastic": "Stochastique",

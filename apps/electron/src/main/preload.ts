@@ -1,6 +1,4 @@
-import type { AIMessage, AIPatternData, AIProviderType, AITrade, AITradingConfig, AITradingStats } from '@marketmind/types';
-import type { TradingFees } from '@marketmind/types';
-import type { Order, Wallet } from '@marketmind/types';
+import type { AIMessage, AIPatternData, AIProviderType, AITrade, AITradingConfig, AITradingStats, Order, TradingFees, Wallet } from '@marketmind/types';
 import { contextBridge, ipcRenderer } from 'electron';
 
 type AIProvider = 'openai' | 'anthropic' | 'gemini';
@@ -98,6 +96,11 @@ interface NotificationOptions {
 interface NotificationAPI {
   show: (options: NotificationOptions) => Promise<{ success: boolean; error?: string }>;
   isSupported: () => Promise<boolean>;
+}
+
+interface WindowAPI {
+  openChart: (symbol?: string) => Promise<{ success: boolean; windowId?: number; error?: string }>;
+  getChartWindows: () => Promise<number[]>;
 }
 
 interface UpdateAPI {
@@ -279,6 +282,16 @@ const API = {
       return await ipcRenderer.invoke('notification:isSupported');
     },
   } as NotificationAPI,
+
+  window: {
+    openChart: async (symbol?: string) => {
+      return await ipcRenderer.invoke('window:openChart', symbol);
+    },
+
+    getChartWindows: async () => {
+      return await ipcRenderer.invoke('window:getChartWindows');
+    },
+  } as WindowAPI,
 } as const;
 
 contextBridge.exposeInMainWorld('electron', API);

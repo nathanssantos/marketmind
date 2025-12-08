@@ -6,6 +6,30 @@
   "author": "MarketMind",
   "tags": ["reversal", "rsi", "oversold", "momentum"],
 
+  "status": "unprofitable",
+  "optimizedParams": {
+    "maxPositionSize": 60,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": false,
+    "minConfidence": 60,
+    "commission": 0.1
+  },
+  "backtestSummary": {
+    "profitFactor": 0.85,
+    "winRate": 41.67,
+    "totalTrades": 12,
+    "netPnlPercent": -1.65,
+    "testedAt": "2025-12-07",
+    "testedTimeframe": "1d",
+    "testedSymbol": "BTCUSDT"
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": ["4h"],
+    "avoid": ["1m", "5m", "15m"],
+    "notes": "RSI oversold bounce works best on daily for mean-reversion"
+  },
+
   "parameters": {
     "rsiPeriod": { "default": 14, "min": 7, "max": 21, "step": 1, "description": "Período do RSI" },
     "oversoldLevel": { "default": 30, "min": 20, "max": 35, "step": 5, "description": "Nível de oversold" },
@@ -32,7 +56,8 @@
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "rsi", "op": "crossover", "right": "$oversoldLevel" }
+        { "left": "rsi.prev", "op": "<", "right": "$oversoldLevel" },
+        { "left": "rsi", "op": ">=", "right": "$oversoldLevel" }
       ]
     }
   },

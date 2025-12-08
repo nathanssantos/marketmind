@@ -1,14 +1,46 @@
-import type { BacktestConfig, BacktestResult, Interval } from '@marketmind/types';
+import type { BacktestConfig, BacktestResult, Interval, StrategyDefinition, OptimizedBacktestParams } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { randomBytes } from 'crypto';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { fetchHistoricalKlinesFromAPI } from '../binance-historical';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
+import { StrategyLoader } from '../setup-detection/dynamic';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const generateId = (length: number): string => {
   return randomBytes(length).toString('base64url').slice(0, length);
 };
 
 export class BacktestEngine {
+  /**
+   * Merge optimizedParams from multiple strategies.
+   * When multiple strategies are tested together:
+   * - Uses the most conservative (lowest) maxPositionSize
+   * - onlyWithTrend is true if ANY strategy requires it
+   * - useAlgorithmicLevels is true if ANY strategy uses it
+   * - minConfidence is the highest of all strategies
+   * - commission uses the highest value
+   */
+  private mergeOptimizedParams(strategies: StrategyDefinition[]): OptimizedBacktestParams | null {
+    const strategiesWithParams = strategies.filter(s => s.optimizedParams);
+    if (strategiesWithParams.length === 0) return null;
+
+    const allParams = strategiesWithParams.map(s => s.optimizedParams!);
+
+    return {
+      maxPositionSize: Math.min(...allParams.map(p => p.maxPositionSize)),
+      useAlgorithmicLevels: allParams.some(p => p.useAlgorithmicLevels),
+      onlyWithTrend: allParams.some(p => p.onlyWithTrend),
+      minConfidence: Math.max(...allParams.map(p => p.minConfidence ?? 0)) || undefined,
+      commission: Math.max(...allParams.map(p => p.commission ?? 0.1)),
+      stopLossPercent: allParams[0]?.stopLossPercent,
+      takeProfitPercent: allParams[0]?.takeProfitPercent,
+    };
+  }
+
   /**
    * Run a backtest with the given configuration
    * @param config Backtest configuration
@@ -49,10 +81,15 @@ export class BacktestEngine {
 
       console.log('[Backtest] Sample kline:', historicalKlines[0]);
 
-      // 2. Setup detection configuration - only profitable setups (pattern123, bearTrap, meanReversion)
+      // 2. Setup detection configuration
       const setupsToEnable = config.setupTypes?.length ? config.setupTypes : [
         'pattern123', 'bearTrap', 'meanReversion'
       ];
+
+      // Legacy strategy IDs
+      const legacyStrategies = ['pattern123', 'bearTrap', 'meanReversion'];
+      const requestedLegacy = setupsToEnable.filter(s => legacyStrategies.includes(s));
+      const requestedDynamic = setupsToEnable.filter(s => !legacyStrategies.includes(s));
 
       // Import default configs from individual files
       const { createDefault123Config } = await import('../setup-detection/Pattern123Detector');
@@ -60,35 +97,23 @@ export class BacktestEngine {
       const { createDefaultMeanReversionConfig } = await import('../setup-detection/MeanReversionDetector');
 
       // Create setup config with defaults + relaxed settings for backtesting
-      // Apply strategyParams overrides to matching enabled strategies (for parameter optimization)
       const strategyOverrides = config.strategyParams || {};
 
-      // Helper to apply overrides to the currently enabled strategy
       const applyOverrides = (strategyKey: string, defaultConfig: any) => {
-        // Apply strategyOverrides if this strategy is the only one enabled
-        // OR if it's one of the enabled strategies and we have overrides
         const isEnabledStrategy = setupsToEnable.includes(strategyKey);
         const shouldApplyOverrides = isEnabledStrategy && Object.keys(strategyOverrides).length > 0;
-
-        return shouldApplyOverrides
-          ? { ...defaultConfig, ...strategyOverrides }
-          : defaultConfig;
+        return shouldApplyOverrides ? { ...defaultConfig, ...strategyOverrides } : defaultConfig;
       };
 
-      // Build setup config - apply strategyParams overrides and use relaxed minRiskReward for backtesting
-      // This allows the backtest to evaluate all setups and filter by actual trade results
       const buildSetupConfig = (key: string, createDefault: () => any) => {
         const defaults = createDefault();
         const overrides = applyOverrides(key, defaults);
         return {
           ...overrides,
-          enabled: setupsToEnable.includes(key),
-          // Only override if config.minConfidence is explicitly set and higher than default
+          enabled: requestedLegacy.includes(key),
           minConfidence: config.minConfidence && config.minConfidence > 0
             ? Math.max(config.minConfidence, defaults.minConfidence)
             : defaults.minConfidence,
-          // Use minRiskReward: 0 for backtesting to allow all setups through
-          // The actual RR is still calculated and used for SL/TP - this just removes the filter
           minRiskReward: 0,
         };
       };
@@ -97,17 +122,55 @@ export class BacktestEngine {
         pattern123: buildSetupConfig('pattern123', createDefault123Config),
         bearTrap: buildSetupConfig('bearTrap', createDefaultBearTrapConfig),
         meanReversion: buildSetupConfig('meanReversion', createDefaultMeanReversionConfig),
+        enableLegacyDetectors: requestedLegacy.length > 0,
       };
 
-      console.log('[Backtest] Enabled setups:', Object.keys(setupConfig).filter(k => setupConfig[k].enabled));
-
-      // DEBUG: Verify strategyParams are being applied
-      const enabledStrategies = Object.keys(setupConfig).filter(k => setupConfig[k].enabled);
-      enabledStrategies.forEach(key => {
-        console.log(`[Backtest] ${key} config:`, JSON.stringify(setupConfig[key], null, 2));
-      });
+      console.log('[Backtest] Legacy setups:', requestedLegacy);
+      console.log('[Backtest] Dynamic setups:', requestedDynamic);
 
       const setupDetectionService = new SetupDetectionService(setupConfig);
+
+      // Load dynamic strategies if requested
+      let loadedStrategies: StrategyDefinition[] = [];
+      if (requestedDynamic.length > 0) {
+        const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
+        const loader = new StrategyLoader([strategiesDir]);
+        const allStrategies = await loader.loadAll({ includeUnprofitable: true });
+
+        for (const strategyDef of allStrategies) {
+          if (requestedDynamic.includes(strategyDef.id)) {
+            setupDetectionService.loadStrategy(strategyDef, strategyOverrides);
+            loadedStrategies.push(strategyDef);
+            console.log(`[Backtest] Loaded dynamic strategy: ${strategyDef.id}`);
+          }
+        }
+      }
+
+      // Apply optimizedParams from strategy definitions if useOptimizedSettings is enabled
+      let effectiveConfig = { ...config };
+      if (config.useOptimizedSettings && loadedStrategies.length > 0) {
+        const mergedParams = this.mergeOptimizedParams(loadedStrategies);
+        if (mergedParams) {
+          effectiveConfig = {
+            ...effectiveConfig,
+            maxPositionSize: mergedParams.maxPositionSize ?? effectiveConfig.maxPositionSize,
+            useAlgorithmicLevels: mergedParams.useAlgorithmicLevels ?? effectiveConfig.useAlgorithmicLevels,
+            onlyWithTrend: mergedParams.onlyWithTrend ?? effectiveConfig.onlyWithTrend,
+            minConfidence: mergedParams.minConfidence ?? effectiveConfig.minConfidence,
+            commission: mergedParams.commission !== undefined ? mergedParams.commission / 100 : effectiveConfig.commission,
+            stopLossPercent: mergedParams.stopLossPercent ?? effectiveConfig.stopLossPercent,
+            takeProfitPercent: mergedParams.takeProfitPercent ?? effectiveConfig.takeProfitPercent,
+          };
+          console.log('[Backtest] Applied optimizedParams from strategy:', mergedParams);
+          console.log('[Backtest] Effective config:', {
+            maxPositionSize: effectiveConfig.maxPositionSize,
+            useAlgorithmicLevels: effectiveConfig.useAlgorithmicLevels,
+            onlyWithTrend: effectiveConfig.onlyWithTrend,
+            minConfidence: effectiveConfig.minConfidence,
+            commission: effectiveConfig.commission,
+          });
+        }
+      }
 
       // 3. Detect setups
       let detectedSetups: any[] = [];
@@ -141,11 +204,11 @@ export class BacktestEngine {
       }
 
       // Filter by minimum confidence if specified
-      const tradableSetups = config.minConfidence && config.minConfidence > 0
-        ? detectedSetups.filter((s: any) => s.confidence >= config.minConfidence!)
+      const tradableSetups = effectiveConfig.minConfidence && effectiveConfig.minConfidence > 0
+        ? detectedSetups.filter((s: any) => s.confidence >= effectiveConfig.minConfidence!)
         : detectedSetups;
 
-      console.log('[Backtest] Filtered to', tradableSetups.length, 'tradable setups by confidence', config.minConfidence ? `(min: ${config.minConfidence}%)` : '(no filter)');
+      console.log('[Backtest] Filtered to', tradableSetups.length, 'tradable setups by confidence', effectiveConfig.minConfidence ? `(min: ${effectiveConfig.minConfidence}%)` : '(no filter)');
 
       // 4. Simulate trading
       const trades: any[] = [];
@@ -169,7 +232,7 @@ export class BacktestEngine {
 
       // Calculate EMA200 for trend detection if enabled
       let ema200: (number | null)[] = [];
-      if (config.onlyWithTrend) {
+      if (effectiveConfig.onlyWithTrend) {
         const { calculateEMA } = await import('@marketmind/indicators');
         ema200 = calculateEMA(historicalKlines, 200);
       }
@@ -198,7 +261,7 @@ export class BacktestEngine {
         const entryPrice = parseFloat(entryKline.close);
 
         // Filter by trend if enabled
-        if (config.onlyWithTrend && ema200.length > 0) {
+        if (effectiveConfig.onlyWithTrend && ema200.length > 0) {
           const setupIndex = historicalKlines.findIndex(k => k.openTime === setup.openTime);
           const ema200Value = ema200[setupIndex];
 
@@ -217,7 +280,7 @@ export class BacktestEngine {
           }
         }
 
-        const positionSize = (equity * ((config.maxPositionSize ?? 10) / 100)) / entryPrice;
+        const positionSize = (equity * ((effectiveConfig.maxPositionSize ?? 10) / 100)) / entryPrice;
         const positionValue = positionSize * entryPrice;
 
         // Ensure position value meets minimum
@@ -227,36 +290,36 @@ export class BacktestEngine {
         }
 
         // Calculate SL/TP
-        const stopLoss = config.useAlgorithmicLevels && setup.stopLoss
+        const stopLoss = effectiveConfig.useAlgorithmicLevels && setup.stopLoss
           ? setup.stopLoss
-          : config.stopLossPercent
+          : effectiveConfig.stopLossPercent
           ? setup.direction === 'LONG'
-            ? entryPrice * (1 - config.stopLossPercent / 100)
-            : entryPrice * (1 + config.stopLossPercent / 100)
+            ? entryPrice * (1 - effectiveConfig.stopLossPercent / 100)
+            : entryPrice * (1 + effectiveConfig.stopLossPercent / 100)
           : undefined;
 
-        const takeProfit = config.useAlgorithmicLevels && setup.takeProfit
+        const takeProfit = effectiveConfig.useAlgorithmicLevels && setup.takeProfit
           ? setup.takeProfit
-          : config.takeProfitPercent
+          : effectiveConfig.takeProfitPercent
           ? setup.direction === 'LONG'
-            ? entryPrice * (1 + config.takeProfitPercent / 100)
-            : entryPrice * (1 - config.takeProfitPercent / 100)
+            ? entryPrice * (1 + effectiveConfig.takeProfitPercent / 100)
+            : entryPrice * (1 - effectiveConfig.takeProfitPercent / 100)
           : undefined;
 
         // Filter by minimum expected profit after fees
-        if (config.minProfitPercent && takeProfit) {
+        if (effectiveConfig.minProfitPercent && takeProfit) {
           const expectedProfitPercent = setup.direction === 'LONG'
             ? ((takeProfit - entryPrice) / entryPrice) * 100
             : ((entryPrice - takeProfit) / entryPrice) * 100;
 
-          const profitAfterFees = expectedProfitPercent - ((config.commission ?? 0.001) * 200);
+          const profitAfterFees = expectedProfitPercent - ((effectiveConfig.commission ?? 0.001) * 200);
 
-          if (profitAfterFees < config.minProfitPercent) {
+          if (profitAfterFees < effectiveConfig.minProfitPercent) {
             console.warn(
               '[Backtest] Skipping setup - expected profit after fees',
               `${profitAfterFees.toFixed(2)}%`,
               'is below minimum',
-              `${config.minProfitPercent}%`
+              `${effectiveConfig.minProfitPercent}%`
             );
             continue;
           }
@@ -274,31 +337,42 @@ export class BacktestEngine {
         for (const futureKline of futureKlines) {
           const high = parseFloat(futureKline.high);
           const low = parseFloat(futureKline.low);
+          const open = parseFloat(futureKline.open);
+          const close = parseFloat(futureKline.close);
 
-          // Check stop loss
-          if (stopLoss) {
-            if (
-              (setup.direction === 'LONG' && low <= stopLoss) ||
-              (setup.direction === 'SHORT' && high >= stopLoss)
-            ) {
-              exitPrice = stopLoss;
-              exitTime = new Date(futureKline.openTime).toISOString();
-              exitReason = 'STOP_LOSS';
-              break;
-            }
-          }
+          // Check if both SL and TP could be hit in same candle
+          const slHit = stopLoss && (
+            (setup.direction === 'LONG' && low <= stopLoss) ||
+            (setup.direction === 'SHORT' && high >= stopLoss)
+          );
+          const tpHit = takeProfit && (
+            (setup.direction === 'LONG' && high >= takeProfit) ||
+            (setup.direction === 'SHORT' && low <= takeProfit)
+          );
 
-          // Check take profit
-          if (takeProfit) {
-            if (
-              (setup.direction === 'LONG' && high >= takeProfit) ||
-              (setup.direction === 'SHORT' && low <= takeProfit)
-            ) {
-              exitPrice = takeProfit;
-              exitTime = new Date(futureKline.openTime).toISOString();
-              exitReason = 'TAKE_PROFIT';
-              break;
+          if (slHit && tpHit) {
+            // Both hit in same candle - use candle direction as heuristic
+            // If candle closed in favorable direction, assume TP hit first
+            const isBullishCandle = close > open;
+            if (setup.direction === 'LONG') {
+              exitReason = isBullishCandle ? 'TAKE_PROFIT' : 'STOP_LOSS';
+              exitPrice = isBullishCandle ? takeProfit : stopLoss;
+            } else {
+              exitReason = isBullishCandle ? 'STOP_LOSS' : 'TAKE_PROFIT';
+              exitPrice = isBullishCandle ? stopLoss : takeProfit;
             }
+            exitTime = new Date(futureKline.openTime).toISOString();
+            break;
+          } else if (slHit) {
+            exitPrice = stopLoss;
+            exitTime = new Date(futureKline.openTime).toISOString();
+            exitReason = 'STOP_LOSS';
+            break;
+          } else if (tpHit) {
+            exitPrice = takeProfit;
+            exitTime = new Date(futureKline.openTime).toISOString();
+            exitReason = 'TAKE_PROFIT';
+            break;
           }
         }
 
@@ -310,6 +384,17 @@ export class BacktestEngine {
           exitReason = 'END_OF_PERIOD';
         }
 
+        // Apply slippage for stop loss exits (market orders)
+        // Take profit is assumed to be limit order (no slippage)
+        if (exitReason === 'STOP_LOSS') {
+          const slippagePercent = effectiveConfig.slippagePercent ?? 0.05; // 0.05% default
+          const slippageAmount = exitPrice * (slippagePercent / 100);
+          // Slippage is unfavorable: LONG exits lower, SHORT exits higher
+          exitPrice = setup.direction === 'LONG'
+            ? exitPrice - slippageAmount
+            : exitPrice + slippageAmount;
+        }
+
         // Calculate PnL
         const priceDiff =
           setup.direction === 'LONG'
@@ -317,7 +402,11 @@ export class BacktestEngine {
             : entryPrice - exitPrice;
 
         const pnl = priceDiff * positionSize;
-        const commission = positionValue * (config.commission ?? 0.001) * 2; // Entry + Exit
+        // Calculate commission correctly: entry fee + exit fee (based on actual prices)
+        const commissionRate = effectiveConfig.commission ?? 0.001;
+        const entryCommission = positionSize * entryPrice * commissionRate;
+        const exitCommission = positionSize * exitPrice * commissionRate;
+        const commission = entryCommission + exitCommission;
         const netPnl = pnl - commission;
         const pnlPercent = (netPnl / positionValue) * 100;
 
@@ -376,16 +465,22 @@ export class BacktestEngine {
       }
 
       // 5. Calculate metrics
-      const winningTrades = trades.filter((t) => (t.netPnl ?? 0) > 0);
-      const losingTrades = trades.filter((t) => (t.netPnl ?? 0) < 0);
+      // Use gross PnL (before fees) for win/loss classification
+      // This reflects actual trade quality - fees are a separate concern
+      const winningTrades = trades.filter((t) => (t.pnl ?? 0) > 0);
+      const losingTrades = trades.filter((t) => (t.pnl ?? 0) < 0);
 
+      // Net PnL (after fees) - for equity calculations
       const totalPnl = trades.reduce((sum, t) => sum + (t.netPnl ?? 0), 0);
       const totalCommission = trades.reduce((sum, t) => sum + t.commission, 0);
 
-      const totalWins = winningTrades.reduce((sum, t) => sum + (t.netPnl ?? 0), 0);
+      // Gross PnL (before fees) - for trade quality metrics
+      const totalGrossPnl = trades.reduce((sum, t) => sum + (t.pnl ?? 0), 0);
+      const totalWins = winningTrades.reduce((sum, t) => sum + (t.pnl ?? 0), 0);
       const totalLosses = Math.abs(
-        losingTrades.reduce((sum, t) => sum + (t.netPnl ?? 0), 0)
+        losingTrades.reduce((sum, t) => sum + (t.pnl ?? 0), 0)
       );
+      const grossProfitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0;
 
       // Calculate trade durations
       const calculateDuration = (trade: any) => {
@@ -407,11 +502,13 @@ export class BacktestEngine {
         ? losingTrades.reduce((sum, t) => sum + calculateDuration(t), 0) / losingTrades.length
         : 0;
 
+      const winRate = trades.length > 0 ? (winningTrades.length / trades.length) * 100 : 0;
+
       const metrics = {
         totalTrades: trades.length,
         winningTrades: winningTrades.length,
         losingTrades: losingTrades.length,
-        winRate: trades.length > 0 ? (winningTrades.length / trades.length) * 100 : 0,
+        winRate,
 
         totalPnl,
         totalPnlPercent: (totalPnl / config.initialCapital) * 100,
@@ -421,11 +518,16 @@ export class BacktestEngine {
             ? trades.reduce((sum, t) => sum + (t.pnlPercent ?? 0), 0) / trades.length
             : 0,
 
+        // Gross metrics (before fees) - reflects trade quality
+        grossWinRate: winRate,
+        grossProfitFactor,
+        totalGrossPnl,
+
         avgWin: winningTrades.length > 0 ? totalWins / winningTrades.length : 0,
         avgLoss: losingTrades.length > 0 ? totalLosses / losingTrades.length : 0,
-        largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t) => t.netPnl ?? 0)) : 0,
-        largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t) => t.netPnl ?? 0)) : 0,
-        profitFactor: totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0,
+        largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t) => t.pnl ?? 0)) : 0,
+        largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t) => t.pnl ?? 0)) : 0,
+        profitFactor: grossProfitFactor,
 
         maxDrawdown,
         maxDrawdownPercent: (maxDrawdown / peakEquity) * 100,

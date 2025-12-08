@@ -276,6 +276,7 @@
       "chartType": "Chart Type",
       "klineChart": "Kline Chart",
       "lineChart": "Line Chart",
+      "newWindow": "Open Chart in New Window",
       "display": "Display",
       "volume": "Volume",
       "stochastic": "Stochastic",

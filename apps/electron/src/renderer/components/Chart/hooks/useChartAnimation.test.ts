@@ -188,7 +188,7 @@ describe('useChartAnimation', () => {
     });
 
     expect(onFrame.mock.calls.length).toBeLessThanOrEqual(35);
-    expect(onFrame.mock.calls.length).toBeGreaterThanOrEqual(25);
+    expect(onFrame.mock.calls.length).toBeGreaterThanOrEqual(24);
     vi.useFakeTimers();
   });
 

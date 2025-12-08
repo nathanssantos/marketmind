@@ -1,0 +1,88 @@
+{
+  "id": "nr7-breakout",
+  "name": "NR7 Breakout",
+  "version": "1.0.0",
+  "description": "Tony Crabel's NR7 (Narrow Range 7) breakout strategy. Identifies bars with narrowest range in 7 bars (volatility contraction) then trades the breakout. Research shows 7.8% CAGR with 899 trades since 1993 on SPY.",
+  "author": "MarketMind",
+  "tags": ["breakout", "volatility", "nr7", "crabel", "classic"],
+
+  "status": "experimental",
+  "optimizedParams": {
+    "maxPositionSize": 50,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": true,
+    "minConfidence": 60,
+    "commission": 0.1
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": ["4h", "1h"],
+    "avoid": ["1m", "5m"],
+    "notes": "NR7 pattern works on daily bars. Strategy trades next-day breakout from NR7 high/low."
+  },
+
+  "parameters": {
+    "lookback": { "default": 7, "min": 4, "max": 10, "step": 1, "description": "NR lookback period (7 is classic)" },
+    "smaTrend": { "default": 50, "min": 20, "max": 100, "step": 10, "description": "Trend filter SMA period" },
+    "atrPeriod": { "default": 14, "min": 10, "max": 20, "step": 2, "description": "ATR for stop loss" },
+    "slMultiplier": { "default": 1.5, "min": 1, "max": 2.5, "step": 0.5, "description": "Stop loss ATR multiplier (tight for breakout)" }
+  },
+
+  "indicators": {
+    "nr7": {
+      "type": "nr7",
+      "params": { "lookback": "$lookback" }
+    },
+    "sma50": {
+      "type": "sma",
+      "params": { "period": "$smaTrend" }
+    },
+    "atr": {
+      "type": "atr",
+      "params": { "period": "$atrPeriod" }
+    }
+  },
+
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "nr7", "op": "==", "right": 1 },
+        { "left": "close", "op": ">", "right": "sma50" }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "nr7", "op": "==", "right": 1 },
+        { "left": "close", "op": "<", "right": "sma50" }
+      ]
+    }
+  },
+
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$slMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2.5
+    }
+  },
+
+  "confidence": {
+    "base": 65,
+    "bonuses": [
+      { "condition": { "left": "close", "op": ">", "right": "sma50" }, "bonus": 10, "description": "With trend (above 50 SMA)" },
+      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "High volume on NR7 breakout" }
+    ],
+    "max": 90
+  },
+
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 2.0
+  }
+}

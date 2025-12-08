@@ -1,10 +1,10 @@
 import type { Kline } from '@marketmind/types';
 import { describe, expect, it } from 'vitest';
 import {
+    calculateBBPercentB,
     calculateBBWidth,
     calculateBollingerBands,
     calculateBollingerBandsArray,
-    calculatePercentB,
 } from './bollingerBands';
 
 const createMockKlines = (count: number, basePrice: number = 100): Kline[] => {
@@ -134,7 +134,7 @@ describe('bollingerBands', () => {
         });
     });
 
-    describe('calculatePercentB', () => {
+    describe('calculateBBPercentB', () => {
         const bb = {
             upper: 110,
             middle: 100,
@@ -142,27 +142,27 @@ describe('bollingerBands', () => {
         };
 
         it('should return 0 at lower band', () => {
-            const percentB = calculatePercentB(90, bb);
+            const percentB = calculateBBPercentB(90, bb);
             expect(percentB).toBe(0);
         });
 
         it('should return 0.5 at middle band', () => {
-            const percentB = calculatePercentB(100, bb);
+            const percentB = calculateBBPercentB(100, bb);
             expect(percentB).toBe(0.5);
         });
 
         it('should return 1 at upper band', () => {
-            const percentB = calculatePercentB(110, bb);
+            const percentB = calculateBBPercentB(110, bb);
             expect(percentB).toBe(1);
         });
 
         it('should return >1 above upper band', () => {
-            const percentB = calculatePercentB(120, bb);
+            const percentB = calculateBBPercentB(120, bb);
             expect(percentB).toBeGreaterThan(1);
         });
 
         it('should return <0 below lower band', () => {
-            const percentB = calculatePercentB(80, bb);
+            const percentB = calculateBBPercentB(80, bb);
             expect(percentB).toBeLessThan(0);
         });
     });

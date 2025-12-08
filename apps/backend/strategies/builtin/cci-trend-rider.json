@@ -1,0 +1,102 @@
+{
+  "id": "cci-trend-rider",
+  "name": "CCI Trend Rider",
+  "version": "1.0.0",
+  "description": "Trend riding strategy using Commodity Channel Index. Entry when CCI crosses above +100 (strong uptrend) or below -100 (strong downtrend). Exit when CCI returns to zero zone.",
+  "author": "MarketMind",
+  "tags": ["trend-following", "cci", "momentum", "trend-rider"],
+
+  "status": "unprofitable",
+  "optimizedParams": {
+    "maxPositionSize": 50,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": true,
+    "minConfidence": 60,
+    "commission": 0.1
+  },
+  "backtestSummary": {
+    "profitFactor": 0.66,
+    "winRate": 31.71,
+    "totalTrades": 41,
+    "netPnlPercent": -7.65,
+    "testedAt": "2025-12-07",
+    "testedTimeframe": "4h",
+    "testedSymbol": "BTCUSDT"
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": ["4h"],
+    "avoid": ["1m", "5m", "15m"],
+    "notes": "CCI works best on daily for trend riding"
+  },
+
+  "parameters": {
+    "cciPeriod": { "default": 20, "min": 14, "max": 30, "step": 2, "description": "CCI period" },
+    "strongTrendUp": { "default": 100, "min": 80, "max": 150, "step": 10, "description": "Strong uptrend threshold" },
+    "strongTrendDown": { "default": -100, "min": -150, "max": -80, "step": 10, "description": "Strong downtrend threshold" },
+    "exitZone": { "default": 50, "min": 0, "max": 75, "step": 25, "description": "Exit zone threshold" },
+    "atrMultiplier": { "default": 1.5, "min": 1, "max": 2.5, "step": 0.25, "description": "ATR multiplier for stop" },
+    "rrMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "Risk-reward multiplier" }
+  },
+
+  "indicators": {
+    "cci": {
+      "type": "cci",
+      "params": { "period": "$cciPeriod" }
+    },
+    "ema50": {
+      "type": "ema",
+      "params": { "period": 50 }
+    },
+    "atr": {
+      "type": "atr",
+      "params": { "period": 14 }
+    }
+  },
+
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "cci.prev", "op": "<", "right": "$strongTrendUp" },
+        { "left": "cci", "op": ">=", "right": "$strongTrendUp" },
+        { "left": "close", "op": ">", "right": "ema50" }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "cci.prev", "op": ">", "right": "$strongTrendDown" },
+        { "left": "cci", "op": "<=", "right": "$strongTrendDown" },
+        { "left": "close", "op": "<", "right": "ema50" }
+      ]
+    }
+  },
+
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$rrMultiplier"
+    }
+  },
+
+  "confidence": {
+    "base": 65,
+    "bonuses": [
+      { "condition": { "left": "cci", "op": ">", "right": 150 }, "bonus": 10, "description": "Very strong bullish trend" },
+      { "condition": { "left": "cci", "op": "<", "right": -150 }, "bonus": 10, "description": "Very strong bearish trend" },
+      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirmation" }
+    ],
+    "max": 90
+  },
+
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 1.5
+  }
+}

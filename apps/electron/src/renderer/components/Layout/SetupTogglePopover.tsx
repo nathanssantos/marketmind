@@ -5,31 +5,40 @@ import {
     Stack,
     Text,
 } from '@chakra-ui/react';
-import { memo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HiAdjustmentsHorizontal } from 'react-icons/hi2';
+import type { SetupDetectionConfig } from '../../store/setupConfig';
 import { useSetupStore } from '../../store/setupStore';
 import { Checkbox } from '../ui/checkbox';
 import { Popover } from '../ui/popover';
 import { TooltipWrapper } from '../ui/Tooltip';
 
-type SetupKey = 'setup91' | 'setup92' | 'setup93' | 'setup94' | 'pattern123' | 'bullTrap' | 'bearTrap' | 'breakoutRetest';
+type SetupKey = keyof Omit<SetupDetectionConfig, 'enableTrendFilter' | 'allowCounterTrend' | 'trendEmaPeriod' | 'setupCooldownPeriod'>;
 
-const SETUP_LIST: Array<{ value: SetupKey; titleKey: string }> = [
-    { value: 'setup91', titleKey: 'setupConfig.setups.setup91.title' },
-    { value: 'setup92', titleKey: 'setupConfig.setups.setup92.title' },
-    { value: 'setup93', titleKey: 'setupConfig.setups.setup93.title' },
-    { value: 'setup94', titleKey: 'setupConfig.setups.setup94.title' },
-    { value: 'pattern123', titleKey: 'setupConfig.setups.pattern123.title' },
-    { value: 'bullTrap', titleKey: 'setupConfig.setups.bullTrap.title' },
-    { value: 'bearTrap', titleKey: 'setupConfig.setups.bearTrap.title' },
-    { value: 'breakoutRetest', titleKey: 'setupConfig.setups.breakoutRetest.title' },
-];
+const EXCLUDED_CONFIG_KEYS = new Set(['enableTrendFilter', 'allowCounterTrend', 'trendEmaPeriod', 'setupCooldownPeriod']);
+
+const isSetupKey = (key: string, config: SetupDetectionConfig): key is SetupKey => {
+    if (EXCLUDED_CONFIG_KEYS.has(key)) return false;
+    const value = config[key as keyof SetupDetectionConfig];
+    return typeof value === 'object' && value !== null && 'enabled' in value;
+};
 
 export const SetupTogglePopover = memo(() => {
     const { t } = useTranslation();
     const { config, updateSetupConfig } = useSetupStore();
     const [isOpen, setIsOpen] = useState(false);
+
+    const setupList = useMemo(() =>
+        Object.keys(config)
+            .filter((key): key is SetupKey => isSetupKey(key, config))
+            .sort((a, b) => a.localeCompare(b))
+            .map(key => ({
+                value: key,
+                titleKey: `setupConfig.setups.${key}.title`,
+            })),
+        [config]
+    );
 
     const toggleSetup = (setupKey: SetupKey): void => {
         updateSetupConfig(setupKey, {
@@ -38,17 +47,17 @@ export const SetupTogglePopover = memo(() => {
     };
 
     const toggleAll = (): void => {
-        const allEnabled = SETUP_LIST.every(s => config[s.value].enabled);
+        const allEnabled = setupList.every(s => config[s.value].enabled);
 
-        SETUP_LIST.forEach(setup => {
+        setupList.forEach(setup => {
             updateSetupConfig(setup.value, {
                 enabled: !allEnabled,
             });
         });
     };
 
-    const allEnabled = SETUP_LIST.every(s => config[s.value].enabled);
-    const enabledCount = SETUP_LIST.filter(s => config[s.value].enabled).length;
+    const allEnabled = setupList.every(s => config[s.value].enabled);
+    const enabledCount = setupList.filter(s => config[s.value].enabled).length;
 
     return (
         <Popover
@@ -79,7 +88,7 @@ export const SetupTogglePopover = memo(() => {
                             {t('setupConfig.enabledSetups')}
                         </Text>
                         <Text fontSize="xs" color="fg.muted">
-                            {enabledCount}/8
+                            {enabledCount}/{setupList.length}
                         </Text>
                     </Flex>
 
@@ -97,7 +106,7 @@ export const SetupTogglePopover = memo(() => {
                     <Box h="1px" bg="border" />
 
                     <Stack gap={2}>
-                        {SETUP_LIST.map((setup) => (
+                        {setupList.map((setup) => (
                             <TooltipWrapper
                                 key={setup.value}
                                 label={t(`setupConfig.setups.${setup.value}.description`)}

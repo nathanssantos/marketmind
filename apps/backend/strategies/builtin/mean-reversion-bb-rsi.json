@@ -6,6 +6,21 @@
   "author": "MarketMind",
   "tags": ["mean-reversion", "bollinger-bands", "rsi", "momentum"],
 
+  "status": "experimental",
+  "optimizedParams": {
+    "maxPositionSize": 50,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": true,
+    "minConfidence": 65,
+    "commission": 0.1
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": ["4h"],
+    "avoid": ["1m", "5m", "15m"],
+    "notes": "Mean-reversion strategies work best on daily timeframe"
+  },
+
   "parameters": {
     "bbPeriod": { "default": 20, "min": 10, "max": 50, "step": 5, "description": "Período das Bollinger Bands" },
     "bbStdDev": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "Desvio padrão das bandas" },

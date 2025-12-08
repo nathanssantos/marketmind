@@ -6,6 +6,30 @@
   "author": "MarketMind",
   "tags": ["momentum", "macd", "crossover", "trend"],
 
+  "status": "unprofitable",
+  "optimizedParams": {
+    "maxPositionSize": 50,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": true,
+    "minConfidence": 60,
+    "commission": 0.1
+  },
+  "backtestSummary": {
+    "profitFactor": 0.84,
+    "winRate": 32.73,
+    "totalTrades": 55,
+    "netPnlPercent": -4.78,
+    "testedAt": "2025-12-07",
+    "testedTimeframe": "4h",
+    "testedSymbol": "BTCUSDT"
+  },
+  "recommendedTimeframes": {
+    "primary": "4h",
+    "secondary": ["1h", "1d"],
+    "avoid": ["1m", "5m"],
+    "notes": "MACD crossover works best on 4H for momentum detection"
+  },
+
   "parameters": {
     "fastPeriod": { "default": 12, "min": 8, "max": 16, "step": 1, "description": "Período da EMA rápida do MACD" },
     "slowPeriod": { "default": 26, "min": 20, "max": 32, "step": 1, "description": "Período da EMA lenta do MACD" },

@@ -2,7 +2,8 @@
  * Condition Evaluator
  *
  * Evaluates entry/exit conditions defined in strategy JSON.
- * Supports comparison operators, crossover detection, and nested condition groups.
+ * Supports comparison operators, crossover detection, nested condition groups,
+ * and mathematical expressions (e.g., "volume.sma20 * 1.5").
  */
 
 import type {
@@ -19,6 +20,8 @@ import {
 } from '@marketmind/types';
 
 import { IndicatorEngine } from './IndicatorEngine';
+
+const MATH_EXPRESSION_REGEX = /^(.+?)\s*([*+\-/])\s*(\d+\.?\d*)$/;
 
 /**
  * Evaluates conditions against market data and indicators
@@ -140,31 +143,47 @@ export class ConditionEvaluator {
 
   /**
    * Get value series for an operand (for crossover detection)
+   * Supports mathematical expressions like "emaFast * 1.01"
    */
   private getSeriesForOperand(
     operand: ConditionOperand,
     indicators: ComputedIndicators,
     params: Record<string, number>
   ): (number | null)[] {
-    // Handle literal numbers
     if (typeof operand === 'number') {
-      // Return an array with the same value repeated
       const length = this.getIndicatorLength(indicators);
       return new Array(length).fill(operand);
     }
 
-    // Handle parameter references
     if (isParameterReference(operand)) {
       const paramName = operand.slice(1);
       const value = params[paramName];
-      if (value === undefined) {
-        return [];
-      }
+      if (value === undefined) return [];
       const length = this.getIndicatorLength(indicators);
       return new Array(length).fill(value);
     }
 
-    // Handle indicator references
+    const mathMatch = MATH_EXPRESSION_REGEX.exec(operand);
+    if (mathMatch) {
+      const [, indicatorRef, operator, multiplierStr] = mathMatch;
+      if (!indicatorRef || !operator || !multiplierStr) return [];
+
+      const baseSeries = this.indicatorEngine.getIndicatorSeries(indicators, indicatorRef.trim());
+      const multiplier = parseFloat(multiplierStr);
+      if (isNaN(multiplier)) return [];
+
+      return baseSeries.map((val) => {
+        if (val === null) return null;
+        switch (operator) {
+          case '*': return val * multiplier;
+          case '/': return multiplier !== 0 ? val / multiplier : null;
+          case '+': return val + multiplier;
+          case '-': return val - multiplier;
+          default: return null;
+        }
+      });
+    }
+
     return this.indicatorEngine.getIndicatorSeries(indicators, operand);
   }
 
@@ -182,6 +201,7 @@ export class ConditionEvaluator {
 
   /**
    * Resolve an operand to a numeric value at the current index
+   * Supports mathematical expressions like "volume.sma20 * 1.5"
    */
   private resolveValue(
     operand: ConditionOperand,
@@ -189,19 +209,40 @@ export class ConditionEvaluator {
   ): number | null {
     const { currentIndex, indicators, params } = context;
 
-    // Handle literal numbers
     if (typeof operand === 'number') {
       return operand;
     }
 
-    // Handle parameter references
     if (isParameterReference(operand)) {
       const paramName = operand.slice(1);
       const value = params[paramName];
       return value ?? null;
     }
 
-    // Handle indicator references
+    const mathMatch = MATH_EXPRESSION_REGEX.exec(operand);
+    if (mathMatch) {
+      const [, indicatorRef, operator, multiplierStr] = mathMatch;
+      if (!indicatorRef || !operator || !multiplierStr) return null;
+
+      const baseValue = this.indicatorEngine.resolveIndicatorValue(
+        indicators,
+        indicatorRef.trim(),
+        currentIndex
+      );
+      if (baseValue === null) return null;
+
+      const multiplier = parseFloat(multiplierStr);
+      if (isNaN(multiplier)) return null;
+
+      switch (operator) {
+        case '*': return baseValue * multiplier;
+        case '/': return multiplier !== 0 ? baseValue / multiplier : null;
+        case '+': return baseValue + multiplier;
+        case '-': return baseValue - multiplier;
+        default: return null;
+      }
+    }
+
     return this.indicatorEngine.resolveIndicatorValue(
       indicators,
       operand,

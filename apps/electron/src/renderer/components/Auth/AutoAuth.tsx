@@ -1,11 +1,12 @@
 import { Box, Spinner, Text } from '@chakra-ui/react';
+import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { useBackendAuth } from '../../hooks/useBackendAuth';
 
 const DEV_USER_EMAIL = 'dev@marketmind.local';
 const DEV_USER_PASSWORD = 'dev123456';
 
-export const AutoAuth = ({ children }: { children: React.ReactNode }) => {
+export const AutoAuth = ({ children }: { children: ReactNode }) => {
   const { isLoading, isAuthenticated, register, login } = useBackendAuth();
 
   useEffect(() => {

@@ -1,4 +1,10 @@
 import chalk from 'chalk';
+import * as fs from 'fs';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Validation utilities for CLI commands
@@ -94,18 +100,40 @@ export function validateDateRange(startDate: string, endDate: string): { startDa
 }
 
 /**
+ * Get dynamic strategies from the strategies directory
+ */
+function getDynamicStrategies(): string[] {
+  const strategiesDir = path.resolve(__dirname, '../../../strategies/builtin');
+
+  try {
+    const files = fs.readdirSync(strategiesDir);
+    return files
+      .filter(f => f.endsWith('.json'))
+      .map(f => f.replace('.json', ''));
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Validate strategy name
  */
 export function validateStrategy(strategy: string): void {
-  const validStrategies = [
+  const legacyStrategies = [
     'pattern123',
     'bearTrap',
     'meanReversion',
   ];
 
+  const dynamicStrategies = getDynamicStrategies();
+
+  const validStrategies = [...legacyStrategies, ...dynamicStrategies];
+
   if (!validStrategies.includes(strategy)) {
     throw new ValidationError(
-      `Invalid strategy "${strategy}". Valid strategies:\n${validStrategies.map(s => `  - ${s}`).join('\n')}`
+      `Invalid strategy "${strategy}". Valid strategies:\n` +
+      `  Legacy:\n${legacyStrategies.map(s => `    - ${s}`).join('\n')}\n` +
+      `  Dynamic:\n${dynamicStrategies.map(s => `    - ${s}`).join('\n')}`
     );
   }
 }

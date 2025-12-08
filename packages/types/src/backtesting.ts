@@ -18,6 +18,8 @@ export interface BacktestConfig {
   takeProfitPercent?: number; // TP as % of entry (ignored if useAlgorithmicLevels = true)
   maxPositionSize?: number; // Max % of capital per trade
   commission?: number; // Trading fee % (default 0.1%)
+  slippagePercent?: number; // Slippage % for market orders - SL (default 0.05%)
+  useOptimizedSettings?: boolean; // Use strategy's optimizedParams instead of config values
 
   // Strategy-specific parameters (for optimization)
   // These override default detector config values (e.g., pivotLookback, volumeMultiplier, emaPeriod)
@@ -66,18 +68,23 @@ export interface BacktestMetrics {
   totalTrades: number;
   winningTrades: number;
   losingTrades: number;
-  winRate: number; // %
+  winRate: number; // % (based on gross PnL - trade quality)
 
-  totalPnl: number;
+  totalPnl: number; // Net PnL (after fees)
   totalPnlPercent: number;
   avgPnl: number;
   avgPnlPercent: number;
+
+  // Gross metrics (before fees) - reflects trade quality
+  grossWinRate: number; // % (same as winRate, for clarity)
+  grossProfitFactor: number; // Total gross wins / Total gross losses
+  totalGrossPnl: number; // Gross PnL (before fees)
 
   avgWin: number;
   avgLoss: number;
   largestWin: number;
   largestLoss: number;
-  profitFactor: number; // Total wins / Total losses
+  profitFactor: number; // Total gross wins / Total gross losses (same as grossProfitFactor)
 
   maxDrawdown: number;
   maxDrawdownPercent: number;

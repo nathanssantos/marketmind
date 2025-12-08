@@ -28,7 +28,8 @@ interface ValidateOptions {
   maxPosition: string;
   commission: string;
   useAlgorithmicLevels: boolean;
-  onlyWithTrend: boolean;
+  trendFilter: boolean;
+  optimized: boolean;
   verbose: boolean;
 }
 
@@ -46,7 +47,9 @@ export async function validateCommand(options: ValidateOptions) {
     const capital = validateCapital(options.capital);
     const stopLoss = validatePercentage(options.stopLoss, 'Stop loss', 0.1, 50);
     const takeProfit = validatePercentage(options.takeProfit, 'Take profit', 0.1, 100);
-    const minConfidence = validatePercentage(options.minConfidence, 'Min confidence', 0, 100);
+    const minConfidence = options.minConfidence
+      ? validatePercentage(options.minConfidence, 'Min confidence', 0, 100)
+      : undefined;
     const maxPosition = validatePercentage(options.maxPosition, 'Max position', 1, 100);
     const commission = validatePercentage(options.commission, 'Commission', 0, 10);
 
@@ -56,11 +59,13 @@ export async function validateCommand(options: ValidateOptions) {
     }
 
     // Display header
-    logger.header(`BACKTEST VALIDATION - ${options.strategy.toUpperCase()}`, {
+    const modeLabel = options.optimized ? ' [OPTIMIZED]' : '';
+    logger.header(`BACKTEST VALIDATION - ${options.strategy.toUpperCase()}${modeLabel}`, {
       'Symbol': options.symbol,
       'Interval': options.interval,
       'Period': `${options.start} → ${options.end}`,
       'Capital': `$${capital.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      ...(options.optimized ? { 'Mode': 'Using strategy optimizedParams' } : {}),
     });
 
     // Parse configuration
@@ -77,7 +82,8 @@ export async function validateCommand(options: ValidateOptions) {
       maxPositionSize: maxPosition,
       commission: commission / 100, // Convert from % to decimal
       useAlgorithmicLevels: options.useAlgorithmicLevels,
-      onlyWithTrend: options.onlyWithTrend,
+      onlyWithTrend: options.trendFilter,
+      useOptimizedSettings: options.optimized,
     };
 
     // Create backtest engine

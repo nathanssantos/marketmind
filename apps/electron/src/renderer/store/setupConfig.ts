@@ -22,13 +22,36 @@ import {
 const DEFAULT_TREND_EMA_PERIOD = 200;
 const DEFAULT_SETUP_COOLDOWN = 5;
 
-// Version for config migration - increment when defaults change
-export const SETUP_CONFIG_VERSION = 3; // Updated: removed unprofitable setups
+export const SETUP_CONFIG_VERSION = 3;
 
-/**
- * Deep merges setup configs, preserving user's enabled state but using new defaults
- * for numeric parameters. This ensures optimized values are applied on update.
- */
+export interface BaseSetupConfig {
+  enabled: boolean;
+}
+
+type SetupConfigFactory<T extends BaseSetupConfig> = () => T;
+
+interface SetupRegistryEntry<T extends BaseSetupConfig = BaseSetupConfig> {
+  createDefault: SetupConfigFactory<T>;
+}
+
+const setupRegistry: Record<string, SetupRegistryEntry> = {
+  setup91: { createDefault: createDefault91Config },
+  setup92: { createDefault: createDefault92Config },
+  setup93: { createDefault: createDefault93Config },
+  setup94: { createDefault: createDefault94Config },
+  pattern123: { createDefault: createDefault123Config },
+  bullTrap: { createDefault: createDefaultBullTrapConfig },
+  bearTrap: { createDefault: createDefaultBearTrapConfig },
+  breakoutRetest: { createDefault: createDefaultBreakoutRetestConfig },
+};
+
+export const getRegisteredSetupKeys = (): string[] => Object.keys(setupRegistry);
+
+export const getSetupDefaultConfig = (key: string): BaseSetupConfig | null => {
+  const entry = setupRegistry[key];
+  return entry ? entry.createDefault() : null;
+};
+
 export const mergeSetupConfigs = (
   defaults: SetupDetectionConfig,
   persisted: Partial<SetupDetectionConfig> | undefined,
@@ -40,29 +63,31 @@ export const mergeSetupConfigs = (
     persistedConfig: Partial<T> | undefined,
   ): T => {
     if (!persistedConfig) return defaultConfig;
-    // Only preserve user's enabled preference, use new defaults for everything else
     return {
       ...defaultConfig,
       enabled: persistedConfig.enabled ?? defaultConfig.enabled,
     };
   };
 
-  return {
-    ...defaults,
-    setup91: mergeStrategyConfig(defaults.setup91, persisted.setup91),
-    setup92: mergeStrategyConfig(defaults.setup92, persisted.setup92),
-    setup93: mergeStrategyConfig(defaults.setup93, persisted.setup93),
-    setup94: mergeStrategyConfig(defaults.setup94, persisted.setup94),
-    pattern123: mergeStrategyConfig(defaults.pattern123, persisted.pattern123),
-    bullTrap: mergeStrategyConfig(defaults.bullTrap, persisted.bullTrap),
-    bearTrap: mergeStrategyConfig(defaults.bearTrap, persisted.bearTrap),
-    breakoutRetest: mergeStrategyConfig(defaults.breakoutRetest, persisted.breakoutRetest),
-    // Preserve user's global preferences
+  const result: Record<string, unknown> = {
     enableTrendFilter: persisted.enableTrendFilter ?? defaults.enableTrendFilter,
     allowCounterTrend: persisted.allowCounterTrend ?? defaults.allowCounterTrend,
     trendEmaPeriod: persisted.trendEmaPeriod ?? defaults.trendEmaPeriod,
     setupCooldownPeriod: persisted.setupCooldownPeriod ?? defaults.setupCooldownPeriod,
   };
+
+  for (const key of getRegisteredSetupKeys()) {
+    const defaultConfig = defaults[key as keyof SetupDetectionConfig];
+    const persistedConfig = persisted[key as keyof SetupDetectionConfig];
+    if (typeof defaultConfig === 'object' && defaultConfig !== null && 'enabled' in defaultConfig) {
+      result[key] = mergeStrategyConfig(
+        defaultConfig as BaseSetupConfig,
+        persistedConfig as Partial<BaseSetupConfig> | undefined
+      );
+    }
+  }
+
+  return result as unknown as SetupDetectionConfig;
 };
 
 export interface SetupDetectionConfig {
@@ -80,17 +105,17 @@ export interface SetupDetectionConfig {
   setupCooldownPeriod: number;
 }
 
-export const createDefaultSetupDetectionConfig = (): SetupDetectionConfig => ({
-  setup91: createDefault91Config(),
-  setup92: createDefault92Config(),
-  setup93: createDefault93Config(),
-  setup94: createDefault94Config(),
-  pattern123: createDefault123Config(),
-  bullTrap: createDefaultBullTrapConfig(),
-  bearTrap: createDefaultBearTrapConfig(),
-  breakoutRetest: createDefaultBreakoutRetestConfig(),
-  enableTrendFilter: false,
-  allowCounterTrend: true,
-  trendEmaPeriod: DEFAULT_TREND_EMA_PERIOD,
-  setupCooldownPeriod: DEFAULT_SETUP_COOLDOWN,
-});
+export const createDefaultSetupDetectionConfig = (): SetupDetectionConfig => {
+  const config: Record<string, unknown> = {
+    enableTrendFilter: false,
+    allowCounterTrend: true,
+    trendEmaPeriod: DEFAULT_TREND_EMA_PERIOD,
+    setupCooldownPeriod: DEFAULT_SETUP_COOLDOWN,
+  };
+
+  for (const [key, entry] of Object.entries(setupRegistry)) {
+    config[key] = entry.createDefault();
+  }
+
+  return config as unknown as SetupDetectionConfig;
+};

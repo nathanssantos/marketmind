@@ -14,12 +14,90 @@ const __dirname = dirname(__filename);
 const WINDOW_CONFIG = {
   WIDTH: 1280,
   HEIGHT: 800,
-  MIN_WIDTH: 1024,
-  MIN_HEIGHT: 768,
+  MIN_WIDTH: 320,
+  MIN_HEIGHT: 600,
 } as const;
 
 let mainWindow: BrowserWindowType | null = null;
 let updateManager: UpdateManager | null = null;
+const chartWindows: Map<number, BrowserWindowType> = new Map();
+let chartWindowCounter = 0;
+
+const createChartWindow = (symbol?: string): number => {
+  console.log('Creating chart window for symbol:', symbol || 'default');
+  
+  const windowId = ++chartWindowCounter;
+  const windowOptions: electron.BrowserWindowConstructorOptions = {
+    width: 1000,
+    height: 700,
+    minWidth: 320,
+    minHeight: 400,
+    show: false,
+    title: `MarketMind - ${symbol || 'Chart'}`,
+    webPreferences: {
+      preload: join(__dirname, '../preload/preload.mjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      backgroundThrottling: true,
+      enableWebSQL: false,
+      webgl: true,
+      spellcheck: false,
+      autoplayPolicy: 'user-gesture-required',
+      sandbox: true,
+      v8CacheOptions: 'code',
+    },
+  };
+
+  const chartWindow = new BrowserWindow(windowOptions);
+  chartWindows.set(windowId, chartWindow);
+
+  const devServerUrl = process.env['VITE_DEV_SERVER_URL'];
+  if (!devServerUrl) {
+    chartWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': [
+            "default-src 'self';",
+            "script-src 'self';",
+            "style-src 'self' 'unsafe-inline';",
+            "img-src 'self' data: https:;",
+            "font-src 'self' data:;",
+            "connect-src 'self' http://localhost:* ws://localhost:* wss://*.binance.com https://*.binance.com;",
+          ].join(' '),
+        },
+      });
+    });
+  }
+
+  chartWindow.once('ready-to-show', () => {
+    console.log('Chart window ready to show');
+    chartWindow?.show();
+  });
+
+  const urlPath = symbol ? `#/chart/${encodeURIComponent(symbol)}` : '#/chart';
+  
+  if (devServerUrl) {
+    void chartWindow.loadURL(`${devServerUrl}${urlPath}`);
+  } else {
+    void chartWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+      hash: symbol ? `/chart/${encodeURIComponent(symbol)}` : '/chart'
+    });
+  }
+  
+  chartWindow.webContents.on('before-input-event', (_event, input) => {
+    if (input.key === 'F12' || (input.key === 'I' && (input.meta || input.control) && input.shift)) {
+      chartWindow?.webContents.toggleDevTools();
+    }
+  });
+
+  chartWindow.on('closed', () => {
+    chartWindows.delete(windowId);
+    console.log(`Chart window ${windowId} closed`);
+  });
+
+  return windowId;
+};
 
 const createWindow = (): void => {
   console.log('Creating main window...');
@@ -52,6 +130,25 @@ const createWindow = (): void => {
   mainWindow = new BrowserWindow(windowOptions);
   console.log('BrowserWindow created');
 
+  const devServerUrl = process.env['VITE_DEV_SERVER_URL'];
+  if (!devServerUrl) {
+    mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': [
+            "default-src 'self';",
+            "script-src 'self';",
+            "style-src 'self' 'unsafe-inline';",
+            "img-src 'self' data: https:;",
+            "font-src 'self' data:;",
+            "connect-src 'self' http://localhost:* ws://localhost:* wss://*.binance.com https://*.binance.com;",
+          ].join(' '),
+        },
+      });
+    });
+  }
+
   windowStateManager.manage(mainWindow);
 
   mainWindow.once('ready-to-show', () => {
@@ -59,7 +156,6 @@ const createWindow = (): void => {
     mainWindow?.show();
   });
 
-  const devServerUrl = process.env['VITE_DEV_SERVER_URL'];
   console.log('Dev server URL:', devServerUrl);
   
   if (devServerUrl) {
@@ -435,6 +531,25 @@ const setupIpcHandlers = (): void => {
   });
 };
 
+const setupWindowHandlers = (): void => {
+  ipcMain.handle('window:openChart', async (_event, symbol?: string) => {
+    try {
+      const windowId = createChartWindow(symbol);
+      return { success: true, windowId };
+    } catch (error) {
+      console.error('Failed to open chart window:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  });
+
+  ipcMain.handle('window:getChartWindows', async () => {
+    return Array.from(chartWindows.keys());
+  });
+};
+
 const setupNotificationHandlers = (): void => {
   ipcMain.handle('notification:show', async (_event, options: { title: string; body: string; silent?: boolean; urgency?: 'normal' | 'critical' | 'low' }) => {
     try {
@@ -474,6 +589,7 @@ const initializeApp = async (): Promise<void> => {
     await app.whenReady();
     console.log('App ready, setting up IPC handlers...');
     setupIpcHandlers();
+    setupWindowHandlers();
     setupNotificationHandlers();
     console.log('IPC handlers set up, creating window...');
     createWindow();

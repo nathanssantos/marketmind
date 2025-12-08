@@ -1,0 +1,94 @@
+{
+  "id": "supertrend-follow",
+  "name": "Supertrend Trend Following",
+  "version": "1.0.0",
+  "description": "Simple but effective trend following strategy using Supertrend indicator. Entry on Supertrend flip, trails with Supertrend value. Works well in trending markets.",
+  "author": "MarketMind",
+  "tags": ["trend-following", "supertrend", "simple", "trailing"],
+
+  "status": "experimental",
+  "optimizedParams": {
+    "maxPositionSize": 50,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": true,
+    "minConfidence": 60,
+    "commission": 0.1
+  },
+  "recommendedTimeframes": {
+    "primary": "4h",
+    "secondary": ["1h", "1d"],
+    "avoid": ["1m", "5m"],
+    "notes": "Supertrend works best on 4H for trend following"
+  },
+
+  "parameters": {
+    "supertrendPeriod": { "default": 10, "min": 7, "max": 14, "step": 1, "description": "Supertrend ATR period" },
+    "supertrendMultiplier": { "default": 3, "min": 2, "max": 4, "step": 0.5, "description": "Supertrend multiplier" },
+    "atrMultiplier": { "default": 1.5, "min": 1, "max": 2.5, "step": 0.5, "description": "ATR multiplier for stop loss" },
+    "rrMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "Risk-reward multiplier" }
+  },
+
+  "indicators": {
+    "supertrend": {
+      "type": "supertrend",
+      "params": { "period": "$supertrendPeriod", "multiplier": "$supertrendMultiplier" }
+    },
+    "atr": {
+      "type": "atr",
+      "params": { "period": 14 }
+    },
+    "ema20": {
+      "type": "ema",
+      "params": { "period": 20 }
+    }
+  },
+
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "close", "op": "crossover", "right": "ema20" },
+        { "left": "supertrend.trend", "op": ">", "right": 0 }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "close", "op": "crossunder", "right": "ema20" },
+        { "left": "supertrend.trend", "op": "<", "right": 0 }
+      ]
+    }
+  },
+
+  "exit": {
+    "stopLoss": {
+      "type": "indicator",
+      "indicator": "supertrend.value"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$rrMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
+    }
+  },
+
+  "confidence": {
+    "base": 65,
+    "bonuses": [
+      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirms trend" },
+      { "condition": { "left": "atr", "op": ">", "right": 0 }, "bonus": 5, "description": "Volatility present" }
+    ],
+    "max": 85
+  },
+
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 1.5
+  }
+}

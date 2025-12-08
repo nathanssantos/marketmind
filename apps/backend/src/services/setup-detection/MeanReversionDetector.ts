@@ -88,9 +88,9 @@ export class MeanReversionDetector extends BaseSetupDetector {
     const current = klines[currentIndex]!;
     const entryPrice = getKlineClose(current);
 
-    // Stop loss: Below lower band
+    // Stop loss: Below lower band with 1.5x band width for breathing room
     const stopDistance = bb.middle - bb.lower;
-    const stopLoss = entryPrice - stopDistance * 0.5;
+    const stopLoss = entryPrice - stopDistance * 1.5;
 
     // Take profit: Middle band (mean)
     const takeProfit = bb.middle;
@@ -138,9 +138,9 @@ export class MeanReversionDetector extends BaseSetupDetector {
     const current = klines[currentIndex]!;
     const entryPrice = getKlineClose(current);
 
-    // Stop loss: Above upper band
+    // Stop loss: Above upper band with 1.5x band width for breathing room
     const stopDistance = bb.upper - bb.middle;
-    const stopLoss = entryPrice + stopDistance * 0.5;
+    const stopLoss = entryPrice + stopDistance * 1.5;
 
     // Take profit: Middle band (mean)
     const takeProfit = bb.middle;

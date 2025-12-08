@@ -1,0 +1,109 @@
+{
+  "id": "7day-momentum-crypto",
+  "name": "7-Day Momentum Crypto",
+  "version": "1.0.0",
+  "description": "Crypto-optimized momentum strategy using 7-day price momentum. Research shows 7-day is the most stable momentum period for crypto trading. Uses EMA for trend confirmation.",
+  "author": "MarketMind",
+  "tags": ["momentum", "crypto", "trend-following", "7day", "proven"],
+
+  "status": "unprofitable",
+  "optimizedParams": {
+    "maxPositionSize": 50,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": true,
+    "minConfidence": 60,
+    "commission": 0.1
+  },
+  "backtestSummary": {
+    "profitFactor": 0.86,
+    "winRate": 33.33,
+    "totalTrades": 24,
+    "netPnlPercent": -3.89,
+    "testedAt": "2025-12-07",
+    "testedTimeframe": "1d",
+    "testedSymbol": "BTCUSDT"
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": ["4h"],
+    "avoid": ["1m", "5m", "15m", "30m"],
+    "notes": "7-day momentum is optimized for daily timeframe on crypto"
+  },
+
+  "parameters": {
+    "momentumPeriod": { "default": 7, "min": 5, "max": 14, "step": 1, "description": "Momentum lookback period" },
+    "momentumThreshold": { "default": 3, "min": 1, "max": 10, "step": 1, "description": "Minimum momentum % for entry" },
+    "emaFast": { "default": 8, "min": 5, "max": 12, "step": 1, "description": "Fast EMA period" },
+    "emaSlow": { "default": 21, "min": 15, "max": 30, "step": 3, "description": "Slow EMA period" },
+    "atrPeriod": { "default": 14, "min": 10, "max": 20, "step": 2, "description": "ATR period" },
+    "slMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.25, "description": "Stop loss ATR multiplier" },
+    "tpMultiplier": { "default": 4, "min": 2, "max": 6, "step": 0.5, "description": "Take profit ATR multiplier" }
+  },
+
+  "indicators": {
+    "emaFast": {
+      "type": "ema",
+      "params": { "period": "$emaFast" }
+    },
+    "emaSlow": {
+      "type": "ema",
+      "params": { "period": "$emaSlow" }
+    },
+    "rsi": {
+      "type": "rsi",
+      "params": { "period": 14 }
+    },
+    "atr": {
+      "type": "atr",
+      "params": { "period": "$atrPeriod" }
+    }
+  },
+
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "emaFast", "op": ">", "right": "emaSlow" },
+        { "left": "close", "op": ">", "right": "emaFast" },
+        { "left": "rsi", "op": ">", "right": 50 },
+        { "left": "rsi", "op": "<", "right": 75 }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "emaFast", "op": "<", "right": "emaSlow" },
+        { "left": "close", "op": "<", "right": "emaFast" },
+        { "left": "rsi", "op": "<", "right": 50 },
+        { "left": "rsi", "op": ">", "right": 25 }
+      ]
+    }
+  },
+
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$slMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "atr",
+      "multiplier": "$tpMultiplier",
+      "indicator": "atr"
+    }
+  },
+
+  "confidence": {
+    "base": 65,
+    "bonuses": [
+      { "condition": { "left": "rsi", "op": ">", "right": 55 }, "bonus": 10, "description": "Strong momentum (RSI > 55)" },
+      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirmation" }
+    ],
+    "max": 95
+  },
+
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 2.0
+  }
+}

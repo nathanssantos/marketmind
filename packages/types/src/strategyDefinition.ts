@@ -23,7 +23,20 @@ export type IndicatorType =
   | 'atr'
   | 'stochastic'
   | 'vwap'
-  | 'pivotPoints';
+  | 'pivotPoints'
+  | 'adx'
+  | 'obv'
+  | 'williamsR'
+  | 'cci'
+  | 'mfi'
+  | 'donchian'
+  | 'keltner'
+  | 'supertrend'
+  | 'ibs'
+  | 'percentB'
+  | 'cumulativeRsi'
+  | 'nDayHighLow'
+  | 'nr7';
 
 /**
  * Price source for indicator calculations
@@ -207,6 +220,65 @@ export interface StrategyFilters {
 }
 
 // =============================================================================
+// Strategy Status Types
+// =============================================================================
+
+/**
+ * Strategy status for filtering during backtesting
+ * - active: Strategy is profitable and should be tested
+ * - unprofitable: Strategy has been tested and is not profitable, skip in batch tests
+ * - experimental: Strategy is being developed/tested, include in tests
+ * - deprecated: Strategy is outdated, skip in tests
+ */
+export type StrategyStatus = 'active' | 'unprofitable' | 'experimental' | 'deprecated';
+
+/**
+ * Valid timeframe intervals
+ */
+export type TimeframeInterval = '1m' | '3m' | '5m' | '15m' | '30m' | '1h' | '2h' | '4h' | '6h' | '8h' | '12h' | '1d' | '3d' | '1w';
+
+/**
+ * Recommended timeframes configuration
+ */
+export interface RecommendedTimeframes {
+  primary: TimeframeInterval;
+  secondary?: TimeframeInterval[];
+  avoid?: TimeframeInterval[];
+  notes?: string;
+}
+
+/**
+ * Backtest result summary stored in strategy
+ */
+export interface StrategyBacktestSummary {
+  profitFactor: number;
+  winRate: number;
+  totalTrades: number;
+  netPnlPercent: number;
+  testedAt: string;
+  testedTimeframe: string;
+  testedSymbol: string;
+}
+
+// =============================================================================
+// Optimized Backtest Parameters
+// =============================================================================
+
+/**
+ * Optimized backtest parameters for a strategy
+ * These override default/global settings when "Use Optimized Settings" is enabled
+ */
+export interface OptimizedBacktestParams {
+  maxPositionSize: number;
+  stopLossPercent?: number;
+  takeProfitPercent?: number;
+  useAlgorithmicLevels: boolean;
+  onlyWithTrend: boolean;
+  minConfidence?: number;
+  commission?: number;
+}
+
+// =============================================================================
 // Main Strategy Definition
 // =============================================================================
 
@@ -238,6 +310,14 @@ export interface StrategyDefinition {
   description?: string;
   author?: string;
   tags?: string[];
+
+  // Status (for filtering unprofitable strategies)
+  status?: StrategyStatus;
+  backtestSummary?: StrategyBacktestSummary;
+  recommendedTimeframes?: RecommendedTimeframes;
+
+  // Optimized backtest parameters (used when "Use Optimized Settings" is enabled)
+  optimizedParams?: OptimizedBacktestParams;
 
   // Configuration
   parameters: Record<string, StrategyParameter>;

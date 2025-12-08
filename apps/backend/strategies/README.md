@@ -112,6 +112,14 @@ Use `$nomeParametro` para referenciar valores em outras seções:
 | `stochastic` | Estocástico | `kPeriod`, `dPeriod` |
 | `vwap` | Volume Weighted Average Price | - |
 | `pivotPoints` | Pontos de Pivô | `lookback` |
+| `adx` | Average Directional Index | `period` |
+| `obv` | On-Balance Volume | `smaPeriod` (optional) |
+| `williamsR` | Williams %R | `period` |
+| `cci` | Commodity Channel Index | `period` |
+| `mfi` | Money Flow Index | `period` |
+| `donchian` | Donchian Channel | `period` |
+| `keltner` | Keltner Channel | `emaPeriod`, `atrPeriod`, `multiplier` |
+| `supertrend` | Supertrend | `period`, `multiplier` |
 
 ### Exemplo
 
@@ -138,11 +146,62 @@ Use `$nomeParametro` para referenciar valores em outras seções:
 
 ### Acessando Valores
 
-- Indicador simples: `"rsi"`, `"emaFast"`
+- Indicador simples: `"rsi"`, `"emaFast"`, `"williamsR"`, `"cci"`, `"mfi"`
 - Indicador composto: `"bb.upper"`, `"bb.middle"`, `"bb.lower"`
 - MACD: `"macd.macd"`, `"macd.signal"`, `"macd.histogram"`
+- ADX: `"adx.adx"`, `"adx.plusDI"`, `"adx.minusDI"`
+- OBV: `"obv.obv"`, `"obv.sma"`
+- Donchian: `"donchian.upper"`, `"donchian.middle"`, `"donchian.lower"`
+- Keltner: `"keltner.upper"`, `"keltner.middle"`, `"keltner.lower"`
+- Supertrend: `"supertrend.trend"` (1=up, -1=down), `"supertrend.value"`
 - Preço: `"close"`, `"open"`, `"high"`, `"low"`
 - Volume: `"volume"`, `"volume.sma20"`
+
+### Valores Históricos (Previous)
+
+Use o sufixo `.prev`, `.prev2`, `.prev3`, etc. para acessar valores de candles anteriores:
+
+- `"close.prev"` - Fechamento do candle anterior (offset 1)
+- `"close.prev2"` - Fechamento de 2 candles atrás
+- `"ema9.prev"` - EMA9 do candle anterior
+- `"rsi.prev3"` - RSI de 3 candles atrás
+- `"bb.upper.prev"` - Banda superior de Bollinger do candle anterior
+- `"high.prev5"` - Máxima de 5 candles atrás
+
+**Exemplos:**
+
+```json
+// EMA turn: EMA estava caindo, agora está subindo
+{
+  "left": "ema9.prev",
+  "op": "<=",
+  "right": "ema9.prev2"
+},
+{
+  "left": "ema9",
+  "op": ">",
+  "right": "ema9.prev"
+}
+
+// Preço fechou abaixo da mínima anterior (pullback)
+{
+  "left": "close",
+  "op": "<",
+  "right": "low.prev"
+}
+
+// RSI cruzou acima de 30 vindo de baixo
+{
+  "left": "rsi.prev",
+  "op": "<",
+  "right": 30
+},
+{
+  "left": "rsi",
+  "op": ">",
+  "right": 30
+}
+```
 
 ---
 

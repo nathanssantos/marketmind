@@ -1,0 +1,100 @@
+{
+  "id": "enhanced-trend-following",
+  "name": "Enhanced Trend Following (Multi-TF)",
+  "version": "1.0.0",
+  "description": "Multi-timeframe EMA crossover with higher timeframe confirmation. Fast EMA crosses Slow EMA on LTF + price alignment with EMA200. ATR-based stop loss with 3:1 R:R.",
+  "author": "MarketMind",
+  "tags": ["trend-following", "multi-timeframe", "ema-crossover", "momentum"],
+
+  "status": "experimental",
+  "optimizedParams": {
+    "maxPositionSize": 50,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": true,
+    "minConfidence": 65,
+    "commission": 0.1
+  },
+  "recommendedTimeframes": {
+    "primary": "1h",
+    "secondary": ["4h"],
+    "avoid": ["1m", "3m", "5m"],
+    "notes": "Best on 1h with 4h confirmation. Use trend filter."
+  },
+
+  "parameters": {
+    "emaFastPeriod": { "default": 9, "min": 5, "max": 21, "step": 1, "description": "Fast EMA period" },
+    "emaSlowPeriod": { "default": 21, "min": 15, "max": 50, "step": 1, "description": "Slow EMA period" },
+    "atrPeriod": { "default": 14, "min": 7, "max": 21, "step": 1, "description": "ATR period for stop loss" },
+    "stopLossATR": { "default": 1.5, "min": 1.0, "max": 3.0, "step": 0.25, "description": "Stop loss as ATR multiplier" },
+    "takeProfitRatio": { "default": 3.0, "min": 2.0, "max": 5.0, "step": 0.5, "description": "Risk:Reward ratio" }
+  },
+
+  "indicators": {
+    "emaFast": {
+      "type": "ema",
+      "params": { "period": "$emaFastPeriod" }
+    },
+    "emaSlow": {
+      "type": "ema",
+      "params": { "period": "$emaSlowPeriod" }
+    },
+    "ema200": {
+      "type": "ema",
+      "params": { "period": 200 }
+    },
+    "atr": {
+      "type": "atr",
+      "params": { "period": "$atrPeriod" }
+    }
+  },
+
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "emaFast", "op": "crossover", "right": "emaSlow" },
+        { "left": "close", "op": ">", "right": "ema200" }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "emaFast", "op": "crossunder", "right": "emaSlow" },
+        { "left": "close", "op": "<", "right": "ema200" }
+      ]
+    }
+  },
+
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$stopLossATR",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$takeProfitRatio"
+    }
+  },
+
+  "confidence": {
+    "base": 55,
+    "bonuses": [
+      { "condition": { "left": "close", "op": ">", "right": "ema200" }, "bonus": 15, "description": "Price above EMA200 (bullish trend)" },
+      { "condition": { "left": "close", "op": "<", "right": "ema200" }, "bonus": 15, "description": "Price below EMA200 (bearish trend)" },
+      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirmation" }
+    ],
+    "max": 95
+  },
+
+  "filters": {
+    "minConfidence": 65,
+    "minRiskReward": 2.0,
+    "trendFilter": {
+      "enabled": true,
+      "indicator": "ema",
+      "period": 200,
+      "allowCounterTrend": false
+    }
+  }
+}

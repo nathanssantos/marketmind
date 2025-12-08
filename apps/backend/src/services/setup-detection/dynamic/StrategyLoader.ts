@@ -13,7 +13,19 @@ import type {
   StrategyFile,
   StrategyValidationResult,
   StrategyValidationError,
+  StrategyStatus,
 } from '@marketmind/types';
+
+/**
+ * Options for loading strategies
+ */
+export interface StrategyLoadOptions {
+  includeStatuses?: StrategyStatus[];
+  excludeStatuses?: StrategyStatus[];
+  includeUnprofitable?: boolean;
+}
+
+const DEFAULT_EXCLUDED_STATUSES: StrategyStatus[] = ['unprofitable', 'deprecated'];
 
 /**
  * Error thrown when strategy validation fails
@@ -44,8 +56,9 @@ export class StrategyLoader {
 
   /**
    * Load all strategies from configured paths
+   * @param options - Options for filtering strategies by status
    */
-  async loadAll(): Promise<StrategyDefinition[]> {
+  async loadAll(options: StrategyLoadOptions = {}): Promise<StrategyDefinition[]> {
     this.strategies.clear();
     const definitions: StrategyDefinition[] = [];
 
@@ -59,7 +72,9 @@ export class StrategyLoader {
       for (const filePath of files) {
         try {
           const definition = await this.loadStrategy(filePath);
-          definitions.push(definition);
+          if (this.shouldIncludeStrategy(definition, options)) {
+            definitions.push(definition);
+          }
         } catch (error) {
           console.error(`Failed to load strategy from ${filePath}:`, error);
         }
@@ -67,6 +82,21 @@ export class StrategyLoader {
     }
 
     return definitions;
+  }
+
+  /**
+   * Check if a strategy should be included based on options
+   */
+  private shouldIncludeStrategy(
+    definition: StrategyDefinition,
+    options: StrategyLoadOptions
+  ): boolean {
+    const status = definition.status ?? 'active';
+
+    if (options.includeUnprofitable) return true;
+    if (options.includeStatuses?.length) return options.includeStatuses.includes(status);
+    const excludeStatuses = options.excludeStatuses ?? DEFAULT_EXCLUDED_STATUSES;
+    return !excludeStatuses.includes(status);
   }
 
   /**
@@ -343,6 +373,19 @@ export class StrategyLoader {
       'stochastic',
       'vwap',
       'pivotPoints',
+      'adx',
+      'obv',
+      'williamsR',
+      'cci',
+      'mfi',
+      'donchian',
+      'keltner',
+      'supertrend',
+      'ibs',
+      'percentB',
+      'cumulativeRsi',
+      'nDayHighLow',
+      'nr7',
     ];
 
     for (const [id, indicator] of Object.entries(indicators)) {

@@ -83,6 +83,6 @@ export const calculateBBWidth = (bb: BollingerBands): number => {
  * Calculate %B (price position within bands)
  * Returns 0-1 range (0 = lower band, 0.5 = middle, 1 = upper band)
  */
-export const calculatePercentB = (price: number, bb: BollingerBands): number => {
+export const calculateBBPercentB = (price: number, bb: BollingerBands): number => {
     return (price - bb.lower) / (bb.upper - bb.lower);
 };

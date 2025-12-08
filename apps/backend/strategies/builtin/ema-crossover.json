@@ -6,6 +6,30 @@
   "author": "MarketMind",
   "tags": ["trend-following", "ema", "crossover", "momentum"],
 
+  "status": "unprofitable",
+  "optimizedParams": {
+    "maxPositionSize": 50,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": true,
+    "minConfidence": 60,
+    "commission": 0.1
+  },
+  "backtestSummary": {
+    "profitFactor": 0.93,
+    "winRate": 30.00,
+    "totalTrades": 10,
+    "netPnlPercent": -0.67,
+    "testedAt": "2025-12-07",
+    "testedTimeframe": "4h",
+    "testedSymbol": "BTCUSDT"
+  },
+  "recommendedTimeframes": {
+    "primary": "4h",
+    "secondary": ["1h", "1d"],
+    "avoid": ["1m", "5m"],
+    "notes": "EMA crossover works best on 4H for trend-following signals"
+  },
+
   "parameters": {
     "fastPeriod": { "default": 9, "min": 5, "max": 21, "step": 1, "description": "Período da EMA rápida" },
     "slowPeriod": { "default": 21, "min": 15, "max": 50, "step": 1, "description": "Período da EMA lenta" },
