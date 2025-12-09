@@ -112,7 +112,7 @@ export const fetchHistoricalKlinesFromAPI = async (
 ): Promise<any[]> => {
   logger.info(
     { symbol, interval, startTime: startTime.toISOString(), endTime: endTime.toISOString() },
-    'Fetching historical klines from Binance API (not saving to DB)'
+    'Fetching historical klines from Binance API'
   );
 
   const allKlines: any[] = [];
@@ -157,7 +157,7 @@ export const fetchHistoricalKlinesFromAPI = async (
       allKlines.push(...klinesData);
       currentStartTime = lastCandle[6] + 1; // Use closeTime from array
 
-      logger.debug({ fetched: klinesData.length, total: allKlines.length }, 'Fetched klines batch');
+      // logger.debug({ fetched: klinesData.length, total: allKlines.length }, 'Fetched klines batch');
 
       await sleep(RATE_LIMIT_DELAY);
     } catch (error) {

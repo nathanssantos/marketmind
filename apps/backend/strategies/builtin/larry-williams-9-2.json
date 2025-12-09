@@ -49,14 +49,16 @@
       "operator": "AND",
       "conditions": [
         { "left": "ema9", "op": ">", "right": "ema9.prev" },
-        { "left": "close", "op": "<", "right": "low.prev" }
+        { "left": "close", "op": "<", "right": "low.prev" },
+        { "left": "volume", "op": ">", "right": "volume.sma20" }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
         { "left": "ema9", "op": "<", "right": "ema9.prev" },
-        { "left": "close", "op": ">", "right": "high.prev" }
+        { "left": "close", "op": ">", "right": "high.prev" },
+        { "left": "volume", "op": ">", "right": "volume.sma20" }
       ]
     }
   },

@@ -1,5 +1,5 @@
-import { WebsocketClient } from 'binance';
 import type { KlineInterval } from 'binance';
+import { WebsocketClient } from 'binance';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
 
@@ -188,12 +188,12 @@ export class BinanceKlineStreamService {
         wsService.emitKlineUpdate(update);
       }
 
-      logger.debug({
-        symbol: update.symbol,
-        interval: update.interval,
-        close: update.close,
-        isClosed: update.isClosed,
-      }, 'Kline update processed');
+      // logger.debug({
+      //   symbol: update.symbol,
+      //   interval: update.interval,
+      //   close: update.close,
+      //   isClosed: update.isClosed,
+      // }, 'Kline update processed');
     } catch (error) {
       logger.error({
         symbol: update.symbol,

@@ -411,11 +411,170 @@ export interface ExitConfig {
 ```
 
 ### Prioridade
-1. 🔴 Implementar `exit.conditions` no tipo e no BacktestEngine
-2. 🟡 Atualizar connors-rsi2, williams-momentum, rsi-oversold-bounce
-3. 🟢 Re-testar com parâmetros exatos dos benchmarks
-4. 🟢 Otimizar estratégias que funcionarem
+1. ✅ Implementar `exit.conditions` no tipo e no BacktestEngine - **CONCLUÍDO!**
+2. ✅ Atualizar connors-rsi2-original com exit conditions - **CONCLUÍDO!**
+3. 🟡 Atualizar williams-momentum, rsi-oversold-bounce
+4. 🟢 Re-testar com parâmetros exatos dos benchmarks
+5. 🟢 Otimizar estratégias que funcionarem
 
 ---
 
-*Documento atualizado em: 2025-12-08*
+## ✅ IMPLEMENTAÇÃO CONCLUÍDA: Exit Conditions
+
+### Data: 2025-12-09
+
+### Arquivos Modificados
+
+1. **packages/types/src/strategyDefinition.ts**
+   - Adicionado `ExitConditions` interface
+   - Modificado `ExitConfig` para incluir `conditions` e `maxBarsInTrade`
+   - `stopLoss` e `takeProfit` agora são opcionais
+
+2. **packages/types/src/tradingSetup.ts**
+   - `stopLoss` e `takeProfit` agora são opcionais no tipo `TradingSetup`
+
+3. **apps/backend/src/services/backtesting/BacktestEngine.ts**
+   - Implementada lógica para avaliar exit conditions usando `ConditionEvaluator`
+   - Novo exit reason: `EXIT_CONDITION` e `MAX_BARS`
+   - Computa indicadores para cada trade em andamento
+   - Exit conditions são avaliadas antes de SL/TP
+
+4. **apps/backend/src/services/setup-detection/dynamic/StrategyLoader.ts**
+   - Atualizada validação para aceitar estratégias com `conditions` no lugar de `takeProfit`
+   - Adicionado `validateExitConditions()`
+
+5. **apps/backend/src/services/setup-detection/dynamic/StrategyInterpreter.ts**
+   - Ajustado para não rejeitar estratégias por riskReward=0 quando usam exit conditions
+
+6. **apps/backend/src/services/setup-detection/BaseSetupDetector.ts**
+   - `stopLoss` e `takeProfit` agora aceitam `null`
+
+7. **Frontend adjustments:**
+   - `SetupRenderer.tsx` - Renderização condicional de SL/TP
+   - `setupStore.ts` - `SetupExecution` com SL/TP opcionais
+   - `SetupCancellationDetector.ts` - Checks condicionais de SL
+   - `AITradingAgent.ts` - Formatação com valores opcionais
+   - Database schema e routers atualizados
+
+### Resultado: connors-rsi2-original
+
+**Antes (com ATR SL + R:R TP):**
+- 0 trades detectados (devido a riskReward check)
+
+**Depois (com exit condition `close > sma5`):**
+- **85 setups detectados**
+- **70 trades executados**
+- **Win Rate: 48.57%**
+- **Profit Factor: 1.29**
+- **PnL: +0.73%**
+
+### JSON Final: connors-rsi2-original.json
+
+```json
+{
+  "exit": {
+    "conditions": {
+      "long": {
+        "operator": "AND",
+        "conditions": [
+          { "left": "close", "op": ">", "right": "sma5" }
+        ]
+      }
+    },
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": 3,
+      "indicator": "atr"
+    },
+    "maxBarsInTrade": 10
+  }
+}
+```
+
+### ✅ TODAS ESTRATÉGIAS ATUALIZADAS COM EXIT CONDITIONS
+
+#### 1. williams-momentum.json
+**Exit condition:** `williamsR > -50` (long) / `williamsR < -50` (short)
+
+```json
+"exit": {
+  "conditions": {
+    "long": { "operator": "AND", "conditions": [{ "left": "williamsR", "op": ">", "right": "$exitLevel" }] },
+    "short": { "operator": "AND", "conditions": [{ "left": "williamsR", "op": "<", "right": "$exitLevel" }] }
+  },
+  "stopLoss": { "type": "atr", "multiplier": "$atrMultiplier", "indicator": "atr" },
+  "maxBarsInTrade": 10
+}
+```
+
+**Resultado:**
+- **70 trades** executados
+- **Win Rate: 47.14%** (antes: 27.4%)
+- **Profit Factor: 1.20** (antes: 1.10)
+- **Melhoria: +19.74 pp em WR!**
+
+#### 2. rsi-oversold-bounce.json
+**Exit condition:** `rsi > 50`
+
+```json
+"exit": {
+  "conditions": {
+    "long": { "operator": "AND", "conditions": [{ "left": "rsi", "op": ">", "right": "$exitLevel" }] }
+  },
+  "stopLoss": { "type": "atr", "multiplier": "$atrMultiplier", "indicator": "atr" },
+  "maxBarsInTrade": 10
+}
+```
+
+**Resultado:**
+- **13 trades** executados
+- **Win Rate: 53.85%** (antes: 23.5%)
+- **Profit Factor: 2.16** (antes: 0.90)
+- **PnL: +1.17%**
+- **Melhoria: +30.35 pp em WR, PF 2.4x maior!**
+
+#### 3. rsi2-mean-reversion.json
+**Mantido ATR exits** (mais conservador para RSI 2)
+**Parâmetro ajustado:** EMA trend filter de 200 → 50 (melhor para crypto)
+
+**Resultado:**
+- **41 trades** executados
+- **Win Rate: 29.27%**
+- **Profit Factor: 1.21**
+- **PnL: +0.41%**
+
+---
+
+## 📊 RESUMO FINAL - Resultados Após Exit Conditions
+
+| Estratégia | Trades | Win Rate | PF | PnL% | Status |
+|------------|--------|----------|------|------|--------|
+| **rsi-oversold-bounce** | 13 | **53.85%** | **2.16** | **+1.17%** | ✅ Lucrativa |
+| **connors-rsi2-original** | 70 | **48.57%** | **1.29** | **+0.73%** | ✅ Lucrativa |
+| **williams-momentum** | 70 | **47.14%** | **1.20** | -0.15% | 🟡 Marginal |
+| **rsi2-mean-reversion** | 41 | 29.27% | **1.21** | **+0.41%** | ✅ Lucrativa |
+
+### Melhorias Alcançadas
+
+| Estratégia | WR Antes | WR Depois | Melhoria |
+|------------|----------|-----------|----------|
+| rsi-oversold-bounce | 23.5% | **53.85%** | **+30.35 pp** |
+| williams-momentum | 27.4% | **47.14%** | **+19.74 pp** |
+| connors-rsi2-original | 0 trades | **48.57%** | N/A (novo) |
+
+### Conclusão
+
+A implementação de **exit conditions baseadas em indicadores** foi o fator decisivo para aproximar os resultados dos benchmarks. As estratégias de mean-reversion funcionam muito melhor quando o exit é determinado pelo próprio indicador retornando à zona neutra (ex: RSI > 50, Williams %R > -50) do que por stops fixos.
+
+---
+
+## Próximos Passos
+
+1. 🟢 Testar em diferentes timeframes (4h, 1h)
+2. 🟢 Testar em diferentes símbolos (ETHUSDT, SOLUSDT)
+3. 🟢 Otimizar parâmetros das estratégias lucrativas
+4. 🟢 Implementar outras estratégias de mean-reversion com exit conditions
+
+---
+
+*Documento atualizado em: 2025-12-09*

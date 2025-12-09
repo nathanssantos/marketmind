@@ -74,11 +74,14 @@ export const SetupRenderer = ({
 
     const x = manager.indexToCenterX(klineIndex);
     const yEntry = manager.priceToY(setup.entryPrice);
-    const ySL = manager.priceToY(setup.stopLoss);
-    const yTP = manager.priceToY(setup.takeProfit);
+    const ySL = setup.stopLoss !== undefined ? manager.priceToY(setup.stopLoss) : null;
+    const yTP = setup.takeProfit !== undefined ? manager.priceToY(setup.takeProfit) : null;
 
     if (Math.abs(mouseX - x) < HIT_THRESHOLD * HIT_THRESHOLD_MULTIPLIER) {
-      if (Math.abs(mouseY - yEntry) < HIT_THRESHOLD || Math.abs(mouseY - ySL) < HIT_THRESHOLD || Math.abs(mouseY - yTP) < HIT_THRESHOLD) {
+      const hitEntry = Math.abs(mouseY - yEntry) < HIT_THRESHOLD;
+      const hitSL = ySL !== null && Math.abs(mouseY - ySL) < HIT_THRESHOLD;
+      const hitTP = yTP !== null && Math.abs(mouseY - yTP) < HIT_THRESHOLD;
+      if (hitEntry || hitSL || hitTP) {
         return true;
       }
     }
@@ -160,8 +163,8 @@ export const SetupRenderer = ({
 
     const x = manager.indexToCenterX(klineIndex);
     const yEntry = manager.priceToY(setup.entryPrice);
-    const ySL = manager.priceToY(setup.stopLoss);
-    const yTP = manager.priceToY(setup.takeProfit);
+    const ySL = setup.stopLoss !== undefined ? manager.priceToY(setup.stopLoss) : null;
+    const yTP = setup.takeProfit !== undefined ? manager.priceToY(setup.takeProfit) : null;
 
     const colors = DIRECTION_COLORS[setup.direction];
     const alpha = isHovered ? 1 : DEFAULT_ALPHA;
@@ -181,19 +184,23 @@ export const SetupRenderer = ({
     ctx.lineTo(chartRight, yEntry);
     ctx.stroke();
 
-    ctx.strokeStyle = colors.stopLoss;
-    ctx.setLineDash([DASH_PATTERN_LARGE, DASH_PATTERN_SMALL]);
-    ctx.beginPath();
-    ctx.moveTo(x, ySL);
-    ctx.lineTo(chartRight, ySL);
-    ctx.stroke();
+    if (ySL !== null) {
+      ctx.strokeStyle = colors.stopLoss;
+      ctx.setLineDash([DASH_PATTERN_LARGE, DASH_PATTERN_SMALL]);
+      ctx.beginPath();
+      ctx.moveTo(x, ySL);
+      ctx.lineTo(chartRight, ySL);
+      ctx.stroke();
+    }
 
-    ctx.strokeStyle = colors.takeProfit;
-    ctx.setLineDash([DASH_PATTERN_LARGE, DASH_PATTERN_SMALL]);
-    ctx.beginPath();
-    ctx.moveTo(x, yTP);
-    ctx.lineTo(chartRight, yTP);
-    ctx.stroke();
+    if (yTP !== null) {
+      ctx.strokeStyle = colors.takeProfit;
+      ctx.setLineDash([DASH_PATTERN_LARGE, DASH_PATTERN_SMALL]);
+      ctx.beginPath();
+      ctx.moveTo(x, yTP);
+      ctx.lineTo(chartRight, yTP);
+      ctx.stroke();
+    }
 
     ctx.setLineDash([]);
 

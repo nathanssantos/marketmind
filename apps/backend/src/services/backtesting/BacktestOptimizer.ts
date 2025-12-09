@@ -1,4 +1,4 @@
-import type { BacktestConfig, BacktestResult, BacktestMetrics } from '@marketmind/types';
+import type { BacktestConfig, BacktestMetrics, BacktestResult } from '@marketmind/types';
 import { BacktestEngine } from './BacktestEngine';
 import { ParameterGenerator, type ParameterCombination } from './ParameterGenerator';
 

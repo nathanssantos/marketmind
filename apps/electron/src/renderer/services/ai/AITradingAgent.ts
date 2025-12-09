@@ -268,8 +268,8 @@ ${klinesData}${setupsInfo}
 - Direction: ${setup.direction}
 - Confidence: ${confidence}%
 - Entry Price: ${setup.entryPrice.toFixed(2)}
-- Stop Loss: ${setup.stopLoss.toFixed(2)}
-- Take Profit: ${setup.takeProfit.toFixed(2)}
+- Stop Loss: ${setup.stopLoss?.toFixed(2) ?? 'N/A (indicator-based exit)'}
+- Take Profit: ${setup.takeProfit?.toFixed(2) ?? 'N/A (indicator-based exit)'}
 - Risk:Reward Ratio: 1:${riskReward}
 - Volume Confirmation: ${setup.volumeConfirmation ? 'Yes' : 'No'}`;
     }).join('\n\n');

@@ -99,7 +99,7 @@ export class SetupCancellationDetector {
     if (getKlineClose(current) < ema9Current) {
       return { isCancelled: true, reason: 'ema-reversal' };
     }
-    if (getKlineLow(current) < setup.stopLoss) {
+    if (setup.stopLoss !== undefined && getKlineLow(current) < setup.stopLoss) {
       return { isCancelled: true, reason: 'swing-lost' };
     }
     return { isCancelled: false };
@@ -118,7 +118,7 @@ export class SetupCancellationDetector {
     if (getKlineClose(current) > ema9Current) {
       return { isCancelled: true, reason: 'ema-reversal' };
     }
-    if (getKlineHigh(current) > setup.stopLoss) {
+    if (setup.stopLoss !== undefined && getKlineHigh(current) > setup.stopLoss) {
       return { isCancelled: true, reason: 'swing-lost' };
     }
     return { isCancelled: false };

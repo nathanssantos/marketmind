@@ -6,20 +6,20 @@
   "author": "MarketMind",
   "tags": ["momentum", "williams", "oscillator", "quick-trades"],
 
-  "status": "unprofitable",
+  "status": "active",
   "optimizedParams": {
     "maxPositionSize": 50,
     "useAlgorithmicLevels": true,
-    "onlyWithTrend": true,
+    "onlyWithTrend": false,
     "minConfidence": 55,
     "commission": 0.1
   },
   "backtestSummary": {
-    "profitFactor": 0.83,
-    "winRate": 35.29,
-    "totalTrades": 34,
-    "netPnlPercent": -5.17,
-    "testedAt": "2025-12-07",
+    "profitFactor": 1.20,
+    "winRate": 47.14,
+    "totalTrades": 70,
+    "netPnlPercent": -0.15,
+    "testedAt": "2025-12-09",
     "testedTimeframe": "1d",
     "testedSymbol": "BTCUSDT"
   },
@@ -31,11 +31,11 @@
   },
 
   "parameters": {
-    "williamsPeriod": { "default": 14, "min": 10, "max": 21, "step": 1, "description": "Williams %R period" },
+    "williamsPeriod": { "default": 5, "min": 2, "max": 14, "step": 1, "description": "Williams %R period (shorter for crypto)" },
     "oversold": { "default": -80, "min": -90, "max": -70, "step": 5, "description": "Oversold level" },
     "overbought": { "default": -20, "min": -30, "max": -10, "step": 5, "description": "Overbought level" },
-    "atrMultiplier": { "default": 1.25, "min": 1, "max": 2, "step": 0.25, "description": "ATR multiplier for stop" },
-    "rrMultiplier": { "default": 1.5, "min": 1, "max": 2.5, "step": 0.25, "description": "Risk-reward multiplier" }
+    "exitLevel": { "default": -50, "min": -60, "max": -40, "step": 5, "description": "Exit level (neutral zone)" },
+    "atrMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "ATR multiplier for safety stop" }
   },
 
   "indicators": {
@@ -71,15 +71,26 @@
   },
 
   "exit": {
+    "conditions": {
+      "long": {
+        "operator": "AND",
+        "conditions": [
+          { "left": "williamsR", "op": ">", "right": "$exitLevel" }
+        ]
+      },
+      "short": {
+        "operator": "AND",
+        "conditions": [
+          { "left": "williamsR", "op": "<", "right": "$exitLevel" }
+        ]
+      }
+    },
     "stopLoss": {
       "type": "atr",
       "multiplier": "$atrMultiplier",
       "indicator": "atr"
     },
-    "takeProfit": {
-      "type": "riskReward",
-      "multiplier": "$rrMultiplier"
-    }
+    "maxBarsInTrade": 10
   },
 
   "confidence": {
@@ -94,6 +105,6 @@
 
   "filters": {
     "minConfidence": 55,
-    "minRiskReward": 1.25
+    "minRiskReward": 0
   }
 }

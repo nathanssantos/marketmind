@@ -1,21 +1,21 @@
 import chalk from 'chalk';
 import ora from 'ora';
 // @ts-expect-error - cli-progress doesn't have types
-import cliProgress from 'cli-progress';
 import type { BacktestConfig, Interval } from '@marketmind/types';
+import cliProgress from 'cli-progress';
+import { ResultManager } from '../../services/backtesting/ResultManager';
 import { WalkForwardOptimizer, type ParameterRange, type WalkForwardConfig } from '../../services/backtesting/WalkForwardOptimizer';
 import { fetchHistoricalKlinesFromAPI } from '../../services/binance-historical';
 import { BacktestLogger, LogLevel } from '../utils/logger';
-import { ResultManager } from '../../services/backtesting/ResultManager';
 import {
-  validateSymbol,
-  validateInterval,
-  validateDateRange,
-  validateStrategy,
-  validateCapital,
-  validatePercentage,
-  validateParameterGrid,
-  ValidationError,
+    validateCapital,
+    validateDateRange,
+    validateInterval,
+    validateParameterGrid,
+    validatePercentage,
+    validateStrategy,
+    validateSymbol,
+    ValidationError,
 } from '../utils/validators';
 
 interface WalkForwardOptions {
@@ -30,7 +30,7 @@ interface WalkForwardOptions {
   maxPosition: string;
   commission: string;
   useAlgorithmicLevels: boolean;
-  onlyWithTrend: boolean;
+  withTrend: boolean;
   trainingMonths: string;
   testingMonths: string;
   stepMonths: string;

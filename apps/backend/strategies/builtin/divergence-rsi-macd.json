@@ -50,15 +50,17 @@
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "low", "op": "<", "right": "low.prev5" },
-        { "left": "rsi", "op": ">", "right": "30" }
+        { "left": "low", "op": "<", "right": "low.prev20" },
+        { "left": "rsi", "op": ">", "right": "30" },
+        { "left": "rsi", "op": ">", "right": "rsi.prev20" }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "high", "op": ">", "right": "high.prev5" },
-        { "left": "rsi", "op": "<", "right": "70" }
+        { "left": "high", "op": ">", "right": "high.prev20" },
+        { "left": "rsi", "op": "<", "right": "70" },
+        { "left": "rsi", "op": "<", "right": "rsi.prev20" }
       ]
     }
   },

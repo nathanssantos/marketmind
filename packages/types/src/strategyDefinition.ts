@@ -164,6 +164,16 @@ export interface TrailingStopConfig {
   breakEvenAfterR?: number;
 }
 
+/**
+ * Exit conditions for indicator-based exits
+ * Allows strategies to exit based on indicator signals (e.g., close > SMA5)
+ * rather than fixed percentage or ATR-based stops
+ */
+export interface ExitConditions {
+  long?: ConditionGroup;
+  short?: ConditionGroup;
+}
+
 // =============================================================================
 // Confidence Calculation Types
 // =============================================================================
@@ -291,12 +301,21 @@ export interface EntryConditions {
 }
 
 /**
- * Exit configuration with stop loss and take profit
+ * Exit configuration with stop loss, take profit, and indicator-based conditions
+ *
+ * Strategies can use:
+ * 1. Traditional SL/TP (fixed %, ATR-based)
+ * 2. Indicator-based exit conditions (e.g., close > SMA5 for mean-reversion)
+ * 3. Both: conditions for primary exit, SL as safety net
+ *
+ * At least one of stopLoss or conditions must be defined.
  */
 export interface ExitConfig {
-  stopLoss: ExitLevel;
-  takeProfit: ExitLevel;
+  stopLoss?: ExitLevel;
+  takeProfit?: ExitLevel;
   trailingStop?: TrailingStopConfig;
+  conditions?: ExitConditions;
+  maxBarsInTrade?: number;
 }
 
 /**

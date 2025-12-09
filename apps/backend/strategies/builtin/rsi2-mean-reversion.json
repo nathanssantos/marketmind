@@ -15,11 +15,11 @@
     "commission": 0.1
   },
   "backtestSummary": {
-    "profitFactor": 1.43,
-    "winRate": 51.72,
-    "totalTrades": 29,
-    "netPnlPercent": 6.89,
-    "testedAt": "2025-12-07",
+    "profitFactor": 1.21,
+    "winRate": 29.27,
+    "totalTrades": 41,
+    "netPnlPercent": 0.41,
+    "testedAt": "2025-12-09",
     "testedTimeframe": "1d",
     "testedSymbol": "BTCUSDT"
   },
@@ -33,8 +33,8 @@
   "parameters": {
     "rsiPeriod": { "default": 2, "min": 2, "max": 5, "step": 1, "description": "RSI period (2 is optimal)" },
     "rsiEntry": { "default": 10, "min": 5, "max": 20, "step": 5, "description": "RSI entry threshold (oversold)" },
-    "rsiExit": { "default": 70, "min": 60, "max": 80, "step": 5, "description": "RSI exit threshold" },
-    "emaTrend": { "default": 200, "min": 100, "max": 250, "step": 50, "description": "Trend filter EMA period" },
+    "rsiExit": { "default": 55, "min": 45, "max": 70, "step": 5, "description": "RSI exit threshold" },
+    "emaTrend": { "default": 50, "min": 20, "max": 200, "step": 10, "description": "Trend filter EMA period (50 for crypto)" },
     "atrPeriod": { "default": 14, "min": 10, "max": 20, "step": 2, "description": "ATR period" },
     "slMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "Stop loss ATR multiplier" },
     "tpMultiplier": { "default": 3, "min": 2, "max": 5, "step": 0.5, "description": "Take profit ATR multiplier" }

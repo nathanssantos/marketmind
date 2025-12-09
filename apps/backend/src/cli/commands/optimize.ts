@@ -1,24 +1,25 @@
 import chalk from 'chalk';
 import ora from 'ora';
 // @ts-expect-error - cli-progress doesn't have types
-import cliProgress from 'cli-progress';
 import type { BacktestConfig, Interval } from '@marketmind/types';
+import cliProgress from 'cli-progress';
 import { BacktestOptimizer } from '../../services/backtesting/BacktestOptimizer';
 import { ParameterGenerator } from '../../services/backtesting/ParameterGenerator';
+import { ResultManager } from '../../services/backtesting/ResultManager';
 import { fetchHistoricalKlinesFromAPI } from '../../services/binance-historical';
 import { BacktestLogger, LogLevel } from '../utils/logger';
-import { ResultManager } from '../../services/backtesting/ResultManager';
 import {
-  validateSymbol,
-  validateInterval,
-  validateDateRange,
-  validateStrategy,
-  validateCapital,
-  validatePercentage,
-  validateParameterGrid,
-  validateGridSearchSize,
-  validateParallelWorkers,
-  ValidationError,
+    validateCapital,
+    validateDateRange,
+    validateGridSearchSize,
+    validateInterval,
+    validateParallelWorkers,
+    validateParameterGrid,
+    validatePercentage,
+    validateRiskReward,
+    validateStrategy,
+    validateSymbol,
+    ValidationError,
 } from '../utils/validators';
 
 interface OptimizeOptions {
@@ -28,12 +29,14 @@ interface OptimizeOptions {
   start: string;
   end: string;
   capital: string;
+  stopLoss: string;
+  takeProfit: string;
   param: string[];
   minConfidence?: string;
   maxPosition: string;
   commission: string;
   useAlgorithmicLevels: boolean;
-  onlyWithTrend: boolean;
+  withTrend: boolean;
   sortBy: string;
   top: string;
   parallel: string;
@@ -55,10 +58,17 @@ export async function optimizeCommand(options: OptimizeOptions) {
     validateGridSearchSize(options.param);
 
     const capital = validateCapital(options.capital);
+    const stopLoss = validatePercentage(options.stopLoss, 'Stop loss', 0.1, 50);
+    const takeProfit = validatePercentage(options.takeProfit, 'Take profit', 0.1, 100);
     const parallelWorkers = validateParallelWorkers(options.parallel);
     const topN = validatePercentage(options.top, 'Top N', 1, 100);
     const maxPosition = validatePercentage(options.maxPosition, 'Max position', 1, 100);
     const commission = validatePercentage(options.commission, 'Commission', 0, 10);
+
+    // Validate risk/reward ratio
+    if (!options.useAlgorithmicLevels) {
+      validateRiskReward(stopLoss, takeProfit);
+    }
 
     // Validate optional parameters
     let minConfidence: number | undefined;
@@ -102,10 +112,12 @@ export async function optimizeCommand(options: OptimizeOptions) {
       endDate: options.end,
       initialCapital: capital,
       setupTypes: [options.strategy],
+      stopLossPercent: stopLoss,        // FIXED: Add SL
+      takeProfitPercent: takeProfit,    // FIXED: Add TP
       maxPositionSize: maxPosition,
       commission: commission / 100,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
-      onlyWithTrend: options.onlyWithTrend,
+      onlyWithTrend: options.withTrend ?? false,  // FIXED: Default to false, only true if --with-trend is passed
     };
 
     // Add minConfidence to base config if specified

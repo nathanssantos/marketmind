@@ -34,9 +34,9 @@
       "type": "atr",
       "params": { "period": "$atrPeriod" }
     },
-    "ema200": {
+    "ema50": {
       "type": "ema",
-      "params": { "period": 200 }
+      "params": { "period": 50 }
     }
   },
 
@@ -46,7 +46,8 @@
       "conditions": [
         { "left": "close", "op": ">", "right": "open" },
         { "left": "volume", "op": ">", "right": "volume.sma20" },
-        { "left": "close", "op": ">", "right": "ema200" }
+        { "left": "low.prev", "op": "<", "right": "low.prev50" },
+        { "left": "close", "op": ">", "right": "ema50" }
       ]
     },
     "short": {
@@ -54,7 +55,8 @@
       "conditions": [
         { "left": "close", "op": "<", "right": "open" },
         { "left": "volume", "op": ">", "right": "volume.sma20" },
-        { "left": "close", "op": "<", "right": "ema200" }
+        { "left": "high.prev", "op": ">", "right": "high.prev50" },
+        { "left": "close", "op": "<", "right": "ema50" }
       ]
     }
   },
@@ -82,13 +84,7 @@
   },
 
   "filters": {
-    "minConfidence": 75,
-    "minRiskReward": 2.0,
-    "trendFilter": {
-      "enabled": true,
-      "indicator": "ema",
-      "period": 200,
-      "allowCounterTrend": false
-    }
+    "minConfidence": 70,
+    "minRiskReward": 1.5
   }
 }

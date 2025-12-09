@@ -486,29 +486,80 @@ export class StrategyLoader {
 
   /**
    * Validate exit configuration
+   * Exit can use:
+   * 1. Traditional SL/TP (stopLoss + takeProfit required)
+   * 2. Indicator-based exit (conditions + optional stopLoss as safety)
+   * 3. Both combined
    */
   private validateExit(
     exit: Record<string, unknown>,
     errors: StrategyValidationError[]
   ): void {
-    if (!exit['stopLoss']) {
+    const hasStopLoss = !!exit['stopLoss'];
+    const hasTakeProfit = !!exit['takeProfit'];
+    const hasConditions = !!exit['conditions'];
+
+    if (!hasStopLoss && !hasConditions) {
       errors.push({
-        path: 'exit.stopLoss',
-        message: 'exit.stopLoss is required',
+        path: 'exit',
+        message: 'exit must have either stopLoss or conditions (or both)',
         severity: 'error',
       });
-    } else {
+    }
+
+    if (!hasTakeProfit && !hasConditions) {
+      errors.push({
+        path: 'exit',
+        message: 'exit must have either takeProfit or conditions (or both)',
+        severity: 'error',
+      });
+    }
+
+    if (hasStopLoss) {
       this.validateExitLevel(exit['stopLoss'], 'exit.stopLoss', errors);
     }
 
-    if (!exit['takeProfit']) {
+    if (hasTakeProfit) {
+      this.validateExitLevel(exit['takeProfit'], 'exit.takeProfit', errors);
+    }
+
+    if (hasConditions) {
+      this.validateExitConditions(exit['conditions'], errors);
+    }
+  }
+
+  /**
+   * Validate exit conditions
+   */
+  private validateExitConditions(
+    conditions: unknown,
+    errors: StrategyValidationError[]
+  ): void {
+    if (!conditions || typeof conditions !== 'object') {
       errors.push({
-        path: 'exit.takeProfit',
-        message: 'exit.takeProfit is required',
+        path: 'exit.conditions',
+        message: 'exit.conditions must be an object',
         severity: 'error',
       });
-    } else {
-      this.validateExitLevel(exit['takeProfit'], 'exit.takeProfit', errors);
+      return;
+    }
+
+    const cond = conditions as Record<string, unknown>;
+
+    if (!cond['long'] && !cond['short']) {
+      errors.push({
+        path: 'exit.conditions',
+        message: 'exit.conditions must have at least long or short',
+        severity: 'error',
+      });
+    }
+
+    if (cond['long']) {
+      this.validateConditionGroup(cond['long'], 'exit.conditions.long', errors);
+    }
+
+    if (cond['short']) {
+      this.validateConditionGroup(cond['short'], 'exit.conditions.short', errors);
     }
   }
 

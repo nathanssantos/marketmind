@@ -4,21 +4,21 @@
  * Analyzes parameter sensitivity to detect over-optimization and identify robust parameter regions.
  */
 
-import chalk from 'chalk';
-import ora from 'ora';
-import Table from 'cli-table3';
 import type { Kline, TimeInterval } from '@marketmind/types';
+import chalk from 'chalk';
+import Table from 'cli-table3';
+import ora from 'ora';
 import { BacktestEngine } from '../../services/backtesting/BacktestEngine';
 import { ParameterSensitivityAnalyzer, type ParameterRange, type SensitivityAnalysis } from '../../services/backtesting/ParameterSensitivityAnalyzer';
 import { ResultManager } from '../../services/backtesting/ResultManager';
 import { fetchHistoricalKlinesFromAPI } from '../../services/binance-historical';
 import {
-  validateSymbol,
-  validateInterval,
-  validateDateRange,
-  validatePercentage,
-  validateNumeric,
-  ValidationError,
+    validateDateRange,
+    validateInterval,
+    validateNumeric,
+    validatePercentage,
+    validateSymbol,
+    ValidationError,
 } from '../utils/validators';
 
 interface SensitivityOptions {
@@ -33,7 +33,7 @@ interface SensitivityOptions {
   maxPosition: string;
   commission: string;
   useAlgorithmicLevels: boolean;
-  onlyWithTrend: boolean;
+  withTrend: boolean;
   metric: string;
   verbose: boolean;
 }

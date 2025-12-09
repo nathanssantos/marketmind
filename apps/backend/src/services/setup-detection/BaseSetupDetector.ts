@@ -29,8 +29,8 @@ export abstract class BaseSetupDetector {
     klines: Kline[],
     currentIndex: number,
     entryPrice: number,
-    stopLoss: number,
-    takeProfit: number,
+    stopLoss: number | null,
+    takeProfit: number | null,
     confidence: number,
     volumeConfirmation: boolean,
     indicatorConfluence: number,
@@ -49,8 +49,8 @@ export abstract class BaseSetupDetector {
       direction,
       openTime: current.openTime,
       entryPrice,
-      stopLoss,
-      takeProfit,
+      stopLoss: stopLoss ?? undefined,
+      takeProfit: takeProfit ?? undefined,
       riskRewardRatio,
       confidence,
       volumeConfirmation,
@@ -64,9 +64,11 @@ export abstract class BaseSetupDetector {
 
   protected calculateRR(
     entry: number,
-    stopLoss: number,
-    takeProfit: number,
+    stopLoss: number | null,
+    takeProfit: number | null,
   ): number {
+    if (stopLoss === null || takeProfit === null) return 0;
+
     const risk = Math.abs(entry - stopLoss);
     const reward = Math.abs(takeProfit - entry);
 

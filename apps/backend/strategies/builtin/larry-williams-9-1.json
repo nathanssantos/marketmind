@@ -50,7 +50,8 @@
       "conditions": [
         { "left": "ema9.prev", "op": "<=", "right": "ema9.prev2" },
         { "left": "ema9", "op": ">", "right": "ema9.prev" },
-        { "left": "close", "op": ">", "right": "ema9" }
+        { "left": "close", "op": ">", "right": "ema9" },
+        { "left": "volume", "op": ">", "right": "volume.sma20" }
       ]
     },
     "short": {
@@ -58,7 +59,8 @@
       "conditions": [
         { "left": "ema9.prev", "op": ">=", "right": "ema9.prev2" },
         { "left": "ema9", "op": "<", "right": "ema9.prev" },
-        { "left": "close", "op": "<", "right": "ema9" }
+        { "left": "close", "op": "<", "right": "ema9" },
+        { "left": "volume", "op": ">", "right": "volume.sma20" }
       ]
     }
   },

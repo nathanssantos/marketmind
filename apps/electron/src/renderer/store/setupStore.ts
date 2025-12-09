@@ -32,8 +32,8 @@ export interface SetupExecution {
   timestamp: number;
   openTime?: number;
   entryPrice: number;
-  stopLoss: number;
-  takeProfit: number;
+  stopLoss?: number;
+  takeProfit?: number;
   exitPrice?: number;
   exitTimestamp?: number;
   status: 'pending' | 'active' | 'won' | 'lost' | 'cancelled';

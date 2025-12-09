@@ -31,7 +31,7 @@ export class AutoTradingService {
     walletBalance: number
   ): OrderParams {
     const entryPrice = parseFloat(setup.entryPrice);
-    const stopLoss = parseFloat(setup.stopLoss);
+    const stopLoss = setup.stopLoss ? parseFloat(setup.stopLoss) : entryPrice * 0.98;
 
     const positionSize = this.calculatePositionSize(
       config,

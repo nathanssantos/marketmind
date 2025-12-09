@@ -1,17 +1,17 @@
+import type { BacktestConfig } from '@marketmind/types';
 import chalk from 'chalk';
 import ora from 'ora';
-import type { BacktestConfig } from '@marketmind/types';
 import { BacktestEngine } from '../../services/backtesting/BacktestEngine';
-import { BacktestLogger, LogLevel } from '../utils/logger';
 import { ResultManager } from '../../services/backtesting/ResultManager';
+import { BacktestLogger, LogLevel } from '../utils/logger';
 import {
-  validateSymbol,
-  validateInterval,
-  validateDateRange,
-  validateStrategy,
   validateCapital,
+  validateDateRange,
+  validateInterval,
   validatePercentage,
   validateRiskReward,
+  validateStrategy,
+  validateSymbol,
   ValidationError,
 } from '../utils/validators';
 
@@ -28,7 +28,7 @@ interface ValidateOptions {
   maxPosition: string;
   commission: string;
   useAlgorithmicLevels: boolean;
-  trendFilter: boolean;
+  withTrend: boolean;
   optimized: boolean;
   verbose: boolean;
 }
@@ -82,7 +82,7 @@ export async function validateCommand(options: ValidateOptions) {
       maxPositionSize: maxPosition,
       commission: commission / 100, // Convert from % to decimal
       useAlgorithmicLevels: options.useAlgorithmicLevels,
-      onlyWithTrend: options.trendFilter,
+      onlyWithTrend: options.withTrend ?? false,  // FIXED: Default to false
       useOptimizedSettings: options.optimized,
     };
 

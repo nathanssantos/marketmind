@@ -6,23 +6,21 @@
  * Extends BaseSetupDetector to integrate with SetupDetectionService.
  */
 
-import type { Kline, SetupDirection } from '@marketmind/types';
 import type {
-  StrategyDefinition,
-  ComputedIndicators,
-  EvaluationContext,
-  ExitContext,
+    ComputedIndicators,
+    EvaluationContext,
+    ExitContext, Kline, SetupDirection, StrategyDefinition
 } from '@marketmind/types';
 
 import {
-  BaseSetupDetector,
-  type SetupDetectorConfig,
-  type SetupDetectorResult,
+    BaseSetupDetector,
+    type SetupDetectorConfig,
+    type SetupDetectorResult,
 } from '../BaseSetupDetector';
 
-import { IndicatorEngine } from './IndicatorEngine';
 import { ConditionEvaluator } from './ConditionEvaluator';
 import { ExitCalculator } from './ExitCalculator';
+import { IndicatorEngine } from './IndicatorEngine';
 
 /**
  * Configuration for StrategyInterpreter
@@ -98,16 +96,13 @@ export class StrategyInterpreter extends BaseSetupDetector {
       params: this.resolvedParams,
     };
 
-    const stopLoss = this.exitCalculator.calculateStopLoss(
-      this.strategy.exit.stopLoss,
-      exitContext
-    );
+    const stopLoss = this.strategy.exit.stopLoss
+      ? this.exitCalculator.calculateStopLoss(this.strategy.exit.stopLoss, exitContext)
+      : null;
 
-    const takeProfit = this.exitCalculator.calculateTakeProfit(
-      this.strategy.exit.takeProfit,
-      exitContext,
-      stopLoss
-    );
+    const takeProfit = this.strategy.exit.takeProfit
+      ? this.exitCalculator.calculateTakeProfit(this.strategy.exit.takeProfit, exitContext, stopLoss ?? 0)
+      : null;
 
     // Calculate confidence
     const confidence = this.exitCalculator.calculateConfidence(
@@ -123,8 +118,10 @@ export class StrategyInterpreter extends BaseSetupDetector {
       direction
     );
 
-    // Check minimum requirements
-    if (!this.meetsMinimumRequirements(confidence, riskReward)) {
+    // Check minimum requirements (skip riskReward check for indicator-based exit strategies)
+    const hasIndicatorBasedExit = !!this.strategy.exit.conditions;
+    const effectiveRiskReward = hasIndicatorBasedExit ? this.config.minRiskReward : riskReward;
+    if (!this.meetsMinimumRequirements(confidence, effectiveRiskReward)) {
       return { setup: null, confidence };
     }
 
@@ -200,7 +197,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
    * Check if setup passes strategy filters
    */
   private passesFilters(confidence: number, riskReward: number): boolean {
-    const { filters } = this.strategy;
+    const { filters, exit } = this.strategy;
 
     if (!filters) {
       return true;
@@ -210,12 +207,10 @@ export class StrategyInterpreter extends BaseSetupDetector {
       return false;
     }
 
-    if (filters.minRiskReward && riskReward < filters.minRiskReward) {
+    const hasIndicatorBasedExit = !!exit.conditions;
+    if (filters.minRiskReward && riskReward < filters.minRiskReward && !hasIndicatorBasedExit) {
       return false;
     }
-
-    // TODO: Add time filters support
-    // TODO: Add trend filter support
 
     return true;
   }

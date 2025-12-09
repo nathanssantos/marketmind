@@ -32,8 +32,8 @@
 
   "parameters": {
     "rsiPeriod": { "default": 2, "min": 2, "max": 3, "step": 1, "description": "RSI period (2 is original)" },
-    "rsiEntry": { "default": 5, "min": 2, "max": 10, "step": 1, "description": "RSI entry threshold (lower = better)" },
-    "smaTrend": { "default": 200, "min": 150, "max": 250, "step": 50, "description": "Trend filter SMA period" },
+    "rsiEntry": { "default": 15, "min": 5, "max": 25, "step": 1, "description": "RSI entry threshold (crypto needs higher value than stocks)" },
+    "smaTrend": { "default": 50, "min": 20, "max": 200, "step": 10, "description": "Trend filter SMA period (200 for stocks, 50 for crypto)" },
     "smaExit": { "default": 5, "min": 3, "max": 10, "step": 1, "description": "Exit SMA period" },
     "atrPeriod": { "default": 14, "min": 10, "max": 20, "step": 2, "description": "ATR for position sizing" },
     "slMultiplier": { "default": 3, "min": 2, "max": 5, "step": 0.5, "description": "Stop loss ATR (Connors uses none, but we add for safety)" }
@@ -69,15 +69,20 @@
   },
 
   "exit": {
+    "conditions": {
+      "long": {
+        "operator": "AND",
+        "conditions": [
+          { "left": "close", "op": ">", "right": "sma5" }
+        ]
+      }
+    },
     "stopLoss": {
       "type": "atr",
       "multiplier": "$slMultiplier",
       "indicator": "atr"
     },
-    "takeProfit": {
-      "type": "riskReward",
-      "multiplier": 2
-    }
+    "maxBarsInTrade": 10
   },
 
   "confidence": {

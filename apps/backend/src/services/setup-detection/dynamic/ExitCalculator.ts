@@ -311,19 +311,20 @@ export class ExitCalculator {
 
   /**
    * Calculate risk-reward ratio
+   * Returns 0 if stopLoss or takeProfit is null (indicator-based exit strategies)
    */
   calculateRiskReward(
     entryPrice: number,
-    stopLoss: number,
-    takeProfit: number,
+    stopLoss: number | null,
+    takeProfit: number | null,
     _direction: 'LONG' | 'SHORT'
   ): number {
+    if (stopLoss === null || takeProfit === null) return 0;
+
     const riskDistance = Math.abs(entryPrice - stopLoss);
     const rewardDistance = Math.abs(takeProfit - entryPrice);
 
-    if (riskDistance === 0) {
-      return 0;
-    }
+    if (riskDistance === 0) return 0;
 
     return rewardDistance / riskDistance;
   }

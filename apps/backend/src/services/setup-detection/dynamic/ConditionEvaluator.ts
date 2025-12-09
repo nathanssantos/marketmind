@@ -155,6 +155,15 @@ export class ConditionEvaluator {
       return new Array(length).fill(operand);
     }
 
+    // Handle numeric strings (e.g., "30" should be treated as number 30)
+    if (typeof operand === 'string' && /^-?\d+\.?\d*$/.test(operand)) {
+      const parsed = parseFloat(operand);
+      if (!isNaN(parsed)) {
+        const length = this.getIndicatorLength(indicators);
+        return new Array(length).fill(parsed);
+      }
+    }
+
     if (isParameterReference(operand)) {
       const paramName = operand.slice(1);
       const value = params[paramName];
@@ -211,6 +220,12 @@ export class ConditionEvaluator {
 
     if (typeof operand === 'number') {
       return operand;
+    }
+
+    // Handle numeric strings (e.g., "30" should be treated as number 30)
+    if (typeof operand === 'string' && /^-?\d+\.?\d*$/.test(operand)) {
+      const parsed = parseFloat(operand);
+      if (!isNaN(parsed)) return parsed;
     }
 
     if (isParameterReference(operand)) {

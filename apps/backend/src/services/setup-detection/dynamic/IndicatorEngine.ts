@@ -74,8 +74,8 @@ export class IndicatorEngine {
       },
     };
 
-    // Compute volume SMA for confidence bonuses
-    const volumeSma20 = calculateSMA(klines, 20);
+    // Compute volume SMA for confidence bonuses (calculate SMA of volume, not close)
+    const volumeSma20 = this.calculateVolumeSMA(klines, 20);
     result['volume'] = {
       type: 'sma' as IndicatorType,
       values: {
@@ -411,20 +411,20 @@ export class IndicatorEngine {
 
     if (effectiveIndex < 0) return null;
 
-    // Handle price references
-    if (['open', 'high', 'low', 'close', 'volume'].includes(base)) {
-      const priceIndicator = indicators['_price'];
-      if (!priceIndicator) return null;
-      const values = priceIndicator.values as Record<string, (number | null)[]>;
-      return values[base]?.[effectiveIndex] ?? null;
-    }
-
-    // Handle volume.sma20 and volume.current
+    // Handle volume.sma20 and volume.current FIRST (before checking price references)
     if (base === 'volume' && subKey) {
       const volumeIndicator = indicators['volume'];
       if (!volumeIndicator) return null;
       const values = volumeIndicator.values as Record<string, (number | null)[]>;
       return values[subKey]?.[effectiveIndex] ?? null;
+    }
+
+    // Handle price references (including raw volume when no subKey)
+    if (['open', 'high', 'low', 'close', 'volume'].includes(base)) {
+      const priceIndicator = indicators['_price'];
+      if (!priceIndicator) return null;
+      const values = priceIndicator.values as Record<string, (number | null)[]>;
+      return values[base]?.[effectiveIndex] ?? null;
     }
 
     if (!base) return null;
@@ -508,6 +508,35 @@ export class IndicatorEngine {
    */
   clearCache(): void {
     this.cache.clear();
+  }
+
+  /**
+   * Calculate SMA of volume values (not close prices)
+   */
+  private calculateVolumeSMA(klines: Kline[], period: number): (number | null)[] {
+    if (period <= 0 || klines.length === 0) {
+      return [];
+    }
+
+    const result: (number | null)[] = [];
+
+    for (let i = 0; i < klines.length; i++) {
+      if (i < period - 1) {
+        result.push(null);
+        continue;
+      }
+
+      let sum = 0;
+      for (let j = 0; j < period; j++) {
+        const kline = klines[i - j];
+        if (!kline) continue;
+        sum += parseFloat(kline.volume);
+      }
+
+      result.push(sum / period);
+    }
+
+    return result;
   }
 
   /**

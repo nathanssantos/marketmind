@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
 import chalk from 'chalk';
-import { validateCommand } from './commands/validate';
-import { optimizeCommand } from './commands/optimize';
+import { Command } from 'commander';
 import { compareCommand } from './commands/compare';
 import { exportCommand } from './commands/export';
-import { walkforwardCommand } from './commands/walkforward';
 import { montecarloCommand } from './commands/montecarlo';
+import { optimizeCommand } from './commands/optimize';
 import { sensitivityCommand } from './commands/sensitivity';
+import { validateCommand } from './commands/validate';
+import { walkforwardCommand } from './commands/walkforward';
 
 const program = new Command();
 
@@ -33,7 +33,7 @@ program
   .option('--max-position <percent>', 'Maximum position size as % of capital', '10')
   .option('--commission <percent>', 'Trading commission percentage', '0.1')
   .option('--use-algorithmic-levels', 'Use strategy\'s calculated SL/TP instead of fixed percentages', false)
-  .option('--no-trend-filter', 'Disable EMA200 trend filter (allow counter-trend trades)')
+  .option('--with-trend', 'Enable EMA200 trend filter (only trade with trend)', false)
   .option('--optimized', 'Use strategy\'s optimized parameters (position size, trend filter, etc.)', false)
   .option('-v, --verbose', 'Show detailed trade-by-trade logs', false)
   .action(validateCommand);
@@ -51,11 +51,13 @@ program
     return previous ? [...previous, value] : [value];
   }, [] as string[])
   .option('-c, --capital <amount>', 'Initial capital in USD', '1000')
+  .option('--stop-loss <percent>', 'Stop loss percentage', '2')
+  .option('--take-profit <percent>', 'Take profit percentage', '6')
   .option('--min-confidence <level>', 'Minimum confidence level (0-100)')
   .option('--max-position <percent>', 'Maximum position size as % of capital', '10')
   .option('--commission <percent>', 'Trading commission percentage', '0.1')
   .option('--use-algorithmic-levels', 'Use strategy\'s calculated SL/TP', false)
-  .option('--no-trend-filter', 'Disable EMA200 trend filter (allow counter-trend trades)')
+  .option('--with-trend', 'Enable EMA200 trend filter (only trade with trend)', false)
   .option('--sort-by <metric>', 'Metric to sort by', 'totalPnlPercent')
   .option('--top <n>', 'Number of top results to display', '10')
   .option('--parallel <n>', 'Number of parallel workers', '4')
@@ -102,7 +104,7 @@ program
   .option('--max-position <percent>', 'Maximum position size as % of capital', '10')
   .option('--commission <percent>', 'Trading commission percentage', '0.1')
   .option('--use-algorithmic-levels', 'Use strategy\'s calculated SL/TP', false)
-  .option('--no-trend-filter', 'Disable EMA200 trend filter (allow counter-trend trades)')
+  .option('--with-trend', 'Enable EMA200 trend filter (only trade with trend)', false)
   .option('--training-months <n>', 'Training window size in months', '6')
   .option('--testing-months <n>', 'Testing window size in months', '2')
   .option('--step-months <n>', 'Step size for moving windows in months', '2')
@@ -125,7 +127,7 @@ program
   .option('--max-position <percent>', 'Maximum position size as % of capital', '10')
   .option('--commission <percent>', 'Trading commission percentage', '0.1')
   .option('--use-algorithmic-levels', 'Use strategy\'s calculated SL/TP', false)
-  .option('--no-trend-filter', 'Disable EMA200 trend filter (allow counter-trend trades)')
+  .option('--with-trend', 'Enable EMA200 trend filter (only trade with trend)', false)
   .option('--simulations <n>', 'Number of Monte Carlo simulations (100-100000)', '1000')
   .option('--confidence-level <level>', 'Confidence level (0.80-0.99)', '0.95')
   .option('-v, --verbose', 'Show detailed logs', false)
@@ -148,7 +150,7 @@ program
   .option('--max-position <percent>', 'Maximum position size as % of capital', '10')
   .option('--commission <percent>', 'Trading commission percentage', '0.1')
   .option('--use-algorithmic-levels', 'Use strategy\'s calculated SL/TP', false)
-  .option('--no-trend-filter', 'Disable EMA200 trend filter (allow counter-trend trades)')
+  .option('--with-trend', 'Enable EMA200 trend filter (only trade with trend)', false)
   .option('--metric <metric>', 'Metric to analyze (sharpeRatio, totalReturn, profitFactor, winRate)', 'sharpeRatio')
   .option('-v, --verbose', 'Show detailed parameter-by-parameter results', false)
   .action(sensitivityCommand);

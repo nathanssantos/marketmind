@@ -35,9 +35,9 @@
       "type": "atr",
       "params": { "period": "$atrPeriod" }
     },
-    "ema200": {
+    "ema50": {
       "type": "ema",
-      "params": { "period": 200 }
+      "params": { "period": 50 }
     }
   },
 
@@ -45,17 +45,19 @@
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "low.prev", "op": "<", "right": "low.prev2" },
+        { "left": "low.prev", "op": "<", "right": "low.prev20" },
         { "left": "close", "op": ">", "right": "close.prev" },
-        { "left": "close", "op": ">", "right": "low.prev2" }
+        { "left": "close", "op": ">", "right": "low.prev20" },
+        { "left": "volume", "op": ">", "right": "volume.sma20" }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "high.prev", "op": ">", "right": "high.prev2" },
+        { "left": "high.prev", "op": ">", "right": "high.prev20" },
         { "left": "close", "op": "<", "right": "close.prev" },
-        { "left": "close", "op": "<", "right": "high.prev2" }
+        { "left": "close", "op": "<", "right": "high.prev20" },
+        { "left": "volume", "op": ">", "right": "volume.sma20" }
       ]
     }
   },
@@ -81,7 +83,7 @@
   },
 
   "filters": {
-    "minConfidence": 75,
-    "minRiskReward": 2.0
+    "minConfidence": 65,
+    "minRiskReward": 1.5
   }
 }

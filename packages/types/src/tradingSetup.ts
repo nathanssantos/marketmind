@@ -35,8 +35,8 @@ export interface TradingSetup {
   direction: SetupDirection;
   openTime: number;
   entryPrice: number;
-  stopLoss: number;
-  takeProfit: number;
+  stopLoss?: number;
+  takeProfit?: number;
   riskRewardRatio: number;
   confidence: number;
   volumeConfirmation: boolean;

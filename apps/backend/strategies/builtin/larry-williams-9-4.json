@@ -51,7 +51,8 @@
         { "left": "ema9.prev3", "op": "<", "right": "ema9.prev2" },
         { "left": "ema9.prev2", "op": ">", "right": "ema9.prev" },
         { "left": "ema9.prev", "op": "<", "right": "ema9" },
-        { "left": "low.prev", "op": ">=", "right": "low.prev2" }
+        { "left": "low.prev", "op": ">=", "right": "low.prev2" },
+        { "left": "volume", "op": ">", "right": "volume.sma20" }
       ]
     },
     "short": {
@@ -60,7 +61,8 @@
         { "left": "ema9.prev3", "op": ">", "right": "ema9.prev2" },
         { "left": "ema9.prev2", "op": "<", "right": "ema9.prev" },
         { "left": "ema9.prev", "op": ">", "right": "ema9" },
-        { "left": "high.prev", "op": "<=", "right": "high.prev2" }
+        { "left": "high.prev", "op": "<=", "right": "high.prev2" },
+        { "left": "volume", "op": ">", "right": "volume.sma20" }
       ]
     }
   },

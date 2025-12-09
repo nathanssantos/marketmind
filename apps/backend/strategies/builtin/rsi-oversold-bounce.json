@@ -6,7 +6,7 @@
   "author": "MarketMind",
   "tags": ["reversal", "rsi", "oversold", "momentum"],
 
-  "status": "unprofitable",
+  "status": "active",
   "optimizedParams": {
     "maxPositionSize": 60,
     "useAlgorithmicLevels": true,
@@ -15,11 +15,11 @@
     "commission": 0.1
   },
   "backtestSummary": {
-    "profitFactor": 0.85,
-    "winRate": 41.67,
-    "totalTrades": 12,
-    "netPnlPercent": -1.65,
-    "testedAt": "2025-12-07",
+    "profitFactor": 2.16,
+    "winRate": 53.85,
+    "totalTrades": 13,
+    "netPnlPercent": 1.17,
+    "testedAt": "2025-12-09",
     "testedTimeframe": "1d",
     "testedSymbol": "BTCUSDT"
   },
@@ -63,15 +63,20 @@
   },
 
   "exit": {
+    "conditions": {
+      "long": {
+        "operator": "AND",
+        "conditions": [
+          { "left": "rsi", "op": ">", "right": "$exitLevel" }
+        ]
+      }
+    },
     "stopLoss": {
       "type": "atr",
       "multiplier": "$atrMultiplier",
       "indicator": "atr"
     },
-    "takeProfit": {
-      "type": "riskReward",
-      "multiplier": 2
-    }
+    "maxBarsInTrade": 10
   },
 
   "confidence": {
@@ -86,6 +91,6 @@
 
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 1.5
+    "minRiskReward": 0
   }
 }

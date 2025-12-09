@@ -1,19 +1,19 @@
+import type { BacktestConfig, Interval } from '@marketmind/types';
 import chalk from 'chalk';
 import ora from 'ora';
-import type { BacktestConfig, Interval } from '@marketmind/types';
 import { BacktestEngine } from '../../services/backtesting/BacktestEngine';
 import { MonteCarloSimulator, type MonteCarloConfig } from '../../services/backtesting/MonteCarloSimulator';
+import { ResultManager } from '../../services/backtesting/ResultManager';
 import { fetchHistoricalKlinesFromAPI } from '../../services/binance-historical';
 import { BacktestLogger, LogLevel } from '../utils/logger';
-import { ResultManager } from '../../services/backtesting/ResultManager';
 import {
-  validateSymbol,
-  validateInterval,
-  validateDateRange,
-  validateStrategy,
-  validateCapital,
-  validatePercentage,
-  ValidationError,
+    validateCapital,
+    validateDateRange,
+    validateInterval,
+    validatePercentage,
+    validateStrategy,
+    validateSymbol,
+    ValidationError,
 } from '../utils/validators';
 
 interface MonteCarloOptions {
@@ -27,7 +27,7 @@ interface MonteCarloOptions {
   maxPosition: string;
   commission: string;
   useAlgorithmicLevels: boolean;
-  onlyWithTrend: boolean;
+  withTrend: boolean;
   simulations: string;
   confidenceLevel: string;
   verbose: boolean;

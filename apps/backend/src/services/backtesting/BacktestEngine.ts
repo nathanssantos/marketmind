@@ -1,11 +1,11 @@
-import type { BacktestConfig, BacktestResult, Interval, StrategyDefinition, OptimizedBacktestParams } from '@marketmind/types';
+import type { BacktestConfig, BacktestResult, ComputedIndicators, EvaluationContext, Interval, Kline, OptimizedBacktestParams, StrategyDefinition } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { randomBytes } from 'crypto';
-import { resolve, dirname } from 'path';
+import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { fetchHistoricalKlinesFromAPI } from '../binance-historical';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
-import { StrategyLoader } from '../setup-detection/dynamic';
+import { ConditionEvaluator, IndicatorEngine, StrategyLoader } from '../setup-detection/dynamic';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -19,7 +19,7 @@ export class BacktestEngine {
    * Merge optimizedParams from multiple strategies.
    * When multiple strategies are tested together:
    * - Uses the most conservative (lowest) maxPositionSize
-   * - onlyWithTrend is true if ANY strategy requires it
+   * - onlyWithTrend is DISABLED here (applied per-strategy instead)
    * - useAlgorithmicLevels is true if ANY strategy uses it
    * - minConfidence is the highest of all strategies
    * - commission uses the highest value
@@ -33,7 +33,7 @@ export class BacktestEngine {
     return {
       maxPositionSize: Math.min(...allParams.map(p => p.maxPositionSize)),
       useAlgorithmicLevels: allParams.some(p => p.useAlgorithmicLevels),
-      onlyWithTrend: allParams.some(p => p.onlyWithTrend),
+      onlyWithTrend: false, // FIXED: Don't apply globally, check per-strategy instead
       minConfidence: Math.max(...allParams.map(p => p.minConfidence ?? 0)) || undefined,
       commission: Math.max(...allParams.map(p => p.commission ?? 0.1)),
       stopLossPercent: allParams[0]?.stopLossPercent,
@@ -132,6 +132,7 @@ export class BacktestEngine {
 
       // Load dynamic strategies if requested
       let loadedStrategies: StrategyDefinition[] = [];
+      const strategyMap = new Map<string, StrategyDefinition>();
       if (requestedDynamic.length > 0) {
         const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
         const loader = new StrategyLoader([strategiesDir]);
@@ -141,13 +142,18 @@ export class BacktestEngine {
           if (requestedDynamic.includes(strategyDef.id)) {
             setupDetectionService.loadStrategy(strategyDef, strategyOverrides);
             loadedStrategies.push(strategyDef);
+            strategyMap.set(strategyDef.id, strategyDef);
             console.log(`[Backtest] Loaded dynamic strategy: ${strategyDef.id}`);
           }
         }
       }
 
+      const indicatorEngine = new IndicatorEngine();
+      const conditionEvaluator = new ConditionEvaluator(indicatorEngine);
+
       // Apply optimizedParams from strategy definitions if useOptimizedSettings is enabled
       let effectiveConfig = { ...config };
+      
       if (config.useOptimizedSettings && loadedStrategies.length > 0) {
         const mergedParams = this.mergeOptimizedParams(loadedStrategies);
         if (mergedParams) {
@@ -155,28 +161,21 @@ export class BacktestEngine {
             ...effectiveConfig,
             maxPositionSize: mergedParams.maxPositionSize ?? effectiveConfig.maxPositionSize,
             useAlgorithmicLevels: mergedParams.useAlgorithmicLevels ?? effectiveConfig.useAlgorithmicLevels,
-            onlyWithTrend: mergedParams.onlyWithTrend ?? effectiveConfig.onlyWithTrend,
+            onlyWithTrend: mergedParams.onlyWithTrend ?? effectiveConfig.onlyWithTrend ?? false,  // FIXED: Default to false
             minConfidence: mergedParams.minConfidence ?? effectiveConfig.minConfidence,
             commission: mergedParams.commission !== undefined ? mergedParams.commission / 100 : effectiveConfig.commission,
             stopLossPercent: mergedParams.stopLossPercent ?? effectiveConfig.stopLossPercent,
             takeProfitPercent: mergedParams.takeProfitPercent ?? effectiveConfig.takeProfitPercent,
           };
-          console.log('[Backtest] Applied optimizedParams from strategy:', mergedParams);
-          console.log('[Backtest] Effective config:', {
-            maxPositionSize: effectiveConfig.maxPositionSize,
-            useAlgorithmicLevels: effectiveConfig.useAlgorithmicLevels,
-            onlyWithTrend: effectiveConfig.onlyWithTrend,
-            minConfidence: effectiveConfig.minConfidence,
-            commission: effectiveConfig.commission,
-          });
         }
       }
 
       // 3. Detect setups
       let detectedSetups: any[] = [];
       try {
-        const MIN_KLINES = 50;
-        const startIndex = MIN_KLINES;
+        // Calculate warmup period based on indicators used in strategies
+        const warmupPeriod = this.calculateWarmupPeriod(loadedStrategies);
+        const startIndex = warmupPeriod;
         const endIndex = historicalKlines.length - 1;
 
         console.log(`[Backtest] Scanning from index ${startIndex} to ${endIndex} (${endIndex - startIndex + 1} candles)`);
@@ -230,12 +229,9 @@ export class BacktestEngine {
         historicalKlines.map((k) => [k.openTime, k])
       );
 
-      // Calculate EMA200 for trend detection if enabled
-      let ema200: (number | null)[] = [];
-      if (effectiveConfig.onlyWithTrend) {
-        const { calculateEMA } = await import('@marketmind/indicators');
-        ema200 = calculateEMA(historicalKlines, 200);
-      }
+      // Calculate EMA200 for trend detection (always calculate - used per-strategy)
+      const { calculateEMA } = await import('@marketmind/indicators');
+      const ema200 = calculateEMA(historicalKlines, 200);
 
       // Sort setups by openTime
       const sortedSetups = tradableSetups.sort(
@@ -260,8 +256,11 @@ export class BacktestEngine {
 
         const entryPrice = parseFloat(entryKline.close);
 
-        // Filter by trend if enabled
-        if (effectiveConfig.onlyWithTrend && ema200.length > 0) {
+        // Filter by trend if enabled FOR THIS SPECIFIC STRATEGY
+        const setupStrategy = strategyMap.get(setup.type);
+        const strategyOnlyWithTrend = setupStrategy?.optimizedParams?.onlyWithTrend ?? false;
+        
+        if (strategyOnlyWithTrend && ema200.length > 0) {
           const setupIndex = historicalKlines.findIndex(k => k.openTime === setup.openTime);
           const ema200Value = ema200[setupIndex];
 
@@ -328,19 +327,71 @@ export class BacktestEngine {
         // Find exit
         let exitPrice: number | undefined;
         let exitTime: string | undefined;
-        let exitReason: 'STOP_LOSS' | 'TAKE_PROFIT' | 'END_OF_PERIOD' | undefined;
+        let exitReason: 'STOP_LOSS' | 'TAKE_PROFIT' | 'EXIT_CONDITION' | 'MAX_BARS' | 'END_OF_PERIOD' | undefined;
+
+        const strategy = strategyMap.get(setup.type);
+        const exitConditions = strategy?.exit?.conditions;
+        const maxBarsInTrade = strategy?.exit?.maxBarsInTrade;
+        const exitConditionForDirection = setup.direction === 'LONG'
+          ? exitConditions?.long
+          : exitConditions?.short;
+
+        let computedIndicators: ComputedIndicators | null = null;
+        let resolvedParams: Record<string, number> = {};
+
+        if (exitConditionForDirection && strategy) {
+          resolvedParams = Object.entries(strategy.parameters).reduce(
+            (acc, [key, param]) => {
+              acc[key] = strategyOverrides[key] ?? param.default;
+              return acc;
+            },
+            {} as Record<string, number>
+          );
+          computedIndicators = indicatorEngine.computeIndicators(
+            historicalKlines as Kline[],
+            strategy.indicators,
+            resolvedParams
+          );
+        }
+
+        let barsInTrade = 0;
 
         const futureKlines = historicalKlines.filter(
           (k) => k.openTime > setup.openTime
         );
 
         for (const futureKline of futureKlines) {
+          barsInTrade++;
+          const futureIndex = historicalKlines.findIndex(k => k.openTime === futureKline.openTime);
           const high = parseFloat(futureKline.high);
           const low = parseFloat(futureKline.low);
           const open = parseFloat(futureKline.open);
           const close = parseFloat(futureKline.close);
 
-          // Check if both SL and TP could be hit in same candle
+          if (exitConditionForDirection && computedIndicators && futureIndex >= 0) {
+            const context: EvaluationContext = {
+              klines: historicalKlines,
+              currentIndex: futureIndex,
+              indicators: computedIndicators,
+              params: resolvedParams,
+            };
+
+            const exitConditionMet = conditionEvaluator.evaluate(exitConditionForDirection, context);
+            if (exitConditionMet) {
+              exitPrice = close;
+              exitTime = new Date(futureKline.openTime).toISOString();
+              exitReason = 'EXIT_CONDITION';
+              break;
+            }
+          }
+
+          if (maxBarsInTrade && barsInTrade >= maxBarsInTrade) {
+            exitPrice = close;
+            exitTime = new Date(futureKline.openTime).toISOString();
+            exitReason = 'MAX_BARS';
+            break;
+          }
+
           const slHit = stopLoss && (
             (setup.direction === 'LONG' && low <= stopLoss) ||
             (setup.direction === 'SHORT' && high >= stopLoss)
@@ -351,8 +402,6 @@ export class BacktestEngine {
           );
 
           if (slHit && tpHit) {
-            // Both hit in same candle - use candle direction as heuristic
-            // If candle closed in favorable direction, assume TP hit first
             const isBullishCandle = close > open;
             if (setup.direction === 'LONG') {
               exitReason = isBullishCandle ? 'TAKE_PROFIT' : 'STOP_LOSS';
@@ -587,5 +636,64 @@ export class BacktestEngine {
         cause: error,
       });
     }
+  }
+
+  /**
+   * Calculate the warmup period needed for indicators in the strategies.
+   * This ensures we have enough historical data for all indicators to produce valid values.
+   */
+  private calculateWarmupPeriod(strategies: StrategyDefinition[]): number {
+    const MIN_WARMUP = 50; // Minimum warmup for basic indicators
+    let maxPeriod = MIN_WARMUP;
+
+    for (const strategy of strategies) {
+      // Check indicators defined in the strategy
+      if (strategy.indicators) {
+        for (const [, indicator] of Object.entries(strategy.indicators)) {
+          const params = indicator.params || {};
+
+          // Extract period from various parameter names
+          const period = params.period || params.emaPeriod || params.smaPeriod ||
+                        params.lookback || params.kPeriod || params.slowPeriod || 0;
+
+          // Handle parameter references (e.g., "$smaTrend")
+          const periodValue = typeof period === 'string' && period.startsWith('$')
+            ? strategy.parameters?.[period.slice(1)]?.default || 0
+            : period;
+
+          if (typeof periodValue === 'number' && periodValue > maxPeriod) {
+            maxPeriod = periodValue;
+          }
+        }
+      }
+
+      // Check parameters for trend filters (like EMA 200)
+      if (strategy.parameters) {
+        for (const [paramName, paramDef] of Object.entries(strategy.parameters)) {
+          if (paramName.toLowerCase().includes('trend') ||
+              paramName.toLowerCase().includes('ema') ||
+              paramName.toLowerCase().includes('sma')) {
+            const defaultValue = paramDef.default;
+            if (typeof defaultValue === 'number' && defaultValue > maxPeriod) {
+              maxPeriod = defaultValue;
+            }
+          }
+        }
+      }
+
+      // Check filters for trend periods
+      if (strategy.filters?.trendFilter?.period) {
+        const trendPeriod = strategy.filters.trendFilter.period;
+        if (typeof trendPeriod === 'number' && trendPeriod > maxPeriod) {
+          maxPeriod = trendPeriod;
+        }
+      }
+    }
+
+    // Add extra buffer for indicator calculations (some need 2x the period)
+    const warmupWithBuffer = Math.ceil(maxPeriod * 1.5);
+    console.log(`[Backtest] Calculated warmup period: ${warmupWithBuffer} (max indicator period: ${maxPeriod})`);
+
+    return warmupWithBuffer;
   }
 }
