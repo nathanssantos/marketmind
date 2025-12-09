@@ -12,7 +12,7 @@
     "useAlgorithmicLevels": true,
     "onlyWithTrend": true,
     "minConfidence": 65,
-    "commission": 0.1
+    "commission": 0.001
   },
   "backtestSummary": {
     "profitFactor": 3.79,

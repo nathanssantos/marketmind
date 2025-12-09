@@ -158,7 +158,7 @@ export class BacktestOptimizer {
     // Metrics where lower is better
     const lowerIsBetter = ['maxDrawdown', 'maxDrawdownPercent', 'totalCommission'];
 
-    const multiplier = lowerIsBetter.includes(sortBy) ? 1 : -1;
+    const multiplier = lowerIsBetter.includes(sortBy) ? -1 : 1;
 
     return results.sort((a, b) => {
       const aValue = a.metrics[sortBy] as number;
@@ -169,6 +169,8 @@ export class BacktestOptimizer {
       if (aValue == null) return 1;
       if (bValue == null) return -1;
 
+      // For higher-is-better metrics: bValue - aValue (descending)
+      // For lower-is-better metrics: aValue - bValue (ascending)
       return multiplier * (bValue - aValue);
     });
   }

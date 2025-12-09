@@ -61,14 +61,24 @@ export async function optimizeCommand(options: OptimizeOptions) {
     validateGridSearchSize(options.param);
 
     const capital = validateCapital(options.capital);
-    const stopLoss = validatePercentage(options.stopLoss, 'Stop loss', 0.1, 50);
-    const takeProfit = validatePercentage(options.takeProfit, 'Take profit', 0.1, 100);
+    const stopLoss = options.stopLoss
+      ? validatePercentage(options.stopLoss, 'Stop loss', 0.1, 50)
+      : undefined;
+    const takeProfit = options.takeProfit
+      ? validatePercentage(options.takeProfit, 'Take profit', 0.1, 100)
+      : undefined;
     const parallelWorkers = validateParallelWorkers(options.parallel);
     const topN = validatePercentage(options.top, 'Top N', 1, 100);
-    const maxPosition = validatePercentage(options.maxPosition, 'Max position', 1, 100);
-    const riskPerTrade = validatePercentage(options.riskPerTrade, 'Risk per trade', 0.1, 10);
+    const maxPosition = options.maxPosition
+      ? validatePercentage(options.maxPosition, 'Max position', 1, 100)
+      : undefined;
+    const riskPerTrade = options.riskPerTrade
+      ? validatePercentage(options.riskPerTrade, 'Risk per trade', 0.1, 10)
+      : undefined;
     const kellyFraction = parseFloat(options.kellyFraction);
-    const commission = validatePercentage(options.commission, 'Commission', 0, 10);
+    const commission = options.commission
+      ? validatePercentage(options.commission, 'Commission', 0, 10)
+      : undefined;
 
     // Validate position sizing method
     const validMethods = ['fixed-fractional', 'risk-based', 'kelly', 'volatility-based'];

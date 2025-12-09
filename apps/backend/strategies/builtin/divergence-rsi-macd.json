@@ -12,7 +12,7 @@
     "useAlgorithmicLevels": true,
     "onlyWithTrend": false,
     "minConfidence": 75,
-    "commission": 0.1
+    "commission": 0.001
   },
   "recommendedTimeframes": {
     "primary": "4h",

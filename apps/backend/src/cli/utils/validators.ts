@@ -193,10 +193,15 @@ export function validatePercentage(
  * Validate stop loss and take profit relationship
  */
 export function validateRiskReward(
-  stopLoss: number,
-  takeProfit: number,
+  stopLoss: number | undefined,
+  takeProfit: number | undefined,
   minRiskReward: number = 1.5
 ): void {
+  // Skip validation if either is undefined (strategy will calculate)
+  if (stopLoss === undefined || takeProfit === undefined) {
+    return;
+  }
+
   const riskReward = takeProfit / stopLoss;
 
   if (riskReward < minRiskReward) {

@@ -15,6 +15,28 @@ const generateId = (length: number): string => {
   return randomBytes(length).toString('base64url').slice(0, length);
 };
 
+interface TradeStats {
+  winRate: number;
+  avgWinPercent: number;
+  avgLossPercent: number;
+}
+
+const calculateRollingStats = (trades: any[], lookback: number = 30): TradeStats | null => {
+  if (trades.length === 0) return null;
+  
+  const recentTrades = trades.slice(-lookback);
+  const winners = recentTrades.filter(t => t.pnlPercent > 0);
+  const losers = recentTrades.filter(t => t.pnlPercent < 0);
+  
+  if (winners.length === 0 || losers.length === 0) return null;
+  
+  const winRate = winners.length / recentTrades.length;
+  const avgWinPercent = winners.reduce((sum, t) => sum + t.pnlPercent, 0) / winners.length;
+  const avgLossPercent = Math.abs(losers.reduce((sum, t) => sum + t.pnlPercent, 0) / losers.length);
+  
+  return { winRate, avgWinPercent, avgLossPercent };
+};
+
 export class BacktestEngine {
   /**
    * Merge optimizedParams from multiple strategies.
@@ -152,21 +174,31 @@ export class BacktestEngine {
       const indicatorEngine = new IndicatorEngine();
       const conditionEvaluator = new ConditionEvaluator(indicatorEngine);
 
-      // Apply optimizedParams from strategy definitions if useOptimizedSettings is enabled
+      // CRITICAL: Apply strategy's optimizedParams as defaults (fallback when CLI doesn't provide)
+      // PRIORITY: CLI parameters > Strategy optimizedParams > System defaults
+      // This allows CLI to override when needed, but uses optimized values when not specified
       let effectiveConfig = { ...config };
       
-      if (config.useOptimizedSettings && loadedStrategies.length > 0) {
+      if (loadedStrategies.length > 0) {
         const mergedParams = this.mergeOptimizedParams(loadedStrategies);
         if (mergedParams) {
           effectiveConfig = {
             ...effectiveConfig,
-            maxPositionSize: mergedParams.maxPositionSize ?? effectiveConfig.maxPositionSize,
-            useAlgorithmicLevels: mergedParams.useAlgorithmicLevels ?? effectiveConfig.useAlgorithmicLevels,
-            onlyWithTrend: mergedParams.onlyWithTrend ?? effectiveConfig.onlyWithTrend ?? false,  // FIXED: Default to false
-            minConfidence: mergedParams.minConfidence ?? effectiveConfig.minConfidence,
-            commission: mergedParams.commission !== undefined ? mergedParams.commission / 100 : effectiveConfig.commission,
-            stopLossPercent: mergedParams.stopLossPercent ?? effectiveConfig.stopLossPercent,
-            takeProfitPercent: mergedParams.takeProfitPercent ?? effectiveConfig.takeProfitPercent,
+            // CRITICAL FIX: For fixed-fractional, use safe default (10%) unless explicitly overridden
+            // For other methods (kelly, risk-based), use strategy optimizedParams as fallback
+            maxPositionSize: effectiveConfig.maxPositionSize ?? (
+              effectiveConfig.positionSizingMethod === 'fixed-fractional' 
+                ? 10  // Safe default for fixed-fractional
+                : mergedParams.maxPositionSize  // Use strategy's optimized value for dynamic methods
+            ),
+            useAlgorithmicLevels: effectiveConfig.useAlgorithmicLevels ?? true,  // Default true for dynamic strategies
+            onlyWithTrend: effectiveConfig.onlyWithTrend ?? false,  // Applied per-strategy, not globally
+            minConfidence: effectiveConfig.minConfidence ?? mergedParams.minConfidence,
+            commission: effectiveConfig.commission ?? (mergedParams.commission !== undefined ? mergedParams.commission / 100 : 0.001),
+            // For SL/TP: only use config values if explicitly provided AND setup doesn't calculate them
+            // Setup-calculated values (from ATR, etc.) always take priority in BacktestEngine execution
+            stopLossPercent: effectiveConfig.stopLossPercent,  // Will be ignored if setup provides stopLoss
+            takeProfitPercent: effectiveConfig.takeProfitPercent,  // Will be ignored if setup provides takeProfit
           };
         }
       }
@@ -239,12 +271,29 @@ export class BacktestEngine {
         (a: any, b: any) => a.openTime - b.openTime
       );
 
-      // Track open position to prevent overlapping trades
-      let currentPositionExitTime: number | null = null;
+      // Track open positions to manage multiple concurrent trades
+      const MAX_CONCURRENT_POSITIONS = 5; // Allow up to 5 simultaneous positions
+      const MAX_TOTAL_EXPOSURE = 0.5; // Max 50% of capital in positions
+      const openPositions: Array<{ exitTime: number; positionValue: number }> = [];
+
+      // Debug counters
+      let skippedOverlap = 0;
+      let skippedKlineNotFound = 0;
+      let skippedTrend = 0;
+      let skippedMinNotional = 0;
+      let skippedMinProfit = 0;
+      let skippedMaxPositions = 0;
+      let skippedMaxExposure = 0;
 
       for (const setup of sortedSetups) {
-        // Skip if we have an open position that hasn't exited yet
-        if (currentPositionExitTime !== null && setup.openTime < currentPositionExitTime) {
+        // Clean up closed positions
+        openPositions.splice(0, openPositions.length, 
+          ...openPositions.filter(p => p.exitTime > setup.openTime)
+        );
+
+        // Check if we've reached max concurrent positions
+        if (openPositions.length >= MAX_CONCURRENT_POSITIONS) {
+          skippedMaxPositions++;
           continue;
         }
 
@@ -252,6 +301,7 @@ export class BacktestEngine {
 
         if (!entryKline) {
           console.warn('[Backtest] Entry kline not found for setup', setup.id, 'at', setup.openTime);
+          skippedKlineNotFound++;
           continue;
         }
 
@@ -271,31 +321,46 @@ export class BacktestEngine {
 
             if (setup.direction === 'LONG' && !isBullishTrend) {
               console.warn('[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)');
+              skippedTrend++;
               continue;
             }
             if (setup.direction === 'SHORT' && !isBearishTrend) {
               console.warn('[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)');
+              skippedTrend++;
               continue;
             }
           }
         }
 
         // Calculate SL/TP first (needed for position sizing)
-        const stopLoss = effectiveConfig.useAlgorithmicLevels && setup.stopLoss
-          ? setup.stopLoss
+        // CRITICAL PRIORITY LOGIC:
+        // 1. ALWAYS use setup's calculated values if available (strategy-specific ATR/indicator-based)
+        // 2. Only fall back to fixed config percentages if setup doesn't provide values
+        // 3. This ensures dynamic strategies (larry-williams, momentum-breakout) use their own calculations
+        const stopLoss = setup.stopLoss
+          ? setup.stopLoss  // Priority 1: Use setup's calculated value
           : effectiveConfig.stopLossPercent
           ? setup.direction === 'LONG'
             ? entryPrice * (1 - effectiveConfig.stopLossPercent / 100)
             : entryPrice * (1 + effectiveConfig.stopLossPercent / 100)
-          : undefined;
+          : undefined;  // No SL defined
 
-        const takeProfit = effectiveConfig.useAlgorithmicLevels && setup.takeProfit
-          ? setup.takeProfit
+        const takeProfit = setup.takeProfit
+          ? setup.takeProfit  // Priority 1: Use setup's calculated value
           : effectiveConfig.takeProfitPercent
           ? setup.direction === 'LONG'
             ? entryPrice * (1 + effectiveConfig.takeProfitPercent / 100)
             : entryPrice * (1 - effectiveConfig.takeProfitPercent / 100)
-          : undefined;
+          : undefined;  // No TP defined
+
+        // Log SL/TP source for first trade (debug - always show)
+        if (trades.length === 0) {
+          const slSource = setup.stopLoss ? '✓ setup-ATR' : '⚠ config-fixed';
+          const tpSource = setup.takeProfit ? '✓ setup-ATR' : '⚠ config-fixed';
+          const slPercent = stopLoss ? (Math.abs((stopLoss - entryPrice) / entryPrice) * 100).toFixed(2) : 'N/A';
+          const tpPercent = takeProfit ? (Math.abs((takeProfit - entryPrice) / entryPrice) * 100).toFixed(2) : 'N/A';
+          console.log(`[Backtest] First Trade SL/TP: ${slSource} ${slPercent}% | ${tpSource} ${tpPercent}%`);
+        }
 
         // Calculate position size using intelligent position sizing
         const positionSizingMethod = effectiveConfig.positionSizingMethod ?? 'fixed-fractional';
@@ -307,6 +372,14 @@ export class BacktestEngine {
           positionSize = (equity * ((effectiveConfig.maxPositionSize ?? 10) / 100)) / entryPrice;
           positionValue = positionSize * entryPrice;
         } else {
+          // Calculate real trade statistics for Kelly Criterion
+          const rollingStats = calculateRollingStats(trades, 30);
+          const kellyConfig = rollingStats ? {
+            winRate: rollingStats.winRate,
+            avgWinPercent: rollingStats.avgWinPercent,
+            avgLossPercent: rollingStats.avgLossPercent,
+          } : {};
+          
           // Use PositionSizer for intelligent sizing
           const sizingResult = PositionSizer.calculatePositionSize(
             equity,
@@ -316,6 +389,7 @@ export class BacktestEngine {
               method: positionSizingMethod,
               riskPerTrade: effectiveConfig.riskPerTrade ?? 2,
               kellyFraction: effectiveConfig.kellyFraction ?? 0.25,
+              ...kellyConfig,
               minPositionPercent: 1,
               maxPositionPercent: effectiveConfig.maxPositionSize ?? 100,
             }
@@ -330,9 +404,19 @@ export class BacktestEngine {
           }
         }
 
+        // Check total exposure limit
+        const currentExposure = openPositions.reduce((sum, p) => sum + p.positionValue, 0);
+        const totalExposure = (currentExposure + positionValue) / equity;
+        
+        if (totalExposure > MAX_TOTAL_EXPOSURE) {
+          skippedMaxExposure++;
+          continue;
+        }
+
         // Ensure position value meets minimum
         if (positionValue < MIN_NOTIONAL_VALUE) {
           console.warn('[Backtest] Position value', positionValue.toFixed(2), 'below MIN_NOTIONAL (', MIN_NOTIONAL_VALUE, '), skipping trade');
+          skippedMinNotional++;
           continue;
         }
 
@@ -351,6 +435,7 @@ export class BacktestEngine {
               'is below minimum',
               `${effectiveConfig.minProfitPercent}%`
             );
+            skippedMinProfit++;
             continue;
           }
         }
@@ -528,9 +613,12 @@ export class BacktestEngine {
 
         trades.push(trade);
 
-        // Track position exit time to prevent overlapping trades
+        // Track this position for concurrent position management
         if (exitTime) {
-          currentPositionExitTime = new Date(exitTime).getTime();
+          openPositions.push({
+            exitTime: new Date(exitTime).getTime(),
+            positionValue: positionValue,
+          });
         }
 
         // Update equity curve
@@ -635,6 +723,15 @@ export class BacktestEngine {
       const duration = endTime - startTime;
 
       console.log('[Backtest] Completed in', (duration / 1000).toFixed(2), 'seconds');
+      console.log('[Backtest] Skip reasons:', {
+        maxPositions: skippedMaxPositions,
+        maxExposure: skippedMaxExposure,
+        klineNotFound: skippedKlineNotFound,
+        trendFilter: skippedTrend,
+        minNotional: skippedMinNotional,
+        minProfit: skippedMinProfit,
+        total: skippedMaxPositions + skippedMaxExposure + skippedKlineNotFound + skippedTrend + skippedMinNotional + skippedMinProfit,
+      });
       console.log('[Backtest] Results:', {
         trades: trades.length,
         winRate: `${metrics.winRate.toFixed(2)}%`,
