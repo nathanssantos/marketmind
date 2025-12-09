@@ -34,12 +34,16 @@ interface OptimizeOptions {
   param: string[];
   minConfidence?: string;
   maxPosition: string;
+  maxConcurrent?: string;
+  maxExposure?: string;
+  trailingStop: boolean;
   positionMethod: string;
   riskPerTrade: string;
   kellyFraction: string;
   commission: string;
   useAlgorithmicLevels: boolean;
   withTrend: boolean;
+  preset?: string;
   sortBy: string;
   top: string;
   parallel: string;
@@ -47,6 +51,37 @@ interface OptimizeOptions {
   minProfitFactor?: string;
   verbose: boolean;
 }
+
+const OPTIMIZATION_PRESETS: Record<string, Record<string, number[]>> = {
+  conservative: {
+    trailingATRMultiplier: [2, 2.5, 3],
+    breakEvenAfterR: [1, 1.5],
+    maxPositionSize: [10, 20, 30],
+    maxConcurrentPositions: [3, 5],
+    maxTotalExposure: [30, 50],
+  },
+  balanced: {
+    trailingATRMultiplier: [2.5, 3, 3.5, 4],
+    breakEvenAfterR: [1.5, 2],
+    maxPositionSize: [30, 50, 70],
+    maxConcurrentPositions: [1, 2, 3],
+    maxTotalExposure: [50, 70],
+  },
+  aggressive: {
+    trailingATRMultiplier: [3, 4, 5],
+    breakEvenAfterR: [2, 2.5, 3],
+    maxPositionSize: [60, 80, 100],
+    maxConcurrentPositions: [1, 2],
+    maxTotalExposure: [70, 90],
+  },
+  trendfollowing: {
+    trailingATRMultiplier: [4, 5, 6],
+    breakEvenAfterR: [2, 3],
+    maxPositionSize: [70, 80, 90],
+    maxConcurrentPositions: [1],
+    maxTotalExposure: [80, 90],
+  },
+};
 
 export async function optimizeCommand(options: OptimizeOptions) {
   const logger = new BacktestLogger(options.verbose ? LogLevel.VERBOSE : LogLevel.INFO);
@@ -57,8 +92,17 @@ export async function optimizeCommand(options: OptimizeOptions) {
     validateSymbol(options.symbol);
     validateInterval(options.interval);
     validateDateRange(options.start, options.end);
-    validateParameterGrid(options.param);
-    validateGridSearchSize(options.param);
+
+    // Validate that we have either preset or params
+    if (!options.preset && (!options.param || options.param.length === 0)) {
+      throw new ValidationError('Parameters', 'none', 'Either --preset or --param is required');
+    }
+
+    // Only validate param grid if params are provided
+    if (options.param && options.param.length > 0) {
+      validateParameterGrid(options.param);
+      validateGridSearchSize(options.param);
+    }
 
     const capital = validateCapital(options.capital);
     const stopLoss = options.stopLoss
@@ -103,8 +147,19 @@ export async function optimizeCommand(options: OptimizeOptions) {
     }
 
     // Parse parameter grid from --param flags
-    const parameterGrid: Record<string, number[]> = {};
+    let parameterGrid: Record<string, number[]> = {};
 
+    // Apply preset if specified
+    if (options.preset) {
+      const presetName = options.preset.toLowerCase();
+      if (!OPTIMIZATION_PRESETS[presetName]) {
+        throw new ValidationError('Preset', options.preset, Object.keys(OPTIMIZATION_PRESETS).join(', '));
+      }
+      parameterGrid = { ...OPTIMIZATION_PRESETS[presetName] };
+      logger.info(`Using optimization preset: ${presetName}`);
+    }
+
+    // Parse custom parameters (override preset values)
     for (const paramStr of options.param) {
       const [name, valuesStr] = paramStr.split('=');
       if (!name || !valuesStr) continue;
@@ -130,6 +185,10 @@ export async function optimizeCommand(options: OptimizeOptions) {
       'Parallel Workers': parallelWorkers.toString(),
     });
 
+    // Parse position management options
+    const maxConcurrent = options.maxConcurrent ? parseInt(options.maxConcurrent, 10) : undefined;
+    const maxExposure = options.maxExposure ? parseFloat(options.maxExposure) / 100 : undefined;
+
     // Create base config
     const baseConfig: BacktestConfig = {
       symbol: options.symbol,
@@ -141,12 +200,15 @@ export async function optimizeCommand(options: OptimizeOptions) {
       stopLossPercent: stopLoss,
       takeProfitPercent: takeProfit,
       maxPositionSize: maxPosition,
+      maxConcurrentPositions: maxConcurrent,
+      maxTotalExposure: maxExposure,
       positionSizingMethod: options.positionMethod as 'fixed-fractional' | 'risk-based' | 'kelly' | 'volatility-based',
       riskPerTrade: riskPerTrade,
       kellyFraction: kellyFraction,
       commission: commission / 100,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
       onlyWithTrend: options.withTrend ?? false,
+      useTrailingStop: options.trailingStop ?? false,
     };
 
     // Add minConfidence to base config if specified

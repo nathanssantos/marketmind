@@ -29,6 +29,8 @@ describe('useVolumeRenderer', () => {
       moveTo: vi.fn(),
       lineTo: vi.fn(),
       stroke: vi.fn(),
+      setLineDash: vi.fn(),
+      strokeRect: vi.fn(),
     } as unknown as CanvasRenderingContext2D;
 
     const klines = [
@@ -349,6 +351,71 @@ describe('useVolumeRenderer', () => {
         minVolume: 0,
         maxVolume: 0,
       }));
+
+      const { result } = renderHook(() =>
+        useVolumeRenderer({
+          manager: mockManager,
+          colors: mockColors,
+        })
+      );
+
+      result.current.render();
+
+      expect(drawingUtils.drawRect).toHaveBeenCalled();
+    });
+
+    it('should draw volume projection for the last kline', () => {
+      const now = Date.now();
+      const klines = [
+        { openTime: now - 3600000, closeTime: now - 2700000, open: '100', high: '105', low: '95', close: '102', volume: '1000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+        { openTime: now - 1800000, closeTime: now + 1800000, open: '102', high: '106', low: '96', close: '98', volume: '500', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '250', takerBuyQuoteVolume: '0' },
+      ];
+
+      mockManager.getKlines = vi.fn(() => klines);
+      mockManager.getVisibleKlines = vi.fn(() => klines);
+
+      const { result } = renderHook(() =>
+        useVolumeRenderer({
+          manager: mockManager,
+          colors: mockColors,
+        })
+      );
+
+      result.current.render();
+
+      expect(mockCtx.strokeRect).toBeDefined();
+      expect(mockCtx.setLineDash).toBeDefined();
+    });
+
+    it('should not draw projection if kline period has completed', () => {
+      const now = Date.now();
+      const klines = [
+        { openTime: now - 7200000, closeTime: now - 3600000, open: '100', high: '105', low: '95', close: '102', volume: '1000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+      ];
+
+      mockManager.getKlines = vi.fn(() => klines);
+      mockManager.getVisibleKlines = vi.fn(() => klines);
+
+      const { result } = renderHook(() =>
+        useVolumeRenderer({
+          manager: mockManager,
+          colors: mockColors,
+        })
+      );
+
+      result.current.render();
+
+      expect(drawingUtils.drawRect).toHaveBeenCalled();
+    });
+
+    it('should not draw projection if projected volume is lower than current', () => {
+      const now = Date.now();
+      const klines = [
+        { openTime: now - 100, closeTime: now + 3600000, open: '100', high: '105', low: '95', close: '102', volume: '10000', quoteVolume: '0', trades: 100, takerBuyBaseVolume: '0', takerBuyQuoteVolume: '0' },
+      ];
+
+      mockManager.getKlines = vi.fn(() => klines);
+      mockManager.getVisibleKlines = vi.fn(() => klines);
 
       const { result } = renderHook(() =>
         useVolumeRenderer({

@@ -6,20 +6,28 @@
   "author": "MarketMind",
   "tags": ["trend-following", "pullback", "buy-the-dip", "bull-market", "2025"],
 
-  "status": "unprofitable",
+  "status": "active",
   "optimizedParams": {
-    "maxPositionSize": 50,
+    "maxPositionSize": 80,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 80,
     "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 6,
+    "breakEvenAfterR": 3,
     "onlyWithTrend": true,
     "minConfidence": 65,
     "commission": 0.001
   },
   "backtestSummary": {
-    "profitFactor": 0.89,
-    "winRate": 36.36,
-    "totalTrades": 22,
-    "netPnlPercent": -2.45,
-    "testedAt": "2025-12-07",
+    "profitFactor": 1.83,
+    "winRate": 40.9,
+    "sharpeRatio": 2.81,
+    "maxDrawdownPercent": 12.84,
+    "totalTrades": 44,
+    "netPnlPercent": 35.68,
+    "testedAt": "2024-12-09",
+    "testedPeriod": "2024-01-01 to 2024-10-01",
     "testedTimeframe": "4h",
     "testedSymbol": "BTCUSDT"
   },
@@ -96,8 +104,8 @@
       "enabled": true,
       "type": "atr",
       "initialMultiplier": 1.5,
-      "trailMultiplier": 1,
-      "breakEvenAfterR": 0.8
+      "trailMultiplier": 6,
+      "breakEvenAfterR": 3
     }
   },
 

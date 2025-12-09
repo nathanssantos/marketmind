@@ -6,13 +6,30 @@
   "author": "MarketMind",
   "tags": ["breakout", "volatility", "nr7", "crabel", "classic"],
 
-  "status": "experimental",
+  "status": "active",
   "optimizedParams": {
-    "maxPositionSize": 50,
+    "maxPositionSize": 90,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 90,
     "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 5,
+    "breakEvenAfterR": 2,
     "onlyWithTrend": true,
     "minConfidence": 60,
     "commission": 0.001
+  },
+  "backtestSummary": {
+    "profitFactor": 1.70,
+    "winRate": 53.7,
+    "sharpeRatio": 1.93,
+    "maxDrawdownPercent": 22.39,
+    "totalTrades": 41,
+    "netPnlPercent": 32.20,
+    "testedAt": "2024-12-09",
+    "testedPeriod": "2024-01-01 to 2024-10-01",
+    "testedTimeframe": "4h",
+    "testedSymbol": "BTCUSDT"
   },
   "recommendedTimeframes": {
     "primary": "1d",
@@ -69,6 +86,13 @@
     "takeProfit": {
       "type": "riskReward",
       "multiplier": 2.5
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 1.5,
+      "trailMultiplier": 5,
+      "breakEvenAfterR": 2
     }
   },
 

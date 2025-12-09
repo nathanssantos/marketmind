@@ -6,13 +6,30 @@
   "author": "MarketMind",
   "tags": ["smart-money", "order-block", "fvg", "institutional"],
 
-  "status": "experimental",
+  "status": "active",
   "optimizedParams": {
-    "maxPositionSize": 40,
+    "maxPositionSize": 80,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 90,
     "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 5,
+    "breakEvenAfterR": 3,
     "onlyWithTrend": true,
-    "minConfidence": 75,
+    "minConfidence": 70,
     "commission": 0.001
+  },
+  "backtestSummary": {
+    "profitFactor": 2.56,
+    "winRate": 50.0,
+    "sharpeRatio": 3.67,
+    "maxDrawdownPercent": 14.3,
+    "totalTrades": 24,
+    "netPnlPercent": 47.98,
+    "testedAt": "2024-12-09",
+    "testedPeriod": "2024-01-01 to 2024-10-01",
+    "testedTimeframe": "4h",
+    "testedSymbol": "BTCUSDT"
   },
   "recommendedTimeframes": {
     "primary": "1h",
@@ -70,6 +87,13 @@
     "takeProfit": {
       "type": "riskReward",
       "multiplier": "$targetMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 1.5,
+      "trailMultiplier": 5,
+      "breakEvenAfterR": 3
     }
   },
 

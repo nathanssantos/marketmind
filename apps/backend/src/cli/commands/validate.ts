@@ -26,12 +26,15 @@ interface ValidateOptions {
   takeProfit: string;
   minConfidence: string;
   maxPosition: string;
+  maxConcurrent: string;
+  maxExposure: string;
   positionMethod: string;
   riskPerTrade: string;
   kellyFraction: string;
   commission: string;
   useAlgorithmicLevels: boolean;
   withTrend: boolean;
+  trailingStop: boolean;
   optimized: boolean;
   verbose: boolean;
 }
@@ -94,6 +97,10 @@ export async function validateCommand(options: ValidateOptions) {
       ...(options.optimized ? { 'Mode': 'Using strategy optimizedParams' } : {}),
     });
 
+    // Parse position management options
+    const maxConcurrent = options.maxConcurrent ? parseInt(options.maxConcurrent, 10) : undefined;
+    const maxExposure = options.maxExposure ? parseFloat(options.maxExposure) / 100 : undefined;
+
     // Parse configuration
     const config: BacktestConfig = {
       symbol: options.symbol,
@@ -106,12 +113,15 @@ export async function validateCommand(options: ValidateOptions) {
       stopLossPercent: stopLoss,
       takeProfitPercent: takeProfit,
       maxPositionSize: maxPosition,
+      maxConcurrentPositions: maxConcurrent,
+      maxTotalExposure: maxExposure,
       positionSizingMethod: options.positionMethod as 'fixed-fractional' | 'risk-based' | 'kelly' | 'volatility-based',
       riskPerTrade: riskPerTrade,
       kellyFraction: kellyFraction,
       commission: commission / 100,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
       onlyWithTrend: options.withTrend ?? false,
+      useTrailingStop: options.trailingStop ?? false,
       useOptimizedSettings: options.optimized,
     };
 

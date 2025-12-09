@@ -280,9 +280,14 @@ export interface StrategyBacktestSummary {
  */
 export interface OptimizedBacktestParams {
   maxPositionSize: number;
+  maxConcurrentPositions?: number;
+  maxTotalExposure?: number;
   stopLossPercent?: number;
   takeProfitPercent?: number;
   useAlgorithmicLevels: boolean;
+  useTrailingStop?: boolean;
+  trailingATRMultiplier?: number;
+  breakEvenAfterR?: number;
   onlyWithTrend: boolean;
   minConfidence?: number;
   commission?: number;

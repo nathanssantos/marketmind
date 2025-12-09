@@ -114,29 +114,39 @@ export class BacktestOptimizer {
     params: ParameterCombination,
     klines?: any[]
   ): Promise<OptimizationResult> {
-    // Separate BacktestConfig-level params from strategy-specific params
     const backtestConfigParams: any = {};
     const strategyParams: Record<string, number> = {};
 
+    const BACKTEST_CONFIG_FIELDS = [
+      'stopLossPercent',
+      'takeProfitPercent',
+      'minConfidence',
+      'maxPositionSize',
+      'commission',
+      'maxConcurrentPositions',
+      'maxTotalExposure',
+      'trailingATRMultiplier',
+      'breakEvenAfterR',
+    ];
+
     for (const [key, value] of Object.entries(params)) {
-      // BacktestConfig direct fields
-      if (['stopLossPercent', 'takeProfitPercent', 'minConfidence', 'maxPositionSize', 'commission'].includes(key)) {
-        backtestConfigParams[key] = value;
+      if (BACKTEST_CONFIG_FIELDS.includes(key)) {
+        if (key === 'maxTotalExposure') {
+          backtestConfigParams[key] = value / 100;
+        } else {
+          backtestConfigParams[key] = value;
+        }
       } else {
-        // Strategy-specific parameters (pivotLookback, volumeMultiplier, etc.)
         strategyParams[key] = value;
       }
     }
 
-    // Merge base config with parameter combination
     const config: BacktestConfig = {
       ...baseConfig,
       ...backtestConfigParams,
-      // Pass strategy-specific params separately so BacktestEngine can apply them
       strategyParams: Object.keys(strategyParams).length > 0 ? strategyParams : undefined,
     };
 
-    // Run the backtest
     const result = await this.engine.run(config, klines);
 
     return {

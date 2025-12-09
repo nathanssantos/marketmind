@@ -6,20 +6,28 @@
   "author": "MarketMind",
   "tags": ["trend-following", "ema", "crossover", "momentum"],
 
-  "status": "unprofitable",
+  "status": "active",
   "optimizedParams": {
-    "maxPositionSize": 50,
+    "maxPositionSize": 90,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 90,
     "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 6,
+    "breakEvenAfterR": 2,
     "onlyWithTrend": true,
     "minConfidence": 60,
     "commission": 0.001
   },
   "backtestSummary": {
-    "profitFactor": 0.93,
-    "winRate": 30.00,
-    "totalTrades": 10,
-    "netPnlPercent": -0.67,
-    "testedAt": "2025-12-07",
+    "profitFactor": 2.54,
+    "winRate": 57.69,
+    "sharpeRatio": 3.37,
+    "maxDrawdownPercent": 18.11,
+    "totalTrades": 26,
+    "netPnlPercent": 53.58,
+    "testedAt": "2024-12-09",
+    "testedPeriod": "2024-01-01 to 2024-10-01",
     "testedTimeframe": "4h",
     "testedSymbol": "BTCUSDT"
   },
@@ -76,6 +84,13 @@
     "takeProfit": {
       "type": "riskReward",
       "multiplier": "$rrMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 6,
+      "breakEvenAfterR": 2
     }
   },
 

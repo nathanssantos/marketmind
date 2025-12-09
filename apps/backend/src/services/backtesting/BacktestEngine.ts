@@ -38,14 +38,31 @@ const calculateRollingStats = (trades: any[], lookback: number = 30): TradeStats
 };
 
 export class BacktestEngine {
+  private getIntervalMs(interval: string): number {
+    const units: Record<string, number> = {
+      'm': 60 * 1000,
+      'h': 60 * 60 * 1000,
+      'd': 24 * 60 * 60 * 1000,
+      'w': 7 * 24 * 60 * 60 * 1000,
+    };
+    const match = interval.match(/^(\d+)([mhdw])$/);
+    if (!match || !match[1] || !match[2]) return 4 * 60 * 60 * 1000;
+    const unitMs = units[match[2]];
+    if (!unitMs) return 4 * 60 * 60 * 1000;
+    return parseInt(match[1]) * unitMs;
+  }
+
   /**
    * Merge optimizedParams from multiple strategies.
    * When multiple strategies are tested together:
    * - Uses the most conservative (lowest) maxPositionSize
    * - onlyWithTrend is DISABLED here (applied per-strategy instead)
    * - useAlgorithmicLevels is true if ANY strategy uses it
+   * - useTrailingStop is true if ANY strategy uses it
    * - minConfidence is the highest of all strategies
    * - commission uses the highest value
+   * - trailingATRMultiplier uses the average
+   * - breakEvenAfterR uses the lowest (most conservative)
    */
   private mergeOptimizedParams(strategies: StrategyDefinition[]): OptimizedBacktestParams | null {
     const strategiesWithParams = strategies.filter(s => s.optimizedParams);
@@ -53,12 +70,24 @@ export class BacktestEngine {
 
     const allParams = strategiesWithParams.map(s => s.optimizedParams!);
 
+    const trailingMultipliers = allParams.filter(p => p.trailingATRMultiplier).map(p => p.trailingATRMultiplier!);
+    const breakEvenValues = allParams.filter(p => p.breakEvenAfterR).map(p => p.breakEvenAfterR!);
+    const maxConcurrentValues = allParams.filter(p => p.maxConcurrentPositions).map(p => p.maxConcurrentPositions!);
+    const maxExposureValues = allParams.filter(p => p.maxTotalExposure).map(p => p.maxTotalExposure!);
+
     return {
       maxPositionSize: Math.min(...allParams.map(p => p.maxPositionSize)),
+      maxConcurrentPositions: maxConcurrentValues.length > 0 ? Math.min(...maxConcurrentValues) : undefined,
+      maxTotalExposure: maxExposureValues.length > 0 ? Math.min(...maxExposureValues) : undefined,
       useAlgorithmicLevels: allParams.some(p => p.useAlgorithmicLevels),
+      useTrailingStop: allParams.some(p => p.useTrailingStop),
+      trailingATRMultiplier: trailingMultipliers.length > 0
+        ? trailingMultipliers.reduce((a, b) => a + b, 0) / trailingMultipliers.length
+        : undefined,
+      breakEvenAfterR: breakEvenValues.length > 0 ? Math.min(...breakEvenValues) : undefined,
       onlyWithTrend: false, // FIXED: Don't apply globally, check per-strategy instead
       minConfidence: Math.max(...allParams.map(p => p.minConfidence ?? 0)) || undefined,
-      commission: Math.max(...allParams.map(p => p.commission ?? 0.1)),
+      commission: Math.max(...allParams.map(p => p.commission ?? 0.001)),
       stopLossPercent: allParams[0]?.stopLossPercent,
       takeProfitPercent: allParams[0]?.takeProfitPercent,
     };
@@ -79,20 +108,38 @@ export class BacktestEngine {
       console.log('[Backtest] Date range:', config.startDate, 'to', config.endDate);
 
       // 1. Fetch historical klines (or use provided ones)
+      // IMPORTANT: We need extra historical data for EMA200 calculation
+      // Without this, EMA200 will be null for the first ~200 bars, causing
+      // the trend filter (onlyWithTrend) to be bypassed!
+      const EMA200_WARMUP_BARS = 250; // Extra bars needed for EMA200 warmup
       let historicalKlines: any[];
+      let warmupBarsFetched = 0;
 
       if (klines && klines.length > 0) {
         console.log('[Backtest] Using pre-fetched klines:', klines.length);
         historicalKlines = klines;
       } else {
         console.log('[Backtest] Fetching historical klines from Binance API...');
+
+        // Calculate warmup start date based on interval
+        const intervalMs = this.getIntervalMs(config.interval);
+        const warmupMs = EMA200_WARMUP_BARS * intervalMs;
+        const warmupStartDate = new Date(new Date(config.startDate).getTime() - warmupMs);
+
+        console.log('[Backtest] Including warmup period for EMA200:', warmupStartDate.toISOString(), 'to', config.startDate);
+
         historicalKlines = await fetchHistoricalKlinesFromAPI(
           config.symbol,
           config.interval as Interval,
-          new Date(config.startDate),
+          warmupStartDate,
           new Date(config.endDate)
         );
-        console.log('[Backtest] Fetched', historicalKlines.length, 'klines from API');
+
+        // Count how many warmup bars we got
+        const startTimestamp = new Date(config.startDate).getTime();
+        warmupBarsFetched = historicalKlines.filter(k => k.openTime < startTimestamp).length;
+
+        console.log('[Backtest] Fetched', historicalKlines.length, 'klines from API (', warmupBarsFetched, 'warmup bars for EMA200)');
       }
 
       if (historicalKlines.length === 0) {
@@ -182,16 +229,25 @@ export class BacktestEngine {
       if (loadedStrategies.length > 0) {
         const mergedParams = this.mergeOptimizedParams(loadedStrategies);
         if (mergedParams) {
+          // When useOptimizedSettings is true, use strategy's optimized values
+          // When false (default), use safe defaults for fixed-fractional
+          const useOptimized = config.useOptimizedSettings ?? false;
+
           effectiveConfig = {
             ...effectiveConfig,
-            // CRITICAL FIX: For fixed-fractional, use safe default (10%) unless explicitly overridden
-            // For other methods (kelly, risk-based), use strategy optimizedParams as fallback
+            // CRITICAL: When --optimized flag is set, use strategy's maxPositionSize
+            // Otherwise, use safe default (10%) for fixed-fractional to prevent over-leveraging
             maxPositionSize: effectiveConfig.maxPositionSize ?? (
-              effectiveConfig.positionSizingMethod === 'fixed-fractional' 
-                ? 10  // Safe default for fixed-fractional
-                : mergedParams.maxPositionSize  // Use strategy's optimized value for dynamic methods
+              useOptimized
+                ? mergedParams.maxPositionSize  // Use strategy's optimized value
+                : (effectiveConfig.positionSizingMethod === 'fixed-fractional' ? 10 : mergedParams.maxPositionSize)
             ),
+            maxConcurrentPositions: effectiveConfig.maxConcurrentPositions ?? mergedParams.maxConcurrentPositions,
+            maxTotalExposure: effectiveConfig.maxTotalExposure ?? mergedParams.maxTotalExposure,
             useAlgorithmicLevels: effectiveConfig.useAlgorithmicLevels ?? true,  // Default true for dynamic strategies
+            useTrailingStop: effectiveConfig.useTrailingStop ?? mergedParams.useTrailingStop ?? false,
+            trailingATRMultiplier: effectiveConfig.trailingATRMultiplier ?? mergedParams.trailingATRMultiplier,
+            breakEvenAfterR: effectiveConfig.breakEvenAfterR ?? mergedParams.breakEvenAfterR,
             onlyWithTrend: effectiveConfig.onlyWithTrend ?? false,  // Applied per-strategy, not globally
             minConfidence: effectiveConfig.minConfidence ?? mergedParams.minConfidence,
             commission: effectiveConfig.commission ?? (mergedParams.commission !== undefined ? mergedParams.commission / 100 : 0.001),
@@ -235,10 +291,19 @@ export class BacktestEngine {
         });
       }
 
+      // Filter setups that are before the user's requested startDate
+      // (warmup data is only for indicator calculation, not for trading)
+      const userStartTimestamp = new Date(config.startDate).getTime();
+      const setupsInRange = detectedSetups.filter((s: any) => s.openTime >= userStartTimestamp);
+
+      if (detectedSetups.length > setupsInRange.length) {
+        console.log(`[Backtest] Excluded ${detectedSetups.length - setupsInRange.length} setups before startDate (warmup period)`);
+      }
+
       // Filter by minimum confidence if specified
       const tradableSetups = effectiveConfig.minConfidence && effectiveConfig.minConfidence > 0
-        ? detectedSetups.filter((s: any) => s.confidence >= effectiveConfig.minConfidence!)
-        : detectedSetups;
+        ? setupsInRange.filter((s: any) => s.confidence >= effectiveConfig.minConfidence!)
+        : setupsInRange;
 
       console.log('[Backtest] Filtered to', tradableSetups.length, 'tradable setups by confidence', effectiveConfig.minConfidence ? `(min: ${effectiveConfig.minConfidence}%)` : '(no filter)');
 
@@ -272,8 +337,8 @@ export class BacktestEngine {
       );
 
       // Track open positions to manage multiple concurrent trades
-      const MAX_CONCURRENT_POSITIONS = 5; // Allow up to 5 simultaneous positions
-      const MAX_TOTAL_EXPOSURE = 0.5; // Max 50% of capital in positions
+      const MAX_CONCURRENT_POSITIONS = effectiveConfig.maxConcurrentPositions ?? 5;
+      const MAX_TOTAL_EXPOSURE = effectiveConfig.maxTotalExposure ?? 0.5;
       const openPositions: Array<{ exitTime: number; positionValue: number }> = [];
 
       // Debug counters
@@ -476,6 +541,16 @@ export class BacktestEngine {
           (k) => k.openTime > setup.openTime
         );
 
+        const trailingStopConfig = strategy?.exit?.trailingStop;
+        const useTrailingStop = trailingStopConfig?.enabled ?? effectiveConfig.useTrailingStop ?? false;
+        let trailingStop = stopLoss;
+        let highestHigh = entryPrice;
+        let lowestLow = entryPrice;
+        let breakEvenReached = false;
+        const trailMultiplier = effectiveConfig.trailingATRMultiplier ?? trailingStopConfig?.trailMultiplier ?? 2;
+        const breakEvenAfterR = effectiveConfig.breakEvenAfterR ?? trailingStopConfig?.breakEvenAfterR ?? 1;
+        const atrAtEntry = setup.atr ?? (stopLoss ? Math.abs(entryPrice - stopLoss) / 1.5 : entryPrice * 0.02);
+
         for (const futureKline of futureKlines) {
           barsInTrade++;
           const futureIndex = historicalKlines.findIndex(k => k.openTime === futureKline.openTime);
@@ -483,6 +558,42 @@ export class BacktestEngine {
           const low = parseFloat(futureKline.low);
           const open = parseFloat(futureKline.open);
           const close = parseFloat(futureKline.close);
+
+          if (useTrailingStop && stopLoss) {
+            if (setup.direction === 'LONG') {
+              if (high > highestHigh) {
+                highestHigh = high;
+                const riskAmount = entryPrice - stopLoss;
+                const unrealizedR = (highestHigh - entryPrice) / riskAmount;
+                if (unrealizedR >= breakEvenAfterR && !breakEvenReached) {
+                  trailingStop = entryPrice + (atrAtEntry * 0.1);
+                  breakEvenReached = true;
+                }
+                if (breakEvenReached) {
+                  const newTrailingStop = highestHigh - (atrAtEntry * trailMultiplier);
+                  if (newTrailingStop > trailingStop!) {
+                    trailingStop = newTrailingStop;
+                  }
+                }
+              }
+            } else {
+              if (low < lowestLow) {
+                lowestLow = low;
+                const riskAmount = stopLoss - entryPrice;
+                const unrealizedR = (entryPrice - lowestLow) / riskAmount;
+                if (unrealizedR >= breakEvenAfterR && !breakEvenReached) {
+                  trailingStop = entryPrice - (atrAtEntry * 0.1);
+                  breakEvenReached = true;
+                }
+                if (breakEvenReached) {
+                  const newTrailingStop = lowestLow + (atrAtEntry * trailMultiplier);
+                  if (newTrailingStop < trailingStop!) {
+                    trailingStop = newTrailingStop;
+                  }
+                }
+              }
+            }
+          }
 
           if (exitConditionForDirection && computedIndicators && futureIndex >= 0) {
             const context: EvaluationContext = {
@@ -508,33 +619,35 @@ export class BacktestEngine {
             break;
           }
 
-          const slHit = stopLoss && (
-            (setup.direction === 'LONG' && low <= stopLoss) ||
-            (setup.direction === 'SHORT' && high >= stopLoss)
+          const effectiveSL = useTrailingStop ? trailingStop : stopLoss;
+          const slHit = effectiveSL && (
+            (setup.direction === 'LONG' && low <= effectiveSL) ||
+            (setup.direction === 'SHORT' && high >= effectiveSL)
           );
-          const tpHit = takeProfit && (
-            (setup.direction === 'LONG' && high >= takeProfit) ||
-            (setup.direction === 'SHORT' && low <= takeProfit)
+          const effectiveTP = useTrailingStop ? undefined : takeProfit;
+          const tpHit = effectiveTP && (
+            (setup.direction === 'LONG' && high >= effectiveTP) ||
+            (setup.direction === 'SHORT' && low <= effectiveTP)
           );
 
           if (slHit && tpHit) {
             const isBullishCandle = close > open;
             if (setup.direction === 'LONG') {
               exitReason = isBullishCandle ? 'TAKE_PROFIT' : 'STOP_LOSS';
-              exitPrice = isBullishCandle ? takeProfit : stopLoss;
+              exitPrice = isBullishCandle ? effectiveTP : effectiveSL;
             } else {
               exitReason = isBullishCandle ? 'STOP_LOSS' : 'TAKE_PROFIT';
-              exitPrice = isBullishCandle ? stopLoss : takeProfit;
+              exitPrice = isBullishCandle ? effectiveSL : effectiveTP;
             }
             exitTime = new Date(futureKline.openTime).toISOString();
             break;
           } else if (slHit) {
-            exitPrice = stopLoss;
+            exitPrice = effectiveSL;
             exitTime = new Date(futureKline.openTime).toISOString();
-            exitReason = 'STOP_LOSS';
+            exitReason = useTrailingStop && breakEvenReached ? 'STOP_LOSS' : 'STOP_LOSS';
             break;
           } else if (tpHit) {
-            exitPrice = takeProfit;
+            exitPrice = effectiveTP;
             exitTime = new Date(futureKline.openTime).toISOString();
             exitReason = 'TAKE_PROFIT';
             break;
@@ -815,6 +928,11 @@ export class BacktestEngine {
         if (typeof trendPeriod === 'number' && trendPeriod > maxPeriod) {
           maxPeriod = trendPeriod;
         }
+      }
+
+      // If strategy uses onlyWithTrend, we need EMA200 to be valid
+      if (strategy.optimizedParams?.onlyWithTrend) {
+        maxPeriod = Math.max(maxPeriod, 200);
       }
     }
 

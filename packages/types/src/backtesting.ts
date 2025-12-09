@@ -32,7 +32,6 @@ export interface BacktestConfig {
 
   // Risk Management (Kelly Criterion)
   useKellyCriterion?: boolean; // Use Kelly Criterion for position sizing
-  kellyFraction?: number; // Kelly fraction to use (0.25 = quarter Kelly, 0.5 = half Kelly, 1.0 = full Kelly)
   riskProfile?: 'conservative' | 'moderate' | 'aggressive'; // Preset risk profiles
 
   // Trailing Stop
@@ -46,6 +45,10 @@ export interface BacktestConfig {
   usePartialExits?: boolean; // Enable scaled exits at profit targets
   partialExitLevels?: Array<{ percentage: number; rMultiple: number }>; // Exit levels
   lockProfitsAfterFirstExit?: boolean; // Move stop to break-even after first partial exit
+
+  // Position Management
+  maxConcurrentPositions?: number; // Max simultaneous positions (default: 5)
+  maxTotalExposure?: number; // Max % of capital in all positions (default: 0.5 = 50%)
 }
 
 export interface BacktestTrade {

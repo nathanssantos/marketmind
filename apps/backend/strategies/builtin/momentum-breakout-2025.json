@@ -8,18 +8,26 @@
 
   "status": "active",
   "optimizedParams": {
-    "maxPositionSize": 60,
+    "maxPositionSize": 80,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 90,
     "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 5,
+    "breakEvenAfterR": 3,
     "onlyWithTrend": false,
     "minConfidence": 60,
     "commission": 0.001
   },
   "backtestSummary": {
-    "profitFactor": 1.51,
-    "winRate": 45.83,
-    "totalTrades": 24,
-    "netPnlPercent": 6.45,
-    "testedAt": "2025-12-07",
+    "profitFactor": 4.86,
+    "winRate": 57.9,
+    "sharpeRatio": 5.75,
+    "maxDrawdownPercent": 12.5,
+    "totalTrades": 19,
+    "netPnlPercent": 82.41,
+    "testedAt": "2024-12-09",
+    "testedPeriod": "2024-01-01 to 2024-10-01",
     "testedTimeframe": "4h",
     "testedSymbol": "BTCUSDT"
   },
@@ -90,8 +98,8 @@
       "enabled": true,
       "type": "atr",
       "initialMultiplier": 2,
-      "trailMultiplier": 1.5,
-      "breakEvenAfterR": 1
+      "trailMultiplier": 5,
+      "breakEvenAfterR": 3
     }
   },
 
