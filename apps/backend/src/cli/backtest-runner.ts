@@ -2,6 +2,7 @@
 
 import chalk from 'chalk';
 import { Command } from 'commander';
+import { benchmarkCommand } from './commands/benchmark';
 import { compareCommand } from './commands/compare';
 import { exportCommand } from './commands/export';
 import { montecarloCommand } from './commands/montecarlo';
@@ -167,6 +168,17 @@ program
   .option('--metric <metric>', 'Metric to analyze (sharpeRatio, totalReturn, profitFactor, winRate)', 'sharpeRatio')
   .option('-v, --verbose', 'Show detailed parameter-by-parameter results', false)
   .action(sensitivityCommand);
+
+// Benchmark command
+program
+  .command('benchmark')
+  .description('Run benchmark validation suite against industry-known strategies')
+  .requiredOption('--start <date>', 'Start date (YYYY-MM-DD)')
+  .requiredOption('--end <date>', 'End date (YYYY-MM-DD)')
+  .option('-c, --capital <amount>', 'Initial capital in USD', '1000')
+  .option('-s, --strategy <type>', 'Run specific strategy benchmark only')
+  .option('-v, --verbose', 'Show detailed logs', false)
+  .action(benchmarkCommand);
 
 // Error handling
 program.exitOverride();

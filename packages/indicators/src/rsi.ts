@@ -12,38 +12,55 @@ export const calculateRSI = (klines: Kline[], period: number = 2): RSIResult => 
   }
 
   const values: (number | null)[] = [];
-  
+  let prevAvgGain = 0;
+  let prevAvgLoss = 0;
+
   for (let i = 0; i < klines.length; i++) {
     if (i < period) {
       values.push(null);
       continue;
     }
 
-    let gains = 0;
-    let losses = 0;
+    if (i === period) {
+      let gains = 0;
+      let losses = 0;
 
-    for (let j = i - period + 1; j <= i; j++) {
-      if (j === 0) continue;
-      const currentKline = klines[j];
-      const prevKline = klines[j - 1];
-      if (!currentKline || !prevKline) continue;
-      const change = getKlineClose(currentKline) - getKlineClose(prevKline);
-      if (change > 0) {
-        gains += change;
-      } else {
-        losses += Math.abs(change);
+      for (let j = 1; j <= period; j++) {
+        const currentKline = klines[j];
+        const prevKline = klines[j - 1];
+        if (!currentKline || !prevKline) continue;
+        const change = getKlineClose(currentKline) - getKlineClose(prevKline);
+        if (change > 0) {
+          gains += change;
+        } else {
+          losses += Math.abs(change);
+        }
       }
+
+      prevAvgGain = gains / period;
+      prevAvgLoss = losses / period;
+    } else {
+      const currentKline = klines[i];
+      const prevKline = klines[i - 1];
+      if (!currentKline || !prevKline) {
+        values.push(null);
+        continue;
+      }
+
+      const change = getKlineClose(currentKline) - getKlineClose(prevKline);
+      const currentGain = change > 0 ? change : 0;
+      const currentLoss = change < 0 ? Math.abs(change) : 0;
+
+      prevAvgGain = (prevAvgGain * (period - 1) + currentGain) / period;
+      prevAvgLoss = (prevAvgLoss * (period - 1) + currentLoss) / period;
     }
 
-    const avgGain = gains / period;
-    const avgLoss = losses / period;
-
-    if (avgLoss === 0) {
+    if (prevAvgLoss === 0) {
       values.push(100);
       continue;
     }
 
-    const rs = avgGain / avgLoss;
+    const rs = prevAvgGain / prevAvgLoss;
     const rsi = 100 - (100 / (1 + rs));
 
     values.push(rsi);
