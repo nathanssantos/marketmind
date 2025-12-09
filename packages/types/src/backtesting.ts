@@ -21,6 +21,11 @@ export interface BacktestConfig {
   slippagePercent?: number; // Slippage % for market orders - SL (default 0.05%)
   useOptimizedSettings?: boolean; // Use strategy's optimizedParams instead of config values
 
+  // Position Sizing
+  positionSizingMethod?: 'fixed-fractional' | 'risk-based' | 'kelly' | 'volatility'; // Default: 'fixed-fractional'
+  riskPerTrade?: number; // % of equity to risk per trade (for risk-based sizing, default: 2%)
+  kellyFraction?: number; // Fraction of Kelly to use (for kelly sizing, default: 0.25 = quarter Kelly)
+  
   // Strategy-specific parameters (for optimization)
   // These override default detector config values (e.g., pivotLookback, volumeMultiplier, emaPeriod)
   strategyParams?: Record<string, number>;

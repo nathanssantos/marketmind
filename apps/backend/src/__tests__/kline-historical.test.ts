@@ -1,6 +1,12 @@
 import type { Interval } from '@marketmind/types';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { calculateStartTime, getIntervalMilliseconds } from '../services/binance-historical';
+
+vi.mock('binance-api-node', () => ({
+  default: vi.fn(() => ({
+    candles: vi.fn(),
+  })),
+}));
 
 describe('Binance Historical Klines', () => {
   describe('getIntervalMilliseconds', () => {

@@ -1,6 +1,15 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Context } from '../trpc/context';
 import { appRouter } from '../trpc/router';
+
+vi.mock('binance-api-node', () => ({
+  default: vi.fn(() => ({
+    candles: vi.fn(),
+    ws: {
+      candles: vi.fn(),
+    },
+  })),
+}));
 
 describe('Setup Router', () => {
   let caller: ReturnType<typeof appRouter.createCaller>;

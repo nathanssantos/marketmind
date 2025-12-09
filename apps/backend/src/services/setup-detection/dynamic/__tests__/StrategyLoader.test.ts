@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { StrategyLoader, StrategyValidationException } from '../StrategyLoader';
 import type { StrategyDefinition } from '@marketmind/types';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { StrategyLoader, StrategyValidationException } from '../StrategyLoader';
 
 describe('StrategyLoader', () => {
   let loader: StrategyLoader;
@@ -201,7 +201,7 @@ describe('StrategyLoader', () => {
       expect(result.errors.some(e => e.message.includes('at least one condition'))).toBe(true);
     });
 
-    it('should detect missing stopLoss', () => {
+    it('should detect missing stopLoss when no conditions provided', () => {
       const invalid = {
         ...validStrategy,
         exit: {
@@ -211,10 +211,10 @@ describe('StrategyLoader', () => {
       const result = loader.validateStrategy(invalid);
 
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.path === 'exit.stopLoss')).toBe(true);
+      expect(result.errors.some(e => e.path === 'exit' && e.message.includes('stopLoss or conditions'))).toBe(true);
     });
 
-    it('should detect missing takeProfit', () => {
+    it('should detect missing takeProfit when no conditions provided', () => {
       const invalid = {
         ...validStrategy,
         exit: {
@@ -224,7 +224,7 @@ describe('StrategyLoader', () => {
       const result = loader.validateStrategy(invalid);
 
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.path === 'exit.takeProfit')).toBe(true);
+      expect(result.errors.some(e => e.path === 'exit' && e.message.includes('takeProfit or conditions'))).toBe(true);
     });
 
     it('should detect invalid exit level type', () => {

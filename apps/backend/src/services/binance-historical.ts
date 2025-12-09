@@ -7,8 +7,8 @@ import { logger } from './logger';
 const BATCH_SIZE = 1000;
 const RATE_LIMIT_DELAY = 200;
 
-const Binance = (BinanceModule as any).default;
-const binanceClient = Binance();
+const Binance = (BinanceModule as any).default || BinanceModule;
+const binanceClient = typeof Binance === 'function' ? Binance() : null;
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 

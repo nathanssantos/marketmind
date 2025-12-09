@@ -34,6 +34,9 @@ interface OptimizeOptions {
   param: string[];
   minConfidence?: string;
   maxPosition: string;
+  positionMethod: string;
+  riskPerTrade: string;
+  kellyFraction: string;
   commission: string;
   useAlgorithmicLevels: boolean;
   withTrend: boolean;
@@ -63,7 +66,20 @@ export async function optimizeCommand(options: OptimizeOptions) {
     const parallelWorkers = validateParallelWorkers(options.parallel);
     const topN = validatePercentage(options.top, 'Top N', 1, 100);
     const maxPosition = validatePercentage(options.maxPosition, 'Max position', 1, 100);
+    const riskPerTrade = validatePercentage(options.riskPerTrade, 'Risk per trade', 0.1, 10);
+    const kellyFraction = parseFloat(options.kellyFraction);
     const commission = validatePercentage(options.commission, 'Commission', 0, 10);
+
+    // Validate position sizing method
+    const validMethods = ['fixed-fractional', 'risk-based', 'kelly', 'volatility-based'];
+    if (!validMethods.includes(options.positionMethod)) {
+      throw new ValidationError('Position sizing method', options.positionMethod, validMethods.join(', '));
+    }
+
+    // Validate Kelly fraction
+    if (isNaN(kellyFraction) || kellyFraction <= 0 || kellyFraction > 1) {
+      throw new ValidationError('Kelly fraction', options.kellyFraction, '0 < fraction <= 1');
+    }
 
     // Validate risk/reward ratio
     if (!options.useAlgorithmicLevels) {
@@ -112,12 +128,15 @@ export async function optimizeCommand(options: OptimizeOptions) {
       endDate: options.end,
       initialCapital: capital,
       setupTypes: [options.strategy],
-      stopLossPercent: stopLoss,        // FIXED: Add SL
-      takeProfitPercent: takeProfit,    // FIXED: Add TP
+      stopLossPercent: stopLoss,
+      takeProfitPercent: takeProfit,
       maxPositionSize: maxPosition,
+      positionSizingMethod: options.positionMethod as 'fixed-fractional' | 'risk-based' | 'kelly' | 'volatility-based',
+      riskPerTrade: riskPerTrade,
+      kellyFraction: kellyFraction,
       commission: commission / 100,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
-      onlyWithTrend: options.withTrend ?? false,  // FIXED: Default to false, only true if --with-trend is passed
+      onlyWithTrend: options.withTrend ?? false,
     };
 
     // Add minConfidence to base config if specified

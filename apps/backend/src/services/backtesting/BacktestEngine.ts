@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { fetchHistoricalKlinesFromAPI } from '../binance-historical';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
 import { ConditionEvaluator, IndicatorEngine, StrategyLoader } from '../setup-detection/dynamic';
+import { PositionSizer } from './PositionSizer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -131,7 +132,7 @@ export class BacktestEngine {
       const setupDetectionService = new SetupDetectionService(setupConfig);
 
       // Load dynamic strategies if requested
-      let loadedStrategies: StrategyDefinition[] = [];
+      const loadedStrategies: StrategyDefinition[] = [];
       const strategyMap = new Map<string, StrategyDefinition>();
       if (requestedDynamic.length > 0) {
         const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
@@ -279,16 +280,7 @@ export class BacktestEngine {
           }
         }
 
-        const positionSize = (equity * ((effectiveConfig.maxPositionSize ?? 10) / 100)) / entryPrice;
-        const positionValue = positionSize * entryPrice;
-
-        // Ensure position value meets minimum
-        if (positionValue < MIN_NOTIONAL_VALUE) {
-          console.warn('[Backtest] Position value', positionValue.toFixed(2), 'below MIN_NOTIONAL (', MIN_NOTIONAL_VALUE, '), skipping trade');
-          continue;
-        }
-
-        // Calculate SL/TP
+        // Calculate SL/TP first (needed for position sizing)
         const stopLoss = effectiveConfig.useAlgorithmicLevels && setup.stopLoss
           ? setup.stopLoss
           : effectiveConfig.stopLossPercent
@@ -304,6 +296,45 @@ export class BacktestEngine {
             ? entryPrice * (1 + effectiveConfig.takeProfitPercent / 100)
             : entryPrice * (1 - effectiveConfig.takeProfitPercent / 100)
           : undefined;
+
+        // Calculate position size using intelligent position sizing
+        const positionSizingMethod = effectiveConfig.positionSizingMethod ?? 'fixed-fractional';
+        let positionSize: number;
+        let positionValue: number;
+
+        if (positionSizingMethod === 'fixed-fractional') {
+          // Original behavior: fixed % of equity
+          positionSize = (equity * ((effectiveConfig.maxPositionSize ?? 10) / 100)) / entryPrice;
+          positionValue = positionSize * entryPrice;
+        } else {
+          // Use PositionSizer for intelligent sizing
+          const sizingResult = PositionSizer.calculatePositionSize(
+            equity,
+            entryPrice,
+            stopLoss,
+            {
+              method: positionSizingMethod,
+              riskPerTrade: effectiveConfig.riskPerTrade ?? 2,
+              kellyFraction: effectiveConfig.kellyFraction ?? 0.25,
+              minPositionPercent: 1,
+              maxPositionPercent: effectiveConfig.maxPositionSize ?? 100,
+            }
+          );
+
+          positionSize = sizingResult.positionSize;
+          positionValue = sizingResult.positionValue;
+
+          // Log sizing decision in verbose mode
+          if (effectiveConfig.minConfidence !== undefined) {
+            console.log(`[Position Sizing] ${sizingResult.rationale}`);
+          }
+        }
+
+        // Ensure position value meets minimum
+        if (positionValue < MIN_NOTIONAL_VALUE) {
+          console.warn('[Backtest] Position value', positionValue.toFixed(2), 'below MIN_NOTIONAL (', MIN_NOTIONAL_VALUE, '), skipping trade');
+          continue;
+        }
 
         // Filter by minimum expected profit after fees
         if (effectiveConfig.minProfitPercent && takeProfit) {
