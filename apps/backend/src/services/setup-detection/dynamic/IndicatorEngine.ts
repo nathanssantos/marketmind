@@ -12,6 +12,20 @@ import type {
 } from '@marketmind/types';
 
 import {
+    calculateFundingRate,
+    detectFundingRateSignal,
+    calculateOpenInterest,
+    calculateLiquidations,
+    calculateRelativeStrength,
+    type FundingRateData,
+    type OpenInterestData,
+    type LiquidationData,
+} from '@marketmind/indicators';
+
+import { getBinanceFuturesDataService } from '../../binance-futures-data';
+import { getBTCDominanceDataService } from '../../btc-dominance-data';
+
+import {
     calculateADX,
     calculateATR,
     calculateBollingerBandsArray,
@@ -34,13 +48,49 @@ import {
     calculateVWAP,
     calculateWilliamsR,
     findPivotPoints,
+    calculateROC,
+    calculateDEMA,
+    calculateTEMA,
+    calculateWMA,
+    calculateHMA,
+    calculateCMO,
+    calculateAO,
+    calculatePPO,
+    calculateTSI,
+    calculateUltimateOscillator,
+    calculateAroon,
+    calculateDMI,
+    calculateVortex,
+    calculateParabolicSAR,
+    calculateMassIndex,
+    calculateCMF,
+    calculateKlinger,
+    calculateElderRay,
+    calculateDeltaVolume,
+    calculateSwingPoints,
+    calculateFVG,
+    calculateCandlePatterns,
+    calculateGaps,
+    calculateFibonacciRetracement,
+    calculateFloorPivotSeries,
+    calculateLiquidityLevels,
 } from '@marketmind/indicators';
+
+interface CryptoData {
+  fundingRate: FundingRateData[];
+  openInterest: OpenInterestData[];
+  liquidations: LiquidationData[];
+  baseAssetCloses?: number[];
+  btcDominance?: number | null;
+}
 
 /**
  * Engine for computing indicators defined in strategy JSON
  */
 export class IndicatorEngine {
   private cache: Map<string, ComputedIndicators> = new Map();
+  private cryptoDataCache: Map<string, { data: CryptoData; timestamp: number }> = new Map();
+  private cryptoDataCacheTTL: number = 60000;
 
   /**
    * Compute all indicators defined in a strategy
@@ -86,6 +136,214 @@ export class IndicatorEngine {
 
     this.cache.set(cacheKey, result);
     return result;
+  }
+
+  /**
+   * Compute all indicators with async crypto data from Binance Futures API
+   */
+  async computeIndicatorsWithCryptoData(
+    klines: Kline[],
+    indicators: Record<string, IndicatorDefinition>,
+    params: Record<string, number>,
+    symbol: string,
+    baseAssetSymbol?: string
+  ): Promise<ComputedIndicators> {
+    const result = this.computeIndicators(klines, indicators, params);
+
+    const hasCryptoIndicators = Object.values(indicators).some(
+      (def) => ['fundingRate', 'openInterest', 'liquidations', 'relativeStrength', 'btcDominance'].includes(def.type)
+    );
+
+    if (!hasCryptoIndicators) return result;
+
+    const cryptoData = await this.fetchCryptoData(symbol, Object.values(indicators).some((def) => def.type === 'btcDominance'));
+
+    for (const [id, definition] of Object.entries(indicators)) {
+      const computed = this.computeCryptoIndicator(klines, definition, params, cryptoData, baseAssetSymbol);
+      if (computed) {
+        result[id] = computed;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Fetch crypto-specific data from Binance Futures API and BTC Dominance
+   */
+  private async fetchCryptoData(symbol: string, needsBtcDominance: boolean = false): Promise<CryptoData> {
+    const cacheKey = `crypto:${symbol}:${needsBtcDominance}`;
+    const cached = this.cryptoDataCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.cryptoDataCacheTTL) {
+      return cached.data;
+    }
+
+    const service = getBinanceFuturesDataService();
+    const promises: Promise<unknown>[] = [
+      service.getFundingRate(symbol),
+      service.getOpenInterest(symbol),
+      service.getLiquidations(symbol),
+    ];
+
+    if (needsBtcDominance) {
+      const btcDominanceService = getBTCDominanceDataService();
+      promises.push(btcDominanceService.getBTCDominance());
+    }
+
+    const results = await Promise.all(promises);
+    const [fundingRate, openInterest, liquidations] = results as [FundingRateData[], OpenInterestData[], LiquidationData[]];
+
+    const data: CryptoData = { fundingRate, openInterest, liquidations };
+
+    if (needsBtcDominance && results[3]) {
+      const btcDomData = results[3] as { btcDominance: number } | null;
+      data.btcDominance = btcDomData?.btcDominance ?? null;
+    }
+
+    this.cryptoDataCache.set(cacheKey, { data, timestamp: Date.now() });
+
+    return data;
+  }
+
+  /**
+   * Compute a crypto-specific indicator
+   */
+  private computeCryptoIndicator(
+    klines: Kline[],
+    definition: IndicatorDefinition,
+    params: Record<string, number>,
+    cryptoData: CryptoData,
+    _baseAssetSymbol?: string
+  ): ComputedIndicator | null {
+    const resolvedParams = this.resolveParams(definition.params, params);
+    const closes = klines.map((k) => parseFloat(k.close));
+
+    switch (definition.type) {
+      case 'fundingRate': {
+        if (cryptoData.fundingRate.length === 0) {
+          return { type: 'fundingRate', values: new Array(klines.length).fill(null) };
+        }
+
+        const result = calculateFundingRate(cryptoData.fundingRate, {
+          extremeThreshold: resolvedParams['extremeThreshold'] ?? 0.1,
+          averagePeriod: resolvedParams['averagePeriod'] ?? 7,
+        });
+
+        const signalResult = detectFundingRateSignal(cryptoData.fundingRate, {
+          extremeThreshold: resolvedParams['extremeThreshold'] ?? 0.1,
+        });
+
+        const values: (number | null)[] = new Array(klines.length).fill(null);
+        if (result.current !== null) {
+          values[klines.length - 1] = result.current;
+        }
+
+        return {
+          type: 'fundingRate',
+          values: {
+            current: values,
+            signal: new Array(klines.length).fill(signalResult.signal === 'long' ? 1 : signalResult.signal === 'short' ? -1 : 0),
+          },
+        };
+      }
+
+      case 'openInterest': {
+        if (cryptoData.openInterest.length === 0) {
+          return { type: 'openInterest', values: new Array(klines.length).fill(null) };
+        }
+
+        const priceChanges: number[] = [];
+        for (let i = 1; i < closes.length; i++) {
+          const prev = closes[i - 1];
+          const curr = closes[i];
+          if (prev !== undefined && curr !== undefined && prev !== 0) {
+            priceChanges.push(((curr - prev) / prev) * 100);
+          } else {
+            priceChanges.push(0);
+          }
+        }
+
+        const result = calculateOpenInterest(cryptoData.openInterest, priceChanges, {
+          lookback: resolvedParams['lookback'] ?? 10,
+          changeThreshold: resolvedParams['changeThreshold'] ?? 5,
+          trendPeriod: resolvedParams['trendPeriod'] ?? 5,
+        });
+
+        const values: (number | null)[] = new Array(klines.length).fill(null);
+        if (result.current !== null) {
+          values[klines.length - 1] = result.current;
+        }
+
+        return {
+          type: 'openInterest',
+          values: {
+            current: values,
+            trend: new Array(klines.length).fill(result.trend === 'increasing' ? 1 : result.trend === 'decreasing' ? -1 : 0),
+            divergence: new Array(klines.length).fill(result.divergence === 'bullish' ? 1 : result.divergence === 'bearish' ? -1 : 0),
+          },
+        };
+      }
+
+      case 'liquidations': {
+        if (cryptoData.liquidations.length === 0) {
+          return { type: 'liquidations', values: new Array(klines.length).fill(null) };
+        }
+
+        const result = calculateLiquidations(cryptoData.liquidations, {
+          cascadeThreshold: resolvedParams['cascadeThreshold'] ?? 1000000,
+          lookbackPeriods: resolvedParams['lookbackPeriods'] ?? 6,
+          imbalanceThreshold: resolvedParams['imbalanceThreshold'] ?? 0.7,
+        });
+
+        const values: (number | null)[] = new Array(klines.length).fill(null);
+        values[klines.length - 1] = result.longLiquidations - result.shortLiquidations;
+
+        return {
+          type: 'liquidations',
+          values: {
+            delta: values,
+            cascade: new Array(klines.length).fill(result.isCascade ? 1 : 0),
+            dominantSide: new Array(klines.length).fill(result.dominantSide === 'long' ? 1 : result.dominantSide === 'short' ? -1 : 0),
+          },
+        };
+      }
+
+      case 'relativeStrength': {
+        const baseAssetCloses = cryptoData.baseAssetCloses || closes;
+        const result = calculateRelativeStrength(closes, baseAssetCloses);
+
+        const values: (number | null)[] = new Array(klines.length).fill(null);
+        if (result.ratio !== null) {
+          values[klines.length - 1] = result.ratio;
+        }
+
+        return {
+          type: 'relativeStrength',
+          values: {
+            ratio: values,
+            outperforming: new Array(klines.length).fill(result.outperforming ? 1 : 0),
+            strength: new Array(klines.length).fill(result.strength === 'strong' ? 2 : result.strength === 'moderate' ? 1 : result.strength === 'weak' ? 0 : -1),
+          },
+        };
+      }
+
+      case 'btcDominance': {
+        const values: (number | null)[] = new Array(klines.length).fill(null);
+        if (cryptoData.btcDominance !== undefined && cryptoData.btcDominance !== null) {
+          values[klines.length - 1] = cryptoData.btcDominance;
+        }
+
+        return {
+          type: 'btcDominance',
+          values: {
+            current: values,
+          },
+        };
+      }
+
+      default:
+        return null;
+    }
   }
 
   /**
@@ -322,6 +580,294 @@ export class IndicatorEngine {
         return {
           type: 'nr7',
           values: nr7Result.isNR7.map((v) => (v ? 1 : 0)),
+        };
+
+      case 'roc': {
+        const rocResult = calculateROC(klines, resolvedParams['period'] ?? 12);
+        return { type: 'roc', values: rocResult.values };
+      }
+
+      case 'dema': {
+        const demaResult = calculateDEMA(klines, resolvedParams['period'] ?? 20);
+        return { type: 'dema', values: demaResult.values };
+      }
+
+      case 'tema': {
+        const temaResult = calculateTEMA(klines, resolvedParams['period'] ?? 20);
+        return { type: 'tema', values: temaResult.values };
+      }
+
+      case 'wma': {
+        const wmaResult = calculateWMA(klines, resolvedParams['period'] ?? 20);
+        return { type: 'wma', values: wmaResult.values };
+      }
+
+      case 'hma': {
+        const hmaResult = calculateHMA(klines, resolvedParams['period'] ?? 20);
+        return { type: 'hma', values: hmaResult.values };
+      }
+
+      case 'cmo': {
+        const cmoResult = calculateCMO(klines, resolvedParams['period'] ?? 14);
+        return { type: 'cmo', values: cmoResult.values };
+      }
+
+      case 'ao': {
+        const aoResult = calculateAO(klines, resolvedParams['fastPeriod'] ?? 5, resolvedParams['slowPeriod'] ?? 34);
+        return { type: 'ao', values: aoResult.values };
+      }
+
+      case 'ppo': {
+        const ppoResult = calculatePPO(klines, resolvedParams['fastPeriod'] ?? 12, resolvedParams['slowPeriod'] ?? 26, resolvedParams['signalPeriod'] ?? 9);
+        return {
+          type: 'ppo',
+          values: {
+            ppo: ppoResult.ppo,
+            signal: ppoResult.signal,
+            histogram: ppoResult.histogram,
+          },
+        };
+      }
+
+      case 'tsi': {
+        const tsiResult = calculateTSI(klines, resolvedParams['longPeriod'] ?? 25, resolvedParams['shortPeriod'] ?? 13, resolvedParams['signalPeriod'] ?? 13);
+        return {
+          type: 'tsi',
+          values: {
+            tsi: tsiResult.tsi,
+            signal: tsiResult.signal,
+          },
+        };
+      }
+
+      case 'ultimateOscillator': {
+        const uoResult = calculateUltimateOscillator(klines, resolvedParams['period1'] ?? 7, resolvedParams['period2'] ?? 14, resolvedParams['period3'] ?? 28);
+        return { type: 'ultimateOscillator', values: uoResult.values };
+      }
+
+      case 'aroon': {
+        const aroonResult = calculateAroon(klines, resolvedParams['period'] ?? 25);
+        return {
+          type: 'aroon',
+          values: {
+            up: aroonResult.aroonUp,
+            down: aroonResult.aroonDown,
+            oscillator: aroonResult.oscillator,
+          },
+        };
+      }
+
+      case 'dmi': {
+        const dmiResult = calculateDMI(klines, resolvedParams['period'] ?? 14);
+        return {
+          type: 'dmi',
+          values: {
+            plusDI: dmiResult.plusDI,
+            minusDI: dmiResult.minusDI,
+            dx: dmiResult.dx,
+          },
+        };
+      }
+
+      case 'vortex': {
+        const vortexResult = calculateVortex(klines, resolvedParams['period'] ?? 14);
+        return {
+          type: 'vortex',
+          values: {
+            viPlus: vortexResult.viPlus,
+            viMinus: vortexResult.viMinus,
+          },
+        };
+      }
+
+      case 'parabolicSar': {
+        const psarResult = calculateParabolicSAR(klines, resolvedParams['step'] ?? 0.02, resolvedParams['max'] ?? 0.2);
+        return {
+          type: 'parabolicSar',
+          values: {
+            sar: psarResult.sar,
+            trend: psarResult.trend.map((t) => (t === 'up' ? 1 : -1)),
+          },
+        };
+      }
+
+      case 'massIndex': {
+        const massResult = calculateMassIndex(klines, resolvedParams['emaPeriod'] ?? 9, resolvedParams['sumPeriod'] ?? 25);
+        return { type: 'massIndex', values: massResult.values };
+      }
+
+      case 'cmf': {
+        const cmfResult = calculateCMF(klines, resolvedParams['period'] ?? 20);
+        return { type: 'cmf', values: cmfResult.values };
+      }
+
+      case 'klinger': {
+        const klingerResult = calculateKlinger(klines, resolvedParams['shortPeriod'] ?? 34, resolvedParams['longPeriod'] ?? 55, resolvedParams['signalPeriod'] ?? 13);
+        return {
+          type: 'klinger',
+          values: {
+            kvo: klingerResult.kvo,
+            signal: klingerResult.signal,
+          },
+        };
+      }
+
+      case 'elderRay': {
+        const elderResult = calculateElderRay(klines, resolvedParams['period'] ?? 13);
+        return {
+          type: 'elderRay',
+          values: {
+            bullPower: elderResult.bullPower,
+            bearPower: elderResult.bearPower,
+          },
+        };
+      }
+
+      case 'deltaVolume': {
+        const deltaResult = calculateDeltaVolume(klines);
+        return {
+          type: 'deltaVolume',
+          values: {
+            delta: deltaResult.delta,
+            cumulative: deltaResult.cumulativeDelta,
+          },
+        };
+      }
+
+      case 'swingPoints': {
+        const swingResult = calculateSwingPoints(klines, resolvedParams['lookback'] ?? 5);
+        return {
+          type: 'swingPoints',
+          values: {
+            high: swingResult.swingHighs,
+            low: swingResult.swingLows,
+          },
+        };
+      }
+
+      case 'fvg': {
+        const fvgResult = calculateFVG(klines);
+        const bullishValues: (number | null)[] = new Array(klines.length).fill(null);
+        const bearishValues: (number | null)[] = new Array(klines.length).fill(null);
+        for (const gap of fvgResult.gaps) {
+          if (gap.index >= 0 && gap.index < klines.length) {
+            if (gap.type === 'bullish') {
+              bullishValues[gap.index] = 1;
+            } else {
+              bearishValues[gap.index] = 1;
+            }
+          }
+        }
+        return {
+          type: 'fvg',
+          values: {
+            bullish: bullishValues,
+            bearish: bearishValues,
+          },
+        };
+      }
+
+      case 'candlePatterns': {
+        const patternsResult = calculateCandlePatterns(klines);
+        const patternValues: (number | null)[] = new Array(klines.length).fill(null);
+        for (const pattern of patternsResult.patterns) {
+          if (pattern.index >= 0 && pattern.index < patternValues.length) {
+            patternValues[pattern.index] = pattern.signal === 'bullish' ? 1 : pattern.signal === 'bearish' ? -1 : 0;
+          }
+        }
+        return { type: 'candlePatterns', values: patternValues };
+      }
+
+      case 'gapDetection': {
+        const gapsResult = calculateGaps(klines, resolvedParams['threshold'] ?? 0.5);
+        const gapValues: (number | null)[] = new Array(klines.length).fill(null);
+        for (const gap of gapsResult.gaps) {
+          if (gap.index >= 0 && gap.index < gapValues.length) {
+            gapValues[gap.index] = gap.type === 'up' ? 1 : -1;
+          }
+        }
+        return { type: 'gapDetection', values: gapValues };
+      }
+
+      case 'fibonacci': {
+        const highs = klines.map((k) => parseFloat(k.high));
+        const lows = klines.map((k) => parseFloat(k.low));
+        const highPrice = Math.max(...highs.filter((h) => !isNaN(h)));
+        const lowPrice = Math.min(...lows.filter((l) => !isNaN(l)));
+        const fibLevels = calculateFibonacciRetracement(highPrice, lowPrice);
+        const getLevel = (targetLevel: number) => fibLevels.find((l) => l.level === targetLevel)?.price ?? null;
+        return {
+          type: 'fibonacci',
+          values: {
+            level236: Array(klines.length).fill(getLevel(0.236)),
+            level382: Array(klines.length).fill(getLevel(0.382)),
+            level500: Array(klines.length).fill(getLevel(0.5)),
+            level618: Array(klines.length).fill(getLevel(0.618)),
+            level786: Array(klines.length).fill(getLevel(0.786)),
+          },
+        };
+      }
+
+      case 'floorPivots': {
+        const highs = klines.map((k) => parseFloat(k.high));
+        const lows = klines.map((k) => parseFloat(k.low));
+        const closes = klines.map((k) => parseFloat(k.close));
+        const pivotTypeParam = resolvedParams['pivotType'];
+        const validTypes = ['standard', 'fibonacci', 'woodie', 'camarilla', 'demark'] as const;
+        const pivotType = typeof pivotTypeParam === 'string' && validTypes.includes(pivotTypeParam as typeof validTypes[number])
+          ? (pivotTypeParam as typeof validTypes[number])
+          : 'standard';
+        const floorResult = calculateFloorPivotSeries(highs, lows, closes, undefined, pivotType);
+        return {
+          type: 'floorPivots',
+          values: {
+            pivot: floorResult.pivot,
+            r1: floorResult.r1,
+            r2: floorResult.r2,
+            r3: floorResult.r3,
+            s1: floorResult.s1,
+            s2: floorResult.s2,
+            s3: floorResult.s3,
+          },
+        };
+      }
+
+      case 'liquidityLevels': {
+        const highs = klines.map((k) => parseFloat(k.high));
+        const lows = klines.map((k) => parseFloat(k.low));
+        const closes = klines.map((k) => parseFloat(k.close));
+        const liquidityResult = calculateLiquidityLevels(highs, lows, closes, {
+          lookback: resolvedParams['lookback'] ?? 50,
+          minTouches: resolvedParams['minTouches'] ?? 2,
+        });
+        const supportValues: (number | null)[] = new Array(klines.length).fill(null);
+        const resistanceValues: (number | null)[] = new Array(klines.length).fill(null);
+        for (const level of liquidityResult) {
+          if (level.lastIndex >= 0 && level.lastIndex < klines.length) {
+            if (level.type === 'support') {
+              supportValues[level.lastIndex] = level.price;
+            } else {
+              resistanceValues[level.lastIndex] = level.price;
+            }
+          }
+        }
+        return {
+          type: 'liquidityLevels',
+          values: {
+            support: supportValues,
+            resistance: resistanceValues,
+          },
+        };
+      }
+
+      case 'fundingRate':
+      case 'openInterest':
+      case 'liquidations':
+      case 'btcDominance':
+      case 'relativeStrength':
+        return {
+          type: definition.type,
+          values: new Array(klines.length).fill(null),
         };
 
       default:
