@@ -282,6 +282,108 @@ import { calculateEMA } from '@marketmind/indicators';
 
 ---
 
+### Sprint 2.5: Centralização de Setup Detection (1 semana) 🆕 CRÍTICO
+
+**Status:** 📋 A fazer antes do Sprint 3  
+**Prioridade:** 🔴 ALTA - Necessário para trading real  
+**Objetivo:** Mover toda lógica de detecção de setups do frontend para backend
+
+#### 2.5.1 Problema Atual
+
+**❌ Frontend tem detectores duplicados:**
+- `apps/electron/src/renderer/services/setupDetection/*.ts` (8 detectores)
+- Setup91Detector, Setup92Detector, Setup93Detector, Setup94Detector
+- BearTrapDetector, BullTrapDetector, BreakoutRetestDetector, Pattern123Detector
+- SetupDetectionService.ts (orquestra tudo)
+
+**❌ Backend tem estratégias JSON:**
+- `apps/backend/src/services/setup-detection/dynamic/strategies/*.json` (87 estratégias)
+- IndicatorEngine.ts, ConditionEvaluator.ts, ExitCalculator.ts
+- Sistema dinâmico completo e testado
+
+**❌ Toggle Popover desconectado:**
+- Frontend mostra setups hardcoded
+- Backend tem estratégias diferentes
+- Sem sincronização entre front/back
+
+#### 2.5.2 Solução: Backend como Fonte Única
+
+**✅ Mover detectores para backend:**
+```
+apps/backend/src/services/setup-detection/
+├── strategies/                    # 87 JSONs existentes
+│   ├── larry-williams-9.1.json
+│   ├── larry-williams-9.2.json
+│   ├── larry-williams-9.3.json
+│   ├── larry-williams-9.4.json
+│   ├── pattern-123-reversal.json
+│   ├── bear-trap.json
+│   ├── bull-trap.json
+│   ├── breakout-retest.json
+│   └── ... (79 outros)
+├── dynamic/
+│   ├── IndicatorEngine.ts        # ✅ Já existe
+│   ├── ConditionEvaluator.ts     # ✅ Já existe
+│   ├── ExitCalculator.ts         # ✅ Já existe
+│   └── StrategyExecutor.ts       # ✅ Já existe
+└── SetupDetectionService.ts      # 🔄 Refatorar (usar dynamic)
+```
+
+**✅ Frontend consome via tRPC:**
+```typescript
+// apps/electron/src/renderer/hooks/useSetupDetection.ts
+const { data: setups } = trpc.trading.detectSetups.useQuery({
+  symbol: 'BTCUSDT',
+  interval: '15m',
+  enabledStrategies: ['larry-williams-9.2', 'bear-trap'],
+});
+```
+
+**✅ Toggle Popover dinâmico:**
+```typescript
+// Lista de estratégias vem do backend
+const { data: strategies } = trpc.trading.listStrategies.useQuery();
+
+// Popover renderiza baseado no backend
+strategies.map(strategy => (
+  <Checkbox key={strategy.id} value={strategy.id}>
+    {strategy.name}
+  </Checkbox>
+));
+```
+
+#### 2.5.3 Tarefas
+
+**Fase 1 - Backend API (2 dias):**
+- [ ] Criar `trpc.trading.listStrategies` - retorna lista de 87 estratégias
+- [ ] Criar `trpc.trading.detectSetups` - executa detecção via StrategyExecutor
+- [ ] Criar `trpc.trading.getStrategyDetails` - retorna config de uma estratégia
+- [ ] Validar que 8 setups principais (9.1-9.4, 123, bear/bull trap, breakout) funcionam
+
+**Fase 2 - Frontend Refactor (2 dias):**
+- [ ] Remover `apps/electron/src/renderer/services/setupDetection/*.ts` (9 arquivos)
+- [ ] Criar `useBackendSetupDetection` hook (substitui useSetupDetection)
+- [ ] Atualizar Toggle Popover para consumir `listStrategies`
+- [ ] Atualizar ChartCanvas para usar setups do backend
+
+**Fase 3 - Migração de Testes (1 dia):**
+- [ ] Mover testes de setup detection para backend
+- [ ] Validar que 100% dos casos de teste passam
+- [ ] Adicionar testes de integração tRPC
+
+**Fase 4 - Limpeza (1 dia):**
+- [ ] Remover código morto (BaseSetupDetector, etc)
+- [ ] Atualizar documentação (SETUP_GUIDE.md)
+- [ ] Validar que backtesting ainda funciona
+
+**Deliverables:**
+- ✅ Zero detectores no frontend
+- ✅ Backend como única fonte de lógica de trading
+- ✅ Toggle Popover sincronizado com backend
+- ✅ Pronto para trading real
+
+---
+
 ### Sprint 3: Refatoração AI Trading (2 semanas)
 
 #### 3.1 Nova Arquitetura
@@ -294,9 +396,9 @@ import { calculateEMA } from '@marketmind/indicators';
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              ALGORITHMIC DETECTION                          │
+│         BACKEND: ALGORITHMIC DETECTION                      │
 │  ✅ Technical Indicators (@marketmind/indicators)           │
-│  ✅ Setup Detection (SetupDetectionService)                 │
+│  ✅ Setup Detection (StrategyExecutor + 87 JSONs)           │
 │     - Larry Williams (9.1, 9.2, 9.3, 9.4)                   │
 │     - Pattern 123 Reversal                                  │
 │     - Bear/Bull Traps                                       │

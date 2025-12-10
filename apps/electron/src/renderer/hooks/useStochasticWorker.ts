@@ -1,7 +1,7 @@
 import { workerPool } from '@/renderer/utils/WorkerPool';
 import type { Kline } from '@marketmind/types';
 import { useCallback, useEffect, useRef } from 'react';
-import type { StochasticResult } from '../utils/stochastic';
+import type { StochasticResult } from '@marketmind/indicators';
 
 const WORKER_KEY = 'stochastic';
 

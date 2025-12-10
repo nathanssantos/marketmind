@@ -1,6 +1,6 @@
 import type { Kline, VolumeCluster } from '@marketmind/types';
 import { getKlineClose, getKlineVolume } from '@shared/utils';
-import { calculateSMA } from '../movingAverages';
+import { calculateSMA } from '@marketmind/indicators';
 
 const DEFAULT_VOLUME_PERIOD = 20;
 const DEFAULT_SPIKE_THRESHOLD = 1.5;

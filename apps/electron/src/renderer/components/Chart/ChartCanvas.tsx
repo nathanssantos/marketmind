@@ -24,7 +24,7 @@ import { setupCancellationDetector } from '@renderer/services/setupDetection';
 import { TradingFeeService } from '@renderer/services/TradingFeeService';
 import { useSetupStore } from '@renderer/store';
 import { useTradingStore } from '@renderer/store/tradingStore';
-import { calculateMovingAverage } from '@renderer/utils/movingAverages';
+import { calculateMovingAverage } from '@marketmind/indicators';
 import type { StochasticResult } from '@renderer/utils/stochastic';
 import { CHART_CONFIG } from '@shared/constants';
 import type { AIPattern, Kline, Viewport } from '@marketmind/types';

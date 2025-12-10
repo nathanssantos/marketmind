@@ -1,4 +1,4 @@
-import { calculateMovingAverage } from '@renderer/utils/movingAverages';
+import { calculateMovingAverage } from '@marketmind/indicators';
 import type { Kline, Viewport } from '@marketmind/types';
 
 export interface MovingAverageLayerConfig {

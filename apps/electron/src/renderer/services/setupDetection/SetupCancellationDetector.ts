@@ -1,4 +1,4 @@
-import { calculateEMA } from '@renderer/utils/movingAverages';
+import { calculateEMA } from '@marketmind/indicators';
 import type { Kline, SetupCancellationReason, TradingSetup } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow } from '@shared/utils';
 

@@ -1,5 +1,5 @@
 import type { Kline } from '@marketmind/types';
-import { calculateStochastic } from '../utils/stochastic';
+import { calculateStochastic } from '@marketmind/indicators';
 
 export interface StochasticWorkerRequest {
   type: 'calculateStochastic';

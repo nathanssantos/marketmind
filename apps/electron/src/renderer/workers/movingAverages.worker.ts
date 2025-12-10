@@ -1,5 +1,5 @@
 import type { Kline } from '@marketmind/types';
-import { calculateMovingAverages, type MAConfig, type MAResult } from '../utils/movingAverages';
+import { calculateMovingAverages, type MAConfig, type MAResult } from '@marketmind/indicators';
 
 export interface MAWorkerRequest {
   type: 'calculate';

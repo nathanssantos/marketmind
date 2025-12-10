@@ -1,5 +1,5 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
-import { calculateEMA } from '@renderer/utils/movingAverages';
+import { calculateEMA } from '@marketmind/indicators';
 import type { Kline, BearTrapConfig } from '@marketmind/types';
 import { createDefaultBearTrapConfig } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineVolume } from '@shared/utils/klineUtils';
