@@ -121,8 +121,6 @@ export const useVolumeRenderer = ({
           const projectedHeight = Math.min(projectedRatio * volumeOverlayHeight, volumeOverlayHeight);
           
           if (projectedHeight > barHeight) {
-            const projectionHeight = projectedHeight - barHeight;
-            
             let projectionColor: string;
             if (buyPressure > 0.55) {
               const intensity = Math.min((buyPressure - 0.55) / 0.45, 1);

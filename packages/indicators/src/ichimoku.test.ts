@@ -55,7 +55,7 @@ describe('calculateIchimoku', () => {
     const firstValidTenkan = result.tenkan.findIndex(v => v !== null);
     expect(firstValidTenkan).toBe(8);
 
-    result.tenkan.forEach((value, i) => {
+    result.tenkan.forEach((value) => {
       if (value !== null) {
         expect(typeof value).toBe('number');
         expect(value).toBeGreaterThan(0);
@@ -70,7 +70,7 @@ describe('calculateIchimoku', () => {
     const firstValidKijun = result.kijun.findIndex(v => v !== null);
     expect(firstValidKijun).toBe(25);
 
-    result.kijun.forEach((value, i) => {
+    result.kijun.forEach((value) => {
       if (value !== null) {
         expect(typeof value).toBe('number');
         expect(value).toBeGreaterThan(0);
