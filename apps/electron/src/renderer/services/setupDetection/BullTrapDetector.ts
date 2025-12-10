@@ -4,7 +4,6 @@ import type { Kline } from '@marketmind/types';
 import { getKlineClose, getKlineLow, getKlineVolume } from '@shared/utils';
 import { BaseSetupDetector, type SetupDetectorResult, type SetupDetectorConfig } from './BaseSetupDetector';
 
-// Local type definition (removed from @marketmind/types as strategy was not profitable)
 export interface BullTrapConfig extends SetupDetectorConfig {
   volumeMultiplier: number;
   lookbackPeriod: number;
@@ -20,7 +19,6 @@ export const createDefaultBullTrapConfig = (): BullTrapConfig => ({
   emaPeriod: 20,
 });
 
-// Internal calculation constants
 const VOLUME_LOOKBACK = 20;
 const MIN_TRAP_DISTANCE_PERCENT = 0.001;
 const MAX_TRAP_DISTANCE_PERCENT = 0.02;

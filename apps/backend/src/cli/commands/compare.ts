@@ -13,7 +13,6 @@ export async function compareCommand(files: string[], options: CompareOptions) {
   const logger = new BacktestLogger(options.verbose ? LogLevel.VERBOSE : LogLevel.INFO);
 
   try {
-    // Validate inputs
     if (!files || files.length === 0) {
       throw new ValidationError('No result files specified. Usage: compare <file1> <file2> ...');
     }
@@ -22,7 +21,6 @@ export async function compareCommand(files: string[], options: CompareOptions) {
       throw new ValidationError('At least 2 result files are required for comparison');
     }
 
-    // Validate all file paths exist
     for (const file of files) {
       await validateFilePath(file);
     }
@@ -31,7 +29,6 @@ export async function compareCommand(files: string[], options: CompareOptions) {
       'Files': files.length.toString(),
     });
 
-    // Load all results
     const resultManager = new ResultManager();
     const results = [];
 
@@ -49,13 +46,10 @@ export async function compareCommand(files: string[], options: CompareOptions) {
       return;
     }
 
-    // Compare results
     const comparison = resultManager.compareResults(results);
 
-    // Display comparison table
     displayComparisonTable(comparison);
 
-    // Find best performer
     console.log('');
     displayBestPerformers(comparison);
 
@@ -74,12 +68,10 @@ export async function compareCommand(files: string[], options: CompareOptions) {
 }
 
 function displayComparisonTable(comparison: any[]) {
-  // Determine if we have validation or optimization results
   const hasValidation = comparison.some(c => c.type === 'validation');
   const hasOptimization = comparison.some(c => c.type === 'optimization');
 
   if (hasValidation && !hasOptimization) {
-    // Display validation comparison table
     const table = new Table({
       head: [
         chalk.cyan('Strategy'),
@@ -116,7 +108,6 @@ function displayComparisonTable(comparison: any[]) {
     console.log(table.toString());
 
   } else if (hasOptimization && !hasValidation) {
-    // Display optimization comparison table
     const table = new Table({
       head: [
         chalk.cyan('Strategy'),
@@ -153,7 +144,6 @@ function displayComparisonTable(comparison: any[]) {
     console.log(table.toString());
 
   } else {
-    // Mixed types - display both
     console.log(chalk.yellow.bold('⚠ Mixed result types detected (validation + optimization)'));
     console.log(chalk.gray('Displaying simplified comparison:'));
     console.log('');
@@ -191,25 +181,21 @@ function displayBestPerformers(comparison: any[]) {
     console.log(chalk.cyan.bold('BEST VALIDATION RESULTS:'));
     console.log('');
 
-    // Best by PnL
     const bestPnL = [...validationResults].sort((a, b) => b.totalPnl - a.totalPnl)[0];
     console.log(chalk.green('✓ Highest PnL:'));
     console.log(chalk.gray(`  ${bestPnL.strategy} (${bestPnL.symbol} ${bestPnL.interval}): ${formatPnL(bestPnL.totalPnl)}%`));
     console.log('');
 
-    // Best by Win Rate
     const bestWinRate = [...validationResults].sort((a, b) => b.winRate - a.winRate)[0];
     console.log(chalk.green('✓ Highest Win Rate:'));
     console.log(chalk.gray(`  ${bestWinRate.strategy} (${bestWinRate.symbol} ${bestWinRate.interval}): ${formatNumber(bestWinRate.winRate, 1)}%`));
     console.log('');
 
-    // Best by Profit Factor
     const bestPF = [...validationResults].sort((a, b) => b.profitFactor - a.profitFactor)[0];
     console.log(chalk.green('✓ Highest Profit Factor:'));
     console.log(chalk.gray(`  ${bestPF.strategy} (${bestPF.symbol} ${bestPF.interval}): ${formatNumber(bestPF.profitFactor, 2)}`));
     console.log('');
 
-    // Best by Sharpe
     const bestSharpe = [...validationResults].sort((a, b) => b.sharpeRatio - a.sharpeRatio)[0];
     console.log(chalk.green('✓ Highest Sharpe Ratio:'));
     console.log(chalk.gray(`  ${bestSharpe.strategy} (${bestSharpe.symbol} ${bestSharpe.interval}): ${formatNumber(bestSharpe.sharpeRatio, 2)}`));
@@ -220,13 +206,11 @@ function displayBestPerformers(comparison: any[]) {
     console.log(chalk.cyan.bold('BEST OPTIMIZATION RESULTS:'));
     console.log('');
 
-    // Best by best PnL
     const bestOptPnL = [...optimizationResults].sort((a, b) => b.bestPnl - a.bestPnl)[0];
     console.log(chalk.green('✓ Highest Optimized PnL:'));
     console.log(chalk.gray(`  ${bestOptPnL.strategy} (${bestOptPnL.symbol} ${bestOptPnL.interval}): ${formatPnL(bestOptPnL.bestPnl)}%`));
     console.log('');
 
-    // Best by average PnL
     const bestAvgPnL = [...optimizationResults].sort((a, b) => b.avgPnl - a.avgPnl)[0];
     console.log(chalk.green('✓ Highest Average PnL:'));
     console.log(chalk.gray(`  ${bestAvgPnL.strategy} (${bestAvgPnL.symbol} ${bestAvgPnL.interval}): ${formatPnL(bestAvgPnL.avgPnl)}%`));

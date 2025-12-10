@@ -121,7 +121,6 @@ export const fetchHistoricalKlinesFromAPI = async (
 
   while (currentStartTime < finalEndTime) {
     try {
-      // Use Binance REST API directly to get full kline data including taker buy volumes
       const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&startTime=${currentStartTime}&limit=${BATCH_SIZE}`;
       const response = await fetch(url);
       
@@ -136,10 +135,6 @@ export const fetchHistoricalKlinesFromAPI = async (
       const lastCandle = candles[candles.length - 1];
       if (!lastCandle) break;
 
-      // Binance kline array format:
-      // [0] Open time, [1] Open, [2] High, [3] Low, [4] Close, [5] Volume,
-      // [6] Close time, [7] Quote asset volume, [8] Number of trades,
-      // [9] Taker buy base asset volume, [10] Taker buy quote asset volume, [11] Ignore
       const klinesData = candles.map((candle: any) => ({
         openTime: candle[0],
         open: candle[1],
@@ -157,7 +152,6 @@ export const fetchHistoricalKlinesFromAPI = async (
       allKlines.push(...klinesData);
       currentStartTime = lastCandle[6] + 1; // Use closeTime from array
 
-      // logger.debug({ fetched: klinesData.length, total: allKlines.length }, 'Fetched klines batch');
 
       await sleep(RATE_LIMIT_DELAY);
     } catch (error) {

@@ -1,0 +1,128 @@
+{
+  "id": "market-structure-break",
+  "name": "Market Structure Break",
+  "version": "1.0.0",
+  "description": "Entry em quebras de estrutura de mercado (BOS/CHoCH). Identifica Higher Highs/Lower Lows e entra na quebra.",
+  "author": "MarketMind",
+  "tags": [
+    "price-action",
+    "structure",
+    "bos",
+    "smart-money"
+  ],
+  "source": "Smart Money Concepts",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 70,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 80,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 2,
+    "breakEvenAfterR": 1,
+    "onlyWithTrend": false,
+    "minConfidence": 70,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "4h",
+    "secondary": [
+      "1h",
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
+    "notes": "Market structure on 4h"
+  },
+  "parameters": {
+    "swingLookback": {
+      "default": 10,
+      "min": 5,
+      "max": 20,
+      "step": 5,
+      "description": "Lookback para swing points"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR stop"
+    }
+  },
+  "indicators": {
+    "swing": {
+      "type": "swingPoints",
+      "params": {
+        "lookback": "$swingLookback"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close",
+          "op": ">",
+          "right": "swing.high"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close",
+          "op": "<",
+          "right": "swing.low"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 2,
+      "breakEvenAfterR": 1
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 15,
+        "description": "Volume on break"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 1.5
+  }
+}

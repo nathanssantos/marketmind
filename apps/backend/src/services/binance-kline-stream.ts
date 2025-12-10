@@ -49,7 +49,6 @@ export class BinanceKlineStreamService {
       this.handleMessage(data);
     });
 
-    // WebsocketClient types don't properly expose error event handler
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this.client as any).on('error', (error: unknown) => {
       logger.error({
@@ -122,8 +121,6 @@ export class BinanceKlineStreamService {
     if (existing.clientCount <= 0) {
       if (this.client) {
         try {
-          // WebsocketClient doesn't have unsubscribeSpotKline method
-          // Use closeWsConnection or other method to unsubscribe
           logger.info(`Unsubscribed from kline stream: ${key}`);
         } catch (error) {
           logger.error({
@@ -149,7 +146,6 @@ export class BinanceKlineStreamService {
 
       const message = data as Record<string, unknown>;
 
-      // Kline/Candlestick event
       if (message['e'] === 'kline' && typeof message['k'] === 'object') {
         const klineData = message['k'] as Record<string, unknown>;
 
@@ -182,18 +178,11 @@ export class BinanceKlineStreamService {
 
   private async processKlineUpdate(update: KlineUpdate): Promise<void> {
     try {
-      // Emit to connected WebSocket clients
       const wsService = getWebSocketService();
       if (wsService) {
         wsService.emitKlineUpdate(update);
       }
 
-      // logger.debug({
-      //   symbol: update.symbol,
-      //   interval: update.interval,
-      //   close: update.close,
-      //   isClosed: update.isClosed,
-      // }, 'Kline update processed');
     } catch (error) {
       logger.error({
         symbol: update.symbol,
@@ -209,9 +198,7 @@ export class BinanceKlineStreamService {
     this.subscriptions.clear();
 
     for (const sub of subs) {
-      // Reset client count to 1 for each unique subscription
       this.subscribe(sub.symbol, sub.interval);
-      // Restore original client count
       const key = `${sub.symbol}_${sub.interval}`.toLowerCase();
       const restored = this.subscriptions.get(key);
       if (restored) {

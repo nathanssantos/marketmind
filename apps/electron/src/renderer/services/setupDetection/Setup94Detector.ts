@@ -9,7 +9,6 @@ import {
     type SetupDetectorConfig,
 } from './BaseSetupDetector';
 
-// Local type definition (removed from @marketmind/types as strategy was not profitable)
 export interface Setup94Config extends SetupDetectorConfig {
   emaPeriod: number;
   atrPeriod: number;
@@ -29,7 +28,6 @@ export const createDefault94Config = (): Setup94Config => ({
   volumeMultiplier: 1.2,
 });
 
-// Internal calculation constants
 const VOLUME_LOOKBACK = 20;
 const EMA_LOOKBACK = 2;
 const BASE_CONFIDENCE = 55;

@@ -155,13 +155,6 @@ function AppContent(): ReactElement {
     processAIResponse,
   } = usePatterns({ symbol, conversationId: activeConversationId });
 
-  // TEMPORARY: Disabled to debug infinite loop
-  // usePatternDetectionWorker();
-  // useAutoPatternDetection(viewport);
-  // const { detectPatterns } = useManualPatternDetection(addPatterns);
-  // useSimulatorLayout();
-  // usePriceUpdates();
-  // useOrderNotifications();
 
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
@@ -236,12 +229,6 @@ function AppContent(): ReactElement {
     viewportRef.current = viewport;
   }, [viewport]);
 
-  // TEMPORARY: Disabled to debug infinite loop
-  // const handleDetectPatterns = useCallback((): void => {
-  //   if (viewportRef.current) {
-  //     void detectPatterns(viewportRef.current);
-  //   }
-  // }, [detectPatterns]);
 
   useEffect(() => {
     restoreActiveConversation();
@@ -527,9 +514,6 @@ function AppContent(): ReactElement {
     return fullSymbol;
   };
 
-  // TEMPORARY: Disabled to debug infinite loop
-  // const setResponseProcessor = useAIStore(state => state.setResponseProcessor);
-  // const enableAIPatterns = useAIStore(state => state.enableAIPatterns);
   const processAIResponseRef = useRef(processAIResponse);
 
   useEffect(() => {
@@ -540,21 +524,6 @@ function AppContent(): ReactElement {
     void deletePattern(patternId);
   }, []);
 
-  // TEMPORARY: Disabled to debug infinite loop
-  // useEffect(() => {
-  //   if (enableAIPatterns && processAIResponseRef.current) {
-  //     const stableProcessor = async (response: string) => {
-  //       if (processAIResponseRef.current) {
-  //         return processAIResponseRef.current(response);
-  //       }
-  //       return response;
-  //     };
-  //     setResponseProcessor(stableProcessor);
-  //   } else {
-  //     setResponseProcessor(null);
-  //   }
-  //   return () => setResponseProcessor(null);
-  // }, [enableAIPatterns]);
 
   const currentSymbolCode = extractSymbolCode(symbol);
   const isCrypto = symbol.endsWith('USDT') || symbol.endsWith('USD');
@@ -595,16 +564,7 @@ function AppContent(): ReactElement {
 
   const isAutoTradingActive = useAIStore((state) => state.isAutoTradingActive);
 
-  // TEMPORARY: Disabled to debug infinite loop
-  // const aiTrading = useAITrading({
-  //   symbol,
-  //   timeframe,
-  //   chartType,
-  //   klines: displayKlines,
-  //   getCurrentPrice,
-  // });
 
-  // const { startTrading, stopTrading } = aiTrading;
   const startTrading = async () => { };
   const stopTrading = async () => { };
 

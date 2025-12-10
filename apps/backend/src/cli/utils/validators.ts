@@ -51,7 +51,6 @@ export function validateInterval(interval: string): string {
  * Validate date format and range
  */
 export function validateDateRange(startDate: string, endDate: string): { startDate: string; endDate: string } {
-  // Check format
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
   if (!dateRegex.test(startDate)) {
@@ -62,12 +61,10 @@ export function validateDateRange(startDate: string, endDate: string): { startDa
     throw new ValidationError(`Invalid end date format "${endDate}". Use YYYY-MM-DD`);
   }
 
-  // Parse dates
   const start = new Date(startDate);
   const end = new Date(endDate);
   const now = new Date();
 
-  // Check if dates are valid
   if (isNaN(start.getTime())) {
     throw new ValidationError(`Invalid start date "${startDate}"`);
   }
@@ -76,7 +73,6 @@ export function validateDateRange(startDate: string, endDate: string): { startDa
     throw new ValidationError(`Invalid end date "${endDate}"`);
   }
 
-  // Check range
   if (start >= end) {
     throw new ValidationError('Start date must be before end date');
   }
@@ -85,13 +81,11 @@ export function validateDateRange(startDate: string, endDate: string): { startDa
     throw new ValidationError('End date cannot be in the future');
   }
 
-  // Check minimum period (at least 7 days for meaningful backtest)
   const daysDiff = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
   if (daysDiff < 7) {
     throw new ValidationError('Date range must be at least 7 days for meaningful results');
   }
 
-  // Warn if period is very long
   if (daysDiff > 365) {
     console.log(chalk.yellow('⚠ Warning: Long date range (>1 year) may take significant time to process'));
   }
@@ -197,7 +191,6 @@ export function validateRiskReward(
   takeProfit: number | undefined,
   minRiskReward: number = 1.5
 ): void {
-  // Skip validation if either is undefined (strategy will calculate)
   if (stopLoss === undefined || takeProfit === undefined) {
     return;
   }
@@ -243,7 +236,6 @@ export function validateParameterGrid(params: string[]): void {
       );
     }
 
-    // Validate all values are numeric
     for (const value of valueArray) {
       if (isNaN(parseFloat(value))) {
         throw new ValidationError(

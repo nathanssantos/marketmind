@@ -1,0 +1,176 @@
+{
+  "id": "dmi-adx-trend",
+  "name": "DMI ADX Trend",
+  "version": "1.0.0",
+  "description": "DMI (+DI/-DI) com ADX para trend trading. Entry quando +DI cruza -DI com ADX > 25. Sistema completo de trend direction e strength.",
+  "author": "MarketMind",
+  "tags": [
+    "trend-following",
+    "dmi",
+    "adx",
+    "directional-movement"
+  ],
+  "source": "J. Welles Wilder - New Concepts",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 80,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 80,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 2.5,
+    "breakEvenAfterR": 1.5,
+    "onlyWithTrend": false,
+    "minConfidence": 70,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "notes": "DMI/ADX works best on daily"
+  },
+  "parameters": {
+    "dmiPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "Período do DMI"
+    },
+    "adxThreshold": {
+      "default": 25,
+      "min": 20,
+      "max": 30,
+      "step": 5,
+      "description": "ADX mínimo para trend"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
+  },
+  "indicators": {
+    "dmi": {
+      "type": "dmi",
+      "params": {
+        "period": "$dmiPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "dmi.plusDI",
+          "op": "crossover",
+          "right": "dmi.minusDI"
+        },
+        {
+          "left": "dmi.adx",
+          "op": ">",
+          "right": "$adxThreshold"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "dmi.minusDI",
+          "op": "crossover",
+          "right": "dmi.plusDI"
+        },
+        {
+          "left": "dmi.adx",
+          "op": ">",
+          "right": "$adxThreshold"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2.5
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 2.5,
+      "breakEvenAfterR": 1.5
+    },
+    "conditions": {
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "dmi.minusDI",
+            "op": ">",
+            "right": "dmi.plusDI"
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "dmi.plusDI",
+            "op": ">",
+            "right": "dmi.minusDI"
+          }
+        ]
+      }
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "dmi.adx",
+          "op": ">",
+          "right": 40
+        },
+        "bonus": 10,
+        "description": "Strong trend"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 5,
+        "description": "Volume confirms"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 2
+  }
+}

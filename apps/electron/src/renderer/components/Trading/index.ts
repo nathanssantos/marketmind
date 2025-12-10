@@ -1,4 +1,3 @@
-// Export all Trading components
 export { OrderTicket } from './OrderTicket';
 export { OrdersList } from './OrdersList';
 export { Portfolio } from './Portfolio';
@@ -8,12 +7,10 @@ export { EquityCurveChart } from './EquityCurveChart';
 export { CreateWalletDialog } from './CreateWalletDialog';
 export { WalletPerformanceDialog } from './WalletPerformanceDialog';
 
-// Auto-Trading & Analytics components
 export { RiskDisplay } from './RiskDisplay';
 export { PerformancePanel } from './PerformancePanel';
 export { SetupStatsTable } from './SetupStatsTable';
 
-// Backtesting components
 export { BacktestConfig } from './BacktestConfig';
 export { BacktestDialog } from './BacktestDialog';
 export { BacktestResults } from './BacktestResults';

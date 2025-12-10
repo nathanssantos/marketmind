@@ -45,7 +45,6 @@ export const useBackendKlines = () => {
       { enabled: !!symbol && !!interval }
     );
 
-  // Real-time streaming
   const subscribeStream = trpc.kline.subscribeStream.useMutation();
   const unsubscribeStream = trpc.kline.unsubscribeStream.useMutation();
 
@@ -61,7 +60,6 @@ export const useBackendKlines = () => {
   };
 };
 
-// Hook for real-time kline streaming via WebSocket
 export const useKlineStream = (
   symbol: string,
   interval: Interval,
@@ -85,7 +83,6 @@ export const useKlineStream = (
   const subscribedRef = useRef(false);
   const onKlineUpdateRef = useRef(onKlineUpdate);
 
-  // Keep callback ref updated
   useEffect(() => {
     onKlineUpdateRef.current = onKlineUpdate;
   }, [onKlineUpdate]);
@@ -107,22 +104,18 @@ export const useKlineStream = (
       }
     };
 
-    // Subscribe to backend stream service (tRPC endpoint)
     if (!subscribedRef.current) {
       subscribeStream.mutate({ symbol, interval });
       subscribedRef.current = true;
     }
 
-    // Subscribe to WebSocket room to receive updates
     subscribe.klines({ symbol, interval });
 
-    // Listen to WebSocket updates
     on('kline:update', handleKlineUpdate);
 
     return () => {
       off('kline:update', handleKlineUpdate);
 
-      // Unsubscribe from WebSocket room
       unsubscribe.klines({ symbol, interval });
 
       if (subscribedRef.current) {

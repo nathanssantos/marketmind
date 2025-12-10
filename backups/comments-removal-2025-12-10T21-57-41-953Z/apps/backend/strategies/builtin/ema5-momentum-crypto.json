@@ -1,0 +1,180 @@
+{
+  "id": "ema5-momentum-crypto",
+  "name": "EMA5 Momentum Crypto",
+  "version": "1.0.0",
+  "description": "Estratégia de momentum otimizada para crypto baseada em EMA de 5 dias. Backtestada com 145% CAGR em BTC. Entry quando preço cruza acima da EMA5, exit quando cruza abaixo.",
+  "author": "MarketMind",
+  "tags": [
+    "trend-following",
+    "ema",
+    "momentum",
+    "crypto-optimized"
+  ],
+  "source": "QuantifiedStrategies.com - Trend Following on Bitcoin",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 90,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 90,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 3,
+    "breakEvenAfterR": 1.5,
+    "onlyWithTrend": false,
+    "minConfidence": 60,
+    "commission": 0.001
+  },
+  "backtestSummary": {
+    "referenceCAGR": 145,
+    "referenceMaxDrawdown": 39,
+    "referenceBenchmark": "BTC Buy&Hold 101% CAGR",
+    "testedPeriod": "2015-2021",
+    "source": "QuantifiedStrategies.com"
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "notes": "EMA5 momentum works best on daily timeframe for crypto"
+  },
+  "parameters": {
+    "emaPeriod": {
+      "default": 5,
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "description": "Período da EMA (otimizado: 5)"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 1,
+      "description": "Período do ATR para stops"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 4,
+      "step": 0.5,
+      "description": "Multiplicador do ATR para stop loss"
+    },
+    "rrMultiplier": {
+      "default": 2.5,
+      "min": 2,
+      "max": 4,
+      "step": 0.5,
+      "description": "Risk-reward para take profit"
+    }
+  },
+  "indicators": {
+    "ema": {
+      "type": "ema",
+      "params": {
+        "period": "$emaPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": "$atrPeriod"
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close",
+          "op": "crossover",
+          "right": "ema"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close",
+          "op": "crossunder",
+          "right": "ema"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$rrMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 3,
+      "breakEvenAfterR": 1.5
+    },
+    "conditions": {
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "close",
+            "op": "crossunder",
+            "right": "ema"
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "close",
+            "op": "crossover",
+            "right": "ema"
+          }
+        ]
+      }
+    }
+  },
+  "confidence": {
+    "base": 65,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume acima da média"
+      },
+      {
+        "condition": {
+          "left": "atr",
+          "op": ">",
+          "right": "atr.prev"
+        },
+        "bonus": 5,
+        "description": "Volatilidade crescente"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 2
+  }
+}

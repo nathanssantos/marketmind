@@ -5,7 +5,6 @@ import { getKlineClose, getKlineVolume } from '../../utils/klineHelpers';
 import type { SetupDetectorResult } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';
 
-// Re-export for consumers
 export type { MeanReversionConfig };
 export { createDefaultMeanReversionConfig };
 
@@ -36,7 +35,6 @@ export class MeanReversionDetector extends BaseSetupDetector {
       return { setup: null, confidence: 0 };
     }
 
-    // Calculate Bollinger Bands
     const klinesUpToCurrent = klines.slice(0, currentIndex + 1);
     const bb = calculateBollingerBands(
       klinesUpToCurrent,
@@ -48,14 +46,12 @@ export class MeanReversionDetector extends BaseSetupDetector {
       return { setup: null, confidence: 0 };
     }
 
-    // Calculate RSI
     const rsiResult = calculateRSI(klinesUpToCurrent, this.meanRevConfig.rsiPeriod);
     const rsi = rsiResult.values[rsiResult.values.length - 1];
     if (rsi === null || rsi === undefined) {
       return { setup: null, confidence: 0 };
     }
 
-    // Check volume confirmation
     const avgVolume = this.calculateAverageVolume(klines, currentIndex, VOLUME_LOOKBACK);
     const volumeConfirmed = getKlineVolume(current) >= avgVolume * this.meanRevConfig.volumeMultiplier;
 
@@ -65,12 +61,10 @@ export class MeanReversionDetector extends BaseSetupDetector {
 
     const closePrice = getKlineClose(current);
 
-    // Check for LONG setup (oversold)
     if (closePrice < bb.lower && rsi < this.meanRevConfig.rsiOversold) {
       return this.createLongSetup(klines, currentIndex, bb, rsi, volumeConfirmed);
     }
 
-    // Check for SHORT setup (overbought)
     if (closePrice > bb.upper && rsi > this.meanRevConfig.rsiOverbought) {
       return this.createShortSetup(klines, currentIndex, bb, rsi, volumeConfirmed);
     }
@@ -88,17 +82,13 @@ export class MeanReversionDetector extends BaseSetupDetector {
     const current = klines[currentIndex]!;
     const entryPrice = getKlineClose(current);
 
-    // Stop loss: Below lower band with 1.5x band width for breathing room
     const stopDistance = bb.middle - bb.lower;
     const stopLoss = entryPrice - stopDistance * 1.5;
 
-    // Take profit: Middle band (mean)
     const takeProfit = bb.middle;
 
-    // Calculate confidence
     const confidence = this.calculateConfidence(entryPrice, bb, rsi, 'LONG');
 
-    // Check minimum criteria
     const riskReward = this.calculateRR(entryPrice, stopLoss, takeProfit);
     if (!this.meetsMinimumRequirements(confidence, riskReward)) {
       return { setup: null, confidence: 0 };
@@ -138,17 +128,13 @@ export class MeanReversionDetector extends BaseSetupDetector {
     const current = klines[currentIndex]!;
     const entryPrice = getKlineClose(current);
 
-    // Stop loss: Above upper band with 1.5x band width for breathing room
     const stopDistance = bb.upper - bb.middle;
     const stopLoss = entryPrice + stopDistance * 1.5;
 
-    // Take profit: Middle band (mean)
     const takeProfit = bb.middle;
 
-    // Calculate confidence
     const confidence = this.calculateConfidence(entryPrice, bb, rsi, 'SHORT');
 
-    // Check minimum criteria
     const riskReward = this.calculateRR(entryPrice, stopLoss, takeProfit);
     if (!this.meetsMinimumRequirements(confidence, riskReward)) {
       return { setup: null, confidence: 0 };
@@ -195,14 +181,12 @@ export class MeanReversionDetector extends BaseSetupDetector {
   ): number {
     let confidence = BASE_CONFIDENCE;
 
-    // Distance from band (more extreme = higher confidence)
     const percentB = this.calculatePercentB(close, bb);
     const deviation = direction === 'LONG' ? -percentB : percentB - 1;
 
     if (Math.abs(deviation) > 0.1) confidence += 15; // >10% outside band
     if (Math.abs(deviation) > 0.15) confidence += 10; // >15% outside band
 
-    // RSI extremes
     if (direction === 'LONG') {
       if (rsi < 25) confidence += 10;
       if (rsi < 20) confidence += 5;

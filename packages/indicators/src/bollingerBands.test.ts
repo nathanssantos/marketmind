@@ -42,7 +42,6 @@ describe('bollingerBands', () => {
         });
 
         it('should have symmetric bands around middle', () => {
-            // Create klines with constant price (no volatility)
             const klines: Kline[] = Array.from({ length: 20 }, (_, i) => ({
                 openTime: Date.now() + i * 60000,
                 open: '100',

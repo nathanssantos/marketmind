@@ -1,0 +1,1090 @@
+{
+  "common": {
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "saveChanges": "Salvar Alterações",
+    "close": "Fechar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "loading": "Carregando...",
+    "error": "Erro",
+    "success": "Sucesso",
+    "search": "Pesquisar",
+    "noResults": "Nenhum resultado encontrado",
+    "typeToSearch": "Digite para pesquisar...",
+    "dismiss": "Dispensar",
+    "skip": "Pular",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "selectAiModel": "Selecionar Modelo de IA",
+    "selectAi": "Selecionar IA",
+    "selectModel": "Selecionar Modelo",
+    "openChat": "Abrir chat",
+    "deleteConversation": "Excluir conversa",
+    "conversationHistory": "Histórico de conversas",
+    "tips": "Dicas"
+  },
+  "app": {
+    "title": "MarketMind",
+    "loadingMarketData": "Carregando dados de mercado...",
+    "failedToLoadMarketData": "Falha ao Carregar Dados de Mercado",
+    "retry": "Tentar Novamente"
+  },
+  "header": {
+    "theme": "Tema",
+    "themeDark": "Escuro",
+    "themeLight": "Claro",
+    "keyboardShortcuts": "Atalhos de Teclado",
+    "settings": "Configurações",
+    "toggleColorMode": "Alternar modo de cor",
+    "showKeyboardShortcuts": "Mostrar atalhos de teclado"
+  },
+  "symbolSelector": {
+    "label": "Binance",
+    "placeholder": "Selecionar símbolo",
+    "searchPlaceholder": "Pesquisar símbolos... (ex: BTC, ETH)",
+    "popularSymbols": "SÍMBOLOS POPULARES",
+    "noSymbolsFound": "Nenhum símbolo encontrado"
+  },
+  "settings": {
+    "title": "Configurações",
+    "resetToDefaults": "Restaurar Padrões",
+    "tabs": {
+      "general": "Geral",
+      "chart": "Gráfico",
+      "ai": "Configuração de IA",
+      "aiTrading": "Auto-Trading IA",
+      "algorithmicAutoTrading": "Auto-Trading Algorítmico",
+      "setupDetection": "Detecção de Setups",
+      "patternDetection": "Detecção de Padrões",
+      "news": "Notícias",
+      "tradingSimulator": "Simulador de Trading",
+      "about": "Sobre"
+    },
+    "language": {
+      "title": "Idioma",
+      "description": "Selecione o idioma da interface",
+      "english": "English",
+      "portuguese": "Português",
+      "spanish": "Español",
+      "french": "Français"
+    },
+    "dataManagement": {
+      "title": "Gerenciamento de Dados",
+      "tipTitle": "💡 Gerenciamento de Dados",
+      "export": "Exportar",
+      "exportDescription": "Salvar todas as conversas como arquivo JSON para backup",
+      "import": "Importar",
+      "importDescription": "Carregar uma conversa exportada anteriormente",
+      "clear": "Limpar",
+      "clearDescription": "Remover todas as conversas e histórico de chat",
+      "totalConversations": "Total de Conversas: {{count}}",
+      "exportAll": "Exportar Todas as Conversas",
+      "importConversation": "Importar Conversa",
+      "clearAll": "Limpar Todos os Dados",
+      "confirmClear": "Tem certeza de que deseja excluir todas as conversas? Esta ação não pode ser desfeita.",
+      "importSuccess": "Conversa importada com sucesso!",
+      "importError": "Falha ao importar conversa. Verifique o formato do arquivo.",
+      "clearSuccess": "Todas as conversas foram limpas."
+    },
+    "autoUpdate": {
+      "title": "Configurações de Atualização Automática",
+      "checkAutomatically": "Verificar atualizações automaticamente",
+      "checkAutomaticallyDescription": "Verificar automaticamente novas versões em segundo plano",
+      "checkInterval": "Intervalo de verificação: {{hours}} horas",
+      "downloadAutomatically": "Baixar atualizações automaticamente",
+      "downloadAutomaticallyDescription": "Baixar automaticamente novas versões quando disponíveis",
+      "checkNow": "Verificar Atualizações Agora"
+    },
+    "chart": {
+      "tipsRealtime": "As alterações são aplicadas imediatamente com um debounce de 300ms",
+      "tipsReset": "Clique em 'Restaurar Padrões' para restaurar as configurações padrão do gráfico",
+      "chartDimensions": "Dimensões do Gráfico",
+      "rightMargin": "Margem Direita",
+      "rightMarginHelper": "Espaço reservado no lado direito do gráfico",
+      "volumeHeightRatio": "Proporção de Altura do Volume",
+      "volumeHeightRatioHelper": "Altura das barras de volume relativa ao gráfico (0-1)",
+      "klineSettings": "Configurações de Kline",
+      "klineSpacing": "Espaçamento de Kline",
+      "klineSpacingHelper": "Espaço entre klines",
+      "wickWidth": "Largura do Pavio",
+      "wickWidthHelper": "Largura dos pavios dos klines",
+      "gridSettings": "Configurações de Grade",
+      "gridLineWidth": "Largura da Linha de Grade",
+      "gridLineWidthHelper": "Espessura das linhas de grade",
+      "currentPriceLine": "Linha de Preço Atual",
+      "lineWidth": "Largura da Linha",
+      "lineWidthHelper": "Espessura da linha de preço atual",
+      "lineStyle": "Estilo da Linha",
+      "lineStyleHelper": "Estilo da linha de preço atual",
+      "solid": "Sólida",
+      "dashed": "Tracejada",
+      "dotted": "Pontilhada",
+      "chartPadding": "Preenchimento do Gráfico",
+      "topPadding": "Preenchimento Superior",
+      "bottomPadding": "Preenchimento Inferior",
+      "leftPadding": "Preenchimento Esquerdo",
+      "rightPadding": "Preenchimento Direito"
+    },
+    "ai": {
+      "tipsEncryption": "As chaves de API são criptografadas e armazenadas com segurança usando criptografia no nível do SO",
+      "tipsTemperature": "Temperatura mais baixa (0-0,5) para análise técnica, mais alta (0,7-1,5) para insights criativos",
+      "tipsFree": "Gemini 2.0 Flash Exp é GRATUITO e não requer chave de API",
+      "apiKeysTitle": "Chaves de API (Criptografadas)",
+      "openaiApiKey": "Chave de API OpenAI",
+      "anthropicApiKey": "Chave de API Anthropic",
+      "geminiApiKey": "Chave de API Google Gemini",
+      "enterApiKey": "Digite sua chave de API {{provider}}",
+      "usingEnvVar": "Usando {{var}} do .env",
+      "encryptionNotAvailable": "Aviso: Criptografia não disponível nesta plataforma",
+      "temperature": "Temperatura: {{value}}",
+      "temperatureHelper": "Controla a aleatoriedade (0 = focado, 2 = criativo)",
+      "maxTokens": "Máx. Tokens: {{value}}",
+      "maxTokensHelper": "Comprimento máximo da resposta",
+      "detailedKlines": "Klines Detalhados: {{value}}",
+      "detailedKlinesHelper": "Número de klines recentes enviados com detalhes completos para a IA",
+      "patternDetection": {
+        "title": "Detecção de Padrões",
+        "mode": "Modo de Detecção",
+        "selectMode": "Selecione o modo de detecção",
+        "aiOnly": "Apenas IA - IA detecta e analisa padrões",
+        "algorithmicOnly": "Apenas Algorítmico - Algoritmo detecta padrões localmente",
+        "hybrid": "Híbrido - Algoritmo detecta, IA interpreta (80-90% redução de custo)",
+        "autoDisplay": "Exibir padrões automaticamente no gráfico",
+        "autoDisplayHelper": "Mostrar automaticamente padrões detectados no gráfico ao fazer zoom/pan (analisa apenas klines visíveis)",
+        "minConfidence": "Confiança Mín: {{value}}%",
+        "minConfidenceHelper": "Limite mínimo de confiança para detecção de padrões (50-90%)",
+        "pivotSensitivity": "Sensibilidade de Pivot: {{value}}",
+        "pivotSensitivityHelper": "Janela de lookback para detecção de pontos de pivot (3-10 klines)"
+      }
+    },
+    "news": {
+      "newsApiKey": "Chave de API",
+      "newsApiKeyPlaceholder": "Digite sua chave do NewsAPI",
+      "newsApiKeyRequired": "Obrigatório",
+      "cryptoPanicApiKey": "Chave de API",
+      "cryptoPanicApiKeyPlaceholder": "Digite a chave da API CryptoPanic ou use 'free'",
+      "refreshInterval": "Intervalo de Atualização (minutos)",
+      "maxArticles": "Máximo de Artigos",
+      "importantNotes": "Notas Importantes",
+      "noteEncryption": "As chaves de API são criptografadas e armazenadas com segurança usando criptografia no nível do SO",
+      "noteFreeTier": "Limites do plano gratuito: NewsAPI (100 req/dia), CryptoPanic (varia)",
+      "noteRestart": "Reinicie o aplicativo após alterar as configurações para efeito completo",
+      "enableNewsIntegration": "Ativar Integração de Notícias",
+      "newsIntegrationDescription": "Integre notícias financeiras à análise de IA para melhores insights de mercado",
+      "newsApiConfiguration": "Configuração NewsAPI",
+      "getFreeApiKey": "Obtenha sua chave de API gratuita em",
+      "freeTierLimit": "(Plano gratuito: 100 requisições/dia)",
+      "testConnection": "Testar Conexão",
+      "cryptoPanicConfiguration": "Configuração CryptoPanic",
+      "getApiKeyAt": "Obtenha a chave de API em",
+      "orUseFree": "ou use \"free\" para endpoint público",
+      "advancedSettings": "Configurações Avançadas",
+      "refreshIntervalHelper": "Com que frequência buscar novos artigos (1-60 minutos)",
+      "maxArticlesHelper": "Número máximo de artigos a buscar (5-50)",
+      "loadingSettings": "Carregando configurações...",
+      "newsApiKeySaved": "✅ Chave NewsAPI salva com sucesso!",
+      "newsApiKeyFailed": "❌ Falha ao salvar chave NewsAPI",
+      "cryptoPanicKeySaved": "Chave de API CryptoPanic salva com sucesso!",
+      "cryptoPanicKeyFailed": "Falha ao salvar chave de API CryptoPanic",
+      "enterKeyFirst": "⚠️ Por favor, insira uma chave NewsAPI primeiro",
+      "testingConnection": "Testando conexão...",
+      "connectionSuccessful": "✅ Conexão NewsAPI bem-sucedida!",
+      "connectionError": "❌ Erro: {{message}}",
+      "connectionFailed": "❌ Falha na conexão. Verifique sua conexão com a internet.",
+      "invalidApiKey": "Chave de API inválida"
+    },
+    "prompt": {
+      "chartAnalysisPrompt": "Prompt de Análise do Gráfico",
+      "chartAnalysisDescription": "Personalize o prompt do sistema usado para análise de gráficos",
+      "chatPrompt": "Prompt do Chat",
+      "chatDescription": "Personalize o prompt do sistema usado para interações gerais de chat",
+      "jsonPlaceholder": "Digite um JSON válido...",
+      "customPromptWarning": "Você está usando um prompt personalizado. Clique em 'Restaurar Padrão' para restaurar a configuração original.",
+      "errorEmpty": "O prompt não pode estar vazio",
+      "errorInvalidJson": "Formato JSON inválido",
+      "formatJson": "Formatar JSON",
+      "resetToDefault": "Restaurar Prompt Padrão",
+      "defaultValue": "Valor Padrão",
+      "tipValidJson": "O prompt deve estar em formato JSON válido",
+      "tipFormat": "Use o botão 'Formatar JSON' para formatar automaticamente seu JSON",
+      "tipBackup": "Mantenha um backup antes de fazer grandes mudanças nos prompts"
+    },
+    "tradingSimulator": {
+      "title": "Configurações do Simulador de Trading",
+      "description": "Gerencie seus dados e configurações do simulador de trading.",
+      "statistics": {
+        "title": "Estatísticas",
+        "wallets": "Total de Carteiras",
+        "orders": "Total de Ordens",
+        "activeOrders": "Ordens Ativas",
+        "pendingOrders": "Ordens Pendentes"
+      },
+      "dangerZone": {
+        "title": "Zona de Perigo",
+        "description": "Limpar todos os dados irá deletar permanentemente todas as carteiras, ordens e histórico de trading. Esta ação não pode ser desfeita.",
+        "clearAll": "Limpar Todos os Dados"
+      },
+      "confirmClearAll": "Tem certeza que deseja limpar todos os dados de trading? Esta ação não pode ser desfeita."
+    },
+    "algorithmicAutoTrading": {
+      "title": "Auto-Trading Algorítmico",
+      "description": "Configure a execução automática de ordens baseada em setups de trading detectados.",
+      "status": {
+        "title": "Status do Auto-Trading",
+        "description": "Ative ou desative a abertura automática de ordens quando setups de trading forem detectados no gráfico.",
+        "active": "Auto-trading está ativo - ordens serão criadas automaticamente",
+        "inactive": "Auto-trading está inativo - setups serão apenas detectados e exibidos",
+        "info": "Este recurso funciona com o sistema de detecção de setups. Certifique-se de ativar pelo menos um tipo de setup na aba Detecção de Setups antes de ativar o auto-trading."
+      }
+    }
+  },
+  "chat": {
+    "title": "Chat",
+    "newConversation": "Nova conversa",
+    "enableAIPatterns": "Ativar desenhos de IA no gráfico",
+    "disableAIPatterns": "Desativar desenhos da IA no gráfico",
+    "enableAutoTrading": "Ativar Auto-Trading com IA",
+    "disableAutoTrading": "Desativar Auto-Trading com IA",
+    "conversationsTitle": "Conversas - {{symbol}}",
+    "noConversationsYet": "Nenhuma conversa ainda",
+    "messageCount_one": "{{count}} mensagem",
+    "messageCount_other": "{{count}} mensagens",
+    "inputPlaceholder": "Pergunte sobre o gráfico...",
+    "sendMessage": "Enviar mensagem",
+    "send": "Enviar",
+    "noMessages": "Nenhuma mensagem ainda",
+    "startConversation": "Inicie uma conversa para obter insights sobre o gráfico",
+    "emptyStateTitle": "Inicie uma conversa",
+    "emptyStateDescription": "Peça para eu analisar o gráfico, explicar padrões ou fornecer insights de trading"
+  },
+  "chart": {
+    "controls": {
+      "title": "Controles do Gráfico",
+      "timeframe": "Período",
+      "chartType": "Tipo de Gráfico",
+      "klineChart": "Gráfico de Velas",
+      "lineChart": "Gráfico de Linha",
+      "newWindow": "Abrir Gráfico em Nova Janela",
+      "display": "Exibição",
+      "volume": "Volume",
+      "stochastic": "Estocástico",
+      "rsi": "IFR (2)",
+      "grid": "Grade",
+      "currentPrice": "Preço Atual",
+      "crosshair": "Mira",
+      "measurementRuler": "Régua de Medição",
+      "measurementArea": "Área de Medição",
+      "autoPatterns": "Detecção Automática de Padrões",
+      "detectPatterns": "Detectar Padrões Agora",
+      "setupDetection": "Detecção Algorítmica de Setups",
+      "patternExtensions": "Estender Padrões Além da Última Vela",
+      "indicators": "Indicadores",
+      "quickSettings": "Configurações Rápidas"
+    },
+    "contextMenu": {
+      "deletePattern": "Deletar Padrão",
+      "deletePattern": "Deletar Padrão",
+      "hidePatterns": "Ocultar Padrões Detectados",
+      "showPatterns": "Mostrar Padrões Detectados",
+      "deleteAllPatterns": "Remover Todos os Padrões Detectados",
+      "deleteSetup": "Deletar Setup",
+      "hideSetups": "Ocultar Setups Detectados",
+      "showSetups": "Mostrar Setups Detectados",
+      "deleteAllSetups": "Remover Todos os Setups Detectados"
+    },
+    "navigation": {
+      "resetView": "Voltar à visualização inicial",
+      "nextKline": "Próximo kline",
+      "klineTimer": "Tempo até o próximo kline"
+    },
+    "advanced": {
+      "title": "Configurações Avançadas",
+      "chartDimensions": "Dimensões do Gráfico",
+      "rightMargin": "Margem Direita",
+      "volumeHeight": "Altura do Volume %",
+      "klineSettings": "Configurações de Kline",
+      "spacing": "Espaçamento",
+      "wickWidth": "Largura do Pavio",
+      "gridSettings": "Configurações de Grade",
+      "lineWidth": "Largura da Linha",
+      "padding": "Preenchimento",
+      "top": "Superior",
+      "bottom": "Inferior",
+      "left": "Esquerda",
+      "right": "Direita"
+    },
+    "timeframes": {
+      "1m": "1 Minuto",
+      "3m": "3 Minutos",
+      "5m": "5 Minutos",
+      "15m": "15 Minutos",
+      "30m": "30 Minutos",
+      "1h": "1 Hora",
+      "2h": "2 Horas",
+      "4h": "4 Horas",
+      "6h": "6 Horas",
+      "8h": "8 Horas",
+      "12h": "12 Horas",
+      "1d": "1 Dia",
+      "3d": "3 Dias",
+      "1w": "1 Semana",
+      "1M": "1 Mês"
+    }
+  },
+  "news": {
+    "title": "Notícias",
+    "selectSymbol": "Selecione a criptomoeda",
+    "symbolLabel": "Criptomoeda",
+    "failedToLoad": "Falha ao carregar notícias",
+    "noArticles": "Nenhuma notícia encontrada",
+    "sentiment": {
+      "positive": "Positivo",
+      "negative": "Negativo",
+      "neutral": "Neutro"
+    },
+    "tabs": {
+      "news": "Notícias",
+      "settings": "Configurações"
+    },
+    "settings": {
+      "enablePolling": "Ativar Atualização Automática",
+      "pollingDescription": "Buscar automaticamente novos artigos em intervalos regulares",
+      "refreshInterval": "Intervalo de Atualização (minutos)",
+      "refreshIntervalHelper": "Com que frequência verificar novos artigos (1-60 minutos)",
+      "minImportanceForToast": "Limite de Notificação",
+      "importanceLevel": "Importância Mínima",
+      "importanceHelper": "Mostrar apenas notificações para artigos com importância acima deste nível (0-100%)",
+      "correlateWithAI": "Incluir Notícias na Análise da IA",
+      "correlateWithAIDescription": "Quando ativado, notícias recentes serão incluídas na análise de gráficos da IA para melhor contexto de mercado"
+    },
+    "toast": {
+      "newImportantNews": "📰 Notícia Importante",
+      "readMore": "Ler Mais"
+    }
+  },
+  "calendar": {
+    "title": "Calendário de Eventos",
+    "disabled": "Calendário está desativado",
+    "enableInSettings": "Ative o calendário nas configurações para visualizar eventos",
+    "failedToLoad": "Falha ao carregar eventos",
+    "noEvents": "Nenhum evento encontrado",
+    "eventTypes": {
+      "conference": "Conferência",
+      "release": "Lançamento",
+      "airdrop": "Airdrop",
+      "update": "Atualização",
+      "listing": "Listagem",
+      "partnership": "Parceria",
+      "other": "Outro"
+    },
+    "importance": {
+      "low": "Baixa",
+      "medium": "Média",
+      "high": "Alta",
+      "critical": "Crítica"
+    },
+    "status": {
+      "ongoing": "Em Andamento",
+      "past": "Passado"
+    },
+    "tabs": {
+      "events": "Eventos",
+      "settings": "Configurações"
+    },
+    "settings": {
+      "enableCalendar": "Ativar Calendário de Eventos",
+      "enableCalendarDescription": "Buscar e exibir próximos eventos de cripto do CoinGecko",
+      "showOnChart": "Mostrar Eventos no Gráfico",
+      "showOnChartDescription": "Exibir marcadores de eventos no gráfico de kline",
+      "minImportanceForChart": "Importância Mínima para Gráfico",
+      "minImportanceHelper": "Mostrar apenas eventos com este nível de importância ou superior no gráfico",
+      "daysAhead": "Dias à Frente",
+      "daysAheadHelper": "Buscar eventos até este número de dias no futuro (1-90)",
+      "daysBehind": "Dias Anteriores",
+      "daysBehindHelper": "Buscar eventos passados até este número de dias atrás (0-90)",
+      "correlateWithAI": "Incluir Eventos na Análise da IA",
+      "correlateWithAIDescription": "Quando ativado, eventos próximos e recentes serão incluídos na análise de gráficos da IA para melhor contexto de mercado"
+    }
+  },
+  "onboarding": {
+    "title": "Primeiros Passos",
+    "skip": "Pular",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "getStarted": "Começar",
+    "steps": {
+      "welcome": {
+        "title": "Bem-vindo ao MarketMind",
+        "description": "Seu assistente de análise de gráficos financeiros com IA. O MarketMind combina gráficos avançados com análise de IA para ajudá-lo a tomar decisões de negociação informadas."
+      },
+      "aiProvider": {
+        "title": "Escolha seu Provedor de IA",
+        "description": "O MarketMind suporta múltiplos provedores de IA: OpenAI (GPT-4), Anthropic (Claude) e Google (Gemini). Configure suas chaves de API nas configurações para começar."
+      },
+      "analyze": {
+        "title": "Analise Dados de Mercado",
+        "description": "Visualize gráficos de kline em tempo real, indicadores de volume e médias móveis. Use os controles para personalizar a visualização do gráfico e selecionar diferentes períodos."
+      },
+      "chat": {
+        "title": "Converse com a IA",
+        "description": "Faça perguntas sobre padrões de gráficos, tendências e sinais de negociação. A IA tem acesso aos dados do seu gráfico e pode fornecer análise técnica e insights."
+      },
+      "ready": {
+        "title": "Pronto para Começar",
+        "description": "Abra as configurações (canto superior direito) para configurar seu provedor de IA e chaves de API. Em seguida, comece a analisar gráficos e conversar com seu assistente de IA!"
+      }
+    }
+  },
+  "update": {
+    "available": "Atualização Disponível",
+    "downloading": "Baixando Atualização",
+    "ready": "Atualização Pronta",
+    "error": "Erro na Atualização",
+    "version": "Versão {{version}} está disponível",
+    "currentVersion": "Versão atual: {{version}}",
+    "downloadedVersion": "Versão {{version}} foi baixada",
+    "downloadUpdate": "Baixar Atualização",
+    "restartAndInstall": "Reiniciar e Instalar",
+    "later": "Mais Tarde",
+    "percent": "{{percent}}%",
+    "downloadSpeed": "{{speed}} MB/s"
+  },
+  "keyboardShortcuts": {
+    "title": "Atalhos de Teclado",
+    "global": "Global",
+    "chartControls": "Controles do Gráfico",
+    "chatInterface": "Interface de Chat",
+    "symbolSelector": "Seletor de Símbolos",
+    "shortcuts": {
+      "openSettings": "Abrir Configurações",
+      "focusChatInput": "Focar no Campo de Chat",
+      "showKeyboardShortcuts": "Mostrar Atalhos de Teclado",
+      "closeDialogs": "Fechar Diálogos",
+      "toggleVolume": "Alternar Exibição de Volume",
+      "toggleGrid": "Alternar Exibição de Grade",
+      "switchChartType": "Alternar Tipo de Gráfico",
+      "toggleMovingAverages": "Alternar Médias Móveis",
+      "zoomIn": "Aumentar Zoom",
+      "zoomOut": "Diminuir Zoom",
+      "resetZoom": "Resetar Zoom",
+      "panLeftRight": "Mover Esquerda/Direita",
+      "panChart": "Mover Gráfico",
+      "sendMessage": "Enviar Mensagem",
+      "newLine": "Nova Linha",
+      "editLastMessage": "Editar Última Mensagem",
+      "clearChatHistory": "Limpar Histórico de Chat",
+      "openSymbolSelector": "Abrir Seletor de Símbolos",
+      "navigateSymbolList": "Navegar Lista de Símbolos",
+      "selectSymbol": "Selecionar Símbolo",
+      "closeSelector": "Fechar Seletor"
+    }
+  },
+  "aiConfig": {
+    "title": "Configuração de IA",
+    "quickTips": "💡 Dicas Rápidas",
+    "tips": {
+      "encryption": "As chaves de API são criptografadas e armazenadas com segurança usando criptografia no nível do sistema operacional",
+      "temperatureLow": "Temperatura mais baixa (0-0.5) para análise técnica",
+      "temperatureHigh": "Temperatura mais alta (0.7-1.5) para insights criativos",
+      "geminiFree": "Gemini 2.0 Flash Exp é GRATUITO sem necessidade de chave de API"
+    },
+    "provider": "Provedor de IA",
+    "providerRequired": "Obrigatório",
+    "model": "Modelo",
+    "apiKeys": "Chaves de API (Criptografadas)",
+    "apiKey": "Chave de API {{provider}}",
+    "apiKeyPlaceholder": "Digite sua chave de API {{provider}}",
+    "apiKeyHelper": "Usando {{envVar}} de .env",
+    "temperature": "Temperatura: {{value}}",
+    "temperatureHelper": "Controla aleatoriedade (0 = focado, 2 = criativo)",
+    "maxTokens": "Tokens Máximos: {{value}}",
+    "maxTokensHelper": "Comprimento máximo da resposta",
+    "encryptionNotAvailable": "Aviso: Criptografia não disponível nesta plataforma",
+    "providers": {
+      "openai": "OpenAI",
+      "anthropic": "Anthropic (Claude)",
+      "gemini": "Google Gemini"
+    },
+    "models": {
+      "gpt4o": "GPT-4o",
+      "gpt4oMini": "GPT-4o Mini",
+      "claudeSonnet": "Claude 4.5 Sonnet",
+      "claudeHaiku": "Claude 4.5 Haiku",
+      "claudeOpus": "Claude 4.1 Opus",
+      "gemini2Flash": "Gemini 2.0 Flash Exp",
+      "gemini15Pro": "Gemini 1.5 Pro",
+      "gemini15Flash": "Gemini 1.5 Flash",
+      "gemini15Flash8b": "Gemini 1.5 Flash-8B"
+    },
+    "pricing": {
+      "gpt4o": "$2.50/$10 por 1M tokens",
+      "gpt4oMini": "$0.15/$0.60 por 1M tokens",
+      "claudeSonnet": "$3/$15 por 1M tokens",
+      "claudeHaiku": "$1/$5 por 1M tokens",
+      "claudeOpus": "$15/$75 por 1M tokens",
+      "gemini2Flash": "GRÁTIS",
+      "gemini15Pro": "$1.25/$5 por 1M tokens",
+      "gemini15Flash": "$0.075/$0.30 por 1M tokens",
+      "gemini15Flash8b": "$0.0375/$0.15 por 1M tokens"
+    }
+  },
+  "aiTrading": {
+    "tips": {
+      "experimental": "Auto-Trading IA é experimental e deve ser usado com cautela",
+      "simulator": "Sempre use o Simulador de Trading antes de operar de verdade",
+      "monitor": "Monitore suas posições e ajuste as configurações de risco conforme necessário"
+    },
+    "status": {
+      "title": "Status do Auto-Trading",
+      "autoTrading": "Auto-Trading",
+      "active": "Ativo - IA está analisando e operando",
+      "inactive": "Inativo - Ative no Chat para começar",
+      "activeWallet": "Carteira Ativa: {{name}} ({{currency}})",
+      "balance": "Saldo: {{balance}} {{currency}}"
+    },
+    "riskProfile": {
+      "title": "Perfil de Risco",
+      "tradingStrategy": "Estratégia de Trading",
+      "conservative": "Conservador",
+      "conservativeDesc": "50%+ confiança, 1:2 risco/recompensa",
+      "moderate": "Moderado",
+      "moderateDesc": "40%+ confiança, 1:1.5 risco/recompensa",
+      "aggressive": "Agressivo",
+      "aggressiveDesc": "30%+ confiança, 1:1 risco/recompensa",
+      "maxPositionSize": "Tamanho Máx. de Posição (%)",
+      "accountRisk": "Risco da Conta (%)",
+      "defaultStopLoss": "Stop Loss Padrão (%)",
+      "defaultTakeProfit": "Take Profit Padrão (%)"
+    },
+    "limits": {
+      "title": "Limites de Trading",
+      "analysisInterval": "Intervalo de Análise",
+      "maxTradesPerDay": "Máx. Operações por Dia",
+      "maxTradesPerHour": "Máx. Operações por Hora",
+      "minTimeBetween": "Tempo Mín. Entre Operações (min)",
+      "interval1m": "1 minuto",
+      "interval5m": "5 minutos",
+      "interval15m": "15 minutos",
+      "interval30m": "30 minutos",
+      "interval1h": "1 hora"
+    },
+    "safety": {
+      "title": "Configurações de Segurança",
+      "maxDailyLoss": "Perda Máx. Diária (%)",
+      "emergencyStop": "Parada de Emergência (perdas consecutivas)",
+      "notifyOnTrade": "Notificar ao executar operação",
+      "notifyOnProfit": "Notificar ao fechar com lucro",
+      "notifyOnLoss": "Notificar ao fechar com prejuízo"
+    },
+    "statistics": {
+      "title": "Estatísticas de Trading",
+      "totalTrades": "Total de Operações",
+      "openPositions": "Posições Abertas",
+      "winRate": "Taxa de Acerto",
+      "netPnL": "Lucro/Prejuízo Líquido"
+    },
+    "clearHistory": "Limpar Histórico de Trading"
+  },
+  "patternDetection": {
+    "title": "Configuração de Detecção de Padrões",
+    "resetDefaults": "Restaurar Padrões",
+    "mode": {
+      "label": "Modo de Detecção",
+      "helper": "Define como os dados de padrões são enviados para a IA (não afeta a exibicão no gráfico)",
+      "aiOnly": "Apenas IA - Sem detecção automática, IA analisa o gráfico visualmente",
+      "algorithmicOnly": "Apenas Algorítmico - Envia padrões detectados para a IA",
+      "hybrid": "Híbrido - IA analisa o gráfico e os padrões detectados"
+    },
+    "tips": {
+      "sensitivity": "Maior sensibilidade detecta mais pontos de pivô mas pode reduzir a precisão",
+      "confidence": "Confiança mínima filtra padrões baseado no limite de confiabilidade",
+      "period": "Período de formação controla quantos klines analisar para padrões"
+    },
+    "sensitivity": {
+      "label": "Sensibilidade",
+      "helper": "Controla a sensibilidade de detecção de pontos de pivô (0 = rigoroso, 100 = permissivo)"
+    },
+    "minConfidence": {
+      "label": "Confiança Mínima",
+      "helper": "Limite mínimo de confiança para validação de padrões"
+    },
+    "formationPeriod": {
+      "label": "Período de Formação",
+      "helper": "Período de retrospectiva para detecção de padrões",
+      "klines": "klines"
+    },
+    "trendlineAccuracy": {
+      "label": "Precisão da Linha de Tendência (R²)",
+      "helper": "Limite R² para avaliação de qualidade da linha de tendência"
+    },
+    "volumeWeight": {
+      "label": "Peso de Confirmação de Volume",
+      "helper": "Peso do volume no cálculo de confiança"
+    },
+    "enabledPatterns": "Padrões Habilitados",
+    "enabled": "Habilitado",
+    "showPreview": {
+      "label": "Mostrar Pré-visualização de Padrões",
+      "helper": "Exibir pré-visualização de padrões em tempo real no gráfico"
+    },
+    "filtering": {
+      "title": "Filtragem de Padrões",
+      "mode": {
+        "label": "Modo de Filtragem",
+        "helper": "Escolha entre limpo (menos padrões, alta qualidade) ou completo (mostrar todos os padrões detectados)",
+        "clean": "Limpo (máx. 20 padrões)",
+        "complete": "Completo (máx. 50 padrões)"
+      },
+      "maxPatterns": {
+        "label": "Máximo de Padrões",
+        "helper": "Número máximo de padrões a exibir no gráfico",
+        "patterns": "padrões"
+      },
+      "enableNested": {
+        "label": "Filtrar Padrões Aninhados",
+        "helper": "Remover padrões menores do mesmo tipo que estão aninhados dentro de padrões maiores (tipos diferentes são mantidos)"
+      },
+      "enableOverlap": {
+        "label": "Filtrar Padrões Sobrepostos",
+        "helper": "Remover padrões com alta sobreposição (mantém o mais importante)"
+      },
+      "overlapThreshold": {
+        "label": "Limite de Sobreposição",
+        "helper": "Porcentagem mínima de sobreposição para considerar padrões como sobrepostos"
+      },
+      "highlightConflicts": {
+        "label": "Destacar Padrões Conflitantes",
+        "helper": "Mostrar indicadores visuais quando padrões dão sinais opostos (ambos os padrões são mantidos)"
+      },
+      "showChannelCenterline": {
+        "label": "Mostrar Linha Central em Canais",
+        "helper": "Exibir linha central tracejada em padrões de canal"
+      }
+    },
+    "groups": {
+      "reversalPatterns": "Padrões de Reversão",
+      "continuationPatterns": "Padrões de Continuação",
+      "supportResistance": "Suporte e Resistência",
+      "zones": "Zonas de Negociação",
+      "gaps": "Gaps de Preço"
+    },
+    "patterns": {
+      "head-and-shoulders": "Ombro-Cabeça-Ombro",
+      "inverse-head-and-shoulders": "Ombro-Cabeça-Ombro Invertido",
+      "double-top": "Topo Duplo",
+      "double-bottom": "Fundo Duplo",
+      "triple-top": "Topo Triplo",
+      "triple-bottom": "Fundo Triplo",
+      "rounding-bottom": "Fundo Arredondado",
+      "triangle-ascending": "Triângulo Ascendente",
+      "triangle-descending": "Triângulo Descendente",
+      "triangle-symmetrical": "Triângulo Simétrico",
+      "flag-bullish": "Bandeira de Alta",
+      "flag-bearish": "Bandeira de Baixa",
+      "pennant": "Flâmula",
+      "cup-and-handle": "Xícara com Alça",
+      "wedge-falling": "Cunha Descendente",
+      "wedge-rising": "Cunha Ascendente",
+      "support": "Suporte",
+      "resistance": "Resistência",
+      "buy-zone": "Zona de Compra",
+      "sell-zone": "Zona de Venda",
+      "liquidity-zone": "Zona de Liquidez",
+      "accumulation-zone": "Zona de Acumulação",
+      "gap-common": "Gap Comum",
+      "gap-breakaway": "Gap de Rompimento",
+      "gap-runaway": "Gap de Continuação",
+      "gap-exhaustion": "Gap de Exaustão"
+    }
+  },
+  "trading": {
+    "simulator": {
+      "toggle": "Simulador de Trading",
+      "active": "Simulador Ativo",
+      "inactive": "Simulador Inativo"
+    },
+    "sidebar": {
+      "title": "Simulador",
+      "close": "Fechar barra de trading"
+    },
+    "tabs": {
+      "wallets": "Carteiras",
+      "ticket": "Ordem",
+      "portfolio": "Portfólio",
+      "orders": "Ordens"
+    },
+    "wallets": {
+      "title": "Carteiras",
+      "create": "Criar Carteira",
+      "createTitle": "Criar Nova Carteira",
+      "empty": "Nenhuma carteira ainda. Crie uma para começar a negociar.",
+      "name": "Nome da Carteira",
+      "namePlaceholder": "Minha Carteira",
+      "initialBalance": "Saldo Inicial",
+      "currency": "Moeda",
+      "balance": "Saldo",
+      "totalPnL": "L&P Total",
+      "viewPerformance": "Ver Desempenho",
+      "delete": "Excluir Carteira",
+      "performanceTitle": "Desempenho - {{name}}",
+      "currentBalance": "Saldo Atual",
+      "tradeDays": "Dias de Negociação",
+      "avgDailyReturn": "Retorno Médio Diário"
+    },
+    "ticket": {
+      "title": "Ticket de Ordem",
+      "noWallet": "Por favor, crie e selecione uma carteira primeiro.",
+      "activeWallet": "Carteira Ativa",
+      "symbol": "Símbolo",
+      "orderType": "Tipo de Ordem",
+      "long": "Compra (Long)",
+      "short": "Venda (Short)",
+      "quantity": "Quantidade",
+      "entryPrice": "Preço de Entrada",
+      "useCurrent": "Usar Atual",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "optional": "Opcional",
+      "totalCost": "Custo Total",
+      "buy": "Comprar Long",
+      "sell": "Vender Short"
+    },
+    "portfolio": {
+      "title": "Portfólio",
+      "noWallet": "Por favor, crie e selecione uma carteira primeiro.",
+      "empty": "Nenhuma posição aberta.",
+      "activePositions": "Posições Ativas",
+      "totalExposure": "Exposição Total",
+      "unrealizedPnL": "L&P Não Realizado",
+      "orders": "ordens",
+      "orderCount": "Ordens",
+      "quantity": "Quantidade",
+      "totalQuantity": "Quantidade Total",
+      "avgPrice": "Preço Médio",
+      "currentPrice": "Preço Atual",
+      "pnl": "L&P",
+      "position": "Posição"
+    },
+    "orders": {
+      "title": "Ordens",
+      "noWallet": "Por favor, crie e selecione uma carteira primeiro.",
+      "empty": "Nenhuma ordem encontrada.",
+      "total": "Total de Ordens",
+      "active": "Ativas",
+      "pending": "Pendentes",
+      "filterByStatus": "Filtrar por Status",
+      "allStatuses": "Todos os Status",
+      "statusPending": "Pendente",
+      "statusActive": "Ativa",
+      "statusFilled": "Executada",
+      "statusClosed": "Fechada",
+      "statusCancelled": "Cancelada",
+      "statusExpired": "Expirada",
+      "createdAt": "Criada",
+      "filledAt": "Executada",
+      "closedAt": "Fechada",
+      "quantity": "Quantidade",
+      "entryPrice": "Preço de Entrada",
+      "currentPrice": "Preço Atual",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "pnl": "L&P",
+      "close": "Fechar Ordem",
+      "cancel": "Cancelar Ordem"
+    },
+    "notifications": {
+      "orderFilled": {
+        "title": "Ordem Executada",
+        "body": "Ordem {{type}} de {{quantity}} {{symbol}} executada a ${{price}}"
+      },
+      "orderClosed": {
+        "titleProfit": "Ordem Fechada - Lucro ✓",
+        "titleLoss": "Ordem Fechada - Prejuízo",
+        "body": "{{type}} {{symbol}} ({{quantity}}) fechada: {{pnl}}"
+      },
+      "orderCancelled": "Ordem Cancelada",
+      "orderCancelledDesc": "{{order}} foi cancelada",
+      "orderExpired": "Ordem Expirada",
+      "orderExpiredDesc": "{{order}} expirou"
+    },
+    "order": {
+      "long": "COMPRA",
+      "short": "VENDA"
+    },
+    "closeOrder": "Fechar Ordem",
+    "closeOrderConfirm": "Fechar ordem {{type}} com entrada em {{entry}}? Preço atual: {{current}}",
+    "removeSLTPConfirm": "Remover {{type}} de todas as ordens desta posição?",
+    "confirmClose": "Confirmar Fechamento",
+    "active": "ATIVO",
+    "pending": "PENDENTE"
+  },
+  "patterns": {
+    "configurePatterns": "Configurar Padrões",
+    "enabledPatterns": "Padrões Habilitados",
+    "basicPatterns": "Básicos",
+    "trendlines": "Tendências",
+    "fibonacci": "Fibonacci",
+    "channels": "Canais",
+    "triangles": "Triângulos",
+    "wedges": "Cunhas",
+    "advancedPatterns": "Avançados",
+    "support": "Suporte",
+    "supportTooltip": "Nível horizontal onde o interesse de compra se concentra, impedindo quedas adicionais. Requer 2+ toques para validação.",
+    "resistance": "Resistência",
+    "resistanceTooltip": "Nível horizontal onde a pressão de venda se concentra, limitando o movimento ascendente. Mais forte com mais toques.",
+    "bullishTrendline": "Tendência de Alta",
+    "bullishTrendlineTooltip": "Linha conectando fundos mais altos, indicando momentum ascendente. Atua como suporte dinâmico durante tendências de alta.",
+    "bearishTrendline": "Tendência de Baixa",
+    "bearishTrendlineTooltip": "Linha conectando topos mais baixos, indicando momentum descendente. Atua como resistência dinâmica durante tendências de baixa.",
+    "fibonacciRetracement": "Retração de Fibonacci",
+    "fibonacciRetracementTooltip": "Níveis-chave (23,6%, 38,2%, 50%, 61,8%, 78,6%) onde o preço frequentemente encontra suporte ou resistência durante correções.",
+    "ascendingChannel": "Canal Ascendente",
+    "ascendingChannelTooltip": "Linhas paralelas ascendentes contendo a ação do preço. Padrão de continuação de alta com suporte e resistência claros.",
+    "descendingChannel": "Canal Descendente",
+    "descendingChannelTooltip": "Linhas paralelas descendentes contendo a ação do preço. Padrão de continuação de baixa indicando tendência de queda sustentada.",
+    "ascendingTriangle": "Triângulo Ascendente",
+    "ascendingTriangleTooltip": "Topo plano com fundos ascendentes. Padrão de alta mostrando compradores ficando mais agressivos. Rompimento geralmente para cima.",
+    "descendingTriangle": "Triângulo Descendente",
+    "descendingTriangleTooltip": "Fundo plano com topos descendentes. Padrão de baixa mostrando vendedores ficando mais agressivos. Rompimento geralmente para baixo.",
+    "symmetricalTriangle": "Triângulo Simétrico",
+    "symmetricalTriangleTooltip": "Linhas de tendência convergentes com topos mais baixos e fundos mais altos. Padrão de consolidação - direção do rompimento incerta.",
+    "risingWedge": "Cunha Ascendente",
+    "risingWedgeTooltip": "Ambas as linhas inclinam para cima mas convergem. Padrão de reversão de baixa - momentum enfraquecendo apesar dos preços mais altos.",
+    "fallingWedge": "Cunha Descendente",
+    "fallingWedgeTooltip": "Ambas as linhas inclinam para baixo mas convergem. Padrão de reversão de alta - pressão de venda diminuindo.",
+    "headAndShoulders": "Ombro-Cabeça-Ombro",
+    "headAndShouldersTooltip": "Três topos com o do meio mais alto. Padrão de reversão de baixa sinalizando exaustão da tendência e possível queda.",
+    "inverseHeadAndShoulders": "OCO Invertido",
+    "inverseHeadAndShouldersTooltip": "Três fundos com o do meio mais baixo. Padrão de reversão de alta indicando formação de fundo e possível alta.",
+    "doubleTop": "Topo Duplo",
+    "doubleTopTooltip": "Dois topos em preço similar (forma de 'M'). Reversão de baixa após tentativa falhada de romper resistência.",
+    "doubleBottom": "Fundo Duplo",
+    "doubleBottomTooltip": "Dois fundos em preço similar (forma de 'W'). Reversão de alta após suporte segurar duas vezes.",
+    "tripleTop": "Topo Triplo",
+    "tripleTopTooltip": "Três topos em preço similar. Padrão de reversão de baixa após múltiplas tentativas falhas de rompimento.",
+    "tripleBottom": "Fundo Triplo",
+    "tripleBottomTooltip": "Três fundos em preço similar. Padrão de reversão de alta após múltiplos suportes.",
+    "flagBullish": "Bandeira de Alta",
+    "flagBullishTooltip": "Consolidação curta após forte movimento de alta, geralmente seguida de continuação para cima.",
+    "flagBearish": "Bandeira de Baixa",
+    "flagBearishTooltip": "Consolidação curta após forte movimento de baixa, geralmente seguida de continuação para baixo.",
+    "pennant": "Pavilhão",
+    "pennantTooltip": "Pequeno triângulo simétrico após movimento brusco, padrão típico de continuação.",
+    "cupAndHandle": "Copo e Alça",
+    "cupAndHandleTooltip": "Fundo arredondado seguido de pequena correção (alça). Padrão de continuação de alta.",
+    "roundingBottom": "Fundo Arredondado",
+    "roundingBottomTooltip": "Mudança gradual de tendência de baixa para alta, formando um fundo arredondado. Reversão de alta.",
+    "gapCommon": "Gap Comum",
+    "gapCommonTooltip": "Gap de preço sem grande significado, geralmente preenchido rapidamente.",
+    "gapBreakaway": "Gap de Ruptura",
+    "gapBreakawayTooltip": "Gap no fim de um padrão, sinalizando início de nova tendência.",
+    "gapRunaway": "Gap de Fuga",
+    "gapRunawayTooltip": "Gap no meio de uma tendência, confirmando sua força.",
+    "gapExhaustion": "Gap de Exaustão",
+    "gapExhaustionTooltip": "Gap próximo ao fim de uma tendência, geralmente sinalizando reversão.",
+    "liquidityZone": "Zona de Liquidez",
+    "liquidityZoneTooltip": "Área de preço com alta atividade, atuando como suporte ou resistência.",
+    "sellZone": "Zona de Venda",
+    "sellZoneTooltip": "Área onde a pressão vendedora tende a aumentar.",
+    "buyZone": "Zona de Compra",
+    "buyZoneTooltip": "Área onde a pressão compradora tende a aumentar.",
+    "accumulationZone": "Zona de Acumulação",
+    "accumulationZoneTooltip": "Área onde grandes players acumulam posições, geralmente antes de uma alta.",
+    "horizontalChannel": "Canal Horizontal",
+    "horizontalChannelTooltip": "Linhas horizontais paralelas contendo o preço. Padrão de mercado lateral.",
+    "fibonacciExtension": "Extensão de Fibonacci",
+    "fibonacciExtensionTooltip": "Níveis usados para projetar possíveis alvos além da tendência atual.",
+    "extraPatterns": "Extras"
+  },
+  "about": {
+    "version": "Versão {{version}}",
+    "description": "Um assistente de trading com IA que combina visualização avançada de gráficos financeiros com inteligência artificial para fornecer insights sobre criptomoedas, ações e outros ativos negociáveis.",
+    "features": "Recursos",
+    "featuresList": {
+      "marketData": "Dados de mercado de criptomoedas em tempo real (Binance)",
+      "charts": "Gráficos de kline avançados com médias móveis",
+      "aiAnalysis": "Análise de IA com OpenAI GPT-4o, Claude 4.5 e Gemini 2.0",
+      "news": "Integração de notícias financeiras (NewsAPI e CryptoPanic)",
+      "chat": "Interface de chat interativa com histórico de conversas",
+      "security": "Armazenamento seguro de chaves de API com criptografia no nível do SO",
+      "autoUpdate": "Sistema de atualização automática com releases do GitHub",
+      "shortcuts": "Atalhos de teclado para produtividade",
+      "themes": "Temas claro e escuro",
+      "websocket": "Atualizações ao vivo via WebSocket"
+    },
+    "techStack": "Stack Tecnológica",
+    "techStackList": {
+      "electron": "Electron {{version}} - Framework desktop",
+      "react": "React {{version}} - Framework de UI",
+      "typescript": "TypeScript {{version}} - Tipagem segura",
+      "chakra": "Chakra UI {{version}} - Biblioteca de componentes",
+      "vite": "Vite {{version}} - Ferramenta de build",
+      "zustand": "Zustand {{version}} - Gerenciamento de estado"
+    },
+    "resources": "Recursos",
+    "resourcesList": {
+      "github": "Repositório GitHub",
+      "documentation": "Documentação",
+      "changelog": "Registro de Alterações"
+    },
+    "copyright": "© 2025 MarketMind. Feito com ❤️ para traders e investidores."
+  },
+  "setupConfig": {
+    "configureSetups": "Configurar Setups de Trading",
+    "enabledSetups": "Setups Habilitados",
+    "toggleAll": "Alternar Todos os Setups",
+    "tips": {
+      "confidence": "Filtros de confiança mais altos mostram apenas os setups mais fortes",
+      "algorithmic": "Detecção algorítmica é mais rápida e consistente que IA",
+      "toolbar": "Ative o auto-trading pelo ícone de robô na barra de ferramentas"
+    },
+    "resetDefaults": "Restaurar Padrões",
+    "trendFilter": {
+      "title": "Filtro de Tendência",
+      "enable": "Ativar Filtro de Tendência",
+      "enableDescription": "Usa EMA 200 para identificar a tendência maior e filtrar setups",
+      "allowCounter": "Permitir Operações Contra-Tendência",
+      "allowCounterDescription": "Quando desabilitado, apenas operações alinhadas com a tendência maior são permitidas"
+    },
+    "status": {
+      "title": "Status do Auto-Trading",
+      "autoTrading": "Auto-Trading Algorítmico",
+      "active": "Ativo",
+      "inactive": "Inativo"
+    },
+    "autoTradingDisabled": "Auto-Trading Desabilitado",
+    "autoTradingDisabledDescription": "O auto-trading foi desabilitado automaticamente porque a detecção de setups foi desligada.",
+    "noSetupsEnabled": "Nenhum Setup Habilitado",
+    "noSetupsEnabledDescription": "Não é possível habilitar o auto-trading sem setups ativos. Por favor, habilite pelo menos um setup nas Configurações.",
+    "setups": {
+      "setup91": {
+        "title": "Setup 9.1 (Reversão EMA9)",
+        "description": "Detecta mudanças de tendência da EMA9 com confirmação de volume - entrada no kline que vira a EMA9"
+      },
+      "setup92": {
+        "title": "Setup 9.2 (Pullback EMA9)",
+        "description": "Seguidor de tendência EMA9 - entrada após kline fechar abaixo/acima da mínima/máxima anterior em tendência de alta/baixa"
+      },
+      "setup93": {
+        "title": "Setup 9.3 (Pullback Duplo EMA9)",
+        "description": "Seguidor de tendência EMA9 - entrada após 2 fechamentos consecutivos abaixo/acima do kline de referência"
+      },
+      "setup94": {
+        "title": "Setup 9.4 (Continuação EMA9)",
+        "description": "Continuação EMA9 - falha temporária de 1 kline na EMA9 seguida por retomada da tendência original"
+      },
+      "pattern123": {
+        "title": "Padrão 123 (Padrão de Reversão)",
+        "description": "Padrão clássico 123 de pivôs com confirmação de rompimento"
+      },
+      "bullTrap": {
+        "title": "Bull Trap (Falso Rompimento)",
+        "description": "Detecta falsos rompimentos acima da resistência seguidos de reversão"
+      },
+      "bearTrap": {
+        "title": "Bear Trap (Falsa Quebra)",
+        "description": "Detecta falsas quebras abaixo do suporte seguidas de recuperação"
+      },
+      "breakoutRetest": {
+        "title": "Reteste de Rompimento (Continuação)",
+        "description": "Rompimento válido seguido de reteste bem-sucedido e continuação"
+      }
+    },
+    "parameters": {
+      "minConfidence": {
+        "label": "Confiança Mínima",
+        "helper": "Mostrar apenas setups com confiança acima deste limite"
+      }
+    },
+    "summary": {
+      "title": "Resumo",
+      "enabledSetups": "Setups Habilitados",
+      "avgConfidence": "Confiança Média"
+    }
+  },
+  "backtesting": {
+    "results": {
+      "title": "Resultados do Backtest"
+    },
+    "chart": {
+      "trades": "Operações",
+      "winRate": "Taxa de Acerto"
+    },
+    "equityCurve": {
+      "title": "Curva de Equity",
+      "description": "Desempenho ao longo do tempo com sobreposição de drawdown",
+      "equity": "Equity",
+      "drawdown": "Drawdown"
+    },
+    "config": {
+      "title": "Configuração do Backtest",
+      "symbol": "Símbolo",
+      "interval": "Intervalo",
+      "startDate": "Data Inicial",
+      "endDate": "Data Final",
+      "initialCapital": "Capital Inicial ($)",
+      "initialCapitalHelper": "Saldo inicial para backtesting",
+      "maxPosition": "Tamanho Máximo da Posição (%)",
+      "maxPositionHelper": "Percentual máximo do capital por operação",
+      "commission": "Comissão (%)",
+      "commissionHelper": "Taxa de comissão por transação",
+      "useAlgorithmicLevels": "Usar Níveis Algorítmicos de Stop/Take",
+      "useAlgorithmicLevelsHelper": "Calcular níveis baseados no algoritmo do setup",
+      "stopLoss": "Stop Loss (%)",
+      "takeProfit": "Take Profit (%)",
+      "minProfit": "Lucro Mínimo (%)",
+      "minProfitHelper": "Filtrar setups com R:R abaixo deste limite",
+      "minConfidence": "Confiança Mínima (%)",
+      "minConfidenceHelper": "Operar apenas setups com confiança acima deste nível",
+      "runBacktest": "Executar Backtest"
+    },
+    "trades": {
+      "title": "Lista de Operações",
+      "count": "{{count}} operações",
+      "columns": {
+        "side": "Lado",
+        "setup": "Setup",
+        "entry": "Entrada",
+        "exit": "Saída",
+        "entryTime": "Hora de Entrada",
+        "exitTime": "Hora de Saída",
+        "duration": "Duração",
+        "pnl": "Lucro/Prejuízo",
+        "pnlPercent": "L/P %",
+        "exitReason": "Motivo da Saída"
+      }
+    },
+    "metrics": {
+      "totalPnl": "Lucro/Prejuízo Total",
+      "winRate": "Taxa de Acerto",
+      "wins": "G",
+      "losses": "P",
+      "profitFactor": "Fator de Lucro",
+      "totalTrades": "Total de Operações",
+      "avgDuration": "Duração Média",
+      "duration": "Duração",
+      "avgWin": "Ganho Médio",
+      "avgLoss": "Perda Média",
+      "largestWin": "Maior Ganho",
+      "largestLoss": "Maior Perda",
+      "maxDrawdown": "Drawdown Máximo",
+      "sharpeRatio": "Índice de Sharpe",
+      "sortinoRatio": "Índice de Sortino",
+      "downsideRisk": "Risco de Queda",
+      "totalCommission": "Comissão Total"
+    },
+    "quality": {
+      "excellent": "Excelente",
+      "good": "Bom",
+      "fair": "Razoável"
+    },
+    "configuration": {
+      "title": "Configuração",
+      "initialCapital": "Capital Inicial",
+      "maxPosition": "Posição Máxima",
+      "commission": "Comissão",
+      "setups": "Setups"
+    }
+  }
+}

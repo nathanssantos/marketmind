@@ -40,11 +40,9 @@ interface ValidateOptions {
 }
 
 export async function validateCommand(options: ValidateOptions) {
-  // Initialize logger
   const logger = new BacktestLogger(options.verbose ? LogLevel.VERBOSE : LogLevel.INFO);
 
   try {
-    // Validate all inputs
     validateStrategy(options.strategy);
     validateSymbol(options.symbol);
     validateInterval(options.interval);
@@ -71,23 +69,19 @@ export async function validateCommand(options: ValidateOptions) {
       ? validatePercentage(options.commission, 'Commission', 0, 10)
       : undefined;
 
-    // Validate position sizing method
     const validMethods = ['fixed-fractional', 'risk-based', 'kelly', 'volatility-based'];
     if (!validMethods.includes(options.positionMethod)) {
       throw new ValidationError('Position sizing method', options.positionMethod, validMethods.join(', '));
     }
 
-    // Validate Kelly fraction
     if (isNaN(kellyFraction) || kellyFraction <= 0 || kellyFraction > 1) {
       throw new ValidationError('Kelly fraction', options.kellyFraction, '0 < fraction <= 1');
     }
 
-    // Validate risk/reward ratio
     if (!options.useAlgorithmicLevels) {
       validateRiskReward(stopLoss, takeProfit);
     }
 
-    // Display header
     const modeLabel = options.optimized ? ' [OPTIMIZED]' : '';
     logger.header(`BACKTEST VALIDATION - ${options.strategy.toUpperCase()}${modeLabel}`, {
       'Symbol': options.symbol,
@@ -97,11 +91,9 @@ export async function validateCommand(options: ValidateOptions) {
       ...(options.optimized ? { 'Mode': 'Using strategy optimizedParams' } : {}),
     });
 
-    // Parse position management options
     const maxConcurrent = options.maxConcurrent ? parseInt(options.maxConcurrent, 10) : undefined;
     const maxExposure = options.maxExposure ? parseFloat(options.maxExposure) / 100 : undefined;
 
-    // Parse configuration
     const config: BacktestConfig = {
       symbol: options.symbol,
       interval: options.interval,
@@ -125,29 +117,24 @@ export async function validateCommand(options: ValidateOptions) {
       useOptimizedSettings: options.optimized,
     };
 
-    // Create backtest engine
     const engine = new BacktestEngine();
 
-    // Run backtest with spinner
     const spinner = ora({
       text: chalk.cyan('Fetching historical data...'),
       color: 'cyan',
     }).start();
 
     try {
-      // Run the backtest
       const result = await engine.run(config);
 
       spinner.stop();
 
-      // Display results
       if (options.verbose && result.trades.length > 0) {
         logger.trades(result.trades, 5);
       }
 
       logger.metrics(result.metrics);
 
-      // Display summary
       const finalEquity = config.initialCapital + result.metrics.totalPnl;
       const returnPercent = result.metrics.totalPnlPercent;
       const duration = (result.duration / 1000).toFixed(2);
@@ -159,11 +146,9 @@ export async function validateCommand(options: ValidateOptions) {
           chalk.gray(` (${returnPercent >= 0 ? '+' : ''}${returnPercent.toFixed(2)}%)`)
       );
 
-      // Interpretation
       console.log('');
       interpretResults(result.metrics, logger);
 
-      // Save result
       console.log('');
       const saveSpinner = ora({
         text: chalk.cyan('Saving result...'),
@@ -208,7 +193,6 @@ function interpretResults(metrics: any, _logger: BacktestLogger) {
   const warnings: string[] = [];
   const successes: string[] = [];
 
-  // Analyze win rate
   if (metrics.winRate >= 60) {
     successes.push(`Excellent win rate (${metrics.winRate.toFixed(1)}%)`);
   } else if (metrics.winRate >= 50) {
@@ -219,7 +203,6 @@ function interpretResults(metrics: any, _logger: BacktestLogger) {
     warnings.push(`Very low win rate (${metrics.winRate.toFixed(1)}%) - strategy may need revision`);
   }
 
-  // Analyze profit factor
   if (metrics.profitFactor >= 2.0) {
     successes.push(`Excellent profit factor (${metrics.profitFactor.toFixed(2)})`);
   } else if (metrics.profitFactor >= 1.5) {
@@ -230,7 +213,6 @@ function interpretResults(metrics: any, _logger: BacktestLogger) {
     warnings.push(`Negative profit factor (${metrics.profitFactor.toFixed(2)}) - strategy loses money`);
   }
 
-  // Analyze Sharpe ratio
   if (metrics.sharpeRatio >= 2.0) {
     successes.push(`Excellent Sharpe ratio (${metrics.sharpeRatio.toFixed(2)})`);
   } else if (metrics.sharpeRatio >= 1.0) {
@@ -239,7 +221,6 @@ function interpretResults(metrics: any, _logger: BacktestLogger) {
     warnings.push(`Low Sharpe ratio (${metrics.sharpeRatio.toFixed(2)}) - high volatility vs returns`);
   }
 
-  // Analyze drawdown
   if (metrics.maxDrawdownPercent < 10) {
     successes.push(`Low max drawdown (${metrics.maxDrawdownPercent.toFixed(2)}%)`);
   } else if (metrics.maxDrawdownPercent < 20) {
@@ -250,14 +231,12 @@ function interpretResults(metrics: any, _logger: BacktestLogger) {
     warnings.push(`Very high max drawdown (${metrics.maxDrawdownPercent.toFixed(2)}%) - not recommended for live`);
   }
 
-  // Analyze trade count
   if (metrics.totalTrades < 30) {
     warnings.push(`Low sample size (${metrics.totalTrades} trades) - results may not be statistically significant`);
   } else if (metrics.totalTrades >= 50) {
     successes.push(`Good sample size (${metrics.totalTrades} trades)`);
   }
 
-  // Display interpretation
   console.log(chalk.cyan.bold('INTERPRETATION:'));
   console.log('');
 
@@ -277,7 +256,6 @@ function interpretResults(metrics: any, _logger: BacktestLogger) {
     console.log('');
   }
 
-  // Overall recommendation
   const isGood =
     metrics.winRate >= 50 &&
     metrics.profitFactor >= 1.5 &&

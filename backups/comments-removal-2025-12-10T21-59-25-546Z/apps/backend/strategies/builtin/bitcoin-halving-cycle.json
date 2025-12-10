@@ -1,0 +1,152 @@
+{
+  "id": "bitcoin-halving-cycle",
+  "name": "Bitcoin Halving Cycle",
+  "version": "1.0.0",
+  "description": "Estratégia baseada no ciclo de halving do Bitcoin. Entry em período pós-halving historicamente bullish. Long-term positioning.",
+  "author": "MarketMind",
+  "tags": [
+    "halving",
+    "cycle",
+    "bitcoin",
+    "long-term",
+    "macro"
+  ],
+  "source": "Bitcoin Halving Studies",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 90,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 90,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 4,
+    "breakEvenAfterR": 2,
+    "onlyWithTrend": false,
+    "minConfidence": 70,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "1w",
+    "secondary": [
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m",
+      "1h",
+      "4h"
+    ],
+    "notes": "Halving cycle on weekly"
+  },
+  "parameters": {
+    "monthsPostHalving": {
+      "default": 6,
+      "min": 3,
+      "max": 12,
+      "step": 3,
+      "description": "Meses após halving para entry"
+    },
+    "monthsPrePeak": {
+      "default": 18,
+      "min": 12,
+      "max": 24,
+      "step": 3,
+      "description": "Meses antes do pico típico"
+    },
+    "atrMultiplier": {
+      "default": 4,
+      "min": 3,
+      "max": 5,
+      "step": 0.5,
+      "description": "ATR stop (largo)"
+    }
+  },
+  "indicators": {
+    "halvingCycle": {
+      "type": "halvingCycle",
+      "params": {
+        "monthsPostHalving": "$monthsPostHalving",
+        "monthsPrePeak": "$monthsPrePeak"
+      }
+    },
+    "ema50w": {
+      "type": "ema",
+      "params": {
+        "period": 50
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "halvingCycle.phase",
+          "op": "==",
+          "right": "accumulation"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "ema50w"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 5
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 4,
+      "trailMultiplier": 4,
+      "breakEvenAfterR": 2
+    },
+    "conditions": {
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "halvingCycle.phase",
+            "op": "==",
+            "right": "distribution"
+          }
+        ]
+      }
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "halvingCycle.daysFromHalving",
+          "op": "<",
+          "right": 365
+        },
+        "bonus": 15,
+        "description": "First year post-halving"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 3
+  }
+}

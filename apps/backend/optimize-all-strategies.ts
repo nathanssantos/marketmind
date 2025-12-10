@@ -79,7 +79,6 @@ async function main() {
   console.log(chalk.gray(`Results directory: ${RESULTS_DIR}`));
   console.log(chalk.gray(`Test period: ${TEST_START_DATE} to ${TEST_END_DATE} (11 months)\n`));
 
-  // Get all active strategies
   const strategyFiles = fs.readdirSync(STRATEGIES_DIR).filter(f => f.endsWith('.json'));
   const activeStrategies: string[] = [];
   
@@ -102,23 +101,18 @@ async function main() {
     console.log(chalk.gray(`\n[${i + 1}/${activeStrategies.length}] Optimizing: ${strategy}`));
 
     try {
-      // Get current baseline performance
       console.log(chalk.gray('  → Getting current performance...'));
       const currentPerf = getCurrentPerformance(strategy);
       console.log(chalk.gray(`  → Current PnL: ${currentPerf.pnl.toFixed(2)}% (${currentPerf.trades} trades)`));
 
-      // Read strategy file to get parameter definitions
       const strategyPath = path.join(STRATEGIES_DIR, `${strategy}.json`);
       const strategyData = JSON.parse(fs.readFileSync(strategyPath, 'utf-8'));
       const currentParams = strategyData.optimizedParams || {};
 
-      // Build parameter grid for optimization
       const paramList: string[] = [];
       if (strategyData.parameters) {
         const paramCount = Object.keys(strategyData.parameters).length;
         
-        // Adaptive grid: fewer values per param when many params exist
-        // Target: max ~10,000 combinations (4^5=1024, 3^7=2187, 2^10=1024)
         let valuesPerParam = 5;
         if (paramCount >= 7) valuesPerParam = 3;
         if (paramCount >= 9) valuesPerParam = 2;
@@ -128,7 +122,6 @@ async function main() {
           const max = paramDef.max;
           const step = paramDef.step || 1;
           
-          // Generate values across the range
           const values: number[] = [];
           for (let j = 0; j < valuesPerParam; j++) {
             const value = min + (j * (max - min) / (valuesPerParam - 1));
@@ -144,7 +137,6 @@ async function main() {
         continue;
       }
 
-      // Calculate total combinations
       const totalCombinations = paramList.reduce((total, param) => {
         const values = param.split('=')[1]!.split(',').length;
         return total * values;
@@ -172,23 +164,18 @@ async function main() {
         env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' }
       });
 
-      // Save full output
       fs.writeFileSync(path.join(RESULTS_DIR, `${strategy}.txt`), output);
 
-      // Extract optimized metrics
       const optimizedPnL = parseFloat(extractMetric(output, 'Total PnL %').replace(/[+%]/g, '')) || 0;
       const optimizedTrades = parseInt(extractMetric(output, 'Total Trades'), 10) || 0;
 
       console.log(chalk.gray(`  → Optimized PnL: ${optimizedPnL.toFixed(2)}% (${optimizedTrades} trades)`));
 
-      // Check if improved: PnL must be better AND must have trades
       const improved = optimizedPnL > currentPerf.pnl && optimizedTrades > 0;
 
       if (improved) {
         console.log(chalk.green(`  ✓ Improved by ${(optimizedPnL - currentPerf.pnl).toFixed(2)}% - updating parameters`));
         
-        // Extract optimized parameters from output
-        // The optimization result will be in the results directory
         const resultFiles = fs.readdirSync('./results/optimizations')
           .filter(f => f.startsWith(strategy) && f.endsWith('.json'))
           .sort()
@@ -201,7 +188,6 @@ async function main() {
           if (resultData.results && resultData.results.length > 0) {
             const bestResult = resultData.results[0];
             
-            // Update strategy file with new optimized params
             strategyData.optimizedParams = {
               ...strategyData.optimizedParams,
               ...bestResult.parameters,
@@ -257,13 +243,11 @@ async function main() {
     }
   }
 
-  // Save results
   fs.writeFileSync(
     path.join(RESULTS_DIR, 'optimization-results.json'),
     JSON.stringify(results, null, 2)
   );
 
-  // Display summary
   console.log(chalk.cyan.bold('\n╔════════════════════════════════════════════════════════════════╗'));
   console.log(chalk.cyan.bold('║                    OPTIMIZATION SUMMARY                        ║'));
   console.log(chalk.cyan.bold('╚════════════════════════════════════════════════════════════════╝\n'));
@@ -273,7 +257,6 @@ async function main() {
   console.log(chalk.yellow(`→ No Improvement:          ${noImprovementCount}`));
   console.log(chalk.red(`✗ Failed:                  ${failedCount}\n`));
 
-  // Show improved strategies
   const improved = results.filter(r => r.improved).sort((a, b) => 
     (b.optimizedPnL - b.currentPnL) - (a.optimizedPnL - a.currentPnL)
   );

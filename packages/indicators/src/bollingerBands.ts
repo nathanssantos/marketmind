@@ -25,16 +25,13 @@ export const calculateBollingerBands = (
     const recentKlines = klines.slice(-period);
     const closes = recentKlines.map((k) => parseFloat(k.close));
 
-    // Calculate SMA (middle band)
     const sum = closes.reduce((acc, val) => acc + val, 0);
     const middle = sum / period;
 
-    // Calculate standard deviation
     const squaredDifferences = closes.map((close) => Math.pow(close - middle, 2));
     const variance = squaredDifferences.reduce((acc, val) => acc + val, 0) / period;
     const standardDeviation = Math.sqrt(variance);
 
-    // Calculate bands
     const upper = middle + stdDev * standardDeviation;
     const lower = middle - stdDev * standardDeviation;
 

@@ -13,9 +13,6 @@ import { useSetupStore } from '@renderer/store/setupStore';
 import type { BacktestConfig as BacktestConfigType } from '@marketmind/types';
 import { useState } from 'react';
 
-// Optimized settings from backtesting (Jan-Dec 2024)
-// Pattern 123: PnL +642.91%, PF 5.91, Sharpe 2.84, Max DD 5.50%
-// These are the EXACT parameters used during optimization
 const OPTIMIZED_SETTINGS = {
   onlyWithTrend: false, // Not used in optimization (default behavior)
   useAlgorithmicLevels: true, // --use-algorithmic-levels
@@ -35,7 +32,6 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
   const { runBacktest, isRunningBacktest, runBacktestError } = useBacktesting();
   const { config: setupConfig } = useSetupStore();
 
-  // Calculate last month's date range
   const getLastMonthRange = () => {
     const now = new Date();
     const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -49,7 +45,6 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
 
   const lastMonthRange = getLastMonthRange();
 
-  // Use optimized settings by default
   const [useOptimizedSettings, setUseOptimizedSettings] = useState(true);
 
   const [symbol, setSymbol] = useState(chartData?.symbol || 'BTCUSDT');
@@ -58,7 +53,6 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
   const [endDate, setEndDate] = useState(lastMonthRange.end);
   const [initialCapital, setInitialCapital] = useState('10000');
 
-  // These are overridden when useOptimizedSettings is true
   const [minProfitPercent, setMinProfitPercent] = useState(String(OPTIMIZED_SETTINGS.minProfitPercent));
   const [onlyWithTrend, setOnlyWithTrend] = useState(OPTIMIZED_SETTINGS.onlyWithTrend);
   const [useAlgorithmicLevels, setUseAlgorithmicLevels] = useState(OPTIMIZED_SETTINGS.useAlgorithmicLevels);
@@ -68,7 +62,6 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
   const [commission, setCommission] = useState(String(OPTIMIZED_SETTINGS.commission));
   const [minConfidence, setMinConfidence] = useState(String(OPTIMIZED_SETTINGS.minConfidence));
 
-  // Get effective values (use optimized if enabled)
   const effectiveOnlyWithTrend = useOptimizedSettings ? OPTIMIZED_SETTINGS.onlyWithTrend : onlyWithTrend;
   const effectiveUseAlgorithmicLevels = useOptimizedSettings ? OPTIMIZED_SETTINGS.useAlgorithmicLevels : useAlgorithmicLevels;
   const effectiveMaxPositionSize = useOptimizedSettings ? OPTIMIZED_SETTINGS.maxPositionSize : Number(maxPositionSize);
@@ -76,7 +69,6 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
   const effectiveMinConfidence = useOptimizedSettings ? OPTIMIZED_SETTINGS.minConfidence : Number(minConfidence);
   const effectiveMinProfitPercent = useOptimizedSettings ? OPTIMIZED_SETTINGS.minProfitPercent : Number(minProfitPercent);
 
-  // Get enabled setups from setup config
   const enabledSetups = Object.entries(setupConfig)
     .filter(([_key, value]) => {
       return typeof value === 'object' && value !== null && 'enabled' in value && value.enabled === true;
@@ -86,7 +78,6 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
   const handleRunBacktest = async () => {
     if (!startDate || !endDate) return;
 
-    // Build config with only the fields the backend actually uses
     const config: BacktestConfigType = {
       symbol,
       interval,
@@ -105,7 +96,6 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
     };
 
     try {
-      // Run backtest on backend (handles kline fetching internally)
       const result = await runBacktest(config);
 
       if (result && onBacktestComplete) {

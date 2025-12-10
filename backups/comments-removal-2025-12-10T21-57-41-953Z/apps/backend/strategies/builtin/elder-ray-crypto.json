@@ -1,0 +1,156 @@
+{
+  "id": "elder-ray-crypto",
+  "name": "Elder Ray Crypto",
+  "version": "1.0.0",
+  "description": "Elder Ray Index (Bull/Bear Power) para crypto. Mede força de bulls vs bears em relação a EMA. Entry quando power cruza zero.",
+  "author": "MarketMind",
+  "tags": [
+    "momentum",
+    "elder-ray",
+    "bull-bear-power"
+  ],
+  "source": "Dr. Alexander Elder - Trading for a Living",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 70,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 80,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": false,
+    "onlyWithTrend": true,
+    "minConfidence": 70,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "notes": "Elder Ray works best on daily"
+  },
+  "parameters": {
+    "emaPeriod": {
+      "default": 13,
+      "min": 10,
+      "max": 20,
+      "step": 1,
+      "description": "Período EMA base"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
+  },
+  "indicators": {
+    "ema": {
+      "type": "ema",
+      "params": {
+        "period": "$emaPeriod"
+      }
+    },
+    "elderRay": {
+      "type": "elderRay",
+      "params": {
+        "period": "$emaPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close",
+          "op": ">",
+          "right": "ema"
+        },
+        {
+          "left": "elderRay.bearPower",
+          "op": "crossover",
+          "right": 0
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close",
+          "op": "<",
+          "right": "ema"
+        },
+        {
+          "left": "elderRay.bullPower",
+          "op": "crossunder",
+          "right": 0
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2
+    },
+    "conditions": {
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "elderRay.bullPower",
+            "op": "<",
+            "right": 0
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "elderRay.bearPower",
+            "op": ">",
+            "right": 0
+          }
+        ]
+      }
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirms"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 1.5
+  }
+}

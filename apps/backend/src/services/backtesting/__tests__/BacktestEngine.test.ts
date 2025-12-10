@@ -6,7 +6,6 @@ import {
   createMockBacktestConfig,
 } from './helpers/mockData';
 
-// Mock the Binance API
 vi.mock('../../binance-historical', () => ({
   fetchHistoricalKlinesFromAPI: vi.fn(),
 }));
@@ -46,7 +45,6 @@ describe('BacktestEngine', () => {
 
       const result = await engine.run(config, klines);
 
-      // Check result structure
       expect(result).toHaveProperty('status');
       expect(result).toHaveProperty('trades');
       expect(result).toHaveProperty('metrics');
@@ -65,7 +63,6 @@ describe('BacktestEngine', () => {
 
       const result = await engine.run(config, klines);
 
-      // Check metrics structure (core metrics)
       expect(result.metrics).toHaveProperty('totalTrades');
       expect(result.metrics).toHaveProperty('winningTrades');
       expect(result.metrics).toHaveProperty('losingTrades');
@@ -76,12 +73,10 @@ describe('BacktestEngine', () => {
       expect(result.metrics).toHaveProperty('maxDrawdown');
       expect(result.metrics).toHaveProperty('maxDrawdownPercent');
 
-      // Check metric types
       expect(typeof result.metrics.totalTrades).toBe('number');
       expect(typeof result.metrics.winRate).toBe('number');
       expect(typeof result.metrics.profitFactor).toBe('number');
 
-      // Check metric ranges
       expect(result.metrics.winRate).toBeGreaterThanOrEqual(0);
       expect(result.metrics.winRate).toBeLessThanOrEqual(100);
       expect(result.metrics.profitFactor).toBeGreaterThanOrEqual(0);
@@ -107,11 +102,9 @@ describe('BacktestEngine', () => {
       const result = await engine.run(config, klines);
 
       if (result.metrics.totalTrades > 0) {
-        // Profit factor = gross profit / gross loss
         expect(result.metrics.profitFactor).toBeGreaterThanOrEqual(0);
 
         if (result.metrics.losingTrades === 0) {
-          // All wins = infinite profit factor (should be capped)
           expect(result.metrics.profitFactor).toBeGreaterThan(0);
         }
       }
@@ -124,7 +117,6 @@ describe('BacktestEngine', () => {
       const result = await engine.run(config, klines);
 
       if (result.metrics.totalTrades > 5) {
-        // Need minimum trades for Sharpe
         expect(result.metrics.sharpeRatio).toBeDefined();
         expect(typeof result.metrics.sharpeRatio).toBe('number');
       }
@@ -153,13 +145,10 @@ describe('BacktestEngine', () => {
 
       const result = await engine.run(config, klines);
 
-      // Should complete without error
       expect(result.status).toBe('COMPLETED');
       expect(result.trades).toBeDefined();
       expect(Array.isArray(result.trades)).toBe(true);
 
-      // Note: Trade generation depends on setup detection which may or may not
-      // find valid setups depending on the generated klines
     });
 
     it('should respect initial capital', async () => {
@@ -171,10 +160,8 @@ describe('BacktestEngine', () => {
 
       const result = await engine.run(config, klines);
 
-      // Final equity should be initial capital + total PnL
       const expectedFinalEquity = initialCapital + result.metrics.totalPnl;
 
-      // Check equity curve final value
       if (result.equityCurve.length > 0) {
         const finalEquity = result.equityCurve[result.equityCurve.length - 1]?.equity || initialCapital;
         expect(Math.abs(finalEquity - expectedFinalEquity)).toBeLessThan(1); // Allow small floating point diff
@@ -191,12 +178,10 @@ describe('BacktestEngine', () => {
       const result = await engine.run(config, klines);
 
       if (result.trades.length > 0) {
-        // Every trade should have commission applied
         for (const trade of result.trades) {
           expect(trade.commission).toBeDefined();
           expect(trade.commission).toBeGreaterThan(0);
 
-          // Commission should be approximately 0.1% of position size (entry + exit)
           const expectedCommission = (trade.entryPrice + (trade.exitPrice || trade.entryPrice)) * commission;
           expect(trade.commission).toBeGreaterThan(0);
           expect(trade.commission).toBeLessThan(expectedCommission * 2); // Upper bound
@@ -215,11 +200,8 @@ describe('BacktestEngine', () => {
 
       const result = await engine.run(config, klines);
 
-      // Should complete without error when max position size is specified
       expect(result.status).toBe('COMPLETED');
 
-      // Note: Actual position size validation would require knowledge of
-      // the BacktestEngine's internal position sizing logic
     });
   });
 
@@ -248,8 +230,6 @@ describe('BacktestEngine', () => {
 
       const result = await engine.run(config, klines);
 
-      // Note: Trades are based on setups that pass minConfidence
-      // The config is applied during setup detection
       expect(result).toBeDefined();
     });
 
@@ -261,7 +241,6 @@ describe('BacktestEngine', () => {
 
       const result = await engine.run(config, klines);
 
-      // Should complete without error
       expect(result.status).toBe('COMPLETED');
     });
 
@@ -273,14 +252,12 @@ describe('BacktestEngine', () => {
 
       const result = await engine.run(config, klines);
 
-      // Should complete without error
       expect(result.status).toBe('COMPLETED');
     });
   });
 
   describe('run() - Edge Cases', () => {
     it('should handle minimum required klines', async () => {
-      // Engine requires minimum 50 klines
       const klines = generateMockKlines(60, 50000, '1h');
       const config = createMockBacktestConfig();
 
@@ -290,7 +267,6 @@ describe('BacktestEngine', () => {
     });
 
     it('should handle no detected setups', async () => {
-      // Use ranging market with strict filters
       const klines = generateMockKlines(100, 50000, '1h');
       const config = createMockBacktestConfig({
         minConfidence: 95, // Very high confidence = likely no setups
@@ -305,7 +281,6 @@ describe('BacktestEngine', () => {
     });
 
     it('should handle all losing trades', async () => {
-      // Downtrend with LONG-only strategy
       const klines = generateTrendingKlines(200, 50000, 'down', 0.003, '1h');
       const config = createMockBacktestConfig({
         setupTypes: ['setup91'], // LONG setup in downtrend
@@ -317,7 +292,6 @@ describe('BacktestEngine', () => {
       expect(result.status).toBe('COMPLETED');
 
       if (result.metrics.totalTrades > 0) {
-        // Profit factor should be low (more losses than wins)
         expect(result.metrics.profitFactor).toBeLessThan(1);
         expect(result.metrics.totalPnl).toBeLessThan(0);
       }
@@ -372,7 +346,6 @@ describe('BacktestEngine', () => {
       const result = await engine.run(config, klines);
 
       if (result.trades.length > 0) {
-        // Equity curve should have at least as many points as trades
         expect(result.equityCurve.length).toBeGreaterThanOrEqual(result.trades.length);
       }
     });
@@ -395,17 +368,14 @@ describe('BacktestEngine', () => {
       const klines = generateMockKlines(500, 50000, '1h');
       const config = createMockBacktestConfig();
 
-      // First run
       const start1 = Date.now();
       await engine.run(config, klines);
       const duration1 = Date.now() - start1;
 
-      // Second run with same klines
       const start2 = Date.now();
       await engine.run(config, klines);
       const duration2 = Date.now() - start2;
 
-      // Both should be fast since klines are pre-fetched
       expect(duration1).toBeLessThan(15000);
       expect(duration2).toBeLessThan(15000);
     }, 35000);

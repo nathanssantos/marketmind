@@ -12,9 +12,6 @@
  * @package @marketmind/types
  */
 
-// =============================================================================
-// Base Configuration Interface
-// =============================================================================
 
 export interface BaseSetupConfig {
   enabled: boolean;
@@ -22,10 +19,6 @@ export interface BaseSetupConfig {
   minRiskReward: number;
 }
 
-// =============================================================================
-// Pattern 123 - Reversal Pattern (Best performer from backtesting)
-// PnL: +7.06%, Profit Factor: 1.63, Sharpe: 5.00, Max DD: 2.83%
-// =============================================================================
 
 export interface Pattern123Config extends BaseSetupConfig {
   pivotLookback: number;
@@ -50,10 +43,6 @@ export const createDefault123Config = (): Pattern123Config => ({
   targetMultiplier: PATTERN_123_DEFAULTS.TARGET_MULTIPLIER,
 });
 
-// =============================================================================
-// Bear Trap - Counter-trend reversal (LONG)
-// PnL: +3.53%, Profit Factor: 1.22, Sharpe: 2.61, Max DD: 3.17%
-// =============================================================================
 
 export interface BearTrapConfig extends BaseSetupConfig {
   volumeMultiplier: number;
@@ -81,10 +70,6 @@ export const createDefaultBearTrapConfig = (): BearTrapConfig => ({
   emaPeriod: BEAR_TRAP_DEFAULTS.EMA_PERIOD,
 });
 
-// =============================================================================
-// Mean Reversion - Bollinger Bands + RSI
-// PnL: +1.34%, Profit Factor: 1.39, Sharpe: 2.03, Max DD: 1.40%
-// =============================================================================
 
 export interface MeanReversionConfig extends BaseSetupConfig {
   bbPeriod: number;
@@ -118,9 +103,6 @@ export const createDefaultMeanReversionConfig = (): MeanReversionConfig => ({
   volumeMultiplier: MEAN_REVERSION_DEFAULTS.VOLUME_MULTIPLIER,
 });
 
-// =============================================================================
-// Aggregated Setup Detection Configuration
-// =============================================================================
 
 export interface SetupDetectionConfig {
   pattern123: Pattern123Config;
@@ -134,9 +116,6 @@ export const createDefaultSetupDetectionConfig = (): SetupDetectionConfig => ({
   meanReversion: createDefaultMeanReversionConfig(),
 });
 
-// =============================================================================
-// Strategy Keys (for iteration and validation)
-// =============================================================================
 
 export const SETUP_STRATEGY_KEYS = [
   'pattern123',

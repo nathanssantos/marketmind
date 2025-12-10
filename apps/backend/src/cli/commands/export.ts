@@ -14,7 +14,6 @@ export async function exportCommand(inputFile: string, options: ExportOptions) {
   const logger = new BacktestLogger(options.verbose ? LogLevel.VERBOSE : LogLevel.INFO);
 
   try {
-    // Validate inputs
     if (!inputFile) {
       throw new ValidationError('No input file specified. Usage: export <input-file> --output <output-file>');
     }
@@ -30,18 +29,15 @@ export async function exportCommand(inputFile: string, options: ExportOptions) {
       color: 'cyan',
     }).start();
 
-    // Load result
     const resultManager = new ResultManager();
     const result = await resultManager.load(inputFile);
 
     spinner.succeed(chalk.green('Result loaded'));
 
-    // Determine output filename
     let outputPath: string;
     if (options.output) {
       outputPath = options.output;
     } else {
-      // Auto-generate output filename
       const inputBasename = path.basename(inputFile, '.json');
       outputPath = path.join(
         path.dirname(inputFile),
@@ -50,7 +46,6 @@ export async function exportCommand(inputFile: string, options: ExportOptions) {
       );
     }
 
-    // Export based on type
     const exportSpinner = ora({
       text: chalk.cyan('Exporting to CSV...'),
       color: 'cyan',
@@ -65,7 +60,6 @@ export async function exportCommand(inputFile: string, options: ExportOptions) {
     exportSpinner.succeed(chalk.green(`Exported to: ${outputPath}`));
     console.log('');
 
-    // Display preview
     if (options.verbose) {
       console.log(chalk.cyan.bold('CSV PREVIEW:'));
       console.log(chalk.gray('(First few lines)'));

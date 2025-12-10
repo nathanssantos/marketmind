@@ -25,7 +25,6 @@ describe('calculateRSI', () => {
     expect(result.values[0]).toBeNull();
     expect(result.values[1]).toBeNull();
     
-    // After period, should have high RSI values (upward trend)
     const lastValue = result.values[result.values.length - 1];
     expect(lastValue).toBeGreaterThan(50);
   });
@@ -36,7 +35,6 @@ describe('calculateRSI', () => {
 
     expect(result.values).toHaveLength(5);
     
-    // Downward trend should have low RSI values
     const lastValue = result.values[result.values.length - 1];
     expect(lastValue).toBeLessThan(50);
   });
@@ -76,7 +74,6 @@ describe('calculateRSI', () => {
 
     expect(result.values).toHaveLength(6);
     
-    // Should have RSI values around 50 for mixed movements
     const nonNullValues = result.values.filter((v) => v !== null);
     expect(nonNullValues.length).toBeGreaterThan(0);
   });

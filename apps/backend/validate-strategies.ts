@@ -47,7 +47,6 @@ function formatPeriod(startDate: string, endDate: string): string {
 }
 
 async function main() {
-  // Create results directory
   if (!fs.existsSync(RESULTS_DIR)) {
     fs.mkdirSync(RESULTS_DIR, { recursive: true });
   }
@@ -58,7 +57,6 @@ async function main() {
   console.log(chalk.gray(`Results directory: ${RESULTS_DIR}`));
   console.log(chalk.gray(`Test period: ${TEST_START_DATE} to ${TEST_END_DATE} (${formatPeriod(TEST_START_DATE, TEST_END_DATE)})\n`));
 
-  // Get list of active strategies
   const strategyFiles = fs.readdirSync(STRATEGIES_DIR)
     .filter(f => f.endsWith('.json'));
 
@@ -77,7 +75,6 @@ async function main() {
   let successCount = 0;
   let failedCount = 0;
 
-  // Validate each strategy
   for (let i = 0; i < activeStrategies.length; i++) {
     const strategy = activeStrategies[i];
     console.log(chalk.gray(`[${i + 1}/${activeStrategies.length}] Testing: ${strategy}`));
@@ -92,10 +89,8 @@ async function main() {
         }
       );
 
-      // Save full output
       fs.writeFileSync(path.join(RESULTS_DIR, `${strategy}.txt`), output);
 
-      // Extract metrics
       const trades = extractMetric(output, 'Total Trades');
       const winRate = extractMetric(output, 'Win Rate');
       const pnl = extractMetric(output, 'Total PnL %');
@@ -133,16 +128,13 @@ async function main() {
     }
   }
 
-  // Save JSON results
   fs.writeFileSync(
     path.join(RESULTS_DIR, 'all-results.json'),
     JSON.stringify(results, null, 2)
   );
 
-  // Display summary table
   displaySummaryTable(results, successCount, failedCount);
 
-  // Generate markdown report
   generateMarkdownReport(results, successCount, failedCount);
 }
 
@@ -167,7 +159,6 @@ function displaySummaryTable(results: ValidationResult[], successCount: number, 
   console.log(chalk.cyan.bold('║                    VALIDATION SUMMARY                          ║'));
   console.log(chalk.cyan.bold('╚════════════════════════════════════════════════════════════════╝\n'));
 
-  // Top performers table
   const topPerformers = results
     .filter(r => r.status === 'success' && r.totalTrades > 0)
     .sort((a, b) => b.totalPnlPercent - a.totalPnlPercent)
@@ -202,7 +193,6 @@ function displaySummaryTable(results: ValidationResult[], successCount: number, 
 
   console.log(table.toString());
 
-  // Summary stats
   console.log(chalk.cyan.bold('\n╔════════════════════════════════════════════════════════════════╗'));
   console.log(chalk.cyan.bold('║                       STATISTICS                               ║'));
   console.log(chalk.cyan.bold('╚════════════════════════════════════════════════════════════════╝\n'));

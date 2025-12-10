@@ -77,7 +77,6 @@ export const BacktestChart = ({
         viewport,
     });
 
-    // Trade visualization removed - not needed for backtest chart
 
     const layers = useChartLayers({
         klines: visibleData,

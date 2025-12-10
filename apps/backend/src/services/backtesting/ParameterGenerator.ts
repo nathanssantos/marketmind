@@ -36,10 +36,8 @@ export class ParameterGenerator {
       return [];
     }
 
-    // Generate cartesian product
     const combinations = this.cartesianProduct(values);
 
-    // Map back to objects with parameter names
     return combinations.map((combo) => {
       const obj: ParameterCombination = {};
       keys.forEach((key, index) => {
@@ -65,7 +63,6 @@ export class ParameterGenerator {
   static range(start: number, end: number, step: number = 1): number[] {
     const result: number[] = [];
     for (let i = start; i <= end; i += step) {
-      // Round to avoid floating point precision issues
       result.push(Math.round(i * 1000) / 1000);
     }
     return result;
@@ -156,7 +153,6 @@ export class ParameterGenerator {
       }
     }
 
-    // Warn if too many combinations
     const totalCombinations = this.countCombinations(grid);
     if (totalCombinations > 1000) {
       console.warn(

@@ -46,7 +46,6 @@ export async function sensitivityCommand(options: SensitivityOptions): Promise<v
     console.log(chalk.cyan.bold('═'.repeat(80)));
     console.log('');
 
-    // Validate inputs
     const symbol = validateSymbol(options.symbol);
     const interval = validateInterval(options.interval);
     const { startDate, endDate } = validateDateRange(options.start, options.end);
@@ -59,14 +58,12 @@ export async function sensitivityCommand(options: SensitivityOptions): Promise<v
       minConfidence = validatePercentage(options.minConfidence, 'Min confidence', 0, 100);
     }
 
-    // Validate metric
     const validMetrics = ['sharpeRatio', 'totalReturn', 'profitFactor', 'winRate'];
     if (!validMetrics.includes(options.metric)) {
       throw new ValidationError(`Invalid metric: ${options.metric}. Must be one of: ${validMetrics.join(', ')}`);
     }
     const metric = options.metric as 'sharpeRatio' | 'totalReturn' | 'profitFactor' | 'winRate';
 
-    // Parse parameter ranges from --param flags
     const parameterRanges: ParameterRange[] = [];
 
     for (const paramStr of options.param) {
@@ -98,7 +95,6 @@ export async function sensitivityCommand(options: SensitivityOptions): Promise<v
       1
     );
 
-    // Display configuration
     console.log(chalk.gray('Configuration:'));
     console.log(chalk.gray(`  Strategy:        ${options.strategy.toUpperCase()}`));
     console.log(chalk.gray(`  Symbol:          ${symbol}`));
@@ -115,7 +111,6 @@ export async function sensitivityCommand(options: SensitivityOptions): Promise<v
       console.log('');
     }
 
-    // Fetch historical data
     const fetchSpinner = ora({
       text: chalk.cyan('Fetching historical data from Binance...'),
       color: 'cyan',
@@ -131,7 +126,6 @@ export async function sensitivityCommand(options: SensitivityOptions): Promise<v
     fetchSpinner.succeed(chalk.green(`✓ Fetched ${klines.length.toLocaleString()} candles`));
     console.log('');
 
-    // Create base config
     const baseConfig = {
       symbol,
       interval,
@@ -146,13 +140,11 @@ export async function sensitivityCommand(options: SensitivityOptions): Promise<v
       onlyWithTrend: options.onlyWithTrend,
     };
 
-    // Create backtest runner
     const engine = new BacktestEngine();
     const backtestRunner = async (config: any) => {
       return await engine.run(config, klines);
     };
 
-    // Run sensitivity analysis
     const analysisSpinner = ora({
       text: chalk.cyan(`Running ${totalCombinations} backtests...`),
       color: 'cyan',
@@ -177,10 +169,8 @@ export async function sensitivityCommand(options: SensitivityOptions): Promise<v
     );
     console.log('');
 
-    // Display results
     displayResults(result, metric, options.verbose);
 
-    // Save results
     console.log('');
     const saveSpinner = ora({
       text: chalk.cyan('Saving sensitivity analysis results...'),
@@ -219,7 +209,6 @@ function displayResults(
   metric: string,
   verbose: boolean
 ) {
-  // Display parameter analyses
   console.log(chalk.cyan.bold('PARAMETER SENSITIVITY ANALYSIS:'));
   console.log('');
 
@@ -227,7 +216,6 @@ function displayResults(
     displayParameterAnalysis(analysis, metric, verbose);
   }
 
-  // Display overall assessment
   console.log('');
   console.log(chalk.cyan.bold('OVERALL ASSESSMENT:'));
   console.log('');
@@ -240,7 +228,6 @@ function displayResults(
   console.log(chalk.gray(`  Robustness Score: ${chalk[robustnessColor].bold(result.robustnessScore.toFixed(1))} / 100`));
   console.log('');
 
-  // Best vs Worst
   console.log(chalk.cyan.bold('BEST VS WORST PARAMETERS:'));
   console.log('');
 
@@ -260,7 +247,6 @@ function displayResults(
   console.log(bestTable.toString());
   console.log('');
 
-  // Interpretation
   interpretResults(result);
 }
 
@@ -284,7 +270,6 @@ function displayParameterAnalysis(
   console.log(chalk.gray(`  Avg Deviation:     ${(analysis.avgDeviation * 100).toFixed(1)}%`));
   console.log(chalk.gray(`  Recommended Range: [${analysis.recommendedRange.min.toFixed(2)}, ${analysis.recommendedRange.max.toFixed(2)}]`));
 
-  // Check for over-optimization
   const overOptCheck = ParameterSensitivityAnalyzer.detectOverOptimization(analysis);
   if (overOptCheck.isOverOptimized) {
     console.log(chalk.red(`  ⚠ OVER-OPTIMIZED: ${overOptCheck.reason}`));
@@ -292,13 +277,11 @@ function displayParameterAnalysis(
     console.log(chalk.green(`  ✓ ${overOptCheck.reason}`));
   }
 
-  // Find optimal plateau
   const plateau = ParameterSensitivityAnalyzer.findOptimalPlateau(analysis);
   if (plateau) {
     console.log(chalk.gray(`  Optimal Plateau:   [${plateau.start.toFixed(2)}, ${plateau.end.toFixed(2)}] (avg ${metric}: ${plateau.avgMetric.toFixed(2)})`));
   }
 
-  // Show detailed results if verbose
   if (verbose && analysis.results.length > 0) {
     console.log('');
     console.log(chalk.gray('  Detailed Results:'));
@@ -334,7 +317,6 @@ function interpretResults(result: any) {
   const warnings: string[] = [];
   const recommendations: string[] = [];
 
-  // Analyze robustness score
   if (result.robustnessScore >= 80) {
     insights.push('Excellent overall robustness - strategy is not over-optimized');
   } else if (result.robustnessScore >= 60) {
@@ -346,7 +328,6 @@ function interpretResults(result: any) {
     recommendations.push('Consider wider parameter ranges or different parameters');
   }
 
-  // Analyze individual parameters
   const criticalParams = result.parameterAnalyses.filter((a: any) => a.sensitivity === 'CRITICAL');
   const highParams = result.parameterAnalyses.filter((a: any) => a.sensitivity === 'HIGH');
   const lowParams = result.parameterAnalyses.filter((a: any) => a.sensitivity === 'LOW');
@@ -365,7 +346,6 @@ function interpretResults(result: any) {
     insights.push('All parameters show low sensitivity - excellent stability');
   }
 
-  // Display insights
   if (insights.length > 0) {
     console.log(chalk.green.bold('✓ INSIGHTS:'));
     for (const insight of insights) {
@@ -374,7 +354,6 @@ function interpretResults(result: any) {
     console.log('');
   }
 
-  // Display warnings
   if (warnings.length > 0) {
     console.log(chalk.yellow.bold('⚠ WARNINGS:'));
     for (const warning of warnings) {
@@ -383,7 +362,6 @@ function interpretResults(result: any) {
     console.log('');
   }
 
-  // Display recommendations
   if (recommendations.length > 0) {
     console.log(chalk.cyan.bold('💡 RECOMMENDATIONS:'));
     for (const recommendation of recommendations) {
@@ -392,7 +370,6 @@ function interpretResults(result: any) {
     console.log('');
   }
 
-  // Final verdict
   console.log(chalk.bold('VERDICT:'));
   if (result.robustnessScore >= 80) {
     console.log(chalk.green('  ✓ Strategy parameters are robust and production-ready'));

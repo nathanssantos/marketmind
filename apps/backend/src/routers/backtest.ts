@@ -9,7 +9,6 @@ const generateId = (length: number): string => {
   return randomBytes(length).toString('base64url').slice(0, length);
 };
 
-// In-memory storage for backtest results (could be moved to DB later)
 const backtestResults = new Map<string, any>();
 
 export const backtestRouter = router({
@@ -37,7 +36,6 @@ export const backtestRouter = router({
       const startTime = Date.now();
 
       try {
-        // Set initial status
         backtestResults.set(backtestId, {
           id: backtestId,
           status: 'RUNNING',
@@ -48,7 +46,6 @@ export const backtestRouter = router({
         console.log('[Backtest] Starting backtest', backtestId, 'for', input.symbol, input.interval);
         console.log('[Backtest] Date range:', input.startDate, 'to', input.endDate);
 
-        // Create backtest config
         const config: BacktestConfig = {
           symbol: input.symbol,
           interval: input.interval as Interval,
@@ -68,11 +65,9 @@ export const backtestRouter = router({
           commission: input.commission,
         };
 
-        // Run backtest using BacktestEngine
         const engine = new BacktestEngine();
         const result = await engine.run(config);
 
-        // Store completed result
         backtestResults.set(backtestId, {
           ...result,
           id: backtestId,
@@ -97,7 +92,6 @@ export const backtestRouter = router({
       } catch (error) {
         console.error('[Backtest] Error:', error);
 
-        // Store failed result
         backtestResults.set(backtestId, {
           id: backtestId,
           status: 'FAILED',

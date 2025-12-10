@@ -16,18 +16,15 @@ import {
 import { StrategyInterpreter, StrategyLoader } from './dynamic';
 
 export interface SetupDetectionConfig {
-  // Legacy detector configs
   pattern123: ReturnType<typeof createDefault123Config>;
   bearTrap: ReturnType<typeof createDefaultBearTrapConfig>;
   meanReversion: ReturnType<typeof createDefaultMeanReversionConfig>;
 
-  // Global settings
   enableTrendFilter: boolean;
   allowCounterTrend: boolean;
   trendEmaPeriod: number;
   setupCooldownPeriod: number;
 
-  // Dynamic strategy settings
   enableLegacyDetectors?: boolean;  // Default: true
   strategyDirectory?: string;
   dynamicStrategies?: StrategyDefinition[];
@@ -46,7 +43,6 @@ export class SetupDetectionService {
   private meanReversionDetector: MeanReversionDetector;
   private lastDetectionIndex: Map<string, number> = new Map();
 
-  // Dynamic strategy support
   private dynamicInterpreters: Map<string, StrategyInterpreter> = new Map();
   private strategyLoader: StrategyLoader | null = null;
 
@@ -72,19 +68,16 @@ export class SetupDetectionService {
       dynamicStrategies: config?.dynamicStrategies,
     };
 
-    // Initialize legacy detectors
     this.pattern123Detector = new Pattern123Detector(this.config.pattern123);
     this.bearTrapDetector = new BearTrapDetector(this.config.bearTrap);
     this.meanReversionDetector = new MeanReversionDetector(
       this.config.meanReversion,
     );
 
-    // Initialize dynamic strategies from config
     if (this.config.dynamicStrategies) {
       this.loadInlineStrategies(this.config.dynamicStrategies);
     }
 
-    // Initialize strategy loader if directory is specified
     if (this.config.strategyDirectory) {
       this.strategyLoader = new StrategyLoader([this.config.strategyDirectory]);
     }
@@ -218,7 +211,6 @@ export class SetupDetectionService {
     const currentIndex = klines.length - 1;
     const trend = this.getTrend(klines, currentIndex);
 
-    // Run legacy detectors if enabled
     if (this.config.enableLegacyDetectors !== false) {
       const detectors = [
         {
@@ -288,7 +280,6 @@ export class SetupDetectionService {
       }
     }
 
-    // Run dynamic strategy interpreters
     for (const [strategyId, interpreter] of this.dynamicInterpreters) {
       this.debugLog(`\n--- Dynamic: ${strategyId} ---`);
 
@@ -339,7 +330,6 @@ export class SetupDetectionService {
   ): TradingSetup[] {
     const setups: TradingSetup[] = [];
 
-    // Legacy detectors
     const legacyDetectors = this.config.enableLegacyDetectors !== false
       ? [
           {
@@ -358,14 +348,12 @@ export class SetupDetectionService {
       : [];
 
     for (let i = startIndex; i <= endIndex; i += 1) {
-      // Run legacy detectors
       for (const { detector, enabled } of legacyDetectors) {
         if (!enabled) continue;
         const result = detector.detect(klines, i);
         if (result.setup) setups.push(result.setup);
       }
 
-      // Run dynamic interpreters
       for (const interpreter of this.dynamicInterpreters.values()) {
         const result = interpreter.detect(klines, i);
         if (result.setup) setups.push(result.setup);

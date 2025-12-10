@@ -156,10 +156,8 @@ export class ResultManager {
   async exportToCSV(result: SavedBacktestResult, outputPath: string): Promise<void> {
     const trades = result.result.trades;
 
-    // CSV header
     let csv = 'Trade,Type,Entry Date,Entry Price,Exit Date,Exit Price,Reason,PnL ($),PnL (%),Commission,Net PnL,Equity\n';
 
-    // CSV rows
     trades.forEach((trade, index) => {
       const tradeData: any = trade; // Type assertion for flexibility
       csv += [
@@ -178,7 +176,6 @@ export class ResultManager {
       ].join(',') + '\n';
     });
 
-    // Add summary row
     csv += '\nSummary\n';
     csv += `Total Trades,${result.metrics.totalTrades}\n`;
     csv += `Win Rate,${result.metrics.winRate.toFixed(2)}%\n`;
@@ -187,7 +184,6 @@ export class ResultManager {
     csv += `Max Drawdown,${result.metrics.maxDrawdownPercent.toFixed(2)}%\n`;
     csv += `Sharpe Ratio,${(result.metrics.sharpeRatio || 0).toFixed(2)}\n`;
 
-    // Calculate final equity
     const finalEquity = result.config.initialCapital + result.metrics.totalPnl;
     csv += `Final Equity,${finalEquity.toFixed(2)}\n`;
 
@@ -198,20 +194,16 @@ export class ResultManager {
    * Export optimization results to CSV
    */
   async exportOptimizationToCSV(summary: OptimizationSummary, outputPath: string): Promise<void> {
-    // CSV header
     let csv = 'Rank,';
 
-    // Add parameter columns
     const firstResult = summary.topResults[0];
     if (firstResult) {
       const paramNames = Object.keys(firstResult.params);
       csv += paramNames.join(',') + ',';
     }
 
-    // Add metric columns
     csv += 'Trades,Win Rate (%),Profit Factor,Total PnL (%),Max DD (%),Sharpe Ratio\n';
 
-    // CSV rows
     summary.topResults.forEach((result, index) => {
       const row = [
         index + 1,
@@ -226,7 +218,6 @@ export class ResultManager {
       csv += row.join(',') + '\n';
     });
 
-    // Add statistics
     csv += '\nStatistics\n';
     csv += `Total Combinations,${summary.totalCombinations}\n`;
     csv += `Average Win Rate,${summary.statistics.average.winRate.toFixed(2)}%\n`;
@@ -250,7 +241,6 @@ export class ResultManager {
     const filename = `${strategy}_${symbol}_${interval}_wf_${timestamp}.json`;
     const filepath = path.join(this.baseDir, 'walkforward', filename);
 
-    // Ensure directory exists
     await fs.mkdir(path.join(this.baseDir, 'walkforward'), { recursive: true });
 
     await fs.writeFile(filepath, JSON.stringify(result, null, 2), 'utf-8');
@@ -283,7 +273,6 @@ export class ResultManager {
     const filename = `${strategy}_${symbol}_${interval}_mc_${timestamp}.json`;
     const filepath = path.join(this.baseDir, 'montecarlo', filename);
 
-    // Ensure directory exists
     await fs.mkdir(path.join(this.baseDir, 'montecarlo'), { recursive: true });
 
     await fs.writeFile(filepath, JSON.stringify(result, null, 2), 'utf-8');
@@ -316,7 +305,6 @@ export class ResultManager {
     const filename = `${strategy}_${symbol}_${interval}_sensitivity_${timestamp}.json`;
     const filepath = path.join(this.baseDir, 'sensitivity', filename);
 
-    // Ensure directory exists
     await fs.mkdir(path.join(this.baseDir, 'sensitivity'), { recursive: true });
 
     await fs.writeFile(filepath, JSON.stringify(result, null, 2), 'utf-8');

@@ -21,32 +21,25 @@ export interface BacktestConfig {
   slippagePercent?: number; // Slippage % for market orders - SL (default 0.05%)
   useOptimizedSettings?: boolean; // Use strategy's optimizedParams instead of config values
 
-  // Position Sizing
   positionSizingMethod?: 'fixed-fractional' | 'risk-based' | 'kelly' | 'volatility'; // Default: 'fixed-fractional'
   riskPerTrade?: number; // % of equity to risk per trade (for risk-based sizing, default: 2%)
   kellyFraction?: number; // Fraction of Kelly to use (for kelly sizing, default: 0.25 = quarter Kelly)
   
-  // Strategy-specific parameters (for optimization)
-  // These override default detector config values (e.g., pivotLookback, volumeMultiplier, emaPeriod)
   strategyParams?: Record<string, number>;
 
-  // Risk Management (Kelly Criterion)
   useKellyCriterion?: boolean; // Use Kelly Criterion for position sizing
   riskProfile?: 'conservative' | 'moderate' | 'aggressive'; // Preset risk profiles
 
-  // Trailing Stop
   useTrailingStop?: boolean; // Enable ATR-based trailing stop
   trailingStopATRMultiplier?: number; // ATR multiplier for initial stop (default 2.0)
   trailingATRMultiplier?: number; // ATR multiplier for trailing (default 1.5)
   breakEvenAfterR?: number; // Move to break-even after this R-multiple (default 1.0)
   breakEvenBuffer?: number; // Buffer above/below entry for break-even (default 0.1%)
 
-  // Partial Exits
   usePartialExits?: boolean; // Enable scaled exits at profit targets
   partialExitLevels?: Array<{ percentage: number; rMultiple: number }>; // Exit levels
   lockProfitsAfterFirstExit?: boolean; // Move stop to break-even after first partial exit
 
-  // Position Management
   maxConcurrentPositions?: number; // Max simultaneous positions (default: 5)
   maxTotalExposure?: number; // Max % of capital in all positions (default: 0.5 = 50%)
 }
@@ -83,7 +76,6 @@ export interface BacktestMetrics {
   avgPnl: number;
   avgPnlPercent: number;
 
-  // Gross metrics (before fees) - reflects trade quality
   grossWinRate: number; // % (same as winRate, for clarity)
   grossProfitFactor: number; // Total gross wins / Total gross losses
   totalGrossPnl: number; // Gross PnL (before fees)

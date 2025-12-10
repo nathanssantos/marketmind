@@ -74,7 +74,6 @@ export const klineRouter = router({
         limit: input.limit,
       });
 
-      // If database is empty, fetch directly from Binance API
       if (result.length === 0) {
         logger.info({ symbol: input.symbol, interval: input.interval }, 'Database empty, fetching from Binance API');
         
@@ -88,12 +87,10 @@ export const klineRouter = router({
           endTime
         );
         
-        // Debug: Log first kline to verify data
         if (apiKlines.length > 0) {
           logger.info({ firstKline: apiKlines[0] }, 'Sample kline from API');
         }
         
-        // API already returns objects with correct keys, just add metadata
         return apiKlines.map((k: any) => ({
           symbol: input.symbol,
           interval: input.interval,
@@ -163,7 +160,6 @@ export const klineRouter = router({
       return latest;
     }),
 
-  // Real-time streaming endpoints
   subscribeStream: protectedProcedure
     .input(
       z.object({

@@ -74,12 +74,10 @@ export class ConditionEvaluator {
   ): boolean {
     const { op } = condition;
 
-    // Handle crossover/crossunder specially
     if (op === 'crossover' || op === 'crossunder') {
       return this.evaluateCrossover(condition, context, op === 'crossover');
     }
 
-    // Resolve values at current index
     const leftValue = this.resolveValue(condition.left, context);
     const rightValue = this.resolveValue(condition.right, context);
 
@@ -107,7 +105,6 @@ export class ConditionEvaluator {
       return false;
     }
 
-    // Get series for left and right
     const leftSeries = this.getSeriesForOperand(condition.left, indicators, params);
     const rightSeries = this.getSeriesForOperand(condition.right, indicators, params);
 
@@ -134,10 +131,8 @@ export class ConditionEvaluator {
     }
 
     if (isCrossover) {
-      // Left crosses above right
       return leftPrevious <= rightPrevious && leftCurrent > rightCurrent;
     } else {
-      // Left crosses below right
       return leftPrevious >= rightPrevious && leftCurrent < rightCurrent;
     }
   }
@@ -171,7 +166,6 @@ export class ConditionEvaluator {
       return series;
     }
 
-    // Handle numeric strings (e.g., "30" should be treated as number 30)
     if (typeof operand === 'string' && /^-?\d+\.?\d*$/.test(operand)) {
       const parsed = parseFloat(operand);
       if (!isNaN(parsed)) {
@@ -243,7 +237,6 @@ export class ConditionEvaluator {
       return this.evaluateCalcExpression(operand.calc, context);
     }
 
-    // Handle numeric strings (e.g., "30" should be treated as number 30)
     if (typeof operand === 'string' && /^-?\d+\.?\d*$/.test(operand)) {
       const parsed = parseFloat(operand);
       if (!isNaN(parsed)) return parsed;

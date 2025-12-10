@@ -37,7 +37,6 @@ export async function montecarloCommand(options: MonteCarloOptions) {
   const logger = new BacktestLogger(options.verbose ? LogLevel.VERBOSE : LogLevel.INFO);
 
   try {
-    // Validate inputs
     validateStrategy(options.strategy);
     validateSymbol(options.symbol);
     validateInterval(options.interval);
@@ -49,7 +48,6 @@ export async function montecarloCommand(options: MonteCarloOptions) {
     const numSimulations = parseInt(options.simulations);
     const confidenceLevel = parseFloat(options.confidenceLevel);
 
-    // Validate Monte Carlo specific options
     if (numSimulations < 100 || numSimulations > 100000) {
       throw new ValidationError('Number of simulations must be between 100 and 100,000');
     }
@@ -58,7 +56,6 @@ export async function montecarloCommand(options: MonteCarloOptions) {
       throw new ValidationError('Confidence level must be between 0.8 and 0.99');
     }
 
-    // Validate optional parameters
     let minConfidence: number | undefined;
     if (options.minConfidence) {
       minConfidence = validatePercentage(options.minConfidence, 'Min confidence', 0, 100);
@@ -72,7 +69,6 @@ export async function montecarloCommand(options: MonteCarloOptions) {
       'Confidence Level': `${(confidenceLevel * 100).toFixed(0)}%`,
     });
 
-    // Create backtest config
     const config: BacktestConfig = {
       symbol: options.symbol,
       interval: options.interval,
@@ -90,7 +86,6 @@ export async function montecarloCommand(options: MonteCarloOptions) {
       config.minConfidence = minConfidence;
     }
 
-    // Fetch historical data
     const dataSpinner = ora({
       text: chalk.cyan('Fetching historical data...'),
       color: 'cyan',
@@ -106,7 +101,6 @@ export async function montecarloCommand(options: MonteCarloOptions) {
     dataSpinner.succeed(chalk.green(`Fetched ${klines.length} candles`));
     console.log('');
 
-    // Run initial backtest
     const backtestSpinner = ora({
       text: chalk.cyan('Running initial backtest...'),
       color: 'cyan',
@@ -127,7 +121,6 @@ export async function montecarloCommand(options: MonteCarloOptions) {
       throw new ValidationError('Insufficient trades for Monte Carlo simulation (minimum 10 required)');
     }
 
-    // Run Monte Carlo simulation
     const mcSpinner = ora({
       text: chalk.cyan(`Running ${numSimulations.toLocaleString()} Monte Carlo simulations...`),
       color: 'cyan',
@@ -151,10 +144,8 @@ export async function montecarloCommand(options: MonteCarloOptions) {
     mcSpinner.succeed(chalk.green(`Completed ${numSimulations.toLocaleString()} simulations in ${duration.toFixed(1)}s`));
     console.log('');
 
-    // Display results
     displayResults(backtestResult, mcResult, confidenceLevel, logger, options.verbose);
 
-    // Save results
     console.log('');
     const saveSpinner = ora({
       text: chalk.cyan('Saving Monte Carlo results...'),
@@ -235,7 +226,6 @@ function displayResults(
   _logger: BacktestLogger,
   _verbose: boolean
 ) {
-  // Display original backtest results
   console.log(chalk.cyan.bold('ORIGINAL BACKTEST:'));
   console.log('');
   console.log(chalk.white(`  Total Trades: ${backtestResult.trades.length}`));
@@ -246,7 +236,6 @@ function displayResults(
   console.log(chalk.white(`  Total Return: ${backtestResult.metrics.totalPnlPercent.toFixed(2)}%`));
   console.log('');
 
-  // Display Monte Carlo statistics
   console.log(chalk.cyan.bold('MONTE CARLO STATISTICS:'));
   console.log('');
 
@@ -271,7 +260,6 @@ function displayResults(
   console.log(chalk.gray(`    Median: ${mcResult.statistics.medianSharpeRatio.toFixed(2)}`));
   console.log('');
 
-  // Display confidence intervals
   const ciPercent = (confidenceLevel * 100).toFixed(0);
   console.log(chalk.cyan.bold(`${ciPercent}% CONFIDENCE INTERVALS:`));
   console.log('');
@@ -291,7 +279,6 @@ function displayResults(
   console.log(chalk.gray(`    Upper: ${(mcResult.confidenceIntervals.maxDrawdown.upper * 100).toFixed(2)}%`));
   console.log('');
 
-  // Display probabilities
   console.log(chalk.cyan.bold('PROBABILITIES:'));
   console.log('');
 
@@ -312,7 +299,6 @@ function displayResults(
   console.log(chalk.gray(`    30%: ${(mcResult.probabilities.drawdownExceeds30Percent * 100).toFixed(1)}%`));
   console.log('');
 
-  // Display best/worst/median cases
   console.log(chalk.cyan.bold('SCENARIOS:'));
   console.log('');
 
@@ -334,7 +320,6 @@ function displayResults(
   console.log(chalk.gray(`    Max Drawdown: ${(mcResult.bestCase.maxDrawdown * 100).toFixed(2)}%`));
   console.log('');
 
-  // Interpretation
   interpretResults(mcResult);
 }
 
@@ -347,7 +332,6 @@ function interpretResults(mcResult: any) {
 
   const insights: string[] = [];
 
-  // Probability of profit
   const profitProb = mcResult.probabilities.profitableProbability;
   if (profitProb >= 0.7) {
     insights.push('✓ High probability of profitability (>70%)');
@@ -357,7 +341,6 @@ function interpretResults(mcResult: any) {
     insights.push('✗ Low probability of profitability (<50%)');
   }
 
-  // Return consistency
   const returnStdDev = Math.abs(
     mcResult.confidenceIntervals.totalReturn.upper - mcResult.confidenceIntervals.totalReturn.lower
   );
@@ -369,7 +352,6 @@ function interpretResults(mcResult: any) {
     insights.push('✗ High variability in returns - risky strategy');
   }
 
-  // Drawdown risk
   const dd20Prob = mcResult.probabilities.drawdownExceeds20Percent;
   if (dd20Prob < 0.1) {
     insights.push('✓ Low risk of significant drawdowns');
@@ -379,7 +361,6 @@ function interpretResults(mcResult: any) {
     insights.push('✗ High risk of significant drawdowns (>20%)');
   }
 
-  // Worst case analysis
   const worstCaseReturn = mcResult.worstCase.totalReturn;
   if (worstCaseReturn > -0.1) {
     insights.push('✓ Worst case is manageable (<10% loss)');
@@ -394,7 +375,6 @@ function interpretResults(mcResult: any) {
   }
   console.log('');
 
-  // Final recommendation
   console.log(chalk.cyan.bold('RECOMMENDATION:'));
   console.log('');
 

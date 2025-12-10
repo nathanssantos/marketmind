@@ -9,7 +9,6 @@ interface ProgressRootProps {
 }
 
 interface ProgressBarProps {
-  // Props vazias pois ProgressBar é apenas visual
 }
 
 export const ProgressRoot = ({ value, size = 'md', colorPalette = 'blue', children }: ProgressRootProps) => {

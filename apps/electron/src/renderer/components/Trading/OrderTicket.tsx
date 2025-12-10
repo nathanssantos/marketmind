@@ -64,7 +64,6 @@ export const OrderTicket = () => {
   const activeWalletId = isSimulatorActive ? simulatorActiveWalletId : backendActiveWalletId;
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
 
-  // Calculate default quantity as 10% of wallet balance divided by current price
   const calculateDefaultQuantity = () => {
     if (!activeWallet || !currentPrice) return 0;
     const tenPercentBalance = activeWallet.balance * 0.1;

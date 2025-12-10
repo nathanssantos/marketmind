@@ -107,10 +107,6 @@ export class BacktestEngine {
       console.log('[Backtest] Starting backtest', backtestId, 'for', config.symbol, config.interval);
       console.log('[Backtest] Date range:', config.startDate, 'to', config.endDate);
 
-      // 1. Fetch historical klines (or use provided ones)
-      // IMPORTANT: We need extra historical data for EMA200 calculation
-      // Without this, EMA200 will be null for the first ~200 bars, causing
-      // the trend filter (onlyWithTrend) to be bypassed!
       const EMA200_WARMUP_BARS = 250; // Extra bars needed for EMA200 warmup
       let historicalKlines: any[];
       let warmupBarsFetched = 0;
@@ -121,7 +117,6 @@ export class BacktestEngine {
       } else {
         console.log('[Backtest] Fetching historical klines from Binance API...');
 
-        // Calculate warmup start date based on interval
         const intervalMs = this.getIntervalMs(config.interval);
         const warmupMs = EMA200_WARMUP_BARS * intervalMs;
         const warmupStartDate = new Date(new Date(config.startDate).getTime() - warmupMs);
@@ -135,7 +130,6 @@ export class BacktestEngine {
           new Date(config.endDate)
         );
 
-        // Count how many warmup bars we got
         const startTimestamp = new Date(config.startDate).getTime();
         warmupBarsFetched = historicalKlines.filter(k => k.openTime < startTimestamp).length;
 
@@ -151,22 +145,18 @@ export class BacktestEngine {
 
       console.log('[Backtest] Sample kline:', historicalKlines[0]);
 
-      // 2. Setup detection configuration
       const setupsToEnable = config.setupTypes?.length ? config.setupTypes : [
         'pattern123', 'bearTrap', 'meanReversion'
       ];
 
-      // Legacy strategy IDs
       const legacyStrategies = ['pattern123', 'bearTrap', 'meanReversion'];
       const requestedLegacy = setupsToEnable.filter(s => legacyStrategies.includes(s));
       const requestedDynamic = setupsToEnable.filter(s => !legacyStrategies.includes(s));
 
-      // Import default configs from individual files
       const { createDefault123Config } = await import('../setup-detection/Pattern123Detector');
       const { createDefaultBearTrapConfig } = await import('../setup-detection/BearTrapDetector');
       const { createDefaultMeanReversionConfig } = await import('../setup-detection/MeanReversionDetector');
 
-      // Create setup config with defaults + relaxed settings for backtesting
       const strategyOverrides = config.strategyParams || {};
 
       const applyOverrides = (strategyKey: string, defaultConfig: any) => {
@@ -200,7 +190,6 @@ export class BacktestEngine {
 
       const setupDetectionService = new SetupDetectionService(setupConfig);
 
-      // Load dynamic strategies if requested
       const loadedStrategies: StrategyDefinition[] = [];
       const strategyMap = new Map<string, StrategyDefinition>();
       if (requestedDynamic.length > 0) {
@@ -221,22 +210,15 @@ export class BacktestEngine {
       const indicatorEngine = new IndicatorEngine();
       const conditionEvaluator = new ConditionEvaluator(indicatorEngine);
 
-      // CRITICAL: Apply strategy's optimizedParams as defaults (fallback when CLI doesn't provide)
-      // PRIORITY: CLI parameters > Strategy optimizedParams > System defaults
-      // This allows CLI to override when needed, but uses optimized values when not specified
       let effectiveConfig = { ...config };
       
       if (loadedStrategies.length > 0) {
         const mergedParams = this.mergeOptimizedParams(loadedStrategies);
         if (mergedParams) {
-          // When useOptimizedSettings is true, use strategy's optimized values
-          // When false (default), use safe defaults for fixed-fractional
           const useOptimized = config.useOptimizedSettings ?? false;
 
           effectiveConfig = {
             ...effectiveConfig,
-            // CRITICAL: When --optimized flag is set, use strategy's maxPositionSize
-            // Otherwise, use safe default (10%) for fixed-fractional to prevent over-leveraging
             maxPositionSize: effectiveConfig.maxPositionSize ?? (
               useOptimized
                 ? mergedParams.maxPositionSize  // Use strategy's optimized value
@@ -251,18 +233,14 @@ export class BacktestEngine {
             onlyWithTrend: effectiveConfig.onlyWithTrend ?? false,  // Applied per-strategy, not globally
             minConfidence: effectiveConfig.minConfidence ?? mergedParams.minConfidence,
             commission: effectiveConfig.commission ?? (mergedParams.commission !== undefined ? mergedParams.commission / 100 : 0.001),
-            // For SL/TP: only use config values if explicitly provided AND setup doesn't calculate them
-            // Setup-calculated values (from ATR, etc.) always take priority in BacktestEngine execution
             stopLossPercent: effectiveConfig.stopLossPercent,  // Will be ignored if setup provides stopLoss
             takeProfitPercent: effectiveConfig.takeProfitPercent,  // Will be ignored if setup provides takeProfit
           };
         }
       }
 
-      // 3. Detect setups
       let detectedSetups: any[] = [];
       try {
-        // Calculate warmup period based on indicators used in strategies
         const warmupPeriod = this.calculateWarmupPeriod(loadedStrategies);
         const startIndex = warmupPeriod;
         const endIndex = historicalKlines.length - 1;
@@ -291,8 +269,6 @@ export class BacktestEngine {
         });
       }
 
-      // Filter setups that are before the user's requested startDate
-      // (warmup data is only for indicator calculation, not for trading)
       const userStartTimestamp = new Date(config.startDate).getTime();
       const setupsInRange = detectedSetups.filter((s: any) => s.openTime >= userStartTimestamp);
 
@@ -300,14 +276,12 @@ export class BacktestEngine {
         console.log(`[Backtest] Excluded ${detectedSetups.length - setupsInRange.length} setups before startDate (warmup period)`);
       }
 
-      // Filter by minimum confidence if specified
       const tradableSetups = effectiveConfig.minConfidence && effectiveConfig.minConfidence > 0
         ? setupsInRange.filter((s: any) => s.confidence >= effectiveConfig.minConfidence!)
         : setupsInRange;
 
       console.log('[Backtest] Filtered to', tradableSetups.length, 'tradable setups by confidence', effectiveConfig.minConfidence ? `(min: ${effectiveConfig.minConfidence}%)` : '(no filter)');
 
-      // 4. Simulate trading
       const trades: any[] = [];
       let equity = config.initialCapital;
       let peakEquity = config.initialCapital;
@@ -327,21 +301,17 @@ export class BacktestEngine {
         historicalKlines.map((k) => [k.openTime, k])
       );
 
-      // Calculate EMA200 for trend detection (always calculate - used per-strategy)
       const { calculateEMA } = await import('@marketmind/indicators');
       const ema200 = calculateEMA(historicalKlines, 200);
 
-      // Sort setups by openTime
       const sortedSetups = tradableSetups.sort(
         (a: any, b: any) => a.openTime - b.openTime
       );
 
-      // Track open positions to manage multiple concurrent trades
       const MAX_CONCURRENT_POSITIONS = effectiveConfig.maxConcurrentPositions ?? 5;
       const MAX_TOTAL_EXPOSURE = effectiveConfig.maxTotalExposure ?? 0.5;
       const openPositions: Array<{ exitTime: number; positionValue: number }> = [];
 
-      // Debug counters
       let skippedOverlap = 0;
       let skippedKlineNotFound = 0;
       let skippedTrend = 0;
@@ -351,12 +321,10 @@ export class BacktestEngine {
       let skippedMaxExposure = 0;
 
       for (const setup of sortedSetups) {
-        // Clean up closed positions
         openPositions.splice(0, openPositions.length, 
           ...openPositions.filter(p => p.exitTime > setup.openTime)
         );
 
-        // Check if we've reached max concurrent positions
         if (openPositions.length >= MAX_CONCURRENT_POSITIONS) {
           skippedMaxPositions++;
           continue;
@@ -372,7 +340,6 @@ export class BacktestEngine {
 
         const entryPrice = parseFloat(entryKline.close);
 
-        // Filter by trend if enabled FOR THIS SPECIFIC STRATEGY
         const setupStrategy = strategyMap.get(setup.type);
         const strategyOnlyWithTrend = setupStrategy?.optimizedParams?.onlyWithTrend ?? false;
         
@@ -397,11 +364,6 @@ export class BacktestEngine {
           }
         }
 
-        // Calculate SL/TP first (needed for position sizing)
-        // CRITICAL PRIORITY LOGIC:
-        // 1. ALWAYS use setup's calculated values if available (strategy-specific ATR/indicator-based)
-        // 2. Only fall back to fixed config percentages if setup doesn't provide values
-        // 3. This ensures dynamic strategies (larry-williams, momentum-breakout) use their own calculations
         const stopLoss = setup.stopLoss
           ? setup.stopLoss  // Priority 1: Use setup's calculated value
           : effectiveConfig.stopLossPercent
@@ -418,7 +380,6 @@ export class BacktestEngine {
             : entryPrice * (1 - effectiveConfig.takeProfitPercent / 100)
           : undefined;  // No TP defined
 
-        // Log SL/TP source for first trade (debug - always show)
         if (trades.length === 0) {
           const slSource = setup.stopLoss ? '✓ setup-ATR' : '⚠ config-fixed';
           const tpSource = setup.takeProfit ? '✓ setup-ATR' : '⚠ config-fixed';
@@ -427,17 +388,14 @@ export class BacktestEngine {
           console.log(`[Backtest] First Trade SL/TP: ${slSource} ${slPercent}% | ${tpSource} ${tpPercent}%`);
         }
 
-        // Calculate position size using intelligent position sizing
         const positionSizingMethod = effectiveConfig.positionSizingMethod ?? 'fixed-fractional';
         let positionSize: number;
         let positionValue: number;
 
         if (positionSizingMethod === 'fixed-fractional') {
-          // Original behavior: fixed % of equity
           positionSize = (equity * ((effectiveConfig.maxPositionSize ?? 10) / 100)) / entryPrice;
           positionValue = positionSize * entryPrice;
         } else {
-          // Calculate real trade statistics for Kelly Criterion
           const rollingStats = calculateRollingStats(trades, 30);
           const kellyConfig = rollingStats ? {
             winRate: rollingStats.winRate,
@@ -445,7 +403,6 @@ export class BacktestEngine {
             avgLossPercent: rollingStats.avgLossPercent,
           } : {};
           
-          // Use PositionSizer for intelligent sizing
           const sizingResult = PositionSizer.calculatePositionSize(
             equity,
             entryPrice,
@@ -463,13 +420,11 @@ export class BacktestEngine {
           positionSize = sizingResult.positionSize;
           positionValue = sizingResult.positionValue;
 
-          // Log sizing decision in verbose mode
           if (effectiveConfig.minConfidence !== undefined) {
             console.log(`[Position Sizing] ${sizingResult.rationale}`);
           }
         }
 
-        // Check total exposure limit
         const currentExposure = openPositions.reduce((sum, p) => sum + p.positionValue, 0);
         const totalExposure = (currentExposure + positionValue) / equity;
         
@@ -478,14 +433,12 @@ export class BacktestEngine {
           continue;
         }
 
-        // Ensure position value meets minimum
         if (positionValue < MIN_NOTIONAL_VALUE) {
           console.warn('[Backtest] Position value', positionValue.toFixed(2), 'below MIN_NOTIONAL (', MIN_NOTIONAL_VALUE, '), skipping trade');
           skippedMinNotional++;
           continue;
         }
 
-        // Filter by minimum expected profit after fees
         if (effectiveConfig.minProfitPercent && takeProfit) {
           const expectedProfitPercent = setup.direction === 'LONG'
             ? ((takeProfit - entryPrice) / entryPrice) * 100
@@ -505,7 +458,6 @@ export class BacktestEngine {
           }
         }
 
-        // Find exit
         let exitPrice: number | undefined;
         let exitTime: string | undefined;
         let exitReason: 'STOP_LOSS' | 'TAKE_PROFIT' | 'EXIT_CONDITION' | 'MAX_BARS' | 'END_OF_PERIOD' | undefined;
@@ -654,7 +606,6 @@ export class BacktestEngine {
           }
         }
 
-        // If no exit found, close at end of period
         if (!exitPrice) {
           const lastKline = historicalKlines[historicalKlines.length - 1];
           exitPrice = parseFloat(lastKline!.close);
@@ -662,25 +613,20 @@ export class BacktestEngine {
           exitReason = 'END_OF_PERIOD';
         }
 
-        // Apply slippage for stop loss exits (market orders)
-        // Take profit is assumed to be limit order (no slippage)
         if (exitReason === 'STOP_LOSS') {
           const slippagePercent = effectiveConfig.slippagePercent ?? 0.05; // 0.05% default
           const slippageAmount = exitPrice * (slippagePercent / 100);
-          // Slippage is unfavorable: LONG exits lower, SHORT exits higher
           exitPrice = setup.direction === 'LONG'
             ? exitPrice - slippageAmount
             : exitPrice + slippageAmount;
         }
 
-        // Calculate PnL
         const priceDiff =
           setup.direction === 'LONG'
             ? exitPrice - entryPrice
             : entryPrice - exitPrice;
 
         const pnl = priceDiff * positionSize;
-        // Calculate commission correctly: entry fee + exit fee (based on actual prices)
         const commissionRate = effectiveConfig.commission ?? 0.001;
         const entryCommission = positionSize * entryPrice * commissionRate;
         const exitCommission = positionSize * exitPrice * commissionRate;
@@ -688,10 +634,8 @@ export class BacktestEngine {
         const netPnl = pnl - commission;
         const pnlPercent = (netPnl / positionValue) * 100;
 
-        // Update equity
         equity += netPnl;
 
-        // Track drawdown
         if (equity > peakEquity) {
           peakEquity = equity;
         }
@@ -702,7 +646,6 @@ export class BacktestEngine {
           maxDrawdown = currentDrawdown;
         }
 
-        // Record trade
         const trade = {
           id: generateId(16),
           setupId: setup.id,
@@ -726,7 +669,6 @@ export class BacktestEngine {
 
         trades.push(trade);
 
-        // Track this position for concurrent position management
         if (exitTime) {
           openPositions.push({
             exitTime: new Date(exitTime).getTime(),
@@ -734,7 +676,6 @@ export class BacktestEngine {
           });
         }
 
-        // Update equity curve
         if (exitTime) {
           equityCurve.push({
             time: exitTime,
@@ -745,17 +686,12 @@ export class BacktestEngine {
         }
       }
 
-      // 5. Calculate metrics
-      // Use gross PnL (before fees) for win/loss classification
-      // This reflects actual trade quality - fees are a separate concern
       const winningTrades = trades.filter((t) => (t.pnl ?? 0) > 0);
       const losingTrades = trades.filter((t) => (t.pnl ?? 0) < 0);
 
-      // Net PnL (after fees) - for equity calculations
       const totalPnl = trades.reduce((sum, t) => sum + (t.netPnl ?? 0), 0);
       const totalCommission = trades.reduce((sum, t) => sum + t.commission, 0);
 
-      // Gross PnL (before fees) - for trade quality metrics
       const totalGrossPnl = trades.reduce((sum, t) => sum + (t.pnl ?? 0), 0);
       const totalWins = winningTrades.reduce((sum, t) => sum + (t.pnl ?? 0), 0);
       const totalLosses = Math.abs(
@@ -763,7 +699,6 @@ export class BacktestEngine {
       );
       const grossProfitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0;
 
-      // Calculate trade durations
       const calculateDuration = (trade: any) => {
         if (!trade.exitTime) return 0;
         const entry = new Date(trade.entryTime).getTime();
@@ -799,7 +734,6 @@ export class BacktestEngine {
             ? trades.reduce((sum, t) => sum + (t.pnlPercent ?? 0), 0) / trades.length
             : 0,
 
-        // Gross metrics (before fees) - reflects trade quality
         grossWinRate: winRate,
         grossProfitFactor,
         totalGrossPnl,
@@ -821,7 +755,6 @@ export class BacktestEngine {
         sharpeRatio: 0,
       };
 
-      // 6. Calculate Sharpe Ratio
       if (trades.length > 1) {
         const returns = trades.map((t) => t.pnlPercent ?? 0);
         const avgReturn = returns.reduce((sum, r) => sum + r, 0) / returns.length;
@@ -888,16 +821,13 @@ export class BacktestEngine {
     let maxPeriod = MIN_WARMUP;
 
     for (const strategy of strategies) {
-      // Check indicators defined in the strategy
       if (strategy.indicators) {
         for (const [, indicator] of Object.entries(strategy.indicators)) {
           const params = indicator.params || {};
 
-          // Extract period from various parameter names
           const period = params.period || params.emaPeriod || params.smaPeriod ||
                         params.lookback || params.kPeriod || params.slowPeriod || 0;
 
-          // Handle parameter references (e.g., "$smaTrend")
           const periodValue = typeof period === 'string' && period.startsWith('$')
             ? strategy.parameters?.[period.slice(1)]?.default || 0
             : period;
@@ -908,7 +838,6 @@ export class BacktestEngine {
         }
       }
 
-      // Check parameters for trend filters (like EMA 200)
       if (strategy.parameters) {
         for (const [paramName, paramDef] of Object.entries(strategy.parameters)) {
           if (paramName.toLowerCase().includes('trend') ||
@@ -922,7 +851,6 @@ export class BacktestEngine {
         }
       }
 
-      // Check filters for trend periods
       if (strategy.filters?.trendFilter?.period) {
         const trendPeriod = strategy.filters.trendFilter.period;
         if (typeof trendPeriod === 'number' && trendPeriod > maxPeriod) {
@@ -930,13 +858,11 @@ export class BacktestEngine {
         }
       }
 
-      // If strategy uses onlyWithTrend, we need EMA200 to be valid
       if (strategy.optimizedParams?.onlyWithTrend) {
         maxPeriod = Math.max(maxPeriod, 200);
       }
     }
 
-    // Add extra buffer for indicator calculations (some need 2x the period)
     const warmupWithBuffer = Math.ceil(maxPeriod * 1.5);
     console.log(`[Backtest] Calculated warmup period: ${warmupWithBuffer} (max indicator period: ${maxPeriod})`);
 

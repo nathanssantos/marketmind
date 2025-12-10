@@ -26,7 +26,6 @@ export const BacktestingPanel = ({ marketService: providedMarketService }: Backt
   const [selectedBacktestId, setSelectedBacktestId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'config' | 'results'>('config');
 
-  // Create default market service if not provided
   const marketService = useMemo(
     () => providedMarketService ?? createDefaultMarketService(),
     [providedMarketService]

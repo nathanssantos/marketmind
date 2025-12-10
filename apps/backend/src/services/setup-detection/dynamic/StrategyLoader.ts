@@ -113,7 +113,6 @@ export class StrategyLoader {
       throw new Error(`Failed to parse JSON in ${filePath}: ${error}`);
     }
 
-    // Validate the strategy
     const validation = this.validateStrategy(definition);
     if (!validation.valid) {
       throw new StrategyValidationException(
@@ -124,7 +123,6 @@ export class StrategyLoader {
 
     const strategyDef = definition as StrategyDefinition;
 
-    // Store in cache
     this.strategies.set(strategyDef.id, {
       path: filePath,
       definition: strategyDef,
@@ -175,7 +173,6 @@ export class StrategyLoader {
 
     const def = definition as Record<string, unknown>;
 
-    // Required fields
     this.validateRequired(def, 'id', 'string', errors);
     this.validateRequired(def, 'name', 'string', errors);
     this.validateRequired(def, 'version', 'string', errors);
@@ -184,7 +181,6 @@ export class StrategyLoader {
     this.validateRequired(def, 'entry', 'object', errors);
     this.validateRequired(def, 'exit', 'object', errors);
 
-    // ID format
     if (typeof def['id'] === 'string' && !/^[a-z0-9-]+$/.test(def['id'])) {
       errors.push({
         path: 'id',
@@ -193,7 +189,6 @@ export class StrategyLoader {
       });
     }
 
-    // Version format
     if (typeof def['version'] === 'string' && !/^\d+\.\d+\.\d+$/.test(def['version'])) {
       warnings.push({
         path: 'version',
@@ -202,7 +197,6 @@ export class StrategyLoader {
       });
     }
 
-    // Validate indicators
     if (def['indicators'] && typeof def['indicators'] === 'object') {
       this.validateIndicators(
         def['indicators'] as Record<string, unknown>,
@@ -211,12 +205,10 @@ export class StrategyLoader {
       );
     }
 
-    // Validate entry conditions
     if (def['entry'] && typeof def['entry'] === 'object') {
       this.validateEntry(def['entry'] as Record<string, unknown>, errors);
     }
 
-    // Validate exit config
     if (def['exit'] && typeof def['exit'] === 'object') {
       this.validateExit(def['exit'] as Record<string, unknown>, errors);
     }

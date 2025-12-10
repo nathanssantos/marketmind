@@ -226,7 +226,6 @@ export const useSetupStore = create<SetupStoreState>()(
             state.config.bearTrap.enabled ||
             state.config.breakoutRetest.enabled;
 
-          // Se tentando ativar mas nenhum setup está habilitado, não faz nada
           if (!state.isAutoTradingActive && !hasAnySetupEnabled) {
             console.warn('[Auto-Trading] Cannot enable: No setups are enabled. Enable at least one setup in Settings.');
             return state;
@@ -410,7 +409,6 @@ export const useSetupStore = create<SetupStoreState>()(
         return {
           ...currentState,
           ...persisted,
-          // Use mergeSetupConfigs to apply new optimized defaults while preserving user's enabled states
           config: mergeSetupConfigs(defaults, persisted.config),
         };
       },

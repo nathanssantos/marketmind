@@ -1,0 +1,1128 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "saveChanges": "Save Changes",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "search": "Search",
+    "noResults": "No results found",
+    "typeToSearch": "Type to search...",
+    "dismiss": "Dismiss",
+    "skip": "Skip",
+    "next": "Next",
+    "previous": "Previous",
+    "selectAiModel": "Select AI Model",
+    "selectAi": "Select AI",
+    "selectModel": "Select Model",
+    "openChat": "Open chat",
+    "deleteConversation": "Delete conversation",
+    "conversationHistory": "Conversation history",
+    "tips": "Tips"
+  },
+  "app": {
+    "title": "MarketMind",
+    "loadingMarketData": "Loading market data...",
+    "failedToLoadMarketData": "Failed to Load Market Data",
+    "retry": "Retry"
+  },
+  "header": {
+    "theme": "Theme",
+    "themeDark": "Dark",
+    "themeLight": "Light",
+    "keyboardShortcuts": "Keyboard Shortcuts",
+    "settings": "Settings",
+    "toggleColorMode": "Toggle color mode",
+    "showKeyboardShortcuts": "Show keyboard shortcuts"
+  },
+  "symbolSelector": {
+    "label": "Binance",
+    "placeholder": "Select symbol",
+    "searchPlaceholder": "Search symbols... (e.g., BTC, ETH)",
+    "popularSymbols": "POPULAR SYMBOLS",
+    "noSymbolsFound": "No symbols found"
+  },
+  "settings": {
+    "title": "Settings",
+    "resetToDefaults": "Reset to Defaults",
+    "tabs": {
+      "general": "General",
+      "chart": "Chart",
+      "ai": "AI Configuration",
+      "aiTrading": "AI Auto-Trading",
+      "algorithmicAutoTrading": "Algorithmic Auto-Trading",
+      "setupDetection": "Setup Detection",
+      "patternDetection": "Pattern Detection",
+      "news": "News",
+      "tradingSimulator": "Trading Simulator",
+      "about": "About"
+    },
+    "language": {
+      "title": "Language",
+      "description": "Select the interface language",
+      "english": "English",
+      "portuguese": "Português",
+      "spanish": "Español",
+      "french": "Français"
+    },
+    "dataManagement": {
+      "title": "Data Management",
+      "tipTitle": "💡 Data Management",
+      "export": "Export",
+      "exportDescription": "Save all conversations as JSON file for backup",
+      "import": "Import",
+      "importDescription": "Load a previously exported conversation",
+      "clear": "Clear",
+      "clearDescription": "Remove all conversations and chat history",
+      "totalConversations": "Total Conversations: {{count}}",
+      "exportAll": "Export All Conversations",
+      "importConversation": "Import Conversation",
+      "clearAll": "Clear All Data",
+      "confirmClear": "Are you sure you want to delete all conversations? This action cannot be undone.",
+      "importSuccess": "Conversation imported successfully!",
+      "importError": "Failed to import conversation. Please check the file format.",
+      "clearSuccess": "All conversations cleared."
+    },
+    "autoUpdate": {
+      "title": "Auto-Update Settings",
+      "checkAutomatically": "Check for updates automatically",
+      "checkAutomaticallyDescription": "Automatically check for new versions in the background",
+      "checkInterval": "Check interval: {{hours}} hours",
+      "downloadAutomatically": "Download updates automatically",
+      "downloadAutomaticallyDescription": "Automatically download new versions when available",
+      "checkNow": "Check for Updates Now"
+    },
+    "chart": {
+      "tipsRealtime": "Changes are applied immediately with a 300ms debounce",
+      "tipsReset": "Click 'Reset to Defaults' to restore default chart settings",
+      "chartDimensions": "Chart Dimensions",
+      "rightMargin": "Right Margin",
+      "rightMarginHelper": "Space reserved on the right side of the chart",
+      "volumeHeightRatio": "Volume Height Ratio",
+      "volumeHeightRatioHelper": "Height of volume bars relative to chart (0-1)",
+      "klineSettings": "Kline Settings",
+      "klineSpacing": "Kline Spacing",
+      "klineSpacingHelper": "Space between klines",
+      "wickWidth": "Wick Width",
+      "wickWidthHelper": "Width of kline wicks",
+      "gridSettings": "Grid Settings",
+      "gridLineWidth": "Grid Line Width",
+      "gridLineWidthHelper": "Thickness of grid lines",
+      "currentPriceLine": "Current Price Line",
+      "lineWidth": "Line Width",
+      "lineWidthHelper": "Thickness of the current price line",
+      "lineStyle": "Line Style",
+      "lineStyleHelper": "Style of the current price line",
+      "solid": "Solid",
+      "dashed": "Dashed",
+      "dotted": "Dotted",
+      "chartPadding": "Chart Padding",
+      "topPadding": "Top Padding",
+      "bottomPadding": "Bottom Padding",
+      "leftPadding": "Left Padding",
+      "rightPadding": "Right Padding",
+      "patternExtensions": "Pattern Extensions",
+      "showAllExtensions": "Enable All Extensions",
+      "showAllExtensionsHelper": "Master toggle for extending patterns beyond the last kline",
+      "extendTrendlines": "Extend Trendlines",
+      "extendTrendlinesHelper": "Extend bullish and bearish trendlines to the right",
+      "extendChannels": "Extend Channels",
+      "extendChannelsHelper": "Extend channel upper and lower lines to the right",
+      "extendSupport": "Extend Support Levels",
+      "extendSupportHelper": "Extend support lines to the right",
+      "extendResistance": "Extend Resistance Levels",
+      "extendResistanceHelper": "Extend resistance lines to the right"
+    },
+    "ai": {
+      "tipsEncryption": "API keys are encrypted and stored securely using OS-level encryption",
+      "tipsTemperature": "Lower temperature (0-0.5) for technical analysis, higher (0.7-1.5) for creative insights",
+      "tipsFree": "Gemini 2.0 Flash Exp is FREE with no API key required",
+      "apiKeysTitle": "API Keys (Encrypted)",
+      "openaiApiKey": "OpenAI API Key",
+      "anthropicApiKey": "Anthropic API Key",
+      "geminiApiKey": "Google Gemini API Key",
+      "enterApiKey": "Enter your {{provider}} API key",
+      "usingEnvVar": "Using {{var}} from .env",
+      "encryptionNotAvailable": "Warning: Encryption not available on this platform",
+      "temperature": "Temperature: {{value}}",
+      "temperatureHelper": "Controls randomness (0 = focused, 2 = creative)",
+      "maxTokens": "Max Tokens: {{value}}",
+      "maxTokensHelper": "Maximum response length",
+      "detailedKlines": "Detailed Klines: {{value}}",
+      "detailedKlinesHelper": "Number of recent klines sent with full details to AI",
+      "patternDetection": {
+        "title": "Pattern Detection",
+        "mode": "Detection Mode",
+        "selectMode": "Select detection mode",
+        "aiOnly": "AI Only - AI detects and analyzes patterns",
+        "algorithmicOnly": "Algorithmic Only - Algorithm detects patterns locally",
+        "hybrid": "Hybrid - Algorithm detects, AI interprets (80-90% cost reduction)",
+        "autoDisplay": "Auto-display patterns on chart",
+        "autoDisplayHelper": "Automatically show detected patterns on the chart as you zoom/pan (analyzes visible klines only)",
+        "minConfidence": "Min Confidence: {{value}}%",
+        "minConfidenceHelper": "Minimum confidence threshold for pattern detection (50-90%)",
+        "pivotSensitivity": "Pivot Sensitivity: {{value}}",
+        "pivotSensitivityHelper": "Lookback window for pivot point detection (3-10 klines)"
+      }
+    },
+    "news": {
+      "newsApiKey": "API Key",
+      "newsApiKeyPlaceholder": "Enter your NewsAPI key",
+      "newsApiKeyRequired": "Required",
+      "cryptoPanicApiKey": "API Key",
+      "cryptoPanicApiKeyPlaceholder": "Enter CryptoPanic API key or use 'free'",
+      "refreshInterval": "Refresh Interval (minutes)",
+      "maxArticles": "Maximum Articles",
+      "importantNotes": "Important Notes",
+      "noteEncryption": "API keys are encrypted and stored securely using OS-level encryption",
+      "noteFreeTier": "Free tier limits: NewsAPI (100 req/day), CryptoPanic (varies)",
+      "noteRestart": "Restart app after changing settings for full effect",
+      "enableNewsIntegration": "Enable News Integration",
+      "newsIntegrationDescription": "Integrate financial news into AI analysis for better market insights",
+      "newsApiConfiguration": "NewsAPI Configuration",
+      "getFreeApiKey": "Get your free API key at",
+      "freeTierLimit": "(Free tier: 100 requests/day)",
+      "testConnection": "Test Connection",
+      "cryptoPanicConfiguration": "CryptoPanic Configuration",
+      "getApiKeyAt": "Get API key at",
+      "orUseFree": "or use \"free\" for public endpoint",
+      "advancedSettings": "Advanced Settings",
+      "refreshIntervalHelper": "How often to fetch new articles (1-60 minutes)",
+      "maxArticlesHelper": "Maximum number of articles to fetch (5-50)",
+      "loadingSettings": "Loading settings...",
+      "newsApiKeySaved": "✅ NewsAPI key saved successfully!",
+      "newsApiKeyFailed": "❌ Failed to save NewsAPI key",
+      "cryptoPanicKeySaved": "CryptoPanic API key saved successfully!",
+      "cryptoPanicKeyFailed": "Failed to save CryptoPanic API key",
+      "enterKeyFirst": "⚠️ Please enter a NewsAPI key first",
+      "testingConnection": "Testing connection...",
+      "connectionSuccessful": "✅ NewsAPI connection successful!",
+      "connectionError": "❌ Error: {{message}}",
+      "connectionFailed": "❌ Connection failed. Check your internet connection.",
+      "invalidApiKey": "Invalid API key"
+    },
+    "prompt": {
+      "chartAnalysisPrompt": "Chart Analysis Prompt",
+      "chartAnalysisDescription": "Customize the system prompt used for chart analysis",
+      "chatPrompt": "Chat Prompt",
+      "chatDescription": "Customize the system prompt used for general chat interactions",
+      "jsonPlaceholder": "Enter valid JSON...",
+      "customPromptWarning": "You are using a custom prompt. Click 'Reset to Default' to restore the original configuration.",
+      "errorEmpty": "Prompt cannot be empty",
+      "errorInvalidJson": "Invalid JSON format",
+      "formatJson": "Format JSON",
+      "resetToDefault": "Reset to Default Prompt",
+      "defaultValue": "Default Value",
+      "tipValidJson": "The prompt must be valid JSON format",
+      "tipFormat": "Use 'Format JSON' button to auto-format your JSON",
+      "tipBackup": "Keep a backup before making major changes to prompts"
+    },
+    "tradingSimulator": {
+      "title": "Trading Simulator Settings",
+      "description": "Manage your trading simulator data and settings.",
+      "statistics": {
+        "title": "Statistics",
+        "wallets": "Total Wallets",
+        "orders": "Total Orders",
+        "activeOrders": "Active Orders",
+        "pendingOrders": "Pending Orders"
+      },
+      "dangerZone": {
+        "title": "Danger Zone",
+        "description": "Clearing all data will permanently delete all wallets, orders, and trading history. This action cannot be undone.",
+        "clearAll": "Clear All Data"
+      },
+      "confirmClearAll": "Are you sure you want to clear all trading data? This action cannot be undone."
+    },
+    "algorithmicAutoTrading": {
+      "title": "Algorithmic Auto-Trading",
+      "description": "Configure automatic order execution based on detected trading setups.",
+      "status": {
+        "title": "Auto-Trading Status",
+        "description": "Enable or disable automatic order placement when trading setups are detected on the chart.",
+        "active": "Auto-trading is currently active - orders will be created automatically",
+        "inactive": "Auto-trading is currently inactive - setups will only be detected and displayed",
+        "info": "This feature works with the setup detection system. Make sure to enable at least one setup type in the Setup Detection tab before activating auto-trading."
+      }
+    }
+  },
+  "chat": {
+    "title": "Chat",
+    "newConversation": "New conversation",
+    "enableAIPatterns": "Enable AI chart drawings",
+    "disableAIPatterns": "Disable AI chart drawings",
+    "enableAutoTrading": "Enable AI Auto-Trading",
+    "disableAutoTrading": "Disable AI Auto-Trading",
+    "conversationsTitle": "Conversations - {{symbol}}",
+    "noConversationsYet": "No conversations yet",
+    "messageCount_one": "{{count}} message",
+    "messageCount_other": "{{count}} messages",
+    "inputPlaceholder": "Ask about the chart...",
+    "sendMessage": "Send message",
+    "send": "Send",
+    "noMessages": "No messages yet",
+    "startConversation": "Start a conversation to get insights about the chart",
+    "emptyStateTitle": "Start a conversation",
+    "emptyStateDescription": "Ask me to analyze the chart, explain patterns, or provide trading insights"
+  },
+  "chart": {
+    "controls": {
+      "title": "Chart Controls",
+      "timeframe": "Timeframe",
+      "chartType": "Chart Type",
+      "klineChart": "Kline Chart",
+      "lineChart": "Line Chart",
+      "newWindow": "Open Chart in New Window",
+      "display": "Display",
+      "volume": "Volume",
+      "stochastic": "Stochastic",
+      "rsi": "RSI (2)",
+      "grid": "Grid",
+      "currentPrice": "Current Price",
+      "crosshair": "Crosshair",
+      "measurementRuler": "Measurement Ruler",
+      "measurementArea": "Measurement Area",
+      "autoPatterns": "Auto Pattern Detection",
+      "detectPatterns": "Detect Patterns Now",
+      "setupDetection": "Algorithmic Setup Detection",
+      "patternExtensions": "Extend Patterns Beyond Last Kline",
+      "indicators": "Indicators",
+      "quickSettings": "Quick Settings"
+    },
+    "contextMenu": {
+      "deletePattern": "Delete Pattern",
+      "deletePattern": "Delete Pattern",
+      "hidePatterns": "Hide Detected Patterns",
+      "showPatterns": "Show Detected Patterns",
+      "deleteAllPatterns": "Remove All Detected Patterns",
+      "deleteSetup": "Delete Setup",
+      "hideSetups": "Hide Detected Setups",
+      "showSetups": "Show Detected Setups",
+      "deleteAllSetups": "Remove All Detected Setups"
+    },
+    "navigation": {
+      "resetView": "Reset to initial view",
+      "nextKline": "Next kline",
+      "klineTimer": "Time until next kline"
+    },
+    "advanced": {
+      "title": "Advanced Settings",
+      "chartDimensions": "Chart Dimensions",
+      "rightMargin": "Right Margin",
+      "volumeHeight": "Volume Height %",
+      "klineSettings": "Kline Settings",
+      "spacing": "Spacing",
+      "wickWidth": "Wick Width",
+      "gridSettings": "Grid Settings",
+      "lineWidth": "Line Width",
+      "padding": "Padding",
+      "top": "Top",
+      "bottom": "Bottom",
+      "left": "Left",
+      "right": "Right"
+    },
+    "timeframes": {
+      "1m": "1 Minute",
+      "3m": "3 Minutes",
+      "5m": "5 Minutes",
+      "15m": "15 Minutes",
+      "30m": "30 Minutes",
+      "1h": "1 Hour",
+      "2h": "2 Hours",
+      "4h": "4 Hours",
+      "6h": "6 Hours",
+      "8h": "8 Hours",
+      "12h": "12 Hours",
+      "1d": "1 Day",
+      "3d": "3 Days",
+      "1w": "1 Week",
+      "1M": "1 Month"
+    }
+  },
+  "news": {
+    "title": "News",
+    "selectSymbol": "Select cryptocurrency",
+    "symbolLabel": "Cryptocurrency",
+    "failedToLoad": "Failed to load news",
+    "noArticles": "No news articles found",
+    "sentiment": {
+      "positive": "Positive",
+      "negative": "Negative",
+      "neutral": "Neutral"
+    },
+    "tabs": {
+      "news": "News",
+      "settings": "Settings"
+    },
+    "settings": {
+      "enablePolling": "Enable Auto-Refresh",
+      "pollingDescription": "Automatically fetch new articles at regular intervals",
+      "refreshInterval": "Refresh Interval (minutes)",
+      "refreshIntervalHelper": "How often to check for new articles (1-60 minutes)",
+      "minImportanceForToast": "Notification Threshold",
+      "importanceLevel": "Minimum Importance",
+      "importanceHelper": "Only show notifications for articles with importance above this level (0-100%)",
+      "correlateWithAI": "Include News in AI Analysis",
+      "correlateWithAIDescription": "When enabled, recent news will be included in AI chart analysis for better market context"
+    },
+    "toast": {
+      "newImportantNews": "📰 Important News",
+      "readMore": "Read More"
+    }
+  },
+  "calendar": {
+    "title": "Events Calendar",
+    "disabled": "Calendar is disabled",
+    "enableInSettings": "Enable calendar in settings to view events",
+    "failedToLoad": "Failed to load events",
+    "noEvents": "No events found",
+    "eventTypes": {
+      "conference": "Conference",
+      "release": "Release",
+      "airdrop": "Airdrop",
+      "update": "Update",
+      "listing": "Listing",
+      "partnership": "Partnership",
+      "other": "Other"
+    },
+    "importance": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "status": {
+      "ongoing": "Ongoing",
+      "past": "Past"
+    },
+    "tabs": {
+      "events": "Events",
+      "settings": "Settings"
+    },
+    "settings": {
+      "enableCalendar": "Enable Events Calendar",
+      "enableCalendarDescription": "Fetch and display upcoming crypto events from CoinGecko",
+      "showOnChart": "Show Events on Chart",
+      "showOnChartDescription": "Display event markers on kline chart",
+      "minImportanceForChart": "Minimum Importance for Chart",
+      "minImportanceHelper": "Only show events with this importance level or higher on the chart",
+      "daysAhead": "Days Ahead",
+      "daysAheadHelper": "Fetch events up to this many days in the future (1-90)",
+      "daysBehind": "Days Behind",
+      "daysBehindHelper": "Fetch past events up to this many days ago (0-90)",
+      "correlateWithAI": "Include Events in AI Analysis",
+      "correlateWithAIDescription": "When enabled, upcoming and recent events will be included in AI chart analysis for better market context"
+    }
+  },
+  "onboarding": {
+    "title": "Getting Started",
+    "skip": "Skip",
+    "next": "Next",
+    "previous": "Previous",
+    "getStarted": "Get Started",
+    "steps": {
+      "welcome": {
+        "title": "Welcome to MarketMind",
+        "description": "Your AI-powered financial chart analysis assistant. MarketMind combines advanced charting with AI analysis to help you make informed trading decisions."
+      },
+      "aiProvider": {
+        "title": "Choose Your AI Provider",
+        "description": "MarketMind supports multiple AI providers: OpenAI (GPT-4), Anthropic (Claude), and Google (Gemini). Configure your API keys in the settings to get started."
+      },
+      "analyze": {
+        "title": "Analyze Market Data",
+        "description": "View real-time kline charts, volume indicators, and moving averages. Use the controls to customize your chart view and select different timeframes."
+      },
+      "chat": {
+        "title": "Chat with AI",
+        "description": "Ask questions about chart patterns, trends, and trading signals. The AI has access to your chart data and can provide technical analysis and insights."
+      },
+      "ready": {
+        "title": "Ready to Start",
+        "description": "Open the settings (top right) to configure your AI provider and API keys. Then start analyzing charts and chatting with your AI assistant!"
+      }
+    }
+  },
+  "update": {
+    "available": "Update Available",
+    "downloading": "Downloading Update",
+    "ready": "Update Ready",
+    "error": "Update Error",
+    "version": "Version {{version}} is now available",
+    "currentVersion": "Current version: {{version}}",
+    "downloadedVersion": "Version {{version}} has been downloaded",
+    "downloadUpdate": "Download Update",
+    "restartAndInstall": "Restart and Install",
+    "later": "Later",
+    "percent": "{{percent}}%",
+    "downloadSpeed": "{{speed}} MB/s"
+  },
+  "keyboardShortcuts": {
+    "title": "Keyboard Shortcuts",
+    "global": "Global",
+    "chartControls": "Chart Controls",
+    "chatInterface": "Chat Interface",
+    "symbolSelector": "Symbol Selector",
+    "shortcuts": {
+      "openSettings": "Open Settings",
+      "focusChatInput": "Focus Chat Input",
+      "showKeyboardShortcuts": "Show Keyboard Shortcuts",
+      "closeDialogs": "Close Dialogs",
+      "toggleVolume": "Toggle Volume Display",
+      "toggleGrid": "Toggle Grid Display",
+      "switchChartType": "Switch Chart Type",
+      "toggleMovingAverages": "Toggle Moving Averages",
+      "zoomIn": "Zoom In",
+      "zoomOut": "Zoom Out",
+      "resetZoom": "Reset Zoom",
+      "panLeftRight": "Pan Left/Right",
+      "panChart": "Pan Chart",
+      "sendMessage": "Send Message",
+      "newLine": "New Line",
+      "editLastMessage": "Edit Last Message",
+      "clearChatHistory": "Clear Chat History",
+      "openSymbolSelector": "Open Symbol Selector",
+      "navigateSymbolList": "Navigate Symbol List",
+      "selectSymbol": "Select Symbol",
+      "closeSelector": "Close Selector"
+    }
+  },
+  "aiConfig": {
+    "title": "AI Configuration",
+    "quickTips": "💡 Quick Tips",
+    "tips": {
+      "encryption": "API keys are encrypted and stored securely using OS-level encryption",
+      "temperatureLow": "Lower temperature (0-0.5) for technical analysis",
+      "temperatureHigh": "Higher temperature (0.7-1.5) for creative insights",
+      "geminiFree": "Gemini 2.0 Flash Exp is FREE with no API key required"
+    },
+    "provider": "AI Provider",
+    "providerRequired": "Required",
+    "model": "Model",
+    "apiKeys": "API Keys (Encrypted)",
+    "apiKey": "{{provider}} API Key",
+    "apiKeyPlaceholder": "Enter your {{provider}} API key",
+    "apiKeyHelper": "Using {{envVar}} from .env",
+    "temperature": "Temperature: {{value}}",
+    "temperatureHelper": "Controls randomness (0 = focused, 2 = creative)",
+    "maxTokens": "Max Tokens: {{value}}",
+    "maxTokensHelper": "Maximum response length",
+    "encryptionNotAvailable": "Warning: Encryption not available on this platform",
+    "providers": {
+      "openai": "OpenAI",
+      "anthropic": "Anthropic (Claude)",
+      "gemini": "Google Gemini"
+    },
+    "models": {
+      "gpt4o": "GPT-4o",
+      "gpt4oMini": "GPT-4o Mini",
+      "claudeSonnet": "Claude 4.5 Sonnet",
+      "claudeHaiku": "Claude 4.5 Haiku",
+      "claudeOpus": "Claude 4.1 Opus",
+      "gemini2Flash": "Gemini 2.0 Flash Exp",
+      "gemini15Pro": "Gemini 1.5 Pro",
+      "gemini15Flash": "Gemini 1.5 Flash",
+      "gemini15Flash8b": "Gemini 1.5 Flash-8B"
+    },
+    "pricing": {
+      "gpt4o": "$2.50/$10 per 1M tokens",
+      "gpt4oMini": "$0.15/$0.60 per 1M tokens",
+      "claudeSonnet": "$3/$15 per 1M tokens",
+      "claudeHaiku": "$1/$5 per 1M tokens",
+      "claudeOpus": "$15/$75 per 1M tokens",
+      "gemini2Flash": "FREE",
+      "gemini15Pro": "$1.25/$5 per 1M tokens",
+      "gemini15Flash": "$0.075/$0.30 per 1M tokens",
+      "gemini15Flash8b": "$0.0375/$0.15 per 1M tokens"
+    }
+  },
+  "aiTrading": {
+    "tips": {
+      "experimental": "AI Auto-Trading is experimental and should be used with caution",
+      "simulator": "Always use the Trading Simulator before real trading",
+      "monitor": "Monitor your positions and adjust risk settings as needed"
+    },
+    "status": {
+      "title": "Auto-Trading Status",
+      "autoTrading": "Auto-Trading",
+      "active": "Active - AI is analyzing and trading",
+      "inactive": "Inactive - Toggle in Chat to activate",
+      "activeWallet": "Active Wallet: {{name}} ({{currency}})",
+      "balance": "Balance: {{balance}} {{currency}}"
+    },
+    "riskProfile": {
+      "title": "Risk Profile",
+      "tradingStrategy": "Trading Strategy",
+      "conservative": "Conservative",
+      "conservativeDesc": "50%+ confidence, 1:2 risk/reward",
+      "moderate": "Moderate",
+      "moderateDesc": "40%+ confidence, 1:1.5 risk/reward",
+      "aggressive": "Aggressive",
+      "aggressiveDesc": "30%+ confidence, 1:1 risk/reward",
+      "maxPositionSize": "Max Position Size (%)",
+      "accountRisk": "Account Risk (%)",
+      "defaultStopLoss": "Default Stop Loss (%)",
+      "defaultTakeProfit": "Default Take Profit (%)"
+    },
+    "limits": {
+      "title": "Trading Limits",
+      "analysisInterval": "Analysis Interval",
+      "maxTradesPerDay": "Max Trades Per Day",
+      "maxTradesPerHour": "Max Trades Per Hour",
+      "minTimeBetween": "Min Time Between Trades (min)",
+      "interval1m": "1 minute",
+      "interval5m": "5 minutes",
+      "interval15m": "15 minutes",
+      "interval30m": "30 minutes",
+      "interval1h": "1 hour"
+    },
+    "safety": {
+      "title": "Safety Settings",
+      "maxDailyLoss": "Max Daily Loss (%)",
+      "emergencyStop": "Emergency Stop (consecutive losses)",
+      "notifyOnTrade": "Notify on trade execution",
+      "notifyOnProfit": "Notify on profitable close",
+      "notifyOnLoss": "Notify on loss close"
+    },
+    "statistics": {
+      "title": "Trading Statistics",
+      "totalTrades": "Total Trades",
+      "openPositions": "Open Positions",
+      "winRate": "Win Rate",
+      "netPnL": "Net P&L"
+    },
+    "clearHistory": "Clear Trading History"
+  },
+  "patternDetection": {
+    "title": "Pattern Detection Configuration",
+    "resetDefaults": "Reset to Defaults",
+    "mode": {
+      "label": "Detection Mode",
+      "helper": "Determines how pattern data is sent to AI for analysis (does not affect chart display)",
+      "aiOnly": "AI Only - No automatic detection, AI analyzes chart visually",
+      "algorithmicOnly": "Algorithmic Only - Send detected patterns to AI",
+      "hybrid": "Hybrid - AI analyzes both chart and detected patterns"
+    },
+    "tips": {
+      "sensitivity": "Higher sensitivity detects more pivot points but may reduce accuracy",
+      "confidence": "Minimum confidence filters patterns based on reliability threshold",
+      "period": "Formation period controls how many klines to analyze for patterns"
+    },
+    "sensitivity": {
+      "label": "Sensitivity",
+      "helper": "Controls pivot point detection sensitivity (0 = strict, 100 = permissive)"
+    },
+    "minConfidence": {
+      "label": "Minimum Confidence",
+      "helper": "Minimum confidence threshold for pattern validation"
+    },
+    "formationPeriod": {
+      "label": "Formation Period",
+      "helper": "Lookback period for pattern detection",
+      "klines": "klines"
+    },
+    "trendlineAccuracy": {
+      "label": "Trendline Accuracy (R²)",
+      "helper": "R² threshold for trendline quality assessment"
+    },
+    "volumeWeight": {
+      "label": "Volume Confirmation Weight",
+      "helper": "Weight of volume in confidence calculation"
+    },
+    "enabledPatterns": "Enabled Patterns",
+    "enabled": "Enabled",
+    "showPreview": {
+      "label": "Show Pattern Preview",
+      "helper": "Display pattern preview in real-time on chart"
+    },
+    "filtering": {
+      "title": "Pattern Filtering",
+      "mode": {
+        "label": "Filtering Mode",
+        "helper": "Choose between clean (fewer, high-quality patterns) or complete (show all detected patterns)",
+        "clean": "Clean (20 patterns max)",
+        "complete": "Complete (50 patterns max)"
+      },
+      "maxPatterns": {
+        "label": "Maximum Patterns",
+        "helper": "Maximum number of patterns to display on chart",
+        "patterns": "patterns"
+      },
+      "enableNested": {
+        "label": "Filter Nested Patterns",
+        "helper": "Remove smaller patterns of the same type that are nested inside larger ones (different types are kept)"
+      },
+      "enableOverlap": {
+        "label": "Filter Overlapping Patterns",
+        "helper": "Remove patterns with high overlap (keeps the most important one)"
+      },
+      "overlapThreshold": {
+        "label": "Overlap Threshold",
+        "helper": "Minimum overlap percentage to consider patterns as overlapping"
+      },
+      "highlightConflicts": {
+        "label": "Highlight Conflicting Patterns",
+        "helper": "Show visual indicators when patterns give opposite signals (both patterns are kept)"
+      },
+      "showChannelCenterline": {
+        "label": "Show Channel Centerline",
+        "helper": "Display dashed centerline in channel patterns"
+      }
+    },
+    "groups": {
+      "reversalPatterns": "Reversal Patterns",
+      "continuationPatterns": "Continuation Patterns",
+      "supportResistance": "Support & Resistance",
+      "zones": "Trading Zones",
+      "gaps": "Price Gaps"
+    },
+    "patterns": {
+      "head-and-shoulders": "Head and Shoulders",
+      "inverse-head-and-shoulders": "Inverse Head and Shoulders",
+      "double-top": "Double Top",
+      "double-bottom": "Double Bottom",
+      "triple-top": "Triple Top",
+      "triple-bottom": "Triple Bottom",
+      "rounding-bottom": "Rounding Bottom",
+      "triangle-ascending": "Ascending Triangle",
+      "triangle-descending": "Descending Triangle",
+      "triangle-symmetrical": "Symmetrical Triangle",
+      "flag-bullish": "Bullish Flag",
+      "flag-bearish": "Bearish Flag",
+      "pennant": "Pennant",
+      "cup-and-handle": "Cup and Handle",
+      "wedge-falling": "Falling Wedge",
+      "wedge-rising": "Rising Wedge",
+      "support": "Support",
+      "resistance": "Resistance",
+      "buy-zone": "Buy Zone",
+      "sell-zone": "Sell Zone",
+      "liquidity-zone": "Liquidity Zone",
+      "accumulation-zone": "Accumulation Zone",
+      "gap-common": "Common Gap",
+      "gap-breakaway": "Breakaway Gap",
+      "gap-runaway": "Runaway Gap",
+      "gap-exhaustion": "Exhaustion Gap"
+    }
+  },
+  "trading": {
+    "simulator": {
+      "toggle": "Trading Simulator",
+      "active": "Simulator Active",
+      "inactive": "Simulator Inactive"
+    },
+    "sidebar": {
+      "title": "Simulator",
+      "close": "Close trading sidebar"
+    },
+    "tabs": {
+      "wallets": "Wallets",
+      "ticket": "Order Ticket",
+      "portfolio": "Portfolio",
+      "orders": "Orders"
+    },
+    "wallets": {
+      "title": "Wallets",
+      "create": "Create Wallet",
+      "createTitle": "Create New Wallet",
+      "empty": "No wallets yet. Create one to start trading.",
+      "name": "Wallet Name",
+      "namePlaceholder": "My Wallet",
+      "initialBalance": "Initial Balance",
+      "currency": "Currency",
+      "balance": "Balance",
+      "totalPnL": "Total P&L",
+      "viewPerformance": "View Performance",
+      "delete": "Delete Wallet",
+      "performanceTitle": "Performance - {{name}}",
+      "currentBalance": "Current Balance",
+      "tradeDays": "Trade Days",
+      "avgDailyReturn": "Avg Daily Return"
+    },
+    "ticket": {
+      "title": "Order Ticket",
+      "noWallet": "Please create and select a wallet first.",
+      "activeWallet": "Active Wallet",
+      "symbol": "Symbol",
+      "orderType": "Order Type",
+      "long": "Long (Buy)",
+      "short": "Short (Sell)",
+      "quantity": "Quantity",
+      "entryPrice": "Entry Price",
+      "useCurrent": "Use Current",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "optional": "Optional",
+      "totalCost": "Total Cost",
+      "buy": "Buy Long",
+      "sell": "Sell Short"
+    },
+    "portfolio": {
+      "title": "Portfolio",
+      "noWallet": "Please create and select a wallet first.",
+      "empty": "No open positions.",
+      "activePositions": "Active Positions",
+      "totalExposure": "Total Exposure",
+      "unrealizedPnL": "Unrealized P&L",
+      "orders": "orders",
+      "orderCount": "Orders",
+      "quantity": "Quantity",
+      "totalQuantity": "Total Quantity",
+      "avgPrice": "Avg Price",
+      "currentPrice": "Current Price",
+      "pnl": "P&L",
+      "position": "Position"
+    },
+    "orders": {
+      "title": "Orders",
+      "noWallet": "Please create and select a wallet first.",
+      "empty": "No orders found.",
+      "total": "Total Orders",
+      "active": "Active",
+      "pending": "Pending",
+      "filterByStatus": "Filter by Status",
+      "allStatuses": "All Statuses",
+      "statusPending": "Pending",
+      "statusActive": "Active",
+      "statusFilled": "Filled",
+      "statusClosed": "Closed",
+      "statusCancelled": "Cancelled",
+      "statusExpired": "Expired",
+      "createdAt": "Created",
+      "filledAt": "Filled",
+      "closedAt": "Closed",
+      "quantity": "Quantity",
+      "entryPrice": "Entry Price",
+      "currentPrice": "Current Price",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "pnl": "P&L",
+      "close": "Close Order",
+      "cancel": "Cancel Order"
+    },
+    "notifications": {
+      "orderFilled": {
+        "title": "Order Filled",
+        "body": "{{type}} order for {{quantity}} {{symbol}} filled at ${{price}}"
+      },
+      "orderClosed": {
+        "titleProfit": "Order Closed - Profit ✓",
+        "titleLoss": "Order Closed - Loss",
+        "body": "{{type}} {{symbol}} ({{quantity}}) closed: {{pnl}}"
+      },
+      "orderCancelled": "Order Cancelled",
+      "orderCancelledDesc": "{{order}} has been cancelled",
+      "orderExpired": "Order Expired",
+      "orderExpiredDesc": "{{order}} has expired"
+    },
+    "order": {
+      "long": "LONG",
+      "short": "SHORT"
+    },
+    "closeOrder": "Close Order",
+    "closeOrderConfirm": "Close {{type}} order at entry {{entry}}? Current price: {{current}}",
+    "removeSLTPConfirm": "Remove {{type}} from all orders in this position?",
+    "confirmClose": "Confirm Close",
+    "active": "ACTIVE",
+    "pending": "PENDING"
+  },
+  "patterns": {
+    "configurePatterns": "Configure Patterns",
+    "enabledPatterns": "Enabled Patterns",
+    "basicPatterns": "Basic",
+    "trendlines": "Trendlines",
+    "fibonacci": "Fibonacci",
+    "channels": "Channels",
+    "triangles": "Triangles",
+    "wedges": "Wedges",
+    "advancedPatterns": "Advanced",
+    "support": "Support",
+    "supportTooltip": "Horizontal price level where buying interest concentrates, preventing further decline. Requires 2+ touches for validation.",
+    "resistance": "Resistance",
+    "resistanceTooltip": "Horizontal price level where selling pressure concentrates, limiting upward movement. Stronger with more touches.",
+    "bullishTrendline": "Bullish Trendline",
+    "bullishTrendlineTooltip": "Line connecting higher lows, indicating upward momentum. Acts as dynamic support during uptrends.",
+    "bearishTrendline": "Bearish Trendline",
+    "bearishTrendlineTooltip": "Line connecting lower highs, indicating downward momentum. Acts as dynamic resistance during downtrends.",
+    "fibonacciRetracement": "Fibonacci Retracement",
+    "fibonacciRetracementTooltip": "Key levels (23.6%, 38.2%, 50%, 61.8%, 78.6%) where price often finds support or resistance during pullbacks.",
+    "ascendingChannel": "Ascending Channel",
+    "ascendingChannelTooltip": "Parallel upward-sloping lines containing price action. Bullish continuation pattern with clear support and resistance.",
+    "descendingChannel": "Descending Channel",
+    "descendingChannelTooltip": "Parallel downward-sloping lines containing price action. Bearish continuation pattern indicating sustained downtrend.",
+    "ascendingTriangle": "Ascending Triangle",
+    "ascendingTriangleTooltip": "Flat top with rising lows. Bullish pattern showing buyers getting more aggressive. Breakout usually upward.",
+    "descendingTriangle": "Descending Triangle",
+    "descendingTriangleTooltip": "Flat bottom with falling highs. Bearish pattern showing sellers getting more aggressive. Breakout usually downward.",
+    "symmetricalTriangle": "Symmetrical Triangle",
+    "symmetricalTriangleTooltip": "Converging trendlines with lower highs and higher lows. Consolidation pattern - breakout direction uncertain.",
+    "risingWedge": "Rising Wedge",
+    "risingWedgeTooltip": "Both lines slope upward but converge. Bearish reversal pattern - momentum weakening despite higher prices.",
+    "fallingWedge": "Falling Wedge",
+    "fallingWedgeTooltip": "Both lines slope downward but converge. Bullish reversal pattern - selling pressure diminishing.",
+    "headAndShoulders": "Head & Shoulders",
+    "headAndShouldersTooltip": "Three peaks with middle highest. Bearish reversal pattern signaling trend exhaustion and potential decline.",
+    "inverseHeadAndShoulders": "Inverse H&S",
+    "inverseHeadAndShouldersTooltip": "Three troughs with middle lowest. Bullish reversal pattern indicating bottom formation and potential rally.",
+    "doubleTop": "Double Top",
+    "doubleTopTooltip": "Two peaks at similar price ('M' shape). Bearish reversal after failed attempt to break resistance.",
+    "doubleBottom": "Double Bottom",
+    "doubleBottomTooltip": "Two troughs at similar price ('W' shape). Bullish reversal after support holds twice.",
+    "tripleTop": "Triple Top",
+    "tripleTopTooltip": "Three peaks at similar price. Bearish reversal pattern after multiple failed breakouts.",
+    "tripleBottom": "Triple Bottom",
+    "tripleBottomTooltip": "Three troughs at similar price. Bullish reversal pattern after multiple support holds.",
+    "flagBullish": "Bullish Flag",
+    "flagBullishTooltip": "Short consolidation after a strong upward move, usually followed by continuation upward.",
+    "flagBearish": "Bearish Flag",
+    "flagBearishTooltip": "Short consolidation after a strong downward move, usually followed by continuation downward.",
+    "pennant": "Pennant",
+    "pennantTooltip": "Small symmetrical triangle that forms after a sharp move, typically a continuation pattern.",
+    "cupAndHandle": "Cup and Handle",
+    "cupAndHandleTooltip": "Rounded bottom followed by a small pullback (handle). Bullish continuation pattern.",
+    "roundingBottom": "Rounding Bottom",
+    "roundingBottomTooltip": "Gradual shift from downtrend to uptrend, forming a rounded shape. Bullish reversal.",
+    "gapCommon": "Common Gap",
+    "gapCommonTooltip": "A price gap with little significance, often filled quickly.",
+    "gapBreakaway": "Breakaway Gap",
+    "gapBreakawayTooltip": "Gap that occurs at the end of a price pattern, signaling the start of a new trend.",
+    "gapRunaway": "Runaway Gap",
+    "gapRunawayTooltip": "Gap that occurs in the middle of a trend, confirming trend strength.",
+    "gapExhaustion": "Exhaustion Gap",
+    "gapExhaustionTooltip": "Gap that occurs near the end of a trend, often signaling a reversal.",
+    "liquidityZone": "Liquidity Zone",
+    "liquidityZoneTooltip": "Price area with high trading activity, often acting as support or resistance.",
+    "sellZone": "Sell Zone",
+    "sellZoneTooltip": "Area where selling pressure is expected to increase.",
+    "buyZone": "Buy Zone",
+    "buyZoneTooltip": "Area where buying pressure is expected to increase.",
+    "accumulationZone": "Accumulation Zone",
+    "accumulationZoneTooltip": "Area where large players are accumulating positions, often before an uptrend.",
+    "horizontalChannel": "Horizontal Channel",
+    "horizontalChannelTooltip": "Parallel horizontal lines containing price action. Range-bound market pattern.",
+    "fibonacciExtension": "Fibonacci Extension",
+    "fibonacciExtensionTooltip": "Levels used to project possible price targets beyond the current trend.",
+    "extraPatterns": "Extra"
+  },
+  "about": {
+    "version": "Version {{version}}",
+    "description": "An AI-powered trading assistant that combines advanced financial chart visualization with artificial intelligence to provide insights on cryptocurrencies, stocks, and other tradeable assets.",
+    "features": "Features",
+    "featuresList": {
+      "marketData": "Real-time cryptocurrency market data (Binance)",
+      "charts": "Advanced kline charts with moving averages",
+      "aiAnalysis": "AI analysis with OpenAI GPT-4o, Claude 4.5, and Gemini 2.0",
+      "news": "Financial news integration (NewsAPI & CryptoPanic)",
+      "chat": "Interactive chat interface with conversation history",
+      "security": "Secure API key storage with OS-level encryption",
+      "autoUpdate": "Auto-update system with GitHub releases",
+      "shortcuts": "Keyboard shortcuts for productivity",
+      "themes": "Light and dark themes",
+      "websocket": "WebSocket live updates"
+    },
+    "techStack": "Technology Stack",
+    "techStackList": {
+      "electron": "Electron {{version}} - Desktop framework",
+      "react": "React {{version}} - UI framework",
+      "typescript": "TypeScript {{version}} - Type safety",
+      "chakra": "Chakra UI {{version}} - Component library",
+      "vite": "Vite {{version}} - Build tool",
+      "zustand": "Zustand {{version}} - State management"
+    },
+    "resources": "Resources",
+    "resourcesList": {
+      "github": "GitHub Repository",
+      "documentation": "Documentation",
+      "changelog": "Changelog"
+    },
+    "copyright": "© 2025 MarketMind. Built with ❤️ for traders and investors."
+  },
+  "setupConfig": {
+    "configureSetups": "Configure Trading Setups",
+    "enabledSetups": "Enabled Setups",
+    "toggleAll": "Toggle All Setups",
+    "tips": {
+      "confidence": "Higher confidence filters show only the strongest setups",
+      "algorithmic": "Algorithmic detection is faster and more consistent than AI",
+      "toolbar": "Enable auto-trading via the robot icon in the toolbar"
+    },
+    "resetDefaults": "Reset to Defaults",
+    "trendFilter": {
+      "title": "Trend Filter",
+      "enable": "Enable Trend Filter",
+      "enableDescription": "Use EMA 200 to identify the major trend and filter setups",
+      "allowCounter": "Allow Counter-Trend Trades",
+      "allowCounterDescription": "When disabled, only trades aligned with the major trend are allowed"
+    },
+    "status": {
+      "title": "Auto-Trading Status",
+      "autoTrading": "Algorithmic Auto-Trading",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "autoTradingDisabled": "Auto-Trading Disabled",
+    "autoTradingDisabledDescription": "Auto-trading was automatically disabled because setup detection was turned off.",
+    "noSetupsEnabled": "No Setups Enabled",
+    "noSetupsEnabledDescription": "Cannot enable auto-trading without active setups. Please enable at least one setup in Settings.",
+    "setups": {
+      "setup91": {
+        "title": "Setup 9.1 (EMA9 Reversal)",
+        "description": "Detects EMA9 trend changes with volume confirmation - entry on kline that turns EMA9"
+      },
+      "setup92": {
+        "title": "Setup 9.2 (EMA9 Pullback)",
+        "description": "EMA9 trend follower - entry after kline closes below/above previous low/high during uptrend/downtrend"
+      },
+      "setup93": {
+        "title": "Setup 9.3 (EMA9 Double Pullback)",
+        "description": "EMA9 trend follower - entry after 2 consecutive lower/higher closes from reference kline"
+      },
+      "setup94": {
+        "title": "Setup 9.4 (EMA9 Continuation)",
+        "description": "EMA9 continuation - temporary 1-kline EMA9 failure followed by resumption of original trend"
+      },
+      "pattern123": {
+        "title": "Pattern 123 (Reversal Pattern)",
+        "description": "Classic 123 pivot pattern with breakout confirmation"
+      },
+      "bullTrap": {
+        "title": "Bull Trap (Fake Breakout)",
+        "description": "Detects false breakouts above resistance followed by reversal"
+      },
+      "bearTrap": {
+        "title": "Bear Trap (Fake Breakdown)",
+        "description": "Detects false breakdowns below support followed by bounce"
+      },
+      "breakoutRetest": {
+        "title": "Breakout Retest (Continuation)",
+        "description": "Valid breakout followed by successful retest and continuation"
+      }
+    },
+    "parameters": {
+      "minConfidence": {
+        "label": "Minimum Confidence",
+        "helper": "Only show setups with confidence above this threshold"
+      }
+    },
+    "summary": {
+      "title": "Summary",
+      "enabledSetups": "Enabled Setups",
+      "avgConfidence": "Avg. Confidence"
+    }
+  },
+  "backtesting": {
+    "results": {
+      "title": "Backtest Results"
+    },
+    "chart": {
+      "trades": "Trades",
+      "winRate": "Win Rate"
+    },
+    "equityCurve": {
+      "title": "Equity Curve",
+      "description": "Performance over time with drawdown overlay",
+      "equity": "Equity",
+      "drawdown": "Drawdown"
+    },
+    "config": {
+      "title": "Backtest Configuration",
+      "symbol": "Symbol",
+      "interval": "Interval",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "initialCapital": "Initial Capital ($)",
+      "initialCapitalHelper": "Starting balance for backtesting",
+      "maxPosition": "Max Position Size (%)",
+      "maxPositionHelper": "Maximum percentage of capital per trade",
+      "commission": "Commission (%)",
+      "commissionHelper": "Trading commission fee per transaction",
+      "useAlgorithmicLevels": "Use Algorithmic Stop/Take Levels",
+      "useAlgorithmicLevelsHelper": "Calculate levels based on setup algorithm",
+      "stopLoss": "Stop Loss (%)",
+      "takeProfit": "Take Profit (%)",
+      "minProfit": "Minimum Profit (%)",
+      "minProfitHelper": "Filter out setups with R:R below this threshold",
+      "minConfidence": "Minimum Confidence (%)",
+      "minConfidenceHelper": "Only trade setups with confidence above this level",
+      "runBacktest": "Run Backtest"
+    },
+    "trades": {
+      "title": "Trade List",
+      "count": "{{count}} trades",
+      "columns": {
+        "side": "Side",
+        "setup": "Setup",
+        "entry": "Entry",
+        "exit": "Exit",
+        "entryTime": "Entry Time",
+        "exitTime": "Exit Time",
+        "duration": "Duration",
+        "pnl": "P&L",
+        "pnlPercent": "P&L %",
+        "exitReason": "Exit Reason"
+      }
+    },
+    "metrics": {
+      "totalPnl": "Total P&L",
+      "winRate": "Win Rate",
+      "wins": "W",
+      "losses": "L",
+      "profitFactor": "Profit Factor",
+      "totalTrades": "Total Trades",
+      "avgDuration": "Avg Duration",
+      "duration": "Duration",
+      "avgWin": "Average Win",
+      "avgLoss": "Average Loss",
+      "largestWin": "Largest Win",
+      "largestLoss": "Largest Loss",
+      "maxDrawdown": "Max Drawdown",
+      "sharpeRatio": "Sharpe Ratio",
+      "sortinoRatio": "Sortino Ratio",
+      "downsideRisk": "Downside Risk",
+      "totalCommission": "Total Commission"
+    },
+    "quality": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair"
+    },
+    "configuration": {
+      "title": "Configuration",
+      "initialCapital": "Initial Capital",
+      "maxPosition": "Max Position",
+      "commission": "Commission",
+      "setups": "Setups"
+    }
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "saveChanges": "Save Changes",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "search": "Search",
+    "noResults": "No results found",
+    "typeToSearch": "Type to search...",
+    "dismiss": "Dismiss",
+    "skip": "Skip",
+    "next": "Next",
+    "previous": "Previous",
+    "selectAiModel": "Select AI Model",
+    "selectAi": "Select AI",
+    "selectModel": "Select Model",
+    "openChat": "Open chat",
+    "deleteConversation": "Delete conversation",
+    "conversationHistory": "Conversation history",
+    "tips": "Tips",
+    "to": "to",
+    "hours": "h"
+  }
+}

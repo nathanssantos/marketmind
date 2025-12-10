@@ -23,6 +23,7 @@
     "refactor:audit:files": "bash scripts/audit-files.sh",
     "refactor:audit:types": "bash scripts/audit-types.sh",
     "refactor:audit:indicators": "bash scripts/audit-indicators.sh",
+    "refactor:analyze-comments": "node scripts/analyze-comments.mjs",
     "refactor:remove-comments": "node scripts/remove-comments.mjs"
   },
   "devDependencies": {

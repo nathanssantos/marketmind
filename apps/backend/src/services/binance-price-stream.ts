@@ -35,7 +35,6 @@ export class BinancePriceStreamService {
       this.handleMessage(data);
     });
 
-    // WebsocketClient types don't properly expose error event handler
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this.client as any).on('error', (error: unknown) => {
       logger.error({

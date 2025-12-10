@@ -62,14 +62,12 @@ export class StrategyInterpreter extends BaseSetupDetector {
       return { setup: null, confidence: 0 };
     }
 
-    // Compute all indicators
     const indicators = this.indicatorEngine.computeIndicators(
       klines,
       this.strategy.indicators,
       this.resolvedParams
     );
 
-    // Create evaluation context
     const evalContext: EvaluationContext = {
       klines,
       currentIndex,
@@ -77,14 +75,12 @@ export class StrategyInterpreter extends BaseSetupDetector {
       params: this.resolvedParams,
     };
 
-    // Check entry conditions
     const { direction, triggered } = this.checkEntryConditions(evalContext);
 
     if (!triggered || !direction) {
       return { setup: null, confidence: 0 };
     }
 
-    // Calculate entry, exit levels
     const entryPrice = parseFloat(klines[currentIndex]?.close ?? '0');
 
     const exitContext: ExitContext = {
@@ -104,13 +100,11 @@ export class StrategyInterpreter extends BaseSetupDetector {
       ? this.exitCalculator.calculateTakeProfit(this.strategy.exit.takeProfit, exitContext, stopLoss ?? 0)
       : null;
 
-    // Calculate confidence
     const confidence = this.exitCalculator.calculateConfidence(
       this.strategy,
       exitContext
     );
 
-    // Calculate risk-reward
     const riskReward = this.exitCalculator.calculateRiskReward(
       entryPrice,
       stopLoss,
@@ -118,31 +112,26 @@ export class StrategyInterpreter extends BaseSetupDetector {
       direction
     );
 
-    // Check minimum requirements (skip riskReward check for indicator-based exit strategies)
     const hasIndicatorBasedExit = !!this.strategy.exit.conditions;
     const effectiveRiskReward = hasIndicatorBasedExit ? this.config.minRiskReward : riskReward;
     if (!this.meetsMinimumRequirements(confidence, effectiveRiskReward)) {
       return { setup: null, confidence };
     }
 
-    // Check strategy filters
     if (!this.passesFilters(confidence, riskReward)) {
       return { setup: null, confidence };
     }
 
-    // Calculate indicator confluence
     const indicatorConfluence = this.calculateIndicatorConfluence(
       indicators,
       currentIndex
     );
 
-    // Check volume confirmation
     const volumeConfirmation = this.checkVolumeConfirmation(
       indicators,
       currentIndex
     );
 
-    // Create the setup
     const setup = this.createSetup(
       this.strategy.id,
       direction,
@@ -174,7 +163,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
   } {
     const { entry } = this.strategy;
 
-    // Check long conditions first
     if (entry.long) {
       const longTriggered = this.conditionEvaluator.evaluate(entry.long, context);
       if (longTriggered) {
@@ -182,7 +170,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
       }
     }
 
-    // Check short conditions
     if (entry.short) {
       const shortTriggered = this.conditionEvaluator.evaluate(entry.short, context);
       if (shortTriggered) {
@@ -225,18 +212,15 @@ export class StrategyInterpreter extends BaseSetupDetector {
     let confluence = 0;
     let count = 0;
 
-    // Check each indicator for alignment
     for (const [id, indicator] of Object.entries(indicators)) {
       if (id.startsWith('_')) continue; // Skip internal indicators
 
-      // Simple heuristic: indicator has a valid value
       if (Array.isArray(indicator.values)) {
         if (indicator.values[currentIndex] !== null) {
           confluence += 1;
           count += 1;
         }
       } else {
-        // Compound indicator - check any sub-value
         const values = indicator.values as Record<string, (number | null)[]>;
         const hasValue = Object.values(values).some(
           (arr) => arr[currentIndex] !== null
@@ -248,7 +232,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
       }
     }
 
-    // Normalize to 0-2 range (matching existing system)
     return count > 0 ? Math.min((confluence / count) * 2, 2) : 0;
   }
 
@@ -319,7 +302,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
         this.resolvedParams[key] = value;
       }
     }
-    // Clear indicator cache when parameters change
     this.indicatorEngine.clearCache();
   }
 

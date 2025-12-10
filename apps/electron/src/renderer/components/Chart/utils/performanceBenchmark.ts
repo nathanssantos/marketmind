@@ -28,14 +28,12 @@ export const runBenchmark = async (config: BenchmarkConfig): Promise<BenchmarkRe
     const frameTimes: number[] = [];
     let frameCount = 0;
 
-    // Measure initial memory if available
     const initialMemory = (performance as any).memory?.usedJSHeapSize;
 
     return new Promise((resolve) => {
         const measureFrame = () => {
             const frameStart = performance.now();
 
-            // Execute all operations
             operations.forEach((op) => op());
 
             const frameEnd = performance.now();
@@ -48,7 +46,6 @@ export const runBenchmark = async (config: BenchmarkConfig): Promise<BenchmarkRe
             if (elapsed < duration) {
                 requestAnimationFrame(measureFrame);
             } else {
-                // Calculate results
                 const totalTime = performance.now() - startTime;
                 const averageFrameTime =
                     frameTimes.reduce((sum, time) => sum + time, 0) / frameTimes.length;
@@ -145,13 +142,11 @@ export const runChartBenchmark = async (
 ): Promise<void> => {
     const operations = {
         singleCanvas: () => {
-            // Simulate single canvas full redraw
             const canvas = document.createElement('canvas');
             canvas.width = 1200;
             canvas.height = 600;
             const ctx = canvas.getContext('2d')!;
 
-            // Grid
             ctx.strokeStyle = '#333';
             for (let i = 0; i < 10; i++) {
                 ctx.beginPath();
@@ -160,13 +155,11 @@ export const runChartBenchmark = async (
                 ctx.stroke();
             }
 
-            // Klines
             ctx.fillStyle = '#00ff00';
             klines.slice(0, 100).forEach((_, i) => {
                 ctx.fillRect(i * 12, 100, 10, 400);
             });
 
-            // Indicators
             ctx.strokeStyle = '#ff0000';
             ctx.beginPath();
             klines.slice(0, 100).forEach((_, i) => {
@@ -174,14 +167,12 @@ export const runChartBenchmark = async (
             });
             ctx.stroke();
 
-            // Orders
             ctx.strokeStyle = '#ffff00';
             ctx.beginPath();
             ctx.moveTo(0, 250);
             ctx.lineTo(1200, 250);
             ctx.stroke();
 
-            // Crosshair
             ctx.strokeStyle = '#ffffff';
             ctx.beginPath();
             ctx.moveTo(600, 0);
@@ -190,13 +181,11 @@ export const runChartBenchmark = async (
         },
 
         multiLayer: () => {
-            // Simulate multi-layer (only crosshair updates)
             const canvas = document.createElement('canvas');
             canvas.width = 1200;
             canvas.height = 600;
             const ctx = canvas.getContext('2d')!;
 
-            // Only redraw interaction layer
             ctx.strokeStyle = '#ffffff';
             ctx.beginPath();
             ctx.moveTo(600, 0);

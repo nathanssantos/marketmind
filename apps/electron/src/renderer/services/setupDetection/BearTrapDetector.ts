@@ -5,11 +5,9 @@ import { createDefaultBearTrapConfig } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineVolume } from '@shared/utils/klineUtils';
 import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
 
-// Re-export for consumers
 export type { BearTrapConfig };
 export { createDefaultBearTrapConfig };
 
-// Internal calculation constants
 const VOLUME_LOOKBACK = 20;
 const MIN_TRAP_DISTANCE_PERCENT = 0.001;
 const MAX_TRAP_DISTANCE_PERCENT = 0.02;

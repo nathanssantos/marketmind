@@ -115,7 +115,6 @@ export class IndicatorEngine {
       result[id] = this.computeIndicator(klines, definition, params);
     }
 
-    // Add built-in price/volume series
     result['_price'] = {
       type: 'sma' as IndicatorType, // placeholder type
       values: {
@@ -127,7 +126,6 @@ export class IndicatorEngine {
       },
     };
 
-    // Compute volume SMA for confidence bonuses (calculate SMA of volume, not close)
     const volumeSma20 = this.calculateVolumeSMA(klines, 20);
     result['volume'] = {
       type: 'sma' as IndicatorType,
@@ -1006,7 +1004,6 @@ export class IndicatorEngine {
 
     if (effectiveIndex < 0) return null;
 
-    // Handle volume.sma20 and volume.current FIRST (before checking price references)
     if (base === 'volume' && subKey) {
       const volumeIndicator = indicators['volume'];
       if (!volumeIndicator) return null;
@@ -1014,7 +1011,6 @@ export class IndicatorEngine {
       return values[subKey]?.[effectiveIndex] ?? null;
     }
 
-    // Handle price references (including raw volume when no subKey)
     if (['open', 'high', 'low', 'close', 'volume'].includes(base)) {
       const priceIndicator = indicators['_price'];
       if (!priceIndicator) return null;
@@ -1027,19 +1023,15 @@ export class IndicatorEngine {
     const indicator = indicators[base];
     if (!indicator) return null;
 
-    // Check if values is an array (simple indicator) or object (compound indicator)
     if (Array.isArray(indicator.values)) {
       return indicator.values[effectiveIndex] ?? null;
     }
 
-    // Compound indicator with sub-keys
     const values = indicator.values as Record<string, (number | null)[]>;
     if (subKey) {
       return values[subKey]?.[effectiveIndex] ?? null;
     }
 
-    // If no sub-key provided, try to get a default value
-    // For RSI-like indicators, return the main value
     const defaultKey = Object.keys(values)[0];
     return defaultKey ? (values[defaultKey]?.[effectiveIndex] ?? null) : null;
   }
@@ -1058,7 +1050,6 @@ export class IndicatorEngine {
 
     let baseSeries: (number | null)[] = [];
 
-    // Handle price references
     if (['open', 'high', 'low', 'close', 'volume'].includes(base)) {
       const priceIndicator = indicators['_price'];
       if (!priceIndicator) return [];
@@ -1086,7 +1077,6 @@ export class IndicatorEngine {
       }
     }
 
-    // Apply offset if needed (shift series by offset positions)
     if (offset > 0 && baseSeries.length > 0) {
       const shifted: (number | null)[] = new Array(baseSeries.length).fill(null);
       for (let i = offset; i < baseSeries.length; i++) {

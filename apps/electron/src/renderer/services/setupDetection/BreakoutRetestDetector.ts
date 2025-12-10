@@ -4,7 +4,6 @@ import type { Kline } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { BaseSetupDetector, type SetupDetectorResult, type SetupDetectorConfig } from './BaseSetupDetector';
 
-// Local type definition (removed from @marketmind/types as strategy was not profitable)
 export interface BreakoutRetestConfig extends SetupDetectorConfig {
   volumeMultiplier: number;
   lookbackPeriod: number;
@@ -20,7 +19,6 @@ export const createDefaultBreakoutRetestConfig = (): BreakoutRetestConfig => ({
   emaPeriod: 20,
 });
 
-// Internal calculation constants
 const VOLUME_LOOKBACK = 20;
 const MIN_BREAKOUT_DISTANCE_PERCENT = 0.002;
 const MIN_RETEST_TOUCHES = 2;

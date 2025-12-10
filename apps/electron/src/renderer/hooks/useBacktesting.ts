@@ -9,30 +9,25 @@ import { trpc } from '../utils/trpc';
 export const useBacktesting = () => {
   const utils = trpc.useUtils();
 
-  // Track if we should fetch backtests (lazy loading)
   const [shouldFetchBacktests, setShouldFetchBacktests] = useState(false);
 
-  // Query: List all backtest results - only fetch when explicitly requested
   const { data: backtests, isLoading: isLoadingBacktests } = trpc.backtest.list.useQuery(
     undefined,
     { enabled: shouldFetchBacktests }
   );
 
-  // Mutation: Run backtest
   const runBacktestMutation = trpc.backtest.run.useMutation({
     onSuccess: () => {
       utils.backtest.list.invalidate();
     },
   });
 
-  // Mutation: Delete backtest
   const deleteBacktestMutation = trpc.backtest.delete.useMutation({
     onSuccess: () => {
       utils.backtest.list.invalidate();
     },
   });
 
-  // Function: Run a new backtest
   const runBacktest = useCallback(
     async (config: BacktestConfig) => {
       return runBacktestMutation.mutateAsync(config);
@@ -40,7 +35,6 @@ export const useBacktesting = () => {
     [runBacktestMutation]
   );
 
-  // Function: Get a specific backtest result
   const getBacktestResult = useCallback(
     async (id: string): Promise<BacktestResult | null> => {
       try {
@@ -54,7 +48,6 @@ export const useBacktesting = () => {
     [utils]
   );
 
-  // Function: Delete a backtest
   const deleteBacktest = useCallback(
     async (id: string) => {
       return deleteBacktestMutation.mutateAsync({ id });
@@ -62,27 +55,22 @@ export const useBacktesting = () => {
     [deleteBacktestMutation]
   );
 
-  // Function: Load backtest history (lazy loading to avoid fetching on modal open)
   const loadBacktestHistory = useCallback(() => {
     setShouldFetchBacktests(true);
   }, []);
 
   return {
-    // Data
     backtests: (backtests ?? []) as BacktestSummary[],
 
-    // Loading states
     isLoadingBacktests,
     isRunningBacktest: runBacktestMutation.isPending,
     isDeletingBacktest: deleteBacktestMutation.isPending,
 
-    // Functions
     runBacktest,
     getBacktestResult,
     deleteBacktest,
     loadBacktestHistory,
 
-    // Errors
     runBacktestError: runBacktestMutation.error,
     deleteBacktestError: deleteBacktestMutation.error,
   };

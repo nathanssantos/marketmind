@@ -125,7 +125,6 @@ export const ChartCanvas = ({
   const closeOrder = useTradingStore((state) => state.closeOrder);
   const updateOrder = useTradingStore((state) => state.updateOrder);
 
-  // Backend wallet for auto-trading
   const { wallets: backendWallets } = useBackendWallet();
   const backendWalletId = backendWallets[0]?.id;
 
@@ -1083,7 +1082,6 @@ export const ChartCanvas = ({
       addDetectedSetup(setup);
       executedSetupsRef.current.add(setup.id);
 
-      // Check if auto-trading is enabled (simulator OR backend mode)
       const shouldExecute = isSimulatorActive
         ? activeWalletId && symbol
         : backendWalletId && symbol;

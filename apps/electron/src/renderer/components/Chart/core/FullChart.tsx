@@ -105,7 +105,6 @@ export const FullChart = ({
         onPan: (deltaX) => (deltaX > 0 ? undefined : undefined),
     });
 
-    // Trade visualization for SL/TP lines
     useTradeVisualization({
         trades: showTrades ? (trades ?? []) : [],
         viewport: {
@@ -131,7 +130,6 @@ export const FullChart = ({
         mousePosition,
     });
 
-    // Update hovered kline based on mouse position
     useEffect(() => {
         if (!mousePosition || !visibleData.length) {
             setHoveredKline(null);

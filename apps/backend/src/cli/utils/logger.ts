@@ -232,7 +232,6 @@ export class BacktestLogger {
     console.log(table.toString());
     console.log('');
 
-    // Highlight best
     const best = results[0];
     if (best) {
       console.log(
@@ -289,7 +288,6 @@ export class BacktestLogger {
     console.log('');
   }
 
-  // Helper methods
   private centerText(text: string, width: number): string {
     const padding = Math.max(0, width - text.length);
     const leftPad = Math.floor(padding / 2);
@@ -302,5 +300,4 @@ export class BacktestLogger {
   }
 }
 
-// Export a default instance
 export const logger = new BacktestLogger();

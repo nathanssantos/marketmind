@@ -1,9 +1,18 @@
 # 🔄 MarketMind Refactoring Plan 2025
 
-**Status:** Planning  
-**Branch:** `feature/refactoring-2025`  
+**Status:** In Progress (Sprint 1 - Auditoria)  
+**Branch:** `feature/setup-optimization` (será migrado para `feature/refactoring-2025`)  
 **Target Date:** Q1 2025  
 **Goal:** Organizar monorepo, consolidar código duplicado, refatorar AI trading e preparar para Machine Learning
+
+**Progress:**
+- ✅ Scripts de auditoria criados (files, types, indicators)
+- ✅ Script de análise de comentários criado
+- ✅ Script de remoção de comentários criado (com validação)
+- ✅ Relatório de comentários gerado (654 comentários removíveis em 64 arquivos)
+- ⏳ Executar remoção de comentários (aguardando revisão)
+- ⏳ Auditoria de tipos duplicados
+- ⏳ Auditoria de indicadores duplicados
 
 ---
 

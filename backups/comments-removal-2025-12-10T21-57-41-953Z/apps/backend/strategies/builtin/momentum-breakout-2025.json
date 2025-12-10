@@ -1,0 +1,210 @@
+{
+  "id": "momentum-breakout-2025",
+  "name": "Momentum Breakout 2025",
+  "version": "1.1.0",
+  "description": "Momentum trend strategy (LONG ONLY). Enters when EMA fast > slow, price > trend EMA, and RSI confirms momentum. Simplified conditions.",
+  "author": "MarketMind",
+  "tags": [
+    "trend-following",
+    "momentum",
+    "breakout",
+    "bull-market",
+    "2025"
+  ],
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 80,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 90,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 5,
+    "breakEvenAfterR": 3,
+    "onlyWithTrend": false,
+    "minConfidence": 60,
+    "commission": 0.001
+  },
+  "backtestSummary": {
+    "profitFactor": 4.86,
+    "winRate": 57.9,
+    "sharpeRatio": 5.75,
+    "maxDrawdownPercent": 12.5,
+    "totalTrades": 19,
+    "netPnlPercent": 82.41,
+    "testedAt": "2024-12-09",
+    "testedPeriod": "2024-01-01 to 2024-10-01",
+    "testedTimeframe": "4h",
+    "testedSymbol": "BTCUSDT"
+  },
+  "recommendedTimeframes": {
+    "primary": "4h",
+    "secondary": [
+      "1h",
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
+    "notes": "Momentum breakout works best on 4H for trend confirmation"
+  },
+  "parameters": {
+    "emaFast": {
+      "default": 9,
+      "min": 5,
+      "max": 15,
+      "step": 2,
+      "description": "Fast EMA period"
+    },
+    "emaSlow": {
+      "default": 21,
+      "min": 15,
+      "max": 30,
+      "step": 3,
+      "description": "Slow EMA period"
+    },
+    "emaTrend": {
+      "default": 50,
+      "min": 30,
+      "max": 100,
+      "step": 10,
+      "description": "Trend EMA period"
+    },
+    "rsiPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "RSI period"
+    },
+    "rsiLong": {
+      "default": 55,
+      "min": 50,
+      "max": 65,
+      "step": 5,
+      "description": "RSI threshold for long (momentum confirmation)"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "ATR period"
+    },
+    "atrMultiplierSL": {
+      "default": 1.5,
+      "min": 1,
+      "max": 2.5,
+      "step": 0.25,
+      "description": "ATR multiplier for stop loss"
+    },
+    "atrMultiplierTP": {
+      "default": 3,
+      "min": 2,
+      "max": 5,
+      "step": 0.5,
+      "description": "ATR multiplier for take profit"
+    }
+  },
+  "indicators": {
+    "emaFast": {
+      "type": "ema",
+      "params": {
+        "period": "$emaFast"
+      }
+    },
+    "emaSlow": {
+      "type": "ema",
+      "params": {
+        "period": "$emaSlow"
+      }
+    },
+    "emaTrend": {
+      "type": "ema",
+      "params": {
+        "period": "$emaTrend"
+      }
+    },
+    "rsi": {
+      "type": "rsi",
+      "params": {
+        "period": "$rsiPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": "$atrPeriod"
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "emaFast",
+          "op": ">",
+          "right": "emaSlow"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "emaTrend"
+        },
+        {
+          "left": "rsi",
+          "op": ">",
+          "right": "$rsiLong"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplierSL",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "atr",
+      "multiplier": "$atrMultiplierTP",
+      "indicator": "atr"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 5,
+      "breakEvenAfterR": 3
+    }
+  },
+  "confidence": {
+    "base": 60,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "rsi",
+          "op": ">",
+          "right": 60
+        },
+        "bonus": 10,
+        "description": "Strong momentum (RSI > 60)"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20 * 1.5"
+        },
+        "bonus": 15,
+        "description": "High volume breakout (1.5x avg)"
+      }
+    ],
+    "max": 95
+  },
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 2.0
+  }
+}

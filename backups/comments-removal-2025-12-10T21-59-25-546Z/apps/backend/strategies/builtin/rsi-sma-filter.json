@@ -1,0 +1,186 @@
+{
+  "id": "rsi-sma-filter",
+  "name": "RSI SMA Filter",
+  "version": "1.0.0",
+  "description": "RSI com filtro de SMA200 para confirmar tendência. Entry RSI < 30 quando preço acima da SMA200. Combina mean-reversion com trend filter.",
+  "author": "MarketMind",
+  "tags": [
+    "mean-reversion",
+    "rsi",
+    "sma",
+    "trend-filter"
+  ],
+  "source": "TradingView Community",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 70,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 80,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": false,
+    "onlyWithTrend": true,
+    "minConfidence": 70,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
+    "notes": "RSI mean reversion with trend filter"
+  },
+  "parameters": {
+    "rsiPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 21,
+      "step": 1,
+      "description": "Período do RSI"
+    },
+    "smaPeriod": {
+      "default": 200,
+      "min": 100,
+      "max": 250,
+      "step": 50,
+      "description": "Período da SMA para filtro"
+    },
+    "oversold": {
+      "default": 30,
+      "min": 20,
+      "max": 35,
+      "step": 5,
+      "description": "Nível oversold"
+    },
+    "overbought": {
+      "default": 70,
+      "min": 65,
+      "max": 80,
+      "step": 5,
+      "description": "Nível overbought"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
+  },
+  "indicators": {
+    "rsi": {
+      "type": "rsi",
+      "params": {
+        "period": "$rsiPeriod"
+      }
+    },
+    "sma": {
+      "type": "sma",
+      "params": {
+        "period": "$smaPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "rsi",
+          "op": "<",
+          "right": "$oversold"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "sma"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "rsi",
+          "op": ">",
+          "right": "$overbought"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "sma"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2
+    },
+    "conditions": {
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "rsi",
+            "op": ">",
+            "right": 50
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "rsi",
+            "op": "<",
+            "right": 50
+          }
+        ]
+      }
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "rsi",
+          "op": "<",
+          "right": 25
+        },
+        "bonus": 10,
+        "description": "Very oversold"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 5,
+        "description": "Volume spike"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 1.5
+  }
+}

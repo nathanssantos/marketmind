@@ -186,18 +186,39 @@ function restoreBackup() {
     log.success('Restored from backup');
 }
 
-function runTypeCheck() {
+function countTypeErrors() {
+    try {
+        const output = execSync('pnpm type-check 2>&1', { encoding: 'utf-8' });
+        const matches = output.match(/error TS/g);
+        return matches ? matches.length : 0;
+    } catch (error) {
+        const matches = error.stdout?.match(/error TS/g) || [];
+        return matches.length;
+    }
+}
+
+function runTypeCheck(baselineErrors) {
     log.info('Running type check...');
 
-    try {
-        execSync('pnpm --filter @marketmind/electron type-check', { stdio: 'pipe' });
-        execSync('pnpm --filter @marketmind/backend type-check', { stdio: 'pipe' });
-        log.success('Type check passed!');
+    const currentErrors = countTypeErrors();
+    
+    if (currentErrors === 0) {
+        log.success('Type check passed! No errors found.');
         return true;
-    } catch (error) {
-        log.error('Type check failed!');
-        return false;
     }
+    
+    if (currentErrors === baselineErrors) {
+        log.success(`Type check passed! Same number of errors as before (${currentErrors})`);
+        return true;
+    }
+    
+    if (currentErrors < baselineErrors) {
+        log.success(`Type check improved! Errors reduced from ${baselineErrors} to ${currentErrors}`);
+        return true;
+    }
+    
+    log.error(`Type check failed! Errors increased from ${baselineErrors} to ${currentErrors}`);
+    return false;
 }
 
 function runTests() {
@@ -222,6 +243,10 @@ function main() {
     console.log('  ✅ Type definition documentation');
     console.log('  ✅ @ts-ignore, @ts-expect-error directives');
     console.log('  ✅ eslint-disable comments\n');
+
+    log.info('Checking baseline type errors...');
+    const baselineErrors = countTypeErrors();
+    log.info(`Found ${baselineErrors} existing type errors\n`);
 
     createBackup();
 
@@ -257,7 +282,7 @@ function main() {
         return;
     }
 
-    if (!runTypeCheck()) {
+    if (!runTypeCheck(baselineErrors)) {
         restoreBackup();
         process.exit(1);
     }

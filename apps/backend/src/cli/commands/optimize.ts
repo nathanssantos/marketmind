@@ -87,18 +87,15 @@ export async function optimizeCommand(options: OptimizeOptions) {
   const logger = new BacktestLogger(options.verbose ? LogLevel.VERBOSE : LogLevel.INFO);
 
   try {
-    // Validate all inputs
     validateStrategy(options.strategy);
     validateSymbol(options.symbol);
     validateInterval(options.interval);
     validateDateRange(options.start, options.end);
 
-    // Validate that we have either preset or params
     if (!options.preset && (!options.param || options.param.length === 0)) {
       throw new ValidationError('Parameters', 'none', 'Either --preset or --param is required');
     }
 
-    // Only validate param grid if params are provided
     if (options.param && options.param.length > 0) {
       validateParameterGrid(options.param);
       validateGridSearchSize(options.param);
@@ -124,32 +121,26 @@ export async function optimizeCommand(options: OptimizeOptions) {
       ? validatePercentage(options.commission, 'Commission', 0, 10)
       : undefined;
 
-    // Validate position sizing method
     const validMethods = ['fixed-fractional', 'risk-based', 'kelly', 'volatility-based'];
     if (!validMethods.includes(options.positionMethod)) {
       throw new ValidationError('Position sizing method', options.positionMethod, validMethods.join(', '));
     }
 
-    // Validate Kelly fraction
     if (isNaN(kellyFraction) || kellyFraction <= 0 || kellyFraction > 1) {
       throw new ValidationError('Kelly fraction', options.kellyFraction, '0 < fraction <= 1');
     }
 
-    // Validate risk/reward ratio
     if (!options.useAlgorithmicLevels) {
       validateRiskReward(stopLoss, takeProfit);
     }
 
-    // Validate optional parameters
     let minConfidence: number | undefined;
     if (options.minConfidence) {
       minConfidence = validatePercentage(options.minConfidence, 'Min confidence', 0, 100);
     }
 
-    // Parse parameter grid from --param flags
     let parameterGrid: Record<string, number[]> = {};
 
-    // Apply preset if specified
     if (options.preset) {
       const presetName = options.preset.toLowerCase();
       if (!OPTIMIZATION_PRESETS[presetName]) {
@@ -159,19 +150,16 @@ export async function optimizeCommand(options: OptimizeOptions) {
       logger.info(`Using optimization preset: ${presetName}`);
     }
 
-    // Parse custom parameters (override preset values)
     for (const paramStr of options.param) {
       const [name, valuesStr] = paramStr.split('=');
       if (!name || !valuesStr) continue;
       parameterGrid[name] = ParameterGenerator.parseArray(valuesStr);
     }
 
-    // Validate grid
     ParameterGenerator.validate(parameterGrid);
 
     const totalCombinations = ParameterGenerator.countCombinations(parameterGrid);
 
-    // Display header
     const paramSummary = Object.entries(parameterGrid)
       .map(([key, values]) => `${key}=[${values.join(',')}]`)
       .join(' ');
@@ -185,11 +173,9 @@ export async function optimizeCommand(options: OptimizeOptions) {
       'Parallel Workers': parallelWorkers.toString(),
     });
 
-    // Parse position management options
     const maxConcurrent = options.maxConcurrent ? parseInt(options.maxConcurrent, 10) : undefined;
     const maxExposure = options.maxExposure ? parseFloat(options.maxExposure) / 100 : undefined;
 
-    // Create base config
     const baseConfig: BacktestConfig = {
       symbol: options.symbol,
       interval: options.interval,
@@ -211,12 +197,10 @@ export async function optimizeCommand(options: OptimizeOptions) {
       useTrailingStop: options.trailingStop ?? false,
     };
 
-    // Add minConfidence to base config if specified
     if (minConfidence !== undefined) {
       baseConfig.minConfidence = minConfidence;
     }
 
-    // Fetch historical data once (reuse for all backtests)
     const spinner = ora({
       text: chalk.cyan('Fetching historical data...'),
       color: 'cyan',
@@ -232,7 +216,6 @@ export async function optimizeCommand(options: OptimizeOptions) {
     spinner.succeed(chalk.green(`Fetched ${klines.length} candles`));
     console.log('');
 
-    // Create progress bar
     const progressBar = new cliProgress.SingleBar({
       format: chalk.cyan('Running backtests |') + chalk.yellow('{bar}') + chalk.cyan('| {percentage}% | {value}/{total} | ETA: {eta}s'),
       barCompleteChar: '\u2588',
@@ -242,7 +225,6 @@ export async function optimizeCommand(options: OptimizeOptions) {
 
     progressBar.start(totalCombinations, 0);
 
-    // Run optimization
     const optimizer = new BacktestOptimizer();
     const startTime = Date.now();
 
@@ -268,7 +250,6 @@ export async function optimizeCommand(options: OptimizeOptions) {
     logger.success(`Completed ${results.length} backtests in ${duration.toFixed(1)}s (avg ${avgTime.toFixed(1)}s/backtest)`);
     console.log('');
 
-    // Filter results if criteria specified
     let filteredResults = results;
 
     if (options.minWinRate || options.minProfitFactor) {
@@ -290,7 +271,6 @@ export async function optimizeCommand(options: OptimizeOptions) {
       return;
     }
 
-    // Display top N results
     const topResults = filteredResults.slice(0, topN);
 
     logger.optimizationResults(
@@ -298,7 +278,6 @@ export async function optimizeCommand(options: OptimizeOptions) {
       topN
     );
 
-    // Display statistics
     const stats = optimizer.getStatistics(filteredResults);
     if (stats) {
       console.log(chalk.cyan.bold('STATISTICS:'));
@@ -310,13 +289,11 @@ export async function optimizeCommand(options: OptimizeOptions) {
       console.log('');
     }
 
-    // Display interpretation
     const best = filteredResults[0];
     if (best) {
       interpretResults(best, logger);
     }
 
-    // Save results
     console.log('');
     const saveSpinner = ora({
       text: chalk.cyan('Saving optimization results...'),
@@ -359,14 +336,12 @@ function interpretResults(best: any, _logger: BacktestLogger) {
   console.log(chalk.cyan.bold('BEST CONFIGURATION:'));
   console.log('');
 
-  // Display parameters
   console.log(chalk.white.bold('Parameters:'));
   for (const [key, value] of Object.entries(best.params)) {
     console.log(chalk.gray(`  ${key}: ${value}`));
   }
   console.log('');
 
-  // Display key metrics
   console.log(chalk.white.bold('Metrics:'));
   console.log(chalk.gray(`  Win Rate: ${m.winRate.toFixed(1)}%`));
   console.log(chalk.gray(`  Profit Factor: ${m.profitFactor.toFixed(2)}`));
@@ -376,7 +351,6 @@ function interpretResults(best: any, _logger: BacktestLogger) {
   console.log(chalk.gray(`  Total Trades: ${m.totalTrades}`));
   console.log('');
 
-  // Recommendation
   const isExcellent =
     m.winRate >= 60 &&
     m.profitFactor >= 2.0 &&

@@ -9,7 +9,6 @@ import {
 import type { SetupDetectorResult } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';
 
-// Re-export for consumers
 export type { BearTrapConfig };
 export { createDefaultBearTrapConfig };
 

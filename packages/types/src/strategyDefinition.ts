@@ -7,9 +7,6 @@
  * @package @marketmind/types
  */
 
-// =============================================================================
-// Indicator Types
-// =============================================================================
 
 /**
  * Supported indicator types that map to @marketmind/indicators functions
@@ -99,9 +96,6 @@ export interface ComputedIndicator {
  */
 export type ComputedIndicators = Record<string, ComputedIndicator>;
 
-// =============================================================================
-// Parameter Types
-// =============================================================================
 
 /**
  * Strategy parameter with default value and optimization range
@@ -114,9 +108,6 @@ export interface StrategyParameter {
   description?: string;
 }
 
-// =============================================================================
-// Condition Types
-// =============================================================================
 
 /**
  * Comparison operators for conditions
@@ -170,9 +161,6 @@ export interface ConditionGroup {
   conditions: (Condition | ConditionGroup)[];
 }
 
-// =============================================================================
-// Exit Level Types
-// =============================================================================
 
 /**
  * Types of exit level calculations
@@ -216,9 +204,6 @@ export interface ExitConditions {
   short?: ConditionGroup;
 }
 
-// =============================================================================
-// Confidence Calculation Types
-// =============================================================================
 
 /**
  * Bonus applied to base confidence when condition is met
@@ -238,9 +223,6 @@ export interface ConfidenceConfig {
   max?: number;
 }
 
-// =============================================================================
-// Filter Types
-// =============================================================================
 
 /**
  * Time-based filters for strategy execution
@@ -271,9 +253,6 @@ export interface StrategyFilters {
   timeFilters?: TimeFilters;
 }
 
-// =============================================================================
-// Strategy Status Types
-// =============================================================================
 
 /**
  * Strategy status for filtering during backtesting
@@ -312,9 +291,6 @@ export interface StrategyBacktestSummary {
   testedSymbol: string;
 }
 
-// =============================================================================
-// Optimized Backtest Parameters
-// =============================================================================
 
 /**
  * Optimized backtest parameters for a strategy
@@ -335,9 +311,6 @@ export interface OptimizedBacktestParams {
   commission?: number;
 }
 
-// =============================================================================
-// Main Strategy Definition
-// =============================================================================
 
 /**
  * Entry conditions for long and short positions
@@ -369,7 +342,6 @@ export interface ExitConfig {
  * Complete strategy definition that can be serialized to JSON
  */
 export interface StrategyDefinition {
-  // Metadata
   id: string;
   name: string;
   version: string;
@@ -377,30 +349,22 @@ export interface StrategyDefinition {
   author?: string;
   tags?: string[];
 
-  // Status (for filtering unprofitable strategies)
   status?: StrategyStatus;
   backtestSummary?: StrategyBacktestSummary;
   recommendedTimeframes?: RecommendedTimeframes;
 
-  // Optimized backtest parameters (used when "Use Optimized Settings" is enabled)
   optimizedParams?: OptimizedBacktestParams;
 
-  // Configuration
   parameters: Record<string, StrategyParameter>;
   indicators: Record<string, IndicatorDefinition>;
 
-  // Trading logic
   entry: EntryConditions;
   exit: ExitConfig;
 
-  // Quality gates
   confidence?: ConfidenceConfig;
   filters?: StrategyFilters;
 }
 
-// =============================================================================
-// Runtime Types
-// =============================================================================
 
 /**
  * Strategy with resolved parameter values
@@ -442,9 +406,6 @@ export interface ExitContext {
   params: Record<string, number>;
 }
 
-// =============================================================================
-// Validation Types
-// =============================================================================
 
 /**
  * Validation error for strategy definitions
@@ -464,9 +425,6 @@ export interface StrategyValidationResult {
   warnings: StrategyValidationError[];
 }
 
-// =============================================================================
-// Type Guards
-// =============================================================================
 
 /**
  * Check if value is a calculated expression

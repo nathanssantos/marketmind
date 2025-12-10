@@ -31,7 +31,6 @@ describe('calculateStochastic', () => {
     expect(result.k).toHaveLength(5);
     expect(result.d).toHaveLength(5);
     
-    // First values should be null (not enough data)
     expect(result.k[0]).toBeNull();
     expect(result.k[1]).toBeNull();
     expect(result.d[0]).toBeNull();
@@ -96,13 +95,11 @@ describe('calculateStochastic', () => {
 
     const result = calculateStochastic(klines, 2, 2);
     
-    // When close equals high, %K should be 100
     const lastK = result.k[result.k.length - 1];
     expect(lastK).toBe(100);
   });
 
   it('should handle price at low', () => {
-    // Create klines where close is at the lowest point of the range
     const klines = [
       createMockKline(105, 100, 100, 0), // close at low
       createMockKline(110, 100, 100, 1), // close at low of period
@@ -110,7 +107,6 @@ describe('calculateStochastic', () => {
 
     const result = calculateStochastic(klines, 2, 2);
     
-    // When close is consistently at low, %K should be 0
     const lastK = result.k[result.k.length - 1];
     expect(lastK).toBe(0);
   });

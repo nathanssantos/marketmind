@@ -7,11 +7,9 @@ import {
     type SetupDetectorResult,
 } from './BaseSetupDetector';
 
-// Re-export for consumers
 export type { Pattern123Config };
 export { createDefault123Config };
 
-// Internal constant
 const MIN_HIGHER_LOW_PERCENT = 0.001;
 
 export class Pattern123Detector extends BaseSetupDetector {

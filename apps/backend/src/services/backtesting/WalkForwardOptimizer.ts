@@ -173,7 +173,6 @@ export class WalkForwardOptimizer {
     for (const params of parameterCombinations) {
       const config = this.applyParameters(baseConfig, params);
 
-      // Override dates to use training window
       const trainingConfig: BacktestConfig = {
         ...config,
         startDate: new Date(window.trainingStart).toISOString(),
@@ -214,7 +213,6 @@ export class WalkForwardOptimizer {
   ): Promise<BacktestResult> {
     const config = this.applyParameters(baseConfig, optimizedParams);
 
-    // Override dates to use testing window
     const testingConfig: BacktestConfig = {
       ...config,
       startDate: new Date(window.testingStart).toISOString(),

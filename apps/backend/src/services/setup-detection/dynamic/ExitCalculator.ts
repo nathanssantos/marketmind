@@ -50,7 +50,6 @@ export class ExitCalculator {
   ): number {
     const { direction, entryPrice } = context;
 
-    // For riskReward type, we need the stop loss distance
     if (exit.type === 'riskReward' && stopLossPrice !== undefined) {
       const slDistance = Math.abs(entryPrice - stopLossPrice);
       const multiplier = this.resolveOperand(exit.multiplier ?? 2, context);
@@ -63,13 +62,11 @@ export class ExitCalculator {
       }
     }
 
-    // For indicator type, get the target value directly
     if (exit.type === 'indicator') {
       const target = this.resolveIndicatorTarget(exit, context);
       if (target !== null) {
         return target;
       }
-      // Fall back to fallback or default
     }
 
     const distance = this.calculateExitDistance(exit, context);
@@ -108,17 +105,13 @@ export class ExitCalculator {
         if (target !== null) {
           return Math.abs(target - entryPrice);
         }
-        // Try fallback
         if (exit.fallback) {
           return this.calculateExitDistance(exit.fallback, context);
         }
-        // Default to 2% if no target found
         return entryPrice * 0.02;
       }
 
       case 'riskReward': {
-        // This is handled specially in calculateTakeProfit
-        // For stop loss or when SL is not provided, default to 2%
         return entryPrice * 0.02;
       }
 
@@ -187,7 +180,6 @@ export class ExitCalculator {
       return context.params[paramName] ?? 0;
     }
 
-    // Try to resolve as indicator reference
     const value = this.indicatorEngine.resolveIndicatorValue(
       context.indicators,
       operand,
@@ -207,13 +199,11 @@ export class ExitCalculator {
     const config = strategy.confidence;
 
     if (!config) {
-      // Default confidence calculation
       return this.calculateDefaultConfidence(context);
     }
 
     let confidence = config.base;
 
-    // Apply bonuses
     if (config.bonuses) {
       for (const bonus of config.bonuses) {
         if (this.evaluateBonusCondition(bonus.condition, context)) {
@@ -222,7 +212,6 @@ export class ExitCalculator {
       }
     }
 
-    // Apply max cap
     const maxConfidence = config.max ?? 100;
     return Math.min(Math.max(confidence, 0), maxConfidence);
   }
@@ -290,7 +279,6 @@ export class ExitCalculator {
 
     let confidence = 60; // Base confidence
 
-    // Bonus for volume confirmation
     const volumeCurrent = this.indicatorEngine.resolveIndicatorValue(
       indicators,
       'volume.current',

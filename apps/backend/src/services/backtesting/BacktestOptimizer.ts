@@ -36,10 +36,8 @@ export class BacktestOptimizer {
   ): Promise<OptimizationResult[]> {
     const { baseConfig, parameterGrid, parallelWorkers = 1, sortBy = 'totalPnlPercent', onProgress } = config;
 
-    // Validate parameter grid
     ParameterGenerator.validate(parameterGrid);
 
-    // Generate all parameter combinations
     const combinations = ParameterGenerator.generateGrid(parameterGrid);
     const totalCombinations = combinations.length;
 
@@ -50,7 +48,6 @@ export class BacktestOptimizer {
     let completed = 0;
 
     if (parallelWorkers > 1) {
-      // Parallel execution
       const chunks = ParameterGenerator.chunk(combinations, parallelWorkers);
 
       for (const chunk of chunks) {
@@ -74,11 +71,9 @@ export class BacktestOptimizer {
           })
         );
 
-        // Filter out failed backtests
         results.push(...batchResults.filter((r): r is OptimizationResult => r !== null));
       }
     } else {
-      // Sequential execution
       for (const params of combinations) {
         try {
           const result = await this.runSingle(baseConfig, params, klines);
@@ -97,7 +92,6 @@ export class BacktestOptimizer {
       }
     }
 
-    // Sort by the specified metric (descending for most metrics)
     const sortedResults = this.sortResults(results, sortBy);
 
     console.log(`[Optimizer] Completed ${results.length}/${totalCombinations} backtests successfully`);
@@ -165,7 +159,6 @@ export class BacktestOptimizer {
     results: OptimizationResult[],
     sortBy: keyof BacktestMetrics
   ): OptimizationResult[] {
-    // Metrics where lower is better
     const lowerIsBetter = ['maxDrawdown', 'maxDrawdownPercent', 'totalCommission'];
 
     const multiplier = lowerIsBetter.includes(sortBy) ? -1 : 1;
@@ -174,13 +167,10 @@ export class BacktestOptimizer {
       const aValue = a.metrics[sortBy] as number;
       const bValue = b.metrics[sortBy] as number;
 
-      // Handle null/undefined values
       if (aValue == null && bValue == null) return 0;
       if (aValue == null) return 1;
       if (bValue == null) return -1;
 
-      // For higher-is-better metrics: bValue - aValue (descending)
-      // For lower-is-better metrics: aValue - bValue (ascending)
       return multiplier * (bValue - aValue);
     });
   }

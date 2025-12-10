@@ -41,7 +41,6 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
   const logger = new BacktestLogger(options.verbose ? LogLevel.VERBOSE : LogLevel.INFO);
 
   try {
-    // Validate all inputs
     validateStrategy(options.strategy);
     validateSymbol(options.symbol);
     validateInterval(options.interval);
@@ -55,7 +54,6 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
     const testingMonths = parseInt(options.testingMonths);
     const stepMonths = parseInt(options.stepMonths);
 
-    // Validate walk-forward config
     if (trainingMonths < 1 || trainingMonths > 24) {
       throw new ValidationError('Training window must be between 1 and 24 months');
     }
@@ -66,13 +64,11 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
       throw new ValidationError('Step must be between 1 and 12 months');
     }
 
-    // Validate optional parameters
     let minConfidence: number | undefined;
     if (options.minConfidence) {
       minConfidence = validatePercentage(options.minConfidence, 'Min confidence', 0, 100);
     }
 
-    // Parse parameter ranges from --param flags
     const parameterRanges: ParameterRange[] = [];
 
     for (const paramStr of options.param) {
@@ -95,7 +91,6 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
       parameterRanges.push({ name, min, max, step });
     }
 
-    // Display header
     const paramSummary = parameterRanges
       .map((r) => `${r.name}=[${r.min}:${r.step}:${r.max}]`)
       .join(' ');
@@ -110,7 +105,6 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
       'Parameters': paramSummary,
     });
 
-    // Create base config
     const baseConfig: BacktestConfig = {
       symbol: options.symbol,
       interval: options.interval,
@@ -124,12 +118,10 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
       onlyWithTrend: options.onlyWithTrend,
     };
 
-    // Add minConfidence to base config if specified
     if (minConfidence !== undefined) {
       baseConfig.minConfidence = minConfidence;
     }
 
-    // Create walk-forward config
     const wfConfig: WalkForwardConfig = {
       trainingWindowMonths: trainingMonths,
       testingWindowMonths: testingMonths,
@@ -137,7 +129,6 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
       minWindowCount: 3,
     };
 
-    // Fetch historical data
     const spinner = ora({
       text: chalk.cyan('Fetching historical data...'),
       color: 'cyan',
@@ -153,7 +144,6 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
     spinner.succeed(chalk.green(`Fetched ${klines.length} candles`));
     console.log('');
 
-    // Create windows
     const windowSpinner = ora({
       text: chalk.cyan('Creating walk-forward windows...'),
       color: 'cyan',
@@ -169,7 +159,6 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
       throw error;
     }
 
-    // Display window information
     if (options.verbose) {
       console.log(chalk.cyan.bold('WINDOWS:'));
       for (const window of windows) {
@@ -185,14 +174,12 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
       console.log('');
     }
 
-    // Run walk-forward analysis
     console.log(chalk.cyan('Running walk-forward analysis...'));
     console.log('');
 
     const startTime = Date.now();
     let currentWindow = 0;
 
-    // Create progress bar
     const progressBar = new cliProgress.SingleBar({
       format: chalk.cyan('Progress |') + chalk.yellow('{bar}') + chalk.cyan('| {percentage}% | Window {value}/{total} | ETA: {eta}s'),
       barCompleteChar: '\u2588',
@@ -202,7 +189,6 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
 
     progressBar.start(windows.length, 0);
 
-    // Run optimization for each window
     for (const window of windows) {
       const optimizationResult = await WalkForwardOptimizer.optimizeWindow(
         window,
@@ -230,15 +216,12 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
     logger.success(`Completed walk-forward analysis in ${duration.toFixed(1)}s`);
     console.log('');
 
-    // Calculate aggregated metrics
     const aggregatedMetrics = (WalkForwardOptimizer as any).calculateAggregatedMetrics(windows);
     const degradation = (WalkForwardOptimizer as any).calculateDegradation(windows);
     const isRobust = degradation <= 0.3;
 
-    // Display results
     displayResults(windows, aggregatedMetrics, degradation, isRobust, options.verbose);
 
-    // Save results
     console.log('');
     const saveSpinner = ora({
       text: chalk.cyan('Saving walk-forward results...'),
@@ -318,7 +301,6 @@ function displayResults(
   isRobust: boolean,
   verbose: boolean
 ) {
-  // Display per-window results
   if (verbose) {
     console.log(chalk.cyan.bold('WINDOW RESULTS:'));
     console.log('');
@@ -329,14 +311,12 @@ function displayResults(
 
       console.log(chalk.white.bold(`Window ${window.windowIndex + 1}:`));
 
-      // In-sample (training)
       console.log(chalk.gray('  In-Sample (Training):'));
       console.log(chalk.gray(`    Best Params: ${JSON.stringify(inSample?.parameters || {})}`));
       console.log(chalk.gray(`    Sharpe Ratio: ${(inSample?.sharpeRatio || 0).toFixed(2)}`));
       console.log(chalk.gray(`    Profit Factor: ${(inSample?.profitFactor || 0).toFixed(2)}`));
       console.log(chalk.gray(`    Max Drawdown: ${((inSample?.maxDrawdown || 0) * 100).toFixed(2)}%`));
 
-      // Out-of-sample (testing)
       console.log(chalk.gray('  Out-of-Sample (Testing):'));
       console.log(chalk.gray(`    Trades: ${window.testResult?.trades.length || 0}`));
       console.log(chalk.gray(`    Win Rate: ${(outOfSample?.winRate || 0).toFixed(1)}%`));
@@ -348,7 +328,6 @@ function displayResults(
     }
   }
 
-  // Display aggregated metrics
   console.log(chalk.cyan.bold('AGGREGATED METRICS:'));
   console.log('');
 
@@ -365,7 +344,6 @@ function displayResults(
   console.log(chalk.gray(`  Degradation: ${(degradation * 100).toFixed(1)}%`));
   console.log('');
 
-  // Robustness assessment
   console.log(chalk.white.bold('Robustness Assessment:'));
 
   const degradationColor = degradation <= 0.3 ? chalk.green : chalk.red;
@@ -380,7 +358,6 @@ function displayResults(
   }
   console.log('');
 
-  // Interpretation and recommendation
   interpretResults(aggregatedMetrics, degradation, isRobust);
 }
 
@@ -397,7 +374,6 @@ function interpretResults(
 
   const insights: string[] = [];
 
-  // Degradation analysis
   if (degradation < 0.15) {
     insights.push('✓ Excellent stability - minimal performance degradation');
   } else if (degradation < 0.3) {
@@ -406,7 +382,6 @@ function interpretResults(
     insights.push('✗ Poor stability - significant overfitting detected');
   }
 
-  // Win rate analysis
   if (metrics.overallWinRate >= 0.55) {
     insights.push('✓ Strong win rate across all periods');
   } else if (metrics.overallWinRate >= 0.45) {
@@ -415,7 +390,6 @@ function interpretResults(
     insights.push('✗ Low win rate - strategy may not be viable');
   }
 
-  // Profit factor analysis
   if (metrics.overallProfitFactor >= 2.0) {
     insights.push('✓ Excellent profit factor');
   } else if (metrics.overallProfitFactor >= 1.5) {
@@ -424,7 +398,6 @@ function interpretResults(
     insights.push('✗ Poor profit factor - risk/reward needs improvement');
   }
 
-  // Trade count analysis
   if (metrics.totalTrades >= 30) {
     insights.push('✓ Sufficient trade sample for statistical validity');
   } else {
@@ -436,7 +409,6 @@ function interpretResults(
   }
   console.log('');
 
-  // Final recommendation
   console.log(chalk.cyan.bold('RECOMMENDATION:'));
   console.log('');
 

@@ -18,7 +18,6 @@ program
   .description('CLI tool for running and optimizing trading strategy backtests')
   .version('1.0.0');
 
-// Validate command
 program
   .command('validate')
   .description('Validate a trading strategy with detailed backtest')
@@ -45,7 +44,6 @@ program
   .option('-v, --verbose', 'Show detailed trade-by-trade logs', false)
   .action(validateCommand);
 
-// Optimize command
 program
   .command('optimize')
   .description('Optimize strategy parameters via grid search')
@@ -80,7 +78,6 @@ program
   .option('-v, --verbose', 'Show detailed logs', false)
   .action(optimizeCommand);
 
-// Compare command
 program
   .command('compare')
   .description('Compare multiple backtest results')
@@ -90,7 +87,6 @@ program
     compareCommand(files, options);
   });
 
-// Export command
 program
   .command('export')
   .description('Export backtest results to CSV')
@@ -101,7 +97,6 @@ program
     exportCommand(file, options);
   });
 
-// Walk-forward command
 program
   .command('walkforward')
   .description('Run walk-forward analysis to validate strategy robustness')
@@ -125,7 +120,6 @@ program
   .option('-v, --verbose', 'Show detailed logs including all windows', false)
   .action(walkforwardCommand);
 
-// Monte Carlo command
 program
   .command('montecarlo')
   .description('Run Monte Carlo simulation for statistical analysis')
@@ -147,7 +141,6 @@ program
   .option('-v, --verbose', 'Show detailed logs', false)
   .action(montecarloCommand);
 
-// Sensitivity command
 program
   .command('sensitivity')
   .description('Analyze parameter sensitivity to detect over-optimization')
@@ -169,7 +162,6 @@ program
   .option('-v, --verbose', 'Show detailed parameter-by-parameter results', false)
   .action(sensitivityCommand);
 
-// Benchmark command
 program
   .command('benchmark')
   .description('Run benchmark validation suite against industry-known strategies')
@@ -180,7 +172,6 @@ program
   .option('-v, --verbose', 'Show detailed logs', false)
   .action(benchmarkCommand);
 
-// Error handling
 program.exitOverride();
 
 try {
@@ -192,7 +183,6 @@ try {
   }
 }
 
-// Show help if no command provided
 if (!process.argv.slice(2).length) {
   program.outputHelp();
 }
