@@ -1,7 +1,7 @@
 # 🔄 MarketMind Refactoring Plan 2025
 
-**Status:** In Progress (Sprint 1 - Auditoria)  
-**Branch:** `feature/setup-optimization` (será migrado para `feature/refactoring-2025`)  
+**Status:** ✅ Sprint 1 Complete - Ready for Sprint 2  
+**Branch:** `feature/setup-optimization` → `feature/type-consolidation`  
 **Target Date:** Q1 2025  
 **Goal:** Organizar monorepo, consolidar código duplicado, refatorar AI trading e preparar para Machine Learning
 
@@ -13,8 +13,12 @@
 - ✅ **Remoção de comentários concluída** (656 inline, 0 block, 667 linhas removidas)
 - ✅ **Todos testes passando** (1,084 tests)
 - ✅ **Type check mantido** (2 erros pré-existentes, nenhum novo erro)
-- ⏳ Auditoria de tipos duplicados
-- ⏳ Auditoria de indicadores duplicados
+- ✅ **Auditoria de tipos duplicados** (12+ duplicações identificadas)
+- ✅ **Auditoria de indicadores duplicados** (8 indicadores duplicados)
+- ✅ **Relatório consolidado** (AUDIT_REPORT_2025.md)
+- ✅ **Plano de migração de tipos** (TYPE_MIGRATION_MAP.md)
+- ✅ **Plano de consolidação de indicadores** (INDICATOR_CONSOLIDATION.md)
+- 🎯 **Sprint 1 COMPLETO** - Pronto para Sprint 2
 
 ---
 
@@ -104,9 +108,9 @@ Este plano detalha a reorganização completa do monorepo MarketMind, incluindo:
 
 ## 🚀 Plano de Execução
 
-### Sprint 1: Auditoria e Consolidação de Tipos (1 semana)
+### Sprint 1: Auditoria e Consolidação de Tipos (1 semana) ✅ COMPLETO
 
-#### 1.1 Inventário Completo
+#### 1.1 Inventário Completo ✅
 ```bash
 # Gerar relatório de todos arquivos, tamanhos e categorias
 pnpm refactor:audit:files
@@ -122,13 +126,26 @@ pnpm refactor:audit:indicators
 - ✅ `scripts/audit-files.sh` - Auditoria de arquivos e estrutura
 - ✅ `scripts/audit-types.sh` - Detecção de tipos duplicados
 - ✅ `scripts/audit-indicators.sh` - Análise de indicadores duplicados
+- ✅ `scripts/audit-comments.sh` - Detecção de comentários
+- ✅ `scripts/remove-comments.sh` - Remoção segura de comentários
 
 **Entregáveis:**
-- `docs/AUDIT_REPORT_2025.md` - Relatório completo
-- `docs/TYPE_MIGRATION_MAP.md` - Mapa de tipos a migrar
-- `docs/INDICATOR_CONSOLIDATION.md` - Plano de consolidação
+- ✅ `docs/AUDIT_REPORT_2025.md` - Relatório completo consolidado
+- ✅ `docs/TYPE_MIGRATION_MAP.md` - Mapa de tipos a migrar
+- ✅ `docs/INDICATOR_CONSOLIDATION.md` - Plano de consolidação
+- ✅ `docs/COMMENT_REMOVAL_REPORT.md` - Relatório de remoção de comentários
 
-#### 1.2 Migração de Tipos para `packages/types`
+**Resultados Sprint 1:**
+- ✅ **667 linhas removidas** (656 comentários inline)
+- ✅ **12+ tipos duplicados** identificados e mapeados
+- ✅ **8 indicadores duplicados** identificados e mapeados
+- ✅ **100% testes passando** (1,084 tests)
+- ✅ **Zero regressões** introduzidas
+- ✅ **Documentação completa** para Sprint 2
+
+#### 1.2 Migração de Tipos para `packages/types` → SPRINT 2
+
+**Status:** 📋 Planejado - Ver `TYPE_MIGRATION_MAP.md` para detalhes
 
 **Tipos a Migrar:**
 - `apps/backend/src/types/binance.ts` → `packages/types/src/binance.ts`
@@ -145,7 +162,7 @@ pnpm refactor:audit:indicators
 - Validar imports em todos workspaces
 - Verificar builds (frontend + backend)
 
-#### 1.3 Atualizar Imports
+#### 1.3 Atualizar Imports → SPRINT 2
 ```typescript
 // ❌ Antes
 import type { BinanceOrderResult } from '../types/binance';
@@ -161,21 +178,56 @@ import type { BinanceOrderResult } from '@marketmind/types';
 
 ---
 
-### Sprint 2: Centralização de Indicadores (1 semana)
+### Sprint 2: Migração de Tipos e Consolidação de Indicadores (2 semanas)
 
-#### 2.1 Remover Implementações Duplicadas
+**Status:** 📋 Pronto para iniciar  
+**Branch:** `feature/type-consolidation` + `feature/indicator-consolidation`  
+**Documentação:** `TYPE_MIGRATION_MAP.md` + `INDICATOR_CONSOLIDATION.md`
+
+#### 2.1 Week 1: Type Migration
+
+**Prioridade 1 - Trading Core:**
+- [ ] Criar `packages/types/src/binance.ts`
+- [ ] Migrar Order types (OrderSide, OrderStatus)
+- [ ] Consolidar SetupDetectionConfig
+- [ ] Atualizar ~25-30 imports
+- [ ] Rodar testes após cada migração
+
+**Prioridade 2 - Configuration:**
+- [ ] Consolidar SetupDetectionConfig
+- [ ] Criar conversões TradingSetup ↔ SetupDetection
+- [ ] Atualizar 5 service files
+
+**Deliverables:**
+- Zero duplicação de tipos
+- Todos imports via `@marketmind/types`
+- 100% testes passando
+- Zero TypeScript errors
+
+#### 2.2 Week 2: Indicator Consolidation
+
+**Prioridade 1 - Core Indicators:**
+
+#### 2.2 Week 2: Indicator Consolidation
+
+**Prioridade 1 - Core Indicators:**
+- [ ] Remover MACD, EMA, RSI duplicados
+- [ ] Remover ATR, Stochastic, VWAP duplicados
+- [ ] Atualizar 3 workers (rsi, stochastic, movingAverage)
+- [ ] Atualizar ~20 imports
 
 **Arquivos a Remover:**
-- `apps/electron/src/renderer/utils/indicators/macd.ts` ❌
-- `apps/electron/src/renderer/utils/indicators/rsi.ts` ❌
-- Qualquer cálculo de indicador fora de `packages/indicators`
+- `apps/electron/src/renderer/utils/indicators/macd.ts`
+- `apps/electron/src/renderer/utils/indicators/atr.ts`
+- `apps/electron/src/renderer/utils/indicators/vwap.ts`
+- `apps/electron/src/renderer/utils/rsi.ts`
+- `apps/electron/src/renderer/utils/stochastic.ts`
+- `apps/electron/src/renderer/utils/movingAverages.ts`
 
 **Manter Apenas:**
-- `packages/indicators/src/*` ✅ (fonte única de verdade)
+- `packages/indicators/src/*` ✅ (fonte única de verdade - 57 indicadores)
 
-#### 2.2 Atualizar `IndicatorEngine.ts`
-
-**Backend:** `apps/backend/src/services/setup-detection/dynamic/IndicatorEngine.ts`
+**Backend Updates:** `apps/backend/src/services/setup-detection/dynamic/IndicatorEngine.ts`
 
 ```typescript
 // ✅ Todos imports devem vir de @marketmind/indicators
