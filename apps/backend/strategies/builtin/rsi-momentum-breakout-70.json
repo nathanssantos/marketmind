@@ -65,7 +65,15 @@
       "multiplier": "$atrMultiplier",
       "indicator": "atr"
     },
-    "maxBarsInTrade": "$holdingBars"
+    "maxBarsInTrade": "$holdingBars",
+    "conditions": {
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          { "left": "barsInTrade", "op": ">=", "right": "$holdingBars" }
+        ]
+      }
+    }
   },
 
   "confidence": {

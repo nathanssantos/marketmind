@@ -34,8 +34,7 @@
   },
 
   "indicators": {
-    "highN": { "type": "highest", "params": { "period": "$lookbackPeriod", "source": "high" } },
-    "lowN": { "type": "lowest", "params": { "period": "$lookbackPeriod", "source": "low" } },
+    "range": { "type": "nDayHighLow", "params": { "period": "$lookbackPeriod" } },
     "volumeSma": { "type": "sma", "params": { "period": 20, "source": "volume" } },
     "atr": { "type": "atr", "params": { "period": 14 } }
   },
@@ -44,14 +43,14 @@
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "close", "op": ">", "right": "highN.prev" },
+        { "left": "close", "op": ">", "right": "range.high" },
         { "left": "volume", "op": ">", "right": { "calc": "volumeSma * $volumeMultiplier" } }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "close", "op": "<", "right": "lowN.prev" },
+        { "left": "close", "op": "<", "right": "range.low" },
         { "left": "volume", "op": ">", "right": { "calc": "volumeSma * $volumeMultiplier" } }
       ]
     }

@@ -7,7 +7,7 @@
   "tags": ["halving", "cycle", "bitcoin", "long-term", "macro"],
   "source": "Bitcoin Halving Studies",
 
-  "status": "active",
+  "status": "disabled",
   "optimizedParams": {
     "maxPositionSize": 90,
     "maxConcurrentPositions": 1,

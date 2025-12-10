@@ -33,7 +33,7 @@
   },
 
   "indicators": {
-    "sar": { "type": "psar", "params": { "start": "$sarStart", "increment": "$sarIncrement", "max": "$sarMax" } },
+    "sar": { "type": "parabolicSar", "params": { "start": "$sarStart", "increment": "$sarIncrement", "max": "$sarMax" } },
     "atr": { "type": "atr", "params": { "period": 14 } }
   },
 

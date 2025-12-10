@@ -31,7 +31,7 @@
   },
 
   "indicators": {
-    "gap": { "type": "gap", "params": { "minPercent": "$minGapPercent" } },
+    "gap": { "type": "gapDetection", "params": { "minPercent": "$minGapPercent" } },
     "atr": { "type": "atr", "params": { "period": 14 } }
   },
 

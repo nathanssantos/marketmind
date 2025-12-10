@@ -43,10 +43,6 @@
   },
 
   "indicators": {
-    "closeLookback": {
-      "type": "close",
-      "params": { "offset": "$lookbackPeriod" }
-    },
     "atr": {
       "type": "atr",
       "params": { "period": 14 }

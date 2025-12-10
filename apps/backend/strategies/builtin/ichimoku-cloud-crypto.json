@@ -7,7 +7,7 @@
   "tags": ["trend-following", "ichimoku", "cloud", "momentum", "support-resistance"],
   "source": "YouHodler - Technical Indicators",
 
-  "status": "active",
+  "status": "disabled",
   "optimizedParams": {
     "maxPositionSize": 80,
     "maxConcurrentPositions": 1,

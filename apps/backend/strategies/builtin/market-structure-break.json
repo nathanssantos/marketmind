@@ -33,8 +33,7 @@
   },
 
   "indicators": {
-    "swingHigh": { "type": "swingHigh", "params": { "lookback": "$swingLookback" } },
-    "swingLow": { "type": "swingLow", "params": { "lookback": "$swingLookback" } },
+    "swing": { "type": "swingPoints", "params": { "lookback": "$swingLookback" } },
     "atr": { "type": "atr", "params": { "period": 14 } }
   },
 
@@ -42,13 +41,13 @@
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "close", "op": ">", "right": "swingHigh.prev" }
+        { "left": "close", "op": ">", "right": "swing.high" }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "close", "op": "<", "right": "swingLow.prev" }
+        { "left": "close", "op": "<", "right": "swing.low" }
       ]
     }
   },

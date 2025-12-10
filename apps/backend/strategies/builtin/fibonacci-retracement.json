@@ -34,7 +34,7 @@
   },
 
   "indicators": {
-    "fib": { "type": "fibonacciRetracement", "params": { "lookback": "$lookbackPeriod" } },
+    "fib": { "type": "fibonacci", "params": { "lookback": "$lookbackPeriod" } },
     "ema50": { "type": "ema", "params": { "period": 50 } },
     "atr": { "type": "atr", "params": { "period": 14 } }
   },

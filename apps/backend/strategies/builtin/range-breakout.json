@@ -34,8 +34,7 @@
   },
 
   "indicators": {
-    "highN": { "type": "highest", "params": { "period": "$rangePeriod", "source": "high" } },
-    "lowN": { "type": "lowest", "params": { "period": "$rangePeriod", "source": "low" } },
+    "range": { "type": "nDayHighLow", "params": { "period": "$rangePeriod" } },
     "atr": { "type": "atr", "params": { "period": 14 } }
   },
 
@@ -43,15 +42,15 @@
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": { "calc": "((highN - lowN) / lowN) * 100" }, "op": "<", "right": "$rangeThreshold" },
-        { "left": "close", "op": ">", "right": "highN.prev" }
+        { "left": { "calc": "((range.high - range.low) / range.low) * 100" }, "op": "<", "right": "$rangeThreshold" },
+        { "left": "close", "op": ">", "right": "range.high" }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": { "calc": "((highN - lowN) / lowN) * 100" }, "op": "<", "right": "$rangeThreshold" },
-        { "left": "close", "op": "<", "right": "lowN.prev" }
+        { "left": { "calc": "((range.high - range.low) / range.low) * 100" }, "op": "<", "right": "$rangeThreshold" },
+        { "left": "close", "op": "<", "right": "range.low" }
       ]
     }
   },

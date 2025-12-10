@@ -34,7 +34,7 @@
   },
 
   "indicators": {
-    "fvg": { "type": "fairValueGap", "params": { "minSize": "$minGapSize", "maxAge": "$maxAge" } },
+    "fvg": { "type": "fvg", "params": { "minSize": "$minGapSize", "maxAge": "$maxAge" } },
     "ema50": { "type": "ema", "params": { "period": 50 } },
     "atr": { "type": "atr", "params": { "period": 14 } }
   },

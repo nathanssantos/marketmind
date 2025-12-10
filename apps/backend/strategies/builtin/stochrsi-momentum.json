@@ -7,7 +7,7 @@
   "tags": ["momentum", "stochrsi", "oscillator", "mean-reversion"],
   "source": "QuantifiedStrategies.com - Stochastic RSI (StochRSI)",
 
-  "status": "active",
+  "status": "disabled",
   "optimizedParams": {
     "maxPositionSize": 70,
     "maxConcurrentPositions": 2,
