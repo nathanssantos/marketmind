@@ -7,16 +7,17 @@
  */
 
 import type {
-  Condition,
-  ConditionGroup,
-  ConditionOperand,
-  ComparisonOperator,
-  ComputedIndicators,
-  EvaluationContext,
+    ComparisonOperator,
+    ComputedIndicators,
+    Condition,
+    ConditionGroup,
+    ConditionOperand,
+    EvaluationContext,
 } from '@marketmind/types';
 import {
-  isConditionGroup,
-  isParameterReference,
+    isCalcExpression,
+    isConditionGroup,
+    isParameterReference,
 } from '@marketmind/types';
 
 import { IndicatorEngine } from './IndicatorEngine';
@@ -144,6 +145,7 @@ export class ConditionEvaluator {
   /**
    * Get value series for an operand (for crossover detection)
    * Supports mathematical expressions like "emaFast * 1.01"
+   * and calc expressions like {calc: "open + (atr * $multiplier)"}
    */
   private getSeriesForOperand(
     operand: ConditionOperand,
@@ -153,6 +155,20 @@ export class ConditionEvaluator {
     if (typeof operand === 'number') {
       const length = this.getIndicatorLength(indicators);
       return new Array(length).fill(operand);
+    }
+
+    if (isCalcExpression(operand)) {
+      const length = this.getIndicatorLength(indicators);
+      const series: (number | null)[] = [];
+      for (let i = 0; i < length; i++) {
+        const value = this.evaluateCalcExpression(operand.calc, {
+          indicators,
+          params,
+          currentIndex: i,
+        });
+        series.push(value);
+      }
+      return series;
     }
 
     // Handle numeric strings (e.g., "30" should be treated as number 30)
@@ -211,6 +227,7 @@ export class ConditionEvaluator {
   /**
    * Resolve an operand to a numeric value at the current index
    * Supports mathematical expressions like "volume.sma20 * 1.5"
+   * and calc expressions like {calc: "open + (atr * $multiplier)"}
    */
   private resolveValue(
     operand: ConditionOperand,
@@ -220,6 +237,10 @@ export class ConditionEvaluator {
 
     if (typeof operand === 'number') {
       return operand;
+    }
+
+    if (isCalcExpression(operand)) {
+      return this.evaluateCalcExpression(operand.calc, context);
     }
 
     // Handle numeric strings (e.g., "30" should be treated as number 30)
@@ -263,6 +284,110 @@ export class ConditionEvaluator {
       operand,
       currentIndex
     );
+  }
+
+  /**
+   * Evaluate a calc expression like "open + (atr * $multiplier)"
+   * Supports: +, -, *, /, parentheses, indicator/price references, and parameters
+   */
+  private evaluateCalcExpression(
+    expression: string,
+    context: EvaluationContext
+  ): number | null {
+    try {
+      const resolveToken = (token: string): number | null => {
+        const trimmed = token.trim();
+        
+        if (trimmed.startsWith('$')) {
+          const paramName = trimmed.slice(1);
+          return context.params[paramName] ?? null;
+        }
+        
+        const numValue = parseFloat(trimmed);
+        if (!isNaN(numValue)) {
+          return numValue;
+        }
+        
+        return this.indicatorEngine.resolveIndicatorValue(
+          context.indicators,
+          trimmed,
+          context.currentIndex
+        );
+      };
+
+      const tokenize = (exp: string): string[] => {
+        const tokens: string[] = [];
+        let current = '';
+        let parenDepth = 0;
+        
+        for (let i = 0; i < exp.length; i++) {
+          const char = exp[i];
+          
+          if (char === '(') {
+            parenDepth++;
+            current += char;
+          } else if (char === ')') {
+            parenDepth--;
+            current += char;
+          } else if (['+', '-', '*', '/'].includes(char!) && parenDepth === 0) {
+            if (current.trim()) tokens.push(current.trim());
+            tokens.push(char!);
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        if (current.trim()) tokens.push(current.trim());
+        
+        return tokens;
+      };
+
+      const evaluateTokens = (tokens: string[]): number | null => {
+        if (tokens.length === 1) {
+          const token = tokens[0]!;
+          if (token.startsWith('(') && token.endsWith(')')) {
+            return this.evaluateCalcExpression(token.slice(1, -1), context);
+          }
+          return resolveToken(token);
+        }
+
+        for (let i = 1; i < tokens.length; i += 2) {
+          const op = tokens[i];
+          if (op === '*' || op === '/') {
+            const left = resolveToken(tokens[i - 1]!);
+            const right = resolveToken(tokens[i + 1]!);
+            if (left === null || right === null) return null;
+            
+            const result = op === '*' ? left * right : (right !== 0 ? left / right : null);
+            if (result === null) return null;
+            
+            tokens.splice(i - 1, 3, result.toString());
+            i -= 2;
+          }
+        }
+
+        let result: number | null = resolveToken(tokens[0]!);
+        if (result === null) return null;
+        
+        for (let i = 1; i < tokens.length; i += 2) {
+          const op = tokens[i];
+          const right = resolveToken(tokens[i + 1]!);
+          if (right === null) return null;
+          
+          if (op === '+') result += right;
+          else if (op === '-') result -= right;
+        }
+        
+        return result;
+      };
+
+      const tokens = tokenize(expression.trim());
+      return evaluateTokens(tokens);
+      
+    } catch (error) {
+      console.error('Error evaluating calc expression:', expression, error);
+      return null;
+    }
   }
 
   /**

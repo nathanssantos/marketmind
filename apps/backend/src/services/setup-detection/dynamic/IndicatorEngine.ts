@@ -13,13 +13,13 @@ import type {
 
 import {
     calculateFundingRate,
-    detectFundingRateSignal,
-    calculateOpenInterest,
     calculateLiquidations,
+    calculateOpenInterest,
     calculateRelativeStrength,
+    detectFundingRateSignal,
     type FundingRateData,
-    type OpenInterestData,
     type LiquidationData,
+    type OpenInterestData,
 } from '@marketmind/indicators';
 
 import { getBinanceFuturesDataService } from '../../binance-futures-data';
@@ -27,53 +27,53 @@ import { getBTCDominanceDataService } from '../../btc-dominance-data';
 
 import {
     calculateADX,
+    calculateAO,
+    calculateAroon,
     calculateATR,
     calculateBollingerBandsArray,
+    calculateCandlePatterns,
     calculateCCI,
+    calculateCMF,
+    calculateCMO,
     calculateCumulativeRSI,
+    calculateDeltaVolume,
+    calculateDEMA,
+    calculateDMI,
     calculateDonchian,
+    calculateElderRay,
     calculateEMA,
+    calculateFibonacciRetracement,
+    calculateFloorPivotSeries,
+    calculateFVG,
+    calculateGaps,
+    calculateHMA,
     calculateIBS,
     calculateKeltner,
+    calculateKlinger,
+    calculateLiquidityLevels,
     calculateMACD,
+    calculateMassIndex,
     calculateMFI,
     calculateNDayHighLow,
     calculateNR7,
     calculateOBV,
+    calculateParabolicSAR,
     calculatePercentBSeries,
+    calculatePPO,
+    calculateROC,
     calculateRSI,
     calculateSMA,
     calculateStochastic,
     calculateSupertrend,
-    calculateVWAP,
-    calculateWilliamsR,
-    findPivotPoints,
-    calculateROC,
-    calculateDEMA,
+    calculateSwingPoints,
     calculateTEMA,
-    calculateWMA,
-    calculateHMA,
-    calculateCMO,
-    calculateAO,
-    calculatePPO,
     calculateTSI,
     calculateUltimateOscillator,
-    calculateAroon,
-    calculateDMI,
     calculateVortex,
-    calculateParabolicSAR,
-    calculateMassIndex,
-    calculateCMF,
-    calculateKlinger,
-    calculateElderRay,
-    calculateDeltaVolume,
-    calculateSwingPoints,
-    calculateFVG,
-    calculateCandlePatterns,
-    calculateGaps,
-    calculateFibonacciRetracement,
-    calculateFloorPivotSeries,
-    calculateLiquidityLevels,
+    calculateVWAP,
+    calculateWilliamsR,
+    calculateWMA,
+    findPivotPoints,
 } from '@marketmind/indicators';
 
 interface CryptoData {
@@ -881,8 +881,8 @@ export class IndicatorEngine {
   private resolveParams(
     indicatorParams: Record<string, number | string>,
     strategyParams: Record<string, number>
-  ): Record<string, number> {
-    const resolved: Record<string, number> = {};
+  ): Record<string, number | string> {
+    const resolved: Record<string, number | string> = {};
 
     for (const [key, value] of Object.entries(indicatorParams)) {
       if (typeof value === 'string' && value.startsWith('$')) {
@@ -892,7 +892,7 @@ export class IndicatorEngine {
           throw new Error(`Unknown parameter reference: ${value}`);
         }
         resolved[key] = paramValue;
-      } else if (typeof value === 'number') {
+      } else if (typeof value === 'number' || typeof value === 'string') {
         resolved[key] = value;
       } else {
         throw new Error(`Invalid parameter value: ${value}`);

@@ -4,11 +4,11 @@
  * Tests all active strategies and displays results in a formatted table
  */
 
+import chalk from 'chalk';
 import { execSync } from 'child_process';
+import Table from 'cli-table3';
 import fs from 'fs';
 import path from 'path';
-import chalk from 'chalk';
-import Table from 'cli-table3';
 
 const STRATEGIES_DIR = './strategies/builtin';
 const RESULTS_DIR = `./results/bulk-validation-${new Date().toISOString().split('T')[0]}`;
@@ -62,7 +62,11 @@ async function main() {
     try {
       const output = execSync(
         `pnpm exec tsx src/cli/backtest-runner.ts validate -s ${strategy} --symbol BTCUSDT -i 1d --start 2024-01-01 --end 2024-12-01 --optimized`,
-        { encoding: 'utf-8', stdio: 'pipe' }
+        { 
+          encoding: 'utf-8', 
+          stdio: 'pipe',
+          env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' }
+        }
       );
 
       // Save full output
@@ -120,9 +124,19 @@ async function main() {
 }
 
 function extractMetric(output: string, metric: string): string {
-  const regex = new RegExp(`│\\s*${metric}\\s*│\\s*([^│]+)\\s*│`);
-  const match = output.match(regex);
-  return match ? match[1].trim() : '0';
+  const stripAnsi = (str: string) => str.replace(/\u001b\[\d+m/g, '');
+  
+  const lines = output.split('\n');
+  for (const line of lines) {
+    if (line.includes('│') && line.includes(metric)) {
+      const cleanLine = stripAnsi(line);
+      const parts = cleanLine.split('│').map(p => p.trim()).filter(p => p);
+      if (parts.length >= 2 && parts[0] === metric) {
+        return parts[1];
+      }
+    }
+  }
+  return '0';
 }
 
 function displaySummaryTable(results: ValidationResult[], successCount: number, failedCount: number) {

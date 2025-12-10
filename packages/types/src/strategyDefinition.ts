@@ -134,13 +134,21 @@ export type ComparisonOperator =
 export type LogicalOperator = 'AND' | 'OR';
 
 /**
+ * Calculated expression for complex operands
+ */
+export interface CalcExpression {
+  calc: string;
+}
+
+/**
  * Reference types for condition operands:
  * - Price: "close", "open", "high", "low", "volume"
  * - Indicator: "rsi", "ema20", "bb.upper", "macd.signal"
  * - Parameter: "$bbPeriod", "$rsiOversold"
  * - Literal number
+ * - Calculated expression: {calc: "open + (atr * $multiplier)"}
  */
-export type ConditionOperand = string | number;
+export type ConditionOperand = string | number | CalcExpression;
 
 /**
  * Simple condition comparing two values
@@ -456,6 +464,12 @@ export interface StrategyValidationResult {
 // =============================================================================
 // Type Guards
 // =============================================================================
+
+/**
+ * Check if value is a calculated expression
+ */
+export const isCalcExpression = (value: ConditionOperand): value is CalcExpression =>
+  typeof value === 'object' && value !== null && 'calc' in value;
 
 /**
  * Check if value is a parameter reference (starts with $)
