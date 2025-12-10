@@ -40,30 +40,30 @@ function shouldPreserveComment(comment, line) {
         /TEMP/,
         /DEBUG/,
     ];
-    
+
     if (preservePatterns.some(pattern => pattern.test(comment))) {
         return true;
     }
-    
+
     if (comment.trim().startsWith('//') && line.trim() !== comment.trim()) {
         return true;
     }
-    
+
     return false;
 }
 
 function analyzeComments(content, filePath) {
     const lines = content.split('\n');
     const comments = [];
-    
+
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        
+
         const commentMatch = line.match(/^(\s*)\/\/(.*)$/);
         if (commentMatch) {
             const [, indent, comment] = commentMatch;
             const fullComment = `//${comment}`;
-            
+
             if (!shouldPreserveComment(fullComment, line)) {
                 comments.push({
                     line: i + 1,
@@ -73,7 +73,7 @@ function analyzeComments(content, filePath) {
                 });
             }
         }
-        
+
         if (line.trim().startsWith('/*') && !line.trim().startsWith('/**')) {
             if (line.includes('*/')) {
                 if (!shouldPreserveComment(line, line)) {
@@ -87,7 +87,7 @@ function analyzeComments(content, filePath) {
             }
         }
     }
-    
+
     if (comments.length > 0) {
         stats.commentBlocks.push({
             file: relative(process.cwd(), filePath),
@@ -126,11 +126,11 @@ function main() {
     ['apps', 'packages'].forEach(dir => {
         walkDirectory(dir, filePattern, (filePath) => {
             stats.filesScanned++;
-            
+
             if (stats.filesScanned % 50 === 0) {
                 process.stdout.write(`\rScanned ${stats.filesScanned} files...`);
             }
-            
+
             try {
                 const content = readFileSync(filePath, 'utf-8');
                 analyzeComments(content, filePath);
@@ -147,7 +147,7 @@ function main() {
     console.log('📊 Summary:');
     console.log(`  Files scanned: ${stats.filesScanned}`);
     console.log(`  Files with removable comments: ${stats.commentBlocks.length}`);
-    
+
     const totalComments = stats.commentBlocks.reduce((sum, block) => sum + block.comments.length, 0);
     console.log(`  Total removable comments: ${totalComments}\n`);
 
@@ -171,19 +171,19 @@ function main() {
         console.log(`📄 ${block.file} (${block.comments.length} comments)`);
         report.push(`### ${block.file}\n\n`);
         report.push(`${block.comments.length} removable comments found:\n\n`);
-        
+
         block.comments.forEach(comment => {
             console.log(`   Line ${comment.line}: ${comment.content}`);
             report.push(`- Line ${comment.line} (${comment.type}): \`${comment.content}\`\n`);
         });
-        
+
         console.log('');
         report.push('\n');
     });
 
     const reportPath = 'docs/COMMENT_REMOVAL_REPORT.md';
     writeFileSync(reportPath, report.join(''), 'utf-8');
-    
+
     console.log('');
     log.success(`Report saved to ${reportPath}`);
     console.log('');

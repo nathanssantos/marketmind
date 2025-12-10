@@ -201,22 +201,22 @@ function runTypeCheck(baselineErrors) {
     log.info('Running type check...');
 
     const currentErrors = countTypeErrors();
-    
+
     if (currentErrors === 0) {
         log.success('Type check passed! No errors found.');
         return true;
     }
-    
+
     if (currentErrors === baselineErrors) {
         log.success(`Type check passed! Same number of errors as before (${currentErrors})`);
         return true;
     }
-    
+
     if (currentErrors < baselineErrors) {
         log.success(`Type check improved! Errors reduced from ${baselineErrors} to ${currentErrors}`);
         return true;
     }
-    
+
     log.error(`Type check failed! Errors increased from ${baselineErrors} to ${currentErrors}`);
     return false;
 }

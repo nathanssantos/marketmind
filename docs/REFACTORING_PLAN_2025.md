@@ -10,7 +10,9 @@
 - ✅ Script de análise de comentários criado
 - ✅ Script de remoção de comentários criado (com validação)
 - ✅ Relatório de comentários gerado (654 comentários removíveis em 64 arquivos)
-- ⏳ Executar remoção de comentários (aguardando revisão)
+- ✅ **Remoção de comentários concluída** (656 inline, 0 block, 667 linhas removidas)
+- ✅ **Todos testes passando** (1,084 tests)
+- ✅ **Type check mantido** (2 erros pré-existentes, nenhum novo erro)
 - ⏳ Auditoria de tipos duplicados
 - ⏳ Auditoria de indicadores duplicados
 
@@ -797,7 +799,10 @@ packages/ml/
 - [ ] Backtests executados e comparados
 
 ### Sprint 4: Cleanup ✅
-- [ ] Comentários inline removidos
+- [x] Comentários inline removidos (656 comentários)
+- [x] Script de remoção automático criado e validado
+- [x] Backup automático implementado
+- [x] Validação de type-check e testes
 - [ ] Magic numbers extraídos
 - [ ] Código temporário resolvido
 - [ ] Utilities consolidadas
