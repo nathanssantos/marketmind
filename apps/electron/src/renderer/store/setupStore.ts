@@ -1,8 +1,8 @@
-import type { SetupType, TradingSetup } from '@shared/types';
+import type { SetupType, TradingSetup } from '@marketmind/types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { SetupDetectionConfig } from './setupConfig';
-import { createDefaultSetupDetectionConfig } from './setupConfig';
+import { createDefaultSetupDetectionConfig, mergeSetupConfigs } from './setupConfig';
 
 const PERCENTAGE_MULTIPLIER = 100;
 
@@ -32,8 +32,8 @@ export interface SetupExecution {
   timestamp: number;
   openTime?: number;
   entryPrice: number;
-  stopLoss: number;
-  takeProfit: number;
+  stopLoss?: number;
+  takeProfit?: number;
   exitPrice?: number;
   exitTimestamp?: number;
   status: 'pending' | 'active' | 'won' | 'lost' | 'cancelled';
@@ -226,7 +226,6 @@ export const useSetupStore = create<SetupStoreState>()(
             state.config.bearTrap.enabled ||
             state.config.breakoutRetest.enabled;
 
-          // Se tentando ativar mas nenhum setup está habilitado, não faz nada
           if (!state.isAutoTradingActive && !hasAnySetupEnabled) {
             console.warn('[Auto-Trading] Cannot enable: No setups are enabled. Enable at least one setup in Settings.');
             return state;
@@ -406,13 +405,11 @@ export const useSetupStore = create<SetupStoreState>()(
       }),
       merge: (persistedState, currentState) => {
         const defaults = createDefaultSetupDetectionConfig();
+        const persisted = persistedState as Partial<SetupStoreState>;
         return {
           ...currentState,
-          ...(persistedState as Partial<SetupStoreState>),
-          config: {
-            ...defaults,
-            ...(persistedState as Partial<SetupStoreState>).config,
-          },
+          ...persisted,
+          config: mergeSetupConfigs(defaults, persisted.config),
         };
       },
     },

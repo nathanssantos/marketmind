@@ -1,4 +1,4 @@
-import type { AIPatternGap, Kline } from '@shared/types';
+import type { AIPatternGap, Kline } from '@marketmind/types';
 import { getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
@@ -122,20 +122,14 @@ const detectGapsBase = (
     .slice(0, PATTERN_DETECTION_CONFIG.MAX_PATTERNS_PER_TYPE);
 };
 
-const getGapLabel = (type: string): string => {
-  switch (type) {
-    case 'gap-common':
-      return 'Common Gap';
-    case 'gap-breakaway':
-      return 'Breakaway Gap';
-    case 'gap-runaway':
-      return 'Runaway Gap';
-    case 'gap-exhaustion':
-      return 'Exhaustion Gap';
-    default:
-      return 'Gap';
-  }
+const gapLabelMap: Record<string, string> = {
+  'gap-common': 'Common Gap',
+  'gap-breakaway': 'Breakaway Gap',
+  'gap-runaway': 'Runaway Gap',
+  'gap-exhaustion': 'Exhaustion Gap',
 };
+
+const getGapLabel = (type: string): string => gapLabelMap[type] ?? 'Gap';
 
 export const detectCommonGaps = (
   klines: Kline[],

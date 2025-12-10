@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { orders, positions, wallets } from '../db/schema';
 import { decryptApiKey } from '../services/encryption';
 import { protectedProcedure, router } from '../trpc';
-import type { BinanceNewOrderResult, BinanceOrderQueryResult } from '../types/binance';
+import type { BinanceNewOrderResult, BinanceOrderQueryResult } from '@marketmind/types';
 
 const generateId = (length: number): string => {
   return randomBytes(length).toString('base64url').slice(0, length);
@@ -81,7 +81,7 @@ export const tradingRouter = router({
           userId: ctx.user.id,
           walletId: input.walletId,
           symbol: orderData.symbol,
-          side: orderData.side as 'BUY' | 'SELL',
+          side: orderData.side,
           type: orderData.type,
           price: orderData.price?.toString(),
           origQty: orderData.origQty?.toString(),
@@ -288,7 +288,7 @@ export const tradingRouter = router({
               userId: ctx.user.id,
               walletId: input.walletId,
               symbol: orderData.symbol,
-              side: orderData.side as 'BUY' | 'SELL',
+              side: orderData.side,
               type: orderData.type,
               price: orderData.price?.toString(),
               origQty: orderData.origQty?.toString(),

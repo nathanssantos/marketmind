@@ -12,6 +12,8 @@ import {
   DialogTitle,
 } from '@/renderer/components/ui/dialog';
 import { Box, Portal } from '@chakra-ui/react';
+import { useAutoTrading } from '@renderer/hooks/useAutoTrading';
+import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useRSIWorker } from '@renderer/hooks/useRSIWorker';
 import { useSetupDetection } from '@renderer/hooks/useSetupDetection';
@@ -22,11 +24,10 @@ import { setupCancellationDetector } from '@renderer/services/setupDetection';
 import { TradingFeeService } from '@renderer/services/TradingFeeService';
 import { useSetupStore } from '@renderer/store';
 import { useTradingStore } from '@renderer/store/tradingStore';
-import { calculateMovingAverage } from '@renderer/utils/movingAverages';
-import type { StochasticResult } from '@renderer/utils/stochastic';
+import { calculateMovingAverage, type StochasticResult } from '@marketmind/indicators';
 import { CHART_CONFIG } from '@shared/constants';
-import type { AIPattern, Kline, Viewport } from '@shared/types';
-import type { Order } from '@shared/types/trading';
+import type { AIPattern, Kline, Viewport } from '@marketmind/types';
+import type { Order } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume, getOrderPrice, getOrderType, isOrderLong, isOrderPending } from '@shared/utils';
 import type React from 'react';
 import type { ReactElement } from 'react';
@@ -122,6 +123,14 @@ export const ChartCanvas = ({
   const getQuantityForSymbol = useTradingStore((state) => state.getQuantityForSymbol);
   const closeOrder = useTradingStore((state) => state.closeOrder);
   const updateOrder = useTradingStore((state) => state.updateOrder);
+
+  const { wallets: backendWallets } = useBackendWallet();
+  const backendWalletId = backendWallets[0]?.id;
+
+  const { executeSetup: executeAutoTradingSetup } = useAutoTrading({
+    walletId: isSimulatorActive ? (activeWalletId ?? '') : (backendWalletId ?? ''),
+    isSimulatorMode: isSimulatorActive,
+  });
 
   const detectedSetups = useSetupStore((state) => state.detectedSetups);
   const addDetectedSetup = useSetupStore((state) => state.addDetectedSetup);
@@ -1072,56 +1081,46 @@ export const ChartCanvas = ({
       addDetectedSetup(setup);
       executedSetupsRef.current.add(setup.id);
 
-      const { isSimulatorActive: simActive, activeWalletId: walletId, wallets } = useTradingStore.getState();
+      const shouldExecute = isSimulatorActive
+        ? activeWalletId && symbol
+        : backendWalletId && symbol;
 
-      if (!simActive || !symbol || !walletId) return;
+      if (!shouldExecute) return;
 
-      const activeWallet = wallets.find(w => w.id === walletId);
-      if (!activeWallet) return;
+      if (!symbol) return;
 
       const lastKline = klines[klines.length - 1];
       const currentPrice = lastKline ? getKlineClose(lastKline) : undefined;
       const quantity = getQuantityForSymbol(symbol) ?? 1;
 
-      const viability = feeService.evaluateTradeViability(
-        setup.entryPrice,
-        setup.stopLoss,
-        setup.takeProfit,
-        quantity,
-      );
-
-      if (!viability.isViable) {
-        console.warn(`[ChartCanvas] Setup ${setup.type} rejected due to fees:`, viability.reason);
-        warning(`Trade Rejected: ${viability.reason ?? 'Trade not viable after fees'}`);
-        return;
-      }
-
-      const isLong = setup.direction === 'LONG';
-
-      const fees = viability.fees;
-
-      addOrder({
-        symbol,
-        side: isLong ? 'BUY' : 'SELL',
-        status: 'NEW' as const,
-        entryPrice: setup.entryPrice,
-        quantity,
-        walletId,
-        stopLoss: setup.stopLoss,
-        takeProfit: setup.takeProfit,
-        setupId: setup.id,
-        setupType: setup.type,
-        setupDirection: setup.direction,
-        setupConfidence: setup.confidence,
-        entryFee: fees.entryFee.toString(),
-        exitFee: fees.exitFee.toString(),
-        totalFees: fees.totalFees.toString(),
-        ...(currentPrice !== undefined && { currentPrice }),
+      executeAutoTradingSetup(setup, symbol, quantity, {
+        entryFee: tradingFees.makerFeeRate,
+        exitFee: tradingFees.makerFeeRate,
+        totalFees: tradingFees.makerFeeRate * 2,
+      }, currentPrice).then((result) => {
+        if (result.success) {
+          useSetupStore.getState().executeSetup(setup.id);
+          console.log(`[ChartCanvas] Setup ${setup.type} executed successfully in ${isSimulatorActive ? 'simulator' : 'backend'} mode`);
+        }
+      }).catch((error) => {
+        console.error(`[ChartCanvas] Setup ${setup.type} execution failed:`, error);
+        warning(`Trade Rejected: ${error.message ?? 'Execution failed'}`);
       });
-
-      useSetupStore.getState().executeSetup(setup.id);
     });
-  }, [klines, setupConfig, setupDetector, addDetectedSetup, addOrder, getQuantityForSymbol, symbol, feeService, warning]);
+  }, [
+    klines,
+    setupConfig,
+    setupDetector,
+    addDetectedSetup,
+    symbol,
+    getQuantityForSymbol,
+    executeAutoTradingSetup,
+    isSimulatorActive,
+    activeWalletId,
+    backendWalletId,
+    tradingFees,
+    warning,
+  ]);
 
   useEffect(() => {
     if (!shiftPressed && !altPressed) {

@@ -1,0 +1,272 @@
+import { TRPCError } from '@trpc/server';
+import { MainClient } from 'binance';
+import { randomBytes } from 'crypto';
+import { and, eq } from 'drizzle-orm';
+import { z } from 'zod';
+import { wallets } from '../db/schema';
+import { decryptApiKey, encryptApiKey } from '../services/encryption';
+import { protectedProcedure, router } from '../trpc';
+
+const generateId = (length: number): string => {
+  return randomBytes(length).toString('base64url').slice(0, length);
+};
+
+export const walletRouter = router({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const userWallets = await ctx.db
+      .select({
+        id: wallets.id,
+        name: wallets.name,
+        currency: wallets.currency,
+        initialBalance: wallets.initialBalance,
+        currentBalance: wallets.currentBalance,
+        isActive: wallets.isActive,
+        createdAt: wallets.createdAt,
+        updatedAt: wallets.updatedAt,
+      })
+      .from(wallets)
+      .where(eq(wallets.userId, ctx.user.id));
+
+    return userWallets;
+  }),
+
+  getById: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const [wallet] = await ctx.db
+        .select({
+          id: wallets.id,
+          name: wallets.name,
+          currency: wallets.currency,
+          initialBalance: wallets.initialBalance,
+          currentBalance: wallets.currentBalance,
+          isActive: wallets.isActive,
+          createdAt: wallets.createdAt,
+          updatedAt: wallets.updatedAt,
+        })
+        .from(wallets)
+        .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      return wallet;
+    }),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(255),
+        apiKey: z.string().min(1),
+        apiSecret: z.string().min(1),
+        testMode: z.boolean().default(false),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const client = new MainClient({
+          api_key: input.apiKey,
+          api_secret: input.apiSecret,
+        });
+
+        const accountInfo = await client.getAccountInformation();
+
+        if (!accountInfo) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid Binance API credentials',
+          });
+        }
+
+        const apiKeyEncrypted = encryptApiKey(input.apiKey);
+        const apiSecretEncrypted = encryptApiKey(input.apiSecret);
+
+        const usdtBalance = accountInfo.balances?.find((b) => b.asset === 'USDT');
+        const initialBalance = usdtBalance?.free
+          ? parseFloat(usdtBalance.free.toString())
+          : 0;
+
+        const walletId = generateId(21);
+
+        await ctx.db.insert(wallets).values({
+          id: walletId,
+          userId: ctx.user.id,
+          name: input.name,
+          apiKeyEncrypted,
+          apiSecretEncrypted,
+          initialBalance: initialBalance.toString(),
+          currentBalance: initialBalance.toString(),
+          currency: 'USDT',
+          isActive: true,
+        });
+
+        return {
+          id: walletId,
+          name: input.name,
+          initialBalance: initialBalance.toString(),
+          currentBalance: initialBalance.toString(),
+          currency: 'USDT',
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to create wallet',
+          cause: error,
+        });
+      }
+    }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().min(1).max(255).optional(),
+        isActive: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const [existing] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!existing) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      const updateData: Partial<typeof wallets.$inferInsert> = {
+        updatedAt: new Date(),
+      };
+
+      if (input.name !== undefined) updateData.name = input.name;
+      if (input.isActive !== undefined) updateData.isActive = input.isActive;
+
+      await ctx.db.update(wallets).set(updateData).where(eq(wallets.id, input.id));
+
+      return { success: true };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const [existing] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!existing) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      await ctx.db.delete(wallets).where(eq(wallets.id, input.id));
+
+      return { success: true };
+    }),
+
+  syncBalance: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      try {
+        const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
+        const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
+
+        const client = new MainClient({
+          api_key: apiKey,
+          api_secret: apiSecret,
+        });
+
+        const accountInfo = await client.getAccountInformation();
+        const usdtBalance = accountInfo.balances?.find((b) => b.asset === 'USDT');
+        const currentBalance = usdtBalance?.free
+          ? parseFloat(usdtBalance.free.toString())
+          : 0;
+
+        await ctx.db
+          .update(wallets)
+          .set({
+            currentBalance: currentBalance.toString(),
+            updatedAt: new Date(),
+          })
+          .where(eq(wallets.id, input.id));
+
+        return {
+          currentBalance: currentBalance.toString(),
+          currency: 'USDT',
+        };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to sync balance',
+          cause: error,
+        });
+      }
+    }),
+
+  testConnection: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      try {
+        const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
+        const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
+
+        const client = new MainClient({
+          api_key: apiKey,
+          api_secret: apiSecret,
+        });
+
+        await client.testConnectivity();
+        const serverTime = await client.getServerTime();
+
+        return {
+          connected: true,
+          serverTime: Number(serverTime),
+        };
+      } catch (error) {
+        return {
+          connected: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        };
+      }
+    }),
+});

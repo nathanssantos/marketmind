@@ -1,0 +1,158 @@
+{
+  "id": "momentum-rotation",
+  "name": "Momentum Rotation",
+  "version": "1.0.0",
+  "description": "Rotação baseada em momentum relativo. Compra ativos com maior momentum recente. Sistema de ranking e rotação.",
+  "author": "MarketMind",
+  "tags": [
+    "momentum",
+    "rotation",
+    "relative-strength",
+    "ranking"
+  ],
+  "source": "Dual Momentum Strategy",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 80,
+    "maxConcurrentPositions": 3,
+    "maxTotalExposure": 100,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 2.5,
+    "breakEvenAfterR": 1.5,
+    "onlyWithTrend": false,
+    "minConfidence": 65,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "1w"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m",
+      "1h"
+    ],
+    "notes": "Momentum rotation on daily/weekly"
+  },
+  "parameters": {
+    "momentumPeriod": {
+      "default": 20,
+      "min": 10,
+      "max": 30,
+      "step": 5,
+      "description": "Período momentum"
+    },
+    "minMomentum": {
+      "default": 5,
+      "min": 0,
+      "max": 15,
+      "step": 2.5,
+      "description": "Momentum mínimo %"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR stop"
+    }
+  },
+  "indicators": {
+    "roc": {
+      "type": "roc",
+      "params": {
+        "period": "$momentumPeriod"
+      }
+    },
+    "ema50": {
+      "type": "ema",
+      "params": {
+        "period": 50
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "roc",
+          "op": ">",
+          "right": "$minMomentum"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "ema50"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2.5
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 2.5,
+      "breakEvenAfterR": 1.5
+    },
+    "conditions": {
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "roc",
+            "op": "<",
+            "right": 0
+          }
+        ]
+      }
+    }
+  },
+  "confidence": {
+    "base": 65,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "roc",
+          "op": ">",
+          "right": 15
+        },
+        "bonus": 15,
+        "description": "Strong momentum"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 5,
+        "description": "Volume"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 65,
+    "minRiskReward": 2
+  }
+}

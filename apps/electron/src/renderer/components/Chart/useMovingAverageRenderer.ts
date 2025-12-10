@@ -1,4 +1,4 @@
-import { calculateMovingAverage } from '@/renderer/utils/movingAverages';
+import { calculateMovingAverage } from '@marketmind/indicators';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';

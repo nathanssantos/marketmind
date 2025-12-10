@@ -1,5 +1,5 @@
-import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Kline, TradingSetup } from '@shared/types';
+import { calculateEMA } from '@marketmind/indicators';
+import type { Kline, TradingSetup } from '@marketmind/types';
 import { getKlineClose } from '@shared/utils';
 import {
     BearTrapDetector,
@@ -14,33 +14,13 @@ import {
     createDefaultBullTrapConfig,
 } from './BullTrapDetector';
 import {
-    DivergenceDetector,
-    createDefaultDivergenceConfig,
-} from './DivergenceDetector';
-import {
-    LiquiditySweepDetector,
-    createDefaultLiquiditySweepConfig,
-} from './LiquiditySweepDetector';
-import {
-    OrderBlockFVGDetector,
-    createDefaultOrderBlockFVGConfig,
-} from './OrderBlockFVGDetector';
-import {
     Pattern123Detector,
     createDefault123Config,
 } from './Pattern123Detector';
-import {
-    PinInsideDetector,
-    createDefaultPinInsideConfig,
-} from './PinInsideDetector';
 import { Setup91Detector, createDefault91Config } from './Setup91Detector';
 import { Setup92Detector, createDefault92Config } from './Setup92Detector';
 import { Setup93Detector, createDefault93Config } from './Setup93Detector';
 import { Setup94Detector, createDefault94Config } from './Setup94Detector';
-import {
-    VWAPEMACrossDetector,
-    createDefaultVWAPEMACrossConfig,
-} from './VWAPEMACrossDetector';
 
 export interface SetupDetectionConfig {
   setup91: ReturnType<typeof createDefault91Config>;
@@ -51,11 +31,6 @@ export interface SetupDetectionConfig {
   bullTrap: ReturnType<typeof createDefaultBullTrapConfig>;
   bearTrap: ReturnType<typeof createDefaultBearTrapConfig>;
   breakoutRetest: ReturnType<typeof createDefaultBreakoutRetestConfig>;
-  pinInside: ReturnType<typeof createDefaultPinInsideConfig>;
-  orderBlockFVG: ReturnType<typeof createDefaultOrderBlockFVGConfig>;
-  vwapEmaCross: ReturnType<typeof createDefaultVWAPEMACrossConfig>;
-  divergence: ReturnType<typeof createDefaultDivergenceConfig>;
-  liquiditySweep: ReturnType<typeof createDefaultLiquiditySweepConfig>;
   enableTrendFilter: boolean;
   allowCounterTrend: boolean;
   trendEmaPeriod: number;
@@ -66,6 +41,7 @@ const DEBUG_ENABLED = import.meta.env.VITE_DEBUG_SETUPS === 'true';
 const PRICE_DECIMAL_PLACES = 2;
 const DEFAULT_TREND_EMA_PERIOD = 200;
 const DEFAULT_SETUP_COOLDOWN = 10;
+const MIN_KLINES_FOR_DETECTION = 50;
 
 export class SetupDetectionService {
   private config: SetupDetectionConfig;
@@ -77,11 +53,6 @@ export class SetupDetectionService {
   private bullTrapDetector: BullTrapDetector;
   private bearTrapDetector: BearTrapDetector;
   private breakoutRetestDetector: BreakoutRetestDetector;
-  private pinInsideDetector: PinInsideDetector;
-  private orderBlockFVGDetector: OrderBlockFVGDetector;
-  private vwapEmaCrossDetector: VWAPEMACrossDetector;
-  private divergenceDetector: DivergenceDetector;
-  private liquiditySweepDetector: LiquiditySweepDetector;
   private lastDetectionIndex: Map<string, number> = new Map();
 
   private debugLog(...args: unknown[]): void {
@@ -92,13 +63,13 @@ export class SetupDetectionService {
 
   /**
    * @deprecated Use useSetupDetection hook instead for backend-powered setup detection with real-time updates.
-   * 
+   *
    * Migration Guide:
    * ```typescript
    * // Old approach (deprecated):
    * const setupService = new SetupDetectionService(setupConfig);
    * const setups = setupService.detectSetups(klines);
-   * 
+   *
    * // New approach (recommended):
    * const setupDetector = useSetupDetection({
    *   symbol: 'BTCUSDT',
@@ -107,7 +78,7 @@ export class SetupDetectionService {
    * });
    * const setups = setupDetector.detectSetups(klines);
    * ```
-   * 
+   *
    * Benefits of migration:
    * - Real-time WebSocket updates when new setups are detected
    * - Persistent storage in PostgreSQL + TimescaleDB
@@ -125,11 +96,6 @@ export class SetupDetectionService {
       bullTrap: config?.bullTrap ?? createDefaultBullTrapConfig(),
       bearTrap: config?.bearTrap ?? createDefaultBearTrapConfig(),
       breakoutRetest: config?.breakoutRetest ?? createDefaultBreakoutRetestConfig(),
-      pinInside: config?.pinInside ?? createDefaultPinInsideConfig(),
-      orderBlockFVG: config?.orderBlockFVG ?? createDefaultOrderBlockFVGConfig(),
-      vwapEmaCross: config?.vwapEmaCross ?? createDefaultVWAPEMACrossConfig(),
-      divergence: config?.divergence ?? createDefaultDivergenceConfig(),
-      liquiditySweep: config?.liquiditySweep ?? createDefaultLiquiditySweepConfig(),
       enableTrendFilter: config?.enableTrendFilter ?? false,
       allowCounterTrend: config?.allowCounterTrend ?? true,
       trendEmaPeriod: config?.trendEmaPeriod ?? DEFAULT_TREND_EMA_PERIOD,
@@ -144,11 +110,6 @@ export class SetupDetectionService {
     this.bullTrapDetector = new BullTrapDetector(this.config.bullTrap);
     this.bearTrapDetector = new BearTrapDetector(this.config.bearTrap);
     this.breakoutRetestDetector = new BreakoutRetestDetector(this.config.breakoutRetest);
-    this.pinInsideDetector = new PinInsideDetector(this.config.pinInside);
-    this.orderBlockFVGDetector = new OrderBlockFVGDetector(this.config.orderBlockFVG);
-    this.vwapEmaCrossDetector = new VWAPEMACrossDetector(this.config.vwapEmaCross);
-    this.divergenceDetector = new DivergenceDetector(this.config.divergence);
-    this.liquiditySweepDetector = new LiquiditySweepDetector(this.config.liquiditySweep);
   }
 
   private canDetectSetup(setupType: string, currentIndex: number): boolean {
@@ -192,432 +153,121 @@ export class SetupDetectionService {
 
   detectSetups(klines: Kline[]): TradingSetup[] {
     if (klines.length === 0) return [];
-
-    const setups: TradingSetup[] = [];
-    const MIN_KLINES_FOR_DETECTION = 50;
-
     if (klines.length < MIN_KLINES_FOR_DETECTION) return [];
 
+    const setups: TradingSetup[] = [];
     const currentIndex = klines.length - 1;
     const trend = this.getTrend(klines, currentIndex);
 
-    if (this.config.setup91.enabled) {
-      this.debugLog('\n--- Setup 9.1 ---');
-      const canDetect = this.canDetectSetup('setup91', currentIndex);
-      this.debugLog('Can Detect (Cooldown):', canDetect);
-      
-      if (canDetect) {
-        const result = this.setup91Detector.detect(klines, currentIndex);
-        this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
-        
-        if (result.setup) {
-          const aligned = this.isTrendAligned(result.setup.direction, trend);
-          this.debugLog('Trend Aligned:', aligned, `(${result.setup.direction} vs ${trend})`);
-          
-          if (aligned) {
-            setups.push(result.setup);
-            this.markSetupDetected('setup91', currentIndex);
-            this.debugLog('✅ Setup 9.1 DETECTED');
-          } else {
-            this.debugLog('❌ Rejected by Trend Filter');
-          }
-        } else {
-          this.debugLog('❌ No setup found (confidence too low or pattern not formed)');
-        }
-      } else {
-        const lastDetection = this.lastDetectionIndex.get('setup91');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
-      }
-    } else {
-      this.debugLog('\n--- Setup 9.1 ---');
-      this.debugLog('❌ Disabled in config');
-    }
+    const detectors = [
+      {
+        name: 'setup91',
+        detector: this.setup91Detector,
+        enabled: this.config.setup91.enabled,
+        label: 'Setup 9.1',
+      },
+      {
+        name: 'setup92',
+        detector: this.setup92Detector,
+        enabled: this.config.setup92.enabled,
+        label: 'Setup 9.2',
+      },
+      {
+        name: 'setup93',
+        detector: this.setup93Detector,
+        enabled: this.config.setup93.enabled,
+        label: 'Setup 9.3',
+      },
+      {
+        name: 'setup94',
+        detector: this.setup94Detector,
+        enabled: this.config.setup94.enabled,
+        label: 'Setup 9.4',
+      },
+      {
+        name: 'pattern123',
+        detector: this.pattern123Detector,
+        enabled: this.config.pattern123.enabled,
+        label: 'Pattern 1-2-3',
+      },
+      {
+        name: 'bullTrap',
+        detector: this.bullTrapDetector,
+        enabled: this.config.bullTrap.enabled,
+        label: 'Bull Trap',
+      },
+      {
+        name: 'bearTrap',
+        detector: this.bearTrapDetector,
+        enabled: this.config.bearTrap.enabled,
+        label: 'Bear Trap',
+      },
+      {
+        name: 'breakoutRetest',
+        detector: this.breakoutRetestDetector,
+        enabled: this.config.breakoutRetest.enabled,
+        label: 'Breakout Retest',
+      },
+    ];
 
-    if (this.config.setup92.enabled) {
-      this.debugLog('\n--- Setup 9.2 ---');
-      const canDetect = this.canDetectSetup('setup92', currentIndex);
-      this.debugLog('Can Detect (Cooldown):', canDetect);
-      
-      if (canDetect) {
-        const result = this.setup92Detector.detect(klines, currentIndex);
-        this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
-        
-        if (result.setup) {
-          const aligned = this.isTrendAligned(result.setup.direction, trend);
-          this.debugLog('Trend Aligned:', aligned, `(${result.setup.direction} vs ${trend})`);
-          
-          if (aligned) {
-            setups.push(result.setup);
-            this.markSetupDetected('setup92', currentIndex);
-            this.debugLog('✅ Setup 9.2 DETECTED');
-          } else {
-            this.debugLog('❌ Rejected by Trend Filter');
-          }
-        } else {
-          this.debugLog('❌ No setup found (confidence too low or pattern not formed)');
-        }
-      } else {
-        const lastDetection = this.lastDetectionIndex.get('setup92');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
-      }
-    } else {
-      this.debugLog('\n--- Setup 9.2 ---');
-      this.debugLog('❌ Disabled in config');
-    }
+    for (const { name, detector, enabled, label } of detectors) {
+      this.debugLog(`\n--- ${label} ---`);
 
-    if (this.config.setup93.enabled) {
-      this.debugLog('\n--- Setup 9.3 ---');
-      const canDetect = this.canDetectSetup('setup93', currentIndex);
-      this.debugLog('Can Detect (Cooldown):', canDetect);
-      
-      if (canDetect) {
-        const result = this.setup93Detector.detect(klines, currentIndex);
-        this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
-        
-        if (result.setup) {
-          const aligned = this.isTrendAligned(result.setup.direction, trend);
-          this.debugLog('Trend Aligned:', aligned, `(${result.setup.direction} vs ${trend})`);
-          
-          if (aligned) {
-            setups.push(result.setup);
-            this.markSetupDetected('setup93', currentIndex);
-            this.debugLog('✅ Setup 9.3 DETECTED');
-          } else {
-            this.debugLog('❌ Rejected by Trend Filter');
-          }
-        } else {
-          this.debugLog('❌ No setup found (confidence too low or pattern not formed)');
-        }
-      } else {
-        const lastDetection = this.lastDetectionIndex.get('setup93');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
+      if (!enabled) {
+        this.debugLog('Disabled in config');
+        continue;
       }
-    } else {
-      this.debugLog('\n--- Setup 9.3 ---');
-      this.debugLog('❌ Disabled in config');
-    }
 
-    if (this.config.setup94.enabled) {
-      this.debugLog('\n--- Setup 9.4 ---');
-      const canDetect = this.canDetectSetup('setup94', currentIndex);
+      const canDetect = this.canDetectSetup(name, currentIndex);
       this.debugLog('Can Detect (Cooldown):', canDetect);
-      
-      if (canDetect) {
-        const result = this.setup94Detector.detect(klines, currentIndex);
-        this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
-        
-        if (result.setup) {
-          const aligned = this.isTrendAligned(result.setup.direction, trend);
-          this.debugLog('Trend Aligned:', aligned, `(${result.setup.direction} vs ${trend})`);
-          
-          if (aligned) {
-            setups.push(result.setup);
-            this.markSetupDetected('setup94', currentIndex);
-            this.debugLog('✅ Setup 9.4 DETECTED');
-          } else {
-            this.debugLog('❌ Rejected by Trend Filter');
-          }
-        } else {
-          this.debugLog('❌ No setup found (confidence too low or pattern not formed)');
-        }
-      } else {
-        const lastDetection = this.lastDetectionIndex.get('setup94');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
-      }
-    } else {
-      this.debugLog('\n--- Setup 9.4 ---');
-      this.debugLog('❌ Disabled in config');
-    }
 
-    if (this.config.pattern123.enabled) {
-      this.debugLog('\n--- Pattern 1-2-3 ---');
-      const canDetect = this.canDetectSetup('pattern123', currentIndex);
-      this.debugLog('Can Detect (Cooldown):', canDetect);
-      
-      if (canDetect) {
-        const result = this.pattern123Detector.detect(klines, currentIndex);
-        this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
-        
-        if (result.setup) {
-          const aligned = this.isTrendAligned(result.setup.direction, trend);
-          this.debugLog('Trend Aligned:', aligned, `(${result.setup.direction} vs ${trend})`);
-          
-          if (aligned) {
-            setups.push(result.setup);
-            this.markSetupDetected('pattern123', currentIndex);
-            this.debugLog('✅ Pattern 1-2-3 DETECTED');
-          } else {
-            this.debugLog('❌ Rejected by Trend Filter');
-          }
-        } else {
-          this.debugLog('❌ No setup found (not enough pivots or breakout not confirmed)');
-        }
-      } else {
-        const lastDetection = this.lastDetectionIndex.get('pattern123');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
+      if (!canDetect) {
+        const lastDetection = this.lastDetectionIndex.get(name);
+        this.debugLog(
+          `Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`,
+        );
+        continue;
       }
-    } else {
-      this.debugLog('\n--- Pattern 1-2-3 ---');
-      this.debugLog('❌ Disabled in config');
-    }
 
-    if (this.config.bullTrap.enabled) {
-      this.debugLog('\n--- Bull Trap ---');
-      const canDetect = this.canDetectSetup('bullTrap', currentIndex);
-      this.debugLog('Can Detect (Cooldown):', canDetect);
-      
-      if (canDetect) {
-        const result = this.bullTrapDetector.detect(klines, currentIndex);
-        this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
-        
-        if (result.setup) {
-          const aligned = this.isTrendAligned(result.setup.direction, trend);
-          this.debugLog('Trend Aligned:', aligned, `(${result.setup.direction} vs ${trend})`);
-          
-          if (aligned) {
-            setups.push(result.setup);
-            this.markSetupDetected('bullTrap', currentIndex);
-            this.debugLog('✅ Bull Trap DETECTED');
-          } else {
-            this.debugLog('❌ Rejected by Trend Filter');
-          }
-        } else {
-          this.debugLog('❌ No setup found (no fake breakout or reversal not strong enough)');
-        }
-      } else {
-        const lastDetection = this.lastDetectionIndex.get('bullTrap');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
-      }
-    } else {
-      this.debugLog('\n--- Bull Trap ---');
-      this.debugLog('❌ Disabled in config');
-    }
+      const result = detector.detect(klines, currentIndex);
+      this.debugLog('Detection Result:', {
+        hasSetup: !!result.setup,
+        confidence: result.confidence,
+      });
 
-    if (this.config.bearTrap.enabled) {
-      this.debugLog('\n--- Bear Trap ---');
-      const canDetect = this.canDetectSetup('bearTrap', currentIndex);
-      this.debugLog('Can Detect (Cooldown):', canDetect);
-      
-      if (canDetect) {
-        const result = this.bearTrapDetector.detect(klines, currentIndex);
-        this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
-        
-        if (result.setup) {
-          const aligned = this.isTrendAligned(result.setup.direction, trend);
-          this.debugLog('Trend Aligned:', aligned, `(${result.setup.direction} vs ${trend})`);
-          
-          if (aligned) {
-            setups.push(result.setup);
-            this.markSetupDetected('bearTrap', currentIndex);
-            this.debugLog('✅ Bear Trap DETECTED');
-          } else {
-            this.debugLog('❌ Rejected by Trend Filter');
-          }
-        } else {
-          this.debugLog('❌ No setup found (no fake breakdown or reversal not strong enough)');
-        }
-      } else {
-        const lastDetection = this.lastDetectionIndex.get('bearTrap');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
+      if (!result.setup) {
+        this.debugLog('No setup found');
+        continue;
       }
-    } else {
-      this.debugLog('\n--- Bear Trap ---');
-      this.debugLog('❌ Disabled in config');
-    }
 
-    if (this.config.breakoutRetest.enabled) {
-      this.debugLog('\n--- Breakout Retest ---');
-      const canDetect = this.canDetectSetup('breakoutRetest', currentIndex);
-      this.debugLog('Can Detect (Cooldown):', canDetect);
-      
-      if (canDetect) {
-        const result = this.breakoutRetestDetector.detect(klines, currentIndex);
-        this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
-        
-        if (result.setup) {
-          const aligned = this.isTrendAligned(result.setup.direction, trend);
-          this.debugLog('Trend Aligned:', aligned, `(${result.setup.direction} vs ${trend})`);
-          
-          if (aligned) {
-            setups.push(result.setup);
-            this.markSetupDetected('breakoutRetest', currentIndex);
-            this.debugLog('✅ Breakout Retest DETECTED');
-          } else {
-            this.debugLog('❌ Rejected by Trend Filter');
-          }
-        } else {
-          this.debugLog('❌ No setup found (no breakout or retest not confirmed)');
-        }
-      } else {
-        const lastDetection = this.lastDetectionIndex.get('breakoutRetest');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
-      }
-    } else {
-      this.debugLog('\n--- Breakout Retest ---');
-      this.debugLog('❌ Disabled in config');
-    }
+      const aligned = this.isTrendAligned(result.setup.direction, trend);
+      this.debugLog(
+        'Trend Aligned:',
+        aligned,
+        `(${result.setup.direction} vs ${trend})`,
+      );
 
-    if (this.config.pinInside.enabled) {
-      this.debugLog('\n--- Pin + Inside Bar Combo ---');
-      const canDetect = this.canDetectSetup('pinInside', currentIndex);
-      this.debugLog('Can Detect (Cooldown):', canDetect);
-      
-      if (canDetect) {
-        const result = this.pinInsideDetector.detect(klines, currentIndex);
-        this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
-        
-        if (result.setup) {
-          const aligned = this.isTrendAligned(result.setup.direction, trend);
-          this.debugLog('Trend Aligned:', aligned, `(${result.setup.direction} vs ${trend})`);
-          
-          if (aligned) {
-            setups.push(result.setup);
-            this.markSetupDetected('pinInside', currentIndex);
-            this.debugLog('✅ Pin + Inside Bar Combo DETECTED');
-          } else {
-            this.debugLog('❌ Rejected by Trend Filter');
-          }
-        } else {
-          this.debugLog('❌ No setup found (pattern not valid or at S/R)');
-        }
+      if (aligned) {
+        setups.push(result.setup);
+        this.markSetupDetected(name, currentIndex);
+        this.debugLog(`${label} DETECTED`);
       } else {
-        const lastDetection = this.lastDetectionIndex.get('pinInside');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
+        this.debugLog('Rejected by Trend Filter');
       }
-    } else {
-      this.debugLog('\n--- Pin + Inside Bar Combo ---');
-      this.debugLog('❌ Disabled in config');
-    }
-
-    if (this.config.orderBlockFVG.enabled) {
-      this.debugLog('\n--- Order Block + FVG ---');
-      const canDetect = this.canDetectSetup('orderBlockFVG', currentIndex);
-      this.debugLog('Can Detect (Cooldown):', canDetect);
-      
-      if (canDetect) {
-        const result = this.orderBlockFVGDetector.detect(klines, currentIndex);
-        this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
-        
-        if (result.setup) {
-          const aligned = this.isTrendAligned(result.setup.direction, trend);
-          this.debugLog('Trend Aligned:', aligned, `(${result.setup.direction} vs ${trend})`);
-          
-          if (aligned) {
-            setups.push(result.setup);
-            this.markSetupDetected('orderBlockFVG', currentIndex);
-            this.debugLog('✅ Order Block + FVG DETECTED');
-          } else {
-            this.debugLog('❌ Rejected by Trend Filter');
-          }
-        } else {
-          this.debugLog('❌ No setup found (no order block + FVG confluence)');
-        }
-      } else {
-        const lastDetection = this.lastDetectionIndex.get('orderBlockFVG');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
-      }
-    } else {
-      this.debugLog('\n--- Order Block + FVG ---');
-      this.debugLog('❌ Disabled in config');
-    }
-
-    if (this.config.vwapEmaCross.enabled) {
-      this.debugLog('\n--- VWAP + EMA Cross ---');
-      const canDetect = this.canDetectSetup('vwapEmaCross', currentIndex);
-      this.debugLog('Can Detect (Cooldown):', canDetect);
-      
-      if (canDetect) {
-        const result = this.vwapEmaCrossDetector.detect(klines, currentIndex);
-        this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
-        
-        if (result.setup) {
-          const aligned = this.isTrendAligned(result.setup.direction, trend);
-          this.debugLog('Trend Aligned:', aligned, `(${result.setup.direction} vs ${trend})`);
-          
-          if (aligned) {
-            setups.push(result.setup);
-            this.markSetupDetected('vwapEmaCross', currentIndex);
-            this.debugLog('✅ VWAP + EMA Cross DETECTED');
-          } else {
-            this.debugLog('❌ Rejected by Trend Filter');
-          }
-        } else {
-          this.debugLog('❌ No setup found (no VWAP cross + pullback)');
-        }
-      } else {
-        const lastDetection = this.lastDetectionIndex.get('vwapEmaCross');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
-      }
-    } else {
-      this.debugLog('\n--- VWAP + EMA Cross ---');
-      this.debugLog('❌ Disabled in config');
-    }
-
-    if (this.config.divergence.enabled) {
-      this.debugLog('\n--- RSI/MACD Divergence ---');
-      const canDetect = this.canDetectSetup('divergence', currentIndex);
-      this.debugLog('Can Detect (Cooldown):', canDetect);
-      
-      if (canDetect) {
-        const result = this.divergenceDetector.detect(klines, currentIndex);
-        this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
-        
-        if (result.setup) {
-          const aligned = this.isTrendAligned(result.setup.direction, trend);
-          this.debugLog('Trend Aligned:', aligned, `(${result.setup.direction} vs ${trend})`);
-          
-          if (aligned) {
-            setups.push(result.setup);
-            this.markSetupDetected('divergence', currentIndex);
-            this.debugLog('✅ Divergence DETECTED');
-          } else {
-            this.debugLog('❌ Rejected by Trend Filter');
-          }
-        } else {
-          this.debugLog('❌ No setup found (no divergence pattern)');
-        }
-      } else {
-        const lastDetection = this.lastDetectionIndex.get('divergence');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
-      }
-    } else {
-      this.debugLog('\n--- RSI/MACD Divergence ---');
-      this.debugLog('❌ Disabled in config');
-    }
-
-    if (this.config.liquiditySweep.enabled) {
-      this.debugLog('\n--- Liquidity Sweep ---');
-      const canDetect = this.canDetectSetup('liquiditySweep', currentIndex);
-      this.debugLog('Can Detect (Cooldown):', canDetect);
-      
-      if (canDetect) {
-        const result = this.liquiditySweepDetector.detect(klines, currentIndex);
-        this.debugLog('Detection Result:', { hasSetup: !!result.setup, confidence: result.confidence });
-        
-        if (result.setup) {
-          const aligned = this.isTrendAligned(result.setup.direction, trend);
-          this.debugLog('Trend Aligned:', aligned, `(${result.setup.direction} vs ${trend})`);
-          
-          if (aligned) {
-            setups.push(result.setup);
-            this.markSetupDetected('liquiditySweep', currentIndex);
-            this.debugLog('✅ Liquidity Sweep DETECTED');
-          } else {
-            this.debugLog('❌ Rejected by Trend Filter');
-          }
-        } else {
-          this.debugLog('❌ No setup found (no sweep pattern)');
-        }
-      } else {
-        const lastDetection = this.lastDetectionIndex.get('liquiditySweep');
-        this.debugLog(`❌ Cooldown active (last: ${lastDetection}, need: ${this.config.setupCooldownPeriod} klines)`);
-      }
-    } else {
-      this.debugLog('\n--- Liquidity Sweep ---');
-      this.debugLog('❌ Disabled in config');
     }
 
     setups.sort((a, b) => b.confidence - a.confidence);
+
+    this.debugLog('\n=== Detection Summary ===');
+    this.debugLog('Total Setups Found:', setups.length);
+    if (setups.length > 0) {
+      setups.forEach((setup) => {
+        this.debugLog(
+          `  - ${setup.type}: ${setup.direction} @ ${setup.entryPrice.toFixed(PRICE_DECIMAL_PLACES)} (Confidence: ${setup.confidence}%)`,
+        );
+      });
+    }
+    this.debugLog('===========================\n');
 
     return setups;
   }
@@ -629,43 +279,50 @@ export class SetupDetectionService {
   ): TradingSetup[] {
     const setups: TradingSetup[] = [];
 
-    for (let i = startIndex; i <= endIndex; i++) {
-      if (this.config.setup91.enabled) {
-        const result = this.setup91Detector.detect(klines, i);
-        if (result.setup) setups.push(result.setup);
-      }
+    const detectors = [
+      {
+        detector: this.setup91Detector,
+        enabled: this.config.setup91.enabled,
+      },
+      {
+        detector: this.setup92Detector,
+        enabled: this.config.setup92.enabled,
+      },
+      {
+        detector: this.setup93Detector,
+        enabled: this.config.setup93.enabled,
+      },
+      {
+        detector: this.setup94Detector,
+        enabled: this.config.setup94.enabled,
+      },
+      {
+        detector: this.pattern123Detector,
+        enabled: this.config.pattern123.enabled,
+      },
+      {
+        detector: this.bullTrapDetector,
+        enabled: this.config.bullTrap.enabled,
+      },
+      {
+        detector: this.bearTrapDetector,
+        enabled: this.config.bearTrap.enabled,
+      },
+      {
+        detector: this.breakoutRetestDetector,
+        enabled: this.config.breakoutRetest.enabled,
+      },
+    ];
 
-      if (this.config.pattern123.enabled) {
-        const result = this.pattern123Detector.detect(klines, i);
-        if (result.setup) setups.push(result.setup);
-      }
-
-      if (this.config.bullTrap.enabled) {
-        const result = this.bullTrapDetector.detect(klines, i);
-        if (result.setup) setups.push(result.setup);
-      }
-
-      if (this.config.bearTrap.enabled) {
-        const result = this.bearTrapDetector.detect(klines, i);
-        if (result.setup) setups.push(result.setup);
-      }
-
-      if (this.config.breakoutRetest.enabled) {
-        const result = this.breakoutRetestDetector.detect(klines, i);
+    for (let i = startIndex; i <= endIndex; i += 1) {
+      for (const { detector, enabled } of detectors) {
+        if (!enabled) continue;
+        const result = detector.detect(klines, i);
         if (result.setup) setups.push(result.setup);
       }
     }
 
     setups.sort((a, b) => b.confidence - a.confidence);
-
-    this.debugLog('\n=== Detection Summary ===');
-    this.debugLog('Total Setups Found:', setups.length);
-    if (setups.length > 0) {
-      setups.forEach(setup => {
-        this.debugLog(`  - ${setup.type}: ${setup.direction} @ ${setup.entryPrice.toFixed(PRICE_DECIMAL_PLACES)} (Confidence: ${setup.confidence}%)`);
-      });
-    }
-    this.debugLog('===========================\n');
 
     return setups;
   }
@@ -674,6 +331,21 @@ export class SetupDetectionService {
     if (config.setup91) {
       this.config.setup91 = { ...this.config.setup91, ...config.setup91 };
       this.setup91Detector = new Setup91Detector(this.config.setup91);
+    }
+
+    if (config.setup92) {
+      this.config.setup92 = { ...this.config.setup92, ...config.setup92 };
+      this.setup92Detector = new Setup92Detector(this.config.setup92);
+    }
+
+    if (config.setup93) {
+      this.config.setup93 = { ...this.config.setup93, ...config.setup93 };
+      this.setup93Detector = new Setup93Detector(this.config.setup93);
+    }
+
+    if (config.setup94) {
+      this.config.setup94 = { ...this.config.setup94, ...config.setup94 };
+      this.setup94Detector = new Setup94Detector(this.config.setup94);
     }
 
     if (config.pattern123) {
@@ -705,7 +377,25 @@ export class SetupDetectionService {
         ...this.config.breakoutRetest,
         ...config.breakoutRetest,
       };
-      this.breakoutRetestDetector = new BreakoutRetestDetector(this.config.breakoutRetest);
+      this.breakoutRetestDetector = new BreakoutRetestDetector(
+        this.config.breakoutRetest,
+      );
+    }
+
+    if (config.enableTrendFilter !== undefined) {
+      this.config.enableTrendFilter = config.enableTrendFilter;
+    }
+
+    if (config.allowCounterTrend !== undefined) {
+      this.config.allowCounterTrend = config.allowCounterTrend;
+    }
+
+    if (config.trendEmaPeriod !== undefined) {
+      this.config.trendEmaPeriod = config.trendEmaPeriod;
+    }
+
+    if (config.setupCooldownPeriod !== undefined) {
+      this.config.setupCooldownPeriod = config.setupCooldownPeriod;
     }
   }
 
@@ -724,13 +414,8 @@ export const createDefaultSetupDetectionConfig =
     bullTrap: createDefaultBullTrapConfig(),
     bearTrap: createDefaultBearTrapConfig(),
     breakoutRetest: createDefaultBreakoutRetestConfig(),
-    pinInside: createDefaultPinInsideConfig(),
-    orderBlockFVG: createDefaultOrderBlockFVGConfig(),
-    vwapEmaCross: createDefaultVWAPEMACrossConfig(),
-    divergence: createDefaultDivergenceConfig(),
-    liquiditySweep: createDefaultLiquiditySweepConfig(),
     enableTrendFilter: false,
     allowCounterTrend: true,
-    trendEmaPeriod: 200,
-    setupCooldownPeriod: 10,
+    trendEmaPeriod: DEFAULT_TREND_EMA_PERIOD,
+    setupCooldownPeriod: DEFAULT_SETUP_COOLDOWN,
   });

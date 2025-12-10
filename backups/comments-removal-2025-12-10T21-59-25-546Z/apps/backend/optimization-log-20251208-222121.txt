@@ -1,0 +1,298 @@
+[2025-12-09T01:21:21.468Z] 📊 BATCH OPTIMIZATION - MarketMind Strategies (Background Mode)
+[2025-12-09T01:21:21.469Z] Period: 2023-01-01 to 2024-12-31
+[2025-12-09T01:21:21.469Z] Symbol: BTCUSDT
+[2025-12-09T01:21:21.469Z] Interval: 1h
+[2025-12-09T01:21:21.469Z] Strategies to optimize: 10
+[2025-12-09T01:21:21.469Z] ================================================================================
+[2025-12-09T01:21:21.469Z] 🔧 Optimizing: order-block-fvg
+[2025-12-09T01:21:21.469Z] ================================================================================
+- Fetching historical data...
+[32m✔[39m Fetched 18000 candles
+- Saving optimization results...
+[32m✔[39m Results saved to: /Users/nathan/Documents/dev/marketmind/apps/backend/results/optimizations/order-block-fvg_BTCUSDT_1h_2025-12-09T01-21-52-289Z.json
+[2025-12-09T01:21:53.164Z] ✅ Optimization complete for order-block-fvg
+[2025-12-09T01:21:53.164Z] ================================================================================
+[2025-12-09T01:21:53.165Z] 🔧 Optimizing: liquidity-sweep
+[2025-12-09T01:21:53.165Z] ================================================================================
+- Fetching historical data...
+[32m✔[39m Fetched 18000 candles
+- Saving optimization results...
+[32m✔[39m Results saved to: /Users/nathan/Documents/dev/marketmind/apps/backend/results/optimizations/liquidity-sweep_BTCUSDT_1h_2025-12-09T01-22-33-489Z.json
+[2025-12-09T01:22:33.864Z] ✅ Optimization complete for liquidity-sweep
+[2025-12-09T01:22:33.864Z] ================================================================================
+[2025-12-09T01:22:33.864Z] 🔧 Optimizing: divergence-rsi-macd
+[2025-12-09T01:22:33.864Z] ================================================================================
+- Fetching historical data...
+[32m✔[39m Fetched 18000 candles
+- Saving optimization results...
+[32m✔[39m Results saved to: /Users/nathan/Documents/dev/marketmind/apps/backend/results/optimizations/divergence-rsi-macd_BTCUSDT_1h_2025-12-09T01-23-13-915Z.json
+[2025-12-09T01:23:14.581Z] ✅ Optimization complete for divergence-rsi-macd
+[2025-12-09T01:23:14.581Z] ================================================================================
+[2025-12-09T01:23:14.581Z] 🔧 Optimizing: larry-williams-9-1
+[2025-12-09T01:23:14.581Z] ================================================================================
+- Fetching historical data...
+[32m✔[39m Fetched 18000 candles
+- Saving optimization results...
+[32m✔[39m Results saved to: /Users/nathan/Documents/dev/marketmind/apps/backend/results/optimizations/larry-williams-9-1_BTCUSDT_1h_2025-12-09T01-23-34-117Z.json
+[2025-12-09T01:23:34.322Z] ✅ Optimization complete for larry-williams-9-1
+[2025-12-09T01:23:34.322Z] ================================================================================
+[2025-12-09T01:23:34.322Z] 🔧 Optimizing: larry-williams-9-2
+[2025-12-09T01:23:34.322Z] ================================================================================
+- Fetching historical data...
+[32m✔[39m Fetched 18000 candles
+- Saving optimization results...
+[32m✔[39m Results saved to: /Users/nathan/Documents/dev/marketmind/apps/backend/results/optimizations/larry-williams-9-2_BTCUSDT_1h_2025-12-09T01-24-24-528Z.json
+[2025-12-09T01:24:25.109Z] ✅ Optimization complete for larry-williams-9-2
+[2025-12-09T01:24:25.109Z] ================================================================================
+[2025-12-09T01:24:25.109Z] 🔧 Optimizing: larry-williams-9-3
+[2025-12-09T01:24:25.109Z] ================================================================================
+- Fetching historical data...
+[32m✔[39m Fetched 18000 candles
+- Saving optimization results...
+[32m✔[39m Results saved to: /Users/nathan/Documents/dev/marketmind/apps/backend/results/optimizations/larry-williams-9-3_BTCUSDT_1h_2025-12-09T01-24-59-945Z.json
+[2025-12-09T01:25:00.812Z] ✅ Optimization complete for larry-williams-9-3
+[2025-12-09T01:25:00.812Z] ================================================================================
+[2025-12-09T01:25:00.812Z] 🔧 Optimizing: larry-williams-9-4
+[2025-12-09T01:25:00.812Z] ================================================================================
+- Fetching historical data...
+[32m✔[39m Fetched 18000 candles
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)
+- Saving optimization results...
+[32m✔[39m Results saved to: /Users/nathan/Documents/dev/marketmind/apps/backend/results/optimizations/larry-williams-9-4_BTCUSDT_1h_2025-12-09T01-26-22-672Z.json
+[2025-12-09T01:26:23.567Z] ✅ Optimization complete for larry-williams-9-4
+[2025-12-09T01:26:23.567Z] ================================================================================
+[2025-12-09T01:26:23.567Z] 🔧 Optimizing: connors-rsi2
+[2025-12-09T01:26:23.567Z] ================================================================================
+[22:26:24] ✗ Validation failed: Invalid strategy "connors-rsi2". Valid strategies:
+  Legacy:
+    - pattern123
+    - bearTrap
+    - meanReversion
+  Dynamic:
+    - 7day-momentum-crypto
+    - adx-ema-trend
+    - bear-trap
+    - breakout-retest
+    - bull-trap
+    - cci-optimized-daily
+    - cci-trend-rider
+    - connors-rsi2-original
+    - cumulative-rsi-r3
+    - divergence-rsi-macd
+    - donchian-breakout
+    - double-seven
+    - ema-crossover
+    - enhanced-trend-following
+    - grid-trading
+    - ibs-mean-reversion
+    - keltner-breakout-optimized
+    - keltner-squeeze
+    - larry-williams-9-1
+    - larry-williams-9-2
+    - larry-williams-9-3
+    - larry-williams-9-4
+    - liquidity-sweep
+    - macd-divergence
+    - market-making
+    - mean-reversion-bb-rsi
+    - momentum-breakout-2025
+    - nr7-breakout
+    - obv-divergence
+    - order-block-fvg
+    - pattern-123-reversal
+    - percent-b-connors
+    - pin-inside-combo
+    - rsi-divergence-trend
+    - rsi-oversold-bounce
+    - rsi2-mean-reversion
+    - supertrend-follow
+    - trend-pullback-2025
+    - triple-confirmation-reversal
+    - triple-ema-confluence
+    - vwap-ema-cross
+    - vwap-pullback
+    - williams-momentum
+    - williams-r-reversal
+[2025-12-09T01:26:24.187Z] ❌ Optimization failed for connors-rsi2: Command failed: npm run backtest:optimize --     --strategy connors-rsi2     --symbol BTCUSDT     --interval 1h     --start 2023-01-01     --end 2024-12-31     --capital 1000     --param rsiPeriod=2,3,4 --param rsiOversoldLevel=5,10,15 --param targetMultiplier=1.5,2.0,2.5,3.0     --parallel 4     --top 3     --min-win-rate 30     --min-profit-factor 1.3     --sort-by profitFactor
+[22:26:24] ✗ Validation failed: Invalid strategy "connors-rsi2". Valid strategies:
+  Legacy:
+    - pattern123
+    - bearTrap
+    - meanReversion
+  Dynamic:
+    - 7day-momentum-crypto
+    - adx-ema-trend
+    - bear-trap
+    - breakout-retest
+    - bull-trap
+    - cci-optimized-daily
+    - cci-trend-rider
+    - connors-rsi2-original
+    - cumulative-rsi-r3
+    - divergence-rsi-macd
+    - donchian-breakout
+    - double-seven
+    - ema-crossover
+    - enhanced-trend-following
+    - grid-trading
+    - ibs-mean-reversion
+    - keltner-breakout-optimized
+    - keltner-squeeze
+    - larry-williams-9-1
+    - larry-williams-9-2
+    - larry-williams-9-3
+    - larry-williams-9-4
+    - liquidity-sweep
+    - macd-divergence
+    - market-making
+    - mean-reversion-bb-rsi
+    - momentum-breakout-2025
+    - nr7-breakout
+    - obv-divergence
+    - order-block-fvg
+    - pattern-123-reversal
+    - percent-b-connors
+    - pin-inside-combo
+    - rsi-divergence-trend
+    - rsi-oversold-bounce
+    - rsi2-mean-reversion
+    - supertrend-follow
+    - trend-pullback-2025
+    - triple-confirmation-reversal
+    - triple-ema-confluence
+    - vwap-ema-cross
+    - vwap-pullback
+    - williams-momentum
+    - williams-r-reversal
+
+[2025-12-09T01:26:24.187Z] ================================================================================
+[2025-12-09T01:26:24.187Z] 🔧 Optimizing: mean-reversion-bb-rsi
+[2025-12-09T01:26:24.187Z] ================================================================================
+- Fetching historical data...
+[32m✔[39m Fetched 18000 candles
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)
+[22:27:00] ⚠ No results meet the specified criteria
+[2025-12-09T01:27:01.893Z] ✅ Optimization complete for mean-reversion-bb-rsi
+[2025-12-09T01:27:01.893Z] ================================================================================
+[2025-12-09T01:27:01.893Z] 🔧 Optimizing: rsi2-mean-reversion
+[2025-12-09T01:27:01.893Z] ================================================================================
+- Fetching historical data...
+[32m✔[39m Fetched 18000 candles
+- Saving optimization results...
+[32m✔[39m Results saved to: /Users/nathan/Documents/dev/marketmind/apps/backend/results/optimizations/rsi2-mean-reversion_BTCUSDT_1h_2025-12-09T01-27-39-914Z.json
+[2025-12-09T01:27:40.630Z] ✅ Optimization complete for rsi2-mean-reversion
+[2025-12-09T01:27:40.630Z] 
+================================================================================
+[2025-12-09T01:27:40.630Z] 📈 BATCH OPTIMIZATION SUMMARY
+[2025-12-09T01:27:40.630Z] ================================================================================
+[2025-12-09T01:27:40.630Z] Total Strategies: 10
+[2025-12-09T01:27:40.630Z] ✅ Successful: 9
+[2025-12-09T01:27:40.630Z] ❌ Failed: 1
+[2025-12-09T01:27:40.631Z] 
+⚠️  Some optimizations failed. Check logs above for details.

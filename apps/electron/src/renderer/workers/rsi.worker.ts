@@ -1,5 +1,5 @@
-import type { Kline } from '@shared/types';
-import { calculateRSI } from '../utils/rsi';
+import type { Kline } from '@marketmind/types';
+import { calculateRSI } from '@marketmind/indicators';
 
 self.onmessage = (e: MessageEvent<{ klines: Kline[]; period: number }>) => {
   const { klines, period } = e.data;

@@ -1,5 +1,5 @@
 import { patternDetectionService } from '@renderer/utils/patternDetection';
-import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage, AIPattern, AIProviderType, Kline } from '@shared/types';
+import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage, AIPattern, AIProviderType, Kline } from '@marketmind/types';
 import defaultPrompts from './prompts.json';
 import { ClaudeProvider, GeminiProvider, OpenAIProvider } from './providers';
 import type { AIProviderConfig, BaseAIProvider } from './types';
@@ -51,6 +51,12 @@ export class AIService {
     return this.apiKey;
   }
 
+  private readonly providerFactories: Record<AIProviderType, (config: AIProviderConfig) => BaseAIProvider> = {
+    openai: (config) => new OpenAIProvider(config),
+    anthropic: (config) => new ClaudeProvider(config),
+    gemini: (config) => new GeminiProvider(config),
+  };
+
   private async initializeProvider(): Promise<void> {
     const apiKey = await this.getApiKey();
 
@@ -62,19 +68,12 @@ export class AIService {
       ...(this.config.detailedKlinesCount !== undefined && { detailedKlinesCount: this.config.detailedKlinesCount }),
     };
 
-    switch (this.providerType) {
-      case 'openai':
-        this.provider = new OpenAIProvider(providerConfig);
-        break;
-      case 'anthropic':
-        this.provider = new ClaudeProvider(providerConfig);
-        break;
-      case 'gemini':
-        this.provider = new GeminiProvider(providerConfig);
-        break;
-      default:
-        throw new Error(`Unknown provider type: ${this.providerType}`);
+    const factory = this.providerFactories[this.providerType];
+    if (!factory) {
+      throw new Error(`Unknown provider type: ${this.providerType}`);
     }
+
+    this.provider = factory(providerConfig);
     
     if (this.provider && this.config.enableAIPatterns !== undefined) {
       this.provider.enableAIPatterns = this.config.enableAIPatterns;

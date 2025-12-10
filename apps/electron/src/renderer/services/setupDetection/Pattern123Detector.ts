@@ -1,21 +1,16 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
-import type { Kline } from '@shared/types';
+import type { Kline, Pattern123Config } from '@marketmind/types';
+import { createDefault123Config } from '@marketmind/types';
 import { getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
 import {
     BaseSetupDetector,
-    type SetupDetectorConfig,
     type SetupDetectorResult,
 } from './BaseSetupDetector';
 
-const DEFAULT_PIVOT_LOOKBACK = 5;
-const BREAKOUT_THRESHOLD_PERCENT = 0.002;
-const MIN_HIGHER_LOW_PERCENT = 0.001;
+export type { Pattern123Config };
+export { createDefault123Config };
 
-export interface Pattern123Config extends SetupDetectorConfig {
-  pivotLookback: number;
-  breakoutThreshold: number;
-  targetMultiplier: number;
-}
+const MIN_HIGHER_LOW_PERCENT = 0.001;
 
 export class Pattern123Detector extends BaseSetupDetector {
   private pattern123Config: Pattern123Config;
@@ -259,11 +254,3 @@ export class Pattern123Detector extends BaseSetupDetector {
   }
 }
 
-export const createDefault123Config = (): Pattern123Config => ({
-  enabled: false,
-  minConfidence: 75,
-  minRiskReward: 2.5,
-  pivotLookback: DEFAULT_PIVOT_LOOKBACK,
-  breakoutThreshold: BREAKOUT_THRESHOLD_PERCENT,
-  targetMultiplier: 2.0,
-});

@@ -1,0 +1,176 @@
+{
+  "id": "ema20-trend-crypto",
+  "name": "EMA20 Trend Crypto",
+  "version": "1.0.0",
+  "description": "Estratégia de trend-following com EMA de 20 dias para Bitcoin. Backtestada com 126% CAGR, 39% max DD, profit factor 2.69 em 127 trades. Win rate baixo (33%) mas alto avg gain por trade (5.99%).",
+  "author": "MarketMind",
+  "tags": [
+    "trend-following",
+    "ema",
+    "momentum",
+    "crypto-optimized"
+  ],
+  "source": "QuantifiedStrategies.com - 20 EMA Trading Strategy",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 90,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 90,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 3,
+    "breakEvenAfterR": 1.5,
+    "onlyWithTrend": false,
+    "minConfidence": 60,
+    "commission": 0.001
+  },
+  "backtestSummary": {
+    "referenceCAGR": 126,
+    "referenceMaxDrawdown": 39,
+    "referenceWinRate": 33,
+    "referenceProfitFactor": 2.69,
+    "referenceTrades": 127,
+    "referenceAvgGainPerTrade": 5.99,
+    "testedPeriod": "2015-2021",
+    "source": "QuantifiedStrategies.com"
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "notes": "EMA20 trend strategy designed for daily timeframe"
+  },
+  "parameters": {
+    "emaPeriod": {
+      "default": 20,
+      "min": 15,
+      "max": 30,
+      "step": 5,
+      "description": "Período da EMA"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "Multiplicador ATR para stop loss"
+    },
+    "rrMultiplier": {
+      "default": 3,
+      "min": 2,
+      "max": 4,
+      "step": 0.5,
+      "description": "Risk-reward para take profit"
+    }
+  },
+  "indicators": {
+    "ema": {
+      "type": "ema",
+      "params": {
+        "period": "$emaPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close",
+          "op": "crossover",
+          "right": "ema"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close",
+          "op": "crossunder",
+          "right": "ema"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$rrMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 3,
+      "breakEvenAfterR": 1.5
+    },
+    "conditions": {
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "close",
+            "op": "crossunder",
+            "right": "ema"
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "close",
+            "op": "crossover",
+            "right": "ema"
+          }
+        ]
+      }
+    }
+  },
+  "confidence": {
+    "base": 65,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirmando crossover"
+      },
+      {
+        "condition": {
+          "left": "atr",
+          "op": ">",
+          "right": "atr.prev"
+        },
+        "bonus": 5,
+        "description": "Volatilidade crescente"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 2
+  }
+}

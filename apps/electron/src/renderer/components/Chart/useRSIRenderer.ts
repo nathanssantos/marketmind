@@ -2,7 +2,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
-import type { RSIResult } from '../../utils/rsi';
+import type { RSIResult } from '@marketmind/indicators';
 
 interface UseRSIRendererProps {
   manager: CanvasManager | null;

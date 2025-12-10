@@ -1,5 +1,5 @@
-import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Kline, SetupCancellationReason, TradingSetup } from '@shared/types';
+import { calculateEMA } from '@marketmind/indicators';
+import type { Kline, SetupCancellationReason, TradingSetup } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow } from '@shared/utils';
 
 const EMA_PERIOD = 9;
@@ -10,6 +10,20 @@ const PULLBACK_BUFFER_LONG = 0.99;
 const PULLBACK_BUFFER_SHORT = 1.01;
 
 export class SetupCancellationDetector {
+  private readonly cancellationHandlers: Record<
+    TradingSetup['type'],
+    (setup: TradingSetup, klines: Kline[], currentIndex: number) => { isCancelled: boolean; reason?: SetupCancellationReason }
+  > = {
+    'setup-9-1': this.checkSetup91Cancellation.bind(this),
+    'setup-9-2': this.checkSetup92Cancellation.bind(this),
+    'setup-9-3': this.checkSetup93Cancellation.bind(this),
+    'setup-9-4': this.checkSetup94Cancellation.bind(this),
+    '123-reversal': this.checkPattern123Cancellation.bind(this),
+    'bull-trap': this.checkBullTrapCancellation.bind(this),
+    'bear-trap': this.checkBearTrapCancellation.bind(this),
+    'breakout-retest': this.checkBreakoutRetestCancellation.bind(this),
+  };
+
   checkCancellation(
     setup: TradingSetup,
     klines: Kline[],
@@ -20,26 +34,8 @@ export class SetupCancellationDetector {
       return { isCancelled: true, reason: setup.cancellationReason };
     }
 
-    switch (setup.type) {
-      case 'setup-9-1':
-        return this.checkSetup91Cancellation(setup, klines, currentIndex);
-      case 'setup-9-2':
-        return this.checkSetup92Cancellation(setup, klines, currentIndex);
-      case 'setup-9-3':
-        return this.checkSetup93Cancellation(setup, klines, currentIndex);
-      case 'setup-9-4':
-        return this.checkSetup94Cancellation(setup, klines, currentIndex);
-      case '123-reversal':
-        return this.checkPattern123Cancellation(setup, klines, currentIndex);
-      case 'bull-trap':
-        return this.checkBullTrapCancellation(setup, klines, currentIndex);
-      case 'bear-trap':
-        return this.checkBearTrapCancellation(setup, klines, currentIndex);
-      case 'breakout-retest':
-        return this.checkBreakoutRetestCancellation(setup, klines, currentIndex);
-      default:
-        return { isCancelled: false };
-    }
+    const handler = this.cancellationHandlers[setup.type];
+    return handler ? handler(setup, klines, currentIndex) : { isCancelled: false };
   }
 
   private checkSetup91Cancellation(
@@ -99,7 +95,7 @@ export class SetupCancellationDetector {
     if (getKlineClose(current) < ema9Current) {
       return { isCancelled: true, reason: 'ema-reversal' };
     }
-    if (getKlineLow(current) < setup.stopLoss) {
+    if (setup.stopLoss !== undefined && getKlineLow(current) < setup.stopLoss) {
       return { isCancelled: true, reason: 'swing-lost' };
     }
     return { isCancelled: false };
@@ -118,7 +114,7 @@ export class SetupCancellationDetector {
     if (getKlineClose(current) > ema9Current) {
       return { isCancelled: true, reason: 'ema-reversal' };
     }
-    if (getKlineHigh(current) > setup.stopLoss) {
+    if (setup.stopLoss !== undefined && getKlineHigh(current) > setup.stopLoss) {
       return { isCancelled: true, reason: 'swing-lost' };
     }
     return { isCancelled: false };

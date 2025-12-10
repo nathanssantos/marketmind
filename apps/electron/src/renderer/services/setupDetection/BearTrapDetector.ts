@@ -1,8 +1,12 @@
 import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
-import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Kline } from '@shared/types';
+import { calculateEMA } from '@marketmind/indicators';
+import type { Kline, BearTrapConfig } from '@marketmind/types';
+import { createDefaultBearTrapConfig } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineVolume } from '@shared/utils/klineUtils';
 import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
+
+export type { BearTrapConfig };
+export { createDefaultBearTrapConfig };
 
 const VOLUME_LOOKBACK = 20;
 const MIN_TRAP_DISTANCE_PERCENT = 0.001;
@@ -23,24 +27,6 @@ const CLUSTER_THRESHOLD_PERCENT = 0.005;
 const BREAKOUT_DISTANCE_TO_PERCENT = 100;
 const OPTIMAL_BREAKOUT_MIN = 0.003;
 const OPTIMAL_BREAKOUT_MAX = 0.01;
-
-export interface BearTrapConfig {
-  enabled: boolean;
-  minConfidence: number;
-  minRiskReward: number;
-  volumeMultiplier: number;
-  lookbackPeriod: number;
-  emaPeriod: number;
-}
-
-export const createDefaultBearTrapConfig = (): BearTrapConfig => ({
-  enabled: false,
-  minConfidence: 70,
-  minRiskReward: 2.5,
-  volumeMultiplier: 1.3,
-  lookbackPeriod: 20,
-  emaPeriod: 20,
-});
 
 export class BearTrapDetector extends BaseSetupDetector {
   private bearTrapConfig: BearTrapConfig;

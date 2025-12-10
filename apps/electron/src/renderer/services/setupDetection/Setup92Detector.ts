@@ -1,20 +1,33 @@
-import { calculateATR } from '@renderer/utils/indicators/atr';
+import { calculateATR, calculateEMA } from '@marketmind/indicators';
 import { findHighestSwingHigh, findLowestSwingLow } from '@renderer/utils/indicators/supportResistance';
-import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '@shared/utils';
 import {
     BaseSetupDetector,
-    type SetupDetectorConfig,
     type SetupDetectorResult,
+    type SetupDetectorConfig,
 } from './BaseSetupDetector';
 
-const DEFAULT_EMA_PERIOD = 9;
-const DEFAULT_ATR_PERIOD = 12;
-const ATR_STOP_MULTIPLIER = 2;
-const ATR_TARGET_MULTIPLIER = 4;
+export interface Setup92Config extends SetupDetectorConfig {
+  emaPeriod: number;
+  atrPeriod: number;
+  atrStopMultiplier: number;
+  atrTargetMultiplier: number;
+  volumeMultiplier: number;
+}
+
+export const createDefault92Config = (): Setup92Config => ({
+  enabled: false,
+  minConfidence: 70,
+  minRiskReward: 2.0,
+  emaPeriod: 9,
+  atrPeriod: 14,
+  atrStopMultiplier: 1.5,
+  atrTargetMultiplier: 2.5,
+  volumeMultiplier: 1.2,
+});
+
 const VOLUME_LOOKBACK = 20;
-const MIN_VOLUME_MULTIPLIER = 1.0;
 const BASE_CONFIDENCE = 60;
 const DISTANCE_CLOSE_THRESHOLD = 0.005;
 const DISTANCE_NEAR_THRESHOLD = 0.01;
@@ -27,14 +40,6 @@ const MAX_CONFIDENCE = 100;
 const SWING_STRENGTH = 3;
 const STOP_BUFFER_LONG = 0.998;
 const STOP_BUFFER_SHORT = 1.002;
-
-export interface Setup92Config extends SetupDetectorConfig {
-  emaPeriod: number;
-  atrPeriod: number;
-  atrStopMultiplier: number;
-  atrTargetMultiplier: number;
-  volumeMultiplier: number;
-}
 
 export class Setup92Detector extends BaseSetupDetector {
   private setup92Config: Setup92Config;
@@ -257,14 +262,3 @@ export class Setup92Detector extends BaseSetupDetector {
     return Math.min(confidence + boost, MAX_CONFIDENCE);
   }
 }
-
-export const createDefault92Config = (): Setup92Config => ({
-  enabled: false,
-  minConfidence: 70,
-  minRiskReward: 2.0,
-  emaPeriod: DEFAULT_EMA_PERIOD,
-  atrPeriod: DEFAULT_ATR_PERIOD,
-  atrStopMultiplier: ATR_STOP_MULTIPLIER,
-  atrTargetMultiplier: ATR_TARGET_MULTIPLIER,
-  volumeMultiplier: MIN_VOLUME_MULTIPLIER,
-});

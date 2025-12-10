@@ -1,0 +1,166 @@
+{
+  "id": "tsi-momentum",
+  "name": "TSI Momentum",
+  "version": "1.0.0",
+  "description": "True Strength Index momentum strategy. TSI mede momentum com double-smoothing para menos noise. Entry quando TSI cruza signal line.",
+  "author": "MarketMind",
+  "tags": [
+    "momentum",
+    "tsi",
+    "oscillator",
+    "trend"
+  ],
+  "source": "William Blau - TSI Creator",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 70,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 80,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": false,
+    "onlyWithTrend": false,
+    "minConfidence": 65,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "notes": "TSI works best on daily"
+  },
+  "parameters": {
+    "longPeriod": {
+      "default": 25,
+      "min": 20,
+      "max": 30,
+      "step": 5,
+      "description": "TSI long period"
+    },
+    "shortPeriod": {
+      "default": 13,
+      "min": 10,
+      "max": 15,
+      "step": 1,
+      "description": "TSI short period"
+    },
+    "signalPeriod": {
+      "default": 7,
+      "min": 5,
+      "max": 10,
+      "step": 1,
+      "description": "Signal line period"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
+  },
+  "indicators": {
+    "tsi": {
+      "type": "tsi",
+      "params": {
+        "longPeriod": "$longPeriod",
+        "shortPeriod": "$shortPeriod",
+        "signalPeriod": "$signalPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "tsi.tsi",
+          "op": "crossover",
+          "right": "tsi.signal"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "tsi.tsi",
+          "op": "crossunder",
+          "right": "tsi.signal"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2
+    },
+    "conditions": {
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "tsi.tsi",
+            "op": "crossunder",
+            "right": "tsi.signal"
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "tsi.tsi",
+            "op": "crossover",
+            "right": "tsi.signal"
+          }
+        ]
+      }
+    }
+  },
+  "confidence": {
+    "base": 65,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "tsi.tsi",
+          "op": ">",
+          "right": 0
+        },
+        "bonus": 5,
+        "description": "TSI positive"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirms"
+      }
+    ],
+    "max": 85
+  },
+  "filters": {
+    "minConfidence": 65,
+    "minRiskReward": 1.5
+  }
+}

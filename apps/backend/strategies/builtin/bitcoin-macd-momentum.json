@@ -1,0 +1,185 @@
+{
+  "id": "bitcoin-macd-momentum",
+  "name": "Bitcoin MACD Momentum",
+  "version": "1.0.0",
+  "description": "Estratégia MACD para Bitcoin com configurações padrão (12/26/9). Backtestada com 77% CAGR vs 61% buy-and-hold, e drawdown reduzido de 83% para 62%. Investido apenas 54% do tempo.",
+  "author": "MarketMind",
+  "tags": [
+    "momentum",
+    "macd",
+    "trend-following",
+    "crypto-optimized"
+  ],
+  "source": "QuantifiedStrategies.com - Bitcoin MACD Trading Strategy",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 90,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 90,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 3,
+    "breakEvenAfterR": 1.5,
+    "onlyWithTrend": false,
+    "minConfidence": 60,
+    "commission": 0.001
+  },
+  "backtestSummary": {
+    "referenceCAGR": 77.24,
+    "referenceMaxDrawdown": 61.97,
+    "referenceTimeInvested": "54.44%",
+    "referenceRiskAdjustedReturn": 141.88,
+    "referenceBenchmark": "Buy&Hold 61.28% CAGR, 83.4% DD",
+    "testedPeriod": "2015-present",
+    "source": "QuantifiedStrategies.com"
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "notes": "MACD works best on daily timeframe for Bitcoin"
+  },
+  "parameters": {
+    "fastPeriod": {
+      "default": 12,
+      "min": 8,
+      "max": 15,
+      "step": 1,
+      "description": "Período da EMA rápida do MACD"
+    },
+    "slowPeriod": {
+      "default": 26,
+      "min": 20,
+      "max": 30,
+      "step": 2,
+      "description": "Período da EMA lenta do MACD"
+    },
+    "signalPeriod": {
+      "default": 9,
+      "min": 7,
+      "max": 12,
+      "step": 1,
+      "description": "Período da linha de sinal"
+    },
+    "atrMultiplier": {
+      "default": 2.5,
+      "min": 2,
+      "max": 4,
+      "step": 0.5,
+      "description": "Multiplicador ATR para stop loss"
+    }
+  },
+  "indicators": {
+    "macd": {
+      "type": "macd",
+      "params": {
+        "fastPeriod": "$fastPeriod",
+        "slowPeriod": "$slowPeriod",
+        "signalPeriod": "$signalPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "macd.line",
+          "op": "crossover",
+          "right": "macd.signal"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "macd.line",
+          "op": "crossunder",
+          "right": "macd.signal"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 3
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2.5,
+      "trailMultiplier": 3,
+      "breakEvenAfterR": 1.5
+    },
+    "conditions": {
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "macd.line",
+            "op": "crossunder",
+            "right": "macd.signal"
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "macd.line",
+            "op": "crossover",
+            "right": "macd.signal"
+          }
+        ]
+      }
+    }
+  },
+  "confidence": {
+    "base": 65,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirmando crossover"
+      },
+      {
+        "condition": {
+          "left": "macd.histogram",
+          "op": ">",
+          "right": 0,
+          "for": "long"
+        },
+        "bonus": 5,
+        "description": "Histograma positivo"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 2
+  }
+}

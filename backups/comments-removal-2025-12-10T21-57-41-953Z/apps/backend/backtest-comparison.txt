@@ -1,0 +1,4 @@
+Strategy                       | Trades | Win Rate | PnL %    | PF    | Max DD %
+--------------------------------------------------------------------------------
+order-block-fvg                |      0 |       0% |       0% |     0 |       0%
+liquidity-sweep                |      0 |       0% |       0% |     0 |       0%

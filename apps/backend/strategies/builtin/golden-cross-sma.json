@@ -1,0 +1,172 @@
+{
+  "id": "golden-cross-sma",
+  "name": "Golden Cross SMA 50/200",
+  "version": "1.0.0",
+  "description": "Estratégia clássica de Golden Cross: SMA 50 cruza acima da SMA 200 (buy), Death Cross quando cruza abaixo (sell). Backtestada com 1030% retorno cumulativo em 10 anos, Sharpe 1.19.",
+  "author": "MarketMind",
+  "tags": [
+    "trend-following",
+    "sma",
+    "crossover",
+    "golden-cross",
+    "long-term"
+  ],
+  "source": "BitDegree - Best Crypto Indicators",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 90,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 90,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 4,
+    "breakEvenAfterR": 2,
+    "onlyWithTrend": false,
+    "minConfidence": 65,
+    "commission": 0.001
+  },
+  "backtestSummary": {
+    "referenceCumulativeReturn": 1030.8,
+    "referenceAnnualizedReturn": 30,
+    "referenceSharpeRatio": 1.19,
+    "testedPeriod": "10 years",
+    "source": "BitDegree Research"
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m",
+      "1h"
+    ],
+    "notes": "Golden Cross is a long-term signal, best on daily"
+  },
+  "parameters": {
+    "fastPeriod": {
+      "default": 50,
+      "min": 30,
+      "max": 70,
+      "step": 10,
+      "description": "Período da SMA rápida"
+    },
+    "slowPeriod": {
+      "default": 200,
+      "min": 150,
+      "max": 250,
+      "step": 25,
+      "description": "Período da SMA lenta"
+    },
+    "atrMultiplier": {
+      "default": 3,
+      "min": 2,
+      "max": 5,
+      "step": 0.5,
+      "description": "Multiplicador ATR para stop"
+    }
+  },
+  "indicators": {
+    "smaFast": {
+      "type": "sma",
+      "params": {
+        "period": "$fastPeriod"
+      }
+    },
+    "smaSlow": {
+      "type": "sma",
+      "params": {
+        "period": "$slowPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "smaFast",
+          "op": "crossover",
+          "right": "smaSlow"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "smaFast",
+          "op": "crossunder",
+          "right": "smaSlow"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 4
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 3,
+      "trailMultiplier": 4,
+      "breakEvenAfterR": 2
+    },
+    "conditions": {
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "smaFast",
+            "op": "crossunder",
+            "right": "smaSlow"
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "smaFast",
+            "op": "crossover",
+            "right": "smaSlow"
+          }
+        ]
+      }
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirmando"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 65,
+    "minRiskReward": 2
+  }
+}

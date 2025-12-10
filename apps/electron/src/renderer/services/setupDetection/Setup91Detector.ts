@@ -1,20 +1,33 @@
-import { calculateATR } from '@renderer/utils/indicators/atr';
+import { calculateATR, calculateEMA } from '@marketmind/indicators';
 import { findHighestSwingHigh, findLowestSwingLow } from '@renderer/utils/indicators/supportResistance';
-import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Kline } from '@shared/types';
+import type { Kline } from '@marketmind/types';
 import { getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
 import {
   BaseSetupDetector,
-  type SetupDetectorConfig,
   type SetupDetectorResult,
+  type SetupDetectorConfig,
 } from './BaseSetupDetector';
 
-const DEFAULT_EMA_PERIOD = 9;
-const DEFAULT_ATR_PERIOD = 12;
-const ATR_STOP_MULTIPLIER = 2;
-const ATR_TARGET_MULTIPLIER = 4;
+export interface Setup91Config extends SetupDetectorConfig {
+  emaPeriod: number;
+  atrPeriod: number;
+  atrStopMultiplier: number;
+  atrTargetMultiplier: number;
+  volumeMultiplier: number;
+}
+
+export const createDefault91Config = (): Setup91Config => ({
+  enabled: false,
+  minConfidence: 70,
+  minRiskReward: 2.0,
+  emaPeriod: 9,
+  atrPeriod: 14,
+  atrStopMultiplier: 1.5,
+  atrTargetMultiplier: 2.5,
+  volumeMultiplier: 1.2,
+});
+
 const VOLUME_LOOKBACK = 20;
-const MIN_VOLUME_MULTIPLIER = 1.0;
 const EMA_LOOKBACK = 2;
 const BASE_CONFIDENCE = 60;
 const DISTANCE_CLOSE_THRESHOLD = 0.005;
@@ -25,14 +38,6 @@ const CONFIDENCE_BOOST_SMALL = 5;
 const CONFIDENCE_BOOST_MEDIUM = 10;
 const CONFIDENCE_BOOST_LARGE = 20;
 const MAX_CONFIDENCE = 100;
-
-export interface Setup91Config extends SetupDetectorConfig {
-  emaPeriod: number;
-  atrPeriod: number;
-  atrStopMultiplier: number;
-  atrTargetMultiplier: number;
-  volumeMultiplier: number;
-}
 
 export class Setup91Detector extends BaseSetupDetector {
   private setup91Config: Setup91Config;
@@ -195,14 +200,3 @@ export class Setup91Detector extends BaseSetupDetector {
     return Math.min(confidence + boost, MAX_CONFIDENCE);
   }
 }
-
-export const createDefault91Config = (): Setup91Config => ({
-  enabled: false,
-  minConfidence: 70,
-  minRiskReward: 2.5,
-  emaPeriod: DEFAULT_EMA_PERIOD,
-  atrPeriod: DEFAULT_ATR_PERIOD,
-  atrStopMultiplier: ATR_STOP_MULTIPLIER,
-  atrTargetMultiplier: ATR_TARGET_MULTIPLIER,
-  volumeMultiplier: MIN_VOLUME_MULTIPLIER,
-});

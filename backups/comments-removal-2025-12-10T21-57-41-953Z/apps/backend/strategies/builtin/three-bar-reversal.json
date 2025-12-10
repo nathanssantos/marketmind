@@ -1,0 +1,136 @@
+{
+  "id": "three-bar-reversal",
+  "name": "Three Bar Reversal",
+  "version": "1.0.0",
+  "description": "Padrão de 3 candles para reversão. Entry após padrão de exaustão de tendência com confirmação na terceira candle.",
+  "author": "MarketMind",
+  "tags": [
+    "reversal",
+    "candlestick",
+    "pattern",
+    "price-action"
+  ],
+  "source": "Price Action Classic",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 70,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 80,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": false,
+    "onlyWithTrend": false,
+    "minConfidence": 70,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "4h",
+    "secondary": [
+      "1h",
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
+    "notes": "Three bar reversal on 4h"
+  },
+  "parameters": {
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
+  },
+  "indicators": {
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close[2]",
+          "op": "<",
+          "right": "open[2]"
+        },
+        {
+          "left": "close[1]",
+          "op": "<",
+          "right": "open[1]"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "open"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "high[1]"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close[2]",
+          "op": ">",
+          "right": "open[2]"
+        },
+        {
+          "left": "close[1]",
+          "op": ">",
+          "right": "open[1]"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "open"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "low[1]"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirms reversal"
+      }
+    ],
+    "max": 85
+  },
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 1.5
+  }
+}

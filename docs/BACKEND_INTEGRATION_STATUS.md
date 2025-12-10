@@ -108,7 +108,6 @@
 
 ---
 
-### Frontend Integration (70%)
 ### Frontend Integration (100%) ✨ COMPLETE
 - ✅ TrpcProvider component created
 - ✅ React Query integration
@@ -119,6 +118,42 @@
 - ✅ useBackendKlines hook
 - ✅ useBackendSetups hook (detectCurrent, detectRange, history, stats, config)
 - ✅ All frontend hooks operational and tested
+
+### Trading Components Migration (100%) ✨ NEW
+- ✅ **Hybrid Architecture Implementation**
+  - Uses backend hooks when simulator is inactive (`isSimulatorActive = false`)
+  - Uses tradingStore (localStorage) when simulator is active (`isSimulatorActive = true`)
+  - Seamless switching between modes without UI changes
+
+- ✅ **WalletManager Component**
+  - Integrated `useBackendWallet` for real wallets (Binance API)
+  - Maintains `tradingStore` for simulated wallets
+  - Shows visual indicator in real mode
+  - Backend wallet deletion support
+  - Loading states for backend operations
+
+- ✅ **OrdersList Component**
+  - Integrated `useBackendTrading.orders` for real orders
+  - Integrated `useBackendTrading.cancelOrder` for order cancellation
+  - Converts backend order schema to frontend Order type
+  - Maintains simulator order management
+
+- ✅ **Portfolio Component**
+  - Integrated `useBackendTrading.positions` for real positions
+  - Converts backend position schema to frontend Position type
+  - Maintains simulator position calculations
+
+- ✅ **OrderTicket Component**
+  - Integrated `useBackendTrading.createOrder` for real order creation
+  - Supports both LIMIT and MARKET orders
+  - Maintains simulator order creation logic
+  - Async order submission for backend
+
+- ✅ **Type Safety & Compatibility**
+  - All components pass TypeScript type checking
+  - Backend order/position schemas mapped to frontend types
+  - Proper handling of nullable fields
+  - Zero TypeScript errors in trading components
 
 ---
 
@@ -141,7 +176,13 @@ All 10 phases of backend integration successfully completed:
 
 ## 🚀 Optional Future Enhancements
 
-### Component Migration (Optional)
+### Component Migration (Partially Complete)
+- ✅ **Trading Components migrated to hybrid backend/simulator mode**
+  - ✅ WalletManager using useBackendWallet
+  - ✅ OrdersList using useBackendTrading
+  - ✅ Portfolio using useBackendTrading
+  - ✅ OrderTicket using useBackendTrading
+  - ✅ Automatic mode switching based on isSimulatorActive
 - [ ] Update trading components to use useBackendSetups
 - [ ] Migrate setup notifications to backend events
 - [ ] Remove frontend SetupDetectionService after verification
@@ -163,6 +204,7 @@ All 10 phases of backend integration successfully completed:
 - **Backend Files:** 35+
 - **Shared Packages:** 2
 - **Frontend Hooks:** 6 (auth, wallet, trading, klines, setups, websocket)
+- **Migrated Trading Components:** 4 (WalletManager, OrdersList, Portfolio, OrderTicket)
 - **Documentation Files:** 5
 
 ### Database

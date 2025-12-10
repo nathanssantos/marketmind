@@ -3,7 +3,7 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawRect } from '@renderer/utils/canvas/drawingUtils';
 import { calculateVolumeMA, getVolumeMAPeriod } from '@renderer/utils/indicators/volume';
 import { CHART_CONFIG } from '@shared/constants';
-import { getKlineClose, getKlineOpen, getKlineVolume, getKlineBuyPressure } from '@shared/utils';
+import { getKlineBuyPressure, getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
 import { useCallback } from 'react';
 
 export interface UseVolumeRendererProps {
@@ -26,7 +26,7 @@ export const useVolumeRenderer = ({
   manager,
   colors,
   enabled = true,
-  opacity = 0.2,
+  opacity = 0.3,
   rightMargin,
   volumeHeightRatio,
   hoveredKlineIndex,
@@ -56,6 +56,7 @@ export const useVolumeRenderer = ({
 
     const volumeOverlayHeight = chartHeight * (volumeHeightRatio ?? CHART_CONFIG.VOLUME_HEIGHT_RATIO);
     const volumeBaseY = chartHeight;
+    const lastKlineIndex = klines.length - 1;
 
     visibleKlines.forEach((kline, index) => {
       const actualIndex = Math.floor(viewport.start) + index;
@@ -71,6 +72,7 @@ export const useVolumeRenderer = ({
       const isBullish = getKlineClose(kline) >= getKlineOpen(kline);
       const baseColor = isBullish ? colors.bullish : colors.bearish;
       const isHovered = hoveredKlineIndex === actualIndex;
+      const isLastKline = actualIndex === lastKlineIndex;
 
       const buyPressure = getKlineBuyPressure(kline);
 
@@ -102,6 +104,61 @@ export const useVolumeRenderer = ({
 
       if (isHovered) {
         ctx.restore();
+      }
+
+      if (isLastKline) {
+        const now = Date.now();
+        const klineOpenTime = kline.openTime;
+        const klineCloseTime = kline.closeTime;
+        const totalDuration = klineCloseTime - klineOpenTime;
+        const elapsedTime = now - klineOpenTime;
+        
+        if (totalDuration > 0 && elapsedTime > 0 && elapsedTime < totalDuration) {
+          const timeProgress = elapsedTime / totalDuration;
+          const currentVolume = getKlineVolume(kline);
+          const projectedVolume = currentVolume / timeProgress;
+          const projectedRatio = projectedVolume / bounds.maxVolume;
+          const projectedHeight = Math.min(projectedRatio * volumeOverlayHeight, volumeOverlayHeight);
+          
+          if (projectedHeight > barHeight) {
+            let projectionColor: string;
+            if (buyPressure > 0.55) {
+              const intensity = Math.min((buyPressure - 0.55) / 0.45, 1);
+              const greenIntensity = Math.floor(100 + intensity * 155);
+              projectionColor = `rgba(34, ${greenIntensity}, 84, ${opacity * 0.8})`;
+            } else if (buyPressure < 0.45) {
+              const intensity = Math.min((0.45 - buyPressure) / 0.45, 1);
+              const redIntensity = Math.floor(100 + intensity * 155);
+              projectionColor = `rgba(${redIntensity}, 34, 34, ${opacity * 0.8})`;
+            } else {
+              const rgbMatch = baseColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+              projectionColor = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
+                ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${opacity * 0.8})`
+                : `rgba(120, 120, 120, ${opacity * 0.8})`;
+            }
+            
+            ctx.save();
+            ctx.setLineDash([4, 2]);
+            ctx.strokeStyle = projectionColor;
+            ctx.lineWidth = 2;
+            
+            const lineOffset = 1;
+            const topY = volumeBaseY - projectedHeight;
+            const leftX = barX + lineOffset;
+            const rightX = barX + klineWidth - lineOffset;
+            
+            ctx.beginPath();
+            ctx.moveTo(leftX, topY);
+            ctx.lineTo(rightX, topY);
+            ctx.moveTo(rightX, topY);
+            ctx.lineTo(rightX, volumeBaseY - barHeight);
+            ctx.moveTo(leftX, topY);
+            ctx.lineTo(leftX, volumeBaseY - barHeight);
+            ctx.stroke();
+            
+            ctx.restore();
+          }
+        }
       }
     });
 

@@ -1,8 +1,23 @@
 import { findHighestSwingHigh, findLowestSwingLow, findPivotPoints } from '@renderer/utils/indicators/supportResistance';
-import { calculateEMA } from '@renderer/utils/movingAverages';
-import type { Kline } from '@shared/types';
+import { calculateEMA } from '@marketmind/indicators';
+import type { Kline } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
-import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
+import { BaseSetupDetector, type SetupDetectorResult, type SetupDetectorConfig } from './BaseSetupDetector';
+
+export interface BreakoutRetestConfig extends SetupDetectorConfig {
+  volumeMultiplier: number;
+  lookbackPeriod: number;
+  emaPeriod: number;
+}
+
+export const createDefaultBreakoutRetestConfig = (): BreakoutRetestConfig => ({
+  enabled: false,
+  minConfidence: 70,
+  minRiskReward: 2.0,
+  volumeMultiplier: 1.3,
+  lookbackPeriod: 50,
+  emaPeriod: 20,
+});
 
 const VOLUME_LOOKBACK = 20;
 const MIN_BREAKOUT_DISTANCE_PERCENT = 0.002;
@@ -21,26 +36,6 @@ const EMA_CONFIRMATION_BONUS = 8;
 const MAX_CONFIDENCE = 95;
 const PIVOT_LOOKBACK = 10;
 const RETEST_TOLERANCE_PERCENT = 0.005;
-
-export interface BreakoutRetestConfig {
-  enabled: boolean;
-  minConfidence: number;
-  minRiskReward: number;
-  volumeMultiplier: number;
-  lookbackPeriod: number;
-  emaPeriod: number;
-  retestTolerance: number;
-}
-
-export const createDefaultBreakoutRetestConfig = (): BreakoutRetestConfig => ({
-  enabled: false,
-  minConfidence: 70,
-  minRiskReward: 2.5,
-  volumeMultiplier: 1.4,
-  lookbackPeriod: 30,
-  emaPeriod: 20,
-  retestTolerance: 0.005,
-});
 
 export class BreakoutRetestDetector extends BaseSetupDetector {
   private breakoutRetestConfig: BreakoutRetestConfig;

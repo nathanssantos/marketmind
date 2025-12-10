@@ -1,0 +1,148 @@
+{
+  "id": "morning-star",
+  "name": "Morning Star",
+  "version": "1.0.0",
+  "description": "Morning Star e Evening Star patterns. Padrão de 3 candles de reversão forte. Star indica indecisão após tendência.",
+  "author": "MarketMind",
+  "tags": [
+    "reversal",
+    "candlestick",
+    "morning-star",
+    "pattern"
+  ],
+  "source": "Japanese Candlestick Classic",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 70,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 80,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": false,
+    "onlyWithTrend": false,
+    "minConfidence": 75,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "notes": "Morning/Evening Star on daily"
+  },
+  "parameters": {
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
+  },
+  "indicators": {
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close[2]",
+          "op": "<",
+          "right": "open[2]"
+        },
+        {
+          "left": {
+            "calc": "abs(close[1] - open[1])"
+          },
+          "op": "<",
+          "right": {
+            "calc": "abs(close[2] - open[2]) * 0.3"
+          }
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "open"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": {
+            "calc": "(open[2] + close[2]) / 2"
+          }
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close[2]",
+          "op": ">",
+          "right": "open[2]"
+        },
+        {
+          "left": {
+            "calc": "abs(close[1] - open[1])"
+          },
+          "op": "<",
+          "right": {
+            "calc": "abs(close[2] - open[2]) * 0.3"
+          }
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "open"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": {
+            "calc": "(open[2] + close[2]) / 2"
+          }
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2.5
+    }
+  },
+  "confidence": {
+    "base": 75,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirms"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 75,
+    "minRiskReward": 2
+  }
+}
