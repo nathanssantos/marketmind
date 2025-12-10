@@ -4,9 +4,13 @@
   "version": "1.0.0",
   "description": "Estratégia de scalping para timeframe de 5 minutos. RSI + EMA rápida para entries frequentes com pequenos targets.",
   "author": "MarketMind",
-  "tags": ["scalping", "5m", "short-term", "high-frequency"],
+  "tags": [
+    "scalping",
+    "5m",
+    "short-term",
+    "high-frequency"
+  ],
   "source": "Crypto Scalping Methods",
-
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 50,
@@ -20,54 +24,134 @@
   },
   "recommendedTimeframes": {
     "primary": "5m",
-    "secondary": ["1m", "15m"],
-    "avoid": ["1h", "4h", "1d"],
+    "secondary": [
+      "1m",
+      "15m"
+    ],
+    "avoid": [
+      "1h",
+      "4h",
+      "1d"
+    ],
     "notes": "Scalping on 5m timeframe only"
   },
-
   "parameters": {
-    "rsiPeriod": { "default": 7, "min": 5, "max": 10, "step": 1, "description": "RSI rápido" },
-    "emaPeriod": { "default": 9, "min": 5, "max": 15, "step": 2, "description": "EMA rápida" },
-    "oversold": { "default": 30, "min": 20, "max": 35, "step": 5, "description": "Oversold" },
-    "overbought": { "default": 70, "min": 65, "max": 80, "step": 5, "description": "Overbought" },
-    "targetPercent": { "default": 0.5, "min": 0.3, "max": 1, "step": 0.1, "description": "Target %" },
-    "stopPercent": { "default": 0.3, "min": 0.2, "max": 0.5, "step": 0.1, "description": "Stop %" }
+    "rsiPeriod": {
+      "default": 7,
+      "min": 5,
+      "max": 10,
+      "step": 1,
+      "description": "RSI rápido"
+    },
+    "emaPeriod": {
+      "default": 9,
+      "min": 5,
+      "max": 15,
+      "step": 2,
+      "description": "EMA rápida"
+    },
+    "oversold": {
+      "default": 30,
+      "min": 20,
+      "max": 35,
+      "step": 5,
+      "description": "Oversold"
+    },
+    "overbought": {
+      "default": 70,
+      "min": 65,
+      "max": 80,
+      "step": 5,
+      "description": "Overbought"
+    },
+    "targetPercent": {
+      "default": 0.5,
+      "min": 0.3,
+      "max": 1,
+      "step": 0.1,
+      "description": "Target %"
+    },
+    "stopPercent": {
+      "default": 0.3,
+      "min": 0.2,
+      "max": 0.5,
+      "step": 0.1,
+      "description": "Stop %"
+    }
   },
-
   "indicators": {
-    "rsi": { "type": "rsi", "params": { "period": "$rsiPeriod" } },
-    "ema": { "type": "ema", "params": { "period": "$emaPeriod" } }
+    "rsi": {
+      "type": "rsi",
+      "params": {
+        "period": "$rsiPeriod"
+      }
+    },
+    "ema": {
+      "type": "ema",
+      "params": {
+        "period": "$emaPeriod"
+      }
+    }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "rsi", "op": "<", "right": "$oversold" },
-        { "left": "close", "op": ">", "right": "ema" }
+        {
+          "left": "rsi",
+          "op": "<",
+          "right": "$oversold"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "ema"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "rsi", "op": ">", "right": "$overbought" },
-        { "left": "close", "op": "<", "right": "ema" }
+        {
+          "left": "rsi",
+          "op": ">",
+          "right": "$overbought"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "ema"
+        }
       ]
     }
   },
-
   "exit": {
-    "stopLoss": { "type": "percent", "percent": "$stopPercent" },
-    "takeProfit": { "type": "percent", "percent": "$targetPercent" }
+    "stopLoss": {
+      "type": "percent",
+      "percent": "$stopPercent"
+    },
+    "takeProfit": {
+      "type": "percent",
+      "percent": "$targetPercent"
+    }
   },
-
   "confidence": {
     "base": 70,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume spike" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume spike"
+      }
     ],
     "max": 85
   },
-
-  "filters": { "minConfidence": 70, "minRiskReward": 1.5 }
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 1.5
+  }
 }

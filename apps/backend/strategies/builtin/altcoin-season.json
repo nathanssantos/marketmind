@@ -4,9 +4,13 @@
   "version": "1.0.0",
   "description": "Detecta altcoin season via BTC dominance e performance relativa. Entry em altcoins quando BTC dominance cai e altcoins outperformam.",
   "author": "MarketMind",
-  "tags": ["altcoin", "season", "dominance", "relative-strength"],
+  "tags": [
+    "altcoin",
+    "season",
+    "dominance",
+    "relative-strength"
+  ],
   "source": "Crypto Market Analysis",
-
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 80,
@@ -22,52 +26,143 @@
   },
   "recommendedTimeframes": {
     "primary": "1d",
-    "secondary": ["4h", "1w"],
-    "avoid": ["1m", "5m", "15m"],
+    "secondary": [
+      "4h",
+      "1w"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
     "notes": "Altcoin season on daily"
   },
-
   "parameters": {
-    "dominanceThreshold": { "default": 50, "min": 45, "max": 55, "step": 2.5, "description": "BTC dominance threshold %" },
-    "dominanceFalling": { "default": 5, "min": 2, "max": 10, "step": 1, "description": "Dominance queda % em 30 dias" },
-    "atrMultiplier": { "default": 2.5, "min": 2, "max": 3.5, "step": 0.5, "description": "ATR stop" }
+    "dominanceThreshold": {
+      "default": 50,
+      "min": 45,
+      "max": 55,
+      "step": 2.5,
+      "description": "BTC dominance threshold %"
+    },
+    "dominanceFalling": {
+      "default": 5,
+      "min": 2,
+      "max": 10,
+      "step": 1,
+      "description": "Dominance queda % em 30 dias"
+    },
+    "atrMultiplier": {
+      "default": 2.5,
+      "min": 2,
+      "max": 3.5,
+      "step": 0.5,
+      "description": "ATR stop"
+    }
   },
-
   "indicators": {
-    "btcDominance": { "type": "btcDominance", "params": { "period": 30 } },
-    "relativeStrength": { "type": "relativeStrength", "params": { "basePair": "BTCUSDT", "period": 14 } },
-    "ema50": { "type": "ema", "params": { "period": 50 } },
-    "atr": { "type": "atr", "params": { "period": 14 } }
+    "btcDominance": {
+      "type": "btcDominance",
+      "params": {
+        "period": 30
+      }
+    },
+    "relativeStrength": {
+      "type": "relativeStrength",
+      "params": {
+        "basePair": "BTCUSDT",
+        "period": 14
+      }
+    },
+    "ema50": {
+      "type": "ema",
+      "params": {
+        "period": 50
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "btcDominance.value", "op": "<", "right": "$dominanceThreshold" },
-        { "left": "btcDominance.change30d", "op": "<", "right": { "calc": "-1 * $dominanceFalling" } },
-        { "left": "relativeStrength", "op": ">", "right": 1 },
-        { "left": "close", "op": ">", "right": "ema50" }
+        {
+          "left": "btcDominance.value",
+          "op": "<",
+          "right": "$dominanceThreshold"
+        },
+        {
+          "left": "btcDominance.change30d",
+          "op": "<",
+          "right": {
+            "calc": "-1 * $dominanceFalling"
+          }
+        },
+        {
+          "left": "relativeStrength",
+          "op": ">",
+          "right": 1
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "ema50"
+        }
       ]
     }
   },
-
   "exit": {
-    "stopLoss": { "type": "atr", "multiplier": "$atrMultiplier", "indicator": "atr" },
-    "takeProfit": { "type": "riskReward", "multiplier": 3 },
-    "trailingStop": { "enabled": true, "type": "atr", "initialMultiplier": 2.5, "trailMultiplier": 2.5, "breakEvenAfterR": 1.5 },
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 3
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2.5,
+      "trailMultiplier": 2.5,
+      "breakEvenAfterR": 1.5
+    },
     "conditions": {
-      "long": { "operator": "OR", "conditions": [{ "left": "btcDominance.change30d", "op": ">", "right": 0 }] }
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "btcDominance.change30d",
+            "op": ">",
+            "right": 0
+          }
+        ]
+      }
     }
   },
-
   "confidence": {
     "base": 70,
     "bonuses": [
-      { "condition": { "left": "relativeStrength", "op": ">", "right": 1.5 }, "bonus": 15, "description": "Strong outperformance" }
+      {
+        "condition": {
+          "left": "relativeStrength",
+          "op": ">",
+          "right": 1.5
+        },
+        "bonus": 15,
+        "description": "Strong outperformance"
+      }
     ],
     "max": 90
   },
-
-  "filters": { "minConfidence": 70, "minRiskReward": 2.5 }
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 2.5
+  }
 }

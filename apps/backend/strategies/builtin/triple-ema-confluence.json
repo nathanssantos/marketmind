@@ -4,8 +4,13 @@
   "version": "1.0.0",
   "description": "High-probability entries when all three EMAs are aligned and price crosses the fast EMA. Strong trend-following strategy for bull markets.",
   "author": "MarketMind",
-  "tags": ["trend-following", "ema", "confluence", "bull-market", "2025"],
-
+  "tags": [
+    "trend-following",
+    "ema",
+    "confluence",
+    "bull-market",
+    "2025"
+  ],
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 80,
@@ -33,58 +38,128 @@
   },
   "recommendedTimeframes": {
     "primary": "4h",
-    "secondary": ["1h", "1d"],
-    "avoid": ["1m", "5m"],
+    "secondary": [
+      "1h",
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
     "notes": "Triple EMA confluence works best on 4H for trend alignment detection"
   },
-
   "parameters": {
-    "emaFast": { "default": 9, "min": 5, "max": 12, "step": 1, "description": "Fast EMA period" },
-    "emaMid": { "default": 21, "min": 15, "max": 30, "step": 3, "description": "Mid EMA period" },
-    "emaSlow": { "default": 55, "min": 40, "max": 100, "step": 10, "description": "Slow EMA period" },
-    "atrPeriod": { "default": 14, "min": 10, "max": 20, "step": 2, "description": "ATR period" },
-    "slMultiplier": { "default": 1.5, "min": 1, "max": 2.5, "step": 0.25, "description": "SL ATR multiplier" },
-    "tpMultiplier": { "default": 3, "min": 2, "max": 4, "step": 0.5, "description": "TP ATR multiplier" }
+    "emaFast": {
+      "default": 9,
+      "min": 5,
+      "max": 12,
+      "step": 1,
+      "description": "Fast EMA period"
+    },
+    "emaMid": {
+      "default": 21,
+      "min": 15,
+      "max": 30,
+      "step": 3,
+      "description": "Mid EMA period"
+    },
+    "emaSlow": {
+      "default": 55,
+      "min": 40,
+      "max": 100,
+      "step": 10,
+      "description": "Slow EMA period"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "ATR period"
+    },
+    "slMultiplier": {
+      "default": 1.5,
+      "min": 1,
+      "max": 2.5,
+      "step": 0.25,
+      "description": "SL ATR multiplier"
+    },
+    "tpMultiplier": {
+      "default": 3,
+      "min": 2,
+      "max": 4,
+      "step": 0.5,
+      "description": "TP ATR multiplier"
+    }
   },
-
   "indicators": {
     "emaFast": {
       "type": "ema",
-      "params": { "period": "$emaFast" }
+      "params": {
+        "period": "$emaFast"
+      }
     },
     "emaMid": {
       "type": "ema",
-      "params": { "period": "$emaMid" }
+      "params": {
+        "period": "$emaMid"
+      }
     },
     "emaSlow": {
       "type": "ema",
-      "params": { "period": "$emaSlow" }
+      "params": {
+        "period": "$emaSlow"
+      }
     },
     "atr": {
       "type": "atr",
-      "params": { "period": "$atrPeriod" }
+      "params": {
+        "period": "$atrPeriod"
+      }
     }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "emaFast", "op": ">", "right": "emaMid" },
-        { "left": "emaMid", "op": ">", "right": "emaSlow" },
-        { "left": "close", "op": "crossover", "right": "emaFast" }
+        {
+          "left": "emaFast",
+          "op": ">",
+          "right": "emaMid"
+        },
+        {
+          "left": "emaMid",
+          "op": ">",
+          "right": "emaSlow"
+        },
+        {
+          "left": "close",
+          "op": "crossover",
+          "right": "emaFast"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "emaFast", "op": "<", "right": "emaMid" },
-        { "left": "emaMid", "op": "<", "right": "emaSlow" },
-        { "left": "close", "op": "crossunder", "right": "emaFast" }
+        {
+          "left": "emaFast",
+          "op": "<",
+          "right": "emaMid"
+        },
+        {
+          "left": "emaMid",
+          "op": "<",
+          "right": "emaSlow"
+        },
+        {
+          "left": "close",
+          "op": "crossunder",
+          "right": "emaFast"
+        }
       ]
     }
   },
-
   "exit": {
     "stopLoss": {
       "type": "atr",
@@ -97,16 +172,30 @@
       "indicator": "atr"
     }
   },
-
   "confidence": {
     "base": 70,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirmation" },
-      { "condition": { "left": "close", "op": ">", "right": "open" }, "bonus": 5, "description": "Bullish candle" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirmation"
+      },
+      {
+        "condition": {
+          "left": "close",
+          "op": ">",
+          "right": "open"
+        },
+        "bonus": 5,
+        "description": "Bullish candle"
+      }
     ],
     "max": 95
   },
-
   "filters": {
     "minConfidence": 65,
     "minRiskReward": 2.0

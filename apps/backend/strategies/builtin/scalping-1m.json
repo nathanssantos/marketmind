@@ -4,9 +4,13 @@
   "version": "1.0.0",
   "description": "Ultra-scalping para 1 minuto. Entries muito rápidas com VWAP + momentum. Alto número de trades, pequenos ganhos.",
   "author": "MarketMind",
-  "tags": ["scalping", "1m", "ultra-short", "high-frequency"],
+  "tags": [
+    "scalping",
+    "1m",
+    "ultra-short",
+    "high-frequency"
+  ],
   "source": "Crypto Ultra-Scalping",
-
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 30,
@@ -20,51 +24,111 @@
   },
   "recommendedTimeframes": {
     "primary": "1m",
-    "secondary": ["5m"],
-    "avoid": ["15m", "1h", "4h", "1d"],
+    "secondary": [
+      "5m"
+    ],
+    "avoid": [
+      "15m",
+      "1h",
+      "4h",
+      "1d"
+    ],
     "notes": "Ultra-scalping on 1m only"
   },
-
   "parameters": {
-    "emaPeriod": { "default": 5, "min": 3, "max": 8, "step": 1, "description": "EMA ultra-rápida" },
-    "targetPercent": { "default": 0.2, "min": 0.1, "max": 0.5, "step": 0.05, "description": "Target %" },
-    "stopPercent": { "default": 0.15, "min": 0.1, "max": 0.3, "step": 0.05, "description": "Stop %" }
+    "emaPeriod": {
+      "default": 5,
+      "min": 3,
+      "max": 8,
+      "step": 1,
+      "description": "EMA ultra-rápida"
+    },
+    "targetPercent": {
+      "default": 0.2,
+      "min": 0.1,
+      "max": 0.5,
+      "step": 0.05,
+      "description": "Target %"
+    },
+    "stopPercent": {
+      "default": 0.15,
+      "min": 0.1,
+      "max": 0.3,
+      "step": 0.05,
+      "description": "Stop %"
+    }
   },
-
   "indicators": {
-    "ema": { "type": "ema", "params": { "period": "$emaPeriod" } },
-    "vwap": { "type": "vwap", "params": {} }
+    "ema": {
+      "type": "ema",
+      "params": {
+        "period": "$emaPeriod"
+      }
+    },
+    "vwap": {
+      "type": "vwap",
+      "params": {}
+    }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "close", "op": ">", "right": "vwap" },
-        { "left": "close", "op": "crossover", "right": "ema" }
+        {
+          "left": "close",
+          "op": ">",
+          "right": "vwap"
+        },
+        {
+          "left": "close",
+          "op": "crossover",
+          "right": "ema"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "close", "op": "<", "right": "vwap" },
-        { "left": "close", "op": "crossunder", "right": "ema" }
+        {
+          "left": "close",
+          "op": "<",
+          "right": "vwap"
+        },
+        {
+          "left": "close",
+          "op": "crossunder",
+          "right": "ema"
+        }
       ]
     }
   },
-
   "exit": {
-    "stopLoss": { "type": "percent", "percent": "$stopPercent" },
-    "takeProfit": { "type": "percent", "percent": "$targetPercent" }
+    "stopLoss": {
+      "type": "percent",
+      "percent": "$stopPercent"
+    },
+    "takeProfit": {
+      "type": "percent",
+      "percent": "$targetPercent"
+    }
   },
-
   "confidence": {
     "base": 75,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume"
+      }
     ],
     "max": 90
   },
-
-  "filters": { "minConfidence": 75, "minRiskReward": 1.3 }
+  "filters": {
+    "minConfidence": 75,
+    "minRiskReward": 1.3
+  }
 }

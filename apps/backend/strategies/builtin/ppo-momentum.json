@@ -4,9 +4,13 @@
   "version": "1.0.0",
   "description": "Percentage Price Oscillator momentum. Similar ao MACD mas em percentagem para melhor comparação entre ativos. Entry quando PPO cruza signal.",
   "author": "MarketMind",
-  "tags": ["momentum", "ppo", "oscillator", "percentage"],
+  "tags": [
+    "momentum",
+    "ppo",
+    "oscillator",
+    "percentage"
+  ],
   "source": "Technical Analysis Library",
-
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 70,
@@ -20,55 +24,143 @@
   },
   "recommendedTimeframes": {
     "primary": "1d",
-    "secondary": ["4h"],
-    "avoid": ["1m", "5m", "15m"],
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
     "notes": "PPO works well on daily"
   },
-
   "parameters": {
-    "fastPeriod": { "default": 12, "min": 8, "max": 15, "step": 1, "description": "Período EMA rápida" },
-    "slowPeriod": { "default": 26, "min": 20, "max": 30, "step": 2, "description": "Período EMA lenta" },
-    "signalPeriod": { "default": 9, "min": 7, "max": 12, "step": 1, "description": "Período signal line" },
-    "atrMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "ATR para stop" }
+    "fastPeriod": {
+      "default": 12,
+      "min": 8,
+      "max": 15,
+      "step": 1,
+      "description": "Período EMA rápida"
+    },
+    "slowPeriod": {
+      "default": 26,
+      "min": 20,
+      "max": 30,
+      "step": 2,
+      "description": "Período EMA lenta"
+    },
+    "signalPeriod": {
+      "default": 9,
+      "min": 7,
+      "max": 12,
+      "step": 1,
+      "description": "Período signal line"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
   },
-
   "indicators": {
-    "ppo": { "type": "ppo", "params": { "fastPeriod": "$fastPeriod", "slowPeriod": "$slowPeriod", "signalPeriod": "$signalPeriod" } },
-    "atr": { "type": "atr", "params": { "period": 14 } }
+    "ppo": {
+      "type": "ppo",
+      "params": {
+        "fastPeriod": "$fastPeriod",
+        "slowPeriod": "$slowPeriod",
+        "signalPeriod": "$signalPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "ppo.ppo", "op": "crossover", "right": "ppo.signal" }
+        {
+          "left": "ppo.ppo",
+          "op": "crossover",
+          "right": "ppo.signal"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "ppo.ppo", "op": "crossunder", "right": "ppo.signal" }
+        {
+          "left": "ppo.ppo",
+          "op": "crossunder",
+          "right": "ppo.signal"
+        }
       ]
     }
   },
-
   "exit": {
-    "stopLoss": { "type": "atr", "multiplier": "$atrMultiplier", "indicator": "atr" },
-    "takeProfit": { "type": "riskReward", "multiplier": 2 },
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2
+    },
     "conditions": {
-      "long": { "operator": "OR", "conditions": [{ "left": "ppo.ppo", "op": "crossunder", "right": "ppo.signal" }] },
-      "short": { "operator": "OR", "conditions": [{ "left": "ppo.ppo", "op": "crossover", "right": "ppo.signal" }] }
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "ppo.ppo",
+            "op": "crossunder",
+            "right": "ppo.signal"
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "ppo.ppo",
+            "op": "crossover",
+            "right": "ppo.signal"
+          }
+        ]
+      }
     }
   },
-
   "confidence": {
     "base": 65,
     "bonuses": [
-      { "condition": { "left": "ppo.histogram", "op": ">", "right": 0 }, "bonus": 5, "description": "PPO histogram positive" },
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirms" }
+      {
+        "condition": {
+          "left": "ppo.histogram",
+          "op": ">",
+          "right": 0
+        },
+        "bonus": 5,
+        "description": "PPO histogram positive"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirms"
+      }
     ],
     "max": 85
   },
-
-  "filters": { "minConfidence": 65, "minRiskReward": 1.5 }
+  "filters": {
+    "minConfidence": 65,
+    "minRiskReward": 1.5
+  }
 }

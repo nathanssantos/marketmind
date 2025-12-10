@@ -4,8 +4,12 @@
   "version": "1.0.0",
   "description": "Momentum strategy using Williams %R oscillator. Entry when Williams %R crosses from oversold/overbought zones with volume confirmation. Quick momentum trades.",
   "author": "MarketMind",
-  "tags": ["momentum", "williams", "oscillator", "quick-trades"],
-
+  "tags": [
+    "momentum",
+    "williams",
+    "oscillator",
+    "quick-trades"
+  ],
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 50,
@@ -25,63 +29,125 @@
   },
   "recommendedTimeframes": {
     "primary": "1d",
-    "secondary": ["4h"],
-    "avoid": ["1m", "5m", "15m"],
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
     "notes": "Williams %R momentum works best on daily timeframe"
   },
-
   "parameters": {
-    "williamsPeriod": { "default": 5, "min": 2, "max": 14, "step": 1, "description": "Williams %R period (shorter for crypto)" },
-    "oversold": { "default": -80, "min": -90, "max": -70, "step": 5, "description": "Oversold level" },
-    "overbought": { "default": -20, "min": -30, "max": -10, "step": 5, "description": "Overbought level" },
-    "exitLevel": { "default": -50, "min": -60, "max": -40, "step": 5, "description": "Exit level (neutral zone)" },
-    "atrMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "ATR multiplier for safety stop" }
+    "williamsPeriod": {
+      "default": 5,
+      "min": 2,
+      "max": 14,
+      "step": 1,
+      "description": "Williams %R period (shorter for crypto)"
+    },
+    "oversold": {
+      "default": -80,
+      "min": -90,
+      "max": -70,
+      "step": 5,
+      "description": "Oversold level"
+    },
+    "overbought": {
+      "default": -20,
+      "min": -30,
+      "max": -10,
+      "step": 5,
+      "description": "Overbought level"
+    },
+    "exitLevel": {
+      "default": -50,
+      "min": -60,
+      "max": -40,
+      "step": 5,
+      "description": "Exit level (neutral zone)"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR multiplier for safety stop"
+    }
   },
-
   "indicators": {
     "williamsR": {
       "type": "williamsR",
-      "params": { "period": "$williamsPeriod" }
+      "params": {
+        "period": "$williamsPeriod"
+      }
     },
     "ema20": {
       "type": "ema",
-      "params": { "period": 20 }
+      "params": {
+        "period": 20
+      }
     },
     "atr": {
       "type": "atr",
-      "params": { "period": 14 }
+      "params": {
+        "period": 14
+      }
     }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "williamsR.prev", "op": "<", "right": "$oversold" },
-        { "left": "williamsR", "op": ">=", "right": "$oversold" }
+        {
+          "left": "williamsR.prev",
+          "op": "<",
+          "right": "$oversold"
+        },
+        {
+          "left": "williamsR",
+          "op": ">=",
+          "right": "$oversold"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "williamsR.prev", "op": ">", "right": "$overbought" },
-        { "left": "williamsR", "op": "<=", "right": "$overbought" }
+        {
+          "left": "williamsR.prev",
+          "op": ">",
+          "right": "$overbought"
+        },
+        {
+          "left": "williamsR",
+          "op": "<=",
+          "right": "$overbought"
+        }
       ]
     }
   },
-
   "exit": {
     "conditions": {
       "long": {
         "operator": "AND",
         "conditions": [
-          { "left": "williamsR", "op": ">", "right": "$exitLevel" }
+          {
+            "left": "williamsR",
+            "op": ">",
+            "right": "$exitLevel"
+          }
         ]
       },
       "short": {
         "operator": "AND",
         "conditions": [
-          { "left": "williamsR", "op": "<", "right": "$exitLevel" }
+          {
+            "left": "williamsR",
+            "op": "<",
+            "right": "$exitLevel"
+          }
         ]
       }
     },
@@ -92,17 +158,39 @@
     },
     "maxBarsInTrade": 10
   },
-
   "confidence": {
     "base": 60,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 15, "description": "Volume confirmation" },
-      { "condition": { "left": "williamsR", "op": "<", "right": -90 }, "bonus": 5, "description": "Extreme oversold" },
-      { "condition": { "left": "williamsR", "op": ">", "right": -10 }, "bonus": 5, "description": "Extreme overbought" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 15,
+        "description": "Volume confirmation"
+      },
+      {
+        "condition": {
+          "left": "williamsR",
+          "op": "<",
+          "right": -90
+        },
+        "bonus": 5,
+        "description": "Extreme oversold"
+      },
+      {
+        "condition": {
+          "left": "williamsR",
+          "op": ">",
+          "right": -10
+        },
+        "bonus": 5,
+        "description": "Extreme overbought"
+      }
     ],
     "max": 85
   },
-
   "filters": {
     "minConfidence": 55,
     "minRiskReward": 0

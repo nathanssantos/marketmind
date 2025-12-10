@@ -4,9 +4,14 @@
   "version": "1.0.0",
   "description": "Hammer e Doji candlestick patterns. Padrões de indecisão e reversão em suportes/resistências. Entry com confirmação.",
   "author": "MarketMind",
-  "tags": ["reversal", "candlestick", "hammer", "doji", "pattern"],
+  "tags": [
+    "reversal",
+    "candlestick",
+    "hammer",
+    "doji",
+    "pattern"
+  ],
   "source": "Japanese Candlestick Classic",
-
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 70,
@@ -20,50 +25,106 @@
   },
   "recommendedTimeframes": {
     "primary": "4h",
-    "secondary": ["1h", "1d"],
-    "avoid": ["1m", "5m"],
+    "secondary": [
+      "1h",
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
     "notes": "Hammer/Doji on 4h or daily"
   },
-
   "parameters": {
-    "wickRatio": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "Ratio mínimo wick/body" },
-    "atrMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "ATR para stop" }
+    "wickRatio": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "Ratio mínimo wick/body"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
   },
-
   "indicators": {
-    "candlePatterns": { "type": "candlePatterns", "params": { "wickRatio": "$wickRatio" } },
-    "atr": { "type": "atr", "params": { "period": 14 } }
+    "candlePatterns": {
+      "type": "candlePatterns",
+      "params": {
+        "wickRatio": "$wickRatio"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "candlePatterns.hammer", "op": "==", "right": true },
-        { "left": "close", "op": ">", "right": "high[1]" }
+        {
+          "left": "candlePatterns.hammer",
+          "op": "==",
+          "right": true
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "high[1]"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "candlePatterns.invertedHammer", "op": "==", "right": true },
-        { "left": "close", "op": "<", "right": "low[1]" }
+        {
+          "left": "candlePatterns.invertedHammer",
+          "op": "==",
+          "right": true
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "low[1]"
+        }
       ]
     }
   },
-
   "exit": {
-    "stopLoss": { "type": "atr", "multiplier": "$atrMultiplier", "indicator": "atr" },
-    "takeProfit": { "type": "riskReward", "multiplier": 2 }
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2
+    }
   },
-
   "confidence": {
     "base": 70,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume on pattern" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume on pattern"
+      }
     ],
     "max": 85
   },
-
-  "filters": { "minConfidence": 70, "minRiskReward": 1.5 }
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 1.5
+  }
 }

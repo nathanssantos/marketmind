@@ -4,9 +4,13 @@
   "version": "1.0.0",
   "description": "Estratégia simples de momentum para Bitcoin: compra quando close > close de 25 dias atrás, vende quando close < close de 25 dias atrás. Backtestada com 108% CAGR, 40% win rate, PF 3.84. Alta taxa de ganho por trade (8.7% avg).",
   "author": "MarketMind",
-  "tags": ["momentum", "price-action", "trend-following", "crypto-optimized"],
+  "tags": [
+    "momentum",
+    "price-action",
+    "trend-following",
+    "crypto-optimized"
+  ],
   "source": "QuantifiedStrategies.com - Trend Following and Momentum on Bitcoin",
-
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 90,
@@ -33,37 +37,61 @@
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [],
-    "avoid": ["1m", "5m", "15m", "1h", "4h"],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m",
+      "1h",
+      "4h"
+    ],
     "notes": "Price momentum strategy designed for daily timeframe"
   },
-
   "parameters": {
-    "lookbackPeriod": { "default": 25, "min": 15, "max": 50, "step": 5, "description": "Período de lookback para comparação de preço" },
-    "atrMultiplier": { "default": 3, "min": 2, "max": 5, "step": 0.5, "description": "Multiplicador ATR para stop loss" }
+    "lookbackPeriod": {
+      "default": 25,
+      "min": 15,
+      "max": 50,
+      "step": 5,
+      "description": "Período de lookback para comparação de preço"
+    },
+    "atrMultiplier": {
+      "default": 3,
+      "min": 2,
+      "max": 5,
+      "step": 0.5,
+      "description": "Multiplicador ATR para stop loss"
+    }
   },
-
   "indicators": {
     "atr": {
       "type": "atr",
-      "params": { "period": 14 }
+      "params": {
+        "period": 14
+      }
     }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "close", "op": ">", "right": "close[$lookbackPeriod]" }
+        {
+          "left": "close",
+          "op": ">",
+          "right": "close[$lookbackPeriod]"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "close", "op": "<", "right": "close[$lookbackPeriod]" }
+        {
+          "left": "close",
+          "op": "<",
+          "right": "close[$lookbackPeriod]"
+        }
       ]
     }
   },
-
   "exit": {
     "stopLoss": {
       "type": "atr",
@@ -85,27 +113,49 @@
       "long": {
         "operator": "OR",
         "conditions": [
-          { "left": "close", "op": "<", "right": "close[$lookbackPeriod]" }
+          {
+            "left": "close",
+            "op": "<",
+            "right": "close[$lookbackPeriod]"
+          }
         ]
       },
       "short": {
         "operator": "OR",
         "conditions": [
-          { "left": "close", "op": ">", "right": "close[$lookbackPeriod]" }
+          {
+            "left": "close",
+            "op": ">",
+            "right": "close[$lookbackPeriod]"
+          }
         ]
       }
     }
   },
-
   "confidence": {
     "base": 65,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirmando momentum" },
-      { "condition": { "left": "atr", "op": ">", "right": "atr.prev" }, "bonus": 5, "description": "Volatilidade crescente" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirmando momentum"
+      },
+      {
+        "condition": {
+          "left": "atr",
+          "op": ">",
+          "right": "atr.prev"
+        },
+        "bonus": 5,
+        "description": "Volatilidade crescente"
+      }
     ],
     "max": 90
   },
-
   "filters": {
     "minConfidence": 60,
     "minRiskReward": 2

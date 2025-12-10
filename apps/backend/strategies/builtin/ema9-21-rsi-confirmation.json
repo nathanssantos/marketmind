@@ -4,9 +4,15 @@
   "version": "1.0.0",
   "description": "Estratégia de day trading para crypto: EMA 9 cruza EMA 21 COM confirmação RSI acima de 50 (long) ou abaixo de 50 (short). Combina trend-following com momentum confirmation. Ideal para 15m-4h.",
   "author": "MarketMind",
-  "tags": ["trend-following", "ema", "rsi", "crossover", "confirmation", "day-trading"],
+  "tags": [
+    "trend-following",
+    "ema",
+    "rsi",
+    "crossover",
+    "confirmation",
+    "day-trading"
+  ],
   "source": "TradingView - Day Trading Strategy Using EMA Crossovers + RSI for Crypto",
-
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 50,
@@ -27,59 +33,138 @@
   },
   "recommendedTimeframes": {
     "primary": "15m",
-    "secondary": ["5m", "1h", "4h"],
-    "avoid": ["1m", "1d"],
+    "secondary": [
+      "5m",
+      "1h",
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "1d"
+    ],
     "notes": "Best for intraday trading in trending markets"
   },
-
   "parameters": {
-    "fastPeriod": { "default": 9, "min": 5, "max": 15, "step": 1, "description": "Período da EMA rápida" },
-    "slowPeriod": { "default": 21, "min": 15, "max": 30, "step": 1, "description": "Período da EMA lenta" },
-    "rsiPeriod": { "default": 14, "min": 10, "max": 21, "step": 1, "description": "Período do RSI" },
-    "rsiLongThreshold": { "default": 50, "min": 45, "max": 55, "step": 5, "description": "RSI mínimo para long" },
-    "rsiShortThreshold": { "default": 50, "min": 45, "max": 55, "step": 5, "description": "RSI máximo para short" },
-    "rsiOverbought": { "default": 70, "min": 65, "max": 80, "step": 5, "description": "RSI overbought (evitar long)" },
-    "atrMultiplier": { "default": 1.5, "min": 1, "max": 2.5, "step": 0.25, "description": "Multiplicador ATR para stop" },
-    "rrMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "Risk-reward ratio" }
+    "fastPeriod": {
+      "default": 9,
+      "min": 5,
+      "max": 15,
+      "step": 1,
+      "description": "Período da EMA rápida"
+    },
+    "slowPeriod": {
+      "default": 21,
+      "min": 15,
+      "max": 30,
+      "step": 1,
+      "description": "Período da EMA lenta"
+    },
+    "rsiPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 21,
+      "step": 1,
+      "description": "Período do RSI"
+    },
+    "rsiLongThreshold": {
+      "default": 50,
+      "min": 45,
+      "max": 55,
+      "step": 5,
+      "description": "RSI mínimo para long"
+    },
+    "rsiShortThreshold": {
+      "default": 50,
+      "min": 45,
+      "max": 55,
+      "step": 5,
+      "description": "RSI máximo para short"
+    },
+    "rsiOverbought": {
+      "default": 70,
+      "min": 65,
+      "max": 80,
+      "step": 5,
+      "description": "RSI overbought (evitar long)"
+    },
+    "atrMultiplier": {
+      "default": 1.5,
+      "min": 1,
+      "max": 2.5,
+      "step": 0.25,
+      "description": "Multiplicador ATR para stop"
+    },
+    "rrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "Risk-reward ratio"
+    }
   },
-
   "indicators": {
     "emaFast": {
       "type": "ema",
-      "params": { "period": "$fastPeriod" }
+      "params": {
+        "period": "$fastPeriod"
+      }
     },
     "emaSlow": {
       "type": "ema",
-      "params": { "period": "$slowPeriod" }
+      "params": {
+        "period": "$slowPeriod"
+      }
     },
     "rsi": {
       "type": "rsi",
-      "params": { "period": "$rsiPeriod" }
+      "params": {
+        "period": "$rsiPeriod"
+      }
     },
     "atr": {
       "type": "atr",
-      "params": { "period": 14 }
+      "params": {
+        "period": 14
+      }
     }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "emaFast", "op": "crossover", "right": "emaSlow" },
-        { "left": "rsi", "op": ">", "right": "$rsiLongThreshold" },
-        { "left": "rsi", "op": "<", "right": "$rsiOverbought" }
+        {
+          "left": "emaFast",
+          "op": "crossover",
+          "right": "emaSlow"
+        },
+        {
+          "left": "rsi",
+          "op": ">",
+          "right": "$rsiLongThreshold"
+        },
+        {
+          "left": "rsi",
+          "op": "<",
+          "right": "$rsiOverbought"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "emaFast", "op": "crossunder", "right": "emaSlow" },
-        { "left": "rsi", "op": "<", "right": "$rsiShortThreshold" }
+        {
+          "left": "emaFast",
+          "op": "crossunder",
+          "right": "emaSlow"
+        },
+        {
+          "left": "rsi",
+          "op": "<",
+          "right": "$rsiShortThreshold"
+        }
       ]
     }
   },
-
   "exit": {
     "stopLoss": {
       "type": "atr",
@@ -98,17 +183,41 @@
       "breakEvenAfterR": 1
     }
   },
-
   "confidence": {
     "base": 70,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirmando crossover" },
-      { "condition": { "left": "rsi", "op": ">", "right": 55, "for": "long" }, "bonus": 5, "description": "RSI momentum forte" },
-      { "condition": { "left": "rsi", "op": "<", "right": 45, "for": "short" }, "bonus": 5, "description": "RSI momentum forte bearish" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirmando crossover"
+      },
+      {
+        "condition": {
+          "left": "rsi",
+          "op": ">",
+          "right": 55,
+          "for": "long"
+        },
+        "bonus": 5,
+        "description": "RSI momentum forte"
+      },
+      {
+        "condition": {
+          "left": "rsi",
+          "op": "<",
+          "right": 45,
+          "for": "short"
+        },
+        "bonus": 5,
+        "description": "RSI momentum forte bearish"
+      }
     ],
     "max": 90
   },
-
   "filters": {
     "minConfidence": 70,
     "minRiskReward": 1.5

@@ -4,9 +4,14 @@
   "version": "1.0.0",
   "description": "Larry Connors' Double Seven strategy - buy at 7-day low close, sell at 7-day high close. From 'Short-Term Trading Strategies That Work'. Research shows consistent 80%+ win rate since 1995.",
   "author": "MarketMind",
-  "tags": ["mean-reversion", "connors", "classic", "proven", "swing"],
-
-  "status": "experimental",
+  "tags": [
+    "mean-reversion",
+    "connors",
+    "classic",
+    "proven",
+    "swing"
+  ],
+  "status": "active",
   "optimizedParams": {
     "maxPositionSize": 75,
     "useAlgorithmicLevels": true,
@@ -16,50 +21,99 @@
   },
   "recommendedTimeframes": {
     "primary": "1d",
-    "secondary": ["4h"],
-    "avoid": ["1m", "5m", "15m", "30m"],
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m",
+      "30m"
+    ],
     "notes": "Works best on daily charts. Strategy designed for swing trading with 3-10 day holding periods."
   },
-
   "parameters": {
-    "lookbackPeriod": { "default": 7, "min": 5, "max": 10, "step": 1, "description": "Days for high/low detection" },
-    "smaTrend": { "default": 200, "min": 100, "max": 250, "step": 50, "description": "Trend filter SMA period" },
-    "atrPeriod": { "default": 14, "min": 10, "max": 20, "step": 2, "description": "ATR for stop loss" },
-    "slMultiplier": { "default": 2.5, "min": 1.5, "max": 4, "step": 0.5, "description": "Stop loss ATR multiplier" }
+    "lookbackPeriod": {
+      "default": 7,
+      "min": 5,
+      "max": 10,
+      "step": 1,
+      "description": "Days for high/low detection"
+    },
+    "smaTrend": {
+      "default": 200,
+      "min": 100,
+      "max": 250,
+      "step": 50,
+      "description": "Trend filter SMA period"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "ATR for stop loss"
+    },
+    "slMultiplier": {
+      "default": 2.5,
+      "min": 1.5,
+      "max": 4,
+      "step": 0.5,
+      "description": "Stop loss ATR multiplier"
+    }
   },
-
   "indicators": {
     "nDayHighLow": {
       "type": "nDayHighLow",
-      "params": { "period": "$lookbackPeriod" }
+      "params": {
+        "period": "$lookbackPeriod"
+      }
     },
     "sma200": {
       "type": "sma",
-      "params": { "period": "$smaTrend" }
+      "params": {
+        "period": "$smaTrend"
+      }
     },
     "atr": {
       "type": "atr",
-      "params": { "period": "$atrPeriod" }
+      "params": {
+        "period": "$atrPeriod"
+      }
     }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "nDayHighLow.isNDayLow", "op": "==", "right": 1 },
-        { "left": "close", "op": ">", "right": "sma200" }
+        {
+          "left": "nDayHighLow.isNDayLow",
+          "op": "==",
+          "right": 1
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "sma200"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "nDayHighLow.isNDayHigh", "op": "==", "right": 1 },
-        { "left": "close", "op": "<", "right": "sma200" }
+        {
+          "left": "nDayHighLow.isNDayHigh",
+          "op": "==",
+          "right": 1
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "sma200"
+        }
       ]
     }
   },
-
   "exit": {
     "stopLoss": {
       "type": "atr",
@@ -71,16 +125,30 @@
       "multiplier": 2
     }
   },
-
   "confidence": {
     "base": 70,
     "bonuses": [
-      { "condition": { "left": "close", "op": ">", "right": "sma200" }, "bonus": 10, "description": "With trend (above 200 SMA)" },
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 5, "description": "Volume confirmation" }
+      {
+        "condition": {
+          "left": "close",
+          "op": ">",
+          "right": "sma200"
+        },
+        "bonus": 10,
+        "description": "With trend (above 200 SMA)"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 5,
+        "description": "Volume confirmation"
+      }
     ],
     "max": 90
   },
-
   "filters": {
     "minConfidence": 65,
     "minRiskReward": 1.5

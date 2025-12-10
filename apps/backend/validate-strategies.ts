@@ -12,6 +12,8 @@ import path from 'path';
 
 const STRATEGIES_DIR = './strategies/builtin';
 const RESULTS_DIR = `./results/bulk-validation-${new Date().toISOString().split('T')[0]}`;
+const TEST_START_DATE = '2024-01-01';
+const TEST_END_DATE = '2024-12-01';
 
 interface ValidationResult {
   strategy: string;
@@ -24,6 +26,26 @@ interface ValidationResult {
   status: 'success' | 'failed';
 }
 
+function formatPeriod(startDate: string, endDate: string): string {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffMs = end.getTime() - start.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const months = Math.floor(diffDays / 30);
+  const years = Math.floor(months / 12);
+  
+  if (years >= 2) {
+    const remainingMonths = months % 12;
+    return remainingMonths > 0 
+      ? `${years} years and ${remainingMonths} ${remainingMonths === 1 ? 'month' : 'months'}`
+      : `${years} years`;
+  } else if (months >= 1) {
+    return `${months} ${months === 1 ? 'month' : 'months'}`;
+  } else {
+    return `${diffDays} days`;
+  }
+}
+
 async function main() {
   // Create results directory
   if (!fs.existsSync(RESULTS_DIR)) {
@@ -33,7 +55,8 @@ async function main() {
   console.log(chalk.cyan.bold('\n╔════════════════════════════════════════════════════════════════╗'));
   console.log(chalk.cyan.bold('║         MARKETMIND - BULK STRATEGY VALIDATION                  ║'));
   console.log(chalk.cyan.bold('╚════════════════════════════════════════════════════════════════╝'));
-  console.log(chalk.gray(`Results directory: ${RESULTS_DIR}\n`));
+  console.log(chalk.gray(`Results directory: ${RESULTS_DIR}`));
+  console.log(chalk.gray(`Test period: ${TEST_START_DATE} to ${TEST_END_DATE} (${formatPeriod(TEST_START_DATE, TEST_END_DATE)})\n`));
 
   // Get list of active strategies
   const strategyFiles = fs.readdirSync(STRATEGIES_DIR)
@@ -61,7 +84,7 @@ async function main() {
 
     try {
       const output = execSync(
-        `pnpm exec tsx src/cli/backtest-runner.ts validate -s ${strategy} --symbol BTCUSDT -i 1d --start 2024-01-01 --end 2024-12-01 --optimized`,
+        `pnpm exec tsx src/cli/backtest-runner.ts validate -s ${strategy} --symbol BTCUSDT -i 1d --start ${TEST_START_DATE} --end ${TEST_END_DATE} --optimized`,
         { 
           encoding: 'utf-8', 
           stdio: 'pipe',
@@ -193,7 +216,8 @@ function displaySummaryTable(results: ValidationResult[], successCount: number, 
   console.log(chalk.red(`✗ Failed:                  ${failedCount}`));
   console.log(chalk.white(`Strategies with >10 trades: ${strategiesWithTrades}`));
   console.log(chalk.white(`Average Win Rate:          ${avgWinRate.toFixed(2)}%`));
-  console.log(chalk.white(`Average PnL:               ${avgPnL.toFixed(2)}%\n`));
+  console.log(chalk.white(`Average PnL:               ${avgPnL.toFixed(2)}%`));
+  console.log(chalk.gray(`\nTest period: ${TEST_START_DATE} to ${TEST_END_DATE} (${formatPeriod(TEST_START_DATE, TEST_END_DATE)})\n`));
 }
 
 function generateMarkdownReport(results: ValidationResult[], successCount: number, failedCount: number) {
@@ -211,6 +235,9 @@ function generateMarkdownReport(results: ValidationResult[], successCount: numbe
   const report = `# Strategy Validation Summary
 
 **Generated:** ${new Date().toISOString()}  
+**Test Period:** ${TEST_START_DATE} to ${TEST_END_DATE} (${formatPeriod(TEST_START_DATE, TEST_END_DATE)})  
+**Symbol:** BTCUSDT  
+**Interval:** 1d  
 **Total Strategies:** ${results.length}  
 **Success:** ${successCount}  
 **Failed:** ${failedCount}

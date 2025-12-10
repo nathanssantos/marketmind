@@ -4,9 +4,13 @@
   "version": "1.0.0",
   "description": "Estratégia MACD para Bitcoin com configurações padrão (12/26/9). Backtestada com 77% CAGR vs 61% buy-and-hold, e drawdown reduzido de 83% para 62%. Investido apenas 54% do tempo.",
   "author": "MarketMind",
-  "tags": ["momentum", "macd", "trend-following", "crypto-optimized"],
+  "tags": [
+    "momentum",
+    "macd",
+    "trend-following",
+    "crypto-optimized"
+  ],
   "source": "QuantifiedStrategies.com - Bitcoin MACD Trading Strategy",
-
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 90,
@@ -31,18 +35,46 @@
   },
   "recommendedTimeframes": {
     "primary": "1d",
-    "secondary": ["4h"],
-    "avoid": ["1m", "5m", "15m"],
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
     "notes": "MACD works best on daily timeframe for Bitcoin"
   },
-
   "parameters": {
-    "fastPeriod": { "default": 12, "min": 8, "max": 15, "step": 1, "description": "Período da EMA rápida do MACD" },
-    "slowPeriod": { "default": 26, "min": 20, "max": 30, "step": 2, "description": "Período da EMA lenta do MACD" },
-    "signalPeriod": { "default": 9, "min": 7, "max": 12, "step": 1, "description": "Período da linha de sinal" },
-    "atrMultiplier": { "default": 2.5, "min": 2, "max": 4, "step": 0.5, "description": "Multiplicador ATR para stop loss" }
+    "fastPeriod": {
+      "default": 12,
+      "min": 8,
+      "max": 15,
+      "step": 1,
+      "description": "Período da EMA rápida do MACD"
+    },
+    "slowPeriod": {
+      "default": 26,
+      "min": 20,
+      "max": 30,
+      "step": 2,
+      "description": "Período da EMA lenta do MACD"
+    },
+    "signalPeriod": {
+      "default": 9,
+      "min": 7,
+      "max": 12,
+      "step": 1,
+      "description": "Período da linha de sinal"
+    },
+    "atrMultiplier": {
+      "default": 2.5,
+      "min": 2,
+      "max": 4,
+      "step": 0.5,
+      "description": "Multiplicador ATR para stop loss"
+    }
   },
-
   "indicators": {
     "macd": {
       "type": "macd",
@@ -54,25 +86,33 @@
     },
     "atr": {
       "type": "atr",
-      "params": { "period": 14 }
+      "params": {
+        "period": 14
+      }
     }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "macd.line", "op": "crossover", "right": "macd.signal" }
+        {
+          "left": "macd.line",
+          "op": "crossover",
+          "right": "macd.signal"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "macd.line", "op": "crossunder", "right": "macd.signal" }
+        {
+          "left": "macd.line",
+          "op": "crossunder",
+          "right": "macd.signal"
+        }
       ]
     }
   },
-
   "exit": {
     "stopLoss": {
       "type": "atr",
@@ -94,27 +134,50 @@
       "long": {
         "operator": "OR",
         "conditions": [
-          { "left": "macd.line", "op": "crossunder", "right": "macd.signal" }
+          {
+            "left": "macd.line",
+            "op": "crossunder",
+            "right": "macd.signal"
+          }
         ]
       },
       "short": {
         "operator": "OR",
         "conditions": [
-          { "left": "macd.line", "op": "crossover", "right": "macd.signal" }
+          {
+            "left": "macd.line",
+            "op": "crossover",
+            "right": "macd.signal"
+          }
         ]
       }
     }
   },
-
   "confidence": {
     "base": 65,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirmando crossover" },
-      { "condition": { "left": "macd.histogram", "op": ">", "right": 0, "for": "long" }, "bonus": 5, "description": "Histograma positivo" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirmando crossover"
+      },
+      {
+        "condition": {
+          "left": "macd.histogram",
+          "op": ">",
+          "right": 0,
+          "for": "long"
+        },
+        "bonus": 5,
+        "description": "Histograma positivo"
+      }
     ],
     "max": 90
   },
-
   "filters": {
     "minConfidence": 60,
     "minRiskReward": 2

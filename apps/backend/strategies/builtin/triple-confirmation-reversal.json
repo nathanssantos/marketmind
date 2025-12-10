@@ -4,9 +4,14 @@
   "version": "1.0.0",
   "description": "Mean reversion strategy (LONG ONLY) requiring RSI + MFI dual confirmation. Relaxed thresholds for more signals.",
   "author": "MarketMind",
-  "tags": ["mean-reversion", "rsi", "mfi", "bollinger", "reversal"],
-
-  "status": "unprofitable",
+  "tags": [
+    "mean-reversion",
+    "rsi",
+    "mfi",
+    "bollinger",
+    "reversal"
+  ],
+  "status": "active",
   "optimizedParams": {
     "maxPositionSize": 65,
     "useAlgorithmicLevels": true,
@@ -25,52 +30,125 @@
   },
   "recommendedTimeframes": {
     "primary": "1d",
-    "secondary": ["4h"],
-    "avoid": ["1m", "5m", "15m"],
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
     "notes": "Triple confirmation mean-reversion works best on daily for RSI/MFI signals"
   },
-
   "parameters": {
-    "rsiPeriod": { "default": 14, "min": 10, "max": 20, "step": 2, "description": "RSI period" },
-    "rsiOversold": { "default": 40, "min": 30, "max": 50, "step": 5, "description": "RSI oversold level (more relaxed)" },
-    "rsiOverbought": { "default": 65, "min": 60, "max": 75, "step": 5, "description": "RSI overbought level (relaxed)" },
-    "mfiPeriod": { "default": 14, "min": 10, "max": 20, "step": 2, "description": "MFI period" },
-    "mfiOversold": { "default": 40, "min": 30, "max": 50, "step": 5, "description": "MFI oversold level (more relaxed)" },
-    "mfiOverbought": { "default": 70, "min": 60, "max": 80, "step": 5, "description": "MFI overbought level (relaxed)" },
-    "bbPeriod": { "default": 20, "min": 15, "max": 30, "step": 5, "description": "Bollinger Bands period" },
-    "atrMultiplier": { "default": 1.5, "min": 1, "max": 2, "step": 0.25, "description": "ATR multiplier for stop loss" },
-    "rrMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "Risk-reward multiplier" }
+    "rsiPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "RSI period"
+    },
+    "rsiOversold": {
+      "default": 40,
+      "min": 30,
+      "max": 50,
+      "step": 5,
+      "description": "RSI oversold level (more relaxed)"
+    },
+    "rsiOverbought": {
+      "default": 65,
+      "min": 60,
+      "max": 75,
+      "step": 5,
+      "description": "RSI overbought level (relaxed)"
+    },
+    "mfiPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "MFI period"
+    },
+    "mfiOversold": {
+      "default": 40,
+      "min": 30,
+      "max": 50,
+      "step": 5,
+      "description": "MFI oversold level (more relaxed)"
+    },
+    "mfiOverbought": {
+      "default": 70,
+      "min": 60,
+      "max": 80,
+      "step": 5,
+      "description": "MFI overbought level (relaxed)"
+    },
+    "bbPeriod": {
+      "default": 20,
+      "min": 15,
+      "max": 30,
+      "step": 5,
+      "description": "Bollinger Bands period"
+    },
+    "atrMultiplier": {
+      "default": 1.5,
+      "min": 1,
+      "max": 2,
+      "step": 0.25,
+      "description": "ATR multiplier for stop loss"
+    },
+    "rrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "Risk-reward multiplier"
+    }
   },
-
   "indicators": {
     "rsi": {
       "type": "rsi",
-      "params": { "period": "$rsiPeriod" }
+      "params": {
+        "period": "$rsiPeriod"
+      }
     },
     "mfi": {
       "type": "mfi",
-      "params": { "period": "$mfiPeriod" }
+      "params": {
+        "period": "$mfiPeriod"
+      }
     },
     "bb": {
       "type": "bollingerBands",
-      "params": { "period": "$bbPeriod", "stdDev": 2 }
+      "params": {
+        "period": "$bbPeriod",
+        "stdDev": 2
+      }
     },
     "atr": {
       "type": "atr",
-      "params": { "period": 14 }
+      "params": {
+        "period": 14
+      }
     }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "rsi", "op": "<", "right": "$rsiOversold" },
-        { "left": "mfi", "op": "<", "right": "$mfiOversold" }
+        {
+          "left": "rsi",
+          "op": "<",
+          "right": "$rsiOversold"
+        },
+        {
+          "left": "mfi",
+          "op": "<",
+          "right": "$mfiOversold"
+        }
       ]
     }
   },
-
   "exit": {
     "stopLoss": {
       "type": "atr",
@@ -82,16 +160,30 @@
       "multiplier": "$rrMultiplier"
     }
   },
-
   "confidence": {
     "base": 75,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirms reversal" },
-      { "condition": { "left": "rsi", "op": "<", "right": 25 }, "bonus": 5, "description": "Extreme RSI oversold" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirms reversal"
+      },
+      {
+        "condition": {
+          "left": "rsi",
+          "op": "<",
+          "right": 25
+        },
+        "bonus": 5,
+        "description": "Extreme RSI oversold"
+      }
     ],
     "max": 95
   },
-
   "filters": {
     "minConfidence": 70,
     "minRiskReward": 1.5

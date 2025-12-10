@@ -4,9 +4,13 @@
   "version": "1.0.0",
   "description": "Triple EMA (TEMA) momentum strategy. TEMA elimina lag melhor que DEMA. Entry quando preço cruza TEMA com slope positivo.",
   "author": "MarketMind",
-  "tags": ["trend-following", "tema", "momentum", "low-lag"],
+  "tags": [
+    "trend-following",
+    "tema",
+    "momentum",
+    "low-lag"
+  ],
   "source": "Technical Analysis Library",
-
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 80,
@@ -22,55 +26,135 @@
   },
   "recommendedTimeframes": {
     "primary": "4h",
-    "secondary": ["1h", "1d"],
-    "avoid": ["1m", "5m"],
+    "secondary": [
+      "1h",
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
     "notes": "TEMA works well on 4h"
   },
-
   "parameters": {
-    "temaPeriod": { "default": 20, "min": 14, "max": 30, "step": 2, "description": "Período do TEMA" },
-    "atrMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "ATR para stop" }
+    "temaPeriod": {
+      "default": 20,
+      "min": 14,
+      "max": 30,
+      "step": 2,
+      "description": "Período do TEMA"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
   },
-
   "indicators": {
-    "tema": { "type": "tema", "params": { "period": "$temaPeriod" } },
-    "atr": { "type": "atr", "params": { "period": 14 } }
+    "tema": {
+      "type": "tema",
+      "params": {
+        "period": "$temaPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "close", "op": "crossover", "right": "tema" },
-        { "left": "tema", "op": ">", "right": "tema.prev" }
+        {
+          "left": "close",
+          "op": "crossover",
+          "right": "tema"
+        },
+        {
+          "left": "tema",
+          "op": ">",
+          "right": "tema.prev"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "close", "op": "crossunder", "right": "tema" },
-        { "left": "tema", "op": "<", "right": "tema.prev" }
+        {
+          "left": "close",
+          "op": "crossunder",
+          "right": "tema"
+        },
+        {
+          "left": "tema",
+          "op": "<",
+          "right": "tema.prev"
+        }
       ]
     }
   },
-
   "exit": {
-    "stopLoss": { "type": "atr", "multiplier": "$atrMultiplier", "indicator": "atr" },
-    "takeProfit": { "type": "riskReward", "multiplier": 2.5 },
-    "trailingStop": { "enabled": true, "type": "atr", "initialMultiplier": 2, "trailMultiplier": 2.5, "breakEvenAfterR": 1.5 },
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2.5
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 2.5,
+      "breakEvenAfterR": 1.5
+    },
     "conditions": {
-      "long": { "operator": "OR", "conditions": [{ "left": "close", "op": "crossunder", "right": "tema" }] },
-      "short": { "operator": "OR", "conditions": [{ "left": "close", "op": "crossover", "right": "tema" }] }
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "close",
+            "op": "crossunder",
+            "right": "tema"
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "close",
+            "op": "crossover",
+            "right": "tema"
+          }
+        ]
+      }
     }
   },
-
   "confidence": {
     "base": 65,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirms" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirms"
+      }
     ],
     "max": 85
   },
-
-  "filters": { "minConfidence": 65, "minRiskReward": 2 }
+  "filters": {
+    "minConfidence": 65,
+    "minRiskReward": 2
+  }
 }

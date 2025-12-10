@@ -4,8 +4,13 @@
   "version": "1.0.0",
   "description": "RSI trend pullback strategy (LONG ONLY). Enters when RSI is oversold while price stays above trend EMA. Simplified for more signals.",
   "author": "MarketMind",
-  "tags": ["reversal", "rsi", "divergence", "trend-filter", "2025"],
-
+  "tags": [
+    "reversal",
+    "rsi",
+    "divergence",
+    "trend-filter",
+    "2025"
+  ],
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 60,
@@ -25,52 +30,123 @@
   },
   "recommendedTimeframes": {
     "primary": "1d",
-    "secondary": ["4h"],
-    "avoid": ["1m", "5m"],
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
     "notes": "Divergence strategies need higher timeframes for reliable signals"
   },
-
   "parameters": {
-    "rsiPeriod": { "default": 14, "min": 7, "max": 21, "step": 2, "description": "RSI period" },
-    "rsiOversold": { "default": 40, "min": 30, "max": 50, "step": 5, "description": "RSI oversold level (relaxed)" },
-    "rsiOverbought": { "default": 65, "min": 60, "max": 75, "step": 5, "description": "RSI overbought level" },
-    "emaTrend": { "default": 50, "min": 30, "max": 100, "step": 10, "description": "Trend EMA period" },
-    "adxPeriod": { "default": 14, "min": 10, "max": 20, "step": 2, "description": "ADX period" },
-    "adxMin": { "default": 20, "min": 15, "max": 30, "step": 5, "description": "Minimum ADX for trend" },
-    "atrPeriod": { "default": 14, "min": 10, "max": 20, "step": 2, "description": "ATR period" },
-    "slMultiplier": { "default": 1.5, "min": 1, "max": 2.5, "step": 0.25, "description": "SL ATR multiplier" },
-    "tpMultiplier": { "default": 2.5, "min": 2, "max": 4, "step": 0.5, "description": "TP ATR multiplier" }
+    "rsiPeriod": {
+      "default": 14,
+      "min": 7,
+      "max": 21,
+      "step": 2,
+      "description": "RSI period"
+    },
+    "rsiOversold": {
+      "default": 40,
+      "min": 30,
+      "max": 50,
+      "step": 5,
+      "description": "RSI oversold level (relaxed)"
+    },
+    "rsiOverbought": {
+      "default": 65,
+      "min": 60,
+      "max": 75,
+      "step": 5,
+      "description": "RSI overbought level"
+    },
+    "emaTrend": {
+      "default": 50,
+      "min": 30,
+      "max": 100,
+      "step": 10,
+      "description": "Trend EMA period"
+    },
+    "adxPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "ADX period"
+    },
+    "adxMin": {
+      "default": 20,
+      "min": 15,
+      "max": 30,
+      "step": 5,
+      "description": "Minimum ADX for trend"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "ATR period"
+    },
+    "slMultiplier": {
+      "default": 1.5,
+      "min": 1,
+      "max": 2.5,
+      "step": 0.25,
+      "description": "SL ATR multiplier"
+    },
+    "tpMultiplier": {
+      "default": 2.5,
+      "min": 2,
+      "max": 4,
+      "step": 0.5,
+      "description": "TP ATR multiplier"
+    }
   },
-
   "indicators": {
     "rsi": {
       "type": "rsi",
-      "params": { "period": "$rsiPeriod" }
+      "params": {
+        "period": "$rsiPeriod"
+      }
     },
     "emaTrend": {
       "type": "ema",
-      "params": { "period": "$emaTrend" }
+      "params": {
+        "period": "$emaTrend"
+      }
     },
     "adx": {
       "type": "adx",
-      "params": { "period": "$adxPeriod" }
+      "params": {
+        "period": "$adxPeriod"
+      }
     },
     "atr": {
       "type": "atr",
-      "params": { "period": "$atrPeriod" }
+      "params": {
+        "period": "$atrPeriod"
+      }
     }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "rsi", "op": "<", "right": "$rsiOversold" },
-        { "left": "close", "op": ">", "right": "emaTrend" }
+        {
+          "left": "rsi",
+          "op": "<",
+          "right": "$rsiOversold"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "emaTrend"
+        }
       ]
     }
   },
-
   "exit": {
     "stopLoss": {
       "type": "atr",
@@ -83,17 +159,39 @@
       "indicator": "atr"
     }
   },
-
   "confidence": {
     "base": 65,
     "bonuses": [
-      { "condition": { "left": "rsi", "op": "<", "right": 30 }, "bonus": 10, "description": "Deep oversold" },
-      { "condition": { "left": "adx.adx", "op": ">", "right": 30 }, "bonus": 10, "description": "Strong trend" },
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 5, "description": "Volume confirmation" }
+      {
+        "condition": {
+          "left": "rsi",
+          "op": "<",
+          "right": 30
+        },
+        "bonus": 10,
+        "description": "Deep oversold"
+      },
+      {
+        "condition": {
+          "left": "adx.adx",
+          "op": ">",
+          "right": 30
+        },
+        "bonus": 10,
+        "description": "Strong trend"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 5,
+        "description": "Volume confirmation"
+      }
     ],
     "max": 95
   },
-
   "filters": {
     "minConfidence": 65,
     "minRiskReward": 1.5

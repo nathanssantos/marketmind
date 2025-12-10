@@ -4,9 +4,13 @@
   "version": "1.0.0",
   "description": "Classic Pivot Points strategy para crypto. Entry em bounces de níveis de suporte/resistência calculados (S1, R1, etc).",
   "author": "MarketMind",
-  "tags": ["support-resistance", "pivot-points", "levels", "intraday"],
+  "tags": [
+    "support-resistance",
+    "pivot-points",
+    "levels",
+    "intraday"
+  ],
   "source": "Floor Traders Classic",
-
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 70,
@@ -20,54 +24,129 @@
   },
   "recommendedTimeframes": {
     "primary": "1h",
-    "secondary": ["4h"],
-    "avoid": ["1m", "5m"],
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
     "notes": "Pivot points work well intraday"
   },
-
   "parameters": {
-    "pivotType": { "default": "standard", "options": ["standard", "fibonacci", "woodie"], "description": "Tipo de pivot" },
-    "atrMultiplier": { "default": 1.5, "min": 1, "max": 2.5, "step": 0.5, "description": "ATR para stop" }
+    "pivotType": {
+      "default": "standard",
+      "options": [
+        "standard",
+        "fibonacci",
+        "woodie"
+      ],
+      "description": "Tipo de pivot"
+    },
+    "atrMultiplier": {
+      "default": 1.5,
+      "min": 1,
+      "max": 2.5,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
   },
-
   "indicators": {
-    "pivots": { "type": "pivotPoints", "params": { "type": "$pivotType" } },
-    "atr": { "type": "atr", "params": { "period": 14 } }
+    "pivots": {
+      "type": "pivotPoints",
+      "params": {
+        "type": "$pivotType"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "low", "op": "<=", "right": "pivots.s1" },
-        { "left": "close", "op": ">", "right": "pivots.s1" }
+        {
+          "left": "low",
+          "op": "<=",
+          "right": "pivots.s1"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "pivots.s1"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "high", "op": ">=", "right": "pivots.r1" },
-        { "left": "close", "op": "<", "right": "pivots.r1" }
+        {
+          "left": "high",
+          "op": ">=",
+          "right": "pivots.r1"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "pivots.r1"
+        }
       ]
     }
   },
-
   "exit": {
-    "stopLoss": { "type": "atr", "multiplier": "$atrMultiplier", "indicator": "atr" },
-    "takeProfit": { "type": "indicator", "indicator": "pivots.pivot" },
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "indicator",
+      "indicator": "pivots.pivot"
+    },
     "conditions": {
-      "long": { "operator": "OR", "conditions": [{ "left": "close", "op": ">=", "right": "pivots.pivot" }] },
-      "short": { "operator": "OR", "conditions": [{ "left": "close", "op": "<=", "right": "pivots.pivot" }] }
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "close",
+            "op": ">=",
+            "right": "pivots.pivot"
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "close",
+            "op": "<=",
+            "right": "pivots.pivot"
+          }
+        ]
+      }
     }
   },
-
   "confidence": {
     "base": 70,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume at support" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume at support"
+      }
     ],
     "max": 85
   },
-
-  "filters": { "minConfidence": 70, "minRiskReward": 1.5 }
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 1.5
+  }
 }

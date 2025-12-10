@@ -4,9 +4,12 @@
   "version": "1.0.0",
   "description": "Bill Williams Awesome Oscillator strategy. Mede momentum do mercado com diferença SMA(5)-SMA(34) de HL/2. Entry em saucer patterns.",
   "author": "MarketMind",
-  "tags": ["momentum", "awesome-oscillator", "bill-williams"],
+  "tags": [
+    "momentum",
+    "awesome-oscillator",
+    "bill-williams"
+  ],
   "source": "Bill Williams - Trading Chaos",
-
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 70,
@@ -20,54 +23,135 @@
   },
   "recommendedTimeframes": {
     "primary": "4h",
-    "secondary": ["1h", "1d"],
-    "avoid": ["1m", "5m"],
+    "secondary": [
+      "1h",
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
     "notes": "AO works well on 4h"
   },
-
   "parameters": {
-    "fastPeriod": { "default": 5, "min": 3, "max": 7, "step": 1, "description": "Período SMA rápida" },
-    "slowPeriod": { "default": 34, "min": 30, "max": 40, "step": 2, "description": "Período SMA lenta" },
-    "atrMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "ATR para stop" }
+    "fastPeriod": {
+      "default": 5,
+      "min": 3,
+      "max": 7,
+      "step": 1,
+      "description": "Período SMA rápida"
+    },
+    "slowPeriod": {
+      "default": 34,
+      "min": 30,
+      "max": 40,
+      "step": 2,
+      "description": "Período SMA lenta"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
   },
-
   "indicators": {
-    "ao": { "type": "ao", "params": { "fastPeriod": "$fastPeriod", "slowPeriod": "$slowPeriod" } },
-    "atr": { "type": "atr", "params": { "period": 14 } }
+    "ao": {
+      "type": "ao",
+      "params": {
+        "fastPeriod": "$fastPeriod",
+        "slowPeriod": "$slowPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "ao", "op": "crossover", "right": 0 }
+        {
+          "left": "ao",
+          "op": "crossover",
+          "right": 0
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "ao", "op": "crossunder", "right": 0 }
+        {
+          "left": "ao",
+          "op": "crossunder",
+          "right": 0
+        }
       ]
     }
   },
-
   "exit": {
-    "stopLoss": { "type": "atr", "multiplier": "$atrMultiplier", "indicator": "atr" },
-    "takeProfit": { "type": "riskReward", "multiplier": 2 },
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2
+    },
     "conditions": {
-      "long": { "operator": "OR", "conditions": [{ "left": "ao", "op": "crossunder", "right": 0 }] },
-      "short": { "operator": "OR", "conditions": [{ "left": "ao", "op": "crossover", "right": 0 }] }
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "ao",
+            "op": "crossunder",
+            "right": 0
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "ao",
+            "op": "crossover",
+            "right": 0
+          }
+        ]
+      }
     }
   },
-
   "confidence": {
     "base": 65,
     "bonuses": [
-      { "condition": { "left": "ao", "op": ">", "right": "ao.prev" }, "bonus": 5, "description": "AO increasing" },
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirms" }
+      {
+        "condition": {
+          "left": "ao",
+          "op": ">",
+          "right": "ao.prev"
+        },
+        "bonus": 5,
+        "description": "AO increasing"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirms"
+      }
     ],
     "max": 85
   },
-
-  "filters": { "minConfidence": 65, "minRiskReward": 1.5 }
+  "filters": {
+    "minConfidence": 65,
+    "minRiskReward": 1.5
+  }
 }

@@ -4,9 +4,13 @@
   "version": "1.0.0",
   "description": "Detects sweeps of liquidity (stop hunts) where price briefly breaks support/resistance to trigger stops, then reverses sharply. Smart money concept strategy.",
   "author": "MarketMind",
-  "tags": ["smart-money", "liquidity", "stop-hunt", "reversal"],
-
-  "status": "experimental",
+  "tags": [
+    "smart-money",
+    "liquidity",
+    "stop-hunt",
+    "reversal"
+  ],
+  "status": "active",
   "optimizedParams": {
     "maxPositionSize": 40,
     "useAlgorithmicLevels": true,
@@ -16,52 +20,125 @@
   },
   "recommendedTimeframes": {
     "primary": "1h",
-    "secondary": ["4h"],
-    "avoid": ["1m", "5m"],
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
     "notes": "Best on 1h-4h for clear liquidity sweeps"
   },
-
   "parameters": {
-    "sweepLookback": { "default": 20, "min": 10, "max": 50, "step": 5, "description": "Lookback for support/resistance levels" },
-    "minSweepDistance": { "default": 0.2, "min": 0.1, "max": 0.5, "step": 0.1, "description": "Min sweep distance % below/above level" },
-    "maxSweepDistance": { "default": 1.0, "min": 0.5, "max": 2.0, "step": 0.25, "description": "Max sweep distance %" },
-    "reversalThreshold": { "default": 0.3, "min": 0.2, "max": 0.5, "step": 0.1, "description": "Min reversal size % to confirm" },
-    "atrPeriod": { "default": 14, "min": 7, "max": 21, "step": 1, "description": "ATR period for stop/target" },
-    "targetMultiplier": { "default": 2.0, "min": 1.5, "max": 3.0, "step": 0.5, "description": "Risk:Reward target" }
+    "sweepLookback": {
+      "default": 20,
+      "min": 10,
+      "max": 50,
+      "step": 5,
+      "description": "Lookback for support/resistance levels"
+    },
+    "minSweepDistance": {
+      "default": 0.2,
+      "min": 0.1,
+      "max": 0.5,
+      "step": 0.1,
+      "description": "Min sweep distance % below/above level"
+    },
+    "maxSweepDistance": {
+      "default": 1.0,
+      "min": 0.5,
+      "max": 2.0,
+      "step": 0.25,
+      "description": "Max sweep distance %"
+    },
+    "reversalThreshold": {
+      "default": 0.3,
+      "min": 0.2,
+      "max": 0.5,
+      "step": 0.1,
+      "description": "Min reversal size % to confirm"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 7,
+      "max": 21,
+      "step": 1,
+      "description": "ATR period for stop/target"
+    },
+    "targetMultiplier": {
+      "default": 2.0,
+      "min": 1.5,
+      "max": 3.0,
+      "step": 0.5,
+      "description": "Risk:Reward target"
+    }
   },
-
   "indicators": {
     "atr": {
       "type": "atr",
-      "params": { "period": "$atrPeriod" }
+      "params": {
+        "period": "$atrPeriod"
+      }
     },
     "ema50": {
       "type": "ema",
-      "params": { "period": 50 }
+      "params": {
+        "period": 50
+      }
     }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "low.prev", "op": "<", "right": "low.prev20" },
-        { "left": "close", "op": ">", "right": "close.prev" },
-        { "left": "close", "op": ">", "right": "low.prev20" },
-        { "left": "volume", "op": ">", "right": "volume.sma20" }
+        {
+          "left": "low.prev",
+          "op": "<",
+          "right": "low.prev20"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "close.prev"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "low.prev20"
+        },
+        {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "high.prev", "op": ">", "right": "high.prev20" },
-        { "left": "close", "op": "<", "right": "close.prev" },
-        { "left": "close", "op": "<", "right": "high.prev20" },
-        { "left": "volume", "op": ">", "right": "volume.sma20" }
+        {
+          "left": "high.prev",
+          "op": ">",
+          "right": "high.prev20"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "close.prev"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "high.prev20"
+        },
+        {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        }
       ]
     }
   },
-
   "exit": {
     "stopLoss": {
       "type": "atr",
@@ -73,15 +150,21 @@
       "multiplier": "$targetMultiplier"
     }
   },
-
   "confidence": {
     "base": 70,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume spike on sweep" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume spike on sweep"
+      }
     ],
     "max": 95
   },
-
   "filters": {
     "minConfidence": 65,
     "minRiskReward": 1.5

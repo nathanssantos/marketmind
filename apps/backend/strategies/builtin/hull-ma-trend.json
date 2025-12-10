@@ -4,9 +4,13 @@
   "version": "1.0.0",
   "description": "Hull Moving Average trend following. HMA é muito responsiva com menos lag que EMA. Entry quando HMA muda de direção.",
   "author": "MarketMind",
-  "tags": ["trend-following", "hull-ma", "momentum", "low-lag"],
+  "tags": [
+    "trend-following",
+    "hull-ma",
+    "momentum",
+    "low-lag"
+  ],
   "source": "Alan Hull - HMA Creator",
-
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 80,
@@ -22,55 +26,135 @@
   },
   "recommendedTimeframes": {
     "primary": "4h",
-    "secondary": ["1h", "1d"],
-    "avoid": ["1m", "5m"],
+    "secondary": [
+      "1h",
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
     "notes": "HMA works well on 4h for crypto"
   },
-
   "parameters": {
-    "hmaPeriod": { "default": 20, "min": 14, "max": 30, "step": 2, "description": "Período do HMA" },
-    "atrMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "ATR para stop" }
+    "hmaPeriod": {
+      "default": 20,
+      "min": 14,
+      "max": 30,
+      "step": 2,
+      "description": "Período do HMA"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
   },
-
   "indicators": {
-    "hma": { "type": "hma", "params": { "period": "$hmaPeriod" } },
-    "atr": { "type": "atr", "params": { "period": 14 } }
+    "hma": {
+      "type": "hma",
+      "params": {
+        "period": "$hmaPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "hma", "op": ">", "right": "hma.prev" },
-        { "left": "hma.prev", "op": "<=", "right": "hma.prev2" }
+        {
+          "left": "hma",
+          "op": ">",
+          "right": "hma.prev"
+        },
+        {
+          "left": "hma.prev",
+          "op": "<=",
+          "right": "hma.prev2"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "hma", "op": "<", "right": "hma.prev" },
-        { "left": "hma.prev", "op": ">=", "right": "hma.prev2" }
+        {
+          "left": "hma",
+          "op": "<",
+          "right": "hma.prev"
+        },
+        {
+          "left": "hma.prev",
+          "op": ">=",
+          "right": "hma.prev2"
+        }
       ]
     }
   },
-
   "exit": {
-    "stopLoss": { "type": "atr", "multiplier": "$atrMultiplier", "indicator": "atr" },
-    "takeProfit": { "type": "riskReward", "multiplier": 2.5 },
-    "trailingStop": { "enabled": true, "type": "atr", "initialMultiplier": 2, "trailMultiplier": 2.5, "breakEvenAfterR": 1.5 },
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2.5
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 2.5,
+      "breakEvenAfterR": 1.5
+    },
     "conditions": {
-      "long": { "operator": "OR", "conditions": [{ "left": "hma", "op": "<", "right": "hma.prev" }] },
-      "short": { "operator": "OR", "conditions": [{ "left": "hma", "op": ">", "right": "hma.prev" }] }
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "hma",
+            "op": "<",
+            "right": "hma.prev"
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "hma",
+            "op": ">",
+            "right": "hma.prev"
+          }
+        ]
+      }
     }
   },
-
   "confidence": {
     "base": 65,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirms" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirms"
+      }
     ],
     "max": 85
   },
-
-  "filters": { "minConfidence": 65, "minRiskReward": 2 }
+  "filters": {
+    "minConfidence": 65,
+    "minRiskReward": 2
+  }
 }

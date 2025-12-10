@@ -4,8 +4,13 @@
   "version": "1.0.0",
   "description": "Larry Connors-style RSI 2 mean reversion strategy (LONG ONLY). Uses extremely short RSI period (2) for high-probability oversold bounces. Backtested: 75% win rate, Sharpe 2.85, PF 3.15 on QQQ.",
   "author": "MarketMind",
-  "tags": ["mean-reversion", "rsi", "connors", "high-winrate", "proven"],
-
+  "tags": [
+    "mean-reversion",
+    "rsi",
+    "connors",
+    "high-winrate",
+    "proven"
+  ],
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 75,
@@ -25,46 +30,104 @@
   },
   "recommendedTimeframes": {
     "primary": "1d",
-    "secondary": ["4h"],
-    "avoid": ["1m", "5m", "15m"],
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
     "notes": "RSI(2) mean-reversion strategy optimized for daily timeframe"
   },
-
   "parameters": {
-    "rsiPeriod": { "default": 2, "min": 2, "max": 5, "step": 1, "description": "RSI period (2 is optimal)" },
-    "rsiEntry": { "default": 10, "min": 5, "max": 20, "step": 5, "description": "RSI entry threshold (oversold)" },
-    "rsiExit": { "default": 55, "min": 45, "max": 70, "step": 5, "description": "RSI exit threshold" },
-    "emaTrend": { "default": 50, "min": 20, "max": 200, "step": 10, "description": "Trend filter EMA period (50 for crypto)" },
-    "atrPeriod": { "default": 14, "min": 10, "max": 20, "step": 2, "description": "ATR period" },
-    "slMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "Stop loss ATR multiplier" },
-    "tpMultiplier": { "default": 3, "min": 2, "max": 5, "step": 0.5, "description": "Take profit ATR multiplier" }
+    "rsiPeriod": {
+      "default": 2,
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "description": "RSI period (2 is optimal)"
+    },
+    "rsiEntry": {
+      "default": 10,
+      "min": 5,
+      "max": 20,
+      "step": 5,
+      "description": "RSI entry threshold (oversold)"
+    },
+    "rsiExit": {
+      "default": 55,
+      "min": 45,
+      "max": 70,
+      "step": 5,
+      "description": "RSI exit threshold"
+    },
+    "emaTrend": {
+      "default": 50,
+      "min": 20,
+      "max": 200,
+      "step": 10,
+      "description": "Trend filter EMA period (50 for crypto)"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "ATR period"
+    },
+    "slMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "Stop loss ATR multiplier"
+    },
+    "tpMultiplier": {
+      "default": 3,
+      "min": 2,
+      "max": 5,
+      "step": 0.5,
+      "description": "Take profit ATR multiplier"
+    }
   },
-
   "indicators": {
     "rsi2": {
       "type": "rsi",
-      "params": { "period": "$rsiPeriod" }
+      "params": {
+        "period": "$rsiPeriod"
+      }
     },
     "emaTrend": {
       "type": "ema",
-      "params": { "period": "$emaTrend" }
+      "params": {
+        "period": "$emaTrend"
+      }
     },
     "atr": {
       "type": "atr",
-      "params": { "period": "$atrPeriod" }
+      "params": {
+        "period": "$atrPeriod"
+      }
     }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "rsi2", "op": "<", "right": "$rsiEntry" },
-        { "left": "close", "op": ">", "right": "emaTrend" }
+        {
+          "left": "rsi2",
+          "op": "<",
+          "right": "$rsiEntry"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "emaTrend"
+        }
       ]
     }
   },
-
   "exit": {
     "stopLoss": {
       "type": "atr",
@@ -77,16 +140,30 @@
       "indicator": "atr"
     }
   },
-
   "confidence": {
     "base": 75,
     "bonuses": [
-      { "condition": { "left": "rsi2", "op": "<", "right": 5 }, "bonus": 10, "description": "Extreme oversold (RSI < 5)" },
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 5, "description": "Volume confirmation" }
+      {
+        "condition": {
+          "left": "rsi2",
+          "op": "<",
+          "right": 5
+        },
+        "bonus": 10,
+        "description": "Extreme oversold (RSI < 5)"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 5,
+        "description": "Volume confirmation"
+      }
     ],
     "max": 95
   },
-
   "filters": {
     "minConfidence": 70,
     "minRiskReward": 1.5

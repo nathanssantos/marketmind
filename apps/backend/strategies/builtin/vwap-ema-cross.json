@@ -4,9 +4,13 @@
   "version": "1.0.0",
   "description": "Combines VWAP (institutional fair value) with EMA crossover. Entry when EMA crosses above/below VWAP and price pulls back to VWAP with volume confirmation.",
   "author": "MarketMind",
-  "tags": ["vwap", "ema", "institutional", "pullback"],
-
-  "status": "experimental",
+  "tags": [
+    "vwap",
+    "ema",
+    "institutional",
+    "pullback"
+  ],
+  "status": "active",
   "optimizedParams": {
     "maxPositionSize": 50,
     "useAlgorithmicLevels": true,
@@ -16,22 +20,51 @@
   },
   "recommendedTimeframes": {
     "primary": "1h",
-    "secondary": ["4h"],
-    "avoid": ["1d", "1w"],
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1d",
+      "1w"
+    ],
     "notes": "Best on intraday timeframes where VWAP is most relevant"
   },
-
   "parameters": {
-    "emaPeriod": { "default": 20, "min": 10, "max": 50, "step": 5, "description": "EMA period" },
-    "pullbackTolerance": { "default": 0.5, "min": 0.2, "max": 1.0, "step": 0.1, "description": "Pullback tolerance % to VWAP" },
-    "targetMultiplier": { "default": 2.0, "min": 1.5, "max": 3.0, "step": 0.5, "description": "Risk:Reward target" },
-    "atrPeriod": { "default": 14, "min": 7, "max": 21, "step": 1, "description": "ATR for stop calculation" }
+    "emaPeriod": {
+      "default": 20,
+      "min": 10,
+      "max": 50,
+      "step": 5,
+      "description": "EMA period"
+    },
+    "pullbackTolerance": {
+      "default": 0.5,
+      "min": 0.2,
+      "max": 1.0,
+      "step": 0.1,
+      "description": "Pullback tolerance % to VWAP"
+    },
+    "targetMultiplier": {
+      "default": 2.0,
+      "min": 1.5,
+      "max": 3.0,
+      "step": 0.5,
+      "description": "Risk:Reward target"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 7,
+      "max": 21,
+      "step": 1,
+      "description": "ATR for stop calculation"
+    }
   },
-
   "indicators": {
     "ema": {
       "type": "ema",
-      "params": { "period": "$emaPeriod" }
+      "params": {
+        "period": "$emaPeriod"
+      }
     },
     "vwap": {
       "type": "vwap",
@@ -39,33 +72,59 @@
     },
     "atr": {
       "type": "atr",
-      "params": { "period": "$atrPeriod" }
+      "params": {
+        "period": "$atrPeriod"
+      }
     },
     "ema200": {
       "type": "ema",
-      "params": { "period": 200 }
+      "params": {
+        "period": 200
+      }
     }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "ema", "op": ">", "right": "vwap" },
-        { "left": "low", "op": "<=", "right": "vwap" },
-        { "left": "close", "op": ">", "right": "vwap" }
+        {
+          "left": "ema",
+          "op": ">",
+          "right": "vwap"
+        },
+        {
+          "left": "low",
+          "op": "<=",
+          "right": "vwap"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "vwap"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "ema", "op": "<", "right": "vwap" },
-        { "left": "high", "op": ">=", "right": "vwap" },
-        { "left": "close", "op": "<", "right": "vwap" }
+        {
+          "left": "ema",
+          "op": "<",
+          "right": "vwap"
+        },
+        {
+          "left": "high",
+          "op": ">=",
+          "right": "vwap"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "vwap"
+        }
       ]
     }
   },
-
   "exit": {
     "stopLoss": {
       "type": "atr",
@@ -77,17 +136,39 @@
       "multiplier": "$targetMultiplier"
     }
   },
-
   "confidence": {
     "base": 70,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirmation on pullback" },
-      { "condition": { "left": "close", "op": ">", "right": "ema200" }, "bonus": 5, "description": "Above major trend (LONG)" },
-      { "condition": { "left": "close", "op": "<", "right": "ema200" }, "bonus": 5, "description": "Below major trend (SHORT)" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirmation on pullback"
+      },
+      {
+        "condition": {
+          "left": "close",
+          "op": ">",
+          "right": "ema200"
+        },
+        "bonus": 5,
+        "description": "Above major trend (LONG)"
+      },
+      {
+        "condition": {
+          "left": "close",
+          "op": "<",
+          "right": "ema200"
+        },
+        "bonus": 5,
+        "description": "Below major trend (SHORT)"
+      }
     ],
     "max": 95
   },
-
   "filters": {
     "minConfidence": 70,
     "minRiskReward": 2.0,

@@ -4,9 +4,13 @@
   "version": "1.0.0",
   "description": "Classic 123 reversal pattern: Point 1 (swing low/high), Point 2 (reaction), Point 3 (higher low/lower high). Entry on breakout above/below Point 2 with volume confirmation.",
   "author": "MarketMind",
-  "tags": ["reversal", "price-action", "pivot-points", "classic"],
-
-  "status": "experimental",
+  "tags": [
+    "reversal",
+    "price-action",
+    "pivot-points",
+    "classic"
+  ],
+  "status": "active",
   "optimizedParams": {
     "maxPositionSize": 50,
     "useAlgorithmicLevels": true,
@@ -16,46 +20,92 @@
   },
   "recommendedTimeframes": {
     "primary": "1d",
-    "secondary": ["4h", "1h"],
-    "avoid": ["1m", "5m"],
+    "secondary": [
+      "4h",
+      "1h"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
     "notes": "Works best on daily and 4h timeframes for swing trading"
   },
-
   "parameters": {
-    "pivotLookback": { "default": 5, "min": 3, "max": 10, "step": 1, "description": "Lookback period for pivot detection" },
-    "breakoutThreshold": { "default": 0.2, "min": 0.1, "max": 0.5, "step": 0.1, "description": "Minimum breakout % above Point 2" },
-    "targetMultiplier": { "default": 2.0, "min": 1.5, "max": 3.0, "step": 0.5, "description": "Risk:Reward target multiplier" },
-    "atrPeriod": { "default": 14, "min": 7, "max": 21, "step": 1, "description": "ATR period for volatility reference" }
+    "pivotLookback": {
+      "default": 5,
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "description": "Lookback period for pivot detection"
+    },
+    "breakoutThreshold": {
+      "default": 0.2,
+      "min": 0.1,
+      "max": 0.5,
+      "step": 0.1,
+      "description": "Minimum breakout % above Point 2"
+    },
+    "targetMultiplier": {
+      "default": 2.0,
+      "min": 1.5,
+      "max": 3.0,
+      "step": 0.5,
+      "description": "Risk:Reward target multiplier"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 7,
+      "max": 21,
+      "step": 1,
+      "description": "ATR period for volatility reference"
+    }
   },
-
   "indicators": {
     "atr": {
       "type": "atr",
-      "params": { "period": "$atrPeriod" }
+      "params": {
+        "period": "$atrPeriod"
+      }
     },
     "ema200": {
       "type": "ema",
-      "params": { "period": 200 }
+      "params": {
+        "period": 200
+      }
     }
   },
-
   "entry": {
     "long": {
       "operator": "AND",
       "conditions": [
-        { "left": "close", "op": ">", "right": "high.prev" },
-        { "left": "low", "op": ">", "right": "low.prev2" }
+        {
+          "left": "close",
+          "op": ">",
+          "right": "high.prev"
+        },
+        {
+          "left": "low",
+          "op": ">",
+          "right": "low.prev2"
+        }
       ]
     },
     "short": {
       "operator": "AND",
       "conditions": [
-        { "left": "close", "op": "<", "right": "low.prev" },
-        { "left": "high", "op": "<", "right": "high.prev2" }
+        {
+          "left": "close",
+          "op": "<",
+          "right": "low.prev"
+        },
+        {
+          "left": "high",
+          "op": "<",
+          "right": "high.prev2"
+        }
       ]
     }
   },
-
   "exit": {
     "stopLoss": {
       "type": "atr",
@@ -67,17 +117,39 @@
       "multiplier": "$targetMultiplier"
     }
   },
-
   "confidence": {
     "base": 65,
     "bonuses": [
-      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 15, "description": "Volume confirmation on breakout" },
-      { "condition": { "left": "close", "op": ">", "right": "ema200" }, "bonus": 10, "description": "Above major trend (LONG)" },
-      { "condition": { "left": "close", "op": "<", "right": "ema200" }, "bonus": 10, "description": "Below major trend (SHORT)" }
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 15,
+        "description": "Volume confirmation on breakout"
+      },
+      {
+        "condition": {
+          "left": "close",
+          "op": ">",
+          "right": "ema200"
+        },
+        "bonus": 10,
+        "description": "Above major trend (LONG)"
+      },
+      {
+        "condition": {
+          "left": "close",
+          "op": "<",
+          "right": "ema200"
+        },
+        "bonus": 10,
+        "description": "Below major trend (SHORT)"
+      }
     ],
     "max": 95
   },
-
   "filters": {
     "minConfidence": 70,
     "minRiskReward": 2.0
