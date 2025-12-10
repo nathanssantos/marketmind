@@ -312,7 +312,7 @@ export class BacktestEngine {
       const MAX_TOTAL_EXPOSURE = effectiveConfig.maxTotalExposure ?? 0.5;
       const openPositions: Array<{ exitTime: number; positionValue: number }> = [];
 
-      let skippedOverlap = 0;
+      let _skippedOverlap = 0;
       let skippedKlineNotFound = 0;
       let skippedTrend = 0;
       let skippedMinNotional = 0;
@@ -825,8 +825,8 @@ export class BacktestEngine {
         for (const [, indicator] of Object.entries(strategy.indicators)) {
           const params = indicator.params || {};
 
-          const period = params.period || params.emaPeriod || params.smaPeriod ||
-                        params.lookback || params.kPeriod || params.slowPeriod || 0;
+          const period = params['period'] || params['emaPeriod'] || params['smaPeriod'] ||
+                        params['lookback'] || params['kPeriod'] || params['slowPeriod'] || 0;
 
           const periodValue = typeof period === 'string' && period.startsWith('$')
             ? strategy.parameters?.[period.slice(1)]?.default || 0

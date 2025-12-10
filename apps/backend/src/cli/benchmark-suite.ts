@@ -85,7 +85,7 @@ async function runBenchmark(
   }
 }
 
-function formatComparison(actual: number, expected: number, tolerance: number): string {
+function _formatComparison(actual: number, expected: number, tolerance: number): string {
   const diff = actual - expected;
   const within = Math.abs(diff) <= tolerance;
   const sign = diff >= 0 ? '+' : '';

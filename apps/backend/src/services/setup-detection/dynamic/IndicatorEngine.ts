@@ -87,6 +87,11 @@ interface CryptoData {
   btcDominance?: number | null;
 }
 
+const toNumber = (value: string | number | undefined, defaultValue: number): number => {
+  if (value === undefined) return defaultValue;
+  return typeof value === 'string' ? parseFloat(value) : value;
+};
+
 /**
  * Engine for computing indicators defined in strategy JSON
  */
@@ -226,12 +231,12 @@ export class IndicatorEngine {
         }
 
         const result = calculateFundingRate(cryptoData.fundingRate, {
-          extremeThreshold: resolvedParams['extremeThreshold'] ?? 0.1,
-          averagePeriod: resolvedParams['averagePeriod'] ?? 7,
+          extremeThreshold: toNumber(resolvedParams['extremeThreshold'], 0.1),
+          averagePeriod: toNumber(resolvedParams['averagePeriod'], 7),
         });
 
         const signalResult = detectFundingRateSignal(cryptoData.fundingRate, {
-          extremeThreshold: resolvedParams['extremeThreshold'] ?? 0.1,
+          extremeThreshold: toNumber(resolvedParams['extremeThreshold'], 0.1),
         });
 
         const values: (number | null)[] = new Array(klines.length).fill(null);
@@ -265,9 +270,9 @@ export class IndicatorEngine {
         }
 
         const result = calculateOpenInterest(cryptoData.openInterest, priceChanges, {
-          lookback: resolvedParams['lookback'] ?? 10,
-          changeThreshold: resolvedParams['changeThreshold'] ?? 5,
-          trendPeriod: resolvedParams['trendPeriod'] ?? 5,
+          lookback: toNumber(resolvedParams['lookback'], 10),
+          changeThreshold: toNumber(resolvedParams['changeThreshold'], 5),
+          trendPeriod: toNumber(resolvedParams['trendPeriod'], 5),
         });
 
         const values: (number | null)[] = new Array(klines.length).fill(null);
@@ -291,9 +296,9 @@ export class IndicatorEngine {
         }
 
         const result = calculateLiquidations(cryptoData.liquidations, {
-          cascadeThreshold: resolvedParams['cascadeThreshold'] ?? 1000000,
-          lookbackPeriods: resolvedParams['lookbackPeriods'] ?? 6,
-          imbalanceThreshold: resolvedParams['imbalanceThreshold'] ?? 0.7,
+          cascadeThreshold: toNumber(resolvedParams['cascadeThreshold'], 1000000),
+          lookbackPeriods: toNumber(resolvedParams['lookbackPeriods'], 6),
+          imbalanceThreshold: toNumber(resolvedParams['imbalanceThreshold'], 0.7),
         });
 
         const values: (number | null)[] = new Array(klines.length).fill(null);
@@ -361,17 +366,17 @@ export class IndicatorEngine {
       case 'sma':
         return {
           type: 'sma',
-          values: calculateSMA(klines, resolvedParams['period'] ?? 20),
+          values: calculateSMA(klines, toNumber(resolvedParams['period'], 20)),
         };
 
       case 'ema':
         return {
           type: 'ema',
-          values: calculateEMA(klines, resolvedParams['period'] ?? 20),
+          values: calculateEMA(klines, toNumber(resolvedParams['period'], 20)),
         };
 
       case 'rsi':
-        const rsiResult = calculateRSI(klines, resolvedParams['period'] ?? 14);
+        const rsiResult = calculateRSI(klines, toNumber(resolvedParams['period'], 14));
         return {
           type: 'rsi',
           values: rsiResult.values,
@@ -380,9 +385,9 @@ export class IndicatorEngine {
       case 'macd':
         const macdResult = calculateMACD(
           klines,
-          resolvedParams['fastPeriod'] ?? 12,
-          resolvedParams['slowPeriod'] ?? 26,
-          resolvedParams['signalPeriod'] ?? 9
+          toNumber(resolvedParams['fastPeriod'], 12),
+          toNumber(resolvedParams['slowPeriod'], 26),
+          toNumber(resolvedParams['signalPeriod'], 9)
         );
         return {
           type: 'macd',
@@ -396,8 +401,8 @@ export class IndicatorEngine {
       case 'bollingerBands':
         const bbResult = calculateBollingerBandsArray(
           klines,
-          resolvedParams['period'] ?? 20,
-          resolvedParams['stdDev'] ?? 2
+          toNumber(resolvedParams['period'], 20),
+          toNumber(resolvedParams['stdDev'], 2)
         );
         return {
           type: 'bollingerBands',
@@ -409,7 +414,7 @@ export class IndicatorEngine {
         };
 
       case 'atr':
-        const atrResult = calculateATR(klines, resolvedParams['period'] ?? 14);
+        const atrResult = calculateATR(klines, toNumber(resolvedParams['period'], 14));
         return {
           type: 'atr',
           values: atrResult.map((v) => (isNaN(v) ? null : v)),
@@ -418,8 +423,8 @@ export class IndicatorEngine {
       case 'stochastic':
         const stochResult = calculateStochastic(
           klines,
-          resolvedParams['kPeriod'] ?? 14,
-          resolvedParams['dPeriod'] ?? 3
+          toNumber(resolvedParams['kPeriod'], 14),
+          toNumber(resolvedParams['dPeriod'], 3)
         );
         return {
           type: 'stochastic',
@@ -432,10 +437,10 @@ export class IndicatorEngine {
       case 'stochRsi':
         const stochRsiResult = calculateStochRSI(
           klines,
-          resolvedParams['rsiPeriod'] ?? 14,
-          resolvedParams['stochPeriod'] ?? 14,
-          resolvedParams['kSmooth'] ?? 3,
-          resolvedParams['dSmooth'] ?? 3
+          toNumber(resolvedParams['rsiPeriod'], 14),
+          toNumber(resolvedParams['stochPeriod'], 14),
+          toNumber(resolvedParams['kSmooth'], 3),
+          toNumber(resolvedParams['dSmooth'], 3)
         );
         return {
           type: 'stochRsi',
@@ -448,10 +453,10 @@ export class IndicatorEngine {
       case 'ichimoku':
         const ichimokuResult = calculateIchimoku(
           klines,
-          resolvedParams['tenkanPeriod'] ?? 9,
-          resolvedParams['kijunPeriod'] ?? 26,
-          resolvedParams['senkouBPeriod'] ?? 52,
-          resolvedParams['displacement'] ?? 26
+          toNumber(resolvedParams['tenkanPeriod'], 9),
+          toNumber(resolvedParams['kijunPeriod'], 26),
+          toNumber(resolvedParams['senkouBPeriod'], 52),
+          toNumber(resolvedParams['displacement'], 26)
         );
         return {
           type: 'ichimoku',
@@ -483,7 +488,7 @@ export class IndicatorEngine {
         };
 
       case 'pivotPoints':
-        const pivots = findPivotPoints(klines, resolvedParams['lookback'] ?? 5);
+        const pivots = findPivotPoints(klines, toNumber(resolvedParams['lookback'], 5));
         const pivotValues: (number | null)[] = new Array(klines.length).fill(null);
         for (const pivot of pivots) {
           if (pivot.index >= 0 && pivot.index < pivotValues.length) {
@@ -496,7 +501,7 @@ export class IndicatorEngine {
         };
 
       case 'adx':
-        const adxResult = calculateADX(klines, resolvedParams['period'] ?? 14);
+        const adxResult = calculateADX(klines, toNumber(resolvedParams['period'], 14));
         return {
           type: 'adx',
           values: {
@@ -517,28 +522,28 @@ export class IndicatorEngine {
         };
 
       case 'williamsR':
-        const williamsResult = calculateWilliamsR(klines, resolvedParams['period'] ?? 14);
+        const williamsResult = calculateWilliamsR(klines, toNumber(resolvedParams['period'], 14));
         return {
           type: 'williamsR',
           values: williamsResult,
         };
 
       case 'cci':
-        const cciResult = calculateCCI(klines, resolvedParams['period'] ?? 20);
+        const cciResult = calculateCCI(klines, toNumber(resolvedParams['period'], 20));
         return {
           type: 'cci',
           values: cciResult,
         };
 
       case 'mfi':
-        const mfiResult = calculateMFI(klines, resolvedParams['period'] ?? 14);
+        const mfiResult = calculateMFI(klines, toNumber(resolvedParams['period'], 14));
         return {
           type: 'mfi',
           values: mfiResult,
         };
 
       case 'donchian':
-        const donchianResult = calculateDonchian(klines, resolvedParams['period'] ?? 20);
+        const donchianResult = calculateDonchian(klines, toNumber(resolvedParams['period'], 20));
         return {
           type: 'donchian',
           values: {
@@ -551,9 +556,9 @@ export class IndicatorEngine {
       case 'keltner':
         const keltnerResult = calculateKeltner(
           klines,
-          resolvedParams['emaPeriod'] ?? 20,
-          resolvedParams['atrPeriod'] ?? 10,
-          resolvedParams['multiplier'] ?? 2
+          toNumber(resolvedParams['emaPeriod'], 20),
+          toNumber(resolvedParams['atrPeriod'], 10),
+          toNumber(resolvedParams['multiplier'], 2)
         );
         return {
           type: 'keltner',
@@ -567,8 +572,8 @@ export class IndicatorEngine {
       case 'supertrend':
         const supertrendResult = calculateSupertrend(
           klines,
-          resolvedParams['period'] ?? 10,
-          resolvedParams['multiplier'] ?? 3
+          toNumber(resolvedParams['period'], 10),
+          toNumber(resolvedParams['multiplier'], 3)
         );
         return {
           type: 'supertrend',
@@ -588,8 +593,8 @@ export class IndicatorEngine {
       case 'percentB':
         const percentBResult = calculatePercentBSeries(
           klines,
-          resolvedParams['period'] ?? 20,
-          resolvedParams['stdDev'] ?? 2
+          toNumber(resolvedParams['period'], 20),
+          toNumber(resolvedParams['stdDev'], 2)
         );
         return {
           type: 'percentB',
@@ -599,8 +604,8 @@ export class IndicatorEngine {
       case 'cumulativeRsi':
         const cumulativeRsiResult = calculateCumulativeRSI(
           klines,
-          resolvedParams['rsiPeriod'] ?? 2,
-          resolvedParams['sumPeriod'] ?? 2
+          toNumber(resolvedParams['rsiPeriod'], 2),
+          toNumber(resolvedParams['sumPeriod'], 2)
         );
         return {
           type: 'cumulativeRsi',
@@ -611,7 +616,7 @@ export class IndicatorEngine {
         };
 
       case 'nDayHighLow':
-        const nDayResult = calculateNDayHighLow(klines, resolvedParams['period'] ?? 7);
+        const nDayResult = calculateNDayHighLow(klines, toNumber(resolvedParams['period'], 7));
         return {
           type: 'nDayHighLow',
           values: {
@@ -623,49 +628,49 @@ export class IndicatorEngine {
         };
 
       case 'nr7':
-        const nr7Result = calculateNR7(klines, resolvedParams['lookback'] ?? 7);
+        const nr7Result = calculateNR7(klines, toNumber(resolvedParams['lookback'], 7));
         return {
           type: 'nr7',
           values: nr7Result.isNR7.map((v) => (v ? 1 : 0)),
         };
 
       case 'roc': {
-        const rocResult = calculateROC(klines, resolvedParams['period'] ?? 12);
+        const rocResult = calculateROC(klines, toNumber(resolvedParams['period'], 12));
         return { type: 'roc', values: rocResult.values };
       }
 
       case 'dema': {
-        const demaResult = calculateDEMA(klines, resolvedParams['period'] ?? 20);
+        const demaResult = calculateDEMA(klines, toNumber(resolvedParams['period'], 20));
         return { type: 'dema', values: demaResult.values };
       }
 
       case 'tema': {
-        const temaResult = calculateTEMA(klines, resolvedParams['period'] ?? 20);
+        const temaResult = calculateTEMA(klines, toNumber(resolvedParams['period'], 20));
         return { type: 'tema', values: temaResult.values };
       }
 
       case 'wma': {
-        const wmaResult = calculateWMA(klines, resolvedParams['period'] ?? 20);
+        const wmaResult = calculateWMA(klines, toNumber(resolvedParams['period'], 20));
         return { type: 'wma', values: wmaResult.values };
       }
 
       case 'hma': {
-        const hmaResult = calculateHMA(klines, resolvedParams['period'] ?? 20);
+        const hmaResult = calculateHMA(klines, toNumber(resolvedParams['period'], 20));
         return { type: 'hma', values: hmaResult.values };
       }
 
       case 'cmo': {
-        const cmoResult = calculateCMO(klines, resolvedParams['period'] ?? 14);
+        const cmoResult = calculateCMO(klines, toNumber(resolvedParams['period'], 14));
         return { type: 'cmo', values: cmoResult.values };
       }
 
       case 'ao': {
-        const aoResult = calculateAO(klines, resolvedParams['fastPeriod'] ?? 5, resolvedParams['slowPeriod'] ?? 34);
+        const aoResult = calculateAO(klines, toNumber(resolvedParams['fastPeriod'], 5), toNumber(resolvedParams['slowPeriod'], 34));
         return { type: 'ao', values: aoResult.values };
       }
 
       case 'ppo': {
-        const ppoResult = calculatePPO(klines, resolvedParams['fastPeriod'] ?? 12, resolvedParams['slowPeriod'] ?? 26, resolvedParams['signalPeriod'] ?? 9);
+        const ppoResult = calculatePPO(klines, toNumber(resolvedParams['fastPeriod'], 12), toNumber(resolvedParams['slowPeriod'], 26), toNumber(resolvedParams['signalPeriod'], 9));
         return {
           type: 'ppo',
           values: {
@@ -677,7 +682,7 @@ export class IndicatorEngine {
       }
 
       case 'tsi': {
-        const tsiResult = calculateTSI(klines, resolvedParams['longPeriod'] ?? 25, resolvedParams['shortPeriod'] ?? 13, resolvedParams['signalPeriod'] ?? 13);
+        const tsiResult = calculateTSI(klines, toNumber(resolvedParams['longPeriod'], 25), toNumber(resolvedParams['shortPeriod'], 13), toNumber(resolvedParams['signalPeriod'], 13));
         return {
           type: 'tsi',
           values: {
@@ -688,12 +693,12 @@ export class IndicatorEngine {
       }
 
       case 'ultimateOscillator': {
-        const uoResult = calculateUltimateOscillator(klines, resolvedParams['period1'] ?? 7, resolvedParams['period2'] ?? 14, resolvedParams['period3'] ?? 28);
+        const uoResult = calculateUltimateOscillator(klines, toNumber(resolvedParams['period1'], 7), toNumber(resolvedParams['period2'], 14), toNumber(resolvedParams['period3'], 28));
         return { type: 'ultimateOscillator', values: uoResult.values };
       }
 
       case 'aroon': {
-        const aroonResult = calculateAroon(klines, resolvedParams['period'] ?? 25);
+        const aroonResult = calculateAroon(klines, toNumber(resolvedParams['period'], 25));
         return {
           type: 'aroon',
           values: {
@@ -705,7 +710,7 @@ export class IndicatorEngine {
       }
 
       case 'dmi': {
-        const dmiResult = calculateDMI(klines, resolvedParams['period'] ?? 14);
+        const dmiResult = calculateDMI(klines, toNumber(resolvedParams['period'], 14));
         return {
           type: 'dmi',
           values: {
@@ -717,7 +722,7 @@ export class IndicatorEngine {
       }
 
       case 'vortex': {
-        const vortexResult = calculateVortex(klines, resolvedParams['period'] ?? 14);
+        const vortexResult = calculateVortex(klines, toNumber(resolvedParams['period'], 14));
         return {
           type: 'vortex',
           values: {
@@ -728,7 +733,7 @@ export class IndicatorEngine {
       }
 
       case 'parabolicSar': {
-        const psarResult = calculateParabolicSAR(klines, resolvedParams['step'] ?? 0.02, resolvedParams['max'] ?? 0.2);
+        const psarResult = calculateParabolicSAR(klines, toNumber(resolvedParams['step'], 0.02), toNumber(resolvedParams['max'], 0.2));
         return {
           type: 'parabolicSar',
           values: {
@@ -739,17 +744,17 @@ export class IndicatorEngine {
       }
 
       case 'massIndex': {
-        const massResult = calculateMassIndex(klines, resolvedParams['emaPeriod'] ?? 9, resolvedParams['sumPeriod'] ?? 25);
+        const massResult = calculateMassIndex(klines, toNumber(resolvedParams['emaPeriod'], 9), toNumber(resolvedParams['sumPeriod'], 25));
         return { type: 'massIndex', values: massResult.values };
       }
 
       case 'cmf': {
-        const cmfResult = calculateCMF(klines, resolvedParams['period'] ?? 20);
+        const cmfResult = calculateCMF(klines, toNumber(resolvedParams['period'], 20));
         return { type: 'cmf', values: cmfResult.values };
       }
 
       case 'klinger': {
-        const klingerResult = calculateKlinger(klines, resolvedParams['shortPeriod'] ?? 34, resolvedParams['longPeriod'] ?? 55, resolvedParams['signalPeriod'] ?? 13);
+        const klingerResult = calculateKlinger(klines, toNumber(resolvedParams['shortPeriod'], 34), toNumber(resolvedParams['longPeriod'], 55), toNumber(resolvedParams['signalPeriod'], 13));
         return {
           type: 'klinger',
           values: {
@@ -760,7 +765,7 @@ export class IndicatorEngine {
       }
 
       case 'elderRay': {
-        const elderResult = calculateElderRay(klines, resolvedParams['period'] ?? 13);
+        const elderResult = calculateElderRay(klines, toNumber(resolvedParams['period'], 13));
         return {
           type: 'elderRay',
           values: {
@@ -782,7 +787,7 @@ export class IndicatorEngine {
       }
 
       case 'swingPoints': {
-        const swingResult = calculateSwingPoints(klines, resolvedParams['lookback'] ?? 5);
+        const swingResult = calculateSwingPoints(klines, toNumber(resolvedParams['lookback'], 5));
         return {
           type: 'swingPoints',
           values: {
@@ -826,7 +831,7 @@ export class IndicatorEngine {
       }
 
       case 'gapDetection': {
-        const gapsResult = calculateGaps(klines, resolvedParams['threshold'] ?? 0.5);
+        const gapsResult = calculateGaps(klines, toNumber(resolvedParams['threshold'], 0.5));
         const gapValues: (number | null)[] = new Array(klines.length).fill(null);
         for (const gap of gapsResult.gaps) {
           if (gap.index >= 0 && gap.index < gapValues.length) {
@@ -884,8 +889,8 @@ export class IndicatorEngine {
         const lows = klines.map((k) => parseFloat(k.low));
         const closes = klines.map((k) => parseFloat(k.close));
         const liquidityResult = calculateLiquidityLevels(highs, lows, closes, {
-          lookback: resolvedParams['lookback'] ?? 50,
-          minTouches: resolvedParams['minTouches'] ?? 2,
+          lookback: toNumber(resolvedParams['lookback'], 50),
+          minTouches: toNumber(resolvedParams['minTouches'], 2),
         });
         const supportValues: (number | null)[] = new Array(klines.length).fill(null);
         const resistanceValues: (number | null)[] = new Array(klines.length).fill(null);

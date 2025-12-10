@@ -181,7 +181,7 @@ export class PositionSizer {
   private static calculateVolatilityBased(
     atr: number,
     entryPrice: number,
-    atrMultiplier: number,
+    _atrMultiplier: number,
     maxPercent: number
   ): { positionPercent: number; rationale: string } {
     if (atr === 0 || !atr) {

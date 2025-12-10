@@ -10,10 +10,10 @@ const createMockKline = (close: number, index: number): Kline => ({
   close: close.toString(),
   volume: '1000',
   closeTime: Date.now() + index * 86400000 + 86399999,
-  quoteAssetVolume: '100000',
-  numberOfTrades: 100,
-  takerBuyBaseAssetVolume: '500',
-  takerBuyQuoteAssetVolume: '50000',
+  quoteVolume: '100000',
+  trades: 100,
+  takerBuyBaseVolume: '500',
+  takerBuyQuoteVolume: '50000',
 });
 
 function validateEMA() {
@@ -56,7 +56,7 @@ function validateEMA() {
     console.log(`Index ${i}: Manual=${manualEMA9.toFixed(4)}, Sistema=${systemEMA?.toFixed(4)}, ${match}`);
   }
 
-  const allMatch = ema9.slice(8).every((v, i) => {
+  const _allMatch = ema9.slice(8).every((v, i) => {
     if (i === 0) return Math.abs((v ?? 0) - manualEMA9Seed) < 0.0001;
     return true;
   });
