@@ -63,6 +63,7 @@
 13. **No Watch Mode:** Never use watch mode commands (`npm test`, `vitest`, etc. without `--run`). Always use run-once commands (`npm test -- --run`, `npm run build`, etc.) to avoid blocking the terminal
 14. **Single-Line Blocks:** Simplify code blocks with only one statement to single-line format when correct and compliant with linting rules (e.g., `if (condition) return value;` instead of multi-line blocks)
 15. **🔴 CRITICAL - All Tests Must Pass:** NEVER commit code with failing tests. ALWAYS run `npm run test:run` before committing. If tests fail, FIX THEM FIRST. Breaking tests is NEVER acceptable. Zero tolerance for broken tests in commits.
+16. **Handler Object Pattern:** When encountering switch statements that map types/enums to functions/handlers with >3 cases and don't require complex control flow, refactor to handler object pattern for better modularity, testability, and maintainability
 
 ### Git Workflow
 
@@ -118,9 +119,58 @@ git push origin feature/new-feature
 - `feat:` - New feature
 - `fix:` - Bug fix
 - `docs:` - Documentation
-- `refactor:` - Code restructuring
+- `refactor:` - Code restructuring (use this when applying handler object pattern to switch statements)
 - `perf:` - Performance improvements
 - `chore:` - Maintenance tasks
+
+### Code Pattern: Handler Object over Switch Statements
+
+**When to use:** Switch statements that map types/enums to functions/handlers with >3 cases and don't require complex control flow.
+
+**Benefits:**
+- More modular and testable
+- Easier to extend with new cases
+- Better code organization
+- Follows single responsibility principle
+
+**Example (Before):**
+```typescript
+function process(type: string) {
+  switch (type) {
+    case 'typeA': return handleA();
+    case 'typeB': return handleB();
+    case 'typeC': return handleC();
+    default: throw new Error('Unknown type');
+  }
+}
+```
+
+**Example (After):**
+```typescript
+const handlers: Record<string, () => ReturnType> = {
+  typeA: handleA,
+  typeB: handleB,
+  typeC: handleC,
+};
+
+function process(type: string) {
+  const handler = handlers[type];
+  if (!handler) throw new Error('Unknown type');
+  return handler();
+}
+```
+
+**Real Examples in Codebase:**
+- `IndicatorEngine.ts` - `indicatorComputeHandlers` object for 50+ indicators
+- `AnnotationLayer.ts` - `markerStyleHandlers` and `shapeDrawHandlers` objects
+- `AIService.ts` - `providerFactories` object for AI providers
+- `SetupCancellationDetector.ts` - `cancellationHandlers` object for setup types
+
+**When NOT to use:**
+- Switch statements with <3 cases (keep simple)
+- Pattern matching with complex conditions per case
+- Fall-through behavior required
+- TypeScript discriminated unions (keep switch for exhaustiveness checking)
 
 ### Code Examples
 
