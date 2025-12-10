@@ -131,7 +131,7 @@ export const Toolbar = memo(({
 
   const isPatternDetectionActive = algorithmicDetectionSettings.autoDisplayPatterns;
   const isExtensionsActive = patternConfig.showExtensions;
-  const isSetupDetectionActive = setupConfig.setup91.enabled || setupConfig.pattern123.enabled;
+  const isSetupDetectionActive = (setupConfig.enabledStrategies?.length ?? 0) > 0;
 
   const handleOpenNewWindow = (): void => {
     void openChartWindow(symbol);
@@ -155,8 +155,7 @@ export const Toolbar = memo(({
     }
 
     setSetupConfig({
-      setup91: { ...setupConfig.setup91, enabled: newEnabled },
-      pattern123: { ...setupConfig.pattern123, enabled: newEnabled },
+      enabledStrategies: newEnabled ? [] : setupConfig.enabledStrategies ?? [],
     });
   };
 

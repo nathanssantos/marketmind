@@ -5,6 +5,7 @@ import { backtestRouter } from '../routers/backtest';
 import { healthRouter } from '../routers/health';
 import { klineRouter } from '../routers/kline';
 import { setupRouter } from '../routers/setup';
+import { setupDetectionRouter } from '../routers/setup-detection';
 import { tradingRouter } from '../routers/trading';
 import { walletRouter } from '../routers/wallet';
 import { router } from '../trpc';
@@ -18,6 +19,7 @@ export const appRouter = router({
   analytics: analyticsRouter,
   kline: klineRouter,
   setup: setupRouter,
+  setupDetection: setupDetectionRouter,
   backtest: backtestRouter,
 });
 

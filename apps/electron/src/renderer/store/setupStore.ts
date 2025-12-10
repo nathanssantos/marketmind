@@ -52,10 +52,6 @@ interface SetupStoreState {
 
   setConfig: (config: Partial<SetupDetectionConfig>) => void;
   resetConfigToDefaults: () => void;
-  updateSetupConfig: <T extends keyof SetupDetectionConfig>(
-    setupType: T,
-    config: Partial<SetupDetectionConfig[T]>,
-  ) => void;
   toggleAutoTrading: () => void;
 
   addDetectedSetup: (setup: TradingSetup) => void;
@@ -198,33 +194,9 @@ export const useSetupStore = create<SetupStoreState>()(
           config: createDefaultSetupDetectionConfig(),
         }),
 
-      updateSetupConfig: (setupType, config) =>
-        set((state) => {
-          const currentConfig = state.config[setupType];
-          
-          if (typeof currentConfig === 'object' && currentConfig !== null) {
-            return {
-              config: {
-                ...state.config,
-                [setupType]: {
-                  ...currentConfig,
-                  ...config,
-                },
-              },
-            };
-          }
-          
-          return state;
-        }),
-
       toggleAutoTrading: () =>
         set((state) => {
-          const hasAnySetupEnabled = 
-            state.config.setup91.enabled ||
-            state.config.pattern123.enabled ||
-            state.config.bullTrap.enabled ||
-            state.config.bearTrap.enabled ||
-            state.config.breakoutRetest.enabled;
+          const hasAnySetupEnabled = state.config.enabledStrategies.length > 0;
 
           if (!state.isAutoTradingActive && !hasAnySetupEnabled) {
             console.warn('[Auto-Trading] Cannot enable: No setups are enabled. Enable at least one setup in Settings.');

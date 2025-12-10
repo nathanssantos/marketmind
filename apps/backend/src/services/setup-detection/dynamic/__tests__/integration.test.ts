@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { SetupDetectionService } from '../../SetupDetectionService';
 import type { Kline, StrategyDefinition } from '@marketmind/types';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { SetupDetectionService } from '../../SetupDetectionService';
 
 function createMockKline(close: number, index: number): Kline {
   const baseTime = new Date('2024-01-01').getTime() + index * 3600000;
@@ -114,9 +114,7 @@ describe('Dynamic Strategy Integration', () => {
   };
 
   beforeEach(() => {
-    service = new SetupDetectionService({
-      enableLegacyDetectors: false,
-    });
+    service = new SetupDetectionService();
   });
 
   describe('SetupDetectionService with dynamic strategies', () => {
@@ -265,25 +263,23 @@ describe('Dynamic Strategy Integration', () => {
   });
 
   describe('Config updates', () => {
-    it('should respect enableLegacyDetectors = false', () => {
-      const serviceNoLegacy = new SetupDetectionService({
-        enableLegacyDetectors: false,
+    it('should respect configuration', () => {
+      const serviceConfig = new SetupDetectionService({
+        minConfidence: 70,
+        minRiskReward: 2.0,
       });
 
-      const klines = generateTrendingKlines(100, 'up');
-      const setups = serviceNoLegacy.detectSetups(klines);
+      serviceConfig.loadStrategy(emaCrossoverStrategy);
 
-      expect(setups).toHaveLength(0);
+      expect(serviceConfig.getLoadedStrategies()).toContain('test-ema-crossover');
     });
 
-    it('should work with legacy + dynamic detectors', () => {
-      const serviceBoth = new SetupDetectionService({
-        enableLegacyDetectors: true,
-      });
+    it('should work with dynamic strategies', () => {
+      const serviceDynamic = new SetupDetectionService();
 
-      serviceBoth.loadStrategy(emaCrossoverStrategy);
+      serviceDynamic.loadStrategy(emaCrossoverStrategy);
 
-      expect(serviceBoth.getLoadedStrategies()).toContain('test-ema-crossover');
+      expect(serviceDynamic.getLoadedStrategies()).toContain('test-ema-crossover');
     });
   });
 });

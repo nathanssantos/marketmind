@@ -5,59 +5,51 @@ import {
     Stack,
     Text,
 } from '@chakra-ui/react';
-import { memo, useMemo, useState } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HiAdjustmentsHorizontal } from 'react-icons/hi2';
-import type { SetupDetectionConfig } from '../../store/setupConfig';
+import { useStrategyList } from '../../hooks/useSetupDetection';
 import { useSetupStore } from '../../store/setupStore';
 import { Checkbox } from '../ui/checkbox';
 import { Popover } from '../ui/popover';
 import { TooltipWrapper } from '../ui/Tooltip';
 
-type SetupKey = keyof Omit<SetupDetectionConfig, 'enableTrendFilter' | 'allowCounterTrend' | 'trendEmaPeriod' | 'setupCooldownPeriod'>;
-
-const EXCLUDED_CONFIG_KEYS = new Set(['enableTrendFilter', 'allowCounterTrend', 'trendEmaPeriod', 'setupCooldownPeriod']);
-
-const isSetupKey = (key: string, config: SetupDetectionConfig): key is SetupKey => {
-    if (EXCLUDED_CONFIG_KEYS.has(key)) return false;
-    const value = config[key as keyof SetupDetectionConfig];
-    return typeof value === 'object' && value !== null && 'enabled' in value;
-};
-
 export const SetupTogglePopover = memo(() => {
     const { t } = useTranslation();
-    const { config, updateSetupConfig } = useSetupStore();
+    const { config, setConfig } = useSetupStore();
     const [isOpen, setIsOpen] = useState(false);
 
-    const setupList = useMemo(() =>
-        Object.keys(config)
-            .filter((key): key is SetupKey => isSetupKey(key, config))
-            .sort((a, b) => a.localeCompare(b))
-            .map(key => ({
-                value: key,
-                titleKey: `setupConfig.setups.${key}.title`,
-            })),
-        [config]
-    );
+    const { data: strategies, isLoading } = useStrategyList({
+        excludeStatuses: ['unprofitable', 'deprecated'],
+    });
 
-    const toggleSetup = (setupKey: SetupKey): void => {
-        updateSetupConfig(setupKey, {
-            enabled: !config[setupKey].enabled,
+    const setupList = (strategies ?? []).map((strategy: { id: string; name: string }) => ({
+        value: strategy.id,
+        title: strategy.name,
+    }));
+
+    const toggleSetup = (strategyId: string): void => {
+        const enabledStrategies = config.enabledStrategies ?? [];
+        const isEnabled = enabledStrategies.includes(strategyId);
+
+        setConfig({
+            enabledStrategies: isEnabled
+                ? enabledStrategies.filter(id => id !== strategyId)
+                : [...enabledStrategies, strategyId],
         });
     };
 
     const toggleAll = (): void => {
-        const allEnabled = setupList.every(s => config[s.value].enabled);
+        const allEnabled = setupList.every((s: { value: string }) => config.enabledStrategies?.includes(s.value));
 
-        setupList.forEach(setup => {
-            updateSetupConfig(setup.value, {
-                enabled: !allEnabled,
-            });
+        setConfig({
+            enabledStrategies: allEnabled ? [] : setupList.map((s: { value: string }) => s.value),
         });
     };
 
-    const allEnabled = setupList.every(s => config[s.value].enabled);
-    const enabledCount = setupList.filter(s => config[s.value].enabled).length;
+    const enabledStrategies = config.enabledStrategies ?? [];
+    const allEnabled = setupList.length > 0 && setupList.every((s: { value: string }) => enabledStrategies.includes(s.value));
+    const enabledCount = enabledStrategies.length;
 
     return (
         <Popover
@@ -105,26 +97,29 @@ export const SetupTogglePopover = memo(() => {
 
                     <Box h="1px" bg="border" />
 
-                    <Stack gap={2}>
-                        {setupList.map((setup) => (
-                            <TooltipWrapper
-                                key={setup.value}
-                                label={t(`setupConfig.setups.${setup.value}.description`)}
-                                placement="right"
-                                showArrow
-                            >
-                                <Box>
+                    <Stack gap={2} maxH="400px" overflowY="auto">
+                        {isLoading ? (
+                            <Text fontSize="sm" color="fg.muted" textAlign="center" py={4}>
+                                {t('common.loading')}
+                            </Text>
+                        ) : setupList.length === 0 ? (
+                            <Text fontSize="sm" color="fg.muted" textAlign="center" py={4}>
+                                {t('setupConfig.noStrategiesAvailable')}
+                            </Text>
+                        ) : (
+                            setupList.map((setup: { value: string; title: string }) => (
+                                <Box key={setup.value}>
                                     <Checkbox
-                                        checked={config[setup.value].enabled}
+                                        checked={enabledStrategies.includes(setup.value)}
                                         onCheckedChange={() => toggleSetup(setup.value)}
                                     >
                                         <Text fontSize="sm">
-                                            {t(setup.titleKey)}
+                                            {setup.title}
                                         </Text>
                                     </Checkbox>
                                 </Box>
-                            </TooltipWrapper>
-                        ))}
+                            ))
+                        )}
                     </Stack>
                 </Stack>
             </Box>

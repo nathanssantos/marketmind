@@ -1,5 +1,5 @@
+import type { TradingSetup } from '@marketmind/types';
 import { useCallback } from 'react';
-import type { SetupDetectorResult } from '../services/setupDetection';
 import { useTradingStore } from '../store/tradingStore';
 import { useBackendAutoTrading } from './useBackendAutoTrading';
 
@@ -20,7 +20,7 @@ export const useAutoTrading = ({ walletId, isSimulatorMode }: UseAutoTradingOpti
 
   const executeSetup = useCallback(
     async (
-      setup: SetupDetectorResult['setup'],
+      setup: TradingSetup | null,
       symbol: string,
       quantity: number,
       fees: {

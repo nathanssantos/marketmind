@@ -1,6 +1,24 @@
-import type { Interval } from '@marketmind/types';
-import type { Kline, TradingSetup } from '@marketmind/types';
+import type { Interval, Kline, TradingSetup } from '@marketmind/types';
+import { useQuery } from '@tanstack/react-query';
+import { trpc } from '../services/trpc';
 import { useBackendSetups } from './useBackendSetups';
+
+interface UseStrategyListOptions {
+  includeStatuses?: ('active' | 'experimental' | 'deprecated' | 'unprofitable')[];
+  excludeStatuses?: ('active' | 'experimental' | 'deprecated' | 'unprofitable')[];
+  includeUnprofitable?: boolean;
+}
+
+export const useStrategyList = (options: UseStrategyListOptions = {}) => {
+  return useQuery({
+    queryKey: ['strategies', options],
+    queryFn: async () => {
+      const strategies = await trpc.setupDetection.listStrategies.query(options);
+      return strategies;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+};
 
 export interface UseSetupDetectionOptions {
   symbol?: string;

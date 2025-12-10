@@ -31,38 +31,42 @@ describe('setupStore', () => {
     it('should initialize with default config', () => {
       const { config } = useSetupStore.getState();
       expect(config).toBeDefined();
-      expect(config.setup91).toBeDefined();
-      expect(config.pattern123).toBeDefined();
+      expect(config.enabledStrategies).toBeDefined();
+      expect(Array.isArray(config.enabledStrategies)).toBe(true);
+      expect(config.minConfidence).toBeDefined();
+      expect(config.minRiskReward).toBeDefined();
     });
 
     it('should update config', () => {
       const store = useSetupStore.getState();
       store.setConfig({
-        setup91: { ...store.config.setup91, enabled: false },
+        enabledStrategies: ['setup-9-1', 'setup-9-2'],
       });
 
       const { config } = useSetupStore.getState();
-      expect(config.setup91.enabled).toBe(false);
+      expect(config.enabledStrategies).toEqual(['setup-9-1', 'setup-9-2']);
     });
 
     it('should reset config to defaults', () => {
       const store = useSetupStore.getState();
       store.setConfig({
-        setup91: { ...store.config.setup91, enabled: true },
+        enabledStrategies: ['setup-9-1', 'setup-9-2'],
+        minConfidence: 80,
       });
 
       store.resetConfigToDefaults();
 
       const { config } = useSetupStore.getState();
-      expect(config.setup91.enabled).toBe(false);
+      expect(config.enabledStrategies).toEqual([]);
+      expect(config.minConfidence).toBe(50);
     });
 
-    it('should update specific setup config', () => {
+    it('should update global config', () => {
       const store = useSetupStore.getState();
-      store.updateSetupConfig('setup91', { minConfidence: 80 });
+      store.setConfig({ minConfidence: 80 });
 
       const { config } = useSetupStore.getState();
-      expect(config.setup91.minConfidence).toBe(80);
+      expect(config.minConfidence).toBe(80);
     });
   });
 

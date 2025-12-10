@@ -112,3 +112,5 @@ const start = async (): Promise<void> => {
 };
 
 start();
+
+export type { AppRouter } from './trpc/router';

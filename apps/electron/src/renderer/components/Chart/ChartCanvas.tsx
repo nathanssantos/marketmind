@@ -22,7 +22,6 @@ import { useSetupDetection } from '@renderer/hooks/useSetupDetection';
 import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
-import { setupCancellationDetector } from '@renderer/services/setupDetection';
 import { TradingFeeService } from '@renderer/services/TradingFeeService';
 import { useSetupStore } from '@renderer/store';
 import { useTradingStore } from '@renderer/store/tradingStore';
@@ -1054,19 +1053,12 @@ export const ChartCanvas = ({
   }, [symbol]);
 
   useEffect(() => {
-    const { isAutoTradingActive, detectedSetups: activeSetups, cancelSetup } = useSetupStore.getState();
+    const { isAutoTradingActive, detectedSetups: activeSetups } = useSetupStore.getState();
 
     if (!isAutoTradingActive || klines.length < 50) return;
 
     activeSetups.forEach((setup) => {
       if (setup.isTriggered || setup.isCancelled) return;
-
-      const currentIndex = klines.length - 1;
-      const cancellationResult = setupCancellationDetector.checkCancellation(setup, klines, currentIndex);
-
-      if (cancellationResult.isCancelled && cancellationResult.reason) {
-        cancelSetup(setup.id, cancellationResult.reason);
-      }
     });
 
     const detectedSetups = setupDetector.detectSetups(klines);

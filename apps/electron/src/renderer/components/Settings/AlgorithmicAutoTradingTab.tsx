@@ -9,7 +9,7 @@ export const AlgorithmicAutoTradingTab = (): ReactElement => {
     const { t } = useTranslation();
     const toast = useToast();
     const { isAutoTradingActive, toggleAutoTrading, config: setupConfig } = useSetupStore();
-    const isSetupDetectionActive = setupConfig.setup91.enabled || setupConfig.pattern123.enabled;
+    const isSetupDetectionActive = (setupConfig.enabledStrategies?.length ?? 0) > 0;
 
     const handleToggleAutoTrading = (checked: boolean): void => {
         if (checked && !isSetupDetectionActive) {
