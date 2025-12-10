@@ -19,7 +19,11 @@
     "type-check": "pnpm -r type-check",
     "test": "pnpm -r test",
     "test:run": "pnpm -r test:run",
-    "clean": "pnpm -r clean && rm -rf node_modules"
+    "clean": "pnpm -r clean && rm -rf node_modules",
+    "refactor:audit:files": "bash scripts/audit-files.sh",
+    "refactor:audit:types": "bash scripts/audit-types.sh",
+    "refactor:audit:indicators": "bash scripts/audit-indicators.sh",
+    "refactor:remove-comments": "node scripts/remove-comments.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
