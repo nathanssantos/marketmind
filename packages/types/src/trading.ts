@@ -1,14 +1,14 @@
 import type {
-  BinanceOrderSide,
-  BinanceOrderStatus,
-  BinanceOrderType,
-  BinanceTimeInForce,
-  BinanceContingencyType,
-  BinanceListStatusType,
-  BinanceListOrderStatus,
-  BinanceAccount,
-  BinanceBalance,
-  BinanceOrderList,
+    BinanceAccount,
+    BinanceBalance,
+    BinanceContingencyType,
+    BinanceListOrderStatus,
+    BinanceListStatusType,
+    BinanceOrderList,
+    BinanceOrderSide,
+    BinanceOrderStatus,
+    BinanceOrderType,
+    BinanceTimeInForce,
 } from './binance';
 
 export type OrderStatus = BinanceOrderStatus | 'EXPIRED_IN_MATCH' | 'PENDING_NEW';

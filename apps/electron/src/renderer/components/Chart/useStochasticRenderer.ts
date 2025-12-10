@@ -1,8 +1,8 @@
+import type { StochasticResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
-import type { StochasticResult } from '@marketmind/indicators';
 
 interface UseStochasticRendererProps {
   manager: CanvasManager | null;

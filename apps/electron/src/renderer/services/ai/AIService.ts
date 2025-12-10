@@ -1,5 +1,5 @@
-import { patternDetectionService } from '@renderer/utils/patternDetection';
 import type { AIAnalysisRequest, AIAnalysisResponse, AIMessage, AIPattern, AIProviderType, Kline } from '@marketmind/types';
+import { patternDetectionService } from '@renderer/utils/patternDetection';
 import defaultPrompts from './prompts.json';
 import { ClaudeProvider, GeminiProvider, OpenAIProvider } from './providers';
 import type { AIProviderConfig, BaseAIProvider } from './types';

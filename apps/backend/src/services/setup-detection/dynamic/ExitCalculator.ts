@@ -6,15 +6,15 @@
  */
 
 import type {
-  ExitLevel,
-  ExitContext,
-  ConditionOperand,
-  StrategyDefinition,
   Condition,
+  ConditionOperand,
+  ExitContext,
+  ExitLevel,
+  StrategyDefinition,
 } from '@marketmind/types';
 import { isParameterReference } from '@marketmind/types';
 
-import { IndicatorEngine } from './IndicatorEngine';
+import type { IndicatorEngine } from './IndicatorEngine';
 
 /**
  * Calculates exit levels (stop loss, take profit) for strategies

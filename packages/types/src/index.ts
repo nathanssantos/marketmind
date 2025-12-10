@@ -10,8 +10,8 @@ export * from './kline';
 export * from './market';
 export * from './news';
 export * from './pattern';
-export * from './trading';
-export * from './tradingSetup';
 export * from './setupConfig';
 export * from './strategyDefinition';
+export * from './trading';
+export * from './tradingSetup';
 

@@ -1,11 +1,11 @@
 import { calculateATR, calculateEMA } from '@marketmind/indicators';
-import { findHighestSwingHigh, findLowestSwingLow } from '@renderer/utils/indicators/supportResistance';
 import type { Kline } from '@marketmind/types';
+import { findHighestSwingHigh, findLowestSwingLow } from '@renderer/utils/indicators/supportResistance';
 import { getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
 import {
-  BaseSetupDetector,
-  type SetupDetectorResult,
-  type SetupDetectorConfig,
+    BaseSetupDetector,
+    type SetupDetectorConfig,
+    type SetupDetectorResult,
 } from './BaseSetupDetector';
 
 export interface Setup91Config extends SetupDetectorConfig {

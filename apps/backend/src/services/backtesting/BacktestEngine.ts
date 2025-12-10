@@ -46,7 +46,7 @@ export class BacktestEngine {
       'w': 7 * 24 * 60 * 60 * 1000,
     };
     const match = interval.match(/^(\d+)([mhdw])$/);
-    if (!match || !match[1] || !match[2]) return 4 * 60 * 60 * 1000;
+    if (!match?.[1] || !match[2]) return 4 * 60 * 60 * 1000;
     const unitMs = units[match[2]];
     if (!unitMs) return 4 * 60 * 60 * 1000;
     return parseInt(match[1]) * unitMs;

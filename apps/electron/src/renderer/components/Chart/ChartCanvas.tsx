@@ -12,6 +12,8 @@ import {
   DialogTitle,
 } from '@/renderer/components/ui/dialog';
 import { Box, Portal } from '@chakra-ui/react';
+import { calculateMovingAverage, type StochasticResult } from '@marketmind/indicators';
+import type { AIPattern, Kline, Order, Viewport } from '@marketmind/types';
 import { useAutoTrading } from '@renderer/hooks/useAutoTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useChartColors } from '@renderer/hooks/useChartColors';
@@ -24,10 +26,7 @@ import { setupCancellationDetector } from '@renderer/services/setupDetection';
 import { TradingFeeService } from '@renderer/services/TradingFeeService';
 import { useSetupStore } from '@renderer/store';
 import { useTradingStore } from '@renderer/store/tradingStore';
-import { calculateMovingAverage, type StochasticResult } from '@marketmind/indicators';
 import { CHART_CONFIG } from '@shared/constants';
-import type { AIPattern, Kline, Viewport } from '@marketmind/types';
-import type { Order } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume, getOrderPrice, getOrderType, isOrderLong, isOrderPending } from '@shared/utils';
 import type React from 'react';
 import type { ReactElement } from 'react';

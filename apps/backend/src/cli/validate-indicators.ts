@@ -1,5 +1,4 @@
-import { calculateEMA, calculateSMA } from '@marketmind/indicators';
-import { calculateRSI } from '@marketmind/indicators';
+import { calculateEMA, calculateRSI, calculateSMA } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 
 const createMockKline = (close: number, index: number): Kline => ({

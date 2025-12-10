@@ -1,8 +1,8 @@
-import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
+import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { getKlineClose, getKlineLow, getKlineVolume } from '@shared/utils';
-import { BaseSetupDetector, type SetupDetectorResult, type SetupDetectorConfig } from './BaseSetupDetector';
+import { BaseSetupDetector, type SetupDetectorConfig, type SetupDetectorResult } from './BaseSetupDetector';
 
 export interface BullTrapConfig extends SetupDetectorConfig {
   volumeMultiplier: number;

@@ -2,8 +2,8 @@ import type { AIPatternGap, Kline } from '@marketmind/types';
 import { getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { PATTERN_DETECTION_CONFIG } from '../constants';
 import {
-    calculateConfidence,
-    normalizeTimeInPattern,
+  calculateConfidence,
+  normalizeTimeInPattern,
 } from '../core/confidenceScoring';
 import type { PivotPoint } from '../types';
 

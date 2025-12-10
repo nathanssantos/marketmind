@@ -1,8 +1,8 @@
-import { findHighestSwingHigh, findLowestSwingLow, findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
+import { findHighestSwingHigh, findLowestSwingLow, findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
-import { BaseSetupDetector, type SetupDetectorResult, type SetupDetectorConfig } from './BaseSetupDetector';
+import { BaseSetupDetector, type SetupDetectorConfig, type SetupDetectorResult } from './BaseSetupDetector';
 
 export interface BreakoutRetestConfig extends SetupDetectorConfig {
   volumeMultiplier: number;

@@ -1,7 +1,7 @@
 import { workerPool } from '@/renderer/utils/WorkerPool';
+import type { RSIResult } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 import { useEffect, useRef, useState } from 'react';
-import type { RSIResult } from '@marketmind/indicators';
 
 const WORKER_KEY = 'rsi';
 

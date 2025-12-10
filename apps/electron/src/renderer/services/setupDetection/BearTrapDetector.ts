@@ -1,12 +1,12 @@
-import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { calculateEMA } from '@marketmind/indicators';
-import type { Kline, BearTrapConfig } from '@marketmind/types';
+import type { BearTrapConfig, Kline } from '@marketmind/types';
 import { createDefaultBearTrapConfig } from '@marketmind/types';
+import { findPivotPoints } from '@renderer/utils/indicators/supportResistance';
 import { getKlineClose, getKlineHigh, getKlineVolume } from '@shared/utils/klineUtils';
 import { BaseSetupDetector, type SetupDetectorResult } from './BaseSetupDetector';
 
-export type { BearTrapConfig };
 export { createDefaultBearTrapConfig };
+export type { BearTrapConfig };
 
 const VOLUME_LOOKBACK = 20;
 const MIN_TRAP_DISTANCE_PERCENT = 0.001;
