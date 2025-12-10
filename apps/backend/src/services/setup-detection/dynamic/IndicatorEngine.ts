@@ -46,8 +46,10 @@ import {
     calculateFloorPivotSeries,
     calculateFVG,
     calculateGaps,
+    calculateHalvingCycle,
     calculateHMA,
     calculateIBS,
+    calculateIchimoku,
     calculateKeltner,
     calculateKlinger,
     calculateLiquidityLevels,
@@ -64,6 +66,7 @@ import {
     calculateRSI,
     calculateSMA,
     calculateStochastic,
+    calculateStochRSI,
     calculateSupertrend,
     calculateSwingPoints,
     calculateTEMA,
@@ -425,6 +428,52 @@ export class IndicatorEngine {
           values: {
             k: stochResult.k,
             d: stochResult.d,
+          },
+        };
+
+      case 'stochRsi':
+        const stochRsiResult = calculateStochRSI(
+          klines,
+          resolvedParams['rsiPeriod'] ?? 14,
+          resolvedParams['stochPeriod'] ?? 14,
+          resolvedParams['kSmooth'] ?? 3,
+          resolvedParams['dSmooth'] ?? 3
+        );
+        return {
+          type: 'stochRsi',
+          values: {
+            k: stochRsiResult.k,
+            d: stochRsiResult.d,
+          },
+        };
+
+      case 'ichimoku':
+        const ichimokuResult = calculateIchimoku(
+          klines,
+          resolvedParams['tenkanPeriod'] ?? 9,
+          resolvedParams['kijunPeriod'] ?? 26,
+          resolvedParams['senkouBPeriod'] ?? 52,
+          resolvedParams['displacement'] ?? 26
+        );
+        return {
+          type: 'ichimoku',
+          values: {
+            tenkan: ichimokuResult.tenkan,
+            kijun: ichimokuResult.kijun,
+            senkouA: ichimokuResult.senkouA,
+            senkouB: ichimokuResult.senkouB,
+            chikou: ichimokuResult.chikou,
+          },
+        };
+
+      case 'halvingCycle':
+        const halvingResult = calculateHalvingCycle(klines);
+        return {
+          type: 'halvingCycle',
+          values: {
+            phase: halvingResult.phase,
+            daysFromHalving: halvingResult.daysFromHalving,
+            cycleProgress: halvingResult.cycleProgress,
           },
         };
 
