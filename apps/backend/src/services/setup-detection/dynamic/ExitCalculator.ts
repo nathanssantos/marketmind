@@ -153,11 +153,15 @@ export class ExitCalculator {
       return exit.value;
     }
 
-    return this.indicatorEngine.resolveIndicatorValue(
-      indicators,
-      exit.value,
-      currentIndex
-    );
+    if (typeof exit.value === 'string') {
+      return this.indicatorEngine.resolveIndicatorValue(
+        indicators,
+        exit.value,
+        currentIndex
+      );
+    }
+
+    return 0;
   }
 
   /**
@@ -180,13 +184,16 @@ export class ExitCalculator {
       return context.params[paramName] ?? 0;
     }
 
-    const value = this.indicatorEngine.resolveIndicatorValue(
-      context.indicators,
-      operand,
-      context.currentIndex
-    );
+    if (typeof operand === 'string') {
+      const value = this.indicatorEngine.resolveIndicatorValue(
+        context.indicators,
+        operand,
+        context.currentIndex
+      );
+      return value ?? 0;
+    }
 
-    return value ?? 0;
+    return 0;
   }
 
   /**
@@ -264,11 +271,15 @@ export class ExitCalculator {
       return context.params[paramName] ?? null;
     }
 
-    return this.indicatorEngine.resolveIndicatorValue(
-      context.indicators,
-      operand,
-      context.currentIndex
-    );
+    if (typeof operand === 'string') {
+      return this.indicatorEngine.resolveIndicatorValue(
+        context.indicators,
+        operand,
+        context.currentIndex
+      );
+    }
+
+    return null;
   }
 
   /**

@@ -470,7 +470,7 @@ export class IndicatorEngine {
       return {
         type: 'halvingCycle',
         values: {
-          phase: halvingResult.phase,
+          phase: halvingResult.phase as unknown as (number | null)[],
           daysFromHalving: halvingResult.daysFromHalving,
           cycleProgress: halvingResult.cycleProgress,
         },
@@ -506,7 +506,8 @@ export class IndicatorEngine {
     },
 
     obv: (klines, resolvedParams) => {
-      const obvResult = calculateOBV(klines, resolvedParams['smaPeriod']);
+      const smaPeriod = resolvedParams['smaPeriod'];
+      const obvResult = calculateOBV(klines, typeof smaPeriod === 'number' ? smaPeriod : undefined);
       return {
         type: 'obv',
         values: {

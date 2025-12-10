@@ -157,6 +157,7 @@ export class ConditionEvaluator {
       const series: (number | null)[] = [];
       for (let i = 0; i < length; i++) {
         const value = this.evaluateCalcExpression(operand.calc, {
+          klines: [],
           indicators,
           params,
           currentIndex: i,

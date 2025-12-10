@@ -42,8 +42,8 @@ export const createSetupMarkerRenderer = (
     ctx.font = `${fontSize}px sans-serif`;
 
     const markerStyleHandlers: Record<
-      ChartMarker['type'],
-      (marker: ChartMarker) => { color: string; shape: 'triangle-up' | 'triangle-down' | 'circle' | 'square' }
+      SetupMarker['type'],
+      (marker: SetupMarker) => { color: string; shape: 'triangle-up' | 'triangle-down' | 'circle' | 'square' }
     > = {
       ENTRY: (marker) => ({
         color: marker.direction === 'LONG' ? entryColor : exitColor,
@@ -92,7 +92,10 @@ export const createSetupMarkerRenderer = (
       const x = ((marker.klineIndex - start) / (end - start)) * width;
       const y = height - ((marker.price - priceMin) / (priceMax - priceMin)) * height;
 
-      const { color, shape } = markerStyleHandlers[marker.type](marker);
+      const handler = markerStyleHandlers[marker.type];
+      if (!handler) return;
+      
+      const { color, shape } = handler(marker);
 
       ctx.fillStyle = color;
       ctx.strokeStyle = color;

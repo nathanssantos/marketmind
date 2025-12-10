@@ -312,7 +312,6 @@ export class BacktestEngine {
       const MAX_TOTAL_EXPOSURE = effectiveConfig.maxTotalExposure ?? 0.5;
       const openPositions: Array<{ exitTime: number; positionValue: number }> = [];
 
-      let _skippedOverlap = 0;
       let skippedKlineNotFound = 0;
       let skippedTrend = 0;
       let skippedMinNotional = 0;
