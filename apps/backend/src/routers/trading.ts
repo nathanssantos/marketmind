@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { orders, positions, wallets } from '../db/schema';
 import { decryptApiKey } from '../services/encryption';
 import { protectedProcedure, router } from '../trpc';
-import type { BinanceNewOrderResult, BinanceOrderQueryResult } from '../types/binance';
+import type { BinanceNewOrderResult, BinanceOrderQueryResult } from '@marketmind/types';
 
 const generateId = (length: number): string => {
   return randomBytes(length).toString('base64url').slice(0, length);

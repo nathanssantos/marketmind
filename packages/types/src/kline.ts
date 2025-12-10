@@ -1,13 +1,7 @@
-export interface Kline {
-  openTime: number;
-  open: string;
-  high: string;
-  low: string;
-  close: string;
-  volume: string;
-  closeTime: number;
+import type { BinanceKline } from './binance';
+
+export interface Kline extends Omit<BinanceKline, 'quoteAssetVolume' | 'takerBuyBaseAssetVolume' | 'takerBuyQuoteAssetVolume'> {
   quoteVolume: string;
-  trades: number;
   takerBuyBaseVolume: string;
   takerBuyQuoteVolume: string;
 }

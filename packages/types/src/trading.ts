@@ -1,41 +1,33 @@
-/**
- * Trading Types
- * Data structures aligned with exchange API standards (Binance)
- */
+import type {
+  BinanceOrderSide,
+  BinanceOrderStatus,
+  BinanceOrderType,
+  BinanceTimeInForce,
+  BinanceContingencyType,
+  BinanceListStatusType,
+  BinanceListOrderStatus,
+  BinanceAccount,
+  BinanceBalance,
+  BinanceOrderList,
+} from './binance';
 
-export type OrderStatus =
-  | 'NEW'
-  | 'PARTIALLY_FILLED'
-  | 'FILLED'
-  | 'CANCELED'
-  | 'PENDING_CANCEL'
-  | 'REJECTED'
-  | 'EXPIRED'
-  | 'EXPIRED_IN_MATCH'
-  | 'PENDING_NEW';
+export type OrderStatus = BinanceOrderStatus | 'EXPIRED_IN_MATCH' | 'PENDING_NEW';
 
-export type OrderType =
-  | 'LIMIT'
-  | 'MARKET'
-  | 'STOP_LOSS'
-  | 'STOP_LOSS_LIMIT'
-  | 'TAKE_PROFIT'
-  | 'TAKE_PROFIT_LIMIT'
-  | 'LIMIT_MAKER';
+export type OrderType = BinanceOrderType;
 
-export type OrderSide = 'BUY' | 'SELL';
+export type OrderSide = BinanceOrderSide;
 
-export type TimeInForce = 'GTC' | 'IOC' | 'FOK';
+export type TimeInForce = BinanceTimeInForce;
 
 export type ExpirationType = 'gtc' | 'day' | 'custom';
 
 export type WalletCurrency = 'USD' | 'BRL' | 'EUR' | 'USDT' | 'BTC' | 'ETH';
 
-export type ContingencyType = 'OCO' | 'OTO' | 'OTOCO';
+export type ContingencyType = BinanceContingencyType;
 
-export type ListStatusType = 'RESPONSE' | 'EXEC_STARTED' | 'ALL_DONE';
+export type ListStatusType = BinanceListStatusType;
 
-export type ListOrderStatus = 'EXECUTING' | 'ALL_DONE' | 'REJECT';
+export type ListOrderStatus = BinanceListOrderStatus;
 
 /**
  * Exchange-standard order structure (Binance format)
@@ -93,61 +85,11 @@ export interface Order {
   takeProfit?: number;
 }
 
-/**
- * Order List structure (OCO - One-Cancels-Other)
- * Binance uses order lists to link stop-loss and take-profit orders
- */
-export interface OrderList {
-  orderListId: number;
-  contingencyType: ContingencyType;
-  listStatusType: ListStatusType;
-  listOrderStatus: ListOrderStatus;
-  listClientOrderId: string;
-  transactionTime: number;
-  symbol: string;
-  orders: Array<{
-    symbol: string;
-    orderId: number;
-    clientOrderId: string;
-  }>;
-}
+export interface OrderList extends BinanceOrderList {}
 
-/**
- * Account balance structure (Binance format)
- */
-export interface Balance {
-  asset: string;
-  free: string;
-  locked: string;
-}
+export type Balance = BinanceBalance;
 
-/**
- * Account information structure (Binance /api/v3/account response)
- * Simulator uses a simplified version with only essential fields
- */
-export interface Account {
-  makerCommission: number;
-  takerCommission: number;
-  buyerCommission: number;
-  sellerCommission: number;
-  commissionRates: {
-    maker: string;
-    taker: string;
-    buyer: string;
-    seller: string;
-  };
-  canTrade: boolean;
-  canWithdraw: boolean;
-  canDeposit: boolean;
-  brokered: boolean;
-  requireSelfTradePrevention: boolean;
-  preventSor: boolean;
-  updateTime: number;
-  accountType: 'SPOT' | 'MARGIN' | 'FUTURES';
-  balances: Balance[];
-  permissions: string[];
-  uid?: number;
-}
+export interface Account extends BinanceAccount {}
 
 /**
  * Simulator wallet (extends Account with simulator-specific fields)
