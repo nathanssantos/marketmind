@@ -41,6 +41,50 @@ export const createSetupMarkerRenderer = (
     ctx.save();
     ctx.font = `${fontSize}px sans-serif`;
 
+    const markerStyleHandlers: Record<
+      ChartMarker['type'],
+      (marker: ChartMarker) => { color: string; shape: 'triangle-up' | 'triangle-down' | 'circle' | 'square' }
+    > = {
+      ENTRY: (marker) => ({
+        color: marker.direction === 'LONG' ? entryColor : exitColor,
+        shape: marker.direction === 'LONG' ? 'triangle-up' : 'triangle-down',
+      }),
+      EXIT: (marker) => ({
+        color: marker.direction === 'LONG' ? exitColor : entryColor,
+        shape: marker.direction === 'LONG' ? 'triangle-down' : 'triangle-up',
+      }),
+      STOP_LOSS: () => ({
+        color: stopLossColor,
+        shape: 'square' as const,
+      }),
+      TAKE_PROFIT: () => ({
+        color: takeProfitColor,
+        shape: 'circle' as const,
+      }),
+    };
+
+    const shapeDrawHandlers: Record<
+      'triangle-up' | 'triangle-down' | 'circle' | 'square',
+      (ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => void
+    > = {
+      'triangle-up': (ctx, x, y, size) => {
+        ctx.moveTo(x, y - size);
+        ctx.lineTo(x - size, y + size);
+        ctx.lineTo(x + size, y + size);
+      },
+      'triangle-down': (ctx, x, y, size) => {
+        ctx.moveTo(x, y + size);
+        ctx.lineTo(x - size, y - size);
+        ctx.lineTo(x + size, y - size);
+      },
+      circle: (ctx, x, y, size) => {
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+      },
+      square: (ctx, x, y, size) => {
+        ctx.rect(x - size, y - size, size * 2, size * 2);
+      },
+    };
+
     markers.forEach((marker) => {
       if (marker.klineIndex < start || marker.klineIndex > end) return;
       if (marker.price < priceMin || marker.price > priceMax) return;
@@ -48,51 +92,14 @@ export const createSetupMarkerRenderer = (
       const x = ((marker.klineIndex - start) / (end - start)) * width;
       const y = height - ((marker.price - priceMin) / (priceMax - priceMin)) * height;
 
-      let color: string;
-      let shape: 'triangle-up' | 'triangle-down' | 'circle' | 'square';
-
-      switch (marker.type) {
-        case 'ENTRY':
-          color = marker.direction === 'LONG' ? entryColor : exitColor;
-          shape = marker.direction === 'LONG' ? 'triangle-up' : 'triangle-down';
-          break;
-        case 'EXIT':
-          color = marker.direction === 'LONG' ? exitColor : entryColor;
-          shape = marker.direction === 'LONG' ? 'triangle-down' : 'triangle-up';
-          break;
-        case 'STOP_LOSS':
-          color = stopLossColor;
-          shape = 'square';
-          break;
-        case 'TAKE_PROFIT':
-          color = takeProfitColor;
-          shape = 'circle';
-          break;
-      }
+      const { color, shape } = markerStyleHandlers[marker.type](marker);
 
       ctx.fillStyle = color;
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
 
       ctx.beginPath();
-      switch (shape) {
-        case 'triangle-up':
-          ctx.moveTo(x, y - markerSize);
-          ctx.lineTo(x - markerSize, y + markerSize);
-          ctx.lineTo(x + markerSize, y + markerSize);
-          break;
-        case 'triangle-down':
-          ctx.moveTo(x, y + markerSize);
-          ctx.lineTo(x - markerSize, y - markerSize);
-          ctx.lineTo(x + markerSize, y - markerSize);
-          break;
-        case 'circle':
-          ctx.arc(x, y, markerSize, 0, Math.PI * 2);
-          break;
-        case 'square':
-          ctx.rect(x - markerSize, y - markerSize, markerSize * 2, markerSize * 2);
-          break;
-      }
+      shapeDrawHandlers[shape](ctx, x, y, markerSize);
       ctx.closePath();
       ctx.fill();
 
