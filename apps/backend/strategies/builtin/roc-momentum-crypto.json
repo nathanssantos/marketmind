@@ -1,0 +1,72 @@
+{
+  "id": "roc-momentum-crypto",
+  "name": "ROC Momentum Crypto",
+  "version": "1.0.0",
+  "description": "Rate of Change momentum strategy para crypto. ROC mede velocidade de mudança de preço. Entry quando ROC cruza zero ou níveis extremos.",
+  "author": "MarketMind",
+  "tags": ["momentum", "roc", "rate-of-change", "velocity"],
+  "source": "Technical Analysis Classic",
+
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 70,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 80,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": false,
+    "onlyWithTrend": false,
+    "minConfidence": 65,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": ["4h"],
+    "avoid": ["1m", "5m"],
+    "notes": "ROC works best on daily"
+  },
+
+  "parameters": {
+    "rocPeriod": { "default": 12, "min": 8, "max": 20, "step": 2, "description": "Período do ROC" },
+    "atrMultiplier": { "default": 2, "min": 1.5, "max": 3, "step": 0.5, "description": "ATR para stop" }
+  },
+
+  "indicators": {
+    "roc": { "type": "roc", "params": { "period": "$rocPeriod" } },
+    "atr": { "type": "atr", "params": { "period": 14 } }
+  },
+
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "roc", "op": "crossover", "right": 0 }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "roc", "op": "crossunder", "right": 0 }
+      ]
+    }
+  },
+
+  "exit": {
+    "stopLoss": { "type": "atr", "multiplier": "$atrMultiplier", "indicator": "atr" },
+    "takeProfit": { "type": "riskReward", "multiplier": 2 },
+    "conditions": {
+      "long": { "operator": "OR", "conditions": [{ "left": "roc", "op": "crossunder", "right": 0 }] },
+      "short": { "operator": "OR", "conditions": [{ "left": "roc", "op": "crossover", "right": 0 }] }
+    }
+  },
+
+  "confidence": {
+    "base": 65,
+    "bonuses": [
+      { "condition": { "left": "roc", "op": ">", "right": 5 }, "bonus": 10, "description": "Strong positive ROC" },
+      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 5, "description": "Volume confirms" }
+    ],
+    "max": 85
+  },
+
+  "filters": { "minConfidence": 65, "minRiskReward": 1.5 }
+}

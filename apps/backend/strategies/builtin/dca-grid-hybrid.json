@@ -1,0 +1,71 @@
+{
+  "id": "dca-grid-hybrid",
+  "name": "DCA Grid Hybrid",
+  "version": "1.0.0",
+  "description": "Estratégia híbrida DCA com grid. Compras programadas em níveis de preço com gestão de posição por grids. Ideal para acumulação.",
+  "author": "MarketMind",
+  "tags": ["dca", "grid", "accumulation", "position-building"],
+  "source": "Crypto Trading Methods",
+
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 100,
+    "maxConcurrentPositions": 10,
+    "maxTotalExposure": 100,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": false,
+    "onlyWithTrend": false,
+    "minConfidence": 60,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "4h",
+    "secondary": ["1h", "1d"],
+    "avoid": ["1m", "5m"],
+    "notes": "DCA/Grid works on any timeframe"
+  },
+
+  "parameters": {
+    "gridLevels": { "default": 5, "min": 3, "max": 10, "step": 1, "description": "Número de níveis do grid" },
+    "gridSpacing": { "default": 3, "min": 1, "max": 5, "step": 0.5, "description": "Espaçamento entre níveis (%)" },
+    "takeProfitPercent": { "default": 5, "min": 2, "max": 10, "step": 1, "description": "Take profit por nível (%)" }
+  },
+
+  "indicators": {
+    "ema50": { "type": "ema", "params": { "period": 50 } },
+    "atr": { "type": "atr", "params": { "period": 14 } }
+  },
+
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "close", "op": "<", "right": { "calc": "ema50 * (1 - $gridSpacing / 100)" } }
+      ]
+    }
+  },
+
+  "exit": {
+    "takeProfit": { "type": "percent", "percent": "$takeProfitPercent" },
+    "conditions": {
+      "long": { "operator": "OR", "conditions": [{ "left": "close", "op": ">", "right": "ema50" }] }
+    }
+  },
+
+  "positionSizing": {
+    "type": "grid",
+    "levels": "$gridLevels",
+    "spacing": "$gridSpacing",
+    "sizePerLevel": { "calc": "100 / $gridLevels" }
+  },
+
+  "confidence": {
+    "base": 65,
+    "bonuses": [
+      { "condition": { "left": "close", "op": "<", "right": { "calc": "ema50 * 0.9" } }, "bonus": 15, "description": "Significant discount" }
+    ],
+    "max": 85
+  },
+
+  "filters": { "minConfidence": 60, "minRiskReward": 1 }
+}

@@ -1,0 +1,80 @@
+{
+  "id": "swing-weekly",
+  "name": "Swing Weekly",
+  "version": "1.0.0",
+  "description": "Estratégia swing trading semanal. EMA 20 + RSI para posições de médio prazo. Menos trades, maiores movimentos.",
+  "author": "MarketMind",
+  "tags": ["swing", "weekly", "position", "long-term"],
+  "source": "Swing Trading Methods",
+
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 90,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 90,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 3,
+    "breakEvenAfterR": 2,
+    "onlyWithTrend": true,
+    "minConfidence": 70,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "1w",
+    "secondary": ["1d"],
+    "avoid": ["1m", "5m", "15m", "1h"],
+    "notes": "Weekly swing trading"
+  },
+
+  "parameters": {
+    "emaPeriod": { "default": 20, "min": 15, "max": 30, "step": 5, "description": "EMA período" },
+    "rsiPeriod": { "default": 14, "min": 10, "max": 21, "step": 1, "description": "RSI período" },
+    "oversold": { "default": 40, "min": 30, "max": 45, "step": 5, "description": "Oversold" },
+    "overbought": { "default": 60, "min": 55, "max": 70, "step": 5, "description": "Overbought" },
+    "atrMultiplier": { "default": 3, "min": 2, "max": 4, "step": 0.5, "description": "ATR stop" }
+  },
+
+  "indicators": {
+    "ema": { "type": "ema", "params": { "period": "$emaPeriod" } },
+    "rsi": { "type": "rsi", "params": { "period": "$rsiPeriod" } },
+    "atr": { "type": "atr", "params": { "period": 14 } }
+  },
+
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "close", "op": ">", "right": "ema" },
+        { "left": "rsi", "op": "crossover", "right": "$oversold" }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "close", "op": "<", "right": "ema" },
+        { "left": "rsi", "op": "crossunder", "right": "$overbought" }
+      ]
+    }
+  },
+
+  "exit": {
+    "stopLoss": { "type": "atr", "multiplier": "$atrMultiplier", "indicator": "atr" },
+    "takeProfit": { "type": "riskReward", "multiplier": 3 },
+    "trailingStop": { "enabled": true, "type": "atr", "initialMultiplier": 3, "trailMultiplier": 3, "breakEvenAfterR": 2 },
+    "conditions": {
+      "long": { "operator": "OR", "conditions": [{ "left": "close", "op": "crossunder", "right": "ema" }] },
+      "short": { "operator": "OR", "conditions": [{ "left": "close", "op": "crossover", "right": "ema" }] }
+    }
+  },
+
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume" }
+    ],
+    "max": 90
+  },
+
+  "filters": { "minConfidence": 70, "minRiskReward": 2.5 }
+}

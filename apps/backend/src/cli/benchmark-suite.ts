@@ -59,25 +59,25 @@ async function runBenchmark(
 ): Promise<BenchmarkResult | null> {
   try {
     const engine = new BacktestEngine();
-    const result = await engine.runBacktest({
+    const result = await engine.run({
       symbol,
-      interval,
+      interval: interval as any,
       startDate,
       endDate,
       initialCapital: 1000,
-      strategies: [strategy],
+      strategies: [],
       riskPerTrade: 0.02,
       dynamicStrategies: [strategy],
     });
 
     return {
       strategy,
-      winRate: result.summary.winRate,
-      profitFactor: result.summary.profitFactor,
-      sharpeRatio: result.summary.sharpeRatio,
-      totalPnl: result.summary.totalPnl,
-      trades: result.summary.totalTrades,
-      maxDrawdown: result.summary.maxDrawdownPercent,
+      winRate: result.metrics.winRate,
+      profitFactor: result.metrics.profitFactor,
+      sharpeRatio: result.metrics.sharpeRatio ?? 0,
+      totalPnl: result.metrics.totalPnl,
+      trades: result.metrics.totalTrades,
+      maxDrawdown: result.metrics.maxDrawdownPercent,
     };
   } catch (error) {
     console.error(`Error running ${strategy}:`, error);

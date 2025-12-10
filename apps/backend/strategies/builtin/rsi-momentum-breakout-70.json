@@ -1,0 +1,84 @@
+{
+  "id": "rsi-momentum-breakout-70",
+  "name": "RSI Momentum Breakout 70",
+  "version": "1.0.0",
+  "description": "Estratégia de momentum Bitcoin: entry quando RSI(5) cruza acima de 70, exit após 8 dias. Backtestada com ~3% avg gain em BTC. Contraintuitivo mas efetivo: comprar força, não fraqueza.",
+  "author": "MarketMind",
+  "tags": ["momentum", "rsi", "breakout", "crypto-optimized", "time-based-exit"],
+  "source": "QuantifiedStrategies.com - When RSI Crosses 70",
+
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 80,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 80,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": false,
+    "onlyWithTrend": false,
+    "minConfidence": 65,
+    "commission": 0.001
+  },
+  "backtestSummary": {
+    "referenceAvgGain": 3.0,
+    "referenceWinRate": 55,
+    "referenceHoldingPeriod": "8 days",
+    "referenceRSIPeriod": 5,
+    "source": "QuantifiedStrategies.com"
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [],
+    "avoid": ["1m", "5m", "15m", "1h", "4h"],
+    "notes": "Time-based exit strategy designed for daily timeframe only"
+  },
+
+  "parameters": {
+    "rsiPeriod": { "default": 5, "min": 2, "max": 10, "step": 1, "description": "Período do RSI (2 ou 5 recomendado)" },
+    "rsiThreshold": { "default": 70, "min": 65, "max": 80, "step": 5, "description": "Threshold de entry RSI" },
+    "holdingBars": { "default": 8, "min": 5, "max": 15, "step": 1, "description": "Dias para manter posição" },
+    "atrMultiplier": { "default": 3, "min": 2, "max": 5, "step": 0.5, "description": "Multiplicador ATR para stop de emergência" }
+  },
+
+  "indicators": {
+    "rsi": {
+      "type": "rsi",
+      "params": { "period": "$rsiPeriod" }
+    },
+    "atr": {
+      "type": "atr",
+      "params": { "period": 14 }
+    }
+  },
+
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        { "left": "rsi", "op": "crossover", "right": "$rsiThreshold" }
+      ]
+    }
+  },
+
+  "exit": {
+    "stopLoss": {
+      "type": "atr",
+      "multiplier": "$atrMultiplier",
+      "indicator": "atr"
+    },
+    "maxBarsInTrade": "$holdingBars"
+  },
+
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      { "condition": { "left": "volume", "op": ">", "right": "volume.sma20" }, "bonus": 10, "description": "Volume confirmando breakout" },
+      { "condition": { "left": "rsi", "op": "<", "right": 85 }, "bonus": 5, "description": "RSI não extremamente sobrecomprado" }
+    ],
+    "max": 90
+  },
+
+  "filters": {
+    "minConfidence": 65,
+    "minRiskReward": 1.5
+  }
+}
