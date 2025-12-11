@@ -49,9 +49,9 @@ Integração de Machine Learning para:
 | Phase 1: Foundation | ✅ Complete | 100% | Feature extraction pipeline complete |
 | Phase 2: Training Pipeline | ✅ Complete | 100% | Python scripts + TS modules done |
 | Phase 3: Inference Engine | ✅ Complete | 100% | ONNX Runtime + ModelRegistry |
-| Phase 4: Backend Integration | ⏳ Pending | 0% | tRPC router |
-| Phase 5: Evaluation | ⏳ Pending | 0% | Metrics framework |
-| Phase 6: Frontend & Production | ⏳ Pending | 0% | UI + hardening |
+| Phase 4: Backend Integration | ✅ Complete | 100% | tRPC router + MLService + SetupDetection integration |
+| Phase 5: Evaluation | ✅ Complete | 100% | ClassificationMetrics + TradingMetrics + BacktestIntegration |
+| Phase 6: Frontend & Production | 🔄 In Progress | 70% | Core hooks + components done, settings pending |
 
 **Legend:** ✅ Complete | 🔄 In Progress | ⏳ Pending | ❌ Blocked
 
@@ -1138,11 +1138,11 @@ export class InferenceEngine {
 
 | Task | Status | File | Lines Est. |
 |------|--------|------|------------|
-| Create ML router | ⏳ | `apps/backend/src/routers/ml.ts` | ~200 |
-| Add router to index | ⏳ | `apps/backend/src/routers/index.ts` | +5 |
-| Create ML service | ⏳ | `apps/backend/src/services/ml/MLService.ts` | ~150 |
-| Integrate with SetupDetectionService | ⏳ | `apps/backend/src/services/setup-detection/SetupDetectionService.ts` | +50 |
-| Add prediction logging | ⏳ | - | ~80 |
+| Create ML router | ✅ | `apps/backend/src/routers/ml.ts` | ~230 |
+| Add router to index | ✅ | `apps/backend/src/trpc/router.ts` | +5 |
+| Create ML service | ✅ | `apps/backend/src/services/ml/MLService.ts` | ~330 |
+| Create MLEnhancedSetupService | ✅ | `apps/backend/src/services/setup-detection/MLEnhancedSetupService.ts` | ~240 |
+| Add prediction logging | ✅ | (in MLService.ts) | - |
 | Write router tests | ⏳ | `apps/backend/src/routers/__tests__/ml.test.ts` | ~200 |
 
 ### 4.2 tRPC ML Router
@@ -1692,6 +1692,9 @@ Antes de treinar os modelos ML, precisamos validar as estratégias existentes:
 | 2025-12-10 | Phase 1 complete: Feature extraction pipeline implemented | Claude |
 | 2025-12-10 | Phase 2 complete: Training pipeline (Python + TypeScript) | Claude |
 | 2025-12-10 | Phase 3 complete: Inference engine + ModelRegistry | Claude |
+| 2025-12-10 | Phase 4 complete: tRPC ML router, MLService, MLEnhancedSetupService | Claude |
+| 2025-12-10 | Phase 5 complete: Evaluation framework (Classification + Trading metrics + Backtest integration) | Claude |
+| 2025-12-10 | Phase 6 started: useMLPredictions hook, useMLModel hook, MLConfidenceIndicator component | Claude |
 
 ---
 

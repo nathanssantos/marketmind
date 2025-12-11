@@ -6,6 +6,7 @@ export * from './features';
 export * from './training';
 export * from './inference';
 export * from './models';
+export * from './evaluation';
 
 export type {
   TechnicalFeatureSet,
@@ -117,3 +118,25 @@ export type {
   ModelManifest,
   ModelLoaderConfig,
 } from './models';
+
+export {
+  ClassificationEvaluator,
+  TradingMetricsEvaluator,
+  BacktestMLEvaluator,
+  DEFAULT_EVALUATION_CONFIG,
+  calculateAccuracy,
+  calculatePrecision,
+  calculateRecall,
+  calculateF1Score,
+} from './evaluation';
+
+export type {
+  ClassificationReport,
+  ROCPoint,
+  BacktestEvaluationConfig,
+  BacktestEvaluationInput,
+  BacktestEvaluationResult,
+  SetupWithPrediction,
+  EvaluationResult,
+  ConfusionMatrix,
+} from './evaluation';

@@ -47,6 +47,7 @@
     "@fastify/helmet": "^13.0.2",
     "@fastify/rate-limit": "^10.3.0",
     "@marketmind/indicators": "workspace:*",
+    "@marketmind/ml": "workspace:*",
     "@marketmind/types": "workspace:*",
     "@node-rs/argon2": "^2.0.2",
     "@trpc/server": "^11.7.2",

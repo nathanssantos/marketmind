@@ -1,12 +1,25 @@
-/**
- * Evaluation Module
- *
- * Future implementations:
- * - Model performance metrics
- * - Backtesting integration
- * - A/B testing framework
- * - Model comparison
- */
+export {
+  ClassificationEvaluator,
+  type ClassificationMetrics,
+  type ClassificationReport,
+  type ROCPoint,
+} from './ClassificationMetrics';
+
+export {
+  TradingMetricsEvaluator,
+  DEFAULT_THRESHOLDS,
+  type TradingMetrics,
+  type ThresholdConfig,
+} from './TradingMetrics';
+
+export {
+  BacktestMLEvaluator,
+  DEFAULT_EVALUATION_CONFIG,
+  type BacktestEvaluationConfig,
+  type BacktestEvaluationInput,
+  type BacktestEvaluationResult,
+  type SetupWithPrediction,
+} from './BacktestIntegration';
 
 export interface EvaluationResult {
   modelName: string;
