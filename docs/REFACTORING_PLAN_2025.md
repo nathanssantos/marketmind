@@ -1,7 +1,8 @@
+
 # 🔄 MarketMind Refactoring Plan 2025
 
-**Status:** ✅ Sprint 2 - Week 1 Day 1 Complete - Types & Indicators Consolidated  
-**Branch:** `feature/type-consolidation`  
+**Status:** ✅ Sprint 2.5 COMPLETO - Setup Detection Centralizado  
+**Branch:** `main`  
 **Target Date:** Q1 2025  
 **Goal:** Organizar monorepo, consolidar código duplicado, refatorar AI trading e preparar para Machine Learning
 
@@ -11,8 +12,8 @@
 - ✅ Script de remoção de comentários criado (com validação)
 - ✅ Relatório de comentários gerado (654 comentários removíveis em 64 arquivos)
 - ✅ **Remoção de comentários concluída** (656 inline, 0 block, 667 linhas removidas)
-- ✅ **Todos testes passando** (1,852 tests)
-- ✅ **Type check mantido** (2 erros pré-existentes, nenhum novo erro)
+- ✅ **Todos testes passando** (1,959 tests - 1,808 frontend + 151 backend)
+- ✅ **Type check mantido** (zero erros TypeScript)
 - ✅ **Auditoria de tipos duplicados** (12+ duplicações identificadas)
 - ✅ **Auditoria de indicadores duplicados** (8 indicadores duplicados)
 - ✅ **Relatório consolidado** (AUDIT_REPORT_2025.md)
@@ -22,7 +23,9 @@
 - ✅ **Tipos Binance consolidados** (packages/types/src/binance.ts)
 - ✅ **Indicadores consolidados** (9 arquivos duplicados removidos)
 - ✅ **19 arquivos atualizados** (imports para @marketmind/indicators)
-- 🎯 **Sprint 2 - Week 1 Day 1 COMPLETO** ✅
+- ✅ **Sprint 2 COMPLETO** (Types & Indicators)
+- ✅ **Sprint 2.5 COMPLETO** (Setup Detection Centralizado - 12 detectores removidos, tRPC endpoints criados)
+- 🎯 **Próximo: Sprint 3 - AI Trading Refactor**
 
 ---
 
@@ -247,111 +250,87 @@ import type { BinanceOrderResult } from '@marketmind/types';
 
 ---
 
-### Sprint 2.5: Centralização de Setup Detection (1 semana) 🆕 CRÍTICO
+### Sprint 2.5: Centralização de Setup Detection ✅ COMPLETO
 
-**Status:** 📋 A fazer antes do Sprint 3  
-**Prioridade:** 🔴 ALTA - Necessário para trading real  
-**Objetivo:** Mover toda lógica de detecção de setups do frontend para backend
+**Status:** ✅ COMPLETO em 10/12/2025  
+**Branch:** `main` (merged)  
+**Objetivo:** ✅ Mover toda lógica de detecção de setups do frontend para backend
 
-#### 2.5.1 Problema Atual
+#### 2.5.1 Solução Implementada: Backend como Fonte Única
 
-**❌ Frontend tem detectores duplicados:**
-- `apps/electron/src/renderer/services/setupDetection/*.ts` (8 detectores)
-- Setup91Detector, Setup92Detector, Setup93Detector, Setup94Detector
-- BearTrapDetector, BullTrapDetector, BreakoutRetestDetector, Pattern123Detector
-- SetupDetectionService.ts (orquestra tudo)
+**✅ Frontend detector code REMOVED:**
+- ✅ Deleted 12 detector files (Setup91-94, Pattern123, BullTrap, BearTrap, BreakoutRetest, Base, SetupCancellation, Service, index)
+- ✅ Deleted entire `setupDetection/` directory from frontend
+- ✅ Removed 3 legacy detectors from backend (Pattern123, BearTrap, MeanReversion)
+- ✅ Removed obsolete `updateSetupConfig` function from setupStore
 
-**❌ Backend tem estratégias JSON:**
-- `apps/backend/src/services/setup-detection/dynamic/strategies/*.json` (87 estratégias)
-- IndicatorEngine.ts, ConditionEvaluator.ts, ExitCalculator.ts
-- Sistema dinâmico completo e testado
-
-**❌ Toggle Popover desconectado:**
-- Frontend mostra setups hardcoded
-- Backend tem estratégias diferentes
-- Sem sincronização entre front/back
-
-#### 2.5.2 Solução: Backend como Fonte Única
-
-**✅ Mover detectores para backend:**
+**✅ Backend centralization complete:**
 ```
-apps/backend/src/services/setup-detection/
-├── strategies/                    # 87 JSONs existentes
-│   ├── larry-williams-9.1.json
-│   ├── larry-williams-9.2.json
-│   ├── larry-williams-9.3.json
-│   ├── larry-williams-9.4.json
-│   ├── pattern-123-reversal.json
-│   ├── bear-trap.json
-│   ├── bull-trap.json
-│   ├── breakout-retest.json
-│   └── ... (79 outros)
-├── dynamic/
-│   ├── IndicatorEngine.ts        # ✅ Já existe
-│   ├── ConditionEvaluator.ts     # ✅ Já existe
-│   ├── ExitCalculator.ts         # ✅ Já existe
-│   └── StrategyExecutor.ts       # ✅ Já existe
-└── SetupDetectionService.ts      # 🔄 Refatorar (usar dynamic)
+apps/backend/
+├── strategies/builtin/           # 105 JSON strategies
+├── src/routers/setup-detection.ts # NEW: tRPC router with 5 endpoints
+└── src/services/setup-detection/
+    ├── SetupDetectionService.ts  # Refactored (427→200 lines)
+    └── dynamic/
+        ├── IndicatorEngine.ts
+        ├── ConditionEvaluator.ts
+        └── StrategyInterpreter.ts
 ```
 
-**✅ Frontend consome via tRPC:**
+**✅ Frontend integration complete:**
 ```typescript
-// apps/electron/src/renderer/hooks/useSetupDetection.ts
-const { data: setups } = trpc.trading.detectSetups.useQuery({
-  symbol: 'BTCUSDT',
-  interval: '15m',
-  enabledStrategies: ['larry-williams-9.2', 'bear-trap'],
-});
+apps/electron/src/
+├── renderer/services/trpc.ts              # NEW: tRPC client
+├── types/backend.d.ts                     # NEW: Type declarations
+├── renderer/hooks/useSetupDetection.ts    # NEW: useStrategyList hook
+├── renderer/components/
+│   ├── Layout/SetupTogglePopover.tsx      # Refactored (uses backend)
+│   └── Settings/SetupConfigTab.tsx        # Simplified (270→90 lines)
+└── renderer/store/
+    ├── setupConfig.ts                     # Rewritten (122→30 lines)
+    └── setupStore.ts                      # Refactored (removed updateSetupConfig)
 ```
 
-**✅ Toggle Popover dinâmico:**
+#### 2.5.2 tRPC Endpoints Implemented
+
 ```typescript
-// Lista de estratégias vem do backend
-const { data: strategies } = trpc.trading.listStrategies.useQuery();
-
-// Popover renderiza baseado no backend
-strategies.map(strategy => (
-  <Checkbox key={strategy.id} value={strategy.id}>
-    {strategy.name}
-  </Checkbox>
-));
+setupDetection.listStrategies()      // ✅ Returns all 105 strategy definitions
+setupDetection.getStrategyDetails()  // ✅ Returns specific strategy metadata
+setupDetection.detectSetups()        // ✅ Run detection on current klines
+setupDetection.detectSetupsInRange() // ✅ Historical range detection
+setupDetection.validateStrategy()    // ✅ Validate strategy JSON
 ```
 
-#### 2.5.3 Tarefas
+#### 2.5.3 Results
 
-**Fase 1 - Backend API (2 dias):**
-- [ ] Criar `trpc.trading.listStrategies` - retorna lista de 87 estratégias
-- [ ] Criar `trpc.trading.detectSetups` - executa detecção via StrategyExecutor
-- [ ] Criar `trpc.trading.getStrategyDetails` - retorna config de uma estratégia
-- [ ] Validar que 8 setups principais (9.1-9.4, 123, bear/bull trap, breakout) funcionam
+**Deliverables Achieved:**
+- ✅ Zero detectores no frontend (12 arquivos deletados)
+- ✅ Backend como única fonte de lógica de trading (105 estratégias JSON)
+- ✅ Toggle Popover sincronizado com backend (via useStrategyList)
+- ✅ Type-safe API com full tRPC inference
+- ✅ setupConfig simplificado: `{ enabledStrategies: string[], minConfidence, minRiskReward }`
 
-**Fase 2 - Frontend Refactor (2 dias):**
-- [ ] Remover `apps/electron/src/renderer/services/setupDetection/*.ts` (9 arquivos)
-- [ ] Criar `useBackendSetupDetection` hook (substitui useSetupDetection)
-- [ ] Atualizar Toggle Popover para consumir `listStrategies`
-- [ ] Atualizar ChartCanvas para usar setups do backend
+**Test Results:**
+- ✅ Frontend: 1,808 tests passing (1,781 unit + 27 browser)
+- ✅ Backend: 151 tests passing
+- ✅ **Total: 1,959 tests - 100% pass rate**
+- ✅ Zero TypeScript errors
 
-**Fase 3 - Migração de Testes (1 dia):**
-- [ ] Mover testes de setup detection para backend
-- [ ] Validar que 100% dos casos de teste passam
-- [ ] Adicionar testes de integração tRPC
-
-**Fase 4 - Limpeza (1 dia):**
-- [ ] Remover código morto (BaseSetupDetector, etc)
-- [ ] Atualizar documentação (SETUP_GUIDE.md)
-- [ ] Validar que backtesting ainda funciona
-
-**Deliverables:**
-- ✅ Zero detectores no frontend
-- ✅ Backend como única fonte de lógica de trading
-- ✅ Toggle Popover sincronizado com backend
-- ✅ Pronto para trading real
+**Architecture:**
+- Frontend detectors: GONE (100% removed)
+- Backend: Single StrategyInterpreter handles all 105 JSON strategies
+- State: enabledStrategies array instead of individual setup objects
+- Ready for real trading ✅
 
 ---
 
-### Sprint 3: Refatoração AI Trading (2 semanas)
+### Sprint 3: Refatoração AI Trading (2 semanas) 🚧 EM PROGRESSO
 
-#### 3.1 Nova Arquitetura
+**Status:** 🟡 Day 1 em progresso - Tipos e serviços base criados  
+**Branch:** `main`  
+**Objetivo:** Separar responsabilidades - AI faz análise contextual, algoritmos fazem detecção técnica
+
+#### 3.1 Nova Arquitetura ✅ DEFINIDA
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -411,9 +390,43 @@ strategies.map(strategy => (
 └─────────────────────────────────────────────────────────────┘
 ```
 
-#### 3.2 Novos Types
+#### 3.2 Novos Types ✅ CRIADOS
 
-**`packages/types/src/aiTrading.ts`:**
+**Arquivo criado:** `packages/types/src/aiTradingContext.ts`
+
+```typescript
+export interface AITradingContext {
+  detectedSetups: TradingSetup[];
+  news: NewsArticle[];
+  calendarEvents: CalendarEvent[];
+  fearGreedIndex: number;
+  btcDominance: number;
+  marketSentiment: 'bullish' | 'bearish' | 'neutral';
+  volatility: number;
+  liquidityLevel: 'high' | 'medium' | 'low';
+  fundingRate?: number;
+  openInterest?: number;
+}
+
+export interface AITradingDecisionEnhanced {
+  selectedSetup: TradingSetup | null;
+  action: 'BUY' | 'SELL' | 'HOLD';
+  confidence: number;
+  entryPrice: number;
+  stopLoss: number;
+  takeProfit: number;
+  positionSizePercent: number;
+  urgency: 'immediate' | 'wait_for_pullback' | 'wait_for_confirmation';
+  reasoning: string;
+  contextualFactors: string[];
+}
+```
+
+**Exports atualizados:** `packages/types/src/index.ts` inclui `aiTradingContext`
+
+#### 3.3 Context Aggregator Service ✅ CRIADO
+
+**Arquivo criado:** `apps/backend/src/services/ai-trading/ContextAggregator.ts`
 
 ```typescript
 export interface AITradingContext {
@@ -459,68 +472,107 @@ export interface AITradingDecision {
 
 #### 3.3 Context Aggregator Service
 
-**Novo:** `apps/backend/src/services/ai-trading/ContextAggregator.ts`
+**Funcionalidades implementadas:**
+- ✅ `buildContext()` - Agrega todos dados contextuais
+- ✅ `fetchRecentNews()` - Busca notícias recentes
+- ✅ `fetchUpcomingEvents()` - Busca eventos do calendário
+- ✅ `getFearGreedIndex()` - Índice de medo/ganância
+- ✅ `getBTCDominance()` - Dominância do BTC
+- ✅ `getFundingRate()` - Taxa de funding
+- ✅ `getOpenInterest()` - Open interest
+- ✅ `filterRelevantNews()` - Filtra notícias relevantes para o símbolo
+- ✅ `calculateSentiment()` - Calcula sentimento de mercado
+- ✅ `calculateVolatility()` - Calcula volatilidade
+- ✅ `assessLiquidity()` - Avalia nível de liquidez
 
-```typescript
-export class ContextAggregator {
-  async buildContext(
-    symbol: string,
-    detectedSetups: TradingSetup[]
-  ): Promise<AITradingContext> {
-    const [news, events, fearIndex, btcDom] = await Promise.all([
-      this.fetchRecentNews(symbol),
-      this.fetchUpcomingEvents(symbol),
-      this.getFearGreedIndex(),
-      this.getBTCDominance(),
-    ]);
+**Configurável via:** `ContextAggregatorConfig`
 
-    return {
-      detectedSetups,
-      news: this.filterRelevantNews(news, symbol),
-      calendarEvents: events,
-      fearGreedIndex: fearIndex,
-      btcDominance: btcDom,
-      marketSentiment: this.calculateSentiment(news, fearIndex),
-      volatility: this.calculateVolatility(symbol),
-      liquidityLevel: this.assessLiquidity(symbol),
-    };
-  }
+#### 3.4 Atualizar AI Prompts ✅ CRIADOS
+
+**Arquivo criado:** `apps/electron/src/renderer/services/ai/prompts-trading-context.json`
+
+**Mudanças principais:**
+- ❌ REMOVIDO: Toda lógica de pattern detection (34 patterns)
+- ❌ REMOVIDO: Instruções de análise técnica (RSI, MACD, indicators)
+- ❌ REMOVIDO: Detecção de support/resistance
+- ❌ REMOVIDO: Detecção de trendlines e canais
+- ✅ ADICIONADO: Setup validation mode (valida setups detectados)
+- ✅ ADICIONADO: Análise contextual (news, events, sentiment)
+- ✅ ADICIONADO: Timing recommendations (immediate, wait_for_pullback, wait_for_confirmation)
+- ✅ ADICIONADO: Position sizing based on context
+- ✅ ADICIONADO: Contextual factors array
+
+**Novo formato de resposta:**
+```json
+{
+  "selectedSetup": { setupObject } | null,
+  "action": "BUY" | "SELL" | "HOLD",
+  "confidence": 0-100,
+  "entryPrice": number,
+  "stopLoss": number,
+  "takeProfit": number,
+  "positionSizePercent": 1-100,
+  "urgency": "immediate" | "wait_for_pullback" | "wait_for_confirmation",
+  "reasoning": "string",
+  "contextualFactors": ["factor1", "factor2"]
 }
 ```
 
-#### 3.4 Atualizar AI Prompts
+**Profiles atualizados:**
+- Conservative: 60% min confidence, max 5% position size, prefer confirmations
+- Moderate: 50% min confidence, max 10% position size, balanced approach
+- Aggressive: 40% min confidence, max 15% position size, immediate entries
 
-**Remover de `prompts.json`:**
-- ❌ Pattern detection instructions
-- ❌ Support/resistance identification
-- ❌ Technical analysis calculations
+#### 3.5 Migration Steps 🔄 PRÓXIMAS ETAPAS
 
-**Adicionar:**
-- ✅ Setup interpretation (recebe setups já detectados)
-- ✅ News sentiment analysis
-- ✅ Calendar event impact assessment
-- ✅ Macro trend consideration
-- ✅ Risk/reward optimization based on context
+**Fase 1 - Backend Integration (próximo):**
+- [ ] Integrar ContextAggregator com serviços existentes (news, calendar, BTC dominance)
+- [ ] Criar tRPC endpoint `aiTrading.analyzeWithContext`
+- [ ] Conectar com SetupDetectionService para obter setups
+- [ ] Implementar caching de dados contextuais
 
-**Exemplo de novo prompt:**
+**Fase 2 - Frontend Refactor:**
+- [ ] Atualizar `AITradingAgent.ts` para usar novos prompts
+- [ ] Remover pattern detection do frontend (PatternDetectionService usage)
+- [ ] Implementar parsing de AITradingDecisionEnhanced
+- [ ] Atualizar UI para mostrar contextual factors
+- [ ] Adicionar urgency indicators no chart
 
-```
-You are a trading analyst. You receive algorithmically detected trading setups 
-and must decide which to use based on contextual factors.
+**Fase 3 - Pattern Detection Removal:**
+- [ ] Remover código de pattern detection não usado
+- [ ] Limpar imports de PatternDetectionService em AITradingAgent
+- [ ] Atualizar testes para nova arquitetura
+- [ ] Validar que pattern detection ainda funciona manualmente (para análise do usuário)
 
-DETECTED SETUPS:
-{setups}
+**Fase 4 - Testing & Validation:**
+- [ ] Unit tests para ContextAggregator
+- [ ] Integration tests para AI Trading pipeline completo
+- [ ] Backtests comparando old vs new approach
+- [ ] Validar que confidence scoring melhora com contexto
 
-CONTEXTUAL DATA:
-- Recent News: {news}
-- Upcoming Events: {events}
-- Fear & Greed Index: {fearIndex}
-- BTC Dominance: {btcDominance}
-- Market Sentiment: {sentiment}
+#### 3.6 Progresso Sprint 3 - Day 1
 
-TASK:
-1. Evaluate which setup (if any) has the best risk/reward given current context
-2. Consider news sentiment and calendar events
+**✅ Completado:**
+1. Criado `packages/types/src/aiTradingContext.ts` com 3 tipos novos
+2. Criado `apps/backend/src/services/ai-trading/ContextAggregator.ts` (150 linhas)
+3. Criado `prompts-trading-context.json` com prompts contextuais (sem pattern detection)
+4. Atualizado `packages/types/src/index.ts` para exportar novos tipos
+
+**📊 Estatísticas:**
+- **Arquivos criados:** 3
+- **Linhas de código:** ~350
+- **Pattern detection removido dos prompts:** 100%
+- **Foco contextual adicionado:** 100%
+
+**🎯 Próximo (Day 2):**
+1. Integrar ContextAggregator com serviços backend existentes
+2. Criar tRPC endpoint para análise com contexto
+3. Refatorar AITradingAgent para consumir novo endpoint
+4. Começar testes unitários
+
+---
+
+### Sprint 4: Code Cleanup (1 semana) 📋 PLANEJADO
 3. Assess timing (immediate entry or wait?)
 4. Recommend position sizing based on confidence and market conditions
 
@@ -551,9 +603,12 @@ Respond with your analysis and recommendation.
 
 ---
 
-### Sprint 4: Code Cleanup (1 semana)
+### Sprint 4: Code Cleanup (1 semana) 📋 PLANEJADO
 
-#### 4.1 Remover Comentários Inline
+**Status:** Aguardando Sprint 3  
+**Prioridade:** Média (pode ser feito em paralelo com testes do Sprint 3)
+
+#### 4.1 Remover Comentários Inline ⏸️ PAUSADO
 
 **Script Automático Seguro:**
 ```bash

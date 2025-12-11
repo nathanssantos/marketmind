@@ -1,3 +1,4 @@
+import { aiTradingRouter } from '../routers/ai-trading';
 import { analyticsRouter } from '../routers/analytics';
 import { authRouter } from '../routers/auth';
 import { autoTradingRouter } from '../routers/auto-trading';
@@ -16,6 +17,7 @@ export const appRouter = router({
   wallet: walletRouter,
   trading: tradingRouter,
   autoTrading: autoTradingRouter,
+  aiTrading: aiTradingRouter,
   analytics: analyticsRouter,
   kline: klineRouter,
   setup: setupRouter,
