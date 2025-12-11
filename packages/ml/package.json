@@ -1,0 +1,28 @@
+{
+  "name": "@marketmind/ml",
+  "version": "0.1.0",
+  "description": "Machine Learning package for MarketMind trading predictions",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "echo 'No tests yet - placeholder package'",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@marketmind/types": "workspace:*",
+    "@marketmind/indicators": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "keywords": [
+    "machine-learning",
+    "trading",
+    "prediction",
+    "crypto"
+  ],
+  "author": "MarketMind Team",
+  "license": "MIT"
+}

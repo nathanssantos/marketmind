@@ -1,6 +1,6 @@
 # MarketMind Documentation Index
 
-**Total: 46 docs | Updated: 2025-12-10**
+**Total: 47 docs | Updated: 2025-12-10**
 
 ## Getting Started
 - [Setup Guide](./SETUP_GUIDE.md) - Complete project setup from scratch
@@ -63,8 +63,12 @@
 - [Version Management](./VERSION_MANAGEMENT.md) - Versioning strategy
 - [Git Commands](./GIT_COMMANDS.md) - Useful Git commands
 
+## Machine Learning
+- [ML Features](./ML_FEATURES.md) - Available features for ML training
+- [packages/ml](../packages/ml/README.md) - ML package structure (placeholder)
+
 ## Refactoring & Migration
-- [Refactoring Plan 2025](./REFACTORING_PLAN_2025.md) - Current refactoring plan
+- [Refactoring Plan 2025](./REFACTORING_PLAN_2025.md) - Refactoring plan (COMPLETE ✅)
 - [Type Migration Map](./TYPE_MIGRATION_MAP.md) - Type consolidation map
 - [Indicator Consolidation](./INDICATOR_CONSOLIDATION.md) - Indicator deduplication
 - [Audit Report 2025](./AUDIT_REPORT_2025.md) - Code audit findings
