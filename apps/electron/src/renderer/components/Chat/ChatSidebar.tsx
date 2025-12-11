@@ -6,6 +6,7 @@ import { useAIStore } from '../../store/aiStore';
 import { SidebarContainer, SidebarHeader } from '../ui/Sidebar';
 import { TooltipWrapper } from '../ui/Tooltip';
 import { ConversationHistory } from './ConversationHistory';
+import { MarketContextDisplay } from './MarketContextDisplay';
 import { MessageInput } from './MessageInput';
 import { MessageList } from './MessageList';
 
@@ -43,6 +44,7 @@ export const ChatSidebar = ({ width, isOpen }: ChatSidebarProps) => {
           </>
         }
       />
+      <MarketContextDisplay />
       <MessageList />
       <MessageInput />
     </SidebarContainer>

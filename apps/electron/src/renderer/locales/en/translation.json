@@ -22,7 +22,16 @@
     "openChat": "Open chat",
     "deleteConversation": "Delete conversation",
     "conversationHistory": "Conversation history",
-    "tips": "Tips"
+    "tips": "Tips",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "direction": "Direction",
+    "long": "Long",
+    "short": "Short",
+    "entry": "Entry",
+    "stopLoss": "Stop Loss",
+    "takeProfit": "Take Profit",
+    "ratio": "Ratio"
   },
   "app": {
     "title": "MarketMind",
@@ -54,12 +63,33 @@
       "chart": "Chart",
       "ai": "AI Configuration",
       "aiTrading": "AI Auto-Trading",
+      "context": "Context",
       "algorithmicAutoTrading": "Algorithmic Auto-Trading",
       "setupDetection": "Setup Detection",
       "patternDetection": "Pattern Detection",
       "news": "News",
       "tradingSimulator": "Trading Simulator",
       "about": "About"
+    },
+    "contextConfig": {
+      "title": "Market Context Configuration",
+      "description": "Configure data sources and time ranges for AI trading context analysis",
+      "dataSources": "Data Sources",
+      "timeRanges": "Time Ranges",
+      "fearGreed": "Fear & Greed Index",
+      "fearGreedDesc": "Measure market sentiment (0-100 scale)",
+      "btcDominance": "BTC Dominance",
+      "btcDominanceDesc": "Bitcoin market cap percentage",
+      "fundingRate": "Funding Rate",
+      "fundingRateDesc": "Perpetual futures funding rate data",
+      "openInterest": "Open Interest",
+      "openInterestDesc": "Total open positions in futures markets",
+      "newsLookback": "News Lookback Period (hours)",
+      "newsLookbackDesc": "How many hours of news to analyze",
+      "eventsLookforward": "Events Lookforward Period (days)",
+      "eventsLookforwardDesc": "How many days ahead to check calendar events",
+      "updateSuccess": "Configuration updated successfully",
+      "updateError": "Failed to update configuration"
     },
     "language": {
       "title": "Language",
@@ -268,6 +298,25 @@
     "startConversation": "Start a conversation to get insights about the chart",
     "emptyStateTitle": "Start a conversation",
     "emptyStateDescription": "Ask me to analyze the chart, explain patterns, or provide trading insights"
+  },
+  "context": {
+    "marketContext": "Market Context",
+    "refresh": "Refresh Context",
+    "sentiment": "Sentiment",
+    "fearGreed": "Fear & Greed",
+    "btcDominance": "BTC Dominance",
+    "fundingRate": "Funding Rate",
+    "openInterest": "Open Interest",
+    "volatility": "Volatility",
+    "news": "News",
+    "articles": "articles",
+    "detectedSetups": "Detected Setups",
+    "noContext": "Click refresh to load market context",
+    "sentiments": {
+      "bullish": "Bullish",
+      "bearish": "Bearish",
+      "neutral": "Neutral"
+    }
   },
   "chart": {
     "controls": {
@@ -595,7 +644,9 @@
       "winRate": "Win Rate",
       "netPnL": "Net P&L"
     },
-    "clearHistory": "Clear Trading History"
+    "clearHistory": "Clear Trading History",
+    "confidence": "Confidence",
+    "urgency": "Urgency"
   },
   "patternDetection": {
     "title": "Pattern Detection Configuration",

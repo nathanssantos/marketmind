@@ -51,6 +51,8 @@ export interface TradingSetup {
   cancellationReason?: SetupCancellationReason;
   isTriggered?: boolean;
   triggeredAt?: number;
+  urgency?: 'immediate' | 'wait_for_pullback' | 'wait_for_confirmation';
+  contextualFactors?: string[];
 }
 
 export interface PivotPoint {

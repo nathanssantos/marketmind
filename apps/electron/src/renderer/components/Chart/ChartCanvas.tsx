@@ -13,10 +13,11 @@ import {
 } from '@/renderer/components/ui/dialog';
 import { Box, Portal } from '@chakra-ui/react';
 import { calculateMovingAverage, type StochasticResult } from '@marketmind/indicators';
-import type { AIPattern, Kline, Order, Viewport } from '@marketmind/types';
+import type { AIPattern, AITradingContext, Kline, Order, Viewport } from '@marketmind/types';
 import { useAutoTrading } from '@renderer/hooks/useAutoTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useChartColors } from '@renderer/hooks/useChartColors';
+import { useMarketContext } from '@renderer/hooks/useMarketContext';
 import { useRSIWorker } from '@renderer/hooks/useRSIWorker';
 import { useSetupDetection } from '@renderer/hooks/useSetupDetection';
 import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
@@ -135,6 +136,7 @@ export const ChartCanvas = ({
   const removeDetectedSetup = useSetupStore((state) => state.removeDetectedSetup);
   const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
   const setupConfig = useSetupStore((state) => state.config);
+  const { getContext } = useMarketContext();
   const setupDetector = useSetupDetection({
     symbol,
     interval: timeframe as any,
@@ -232,6 +234,8 @@ export const ChartCanvas = ({
     };
     order?: Order;
     currentPrice?: number;
+    setup?: typeof hoveredSetup;
+    setupContext?: AITradingContext | null;
   }>({
     kline: null,
     x: 0,
@@ -279,15 +283,18 @@ export const ChartCanvas = ({
 
   const handleSetupHover = useCallback((setup: typeof hoveredSetup) => {
     setHoveredSetup(setup);
-    if (setup && mousePosition) {
+    if (setup && mousePosition && symbol) {
+      const context = getContext(symbol);
       setTooltipData({
         kline: null,
         x: mousePosition.x,
         y: mousePosition.y,
         visible: true,
+        setup,
+        setupContext: context ?? null,
       });
     }
-  }, [mousePosition]);
+  }, [mousePosition, getContext, symbol]);
 
   const handleConfirmCloseOrder = useCallback((): void => {
     if (!orderToClose || !manager) return;
@@ -1536,6 +1543,8 @@ export const ChartCanvas = ({
           {...(tooltipData.measurement && { measurement: tooltipData.measurement })}
           {...(tooltipData.order && { order: tooltipData.order })}
           {...(tooltipData.currentPrice && { currentPrice: tooltipData.currentPrice })}
+          {...(tooltipData.setup && { setup: tooltipData.setup })}
+          {...(tooltipData.setupContext && { setupContext: tooltipData.setupContext })}
         />
       </Box>
     </>

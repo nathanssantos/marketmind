@@ -22,7 +22,16 @@
     "openChat": "Abrir chat",
     "deleteConversation": "Eliminar conversación",
     "conversationHistory": "Historial de conversaciones",
-    "tips": "Consejos"
+    "tips": "Consejos",
+    "collapse": "Contraer",
+    "expand": "Expandir",
+    "direction": "Dirección",
+    "long": "Largo",
+    "short": "Corto",
+    "entry": "Entrada",
+    "stopLoss": "Stop Loss",
+    "takeProfit": "Take Profit",
+    "ratio": "Relación"
   },
   "app": {
     "title": "MarketMind",
@@ -54,12 +63,33 @@
       "chart": "Gráfico",
       "ai": "Configuración de IA",
       "aiTrading": "Auto-Trading IA",
+      "context": "Contexto",
       "algorithmicAutoTrading": "Auto-Trading Algorítmico",
       "setupDetection": "Detección de Setups",
       "patternDetection": "Detección de Patrones",
       "news": "Noticias",
       "tradingSimulator": "Simulador de Trading",
       "about": "Acerca de"
+    },
+    "contextConfig": {
+      "title": "Configuración de Contexto de Mercado",
+      "description": "Configure fuentes de datos y rangos de tiempo para análisis de contexto de trading con IA",
+      "dataSources": "Fuentes de Datos",
+      "timeRanges": "Rangos de Tiempo",
+      "fearGreed": "Índice de Miedo y Codicia",
+      "fearGreedDesc": "Medir sentimiento del mercado (escala 0-100)",
+      "btcDominance": "Dominancia BTC",
+      "btcDominanceDesc": "Porcentaje de capitalización de mercado de Bitcoin",
+      "fundingRate": "Tasa de Funding",
+      "fundingRateDesc": "Datos de tasa de funding de futuros perpetuos",
+      "openInterest": "Open Interest",
+      "openInterestDesc": "Total de posiciones abiertas en mercados de futuros",
+      "newsLookback": "Período de Retrospección de Noticias (horas)",
+      "newsLookbackDesc": "Cuántas horas de noticias analizar",
+      "eventsLookforward": "Período de Previsión de Eventos (días)",
+      "eventsLookforwardDesc": "Cuántos días adelante verificar eventos del calendario",
+      "updateSuccess": "Configuración actualizada exitosamente",
+      "updateError": "Error al actualizar configuración"
     },
     "language": {
       "title": "Idioma",
@@ -268,6 +298,25 @@
     "startConversation": "Inicia una conversación para obtener información sobre el gráfico",
     "emptyStateTitle": "Iniciar una conversación",
     "emptyStateDescription": "Pídeme que analice el gráfico, explique patrones o proporcione información de trading"
+  },
+  "context": {
+    "marketContext": "Contexto de Mercado",
+    "refresh": "Actualizar Contexto",
+    "sentiment": "Sentimiento",
+    "fearGreed": "Miedo y Codicia",
+    "btcDominance": "Dominancia BTC",
+    "fundingRate": "Tasa de Funding",
+    "openInterest": "Open Interest",
+    "volatility": "Volatilidad",
+    "news": "Noticias",
+    "articles": "artículos",
+    "detectedSetups": "Setups Detectados",
+    "noContext": "Haz clic en actualizar para cargar el contexto del mercado",
+    "sentiments": {
+      "bullish": "Alcista",
+      "bearish": "Bajista",
+      "neutral": "Neutral"
+    }
   },
   "chart": {
     "controls": {
@@ -595,7 +644,9 @@
       "winRate": "Tasa de Acierto",
       "netPnL": "Ganancia/Pérdida Neta"
     },
-    "clearHistory": "Limpiar Historial de Trading"
+    "clearHistory": "Limpiar Historial de Trading",
+    "confidence": "Confianza",
+    "urgency": "Urgencia"
   },
   "patternDetection": {
     "title": "Configuración de Detección de Patrones",

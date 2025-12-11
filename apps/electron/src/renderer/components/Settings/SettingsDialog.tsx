@@ -9,6 +9,7 @@ import { AIConfigTab } from './AIConfigTab';
 import { AITradingConfigTab } from './AITradingConfigTab';
 import { AlgorithmicAutoTradingTab } from './AlgorithmicAutoTradingTab';
 import { ChartSettingsTab } from './ChartSettingsTab';
+import { ContextConfigTab } from './ContextConfigTab';
 import { GeneralTab } from './GeneralTab';
 import { NewsConfigTab } from './NewsConfigTab';
 import { PatternDetectionTab } from './PatternDetectionTab';
@@ -49,6 +50,7 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 <Tabs.Trigger value="chart">{t('settings.tabs.chart')}</Tabs.Trigger>
                 <Tabs.Trigger value="ai">{t('settings.tabs.ai')}</Tabs.Trigger>
                 <Tabs.Trigger value="aiTrading">{t('settings.tabs.aiTrading')}</Tabs.Trigger>
+                <Tabs.Trigger value="context">{t('settings.tabs.context')}</Tabs.Trigger>
                 <Tabs.Trigger value="algorithmicAutoTrading">{t('settings.tabs.algorithmicAutoTrading')}</Tabs.Trigger>
                 <Tabs.Trigger value="setupDetection">{t('settings.tabs.setupDetection')}</Tabs.Trigger>
                 <Tabs.Trigger value="patternDetection">{t('settings.tabs.patternDetection')}</Tabs.Trigger>
@@ -72,9 +74,12 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 <Tabs.Content value="ai">
                   <AIConfigTab />
                 </Tabs.Content>
-
                 <Tabs.Content value="aiTrading">
                   <AITradingConfigTab />
+                </Tabs.Content>
+
+                <Tabs.Content value="context">
+                  <ContextConfigTab />
                 </Tabs.Content>
 
                 <Tabs.Content value="algorithmicAutoTrading">

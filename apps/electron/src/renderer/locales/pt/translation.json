@@ -22,7 +22,16 @@
     "openChat": "Abrir chat",
     "deleteConversation": "Excluir conversa",
     "conversationHistory": "Histórico de conversas",
-    "tips": "Dicas"
+    "tips": "Dicas",
+    "collapse": "Recolher",
+    "expand": "Expandir",
+    "direction": "Direção",
+    "long": "Comprado",
+    "short": "Vendido",
+    "entry": "Entrada",
+    "stopLoss": "Stop Loss",
+    "takeProfit": "Take Profit",
+    "ratio": "Proporção"
   },
   "app": {
     "title": "MarketMind",
@@ -60,6 +69,26 @@
       "news": "Notícias",
       "tradingSimulator": "Simulador de Trading",
       "about": "Sobre"
+    },
+    "contextConfig": {
+      "title": "Configuração de Contexto de Mercado",
+      "description": "Configure fontes de dados e períodos de tempo para análise de contexto de trading com IA",
+      "dataSources": "Fontes de Dados",
+      "timeRanges": "Períodos de Tempo",
+      "fearGreed": "Índice de Medo e Ganância",
+      "fearGreedDesc": "Medir sentimento do mercado (escala 0-100)",
+      "btcDominance": "Dominância BTC",
+      "btcDominanceDesc": "Porcentagem de capitalização de mercado do Bitcoin",
+      "fundingRate": "Taxa de Funding",
+      "fundingRateDesc": "Dados de taxa de funding de futuros perpétuos",
+      "openInterest": "Open Interest",
+      "openInterestDesc": "Total de posições abertas nos mercados futuros",
+      "newsLookback": "Período de Retrospectiva de Notícias (horas)",
+      "newsLookbackDesc": "Quantas horas de notícias analisar",
+      "eventsLookforward": "Período de Previsão de Eventos (dias)",
+      "eventsLookforwardDesc": "Quantos dias à frente verificar eventos do calendário",
+      "updateSuccess": "Configuração atualizada com sucesso",
+      "updateError": "Falha ao atualizar configuração"
     },
     "language": {
       "title": "Idioma",

@@ -26,7 +26,7 @@ export const useMarketContext = () => {
   const updateContextConfig = useMutation({
     mutationFn: (config: Partial<ContextAggregatorConfig>) => 
       trpc.aiTrading.updateContextConfig.mutate(config),
-    onSuccess: (data) => {
+    onSuccess: (data: { config: ContextAggregatorConfig }) => {
       queryClient.setQueryData(['marketContextConfig'], data.config);
     },
   });

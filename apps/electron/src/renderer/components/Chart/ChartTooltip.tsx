@@ -1,18 +1,17 @@
 import { formatDateTimeTooltip, formatPrice } from '@/renderer/utils/formatters';
-import { Box, HStack, Stack, Text } from '@chakra-ui/react';
-import type { AIPattern, Kline } from '@marketmind/types';
-import type { Order } from '@marketmind/types';
+import { Badge, Box, HStack, Stack, Text } from '@chakra-ui/react';
+import type { AIPattern, AITradingContext, Kline, Order, TradingSetup } from '@marketmind/types';
 import {
+  getKlineAverageTradeValue,
+  getKlineBuyPressure,
   getKlineClose,
   getKlineHigh,
   getKlineLow,
   getKlineOpen,
-  getKlineVolume,
+  getKlinePressureType,
   getKlineQuoteVolume,
   getKlineTrades,
-  getKlineBuyPressure,
-  getKlinePressureType,
-  getKlineAverageTradeValue,
+  getKlineVolume,
   getOrderCreatedAt,
   getOrderPrice,
   getOrderQuantity,
@@ -47,6 +46,8 @@ export interface ChartTooltipProps {
   } | undefined;
   order?: Order | null | undefined;
   currentPrice?: number | undefined;
+  setup?: TradingSetup | null | undefined;
+  setupContext?: AITradingContext | null | undefined;
 }
 
 export const ChartTooltip = ({
@@ -61,10 +62,12 @@ export const ChartTooltip = ({
   measurement,
   order,
   currentPrice,
+  setup,
+  setupContext,
 }: ChartTooltipProps): ReactElement | null => {
   const { t } = useTranslation();
 
-  if (!visible || (!kline && !aiPattern && !movingAverage && !measurement && !order)) return null;
+  if (!visible || (!kline && !aiPattern && !movingAverage && !measurement && !order && !setup)) return null;
 
   const isBullish = kline ? getKlineClose(kline) >= getKlineOpen(kline) : false;
   const change = kline ? getKlineClose(kline) - getKlineOpen(kline) : 0;
@@ -429,6 +432,139 @@ export const ChartTooltip = ({
             <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
               <Text color="fg.muted">Value:</Text>
               <Text fontWeight="medium">{formatPrice(movingAverage.value)}</Text>
+            </HStack>
+          )}
+        </Stack>
+      </Box>
+    );
+  }
+
+  if (setup) {
+    const isLong = setup.direction === 'LONG';
+    const riskRewardRatio = setup.stopLoss && setup.takeProfit
+      ? Math.abs((setup.takeProfit - setup.entryPrice) / (setup.entryPrice - setup.stopLoss))
+      : null;
+
+    const getUrgencyColor = (urgency: string) => {
+      if (urgency === 'immediate') return 'red';
+      if (urgency === 'wait_for_pullback') return 'orange';
+      return 'green';
+    };
+
+    const getUrgencyLabel = (urgency: string) => {
+      if (urgency === 'immediate') return 'Immediate';
+      if (urgency === 'wait_for_pullback') return 'Wait for Pullback';
+      return 'Wait for Confirmation';
+    };
+
+    const getSentimentColor = (sentiment: string) => {
+      if (sentiment === 'bullish') return 'green';
+      if (sentiment === 'bearish') return 'red';
+      return 'gray';
+    };
+
+    return (
+      <Box
+        position="absolute"
+        left={`${leftPos}px`}
+        top={`${topPos}px`}
+        bg="bg.muted"
+        color="fg"
+        p={3}
+        borderRadius="md"
+        boxShadow="lg"
+        fontSize="xs"
+        zIndex={1000}
+        pointerEvents="none"
+        opacity={0.95}
+        minW={`${tooltipWidth}px`}
+        borderWidth={1}
+        borderColor="border"
+      >
+        <Stack gap={1.5}>
+          {setup.openTime && (
+            <Text fontSize="2xs" color="fg.muted" mb={1}>
+              {new Date(setup.openTime).toLocaleString()}
+            </Text>
+          )}
+
+          <HStack gap={1.5}>
+            <Text>{isLong ? '📈' : '📉'}</Text>
+            <Text fontWeight="semibold" color={isLong ? 'green.500' : 'red.500'}>
+              {setup.type.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            </Text>
+          </HStack>
+
+          <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+            <Text color="fg.muted">{t('common.direction')}:</Text>
+            <Text fontWeight="medium" color={isLong ? 'green.500' : 'red.500'}>
+              {isLong ? t('common.long') : t('common.short')}
+            </Text>
+          </HStack>
+
+          {setup.confidence !== undefined && (
+            <HStack justify="space-between">
+              <Text color="fg.muted">{t('aiTrading.confidence')}:</Text>
+              <Text fontWeight="medium" color={setup.confidence >= 0.7 ? 'green.500' : setup.confidence >= 0.5 ? 'yellow.500' : 'orange.500'}>
+                {Math.round(setup.confidence * 100)}%
+              </Text>
+            </HStack>
+          )}
+
+          {riskRewardRatio && (
+            <HStack justify="space-between">
+              <Text color="fg.muted">R:R {t('common.ratio')}:</Text>
+              <Text fontWeight="medium" color="blue.500">
+                1:{riskRewardRatio.toFixed(2)}
+              </Text>
+            </HStack>
+          )}
+
+          {setupContext && (
+            <>
+              <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+                <Text color="fg.muted">{t('context.sentiment')}:</Text>
+                <Badge colorScheme={getSentimentColor(setupContext.marketSentiment)}>
+                  {t(`context.sentiments.${setupContext.marketSentiment}`)}
+                </Badge>
+              </HStack>
+
+              {setupContext.fearGreedIndex !== undefined && (
+                <HStack justify="space-between">
+                  <Text color="fg.muted">{t('context.fearGreed')}:</Text>
+                  <Text fontWeight="medium">
+                    {setupContext.fearGreedIndex}
+                  </Text>
+                </HStack>
+              )}
+            </>
+          )}
+
+          {setup.urgency && (
+            <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+              <Text color="fg.muted">{t('aiTrading.urgency')}:</Text>
+              <Badge colorScheme={getUrgencyColor(setup.urgency)}>
+                {getUrgencyLabel(setup.urgency)}
+              </Badge>
+            </HStack>
+          )}
+
+          <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+            <Text color="fg.muted">{t('common.entry')}:</Text>
+            <Text fontWeight="medium">{formatPrice(setup.entryPrice)}</Text>
+          </HStack>
+
+          {setup.stopLoss && (
+            <HStack justify="space-between">
+              <Text color="fg.muted">{t('common.stopLoss')}:</Text>
+              <Text fontWeight="medium" color="red.500">{formatPrice(setup.stopLoss)}</Text>
+            </HStack>
+          )}
+
+          {setup.takeProfit && (
+            <HStack justify="space-between">
+              <Text color="fg.muted">{t('common.takeProfit')}:</Text>
+              <Text fontWeight="medium" color="green.500">{formatPrice(setup.takeProfit)}</Text>
             </HStack>
           )}
         </Stack>

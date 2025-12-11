@@ -25,6 +25,14 @@ vi.mock('./AIConfigTab', () => ({
     AIConfigTab: () => <div>AIConfigTab Content</div>,
 }));
 
+vi.mock('./AITradingConfigTab', () => ({
+    AITradingConfigTab: () => <div>AITradingConfigTab Content</div>,
+}));
+
+vi.mock('./ContextConfigTab', () => ({
+    ContextConfigTab: () => <div>ContextConfigTab Content</div>,
+}));
+
 vi.mock('./NewsConfigTab', () => ({
     NewsConfigTab: () => <div>NewsConfigTab Content</div>,
 }));
