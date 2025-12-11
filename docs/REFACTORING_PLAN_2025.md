@@ -728,23 +728,31 @@ grep -r "export const calculatePercentage" apps
 
 ---
 
-### Sprint 5: Documentação (1 semana)
+### Sprint 5: Documentação (1 semana) 🚧 EM PROGRESSO
 
-#### 5.1 Auditoria de Documentação
+**Status:** 🟡 Day 1 - INDEX.md criado, arquivos arquivados
+**Data:** 10/12/2025
+
+#### 5.1 Auditoria de Documentação ✅ COMPLETO
 
 **Categorizar arquivos em `/docs`:**
 
-| Categoria | Arquivos | Ação |
-|-----------|----------|------|
-| **Setup Guides** | `QUICK_START.md`, `QUICK_START_GUIDE.md`, `BACKEND_QUICKSTART.md` | Consolidar em 1 |
-| **Architecture** | `IMPLEMENTATION_PLAN.md`, `MONOREPO.md`, `BACKEND_INTEGRATION_STATUS.md` | Atualizar + merge |
-| **Trading** | `TRADING_*.md` (8 files), `SIMULATOR_TO_REAL_TRADING.md` | Consolidar |
-| **Backtesting** | `BACKTESTING_*.md` (6 files) | Merge em 1 guide |
-| **Context Files** | `NEXT_CHAT_CONTEXT*.md`, `CONTEXT_FOR_NEW_CHAT.md` | Manter apenas 1 atualizado |
-| **Status Reports** | `*_COMPLETE.md`, `*_STATUS.md` | Arquivar em `/docs/archive/` |
-| **Obsolete** | `CRITICAL_BUGS_FIXED*.md`, old optimization logs | Deletar |
+| Categoria | Arquivos | Ação | Status |
+|-----------|----------|------|--------|
+| **Setup Guides** | `QUICK_START.md`, `QUICK_START_GUIDE.md`, `BACKEND_QUICKSTART.md` | Consolidar em 1 | ⏳ |
+| **Architecture** | `IMPLEMENTATION_PLAN.md`, `MONOREPO.md`, `BACKEND_INTEGRATION_STATUS.md` | Atualizar + merge | ⏳ |
+| **Trading** | `TRADING_*.md` (8 files), `SIMULATOR_TO_REAL_TRADING.md` | Consolidar | ⏳ |
+| **Backtesting** | `BACKTESTING_*.md` (6 files) | Merge em 1 guide | ⏳ |
+| **Context Files** | `NEXT_CHAT_CONTEXT*.md`, `CONTEXT_FOR_NEW_CHAT.md` | Arquivar antigos | ✅ |
+| **Status Reports** | `*_COMPLETE.md`, `*_STATUS.md` | Arquivar em `/docs/archive/` | ✅ |
+| **Obsolete** | `CRITICAL_BUGS_FIXED*.md`, old optimization logs | Arquivado | ✅ |
 
-#### 5.2 Criar Documentação Centralizada
+**Arquivos movidos para archive:**
+- `docs/archive/context/` - 3 arquivos (NEXT_CHAT_CONTEXT antigos, CONTEXT_FOR_NEW_CHAT)
+- `docs/archive/status/` - 5 arquivos (CRITICAL_BUGS_FIXED, BACKEND_MIGRATION_COMPLETE, etc)
+- `docs/archive/optimization/` - 3 arquivos (OPTIMIZATION_RESULTS, OPTIMIZATION_LEARNINGS)
+
+#### 5.2 Criar Documentação Centralizada ✅ COMPLETO
 
 **Novo:** `docs/INDEX.md`
 
