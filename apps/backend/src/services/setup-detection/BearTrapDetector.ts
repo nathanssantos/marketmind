@@ -1,11 +1,11 @@
 import { calculateEMA, findPivotPoints } from '@marketmind/indicators';
 import type { Kline, BearTrapConfig } from '@marketmind/types';
-import { createDefaultBearTrapConfig } from '@marketmind/types';
 import {
+    createDefaultBearTrapConfig,
     getKlineClose,
     getKlineHigh,
     getKlineVolume,
-} from '../../utils/klineHelpers';
+} from '@marketmind/types';
 import type { SetupDetectorResult } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';
 

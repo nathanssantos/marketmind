@@ -1,7 +1,10 @@
 import { calculateBollingerBands, calculateRSI } from '@marketmind/indicators';
 import type { Kline, MeanReversionConfig } from '@marketmind/types';
-import { createDefaultMeanReversionConfig } from '@marketmind/types';
-import { getKlineClose, getKlineVolume } from '../../utils/klineHelpers';
+import {
+    createDefaultMeanReversionConfig,
+    getKlineClose,
+    getKlineVolume,
+} from '@marketmind/types';
 import type { SetupDetectorResult } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';
 

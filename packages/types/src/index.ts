@@ -8,6 +8,7 @@ export * from './calendar';
 export * from './chart';
 export * from './fees';
 export * from './kline';
+export * from './klineUtils';
 export * from './market';
 export * from './news';
 export * from './pattern';

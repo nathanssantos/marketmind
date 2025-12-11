@@ -1,7 +1,7 @@
 
 # 🔄 MarketMind Refactoring Plan 2025
 
-**Status:** ✅ Sprint 3 COMPLETO - AI Trading Refactor
+**Status:** ✅ Sprint 4 COMPLETO - Code Cleanup
 **Branch:** `main`
 **Target Date:** Q1 2025
 **Goal:** Organizar monorepo, consolidar código duplicado, refatorar AI trading e preparar para Machine Learning
@@ -26,7 +26,8 @@
 - ✅ **Sprint 2 COMPLETO** (Types & Indicators)
 - ✅ **Sprint 2.5 COMPLETO** (Setup Detection Centralizado - 12 detectores removidos, tRPC endpoints criados)
 - ✅ **Sprint 3 COMPLETO** (AI Trading Refactor - ContextAggregator, tRPC endpoints, prompts contextuais)
-- 🎯 **Próximo: Sprint 4 - Code Cleanup**
+- ✅ **Sprint 4 COMPLETO** (Code Cleanup - Magic numbers extraídos, klineUtils consolidado)
+- 🎯 **Próximo: Sprint 5 - Documentação**
 
 ---
 
@@ -602,9 +603,9 @@ Translations (96 chaves em 4 idiomas):
 
 ---
 
-### Sprint 4: Code Cleanup (1 semana) 🚧 EM PROGRESSO
+### Sprint 4: Code Cleanup (1 semana) ✅ COMPLETO
 
-**Status:** 🟡 Day 1 completo - Magic numbers extraídos para constants
+**Status:** ✅ COMPLETO em 10/12/2025
 **Prioridade:** Alta
 **Data:** 10/12/2025
 
@@ -649,40 +650,39 @@ Translations (96 chaves em 4 idiomas):
 
 **Status:** ✅ App.tsx já estava limpo - zero código comentado encontrado
 
-#### 4.4 Consolidar Utility Functions ⏳ PENDENTE
+#### 4.4 Consolidar Utility Functions ✅ COMPLETO
 
-**Script Automático Seguro:**
-```bash
-# Remove comentários inline e block comments preservando:
-# - JSDoc comments (/** ... */)
-# - License headers
-# - Type documentation
-# - @ts-ignore, @ts-expect-error
-# - eslint-disable comments
+**Análise realizada:**
+- ✅ Identificado funções duplicadas via subagent search
+- ✅ `klineHelpers.ts` (backend) duplicava funções de `klineUtils.ts` (frontend)
+- ✅ `formatPrice`/`formatVolume` em `priceUtils.ts` vs `formatters.ts` - NÃO são duplicatas (propósitos diferentes)
 
-pnpm refactor:remove-comments
-```
+**Ações executadas:**
+- ✅ Criado `packages/types/src/klineUtils.ts` (87 linhas - 25 funções utilitárias)
+- ✅ Exportado em `packages/types/src/index.ts`
+- ✅ Removido `apps/backend/src/utils/klineHelpers.ts` (duplicata)
+- ✅ Atualizado imports em 3 arquivos:
+  - `Pattern123Detector.ts` → `@marketmind/types`
+  - `BearTrapDetector.ts` → `@marketmind/types`
+  - `MeanReversionDetector.ts` → `@marketmind/types`
 
-**Script Criado:**
-- ✅ `scripts/remove-comments.mjs` - Remoção segura de comentários
-- ✅ Cria backup automático antes de processar
-- ✅ Valida com type-check após remoção
-- ✅ Executa testes para garantir integridade
-- ✅ Restaura backup automaticamente se falhar
+**Funções consolidadas:**
+- `getKlineOpen`, `getKlineHigh`, `getKlineLow`, `getKlineClose`, `getKlineVolume`
+- `parseKlinePrice`, `parseKlineVolume`
+- `getKlineTimestamp`, `getKlineCloseTime`, `getKlineDuration`
+- `isKlineBullish`, `isKlineBearish`
+- `getKlineBodySize`, `getKlineUpperWick`, `getKlineLowerWick`
+- `getKlineQuoteVolume`, `getKlineTrades`
+- `getKlineTakerBuyBaseVolume`, `getKlineTakerBuyQuoteVolume`
+- `getKlineBuyPressure`, `getKlineSellPressure`, `getKlinePressureType`
+- `getKlineAverageTradeSize`, `getKlineAverageTradeValue`
 
-**Features:**
-- Processa todos arquivos .ts e .tsx
-- Remove apenas comentários não-essenciais
-- Preserva documentação técnica
-- Validação completa pós-remoção
-- Rollback automático em caso de erro
-
-**Exceções (manter):**
-- JSDoc comments para funções públicas
-- Type definitions documentation
-- License headers
-- Compiler directives (@ts-ignore, etc)
-- Linter directives (eslint-disable, etc)
+**Resultado:**
+- ✅ 1,792 frontend tests passando
+- ✅ 27 browser tests passando
+- ✅ 178 backend tests passando
+- ✅ Total: 1,997 tests - 100% pass rate
+- ✅ Zero erros TypeScript nos arquivos modificados
 
 #### 4.2 Extrair Magic Numbers
 

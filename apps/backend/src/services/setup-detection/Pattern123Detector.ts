@@ -1,11 +1,11 @@
 import { findPivotPoints } from '@marketmind/indicators';
 import type { Kline, Pattern123Config } from '@marketmind/types';
-import { createDefault123Config } from '@marketmind/types';
 import {
+    createDefault123Config,
     getKlineClose,
     getKlineOpen,
     getKlineVolume,
-} from '../../utils/klineHelpers';
+} from '@marketmind/types';
 import type { SetupDetectorResult } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';
 
