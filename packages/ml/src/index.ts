@@ -1,42 +1,119 @@
-/**
- * @marketmind/ml - Machine Learning Package
- *
- * Placeholder package for future ML model integration.
- * This package will contain:
- * - Feature extraction pipelines
- * - Model definitions and training
- * - Model evaluation metrics
- * - Deployment utilities
- *
- * @packageDocumentation
- */
+export const ML_VERSION = '0.2.0';
 
-export const ML_VERSION = '0.1.0';
+export * from './types';
+export * from './constants';
+export * from './features';
+export * from './training';
+export * from './inference';
+export * from './models';
 
-export interface MLConfig {
-  modelType: 'classification' | 'regression';
-  features: string[];
-  targetColumn: string;
-  trainTestSplit: number;
-}
+export type {
+  TechnicalFeatureSet,
+  MarketFeatureSet,
+  TemporalFeatureSet,
+  SetupFeatureSet,
+  MLFeatureVector,
+  NormalizedFeatureVector,
+  MarketContext,
+  PredictionResult,
+  ModelInfo,
+  ModelMetrics,
+  ClassificationMetrics,
+  TradingMetrics,
+  TradeOutcome,
+  TrainingDataset,
+  NormalizationParams,
+  FeatureNormalizationConfig,
+  MLModelType,
+  MLModelStatus,
+  ThresholdConfig,
+} from './types';
 
-export interface MLPrediction {
-  symbol: string;
-  timestamp: number;
-  prediction: number;
-  confidence: number;
-  modelVersion: string;
-}
+export { DEFAULT_THRESHOLDS } from './types';
 
-export interface FeatureSet {
-  technical: Record<string, number>;
-  sentiment: Record<string, number>;
-  temporal: Record<string, number>;
-}
+export {
+  TechnicalFeatures,
+  MarketFeatures,
+  TemporalFeatures,
+  SetupFeatures,
+  Normalizer,
+  LabelGenerator,
+  FeatureExtractor,
+} from './features';
 
-export const createDefaultMLConfig = (): MLConfig => ({
-  modelType: 'classification',
-  features: ['rsi', 'macd', 'bollingerBands', 'volume'],
-  targetColumn: 'direction',
-  trainTestSplit: 0.8,
-});
+export type { FeatureConfig } from './features';
+
+export {
+  RSI_PERIODS,
+  ATR_PERIODS,
+  EMA_PERIODS,
+  SMA_PERIODS,
+  MACD_CONFIG,
+  BOLLINGER_CONFIG,
+  STOCHASTIC_CONFIG,
+  ADX_PERIOD,
+  TECHNICAL_FEATURE_NAMES,
+  MARKET_FEATURE_NAMES,
+  TEMPORAL_FEATURE_NAMES,
+  SETUP_FEATURE_NAMES,
+  ALL_FEATURE_NAMES,
+  TOTAL_FEATURE_COUNT,
+} from './constants/featureConfig';
+
+export {
+  MODEL_TYPES,
+  DEFAULT_MODEL_CONFIG,
+  INFERENCE_CONFIG,
+  TRAINING_CONFIG,
+  XGBOOST_DEFAULTS,
+  LIGHTGBM_DEFAULTS,
+  NORMALIZATION_CONFIG,
+  EVALUATION_THRESHOLDS,
+  MODEL_REGISTRY_CONFIG,
+  ONNX_CONFIG,
+  FEATURE_CACHE_CONFIG,
+  DRIFT_DETECTION_CONFIG,
+} from './constants/modelConfig';
+
+export {
+  DatasetBuilder,
+  TrainingConfigBuilder,
+  createDefaultTrainingConfig,
+  createConservativeTrainingConfig,
+  DEFAULT_XGBOOST_CONFIG,
+  DEFAULT_LIGHTGBM_CONFIG,
+  CONSERVATIVE_XGBOOST_CONFIG,
+  AGGRESSIVE_XGBOOST_CONFIG,
+} from './training';
+
+export type {
+  DatasetConfig,
+  BacktestResult,
+  TrainingConfig,
+  XGBoostConfig,
+  LightGBMConfig,
+} from './training';
+
+export {
+  InferenceEngine,
+  BatchPredictor,
+  RealtimePredictor,
+} from './inference';
+
+export type {
+  InferenceEngineConfig,
+  BatchPredictorConfig,
+  BatchPredictionInput,
+  BatchPredictionResult,
+  RealtimePredictorConfig,
+  EnhancedSetup,
+} from './inference';
+
+export { ModelRegistry, ModelLoader } from './models';
+
+export type {
+  RegisteredModel,
+  ModelRegistryConfig,
+  ModelManifest,
+  ModelLoaderConfig,
+} from './models';

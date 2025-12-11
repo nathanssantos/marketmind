@@ -1,27 +1,36 @@
 {
   "name": "@marketmind/ml",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Machine Learning package for MarketMind trading predictions",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "echo 'No tests yet - placeholder package'",
-    "type-check": "tsc --noEmit"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@marketmind/types": "workspace:*",
-    "@marketmind/indicators": "workspace:*"
+    "@marketmind/indicators": "workspace:*",
+    "@marketmind/types": "workspace:*"
+  },
+  "optionalDependencies": {
+    "onnxruntime-node": "^1.20.0"
   },
   "devDependencies": {
-    "typescript": "^5.6.3"
+    "@types/node": "^22.19.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.15"
   },
   "keywords": [
     "machine-learning",
     "trading",
     "prediction",
-    "crypto"
+    "crypto",
+    "feature-extraction",
+    "onnx"
   ],
   "author": "MarketMind Team",
   "license": "MIT"

@@ -292,3 +292,94 @@ export type NewTradeExecution = typeof tradeExecutions.$inferInsert;
 
 export type PriceCache = typeof priceCache.$inferSelect;
 export type NewPriceCache = typeof priceCache.$inferInsert;
+
+export const mlModels = pgTable('ml_models', {
+  id: varchar({ length: 255 }).primaryKey(),
+  name: varchar({ length: 100 }).notNull(),
+  version: varchar({ length: 50 }).notNull(),
+  type: varchar({ length: 50 }).notNull(),
+  status: varchar({ length: 20 }).default('active'),
+  filePath: text('file_path').notNull(),
+  fileSize: integer('file_size'),
+  checksum: varchar({ length: 64 }),
+  trainedAt: timestamp('trained_at', { mode: 'date' }),
+  trainingDataStart: timestamp('training_data_start', { mode: 'date' }),
+  trainingDataEnd: timestamp('training_data_end', { mode: 'date' }),
+  samplesCount: integer('samples_count'),
+  metrics: text(),
+  featureConfig: text('feature_config'),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+});
+
+export const mlPredictions = pgTable('ml_predictions', {
+  id: varchar({ length: 255 }).primaryKey(),
+  modelId: varchar('model_id', { length: 255 })
+    .notNull()
+    .references(() => mlModels.id),
+  setupDetectionId: varchar('setup_detection_id', { length: 255 })
+    .references(() => setupDetections.id),
+  probability: numeric({ precision: 10, scale: 6 }).notNull(),
+  confidence: integer().notNull(),
+  predictedLabel: integer('predicted_label').notNull(),
+  actualLabel: integer('actual_label'),
+  outcomeRecordedAt: timestamp('outcome_recorded_at', { mode: 'date' }),
+  inferenceLatencyMs: numeric('inference_latency_ms', { precision: 10, scale: 2 }),
+  symbol: varchar({ length: 20 }).notNull(),
+  interval: varchar({ length: 5 }).notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  modelIdIdx: index('ml_predictions_model_id_idx').on(table.modelId),
+  setupDetectionIdIdx: index('ml_predictions_setup_detection_id_idx').on(table.setupDetectionId),
+  symbolIdx: index('ml_predictions_symbol_idx').on(table.symbol),
+  createdAtIdx: index('ml_predictions_created_at_idx').on(table.createdAt),
+}));
+
+export const mlEvaluations = pgTable('ml_evaluations', {
+  id: varchar({ length: 255 }).primaryKey(),
+  modelId: varchar('model_id', { length: 255 })
+    .notNull()
+    .references(() => mlModels.id),
+  evaluationStart: timestamp('evaluation_start', { mode: 'date' }).notNull(),
+  evaluationEnd: timestamp('evaluation_end', { mode: 'date' }).notNull(),
+  accuracy: numeric({ precision: 10, scale: 6 }),
+  precision: numeric({ precision: 10, scale: 6 }),
+  recall: numeric({ precision: 10, scale: 6 }),
+  f1Score: numeric('f1_score', { precision: 10, scale: 6 }),
+  auc: numeric({ precision: 10, scale: 6 }),
+  winRateImprovement: numeric('win_rate_improvement', { precision: 10, scale: 2 }),
+  sharpeImprovement: numeric('sharpe_improvement', { precision: 10, scale: 2 }),
+  profitFactorImprovement: numeric('profit_factor_improvement', { precision: 10, scale: 2 }),
+  predictionsCount: integer('predictions_count'),
+  correctPredictions: integer('correct_predictions'),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  modelIdIdx: index('ml_evaluations_model_id_idx').on(table.modelId),
+  evaluationStartIdx: index('ml_evaluations_evaluation_start_idx').on(table.evaluationStart),
+}));
+
+export const mlFeatureCache = pgTable('ml_feature_cache', {
+  id: varchar({ length: 255 }).primaryKey(),
+  symbol: varchar({ length: 20 }).notNull(),
+  interval: varchar({ length: 5 }).notNull(),
+  openTime: timestamp('open_time', { mode: 'date' }).notNull(),
+  features: text().notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  expiresAt: timestamp('expires_at', { mode: 'date' }).notNull(),
+}, (table) => ({
+  symbolIntervalTimeIdx: index('ml_feature_cache_symbol_interval_time_idx')
+    .on(table.symbol, table.interval, table.openTime),
+  expiresAtIdx: index('ml_feature_cache_expires_at_idx').on(table.expiresAt),
+}));
+
+export type MLModel = typeof mlModels.$inferSelect;
+export type NewMLModel = typeof mlModels.$inferInsert;
+
+export type MLPrediction = typeof mlPredictions.$inferSelect;
+export type NewMLPrediction = typeof mlPredictions.$inferInsert;
+
+export type MLEvaluation = typeof mlEvaluations.$inferSelect;
+export type NewMLEvaluation = typeof mlEvaluations.$inferInsert;
+
+export type MLFeatureCache = typeof mlFeatureCache.$inferSelect;
+export type NewMLFeatureCache = typeof mlFeatureCache.$inferInsert;
