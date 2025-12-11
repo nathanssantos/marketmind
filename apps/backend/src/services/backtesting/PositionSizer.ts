@@ -1,12 +1,22 @@
-/**
- * Position Sizing Calculator
- * 
- * Implements professional position sizing strategies:
- * 1. Risk-Based: Size based on % of capital willing to risk
- * 2. Kelly Criterion: Optimal sizing based on win rate and risk/reward
- * 3. Volatility-Based: Adjust position size based on market volatility
- * 4. Fixed Fractional: Simple % of total equity
- */
+import { POSITION_SIZING } from '../../constants';
+
+const {
+  DEFAULT_MIN_PERCENT,
+  DEFAULT_MAX_PERCENT,
+  DEFAULT_RISK_PER_TRADE,
+  DEFAULT_KELLY_FRACTION,
+  DEFAULT_WIN_RATE,
+  DEFAULT_AVG_WIN_PERCENT,
+  DEFAULT_AVG_LOSS_PERCENT,
+  DEFAULT_ATR_MULTIPLIER,
+  DEFAULT_FIXED_PERCENT,
+  DEFAULT_RISK_PERCENT,
+  VOLATILITY_TARGET,
+  KELLY_BOUNDS,
+  KELLY_ADJUSTMENTS,
+  DRAWDOWN_THRESHOLDS,
+  STRATEGY_EVALUATION,
+} = POSITION_SIZING;
 
 export interface PositionSizingConfig {
   method: 'risk-based' | 'kelly' | 'volatility' | 'fixed-fractional';
@@ -46,8 +56,8 @@ export class PositionSizer {
     stopLossPrice: number | undefined,
     config: PositionSizingConfig
   ): PositionSizingResult {
-    const minPercent = config.minPositionPercent ?? 1;
-    const maxPercent = config.maxPositionPercent ?? 100;
+    const minPercent = config.minPositionPercent ?? DEFAULT_MIN_PERCENT;
+    const maxPercent = config.maxPositionPercent ?? DEFAULT_MAX_PERCENT;
 
     let positionPercent: number;
     let rationale: string;
@@ -58,16 +68,16 @@ export class PositionSizer {
           equity,
           entryPrice,
           stopLossPrice,
-          config.riskPerTrade ?? 2
+          config.riskPerTrade ?? DEFAULT_RISK_PER_TRADE
         ));
         break;
 
       case 'kelly':
         ({ positionPercent, rationale } = this.calculateKelly(
-          config.winRate ?? 0.5,
-          config.avgWinPercent ?? 5,
-          config.avgLossPercent ?? 2,
-          config.kellyFraction ?? 0.25
+          config.winRate ?? DEFAULT_WIN_RATE,
+          config.avgWinPercent ?? DEFAULT_AVG_WIN_PERCENT,
+          config.avgLossPercent ?? DEFAULT_AVG_LOSS_PERCENT,
+          config.kellyFraction ?? DEFAULT_KELLY_FRACTION
         ));
         break;
 
@@ -75,14 +85,14 @@ export class PositionSizer {
         ({ positionPercent, rationale } = this.calculateVolatilityBased(
           config.atr ?? 0,
           entryPrice,
-          config.atrMultiplier ?? 2.0,
+          config.atrMultiplier ?? DEFAULT_ATR_MULTIPLIER,
           maxPercent
         ));
         break;
 
       case 'fixed-fractional':
       default:
-        positionPercent = config.fixedPercent ?? 10;
+        positionPercent = config.fixedPercent ?? DEFAULT_FIXED_PERCENT;
         rationale = `Fixed ${positionPercent}% of equity`;
         break;
     }
@@ -94,7 +104,7 @@ export class PositionSizer {
 
     const riskAmount = stopLossPrice
       ? Math.abs(entryPrice - stopLossPrice) * positionSize
-      : positionValue * 0.02; // Default 2% risk if no stop
+      : positionValue * DEFAULT_RISK_PERCENT;
 
     return {
       positionPercent,
@@ -120,8 +130,8 @@ export class PositionSizer {
   ): { positionPercent: number; rationale: string } {
     if (!stopLossPrice || stopLossPrice === entryPrice) {
       return {
-        positionPercent: 10,
-        rationale: `No stop loss - using fixed 10%`,
+        positionPercent: DEFAULT_FIXED_PERCENT,
+        rationale: `No stop loss - using fixed ${DEFAULT_FIXED_PERCENT}%`,
       };
     }
 
@@ -164,7 +174,7 @@ export class PositionSizer {
 
     const adjustedPercent = kellyPercent * kellyFraction;
 
-    const finalPercent = Math.max(1, Math.min(100, adjustedPercent));
+    const finalPercent = Math.max(DEFAULT_MIN_PERCENT, Math.min(DEFAULT_MAX_PERCENT, adjustedPercent));
 
     return {
       positionPercent: finalPercent,
@@ -186,17 +196,15 @@ export class PositionSizer {
   ): { positionPercent: number; rationale: string } {
     if (atr === 0 || !atr) {
       return {
-        positionPercent: 10,
-        rationale: `No ATR available - using fixed 10%`,
+        positionPercent: DEFAULT_FIXED_PERCENT,
+        rationale: `No ATR available - using fixed ${DEFAULT_FIXED_PERCENT}%`,
       };
     }
 
     const atrPercent = (atr / entryPrice) * 100;
 
-    const targetAtrPercent = 2.0; // Baseline ATR %
-    const baselinePosition = 50; // Position size at baseline ATR
-
-    const positionPercent = (baselinePosition * targetAtrPercent) / atrPercent;
+    const { TARGET_ATR_PERCENT, BASELINE_POSITION } = VOLATILITY_TARGET;
+    const positionPercent = (BASELINE_POSITION * TARGET_ATR_PERCENT) / atrPercent;
 
     return {
       positionPercent: Math.min(maxPercent, positionPercent),
@@ -213,25 +221,25 @@ export class PositionSizer {
     profitFactor: number,
     maxDrawdownPercent: number
   ): number {
-    let kellyFraction = 0.25;
+    let kellyFraction = DEFAULT_KELLY_FRACTION;
 
-    if (winRate > 0.5) {
-      kellyFraction += 0.05; // More aggressive with higher win rate
+    if (winRate > DEFAULT_WIN_RATE) {
+      kellyFraction += KELLY_ADJUSTMENTS.SMALL;
     }
 
     if (profitFactor > 2.0) {
-      kellyFraction += 0.1; // Much more aggressive with strong PF
+      kellyFraction += KELLY_ADJUSTMENTS.MEDIUM;
     } else if (profitFactor < 1.2) {
-      kellyFraction -= 0.1; // More conservative with weak PF
+      kellyFraction -= KELLY_ADJUSTMENTS.MEDIUM;
     }
 
-    if (maxDrawdownPercent > 20) {
-      kellyFraction -= 0.15; // Very conservative with high DD
-    } else if (maxDrawdownPercent < 5) {
-      kellyFraction += 0.05; // Slightly more aggressive with low DD
+    if (maxDrawdownPercent > DRAWDOWN_THRESHOLDS.MAX) {
+      kellyFraction -= KELLY_ADJUSTMENTS.LARGE;
+    } else if (maxDrawdownPercent < DRAWDOWN_THRESHOLDS.MIN) {
+      kellyFraction += KELLY_ADJUSTMENTS.SMALL;
     }
 
-    return Math.max(0.1, Math.min(0.5, kellyFraction));
+    return Math.max(KELLY_BOUNDS.MIN, Math.min(KELLY_BOUNDS.MAX, kellyFraction));
   }
 
   /**
@@ -243,11 +251,11 @@ export class PositionSizer {
     totalTrades: number,
     hasStopLoss: boolean
   ): 'risk-based' | 'kelly' | 'fixed-fractional' {
-    if (totalTrades < 30) {
+    if (totalTrades < STRATEGY_EVALUATION.MIN_WIN_RATE) {
       return hasStopLoss ? 'risk-based' : 'fixed-fractional';
     }
 
-    if (profitFactor > 1.5 && winRate > 0.35 && winRate < 0.65) {
+    if (profitFactor > STRATEGY_EVALUATION.MIN_PROFIT_FACTOR && winRate > STRATEGY_EVALUATION.MIN_KELLY && winRate < STRATEGY_EVALUATION.MAX_KELLY) {
       return 'kelly';
     }
 

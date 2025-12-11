@@ -9,11 +9,28 @@ import type {
   Kline,
   TradingSetup,
 } from '@marketmind/types';
+import { AI_TRADING_CONSTANTS } from '@shared/constants';
 import { getKlineClose } from '@shared/utils';
 import { nanoid } from 'nanoid';
 import { trpc } from '../trpc';
 import type { AIService } from './AIService';
 import tradingPrompts from './prompts-trading-context.json';
+
+const {
+  MIN_KLINES_FOR_ANALYSIS,
+  MIN_KLINES_FOR_SETUP_DETECTION,
+  RECENT_KLINES_LOOKBACK,
+  CONFIDENCE_THRESHOLDS,
+  CONFIDENCE_MULTIPLIERS,
+  RISK_REWARD_THRESHOLDS,
+  PRICE_CHANGE_THRESHOLDS,
+  MIN_TRADE_AMOUNT_PERCENT,
+  QUANTITY_PRECISION_FACTOR,
+  DEFAULT_ANALYSIS_INTERVAL_MS,
+  HOURLY_RESET_MS,
+  DEFAULT_STOP_LOSS_MULTIPLIERS,
+  DEFAULT_TAKE_PROFIT_MULTIPLIERS,
+} = AI_TRADING_CONSTANTS;
 
 export interface AITradingAgentConfig {
   config: AITradingConfig;
@@ -206,7 +223,7 @@ export class AITradingAgent {
 
     const optimizedKlines = optimizeKlines(chartData.klines);
     
-    const detectedSetups = chartData.klines.length >= 50 
+    const detectedSetups = chartData.klines.length >= MIN_KLINES_FOR_SETUP_DETECTION
       ? this.detectSetups(chartData.klines)
       : [];
     
@@ -297,7 +314,7 @@ ${klinesData}${setupsInfo}${contextInfo}
     }
 
     const wallet = this.getWalletBalance();
-    const minTradeAmount = wallet * 0.01;
+    const minTradeAmount = wallet * MIN_TRADE_AMOUNT_PERCENT;
     if (wallet < minTradeAmount) {
       return false;
     }
@@ -334,25 +351,25 @@ ${klinesData}${setupsInfo}${contextInfo}
     const confidenceMultiplier = this.getConfidenceMultiplier(decision.confidence);
     let quantity = Math.min(riskBasedQuantity, maxQuantity) * confidenceMultiplier;
 
-    quantity = Math.floor(quantity * 100000) / 100000;
+    quantity = Math.floor(quantity * QUANTITY_PRECISION_FACTOR) / QUANTITY_PRECISION_FACTOR;
 
     return quantity;
   }
 
   private getConfidenceMultiplier(confidence: number): number {
-    if (confidence >= 70) return 1.0;
-    if (confidence >= 50) return 0.7;
-    return 0.5;
+    if (confidence >= CONFIDENCE_THRESHOLDS.HIGH) return CONFIDENCE_MULTIPLIERS.HIGH;
+    if (confidence >= CONFIDENCE_THRESHOLDS.MEDIUM) return CONFIDENCE_MULTIPLIERS.MEDIUM;
+    return CONFIDENCE_MULTIPLIERS.LOW;
   }
 
   private shouldAnalyze(klines: Kline[]): boolean {
-    if (klines.length < 20) {
+    if (klines.length < MIN_KLINES_FOR_ANALYSIS) {
       console.log('[AITradingAgent] Not enough klines:', klines.length);
       return false;
     }
 
     const priceChangeThreshold = this.getPriceChangeThreshold();
-    const recentKlines = klines.slice(-10);
+    const recentKlines = klines.slice(-RECENT_KLINES_LOOKBACK);
     const firstKline = recentKlines[0];
     const lastKline = recentKlines[recentKlines.length - 1];
     
@@ -374,13 +391,13 @@ ${klinesData}${setupsInfo}${contextInfo}
   private getPriceChangeThreshold(): number {
     switch (this.config.riskProfile) {
       case 'conservative':
-        return 2.0;
+        return PRICE_CHANGE_THRESHOLDS.CONSERVATIVE;
       case 'moderate':
-        return 1.0;
+        return PRICE_CHANGE_THRESHOLDS.MODERATE;
       case 'aggressive':
-        return 0.5;
+        return PRICE_CHANGE_THRESHOLDS.AGGRESSIVE;
       default:
-        return 1.0;
+        return PRICE_CHANGE_THRESHOLDS.MODERATE;
     }
   }
 
@@ -394,13 +411,13 @@ ${klinesData}${setupsInfo}${contextInfo}
 
     switch (this.config.riskProfile) {
       case 'conservative':
-        return { minConfidence: 50, minRiskReward: 2.0 };
+        return { minConfidence: CONFIDENCE_THRESHOLDS.MEDIUM, minRiskReward: RISK_REWARD_THRESHOLDS.CONSERVATIVE };
       case 'moderate':
-        return { minConfidence: 40, minRiskReward: 1.5 };
+        return { minConfidence: CONFIDENCE_THRESHOLDS.LOW + 10, minRiskReward: RISK_REWARD_THRESHOLDS.MODERATE };
       case 'aggressive':
-        return { minConfidence: 30, minRiskReward: 1.0 };
+        return { minConfidence: CONFIDENCE_THRESHOLDS.LOW, minRiskReward: RISK_REWARD_THRESHOLDS.AGGRESSIVE };
       default:
-        return { minConfidence: 40, minRiskReward: 1.5 };
+        return { minConfidence: CONFIDENCE_THRESHOLDS.LOW + 10, minRiskReward: RISK_REWARD_THRESHOLDS.MODERATE };
     }
   }
 
@@ -413,7 +430,7 @@ ${klinesData}${setupsInfo}${contextInfo}
       '1h': 60 * 60 * 1000,
     };
 
-    return intervalMap[this.config.analysisInterval] || 5 * 60 * 1000;
+    return intervalMap[this.config.analysisInterval] || DEFAULT_ANALYSIS_INTERVAL_MS;
   }
 
   private checkEmergencyStop(): boolean {
@@ -437,7 +454,7 @@ ${klinesData}${setupsInfo}${contextInfo}
 
     setTimeout(() => {
       this.tradesCountThisHour--;
-    }, 60 * 60 * 1000);
+    }, HOURLY_RESET_MS);
   }
 
   private async fetchMarketContext(symbol: string, detectedSetups: TradingSetup[]): Promise<AITradingContext | undefined> {
@@ -506,8 +523,8 @@ ${context.calendarEvents.slice(0, 3).map((event, i) => `${i + 1}. [${event.impor
       };
     }
 
-    const stopLoss = setup.stopLoss ?? (setup.direction === 'LONG' ? setup.entryPrice * 0.98 : setup.entryPrice * 1.02);
-    const takeProfit = setup.takeProfit ?? (setup.direction === 'LONG' ? setup.entryPrice * 1.06 : setup.entryPrice * 0.94);
+    const stopLoss = setup.stopLoss ?? (setup.direction === 'LONG' ? setup.entryPrice * DEFAULT_STOP_LOSS_MULTIPLIERS.LONG : setup.entryPrice * DEFAULT_STOP_LOSS_MULTIPLIERS.SHORT);
+    const takeProfit = setup.takeProfit ?? (setup.direction === 'LONG' ? setup.entryPrice * DEFAULT_TAKE_PROFIT_MULTIPLIERS.LONG : setup.entryPrice * DEFAULT_TAKE_PROFIT_MULTIPLIERS.SHORT);
 
     return {
       action: enhanced.action === 'BUY' ? 'buy' : 'sell',

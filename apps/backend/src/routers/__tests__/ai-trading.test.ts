@@ -24,23 +24,26 @@ describe('aiTrading router', () => {
         {
           id: 'test-1',
           type: 'larry-williams-9.2',
-          symbol: 'BTCUSDT',
-          timeframe: '15m',
           direction: 'LONG',
+          openTime: Date.now(),
           entryPrice: 50000,
           stopLoss: 49000,
           takeProfit: 52000,
           confidence: 80,
-          riskReward: 2,
-          detectedAt: Date.now(),
-          status: 'pending',
+          riskRewardRatio: 2,
+          volumeConfirmation: true,
+          indicatorConfluence: 3,
+          klineIndex: 100,
+          setupData: {},
+          visible: true,
+          source: 'algorithm',
         },
       ];
 
       const context = await contextAggregator.buildContext('BTCUSDT', mockSetups);
 
       expect(context.detectedSetups).toHaveLength(1);
-      expect(context.detectedSetups[0].type).toBe('larry-williams-9.2');
+      expect(context.detectedSetups[0]?.type).toBe('larry-williams-9.2');
     });
 
     it('should handle different symbols', async () => {

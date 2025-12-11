@@ -7,8 +7,20 @@ import type {
     NewsArticle,
     TradingSetup,
 } from '@marketmind/types';
+import { CONTEXT_AGGREGATOR } from '../../constants';
 import { BinanceFuturesDataService } from '../binance-futures-data';
 import { BTCDominanceDataService } from '../btc-dominance-data';
+
+const {
+  DEFAULT_NEWS_LOOKBACK_HOURS,
+  DEFAULT_EVENTS_LOOKFORWARD_DAYS,
+  DEFAULT_FEAR_GREED_INDEX,
+  DEFAULT_BTC_DOMINANCE,
+  SENTIMENT_THRESHOLDS,
+  SENTIMENT_WEIGHTS,
+  SENTIMENT_SCORE_THRESHOLDS,
+  MAX_NEWS_ARTICLES,
+} = CONTEXT_AGGREGATOR;
 
 export class ContextAggregator {
   private config: ContextAggregatorConfig;
@@ -17,8 +29,8 @@ export class ContextAggregator {
 
   constructor(config: ContextAggregatorConfig = {}) {
     this.config = {
-      newsLookbackHours: 24,
-      eventsLookforwardDays: 7,
+      newsLookbackHours: DEFAULT_NEWS_LOOKBACK_HOURS,
+      eventsLookforwardDays: DEFAULT_EVENTS_LOOKFORWARD_DAYS,
       enableFearGreedIndex: true,
       enableBTCDominance: true,
       enableFundingRate: true,
@@ -36,8 +48,8 @@ export class ContextAggregator {
     const [news, events, fearIndex, btcDom, funding, openInterest] = await Promise.all([
       this.fetchRecentNews(symbol),
       this.fetchUpcomingEvents(symbol),
-      this.config.enableFearGreedIndex ? this.getFearGreedIndex() : Promise.resolve(50),
-      this.config.enableBTCDominance ? this.getBTCDominance() : Promise.resolve(50),
+      this.config.enableFearGreedIndex ? this.getFearGreedIndex() : Promise.resolve(DEFAULT_FEAR_GREED_INDEX),
+      this.config.enableBTCDominance ? this.getBTCDominance() : Promise.resolve(DEFAULT_BTC_DOMINANCE),
       this.config.enableFundingRate ? this.getFundingRate(symbol) : Promise.resolve(undefined),
       this.config.enableOpenInterest ? this.getOpenInterest(symbol) : Promise.resolve(undefined),
     ]);
@@ -72,26 +84,26 @@ export class ContextAggregator {
   private async getFearGreedIndex(): Promise<number> {
     try {
       const response = await fetch('https://api.alternative.me/fng/?limit=1');
-      if (!response.ok) return 50;
-      
+      if (!response.ok) return DEFAULT_FEAR_GREED_INDEX;
+
       const data = await response.json();
       if (data?.data?.[0]?.value) {
         return parseInt(data.data[0].value, 10);
       }
-      return 50;
+      return DEFAULT_FEAR_GREED_INDEX;
     } catch {
-      return 50;
+      return DEFAULT_FEAR_GREED_INDEX;
     }
   }
 
   private async getBTCDominance(): Promise<number> {
     try {
-      if (!this.config.enableBTCDominance) return 50;
-      
+      if (!this.config.enableBTCDominance) return DEFAULT_BTC_DOMINANCE;
+
       const result = await this.btcDominanceService.getBTCDominanceResult();
-      return result.current ?? 50;
+      return result.current ?? DEFAULT_BTC_DOMINANCE;
     } catch {
-      return 50;
+      return DEFAULT_BTC_DOMINANCE;
     }
   }
 
@@ -121,7 +133,7 @@ export class ContextAggregator {
 
   private filterRelevantNews(news: NewsArticle[], symbol: string): NewsArticle[] {
     const symbolBase = symbol.replace('USDT', '').replace('USD', '');
-    const lookbackTime = Date.now() - (this.config.newsLookbackHours || 24) * 60 * 60 * 1000;
+    const lookbackTime = Date.now() - (this.config.newsLookbackHours || DEFAULT_NEWS_LOOKBACK_HOURS) * 60 * 60 * 1000;
 
     return news
       .filter(article => {
@@ -138,13 +150,13 @@ export class ContextAggregator {
         );
       })
       .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-      .slice(0, 10);
+      .slice(0, MAX_NEWS_ARTICLES);
   }
 
   private calculateSentiment(news: NewsArticle[], fearIndex: number): MarketSentiment {
     if (news.length === 0) {
-      if (fearIndex > 60) return 'bullish';
-      if (fearIndex < 40) return 'bearish';
+      if (fearIndex > SENTIMENT_THRESHOLDS.BULLISH) return 'bullish';
+      if (fearIndex < SENTIMENT_THRESHOLDS.BEARISH) return 'bearish';
       return 'neutral';
     }
 
@@ -155,11 +167,11 @@ export class ContextAggregator {
     }, 0);
 
     const avgSentiment = sentimentScore / news.length;
-    const fearWeight = (fearIndex - 50) / 50;
-    const combinedScore = avgSentiment * 0.7 + fearWeight * 0.3;
+    const fearWeight = (fearIndex - DEFAULT_FEAR_GREED_INDEX) / DEFAULT_FEAR_GREED_INDEX;
+    const combinedScore = avgSentiment * SENTIMENT_WEIGHTS.NEWS + fearWeight * SENTIMENT_WEIGHTS.FEAR_INDEX;
 
-    if (combinedScore > 0.2) return 'bullish';
-    if (combinedScore < -0.2) return 'bearish';
+    if (combinedScore > SENTIMENT_SCORE_THRESHOLDS.BULLISH) return 'bullish';
+    if (combinedScore < SENTIMENT_SCORE_THRESHOLDS.BEARISH) return 'bearish';
     return 'neutral';
   }
 

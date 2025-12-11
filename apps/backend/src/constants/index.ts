@@ -1,0 +1,101 @@
+export const FLOAT_COMPARISON = {
+  EPSILON: 0.0000001,
+} as const;
+
+export const POSITION_SIZING = {
+  DEFAULT_MIN_PERCENT: 1,
+  DEFAULT_MAX_PERCENT: 100,
+  DEFAULT_RISK_PER_TRADE: 2,
+  DEFAULT_KELLY_FRACTION: 0.25,
+  DEFAULT_WIN_RATE: 0.5,
+  DEFAULT_AVG_WIN_PERCENT: 5,
+  DEFAULT_AVG_LOSS_PERCENT: 2,
+  DEFAULT_ATR_MULTIPLIER: 2.0,
+  DEFAULT_FIXED_PERCENT: 10,
+  DEFAULT_RISK_PERCENT: 0.02,
+
+  VOLATILITY_TARGET: {
+    BASELINE_POSITION: 50,
+    TARGET_ATR_PERCENT: 2.0,
+  },
+
+  KELLY_BOUNDS: {
+    MIN: 0.1,
+    MAX: 0.5,
+  },
+
+  KELLY_ADJUSTMENTS: {
+    SMALL: 0.05,
+    MEDIUM: 0.1,
+    LARGE: 0.15,
+  },
+
+  DRAWDOWN_THRESHOLDS: {
+    MAX: 20,
+    MIN: 5,
+  },
+
+  STRATEGY_EVALUATION: {
+    MIN_WIN_RATE: 30,
+    MIN_PROFIT_FACTOR: 1.5,
+    MIN_KELLY: 0.35,
+    MAX_KELLY: 0.65,
+  },
+} as const;
+
+export const EXIT_CALCULATOR = {
+  DEFAULT_MULTIPLIER: 2,
+  DEFAULT_PERCENTAGE: 2,
+  DEFAULT_DISTANCE_PERCENT: 0.02,
+  BASE_CONFIDENCE: 60,
+  VOLUME_CONFIRMATION_BONUS: 10,
+  MAX_CONFIDENCE: 95,
+  DEFAULT_MAX_CONFIDENCE: 100,
+} as const;
+
+export const BACKTEST_ENGINE = {
+  INTERVAL_SECONDS: {
+    MINUTE: 60,
+    HOUR: 3600,
+    DAY: 86400,
+    WEEK: 604800,
+  },
+  DEFAULT_INTERVAL_MS: 4 * 60 * 60 * 1000,
+  EMA200_WARMUP_BARS: 250,
+} as const;
+
+export const CONTEXT_AGGREGATOR = {
+  DEFAULT_NEWS_LOOKBACK_HOURS: 24,
+  DEFAULT_EVENTS_LOOKFORWARD_DAYS: 7,
+  DEFAULT_FEAR_GREED_INDEX: 50,
+  DEFAULT_BTC_DOMINANCE: 50,
+
+  SENTIMENT_THRESHOLDS: {
+    BULLISH: 60,
+    BEARISH: 40,
+  },
+
+  SENTIMENT_WEIGHTS: {
+    NEWS: 0.7,
+    FEAR_INDEX: 0.3,
+  },
+
+  SENTIMENT_SCORE_THRESHOLDS: {
+    BULLISH: 0.2,
+    BEARISH: -0.2,
+  },
+
+  MAX_NEWS_ARTICLES: 10,
+} as const;
+
+export const RISK_MANAGER = {
+  MAX_EXPOSURE_PERCENT: 50,
+  PERCENT_DIVISOR: 100,
+} as const;
+
+export type FloatComparisonConstants = typeof FLOAT_COMPARISON;
+export type PositionSizingConstants = typeof POSITION_SIZING;
+export type ExitCalculatorConstants = typeof EXIT_CALCULATOR;
+export type BacktestEngineConstants = typeof BACKTEST_ENGINE;
+export type ContextAggregatorConstants = typeof CONTEXT_AGGREGATOR;
+export type RiskManagerConstants = typeof RISK_MANAGER;

@@ -1,10 +1,3 @@
-/**
- * Exit Calculator
- *
- * Calculates stop loss and take profit levels based on strategy definitions.
- * Supports multiple exit types: ATR-based, percentage, fixed, indicator, and risk-reward.
- */
-
 import type {
   Condition,
   ConditionOperand,
@@ -14,7 +7,20 @@ import type {
 } from '@marketmind/types';
 import { isParameterReference } from '@marketmind/types';
 
+import { EXIT_CALCULATOR, FLOAT_COMPARISON } from '../../../constants';
 import type { IndicatorEngine } from './IndicatorEngine';
+
+const {
+  DEFAULT_MULTIPLIER,
+  DEFAULT_PERCENTAGE,
+  DEFAULT_DISTANCE_PERCENT,
+  BASE_CONFIDENCE,
+  VOLUME_CONFIRMATION_BONUS,
+  MAX_CONFIDENCE,
+  DEFAULT_MAX_CONFIDENCE,
+} = EXIT_CALCULATOR;
+
+const { EPSILON } = FLOAT_COMPARISON;
 
 /**
  * Calculates exit levels (stop loss, take profit) for strategies
@@ -52,7 +58,7 @@ export class ExitCalculator {
 
     if (exit.type === 'riskReward' && stopLossPrice !== undefined) {
       const slDistance = Math.abs(entryPrice - stopLossPrice);
-      const multiplier = this.resolveOperand(exit.multiplier ?? 2, context);
+      const multiplier = this.resolveOperand(exit.multiplier ?? DEFAULT_MULTIPLIER, context);
       const tpDistance = slDistance * multiplier;
 
       if (direction === 'LONG') {
@@ -87,12 +93,12 @@ export class ExitCalculator {
     switch (exit.type) {
       case 'atr': {
         const atrValue = this.getATRValue(exit, context);
-        const multiplier = this.resolveOperand(exit.multiplier ?? 2, context);
+        const multiplier = this.resolveOperand(exit.multiplier ?? DEFAULT_MULTIPLIER, context);
         return atrValue * multiplier;
       }
 
       case 'percent': {
-        const percent = this.resolveOperand(exit.value ?? 2, context);
+        const percent = this.resolveOperand(exit.value ?? DEFAULT_PERCENTAGE, context);
         return entryPrice * (percent / 100);
       }
 
@@ -108,15 +114,15 @@ export class ExitCalculator {
         if (exit.fallback) {
           return this.calculateExitDistance(exit.fallback, context);
         }
-        return entryPrice * 0.02;
+        return entryPrice * DEFAULT_DISTANCE_PERCENT;
       }
 
       case 'riskReward': {
-        return entryPrice * 0.02;
+        return entryPrice * DEFAULT_DISTANCE_PERCENT;
       }
 
       default:
-        return entryPrice * 0.02; // Default 2%
+        return entryPrice * DEFAULT_DISTANCE_PERCENT;
     }
   }
 
@@ -219,7 +225,7 @@ export class ExitCalculator {
       }
     }
 
-    const maxConfidence = config.max ?? 100;
+    const maxConfidence = config.max ?? DEFAULT_MAX_CONFIDENCE;
     return Math.min(Math.max(confidence, 0), maxConfidence);
   }
 
@@ -247,9 +253,9 @@ export class ExitCalculator {
       case '<=':
         return leftValue <= rightValue;
       case '==':
-        return Math.abs(leftValue - rightValue) < 0.0000001;
+        return Math.abs(leftValue - rightValue) < EPSILON;
       case '!=':
-        return Math.abs(leftValue - rightValue) >= 0.0000001;
+        return Math.abs(leftValue - rightValue) >= EPSILON;
       default:
         return false;
     }
@@ -288,7 +294,7 @@ export class ExitCalculator {
   private calculateDefaultConfidence(context: ExitContext): number {
     const { indicators, currentIndex } = context;
 
-    let confidence = 60; // Base confidence
+    let confidence = BASE_CONFIDENCE;
 
     const volumeCurrent = this.indicatorEngine.resolveIndicatorValue(
       indicators,
@@ -302,10 +308,10 @@ export class ExitCalculator {
     );
 
     if (volumeCurrent !== null && volumeSma20 !== null && volumeCurrent > volumeSma20) {
-      confidence += 10;
+      confidence += VOLUME_CONFIRMATION_BONUS;
     }
 
-    return Math.min(confidence, 95);
+    return Math.min(confidence, MAX_CONFIDENCE);
   }
 
   /**

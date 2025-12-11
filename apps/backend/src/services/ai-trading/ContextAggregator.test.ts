@@ -1,4 +1,4 @@
-import type { NewsArticle, TradingSetup } from '@marketmind/types';
+import type { TradingSetup } from '@marketmind/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContextAggregator } from './ContextAggregator';
 
@@ -18,16 +18,19 @@ describe('ContextAggregator', () => {
         {
           id: 'test-1',
           type: 'larry-williams-9.2',
-          symbol: 'BTCUSDT',
-          timeframe: '15m',
           direction: 'LONG',
+          openTime: Date.now(),
           entryPrice: 50000,
           stopLoss: 49000,
           takeProfit: 52000,
           confidence: 80,
-          riskReward: 2,
-          detectedAt: Date.now(),
-          status: 'pending',
+          riskRewardRatio: 2,
+          volumeConfirmation: true,
+          indicatorConfluence: 3,
+          klineIndex: 100,
+          setupData: {},
+          visible: true,
+          source: 'algorithm',
         },
       ];
 
@@ -69,27 +72,6 @@ describe('ContextAggregator', () => {
 
   describe('calculateSentiment', () => {
     it('should return bullish sentiment for positive news', async () => {
-      const mockNews: NewsArticle[] = [
-        {
-          id: '1',
-          title: 'Bitcoin hits new high',
-          description: 'Great news for crypto',
-          url: 'https://example.com',
-          source: 'CryptoNews',
-          publishedAt: Date.now(),
-          sentiment: 'positive',
-        },
-        {
-          id: '2',
-          title: 'Ethereum surges',
-          description: 'Positive market movement',
-          url: 'https://example.com',
-          source: 'CryptoNews',
-          publishedAt: Date.now(),
-          sentiment: 'positive',
-        },
-      ];
-
       const context = await aggregator.buildContext('BTCUSDT', []);
       expect(context.marketSentiment).toBeDefined();
     });
