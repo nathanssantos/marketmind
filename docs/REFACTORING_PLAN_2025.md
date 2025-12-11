@@ -1,7 +1,7 @@
 
 # 🔄 MarketMind Refactoring Plan 2025
 
-**Status:** ✅ Sprint 4 COMPLETO - Code Cleanup
+**Status:** ✅ Sprint 5 COMPLETO - Documentação
 **Branch:** `main`
 **Target Date:** Q1 2025
 **Goal:** Organizar monorepo, consolidar código duplicado, refatorar AI trading e preparar para Machine Learning
@@ -27,7 +27,8 @@
 - ✅ **Sprint 2.5 COMPLETO** (Setup Detection Centralizado - 12 detectores removidos, tRPC endpoints criados)
 - ✅ **Sprint 3 COMPLETO** (AI Trading Refactor - ContextAggregator, tRPC endpoints, prompts contextuais)
 - ✅ **Sprint 4 COMPLETO** (Code Cleanup - Magic numbers extraídos, klineUtils consolidado)
-- 🎯 **Próximo: Sprint 5 - Documentação**
+- ✅ **Sprint 5 COMPLETO** (Documentação - 67→46 docs, INDEX.md criado, arquivo organizado)
+- 🎯 **Próximo: Sprint 6 - Machine Learning Preparation**
 
 ---
 
@@ -728,29 +729,30 @@ grep -r "export const calculatePercentage" apps
 
 ---
 
-### Sprint 5: Documentação (1 semana) 🚧 EM PROGRESSO
+### Sprint 5: Documentação (1 semana) ✅ COMPLETO
 
-**Status:** 🟡 Day 1 - INDEX.md criado, arquivos arquivados
+**Status:** ✅ COMPLETO em 10/12/2025
 **Data:** 10/12/2025
 
 #### 5.1 Auditoria de Documentação ✅ COMPLETO
 
-**Categorizar arquivos em `/docs`:**
+**Resultado: 67 → 46 docs (21 arquivados)**
 
 | Categoria | Arquivos | Ação | Status |
 |-----------|----------|------|--------|
-| **Setup Guides** | `QUICK_START.md`, `QUICK_START_GUIDE.md`, `BACKEND_QUICKSTART.md` | Consolidar em 1 | ⏳ |
-| **Architecture** | `IMPLEMENTATION_PLAN.md`, `MONOREPO.md`, `BACKEND_INTEGRATION_STATUS.md` | Atualizar + merge | ⏳ |
-| **Trading** | `TRADING_*.md` (8 files), `SIMULATOR_TO_REAL_TRADING.md` | Consolidar | ⏳ |
-| **Backtesting** | `BACKTESTING_*.md` (6 files) | Merge em 1 guide | ⏳ |
-| **Context Files** | `NEXT_CHAT_CONTEXT*.md`, `CONTEXT_FOR_NEW_CHAT.md` | Arquivar antigos | ✅ |
-| **Status Reports** | `*_COMPLETE.md`, `*_STATUS.md` | Arquivar em `/docs/archive/` | ✅ |
-| **Obsolete** | `CRITICAL_BUGS_FIXED*.md`, old optimization logs | Arquivado | ✅ |
+| **Setup Guides** | `QUICK_START_GUIDE.md`, `SETUP_GUIDE.md` | Mantidos (propósitos diferentes) | ✅ |
+| **Architecture** | `IMPLEMENTATION_PLAN.md` | Mantido como principal | ✅ |
+| **Trading** | Migration docs (3 files) | Arquivados | ✅ |
+| **Backtesting** | Status/Research/Summary (4 files) | Arquivados | ✅ |
+| **Context Files** | `NEXT_CHAT_CONTEXT*.md`, `CONTEXT_FOR_NEW_CHAT.md` | Arquivados | ✅ |
+| **Status Reports** | `*_COMPLETE.md`, `*_STATUS.md`, `*_SUMMARY.md` | Arquivados | ✅ |
+| **Obsolete** | `CRITICAL_BUGS_FIXED*.md`, optimization logs | Arquivados | ✅ |
 
 **Arquivos movidos para archive:**
-- `docs/archive/context/` - 3 arquivos (NEXT_CHAT_CONTEXT antigos, CONTEXT_FOR_NEW_CHAT)
-- `docs/archive/status/` - 5 arquivos (CRITICAL_BUGS_FIXED, BACKEND_MIGRATION_COMPLETE, etc)
-- `docs/archive/optimization/` - 3 arquivos (OPTIMIZATION_RESULTS, OPTIMIZATION_LEARNINGS)
+- `docs/archive/status/` - 8 arquivos (status, summaries, research, validation plans)
+- `docs/archive/migration/` - 3 arquivos (TRADING_MIGRATION*, TRADING_BACKEND_MIGRATION_PLAN)
+- `docs/archive/optimization/` - 1 arquivo (STRATEGY_OPTIMIZATION_SESSION)
+- `docs/archive/context/` - Contextos de chat antigos
 
 #### 5.2 Criar Documentação Centralizada ✅ COMPLETO
 
