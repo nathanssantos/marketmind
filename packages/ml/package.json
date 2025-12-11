@@ -2,6 +2,7 @@
   "name": "@marketmind/ml",
   "version": "0.2.0",
   "description": "Machine Learning package for MarketMind trading predictions",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

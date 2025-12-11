@@ -5,6 +5,7 @@ import { Command } from 'commander';
 import { benchmarkCommand } from './commands/benchmark';
 import { compareCommand } from './commands/compare';
 import { exportCommand } from './commands/export';
+import { generateTrainingDataCommand } from './commands/generate-training-data';
 import { montecarloCommand } from './commands/montecarlo';
 import { optimizeCommand } from './commands/optimize';
 import { sensitivityCommand } from './commands/sensitivity';
@@ -171,6 +172,19 @@ program
   .option('-s, --strategy <type>', 'Run specific strategy benchmark only')
   .option('-v, --verbose', 'Show detailed logs', false)
   .action(benchmarkCommand);
+
+program
+  .command('generate-training')
+  .description('Generate ML training data from backtest results')
+  .requiredOption('--symbols <symbols>', 'Comma-separated symbols (e.g., BTCUSDT,ETHUSDT,SOLUSDT)')
+  .requiredOption('--intervals <intervals>', 'Comma-separated intervals (e.g., 1h,4h,1d)')
+  .requiredOption('--start <date>', 'Start date (YYYY-MM-DD)')
+  .requiredOption('--end <date>', 'End date (YYYY-MM-DD)')
+  .option('--strategies <strategies>', 'Comma-separated strategies (default: top 10 optimized)')
+  .option('-o, --output <path>', 'Output file path', '../../packages/ml/data/training_data.csv')
+  .option('--min-trades <n>', 'Minimum trades per strategy/symbol/interval combo', '5')
+  .option('-v, --verbose', 'Show detailed logs', false)
+  .action(generateTrainingDataCommand);
 
 program.exitOverride();
 

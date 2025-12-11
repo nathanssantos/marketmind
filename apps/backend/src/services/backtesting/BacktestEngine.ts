@@ -796,6 +796,8 @@ export class BacktestEngine {
         endTime: new Date(endTime).toISOString(),
         duration,
         status: 'COMPLETED' as const,
+        setupDetections: detectedSetups,
+        klines: historicalKlines,
       };
 
       return result;

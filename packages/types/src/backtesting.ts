@@ -117,6 +117,8 @@ export interface BacktestResult {
   duration: number; // execution time in ms
   status: 'RUNNING' | 'COMPLETED' | 'FAILED';
   error?: string;
+  setupDetections?: import('./tradingSetup').TradingSetup[];
+  klines?: import('./kline').Kline[];
 }
 
 export interface BacktestSummary {
