@@ -3,14 +3,17 @@ import { optimizeKlines } from '@/renderer/utils/klineOptimizer';
 import type {
   AITrade,
   AITradingConfig,
+  AITradingContext,
   AITradingDecision,
+  AITradingDecisionEnhanced,
   Kline,
   TradingSetup,
 } from '@marketmind/types';
 import { getKlineClose } from '@shared/utils';
 import { nanoid } from 'nanoid';
+import { trpc } from '../trpc';
 import type { AIService } from './AIService';
-import tradingPrompts from './prompts-trading.json';
+import tradingPrompts from './prompts-trading-context.json';
 
 export interface AITradingAgentConfig {
   config: AITradingConfig;
@@ -207,7 +210,9 @@ export class AITradingAgent {
       ? this.detectSetups(chartData.klines)
       : [];
     
-    const prompt = this.buildTradingPrompt(chartData, optimizedKlines, detectedSetups);
+    const context = await this.fetchMarketContext(chartData.symbol, detectedSetups);
+    
+    const prompt = this.buildTradingPrompt(chartData, optimizedKlines, detectedSetups, context);
 
     const response = await this.aiService.sendMessage([
       {
@@ -218,13 +223,14 @@ export class AITradingAgent {
       },
     ]);
 
-    const decision = this.parseAIResponse(response.text);
+    const enhancedDecision = this.parseEnhancedAIResponse(response.text);
+    const decision = this.convertToLegacyDecision(enhancedDecision);
     decision.entryPrice = this.getCurrentPrice() || decision.entryPrice;
 
     return decision;
   }
 
-  private buildTradingPrompt(chartData: ChartData, optimizedKlines: ReturnType<typeof optimizeKlines>, detectedSetups: TradingSetup[] = []): string {
+  private buildTradingPrompt(chartData: ChartData, optimizedKlines: ReturnType<typeof optimizeKlines>, detectedSetups: TradingSetup[] = [], context?: AITradingContext): string {
     const profile = this.config.riskProfile;
     const systemPrompt = tradingPrompts.trading.system;
     const profileAddition = tradingPrompts.trading[profile].systemAddition;
@@ -243,6 +249,10 @@ export class AITradingAgent {
       ? `\n\nDetected Algorithmic Setups:\n${this.formatSetupsForAI(detectedSetups)}` 
       : '';
 
+    const contextInfo = context 
+      ? `\n\nMarket Context:\n${this.formatContextForAI(context)}` 
+      : '';
+
     const chartInfo = `
 Symbol: ${chartData.symbol}
 Timeframe: ${chartData.timeframe}
@@ -252,7 +262,7 @@ Volume Visible: ${chartData.showVolume}
 Moving Averages: ${chartData.movingAverages.map(ma => `${ma.type}(${ma.period})`).join(', ')}
 
 Kline Data:
-${klinesData}${setupsInfo}
+${klinesData}${setupsInfo}${contextInfo}
 `;
 
     return `${systemPrompt}\n${profileAddition}\n${setupValidationPrompt}\n\n${analysisPrompt}\n\n${chartInfo}`;
@@ -273,26 +283,6 @@ ${klinesData}${setupsInfo}
 - Risk:Reward Ratio: 1:${riskReward}
 - Volume Confirmation: ${setup.volumeConfirmation ? 'Yes' : 'No'}`;
     }).join('\n\n');
-  }
-
-  private parseAIResponse(responseText: string): AITradingDecision {
-    try {
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('No JSON found in AI response');
-      }
-
-      const decision = JSON.parse(jsonMatch[0]) as AITradingDecision;
-
-      if (!decision.action || !decision.confidence || !decision.entryPrice) {
-        throw new Error('Invalid decision format');
-      }
-
-      return decision;
-    } catch (error) {
-      console.error('Failed to parse AI response:', responseText);
-      throw new Error(`Failed to parse AI decision: ${error instanceof Error ? error.message : String(error)}`);
-    }
   }
 
   private validateTrade(decision: AITradingDecision): boolean {
@@ -448,6 +438,89 @@ ${klinesData}${setupsInfo}
     setTimeout(() => {
       this.tradesCountThisHour--;
     }, 60 * 60 * 1000);
+  }
+
+  private async fetchMarketContext(symbol: string, detectedSetups: TradingSetup[]): Promise<AITradingContext | undefined> {
+    try {
+      return await trpc.aiTrading.buildContext.query({
+        symbol,
+        detectedSetups,
+      });
+    } catch (error) {
+      console.error('[AITradingAgent] Failed to fetch market context:', error);
+      return undefined;
+    }
+  }
+
+  private formatContextForAI(context: AITradingContext): string {
+    return `Fear & Greed Index: ${context.fearGreedIndex}/100
+BTC Dominance: ${context.btcDominance.toFixed(2)}%
+Market Sentiment: ${context.marketSentiment}
+Volatility: ${(context.volatility * 100).toFixed(1)}%
+Liquidity Level: ${context.liquidityLevel}
+${context.fundingRate ? `Funding Rate: ${(context.fundingRate * 100).toFixed(4)}%` : ''}
+${context.openInterest ? `Open Interest: $${(context.openInterest / 1_000_000).toFixed(2)}M` : ''}
+
+Recent News (${context.news.length} articles):
+${context.news.slice(0, 3).map((article, i) => `${i + 1}. [${article.sentiment}] ${article.title}`).join('\\n')}
+
+Upcoming Events (${context.calendarEvents.length}):
+${context.calendarEvents.slice(0, 3).map((event, i) => `${i + 1}. [${event.importance}] ${event.title} - ${new Date(event.startDate).toLocaleString()}`).join('\n')}`
+  }
+
+  private parseEnhancedAIResponse(responseText: string): AITradingDecisionEnhanced {
+    try {
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in AI response');
+      }
+
+      const decision = JSON.parse(jsonMatch[0]) as AITradingDecisionEnhanced;
+
+      if (!decision.action || decision.confidence === undefined) {
+        throw new Error('Invalid enhanced decision format');
+      }
+
+      return decision;
+    } catch (error) {
+      console.error('[AITradingAgent] Failed to parse enhanced AI response:', responseText);
+      throw new Error(`Failed to parse enhanced AI decision: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private convertToLegacyDecision(enhanced: AITradingDecisionEnhanced): AITradingDecision {
+    const setup = enhanced.selectedSetup;
+    
+    if (!setup || enhanced.action === 'HOLD') {
+      return {
+        action: 'hold',
+        confidence: enhanced.confidence,
+        entryPrice: 0,
+        stopLoss: 0,
+        takeProfit: 0,
+        riskReward: 0,
+        patterns: [],
+        reason: enhanced.reasoning,
+        volumeConfirmation: false,
+        trendAlignment: false,
+      };
+    }
+
+    const stopLoss = setup.stopLoss ?? (setup.direction === 'LONG' ? setup.entryPrice * 0.98 : setup.entryPrice * 1.02);
+    const takeProfit = setup.takeProfit ?? (setup.direction === 'LONG' ? setup.entryPrice * 1.06 : setup.entryPrice * 0.94);
+
+    return {
+      action: enhanced.action === 'BUY' ? 'buy' : 'sell',
+      confidence: enhanced.confidence,
+      entryPrice: setup.entryPrice,
+      stopLoss,
+      takeProfit,
+      riskReward: setup.riskRewardRatio,
+      patterns: [setup.type],
+      reason: `${enhanced.reasoning}\n\nContextual Factors: ${enhanced.contextualFactors.join(', ')}\nUrgency: ${enhanced.urgency}`,
+      volumeConfirmation: setup.volumeConfirmation,
+      trendAlignment: true,
+    };
   }
 
   private resetDailyCounters(): void {

@@ -100,7 +100,8 @@ export class ContextAggregator {
       if (!this.config.enableFundingRate) return undefined;
       
       const result = await this.binanceFuturesService.getCurrentFundingRate(_symbol);
-      return result.fundingRate;
+      if (!result) return undefined;
+      return result.rate;
     } catch {
       return undefined;
     }
@@ -111,6 +112,7 @@ export class ContextAggregator {
       if (!this.config.enableOpenInterest) return undefined;
       
       const result = await this.binanceFuturesService.getCurrentOpenInterest(_symbol);
+      if (!result) return undefined;
       return result.openInterest;
     } catch {
       return undefined;
