@@ -47,6 +47,7 @@ export const useCrosshairPriceLineRenderer = ({
     const isInChartArea = mouseX < priceScaleLeft;
 
     if (!isInChartArea) return;
+    if (mouseY < 0 || mouseY > chartHeight) return;
 
     const price = manager.yToPrice(mouseY);
 
@@ -80,6 +81,8 @@ export const useCrosshairPriceLineRenderer = ({
     ctx.stroke();
 
     ctx.restore();
+
+    if (mouseY < 0 || mouseY > chartHeight) return;
 
     const priceText = price.toFixed(2);
     ctx.save();

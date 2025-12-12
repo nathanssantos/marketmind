@@ -41,8 +41,10 @@ export const useCurrentPriceLineRenderer = ({
     if (!lastKline) return;
 
     const currentPrice = getKlineClose(lastKline);
-    const { width } = dimensions;
+    const { width, chartHeight } = dimensions;
     const y = manager.priceToY(currentPrice);
+
+    if (y < 0 || y > chartHeight) return;
 
     ctx.save();
     ctx.strokeStyle = colors.bullish;
@@ -79,8 +81,10 @@ export const useCurrentPriceLineRenderer = ({
     if (!lastKline) return;
 
     const currentPrice = getKlineClose(lastKline);
-    const { width } = dimensions;
+    const { width, chartHeight } = dimensions;
     const y = manager.priceToY(currentPrice);
+
+    if (y < 0 || y > chartHeight) return;
 
     ctx.save();
     ctx.font = '11px monospace';

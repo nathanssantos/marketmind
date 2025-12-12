@@ -64,6 +64,8 @@ describe('useGridRenderer', () => {
       getVisibleKlines: vi.fn(() => klines),
       indexToX: vi.fn((index: number) => index * 145.6),
       priceToY: vi.fn((price: number) => 575 - (price - 90) * 19),
+      getStochasticPanelHeight: vi.fn(() => 0),
+      getRSIPanelHeight: vi.fn(() => 0),
     } as unknown as CanvasManager;
 
     mockColors = {
@@ -186,7 +188,7 @@ describe('useGridRenderer', () => {
         mockCtx,
         800,
         575,
-        5,
+        10,
         10,
         mockColors.grid,
         expect.any(Number),
@@ -230,7 +232,7 @@ describe('useGridRenderer', () => {
         mockCtx,
         800,
         575,
-        5,
+        10,
         15,
         mockColors.grid,
         expect.any(Number),
@@ -252,7 +254,7 @@ describe('useGridRenderer', () => {
         mockCtx,
         800,
         575,
-        5,
+        10,
         10,
         mockColors.grid,
         2,

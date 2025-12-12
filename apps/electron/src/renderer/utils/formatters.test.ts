@@ -36,23 +36,45 @@ describe('formatters', () => {
 
   describe('formatTimestamp', () => {
     const testDate = new Date('2024-11-15T14:30:00').getTime();
+    const prevSameDay = new Date('2024-11-15T12:00:00').getTime();
+    const prevDiffDay = new Date('2024-11-14T14:00:00').getTime();
 
-    it('should format minute intervals with time only', () => {
-      expect(formatTimestamp(testDate, '1m')).toBe('14:30');
-      expect(formatTimestamp(testDate, '5m')).toBe('14:30');
-      expect(formatTimestamp(testDate, '15m')).toBe('14:30');
-      expect(formatTimestamp(testDate, '30m')).toBe('14:30');
+    it('should format minute intervals with time only on same day', () => {
+      expect(formatTimestamp(testDate, '1m', prevSameDay)).toBe('14:30');
+      expect(formatTimestamp(testDate, '5m', prevSameDay)).toBe('14:30');
+      expect(formatTimestamp(testDate, '15m', prevSameDay)).toBe('14:30');
+      expect(formatTimestamp(testDate, '30m', prevSameDay)).toBe('14:30');
     });
 
-    it('should format hour intervals with date and time', () => {
-      expect(formatTimestamp(testDate, '1h')).toBe('15/11 14:30');
-      expect(formatTimestamp(testDate, '4h')).toBe('15/11 14:30');
+    it('should format minute intervals with date on different day', () => {
+      expect(formatTimestamp(testDate, '1m', prevDiffDay)).toBe('15/11 14:30');
+      expect(formatTimestamp(testDate, '5m', prevDiffDay)).toBe('15/11 14:30');
     });
 
-    it('should format day intervals with full date', () => {
-      expect(formatTimestamp(testDate, '1d')).toBe('15/11/2024');
-      expect(formatTimestamp(testDate, '1w')).toBe('15/11/2024');
-      expect(formatTimestamp(testDate, '1M')).toBe('15/11/2024');
+    it('should format hour intervals with hour only on same day', () => {
+      expect(formatTimestamp(testDate, '1h', prevSameDay)).toBe('14h');
+      expect(formatTimestamp(testDate, '4h', prevSameDay)).toBe('14h');
+    });
+
+    it('should format hour intervals with date on different day', () => {
+      expect(formatTimestamp(testDate, '1h', prevDiffDay)).toBe('15/11 14h');
+      expect(formatTimestamp(testDate, '4h', prevDiffDay)).toBe('15/11 14h');
+    });
+
+    it('should format day intervals with date only on same year', () => {
+      const prevSameYear = new Date('2024-10-01T10:00:00').getTime();
+      expect(formatTimestamp(testDate, '1d', prevSameYear)).toBe('15/11');
+      expect(formatTimestamp(testDate, '3d', prevSameYear)).toBe('15/11');
+    });
+
+    it('should format day intervals with full date on different year', () => {
+      const prevDiffYear = new Date('2023-12-31T10:00:00').getTime();
+      expect(formatTimestamp(testDate, '1d', prevDiffYear)).toBe('15/11/2024');
+    });
+
+    it('should format week and month intervals with month/year', () => {
+      expect(formatTimestamp(testDate, '1w')).toBe('11/2024');
+      expect(formatTimestamp(testDate, '1M')).toBe('11/2024');
     });
 
     it('should format without interval as full date', () => {
@@ -62,7 +84,7 @@ describe('formatters', () => {
     it('should pad single digits with zeros', () => {
       const earlyDate = new Date('2024-01-05T09:05:00').getTime();
       expect(formatTimestamp(earlyDate, '1m')).toBe('09:05');
-      expect(formatTimestamp(earlyDate, '1d')).toBe('05/01/2024');
+      expect(formatTimestamp(earlyDate, '1d')).toBe('05/01');
     });
   });
 

@@ -51,6 +51,7 @@ import { useOrderLinesRenderer } from './useOrderLinesRenderer';
 import { useRSIRenderer } from './useRSIRenderer';
 import { useStochasticRenderer } from './useStochasticRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
+import { useWatermarkRenderer } from './useWatermarkRenderer';
 
 const MOUSE_POSITION_THROTTLE_MS = 16;
 const RIGHT_MOUSE_BUTTON = 2;
@@ -331,6 +332,7 @@ export const ChartCanvas = ({
     manager,
     colors,
     enabled: showGrid,
+    timeframe,
     ...(advancedConfig?.gridLineWidth !== undefined && { gridLineWidth: advancedConfig.gridLineWidth }),
     ...(advancedConfig?.paddingRight !== undefined && { paddingRight: advancedConfig.paddingRight }),
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
@@ -405,6 +407,14 @@ export const ChartCanvas = ({
   });
 
   const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, isSimulatorActive, hoveredOrderId);
+
+  const { render: renderWatermark } = useWatermarkRenderer({
+    manager,
+    colors,
+    symbol,
+    timeframe,
+    enabled: true,
+  });
 
   const currentKlines = manager?.getKlines() ?? [];
   const lastKline = currentKlines[currentKlines.length - 1];
@@ -1147,6 +1157,7 @@ export const ChartCanvas = ({
 
     const render = (): void => {
       manager.clear();
+      renderWatermark();
       renderGrid();
       renderVolume();
       if (chartType === 'kline') {
@@ -1350,6 +1361,7 @@ export const ChartCanvas = ({
     };
   }, [
     manager,
+    renderWatermark,
     renderGrid,
     renderVolume,
     renderKlines,

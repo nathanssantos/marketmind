@@ -15,6 +15,7 @@ export interface UseGridRendererProps {
   gridLineWidth?: number;
   paddingRight?: number;
   rightMargin?: number;
+  timeframe?: string;
 }
 
 export interface UseGridRendererReturn {
@@ -25,14 +26,15 @@ export const useGridRenderer = ({
   manager,
   colors,
   enabled = true,
-  horizontalLines = 5,
+  horizontalLines = 10,
   verticalLines = 10,
   gridLineWidth,
   paddingRight,
   rightMargin,
+  timeframe,
 }: UseGridRendererProps): UseGridRendererReturn => {
   const render = useCallback((): void => {
-    if (!manager || !enabled) return;
+    if (!manager) return;
 
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
@@ -41,19 +43,25 @@ export const useGridRenderer = ({
 
     if (!ctx || !dimensions || !bounds) return;
 
-    const { width, chartHeight } = dimensions;
+    const { width, chartHeight, height } = dimensions;
     const { minPrice, maxPrice } = bounds;
     const klines = manager.getVisibleKlines();
 
-    drawGrid(
-      ctx,
-      width,
-      chartHeight,
-      horizontalLines,
-      verticalLines,
-      colors.grid,
-      gridLineWidth ?? CHART_CONFIG.GRID_LINE_WIDTH,
-    );
+    const stochasticHeight = manager.getStochasticPanelHeight();
+    const rsiHeight = manager.getRSIPanelHeight();
+    const totalHeight = chartHeight + stochasticHeight + rsiHeight;
+
+    if (enabled) {
+      drawGrid(
+        ctx,
+        width,
+        totalHeight,
+        horizontalLines,
+        verticalLines,
+        colors.grid,
+        gridLineWidth ?? CHART_CONFIG.GRID_LINE_WIDTH,
+      );
+    }
 
     const labelColor = colors.axisLabel;
     const effectivePaddingRight = paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT;
@@ -61,8 +69,8 @@ export const useGridRenderer = ({
 
     ctx.save();
     ctx.fillStyle = colors.background;
-    ctx.fillRect(chartRightBoundary, 0, effectivePaddingRight, chartHeight);
-    ctx.fillRect(0, chartHeight, chartRightBoundary, effectivePaddingRight);
+    ctx.fillRect(chartRightBoundary, 0, effectivePaddingRight, totalHeight);
+    ctx.fillRect(0, totalHeight, chartRightBoundary, CHART_CONFIG.CANVAS_PADDING_BOTTOM);
     ctx.restore();
 
     const priceRange = maxPrice - minPrice;
@@ -99,7 +107,10 @@ export const useGridRenderer = ({
     if (klines.length > 0) {
       const visibleIndices = Math.floor(viewport.end - viewport.start);
       const step = Math.max(1, Math.floor(visibleIndices / verticalLines));
+      const timeAxisY = height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
 
+      let previousTimestamp: number | undefined;
+      
       for (let i = 0; i < klines.length; i += step) {
         const kline = klines[i];
         if (!kline) continue;
@@ -108,15 +119,16 @@ export const useGridRenderer = ({
         const x = manager.indexToX(index);
 
         if (x >= 0 && x <= chartRightBoundary - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN)) {
-          const timeLabel = formatTimestamp(kline.openTime);
+          const timeLabel = formatTimestamp(kline.openTime, timeframe, previousTimestamp);
+          previousTimestamp = kline.openTime;
           
           drawText(
             ctx,
             timeLabel,
             x,
-            chartHeight + 8,
+            timeAxisY + 8,
             labelColor,
-            CHART_CONFIG.AXIS_LABEL_FONT,
+            '12px monospace',
             'center',
             'top',
           );
@@ -124,9 +136,9 @@ export const useGridRenderer = ({
           drawLine(
             ctx,
             x,
-            chartHeight,
+            timeAxisY,
             x,
-            chartHeight + 5,
+            timeAxisY + 5,
             colors.axisLine,
             1,
           );
@@ -139,7 +151,7 @@ export const useGridRenderer = ({
       chartRightBoundary,
       0,
       chartRightBoundary,
-      chartHeight,
+      totalHeight,
       colors.axisLine,
       2,
     );
@@ -147,13 +159,13 @@ export const useGridRenderer = ({
     drawLine(
       ctx,
       0,
-      chartHeight,
+      totalHeight,
       chartRightBoundary,
-      chartHeight,
+      totalHeight,
       colors.axisLine,
       2,
     );
-  }, [manager, colors, enabled, horizontalLines, verticalLines, gridLineWidth, paddingRight, rightMargin]);
+  }, [manager, colors, enabled, horizontalLines, verticalLines, gridLineWidth, paddingRight, rightMargin, timeframe]);
 
   return { render };
 };

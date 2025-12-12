@@ -294,6 +294,8 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
 
     pendingOrdersToRender.forEach((order) => {
       const y = manager.priceToY(getOrderPrice(order));
+      if (y < 0 || y > chartHeight) return;
+      
       const isLong = isOrderLong(order);
       
       orderHitboxesRef.current.push({
@@ -459,19 +461,20 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
     if (hoveredPendingOrder) {
       const order = hoveredPendingOrder;
       const y = manager.priceToY(getOrderPrice(order));
-      const isLong = isOrderLong(order);
-      
-      ctx.save();
-      ctx.font = '11px monospace';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      
-      const lineColor = isLong ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)';
-      const fillColor = isLong ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)';
-      
-      const priceText = getOrderPrice(order).toFixed(2);
-      const tagStartX = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
-      drawPriceTag(ctx, priceText, y, tagStartX, fillColor, 'left', tagStartX);
+      if (y >= 0 && y <= chartHeight) {
+        const isLong = isOrderLong(order);
+        
+        ctx.save();
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        
+        const lineColor = isLong ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)';
+        const fillColor = isLong ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)';
+        
+        const priceText = getOrderPrice(order).toFixed(2);
+        const tagStartX = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
+        drawPriceTag(ctx, priceText, y, tagStartX, fillColor, 'left', tagStartX);
       
       ctx.strokeStyle = lineColor;
       ctx.lineWidth = 1.5;
@@ -494,48 +497,50 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
         height: closeButtonRef.size,
       });
       
-      ctx.restore();
+        ctx.restore();
+      }
     }
 
     if (hoveredPosition) {
       const position: PositionData = hoveredPosition;
       const y = manager.priceToY(position.avgPrice);
-      const isLong = position.type === 'long';
-      const positionId = `position-${position.symbol}-${position.type}`;
-      
-      const positionData = {
-        symbol: position.symbol,
-        type: position.type,
-        avgPrice: position.avgPrice,
-        totalQuantity: position.totalQuantity,
-        totalPnL: position.totalPnL,
-        orders: position.orders,
-      };
-      
-      orderHitboxesRef.current.push({
-        orderId: positionId,
-        y,
-        tolerance: 8,
-        order: {
-          ...position.orders[0],
-          id: positionId,
-          entryPrice: position.avgPrice,
-          quantity: position.totalQuantity,
-          metadata: { isPosition: true, positionData },
-        } as Order,
-      });
+      if (y >= 0 && y <= chartHeight) {
+        const isLong = position.type === 'long';
+        const positionId = `position-${position.symbol}-${position.type}`;
+        
+        const positionData = {
+          symbol: position.symbol,
+          type: position.type,
+          avgPrice: position.avgPrice,
+          totalQuantity: position.totalQuantity,
+          totalPnL: position.totalPnL,
+          orders: position.orders,
+        };
+        
+        orderHitboxesRef.current.push({
+          orderId: positionId,
+          y,
+          tolerance: 8,
+          order: {
+            ...position.orders[0],
+            id: positionId,
+            entryPrice: position.avgPrice,
+            quantity: position.totalQuantity,
+            metadata: { isPosition: true, positionData },
+          } as Order,
+        });
 
-      ctx.save();
-      ctx.font = '11px monospace';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      
-      const lineColor = isLong ? 'rgba(59, 130, 246, 0.8)' : 'rgba(251, 146, 60, 0.8)';
-      const fillColor = isLong ? 'rgba(59, 130, 246, 0.9)' : 'rgba(251, 146, 60, 0.9)';
-      
-      const priceText = position.avgPrice.toFixed(2);
-      const tagStartX = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
-      drawPriceTag(ctx, priceText, y, tagStartX, fillColor, 'left', tagStartX);
+        ctx.save();
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        
+        const lineColor = isLong ? 'rgba(59, 130, 246, 0.8)' : 'rgba(251, 146, 60, 0.8)';
+        const fillColor = isLong ? 'rgba(59, 130, 246, 0.9)' : 'rgba(251, 146, 60, 0.9)';
+        
+        const priceText = position.avgPrice.toFixed(2);
+        const tagStartX = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
+        drawPriceTag(ctx, priceText, y, tagStartX, fillColor, 'left', tagStartX);
       
       ctx.strokeStyle = lineColor;
       ctx.lineWidth = 1.5;
@@ -574,7 +579,8 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
       const badgeX = infoTagSize.width + 6;
       drawPercentBadge(ctx, percentText, badgeX, y, percentChange >= 0);
       
-      ctx.restore();
+        ctx.restore();
+      }
     }
 
     allPositions.forEach((position) => {
@@ -741,8 +747,10 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
     ctx.textBaseline = 'middle';
     
     priceTags.forEach(({ priceText, y, fillColor }) => {
-      const tagStartX = width - CHART_CONFIG.CHART_RIGHT_MARGIN;
-      drawPriceTag(ctx, priceText, y, width, fillColor, 'left', tagStartX);
+      if (y >= 0 && y <= chartHeight) {
+        const tagStartX = width - CHART_CONFIG.CHART_RIGHT_MARGIN;
+        drawPriceTag(ctx, priceText, y, width, fillColor, 'left', tagStartX);
+      }
     });
     
     ctx.restore();

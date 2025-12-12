@@ -18,8 +18,9 @@ export const formatPrice = (price: number): string => {
   return price.toFixed(8);
 };
 
-export const formatTimestamp = (timestamp: number, interval?: string): string => {
+export const formatTimestamp = (timestamp: number, interval?: string, previousTimestamp?: number): string => {
   const date = new Date(timestamp);
+  const prevDate = previousTimestamp ? new Date(previousTimestamp) : null;
   
   const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -27,12 +28,35 @@ export const formatTimestamp = (timestamp: number, interval?: string): string =>
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const year = date.getFullYear();
 
+  const sameDay = prevDate && 
+    prevDate.getDate() === date.getDate() && 
+    prevDate.getMonth() === date.getMonth() && 
+    prevDate.getFullYear() === date.getFullYear();
+
   if (interval === '1m' || interval === '5m' || interval === '15m' || interval === '30m') {
+    if (!sameDay && prevDate) {
+      return `${day}/${month} ${hours}:${minutes}`;
+    }
     return `${hours}:${minutes}`;
   }
 
-  if (interval === '1h' || interval === '4h') {
-    return `${day}/${month} ${hours}:${minutes}`;
+  if (interval === '1h' || interval === '2h' || interval === '4h' || interval === '6h' || interval === '8h' || interval === '12h') {
+    if (!sameDay && prevDate) {
+      return `${day}/${month} ${hours}h`;
+    }
+    return `${hours}h`;
+  }
+
+  if (interval === '1d' || interval === '3d') {
+    const sameYear = prevDate && prevDate.getFullYear() === date.getFullYear();
+    if (!sameYear && prevDate) {
+      return `${day}/${month}/${year}`;
+    }
+    return `${day}/${month}`;
+  }
+
+  if (interval === '1w' || interval === '1M') {
+    return `${month}/${year}`;
   }
 
   return `${day}/${month}/${year}`;

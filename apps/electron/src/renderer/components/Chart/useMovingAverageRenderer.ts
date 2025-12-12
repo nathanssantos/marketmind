@@ -142,6 +142,8 @@ export const useMovingAverageRenderer = ({
     ctx.textBaseline = 'middle';
 
     priceTags.forEach(({ priceText, y, fillColor, index }) => {
+      if (y < 0 || y > dimensions.chartHeight) return;
+      
       const tagStartX = width - CHART_CONFIG.CHART_RIGHT_MARGIN;
       const tagSize = drawPriceTag(ctx, priceText, y, tagStartX, fillColor, CHART_CONFIG.CHART_RIGHT_MARGIN);
       

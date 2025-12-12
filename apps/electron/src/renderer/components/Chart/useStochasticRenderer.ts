@@ -30,9 +30,10 @@ export const useStochasticRenderer = ({
 
     if (!ctx || !dimensions) return;
 
-    const { chartWidth, height } = dimensions;
+    const { chartWidth, height, chartHeight } = dimensions;
+    const rsiHeight = manager.getRSIPanelHeight();
     const panelHeight = CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT;
-    const panelTop = height - panelHeight;
+    const panelTop = chartHeight + rsiHeight;
     const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
 
     ctx.save();
@@ -51,16 +52,8 @@ export const useStochasticRenderer = ({
       return panelTop + padding + innerHeight - ((value / 100) * innerHeight);
     };
 
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.05)';
-    ctx.fillRect(0, panelTop, effectiveWidth, panelHeight);
-
-    ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.moveTo(0, panelTop);
-    ctx.lineTo(effectiveWidth, panelTop);
-    ctx.stroke();
+    ctx.fillStyle = 'rgba(128, 128, 128, 0.02)';
+    ctx.fillRect(0, panelTop, chartWidth, panelHeight);
 
     ctx.strokeStyle = colors.stochastic.zone;
     ctx.lineWidth = 1;
@@ -69,20 +62,20 @@ export const useStochasticRenderer = ({
     const overboughtY = valueToY(overboughtLevel);
     ctx.beginPath();
     ctx.moveTo(0, overboughtY);
-    ctx.lineTo(effectiveWidth, overboughtY);
+    ctx.lineTo(chartWidth, overboughtY);
     ctx.stroke();
 
     const oversoldY = valueToY(oversoldLevel);
     ctx.beginPath();
     ctx.moveTo(0, oversoldY);
-    ctx.lineTo(effectiveWidth, oversoldY);
+    ctx.lineTo(chartWidth, oversoldY);
     ctx.stroke();
 
     const midY = valueToY(50);
-    ctx.strokeStyle = 'rgba(128, 128, 128, 0.1)';
+    ctx.strokeStyle = colors.stochastic.zone;
     ctx.beginPath();
     ctx.moveTo(0, midY);
-    ctx.lineTo(effectiveWidth, midY);
+    ctx.lineTo(chartWidth, midY);
     ctx.stroke();
 
     ctx.setLineDash([]);

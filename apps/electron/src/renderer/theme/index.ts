@@ -204,8 +204,8 @@ const customConfig = defineConfig({
         },
         'chart.stochastic.zone': {
           value: {
-            base: 'rgba(128, 128, 128, 0.4)',
-            _dark: 'rgba(128, 128, 128, 0.4)',
+            base: 'rgba(128, 128, 128, 0.7)',
+            _dark: 'rgba(128, 128, 128, 0.7)',
           },
         },
         'chart.rsi.line': {
@@ -216,8 +216,8 @@ const customConfig = defineConfig({
         },
         'chart.rsi.zone': {
           value: {
-            base: 'rgba(128, 128, 128, 0.4)',
-            _dark: 'rgba(128, 128, 128, 0.4)',
+            base: 'rgba(128, 128, 128, 0.7)',
+            _dark: 'rgba(128, 128, 128, 0.7)',
           },
         },
       },
