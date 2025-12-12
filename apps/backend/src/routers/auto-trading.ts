@@ -9,10 +9,20 @@ import {
   setupDetections,
 } from '../db/schema';
 import { riskManagerService } from '../services/risk-manager';
+import { autoTradingScheduler } from '../services/auto-trading-scheduler';
 import { protectedProcedure, router } from '../trpc';
 
 const generateId = (length: number): string => {
   return randomBytes(length).toString('base64url').slice(0, length);
+};
+
+const log = (message: string, data?: Record<string, unknown>): void => {
+  const timestamp = new Date().toISOString();
+  if (data) {
+    console.log(`[Auto-Trading] [${timestamp}] ${message}`, JSON.stringify(data, null, 2));
+  } else {
+    console.log(`[Auto-Trading] [${timestamp}] ${message}`);
+  }
 };
 
 export const autoTradingRouter = router({
@@ -98,6 +108,8 @@ export const autoTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      log('📝 updateConfig called', { walletId: input.walletId, isEnabled: input.isEnabled });
+
       const [config] = await ctx.db
         .select()
         .from(autoTradingConfig)
@@ -110,6 +122,7 @@ export const autoTradingRouter = router({
         .limit(1);
 
       if (!config) {
+        log('❌ Config not found for wallet', { walletId: input.walletId });
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Auto-trading config not found. Please get config first.',
@@ -137,6 +150,13 @@ export const autoTradingRouter = router({
         .set(updateData)
         .where(eq(autoTradingConfig.id, config.id));
 
+      if (input.isEnabled !== undefined) {
+        log(input.isEnabled ? '🟢 Auto-trading ENABLED' : '🔴 Auto-trading DISABLED', {
+          walletId: input.walletId,
+          enabledSetupTypes: input.enabledSetupTypes,
+        });
+      }
+
       return { success: true };
     }),
 
@@ -148,6 +168,8 @@ export const autoTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      log('🚀 executeSetup called', { setupId: input.setupId, walletId: input.walletId });
+
       const [setup] = await ctx.db
         .select()
         .from(setupDetections)
@@ -160,11 +182,22 @@ export const autoTradingRouter = router({
         .limit(1);
 
       if (!setup) {
+        log('❌ Setup not found', { setupId: input.setupId });
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Setup not found',
         });
       }
+
+      log('📍 Setup found', {
+        setupType: setup.setupType,
+        symbol: setup.symbol,
+        direction: setup.direction,
+        entryPrice: setup.entryPrice,
+        stopLoss: setup.stopLoss,
+        takeProfit: setup.takeProfit,
+        confidence: setup.confidence,
+      });
 
       const [config] = await ctx.db
         .select()
@@ -178,6 +211,7 @@ export const autoTradingRouter = router({
         .limit(1);
 
       if (!config) {
+        log('❌ Auto-trading config not found', { walletId: input.walletId });
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Auto-trading config not found',
@@ -185,6 +219,7 @@ export const autoTradingRouter = router({
       }
 
       if (!config.isEnabled) {
+        log('⚠️ Auto-trading is disabled', { walletId: input.walletId });
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Auto-trading is not enabled for this wallet',
@@ -193,6 +228,7 @@ export const autoTradingRouter = router({
 
       const enabledSetupTypes = JSON.parse(config.enabledSetupTypes) as string[];
       if (!enabledSetupTypes.includes(setup.setupType)) {
+        log('⚠️ Setup type not enabled', { setupType: setup.setupType, enabledTypes: enabledSetupTypes });
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: `Setup type ${setup.setupType} is not enabled`,
@@ -209,7 +245,10 @@ export const autoTradingRouter = router({
           )
         );
 
+      log('📊 Current open positions', { count: openPositions.length, max: config.maxConcurrentPositions });
+
       if (openPositions.length >= config.maxConcurrentPositions) {
+        log('⚠️ Max concurrent positions reached', { current: openPositions.length, max: config.maxConcurrentPositions });
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: `Maximum concurrent positions (${config.maxConcurrentPositions}) reached`,
@@ -223,6 +262,7 @@ export const autoTradingRouter = router({
         .limit(1);
 
       if (!wallet) {
+        log('❌ Wallet not found', { walletId: input.walletId });
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Wallet not found',
@@ -233,6 +273,12 @@ export const autoTradingRouter = router({
       const maxPositionSizePercent = parseFloat(config.maxPositionSize);
       const positionValue = (walletBalance * maxPositionSizePercent) / 100;
 
+      log('💰 Position sizing', {
+        walletBalance: walletBalance.toFixed(2),
+        maxPositionSizePercent,
+        positionValue: positionValue.toFixed(2),
+      });
+
       const riskValidation = await riskManagerService.validateNewPosition(
         input.walletId,
         config,
@@ -240,11 +286,14 @@ export const autoTradingRouter = router({
       );
 
       if (!riskValidation.isValid) {
+        log('⚠️ Risk validation failed', { reason: riskValidation.reason });
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: `Risk validation failed: ${riskValidation.reason}`,
         });
       }
+
+      log('✅ Risk validation passed');
 
       const executionId = generateId(21);
 
@@ -264,6 +313,16 @@ export const autoTradingRouter = router({
         status: 'open',
       });
 
+      log('✅ Trade execution created', {
+        executionId,
+        setupType: setup.setupType,
+        symbol: setup.symbol,
+        direction: setup.direction,
+        entryPrice: setup.entryPrice,
+        stopLoss: setup.stopLoss,
+        takeProfit: setup.takeProfit,
+      });
+
       return {
         executionId,
         message: 'Setup execution created successfully',
@@ -277,6 +336,8 @@ export const autoTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      log('🚫 cancelExecution called', { executionId: input.executionId });
+
       const [execution] = await ctx.db
         .select()
         .from(tradeExecutions)
@@ -289,6 +350,7 @@ export const autoTradingRouter = router({
         .limit(1);
 
       if (!execution) {
+        log('❌ Execution not found', { executionId: input.executionId });
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Execution not found',
@@ -296,6 +358,7 @@ export const autoTradingRouter = router({
       }
 
       if (execution.status !== 'open') {
+        log('⚠️ Cannot cancel - execution not open', { executionId: input.executionId, status: execution.status });
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Can only cancel open executions',
@@ -310,6 +373,12 @@ export const autoTradingRouter = router({
           updatedAt: new Date(),
         })
         .where(eq(tradeExecutions.id, input.executionId));
+
+      log('✅ Execution cancelled', {
+        executionId: input.executionId,
+        setupType: execution.setupType,
+        symbol: execution.symbol,
+      });
 
       return { success: true };
     }),
@@ -387,6 +456,8 @@ export const autoTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      log('🏁 closeExecution called', { executionId: input.executionId, exitPrice: input.exitPrice });
+
       const [execution] = await ctx.db
         .select()
         .from(tradeExecutions)
@@ -399,6 +470,7 @@ export const autoTradingRouter = router({
         .limit(1);
 
       if (!execution) {
+        log('❌ Execution not found', { executionId: input.executionId });
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Execution not found',
@@ -406,6 +478,7 @@ export const autoTradingRouter = router({
       }
 
       if (execution.status !== 'open') {
+        log('⚠️ Cannot close - execution not open', { executionId: input.executionId, status: execution.status });
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Execution is not open',
@@ -439,9 +512,166 @@ export const autoTradingRouter = router({
         })
         .where(eq(tradeExecutions.id, input.executionId));
 
+      const isWin = pnl > 0;
+      log(`${isWin ? '💚 WIN' : '❤️ LOSS'} Execution closed`, {
+        executionId: input.executionId,
+        setupType: execution.setupType,
+        symbol: execution.symbol,
+        side: execution.side,
+        entryPrice: entryPrice.toFixed(2),
+        exitPrice: exitPrice.toFixed(2),
+        pnl: pnl.toFixed(2),
+        pnlPercent: `${adjustedPnlPercent >= 0 ? '+' : ''}${adjustedPnlPercent.toFixed(2)}%`,
+      });
+
       return {
         pnl: pnl.toString(),
         pnlPercent: adjustedPnlPercent.toFixed(2),
+      };
+    }),
+
+  startWatcher: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        symbol: z.string(),
+        interval: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      log('🚀 startWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval });
+
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) {
+        log('❌ Wallet not found', { walletId: input.walletId });
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      await ctx.db
+        .update(autoTradingConfig)
+        .set({ isEnabled: true, updatedAt: new Date() })
+        .where(
+          and(
+            eq(autoTradingConfig.walletId, input.walletId),
+            eq(autoTradingConfig.userId, ctx.user.id)
+          )
+        );
+
+      await autoTradingScheduler.startWatcher(
+        input.walletId,
+        ctx.user.id,
+        input.symbol,
+        input.interval
+      );
+
+      log('✅ Watcher started', { walletId: input.walletId, symbol: input.symbol, interval: input.interval });
+
+      return { success: true };
+    }),
+
+  stopWatcher: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        symbol: z.string(),
+        interval: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      log('🛑 stopWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval });
+
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      await autoTradingScheduler.stopWatcher(input.walletId, input.symbol, input.interval);
+
+      log('✅ Watcher stopped', { walletId: input.walletId, symbol: input.symbol, interval: input.interval });
+
+      return { success: true };
+    }),
+
+  stopAllWatchers: protectedProcedure
+    .input(z.object({ walletId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      log('🛑 stopAllWatchers called', { walletId: input.walletId });
+
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      await ctx.db
+        .update(autoTradingConfig)
+        .set({ isEnabled: false, updatedAt: new Date() })
+        .where(
+          and(
+            eq(autoTradingConfig.walletId, input.walletId),
+            eq(autoTradingConfig.userId, ctx.user.id)
+          )
+        );
+
+      await autoTradingScheduler.stopAllWatchersForWallet(input.walletId);
+
+      log('✅ All watchers stopped', { walletId: input.walletId });
+
+      return { success: true };
+    }),
+
+  getWatcherStatus: protectedProcedure
+    .input(z.object({ walletId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      const memoryStatus = autoTradingScheduler.getWatcherStatus(input.walletId);
+      const dbStatus = await autoTradingScheduler.getWatcherStatusFromDb(input.walletId);
+      const activeWatchers = autoTradingScheduler.getActiveWatchers().filter(
+        w => w.watcherId.startsWith(input.walletId)
+      );
+
+      return {
+        active: memoryStatus.active,
+        watchers: memoryStatus.watchers,
+        activeWatchers: memoryStatus.active
+          ? activeWatchers
+          : dbStatus.watcherDetails.map(w => ({ watcherId: `${input.walletId}-${w.symbol}-${w.interval}`, ...w })),
+        persistedWatchers: dbStatus.watchers,
       };
     }),
 });

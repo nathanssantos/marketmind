@@ -29,6 +29,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
 
       const order = config.orders.find((o) => getOrderId(o) === sltpInfo.orderId);
       if (!order || !isOrderActive(order)) return false;
+      if (order.isAutoTrade) return false;
 
       setDraggedOrder(order);
       setDragType(sltpInfo.type);
@@ -44,6 +45,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
 
       const order = config.getOrderAtPosition(x, y);
       if (!order) return false;
+      if (order.isAutoTrade) return false;
 
       if (isOrderPending(order)) {
         setDraggedOrder(order);

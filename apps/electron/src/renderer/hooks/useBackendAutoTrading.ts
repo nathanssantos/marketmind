@@ -48,6 +48,30 @@ export const useBackendAutoTrading = (walletId: string) => {
     },
   });
 
+  const startWatcherMutation = trpc.autoTrading.startWatcher.useMutation({
+    onSuccess: () => {
+      utils.autoTrading.getWatcherStatus.invalidate();
+    },
+  });
+
+  const stopWatcherMutation = trpc.autoTrading.stopWatcher.useMutation({
+    onSuccess: () => {
+      utils.autoTrading.getWatcherStatus.invalidate();
+    },
+  });
+
+  const stopAllWatchersMutation = trpc.autoTrading.stopAllWatchers.useMutation({
+    onSuccess: () => {
+      utils.autoTrading.getWatcherStatus.invalidate();
+    },
+  });
+
+  const { data: watcherStatus, isLoading: isLoadingWatcherStatus } =
+    trpc.autoTrading.getWatcherStatus.useQuery(
+      { walletId },
+      { enabled: !!walletId, refetchInterval: 5000 }
+    );
+
   const updateConfig = useCallback(
     async (data: {
       walletId: string;
@@ -95,6 +119,27 @@ export const useBackendAutoTrading = (walletId: string) => {
     [walletId, updateConfigMutation]
   );
 
+  const startWatcher = useCallback(
+    async (symbol: string, interval: string) => {
+      return startWatcherMutation.mutateAsync({ walletId, symbol, interval });
+    },
+    [walletId, startWatcherMutation]
+  );
+
+  const stopWatcher = useCallback(
+    async (symbol: string, interval: string) => {
+      return stopWatcherMutation.mutateAsync({ walletId, symbol, interval });
+    },
+    [walletId, stopWatcherMutation]
+  );
+
+  const stopAllWatchers = useCallback(
+    async () => {
+      return stopAllWatchersMutation.mutateAsync({ walletId });
+    },
+    [walletId, stopAllWatchersMutation]
+  );
+
   return {
     config,
     activeExecutions: activeExecutions ?? [],
@@ -115,5 +160,16 @@ export const useBackendAutoTrading = (walletId: string) => {
     executeSetupError: executeSetupMutation.error,
     cancelExecutionError: cancelExecutionMutation.error,
     closeExecutionError: closeExecutionMutation.error,
+    startWatcher,
+    stopWatcher,
+    stopAllWatchers,
+    watcherStatus,
+    isLoadingWatcherStatus,
+    isStartingWatcher: startWatcherMutation.isPending,
+    isStoppingWatcher: stopWatcherMutation.isPending,
+    isStoppingAllWatchers: stopAllWatchersMutation.isPending,
+    startWatcherError: startWatcherMutation.error,
+    stopWatcherError: stopWatcherMutation.error,
+    stopAllWatchersError: stopAllWatchersMutation.error,
   };
 };

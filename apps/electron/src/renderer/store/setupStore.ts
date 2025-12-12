@@ -196,15 +196,10 @@ export const useSetupStore = create<SetupStoreState>()(
 
       toggleAutoTrading: () =>
         set((state) => {
-          const hasAnySetupEnabled = state.config.enabledStrategies.length > 0;
-
-          if (!state.isAutoTradingActive && !hasAnySetupEnabled) {
-            console.warn('[Auto-Trading] Cannot enable: No setups are enabled. Enable at least one setup in Settings.');
-            return state;
-          }
-
+          const newState = !state.isAutoTradingActive;
+          console.log(`[Auto-Trading] ${newState ? '🟢 ENABLED' : '🔴 DISABLED'}`);
           return {
-            isAutoTradingActive: !state.isAutoTradingActive,
+            isAutoTradingActive: newState,
           };
         }),
 

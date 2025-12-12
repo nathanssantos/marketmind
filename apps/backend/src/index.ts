@@ -98,6 +98,9 @@ const start = async (): Promise<void> => {
     const { binanceKlineStreamService } = await import('./services/binance-kline-stream');
     binanceKlineStreamService.start();
 
+    const { autoTradingScheduler } = await import('./services/auto-trading-scheduler');
+    await autoTradingScheduler.restoreWatchersFromDb();
+
     fastify.log.info(`🚀 Backend server running on http://localhost:${port}`);
     fastify.log.info(`📡 tRPC endpoint: http://localhost:${port}/trpc`);
     fastify.log.info(`🔌 WebSocket server initialized`);

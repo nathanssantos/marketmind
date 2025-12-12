@@ -1,6 +1,8 @@
 import { Switch } from '@/renderer/components/ui/switch';
 import { useSetupStore } from '@/renderer/store/setupStore';
+import { trpc } from '@/renderer/utils/trpc';
 import { Box, Separator, Stack, Text } from '@chakra-ui/react';
+import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useToast } from '@renderer/hooks/useToast';
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,8 +10,16 @@ import { useTranslation } from 'react-i18next';
 export const AlgorithmicAutoTradingTab = (): ReactElement => {
     const { t } = useTranslation();
     const toast = useToast();
-    const { isAutoTradingActive, toggleAutoTrading, config: setupConfig } = useSetupStore();
-    const isSetupDetectionActive = (setupConfig.enabledStrategies?.length ?? 0) > 0;
+    const { isAutoTradingActive, toggleAutoTrading } = useSetupStore();
+    const { wallets } = useBackendWallet();
+    const walletId = wallets[0]?.id;
+
+    const { data: config } = trpc.autoTrading.getConfig.useQuery(
+        { walletId: walletId ?? '' },
+        { enabled: !!walletId }
+    );
+
+    const isSetupDetectionActive = (config?.enabledSetupTypes?.length ?? 0) > 0;
 
     const handleToggleAutoTrading = (checked: boolean): void => {
         if (checked && !isSetupDetectionActive) {

@@ -83,6 +83,9 @@ export interface Order {
   commissionRate?: number;
   stopLoss?: number;
   takeProfit?: number;
+
+  isAutoTrade?: boolean;
+  mlConfidence?: number;
 }
 
 export interface OrderList extends BinanceOrderList {}

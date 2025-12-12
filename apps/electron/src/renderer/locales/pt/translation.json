@@ -728,6 +728,8 @@
     }
   },
   "trading": {
+    "noWalletSelected": "Nenhuma carteira selecionada. Por favor, crie ou selecione uma carteira primeiro.",
+    "loadingWallets": "Carregando carteiras, aguarde...",
     "simulator": {
       "toggle": "Simulador de Trading",
       "active": "Simulador Ativo",
@@ -748,6 +750,8 @@
       "create": "Criar Carteira",
       "createTitle": "Criar Nova Carteira",
       "empty": "Nenhuma carteira ainda. Crie uma para começar a negociar.",
+      "emptyReal": "Nenhuma carteira ainda. Crie uma carteira de paper trading para testar o auto-trading.",
+      "realMode": "Modo Paper Trading - Crie uma carteira para testar o auto-trading sem fundos reais.",
       "name": "Nome da Carteira",
       "namePlaceholder": "Minha Carteira",
       "initialBalance": "Saldo Inicial",
@@ -986,6 +990,10 @@
     "autoTradingDisabledDescription": "O auto-trading foi desabilitado automaticamente porque a detecção de setups foi desligada.",
     "noSetupsEnabled": "Nenhum Setup Habilitado",
     "noSetupsEnabledDescription": "Não é possível habilitar o auto-trading sem setups ativos. Por favor, habilite pelo menos um setup nas Configurações.",
+    "watcherStarted": "Auto-Trading Iniciado",
+    "watcherStartedDescription": "Monitorando",
+    "watcherStopped": "Auto-Trading Parado",
+    "watcherStoppedDescription": "O monitoramento de auto-trading foi parado.",
     "setups": {
       "setup91": {
         "title": "Setup 9.1 (Reversão EMA9)",

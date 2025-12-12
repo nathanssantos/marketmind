@@ -1,6 +1,9 @@
 import { useSetupStore } from '@/renderer/store/setupStore';
 import { useUIStore } from '@/renderer/store/uiStore';
+import { trpc } from '@/renderer/utils/trpc';
 import { Box, Flex, HStack, IconButton, Text } from '@chakra-ui/react';
+import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
+import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useToast } from '@renderer/hooks/useToast';
 import { usePatternDetectionConfigStore } from '@renderer/store/patternDetectionConfigStore';
 import { memo } from 'react';
@@ -23,7 +26,6 @@ import {
   LuRadar,
   LuRuler,
   LuScan,
-  LuTarget
 } from 'react-icons/lu';
 import { useChartWindows } from '../../hooks/useChartWindows';
 import type { MarketDataService } from '../../services/market/MarketDataService';
@@ -126,12 +128,27 @@ export const Toolbar = memo(({
   const setPatternConfig = usePatternDetectionConfigStore((state) => state.setConfig);
   const isAutoTradingActive = useSetupStore((state) => state.isAutoTradingActive);
   const toggleAutoTrading = useSetupStore((state) => state.toggleAutoTrading);
-  const setupConfig = useSetupStore((state) => state.config);
-  const setSetupConfig = useSetupStore((state) => state.setConfig);
+
+  const { wallets, isLoading: isLoadingWallets } = useBackendWallet();
+  const walletId = wallets[0]?.id;
+  const {
+    startWatcher,
+    stopAllWatchers,
+    watcherStatus,
+    isStartingWatcher,
+    isStoppingAllWatchers,
+    isLoadingWatcherStatus,
+  } = useBackendAutoTrading(walletId ?? '');
+
+  const { data: autoTradingConfig } = trpc.autoTrading.getConfig.useQuery(
+    { walletId: walletId ?? '' },
+    { enabled: !!walletId }
+  );
 
   const isPatternDetectionActive = algorithmicDetectionSettings.autoDisplayPatterns;
   const isExtensionsActive = patternConfig.showExtensions;
-  const isSetupDetectionActive = (setupConfig.enabledStrategies?.length ?? 0) > 0;
+  const isSetupDetectionActive = (autoTradingConfig?.enabledSetupTypes?.length ?? 0) > 0;
+  const isBackendWatcherActive = watcherStatus?.active ?? false;
 
   const handleOpenNewWindow = (): void => {
     void openChartWindow(symbol, timeframe);
@@ -143,23 +160,17 @@ export const Toolbar = memo(({
     });
   };
 
-  const toggleSetupDetection = (): void => {
-    const newEnabled = !isSetupDetectionActive;
-
-    if (!newEnabled && isAutoTradingActive) {
-      toggleAutoTrading();
-      toast.warning(
-        t('setupConfig.autoTradingDisabled'),
-        t('setupConfig.autoTradingDisabledDescription')
-      );
+  const handleToggleAutoTrading = async (): Promise<void> => {
+    if (isLoadingWallets) {
+      toast.info(t('common.loading'), t('trading.loadingWallets'));
+      return;
     }
 
-    setSetupConfig({
-      enabledStrategies: newEnabled ? [] : setupConfig.enabledStrategies ?? [],
-    });
-  };
+    if (!walletId) {
+      toast.error(t('common.error'), t('trading.noWalletSelected'));
+      return;
+    }
 
-  const handleToggleAutoTrading = (): void => {
     if (!isAutoTradingActive && !isSetupDetectionActive) {
       toast.error(
         t('setupConfig.noSetupsEnabled'),
@@ -168,7 +179,28 @@ export const Toolbar = memo(({
       return;
     }
 
-    toggleAutoTrading();
+    try {
+      if (isBackendWatcherActive) {
+        await stopAllWatchers();
+        toggleAutoTrading();
+        toast.success(
+          t('setupConfig.watcherStopped'),
+          t('setupConfig.watcherStoppedDescription')
+        );
+      } else {
+        await startWatcher(symbol, timeframe);
+        toggleAutoTrading();
+        toast.success(
+          t('setupConfig.watcherStarted'),
+          `${t('setupConfig.watcherStartedDescription')} ${symbol} @ ${timeframe}`
+        );
+      }
+    } catch (error) {
+      toast.error(
+        t('common.error'),
+        error instanceof Error ? error.message : t('common.unknownError')
+      );
+    }
   };
 
   const toggleExtensions = (): void => {
@@ -418,25 +450,22 @@ export const Toolbar = memo(({
             <Box w="1px" h="32px" bg="border" flexShrink={0} />
 
             <HStack gap={1} flexWrap="nowrap">
-              <TooltipWrapper label={t('chart.controls.setupDetection')} showArrow placement="top">
-                <IconButton
-                  size="2xs"
-                  aria-label={t('chart.controls.setupDetection')}
-                  onClick={toggleSetupDetection}
-                  colorPalette={isSetupDetectionActive ? 'green' : 'gray'}
-                  variant={isSetupDetectionActive ? 'solid' : 'ghost'}
-                >
-                  <LuTarget />
-                </IconButton>
-              </TooltipWrapper>
               <SetupTogglePopover />
-              <TooltipWrapper label={t('setupConfig.status.autoTrading')} showArrow placement="top">
+              <TooltipWrapper
+                label={isBackendWatcherActive
+                  ? `${t('setupConfig.status.autoTrading')} (${symbol} @ ${timeframe})`
+                  : t('setupConfig.status.autoTrading')
+                }
+                showArrow
+                placement="top"
+              >
                 <IconButton
                   size="2xs"
                   aria-label={t('setupConfig.status.autoTrading')}
-                  onClick={handleToggleAutoTrading}
-                  colorPalette={isAutoTradingActive ? 'green' : 'gray'}
-                  variant={isAutoTradingActive ? 'solid' : 'ghost'}
+                  onClick={() => void handleToggleAutoTrading()}
+                  colorPalette={isBackendWatcherActive ? 'green' : 'gray'}
+                  variant={isBackendWatcherActive ? 'solid' : 'ghost'}
+                  loading={isLoadingWallets || isStartingWatcher || isStoppingAllWatchers || (!!walletId && isLoadingWatcherStatus)}
                 >
                   <LuBot />
                 </IconButton>

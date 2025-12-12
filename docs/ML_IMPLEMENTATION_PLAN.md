@@ -2,7 +2,7 @@
 
 **Status:** 🚀 In Progress
 **Created:** 2025-12-10
-**Last Updated:** 2025-12-10
+**Last Updated:** 2025-12-12
 **Branch:** `feature/ml-integration`
 
 ---
@@ -48,10 +48,11 @@ Integração de Machine Learning para:
 |-------|--------|----------|-------|
 | Phase 1: Foundation | ✅ Complete | 100% | Feature extraction pipeline complete |
 | Phase 2: Training Pipeline | ✅ Complete | 100% | Python scripts + TS modules done |
-| Phase 3: Inference Engine | ✅ Complete | 100% | ONNX Runtime + ModelRegistry |
+| Phase 3: Inference Engine | ✅ Complete | 100% | ONNX + XGBoost native JSON inference |
 | Phase 4: Backend Integration | ✅ Complete | 100% | tRPC router + MLService + SetupDetection integration |
 | Phase 5: Evaluation | ✅ Complete | 100% | ClassificationMetrics + TradingMetrics + BacktestIntegration |
-| Phase 6: Frontend & Production | 🔄 In Progress | 70% | Core hooks + components done, settings pending |
+| Phase 6: Frontend & Production | ✅ Complete | 100% | Hooks + components + backend integration |
+| Phase 7: Auto-Trading Integration | 🔄 In Progress | 60% | Backend scheduler complete, frontend integration done |
 
 **Legend:** ✅ Complete | 🔄 In Progress | ⏳ Pending | ❌ Blocked
 
@@ -1620,6 +1621,224 @@ export const useMLPredictions = () => {
 
 ---
 
+## Phase 7: Auto-Trading Integration
+
+### 7.1 Overview
+
+Integração completa do ML com o sistema de auto-trading, usando a infraestrutura existente do simulador para:
+- Criar ordens reais na carteira selecionada
+- Visualizar trades no gráfico usando `useOrderLinesRenderer`
+- Acompanhar performance pelo `WalletPerformanceDialog` existente
+
+### 7.2 Architecture Decisions
+
+| Componente | Decisão | Motivo |
+|------------|---------|--------|
+| **Visualização** | Usar `useOrderLinesRenderer` existente | Consistência visual, já funciona com SL/TP |
+| **Botão toggle** | Usar botão `LuBot` da toolbar existente | UX consistente, já conectado ao `setupStore` |
+| **Carteira** | Usar `activeWalletId` do simulador | Integração com relatórios de performance |
+| **Ordens** | Criar via `tradingStore.addOrder()` | Funciona com todo o sistema existente |
+| **Relatórios** | Usar `WalletPerformanceDialog` | Gráfico de performance já existe |
+| **Identificação** | Flag `isAutoTrade: boolean` em Order | Distinguir ordens manuais de automáticas |
+
+### 7.3 Tasks
+
+| Task | Status | File | Notes |
+|------|--------|------|-------|
+| AutoTradingScheduler backend | ✅ | `auto-trading-scheduler.ts` | Polling de watchers a cada 60s |
+| Persistência de watchers no DB | ✅ | `active_watchers` table | Sobrevive restart do backend |
+| Restauração de watchers no startup | ✅ | `restoreWatchersFromDb()` | Auto-restore ao iniciar |
+| Auto-fetch de dados históricos | ✅ | `backfillHistoricalKlines()` | Busca da Binance quando insuficiente |
+| tRPC endpoints (start/stop/status) | ✅ | `auto-trading.ts` router | CRUD completo de watchers |
+| SetupTogglePopover → backend | ✅ | `SetupTogglePopover.tsx` | Backend como fonte de verdade |
+| Toolbar usa backend config | ✅ | `Toolbar.tsx` | `autoTradingConfig.enabledSetupTypes` |
+| Botão verde quando ativo | ✅ | `Toolbar.tsx` | `isBackendWatcherActive` |
+| Treinar modelo intraday | ⏳ | Python script | XGBoost com dados 5m/15m |
+| Adicionar `isAutoTrade` em Order | ⏳ | `packages/types/src/order.ts` | Flag para identificar |
+| Marcar ordens como auto-trade | ⏳ | `useAutoTrading.ts` | Setar `isAutoTrade: true` |
+| Ícone 🤖 nas tags de ordens | ⏳ | `useOrderLinesRenderer.ts` | Visual diferenciado |
+| Bloquear criação manual | ⏳ | `ChartCanvas.tsx` | Quando auto-trading ativo |
+| Bloquear modificação de auto-trades | ⏳ | `useOrderDragHandler.ts` | Proteger ordens ML |
+| Detecção de setups via StrategyLoader | ⏳ | `processWatcher()` | Integrar scanner de strategies |
+| Testar em tempo real | ⏳ | - | Validar integração completa |
+
+### 7.4 Auto-Trading Architecture (Implemented)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           FRONTEND (Electron)                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────┐    ┌──────────────────────┐                       │
+│  │ SetupTogglePopover  │───▶│  tRPC updateConfig   │                       │
+│  │ (estratégias)       │    │  enabledSetupTypes   │                       │
+│  └─────────────────────┘    └──────────────────────┘                       │
+│           │                           │                                     │
+│           ▼                           ▼                                     │
+│  ┌─────────────────────┐    ┌──────────────────────┐                       │
+│  │  Toolbar (LuBot)    │───▶│ tRPC startWatcher    │                       │
+│  │  verde = ativo      │    │ tRPC stopAllWatchers │                       │
+│  └─────────────────────┘    │ tRPC getWatcherStatus│                       │
+│           │                 └──────────────────────┘                       │
+│           ▼                           │                                     │
+│  ┌─────────────────────┐              │                                     │
+│  │ useBackendAuto      │◀─────────────┘                                     │
+│  │ Trading hook        │   polling 5s                                       │
+│  └─────────────────────┘                                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            BACKEND (Fastify)                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      AutoTradingScheduler                           │   │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐     │   │
+│  │  │ activeWatchers  │  │ processWatcher  │  │ restoreFromDb   │     │   │
+│  │  │ Map<id, watcher>│  │ every 60s       │  │ on startup      │     │   │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘     │   │
+│  │           │                    │                    │               │   │
+│  │           ▼                    ▼                    ▼               │   │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐     │   │
+│  │  │ startWatcher()  │  │ scanForSetups() │  │ PostgreSQL      │     │   │
+│  │  │ stopWatcher()   │  │ StrategyLoader  │  │ active_watchers │     │   │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘     │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      binance-historical.ts                          │   │
+│  │  backfillHistoricalKlines() - auto-fetch when insufficient data     │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                        PostgreSQL + TimescaleDB                      │   │
+│  │  ┌──────────────┐  ┌──────────────────┐  ┌──────────────────────┐  │   │
+│  │  │ klines       │  │ auto_trading_    │  │ active_watchers      │  │   │
+│  │  │ (histórico)  │  │ config           │  │ (persistência)       │  │   │
+│  │  └──────────────┘  └──────────────────┘  └──────────────────────┘  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Fluxo:**
+1. Usuário seleciona estratégias no `SetupTogglePopover` → salva em `auto_trading_config.enabledSetupTypes`
+2. Usuário clica no botão LuBot → `startWatcher(symbol, interval)`
+3. Backend persiste watcher em `active_watchers` e inicia polling
+4. A cada 60s, `processWatcher()` busca klines e escaneia setups
+5. Se dados insuficientes, `backfillHistoricalKlines()` busca da Binance
+6. Frontend faz polling de status a cada 5s, botão fica verde se ativo
+7. Restart do backend restaura watchers automaticamente via `restoreWatchersFromDb()`
+
+### 7.5 Order Type Extension
+
+```typescript
+// packages/types/src/order.ts - Adição
+
+export interface Order {
+  // ... campos existentes ...
+
+  /** Indica se a ordem foi criada pelo sistema de auto-trading */
+  isAutoTrade?: boolean;
+
+  /** ID do setup que originou a ordem (para rastreabilidade) */
+  setupId?: string;
+
+  /** Confiança ML no momento da criação (0-100) */
+  mlConfidence?: number;
+}
+```
+
+### 7.5 Visual Indicator
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  LONG (0.0234) 🤖                    [X]   +2.34%      │  <- Tag com ícone robô
+├─────────────────────────────────────────────────────────┤
+│  ────────────────────────────────────  94,250.00       │  <- Linha de posição
+├─────────────────────────────────────────────────────────┤
+│  - - - - - - - - - - - - - - - - - -  93,500.00       │  <- SL (tracejado)
+│  - - - - - - - - - - - - - - - - - -  95,000.00       │  <- TP (tracejado)
+└─────────────────────────────────────────────────────────┘
+```
+
+### 7.6 Blocking Rules
+
+| Condição | Ação | Motivo |
+|----------|------|--------|
+| `isAutoTradingActive = true` | Bloquear shift+click | Evitar conflito manual/auto |
+| `isAutoTradingActive = true` | Bloquear ctrl/cmd+click | Evitar conflito manual/auto |
+| `order.isAutoTrade = true` | Bloquear drag de SL/TP | Proteger gestão de risco ML |
+| `order.isAutoTrade = true` | Bloquear edição via modal | Proteger parâmetros ML |
+| `order.isAutoTrade = true` | Permitir fechar manualmente | Usuário tem controle final |
+
+### 7.7 Training Data Generation
+
+```bash
+# Comando para gerar dados intraday (5m, 15m)
+pnpm exec tsx src/cli/backtest-runner.ts generate-training \
+  --symbols BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,AVAXUSDT \
+  --intervals 5m,15m \
+  --start 2024-01-01 --end 2024-11-01 \
+  --output ../../packages/ml/data/training_data_intraday.csv
+```
+
+**Estatísticas esperadas:**
+- 6 símbolos × 2 intervalos × 10 estratégias = 120 combinações
+- ~500k+ amostras de treinamento
+- ~12-13 setups/hora em SOLUSDT 5m (bom para testes)
+
+### 7.8 Integration Points
+
+```
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│   useAutoTrading │ --> │  tradingStore    │ --> │ useOrderLines    │
+│                  │     │  .addOrder()     │     │ Renderer         │
+│  - detectSetups  │     │                  │     │                  │
+│  - filterByML    │     │  - orders[]      │     │  - renderLines   │
+│  - createOrder   │     │  - activeWallet  │     │  - show 🤖 icon  │
+└──────────────────┘     └──────────────────┘     └──────────────────┘
+         │                        │                        │
+         v                        v                        v
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│   setupStore     │     │ WalletPerformance│     │   ChartCanvas    │
+│                  │     │ Dialog           │     │                  │
+│  - isAutoTrading │     │                  │     │  - block manual  │
+│  - toggleAuto    │     │  - P&L chart     │     │  - show trades   │
+└──────────────────┘     │  - metrics       │     └──────────────────┘
+                         └──────────────────┘
+```
+
+### 7.10 Success Criteria
+
+**Infraestrutura (✅ Complete):**
+- [x] AutoTradingScheduler com polling a cada 60s
+- [x] Persistência de watchers em `active_watchers` table
+- [x] Restauração automática de watchers no startup do backend
+- [x] Auto-fetch de dados históricos da Binance quando insuficiente
+- [x] Frontend SetupTogglePopover salva estratégias no backend
+- [x] Botão LuBot mostra verde quando watcher ativo
+- [x] Page refresh mantém estado do watcher
+
+**Detecção (⏳ Pending):**
+- [ ] StrategyLoader integrado com `processWatcher()`
+- [ ] Scanning mostra `strategies > 0` no log
+- [ ] Setups detectados salvos em `setup_detections`
+- [ ] Dados de treinamento 5m/15m gerados (~500k+ amostras)
+- [ ] Modelo XGBoost intraday treinado (AUC > 0.60)
+
+**Execução (⏳ Pending):**
+- [ ] Ordens auto-trade marcadas com `isAutoTrade: true`
+- [ ] Ícone 🤖 visível nas tags de ordens auto-trade
+- [ ] Criação manual bloqueada quando auto-trading ativo
+- [ ] Modificação de ordens auto-trade bloqueada
+- [ ] Performance visível no gráfico da carteira
+- [ ] ~1 setup a cada 5-10 minutos em SOLUSDT 5m (testável)
+
+---
+
 ## Pre-requisite: Strategy Benchmarking
 
 Antes de treinar os modelos ML, precisamos validar as estratégias existentes:
@@ -1695,6 +1914,16 @@ Antes de treinar os modelos ML, precisamos validar as estratégias existentes:
 | 2025-12-10 | Phase 4 complete: tRPC ML router, MLService, MLEnhancedSetupService | Claude |
 | 2025-12-10 | Phase 5 complete: Evaluation framework (Classification + Trading metrics + Backtest integration) | Claude |
 | 2025-12-10 | Phase 6 started: useMLPredictions hook, useMLModel hook, MLConfidenceIndicator component | Claude |
+| 2025-12-12 | Added XGBoostInferenceEngine for native JSON model loading (~0.13ms inference) | Claude |
+| 2025-12-12 | Phase 7 added: Auto-Trading Integration plan with simulator integration | Claude |
+| 2025-12-12 | Decision: Use existing `useOrderLinesRenderer` instead of new `TradeRenderer` | Claude |
+| 2025-12-12 | Decision: Use simulator wallet for auto-trades (WalletPerformanceDialog reports) | Claude |
+| 2025-12-12 | Started intraday training data generation (5m, 15m intervals) | Claude |
+| 2025-12-12 | AutoTradingScheduler: watcher persistence in DB (`active_watchers` table) | Claude |
+| 2025-12-12 | Auto-fetch historical klines from Binance when insufficient data | Claude |
+| 2025-12-12 | Frontend refactor: SetupTogglePopover agora usa backend como fonte de verdade | Claude |
+| 2025-12-12 | Toolbar simplificado: removido botão Target obsoleto, usa `autoTradingConfig` | Claude |
+| 2025-12-12 | Phase 6 marked complete: hooks + components + backend config integration | Claude |
 
 ---
 

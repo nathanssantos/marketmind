@@ -5,51 +5,95 @@ import {
     Stack,
     Text,
 } from '@chakra-ui/react';
-import { memo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HiAdjustmentsHorizontal } from 'react-icons/hi2';
+import { useBackendWallet } from '../../hooks/useBackendWallet';
 import { useStrategyList } from '../../hooks/useSetupDetection';
-import { useSetupStore } from '../../store/setupStore';
+import { trpc } from '../../utils/trpc';
 import { Checkbox } from '../ui/checkbox';
 import { Popover } from '../ui/popover';
 import { TooltipWrapper } from '../ui/Tooltip';
 
+const ML_TRAINED_STRATEGIES = [
+    'keltner-breakout-optimized',
+    'bollinger-breakout-crypto',
+    'larry-williams-9-1',
+    'williams-momentum',
+    'larry-williams-9-3',
+    'tema-momentum',
+    'elder-ray-crypto',
+    'ppo-momentum',
+    'parabolic-sar-crypto',
+    'supertrend-follow',
+];
+
 export const SetupTogglePopover = memo(() => {
     const { t } = useTranslation();
-    const { config, setConfig } = useSetupStore();
+    const { wallets } = useBackendWallet();
+    const walletId = wallets[0]?.id;
     const [isOpen, setIsOpen] = useState(false);
+    const utils = trpc.useUtils();
 
-    const { data: strategies, isLoading } = useStrategyList({
+    const { data: config, isLoading: isLoadingConfig } = trpc.autoTrading.getConfig.useQuery(
+        { walletId: walletId ?? '' },
+        { enabled: !!walletId }
+    );
+
+    const updateConfigMutation = trpc.autoTrading.updateConfig.useMutation({
+        onSuccess: () => {
+            utils.autoTrading.getConfig.invalidate();
+        },
+    });
+
+    const { data: strategies, isLoading: isLoadingStrategies } = useStrategyList({
         excludeStatuses: ['unprofitable', 'deprecated'],
     });
 
-    const setupList = (strategies ?? []).map((strategy: { id: string; name: string }) => ({
-        value: strategy.id,
-        title: strategy.name,
-    }));
+    const setupList = useMemo(() => {
+        const allStrategies = (strategies ?? []).map((strategy: { id: string; name: string }) => ({
+            value: strategy.id,
+            title: strategy.name,
+        }));
 
-    const toggleSetup = (strategyId: string): void => {
-        const enabledStrategies = config.enabledStrategies ?? [];
+        return allStrategies.filter((s: { value: string }) => ML_TRAINED_STRATEGIES.includes(s.value));
+    }, [strategies]);
+
+    const enabledStrategies = useMemo(() => config?.enabledSetupTypes ?? [], [config?.enabledSetupTypes]);
+
+    const toggleSetup = useCallback((strategyId: string): void => {
+        if (!walletId) return;
+
         const isEnabled = enabledStrategies.includes(strategyId);
+        const newEnabledStrategies = isEnabled
+            ? enabledStrategies.filter(id => id !== strategyId)
+            : [...enabledStrategies, strategyId];
 
-        setConfig({
-            enabledStrategies: isEnabled
-                ? enabledStrategies.filter(id => id !== strategyId)
-                : [...enabledStrategies, strategyId],
+        updateConfigMutation.mutate({
+            walletId,
+            enabledSetupTypes: newEnabledStrategies,
         });
-    };
+    }, [walletId, enabledStrategies, updateConfigMutation]);
 
-    const toggleAll = (): void => {
-        const allEnabled = setupList.every((s: { value: string }) => config.enabledStrategies?.includes(s.value));
+    const toggleAll = useCallback((): void => {
+        if (!walletId) return;
 
-        setConfig({
-            enabledStrategies: allEnabled ? [] : setupList.map((s: { value: string }) => s.value),
+        const allEnabled = setupList.every((s: { value: string }) => enabledStrategies.includes(s.value));
+        const newEnabledStrategies = allEnabled ? [] : setupList.map((s: { value: string }) => s.value);
+
+        updateConfigMutation.mutate({
+            walletId,
+            enabledSetupTypes: newEnabledStrategies,
         });
-    };
+    }, [walletId, setupList, enabledStrategies, updateConfigMutation]);
 
-    const enabledStrategies = config.enabledStrategies ?? [];
+    const isLoading = isLoadingConfig || isLoadingStrategies;
     const allEnabled = setupList.length > 0 && setupList.every((s: { value: string }) => enabledStrategies.includes(s.value));
-    const enabledCount = enabledStrategies.length;
+    const enabledCount = setupList.filter((s: { value: string }) => enabledStrategies.includes(s.value)).length;
+
+    if (!walletId) {
+        return null;
+    }
 
     return (
         <Popover
@@ -88,6 +132,7 @@ export const SetupTogglePopover = memo(() => {
                         <Checkbox
                             checked={allEnabled}
                             onCheckedChange={toggleAll}
+                            disabled={updateConfigMutation.isPending}
                         >
                             <Text fontWeight="semibold" fontSize="sm">
                                 {t('setupConfig.toggleAll')}
@@ -112,6 +157,7 @@ export const SetupTogglePopover = memo(() => {
                                     <Checkbox
                                         checked={enabledStrategies.includes(setup.value)}
                                         onCheckedChange={() => toggleSetup(setup.value)}
+                                        disabled={updateConfigMutation.isPending}
                                     >
                                         <Text fontSize="sm">
                                             {setup.title}

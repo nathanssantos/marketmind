@@ -13,6 +13,18 @@ import {
 } from '@shared/utils';
 import { useMemo, useRef } from 'react';
 
+export interface BackendExecution {
+  id: string;
+  symbol: string;
+  side: 'LONG' | 'SHORT';
+  entryPrice: string;
+  quantity: string;
+  stopLoss: string | null;
+  takeProfit: string | null;
+  status: string | null;
+  setupType: string | null;
+}
+
 interface OrderCloseButton {
   orderId: string;
   x: number;
@@ -94,23 +106,70 @@ const drawPriceTag = (
   return { width: fixedTagWidth + arrowWidth, height: labelHeight };
 };
 
+const drawBotIcon = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number
+): void => {
+  ctx.save();
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.lineWidth = 1;
+
+  const headSize = size * 0.6;
+  const headX = x + (size - headSize) / 2;
+  const headY = y + size * 0.15;
+
+  ctx.beginPath();
+  ctx.roundRect(headX, headY, headSize, headSize * 0.7, 2);
+  ctx.fill();
+
+  const eyeSize = size * 0.12;
+  const eyeY = headY + headSize * 0.25;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+  ctx.beginPath();
+  ctx.arc(headX + headSize * 0.3, eyeY, eyeSize, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(headX + headSize * 0.7, eyeY, eyeSize, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+  const antennaX = x + size / 2;
+  const antennaY = headY - size * 0.1;
+  ctx.beginPath();
+  ctx.moveTo(antennaX, headY);
+  ctx.lineTo(antennaX, antennaY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(antennaX, antennaY, size * 0.08, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+};
+
 const drawInfoTag = (
   ctx: CanvasRenderingContext2D,
   text: string,
   y: number,
   fillColor: string,
   hasCloseButton: boolean = false,
-  closeButtonRef?: { x: number; y: number; size: number } | null
+  closeButtonRef?: { x: number; y: number; size: number } | null,
+  isAutoTrade: boolean = false
 ): { width: number; height: number } => {
   const labelPadding = 8;
   const labelHeight = 18;
   const arrowWidth = 6;
   const closeButtonSize = 14;
   const closeButtonMargin = 4;
-  
+  const botIconSize = 12;
+  const botIconMargin = 3;
+
   const textWidth = ctx.measureText(text).width;
   const closeButtonSpace = hasCloseButton ? closeButtonSize + closeButtonMargin : 0;
-  const totalContentWidth = closeButtonSpace + textWidth;
+  const botIconSpace = isAutoTrade ? botIconSize + botIconMargin : 0;
+  const totalContentWidth = closeButtonSpace + botIconSpace + textWidth;
   const tagWidth = totalContentWidth + labelPadding * 2;
   
   ctx.save();
@@ -149,10 +208,16 @@ const drawInfoTag = (
     closeButtonRef.size = closeButtonSize;
   }
   
+  let currentX = labelPadding + closeButtonSpace;
+
+  if (isAutoTrade) {
+    drawBotIcon(ctx, currentX, y - botIconSize / 2, botIconSize);
+    currentX += botIconSize + botIconMargin;
+  }
+
   ctx.fillStyle = '#ffffff';
-  const textX = labelPadding + closeButtonSpace;
-  ctx.fillText(text, textX, y);
-  
+  ctx.fillText(text, currentX, y);
+
   ctx.restore();
   return { width: tagWidth + arrowWidth, height: labelHeight };
 };
@@ -185,15 +250,57 @@ const drawPercentBadge = (
   return { width: badgeWidth, height: percentHeight };
 };
 
-export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulatorActive: boolean, hoveredOrderId: string | null = null) => {
+export const useOrderLinesRenderer = (
+  manager: CanvasManager | null,
+  isSimulatorActive: boolean,
+  hoveredOrderId: string | null = null,
+  backendExecutions: BackendExecution[] = []
+) => {
   const activeWalletId = useTradingStore((state) => state.activeWalletId);
   const orders = useTradingStore((state) => state.orders);
-  
-  const activeOrders = useMemo(
+
+  const backendOrders = useMemo((): Order[] => {
+    return backendExecutions
+      .filter(exec => exec.status === 'open')
+      .map(exec => ({
+        id: exec.id,
+        symbol: exec.symbol,
+        orderId: 0,
+        orderListId: -1,
+        clientOrderId: exec.id,
+        price: exec.entryPrice,
+        origQty: exec.quantity,
+        executedQty: exec.quantity,
+        cummulativeQuoteQty: '0',
+        status: 'FILLED' as const,
+        timeInForce: 'GTC' as const,
+        type: 'MARKET' as const,
+        side: exec.side === 'LONG' ? 'BUY' : 'SELL',
+        time: Date.now(),
+        updateTime: Date.now(),
+        isWorking: true,
+        origQuoteOrderQty: '0',
+        entryPrice: parseFloat(exec.entryPrice),
+        quantity: parseFloat(exec.quantity),
+        orderDirection: exec.side === 'LONG' ? 'long' : 'short',
+        stopLoss: exec.stopLoss ? parseFloat(exec.stopLoss) : undefined,
+        takeProfit: exec.takeProfit ? parseFloat(exec.takeProfit) : undefined,
+        isAutoTrade: true,
+        walletId: '',
+        setupType: exec.setupType ?? undefined,
+      } as Order));
+  }, [backendExecutions]);
+
+  const simulatorOrders = useMemo(
     () => isSimulatorActive && activeWalletId
       ? orders.filter(o => o.walletId === activeWalletId && (isOrderActive(o) || isOrderPending(o)))
       : [],
     [orders, activeWalletId, isSimulatorActive]
+  );
+
+  const activeOrders = useMemo(
+    () => [...simulatorOrders, ...backendOrders],
+    [simulatorOrders, backendOrders]
   );
   
   const closeButtonsRef = useRef<OrderCloseButton[]>([]);
@@ -202,7 +309,9 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
   const sltpCloseButtonsRef = useRef<SLTPCloseButton[]>([]);
 
   const renderOrderLines = (): void => {
-    if (!manager || !isSimulatorActive || activeOrders.length === 0) return;
+    const hasOrders = activeOrders.length > 0;
+    if (!manager || !hasOrders) return;
+    if (!isSimulatorActive && backendOrders.length === 0) return;
 
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
@@ -295,9 +404,9 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
     pendingOrdersToRender.forEach((order) => {
       const y = manager.priceToY(getOrderPrice(order));
       if (y < 0 || y > chartHeight) return;
-      
+
       const isLong = isOrderLong(order);
-      
+
       orderHitboxesRef.current.push({
         orderId: getOrderId(order),
         y,
@@ -309,13 +418,13 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
       ctx.font = '11px monospace';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      
+
       const lineColor = isLong ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)';
       const fillColor = isLong ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)';
-      
+
       const priceText = getOrderPrice(order).toFixed(2);
       priceTags.push({ priceText, y, fillColor });
-      
+
       const tagStartX = chartWidth;
       ctx.strokeStyle = lineColor;
       ctx.lineWidth = 1.5;
@@ -323,13 +432,13 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
       ctx.moveTo(0, y);
       ctx.lineTo(tagStartX, y);
       ctx.stroke();
-      
+
       const typeLabel = isLong ? 'L' : 'S';
       const infoText = `${typeLabel} (${getOrderQuantity(order)})`;
-      
+
       const closeButtonRef = { x: 0, y: 0, size: 14 };
-      drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef);
-      
+      drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade);
+
       closeButtonsRef.current.push({
         orderId: getOrderId(order),
         x: closeButtonRef.x,
@@ -337,7 +446,7 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
         width: closeButtonRef.size,
         height: closeButtonRef.size,
       });
-      
+
       ctx.restore();
     });
 
@@ -433,15 +542,16 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
       const percentSign = percentChange >= 0 ? '+' : '';
       const percentText = `${percentSign}${percentChange.toFixed(2)}%`;
       
-      const quantityPrefix = position.orders.length > 1 
-        ? `(${position.orders.length}x) ` 
+      const quantityPrefix = position.orders.length > 1
+        ? `(${position.orders.length}x) `
         : '';
       const directionSymbol = isLong ? '↑' : '↓';
       const infoText = `${quantityPrefix}${directionSymbol} (${absQuantity})`;
-      
+      const hasAutoTrade = position.orders.some(o => o.isAutoTrade);
+
       const closeButtonRef = { x: 0, y: 0, size: 14 };
-      const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef);
-      
+      const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, hasAutoTrade);
+
       position.orderIds.forEach((orderId) => {
         closeButtonsRef.current.push({
           orderId,
@@ -451,10 +561,10 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
           height: closeButtonRef.size,
         });
       });
-      
+
       const badgeX = infoTagSize.width + 6;
       drawPercentBadge(ctx, percentText, badgeX, y, percentChange >= 0);
-      
+
       ctx.restore();
     });
 
@@ -463,40 +573,40 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
       const y = manager.priceToY(getOrderPrice(order));
       if (y >= 0 && y <= chartHeight) {
         const isLong = isOrderLong(order);
-        
+
         ctx.save();
         ctx.font = '11px monospace';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        
+
         const lineColor = isLong ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)';
         const fillColor = isLong ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)';
-        
+
         const priceText = getOrderPrice(order).toFixed(2);
         const tagStartX = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
         drawPriceTag(ctx, priceText, y, tagStartX, fillColor, 'left', tagStartX);
-      
-      ctx.strokeStyle = lineColor;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(tagStartX, y);
-      ctx.stroke();
-      
-      const typeLabel = isLong ? 'L' : 'S';
-      const infoText = `${typeLabel} (${getOrderQuantity(order)})`;
-      
-      const closeButtonRef = { x: 0, y: 0, size: 14 };
-      drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef);
-      
-      closeButtonsRef.current.push({
-        orderId: getOrderId(order),
-        x: closeButtonRef.x,
-        y: closeButtonRef.y,
-        width: closeButtonRef.size,
-        height: closeButtonRef.size,
-      });
-      
+
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(tagStartX, y);
+        ctx.stroke();
+
+        const typeLabel = isLong ? 'L' : 'S';
+        const infoText = `${typeLabel} (${getOrderQuantity(order)})`;
+
+        const closeButtonRef = { x: 0, y: 0, size: 14 };
+        drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade);
+
+        closeButtonsRef.current.push({
+          orderId: getOrderId(order),
+          x: closeButtonRef.x,
+          y: closeButtonRef.y,
+          width: closeButtonRef.size,
+          height: closeButtonRef.size,
+        });
+
         ctx.restore();
       }
     }
@@ -507,7 +617,7 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
       if (y >= 0 && y <= chartHeight) {
         const isLong = position.type === 'long';
         const positionId = `position-${position.symbol}-${position.type}`;
-        
+
         const positionData = {
           symbol: position.symbol,
           type: position.type,
@@ -516,7 +626,7 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
           totalPnL: position.totalPnL,
           orders: position.orders,
         };
-        
+
         orderHitboxesRef.current.push({
           orderId: positionId,
           y,
@@ -534,51 +644,52 @@ export const useOrderLinesRenderer = (manager: CanvasManager | null, isSimulator
         ctx.font = '11px monospace';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        
+
         const lineColor = isLong ? 'rgba(59, 130, 246, 0.8)' : 'rgba(251, 146, 60, 0.8)';
         const fillColor = isLong ? 'rgba(59, 130, 246, 0.9)' : 'rgba(251, 146, 60, 0.9)';
-        
+
         const priceText = position.avgPrice.toFixed(2);
         const tagStartX = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
         drawPriceTag(ctx, priceText, y, tagStartX, fillColor, 'left', tagStartX);
-      
-      ctx.strokeStyle = lineColor;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(tagStartX, y);
-      ctx.stroke();
-      
-      const priceChange = currentPrice - position.avgPrice;
-      const percentChange = isLong 
-        ? (priceChange / position.avgPrice) * 100
-        : (-priceChange / position.avgPrice) * 100;
-      
-      const percentSign = percentChange >= 0 ? '+' : '';
-      const percentText = `${percentSign}${percentChange.toFixed(2)}%`;
-      
-      const typeLabel = position.type === 'long' ? 'L' : 'S';
-      const quantityPrefix = position.orders.length > 1 
-        ? `(${position.orders.length}x) ` 
-        : '';
-      const infoText = `${quantityPrefix}${typeLabel} (${position.totalQuantity})`;
-      
-      const closeButtonRef = { x: 0, y: 0, size: 14 };
-      const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef);
-      
-      position.orderIds.forEach((orderId) => {
-        closeButtonsRef.current.push({
-          orderId,
-          x: closeButtonRef.x,
-          y: closeButtonRef.y,
-          width: closeButtonRef.size,
-          height: closeButtonRef.size,
+
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(tagStartX, y);
+        ctx.stroke();
+
+        const priceChange = currentPrice - position.avgPrice;
+        const percentChange = isLong
+          ? (priceChange / position.avgPrice) * 100
+          : (-priceChange / position.avgPrice) * 100;
+
+        const percentSign = percentChange >= 0 ? '+' : '';
+        const percentText = `${percentSign}${percentChange.toFixed(2)}%`;
+
+        const typeLabel = position.type === 'long' ? 'L' : 'S';
+        const quantityPrefix = position.orders.length > 1
+          ? `(${position.orders.length}x) `
+          : '';
+        const infoText = `${quantityPrefix}${typeLabel} (${position.totalQuantity})`;
+        const hasAutoTrade = position.orders.some(o => o.isAutoTrade);
+
+        const closeButtonRef = { x: 0, y: 0, size: 14 };
+        const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, hasAutoTrade);
+
+        position.orderIds.forEach((orderId) => {
+          closeButtonsRef.current.push({
+            orderId,
+            x: closeButtonRef.x,
+            y: closeButtonRef.y,
+            width: closeButtonRef.size,
+            height: closeButtonRef.size,
+          });
         });
-      });
-      
-      const badgeX = infoTagSize.width + 6;
-      drawPercentBadge(ctx, percentText, badgeX, y, percentChange >= 0);
-      
+
+        const badgeX = infoTagSize.width + 6;
+        drawPercentBadge(ctx, percentText, badgeX, y, percentChange >= 0);
+
         ctx.restore();
       }
     }

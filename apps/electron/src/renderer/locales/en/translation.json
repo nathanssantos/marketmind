@@ -761,6 +761,8 @@
     }
   },
   "trading": {
+    "noWalletSelected": "No wallet selected. Please create or select a wallet first.",
+    "loadingWallets": "Loading wallets, please wait...",
     "simulator": {
       "toggle": "Trading Simulator",
       "active": "Simulator Active",
@@ -781,6 +783,8 @@
       "create": "Create Wallet",
       "createTitle": "Create New Wallet",
       "empty": "No wallets yet. Create one to start trading.",
+      "emptyReal": "No wallets yet. Create a paper trading wallet to test auto-trading.",
+      "realMode": "Paper Trading Mode - Create a wallet to test auto-trading without real funds.",
       "name": "Wallet Name",
       "namePlaceholder": "My Wallet",
       "initialBalance": "Initial Balance",
@@ -1019,6 +1023,10 @@
     "autoTradingDisabledDescription": "Auto-trading was automatically disabled because setup detection was turned off.",
     "noSetupsEnabled": "No Setups Enabled",
     "noSetupsEnabledDescription": "Cannot enable auto-trading without active setups. Please enable at least one setup in Settings.",
+    "watcherStarted": "Auto-Trading Started",
+    "watcherStartedDescription": "Monitoring",
+    "watcherStopped": "Auto-Trading Stopped",
+    "watcherStoppedDescription": "Auto-trading watcher has been stopped.",
     "setups": {
       "setup91": {
         "title": "Setup 9.1 (EMA9 Reversal)",

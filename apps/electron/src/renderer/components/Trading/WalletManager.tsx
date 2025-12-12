@@ -25,7 +25,9 @@ export const WalletManager = () => {
     wallets: backendWalletsData,
     isLoading: isLoadingBackendWallets,
     deleteWallet: deleteBackendWallet,
-    isDeleting: isDeletingBackendWallet
+    createPaperWallet,
+    isDeleting: isDeletingBackendWallet,
+    isCreatingPaper: isCreatingPaperWallet,
   } = useBackendWallet();
 
   const backendWallets = useMemo(() => {
@@ -61,16 +63,22 @@ export const WalletManager = () => {
   }, [backendWalletsData]);
 
   const wallets = isSimulatorActive ? simulatorWallets : backendWallets;
-  const activeWalletId = isSimulatorActive ? simulatorActiveWalletId : null;
+  const activeWalletId = isSimulatorActive ? simulatorActiveWalletId : backendWallets[0]?.id ?? null;
   const isLoading = !isSimulatorActive && isLoadingBackendWallets;
 
-  const handleAddWallet = (params: {
+  const handleAddWallet = async (params: {
     name: string;
     initialBalance: number;
     currency: 'USD' | 'BRL' | 'EUR' | 'USDT' | 'BTC' | 'ETH';
   }) => {
     if (isSimulatorActive) {
       addSimulatorWallet(params);
+    } else {
+      await createPaperWallet({
+        name: params.name,
+        initialBalance: params.initialBalance.toString(),
+        currency: params.currency,
+      });
     }
   };
 
@@ -98,16 +106,15 @@ export const WalletManager = () => {
         <Text fontSize="sm" fontWeight="bold">
           {t('trading.wallets.title')}
         </Text>
-        {isSimulatorActive && (
-          <Button
-            size="2xs"
-            colorPalette="blue"
-            onClick={() => setShowCreateDialog(true)}
-          >
-            <LuPlus />
-            {t('trading.wallets.create')}
-          </Button>
-        )}
+        <Button
+          size="2xs"
+          colorPalette="blue"
+          onClick={() => setShowCreateDialog(true)}
+          loading={isCreatingPaperWallet}
+        >
+          <LuPlus />
+          {t('trading.wallets.create')}
+        </Button>
       </Flex>
 
       {!isSimulatorActive && (
@@ -154,13 +161,11 @@ export const WalletManager = () => {
         )}
       </Box>
 
-      {isSimulatorActive && (
-        <CreateWalletDialog
-          isOpen={showCreateDialog}
-          onClose={() => setShowCreateDialog(false)}
-          onCreate={handleAddWallet}
-        />
-      )}
+      <CreateWalletDialog
+        isOpen={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+        onCreate={handleAddWallet}
+      />
 
       {isSimulatorActive && (
         <WalletPerformanceDialog

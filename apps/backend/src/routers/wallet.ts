@@ -58,6 +58,38 @@ export const walletRouter = router({
       return wallet;
     }),
 
+  createPaper: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(255),
+        initialBalance: z.string().default('10000'),
+        currency: z.string().default('USDT'),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const walletId = generateId(21);
+
+      await ctx.db.insert(wallets).values({
+        id: walletId,
+        userId: ctx.user.id,
+        name: input.name,
+        apiKeyEncrypted: 'paper-trading',
+        apiSecretEncrypted: 'paper-trading',
+        initialBalance: input.initialBalance,
+        currentBalance: input.initialBalance,
+        currency: input.currency,
+        isActive: true,
+      });
+
+      return {
+        id: walletId,
+        name: input.name,
+        initialBalance: input.initialBalance,
+        currentBalance: input.initialBalance,
+        currency: input.currency,
+      };
+    }),
+
   create: protectedProcedure
     .input(
       z.object({

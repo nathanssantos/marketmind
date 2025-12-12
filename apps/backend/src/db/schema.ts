@@ -383,3 +383,23 @@ export type NewMLEvaluation = typeof mlEvaluations.$inferInsert;
 
 export type MLFeatureCache = typeof mlFeatureCache.$inferSelect;
 export type NewMLFeatureCache = typeof mlFeatureCache.$inferInsert;
+
+export const activeWatchers = pgTable('active_watchers', {
+  id: varchar({ length: 255 }).primaryKey(),
+  userId: varchar('user_id', { length: 255 })
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  walletId: varchar('wallet_id', { length: 255 })
+    .notNull()
+    .references(() => wallets.id, { onDelete: 'cascade' }),
+  symbol: varchar({ length: 20 }).notNull(),
+  interval: varchar({ length: 5 }).notNull(),
+  startedAt: timestamp('started_at', { mode: 'date' }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  walletIdIdx: index('active_watchers_wallet_id_idx').on(table.walletId),
+  userIdIdx: index('active_watchers_user_id_idx').on(table.userId),
+}));
+
+export type ActiveWatcher = typeof activeWatchers.$inferSelect;
+export type NewActiveWatcher = typeof activeWatchers.$inferInsert;

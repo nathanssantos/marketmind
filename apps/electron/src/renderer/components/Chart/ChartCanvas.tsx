@@ -14,18 +14,17 @@ import {
 import { Box, Portal } from '@chakra-ui/react';
 import { calculateMovingAverage, type StochasticResult } from '@marketmind/indicators';
 import type { AIPattern, AITradingContext, Kline, Order, Viewport } from '@marketmind/types';
-import { useAutoTrading } from '@renderer/hooks/useAutoTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useMarketContext } from '@renderer/hooks/useMarketContext';
 import { useRSIWorker } from '@renderer/hooks/useRSIWorker';
-import { useSetupDetection } from '@renderer/hooks/useSetupDetection';
 import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
 import { TradingFeeService } from '@renderer/services/TradingFeeService';
 import { useSetupStore } from '@renderer/store';
 import { useTradingStore } from '@renderer/store/tradingStore';
+import { trpc } from '@renderer/utils/trpc';
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume, getOrderPrice, getOrderType, isOrderLong, isOrderPending } from '@shared/utils';
 import type React from 'react';
@@ -39,7 +38,6 @@ import { ChartTooltip } from './ChartTooltip';
 import { KlineTimer } from './KlineTimer';
 import { PatternRenderer } from './PatternRenderer';
 import { SetupRenderer } from './SetupRenderer';
-import { TradeRenderer } from './TradeRenderer';
 import { useChartCanvas } from './useChartCanvas';
 import { useCrosshairPriceLineRenderer } from './useCrosshairPriceLineRenderer';
 import { useCurrentPriceLineRenderer } from './useCurrentPriceLineRenderer';
@@ -48,7 +46,7 @@ import { useKlineRenderer } from './useKlineRenderer';
 import { useLineChartRenderer } from './useLineChartRenderer';
 import { useMovingAverageRenderer, type MovingAverageConfig } from './useMovingAverageRenderer';
 import { useOrderDragHandler } from './useOrderDragHandler';
-import { useOrderLinesRenderer } from './useOrderLinesRenderer';
+import { useOrderLinesRenderer, type BackendExecution } from './useOrderLinesRenderer';
 import { useRSIRenderer } from './useRSIRenderer';
 import { useStochasticRenderer } from './useStochasticRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
@@ -125,27 +123,40 @@ export const ChartCanvas = ({
   const closeOrder = useTradingStore((state) => state.closeOrder);
   const updateOrder = useTradingStore((state) => state.updateOrder);
 
-  const { wallets: backendWallets } = useBackendWallet();
-  const backendWalletId = backendWallets[0]?.id;
-
-  const { executeSetup: executeAutoTradingSetup } = useAutoTrading({
-    walletId: isSimulatorActive ? (activeWalletId ?? '') : (backendWalletId ?? ''),
-    isSimulatorMode: isSimulatorActive,
-  });
-
   const detectedSetups = useSetupStore((state) => state.detectedSetups);
-  const addDetectedSetup = useSetupStore((state) => state.addDetectedSetup);
   const removeDetectedSetup = useSetupStore((state) => state.removeDetectedSetup);
   const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
-  const setupConfig = useSetupStore((state) => state.config);
+  const isAutoTradingActive = useSetupStore((state) => state.isAutoTradingActive);
   const { getContext } = useMarketContext();
-  const setupDetector = useSetupDetection({
-    symbol,
-    interval: timeframe as any,
-    enableRealtimeUpdates: true,
-  });
+
+  const { wallets } = useBackendWallet();
+  const backendWalletId = wallets[0]?.id;
+
+  const { data: backendExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
+    { walletId: backendWalletId ?? '', limit: 50 },
+    {
+      enabled: !!backendWalletId && !!symbol,
+      refetchInterval: 5000,
+    }
+  );
+
+  const filteredBackendExecutions = useMemo((): BackendExecution[] => {
+    if (!backendExecutions || !symbol) return [];
+    return backendExecutions
+      .filter(exec => exec.symbol === symbol)
+      .map(exec => ({
+        id: exec.id,
+        symbol: exec.symbol,
+        side: exec.side as 'LONG' | 'SHORT',
+        entryPrice: exec.entryPrice,
+        quantity: exec.quantity,
+        stopLoss: exec.stopLoss,
+        takeProfit: exec.takeProfit,
+        status: exec.status,
+        setupType: exec.setupType,
+      }));
+  }, [backendExecutions, symbol]);
   const [hoveredSetup, setHoveredSetup] = useState<ReturnType<typeof useSetupStore.getState>['detectedSetups'][0] | null>(null);
-  const executedSetupsRef = useRef<Set<string>>(new Set());
 
   const tradingFees = useTradingStore((state) => state.tradingFees);
   const [feeService] = useState(() => {
@@ -209,7 +220,7 @@ export const ChartCanvas = ({
   const { shiftPressed, altPressed } = useTradingShortcuts({
     onLongEntry: handleLongEntry,
     onShortEntry: handleShortEntry,
-    enabled: isSimulatorActive,
+    enabled: isSimulatorActive && !isAutoTradingActive,
   });
 
   const [tooltipData, setTooltipData] = useState<{
@@ -407,7 +418,7 @@ export const ChartCanvas = ({
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
   });
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, isSimulatorActive, hoveredOrderId);
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, isSimulatorActive, hoveredOrderId, filteredBackendExecutions);
 
   const { render: renderWatermark } = useWatermarkRenderer({
     manager,
@@ -1066,70 +1077,6 @@ export const ChartCanvas = ({
     manager.setRSIPanelHeight(height);
   }, [manager, showRSI]);
 
-  useEffect(() => {
-    executedSetupsRef.current.clear();
-  }, [symbol]);
-
-  useEffect(() => {
-    const { isAutoTradingActive, detectedSetups: activeSetups } = useSetupStore.getState();
-
-    if (!isAutoTradingActive || klines.length < 50) return;
-
-    activeSetups.forEach((setup) => {
-      if (setup.isTriggered || setup.isCancelled) return;
-    });
-
-    const detectedSetups = setupDetector.detectSetups(klines);
-
-    detectedSetups.forEach((setup) => {
-      if (executedSetupsRef.current.has(setup.id)) return;
-
-      const existing = useSetupStore.getState().detectedSetups.find(s => s.id === setup.id);
-      if (existing) return;
-
-      addDetectedSetup(setup);
-      executedSetupsRef.current.add(setup.id);
-
-      const shouldExecute = isSimulatorActive
-        ? activeWalletId && symbol
-        : backendWalletId && symbol;
-
-      if (!shouldExecute) return;
-
-      if (!symbol) return;
-
-      const lastKline = klines[klines.length - 1];
-      const currentPrice = lastKline ? getKlineClose(lastKline) : undefined;
-      const quantity = getQuantityForSymbol(symbol) ?? 1;
-
-      executeAutoTradingSetup(setup, symbol, quantity, {
-        entryFee: tradingFees.makerFeeRate,
-        exitFee: tradingFees.makerFeeRate,
-        totalFees: tradingFees.makerFeeRate * 2,
-      }, currentPrice).then((result) => {
-        if (result.success) {
-          useSetupStore.getState().executeSetup(setup.id);
-          console.log(`[ChartCanvas] Setup ${setup.type} executed successfully in ${isSimulatorActive ? 'simulator' : 'backend'} mode`);
-        }
-      }).catch((error) => {
-        console.error(`[ChartCanvas] Setup ${setup.type} execution failed:`, error);
-        warning(`Trade Rejected: ${error.message ?? 'Execution failed'}`);
-      });
-    });
-  }, [
-    klines,
-    setupConfig,
-    setupDetector,
-    addDetectedSetup,
-    symbol,
-    getQuantityForSymbol,
-    executeAutoTradingSetup,
-    isSimulatorActive,
-    activeWalletId,
-    backendWalletId,
-    tradingFees,
-    warning,
-  ]);
 
   useEffect(() => {
     if (!shiftPressed && !altPressed) {
@@ -1530,17 +1477,6 @@ export const ChartCanvas = ({
             height={canvasRef.current?.height ?? 0}
             mousePosition={mousePosition}
             onSetupHover={handleSetupHover}
-          />
-        )}
-        {manager && !isInteracting && symbol && (
-          <TradeRenderer
-            canvasManager={manager}
-            orders={orders}
-            currentSymbol={symbol}
-            width={canvasRef.current?.width ?? 0}
-            height={canvasRef.current?.height ?? 0}
-            mousePosition={mousePosition}
-            onTradeHover={() => {}}
           />
         )}
         <ChartNavigation
