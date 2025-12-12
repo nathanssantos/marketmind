@@ -189,3 +189,6 @@ updates/
 *.asar
 *.blockmap
 latest*.yml
+
+
+*.csv
