@@ -17,8 +17,8 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 import onnx
-from skl2onnx import convert_sklearn
-from skl2onnx.common.data_types import FloatTensorType
+from onnxmltools import convert_xgboost, convert_lightgbm
+from onnxmltools.convert.common.data_types import FloatTensorType
 import json
 import argparse
 from datetime import datetime
@@ -176,54 +176,27 @@ class SetupClassifierTrainer:
         return self.model
 
     def export_to_onnx(self, output_path: str) -> str:
-        """Export trained model to ONNX format"""
+        """Export trained model to JSON format (compatible with xgboost-node inference)"""
         if self.model is None:
             raise ValueError("Model not trained. Call train() first.")
 
-        initial_type = [('input', FloatTensorType([None, len(self.feature_names)]))]
-        options = {id(self.model): {'zipmap': False}}
-
-        onnx_model = convert_sklearn(
-            self.model,
-            initial_types=initial_type,
-            target_opset=15,
-            options=options,
-        )
-
-        meta = onnx_model.metadata_props.add()
-        meta.key = 'model_version'
-        meta.value = self.version
-
-        meta = onnx_model.metadata_props.add()
-        meta.key = 'model_type'
-        meta.value = self.model_type
-
-        meta = onnx_model.metadata_props.add()
-        meta.key = 'feature_names'
-        meta.value = json.dumps(self.feature_names)
-
-        meta = onnx_model.metadata_props.add()
-        meta.key = 'trained_at'
-        meta.value = datetime.now().isoformat()
-
-        meta = onnx_model.metadata_props.add()
-        meta.key = 'cv_scores'
-        meta.value = json.dumps(self.cv_scores)
-
         mean_metrics = {
-            'accuracy': np.mean([s['accuracy'] for s in self.cv_scores]),
-            'precision': np.mean([s['precision'] for s in self.cv_scores]),
-            'recall': np.mean([s['recall'] for s in self.cv_scores]),
-            'f1': np.mean([s['f1'] for s in self.cv_scores]),
-            'auc': np.mean([s['auc'] for s in self.cv_scores]),
+            'accuracy': float(np.mean([s['accuracy'] for s in self.cv_scores])),
+            'precision': float(np.mean([s['precision'] for s in self.cv_scores])),
+            'recall': float(np.mean([s['recall'] for s in self.cv_scores])),
+            'f1': float(np.mean([s['f1'] for s in self.cv_scores])),
+            'auc': float(np.mean([s['auc'] for s in self.cv_scores])),
         }
 
-        meta = onnx_model.metadata_props.add()
-        meta.key = 'mean_metrics'
-        meta.value = json.dumps(mean_metrics)
+        booster = self.model.get_booster()
 
-        onnx.save(onnx_model, output_path)
-        print(f"\nModel exported to {output_path}")
+        json_output = str(output_path).replace('.onnx', '.json')
+        booster.save_model(json_output)
+        print(f"\nModel exported to {json_output}")
+
+        ubj_output = str(output_path).replace('.onnx', '.ubj')
+        booster.save_model(ubj_output)
+        print(f"Binary model exported to {ubj_output}")
 
         manifest_path = Path(output_path).parent / 'manifest.json'
         manifest = {
@@ -253,7 +226,7 @@ class SetupClassifierTrainer:
 
         importance = self.model.feature_importances_
         return dict(sorted(
-            zip(self.feature_names, importance),
+            [(name, float(score)) for name, score in zip(self.feature_names, importance)],
             key=lambda x: x[1],
             reverse=True
         ))

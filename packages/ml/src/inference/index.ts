@@ -1,6 +1,9 @@
 export { InferenceEngine } from './InferenceEngine';
 export type { InferenceEngineConfig } from './InferenceEngine';
 
+export { XGBoostInferenceEngine } from './XGBoostInferenceEngine';
+export type { XGBoostInferenceConfig } from './XGBoostInferenceEngine';
+
 export { BatchPredictor } from './BatchPredictor';
 export type {
   BatchPredictorConfig,

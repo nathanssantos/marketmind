@@ -1,6 +1,18 @@
 import { InferenceEngine } from '../inference/InferenceEngine';
+import { XGBoostInferenceEngine } from '../inference/XGBoostInferenceEngine';
 import type { ModelRegistry, RegisteredModel } from './ModelRegistry';
-import type { MLModelType } from '../types';
+import type { MLModelType, PredictionResult, ModelInfo } from '../types';
+
+interface BaseInferenceEngine {
+  initialize(): Promise<void>;
+  predict(features: Float32Array | number[]): PredictionResult | Promise<PredictionResult>;
+  predictBatch?(featuresBatch: (Float32Array | number[])[]): PredictionResult[] | Promise<PredictionResult[]>;
+  isReady(): boolean;
+  getModelInfo(): ModelInfo | { path: string; numTrees: number; baseScore: number };
+  getFeatureNames?(): string[];
+  getFeatureCount?(): number;
+  dispose?(): Promise<void>;
+}
 
 export interface ModelLoaderConfig {
   autoWarmup?: boolean;
@@ -11,8 +23,8 @@ export interface ModelLoaderConfig {
 export class ModelLoader {
   private registry: ModelRegistry;
   private config: ModelLoaderConfig;
-  private engineCache: Map<string, InferenceEngine> = new Map();
-  private activeEngine: InferenceEngine | null = null;
+  private engineCache: Map<string, BaseInferenceEngine> = new Map();
+  private activeEngine: BaseInferenceEngine | null = null;
   private activeModelId: string | null = null;
 
   constructor(registry: ModelRegistry, config: ModelLoaderConfig = {}) {
@@ -24,7 +36,7 @@ export class ModelLoader {
     };
   }
 
-  async loadModel(modelId: string): Promise<InferenceEngine> {
+  async loadModel(modelId: string): Promise<BaseInferenceEngine> {
     if (this.config.cacheEngines && this.engineCache.has(modelId)) {
       const engine = this.engineCache.get(modelId)!;
       this.activeEngine = engine;
@@ -45,12 +57,12 @@ export class ModelLoader {
     return engine;
   }
 
-  async loadLatestModel(type: MLModelType): Promise<InferenceEngine> {
+  async loadLatestModel(type: MLModelType): Promise<BaseInferenceEngine> {
     const model = await this.registry.getLatestModel(type);
     return this.loadModel(model.id);
   }
 
-  async switchModel(modelId: string): Promise<InferenceEngine> {
+  async switchModel(modelId: string): Promise<BaseInferenceEngine> {
     if (this.activeModelId === modelId && this.activeEngine) {
       return this.activeEngine;
     }
@@ -58,7 +70,7 @@ export class ModelLoader {
     return this.loadModel(modelId);
   }
 
-  getActiveEngine(): InferenceEngine | null {
+  getActiveEngine(): BaseInferenceEngine | null {
     return this.activeEngine;
   }
 
@@ -73,7 +85,7 @@ export class ModelLoader {
   async unloadModel(modelId: string): Promise<void> {
     const engine = this.engineCache.get(modelId);
     if (engine) {
-      await engine.dispose();
+      await engine.dispose?.();
       this.engineCache.delete(modelId);
 
       if (this.activeModelId === modelId) {
@@ -85,15 +97,24 @@ export class ModelLoader {
 
   async unloadAll(): Promise<void> {
     for (const [modelId, engine] of this.engineCache.entries()) {
-      await engine.dispose();
+      await engine.dispose?.();
       this.engineCache.delete(modelId);
     }
     this.activeEngine = null;
     this.activeModelId = null;
   }
 
-  private async createEngine(model: RegisteredModel): Promise<InferenceEngine> {
-    const engine = new InferenceEngine(model.filePath, {
+  private async createEngine(model: RegisteredModel): Promise<BaseInferenceEngine> {
+    const filePath = model.filePath;
+    const isXGBoostJSON = filePath.endsWith('.json') && !filePath.endsWith('manifest.json');
+
+    if (isXGBoostJSON) {
+      const engine = new XGBoostInferenceEngine(filePath);
+      await engine.initialize();
+      return engine;
+    }
+
+    const engine = new InferenceEngine(filePath, {
       warmupIterations: this.config.autoWarmup ? 3 : 0,
     });
 
@@ -101,12 +122,12 @@ export class ModelLoader {
     return engine;
   }
 
-  private addToCache(modelId: string, engine: InferenceEngine): void {
+  private addToCache(modelId: string, engine: BaseInferenceEngine): void {
     if (this.engineCache.size >= this.config.maxCachedEngines!) {
       const oldestKey = this.engineCache.keys().next().value;
       if (oldestKey) {
         const oldEngine = this.engineCache.get(oldestKey);
-        oldEngine?.dispose();
+        oldEngine?.dispose?.();
         this.engineCache.delete(oldestKey);
       }
     }

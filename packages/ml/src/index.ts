@@ -97,12 +97,14 @@ export type {
 
 export {
   InferenceEngine,
+  XGBoostInferenceEngine,
   BatchPredictor,
   RealtimePredictor,
 } from './inference';
 
 export type {
   InferenceEngineConfig,
+  XGBoostInferenceConfig,
   BatchPredictorConfig,
   BatchPredictionInput,
   BatchPredictionResult,

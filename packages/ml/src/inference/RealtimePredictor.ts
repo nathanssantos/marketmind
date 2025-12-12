@@ -1,7 +1,10 @@
 import type { Kline, TradingSetup } from '@marketmind/types';
 import type { FeatureExtractor } from '../features/FeatureExtractor';
 import type { MarketContext, NormalizedFeatureVector, PredictionResult } from '../types';
-import type { InferenceEngine } from './InferenceEngine';
+
+interface BaseInferenceEngine {
+  predict(features: Float32Array | number[]): PredictionResult | Promise<PredictionResult>;
+}
 
 export interface RealtimePredictorConfig {
   cacheFeatures?: boolean;
@@ -21,13 +24,13 @@ interface CachedFeatures {
 }
 
 export class RealtimePredictor {
-  private inferenceEngine: InferenceEngine;
+  private inferenceEngine: BaseInferenceEngine;
   private featureExtractor: FeatureExtractor;
   private config: RealtimePredictorConfig;
   private featureCache: Map<string, CachedFeatures> = new Map();
 
   constructor(
-    inferenceEngine: InferenceEngine,
+    inferenceEngine: BaseInferenceEngine,
     featureExtractor: FeatureExtractor,
     config: RealtimePredictorConfig = {}
   ) {

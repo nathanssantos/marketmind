@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "@marketmind/indicators": "workspace:*",
-    "@marketmind/types": "workspace:*"
+    "@marketmind/types": "workspace:*",
+    "xgboost-scorer": "^0.0.4"
   },
   "optionalDependencies": {
     "onnxruntime-node": "^1.20.0"
