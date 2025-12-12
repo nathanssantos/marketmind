@@ -312,6 +312,17 @@ export class CanvasManager {
     return this.viewport.start + relativeIndex;
   }
 
+  public timeToIndex(timestamp: number): number {
+    if (this.klines.length === 0) return -1;
+    for (let i = 0; i < this.klines.length; i++) {
+      const klineTime = typeof this.klines[i]!.openTime === 'number'
+        ? this.klines[i]!.openTime
+        : new Date(this.klines[i]!.openTime).getTime();
+      if (klineTime >= timestamp) return i;
+    }
+    return this.klines.length - 1;
+  }
+
   public getVisibleKlines(): Kline[] {
     const start = Math.floor(this.viewport.start);
     const end = Math.min(Math.ceil(this.viewport.end), this.klines.length);

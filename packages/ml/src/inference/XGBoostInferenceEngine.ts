@@ -1,5 +1,5 @@
 import { readFile } from 'fs/promises';
-import type { PredictionResult } from '../types';
+import type { ModelInfo, PredictionResult } from '../types';
 
 interface XGBoostTree {
   base_weights: number[];
@@ -35,7 +35,6 @@ export class XGBoostInferenceEngine {
   private model: XGBoostModel | null = null;
   private modelPath: string;
   private trees: XGBoostTree[] = [];
-  private baseScore: number = 0.5;
   private numTrees: number = 0;
   private config: XGBoostInferenceConfig;
 
@@ -53,8 +52,6 @@ export class XGBoostInferenceEngine {
     this.trees = this.model.learner.gradient_booster.model.trees;
     this.numTrees = parseInt(this.model.learner.gradient_booster.model.gbtree_model_param.num_trees, 10);
 
-    const baseScoreStr = this.model.learner.learner_model_param?.base_score;
-    this.baseScore = baseScoreStr ? parseFloat(baseScoreStr) : 0.5;
   }
 
   private traverseTree(tree: XGBoostTree, features: number[]): number {
@@ -112,11 +109,21 @@ export class XGBoostInferenceEngine {
     return this.model !== null && this.trees.length > 0;
   }
 
-  getModelInfo(): { path: string; numTrees: number; baseScore: number } {
+  getModelInfo(): ModelInfo {
     return {
       path: this.modelPath,
-      numTrees: this.numTrees,
-      baseScore: this.baseScore,
+      featureNames: [],
+      featureCount: 0,
+      isInitialized: this.isReady(),
+      version: `xgboost-${this.numTrees}trees`,
     };
+  }
+
+  getFeatureCount(): number {
+    return 0;
+  }
+
+  getFeatureNames(): string[] {
+    return [];
   }
 }

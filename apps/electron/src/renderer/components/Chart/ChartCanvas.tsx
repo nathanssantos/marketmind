@@ -39,6 +39,7 @@ import { ChartTooltip } from './ChartTooltip';
 import { KlineTimer } from './KlineTimer';
 import { PatternRenderer } from './PatternRenderer';
 import { SetupRenderer } from './SetupRenderer';
+import { TradeRenderer } from './TradeRenderer';
 import { useChartCanvas } from './useChartCanvas';
 import { useCrosshairPriceLineRenderer } from './useCrosshairPriceLineRenderer';
 import { useCurrentPriceLineRenderer } from './useCurrentPriceLineRenderer';
@@ -1529,6 +1530,17 @@ export const ChartCanvas = ({
             height={canvasRef.current?.height ?? 0}
             mousePosition={mousePosition}
             onSetupHover={handleSetupHover}
+          />
+        )}
+        {manager && !isInteracting && symbol && (
+          <TradeRenderer
+            canvasManager={manager}
+            orders={orders}
+            currentSymbol={symbol}
+            width={canvasRef.current?.width ?? 0}
+            height={canvasRef.current?.height ?? 0}
+            mousePosition={mousePosition}
+            onTradeHover={() => {}}
           />
         )}
         <ChartNavigation

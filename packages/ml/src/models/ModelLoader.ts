@@ -8,7 +8,7 @@ interface BaseInferenceEngine {
   predict(features: Float32Array | number[]): PredictionResult | Promise<PredictionResult>;
   predictBatch?(featuresBatch: (Float32Array | number[])[]): PredictionResult[] | Promise<PredictionResult[]>;
   isReady(): boolean;
-  getModelInfo(): ModelInfo | { path: string; numTrees: number; baseScore: number };
+  getModelInfo(): ModelInfo;
   getFeatureNames?(): string[];
   getFeatureCount?(): number;
   dispose?(): Promise<void>;

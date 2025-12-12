@@ -211,7 +211,7 @@ class MLServiceImpl {
         ? {
             id: this.activeModelId,
             version: activeEngine.getModelInfo().version,
-            featureCount: activeEngine.getFeatureCount(),
+            featureCount: activeEngine.getFeatureCount?.() ?? activeEngine.getModelInfo().featureCount,
             isReady: activeEngine.isReady(),
           }
         : null,
