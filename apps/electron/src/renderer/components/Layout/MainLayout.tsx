@@ -102,11 +102,12 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
         <Header onSettingsClick={handleSettingsClick} />
 
         <Flex
-          position="fixed"
-          top="96px"
+          position="relative"
+          top={0}
           left={0}
           right={0}
-          bottom={0}
+          height="calc(100vh - 96px)"
+          marginTop="96px"
           overflow="hidden"
         >
           {chatPosition === 'left' && isChatOpen && (

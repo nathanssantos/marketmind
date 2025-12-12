@@ -41,7 +41,7 @@ export const useCrosshairPriceLineRenderer = ({
     
     if (!ctx || !dimensions || !bounds) return;
 
-    const { width, chartWidth, chartHeight } = dimensions;
+    const { width, height, chartWidth, chartHeight } = dimensions;
 
     const priceScaleLeft = width - rightMargin;
     const isInChartArea = mouseX < priceScaleLeft;
@@ -75,9 +75,17 @@ export const useCrosshairPriceLineRenderer = ({
     ctx.lineTo(lineEndX, mouseY);
     ctx.stroke();
 
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle = colors.crosshair;
+    ctx.lineWidth = lineWidth;
+    ctx.globalAlpha = 0.6;
+    ctx.setLineDash(lineStyle === 'dashed' ? DASHED_LINE_PATTERN : lineStyle === 'dotted' ? DOTTED_LINE_PATTERN : CROSSHAIR_DASH_PATTERN);
+
     ctx.beginPath();
     ctx.moveTo(mouseX, 0);
-    ctx.lineTo(mouseX, chartHeight);
+    ctx.lineTo(mouseX, height - CHART_CONFIG.CANVAS_PADDING_BOTTOM);
     ctx.stroke();
 
     ctx.restore();
