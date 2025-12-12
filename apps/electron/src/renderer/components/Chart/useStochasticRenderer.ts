@@ -30,7 +30,7 @@ export const useStochasticRenderer = ({
 
     if (!ctx || !dimensions) return;
 
-    const { chartWidth, height, chartHeight } = dimensions;
+    const { chartWidth, chartHeight } = dimensions;
     const rsiHeight = manager.getRSIPanelHeight();
     const panelHeight = CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT;
     const panelTop = chartHeight + rsiHeight;

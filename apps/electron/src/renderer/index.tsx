@@ -23,6 +23,7 @@ root.render(
           <Route path="/" element={<App />} />
           <Route path="/chart" element={<ChartWindow />} />
           <Route path="/chart/:symbol" element={<ChartWindow />} />
+          <Route path="/chart/:symbol/:timeframe" element={<ChartWindow />} />
         </Routes>
       </HashRouter>
     </ColorModeProvider>

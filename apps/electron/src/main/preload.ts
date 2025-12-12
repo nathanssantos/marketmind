@@ -99,7 +99,7 @@ interface NotificationAPI {
 }
 
 interface WindowAPI {
-  openChart: (symbol?: string) => Promise<{ success: boolean; windowId?: number; error?: string }>;
+  openChart: (symbol?: string, timeframe?: string) => Promise<{ success: boolean; windowId?: number; error?: string }>;
   getChartWindows: () => Promise<number[]>;
 }
 
@@ -284,8 +284,8 @@ const API = {
   } as NotificationAPI,
 
   window: {
-    openChart: async (symbol?: string) => {
-      return await ipcRenderer.invoke('window:openChart', symbol);
+    openChart: async (symbol?: string, timeframe?: string) => {
+      return await ipcRenderer.invoke('window:openChart', symbol, timeframe);
     },
 
     getChartWindows: async () => {

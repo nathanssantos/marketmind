@@ -134,7 +134,7 @@ export const Toolbar = memo(({
   const isSetupDetectionActive = (setupConfig.enabledStrategies?.length ?? 0) > 0;
 
   const handleOpenNewWindow = (): void => {
-    void openChartWindow(symbol);
+    void openChartWindow(symbol, timeframe);
   };
 
   const togglePatternDetection = (): void => {

@@ -30,8 +30,7 @@ export const useRSIRenderer = ({
 
     if (!ctx || !dimensions) return;
 
-    const { chartWidth, height, chartHeight } = dimensions;
-    const stochasticHeight = manager.getStochasticPanelHeight();
+    const { chartWidth, chartHeight } = dimensions;
     const panelHeight = CHART_CONFIG.RSI_PANEL_HEIGHT;
     const panelTop = chartHeight;
     const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;

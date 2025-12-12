@@ -23,8 +23,8 @@ let updateManager: UpdateManager | null = null;
 const chartWindows: Map<number, BrowserWindowType> = new Map();
 let chartWindowCounter = 0;
 
-const createChartWindow = (symbol?: string): number => {
-  console.log('Creating chart window for symbol:', symbol || 'default');
+const createChartWindow = (symbol?: string, timeframe?: string): number => {
+  console.log('Creating chart window for symbol:', symbol || 'default', 'timeframe:', timeframe || 'default');
   
   const windowId = ++chartWindowCounter;
   const windowOptions: electron.BrowserWindowConstructorOptions = {
@@ -75,13 +75,21 @@ const createChartWindow = (symbol?: string): number => {
     chartWindow?.show();
   });
 
-  const urlPath = symbol ? `#/chart/${encodeURIComponent(symbol)}` : '#/chart';
+  const urlPath = symbol && timeframe 
+    ? `#/chart/${encodeURIComponent(symbol)}/${encodeURIComponent(timeframe)}`
+    : symbol 
+      ? `#/chart/${encodeURIComponent(symbol)}`
+      : '#/chart';
   
   if (devServerUrl) {
     void chartWindow.loadURL(`${devServerUrl}${urlPath}`);
   } else {
     void chartWindow.loadFile(join(__dirname, '../renderer/index.html'), {
-      hash: symbol ? `/chart/${encodeURIComponent(symbol)}` : '/chart'
+      hash: symbol && timeframe 
+        ? `/chart/${encodeURIComponent(symbol)}/${encodeURIComponent(timeframe)}`
+        : symbol 
+          ? `/chart/${encodeURIComponent(symbol)}`
+          : '/chart'
     });
   }
   
@@ -532,9 +540,9 @@ const setupIpcHandlers = (): void => {
 };
 
 const setupWindowHandlers = (): void => {
-  ipcMain.handle('window:openChart', async (_event, symbol?: string) => {
+  ipcMain.handle('window:openChart', async (_event, symbol?: string, timeframe?: string) => {
     try {
-      const windowId = createChartWindow(symbol);
+      const windowId = createChartWindow(symbol, timeframe);
       return { success: true, windowId };
     } catch (error) {
       console.error('Failed to open chart window:', error);

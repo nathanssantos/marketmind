@@ -5,7 +5,7 @@ import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@share
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import type { AdvancedControlsConfig } from '../components/Chart/AdvancedControls';
 import { ChartCanvas } from '../components/Chart/ChartCanvas';
 import { PinnedControlsProvider } from '../components/Chart/PinnedControlsContext';
@@ -67,7 +67,8 @@ interface ChartWindowContentProps {
 
 function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactElement {
   const { t } = useTranslation();
-  const { symbol: routeSymbol } = useParams<{ symbol?: string }>();
+  const navigate = useNavigate();
+  const { symbol: routeSymbol, timeframe: routeTimeframe } = useParams<{ symbol?: string; timeframe?: string }>();
   const [symbol, setSymbol] = useLocalStorage('marketmind:chartwindow:symbol', routeSymbol || initialSymbol || 'BTCUSDT');
 
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
@@ -79,7 +80,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   const [showStochastic, setShowStochastic] = useLocalStorage('marketmind:showStochastic', false);
   const [showRSI, setShowRSI] = useLocalStorage('marketmind:showRSI', false);
   const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
-  const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
+  const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', (routeTimeframe as Timeframe) || '1d');
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
     'marketmind:movingAverages',
     DEFAULT_MOVING_AVERAGES
@@ -287,6 +288,20 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
       setSymbol(initialSymbol);
     }
   }, [routeSymbol, initialSymbol]);
+
+  useEffect(() => {
+    if (routeTimeframe && routeTimeframe !== timeframe) {
+      setTimeframe(routeTimeframe as Timeframe);
+    }
+  }, [routeTimeframe]);
+
+  useEffect(() => {
+    const newPath = `/chart/${encodeURIComponent(symbol)}/${timeframe}`;
+    const currentPath = window.location.hash.slice(1);
+    if (currentPath !== newPath) {
+      navigate(newPath, { replace: true });
+    }
+  }, [symbol, timeframe, navigate]);
 
   return (
     <Box
