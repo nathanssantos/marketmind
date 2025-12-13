@@ -1,8 +1,8 @@
 # MarketMind ML Implementation Plan
 
-**Status:** 🚀 In Progress
+**Status:** 🔄 Phase 8 - Model Regeneration
 **Created:** 2025-12-10
-**Last Updated:** 2025-12-12
+**Last Updated:** 2025-12-13
 **Branch:** `feature/ml-integration`
 
 ---
@@ -13,8 +13,8 @@ Integração de Machine Learning para:
 1. **Setup Success Prediction** - Classificação binária (lucrativo vs não lucrativo)
 2. **Confidence Enhancement** - Ajustar confiança dos setups detectados com ML
 
-**Runtime:** ONNX Runtime para Node.js (< 50ms inferência)
-**Training:** Python (XGBoost/LightGBM) → ONNX export
+**Runtime:** XGBoost native JSON inference (~0.13ms) ou ONNX Runtime (< 50ms)
+**Training:** Python (XGBoost) → JSON export (preferido) ou ONNX export
 
 ---
 
@@ -48,11 +48,12 @@ Integração de Machine Learning para:
 |-------|--------|----------|-------|
 | Phase 1: Foundation | ✅ Complete | 100% | Feature extraction pipeline complete |
 | Phase 2: Training Pipeline | ✅ Complete | 100% | Python scripts + TS modules done |
-| Phase 3: Inference Engine | ✅ Complete | 100% | ONNX + XGBoost native JSON inference |
+| Phase 3: Inference Engine | ✅ Complete | 100% | ONNX + XGBoost native JSON inference (~0.13ms) |
 | Phase 4: Backend Integration | ✅ Complete | 100% | tRPC router + MLService + SetupDetection integration |
 | Phase 5: Evaluation | ✅ Complete | 100% | ClassificationMetrics + TradingMetrics + BacktestIntegration |
 | Phase 6: Frontend & Production | ✅ Complete | 100% | Hooks + components + backend integration |
-| Phase 7: Auto-Trading Integration | 🔄 In Progress | 60% | Backend scheduler complete, frontend integration done |
+| Phase 7: Auto-Trading Integration | 🔄 In Progress | 70% | Backend scheduler + DB persistence + auto-fetch complete |
+| Phase 8: Model Regeneration | 🔄 In Progress | 40% | Data cleaning + training data generation in progress |
 
 **Legend:** ✅ Complete | 🔄 In Progress | ⏳ Pending | ❌ Blocked
 
@@ -1839,18 +1840,124 @@ pnpm exec tsx src/cli/backtest-runner.ts generate-training \
 
 ---
 
+## Phase 8: Model Regeneration (2025-12-13)
+
+### 8.1 Overview
+
+Regeneração completa do sistema ML para garantir dados consistentes e modelo otimizado.
+
+### 8.2 Motivation
+
+1. **Kline Data Inconsistency**: Bugs anteriores em `onConflictDoUpdate` e paginação causaram dados incorretos
+2. **Threshold Relaxation**: Thresholds foram reduzidos temporariamente e precisam ser restaurados
+3. **Multi-Timeframe Training**: Novo modelo unificado cobrindo todos os timeframes
+4. **Clean Slate**: Remover modelos antigos com dados potencialmente corrompidos
+
+### 8.3 Tasks
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Delete all klines from database | ✅ | 644 rows deleted |
+| Delete all ML data and models | ✅ | Clean slate |
+| Restore evaluation thresholds | ✅ | 0.65/0.60/0.55/0.55/0.65 |
+| Generate 1w training data | ✅ | 714 samples |
+| Generate 1d training data | ✅ | 6,310 samples |
+| Generate 4h training data | ✅ | 29,923 samples |
+| Generate 1h training data | ✅ | 76,028 samples |
+| Generate 30m training data | ⏳ | Pending |
+| Generate 15m training data | ⏳ | Pending |
+| Generate 5m training data | ⏳ | Pending |
+| Generate 1m training data | ⏳ | Pending |
+| Concatenate all CSVs | ⏳ | training_unified.csv |
+| Train unified XGBoost model | ⏳ | Multi-timeframe |
+| Validate model metrics | ⏳ | AUC > 0.65 target |
+
+### 8.4 Training Configuration
+
+**Symbols:** BTCUSDT, ETHUSDT, SOLUSDT, BNBUSDT, XRPUSDT, AVAXUSDT
+
+**Strategies (10 total):**
+1. keltner-breakout-optimized
+2. bollinger-breakout-crypto
+3. larry-williams-9-1
+4. williams-momentum
+5. larry-williams-9-3
+6. tema-momentum
+7. elder-ray-crypto
+8. ppo-momentum
+9. parabolic-sar-crypto
+10. supertrend-follow
+
+**Timeframes:**
+
+| Timeframe | Start | End | Samples |
+|-----------|-------|-----|---------|
+| 1w | 2022-01-01 | 2024-12-01 | 714 |
+| 1d | 2022-01-01 | 2024-12-01 | 6,310 |
+| 4h | 2022-01-01 | 2024-12-01 | 29,923 |
+| 1h | 2023-01-01 | 2024-12-01 | 76,028 |
+| 30m | 2023-06-01 | 2024-12-01 | ~100,000 (est.) |
+| 15m | 2024-01-01 | 2024-12-01 | ~150,000 (est.) |
+| 5m | 2024-06-01 | 2024-12-01 | ~200,000 (est.) |
+| 1m | 2024-09-01 | 2024-12-01 | ~300,000 (est.) |
+
+### 8.5 Restored Thresholds
+
+```typescript
+export const EVALUATION_THRESHOLDS = {
+  minAccuracy: 0.65,    // Was 0.55
+  minPrecision: 0.60,   // Was 0.50
+  minRecall: 0.55,      // Was 0.50
+  minF1: 0.55,          // Was 0.50
+  minAUC: 0.65,         // Was 0.55
+  winRateImprovementTarget: 0.05,
+  sharpeImprovementTarget: 0.1,
+} as const;
+```
+
+### 8.6 Bug Fixes Applied
+
+1. **Kline upsert**: Fixed `onConflictDoUpdate` to update all fields including closeTime
+2. **Pagination**: Fixed `fetchHistoricalKlines` to not truncate last page
+3. **Duplicate candles**: Fixed React state management in ChartWindow.tsx
+
+### 8.7 Commands
+
+```bash
+# Generate training data per timeframe
+pnpm exec tsx src/cli/backtest-runner.ts generate-training \
+  --symbols BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,AVAXUSDT \
+  --interval 1d \
+  --start 2022-01-01 --end 2024-12-01 \
+  --output ../../packages/ml/data/training_1d.csv
+
+# Concatenate all CSVs
+cd packages/ml/data
+head -1 training_1w.csv > training_unified.csv
+tail -n +2 -q training_*.csv >> training_unified.csv
+
+# Train model
+cd packages/ml/scripts
+python train_setup_classifier.py \
+  --config ../data/training_unified-config.json \
+  --data ../data/training_unified.csv \
+  --output ../models/setup_classifier_unified.json
+```
+
+---
+
 ## Pre-requisite: Strategy Benchmarking
 
 Antes de treinar os modelos ML, precisamos validar as estratégias existentes:
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Run backtests on all 105 strategies | ⏳ | With BTCUSDT, ETHUSDT data |
-| Filter strategies by asset type | ⏳ | Crypto-optimized only |
-| Identify top 20 performers | ⏳ | By Sharpe ratio |
-| Validate setup detection accuracy | ⏳ | Review detection rules |
-| Generate training labels | ⏳ | From backtest results |
-| Document findings | ⏳ | Update strategy docs |
+| Run backtests on all 105 strategies | ✅ | Filtered to 10 crypto-optimized |
+| Filter strategies by asset type | ✅ | Crypto-optimized only |
+| Identify top 20 performers | ✅ | Selected 10 best |
+| Validate setup detection accuracy | ✅ | Review detection rules |
+| Generate training labels | 🔄 | From backtest results |
+| Document findings | 🔄 | Update strategy docs |
 
 ---
 
@@ -1924,6 +2031,12 @@ Antes de treinar os modelos ML, precisamos validar as estratégias existentes:
 | 2025-12-12 | Frontend refactor: SetupTogglePopover agora usa backend como fonte de verdade | Claude |
 | 2025-12-12 | Toolbar simplificado: removido botão Target obsoleto, usa `autoTradingConfig` | Claude |
 | 2025-12-12 | Phase 6 marked complete: hooks + components + backend config integration | Claude |
+| 2025-12-13 | Phase 8 added: Model Regeneration - complete data cleaning and retraining | Claude |
+| 2025-12-13 | Fixed kline data consistency issues (onConflictDoUpdate, pagination bugs) | Claude |
+| 2025-12-13 | Restored evaluation thresholds to stricter values (0.65/0.60/0.55/0.55/0.65) | Claude |
+| 2025-12-13 | Deleted all old klines (644 rows) and ML models for clean slate | Claude |
+| 2025-12-13 | Generating multi-timeframe training data: 1w, 1d, 4h, 1h, 30m, 15m, 5m, 1m | Claude |
+| 2025-12-13 | Training data stats: 1w=714, 1d=6,310, 4h=29,923, 1h=76,028 samples | Claude |
 
 ---
 

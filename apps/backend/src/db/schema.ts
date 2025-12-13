@@ -97,6 +97,7 @@ export const klines = pgTable(
     symbol: varchar({ length: 20 }).notNull(),
     interval: varchar({ length: 5 }).notNull(),
     openTime: timestamp('open_time', { mode: 'date' }).notNull(),
+    closeTime: timestamp('close_time', { mode: 'date' }).notNull(),
     open: numeric({ precision: 20, scale: 8 }).notNull(),
     high: numeric({ precision: 20, scale: 8 }).notNull(),
     low: numeric({ precision: 20, scale: 8 }).notNull(),

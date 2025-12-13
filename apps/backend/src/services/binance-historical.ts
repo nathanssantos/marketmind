@@ -23,6 +23,7 @@ export const backfillHistoricalKlines = async (
     'Starting historical klines backfill'
   );
 
+  const intervalMs = getIntervalMilliseconds(interval);
   let totalInserted = 0;
   let currentStartTime = startTime.getTime();
   const finalEndTime = endTime.getTime();
@@ -60,7 +61,7 @@ export const backfillHistoricalKlines = async (
       await db.insert(klines).values(klinesData).onConflictDoNothing();
 
       totalInserted += klinesData.length;
-      currentStartTime = lastCandle.closeTime + 1;
+      currentStartTime = lastCandle.openTime + intervalMs;
 
       logger.debug({ inserted: klinesData.length, total: totalInserted }, 'Inserted klines batch');
 
@@ -115,6 +116,7 @@ export const fetchHistoricalKlinesFromAPI = async (
     'Fetching historical klines from Binance API'
   );
 
+  const intervalMs = getIntervalMilliseconds(interval);
   const allKlines: any[] = [];
   let currentStartTime = startTime.getTime();
   const finalEndTime = endTime.getTime();
@@ -123,11 +125,11 @@ export const fetchHistoricalKlinesFromAPI = async (
     try {
       const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&startTime=${currentStartTime}&limit=${BATCH_SIZE}`;
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         throw new Error(`Binance API error: ${response.status} ${response.statusText}`);
       }
-      
+
       const candles = await response.json();
 
       if (candles.length === 0) break;
@@ -150,8 +152,7 @@ export const fetchHistoricalKlinesFromAPI = async (
       }));
 
       allKlines.push(...klinesData);
-      currentStartTime = lastCandle[6] + 1; // Use closeTime from array
-
+      currentStartTime = lastCandle[0] + intervalMs;
 
       await sleep(RATE_LIMIT_DELAY);
     } catch (error) {

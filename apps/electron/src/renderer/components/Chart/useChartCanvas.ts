@@ -116,6 +116,7 @@ export const useChartCanvas = ({
   const prevKlineCountRef = useRef<number>(klines.length);
   const wasAtEndRef = useRef<boolean>(true);
   const prevFirstKlineTimestampRef = useRef<number>(klines[0]?.openTime ?? 0);
+  const isInitialLoadRef = useRef<boolean>(true);
 
   useEffect(() => {
     if (managerRef.current) {
@@ -123,39 +124,53 @@ export const useChartCanvas = ({
       const currentCount = klines.length;
       const firstKlineTimestamp = klines[0]?.openTime ?? 0;
       const prevFirstKlineTimestamp = prevFirstKlineTimestampRef.current;
-      
+
       const currentViewport = managerRef.current.getViewport();
       const wasAtEnd = wasAtEndRef.current || Math.abs(currentViewport.end - prevCount) < 1;
-      
+
       managerRef.current.setKlines(klines);
-      
+
       const countDiffPercentage = Math.abs(currentCount - prevCount) / Math.max(prevCount, 1);
-      const isSignificantChange = countDiffPercentage > SIGNIFICANT_CHANGE_THRESHOLD;
-      const isCompleteDataChange = firstKlineTimestamp !== prevFirstKlineTimestamp && currentCount > 0;
-      
-      if (initialViewport === DEFAULT_VIEWPORT && (isSignificantChange || isCompleteDataChange)) {
+      const isSignificantChange = countDiffPercentage > SIGNIFICANT_CHANGE_THRESHOLD && prevCount > 0;
+      const isCompleteDataChange = firstKlineTimestamp !== prevFirstKlineTimestamp &&
+        currentCount > 0 &&
+        prevFirstKlineTimestamp > 0;
+
+      if (isInitialLoadRef.current && currentCount > 0) {
         const visibleCount = Math.min(DEFAULT_VISIBLE_KLINES, currentCount);
-        
         const newViewport = {
           ...DEFAULT_VIEWPORT,
           start: Math.max(0, currentCount - visibleCount),
           end: currentCount,
         };
-        
+
         setViewport(newViewport);
         managerRef.current.setViewport(newViewport);
         onViewportChange?.(newViewport);
-        
         managerRef.current.resetVerticalZoom();
         wasAtEndRef.current = true;
-      } else if (wasAtEnd && currentCount > prevCount && !isCompleteDataChange) {
+        isInitialLoadRef.current = false;
+      } else if (isCompleteDataChange || isSignificantChange) {
+        const visibleCount = Math.min(DEFAULT_VISIBLE_KLINES, currentCount);
+        const newViewport = {
+          ...DEFAULT_VIEWPORT,
+          start: Math.max(0, currentCount - visibleCount),
+          end: currentCount,
+        };
+
+        setViewport(newViewport);
+        managerRef.current.setViewport(newViewport);
+        onViewportChange?.(newViewport);
+        managerRef.current.resetVerticalZoom();
+        wasAtEndRef.current = true;
+      } else if (wasAtEnd && currentCount > prevCount) {
         const klinesAdded = currentCount - prevCount;
         const newViewport = {
           ...currentViewport,
           start: currentViewport.start + klinesAdded,
           end: currentCount,
         };
-        
+
         setViewport(newViewport);
         managerRef.current.setViewport(newViewport);
         onViewportChange?.(newViewport);
@@ -163,7 +178,7 @@ export const useChartCanvas = ({
       } else {
         wasAtEndRef.current = Math.abs(currentViewport.end - currentCount) < 1;
       }
-      
+
       prevKlineCountRef.current = currentCount;
       prevFirstKlineTimestampRef.current = firstKlineTimestamp;
     }

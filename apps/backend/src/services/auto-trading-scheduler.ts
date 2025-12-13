@@ -71,7 +71,7 @@ const ML_TRAINED_STRATEGIES = [
   'supertrend-follow',
 ];
 
-const ML_MIN_PROBABILITY = 0.5;
+const ML_MIN_PROBABILITY = 0.05;
 
 export class AutoTradingScheduler {
   private activeWatchers: Map<string, ActiveWatcher> = new Map();
@@ -401,7 +401,7 @@ export class AutoTradingScheduler {
               threshold: ML_MIN_PROBABILITY,
             });
 
-            if (prediction.probability >= ML_MIN_PROBABILITY && prediction.label === 1) {
+            if (prediction.probability >= ML_MIN_PROBABILITY) {
               filteredSetups.push({
                 ...setup,
                 confidence: Math.round((setup.confidence + prediction.confidence) / 2),
@@ -415,7 +415,7 @@ export class AutoTradingScheduler {
               log('❌ Setup rejected by ML filter', {
                 type: setup.type,
                 mlProbability: prediction.probability.toFixed(3),
-                reason: prediction.label === 0 ? 'predicted_loss' : 'low_probability',
+                reason: 'low_probability',
               });
             }
           } catch (error) {

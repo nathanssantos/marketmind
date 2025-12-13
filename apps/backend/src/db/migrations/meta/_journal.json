@@ -36,6 +36,13 @@
       "when": 1765588861303,
       "tag": "0004_neat_blonde_phantom",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1765629493754,
+      "tag": "0005_heavy_kitty_pryde",
+      "breakpoints": true
     }
   ]
 }

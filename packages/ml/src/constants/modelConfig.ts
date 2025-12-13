@@ -60,11 +60,11 @@ export const NORMALIZATION_CONFIG = {
 } as const;
 
 export const EVALUATION_THRESHOLDS = {
-  minAccuracy: 0.55,
-  minPrecision: 0.5,
-  minRecall: 0.5,
-  minF1: 0.5,
-  minAUC: 0.55,
+  minAccuracy: 0.65,
+  minPrecision: 0.60,
+  minRecall: 0.55,
+  minF1: 0.55,
+  minAUC: 0.65,
   winRateImprovementTarget: 0.05,
   sharpeImprovementTarget: 0.1,
 } as const;

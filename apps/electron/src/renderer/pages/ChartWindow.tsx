@@ -189,6 +189,19 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
     pendingUpdateRef.current = null;
   }, [symbol, timeframe]);
 
+  useEffect(() => {
+    if (!marketData?.klines?.length) return;
+    const lastBaseKline = marketData.klines[marketData.klines.length - 1];
+    if (!lastBaseKline) return;
+
+    setLiveKlines(prev => {
+      if (prev.length === 0) return prev;
+      const filtered = prev.filter(k => k.openTime >= lastBaseKline.openTime);
+      if (filtered.length === prev.length) return prev;
+      return filtered;
+    });
+  }, [marketData?.klines]);
+
   const handleRealtimeUpdate = useCallback((kline: Kline, isFinal: boolean) => {
     pendingUpdateRef.current = { kline, isFinal };
 
@@ -270,13 +283,22 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
 
     const baseKlines = marketData.klines;
     const lastBaseKline = baseKlines[baseKlines.length - 1];
-    const firstLiveKline = liveKlines[0];
 
-    if (lastBaseKline && firstLiveKline && firstLiveKline.openTime === lastBaseKline.openTime) {
-      return [...baseKlines.slice(0, -1), ...liveKlines];
+    if (!lastBaseKline) return marketData.klines;
+
+    const lastBaseOpenTime = lastBaseKline.openTime;
+    const filteredLiveKlines = liveKlines.filter(k => k.openTime >= lastBaseOpenTime);
+
+    if (filteredLiveKlines.length === 0) return marketData.klines;
+
+    const firstFilteredKline = filteredLiveKlines[0];
+    if (!firstFilteredKline) return marketData.klines;
+
+    if (firstFilteredKline.openTime === lastBaseOpenTime) {
+      return [...baseKlines.slice(0, -1), ...filteredLiveKlines];
     }
 
-    return [...baseKlines, ...liveKlines];
+    return [...baseKlines, ...filteredLiveKlines];
   }, [marketData?.klines, liveKlines]);
 
   const debouncedAdvancedConfig = useDebounce(advancedConfig, 300);

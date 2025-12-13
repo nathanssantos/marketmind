@@ -84,16 +84,21 @@ export const klineRouter = router({
         conditions.push(lte(klines.openTime, input.endTime));
       }
 
-      const result = await db.query.klines.findMany({
-        where: and(...conditions),
+      const latestKlineResult = await db.query.klines.findFirst({
+        where: and(
+          eq(klines.symbol, input.symbol),
+          eq(klines.interval, input.interval as Interval)
+        ),
         orderBy: [desc(klines.openTime)],
-        limit: input.limit,
       });
 
-      if (result.length === 0) {
+      const now = new Date();
+      const intervalMs = getIntervalMs(input.interval);
+
+      if (!latestKlineResult) {
         logger.info({ symbol: input.symbol, interval: input.interval }, 'Database empty, fetching from Binance API');
 
-        const endTime = input.endTime || new Date();
+        const endTime = input.endTime || now;
         const startTime = input.startTime || calculateStartTime(input.interval as Interval, input.limit);
 
         const apiKlines = await fetchHistoricalKlinesFromAPI(
@@ -104,7 +109,7 @@ export const klineRouter = router({
         );
 
         if (apiKlines.length > 0) {
-          logger.info({ firstKline: apiKlines[0] }, 'Sample kline from API');
+          logger.info({ count: apiKlines.length, firstOpenTime: apiKlines[0].openTime }, 'Fetched klines from API');
         }
 
         return apiKlines.map((k: any) => ({
@@ -116,44 +121,43 @@ export const klineRouter = router({
           low: k.low,
           close: k.close,
           volume: k.volume,
+          closeTime: new Date(k.closeTime),
           quoteVolume: k.quoteVolume,
           trades: k.trades,
           takerBuyBaseVolume: k.takerBuyBaseVolume,
           takerBuyQuoteVolume: k.takerBuyQuoteVolume,
-          createdAt: new Date().toISOString(),
+          createdAt: new Date(),
         }));
       }
 
-      const latestKline = result[0];
-      const now = new Date();
-      const intervalMs = getIntervalMs(input.interval);
       const staleCutoff = new Date(now.getTime() - intervalMs * 2);
+      const latestOpenTime = new Date(latestKlineResult.openTime);
 
-      if (latestKline && new Date(latestKline.openTime) < staleCutoff) {
+      if (latestOpenTime < staleCutoff) {
         logger.info({
           symbol: input.symbol,
           interval: input.interval,
-          latestInDb: latestKline.openTime,
-          staleCutoff,
+          latestInDb: latestOpenTime.toISOString(),
+          staleCutoff: staleCutoff.toISOString(),
         }, 'Database data is stale, fetching recent klines');
 
         const recentKlines = await fetchHistoricalKlinesFromAPI(
           input.symbol,
           input.interval as Interval,
-          new Date(latestKline.openTime),
+          latestOpenTime,
           now
         );
 
         if (recentKlines.length > 0) {
-          const newKlines = recentKlines.filter((k: any) =>
-            new Date(k.openTime) > new Date(latestKline.openTime)
+          const klinesToUpsert = recentKlines.filter((k: any) =>
+            k.openTime >= latestOpenTime.getTime()
           );
 
-          if (newKlines.length > 0) {
-            logger.info({ count: newKlines.length }, 'Inserting new klines');
+          if (klinesToUpsert.length > 0) {
+            logger.info({ count: klinesToUpsert.length }, 'Upserting klines with latest data');
 
-            await db.insert(klines).values(
-              newKlines.map((k: any) => ({
+            for (const k of klinesToUpsert) {
+              await db.insert(klines).values({
                 symbol: input.symbol,
                 interval: input.interval as Interval,
                 openTime: new Date(k.openTime),
@@ -167,21 +171,35 @@ export const klineRouter = router({
                 trades: k.trades,
                 takerBuyBaseVolume: k.takerBuyBaseVolume || '0',
                 takerBuyQuoteVolume: k.takerBuyQuoteVolume || '0',
-              }))
-            ).onConflictDoNothing();
-
-            const updatedResult = await db.query.klines.findMany({
-              where: and(...conditions),
-              orderBy: [desc(klines.openTime)],
-              limit: input.limit,
-            });
-
-            return updatedResult.reverse();
+              }).onConflictDoUpdate({
+                target: [klines.symbol, klines.interval, klines.openTime],
+                set: {
+                  open: k.open,
+                  high: k.high,
+                  low: k.low,
+                  close: k.close,
+                  volume: k.volume,
+                  closeTime: new Date(k.closeTime),
+                  quoteVolume: k.quoteVolume,
+                  trades: k.trades,
+                  takerBuyBaseVolume: k.takerBuyBaseVolume || '0',
+                  takerBuyQuoteVolume: k.takerBuyQuoteVolume || '0',
+                },
+              });
+            }
           }
         }
       }
 
-      return result.reverse();
+      const result = await db.query.klines.findMany({
+        where: and(...conditions),
+        orderBy: [desc(klines.openTime)],
+        limit: input.limit,
+      });
+
+      result.sort((a, b) => new Date(a.openTime).getTime() - new Date(b.openTime).getTime());
+
+      return result;
     }),
 
   backfill: protectedProcedure
