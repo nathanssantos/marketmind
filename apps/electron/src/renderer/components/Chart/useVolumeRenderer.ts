@@ -75,11 +75,19 @@ export const useVolumeRenderer = ({
       const isLastKline = actualIndex === lastKlineIndex;
 
       const buyPressure = getKlineBuyPressure(kline);
+      const hasTakerData = parseFloat(kline.takerBuyBaseVolume) > 0;
 
       let finalColor: string;
       const volumeOpacity = isHovered ? opacity * 2.5 : opacity;
 
-      if (buyPressure > 0.55) {
+      const rgbMatch = baseColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+      const fallbackColor = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
+        ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${volumeOpacity})`
+        : `rgba(120, 120, 120, ${volumeOpacity})`;
+
+      if (!hasTakerData) {
+        finalColor = fallbackColor;
+      } else if (buyPressure > 0.55) {
         const intensity = Math.min((buyPressure - 0.55) / 0.45, 1);
         const greenIntensity = Math.floor(100 + intensity * 155);
         finalColor = `rgba(34, ${greenIntensity}, 84, ${volumeOpacity})`;
@@ -88,10 +96,7 @@ export const useVolumeRenderer = ({
         const redIntensity = Math.floor(100 + intensity * 155);
         finalColor = `rgba(${redIntensity}, 34, 34, ${volumeOpacity})`;
       } else {
-        const rgbMatch = baseColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
-        finalColor = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
-          ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${volumeOpacity})`
-          : `rgba(120, 120, 120, ${volumeOpacity})`;
+        finalColor = fallbackColor;
       }
 
       if (isHovered) {
@@ -122,7 +127,13 @@ export const useVolumeRenderer = ({
           
           if (projectedHeight > barHeight) {
             let projectionColor: string;
-            if (buyPressure > 0.55) {
+            const projectionFallback = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
+              ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${opacity * 0.8})`
+              : `rgba(120, 120, 120, ${opacity * 0.8})`;
+
+            if (!hasTakerData) {
+              projectionColor = projectionFallback;
+            } else if (buyPressure > 0.55) {
               const intensity = Math.min((buyPressure - 0.55) / 0.45, 1);
               const greenIntensity = Math.floor(100 + intensity * 155);
               projectionColor = `rgba(34, ${greenIntensity}, 84, ${opacity * 0.8})`;
@@ -131,10 +142,7 @@ export const useVolumeRenderer = ({
               const redIntensity = Math.floor(100 + intensity * 155);
               projectionColor = `rgba(${redIntensity}, 34, 34, ${opacity * 0.8})`;
             } else {
-              const rgbMatch = baseColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
-              projectionColor = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
-                ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${opacity * 0.8})`
-                : `rgba(120, 120, 120, ${opacity * 0.8})`;
+              projectionColor = projectionFallback;
             }
             
             ctx.save();

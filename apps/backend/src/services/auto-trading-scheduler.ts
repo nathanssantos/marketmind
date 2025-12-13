@@ -16,6 +16,7 @@ import { StrategyInterpreter, StrategyLoader } from './setup-detection/dynamic';
 import { riskManagerService } from './risk-manager';
 import { backfillHistoricalKlines, calculateStartTime } from './binance-historical';
 import type { Interval } from '@marketmind/types';
+import { mlService } from './ml';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,28 +60,60 @@ const ML_TRAINED_STRATEGIES = [
   'keltner-breakout-optimized',
   'bollinger-breakout-crypto',
   'larry-williams-9-1',
-  'williams-momentum',
+  'larry-williams-9-2',
   'larry-williams-9-3',
+  'larry-williams-9-4',
+  'williams-momentum',
   'tema-momentum',
   'elder-ray-crypto',
   'ppo-momentum',
   'parabolic-sar-crypto',
   'supertrend-follow',
-  'Setup91',
-  'Setup92',
-  'Setup93',
-  'Setup94',
 ];
+
+const ML_MIN_PROBABILITY = 0.5;
 
 export class AutoTradingScheduler {
   private activeWatchers: Map<string, ActiveWatcher> = new Map();
   private strategyLoader: StrategyLoader;
   private pollIntervalMs: number;
+  private mlInitialized: boolean = false;
+  private mlInitializing: boolean = false;
 
   constructor(pollIntervalMs: number = 60000) {
     this.strategyLoader = new StrategyLoader([STRATEGIES_DIR]);
     this.pollIntervalMs = pollIntervalMs;
     log('🚀 AutoTradingScheduler initialized', { pollIntervalMs });
+  }
+
+  private async ensureMLInitialized(): Promise<boolean> {
+    if (this.mlInitialized) return true;
+    if (this.mlInitializing) {
+      while (this.mlInitializing) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return this.mlInitialized;
+    }
+
+    this.mlInitializing = true;
+    try {
+      const result = await mlService.initialize('setup-classifier');
+      this.mlInitialized = result.success;
+      log('🤖 ML Service initialized', {
+        success: result.success,
+        modelVersion: result.modelVersion,
+        featureCount: result.featureCount,
+      });
+      return result.success;
+    } catch (error) {
+      log('⚠️ ML Service initialization failed (will continue without ML filter)', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      this.mlInitialized = false;
+      return false;
+    } finally {
+      this.mlInitializing = false;
+    }
   }
 
   async startWatcher(
@@ -343,7 +376,73 @@ export class AutoTradingScheduler {
         return;
       }
 
-      for (const setup of detectedSetups) {
+      const mlReady = await this.ensureMLInitialized();
+      let filteredSetups = detectedSetups;
+
+      if (mlReady) {
+        log('🤖 Filtering setups with ML model', { setupCount: detectedSetups.length });
+
+        filteredSetups = [];
+        for (const setup of detectedSetups) {
+          try {
+            const prediction = await mlService.predictSetup(
+              mappedKlines,
+              setup,
+              undefined,
+              watcher.symbol,
+              watcher.interval
+            );
+
+            log('🔮 ML prediction', {
+              setupType: setup.type,
+              probability: prediction.probability.toFixed(3),
+              confidence: prediction.confidence,
+              label: prediction.label,
+              threshold: ML_MIN_PROBABILITY,
+            });
+
+            if (prediction.probability >= ML_MIN_PROBABILITY && prediction.label === 1) {
+              filteredSetups.push({
+                ...setup,
+                confidence: Math.round((setup.confidence + prediction.confidence) / 2),
+              });
+              log('✅ Setup passed ML filter', {
+                type: setup.type,
+                mlProbability: prediction.probability.toFixed(3),
+                blendedConfidence: Math.round((setup.confidence + prediction.confidence) / 2),
+              });
+            } else {
+              log('❌ Setup rejected by ML filter', {
+                type: setup.type,
+                mlProbability: prediction.probability.toFixed(3),
+                reason: prediction.label === 0 ? 'predicted_loss' : 'low_probability',
+              });
+            }
+          } catch (error) {
+            log('⚠️ ML prediction failed, using original setup', {
+              type: setup.type,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            filteredSetups.push(setup);
+          }
+        }
+
+        log('📊 ML filtering complete', {
+          original: detectedSetups.length,
+          afterFilter: filteredSetups.length,
+          rejected: detectedSetups.length - filteredSetups.length,
+        });
+      } else {
+        log('⚠️ ML not available, using all detected setups');
+      }
+
+      if (filteredSetups.length === 0) {
+        log('📭 No setups passed ML filter');
+        watcher.lastProcessedTime = Date.now();
+        return;
+      }
+
+      for (const setup of filteredSetups) {
         await this.executeSetup(watcher, setup);
       }
 

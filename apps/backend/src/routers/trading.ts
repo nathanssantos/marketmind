@@ -4,7 +4,7 @@ import { MainClient } from 'binance';
 import { randomBytes } from 'crypto';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { orders, positions, wallets } from '../db/schema';
+import { orders, positions, tradeExecutions, wallets } from '../db/schema';
 import { decryptApiKey } from '../services/encryption';
 import { protectedProcedure, router } from '../trpc';
 
@@ -436,5 +436,121 @@ export const tradingRouter = router({
         pnl: pnl.toString(),
         pnlPercent: pnlPercent.toFixed(2),
       };
+    }),
+
+  getTradeExecutions: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        symbol: z.string().optional(),
+        status: z.enum(['open', 'closed', 'cancelled']).optional(),
+        limit: z.number().min(1).max(100).default(50),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const whereConditions = [
+        eq(tradeExecutions.userId, ctx.user.id),
+        eq(tradeExecutions.walletId, input.walletId),
+      ];
+
+      if (input.symbol) {
+        whereConditions.push(eq(tradeExecutions.symbol, input.symbol));
+      }
+
+      if (input.status) {
+        whereConditions.push(eq(tradeExecutions.status, input.status));
+      }
+
+      const executions = await ctx.db
+        .select()
+        .from(tradeExecutions)
+        .where(and(...whereConditions))
+        .orderBy(desc(tradeExecutions.openedAt))
+        .limit(input.limit);
+
+      return executions;
+    }),
+
+  closeTradeExecution: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        exitPrice: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const [execution] = await ctx.db
+        .select()
+        .from(tradeExecutions)
+        .where(and(eq(tradeExecutions.id, input.id), eq(tradeExecutions.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!execution) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Trade execution not found',
+        });
+      }
+
+      const entryPrice = parseFloat(execution.entryPrice);
+      const exitPrice = parseFloat(input.exitPrice);
+      const qty = parseFloat(execution.quantity);
+
+      let pnl = 0;
+      if (execution.side === 'LONG') {
+        pnl = (exitPrice - entryPrice) * qty;
+      } else {
+        pnl = (entryPrice - exitPrice) * qty;
+      }
+
+      const pnlPercent = (pnl / (entryPrice * qty)) * 100;
+
+      await ctx.db
+        .update(tradeExecutions)
+        .set({
+          status: 'closed',
+          exitPrice: input.exitPrice,
+          pnl: pnl.toString(),
+          pnlPercent: pnlPercent.toString(),
+          closedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(tradeExecutions.id, input.id));
+
+      return {
+        pnl: pnl.toString(),
+        pnlPercent: pnlPercent.toFixed(2),
+      };
+    }),
+
+  cancelTradeExecution: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const [execution] = await ctx.db
+        .select()
+        .from(tradeExecutions)
+        .where(and(eq(tradeExecutions.id, input.id), eq(tradeExecutions.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!execution) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Trade execution not found',
+        });
+      }
+
+      await ctx.db
+        .update(tradeExecutions)
+        .set({
+          status: 'cancelled',
+          updatedAt: new Date(),
+        })
+        .where(eq(tradeExecutions.id, input.id));
+
+      return { success: true };
     }),
 });

@@ -60,10 +60,10 @@ export const autoTradingRouter = router({
       if (!config) {
         const configId = generateId(21);
         const defaultEnabledSetups = JSON.stringify([
-          'Setup91',
-          'Setup92',
-          'Setup93',
-          'Setup94',
+          'larry-williams-9-1',
+          'larry-williams-9-2',
+          'larry-williams-9-3',
+          'larry-williams-9-4',
         ]);
 
         await ctx.db.insert(autoTradingConfig).values({

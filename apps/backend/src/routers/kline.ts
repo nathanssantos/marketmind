@@ -9,6 +9,22 @@ import { getBinanceKlineSync } from '../services/binance-kline-sync';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 
+const getIntervalMs = (interval: string): number => {
+  const units: Record<string, number> = {
+    's': 1000,
+    'm': 60 * 1000,
+    'h': 60 * 60 * 1000,
+    'd': 24 * 60 * 60 * 1000,
+    'w': 7 * 24 * 60 * 60 * 1000,
+    'M': 30 * 24 * 60 * 60 * 1000,
+  };
+  const match = interval.match(/^(\d+)([smhdwM])$/);
+  if (!match?.[1] || !match[2]) return 4 * 60 * 60 * 1000;
+  const unitMs = units[match[2]];
+  if (!unitMs) return 4 * 60 * 60 * 1000;
+  return parseInt(match[1]) * unitMs;
+};
+
 const intervalSchema = z.enum([
   '1s', '1m', '3m', '5m', '15m', '30m',
   '1h', '2h', '4h', '6h', '8h', '12h',
@@ -76,21 +92,21 @@ export const klineRouter = router({
 
       if (result.length === 0) {
         logger.info({ symbol: input.symbol, interval: input.interval }, 'Database empty, fetching from Binance API');
-        
+
         const endTime = input.endTime || new Date();
         const startTime = input.startTime || calculateStartTime(input.interval as Interval, input.limit);
-        
+
         const apiKlines = await fetchHistoricalKlinesFromAPI(
           input.symbol,
           input.interval as Interval,
           startTime,
           endTime
         );
-        
+
         if (apiKlines.length > 0) {
           logger.info({ firstKline: apiKlines[0] }, 'Sample kline from API');
         }
-        
+
         return apiKlines.map((k: any) => ({
           symbol: input.symbol,
           interval: input.interval,
@@ -106,6 +122,63 @@ export const klineRouter = router({
           takerBuyQuoteVolume: k.takerBuyQuoteVolume,
           createdAt: new Date().toISOString(),
         }));
+      }
+
+      const latestKline = result[0];
+      const now = new Date();
+      const intervalMs = getIntervalMs(input.interval);
+      const staleCutoff = new Date(now.getTime() - intervalMs * 2);
+
+      if (latestKline && new Date(latestKline.openTime) < staleCutoff) {
+        logger.info({
+          symbol: input.symbol,
+          interval: input.interval,
+          latestInDb: latestKline.openTime,
+          staleCutoff,
+        }, 'Database data is stale, fetching recent klines');
+
+        const recentKlines = await fetchHistoricalKlinesFromAPI(
+          input.symbol,
+          input.interval as Interval,
+          new Date(latestKline.openTime),
+          now
+        );
+
+        if (recentKlines.length > 0) {
+          const newKlines = recentKlines.filter((k: any) =>
+            new Date(k.openTime) > new Date(latestKline.openTime)
+          );
+
+          if (newKlines.length > 0) {
+            logger.info({ count: newKlines.length }, 'Inserting new klines');
+
+            await db.insert(klines).values(
+              newKlines.map((k: any) => ({
+                symbol: input.symbol,
+                interval: input.interval as Interval,
+                openTime: new Date(k.openTime),
+                open: k.open,
+                high: k.high,
+                low: k.low,
+                close: k.close,
+                volume: k.volume,
+                closeTime: new Date(k.closeTime),
+                quoteVolume: k.quoteVolume,
+                trades: k.trades,
+                takerBuyBaseVolume: k.takerBuyBaseVolume || '0',
+                takerBuyQuoteVolume: k.takerBuyQuoteVolume || '0',
+              }))
+            ).onConflictDoNothing();
+
+            const updatedResult = await db.query.klines.findMany({
+              where: and(...conditions),
+              orderBy: [desc(klines.openTime)],
+              limit: input.limit,
+            });
+
+            return updatedResult.reverse();
+          }
+        }
       }
 
       return result.reverse();

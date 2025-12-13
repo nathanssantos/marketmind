@@ -31,13 +31,16 @@ export const OrdersList = () => {
 
   const { wallets: backendWallets } = useBackendWallet();
   const backendActiveWalletId = backendWallets[0]?.id;
-  const { orders: backendOrdersData, cancelOrder: cancelBackendOrder } = useBackendTrading(
-    backendActiveWalletId || '',
-    undefined
-  );
+  const {
+    orders: backendOrdersData,
+    tradeExecutions,
+    cancelOrder: cancelBackendOrder,
+    closeExecution,
+    cancelExecution,
+  } = useBackendTrading(backendActiveWalletId || '', undefined);
 
   const backendOrders: Order[] = useMemo(() => {
-    return backendOrdersData.map((o): Order => ({
+    const ordersFromApi = backendOrdersData.map((o): Order => ({
       symbol: o.symbol,
       orderId: o.orderId,
       orderListId: 0,
@@ -61,7 +64,41 @@ export const OrdersList = () => {
       quantity: parseFloat(o.origQty || '0'),
       createdAt: new Date(o.createdAt),
     }));
-  }, [backendOrdersData]);
+
+    const ordersFromExecutions = tradeExecutions.map((e): Order => ({
+      symbol: e.symbol,
+      orderId: 0,
+      orderListId: 0,
+      clientOrderId: e.id,
+      price: e.entryPrice,
+      origQty: e.quantity,
+      executedQty: e.quantity,
+      cummulativeQuoteQty: '0',
+      status: e.status === 'open' ? 'FILLED' : e.status === 'closed' ? 'FILLED' : 'CANCELED',
+      timeInForce: 'GTC',
+      type: 'MARKET',
+      side: e.side === 'LONG' ? 'BUY' : 'SELL',
+      time: new Date(e.openedAt).getTime(),
+      updateTime: e.closedAt ? new Date(e.closedAt).getTime() : new Date(e.openedAt).getTime(),
+      isWorking: e.status === 'open',
+      origQuoteOrderQty: '0',
+      id: e.id,
+      walletId: e.walletId,
+      orderDirection: e.side === 'LONG' ? ('long' as const) : ('short' as const),
+      entryPrice: parseFloat(e.entryPrice),
+      quantity: parseFloat(e.quantity),
+      createdAt: new Date(e.openedAt),
+      stopLoss: e.stopLoss ? parseFloat(e.stopLoss) : undefined,
+      takeProfit: e.takeProfit ? parseFloat(e.takeProfit) : undefined,
+      pnl: e.pnl || undefined,
+      pnlPercent: e.pnlPercent || undefined,
+      closedAt: e.closedAt ? new Date(e.closedAt) : undefined,
+      setupType: e.setupType || undefined,
+      isAutoTrade: true,
+    }));
+
+    return [...ordersFromApi, ...ordersFromExecutions];
+  }, [backendOrdersData, tradeExecutions]);
 
   const wallets = isSimulatorActive ? simulatorWallets : backendWallets.map((w) => ({
     id: w.id,
@@ -96,17 +133,26 @@ export const OrdersList = () => {
     } else {
       const order = orders.find(o => o.id === id);
       if (order && activeWalletId) {
-        await cancelBackendOrder({
-          walletId: activeWalletId,
-          symbol: order.symbol,
-          orderId: order.orderId || 0,
-        });
+        if (order.isAutoTrade) {
+          await cancelExecution(id);
+        } else {
+          await cancelBackendOrder({
+            walletId: activeWalletId,
+            symbol: order.symbol,
+            orderId: order.orderId || 0,
+          });
+        }
       }
     }
   };
-  const closeOrder = (id: string, price: number) => {
+  const closeOrder = async (id: string, price: number) => {
     if (isSimulatorActive) {
       closeSimulatorOrder(id, price);
+    } else {
+      const order = orders.find(o => o.id === id);
+      if (order?.isAutoTrade) {
+        await closeExecution(id, price.toString());
+      }
     }
   };
 

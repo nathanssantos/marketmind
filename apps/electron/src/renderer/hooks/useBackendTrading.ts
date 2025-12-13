@@ -3,13 +3,17 @@ import { trpc } from '../utils/trpc';
 
 export const useBackendTrading = (walletId: string, symbol?: string) => {
   const utils = trpc.useUtils();
-  
+
   const { data: orders, isLoading: isLoadingOrders } = trpc.trading.getOrders.useQuery(
     { walletId, symbol, limit: 50 },
     { enabled: !!walletId }
   );
   const { data: positions, isLoading: isLoadingPositions } = trpc.trading.getPositions.useQuery(
     { walletId, limit: 50 },
+    { enabled: !!walletId }
+  );
+  const { data: tradeExecutions, isLoading: isLoadingExecutions } = trpc.trading.getTradeExecutions.useQuery(
+    { walletId, symbol, limit: 50 },
     { enabled: !!walletId }
   );
   
@@ -41,6 +45,18 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
   const closePositionMutation = trpc.trading.closePosition.useMutation({
     onSuccess: () => {
       utils.trading.getPositions.invalidate();
+    },
+  });
+
+  const closeExecutionMutation = trpc.trading.closeTradeExecution.useMutation({
+    onSuccess: () => {
+      utils.trading.getTradeExecutions.invalidate();
+    },
+  });
+
+  const cancelExecutionMutation = trpc.trading.cancelTradeExecution.useMutation({
+    onSuccess: () => {
+      utils.trading.getTradeExecutions.invalidate();
     },
   });
   
@@ -97,26 +113,48 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
     },
     [closePositionMutation]
   );
-  
+
+  const closeExecution = useCallback(
+    async (id: string, exitPrice: string) => {
+      return closeExecutionMutation.mutateAsync({ id, exitPrice });
+    },
+    [closeExecutionMutation]
+  );
+
+  const cancelExecution = useCallback(
+    async (id: string) => {
+      return cancelExecutionMutation.mutateAsync({ id });
+    },
+    [cancelExecutionMutation]
+  );
+
   return {
     orders: orders ?? [],
     positions: positions ?? [],
+    tradeExecutions: tradeExecutions ?? [],
     isLoadingOrders,
     isLoadingPositions,
+    isLoadingExecutions,
     createOrder,
     cancelOrder,
     syncOrders,
     createPosition,
     closePosition,
+    closeExecution,
+    cancelExecution,
     isCreatingOrder: createOrderMutation.isPending,
     isCancelingOrder: cancelOrderMutation.isPending,
     isSyncingOrders: syncOrdersMutation.isPending,
     isCreatingPosition: createPositionMutation.isPending,
     isClosingPosition: closePositionMutation.isPending,
+    isClosingExecution: closeExecutionMutation.isPending,
+    isCancelingExecution: cancelExecutionMutation.isPending,
     createOrderError: createOrderMutation.error,
     cancelOrderError: cancelOrderMutation.error,
     syncOrdersError: syncOrdersMutation.error,
     createPositionError: createPositionMutation.error,
     closePositionError: closePositionMutation.error,
+    closeExecutionError: closeExecutionMutation.error,
+    cancelExecutionError: cancelExecutionMutation.error,
   };
 };
