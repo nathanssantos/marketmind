@@ -21,6 +21,134 @@ export interface TrailingStopUpdate {
   reason: 'breakeven' | 'swing_trail';
 }
 
+export interface TrailingStopInput {
+  entryPrice: number;
+  currentPrice: number;
+  currentStopLoss: number | null;
+  side: 'LONG' | 'SHORT';
+  swingPoints: Array<{ price: number; type: 'high' | 'low' }>;
+}
+
+export interface TrailingStopResult {
+  newStopLoss: number;
+  reason: 'breakeven' | 'swing_trail';
+}
+
+export const calculateProfitPercent = (
+  entryPrice: number,
+  currentPrice: number,
+  isLong: boolean
+): number => {
+  return isLong
+    ? (currentPrice - entryPrice) / entryPrice
+    : (entryPrice - currentPrice) / entryPrice;
+};
+
+export const calculateBreakevenPrice = (
+  entryPrice: number,
+  isLong: boolean,
+  buffer: number = 0.001
+): number => {
+  return entryPrice * (isLong ? 1 + buffer : 1 - buffer);
+};
+
+export const findBestSwingStop = (
+  swingPoints: Array<{ price: number; type: 'high' | 'low' }>,
+  currentPrice: number,
+  entryPrice: number,
+  isLong: boolean,
+  minDistancePercent: number
+): number | null => {
+  const relevantSwings = swingPoints.filter(sp =>
+    isLong ? sp.type === 'low' : sp.type === 'high'
+  );
+
+  const recentSwings = relevantSwings.slice(-5);
+
+  if (isLong) {
+    const validSwingLows = recentSwings
+      .filter(sp => sp.price < currentPrice && sp.price > entryPrice)
+      .sort((a, b) => b.price - a.price);
+
+    if (validSwingLows.length > 0) {
+      const swingLow = validSwingLows[0]!.price;
+      const buffer = swingLow * minDistancePercent;
+      return swingLow - buffer;
+    }
+  } else {
+    const validSwingHighs = recentSwings
+      .filter(sp => sp.price > currentPrice && sp.price < entryPrice)
+      .sort((a, b) => a.price - b.price);
+
+    if (validSwingHighs.length > 0) {
+      const swingHigh = validSwingHighs[0]!.price;
+      const buffer = swingHigh * minDistancePercent;
+      return swingHigh + buffer;
+    }
+  }
+
+  return null;
+};
+
+export const shouldUpdateStopLoss = (
+  newStopLoss: number,
+  currentStopLoss: number | null,
+  isLong: boolean
+): boolean => {
+  if (currentStopLoss === null) return true;
+  return isLong ? newStopLoss > currentStopLoss : newStopLoss < currentStopLoss;
+};
+
+export const calculateNewStopLoss = (
+  breakevenPrice: number,
+  swingStop: number | null,
+  isLong: boolean
+): number => {
+  if (swingStop === null) return breakevenPrice;
+  return isLong
+    ? Math.max(breakevenPrice, swingStop)
+    : Math.min(breakevenPrice, swingStop);
+};
+
+export const computeTrailingStop = (
+  input: TrailingStopInput,
+  config: TrailingStopOptimizationConfig
+): TrailingStopResult | null => {
+  const { entryPrice, currentPrice, currentStopLoss, side, swingPoints } = input;
+  const isLong = side === 'LONG';
+
+  const profitPercent = calculateProfitPercent(entryPrice, currentPrice, isLong);
+
+  if (profitPercent < config.breakevenProfitThreshold) {
+    return null;
+  }
+
+  const breakevenPrice = calculateBreakevenPrice(entryPrice, isLong);
+
+  if (!shouldUpdateStopLoss(breakevenPrice, currentStopLoss, isLong)) {
+    return null;
+  }
+
+  const swingStop = findBestSwingStop(
+    swingPoints,
+    currentPrice,
+    entryPrice,
+    isLong,
+    config.minTrailingDistancePercent
+  );
+
+  const newStopLoss = calculateNewStopLoss(breakevenPrice, swingStop, isLong);
+
+  if (!shouldUpdateStopLoss(newStopLoss, currentStopLoss, isLong)) {
+    return null;
+  }
+
+  return {
+    newStopLoss,
+    reason: swingStop !== null ? 'swing_trail' : 'breakeven',
+  };
+};
+
 export class TrailingStopService {
   private config: TrailingStopOptimizationConfig;
 
@@ -119,11 +247,10 @@ export class TrailingStopService {
     const { swingPoints } = calculateSwingPoints(mappedKlines, this.config.swingLookback);
 
     for (const execution of executions) {
-      const update = await this.calculateTrailingStop(
+      const update = this.calculateTrailingStop(
         execution,
         currentPrice,
-        swingPoints,
-        mappedKlines
+        swingPoints
       );
 
       if (update) {
@@ -135,90 +262,46 @@ export class TrailingStopService {
     return updates;
   }
 
-  private async calculateTrailingStop(
+  private calculateTrailingStop(
     execution: TradeExecution,
     currentPrice: number,
-    swingPoints: Array<{ index: number; type: 'high' | 'low'; price: number; timestamp: number }>,
-    _klines: KlineType[]
-  ): Promise<TrailingStopUpdate | null> {
+    swingPoints: Array<{ index: number; type: 'high' | 'low'; price: number; timestamp: number }>
+  ): TrailingStopUpdate | null {
     const entryPrice = parseFloat(execution.entryPrice);
     const currentStopLoss = execution.stopLoss ? parseFloat(execution.stopLoss) : null;
-    const isLong = execution.side === 'LONG';
 
-    const profitPercent = isLong
-      ? (currentPrice - entryPrice) / entryPrice
-      : (entryPrice - currentPrice) / entryPrice;
+    const input: TrailingStopInput = {
+      entryPrice,
+      currentPrice,
+      currentStopLoss,
+      side: execution.side as 'LONG' | 'SHORT',
+      swingPoints: swingPoints.map(sp => ({ price: sp.price, type: sp.type })),
+    };
 
-    if (profitPercent >= this.config.breakevenProfitThreshold) {
-      const breakevenPrice = entryPrice * (isLong ? 1.001 : 0.999);
+    const result = computeTrailingStop(input, this.config);
 
-      if (currentStopLoss === null ||
-          (isLong && breakevenPrice > currentStopLoss) ||
-          (!isLong && breakevenPrice < currentStopLoss)) {
+    if (!result) return null;
 
-        const relevantSwings = swingPoints.filter(sp =>
-          isLong ? sp.type === 'low' : sp.type === 'high'
-        );
+    const profitPercent = calculateProfitPercent(entryPrice, currentPrice, execution.side === 'LONG');
 
-        const recentSwings = relevantSwings.slice(-5);
+    logger.info({
+      executionId: execution.id,
+      symbol: execution.symbol,
+      side: execution.side,
+      entryPrice,
+      currentPrice,
+      profitPercent: (profitPercent * 100).toFixed(2),
+      oldStopLoss: currentStopLoss,
+      newStopLoss: result.newStopLoss,
+      reason: result.reason,
+    }, 'Trailing stop updated');
 
-        let trailingStop: number | null = null;
-
-        if (isLong) {
-          const validSwingLows = recentSwings
-            .filter(sp => sp.price < currentPrice && sp.price > entryPrice)
-            .sort((a, b) => b.price - a.price);
-
-          if (validSwingLows.length > 0) {
-            const swingLow = validSwingLows[0]!.price;
-            const buffer = swingLow * this.config.minTrailingDistancePercent;
-            trailingStop = swingLow - buffer;
-          }
-        } else {
-          const validSwingHighs = recentSwings
-            .filter(sp => sp.price > currentPrice && sp.price < entryPrice)
-            .sort((a, b) => a.price - b.price);
-
-          if (validSwingHighs.length > 0) {
-            const swingHigh = validSwingHighs[0]!.price;
-            const buffer = swingHigh * this.config.minTrailingDistancePercent;
-            trailingStop = swingHigh + buffer;
-          }
-        }
-
-        const newStopLoss = trailingStop !== null
-          ? (isLong
-              ? Math.max(breakevenPrice, trailingStop)
-              : Math.min(breakevenPrice, trailingStop))
-          : breakevenPrice;
-
-        if (currentStopLoss === null ||
-            (isLong && newStopLoss > currentStopLoss) ||
-            (!isLong && newStopLoss < currentStopLoss)) {
-
-          logger.info({
-            executionId: execution.id,
-            symbol: execution.symbol,
-            side: execution.side,
-            entryPrice,
-            currentPrice,
-            profitPercent: (profitPercent * 100).toFixed(2),
-            oldStopLoss: currentStopLoss,
-            newStopLoss,
-            reason: trailingStop !== null ? 'swing_trail' : 'breakeven',
-          }, 'Trailing stop updated');
-
-          return {
-            executionId: execution.id,
-            oldStopLoss: currentStopLoss,
-            newStopLoss,
-            reason: trailingStop !== null ? 'swing_trail' : 'breakeven',
-          };
-        }
-      }
-    }
-
-    return null;
+    return {
+      executionId: execution.id,
+      oldStopLoss: currentStopLoss,
+      newStopLoss: result.newStopLoss,
+      reason: result.reason,
+    };
   }
 
   private async applyStopLossUpdate(executionId: string, newStopLoss: number): Promise<void> {

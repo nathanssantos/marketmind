@@ -5,6 +5,114 @@ import type { TradeExecution } from '../db/schema';
 import { logger } from './logger';
 import { positionMonitorService } from './position-monitor';
 
+export interface ExecutionLike {
+  entryPrice: string;
+  quantity: string;
+  side?: string | null;
+  openedAt: Date;
+  stopLoss?: string | null;
+}
+
+export const calculateWeightedAvgPrice = (executions: ExecutionLike[]): number => {
+  let totalValue = 0;
+  let totalQuantity = 0;
+
+  for (const exec of executions) {
+    const price = parseFloat(exec.entryPrice);
+    const qty = parseFloat(exec.quantity);
+    totalValue += price * qty;
+    totalQuantity += qty;
+  }
+
+  return totalQuantity > 0 ? totalValue / totalQuantity : 0;
+};
+
+export const calculateTotalExposure = (executions: ExecutionLike[]): number => {
+  return executions.reduce((sum, exec) => {
+    const price = parseFloat(exec.entryPrice);
+    const qty = parseFloat(exec.quantity);
+    return sum + price * qty;
+  }, 0);
+};
+
+export const calculateBaseSize = (executions: ExecutionLike[]): number => {
+  if (executions.length === 0) return 0;
+
+  const sorted = [...executions].sort(
+    (a, b) => new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime()
+  );
+
+  return parseFloat(sorted[0]?.quantity || '0');
+};
+
+export const roundQuantity = (quantity: number): number => {
+  if (quantity < 1) {
+    return Math.floor(quantity * 100000) / 100000;
+  }
+  if (quantity < 10) {
+    return Math.floor(quantity * 1000) / 1000;
+  }
+  return Math.floor(quantity * 100) / 100;
+};
+
+export const calculatePyramidProfitPercent = (
+  avgEntryPrice: number,
+  currentPrice: number,
+  direction: 'LONG' | 'SHORT'
+): number => {
+  return direction === 'LONG'
+    ? (currentPrice - avgEntryPrice) / avgEntryPrice
+    : (avgEntryPrice - currentPrice) / avgEntryPrice;
+};
+
+export const calculatePyramidSize = (
+  baseSize: number,
+  entryCount: number,
+  scaleFactor: number,
+  mlConfidence?: number,
+  mlConfidenceBoost: number = 1.2
+): number => {
+  let scaledSize = baseSize * Math.pow(scaleFactor, entryCount);
+
+  if (mlConfidence && mlConfidence > 0.7) {
+    scaledSize *= mlConfidenceBoost;
+  }
+
+  return scaledSize;
+};
+
+export const calculateBreakevenStopLoss = (
+  avgEntryPrice: number,
+  direction: 'LONG' | 'SHORT',
+  bufferPercent: number = 0.002
+): number => {
+  const breakevenBuffer = direction === 'LONG' ? 1 + bufferPercent : 1 - bufferPercent;
+  return avgEntryPrice * breakevenBuffer;
+};
+
+export const shouldUpdatePyramidStopLoss = (
+  newStopLoss: number,
+  currentConsolidatedSL: number,
+  direction: 'LONG' | 'SHORT'
+): boolean => {
+  return direction === 'LONG'
+    ? newStopLoss > currentConsolidatedSL
+    : newStopLoss < currentConsolidatedSL;
+};
+
+export const getConsolidatedStopLoss = (
+  executions: ExecutionLike[],
+  direction: 'LONG' | 'SHORT'
+): number | null => {
+  const currentStops = executions
+    .filter(e => e.stopLoss)
+    .map(e => parseFloat(e.stopLoss!));
+
+  if (currentStops.length === 0) return null;
+
+  return direction === 'LONG' ? Math.max(...currentStops) : Math.min(...currentStops);
+};
+
 export interface PyramidEvaluation {
   canPyramid: boolean;
   reason: string;
@@ -94,7 +202,7 @@ export class PyramidingService {
       };
     }
 
-    const avgEntryPrice = this.calculateWeightedAvgPrice(openExecutions);
+    const avgEntryPrice = calculateWeightedAvgPrice(openExecutions);
     const profitPercent = direction === 'LONG'
       ? (currentPrice - avgEntryPrice) / avgEntryPrice
       : (avgEntryPrice - currentPrice) / avgEntryPrice;
@@ -154,20 +262,20 @@ export class PyramidingService {
       };
     }
 
-    const baseSize = this.calculateBaseSize(openExecutions);
+    const baseSize = calculateBaseSize(openExecutions);
     let scaledSize = baseSize * Math.pow(pyramidConfig.scaleFactor, openExecutions.length);
 
     if (mlConfidence && mlConfidence > 0.7) {
       scaledSize *= pyramidConfig.mlConfidenceBoost;
     }
 
-    const totalExposure = this.calculateTotalExposure(openExecutions) + scaledSize * currentPrice;
+    const totalExposure = calculateTotalExposure(openExecutions) + scaledSize * currentPrice;
     const maxPositionSize = parseFloat(tradingConfig.maxPositionSize);
 
     return {
       canPyramid: true,
       reason: 'Position eligible for pyramid entry',
-      suggestedSize: this.roundQuantity(scaledSize),
+      suggestedSize: roundQuantity(scaledSize),
       currentEntries: openExecutions.length,
       maxEntries: pyramidConfig.maxEntries,
       profitPercent,
@@ -233,13 +341,13 @@ export class PyramidingService {
       const quantity = positionValue / entryPrice;
 
       return {
-        quantity: this.roundQuantity(quantity),
+        quantity: roundQuantity(quantity),
         sizePercent: baseSizePercent,
         reason: `Initial entry: ${baseSizePercent.toFixed(1)}% position (ML confidence: ${mlConfidence ? (mlConfidence * 100).toFixed(0) + '%' : 'N/A'})`,
       };
     }
 
-    const currentExposure = this.calculateTotalExposure(openExecutions);
+    const currentExposure = calculateTotalExposure(openExecutions);
     const remainingCapacity = maxTotalExposure - currentExposure;
 
     if (remainingCapacity <= 0) {
@@ -250,7 +358,7 @@ export class PyramidingService {
       };
     }
 
-    const avgEntryPrice = this.calculateWeightedAvgPrice(openExecutions);
+    const avgEntryPrice = calculateWeightedAvgPrice(openExecutions);
     let currentPrice: number;
 
     try {
@@ -285,7 +393,7 @@ export class PyramidingService {
     const sizePercent = (maxPyramidValue / walletBalance) * 100;
 
     return {
-      quantity: this.roundQuantity(finalQuantity),
+      quantity: roundQuantity(finalQuantity),
       sizePercent,
       reason: `Pyramid entry #${openExecutions.length + 1}: ${sizePercent.toFixed(1)}% (profit: ${(profitPercent * 100).toFixed(2)}%, ML: ${mlConfidence ? (mlConfidence * 100).toFixed(0) + '%' : 'N/A'})`,
     };
@@ -297,7 +405,7 @@ export class PyramidingService {
   ): Promise<number | null> {
     if (executions.length < 2) return null;
 
-    const avgEntryPrice = this.calculateWeightedAvgPrice(executions);
+    const avgEntryPrice = calculateWeightedAvgPrice(executions);
 
     const breakevenBuffer = direction === 'LONG' ? 1.002 : 0.998;
     const newStopLoss = avgEntryPrice * breakevenBuffer;
@@ -331,48 +439,6 @@ export class PyramidingService {
     return null;
   }
 
-  private calculateWeightedAvgPrice(executions: TradeExecution[]): number {
-    let totalValue = 0;
-    let totalQuantity = 0;
-
-    for (const exec of executions) {
-      const price = parseFloat(exec.entryPrice);
-      const qty = parseFloat(exec.quantity);
-      totalValue += price * qty;
-      totalQuantity += qty;
-    }
-
-    return totalQuantity > 0 ? totalValue / totalQuantity : 0;
-  }
-
-  private calculateTotalExposure(executions: TradeExecution[]): number {
-    return executions.reduce((sum, exec) => {
-      const price = parseFloat(exec.entryPrice);
-      const qty = parseFloat(exec.quantity);
-      return sum + price * qty;
-    }, 0);
-  }
-
-  private calculateBaseSize(executions: TradeExecution[]): number {
-    if (executions.length === 0) return 0;
-
-    const firstEntry = executions.sort((a, b) =>
-      new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime()
-    )[0];
-
-    return parseFloat(firstEntry?.quantity || '0');
-  }
-
-  private roundQuantity(quantity: number): number {
-    if (quantity < 1) {
-      return Math.floor(quantity * 100000) / 100000;
-    }
-    if (quantity < 10) {
-      return Math.floor(quantity * 1000) / 1000;
-    }
-    return Math.floor(quantity * 100) / 100;
-  }
-
   getExposureSummary(
     executions: TradeExecution[],
     currentPrice: number,
@@ -397,8 +463,8 @@ export class PyramidingService {
     }
 
     const totalQuantity = executions.reduce((sum, e) => sum + parseFloat(e.quantity), 0);
-    const avgEntryPrice = this.calculateWeightedAvgPrice(executions);
-    const totalExposure = this.calculateTotalExposure(executions);
+    const avgEntryPrice = calculateWeightedAvgPrice(executions);
+    const totalExposure = calculateTotalExposure(executions);
     const direction = executions[0]?.side;
 
     const unrealizedPnL = direction === 'LONG'
