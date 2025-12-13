@@ -1,4 +1,5 @@
 import type { Interval, Kline, TradingSetup } from '@marketmind/types';
+import { getThresholdForTimeframe } from '@marketmind/ml';
 import { and, desc, eq } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
@@ -74,7 +75,6 @@ const ML_TRAINED_STRATEGIES = [
   'supertrend-follow',
 ];
 
-const ML_MIN_PROBABILITY = 0.05;
 
 export class AutoTradingScheduler {
   private activeWatchers: Map<string, ActiveWatcher> = new Map();
@@ -396,15 +396,18 @@ export class AutoTradingScheduler {
               watcher.interval
             );
 
+            const mlThreshold = getThresholdForTimeframe(watcher.interval);
+
             log('🔮 ML prediction', {
               setupType: setup.type,
               probability: prediction.probability.toFixed(3),
               confidence: prediction.confidence,
               label: prediction.label,
-              threshold: ML_MIN_PROBABILITY,
+              threshold: mlThreshold.minProbability,
+              interval: watcher.interval,
             });
 
-            if (prediction.probability >= ML_MIN_PROBABILITY) {
+            if (prediction.probability >= mlThreshold.minProbability) {
               filteredSetups.push({
                 ...setup,
                 confidence: Math.round((setup.confidence + prediction.confidence) / 2),

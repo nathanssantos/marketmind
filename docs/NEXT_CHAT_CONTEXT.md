@@ -67,6 +67,14 @@ Copy this entire document and paste it in a new Claude Code chat to continue.
     - Added Analytics tab translations (EN/PT/ES/FR)
     - All performance/stats components now use i18n
 
+11. **Full System Optimization Pipeline (Phase 9) ✅**
+    - `TrailingStopService` made configurable with `DEFAULT_TRAILING_STOP_CONFIG`
+    - `FullSystemOptimizer` service created with 3 presets (quick, balanced, thorough)
+    - `optimize-full` CLI command added to backtest-runner
+    - Per-timeframe ML thresholds in `packages/ml/src/constants/optimizedThresholds.ts`
+    - Auto-trading scheduler now uses `getThresholdForTimeframe()` for ML filtering
+    - Walk-forward validation integrated for robustness testing
+
 ### In Progress
 
 **1m Training Data Generation**
@@ -100,15 +108,11 @@ cp models/setup-classifier-v3.json ../../apps/backend/models/
    - Expected: ~1M+ samples
    - Will improve model coverage for short timeframes
 
-2. **Phase 9: Full System Optimization**
-   - Create `trailing-stop.ts` service with configurable params
-   - Create `FullSystemOptimizer.ts` orchestrator service
-   - Create `optimize-full-system.ts` CLI command
-   - Create per-timeframe ML threshold constants
-   - Integrate calibrated thresholds in auto-trading-scheduler
-   - **Plan docs:**
-     - `docs/OPTIMIZATION_PIPELINE_PLAN.md` - Original 8-phase design
-     - `docs/OPTIMIZATION_IMPROVEMENTS_PLAN.md` - Implementation details
+2. **Run Full System Optimization**
+   - Use new `optimize-full` CLI command
+   - Example: `pnpm exec tsx src/cli/backtest-runner.ts optimize-full -s setup91 --symbol BTCUSDT -i 1h --start 2024-01-01 --end 2024-10-01 --preset balanced`
+   - Run per-timeframe threshold calibration
+   - Save optimized params to config files
 
 ---
 
@@ -120,13 +124,14 @@ cp models/setup-classifier-v3.json ../../apps/backend/models/
 | `apps/backend/src/services/auto-trading-scheduler.ts` | Main trading orchestrator |
 | `apps/backend/src/services/auto-trading.ts` | Has `executeBinanceOrder()` |
 | `apps/backend/src/services/pyramiding.ts` | Position scaling logic + ML-based sizing |
-| `apps/backend/src/services/trailing-stop.ts` | Trailing stop logic |
+| `apps/backend/src/services/trailing-stop.ts` | Trailing stop logic (configurable) |
+| `apps/backend/src/services/backtesting/FullSystemOptimizer.ts` | Full system optimization orchestrator |
+| `apps/backend/src/cli/commands/optimize-full-system.ts` | CLI for full system optimization |
+| `packages/ml/src/constants/optimizedThresholds.ts` | Per-timeframe ML thresholds |
 | `packages/types/src/backtesting.ts` | Optimization types |
 | `packages/ml/scripts/concatenate_training.sh` | CSV concatenation script |
 | `packages/ml/scripts/train_setup_classifier.py` | Model training script |
-| `docs/OPTIMIZATION_PIPELINE_PLAN.md` | Full optimization pipeline plan |
-| `docs/OPTIMIZATION_IMPROVEMENTS_PLAN.md` | Implementation details for optimization |
-| `docs/ML_IMPLEMENTATION_PLAN.md` | ML implementation plan (Phase 9) |
+| `docs/OPTIMIZATION_IMPROVEMENTS_PLAN.md` | Optimization implementation (✅ complete) |
 | `docs/TRADING_SYSTEM.md` | Trading system documentation |
 
 ---

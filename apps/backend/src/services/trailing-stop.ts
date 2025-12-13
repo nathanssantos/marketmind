@@ -1,4 +1,4 @@
-import type { Kline as KlineType, Interval } from '@marketmind/types';
+import type { Kline as KlineType, Interval, TrailingStopOptimizationConfig } from '@marketmind/types';
 import { calculateSwingPoints } from '@marketmind/indicators';
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../db';
@@ -6,9 +6,13 @@ import { klines, tradeExecutions } from '../db/schema';
 import type { TradeExecution } from '../db/schema';
 import { logger } from './logger';
 
-const SWING_LOOKBACK = 3;
-const BREAKEVEN_PROFIT_THRESHOLD = 0.005;
-const MIN_TRAILING_DISTANCE_PERCENT = 0.002;
+export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
+  breakevenProfitThreshold: 0.005,
+  minTrailingDistancePercent: 0.002,
+  swingLookback: 3,
+  useATRMultiplier: false,
+  atrMultiplier: 2.5,
+};
 
 export interface TrailingStopUpdate {
   executionId: string;
@@ -18,6 +22,20 @@ export interface TrailingStopUpdate {
 }
 
 export class TrailingStopService {
+  private config: TrailingStopOptimizationConfig;
+
+  constructor(config?: Partial<TrailingStopOptimizationConfig>) {
+    this.config = { ...DEFAULT_TRAILING_STOP_CONFIG, ...config };
+  }
+
+  updateConfig(config: Partial<TrailingStopOptimizationConfig>): void {
+    this.config = { ...this.config, ...config };
+  }
+
+  getConfig(): TrailingStopOptimizationConfig {
+    return { ...this.config };
+  }
+
   async updateTrailingStops(): Promise<TrailingStopUpdate[]> {
     const updates: TrailingStopUpdate[] = [];
 
@@ -98,7 +116,7 @@ export class TrailingStopService {
     }));
 
     const currentPrice = parseFloat(mappedKlines[mappedKlines.length - 1]!.close);
-    const { swingPoints } = calculateSwingPoints(mappedKlines, SWING_LOOKBACK);
+    const { swingPoints } = calculateSwingPoints(mappedKlines, this.config.swingLookback);
 
     for (const execution of executions) {
       const update = await this.calculateTrailingStop(
@@ -131,7 +149,7 @@ export class TrailingStopService {
       ? (currentPrice - entryPrice) / entryPrice
       : (entryPrice - currentPrice) / entryPrice;
 
-    if (profitPercent >= BREAKEVEN_PROFIT_THRESHOLD) {
+    if (profitPercent >= this.config.breakevenProfitThreshold) {
       const breakevenPrice = entryPrice * (isLong ? 1.001 : 0.999);
 
       if (currentStopLoss === null ||
@@ -153,7 +171,7 @@ export class TrailingStopService {
 
           if (validSwingLows.length > 0) {
             const swingLow = validSwingLows[0]!.price;
-            const buffer = swingLow * MIN_TRAILING_DISTANCE_PERCENT;
+            const buffer = swingLow * this.config.minTrailingDistancePercent;
             trailingStop = swingLow - buffer;
           }
         } else {
@@ -163,7 +181,7 @@ export class TrailingStopService {
 
           if (validSwingHighs.length > 0) {
             const swingHigh = validSwingHighs[0]!.price;
-            const buffer = swingHigh * MIN_TRAILING_DISTANCE_PERCENT;
+            const buffer = swingHigh * this.config.minTrailingDistancePercent;
             trailingStop = swingHigh + buffer;
           }
         }

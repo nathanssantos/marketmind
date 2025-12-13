@@ -8,6 +8,7 @@ import { exportCommand } from './commands/export';
 import { generateTrainingDataCommand } from './commands/generate-training-data';
 import { montecarloCommand } from './commands/montecarlo';
 import { optimizeCommand } from './commands/optimize';
+import { optimizeFullSystemCommand } from './commands/optimize-full-system';
 import { sensitivityCommand } from './commands/sensitivity';
 import { validateCommand } from './commands/validate';
 import { walkforwardCommand } from './commands/walkforward';
@@ -185,6 +186,23 @@ program
   .option('--min-trades <n>', 'Minimum trades per strategy/symbol/interval combo', '5')
   .option('-v, --verbose', 'Show detailed logs', false)
   .action(generateTrainingDataCommand);
+
+program
+  .command('optimize-full')
+  .description('Optimize full trading system (ML threshold + pyramiding + trailing stop)')
+  .requiredOption('-s, --strategy <type>', 'Strategy to optimize (e.g., setup91, setup92)')
+  .requiredOption('--symbol <symbol>', 'Trading symbol (e.g., BTCUSDT, ETHUSDT, SOLUSDT)')
+  .requiredOption('-i, --interval <interval>', 'Timeframe (e.g., 1h, 4h, 1d)')
+  .requiredOption('--start <date>', 'Start date (YYYY-MM-DD)')
+  .requiredOption('--end <date>', 'End date (YYYY-MM-DD)')
+  .option('-c, --capital <amount>', 'Initial capital in USD', '1000')
+  .option('--preset <name>', 'Optimization preset: quick, balanced, thorough', 'balanced')
+  .option('--parallel <n>', 'Number of parallel workers', '4')
+  .option('--top <n>', 'Number of top results to display', '10')
+  .option('--min-trades <n>', 'Minimum trades for valid result', '10')
+  .option('-o, --output <dir>', 'Output directory for results')
+  .option('-v, --verbose', 'Show detailed logs', false)
+  .action(optimizeFullSystemCommand);
 
 program.exitOverride();
 

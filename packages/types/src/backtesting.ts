@@ -147,7 +147,7 @@ export interface PyramidingConfig {
   mlConfidenceBoost: number;
 }
 
-export interface TrailingStopConfig {
+export interface TrailingStopOptimizationConfig {
   breakevenProfitThreshold: number;
   minTrailingDistancePercent: number;
   swingLookback: number;
@@ -169,7 +169,7 @@ export interface FullSystemOptimizationConfig {
 
   mlThresholds: number[];
   pyramidingConfigs: Partial<PyramidingConfig>[];
-  trailingStopConfigs: Partial<TrailingStopConfig>[];
+  trailingStopConfigs: Partial<TrailingStopOptimizationConfig>[];
 
   walkForward: {
     trainingMonths: number;
@@ -204,7 +204,7 @@ export interface OptimizationResultEntry {
   params: {
     mlThreshold: number;
     pyramiding: Partial<PyramidingConfig>;
-    trailingStop: Partial<TrailingStopConfig>;
+    trailingStop: Partial<TrailingStopOptimizationConfig>;
   };
   metrics: BacktestMetrics;
   walkForwardValidated?: boolean;

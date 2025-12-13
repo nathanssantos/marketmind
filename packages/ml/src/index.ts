@@ -77,6 +77,14 @@ export {
 } from './constants/modelConfig';
 
 export {
+  ML_THRESHOLDS_BY_TIMEFRAME,
+  getThresholdForTimeframe,
+  updateThresholdForTimeframe,
+  setThresholdsFromOptimization,
+  getAllThresholds,
+} from './constants/optimizedThresholds';
+
+export {
   DatasetBuilder,
   TrainingConfigBuilder,
   createDefaultTrainingConfig,
