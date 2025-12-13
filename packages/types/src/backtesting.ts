@@ -138,3 +138,88 @@ export interface BacktestSummary {
   createdAt: string;
   status: 'RUNNING' | 'COMPLETED' | 'FAILED';
 }
+
+export interface PyramidingConfig {
+  profitThreshold: number;
+  minDistance: number;
+  maxEntries: number;
+  scaleFactor: number;
+  mlConfidenceBoost: number;
+}
+
+export interface TrailingStopConfig {
+  breakevenProfitThreshold: number;
+  minTrailingDistancePercent: number;
+  swingLookback: number;
+  useATRMultiplier: boolean;
+  atrMultiplier: number;
+}
+
+export interface TimeframeThreshold {
+  minProbability: number;
+  minConfidence: number;
+}
+
+export interface FullSystemOptimizationConfig {
+  symbol: string;
+  interval: string;
+  startDate: string;
+  endDate: string;
+  initialCapital: number;
+
+  mlThresholds: number[];
+  pyramidingConfigs: Partial<PyramidingConfig>[];
+  trailingStopConfigs: Partial<TrailingStopConfig>[];
+
+  walkForward: {
+    trainingMonths: number;
+    testingMonths: number;
+    stepMonths: number;
+    minWindows: number;
+  };
+
+  minTrades: number;
+  maxDegradation: number;
+  topResultsForValidation: number;
+}
+
+export interface OptimizationResult {
+  id: string;
+  config: FullSystemOptimizationConfig;
+  totalCombinations: number;
+  completedCombinations: number;
+  results: OptimizationResultEntry[];
+  bestResult?: OptimizationResultEntry;
+  walkForwardResults?: WalkForwardResult[];
+  calibratedThresholds?: Record<string, TimeframeThreshold>;
+  startTime: string;
+  endTime?: string;
+  duration?: number;
+  status: 'RUNNING' | 'COMPLETED' | 'FAILED';
+  error?: string;
+}
+
+export interface OptimizationResultEntry {
+  id: string;
+  params: {
+    mlThreshold: number;
+    pyramiding: Partial<PyramidingConfig>;
+    trailingStop: Partial<TrailingStopConfig>;
+  };
+  metrics: BacktestMetrics;
+  walkForwardValidated?: boolean;
+  degradationPercent?: number;
+  rank?: number;
+}
+
+export interface WalkForwardResult {
+  windowIndex: number;
+  trainingStart: string;
+  trainingEnd: string;
+  testingStart: string;
+  testingEnd: string;
+  inSampleMetrics: BacktestMetrics;
+  outOfSampleMetrics: BacktestMetrics;
+  degradationPercent: number;
+  isRobust: boolean;
+}

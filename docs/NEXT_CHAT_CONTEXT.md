@@ -26,7 +26,7 @@ Copy this entire document and paste it in a new Claude Code chat to continue.
    - 139 features including `interval_encoded`
 
 4. **Trading System Infrastructure**
-   - Pyramiding: `apps/backend/src/services/pyramiding.ts`
+   - Pyramiding: `apps/backend/src/services/pyramiding.ts` (now configurable!)
    - Trailing Stop: `apps/backend/src/services/trailing-stop.ts`
    - Position Monitor: `apps/backend/src/services/position-monitor.ts`
    - Auto-Trading Scheduler: `apps/backend/src/services/auto-trading-scheduler.ts`
@@ -42,22 +42,30 @@ Copy this entire document and paste it in a new Claude Code chat to continue.
    - Ceiling: 100% of maxPositionSize
    - File: `apps/backend/src/services/pyramiding.ts`
 
-7. **maxPositionSize Updated to 50%**
-   - Database updated: `auto_trading_config.max_position_size = 50`
-   - Position sizes now range from 10% to 50% based on ML confidence
-
-8. **Auto-Trading Connected to Real Execution**
+7. **Auto-Trading Connected to Real Execution**
    - File: `apps/backend/src/services/auto-trading-scheduler.ts`
    - Wallet types: `live`/`testnet` → real Binance orders, `paper` → DB only
    - MARKET orders for entries, STOP_LOSS_LIMIT for SL, LIMIT for TP
-   - Stores actual fill price/quantity from Binance in `trade_executions`
-   - **Safety flag**: `ENABLE_LIVE_TRADING=false` in `.env` disables real orders (default: false)
+   - **Safety flag**: `ENABLE_LIVE_TRADING=false` in `.env` (default: false)
 
-9. **Complete Binance Integration**
-   - `closeTradeExecution` - executes MARKET exit order on Binance (live/testnet)
-   - `closePosition` - executes MARKET exit order on Binance (live/testnet)
-   - `getPortfolio` - fetches all assets from Binance, calculates total value in USDT
-   - All endpoints respect `ENABLE_LIVE_TRADING` flag
+8. **Pyramiding Made Configurable**
+   - `PyramidConfig` interface exported
+   - `DEFAULT_PYRAMIDING_CONFIG` constant exported
+   - Constructor accepts custom config
+   - `updateConfig()` and `getConfig()` methods added
+
+9. **Optimization Types Added**
+   - `packages/types/src/backtesting.ts` now includes:
+     - `PyramidingConfig`, `TrailingStopConfig`
+     - `TimeframeThreshold`, `FullSystemOptimizationConfig`
+     - `OptimizationResult`, `OptimizationResultEntry`
+     - `WalkForwardResult`
+
+10. **i18n Fixes for Trading Sidebar**
+    - Fixed broken badges in `OrdersList.tsx` (status mapping)
+    - Updated `Portfolio.tsx` to use `tradeExecutions` data
+    - Added Analytics tab translations (EN/PT/ES/FR)
+    - All performance/stats components now use i18n
 
 ### In Progress
 
@@ -92,18 +100,15 @@ cp models/setup-classifier-v3.json ../../apps/backend/models/
    - Expected: ~1M+ samples
    - Will improve model coverage for short timeframes
 
-2. **✅ Connect Auto-Trading to Real Execution** (COMPLETED)
-   - Auto-trading scheduler now executes real Binance orders for `live` and `testnet` wallets
-   - Paper wallets (`paper` type) continue with DB-only simulation
-   - Entry orders placed as MARKET orders for immediate execution
-   - Stop loss and take profit orders automatically placed after entry
-   - `entryOrderId` stored in `trade_executions` table
-   - Actual fill price and quantity from Binance used (not setup estimates)
-
-3. **Phase 9: Full System Optimization** (from OPTIMIZATION_PIPELINE_PLAN.md)
-   - Grid search on pyramiding/trailing stop parameters
-   - Walk-forward validation
-   - Per-timeframe ML threshold calibration
+2. **Phase 9: Full System Optimization**
+   - Create `trailing-stop.ts` service with configurable params
+   - Create `FullSystemOptimizer.ts` orchestrator service
+   - Create `optimize-full-system.ts` CLI command
+   - Create per-timeframe ML threshold constants
+   - Integrate calibrated thresholds in auto-trading-scheduler
+   - **Plan docs:**
+     - `docs/OPTIMIZATION_PIPELINE_PLAN.md` - Original 8-phase design
+     - `docs/OPTIMIZATION_IMPROVEMENTS_PLAN.md` - Implementation details
 
 ---
 
@@ -116,9 +121,12 @@ cp models/setup-classifier-v3.json ../../apps/backend/models/
 | `apps/backend/src/services/auto-trading.ts` | Has `executeBinanceOrder()` |
 | `apps/backend/src/services/pyramiding.ts` | Position scaling logic + ML-based sizing |
 | `apps/backend/src/services/trailing-stop.ts` | Trailing stop logic |
+| `packages/types/src/backtesting.ts` | Optimization types |
 | `packages/ml/scripts/concatenate_training.sh` | CSV concatenation script |
 | `packages/ml/scripts/train_setup_classifier.py` | Model training script |
 | `docs/OPTIMIZATION_PIPELINE_PLAN.md` | Full optimization pipeline plan |
+| `docs/OPTIMIZATION_IMPROVEMENTS_PLAN.md` | Implementation details for optimization |
+| `docs/ML_IMPLEMENTATION_PLAN.md` | ML implementation plan (Phase 9) |
 | `docs/TRADING_SYSTEM.md` | Trading system documentation |
 
 ---
@@ -134,7 +142,7 @@ baseSizePercent = Math.max(baseSizePercent, maxPositionSize × 0.2)  // Floor 20
 baseSizePercent = Math.min(baseSizePercent, maxPositionSize)       // Ceiling 100%
 
 // Pyramid entries
-pyramidSize = baseQuantity × PYRAMID_SCALE_FACTOR × mlConfidence
+pyramidSize = baseQuantity × config.scaleFactor × mlConfidence
 pyramidSize = Math.max(pyramidSize, baseQuantity × 0.2)            // Floor 20%
 ```
 
@@ -148,20 +156,33 @@ pyramidSize = Math.max(pyramidSize, baseQuantity × 0.2)            // Floor 20%
 
 ---
 
-## Recent Fixes Applied
+## Optimization System Status
 
-1. **Position Grouping by Direction** - Fixed SL/TP visualization for LONG vs SHORT
-   - `useOrderLinesRenderer.ts`: Changed grouping key to `${symbol}-${direction}`
+### What Already Exists
+- **BacktestOptimizer** - Grid search with parallel workers
+- **WalkForwardOptimizer** - Walk-forward validation (6mo train, 2mo test)
+- **ParameterGenerator** - Parameter combination generation
+- **optimize.ts CLI** - Grid search command with presets
 
-2. **Opposite Direction Prevention** - Blocks opening LONG when SHORT exists (One-Way Mode)
-   - `auto-trading-scheduler.ts`: Added check before opening new positions
+### What Needs to Be Built
+- **TrailingStopService** - Configurable trailing stop params
+- **FullSystemOptimizer** - Orchestrates ML + pyramiding + trailing stop optimization
+- **optimize-full-system CLI** - New command for full system optimization
+- **Per-timeframe ML thresholds** - Calibrated thresholds by interval
 
-3. **Pyramiding Integration** - Connected pyramiding service to auto-trading scheduler
-   - Evaluates if pyramid is possible before creating new entries
-   - Adjusts stop loss to breakeven after pyramid entries
+### Parameter Grid (Balanced Preset)
+```
+ML Thresholds: [0.03, 0.05, 0.07, 0.10] = 4 values
+Pyramiding:
+  - profitThreshold: [0.005, 0.01, 0.015]
+  - scaleFactor: [0.7, 0.8, 0.9]
+  - maxEntries: [3, 5]
+Trailing:
+  - breakevenThreshold: [0.003, 0.005, 0.007]
+  - minDistance: [0.001, 0.002]
 
-4. **ML-Driven Position Sizing** - Replaced fixed multiplier tiers with ML confidence
-   - Position size scales directly with model confidence
+Total: 4 × 3 × 3 × 2 × 3 × 2 = 432 combinations
+```
 
 ---
 
@@ -173,7 +194,7 @@ pyramidSize = Math.max(pyramidSize, baseQuantity × 0.2)            // Floor 20%
   - Auto-trading with real order execution
   - Manual position/execution close with real Binance orders
   - Full portfolio fetch (all assets with USDT valuation)
-- **Live Trading Flow**: Setup detected → ML filter → Risk validation → MARKET entry order → SL/TP orders
+- **Live Trading Flow**: Setup detected → ML filter → Risk validation → MARKET entry → SL/TP orders
 - **Safety**: All real execution controlled by `ENABLE_LIVE_TRADING` env flag (default: false)
 - **Not Implemented**: Futures, OCO orders, margin trading
 
@@ -190,19 +211,6 @@ pyramidSize = Math.max(pyramidSize, baseQuantity × 0.2)            // Floor 20%
 | Samples | 6,310 | **464,136** |
 
 v2 is more conservative (lower recall) but better discrimination (higher AUC).
-
----
-
-## Database Configuration
-
-```sql
--- Current auto_trading_config
-SELECT * FROM auto_trading_config;
-
--- Key values:
--- max_position_size: 50 (%)
--- max_concurrent_positions: 3
-```
 
 ---
 
@@ -247,10 +255,16 @@ Continuing MarketMind development. See docs/NEXT_CHAT_CONTEXT.md for full contex
 
 Current priorities:
 1. Check if 1m training data is complete and retrain model if so
-2. Connect auto-trading scheduler to real order execution
-3. Implement full system optimization pipeline
+2. Continue Phase 9: Full System Optimization Pipeline
+   - Create TrailingStopService with configurable params
+   - Create FullSystemOptimizer service
+   - Create optimize-full-system CLI command
+   - Add per-timeframe ML threshold constants
 
-Reference: docs/OPTIMIZATION_PIPELINE_PLAN.md
+Reference docs:
+- docs/OPTIMIZATION_IMPROVEMENTS_PLAN.md (implementation details)
+- docs/OPTIMIZATION_PIPELINE_PLAN.md (8-phase design)
+- docs/ML_IMPLEMENTATION_PLAN.md (Phase 9)
 
 Branch: main
 ```
@@ -262,7 +276,8 @@ Branch: main
 Read these files first:
 1. `/CLAUDE.md` - Project conventions
 2. `/docs/TRADING_SYSTEM.md` - Trading system architecture
-3. `/docs/OPTIMIZATION_PIPELINE_PLAN.md` - Optimization pipeline plan
-4. `/apps/backend/src/services/auto-trading-scheduler.ts` - Main scheduler
-5. `/apps/backend/src/services/pyramiding.ts` - Position sizing + pyramiding
-6. `/apps/backend/src/services/auto-trading.ts` - Order execution methods
+3. `/docs/OPTIMIZATION_IMPROVEMENTS_PLAN.md` - Current optimization plan
+4. `/docs/OPTIMIZATION_PIPELINE_PLAN.md` - Original pipeline design
+5. `/apps/backend/src/services/auto-trading-scheduler.ts` - Main scheduler
+6. `/apps/backend/src/services/pyramiding.ts` - Position sizing + pyramiding
+7. `/packages/types/src/backtesting.ts` - Optimization types

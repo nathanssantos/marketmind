@@ -5,12 +5,6 @@ import type { TradeExecution } from '../db/schema';
 import { logger } from './logger';
 import { positionMonitorService } from './position-monitor';
 
-const PYRAMID_PROFIT_THRESHOLD = 0.01;
-const PYRAMID_MIN_DISTANCE = 0.005;
-const PYRAMID_MAX_ENTRIES = 5;
-const PYRAMID_SCALE_FACTOR = 0.8;
-const PYRAMID_ML_CONFIDENCE_BOOST = 1.2;
-
 export interface PyramidEvaluation {
   canPyramid: boolean;
   reason: string;
@@ -22,21 +16,35 @@ export interface PyramidEvaluation {
 }
 
 export interface PyramidConfig {
-  maxEntries: number;
   profitThreshold: number;
   minDistance: number;
+  maxEntries: number;
   scaleFactor: number;
   mlConfidenceBoost: number;
 }
 
+export const DEFAULT_PYRAMIDING_CONFIG: PyramidConfig = {
+  profitThreshold: 0.01,
+  minDistance: 0.005,
+  maxEntries: 5,
+  scaleFactor: 0.8,
+  mlConfidenceBoost: 1.2,
+};
+
 export class PyramidingService {
-  private defaultConfig: PyramidConfig = {
-    maxEntries: PYRAMID_MAX_ENTRIES,
-    profitThreshold: PYRAMID_PROFIT_THRESHOLD,
-    minDistance: PYRAMID_MIN_DISTANCE,
-    scaleFactor: PYRAMID_SCALE_FACTOR,
-    mlConfidenceBoost: PYRAMID_ML_CONFIDENCE_BOOST,
-  };
+  private config: PyramidConfig;
+
+  constructor(config?: Partial<PyramidConfig>) {
+    this.config = { ...DEFAULT_PYRAMIDING_CONFIG, ...config };
+  }
+
+  updateConfig(config: Partial<PyramidConfig>): void {
+    this.config = { ...this.config, ...config };
+  }
+
+  getConfig(): PyramidConfig {
+    return { ...this.config };
+  }
 
   async evaluatePyramid(
     userId: string,
@@ -47,7 +55,7 @@ export class PyramidingService {
     mlConfidence?: number,
     config?: Partial<PyramidConfig>
   ): Promise<PyramidEvaluation> {
-    const pyramidConfig = { ...this.defaultConfig, ...config };
+    const pyramidConfig = { ...this.config, ...config };
 
     const openExecutions = await db
       .select()
@@ -255,16 +263,16 @@ export class PyramidingService {
       ? (currentPrice - avgEntryPrice) / avgEntryPrice
       : (avgEntryPrice - currentPrice) / avgEntryPrice;
 
-    if (profitPercent < PYRAMID_PROFIT_THRESHOLD) {
+    if (profitPercent < this.config.profitThreshold) {
       return {
         quantity: 0,
         sizePercent: 0,
-        reason: `Position not in profit (${(profitPercent * 100).toFixed(2)}%), waiting for ${(PYRAMID_PROFIT_THRESHOLD * 100).toFixed(1)}%`,
+        reason: `Position not in profit (${(profitPercent * 100).toFixed(2)}%), waiting for ${(this.config.profitThreshold * 100).toFixed(1)}%`,
       };
     }
 
     const baseQuantity = parseFloat(openExecutions[0]?.quantity || '0');
-    let pyramidSize = baseQuantity * Math.pow(PYRAMID_SCALE_FACTOR, openExecutions.length);
+    let pyramidSize = baseQuantity * Math.pow(this.config.scaleFactor, openExecutions.length);
 
     if (mlConfidence) {
       pyramidSize *= mlConfidence;

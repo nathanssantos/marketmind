@@ -2048,7 +2048,9 @@ Antes de treinar os modelos ML, precisamos validar as estratégias existentes:
 
 Pipeline completo de otimização que combina ML + trading system parameters (pyramiding, trailing stops) com walk-forward validation.
 
-**Detailed Plan:** See [OPTIMIZATION_PIPELINE_PLAN.md](./OPTIMIZATION_PIPELINE_PLAN.md)
+**Detailed Plans:**
+- [OPTIMIZATION_PIPELINE_PLAN.md](./OPTIMIZATION_PIPELINE_PLAN.md) - Original 8-phase pipeline design
+- [OPTIMIZATION_IMPROVEMENTS_PLAN.md](./OPTIMIZATION_IMPROVEMENTS_PLAN.md) - Implementation details and improvements
 
 ### 9.2 Pipeline Summary
 
@@ -2091,7 +2093,8 @@ Pipeline completo de otimização que combina ML + trading system parameters (py
 | Create optimization CLI | ⏳ | `apps/backend/src/cli/commands/optimize-full-system.ts` |
 | Implement FullSystemOptimizer | ⏳ | `apps/backend/src/services/backtesting/FullSystemOptimizer.ts` |
 | Create threshold constants | ⏳ | `packages/ml/src/constants/optimizedThresholds.ts` |
-| Make pyramiding configurable | ⏳ | `apps/backend/src/services/pyramiding.ts` |
+| Make pyramiding configurable | ✅ | `apps/backend/src/services/pyramiding.ts` |
+| Add optimization types | ✅ | `packages/types/src/backtesting.ts` |
 | Make trailing stop configurable | ⏳ | `apps/backend/src/services/trailing-stop.ts` |
 | Integrate calibrated thresholds | ⏳ | `apps/backend/src/services/auto-trading-scheduler.ts` |
 | Export results | ⏳ | JSON + Markdown reports |
