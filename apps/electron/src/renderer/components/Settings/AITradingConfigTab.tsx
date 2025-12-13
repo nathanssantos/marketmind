@@ -4,7 +4,7 @@ import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Select } from '@/renderer/components/ui/select';
 import { Switch } from '@/renderer/components/ui/switch';
 import { useAIStore } from '@/renderer/store';
-import { useTradingStore } from '@/renderer/store/tradingStore';
+import { useBackendWallet } from '@/renderer/hooks/useBackendWallet';
 import {
   Box,
   HStack,
@@ -41,8 +41,14 @@ export const AITradingConfigTab = (): React.ReactElement => {
     clearTradingHistory,
   } = useAIStore();
 
-  const { getActiveWallet } = useTradingStore();
-  const wallet = getActiveWallet();
+  const { wallets } = useBackendWallet();
+  const backendWallet = wallets[0];
+  const wallet = backendWallet ? {
+    id: backendWallet.id,
+    name: backendWallet.name,
+    balance: parseFloat(backendWallet.currentBalance || '0'),
+    currency: (backendWallet.currency || 'USDT') as any,
+  } : null;
 
   const [localConfig, setLocalConfig] = useState(tradingConfig);
 

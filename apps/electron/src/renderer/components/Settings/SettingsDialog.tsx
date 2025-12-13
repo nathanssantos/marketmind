@@ -14,7 +14,6 @@ import { GeneralTab } from './GeneralTab';
 import { NewsConfigTab } from './NewsConfigTab';
 import { PatternDetectionTab } from './PatternDetectionTab';
 import { SetupConfigTab } from './SetupConfigTab';
-import { TradingSimulatorTab } from './TradingSimulatorTab';
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -55,7 +54,6 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 <Tabs.Trigger value="setupDetection">{t('settings.tabs.setupDetection')}</Tabs.Trigger>
                 <Tabs.Trigger value="patternDetection">{t('settings.tabs.patternDetection')}</Tabs.Trigger>
                 <Tabs.Trigger value="news">{t('settings.tabs.news')}</Tabs.Trigger>
-                <Tabs.Trigger value="tradingSimulator">{t('settings.tabs.tradingSimulator')}</Tabs.Trigger>
                 <Tabs.Trigger value="about">{t('settings.tabs.about')}</Tabs.Trigger>
               </Tabs.List>
 
@@ -96,10 +94,6 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
 
                 <Tabs.Content value="news">
                   <NewsConfigTab />
-                </Tabs.Content>
-
-                <Tabs.Content value="tradingSimulator">
-                  <TradingSimulatorTab />
                 </Tabs.Content>
 
                 <Tabs.Content value="about">

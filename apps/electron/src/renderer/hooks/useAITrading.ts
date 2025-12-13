@@ -2,7 +2,8 @@ import type { Timeframe } from '@/renderer/components/Chart/TimeframeSelector';
 import { AIService } from '@/renderer/services/ai/AIService';
 import { AITradingAgent, type AITradingAgentConfig } from '@/renderer/services/ai/AITradingAgent';
 import { useAIStore } from '@/renderer/store/aiStore';
-import { useTradingStore } from '@/renderer/store/tradingStore';
+import { useBackendWallet } from './useBackendWallet';
+import { useBackendTrading } from './useBackendTrading';
 import type { AITradingDecision, Kline } from '@marketmind/types';
 import { useCallback, useEffect, useRef } from 'react';
 import { useSetupDetection } from './useSetupDetection';
@@ -38,8 +39,20 @@ export const useAITrading = (options: UseAITradingOptions) => {
   const calculateTradingStats = useAIStore((state) => state.calculateTradingStats);
   const settings = useAIStore((state) => state.settings);
 
-  const addOrder = useTradingStore((state) => state.addOrder);
-  const getActiveWallet = useTradingStore((state) => state.getActiveWallet);
+  const { wallets } = useBackendWallet();
+  const activeWalletId = wallets[0]?.id;
+  const { createOrder } = useBackendTrading(activeWalletId || '', options.symbol);
+
+  const getActiveWallet = useCallback(() => {
+    const backendWallet = wallets[0];
+    if (!backendWallet) return null;
+    return {
+      id: backendWallet.id,
+      name: backendWallet.name,
+      balance: parseFloat(backendWallet.currentBalance || '0'),
+      currency: (backendWallet.currency || 'USDT') as any,
+    };
+  }, [wallets]);
 
   const getChartData = useCallback(() => {
     if (!options.symbol || options.klines.length === 0) return null;
@@ -63,32 +76,25 @@ export const useAITrading = (options: UseAITradingOptions) => {
     async (decision: AITradingDecision, quantity: number): Promise<string | null> => {
       try {
         const wallet = getActiveWallet();
-        if (!wallet) throw new Error('No active wallet');
+        if (!wallet || !activeWalletId) throw new Error('No active wallet');
 
-        const order = {
-          walletId: wallet.id,
+        await createOrder({
+          walletId: activeWalletId,
           symbol: options.symbol,
-          orderDirection: decision.action === 'buy' ? ('long' as const) : ('short' as const),
-          subType: 'limit' as const,
-          quantity,
-          entryPrice: decision.entryPrice,
-          stopLoss: decision.stopLoss,
-          takeProfit: decision.takeProfit,
-          status: 'FILLED' as const,
-          expiration: {
-            type: 'gtc' as const,
-          },
-        };
+          side: decision.action === 'buy' ? 'BUY' : 'SELL',
+          type: 'LIMIT',
+          quantity: quantity.toString(),
+          price: decision.entryPrice.toString(),
+          stopPrice: decision.stopLoss?.toString(),
+        });
 
-        addOrder(order);
-        
         return wallet.id;
       } catch (error) {
         console.error('Failed to execute trade:', error);
         return null;
       }
     },
-    [addOrder, getActiveWallet, options.symbol]
+    [createOrder, getActiveWallet, options.symbol, activeWalletId]
   );
 
   const startTrading = useCallback(async () => {

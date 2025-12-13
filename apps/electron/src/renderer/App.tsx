@@ -1,7 +1,7 @@
 import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { AIPattern, Kline, Viewport } from '@marketmind/types';
-import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume, getOrderId, isOrderActive, isOrderLong, isOrderPending } from '@shared/utils';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
@@ -33,7 +33,6 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { useNews } from './hooks/useNews';
 import { usePatterns } from './hooks/usePatterns';
 import { useAIStore } from './store/aiStore';
-import { useTradingStore } from './store/tradingStore';
 import { system } from './theme';
 import { toaster } from './utils/toaster';
 
@@ -192,20 +191,15 @@ function AppContent(): ReactElement {
     paddingRight: CHART_CONFIG.CANVAS_PADDING_RIGHT,
   });
 
-  const syncWithElectron = useTradingStore((state) => state.syncWithElectron);
   const syncAIStore = useAIStore((state) => state.syncWithElectron);
 
   useEffect(() => {
-    void syncWithElectron();
     void syncAIStore();
   }, []);
 
   const restoreActiveConversation = useAIStore((state) => state.restoreActiveConversation);
   const setActiveConversationBySymbol = useAIStore((state) => state.setActiveConversationBySymbol);
   const getActiveConversation = useAIStore((state) => state.getActiveConversation);
-
-  const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
-  const toggleSimulator = useTradingStore((state) => state.toggleSimulator);
 
   const toggleChat = useCallback(() => {
     setIsChatOpen((prev) => !prev);
@@ -342,10 +336,8 @@ function AppContent(): ReactElement {
 
   const [liveKlines, setLiveKlines] = useState<Kline[]>([]);
   const previousPriceRef = useRef<number | null>(null);
-  const appLoadTimeRef = useRef(Date.now());
   const pendingUpdateRef = useRef<{ kline: Kline; isFinal: boolean } | null>(null);
   const rafIdRef = useRef<number | null>(null);
-  const lastOrderUpdateRef = useRef<number>(0);
 
   useEffect(() => {
     setLiveKlines([]);
@@ -370,54 +362,6 @@ function AppContent(): ReactElement {
 
       const { kline: latestKline, isFinal: finalFlag } = update;
       const currentPrice = getKlineClose(latestKline);
-      const previousPrice = previousPriceRef.current;
-
-      const now = Date.now();
-      const shouldUpdateOrders = now - lastOrderUpdateRef.current > 500;
-
-      if (previousPrice !== null && previousPrice !== currentPrice && shouldUpdateOrders) {
-        const state = useTradingStore.getState();
-        if (state.isSimulatorActive) {
-          const hasPendingOrders = state.orders.some(o => isOrderPending(o) && o.symbol === symbol);
-          if (hasPendingOrders) {
-            state.fillPendingOrders(symbol, currentPrice, previousPrice, appLoadTimeRef.current);
-          }
-
-          const activeOrders = state.orders.filter(o => isOrderActive(o) && o.symbol === symbol);
-          activeOrders.forEach(order => {
-            const isLong = isOrderLong(order);
-
-            state.updateOrder(getOrderId(order), { currentPrice });
-
-            if (order.stopLoss) {
-              const stopHit = isLong
-                ? getKlineLow(latestKline) <= order.stopLoss
-                : getKlineHigh(latestKline) >= order.stopLoss;
-
-              if (stopHit) {
-                const orderId = getOrderId(order);
-                console.log(`[OCO] Stop Loss hit for order ${orderId.slice(0, 8)}... at ${order.stopLoss} (${isLong ? 'LONG' : 'SHORT'})`);
-                state.closeOrder(orderId, order.stopLoss);
-                return;
-              }
-            }
-
-            if (order.takeProfit) {
-              const targetHit = isLong
-                ? getKlineHigh(latestKline) >= order.takeProfit
-                : getKlineLow(latestKline) <= order.takeProfit;
-
-              if (targetHit) {
-                const orderId = getOrderId(order);
-                console.log(`[OCO] Take Profit hit for order ${orderId.slice(0, 8)}... at ${order.takeProfit} (${isLong ? 'LONG' : 'SHORT'})`);
-                state.closeOrder(orderId, order.takeProfit);
-                return;
-              }
-            }
-          });
-        }
-        lastOrderUpdateRef.current = now;
-      }
 
       previousPriceRef.current = currentPrice;
 
@@ -596,7 +540,6 @@ function AppContent(): ReactElement {
         showStochastic={showStochastic}
         showRSI={showRSI}
         movingAverages={movingAverages}
-        isSimulatorActive={isSimulatorActive}
         isTradingOpen={isTradingOpen}
         isChatOpen={isChatOpen}
         isNewsOpen={isNewsOpen}
@@ -613,7 +556,6 @@ function AppContent(): ReactElement {
         onShowStochasticChange={setShowStochastic}
         onShowRSIChange={setShowRSI}
         onMovingAveragesChange={setMovingAverages}
-        onToggleSimulator={toggleSimulator}
         onToggleBacktest={toggleBacktest}
         onToggleTrading={toggleTrading}
         onToggleChat={toggleChat}

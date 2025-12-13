@@ -1,11 +1,10 @@
 import type { BinanceNewOrderResult, BinanceOrderQueryResult } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
-import { MainClient } from 'binance';
 import { randomBytes } from 'crypto';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { orders, positions, tradeExecutions, wallets } from '../db/schema';
-import { decryptApiKey } from '../services/encryption';
+import { createBinanceClient, isPaperWallet } from '../services/binance-client';
 import { protectedProcedure, router } from '../trpc';
 
 const generateId = (length: number): string => {
@@ -56,13 +55,42 @@ export const tradingRouter = router({
       }
 
       try {
-        const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
-        const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
+        if (isPaperWallet(wallet)) {
+          const simulatedOrderId = Date.now();
+          const price = input.price || '0';
+          const quantity = input.quantity;
 
-        const client = new MainClient({
-          api_key: apiKey,
-          api_secret: apiSecret,
-        });
+          await ctx.db.insert(orders).values({
+            orderId: simulatedOrderId,
+            userId: ctx.user.id,
+            walletId: input.walletId,
+            symbol: input.symbol,
+            side: input.side,
+            type: input.type,
+            price,
+            origQty: quantity,
+            executedQty: input.type === 'MARKET' ? quantity : '0',
+            status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
+            timeInForce: input.type.includes('LIMIT') ? 'GTC' : undefined,
+            time: simulatedOrderId,
+            updateTime: simulatedOrderId,
+            setupId: input.setupId,
+            setupType: input.setupType,
+          });
+
+          return {
+            orderId: simulatedOrderId,
+            symbol: input.symbol,
+            side: input.side,
+            type: input.type,
+            status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
+            price,
+            quantity,
+            executedQty: input.type === 'MARKET' ? quantity : '0',
+          };
+        }
+
+        const client = createBinanceClient(wallet);
 
         const binanceOrder = await client.submitNewOrder({
           symbol: input.symbol,
@@ -136,13 +164,23 @@ export const tradingRouter = router({
       }
 
       try {
-        const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
-        const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
+        if (isPaperWallet(wallet)) {
+          await ctx.db
+            .update(orders)
+            .set({
+              status: 'CANCELED',
+              updateTime: Date.now(),
+            })
+            .where(eq(orders.orderId, input.orderId));
 
-        const client = new MainClient({
-          api_key: apiKey,
-          api_secret: apiSecret,
-        });
+          return {
+            orderId: input.orderId,
+            symbol: input.symbol,
+            status: 'CANCELED',
+          };
+        }
+
+        const client = createBinanceClient(wallet);
 
         const canceledOrder = await client.cancelOrder({
           symbol: input.symbol,
@@ -251,13 +289,11 @@ export const tradingRouter = router({
       }
 
       try {
-        const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
-        const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
+        if (isPaperWallet(wallet)) {
+          return { synced: 0, message: 'Paper wallets do not sync with Binance' };
+        }
 
-        const client = new MainClient({
-          api_key: apiKey,
-          api_secret: apiSecret,
-        });
+        const client = createBinanceClient(wallet);
 
         const binanceOrders = await client.getAllOrders({
           symbol: input.symbol,
@@ -492,6 +528,12 @@ export const tradingRouter = router({
         });
       }
 
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(eq(wallets.id, execution.walletId))
+        .limit(1);
+
       const entryPrice = parseFloat(execution.entryPrice);
       const exitPrice = parseFloat(input.exitPrice);
       const qty = parseFloat(execution.quantity);
@@ -504,6 +546,19 @@ export const tradingRouter = router({
       }
 
       const pnlPercent = (pnl / (entryPrice * qty)) * 100;
+
+      if (wallet) {
+        const currentBalance = parseFloat(wallet.currentBalance || '0');
+        const newBalance = currentBalance + pnl;
+
+        await ctx.db
+          .update(wallets)
+          .set({
+            currentBalance: newBalance.toString(),
+            updatedAt: new Date(),
+          })
+          .where(eq(wallets.id, wallet.id));
+      }
 
       await ctx.db
         .update(tradeExecutions)

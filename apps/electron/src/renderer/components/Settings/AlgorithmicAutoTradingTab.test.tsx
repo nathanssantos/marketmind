@@ -25,6 +25,34 @@ vi.mock('@renderer/hooks/useToast', () => ({
     }),
 }));
 
+vi.mock('@renderer/hooks/useBackendWallet', () => ({
+    useBackendWallet: () => ({
+        wallets: [{ id: 'wallet-1', name: 'Test Wallet', currentBalance: '1000', currency: 'USDT' }],
+        isLoading: false,
+    }),
+}));
+
+vi.mock('@renderer/hooks/useBackendAutoTrading', () => ({
+    useBackendAutoTrading: () => ({
+        isLoading: false,
+        startAutoTrading: vi.fn(),
+        stopAutoTrading: vi.fn(),
+    }),
+}));
+
+vi.mock('@/renderer/utils/trpc', () => ({
+    trpc: {
+        autoTrading: {
+            getConfig: {
+                useQuery: () => ({
+                    data: { enabledSetupTypes: ['setup-91', 'setup-92'] },
+                    isLoading: false,
+                }),
+            },
+        },
+    },
+}));
+
 vi.mock('@/renderer/store/setupStore', () => ({
     useSetupStore: vi.fn(() => ({
         isAutoTradingActive: false,

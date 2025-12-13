@@ -37,10 +37,6 @@ vi.mock('./NewsConfigTab', () => ({
     NewsConfigTab: () => <div>NewsConfigTab Content</div>,
 }));
 
-vi.mock('./TradingSimulatorTab', () => ({
-    TradingSimulatorTab: () => <div>TradingSimulatorTab Content</div>,
-}));
-
 vi.mock('./AlgorithmicAutoTradingTab', () => ({
     AlgorithmicAutoTradingTab: () => <div>AlgorithmicAutoTradingTab Content</div>,
 }));
@@ -118,7 +114,6 @@ describe('SettingsDialog', () => {
         expect(screen.getByText('settings.tabs.chart')).toBeDefined();
         expect(screen.getByText('settings.tabs.ai')).toBeDefined();
         expect(screen.getByText('settings.tabs.news')).toBeDefined();
-        expect(screen.getByText('settings.tabs.tradingSimulator')).toBeDefined();
         expect(screen.getByText('settings.tabs.about')).toBeDefined();
     });
 
@@ -181,22 +176,6 @@ describe('SettingsDialog', () => {
         fireEvent.click(newsTab);
 
         expect(screen.getByText('NewsConfigTab Content')).toBeDefined();
-    });
-
-    it('renders TradingSimulatorTab when tradingSimulator tab is clicked', () => {
-        renderWithChakra(
-            <SettingsDialog
-                isOpen={true}
-                onClose={mockOnClose}
-                advancedConfig={mockAdvancedConfig}
-                onAdvancedConfigChange={mockOnAdvancedConfigChange}
-            />
-        );
-
-        const tradingTab = screen.getByText('settings.tabs.tradingSimulator');
-        fireEvent.click(tradingTab);
-
-        expect(screen.getByText('TradingSimulatorTab Content')).toBeDefined();
     });
 
     it('renders AboutTab when about tab is clicked', () => {

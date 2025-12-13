@@ -21,12 +21,12 @@ import { useRSIWorker } from '@renderer/hooks/useRSIWorker';
 import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
-import { TradingFeeService } from '@renderer/services/TradingFeeService';
 import { useSetupStore } from '@renderer/store';
-import { useTradingStore } from '@renderer/store/tradingStore';
+import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
+import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
 import { trpc } from '@renderer/utils/trpc';
 import { CHART_CONFIG } from '@shared/constants';
-import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume, getOrderPrice, getOrderType, isOrderLong, isOrderPending } from '@shared/utils';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume, isOrderLong, isOrderPending } from '@shared/utils';
 import type React from 'react';
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -115,22 +115,24 @@ export const ChartCanvas = ({
   const { t } = useTranslation();
   const { warning } = useToast();
   const colors = useChartColors();
-  const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
-  const activeWalletId = useTradingStore((state) => state.activeWalletId);
-  const orders = useTradingStore((state) => state.orders);
-  const addOrder = useTradingStore((state) => state.addOrder);
-  const getQuantityForSymbol = useTradingStore((state) => state.getQuantityForSymbol);
-  const closeOrder = useTradingStore((state) => state.closeOrder);
-  const updateOrder = useTradingStore((state) => state.updateOrder);
+
+  const { wallets } = useBackendWallet();
+  const backendWalletId = wallets[0]?.id;
+  const {
+    createOrder: addBackendOrder,
+    closeExecution,
+  } = useBackendTrading(backendWalletId || '', symbol);
+
+  const hasTradingEnabled = !!backendWalletId;
+
+  const [quantityBySymbol] = useLocalStorage<Record<string, number>>('marketmind:quantityBySymbol', {});
+  const getQuantityForSymbol = (sym: string) => quantityBySymbol[sym] ?? 1;
 
   const detectedSetups = useSetupStore((state) => state.detectedSetups);
   const removeDetectedSetup = useSetupStore((state) => state.removeDetectedSetup);
   const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
   const isAutoTradingActive = useSetupStore((state) => state.isAutoTradingActive);
   const { getContext } = useMarketContext();
-
-  const { wallets } = useBackendWallet();
-  const backendWalletId = wallets[0]?.id;
 
   const { data: backendExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
     { walletId: backendWalletId ?? '', limit: 50 },
@@ -158,69 +160,44 @@ export const ChartCanvas = ({
   }, [backendExecutions, symbol]);
   const [hoveredSetup, setHoveredSetup] = useState<ReturnType<typeof useSetupStore.getState>['detectedSetups'][0] | null>(null);
 
-  const tradingFees = useTradingStore((state) => state.tradingFees);
-  const [feeService] = useState(() => {
-    const service = new TradingFeeService();
-    service.setFees(tradingFees);
-    return service;
-  });
-
-  useEffect(() => {
-    feeService.setFees(tradingFees);
-  }, [tradingFees, feeService]);
-
   const handleLongEntry = useCallback((price: number) => {
-    const state = useTradingStore.getState();
-    const activeWallet = state.wallets.find((w) => w.id === state.activeWalletId);
-
-    if (!activeWallet) {
+    if (!backendWalletId) {
       warning(t('trading.ticket.noWallet'));
       return;
     }
     if (!symbol) return;
 
-    const lastKline = klines[klines.length - 1];
-    const currentPrice = lastKline ? getKlineClose(lastKline) : undefined;
-
-    addOrder({
+    addBackendOrder({
+      walletId: backendWalletId,
       symbol,
-      side: 'BUY' as const,
-      status: 'NEW' as const,
-      entryPrice: price,
-      quantity: getQuantityForSymbol(symbol) ?? 1,
-      walletId: activeWallet.id,
-      ...(currentPrice !== undefined && { currentPrice }),
+      side: 'BUY',
+      type: 'LIMIT',
+      price: price.toString(),
+      quantity: (getQuantityForSymbol(symbol) ?? 1).toString(),
     });
-  }, [addOrder, symbol, klines, getQuantityForSymbol, warning, t]);
+  }, [addBackendOrder, symbol, getQuantityForSymbol, warning, t, backendWalletId]);
 
   const handleShortEntry = useCallback((price: number) => {
-    const state = useTradingStore.getState();
-    const activeWallet = state.wallets.find((w) => w.id === state.activeWalletId);
-
-    if (!activeWallet) {
+    if (!backendWalletId) {
       warning(t('trading.ticket.noWallet'));
       return;
     }
     if (!symbol) return;
 
-    const lastKline = klines[klines.length - 1];
-    const currentPrice = lastKline ? getKlineClose(lastKline) : undefined;
-
-    addOrder({
+    addBackendOrder({
+      walletId: backendWalletId,
       symbol,
-      side: 'SELL' as const,
-      status: 'NEW' as const,
-      entryPrice: price,
-      quantity: getQuantityForSymbol(symbol) ?? 1,
-      walletId: activeWallet.id,
-      ...(currentPrice !== undefined && { currentPrice }),
+      side: 'SELL',
+      type: 'LIMIT',
+      price: price.toString(),
+      quantity: (getQuantityForSymbol(symbol) ?? 1).toString(),
     });
-  }, [addOrder, symbol, klines, getQuantityForSymbol, warning, t]);
+  }, [addBackendOrder, symbol, getQuantityForSymbol, warning, t, backendWalletId]);
 
   const { shiftPressed, altPressed } = useTradingShortcuts({
     onLongEntry: handleLongEntry,
     onShortEntry: handleShortEntry,
-    enabled: isSimulatorActive && !isAutoTradingActive,
+    enabled: hasTradingEnabled && !isAutoTradingActive,
   });
 
   const [tooltipData, setTooltipData] = useState<{
@@ -309,36 +286,19 @@ export const ChartCanvas = ({
     }
   }, [mousePosition, getContext, symbol]);
 
-  const handleConfirmCloseOrder = useCallback((): void => {
+  const handleConfirmCloseOrder = useCallback(async (): Promise<void> => {
     if (!orderToClose || !manager) return;
 
-    if (orderToClose.startsWith('sltp-')) {
-      const parts = orderToClose.split('-');
-      const type = parts[1] as 'stopLoss' | 'takeProfit';
-      const orderIdsString = parts.slice(2).join('-');
-      const orderIds = orderIdsString.split(',').filter(id => id);
-
-      orderIds.forEach((orderId) => {
-        updateOrder(orderId, {
-          [type]: undefined,
-        });
-      });
-
-      setOrderToClose(null);
-      return;
+    const exec = filteredBackendExecutions.find((e) => e.id === orderToClose);
+    if (exec) {
+      const klines = manager.getKlines();
+      const lastKline = klines[klines.length - 1];
+      const exitPrice = lastKline ? getKlineClose(lastKline).toString() : '0';
+      await closeExecution(exec.id, exitPrice);
     }
 
-    const currentKlines = manager.getKlines();
-    if (!currentKlines.length) return;
-
-    const lastKline = currentKlines[currentKlines.length - 1];
-    if (!lastKline) return;
-
-    const currentPrice = getKlineClose(lastKline);
-
-    closeOrder(orderToClose, currentPrice);
     setOrderToClose(null);
-  }, [orderToClose, manager, closeOrder, updateOrder]);
+  }, [orderToClose, manager, filteredBackendExecutions, closeExecution]);
 
   const { render: renderGrid } = useGridRenderer({
     manager,
@@ -418,7 +378,7 @@ export const ChartCanvas = ({
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
   });
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, isSimulatorActive, hoveredOrderId, filteredBackendExecutions);
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderId, filteredBackendExecutions);
 
   const { render: renderWatermark } = useWatermarkRenderer({
     manager,
@@ -432,17 +392,12 @@ export const ChartCanvas = ({
   const lastKline = currentKlines[currentKlines.length - 1];
   const currentPrice = lastKline ? getKlineClose(lastKline) : 0;
 
-  const activeOrders = useMemo(
-    () => activeWalletId ? orders.filter(o => o.walletId === activeWalletId) : [],
-    [orders, activeWalletId]
-  );
-
   const orderDragHandler = useOrderDragHandler({
-    orders: activeOrders,
-    updateOrder,
+    orders: [],
+    updateOrder: () => {},
     priceToY: (price) => manager?.priceToY(price) ?? 0,
     yToPrice: (y) => manager?.yToPrice(y) ?? 0,
-    enabled: isSimulatorActive,
+    enabled: false,
     getOrderAtPosition: (x, y) => getOrderAtPosition(x, y),
     currentPrice,
   });
@@ -552,7 +507,7 @@ export const ChartCanvas = ({
     const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
     const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
 
-    if (isSimulatorActive && (shiftPressed || altPressed) && mouseY < timeScaleTop) {
+    if (hasTradingEnabled && (shiftPressed || altPressed) && mouseY < timeScaleTop) {
       const price = manager.yToPrice(mouseY);
       setOrderPreview({
         price,
@@ -939,7 +894,7 @@ export const ChartCanvas = ({
       }
     }
 
-    if (isSimulatorActive && (shiftPressed || altPressed)) {
+    if (hasTradingEnabled && (shiftPressed || altPressed)) {
       event.preventDefault();
       event.stopPropagation();
 
@@ -1084,7 +1039,7 @@ export const ChartCanvas = ({
       return;
     }
 
-    if (mousePosition && manager && isSimulatorActive) {
+    if (mousePosition && manager && hasTradingEnabled) {
       const dimensions = manager.getDimensions();
       if (!dimensions) return;
 
@@ -1098,7 +1053,7 @@ export const ChartCanvas = ({
         });
       }
     }
-  }, [shiftPressed, altPressed, mousePosition, manager, isSimulatorActive]);
+  }, [shiftPressed, altPressed, mousePosition, manager, hasTradingEnabled]);
 
   useEffect(() => {
     if (!manager) return;
@@ -1329,7 +1284,7 @@ export const ChartCanvas = ({
     showMeasurementArea,
     showMeasurementRuler,
     colors,
-    orders,
+    filteredBackendExecutions,
     hoveredOrderId,
     orderDragHandler,
     currentPrice,
@@ -1364,8 +1319,8 @@ export const ChartCanvas = ({
                     );
                   }
 
-                  const order = orders.find((o) => o.id === orderToClose);
-                  if (!order || !manager) return null;
+                  const exec = filteredBackendExecutions.find((e) => e.id === orderToClose);
+                  if (!exec || !manager) return null;
 
                   const klines = manager.getKlines();
                   if (!klines.length) return null;
@@ -1373,10 +1328,10 @@ export const ChartCanvas = ({
                   const lastKline = klines[klines.length - 1];
                   if (!lastKline) return null;
 
-                  const currentPrice = getKlineClose(lastKline);
-                  const isLong = isOrderLong(order);
-                  const entryPrice = getOrderPrice(order);
-                  const priceChange = currentPrice - entryPrice;
+                  const currentPriceVal = getKlineClose(lastKline);
+                  const isLong = exec.side === 'LONG';
+                  const entryPrice = parseFloat(exec.entryPrice);
+                  const priceChange = currentPriceVal - entryPrice;
                   const percentChange = isLong
                     ? (priceChange / entryPrice) * 100
                     : (-priceChange / entryPrice) * 100;
@@ -1386,9 +1341,9 @@ export const ChartCanvas = ({
                     <Box>
                       <Box mb={4}>
                         {t('trading.closeOrderConfirm', {
-                          type: getOrderType(order).toUpperCase(),
+                          type: exec.side,
                           entry: entryPrice.toFixed(2),
-                          current: currentPrice.toFixed(2),
+                          current: currentPriceVal.toFixed(2),
                         })}
                       </Box>
                       <Box

@@ -4,7 +4,6 @@ import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@c
 import { Select } from '@renderer/components/ui/select';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
-import { useTradingStore } from '@renderer/store/tradingStore';
 import type { Order, OrderStatus } from '@marketmind/types';
 import {
   getOrderId,
@@ -21,25 +20,18 @@ import { LuX } from 'react-icons/lu';
 
 export const OrdersList = () => {
   const { t } = useTranslation();
-  const isSimulatorActive = useTradingStore((state) => state.isSimulatorActive);
-
-  const simulatorWallets = useTradingStore((state) => state.wallets);
-  const simulatorActiveWalletId = useTradingStore((state) => state.activeWalletId);
-  const simulatorOrders = useTradingStore((state) => state.orders);
-  const cancelSimulatorOrder = useTradingStore((state) => state.cancelOrder);
-  const closeSimulatorOrder = useTradingStore((state) => state.closeOrder);
 
   const { wallets: backendWallets } = useBackendWallet();
-  const backendActiveWalletId = backendWallets[0]?.id;
+  const activeWalletId = backendWallets[0]?.id;
   const {
     orders: backendOrdersData,
     tradeExecutions,
     cancelOrder: cancelBackendOrder,
     closeExecution,
     cancelExecution,
-  } = useBackendTrading(backendActiveWalletId || '', undefined);
+  } = useBackendTrading(activeWalletId || '', undefined);
 
-  const backendOrders: Order[] = useMemo(() => {
+  const orders: Order[] = useMemo(() => {
     const ordersFromApi = backendOrdersData.map((o): Order => ({
       symbol: o.symbol,
       orderId: o.orderId,
@@ -100,7 +92,7 @@ export const OrdersList = () => {
     return [...ordersFromApi, ...ordersFromExecutions];
   }, [backendOrdersData, tradeExecutions]);
 
-  const wallets = isSimulatorActive ? simulatorWallets : backendWallets.map((w) => ({
+  const wallets = backendWallets.map((w) => ({
     id: w.id,
     name: w.name,
     balance: parseFloat(w.currentBalance || '0'),
@@ -125,34 +117,25 @@ export const OrdersList = () => {
     permissions: ['SPOT'],
   }));
 
-  const activeWalletId = isSimulatorActive ? simulatorActiveWalletId : backendActiveWalletId;
-  const orders = isSimulatorActive ? simulatorOrders : backendOrders;
   const cancelOrder = async (id: string) => {
-    if (isSimulatorActive) {
-      cancelSimulatorOrder(id);
-    } else {
-      const order = orders.find(o => o.id === id);
-      if (order && activeWalletId) {
-        if (order.isAutoTrade) {
-          await cancelExecution(id);
-        } else {
-          await cancelBackendOrder({
-            walletId: activeWalletId,
-            symbol: order.symbol,
-            orderId: order.orderId || 0,
-          });
-        }
+    const order = orders.find(o => o.id === id);
+    if (order && activeWalletId) {
+      if (order.isAutoTrade) {
+        await cancelExecution(id);
+      } else {
+        await cancelBackendOrder({
+          walletId: activeWalletId,
+          symbol: order.symbol,
+          orderId: order.orderId || 0,
+        });
       }
     }
   };
+
   const closeOrder = async (id: string, price: number) => {
-    if (isSimulatorActive) {
-      closeSimulatorOrder(id, price);
-    } else {
-      const order = orders.find(o => o.id === id);
-      if (order?.isAutoTrade) {
-        await closeExecution(id, price.toString());
-      }
+    const order = orders.find(o => o.id === id);
+    if (order?.isAutoTrade) {
+      await closeExecution(id, price.toString());
     }
   };
 

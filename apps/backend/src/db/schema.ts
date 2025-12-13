@@ -33,6 +33,7 @@ export const wallets = pgTable('wallets', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   name: varchar({ length: 255 }).notNull(),
+  walletType: varchar('wallet_type', { length: 20 }).default('paper').$type<'live' | 'testnet' | 'paper'>(),
   apiKeyEncrypted: text('api_key_encrypted').notNull(),
   apiSecretEncrypted: text('api_secret_encrypted').notNull(),
   initialBalance: numeric('initial_balance', { precision: 20, scale: 8 }),

@@ -1,9 +1,8 @@
-import { MainClient } from 'binance';
 import { eq } from 'drizzle-orm';
 import type { TradeExecution, Wallet } from '../db/schema';
 import { tradeExecutions, priceCache, wallets } from '../db/schema';
 import { db } from '../db';
-import { decryptApiKey } from './encryption';
+import { createBinanceClient, createBinanceClientForPrices, isPaperWallet } from './binance-client';
 import { logger } from './logger';
 
 export interface PositionCheckResult {
@@ -138,14 +137,6 @@ export class PositionMonitorService {
         return;
       }
 
-      const exitOrderId = await this.createExitOrder(
-        wallet,
-        execution.symbol,
-        quantity,
-        exitPrice,
-        execution.side
-      );
-
       const entryPrice = parseFloat(execution.entryPrice);
       let pnl = 0;
       if (execution.side === 'LONG') {
@@ -156,6 +147,36 @@ export class PositionMonitorService {
 
       const pnlPercent = ((exitPrice - entryPrice) / entryPrice) * 100;
       const adjustedPnlPercent = execution.side === 'LONG' ? pnlPercent : -pnlPercent;
+
+      let exitOrderId: number | null = null;
+
+      if (isPaperWallet(wallet)) {
+        logger.info({
+          executionId: execution.id,
+          symbol: execution.symbol,
+          walletType: 'paper',
+          reason,
+        }, 'Paper trading: simulating exit order');
+      } else {
+        exitOrderId = await this.createExitOrder(
+          wallet,
+          execution.symbol,
+          quantity,
+          exitPrice,
+          execution.side
+        );
+      }
+
+      const currentBalance = parseFloat(wallet.currentBalance || '0');
+      const newBalance = currentBalance + pnl;
+
+      await db
+        .update(wallets)
+        .set({
+          currentBalance: newBalance.toString(),
+          updatedAt: new Date(),
+        })
+        .where(eq(wallets.id, wallet.id));
 
       await db
         .update(tradeExecutions)
@@ -177,6 +198,8 @@ export class PositionMonitorService {
         exitPrice,
         pnl: pnl.toFixed(2),
         pnlPercent: adjustedPnlPercent.toFixed(2),
+        newBalance: newBalance.toFixed(2),
+        isPaperTrading: isPaperWallet(wallet),
       }, 'Position exit executed');
     } catch (error) {
       logger.error({
@@ -195,14 +218,7 @@ export class PositionMonitorService {
     _price: number,
     side: 'LONG' | 'SHORT'
   ): Promise<number> {
-    const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
-    const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
-
-    const client = new MainClient({
-      api_key: apiKey,
-      api_secret: apiSecret,
-    });
-
+    const client = createBinanceClient(wallet);
     const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
 
     const order = await client.submitNewOrder({
@@ -238,7 +254,7 @@ export class PositionMonitorService {
         return parseFloat(cached.price);
       }
 
-      const client = new MainClient();
+      const client = createBinanceClientForPrices();
       const ticker = await client.get24hrChangeStatistics({ symbol });
 
       const price = parseFloat(ticker.lastPrice);

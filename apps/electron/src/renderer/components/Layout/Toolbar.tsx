@@ -50,7 +50,6 @@ export interface ToolbarProps {
   showStochastic: boolean;
   showRSI: boolean;
   movingAverages: MovingAverageConfig[];
-  isSimulatorActive: boolean;
   isTradingOpen: boolean;
   isChatOpen: boolean;
   isNewsOpen: boolean;
@@ -70,7 +69,6 @@ export interface ToolbarProps {
   onShowStochasticChange: (show: boolean) => void;
   onShowRSIChange: (show: boolean) => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
-  onToggleSimulator: () => void;
   onToggleTrading: () => void;
   onToggleChat: () => void;
   onToggleNews: () => void;
@@ -92,7 +90,6 @@ export const Toolbar = memo(({
   showStochastic,
   showRSI,
   movingAverages,
-  isSimulatorActive: _isSimulatorActive,
   isTradingOpen,
   isChatOpen,
   isNewsOpen,
@@ -112,7 +109,6 @@ export const Toolbar = memo(({
   onShowStochasticChange,
   onShowRSIChange,
   onMovingAveragesChange,
-  onToggleSimulator: _onToggleSimulator,
   onToggleTrading,
   onToggleChat,
   onToggleNews,

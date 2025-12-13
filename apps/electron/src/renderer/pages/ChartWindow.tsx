@@ -341,12 +341,10 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
           showNewWindowButton={false}
           showSidebarButtons={false}
           hideTopOffset={true}
-          isSimulatorActive={false}
           isTradingOpen={false}
           isChatOpen={false}
           isNewsOpen={false}
           isBacktestOpen={false}
-          onToggleSimulator={() => { }}
           onToggleTrading={() => { }}
           onToggleChat={() => { }}
           onToggleNews={() => { }}

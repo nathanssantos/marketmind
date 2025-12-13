@@ -1,4 +1,3 @@
-import { useTradingStore } from '@renderer/store/tradingStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants';
 import type { Order } from '@marketmind/types';
@@ -252,14 +251,11 @@ const drawPercentBadge = (
 
 export const useOrderLinesRenderer = (
   manager: CanvasManager | null,
-  isSimulatorActive: boolean,
+  hasTradingEnabled: boolean,
   hoveredOrderId: string | null = null,
   backendExecutions: BackendExecution[] = []
 ) => {
-  const activeWalletId = useTradingStore((state) => state.activeWalletId);
-  const orders = useTradingStore((state) => state.orders);
-
-  const backendOrders = useMemo((): Order[] => {
+  const activeOrders = useMemo((): Order[] => {
     return backendExecutions
       .filter(exec => exec.status === 'open')
       .map(exec => ({
@@ -290,18 +286,6 @@ export const useOrderLinesRenderer = (
         setupType: exec.setupType ?? undefined,
       } as Order));
   }, [backendExecutions]);
-
-  const simulatorOrders = useMemo(
-    () => isSimulatorActive && activeWalletId
-      ? orders.filter(o => o.walletId === activeWalletId && (isOrderActive(o) || isOrderPending(o)))
-      : [],
-    [orders, activeWalletId, isSimulatorActive]
-  );
-
-  const activeOrders = useMemo(
-    () => [...simulatorOrders, ...backendOrders],
-    [simulatorOrders, backendOrders]
-  );
   
   const closeButtonsRef = useRef<OrderCloseButton[]>([]);
   const orderHitboxesRef = useRef<OrderHitbox[]>([]);
@@ -311,7 +295,7 @@ export const useOrderLinesRenderer = (
   const renderOrderLines = (): void => {
     const hasOrders = activeOrders.length > 0;
     if (!manager || !hasOrders) return;
-    if (!isSimulatorActive && backendOrders.length === 0) return;
+    if (!hasTradingEnabled && activeOrders.length === 0) return;
 
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
@@ -893,13 +877,7 @@ export const useOrderLinesRenderer = (
   };
 
   const getOrderAtPosition = (_x: number, y: number): import('@marketmind/types').Order | null => {
-    if (!manager || !isSimulatorActive) return null;
-
-    const activeOrders = orders.filter(
-      (order) => 
-        order.walletId === activeWalletId && 
-        (isOrderActive(order) || isOrderPending(order))
-    );
+    if (!manager || !hasTradingEnabled) return null;
 
     const tolerance = 8;
 
