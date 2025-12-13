@@ -474,6 +474,7 @@ export const useOrderLinesRenderer = (
       const isLong = position.netQuantity > 0;
       const absQuantity = Math.abs(position.netQuantity);
       
+      const setupTypes = [...new Set(position.orders.map(o => o.setupType).filter(Boolean))] as string[];
       const positionData = {
         symbol: position.symbol,
         type: isLong ? ('long' as const) : ('short' as const),
@@ -481,6 +482,7 @@ export const useOrderLinesRenderer = (
         totalQuantity: absQuantity,
         totalPnL: position.totalPnL,
         orders: position.orders,
+        setupTypes,
       };
 
       const positionId = `position-${position.symbol}`;
@@ -602,6 +604,7 @@ export const useOrderLinesRenderer = (
         const isLong = position.type === 'long';
         const positionId = `position-${position.symbol}-${position.type}`;
 
+        const setupTypes = [...new Set(position.orders.map(o => o.setupType).filter(Boolean))] as string[];
         const positionData = {
           symbol: position.symbol,
           type: position.type,
@@ -609,6 +612,7 @@ export const useOrderLinesRenderer = (
           totalQuantity: position.totalQuantity,
           totalPnL: position.totalPnL,
           orders: position.orders,
+          setupTypes,
         };
 
         orderHitboxesRef.current.push({
@@ -682,8 +686,11 @@ export const useOrderLinesRenderer = (
       const anyOrderHasStopLoss = position.orders.some(o => o.stopLoss);
       if (anyOrderHasStopLoss) {
         const stopLossOrders = position.orders.filter(o => o.stopLoss);
-        const avgStopLoss = stopLossOrders.reduce((sum, o) => sum + (o.stopLoss || 0), 0) / stopLossOrders.length;
-        const stopY = manager.priceToY(avgStopLoss);
+        const isLongPosition = position.netQuantity > 0;
+        const consolidatedStopLoss = isLongPosition
+          ? Math.max(...stopLossOrders.map(o => o.stopLoss || 0))
+          : Math.min(...stopLossOrders.map(o => o.stopLoss || Infinity));
+        const stopY = manager.priceToY(consolidatedStopLoss);
         
         const firstOrderId = position.orderIds[0] || '';
         
@@ -693,19 +700,19 @@ export const useOrderLinesRenderer = (
           tolerance: 8,
           order: {
             ...position.orders[0],
-            entryPrice: avgStopLoss,
-            stopLoss: avgStopLoss,
+            entryPrice: consolidatedStopLoss,
+            stopLoss: consolidatedStopLoss,
             metadata: { isSLTP: true, type: 'stopLoss' },
           } as Order,
         });
-        
+
         position.orders.forEach((order) => {
           sltpHitboxesRef.current.push({
             orderId: getOrderId(order),
             y: stopY,
             tolerance: 8,
             type: 'stopLoss',
-            price: avgStopLoss,
+            price: consolidatedStopLoss,
           });
         });
         
@@ -723,10 +730,10 @@ export const useOrderLinesRenderer = (
         ctx.font = '11px monospace';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        
+
         const fillColor = 'rgba(239, 68, 68, 0.9)';
-        const slPercent = ((avgStopLoss - position.avgPrice) / position.avgPrice) * 100;
-        const priceText = avgStopLoss.toFixed(2);
+        const slPercent = ((consolidatedStopLoss - position.avgPrice) / position.avgPrice) * 100;
+        const priceText = consolidatedStopLoss.toFixed(2);
         const infoText = `SL (${slPercent.toFixed(2)}%)`;
         
         priceTags.push({ priceText, y: stopY, fillColor });
@@ -759,8 +766,11 @@ export const useOrderLinesRenderer = (
       const anyOrderHasTakeProfit = position.orders.some(o => o.takeProfit);
       if (anyOrderHasTakeProfit) {
         const takeProfitOrders = position.orders.filter(o => o.takeProfit);
-        const avgTakeProfit = takeProfitOrders.reduce((sum, o) => sum + (o.takeProfit || 0), 0) / takeProfitOrders.length;
-        const tpY = manager.priceToY(avgTakeProfit);
+        const isLongPosition = position.netQuantity > 0;
+        const consolidatedTakeProfit = isLongPosition
+          ? Math.min(...takeProfitOrders.map(o => o.takeProfit || Infinity))
+          : Math.max(...takeProfitOrders.map(o => o.takeProfit || 0));
+        const tpY = manager.priceToY(consolidatedTakeProfit);
         
         const firstOrderId = position.orderIds[0] || '';
         
@@ -770,19 +780,19 @@ export const useOrderLinesRenderer = (
           tolerance: 8,
           order: {
             ...position.orders[0],
-            entryPrice: avgTakeProfit,
-            takeProfit: avgTakeProfit,
+            entryPrice: consolidatedTakeProfit,
+            takeProfit: consolidatedTakeProfit,
             metadata: { isSLTP: true, type: 'takeProfit' },
           } as Order,
         });
-        
+
         position.orders.forEach((order) => {
           sltpHitboxesRef.current.push({
             orderId: getOrderId(order),
             y: tpY,
             tolerance: 8,
             type: 'takeProfit',
-            price: avgTakeProfit,
+            price: consolidatedTakeProfit,
           });
         });
         
@@ -800,10 +810,10 @@ export const useOrderLinesRenderer = (
         ctx.font = '11px monospace';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        
+
         const fillColor = 'rgba(34, 197, 94, 0.9)';
-        const tpPercent = ((avgTakeProfit - position.avgPrice) / position.avgPrice) * 100;
-        const priceText = avgTakeProfit.toFixed(2);
+        const tpPercent = ((consolidatedTakeProfit - position.avgPrice) / position.avgPrice) * 100;
+        const priceText = consolidatedTakeProfit.toFixed(2);
         const infoText = `TP (+${tpPercent.toFixed(2)}%)`;
         
         priceTags.push({ priceText, y: tpY, fillColor });

@@ -1,5 +1,9 @@
+import type { Interval } from '@marketmind/types';
 import type { KlineInterval } from 'binance';
 import { WebsocketClient } from 'binance';
+import { and, eq } from 'drizzle-orm';
+import { db } from '../db';
+import { klines } from '../db/schema';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
 
@@ -183,11 +187,68 @@ export class BinanceKlineStreamService {
         wsService.emitKlineUpdate(update);
       }
 
+      if (update.isClosed) {
+        await this.persistKline(update);
+      }
     } catch (error) {
       logger.error({
         symbol: update.symbol,
         error: error instanceof Error ? error.message : String(error),
       }, 'Error processing kline update');
+    }
+  }
+
+  private async persistKline(update: KlineUpdate): Promise<void> {
+    try {
+      const openTime = new Date(update.openTime);
+      const interval = update.interval as Interval;
+
+      const existing = await db.query.klines.findFirst({
+        where: and(
+          eq(klines.symbol, update.symbol),
+          eq(klines.interval, interval),
+          eq(klines.openTime, openTime)
+        ),
+      });
+
+      const klineData = {
+        symbol: update.symbol,
+        interval,
+        openTime,
+        open: update.open,
+        high: update.high,
+        low: update.low,
+        close: update.close,
+        volume: update.volume,
+        closeTime: new Date(update.closeTime),
+        quoteVolume: update.quoteVolume,
+        trades: update.trades,
+        takerBuyBaseVolume: update.takerBuyBaseVolume,
+        takerBuyQuoteVolume: update.takerBuyQuoteVolume,
+      };
+
+      if (existing) {
+        await db
+          .update(klines)
+          .set(klineData)
+          .where(
+            and(
+              eq(klines.symbol, update.symbol),
+              eq(klines.interval, interval),
+              eq(klines.openTime, openTime)
+            )
+          );
+      } else {
+        await db.insert(klines).values(klineData);
+      }
+
+      logger.debug({ symbol: update.symbol, interval, openTime: openTime.toISOString() }, 'Persisted closed kline');
+    } catch (error) {
+      logger.error({
+        symbol: update.symbol,
+        interval: update.interval,
+        error: error instanceof Error ? error.message : String(error),
+      }, 'Error persisting kline to database');
     }
   }
 

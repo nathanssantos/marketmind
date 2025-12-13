@@ -826,7 +826,8 @@
       "avgPrice": "Precio Promedio",
       "currentPrice": "Precio Actual",
       "pnl": "PyG",
-      "position": "Posición"
+      "position": "Posición",
+      "setups": "Setups"
     },
     "orders": {
       "title": "Órdenes",

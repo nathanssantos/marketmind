@@ -4,6 +4,7 @@ import { tradeExecutions, priceCache, wallets } from '../db/schema';
 import { db } from '../db';
 import { createBinanceClient, createBinanceClientForPrices, isPaperWallet } from './binance-client';
 import { logger } from './logger';
+import { trailingStopService } from './trailing-stop';
 
 export interface PositionCheckResult {
   executionId: string;
@@ -59,16 +60,118 @@ export class PositionMonitorService {
 
     logger.info(`Checking ${openExecutions.length} open positions`);
 
-    for (const execution of openExecutions) {
+    try {
+      const trailingUpdates = await trailingStopService.updateTrailingStops();
+      if (trailingUpdates.length > 0) {
+        logger.info({ updateCount: trailingUpdates.length }, 'Trailing stops updated');
+      }
+    } catch (error) {
+      logger.error({
+        error: error instanceof Error ? error.message : String(error),
+      }, 'Error updating trailing stops');
+    }
+
+    const positionGroups = this.groupExecutionsBySymbolAndSide(openExecutions);
+
+    for (const [groupKey, executions] of positionGroups) {
       try {
-        await this.checkPosition(execution);
+        await this.checkPositionGroup(groupKey, executions);
       } catch (error) {
         logger.error({
-          executionId: execution.id,
+          groupKey,
           error: error instanceof Error ? error.message : String(error),
-        }, 'Error checking position');
+        }, 'Error checking position group');
       }
     }
+  }
+
+  private groupExecutionsBySymbolAndSide(executions: TradeExecution[]): Map<string, TradeExecution[]> {
+    const groups = new Map<string, TradeExecution[]>();
+
+    for (const execution of executions) {
+      const key = `${execution.symbol}-${execution.side}`;
+      const existing = groups.get(key) || [];
+      existing.push(execution);
+      groups.set(key, existing);
+    }
+
+    return groups;
+  }
+
+  private async checkPositionGroup(groupKey: string, executions: TradeExecution[]): Promise<void> {
+    if (executions.length === 0) return;
+
+    const firstExecution = executions[0];
+    if (!firstExecution) return;
+
+    const currentPrice = await this.getCurrentPrice(firstExecution.symbol);
+    const isLong = firstExecution.side === 'LONG';
+
+    const consolidatedSL = this.calculateConsolidatedStopLoss(executions, isLong);
+    const consolidatedTP = this.calculateConsolidatedTakeProfit(executions, isLong);
+
+    logger.debug({
+      groupKey,
+      executionCount: executions.length,
+      currentPrice,
+      consolidatedSL,
+      consolidatedTP,
+      isLong,
+    }, 'Checking position group');
+
+    const slTriggered = consolidatedSL !== null && (
+      isLong ? currentPrice <= consolidatedSL : currentPrice >= consolidatedSL
+    );
+
+    const tpTriggered = consolidatedTP !== null && (
+      isLong ? currentPrice >= consolidatedTP : currentPrice <= consolidatedTP
+    );
+
+    if (slTriggered) {
+      logger.info({
+        groupKey,
+        reason: 'STOP_LOSS',
+        currentPrice,
+        consolidatedSL,
+        executionCount: executions.length,
+      }, 'Consolidated stop loss triggered - closing all positions in group');
+
+      for (const execution of executions) {
+        await this.executeExit(execution, currentPrice, 'STOP_LOSS');
+      }
+    } else if (tpTriggered) {
+      logger.info({
+        groupKey,
+        reason: 'TAKE_PROFIT',
+        currentPrice,
+        consolidatedTP,
+        executionCount: executions.length,
+      }, 'Consolidated take profit triggered - closing all positions in group');
+
+      for (const execution of executions) {
+        await this.executeExit(execution, currentPrice, 'TAKE_PROFIT');
+      }
+    }
+  }
+
+  private calculateConsolidatedStopLoss(executions: TradeExecution[], isLong: boolean): number | null {
+    const stopLosses = executions
+      .filter(e => e.stopLoss !== null)
+      .map(e => parseFloat(e.stopLoss!));
+
+    if (stopLosses.length === 0) return null;
+
+    return isLong ? Math.max(...stopLosses) : Math.min(...stopLosses);
+  }
+
+  private calculateConsolidatedTakeProfit(executions: TradeExecution[], isLong: boolean): number | null {
+    const takeProfits = executions
+      .filter(e => e.takeProfit !== null)
+      .map(e => parseFloat(e.takeProfit!));
+
+    if (takeProfits.length === 0) return null;
+
+    return isLong ? Math.min(...takeProfits) : Math.max(...takeProfits);
   }
 
   async checkPosition(execution: TradeExecution): Promise<PositionCheckResult> {

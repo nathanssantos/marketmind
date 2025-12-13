@@ -797,7 +797,8 @@
       "avgPrice": "Preço Médio",
       "currentPrice": "Preço Atual",
       "pnl": "L&P",
-      "position": "Posição"
+      "position": "Posição",
+      "setups": "Setups"
     },
     "orders": {
       "title": "Ordens",

@@ -808,7 +808,8 @@
       "avgPrice": "Prix Moyen",
       "currentPrice": "Prix Actuel",
       "pnl": "P&P",
-      "position": "Position"
+      "position": "Position",
+      "setups": "Setups"
     },
     "orders": {
       "title": "Ordres",

@@ -112,57 +112,25 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
       return null;
     }
 
-    const getIntervalMs = (interval: string): number => {
-      const units: Record<string, number> = {
-        s: 1000,
-        m: 60 * 1000,
-        h: 60 * 60 * 1000,
-        d: 24 * 60 * 60 * 1000,
-        w: 7 * 24 * 60 * 60 * 1000,
-        M: 30 * 24 * 60 * 60 * 1000,
-      };
-      const match = interval.match(/(\d+)([smhdwM])/);
-      if (!match?.[1] || !match[2]) return 60 * 60 * 1000;
-      const value = Number.parseInt(match[1], 10);
-      const unit = match[2];
-      return value * (units[unit] ?? 60 * 60 * 1000) - 1;
-    };
-
-    const parseOpenTime = (time: unknown): number => {
+    const parseTimestamp = (time: unknown): number => {
       if (typeof time === 'string') return new Date(time).getTime();
       if (time instanceof Date) return time.getTime();
       return Number(time);
     };
 
-    const klines: Kline[] = backendKlinesQuery.data.map((k, index, arr) => {
-      const openTime = parseOpenTime(k.openTime);
-
-      let closeTime: number;
-      if (index < arr.length - 1) {
-        const nextKline = arr[index + 1];
-        if (nextKline) {
-          closeTime = parseOpenTime(nextKline.openTime) - 1;
-        } else {
-          closeTime = openTime + getIntervalMs(timeframe);
-        }
-      } else {
-        closeTime = openTime + getIntervalMs(timeframe);
-      }
-
-      return {
-        openTime,
-        closeTime,
-        open: k.open,
-        high: k.high,
-        low: k.low,
-        close: k.close,
-        volume: k.volume,
-        quoteVolume: k.quoteVolume || '0',
-        trades: k.trades || 0,
-        takerBuyBaseVolume: k.takerBuyBaseVolume || '0',
-        takerBuyQuoteVolume: k.takerBuyQuoteVolume || '0',
-      };
-    });
+    const klines: Kline[] = backendKlinesQuery.data.map((k) => ({
+      openTime: parseTimestamp(k.openTime),
+      closeTime: parseTimestamp(k.closeTime),
+      open: k.open,
+      high: k.high,
+      low: k.low,
+      close: k.close,
+      volume: k.volume,
+      quoteVolume: k.quoteVolume || '0',
+      trades: k.trades || 0,
+      takerBuyBaseVolume: k.takerBuyBaseVolume || '0',
+      takerBuyQuoteVolume: k.takerBuyQuoteVolume || '0',
+    }));
 
     return {
       symbol,

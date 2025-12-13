@@ -5,8 +5,14 @@ import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const VIEWPORT_UPDATE_THROTTLE_MS = 16;
-const DEFAULT_VISIBLE_KLINES = 100;
 const SIGNIFICANT_CHANGE_THRESHOLD = 0.1;
+const TARGET_KLINE_WIDTH = 10;
+const KLINE_TOTAL_WIDTH = TARGET_KLINE_WIDTH + CHART_CONFIG.KLINE_SPACING;
+
+const calculateVisibleKlines = (containerWidth?: number): number => {
+  const width = containerWidth || window.innerWidth - CHART_CONFIG.CHART_RIGHT_MARGIN - CHART_CONFIG.CANVAS_PADDING * 2;
+  return Math.floor(width / KLINE_TOTAL_WIDTH);
+};
 
 export interface UseChartCanvasProps {
   klines: Kline[];
@@ -48,10 +54,10 @@ export const useChartCanvas = ({
     if (initialViewport !== DEFAULT_VIEWPORT) {
       return initialViewport;
     }
-    
+
     const klineCount = klines.length;
-    const visibleCount = Math.min(DEFAULT_VISIBLE_KLINES, klineCount);
-    
+    const visibleCount = Math.min(calculateVisibleKlines(), klineCount);
+
     return {
       ...DEFAULT_VIEWPORT,
       start: Math.max(0, klineCount - visibleCount),
@@ -137,7 +143,7 @@ export const useChartCanvas = ({
         prevFirstKlineTimestamp > 0;
 
       if (isInitialLoadRef.current && currentCount > 0) {
-        const visibleCount = Math.min(DEFAULT_VISIBLE_KLINES, currentCount);
+        const visibleCount = Math.min(calculateVisibleKlines(), currentCount);
         const newViewport = {
           ...DEFAULT_VIEWPORT,
           start: Math.max(0, currentCount - visibleCount),
@@ -151,7 +157,7 @@ export const useChartCanvas = ({
         wasAtEndRef.current = true;
         isInitialLoadRef.current = false;
       } else if (isCompleteDataChange || isSignificantChange) {
-        const visibleCount = Math.min(DEFAULT_VISIBLE_KLINES, currentCount);
+        const visibleCount = Math.min(calculateVisibleKlines(), currentCount);
         const newViewport = {
           ...DEFAULT_VIEWPORT,
           start: Math.max(0, currentCount - visibleCount),

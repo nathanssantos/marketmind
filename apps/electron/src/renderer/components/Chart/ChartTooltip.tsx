@@ -166,7 +166,7 @@ export const ChartTooltip = ({
     const isLong = isOrderLong(order);
     const isActive = isOrderActive(order);
     const isPending = isOrderPending(order);
-    const metadata = (order as any).metadata as { isPosition?: boolean; positionData?: { symbol: string; type: 'long' | 'short'; avgPrice: number; totalQuantity: number; totalPnL: number; orders: Order[] } } | undefined;
+    const metadata = (order as any).metadata as { isPosition?: boolean; positionData?: { symbol: string; type: 'long' | 'short'; avgPrice: number; totalQuantity: number; totalPnL: number; orders: Order[]; setupTypes?: string[] } } | undefined;
     const isPosition = metadata?.isPosition ?? false;
     const positionData = isPosition ? metadata?.positionData : null;
 
@@ -219,10 +219,24 @@ export const ChartTooltip = ({
           </HStack>
 
           {isPosition && positionData && (
-            <HStack justify="space-between">
-              <Text color="fg.muted">{t('trading.portfolio.orderCount')}:</Text>
-              <Text fontWeight="medium">{positionData.orders.length}x</Text>
-            </HStack>
+            <>
+              <HStack justify="space-between">
+                <Text color="fg.muted">{t('trading.portfolio.orderCount')}:</Text>
+                <Text fontWeight="medium">{positionData.orders.length}x</Text>
+              </HStack>
+              {positionData.setupTypes && positionData.setupTypes.length > 0 && (
+                <HStack justify="space-between" flexWrap="wrap" pt={1} borderTopWidth={1} borderColor="border">
+                  <Text color="fg.muted">{t('trading.portfolio.setups')}:</Text>
+                  <Stack gap={0.5} align="flex-end" bg="bg.subtle" p={1} borderRadius="sm">
+                    {positionData.setupTypes.map((setup, idx) => (
+                      <Badge key={idx} colorScheme="blue" fontSize="2xs">
+                        {setup.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Badge>
+                    ))}
+                  </Stack>
+                </HStack>
+              )}
+            </>
           )}
 
           <HStack justify="space-between">
