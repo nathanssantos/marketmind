@@ -1,8 +1,25 @@
 {
   "models": [
     {
+      "id": "setup-classifier-v3.0.0",
+      "name": "Setup Classifier v3 (All 8 TFs)",
+      "version": "3.0.0",
+      "type": "setup-classifier",
+      "file": "setup-classifier-v3.json",
+      "model_type": "xgboost",
+      "feature_count": 139,
+      "trained_at": "2025-12-13T19:33:00.000000",
+      "metrics": {
+        "accuracy": 0.7610,
+        "precision": 0.5397,
+        "recall": 0.1309,
+        "f1": 0.2021,
+        "auc": 0.7373
+      }
+    },
+    {
       "id": "setup-classifier-v2.0.0",
-      "name": "Setup Classifier v2 (Unified)",
+      "name": "Setup Classifier v2 (7 TFs)",
       "version": "2.0.0",
       "type": "setup-classifier",
       "file": "setup-classifier-v2.json",

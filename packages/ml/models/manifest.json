@@ -1,20 +1,37 @@
 {
   "models": [
     {
-      "id": "setup-classifier-v2.0.0",
-      "name": "Setup Classifier",
-      "version": "2.0.0",
+      "id": "setup-classifier-v3.0.0",
+      "name": "Setup Classifier v3 (All 8 TFs)",
+      "version": "3.0.0",
       "type": "setup-classifier",
-      "file": "setup-classifier-v2.json",
+      "file": "setup-classifier-v3.json",
       "model_type": "xgboost",
       "feature_count": 139,
-      "trained_at": "2025-12-13T14:26:41.569536",
+      "trained_at": "2025-12-13T19:33:31.495744",
       "metrics": {
-        "accuracy": 0.7091266352965511,
-        "precision": 0.5698573065248136,
-        "recall": 0.19002571229645607,
-        "f1": 0.28164905326502854,
-        "auc": 0.6859417529046159
+        "accuracy": 0.7610,
+        "precision": 0.5397,
+        "recall": 0.1309,
+        "f1": 0.2021,
+        "auc": 0.7373
+      }
+    },
+    {
+      "id": "setup-classifier-1m-v1.0.0",
+      "name": "Setup Classifier 1m Only",
+      "version": "1.0.0",
+      "type": "setup-classifier",
+      "file": "setup_classifier_1m.json",
+      "model_type": "xgboost",
+      "feature_count": 138,
+      "trained_at": "2025-12-13T17:28:00.000000",
+      "metrics": {
+        "accuracy": 0.8509,
+        "precision": 0.4577,
+        "recall": 0.1458,
+        "f1": 0.2211,
+        "auc": 0.8287
       }
     }
   ]

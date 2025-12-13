@@ -308,8 +308,8 @@ export class BacktestEngine {
         (a: any, b: any) => a.openTime - b.openTime
       );
 
-      const MAX_CONCURRENT_POSITIONS = effectiveConfig.maxConcurrentPositions ?? 5;
-      const MAX_TOTAL_EXPOSURE = effectiveConfig.maxTotalExposure ?? 0.5;
+      const MAX_CONCURRENT_POSITIONS = effectiveConfig.maxConcurrentPositions ?? 10;
+      const MAX_TOTAL_EXPOSURE = effectiveConfig.maxTotalExposure ?? 1.0;
       const openPositions: Array<{ exitTime: number; positionValue: number }> = [];
 
       let skippedKlineNotFound = 0;

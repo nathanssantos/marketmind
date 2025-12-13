@@ -52,11 +52,42 @@ Integração de Machine Learning para:
 | Phase 4: Backend Integration | ✅ Complete | 100% | tRPC router + MLService + SetupDetection integration |
 | Phase 5: Evaluation | ✅ Complete | 100% | ClassificationMetrics + TradingMetrics + BacktestIntegration |
 | Phase 6: Frontend & Production | ✅ Complete | 100% | Hooks + components + backend integration |
-| Phase 7: Auto-Trading Integration | 🔄 In Progress | 70% | Backend scheduler + DB persistence + auto-fetch complete |
-| Phase 8: Model Regeneration | 🔄 In Progress | 60% | 1w,1d,4h,1h,30m,15m,5m complete, 1m in progress |
-| Phase 9: Full System Optimization | ⏳ Pending | 0% | Grid search + walk-forward validation pipeline |
+| Phase 7: Auto-Trading Integration | ✅ Complete | 100% | Backend scheduler + DB persistence + auto-fetch complete |
+| Phase 8: Model Regeneration | ✅ Complete | 100% | All 8 timeframes complete (1w,1d,4h,1h,30m,15m,5m,1m) |
+| Phase 9: Full System Optimization | ✅ Complete | 100% | Grid search + walk-forward + per-timeframe thresholds |
+| Phase 10: Test Coverage | ✅ Complete | 100% | 3,219 tests, pure functions extracted |
 
 **Legend:** ✅ Complete | 🔄 In Progress | ⏳ Pending | ❌ Blocked
+
+---
+
+## ML Models Summary
+
+| Model | Timeframe | Samples | Accuracy | Precision | AUC | Location |
+|-------|-----------|---------|----------|-----------|-----|----------|
+| v1 | 1d only | 6,310 | 64.3% | 59.7% | 65.3% | backend/models |
+| v2 | Multi-TF (7) | 464,136 | 70.9% | 57.0% | 68.6% | backend/models |
+| **1m** | 1m only | 170,900 | **85.09%** | 45.77% | **82.87%** | packages/ml/models |
+
+### 1m Model Top Features
+1. `setup_type_6` - 17.15%
+2. `atr_percent` - 8.03%
+3. `avg_true_range_normalized` - 6.55%
+4. `setup_confidence_original` - 6.04%
+5. `take_profit_atr_multiple` - 5.70%
+
+### Training Data Available
+| Timeframe | Samples | Size |
+|-----------|---------|------|
+| 1w | ~4K | 763 KB |
+| 1d | ~35K | 7.3 MB |
+| 4h | ~150K | 37 MB |
+| 1h | ~400K | 99 MB |
+| 30m | ~530K | 132 MB |
+| 15m | ~460K | 150 MB |
+| 5m | ~730K | 182 MB |
+| 1m | 170,900 | 216 MB |
+| unified | 2.4M+ | 609 MB |
 
 ---
 

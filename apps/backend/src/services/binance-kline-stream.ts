@@ -242,7 +242,7 @@ export class BinanceKlineStreamService {
         await db.insert(klines).values(klineData);
       }
 
-      logger.debug({ symbol: update.symbol, interval, openTime: openTime.toISOString() }, 'Persisted closed kline');
+      // logger.debug({ symbol: update.symbol, interval, openTime: openTime.toISOString() }, 'Persisted closed kline');
     } catch (error) {
       logger.error({
         symbol: update.symbol,

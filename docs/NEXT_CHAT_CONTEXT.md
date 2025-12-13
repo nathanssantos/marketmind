@@ -14,60 +14,65 @@ Copy this entire document and paste it in a new Claude Code chat to continue.
    - Unified dataset: 464,136 samples across 7 timeframes (1w, 1d, 4h, 1h, 30m, 15m, 5m)
    - Model location: `apps/backend/models/setup-classifier-v2.json`
    - Metrics: Accuracy 70.9%, Precision 57%, AUC 0.686
-   - Missing 1m data (still generating)
 
-2. **Concatenation Script Created**
+2. **ML Model 1m Trained & Deployed ✅**
+   - Dataset: 170,900 samples (6 symbols × 6 months)
+   - Model location: `packages/ml/models/setup_classifier_1m.json`
+   - Metrics: Accuracy 85.09%, Precision 45.77%, AUC 0.8287
+   - Top features: setup_type_6 (17%), atr_percent (8%), avg_true_range_normalized (6.5%)
+
+3. **Concatenation Script Created**
    - File: `packages/ml/scripts/concatenate_training.sh`
    - Combines all training CSVs with `interval` column
    - Output: `packages/ml/data/training_unified.csv`
 
-3. **Training Config**
+4. **Training Config**
    - File: `packages/ml/data/training_unified-config.json`
    - 139 features including `interval_encoded`
 
-4. **Trading System Infrastructure**
+5. **Trading System Infrastructure**
    - Pyramiding: `apps/backend/src/services/pyramiding.ts` (now configurable!)
    - Trailing Stop: `apps/backend/src/services/trailing-stop.ts`
    - Position Monitor: `apps/backend/src/services/position-monitor.ts`
    - Auto-Trading Scheduler: `apps/backend/src/services/auto-trading-scheduler.ts`
 
-5. **Pyramiding Connected to Auto-Trading Scheduler**
+6. **Pyramiding Connected to Auto-Trading Scheduler**
    - Evaluates pyramid opportunities before new entries
    - Adjusts stop loss after pyramid entries
    - Lines 541-574, 661-694 in `auto-trading-scheduler.ts`
 
-6. **ML-Based Position Sizing**
+7. **ML-Based Position Sizing**
    - Position size = maxPositionSize × mlConfidence
    - Floor: 20% of maxPositionSize (prevents tiny positions)
    - Ceiling: 100% of maxPositionSize
    - File: `apps/backend/src/services/pyramiding.ts`
 
-7. **Auto-Trading Connected to Real Execution**
+8. **Auto-Trading Connected to Real Execution**
    - File: `apps/backend/src/services/auto-trading-scheduler.ts`
    - Wallet types: `live`/`testnet` → real Binance orders, `paper` → DB only
    - MARKET orders for entries, STOP_LOSS_LIMIT for SL, LIMIT for TP
    - **Safety flag**: `ENABLE_LIVE_TRADING=false` in `.env` (default: false)
 
-8. **Pyramiding Made Configurable**
+9. **Pyramiding Made Configurable**
    - `PyramidConfig` interface exported
    - `DEFAULT_PYRAMIDING_CONFIG` constant exported
    - Constructor accepts custom config
    - `updateConfig()` and `getConfig()` methods added
 
-9. **Optimization Types Added**
-   - `packages/types/src/backtesting.ts` now includes:
-     - `PyramidingConfig`, `TrailingStopConfig`
-     - `TimeframeThreshold`, `FullSystemOptimizationConfig`
-     - `OptimizationResult`, `OptimizationResultEntry`
-     - `WalkForwardResult`
+10. **Optimization Types Added**
+    - `packages/types/src/backtesting.ts` now includes:
+      - `PyramidingConfig`, `TrailingStopConfig`
+      - `TimeframeThreshold`, `FullSystemOptimizationConfig`
+      - `OptimizationResult`, `OptimizationResultEntry`
+      - `WalkForwardResult`
 
-10. **i18n Fixes for Trading Sidebar**
+11. **i18n Fixes for Trading Sidebar**
     - Fixed broken badges in `OrdersList.tsx` (status mapping)
     - Updated `Portfolio.tsx` to use `tradeExecutions` data
     - Added Analytics tab translations (EN/PT/ES/FR)
     - All performance/stats components now use i18n
 
-11. **Full System Optimization Pipeline (Phase 9) ✅**
+12. **Full System Optimization Pipeline (Phase 9) ✅**
     - `TrailingStopService` made configurable with `DEFAULT_TRAILING_STOP_CONFIG`
     - `FullSystemOptimizer` service created with 3 presets (quick, balanced, thorough)
     - `optimize-full` CLI command added to backtest-runner
@@ -75,38 +80,24 @@ Copy this entire document and paste it in a new Claude Code chat to continue.
     - Auto-trading scheduler now uses `getThresholdForTimeframe()` for ML filtering
     - Walk-forward validation integrated for robustness testing
 
-### In Progress
+13. **Test Coverage Improvements ✅**
+    - Backend: 296 tests (pyramiding, risk-manager, trailing-stop pure functions)
+    - ML Package: 43 tests (evaluation metrics, optimized thresholds)
+    - Frontend: 1,794 tests (useBacktestMetrics, useDebounceCallback)
+    - Indicators: 1,086 tests
+    - **Total: 3,219 tests passing**
 
-**1m Training Data Generation**
-```bash
-# Check if still running:
-ps aux | grep backtest-runner | grep -v grep
-
-# Check if file created:
-ls -la packages/ml/data/training_1m.csv
-```
-
-When 1m completes:
-```bash
-cd packages/ml
-./scripts/concatenate_training.sh
-source .venv/bin/activate
-python scripts/train_setup_classifier.py \
-  --config data/training_unified-config.json \
-  --data data/training_unified.csv \
-  --output models/setup-classifier-v3.onnx \
-  --importance models/feature_importance.json
-
-# Copy to backend
-cp models/setup-classifier-v3.json ../../apps/backend/models/
-# Update apps/backend/models/manifest.json to include v3
-```
+14. **Pure Function Extraction for Testability**
+    - `pyramiding.ts`: 9 pure functions extracted
+    - `risk-manager.ts`: 7 pure functions extracted
+    - `trailing-stop.ts`: 6 pure functions extracted
+    - `useBacktestMetrics.ts`: 10 pure functions extracted
 
 ### Pending Tasks (Priority Order)
 
-1. **Re-train with 1m data** (when generation completes)
-   - Expected: ~1M+ samples
-   - Will improve model coverage for short timeframes
+1. **Re-train Unified Model with 1m data**
+   - Now have all 8 timeframes: 1w, 1d, 4h, 1h, 30m, 15m, 5m, 1m
+   - Run concatenation and train v3 model
 
 2. **Run Full System Optimization**
    - Use new `optimize-full` CLI command
@@ -128,11 +119,29 @@ cp models/setup-classifier-v3.json ../../apps/backend/models/
 | `apps/backend/src/services/backtesting/FullSystemOptimizer.ts` | Full system optimization orchestrator |
 | `apps/backend/src/cli/commands/optimize-full-system.ts` | CLI for full system optimization |
 | `packages/ml/src/constants/optimizedThresholds.ts` | Per-timeframe ML thresholds |
+| `packages/ml/models/setup_classifier_1m.json` | 1m ML model |
 | `packages/types/src/backtesting.ts` | Optimization types |
 | `packages/ml/scripts/concatenate_training.sh` | CSV concatenation script |
 | `packages/ml/scripts/train_setup_classifier.py` | Model training script |
 | `docs/OPTIMIZATION_IMPROVEMENTS_PLAN.md` | Optimization implementation (✅ complete) |
 | `docs/TRADING_SYSTEM.md` | Trading system documentation |
+
+---
+
+## ML Models Summary
+
+| Model | Timeframe | Samples | Accuracy | Precision | AUC |
+|-------|-----------|---------|----------|-----------|-----|
+| v1 | 1d only | 6,310 | 64.3% | 59.7% | 65.3% |
+| v2 | Multi-TF (7) | 464,136 | 70.9% | 57.0% | 68.6% |
+| 1m | 1m only | 170,900 | **85.09%** | 45.77% | **82.87%** |
+
+**1m Model Top Features:**
+1. `setup_type_6` - 17.15%
+2. `atr_percent` - 8.03%
+3. `avg_true_range_normalized` - 6.55%
+4. `setup_confidence_original` - 6.04%
+5. `take_profit_atr_multiple` - 5.70%
 
 ---
 
@@ -161,75 +170,35 @@ pyramidSize = Math.max(pyramidSize, baseQuantity × 0.2)            // Floor 20%
 
 ---
 
-## Optimization System Status
+## Training Data Available
 
-### What Already Exists
-- **BacktestOptimizer** - Grid search with parallel workers
-- **WalkForwardOptimizer** - Walk-forward validation (6mo train, 2mo test)
-- **ParameterGenerator** - Parameter combination generation
-- **optimize.ts CLI** - Grid search command with presets
-
-### What Needs to Be Built
-- **TrailingStopService** - Configurable trailing stop params
-- **FullSystemOptimizer** - Orchestrates ML + pyramiding + trailing stop optimization
-- **optimize-full-system CLI** - New command for full system optimization
-- **Per-timeframe ML thresholds** - Calibrated thresholds by interval
-
-### Parameter Grid (Balanced Preset)
-```
-ML Thresholds: [0.03, 0.05, 0.07, 0.10] = 4 values
-Pyramiding:
-  - profitThreshold: [0.005, 0.01, 0.015]
-  - scaleFactor: [0.7, 0.8, 0.9]
-  - maxEntries: [3, 5]
-Trailing:
-  - breakevenThreshold: [0.003, 0.005, 0.007]
-  - minDistance: [0.001, 0.002]
-
-Total: 4 × 3 × 3 × 2 × 3 × 2 = 432 combinations
-```
-
----
-
-## Binance Integration Status
-
-- **Fully Implemented**:
-  - Spot trading, order placement, paper trading, testnet
-  - Position monitoring with automatic SL/TP execution
-  - Auto-trading with real order execution
-  - Manual position/execution close with real Binance orders
-  - Full portfolio fetch (all assets with USDT valuation)
-- **Live Trading Flow**: Setup detected → ML filter → Risk validation → MARKET entry → SL/TP orders
-- **Safety**: All real execution controlled by `ENABLE_LIVE_TRADING` env flag (default: false)
-- **Not Implemented**: Futures, OCO orders, margin trading
-
----
-
-## Model Comparison
-
-| Métrica | v1 (1d only) | v2 (Multi-TF) |
-|---------|-------------|---------------|
-| Accuracy | 64.3% | **70.9%** |
-| Precision | 59.7% | 57.0% |
-| Recall | 31.9% | 19.0% |
-| AUC | 65.3% | **68.6%** |
-| Samples | 6,310 | **464,136** |
-
-v2 is more conservative (lower recall) but better discrimination (higher AUC).
+| Timeframe | File | Samples | Size |
+|-----------|------|---------|------|
+| 1w | training_1w.csv | ~4K | 763 KB |
+| 1d | training_1d.csv | ~35K | 7.3 MB |
+| 4h | training_4h.csv | ~150K | 37 MB |
+| 1h | training_1h.csv | ~400K | 99 MB |
+| 30m | training_30m.csv | ~530K | 132 MB |
+| 15m | training_15m.csv | ~460K | 150 MB |
+| 5m | training_5m.csv | ~730K | 182 MB |
+| **1m** | **training_1m.csv** | **170,900** | **216 MB** |
+| unified | training_unified.csv | 2.4M+ | 609 MB |
 
 ---
 
 ## Commands Reference
 
 ```bash
-# Check training status
-ps aux | grep backtest-runner
+# Train 1m model (already done)
+cd packages/ml && source venv/bin/activate
+python scripts/train_setup_classifier.py \
+  --config data/training_1m-config.json \
+  --data data/training_1m.csv \
+  --output models/setup_classifier_1m.onnx
 
-# Run concatenation
-cd packages/ml && ./scripts/concatenate_training.sh
-
-# Train model
-cd packages/ml && source .venv/bin/activate
+# Train unified v3 model (next step)
+cd packages/ml
+./scripts/concatenate_training.sh  # Re-run to include 1m
 python scripts/train_setup_classifier.py \
   --config data/training_unified-config.json \
   --data data/training_unified.csv \
@@ -259,17 +228,14 @@ psql "postgresql://marketmind:marketmind123@localhost:5432/marketmind"
 Continuing MarketMind development. See docs/NEXT_CHAT_CONTEXT.md for full context.
 
 Current priorities:
-1. Check if 1m training data is complete and retrain model if so
-2. Continue Phase 9: Full System Optimization Pipeline
-   - Create TrailingStopService with configurable params
-   - Create FullSystemOptimizer service
-   - Create optimize-full-system CLI command
-   - Add per-timeframe ML threshold constants
+1. Re-train unified model v3 with 1m data included (all 8 timeframes)
+2. Run full system optimization with `optimize-full` CLI
+3. Continue improving test coverage
 
-Reference docs:
-- docs/OPTIMIZATION_IMPROVEMENTS_PLAN.md (implementation details)
-- docs/OPTIMIZATION_PIPELINE_PLAN.md (8-phase design)
-- docs/ML_IMPLEMENTATION_PLAN.md (Phase 9)
+Recent completions:
+- 1m ML model trained (85% accuracy, 83% AUC)
+- Test coverage improved to 3,219 tests
+- Pure functions extracted from pyramiding, risk-manager, trailing-stop
 
 Branch: main
 ```
