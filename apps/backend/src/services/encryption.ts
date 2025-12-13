@@ -15,9 +15,11 @@ export const encryptApiKey = (plaintext: string): string => {
 };
 
 export const decryptApiKey = (encrypted: string): string => {
+  if (encrypted === 'paper-trading') return 'paper-trading';
+
   const [ivHex, encryptedHex] = encrypted.split(':');
-  if (!ivHex || !encryptedHex) throw new Error('Invalid encrypted data format');
-  
+  if (!ivHex || !encryptedHex) throw new Error('Invalid encrypted data format - wallet may need to be re-configured with valid API keys');
+
   const iv = Buffer.from(ivHex, 'hex');
   const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
 

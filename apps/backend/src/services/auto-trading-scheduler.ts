@@ -510,6 +510,19 @@ export class AutoTradingScheduler {
         return;
       }
 
+      const existingOpenExecution = openPositions.find(
+        (pos) => pos.symbol === watcher.symbol && pos.setupType === setup.type
+      );
+
+      if (existingOpenExecution) {
+        log('⚠️ Duplicate execution prevented - already have open position for this setup', {
+          symbol: watcher.symbol,
+          setupType: setup.type,
+          existingExecutionId: existingOpenExecution.id,
+        });
+        return;
+      }
+
       const walletBalance = parseFloat(wallet.currentBalance || '0');
       const maxPositionSizePercent = parseFloat(config.maxPositionSize);
       const positionValue = (walletBalance * maxPositionSizePercent) / 100;
