@@ -39,7 +39,7 @@ export const TradingSidebar = ({ width }: TradingSidebarProps) => {
           </Tabs.Trigger>
           {activeWalletId && (
             <Tabs.Trigger value="analytics">
-              <Text fontSize="xs">Analytics</Text>
+              <Text fontSize="xs">{t('trading.tabs.analytics')}</Text>
             </Tabs.Trigger>
           )}
         </Tabs.List>

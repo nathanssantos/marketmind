@@ -1,27 +1,64 @@
-import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Flex, Stack, Text } from '@chakra-ui/react';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+
+interface PortfolioPosition {
+  symbol: string;
+  side: 'LONG' | 'SHORT';
+  quantity: number;
+  avgPrice: number;
+  currentPrice: number;
+  pnl: number;
+  pnlPercent: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  setupType?: string;
+  openedAt: Date;
+  id: string;
+}
 
 export const Portfolio = () => {
   const { t } = useTranslation();
 
   const { wallets: backendWallets } = useBackendWallet();
   const activeWalletId = backendWallets[0]?.id;
-  const { positions: backendPositionsData } = useBackendTrading(activeWalletId || '', undefined);
+  const { tradeExecutions } = useBackendTrading(activeWalletId || '', undefined);
 
-  const positions = useMemo(() => {
-    return backendPositionsData.map((p) => ({
-      symbol: p.symbol,
-      quantity: parseFloat(p.entryQty || '0'),
-      avgPrice: parseFloat(p.entryPrice || '0'),
-      currentPrice: parseFloat(p.currentPrice || p.entryPrice || '0'),
-      pnl: 0,
-      pnlPercent: 0,
-      orders: [p.id],
-    }));
-  }, [backendPositionsData]);
+  const positions: PortfolioPosition[] = useMemo(() => {
+    return tradeExecutions
+      .filter((e) => e.status === 'open')
+      .map((e) => {
+        const entryPrice = parseFloat(e.entryPrice || '0');
+        const quantity = parseFloat(e.quantity || '0');
+        const currentPrice = entryPrice;
+
+        let pnl = 0;
+        if (e.side === 'LONG') {
+          pnl = (currentPrice - entryPrice) * quantity;
+        } else {
+          pnl = (entryPrice - currentPrice) * quantity;
+        }
+        const pnlPercent = entryPrice > 0 ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0;
+        const adjustedPnlPercent = e.side === 'LONG' ? pnlPercent : -pnlPercent;
+
+        return {
+          id: e.id,
+          symbol: e.symbol,
+          side: e.side,
+          quantity,
+          avgPrice: entryPrice,
+          currentPrice,
+          pnl,
+          pnlPercent: adjustedPnlPercent,
+          stopLoss: e.stopLoss ? parseFloat(e.stopLoss) : undefined,
+          takeProfit: e.takeProfit ? parseFloat(e.takeProfit) : undefined,
+          setupType: e.setupType || undefined,
+          openedAt: new Date(e.openedAt),
+        };
+      });
+  }, [tradeExecutions]);
 
   const wallets = backendWallets.map((w) => ({
     id: w.id,
@@ -84,7 +121,7 @@ export const Portfolio = () => {
           <Box maxH="calc(100vh - 400px)" overflowY="auto">
             <Stack gap={2}>
               {positions.map((position) => (
-                <PositionCard key={position.symbol} position={position} currency={activeWallet.currency} />
+                <PositionCard key={position.id} position={position} currency={activeWallet.currency} />
               ))}
             </Stack>
           </Box>
@@ -95,13 +132,14 @@ export const Portfolio = () => {
 };
 
 interface PositionCardProps {
-  position: import('@marketmind/types').Position;
-  currency: import('@marketmind/types').WalletCurrency;
+  position: PortfolioPosition;
+  currency: string;
 }
 
 const PositionCard = ({ position, currency }: PositionCardProps) => {
   const { t } = useTranslation();
   const isProfitable = position.pnl >= 0;
+  const isLong = position.side === 'LONG';
 
   return (
     <Box
@@ -109,14 +147,31 @@ const PositionCard = ({ position, currency }: PositionCardProps) => {
       bg="bg.muted"
       borderRadius="md"
       borderLeft="4px solid"
-      borderColor={isProfitable ? 'green.500' : 'red.500'}
+      borderColor={isLong ? 'green.500' : 'red.500'}
     >
-      <Flex justify="space-between" align="center" mb={2}>
-        <Text fontWeight="bold" fontSize="sm">
-          {position.symbol}
-        </Text>
+      <Flex justify="space-between" align="flex-start" mb={2}>
+        <Stack gap={1.5}>
+          <Text fontWeight="bold" fontSize="sm">
+            {position.symbol}
+          </Text>
+          <Flex gap={2} align="center">
+            <Badge colorPalette={isLong ? 'green' : 'red'} size="sm" px={2}>
+              {t(`trading.ticket.${isLong ? 'long' : 'short'}`)}
+            </Badge>
+            {position.setupType && (
+              <Badge colorPalette="purple" size="sm" px={2}>
+                {position.setupType}
+              </Badge>
+            )}
+          </Flex>
+        </Stack>
         <Text fontSize="xs" color="fg.muted">
-          {position.orders.length} {t('trading.portfolio.orders')}
+          {position.openedAt.toLocaleString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
         </Text>
       </Flex>
 
@@ -129,10 +184,18 @@ const PositionCard = ({ position, currency }: PositionCardProps) => {
           <Text color="fg.muted">{t('trading.portfolio.avgPrice')}</Text>
           <Text>{currency} {position.avgPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
         </Flex>
-        <Flex justify="space-between">
-          <Text color="fg.muted">{t('trading.portfolio.currentPrice')}</Text>
-          <Text>{currency} {position.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-        </Flex>
+        {position.stopLoss && (
+          <Flex justify="space-between">
+            <Text color="fg.muted">{t('trading.orders.stopLoss')}</Text>
+            <Text color="red.500">{currency} {position.stopLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+          </Flex>
+        )}
+        {position.takeProfit && (
+          <Flex justify="space-between">
+            <Text color="fg.muted">{t('trading.orders.takeProfit')}</Text>
+            <Text color="green.500">{currency} {position.takeProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+          </Flex>
+        )}
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.portfolio.pnl')}</Text>
           <Text fontWeight="medium" color={isProfitable ? 'green.500' : 'red.500'}>

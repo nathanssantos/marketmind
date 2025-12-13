@@ -340,28 +340,23 @@ export const useOrderLinesRenderer = (
     }>();
 
     activeOrdersList.forEach((order) => {
-      const key = order.symbol;
+      const isLong = isOrderLong(order);
+      const key = `${order.symbol}-${isLong ? 'LONG' : 'SHORT'}`;
       const existing = groupedPositions.get(key);
-      const orderQuantity = isOrderLong(order) ? getOrderQuantity(order) : -getOrderQuantity(order);
+      const orderQuantity = isLong ? getOrderQuantity(order) : -getOrderQuantity(order);
 
       if (existing) {
         const newNetQty = existing.netQuantity + orderQuantity;
-        const sameDirection = (existing.netQuantity > 0 && orderQuantity > 0) || (existing.netQuantity < 0 && orderQuantity < 0);
-        
-        let avgPrice = existing.avgPrice;
-        
-        if (sameDirection) {
-          const entryPrice = getOrderPrice(order);
-          const totalInvestment = Math.abs(existing.avgPrice * existing.netQuantity) + Math.abs(entryPrice * orderQuantity);
-          avgPrice = totalInvestment / Math.abs(newNetQty || 1);
-        }
-        
+
         const entryPrice = getOrderPrice(order);
+        const totalInvestment = Math.abs(existing.avgPrice * existing.netQuantity) + Math.abs(entryPrice * orderQuantity);
+        const avgPrice = totalInvestment / Math.abs(newNetQty || 1);
+
         const quantity = getOrderQuantity(order);
-        const orderPnL = isOrderLong(order)
+        const orderPnL = isLong
           ? (currentPrice - entryPrice) * quantity
           : (entryPrice - currentPrice) * quantity;
-        
+
         existing.avgPrice = avgPrice;
         existing.netQuantity = newNetQty;
         existing.totalPnL += orderPnL;
@@ -370,7 +365,7 @@ export const useOrderLinesRenderer = (
       } else {
         const entryPrice = getOrderPrice(order);
         const quantity = getOrderQuantity(order);
-        const orderPnL = isOrderLong(order)
+        const orderPnL = isLong
           ? (currentPrice - entryPrice) * quantity
           : (entryPrice - currentPrice) * quantity;
 
@@ -485,7 +480,7 @@ export const useOrderLinesRenderer = (
         setupTypes,
       };
 
-      const positionId = `position-${position.symbol}`;
+      const positionId = `position-${position.symbol}-${isLong ? 'LONG' : 'SHORT'}`;
 
       orderHitboxesRef.current.push({
         orderId: positionId,
@@ -602,7 +597,7 @@ export const useOrderLinesRenderer = (
       const y = manager.priceToY(position.avgPrice);
       if (y >= 0 && y <= chartHeight) {
         const isLong = position.type === 'long';
-        const positionId = `position-${position.symbol}-${position.type}`;
+        const positionId = `position-${position.symbol}-${isLong ? 'LONG' : 'SHORT'}`;
 
         const setupTypes = [...new Set(position.orders.map(o => o.setupType).filter(Boolean))] as string[];
         const positionData = {

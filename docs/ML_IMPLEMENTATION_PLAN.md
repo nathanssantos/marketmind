@@ -53,7 +53,8 @@ Integração de Machine Learning para:
 | Phase 5: Evaluation | ✅ Complete | 100% | ClassificationMetrics + TradingMetrics + BacktestIntegration |
 | Phase 6: Frontend & Production | ✅ Complete | 100% | Hooks + components + backend integration |
 | Phase 7: Auto-Trading Integration | 🔄 In Progress | 70% | Backend scheduler + DB persistence + auto-fetch complete |
-| Phase 8: Model Regeneration | 🔄 In Progress | 40% | Data cleaning + training data generation in progress |
+| Phase 8: Model Regeneration | 🔄 In Progress | 60% | 1w,1d,4h,1h,30m,15m,5m complete, 1m in progress |
+| Phase 9: Full System Optimization | ⏳ Pending | 0% | Grid search + walk-forward validation pipeline |
 
 **Legend:** ✅ Complete | 🔄 In Progress | ⏳ Pending | ❌ Blocked
 
@@ -2037,6 +2038,63 @@ Antes de treinar os modelos ML, precisamos validar as estratégias existentes:
 | 2025-12-13 | Deleted all old klines (644 rows) and ML models for clean slate | Claude |
 | 2025-12-13 | Generating multi-timeframe training data: 1w, 1d, 4h, 1h, 30m, 15m, 5m, 1m | Claude |
 | 2025-12-13 | Training data stats: 1w=714, 1d=6,310, 4h=29,923, 1h=76,028 samples | Claude |
+| 2025-12-13 | Phase 9 added: Full System Optimization Pipeline (see plan file) | Claude |
+
+---
+
+## Phase 9: Full System Optimization Pipeline
+
+### 9.1 Overview
+
+Pipeline completo de otimização que combina ML + trading system parameters (pyramiding, trailing stops) com walk-forward validation.
+
+**Detailed Plan:** See [OPTIMIZATION_PIPELINE_PLAN.md](./OPTIMIZATION_PIPELINE_PLAN.md)
+
+### 9.2 Pipeline Summary
+
+1. **Data Consolidation** - Concatenate all timeframe CSVs into unified dataset
+2. **Train Unified Model** - XGBoost with walk-forward cross-validation
+3. **Grid Search** - Optimize pyramiding, trailing stop, and ML threshold parameters
+4. **Walk-Forward Validation** - 6-month train, 2-month test windows
+5. **Per-Timeframe Calibration** - Optimize ML thresholds by interval
+6. **Integration** - Apply calibrated thresholds to auto-trading scheduler
+
+### 9.3 Key Parameters to Optimize
+
+**ML Thresholds (per timeframe):**
+- `mlMinProbability`: [0.03, 0.05, 0.07, 0.10]
+- `mlMinConfidence`: [40, 50, 60, 70]
+
+**Pyramiding:**
+- `PYRAMID_PROFIT_THRESHOLD`: [0.005, 0.01, 0.015, 0.02]
+- `PYRAMID_SCALE_FACTOR`: [0.6, 0.7, 0.8, 0.9]
+- `PYRAMID_MAX_ENTRIES`: [3, 4, 5, 6]
+
+**Trailing Stop:**
+- `BREAKEVEN_PROFIT_THRESHOLD`: [0.003, 0.005, 0.007, 0.01]
+- `MIN_TRAILING_DISTANCE_PERCENT`: [0.001, 0.002, 0.003]
+- `SWING_LOOKBACK`: [2, 3, 4, 5]
+
+### 9.4 Success Metrics
+
+- Out-of-sample Sharpe > In-sample × 0.7 (max 30% degradation)
+- Win rate improvement > 5% vs baseline
+- Drawdown reduction > 10%
+- Profit factor > 1.5
+
+### 9.5 Tasks
+
+| Task | Status | File |
+|------|--------|------|
+| Concatenate all CSVs | ⏳ | `packages/ml/scripts/concatenate_training.sh` |
+| Train unified XGBoost | ⏳ | `packages/ml/scripts/train_setup_classifier.py` |
+| Create optimization CLI | ⏳ | `apps/backend/src/cli/commands/optimize-full-system.ts` |
+| Implement FullSystemOptimizer | ⏳ | `apps/backend/src/services/backtesting/FullSystemOptimizer.ts` |
+| Create threshold constants | ⏳ | `packages/ml/src/constants/optimizedThresholds.ts` |
+| Make pyramiding configurable | ⏳ | `apps/backend/src/services/pyramiding.ts` |
+| Make trailing stop configurable | ⏳ | `apps/backend/src/services/trailing-stop.ts` |
+| Integrate calibrated thresholds | ⏳ | `apps/backend/src/services/auto-trading-scheduler.ts` |
+| Export results | ⏳ | JSON + Markdown reports |
 
 ---
 

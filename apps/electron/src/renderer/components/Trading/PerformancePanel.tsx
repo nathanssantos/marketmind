@@ -10,6 +10,7 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useBackendAnalytics, type AnalyticsPeriod } from '../../hooks/useBackendAnalytics';
 
 interface PerformancePanelProps {
@@ -17,6 +18,7 @@ interface PerformancePanelProps {
 }
 
 export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
+  const { t } = useTranslation();
   const [period, setPeriod] = useState<AnalyticsPeriod>('all');
   const { performance, isLoadingPerformance } = useBackendAnalytics(walletId, period);
 
@@ -34,7 +36,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
     return (
       <Stack gap={4} p={4} bg="gray.50" _dark={{ bg: 'gray.800' }} borderRadius="md" borderWidth="1px">
         <Text textAlign="center" color="gray.500" py={8}>
-          No performance data available
+          {t('trading.analytics.performance.noData')}
         </Text>
       </Stack>
     );
@@ -56,18 +58,18 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
     return `${sign}$${Math.abs(value).toFixed(2)}`;
   };
 
-  const periods: { value: AnalyticsPeriod; label: string }[] = [
-    { value: 'day', label: 'Day' },
-    { value: 'week', label: 'Week' },
-    { value: 'month', label: 'Month' },
-    { value: 'all', label: 'All Time' },
+  const periods: { value: AnalyticsPeriod; labelKey: string }[] = [
+    { value: 'day', labelKey: 'trading.analytics.periods.day' },
+    { value: 'week', labelKey: 'trading.analytics.periods.week' },
+    { value: 'month', labelKey: 'trading.analytics.periods.month' },
+    { value: 'all', labelKey: 'trading.analytics.periods.all' },
   ];
 
   return (
     <Stack gap={4} p={6} bg="gray.50" _dark={{ bg: 'gray.800' }} borderRadius="md" borderWidth="1px">
       <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px">
         <Text fontSize="lg" fontWeight="bold">
-          Performance
+          {t('trading.analytics.performance.title')}
         </Text>
         <ButtonGroup size="sm" variant="outline">
           {periods.map((p) => (
@@ -76,7 +78,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
               onClick={() => setPeriod(p.value)}
               variant={period === p.value ? 'solid' : 'outline'}
             >
-              {p.label}
+              {t(p.labelKey)}
             </Button>
           ))}
         </ButtonGroup>
@@ -86,7 +88,6 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
         templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(5, 1fr)' }}
         gap={4}
       >
-        {/* Total Return */}
         <GridItem>
           <Box
             p={4}
@@ -98,7 +99,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
             _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
           >
             <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              TOTAL RETURN
+              {t('trading.analytics.performance.totalReturn').toUpperCase()}
             </Text>
             <Text fontSize="2xl" fontWeight="bold" color={getValueColor(performance.totalReturn)}>
               {formatPercent(performance.totalReturn)}
@@ -106,7 +107,6 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
           </Box>
         </GridItem>
 
-        {/* Net PnL */}
         <GridItem>
           <Box
             p={4}
@@ -118,18 +118,17 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
             _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
           >
             <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              NET PNL
+              {t('trading.analytics.performance.netPnL').toUpperCase()}
             </Text>
             <Text fontSize="2xl" fontWeight="bold" color={getValueColor(performance.netPnL)}>
               {formatCurrency(performance.netPnL)}
             </Text>
             <Text fontSize="xs" color="gray.500" mt={1}>
-              Gross: {formatCurrency(performance.totalPnL)} - Fees: ${performance.totalFees.toFixed(2)}
+              {t('trading.analytics.performance.grossPnL')}: {formatCurrency(performance.totalPnL)} - {t('trading.analytics.performance.fees')}: ${performance.totalFees.toFixed(2)}
             </Text>
           </Box>
         </GridItem>
 
-        {/* Win Rate */}
         <GridItem>
           <Box
             p={4}
@@ -141,7 +140,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
             _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
           >
             <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              WIN RATE
+              {t('trading.analytics.performance.winRate').toUpperCase()}
             </Text>
             <Text fontSize="2xl" fontWeight="bold">
               {performance.winRate.toFixed(1)}%
@@ -152,7 +151,6 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
           </Box>
         </GridItem>
 
-        {/* Profit Factor */}
         <GridItem>
           <Box
             p={4}
@@ -164,7 +162,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
             _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
           >
             <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              PROFIT FACTOR
+              {t('trading.analytics.performance.profitFactor').toUpperCase()}
             </Text>
             <Text
               fontSize="2xl"
@@ -176,7 +174,6 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
           </Box>
         </GridItem>
 
-        {/* Total Trades */}
         <GridItem>
           <Box
             p={4}
@@ -188,7 +185,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
             _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
           >
             <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              TOTAL TRADES
+              {t('trading.analytics.performance.totalTrades').toUpperCase()}
             </Text>
             <Text fontSize="2xl" fontWeight="bold">
               {performance.totalTrades}
@@ -196,7 +193,6 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
           </Box>
         </GridItem>
 
-        {/* Average Win */}
         <GridItem>
           <Box
             p={4}
@@ -208,7 +204,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
             _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
           >
             <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              AVG WIN
+              {t('trading.analytics.performance.avgWin').toUpperCase()}
             </Text>
             <Text fontSize="2xl" fontWeight="bold" color="green.500">
               {formatCurrency(performance.avgWin)}
@@ -216,7 +212,6 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
           </Box>
         </GridItem>
 
-        {/* Average Loss */}
         <GridItem>
           <Box
             p={4}
@@ -228,7 +223,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
             _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
           >
             <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              AVG LOSS
+              {t('trading.analytics.performance.avgLoss').toUpperCase()}
             </Text>
             <Text fontSize="2xl" fontWeight="bold" color="red.500">
               {formatCurrency(performance.avgLoss)}
@@ -236,7 +231,6 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
           </Box>
         </GridItem>
 
-        {/* Max Drawdown */}
         <GridItem>
           <Box
             p={4}
@@ -248,7 +242,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
             _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
           >
             <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              MAX DRAWDOWN
+              {t('trading.analytics.performance.maxDrawdown').toUpperCase()}
             </Text>
             <Text fontSize="2xl" fontWeight="bold" color="red.500">
               -{performance.maxDrawdown.toFixed(2)}%
@@ -256,7 +250,6 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
           </Box>
         </GridItem>
 
-        {/* Largest Win */}
         <GridItem>
           <Box
             p={4}
@@ -268,7 +261,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
             _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
           >
             <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              LARGEST WIN
+              {t('trading.analytics.performance.largestWin').toUpperCase()}
             </Text>
             <Text fontSize="2xl" fontWeight="bold" color="green.500">
               {formatCurrency(performance.largestWin)}
@@ -276,7 +269,6 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
           </Box>
         </GridItem>
 
-        {/* Largest Loss */}
         <GridItem>
           <Box
             p={4}
@@ -288,7 +280,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
             _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
           >
             <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              LARGEST LOSS
+              {t('trading.analytics.performance.largestLoss').toUpperCase()}
             </Text>
             <Text fontSize="2xl" fontWeight="bold" color="red.500">
               {formatCurrency(performance.largestLoss)}

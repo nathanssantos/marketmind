@@ -6,273 +6,253 @@ Copy this entire document and paste it in a new Claude Code chat to continue.
 
 ---
 
-## Project Summary
+## Current State (2025-12-13)
 
-MarketMind is an Electron-based trading application with:
-- **105 trading strategies** in JSON format (backend)
-- **Backtest engine** for strategy validation
-- **Indicator library** in TypeScript (fully implemented)
-- **Crypto data integration** with Binance Futures API and CoinGecko
-- **Backend API** with Fastify + tRPC + PostgreSQL + TimescaleDB
-- **Frontend** Electron + React 19 + Chakra UI
+### Completed Tasks
 
-## Completed Work
+1. **ML Model v2 Trained & Deployed**
+   - Unified dataset: 464,136 samples across 7 timeframes (1w, 1d, 4h, 1h, 30m, 15m, 5m)
+   - Model location: `apps/backend/models/setup-classifier-v2.json`
+   - Metrics: Accuracy 70.9%, Precision 57%, AUC 0.686
+   - Missing 1m data (still generating)
 
-### Sprint 2.5 - Setup Detection Centralization (COMPLETE ✅)
+2. **Concatenation Script Created**
+   - File: `packages/ml/scripts/concatenate_training.sh`
+   - Combines all training CSVs with `interval` column
+   - Output: `packages/ml/data/training_unified.csv`
 
-**ALL legacy frontend detector code REMOVED:**
-- ❌ Deleted 12 detector files (Setup91-94, Pattern123, BullTrap, BearTrap, BreakoutRetest, Base, SetupCancellation, Service, index)
-- ❌ Deleted entire `setupDetection/` directory from frontend
-- ❌ Removed 3 legacy detectors from backend (Pattern123, BearTrap, MeanReversion)
-- ❌ Removed obsolete `updateSetupConfig` function from setupStore
+3. **Training Config**
+   - File: `packages/ml/data/training_unified-config.json`
+   - 139 features including `interval_encoded`
 
-**NEW centralized architecture:**
-- ✅ Created `apps/backend/src/routers/setup-detection.ts` (260 lines) - tRPC router with 5 endpoints
-- ✅ Created `apps/electron/src/renderer/services/trpc.ts` - tRPC client
-- ✅ Created `apps/electron/src/types/backend.d.ts` - Type declarations
-- ✅ Refactored SetupTogglePopover to fetch strategies from backend via `useStrategyList` hook
-- ✅ Simplified SetupConfigTab (270→90 lines) - now only global settings (minConfidence, minRiskReward)
-- ✅ Rewrote setupConfig.ts (122→30 lines) - now just `{ enabledStrategies: string[], minConfidence: number, minRiskReward: number }`
-- ✅ Updated setupStore.ts - removed updateSetupConfig, changed toggleAutoTrading logic
+4. **Trading System Infrastructure**
+   - Pyramiding: `apps/backend/src/services/pyramiding.ts`
+   - Trailing Stop: `apps/backend/src/services/trailing-stop.ts`
+   - Position Monitor: `apps/backend/src/services/position-monitor.ts`
+   - Auto-Trading Scheduler: `apps/backend/src/services/auto-trading-scheduler.ts`
 
-**tRPC Endpoints:**
-```typescript
-setupDetection.listStrategies()      // Returns all 105 strategy definitions
-setupDetection.getStrategyDetails()  // Returns specific strategy metadata
-setupDetection.detectSetups()        // Run detection on current klines
-setupDetection.detectSetupsInRange() // Historical range detection
-setupDetection.validateStrategy()    // Validate strategy JSON
-```
+5. **Pyramiding Connected to Auto-Trading Scheduler**
+   - Evaluates pyramid opportunities before new entries
+   - Adjusts stop loss after pyramid entries
+   - Lines 541-574, 661-694 in `auto-trading-scheduler.ts`
 
-**Test Results:**
-- Frontend: 1,808 tests passing (1,781 unit + 27 browser) ✅
-- Backend: 151 tests passing ✅
-- **Total: 1,959 tests - 100% pass rate**
-- Zero TypeScript errors ✅
+6. **ML-Based Position Sizing**
+   - Position size = maxPositionSize × mlConfidence
+   - Floor: 20% of maxPositionSize (prevents tiny positions)
+   - Ceiling: 100% of maxPositionSize
+   - File: `apps/backend/src/services/pyramiding.ts`
 
-**Architecture:**
-- Frontend detectors: GONE (100% removed)
-- Backend: Single StrategyInterpreter handles all 105 JSON strategies
-- Type-safety: Full tRPC type inference from backend to frontend
-- State: enabledStrategies array instead of individual setup objects
+7. **maxPositionSize Updated to 50%**
+   - Database updated: `auto_trading_config.max_position_size = 50`
+   - Position sizes now range from 10% to 50% based on ML confidence
 
-### All 41 Technical Indicators Implemented (7 Sprints Complete)
+8. **Auto-Trading Connected to Real Execution**
+   - File: `apps/backend/src/services/auto-trading-scheduler.ts`
+   - Wallet types: `live`/`testnet` → real Binance orders, `paper` → DB only
+   - MARKET orders for entries, STOP_LOSS_LIMIT for SL, LIMIT for TP
+   - Stores actual fill price/quantity from Binance in `trade_executions`
+   - **Safety flag**: `ENABLE_LIVE_TRADING=false` in `.env` disables real orders (default: false)
 
-**Sprint 1 - Trend Indicators:**
-- ROC (Rate of Change)
-- DEMA (Double EMA)
-- TEMA (Triple EMA)
-- WMA (Weighted MA)
-- HMA (Hull MA)
-- CMO (Chande Momentum Oscillator)
+9. **Complete Binance Integration**
+   - `closeTradeExecution` - executes MARKET exit order on Binance (live/testnet)
+   - `closePosition` - executes MARKET exit order on Binance (live/testnet)
+   - `getPortfolio` - fetches all assets from Binance, calculates total value in USDT
+   - All endpoints respect `ENABLE_LIVE_TRADING` flag
 
-**Sprint 2 - Oscillators:**
-- AO (Awesome Oscillator)
-- PPO (Percentage Price Oscillator)
-- TSI (True Strength Index)
-- Ultimate Oscillator
+### In Progress
 
-**Sprint 3 - Trend & Volatility:**
-- Aroon (Up/Down/Oscillator)
-- DMI (+DI/-DI)
-- Vortex (VI+/VI-)
-- Parabolic SAR
-- Mass Index
-
-**Sprint 4 - Volume:**
-- CMF (Chaikin Money Flow)
-- Klinger Volume Oscillator
-- Elder Ray (Bull/Bear Power)
-- Delta Volume
-
-**Sprint 5 - Structure:**
-- Swing Points (High/Low detection)
-- FVG (Fair Value Gap)
-- Candle Patterns (15 patterns: doji, hammer, engulfing, morning/evening star, etc.)
-- Gap Detection
-- Fibonacci (Retracement/Extension)
-
-**Sprint 6 - Support/Resistance:**
-- Floor Trader Pivot Points (Standard, Fibonacci, Woodie, Camarilla, Demark)
-- Liquidity Levels (zones, sweeps detection, clustering)
-
-**Sprint 7 - Crypto-Specific:**
-- Funding Rate (calculations, signals, MA, annualization, cost)
-- Open Interest (divergence detection, OI ratio, trends)
-- Liquidations (cascade detection, delta, cumulative, heatmap)
-- BTC Dominance (altcoin season detection, trends, phases)
-- Relative Strength vs BTC (outperformance analysis, comparisons)
-
-### Binance Futures API Integration (Complete)
-
-**Created Services:**
-1. `apps/backend/src/services/binance-futures-data.ts` - Binance Futures data:
-   - `getFundingRate()` - Historical funding rate
-   - `getCurrentFundingRate()` - Real-time funding rate
-   - `getOpenInterest()` - Historical open interest
-   - `getCurrentOpenInterest()` - Real-time open interest
-   - `getLiquidations()` - Aggregated liquidation data
-   - `getLongShortRatio()` - Global long/short account ratio
-   - `getTopTraderLongShortRatio()` - Top trader positions
-   - `getTakerBuySellVolume()` - Taker buy/sell volume
-   - Built-in caching with 60s TTL
-
-2. `apps/backend/src/services/btc-dominance-data.ts` - BTC Dominance:
-   - Primary: **CoinGecko API** (FREE, no API key required)
-   - Fallback: CoinMarketCap API (optional, needs API key)
-   - `getBTCDominance()` - Returns btcDominance, ethDominance, totalMarketCap
-   - `getBTCDominanceResult()` - Returns analysis with trend
-   - Cache: 2 minutes TTL
-
-3. `apps/backend/src/services/setup-detection/dynamic/IndicatorEngine.ts` - Updated:
-   - New async method `computeIndicatorsWithCryptoData()` for strategies using crypto indicators
-   - Crypto data caching (60s TTL)
-   - Integration with all crypto indicator functions
-
-### Crypto Indicators Available in IndicatorEngine:
-
-| Indicator | Data Source | Output Fields |
-|-----------|-------------|---------------|
-| fundingRate | Binance Futures | current, signal (1=long, -1=short, 0=none) |
-| openInterest | Binance Futures | current, trend (1=up, -1=down, 0=stable), divergence |
-| liquidations | Binance Futures | delta, cascade (1/0), dominantSide (1=long, -1=short, 0=balanced) |
-| relativeStrength | Calculated | ratio, outperforming (1/0), strength (2/1/0/-1) |
-| btcDominance | CoinGecko | current |
-
-### Test Results
-- **Frontend:** 1,808 tests passing (1,781 unit + 27 browser)
-- **Backend:** 151 tests passing
-- **Indicators:** 878+ tests passing
-- **Total:** 2,837+ tests with 100% pass rate ✅
-- Build passes with TypeScript strict mode
-- All indicators exported from `packages/indicators/src/index.ts`
-
-## Key Locations
-
-```
-# Backend
-/apps/backend/strategies/builtin/                                           # 105 strategy JSON files
-/apps/backend/src/routers/setup-detection.ts                                # NEW: tRPC setup detection endpoints
-/apps/backend/src/services/setup-detection/SetupDetectionService.ts         # Refactored (427→200 lines)
-/apps/backend/src/services/setup-detection/dynamic/IndicatorEngine.ts       # Indicator computation
-/apps/backend/src/services/backtest/                                        # Backtest engine
-/apps/backend/src/services/binance-futures-data.ts                          # Binance Futures API
-/apps/backend/src/services/btc-dominance-data.ts                            # BTC Dominance API
-
-# Frontend
-/apps/electron/src/renderer/services/trpc.ts                                # NEW: tRPC client
-/apps/electron/src/types/backend.d.ts                                       # NEW: Backend type declarations
-/apps/electron/src/renderer/hooks/useSetupDetection.ts                      # NEW: useStrategyList hook
-/apps/electron/src/renderer/components/Layout/SetupTogglePopover.tsx        # Refactored (uses backend)
-/apps/electron/src/renderer/components/Settings/SetupConfigTab.tsx          # Simplified (270→90 lines)
-/apps/electron/src/renderer/store/setupConfig.ts                            # Rewritten (122→30 lines)
-/apps/electron/src/renderer/store/setupStore.ts                             # Refactored (removed updateSetupConfig)
-
-# Packages
-/packages/indicators/src/                                                   # Indicator implementations
-
-# Documentation
-/docs/STRATEGY_IMPLEMENTATION_PLAN.md                                       # Implementation plan
-/.github/copilot-instructions.md                                            # Project guidelines
-```
-
-## Commands
-
+**1m Training Data Generation**
 ```bash
-# Test commands
-pnpm test                                          # Run all tests (frontend + backend)
-pnpm --filter @marketmind/electron test            # Frontend tests only
-pnpm --filter @marketmind/backend test             # Backend tests only
-pnpm --filter @marketmind/indicators test          # Indicator tests only
+# Check if still running:
+ps aux | grep backtest-runner | grep -v grep
 
-# Type checking
-pnpm --filter @marketmind/electron type-check      # Frontend TypeScript check
-pnpm --filter @marketmind/backend type-check       # Backend TypeScript check
-
-# Development
-cd apps/backend && pnpm dev                        # Start backend server (localhost:3001)
-cd apps/electron && pnpm dev                       # Start frontend Electron app
-
-# Build
-pnpm --filter @marketmind/indicators build         # Build indicators package
-pnpm --filter @marketmind/backend build            # Build backend
-pnpm --filter @marketmind/electron build           # Build Electron app
-
-# Backtest
-pnpm --filter @marketmind/backend exec tsx src/cli/backtest-runner.ts validate \
-  -s connors-rsi2-original --symbol BTCUSDT -i 1d --start 2024-01-01 --end 2024-10-01
+# Check if file created:
+ls -la packages/ml/data/training_1m.csv
 ```
 
-## Architecture Changes
+When 1m completes:
+```bash
+cd packages/ml
+./scripts/concatenate_training.sh
+source .venv/bin/activate
+python scripts/train_setup_classifier.py \
+  --config data/training_unified-config.json \
+  --data data/training_unified.csv \
+  --output models/setup-classifier-v3.onnx \
+  --importance models/feature_importance.json
 
-**Before Sprint 2.5:**
-```
-Frontend:
-  - 12 detector TypeScript classes (Setup91-94, Pattern123, etc.)
-  - SetupDetectionService managing all detectors
-  - setupConfig with 8 individual setup objects
-  
-Backend:
-  - 3 legacy detectors + 105 JSON strategies
-```
-
-**After Sprint 2.5:**
-```
-Frontend:
-  - ❌ ZERO detector classes (all deleted)
-  - tRPC client calls backend
-  - setupConfig: { enabledStrategies: string[], minConfidence, minRiskReward }
-  
-Backend:
-  - 105 JSON strategies handled by StrategyInterpreter
-  - tRPC router with 5 endpoints
-  - Type-safe API with full inference
+# Copy to backend
+cp models/setup-classifier-v3.json ../../apps/backend/models/
+# Update apps/backend/models/manifest.json to include v3
 ```
 
-## TypeScript Notes
+### Pending Tasks (Priority Order)
 
-The codebase uses strict TypeScript with `noUncheckedIndexedAccess`. When accessing array elements:
-- Use non-null assertion (`array[i]!`) when index is guaranteed valid
-- Use null/undefined checks (`if (val === null || val === undefined)`) for array element type narrowing
+1. **Re-train with 1m data** (when generation completes)
+   - Expected: ~1M+ samples
+   - Will improve model coverage for short timeframes
 
-## Branch
-- Current: `main` (Sprint 2.5 complete)
-- All changes committed and tested
+2. **✅ Connect Auto-Trading to Real Execution** (COMPLETED)
+   - Auto-trading scheduler now executes real Binance orders for `live` and `testnet` wallets
+   - Paper wallets (`paper` type) continue with DB-only simulation
+   - Entry orders placed as MARKET orders for immediate execution
+   - Stop loss and take profit orders automatically placed after entry
+   - `entryOrderId` stored in `trade_executions` table
+   - Actual fill price and quantity from Binance used (not setup estimates)
 
-## What's Next?
-
-Sprint 2.5 complete! Potential next tasks:
-1. **Frontend Integration:** Wire up tRPC endpoints to chart detection display
-2. **Real-time Detection:** Implement WebSocket streaming for live setup detection
-3. **Strategy Management UI:** Add/edit/delete strategies from frontend
-4. **Performance:** Add strategy caching and optimization
-5. **Crypto Strategies:** Create more strategies using new crypto indicators
-3. Add real-time crypto data streaming (WebSocket)
-4. Optimize backtesting with crypto indicators
-5. Add indicator documentation/tooltips in the UI
-6. Create indicator presets/configurations
+3. **Phase 9: Full System Optimization** (from OPTIMIZATION_PIPELINE_PLAN.md)
+   - Grid search on pyramiding/trailing stop parameters
+   - Walk-forward validation
+   - Per-timeframe ML threshold calibration
 
 ---
 
-## Request Template
+## Key Files Reference
+
+| File | Purpose |
+|------|---------|
+| `apps/backend/models/manifest.json` | ML model registry (v1 & v2) |
+| `apps/backend/src/services/auto-trading-scheduler.ts` | Main trading orchestrator |
+| `apps/backend/src/services/auto-trading.ts` | Has `executeBinanceOrder()` |
+| `apps/backend/src/services/pyramiding.ts` | Position scaling logic + ML-based sizing |
+| `apps/backend/src/services/trailing-stop.ts` | Trailing stop logic |
+| `packages/ml/scripts/concatenate_training.sh` | CSV concatenation script |
+| `packages/ml/scripts/train_setup_classifier.py` | Model training script |
+| `docs/OPTIMIZATION_PIPELINE_PLAN.md` | Full optimization pipeline plan |
+| `docs/TRADING_SYSTEM.md` | Trading system documentation |
+
+---
+
+## Position Sizing Logic
+
+Current formula in `pyramiding.ts`:
+
+```typescript
+// Initial position (no existing entries)
+baseSizePercent = maxPositionSize × mlConfidence
+baseSizePercent = Math.max(baseSizePercent, maxPositionSize × 0.2)  // Floor 20%
+baseSizePercent = Math.min(baseSizePercent, maxPositionSize)       // Ceiling 100%
+
+// Pyramid entries
+pyramidSize = baseQuantity × PYRAMID_SCALE_FACTOR × mlConfidence
+pyramidSize = Math.max(pyramidSize, baseQuantity × 0.2)            // Floor 20%
+```
+
+| ML Confidence | Position Size (max 50%) |
+|---------------|-------------------------|
+| 100% | 50% of wallet |
+| 80% | 40% of wallet |
+| 60% | 30% of wallet |
+| 40% | 20% of wallet |
+| 20% | 10% of wallet (floor) |
+
+---
+
+## Recent Fixes Applied
+
+1. **Position Grouping by Direction** - Fixed SL/TP visualization for LONG vs SHORT
+   - `useOrderLinesRenderer.ts`: Changed grouping key to `${symbol}-${direction}`
+
+2. **Opposite Direction Prevention** - Blocks opening LONG when SHORT exists (One-Way Mode)
+   - `auto-trading-scheduler.ts`: Added check before opening new positions
+
+3. **Pyramiding Integration** - Connected pyramiding service to auto-trading scheduler
+   - Evaluates if pyramid is possible before creating new entries
+   - Adjusts stop loss to breakeven after pyramid entries
+
+4. **ML-Driven Position Sizing** - Replaced fixed multiplier tiers with ML confidence
+   - Position size scales directly with model confidence
+
+---
+
+## Binance Integration Status
+
+- **Fully Implemented**:
+  - Spot trading, order placement, paper trading, testnet
+  - Position monitoring with automatic SL/TP execution
+  - Auto-trading with real order execution
+  - Manual position/execution close with real Binance orders
+  - Full portfolio fetch (all assets with USDT valuation)
+- **Live Trading Flow**: Setup detected → ML filter → Risk validation → MARKET entry order → SL/TP orders
+- **Safety**: All real execution controlled by `ENABLE_LIVE_TRADING` env flag (default: false)
+- **Not Implemented**: Futures, OCO orders, margin trading
+
+---
+
+## Model Comparison
+
+| Métrica | v1 (1d only) | v2 (Multi-TF) |
+|---------|-------------|---------------|
+| Accuracy | 64.3% | **70.9%** |
+| Precision | 59.7% | 57.0% |
+| Recall | 31.9% | 19.0% |
+| AUC | 65.3% | **68.6%** |
+| Samples | 6,310 | **464,136** |
+
+v2 is more conservative (lower recall) but better discrimination (higher AUC).
+
+---
+
+## Database Configuration
+
+```sql
+-- Current auto_trading_config
+SELECT * FROM auto_trading_config;
+
+-- Key values:
+-- max_position_size: 50 (%)
+-- max_concurrent_positions: 3
+```
+
+---
+
+## Commands Reference
+
+```bash
+# Check training status
+ps aux | grep backtest-runner
+
+# Run concatenation
+cd packages/ml && ./scripts/concatenate_training.sh
+
+# Train model
+cd packages/ml && source .venv/bin/activate
+python scripts/train_setup_classifier.py \
+  --config data/training_unified-config.json \
+  --data data/training_unified.csv \
+  --output models/setup-classifier-v3.onnx
+
+# Copy model to backend
+cp packages/ml/models/setup-classifier-v3.json apps/backend/models/
+
+# Run backend
+cd apps/backend && pnpm dev
+
+# Run frontend
+cd apps/electron && pnpm dev
+
+# Run tests
+pnpm test
+
+# Database access
+psql "postgresql://marketmind:marketmind123@localhost:5432/marketmind"
+```
+
+---
+
+## Starting Prompt for Next Chat
 
 ```
-Working on MarketMind following CLAUDE.md instructions.
+Continuing MarketMind development. See docs/NEXT_CHAT_CONTEXT.md for full context.
 
-Status:
-- Completed: All 41 technical indicators (Sprints 1-7)
-- Completed: Binance Futures API integration (funding rate, OI, liquidations)
-- Completed: BTC Dominance via CoinGecko (free, no API key)
-- Completed: IndicatorEngine crypto indicator support
-- Tests: 878+ passing
-- Build: Passing
-- Branch: feature/setup-optimization
+Current priorities:
+1. Check if 1m training data is complete and retrain model if so
+2. Connect auto-trading scheduler to real order execution
+3. Implement full system optimization pipeline
 
-Reference docs:
-- /docs/NEXT_CHAT_CONTEXT.md
-- /CLAUDE.md
+Reference: docs/OPTIMIZATION_PIPELINE_PLAN.md
 
-Task: [describe your next task here]
+Branch: main
 ```
 
 ---
@@ -280,9 +260,9 @@ Task: [describe your next task here]
 ## Additional Context Files
 
 Read these files first:
-1. `/Users/nathan/Documents/dev/marketmind/CLAUDE.md` - Project conventions
-2. `/packages/indicators/src/index.ts` - All indicator exports
-3. `/apps/backend/src/services/binance-futures-data.ts` - Binance Futures service
-4. `/apps/backend/src/services/btc-dominance-data.ts` - BTC Dominance service
-5. `/apps/backend/src/services/setup-detection/dynamic/IndicatorEngine.ts` - Indicator engine
-6. `/docs/STRATEGY_IMPLEMENTATION_PLAN.md` - Implementation plan reference
+1. `/CLAUDE.md` - Project conventions
+2. `/docs/TRADING_SYSTEM.md` - Trading system architecture
+3. `/docs/OPTIMIZATION_PIPELINE_PLAN.md` - Optimization pipeline plan
+4. `/apps/backend/src/services/auto-trading-scheduler.ts` - Main scheduler
+5. `/apps/backend/src/services/pyramiding.ts` - Position sizing + pyramiding
+6. `/apps/backend/src/services/auto-trading.ts` - Order execution methods

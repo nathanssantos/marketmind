@@ -1,4 +1,4 @@
-import type { Kline, TradingSetup } from '@marketmind/types';
+import type { Interval, Kline, TradingSetup } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
@@ -11,12 +11,15 @@ import {
   setupDetections,
   tradeExecutions,
   wallets,
+  type Wallet,
 } from '../db/schema';
 import { StrategyInterpreter, StrategyLoader } from './setup-detection/dynamic';
 import { riskManagerService } from './risk-manager';
 import { backfillHistoricalKlines, calculateStartTime } from './binance-historical';
-import type { Interval } from '@marketmind/types';
 import { mlService } from './ml';
+import { pyramidingService } from './pyramiding';
+import { autoTradingService } from './auto-trading';
+import { env } from '../env';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -490,6 +493,17 @@ export class AutoTradingScheduler {
         return;
       }
 
+      const walletSupportsLive = wallet.walletType === 'live' || wallet.walletType === 'testnet';
+      const isLiveExecution = walletSupportsLive && env.ENABLE_LIVE_TRADING;
+
+      if (walletSupportsLive && !env.ENABLE_LIVE_TRADING) {
+        log('⚠️ Live trading disabled via ENABLE_LIVE_TRADING=false, using paper mode', {
+          walletType: wallet.walletType,
+        });
+      }
+
+      log('📋 Wallet type', { walletType: wallet.walletType, isLiveExecution, enableLiveTrading: env.ENABLE_LIVE_TRADING });
+
       const openPositions = await db
         .select()
         .from(tradeExecutions)
@@ -523,14 +537,79 @@ export class AutoTradingScheduler {
         return;
       }
 
-      const walletBalance = parseFloat(wallet.currentBalance || '0');
-      const maxPositionSizePercent = parseFloat(config.maxPositionSize);
-      const positionValue = (walletBalance * maxPositionSizePercent) / 100;
+      const oppositeDirectionPosition = openPositions.find(
+        (pos) => pos.symbol === watcher.symbol && pos.side !== setup.direction
+      );
 
-      log('💰 Position sizing', {
+      if (oppositeDirectionPosition) {
+        log('⚠️ Opposite direction position exists - cannot open both LONG and SHORT (One-Way Mode)', {
+          symbol: watcher.symbol,
+          existingDirection: oppositeDirectionPosition.side,
+          newDirection: setup.direction,
+          existingExecutionId: oppositeDirectionPosition.id,
+        });
+        return;
+      }
+
+      const sameDirectionPositions = openPositions.filter(
+        (pos) => pos.symbol === watcher.symbol && pos.side === setup.direction
+      );
+
+      if (sameDirectionPositions.length > 0) {
+        const pyramidEval = await pyramidingService.evaluatePyramid(
+          watcher.userId,
+          watcher.walletId,
+          watcher.symbol,
+          setup.direction,
+          setup.entryPrice,
+          setup.confidence ? setup.confidence / 100 : undefined
+        );
+
+        if (!pyramidEval.canPyramid) {
+          log('⚠️ Position exists but cannot pyramid', {
+            symbol: watcher.symbol,
+            direction: setup.direction,
+            reason: pyramidEval.reason,
+            currentEntries: pyramidEval.currentEntries,
+            maxEntries: pyramidEval.maxEntries,
+            profitPercent: (pyramidEval.profitPercent * 100).toFixed(2) + '%',
+          });
+          return;
+        }
+
+        log('📈 Pyramiding opportunity detected', {
+          symbol: watcher.symbol,
+          direction: setup.direction,
+          currentEntries: pyramidEval.currentEntries,
+          profitPercent: (pyramidEval.profitPercent * 100).toFixed(2) + '%',
+          suggestedSize: pyramidEval.suggestedSize,
+        });
+      }
+
+      const walletBalance = parseFloat(wallet.currentBalance || '0');
+
+      const dynamicSize = await pyramidingService.calculateDynamicPositionSize(
+        watcher.userId,
+        watcher.walletId,
+        watcher.symbol,
+        setup.direction,
+        walletBalance,
+        setup.entryPrice,
+        setup.confidence ? setup.confidence / 100 : undefined
+      );
+
+      if (dynamicSize.quantity <= 0) {
+        log('⚠️ Dynamic sizing returned zero quantity', { reason: dynamicSize.reason });
+        return;
+      }
+
+      const positionValue = dynamicSize.quantity * setup.entryPrice;
+
+      log('💰 Dynamic position sizing', {
         walletBalance: walletBalance.toFixed(2),
-        maxPositionSizePercent,
+        sizePercent: dynamicSize.sizePercent.toFixed(2),
         positionValue: positionValue.toFixed(2),
+        reason: dynamicSize.reason,
       });
 
       const riskValidation = await riskManagerService.validateNewPosition(
@@ -588,16 +667,93 @@ export class AutoTradingScheduler {
 
       const executionId = `exec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-      const quantity = positionValue / setup.entryPrice;
-      const quantityFormatted = quantity.toFixed(8);
+      const quantityFormatted = dynamicSize.quantity.toFixed(8);
 
-      log('📐 Calculated position size', {
+      log('📐 Final position size', {
         positionValue: positionValue.toFixed(2),
         entryPrice: setup.entryPrice,
         quantity: quantityFormatted,
         walletBalance: walletBalance.toFixed(2),
-        maxPositionSizePercent,
+        sizePercent: dynamicSize.sizePercent.toFixed(2),
       });
+
+      let entryOrderId: number | null = null;
+      let actualEntryPrice = setup.entryPrice;
+      let actualQuantity = dynamicSize.quantity;
+
+      if (isLiveExecution) {
+        log('🔴 LIVE EXECUTION - Placing order on Binance', {
+          walletType: wallet.walletType,
+          symbol: watcher.symbol,
+          side: setup.direction === 'LONG' ? 'BUY' : 'SELL',
+          quantity: quantityFormatted,
+        });
+
+        try {
+          const orderResult = await autoTradingService.executeBinanceOrder(
+            wallet as Wallet,
+            {
+              symbol: watcher.symbol,
+              side: setup.direction === 'LONG' ? 'BUY' : 'SELL',
+              type: 'MARKET',
+              quantity: dynamicSize.quantity,
+            }
+          );
+
+          entryOrderId = orderResult.orderId;
+          actualEntryPrice = parseFloat(orderResult.price) || setup.entryPrice;
+          actualQuantity = parseFloat(orderResult.executedQty) || dynamicSize.quantity;
+
+          log('✅ Binance order executed', {
+            orderId: entryOrderId,
+            executedQty: orderResult.executedQty,
+            price: orderResult.price,
+          });
+
+          if (setup.stopLoss) {
+            try {
+              const slOrderId = await autoTradingService.createStopLossOrder(
+                wallet as Wallet,
+                watcher.symbol,
+                actualQuantity,
+                setup.stopLoss,
+                setup.direction
+              );
+              log('🛡️ Stop loss order placed', { slOrderId, stopLoss: setup.stopLoss });
+            } catch (slError) {
+              log('⚠️ Failed to place stop loss order', {
+                error: slError instanceof Error ? slError.message : String(slError),
+              });
+            }
+          }
+
+          if (setup.takeProfit) {
+            try {
+              const tpOrderId = await autoTradingService.createTakeProfitOrder(
+                wallet as Wallet,
+                watcher.symbol,
+                actualQuantity,
+                setup.takeProfit,
+                setup.direction
+              );
+              log('🎯 Take profit order placed', { tpOrderId, takeProfit: setup.takeProfit });
+            } catch (tpError) {
+              log('⚠️ Failed to place take profit order', {
+                error: tpError instanceof Error ? tpError.message : String(tpError),
+              });
+            }
+          }
+        } catch (orderError) {
+          log('❌ Failed to execute Binance order', {
+            error: orderError instanceof Error ? orderError.message : String(orderError),
+          });
+          return;
+        }
+      } else {
+        log('📝 PAPER TRADING - Recording execution without Binance order', {
+          walletType: wallet.walletType,
+        });
+      }
 
       await db.insert(tradeExecutions).values({
         id: executionId,
@@ -607,8 +763,9 @@ export class AutoTradingScheduler {
         setupType: setup.type,
         symbol: watcher.symbol,
         side: setup.direction,
-        entryPrice: setup.entryPrice.toString(),
-        quantity: quantityFormatted,
+        entryPrice: actualEntryPrice.toString(),
+        entryOrderId,
+        quantity: actualQuantity.toFixed(8),
         stopLoss: setup.stopLoss?.toString(),
         takeProfit: setup.takeProfit?.toString(),
         openedAt: new Date(),
@@ -620,13 +777,50 @@ export class AutoTradingScheduler {
         setupType: setup.type,
         symbol: watcher.symbol,
         direction: setup.direction,
-        entryPrice: setup.entryPrice,
-        quantity: quantityFormatted,
-        positionValue: positionValue.toFixed(2),
+        entryPrice: actualEntryPrice,
+        quantity: actualQuantity.toFixed(8),
+        positionValue: (actualQuantity * actualEntryPrice).toFixed(2),
         stopLoss: setup.stopLoss,
         takeProfit: setup.takeProfit,
         confidence: setup.confidence,
+        isLiveExecution,
+        entryOrderId,
       });
+
+      const allOpenExecutions = await db
+        .select()
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.walletId, watcher.walletId),
+            eq(tradeExecutions.symbol, watcher.symbol),
+            eq(tradeExecutions.side, setup.direction),
+            eq(tradeExecutions.status, 'open')
+          )
+        );
+
+      if (allOpenExecutions.length > 1) {
+        const newStopLoss = await pyramidingService.adjustStopLossForPyramid(
+          allOpenExecutions,
+          setup.direction
+        );
+
+        if (newStopLoss !== null) {
+          for (const exec of allOpenExecutions) {
+            await db
+              .update(tradeExecutions)
+              .set({ stopLoss: newStopLoss.toString() })
+              .where(eq(tradeExecutions.id, exec.id));
+          }
+
+          log('🛡️ Stop loss adjusted for pyramid position', {
+            symbol: watcher.symbol,
+            direction: setup.direction,
+            entries: allOpenExecutions.length,
+            newStopLoss: newStopLoss.toFixed(2),
+          });
+        }
+      }
     } catch (error) {
       log('❌ Error executing setup', {
         type: setup.type,

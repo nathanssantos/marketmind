@@ -1,8 +1,25 @@
 {
   "models": [
     {
+      "id": "setup-classifier-v2.0.0",
+      "name": "Setup Classifier v2 (Unified)",
+      "version": "2.0.0",
+      "type": "setup-classifier",
+      "file": "setup-classifier-v2.json",
+      "model_type": "xgboost",
+      "feature_count": 139,
+      "trained_at": "2025-12-13T14:26:41.569536",
+      "metrics": {
+        "accuracy": 0.7091,
+        "precision": 0.5699,
+        "recall": 0.1900,
+        "f1": 0.2816,
+        "auc": 0.6859
+      }
+    },
+    {
       "id": "setup-classifier-v1.0.0",
-      "name": "Setup Classifier",
+      "name": "Setup Classifier v1 (1d only)",
       "version": "1.0.0",
       "type": "setup-classifier",
       "file": "setup-classifier-v1.json",
@@ -10,11 +27,11 @@
       "feature_count": 138,
       "trained_at": "2025-12-12T17:34:45.212103",
       "metrics": {
-        "accuracy": 0.6433964799140132,
-        "precision": 0.5971984324888351,
-        "recall": 0.3185419035460762,
-        "f1": 0.41455136077804566,
-        "auc": 0.6530633828774006
+        "accuracy": 0.6434,
+        "precision": 0.5972,
+        "recall": 0.3185,
+        "f1": 0.4146,
+        "auc": 0.6531
       }
     }
   ]

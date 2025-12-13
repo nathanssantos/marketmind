@@ -776,7 +776,8 @@
       "wallets": "Wallets",
       "ticket": "Order Ticket",
       "portfolio": "Portfolio",
-      "orders": "Orders"
+      "orders": "Orders",
+      "analytics": "Analytics"
     },
     "wallets": {
       "title": "Wallets",
@@ -884,7 +885,42 @@
     "removeSLTPConfirm": "Remove {{type}} from all orders in this position?",
     "confirmClose": "Confirm Close",
     "active": "ACTIVE",
-    "pending": "PENDING"
+    "pending": "PENDING",
+    "analytics": {
+      "performance": {
+        "title": "Performance",
+        "totalReturn": "Total Return",
+        "netPnL": "Net PnL",
+        "grossPnL": "Gross",
+        "fees": "Fees",
+        "winRate": "Win Rate",
+        "profitFactor": "Profit Factor",
+        "totalTrades": "Total Trades",
+        "avgWin": "Avg Win",
+        "avgLoss": "Avg Loss",
+        "maxDrawdown": "Max Drawdown",
+        "largestWin": "Largest Win",
+        "largestLoss": "Largest Loss",
+        "noData": "No performance data available"
+      },
+      "setupStats": {
+        "title": "Setup Performance",
+        "setupType": "Setup Type",
+        "totalTrades": "Total Trades",
+        "winRate": "Win Rate",
+        "winLoss": "W/L",
+        "totalPnL": "Total PnL",
+        "avgPnL": "Avg PnL",
+        "noData": "No setup statistics available",
+        "totalAnalyzed": "Total setups analyzed"
+      },
+      "periods": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "all": "All Time"
+      }
+    }
   },
   "patterns": {
     "configurePatterns": "Configure Patterns",

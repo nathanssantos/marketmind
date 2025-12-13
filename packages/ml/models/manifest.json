@@ -1,0 +1,21 @@
+{
+  "models": [
+    {
+      "id": "setup-classifier-v2.0.0",
+      "name": "Setup Classifier",
+      "version": "2.0.0",
+      "type": "setup-classifier",
+      "file": "setup-classifier-v2.json",
+      "model_type": "xgboost",
+      "feature_count": 139,
+      "trained_at": "2025-12-13T14:26:41.569536",
+      "metrics": {
+        "accuracy": 0.7091266352965511,
+        "precision": 0.5698573065248136,
+        "recall": 0.19002571229645607,
+        "f1": 0.28164905326502854,
+        "auc": 0.6859417529046159
+      }
+    }
+  ]
+}

@@ -774,7 +774,8 @@
       "wallets": "Carteras",
       "ticket": "Orden",
       "portfolio": "Portafolio",
-      "orders": "Órdenes"
+      "orders": "Órdenes",
+      "analytics": "Analíticas"
     },
     "wallets": {
       "title": "Carteras",
@@ -880,7 +881,42 @@
     "removeSLTPConfirm": "¿Eliminar {{type}} de todas las órdenes en esta posición?",
     "confirmClose": "Confirmar Cierre",
     "active": "ACTIVO",
-    "pending": "PENDIENTE"
+    "pending": "PENDIENTE",
+    "analytics": {
+      "performance": {
+        "title": "Rendimiento",
+        "totalReturn": "Retorno Total",
+        "netPnL": "P&L Neto",
+        "grossPnL": "Bruto",
+        "fees": "Comisiones",
+        "winRate": "Tasa de Acierto",
+        "profitFactor": "Factor de Beneficio",
+        "totalTrades": "Total de Trades",
+        "avgWin": "Ganancia Promedio",
+        "avgLoss": "Pérdida Promedio",
+        "maxDrawdown": "Drawdown Máximo",
+        "largestWin": "Mayor Ganancia",
+        "largestLoss": "Mayor Pérdida",
+        "noData": "No hay datos de rendimiento disponibles"
+      },
+      "setupStats": {
+        "title": "Rendimiento por Setup",
+        "setupType": "Tipo de Setup",
+        "totalTrades": "Total de Trades",
+        "winRate": "Tasa de Acierto",
+        "winLoss": "G/P",
+        "totalPnL": "P&L Total",
+        "avgPnL": "P&L Promedio",
+        "noData": "No hay estadísticas de setup disponibles",
+        "totalAnalyzed": "Total de setups analizados"
+      },
+      "periods": {
+        "day": "Día",
+        "week": "Semana",
+        "month": "Mes",
+        "all": "Todo"
+      }
+    }
   },
   "patterns": {
     "configurePatterns": "Configurar Patrones",

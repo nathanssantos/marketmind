@@ -5,6 +5,8 @@ import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { orders, positions, tradeExecutions, wallets } from '../db/schema';
 import { createBinanceClient, isPaperWallet } from '../services/binance-client';
+import { env } from '../env';
+import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 
 const generateId = (length: number): string => {
@@ -426,7 +428,7 @@ export const tradingRouter = router({
     .input(
       z.object({
         id: z.string(),
-        exitPrice: z.string(),
+        exitPrice: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -443,9 +445,82 @@ export const tradingRouter = router({
         });
       }
 
+      if (position.status !== 'open') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Position is not open',
+        });
+      }
+
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(eq(wallets.id, position.walletId))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
       const entryPrice = parseFloat(position.entryPrice);
-      const exitPrice = parseFloat(input.exitPrice);
       const qty = parseFloat(position.entryQty);
+      let exitPrice = input.exitPrice ? parseFloat(input.exitPrice) : 0;
+      let exitOrderId: number | null = null;
+
+      const walletSupportsLive = !isPaperWallet(wallet);
+      const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
+
+      if (shouldExecuteReal) {
+        try {
+          const client = createBinanceClient(wallet);
+          const orderSide = position.side === 'LONG' ? 'SELL' : 'BUY';
+
+          const order = await client.submitNewOrder({
+            symbol: position.symbol,
+            side: orderSide,
+            type: 'MARKET',
+            quantity: qty,
+          });
+
+          exitOrderId = order.orderId;
+          const filledPrice = 'price' in order ? parseFloat(order.price?.toString() || '0') : 0;
+          if (filledPrice > 0) exitPrice = filledPrice;
+
+          logger.info({
+            positionId: position.id,
+            orderId: exitOrderId,
+            symbol: position.symbol,
+            side: orderSide,
+            quantity: qty,
+            exitPrice,
+          }, 'Manual close position: Binance exit order executed');
+        } catch (error) {
+          logger.error({
+            positionId: position.id,
+            error: error instanceof Error ? error.message : String(error),
+          }, 'Failed to execute Binance exit order for position');
+
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Failed to execute exit order on Binance',
+          });
+        }
+      } else {
+        if (!input.exitPrice) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Exit price is required for paper trading',
+          });
+        }
+        logger.info({
+          positionId: position.id,
+          walletType: wallet.walletType,
+          liveEnabled: env.ENABLE_LIVE_TRADING,
+        }, 'Manual close position: Paper/disabled mode - simulating exit');
+      }
 
       let pnl = 0;
       if (position.side === 'LONG') {
@@ -456,11 +531,22 @@ export const tradingRouter = router({
 
       const pnlPercent = (pnl / (entryPrice * qty)) * 100;
 
+      const currentBalance = parseFloat(wallet.currentBalance || '0');
+      const newBalance = currentBalance + pnl;
+
+      await ctx.db
+        .update(wallets)
+        .set({
+          currentBalance: newBalance.toString(),
+          updatedAt: new Date(),
+        })
+        .where(eq(wallets.id, wallet.id));
+
       await ctx.db
         .update(positions)
         .set({
           status: 'closed',
-          currentPrice: input.exitPrice,
+          currentPrice: exitPrice.toString(),
           pnl: pnl.toString(),
           pnlPercent: pnlPercent.toString(),
           closedAt: new Date(),
@@ -471,6 +557,8 @@ export const tradingRouter = router({
       return {
         pnl: pnl.toString(),
         pnlPercent: pnlPercent.toFixed(2),
+        exitOrderId,
+        exitPrice: exitPrice.toString(),
       };
     }),
 
@@ -511,7 +599,7 @@ export const tradingRouter = router({
     .input(
       z.object({
         id: z.string(),
-        exitPrice: z.string(),
+        exitPrice: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -528,15 +616,82 @@ export const tradingRouter = router({
         });
       }
 
+      if (execution.status !== 'open') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Trade execution is not open',
+        });
+      }
+
       const [wallet] = await ctx.db
         .select()
         .from(wallets)
         .where(eq(wallets.id, execution.walletId))
         .limit(1);
 
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
       const entryPrice = parseFloat(execution.entryPrice);
-      const exitPrice = parseFloat(input.exitPrice);
       const qty = parseFloat(execution.quantity);
+      let exitPrice = input.exitPrice ? parseFloat(input.exitPrice) : 0;
+      let exitOrderId: number | null = null;
+
+      const walletSupportsLive = !isPaperWallet(wallet);
+      const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
+
+      if (shouldExecuteReal) {
+        try {
+          const client = createBinanceClient(wallet);
+          const orderSide = execution.side === 'LONG' ? 'SELL' : 'BUY';
+
+          const order = await client.submitNewOrder({
+            symbol: execution.symbol,
+            side: orderSide,
+            type: 'MARKET',
+            quantity: qty,
+          });
+
+          exitOrderId = order.orderId;
+          const filledPrice = 'price' in order ? parseFloat(order.price?.toString() || '0') : 0;
+          if (filledPrice > 0) exitPrice = filledPrice;
+
+          logger.info({
+            executionId: execution.id,
+            orderId: exitOrderId,
+            symbol: execution.symbol,
+            side: orderSide,
+            quantity: qty,
+            exitPrice,
+          }, 'Manual close: Binance exit order executed');
+        } catch (error) {
+          logger.error({
+            executionId: execution.id,
+            error: error instanceof Error ? error.message : String(error),
+          }, 'Failed to execute Binance exit order');
+
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Failed to execute exit order on Binance',
+          });
+        }
+      } else {
+        if (!input.exitPrice) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Exit price is required for paper trading',
+          });
+        }
+        logger.info({
+          executionId: execution.id,
+          walletType: wallet.walletType,
+          liveEnabled: env.ENABLE_LIVE_TRADING,
+        }, 'Manual close: Paper/disabled mode - simulating exit');
+      }
 
       let pnl = 0;
       if (execution.side === 'LONG') {
@@ -547,24 +702,23 @@ export const tradingRouter = router({
 
       const pnlPercent = (pnl / (entryPrice * qty)) * 100;
 
-      if (wallet) {
-        const currentBalance = parseFloat(wallet.currentBalance || '0');
-        const newBalance = currentBalance + pnl;
+      const currentBalance = parseFloat(wallet.currentBalance || '0');
+      const newBalance = currentBalance + pnl;
 
-        await ctx.db
-          .update(wallets)
-          .set({
-            currentBalance: newBalance.toString(),
-            updatedAt: new Date(),
-          })
-          .where(eq(wallets.id, wallet.id));
-      }
+      await ctx.db
+        .update(wallets)
+        .set({
+          currentBalance: newBalance.toString(),
+          updatedAt: new Date(),
+        })
+        .where(eq(wallets.id, wallet.id));
 
       await ctx.db
         .update(tradeExecutions)
         .set({
           status: 'closed',
-          exitPrice: input.exitPrice,
+          exitPrice: exitPrice.toString(),
+          exitOrderId,
           pnl: pnl.toString(),
           pnlPercent: pnlPercent.toString(),
           closedAt: new Date(),
@@ -575,6 +729,8 @@ export const tradingRouter = router({
       return {
         pnl: pnl.toString(),
         pnlPercent: pnlPercent.toFixed(2),
+        exitOrderId,
+        exitPrice: exitPrice.toString(),
       };
     }),
 

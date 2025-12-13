@@ -301,4 +301,124 @@ export const walletRouter = router({
         };
       }
     }),
+
+  getPortfolio: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      if (wallet.apiKeyEncrypted === 'paper-trading') {
+        return {
+          totalValueUSDT: wallet.currentBalance || '0',
+          assets: [
+            {
+              asset: 'USDT',
+              free: wallet.currentBalance || '0',
+              locked: '0',
+              valueUSDT: wallet.currentBalance || '0',
+            },
+          ],
+        };
+      }
+
+      try {
+        const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
+        const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
+
+        const client = new MainClient({
+          api_key: apiKey,
+          api_secret: apiSecret,
+        });
+
+        const accountInfo = await client.getAccountInformation();
+
+        const nonZeroBalances = accountInfo.balances?.filter((b) => {
+          const free = parseFloat(b.free?.toString() || '0');
+          const locked = parseFloat(b.locked?.toString() || '0');
+          return free > 0 || locked > 0;
+        }) || [];
+
+        const stablecoins = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD'];
+        let totalValueUSDT = 0;
+
+        const assetsWithValue = await Promise.all(
+          nonZeroBalances.map(async (balance) => {
+            const free = parseFloat(balance.free?.toString() || '0');
+            const locked = parseFloat(balance.locked?.toString() || '0');
+            const total = free + locked;
+
+            let valueUSDT = 0;
+
+            if (stablecoins.includes(balance.asset)) {
+              valueUSDT = total;
+            } else {
+              try {
+                const ticker = await client.get24hrChangeStatistics({
+                  symbol: `${balance.asset}USDT`,
+                });
+                const price = parseFloat(ticker.lastPrice || '0');
+                valueUSDT = total * price;
+              } catch {
+                try {
+                  const btcTicker = await client.get24hrChangeStatistics({
+                    symbol: `${balance.asset}BTC`,
+                  });
+                  const btcUsdtTicker = await client.get24hrChangeStatistics({
+                    symbol: 'BTCUSDT',
+                  });
+                  const btcPrice = parseFloat(btcTicker.lastPrice || '0');
+                  const btcUsdtPrice = parseFloat(btcUsdtTicker.lastPrice || '0');
+                  valueUSDT = total * btcPrice * btcUsdtPrice;
+                } catch {
+                  valueUSDT = 0;
+                }
+              }
+            }
+
+            totalValueUSDT += valueUSDT;
+
+            return {
+              asset: balance.asset,
+              free: free.toString(),
+              locked: locked.toString(),
+              valueUSDT: valueUSDT.toFixed(2),
+            };
+          })
+        );
+
+        const sortedAssets = assetsWithValue.sort(
+          (a, b) => parseFloat(b.valueUSDT) - parseFloat(a.valueUSDT)
+        );
+
+        await ctx.db
+          .update(wallets)
+          .set({
+            currentBalance: totalValueUSDT.toFixed(2),
+            updatedAt: new Date(),
+          })
+          .where(eq(wallets.id, input.id));
+
+        return {
+          totalValueUSDT: totalValueUSDT.toFixed(2),
+          assets: sortedAssets,
+        };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch portfolio',
+          cause: error,
+        });
+      }
+    }),
 });

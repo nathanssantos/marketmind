@@ -1,7 +1,6 @@
-import { MainClient } from 'binance';
 import type { SetupDetection, Wallet, AutoTradingConfig } from '../db/schema';
-import { decryptApiKey } from './encryption';
 import { logger } from './logger';
+import { createBinanceClient, isPaperWallet } from './binance-client';
 
 export interface OrderParams {
   symbol: string;
@@ -164,14 +163,12 @@ export class AutoTradingService {
     wallet: Wallet,
     orderParams: OrderParams
   ): Promise<{ orderId: number; executedQty: string; price: string }> {
-    try {
-      const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
-      const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
+    if (isPaperWallet(wallet)) {
+      throw new Error('Paper wallets cannot execute real orders on Binance');
+    }
 
-      const client = new MainClient({
-        api_key: apiKey,
-        api_secret: apiSecret,
-      });
+    try {
+      const client = createBinanceClient(wallet);
 
       const order = await client.submitNewOrder({
         symbol: orderParams.symbol,
@@ -189,6 +186,7 @@ export class AutoTradingService {
         side: 'side' in order ? order.side : 'unknown',
         quantity: 'origQty' in order ? order.origQty : '0',
         price: 'price' in order ? order.price : '0',
+        walletType: wallet.walletType,
       }, 'Binance order executed');
 
       return {
@@ -200,6 +198,7 @@ export class AutoTradingService {
       logger.error({
         error: error instanceof Error ? error.message : String(error),
         orderParams,
+        walletType: wallet.walletType,
       }, 'Failed to execute Binance order');
       throw error;
     }

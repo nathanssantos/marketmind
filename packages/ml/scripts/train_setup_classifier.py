@@ -4,10 +4,10 @@ Setup Classifier Training Script
 
 Trains an XGBoost or LightGBM model to predict trading setup success.
 Uses walk-forward cross-validation to prevent data leakage.
-Exports trained model to ONNX format for Node.js inference.
+Exports trained model to JSON format for Node.js inference.
 
 Usage:
-    python train_setup_classifier.py --config config.json --data training_data.parquet --output model.onnx
+    python train_setup_classifier.py --config config.json --data training_unified.csv --output models/model.onnx
 """
 
 import numpy as np
@@ -16,9 +16,6 @@ from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
-import onnx
-from onnxmltools import convert_xgboost, convert_lightgbm
-from onnxmltools.convert.common.data_types import FloatTensorType
 import json
 import argparse
 from datetime import datetime
@@ -27,6 +24,11 @@ from typing import Optional
 import warnings
 
 warnings.filterwarnings('ignore')
+
+INTERVAL_MAP = {
+    '1m': 0, '5m': 1, '15m': 2, '30m': 3,
+    '1h': 4, '4h': 5, '1d': 6, '1w': 7
+}
 
 
 class SetupClassifierTrainer:
@@ -53,11 +55,35 @@ class SetupClassifierTrainer:
         else:
             raise ValueError(f"Unsupported file format: {file_path.suffix}")
 
+        if 'interval' in df.columns:
+            print(f"\nInterval distribution:")
+            print(df['interval'].value_counts().to_string())
+            df['interval_encoded'] = df['interval'].map(INTERVAL_MAP).fillna(-1).astype(np.float32)
+            if 'interval_encoded' not in self.feature_names:
+                self.feature_names = self.feature_names + ['interval_encoded']
+            print(f"\nAdded interval_encoded feature (0-7 scale)")
+
+        available_features = [f for f in self.feature_names if f in df.columns]
+        missing_features = [f for f in self.feature_names if f not in df.columns]
+
+        if missing_features:
+            print(f"\nWarning: {len(missing_features)} features not found in data:")
+            for f in missing_features[:10]:
+                print(f"  - {f}")
+            if len(missing_features) > 10:
+                print(f"  ... and {len(missing_features) - 10} more")
+            self.feature_names = available_features
+
         X = df[self.feature_names].values.astype(np.float32)
         y = df['label'].values.astype(np.int32)
         timestamps = df['timestamp'].values
 
-        print(f"Loaded {len(X)} samples with {len(self.feature_names)} features")
+        nan_counts = np.isnan(X).sum(axis=0)
+        if nan_counts.sum() > 0:
+            print(f"\nWarning: Found NaN values in {(nan_counts > 0).sum()} features")
+            X = np.nan_to_num(X, nan=0.0)
+
+        print(f"\nLoaded {len(X)} samples with {len(self.feature_names)} features")
         print(f"Label distribution: {np.bincount(y)}")
         print(f"Positive rate: {y.sum() / len(y):.2%}")
 

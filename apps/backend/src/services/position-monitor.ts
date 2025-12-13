@@ -5,6 +5,7 @@ import { db } from '../db';
 import { createBinanceClient, createBinanceClientForPrices, isPaperWallet } from './binance-client';
 import { logger } from './logger';
 import { trailingStopService } from './trailing-stop';
+import { env } from '../env';
 
 export interface PositionCheckResult {
   executionId: string;
@@ -253,13 +254,17 @@ export class PositionMonitorService {
 
       let exitOrderId: number | null = null;
 
-      if (isPaperWallet(wallet)) {
+      const walletSupportsLive = !isPaperWallet(wallet);
+      const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
+
+      if (!shouldExecuteReal) {
         logger.info({
           executionId: execution.id,
           symbol: execution.symbol,
-          walletType: 'paper',
+          walletType: wallet.walletType,
           reason,
-        }, 'Paper trading: simulating exit order');
+          liveEnabled: env.ENABLE_LIVE_TRADING,
+        }, 'Paper/disabled mode: simulating exit order');
       } else {
         exitOrderId = await this.createExitOrder(
           wallet,

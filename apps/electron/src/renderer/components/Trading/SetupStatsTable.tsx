@@ -1,5 +1,6 @@
 import { Box, Button, ButtonGroup, Flex, Spinner, Stack, Table, Text } from '@chakra-ui/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useBackendAnalytics, type AnalyticsPeriod } from '../../hooks/useBackendAnalytics';
 
 interface SetupStatsTableProps {
@@ -7,6 +8,7 @@ interface SetupStatsTableProps {
 }
 
 export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
+  const { t } = useTranslation();
   const [period, setPeriod] = useState<AnalyticsPeriod>('all');
   const { setupStats, isLoadingSetupStats } = useBackendAnalytics(walletId, period);
 
@@ -24,7 +26,7 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
     return (
       <Stack gap={4} p={4} bg="gray.50" _dark={{ bg: 'gray.800' }} borderRadius="md" borderWidth="1px">
         <Text textAlign="center" color="gray.500" py={8}>
-          No setup statistics available
+          {t('trading.analytics.setupStats.noData')}
         </Text>
       </Stack>
     );
@@ -42,18 +44,18 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
     return 'red.500';
   };
 
-  const periods: { value: AnalyticsPeriod; label: string }[] = [
-    { value: 'day', label: 'Day' },
-    { value: 'week', label: 'Week' },
-    { value: 'month', label: 'Month' },
-    { value: 'all', label: 'All Time' },
+  const periods: { value: AnalyticsPeriod; labelKey: string }[] = [
+    { value: 'day', labelKey: 'trading.analytics.periods.day' },
+    { value: 'week', labelKey: 'trading.analytics.periods.week' },
+    { value: 'month', labelKey: 'trading.analytics.periods.month' },
+    { value: 'all', labelKey: 'trading.analytics.periods.all' },
   ];
 
   return (
     <Stack gap={4} p={6} bg="gray.50" _dark={{ bg: 'gray.800' }} borderRadius="md" borderWidth="1px">
       <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px">
         <Text fontSize="lg" fontWeight="bold">
-          Setup Performance
+          {t('trading.analytics.setupStats.title')}
         </Text>
         <ButtonGroup size="sm" variant="outline">
           {periods.map((p) => (
@@ -62,7 +64,7 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
               onClick={() => setPeriod(p.value)}
               variant={period === p.value ? 'solid' : 'outline'}
             >
-              {p.label}
+              {t(p.labelKey)}
             </Button>
           ))}
         </ButtonGroup>
@@ -72,12 +74,12 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
         <Table.Root variant="outline" size="sm">
           <Table.Header>
             <Table.Row>
-              <Table.ColumnHeader>Setup Type</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="right">Total Trades</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="right">Win Rate</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="right">W/L</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="right">Total PnL</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="right">Avg PnL</Table.ColumnHeader>
+              <Table.ColumnHeader>{t('trading.analytics.setupStats.setupType')}</Table.ColumnHeader>
+              <Table.ColumnHeader textAlign="right">{t('trading.analytics.setupStats.totalTrades')}</Table.ColumnHeader>
+              <Table.ColumnHeader textAlign="right">{t('trading.analytics.setupStats.winRate')}</Table.ColumnHeader>
+              <Table.ColumnHeader textAlign="right">{t('trading.analytics.setupStats.winLoss')}</Table.ColumnHeader>
+              <Table.ColumnHeader textAlign="right">{t('trading.analytics.setupStats.totalPnL')}</Table.ColumnHeader>
+              <Table.ColumnHeader textAlign="right">{t('trading.analytics.setupStats.avgPnL')}</Table.ColumnHeader>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -119,7 +121,7 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
 
       <Flex justify="center" pt={2} borderTopWidth="1px">
         <Text fontSize="sm" color="gray.600" _dark={{ color: 'gray.400' }}>
-          Total setups analyzed: <strong>{setupStats.length}</strong>
+          {t('trading.analytics.setupStats.totalAnalyzed')}: <strong>{setupStats.length}</strong>
         </Text>
       </Flex>
     </Stack>

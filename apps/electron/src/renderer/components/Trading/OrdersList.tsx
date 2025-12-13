@@ -257,6 +257,21 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
     return colors[status];
   };
 
+  const getStatusTranslationKey = (status: OrderStatus): string => {
+    const statusMap: Record<OrderStatus, string> = {
+      NEW: 'statusPending',
+      PENDING_NEW: 'statusPending',
+      PARTIALLY_FILLED: 'statusActive',
+      FILLED: 'statusFilled',
+      CANCELED: 'statusCancelled',
+      PENDING_CANCEL: 'statusCancelled',
+      REJECTED: 'statusCancelled',
+      EXPIRED: 'statusExpired',
+      EXPIRED_IN_MATCH: 'statusExpired',
+    };
+    return statusMap[status] || 'statusPending';
+  };
+
   const getTypeColor = (isLong: boolean): string => {
     return isLong ? 'green' : 'red';
   };
@@ -283,7 +298,7 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
               {t(`trading.ticket.${isOrderLong(order) ? 'long' : 'short'}`)}
             </Badge>
             <Badge colorPalette={getStatusColor(order.status)} size="sm" px={2}>
-              {t(`trading.orders.status${order.status.charAt(0).toUpperCase()}${order.status.slice(1)}`)}
+              {t(`trading.orders.${getStatusTranslationKey(order.status)}`)}
             </Badge>
           </Flex>
         </Stack>
