@@ -10,6 +10,7 @@ import { mlRouter } from '../routers/ml';
 import { setupRouter } from '../routers/setup';
 import { setupDetectionRouter } from '../routers/setup-detection';
 import { tradingRouter } from '../routers/trading';
+import { tradingProfilesRouter } from '../routers/trading-profiles';
 import { walletRouter } from '../routers/wallet';
 import { router } from '../trpc';
 
@@ -27,6 +28,7 @@ export const appRouter = router({
   backtest: backtestRouter,
   ml: mlRouter,
   marketContext: marketContextRouter,
+  tradingProfiles: tradingProfilesRouter,
 });
 
 export type AppRouter = typeof appRouter;

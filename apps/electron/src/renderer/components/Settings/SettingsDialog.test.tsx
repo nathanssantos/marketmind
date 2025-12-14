@@ -41,6 +41,22 @@ vi.mock('./AlgorithmicAutoTradingTab', () => ({
     AlgorithmicAutoTradingTab: () => <div>AlgorithmicAutoTradingTab Content</div>,
 }));
 
+vi.mock('./TradingProfilesTab', () => ({
+    TradingProfilesTab: () => <div>TradingProfilesTab Content</div>,
+}));
+
+vi.mock('./MarketContextConfigTab', () => ({
+    MarketContextConfigTab: () => <div>MarketContextConfigTab Content</div>,
+}));
+
+vi.mock('./SetupConfigTab', () => ({
+    SetupConfigTab: () => <div>SetupConfigTab Content</div>,
+}));
+
+vi.mock('./PatternDetectionTab', () => ({
+    PatternDetectionTab: () => <div>PatternDetectionTab Content</div>,
+}));
+
 vi.mock('./AboutTab', () => ({
     AboutTab: () => <div>AboutTab Content</div>,
 }));

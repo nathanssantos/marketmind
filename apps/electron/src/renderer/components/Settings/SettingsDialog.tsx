@@ -14,6 +14,7 @@ import { MarketContextConfigTab } from './MarketContextConfigTab';
 import { NewsConfigTab } from './NewsConfigTab';
 import { PatternDetectionTab } from './PatternDetectionTab';
 import { SetupConfigTab } from './SetupConfigTab';
+import { TradingProfilesTab } from './TradingProfilesTab';
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 <Tabs.Trigger value="ai">{t('settings.tabs.ai')}</Tabs.Trigger>
                 <Tabs.Trigger value="context">{t('settings.tabs.context')}</Tabs.Trigger>
                 <Tabs.Trigger value="algorithmicAutoTrading">{t('settings.tabs.algorithmicAutoTrading')}</Tabs.Trigger>
+                <Tabs.Trigger value="tradingProfiles">{t('settings.tabs.tradingProfiles')}</Tabs.Trigger>
                 <Tabs.Trigger value="marketContext">{t('settings.tabs.marketContext')}</Tabs.Trigger>
                 <Tabs.Trigger value="setupDetection">{t('settings.tabs.setupDetection')}</Tabs.Trigger>
                 <Tabs.Trigger value="patternDetection">{t('settings.tabs.patternDetection')}</Tabs.Trigger>
@@ -79,6 +81,10 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
 
                 <Tabs.Content value="algorithmicAutoTrading">
                   <AlgorithmicAutoTradingTab />
+                </Tabs.Content>
+
+                <Tabs.Content value="tradingProfiles">
+                  <TradingProfilesTab />
                 </Tabs.Content>
 
                 <Tabs.Content value="marketContext">

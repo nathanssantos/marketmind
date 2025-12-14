@@ -24,7 +24,19 @@
     "conversationHistory": "Historique des conversations",
     "tips": "Conseils",
     "collapse": "Réduire",
-    "expand": "Développer"
+    "expand": "Développer",
+    "direction": "Direction",
+    "long": "Achat",
+    "short": "Vente",
+    "entry": "Entrée",
+    "stopLoss": "Stop Loss",
+    "takeProfit": "Take Profit",
+    "ratio": "Ratio",
+    "copy": "Copie",
+    "duplicate": "Dupliquer",
+    "default": "Par défaut",
+    "selectAll": "Tout Sélectionner",
+    "deselectAll": "Tout Désélectionner"
   },
   "app": {
     "title": "MarketMind",
@@ -58,6 +70,7 @@
       "aiTrading": "Auto-Trading IA",
       "context": "Contexte",
       "algorithmicAutoTrading": "Auto-Trading Algorithmique",
+      "tradingProfiles": "Profils de Trading",
       "setupDetection": "Détection de Setups",
       "patternDetection": "Détection de Motifs",
       "news": "Actualités",
@@ -1172,6 +1185,70 @@
       "maxPosition": "Position Maximale",
       "commission": "Commission",
       "setups": "Setups"
+    }
+  },
+  "tradingProfiles": {
+    "title": "Profils de Trading",
+    "description": "Créez des profils avec différentes configurations de setups pour le trading multi-actifs",
+    "create": "Nouveau Profil",
+    "createFirst": "Créez Votre Premier Profil",
+    "empty": "Pas encore de profils de trading",
+    "editProfile": "Modifier le Profil",
+    "createProfile": "Créer un Profil",
+    "enabledSetups": "Setups Activés",
+    "maxPosition": "Position Max",
+    "maxConcurrent": "Max Concurrents",
+    "noWallet": "Veuillez d'abord créer un portefeuille",
+    "fields": {
+      "name": "Nom du Profil",
+      "description": "Description",
+      "enabledSetups": "Setups Activés",
+      "riskOverrides": "Remplacements de Risque (Optionnel)",
+      "overrideMaxPosition": "Remplacer la taille de position maximale",
+      "overrideMaxPositionDescription": "Utiliser une taille de position personnalisée au lieu de la valeur par défaut du portefeuille",
+      "overrideMaxConcurrent": "Remplacer le maximum de positions concurrentes",
+      "overrideMaxConcurrentDescription": "Utiliser une limite personnalisée au lieu de la valeur par défaut du portefeuille",
+      "maxPositionSize": "Taille Max de Position (%)",
+      "maxConcurrentPositions": "Max Positions Concurrentes",
+      "setAsDefault": "Définir comme profil par défaut",
+      "setAsDefaultDescription": "Les nouveaux watchers utiliseront ce profil par défaut"
+    },
+    "placeholders": {
+      "name": "ex: BTC Trend Following",
+      "description": "Description optionnelle pour ce profil"
+    },
+    "setups": {
+      "larry-williams-9-1": "Larry Williams 9.1",
+      "larry-williams-9-2": "Larry Williams 9.2",
+      "larry-williams-9-3": "Larry Williams 9.3",
+      "larry-williams-9-4": "Larry Williams 9.4",
+      "keltner-breakout-optimized": "Keltner Breakout",
+      "bollinger-breakout-crypto": "Bollinger Breakout",
+      "williams-momentum": "Williams Momentum",
+      "tema-momentum": "TEMA Momentum",
+      "elder-ray-crypto": "Elder Ray",
+      "ppo-momentum": "PPO Momentum",
+      "parabolic-sar-crypto": "Parabolic SAR",
+      "supertrend-follow": "Supertrend"
+    },
+    "watchers": {
+      "title": "Watchers Actifs",
+      "description": "Surveillez les actifs pour les setups de trading",
+      "add": "Ajouter un Watcher",
+      "addFirst": "Ajoutez Votre Premier Watcher",
+      "addTitle": "Ajouter un Nouveau Watcher",
+      "empty": "Pas de watchers actifs",
+      "stopAll": "Arrêter Tous",
+      "stop": "Arrêter",
+      "start": "Démarrer",
+      "profile": "Profil",
+      "usingDefault": "Utilisation de la configuration par défaut du portefeuille",
+      "symbol": "Symbole",
+      "interval": "Intervalle",
+      "useWalletDefault": "Utiliser la configuration par défaut du portefeuille",
+      "selectProfile": "Sélectionnez un profil...",
+      "noProfiles": "Pas de profils disponibles. Créez d'abord un profil pour utiliser des configurations personnalisées.",
+      "info": "Le watcher analysera les setups en fonction de la configuration du profil sélectionné et exécutera automatiquement les trades lorsque les conditions sont remplies."
     }
   }
 }

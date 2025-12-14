@@ -15,3 +15,8 @@ export { BacktestConfig } from './BacktestConfig';
 export { BacktestDialog } from './BacktestDialog';
 export { BacktestResults } from './BacktestResults';
 export { BacktestingPanel } from './BacktestingPanel';
+
+export { TradingProfilesManager } from './TradingProfilesManager';
+export { ProfileEditorDialog } from './ProfileEditorDialog';
+export { WatcherManager } from './WatcherManager';
+export { AddWatcherDialog } from './AddWatcherDialog';

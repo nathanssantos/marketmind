@@ -31,7 +31,12 @@
     "entry": "Entry",
     "stopLoss": "Stop Loss",
     "takeProfit": "Take Profit",
-    "ratio": "Ratio"
+    "ratio": "Ratio",
+    "copy": "Copy",
+    "duplicate": "Duplicate",
+    "default": "Default",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All"
   },
   "app": {
     "title": "MarketMind",
@@ -65,6 +70,7 @@
       "aiTrading": "AI Auto-Trading",
       "context": "Context",
       "algorithmicAutoTrading": "Algorithmic Auto-Trading",
+      "tradingProfiles": "Trading Profiles",
       "marketContext": "Market Context",
       "setupDetection": "Setup Detection",
       "patternDetection": "Pattern Detection",
@@ -1272,6 +1278,70 @@
       "title": "Open Interest",
       "description": "Filter based on open interest changes",
       "changeThreshold": "Change Threshold (%)"
+    }
+  },
+  "tradingProfiles": {
+    "title": "Trading Profiles",
+    "description": "Create profiles with different setup configurations for multi-asset trading",
+    "create": "New Profile",
+    "createFirst": "Create Your First Profile",
+    "empty": "No trading profiles yet",
+    "editProfile": "Edit Profile",
+    "createProfile": "Create Profile",
+    "enabledSetups": "Enabled Setups",
+    "maxPosition": "Max Position",
+    "maxConcurrent": "Max Concurrent",
+    "noWallet": "Please create a wallet first",
+    "fields": {
+      "name": "Profile Name",
+      "description": "Description",
+      "enabledSetups": "Enabled Setups",
+      "riskOverrides": "Risk Overrides (Optional)",
+      "overrideMaxPosition": "Override max position size",
+      "overrideMaxPositionDescription": "Use a custom position size instead of wallet default",
+      "overrideMaxConcurrent": "Override max concurrent positions",
+      "overrideMaxConcurrentDescription": "Use a custom limit instead of wallet default",
+      "maxPositionSize": "Max Position Size (%)",
+      "maxConcurrentPositions": "Max Concurrent Positions",
+      "setAsDefault": "Set as default profile",
+      "setAsDefaultDescription": "New watchers will use this profile by default"
+    },
+    "placeholders": {
+      "name": "e.g., BTC Trend Following",
+      "description": "Optional description for this profile"
+    },
+    "setups": {
+      "larry-williams-9-1": "Larry Williams 9.1",
+      "larry-williams-9-2": "Larry Williams 9.2",
+      "larry-williams-9-3": "Larry Williams 9.3",
+      "larry-williams-9-4": "Larry Williams 9.4",
+      "keltner-breakout-optimized": "Keltner Breakout",
+      "bollinger-breakout-crypto": "Bollinger Breakout",
+      "williams-momentum": "Williams Momentum",
+      "tema-momentum": "TEMA Momentum",
+      "elder-ray-crypto": "Elder Ray",
+      "ppo-momentum": "PPO Momentum",
+      "parabolic-sar-crypto": "Parabolic SAR",
+      "supertrend-follow": "Supertrend"
+    },
+    "watchers": {
+      "title": "Active Watchers",
+      "description": "Monitor assets for trading setups",
+      "add": "Add Watcher",
+      "addFirst": "Add Your First Watcher",
+      "addTitle": "Add New Watcher",
+      "empty": "No active watchers",
+      "stopAll": "Stop All",
+      "stop": "Stop",
+      "start": "Start",
+      "profile": "Profile",
+      "usingDefault": "Using wallet default",
+      "symbol": "Symbol",
+      "interval": "Interval",
+      "useWalletDefault": "Use wallet default configuration",
+      "selectProfile": "Select a profile...",
+      "noProfiles": "No profiles available. Create a profile first to use custom configurations.",
+      "info": "The watcher will scan for setups based on the selected profile's configuration and execute trades automatically when conditions are met."
     }
   }
 }

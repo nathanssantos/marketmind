@@ -31,7 +31,12 @@
     "entry": "Entrada",
     "stopLoss": "Stop Loss",
     "takeProfit": "Take Profit",
-    "ratio": "Relación"
+    "ratio": "Relación",
+    "copy": "Copia",
+    "duplicate": "Duplicar",
+    "default": "Predeterminado",
+    "selectAll": "Seleccionar Todo",
+    "deselectAll": "Deseleccionar Todo"
   },
   "app": {
     "title": "MarketMind",
@@ -65,6 +70,7 @@
       "aiTrading": "Auto-Trading IA",
       "context": "Contexto",
       "algorithmicAutoTrading": "Auto-Trading Algorítmico",
+      "tradingProfiles": "Perfiles de Trading",
       "setupDetection": "Detección de Setups",
       "patternDetection": "Detección de Patrones",
       "news": "Noticias",
@@ -1190,6 +1196,70 @@
       "maxPosition": "Posición Máxima",
       "commission": "Comisión",
       "setups": "Setups"
+    }
+  },
+  "tradingProfiles": {
+    "title": "Perfiles de Trading",
+    "description": "Cree perfiles con diferentes configuraciones de setups para trading multi-activos",
+    "create": "Nuevo Perfil",
+    "createFirst": "Cree Su Primer Perfil",
+    "empty": "Aún no hay perfiles de trading",
+    "editProfile": "Editar Perfil",
+    "createProfile": "Crear Perfil",
+    "enabledSetups": "Setups Habilitados",
+    "maxPosition": "Posición Máx",
+    "maxConcurrent": "Máx Concurrentes",
+    "noWallet": "Por favor, cree una billetera primero",
+    "fields": {
+      "name": "Nombre del Perfil",
+      "description": "Descripción",
+      "enabledSetups": "Setups Habilitados",
+      "riskOverrides": "Anulaciones de Riesgo (Opcional)",
+      "overrideMaxPosition": "Anular tamaño máximo de posición",
+      "overrideMaxPositionDescription": "Usar un tamaño de posición personalizado en lugar del predeterminado de la billetera",
+      "overrideMaxConcurrent": "Anular máximo de posiciones concurrentes",
+      "overrideMaxConcurrentDescription": "Usar un límite personalizado en lugar del predeterminado de la billetera",
+      "maxPositionSize": "Tamaño Máx de Posición (%)",
+      "maxConcurrentPositions": "Máx Posiciones Concurrentes",
+      "setAsDefault": "Establecer como perfil predeterminado",
+      "setAsDefaultDescription": "Los nuevos watchers usarán este perfil por defecto"
+    },
+    "placeholders": {
+      "name": "ej: BTC Trend Following",
+      "description": "Descripción opcional para este perfil"
+    },
+    "setups": {
+      "larry-williams-9-1": "Larry Williams 9.1",
+      "larry-williams-9-2": "Larry Williams 9.2",
+      "larry-williams-9-3": "Larry Williams 9.3",
+      "larry-williams-9-4": "Larry Williams 9.4",
+      "keltner-breakout-optimized": "Keltner Breakout",
+      "bollinger-breakout-crypto": "Bollinger Breakout",
+      "williams-momentum": "Williams Momentum",
+      "tema-momentum": "TEMA Momentum",
+      "elder-ray-crypto": "Elder Ray",
+      "ppo-momentum": "PPO Momentum",
+      "parabolic-sar-crypto": "Parabolic SAR",
+      "supertrend-follow": "Supertrend"
+    },
+    "watchers": {
+      "title": "Watchers Activos",
+      "description": "Monitoree activos para setups de trading",
+      "add": "Agregar Watcher",
+      "addFirst": "Agregue Su Primer Watcher",
+      "addTitle": "Agregar Nuevo Watcher",
+      "empty": "No hay watchers activos",
+      "stopAll": "Detener Todos",
+      "stop": "Detener",
+      "start": "Iniciar",
+      "profile": "Perfil",
+      "usingDefault": "Usando configuración predeterminada de la billetera",
+      "symbol": "Símbolo",
+      "interval": "Intervalo",
+      "useWalletDefault": "Usar configuración predeterminada de la billetera",
+      "selectProfile": "Seleccione un perfil...",
+      "noProfiles": "No hay perfiles disponibles. Cree un perfil primero para usar configuraciones personalizadas.",
+      "info": "El watcher escaneará por setups basándose en la configuración del perfil seleccionado y ejecutará trades automáticamente cuando se cumplan las condiciones."
     }
   }
 }

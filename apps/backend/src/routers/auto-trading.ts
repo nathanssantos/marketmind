@@ -536,10 +536,11 @@ export const autoTradingRouter = router({
         walletId: z.string(),
         symbol: z.string(),
         interval: z.string(),
+        profileId: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      log('🚀 startWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval });
+      log('🚀 startWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId });
 
       const [wallet] = await ctx.db
         .select()
@@ -569,10 +570,11 @@ export const autoTradingRouter = router({
         input.walletId,
         ctx.user.id,
         input.symbol,
-        input.interval
+        input.interval,
+        input.profileId
       );
 
-      log('✅ Watcher started', { walletId: input.walletId, symbol: input.symbol, interval: input.interval });
+      log('✅ Watcher started', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId });
 
       return { success: true };
     }),

@@ -16,5 +16,6 @@ export * from './pattern';
 export * from './setupConfig';
 export * from './strategyDefinition';
 export * from './trading';
+export * from './tradingProfile';
 export * from './tradingSetup';
 

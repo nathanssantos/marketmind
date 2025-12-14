@@ -11,6 +11,7 @@ import {
   klines,
   setupDetections,
   tradeExecutions,
+  tradingProfiles,
   wallets,
   type Wallet,
 } from '../db/schema';
@@ -57,6 +58,8 @@ interface ActiveWatcher {
   symbol: string;
   interval: string;
   enabledStrategies: string[];
+  profileId?: string;
+  profileName?: string;
   intervalId: NodeJS.Timeout;
   lastProcessedTime: number;
 }
@@ -125,6 +128,7 @@ export class AutoTradingScheduler {
     userId: string,
     symbol: string,
     interval: string,
+    profileId?: string,
     skipDbPersist: boolean = false
   ): Promise<void> {
     const watcherId = `${walletId}-${symbol}-${interval}`;
@@ -154,11 +158,32 @@ export class AutoTradingScheduler {
       return;
     }
 
-    const enabledStrategies = JSON.parse(config.enabledSetupTypes) as string[];
+    let enabledStrategies: string[];
+    let profileName: string | undefined;
+
+    if (profileId) {
+      const [profile] = await db
+        .select()
+        .from(tradingProfiles)
+        .where(eq(tradingProfiles.id, profileId))
+        .limit(1);
+
+      if (profile) {
+        enabledStrategies = JSON.parse(profile.enabledSetupTypes) as string[];
+        profileName = profile.name;
+        log('📋 Using trading profile', { profileId, profileName, strategies: enabledStrategies.length });
+      } else {
+        log('⚠️ Profile not found, falling back to global config', { profileId });
+        enabledStrategies = JSON.parse(config.enabledSetupTypes) as string[];
+      }
+    } else {
+      enabledStrategies = JSON.parse(config.enabledSetupTypes) as string[];
+    }
+
     const mlStrategies = enabledStrategies.filter(s => ML_TRAINED_STRATEGIES.includes(s));
 
     if (mlStrategies.length === 0) {
-      log('⚠️ No ML strategies enabled', { walletId, enabledStrategies });
+      log('⚠️ No ML strategies enabled', { walletId, enabledStrategies, profileId });
       return;
     }
 
@@ -182,9 +207,16 @@ export class AutoTradingScheduler {
           walletId,
           symbol,
           interval,
+          profileId: profileId ?? null,
           startedAt: new Date(),
         });
-        log('💾 Persisted watcher to database', { watcherId });
+        log('💾 Persisted watcher to database', { watcherId, profileId });
+      } else if (existingWatcher[0] && existingWatcher[0].profileId !== profileId) {
+        await db
+          .update(activeWatchersTable)
+          .set({ profileId: profileId ?? null })
+          .where(eq(activeWatchersTable.id, watcherId));
+        log('💾 Updated watcher profile in database', { watcherId, profileId });
       }
     }
 
@@ -193,6 +225,8 @@ export class AutoTradingScheduler {
       symbol,
       interval,
       enabledStrategies: mlStrategies,
+      profileId,
+      profileName,
     });
 
     const intervalId = setInterval(async () => {
@@ -205,6 +239,8 @@ export class AutoTradingScheduler {
       symbol,
       interval,
       enabledStrategies: mlStrategies,
+      profileId,
+      profileName,
       intervalId,
       lastProcessedTime: Date.now(),
     };
@@ -918,11 +954,13 @@ export class AutoTradingScheduler {
     }
   }
 
-  getActiveWatchers(): { watcherId: string; symbol: string; interval: string }[] {
+  getActiveWatchers(): { watcherId: string; symbol: string; interval: string; profileId?: string; profileName?: string }[] {
     return Array.from(this.activeWatchers.entries()).map(([watcherId, watcher]) => ({
       watcherId,
       symbol: watcher.symbol,
       interval: watcher.interval,
+      profileId: watcher.profileId,
+      profileName: watcher.profileName,
     }));
   }
 
@@ -936,19 +974,36 @@ export class AutoTradingScheduler {
     return { active: count > 0, watchers: count };
   }
 
-  async getWatcherStatusFromDb(walletId: string): Promise<{ active: boolean; watchers: number; watcherDetails: { symbol: string; interval: string }[] }> {
+  async getWatcherStatusFromDb(walletId: string): Promise<{ active: boolean; watchers: number; watcherDetails: { symbol: string; interval: string; profileId?: string; profileName?: string }[] }> {
     const persistedWatchers = await db
       .select()
       .from(activeWatchersTable)
       .where(eq(activeWatchersTable.walletId, walletId));
 
+    const watcherDetails: { symbol: string; interval: string; profileId?: string; profileName?: string }[] = [];
+
+    for (const w of persistedWatchers) {
+      let profileName: string | undefined;
+      if (w.profileId) {
+        const [profile] = await db
+          .select({ name: tradingProfiles.name })
+          .from(tradingProfiles)
+          .where(eq(tradingProfiles.id, w.profileId))
+          .limit(1);
+        profileName = profile?.name;
+      }
+      watcherDetails.push({
+        symbol: w.symbol,
+        interval: w.interval,
+        profileId: w.profileId ?? undefined,
+        profileName,
+      });
+    }
+
     return {
       active: persistedWatchers.length > 0,
       watchers: persistedWatchers.length,
-      watcherDetails: persistedWatchers.map(w => ({
-        symbol: w.symbol,
-        interval: w.interval,
-      })),
+      watcherDetails,
     };
   }
 
@@ -973,9 +1028,10 @@ export class AutoTradingScheduler {
           pw.userId,
           pw.symbol,
           pw.interval,
+          pw.profileId ?? undefined,
           true
         );
-        log('✅ Restored watcher', { watcherId: pw.id, symbol: pw.symbol, interval: pw.interval });
+        log('✅ Restored watcher', { watcherId: pw.id, symbol: pw.symbol, interval: pw.interval, profileId: pw.profileId });
       } catch (error) {
         log('❌ Failed to restore watcher', {
           watcherId: pw.id,

@@ -386,6 +386,26 @@ export type NewMLEvaluation = typeof mlEvaluations.$inferInsert;
 export type MLFeatureCache = typeof mlFeatureCache.$inferSelect;
 export type NewMLFeatureCache = typeof mlFeatureCache.$inferInsert;
 
+export const tradingProfiles = pgTable('trading_profiles', {
+  id: varchar({ length: 255 }).primaryKey(),
+  userId: varchar('user_id', { length: 255 })
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  name: varchar({ length: 100 }).notNull(),
+  description: text(),
+  enabledSetupTypes: text('enabled_setup_types').notNull(),
+  maxPositionSize: numeric('max_position_size', { precision: 10, scale: 2 }),
+  maxConcurrentPositions: integer('max_concurrent_positions'),
+  isDefault: boolean('is_default').default(false).notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('trading_profiles_user_id_idx').on(table.userId),
+}));
+
+export type TradingProfileRow = typeof tradingProfiles.$inferSelect;
+export type NewTradingProfileRow = typeof tradingProfiles.$inferInsert;
+
 export const activeWatchers = pgTable('active_watchers', {
   id: varchar({ length: 255 }).primaryKey(),
   userId: varchar('user_id', { length: 255 })
@@ -394,6 +414,8 @@ export const activeWatchers = pgTable('active_watchers', {
   walletId: varchar('wallet_id', { length: 255 })
     .notNull()
     .references(() => wallets.id, { onDelete: 'cascade' }),
+  profileId: varchar('profile_id', { length: 255 })
+    .references(() => tradingProfiles.id, { onDelete: 'set null' }),
   symbol: varchar({ length: 20 }).notNull(),
   interval: varchar({ length: 5 }).notNull(),
   startedAt: timestamp('started_at', { mode: 'date' }).defaultNow().notNull(),
@@ -401,10 +423,11 @@ export const activeWatchers = pgTable('active_watchers', {
 }, (table) => ({
   walletIdIdx: index('active_watchers_wallet_id_idx').on(table.walletId),
   userIdIdx: index('active_watchers_user_id_idx').on(table.userId),
+  profileIdIdx: index('active_watchers_profile_id_idx').on(table.profileId),
 }));
 
-export type ActiveWatcher = typeof activeWatchers.$inferSelect;
-export type NewActiveWatcher = typeof activeWatchers.$inferInsert;
+export type ActiveWatcherRow = typeof activeWatchers.$inferSelect;
+export type NewActiveWatcherRow = typeof activeWatchers.$inferInsert;
 
 export const marketContextConfig = pgTable('market_context_config', {
   id: varchar({ length: 255 }).primaryKey(),
