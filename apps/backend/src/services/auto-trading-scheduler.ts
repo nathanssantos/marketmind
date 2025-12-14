@@ -20,6 +20,7 @@ import { backfillHistoricalKlines, calculateStartTime } from './binance-historic
 import { mlService } from './ml';
 import { pyramidingService } from './pyramiding';
 import { autoTradingService } from './auto-trading';
+import { marketContextFilter } from './market-context-filter';
 import { env } from '../env';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -448,7 +449,79 @@ export class AutoTradingScheduler {
         return;
       }
 
+      log('🌍 Applying market context filter', { setupCount: filteredSetups.length });
+
+      const contextFilteredSetups: TradingSetup[] = [];
+
       for (const setup of filteredSetups) {
+        try {
+          const contextResult = await marketContextFilter.validateSetup(
+            setup,
+            watcher.symbol,
+            watcher.walletId
+          );
+
+          if (!contextResult.shouldTrade) {
+            log('⛔ Setup rejected by market context filter', {
+              type: setup.type,
+              reason: contextResult.reason,
+              appliedFilters: contextResult.appliedFilters.map(f => f.filter),
+            });
+            continue;
+          }
+
+          const adjustedSetup = { ...setup };
+
+          if (contextResult.positionSizeMultiplier < 1.0) {
+            adjustedSetup.positionSizeMultiplier = contextResult.positionSizeMultiplier;
+            log('📉 Position size reduced by market context', {
+              type: setup.type,
+              multiplier: contextResult.positionSizeMultiplier.toFixed(2),
+            });
+          }
+
+          if (contextResult.confidenceAdjustment !== 0) {
+            adjustedSetup.confidence = Math.max(0, Math.min(100,
+              setup.confidence + contextResult.confidenceAdjustment
+            ));
+            log('📊 Confidence adjusted by market context', {
+              type: setup.type,
+              original: setup.confidence,
+              adjusted: adjustedSetup.confidence,
+              adjustment: contextResult.confidenceAdjustment,
+            });
+          }
+
+          if (contextResult.warnings.length > 0) {
+            log('⚠️ Market context warnings', {
+              type: setup.type,
+              warnings: contextResult.warnings,
+            });
+          }
+
+          contextFilteredSetups.push(adjustedSetup);
+        } catch (error) {
+          log('⚠️ Market context filter failed, using original setup', {
+            type: setup.type,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          contextFilteredSetups.push(setup);
+        }
+      }
+
+      log('📊 Market context filtering complete', {
+        original: filteredSetups.length,
+        afterFilter: contextFilteredSetups.length,
+        rejected: filteredSetups.length - contextFilteredSetups.length,
+      });
+
+      if (contextFilteredSetups.length === 0) {
+        log('📭 No setups passed market context filter');
+        watcher.lastProcessedTime = Date.now();
+        return;
+      }
+
+      for (const setup of contextFilteredSetups) {
         await this.executeSetup(watcher, setup);
       }
 
@@ -606,11 +679,24 @@ export class AutoTradingScheduler {
         return;
       }
 
-      const positionValue = dynamicSize.quantity * setup.entryPrice;
+      let adjustedQuantity = dynamicSize.quantity;
+      let adjustedSizePercent = dynamicSize.sizePercent;
+
+      if (setup.positionSizeMultiplier && setup.positionSizeMultiplier < 1.0) {
+        adjustedQuantity = dynamicSize.quantity * setup.positionSizeMultiplier;
+        adjustedSizePercent = dynamicSize.sizePercent * setup.positionSizeMultiplier;
+        log('🌍 Market context size adjustment applied', {
+          originalQuantity: dynamicSize.quantity.toFixed(8),
+          multiplier: setup.positionSizeMultiplier.toFixed(2),
+          adjustedQuantity: adjustedQuantity.toFixed(8),
+        });
+      }
+
+      const positionValue = adjustedQuantity * setup.entryPrice;
 
       log('💰 Dynamic position sizing', {
         walletBalance: walletBalance.toFixed(2),
-        sizePercent: dynamicSize.sizePercent.toFixed(2),
+        sizePercent: adjustedSizePercent.toFixed(2),
         positionValue: positionValue.toFixed(2),
         reason: dynamicSize.reason,
       });
@@ -670,19 +756,19 @@ export class AutoTradingScheduler {
 
       const executionId = `exec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-      const quantityFormatted = dynamicSize.quantity.toFixed(8);
+      const quantityFormatted = adjustedQuantity.toFixed(8);
 
       log('📐 Final position size', {
         positionValue: positionValue.toFixed(2),
         entryPrice: setup.entryPrice,
         quantity: quantityFormatted,
         walletBalance: walletBalance.toFixed(2),
-        sizePercent: dynamicSize.sizePercent.toFixed(2),
+        sizePercent: adjustedSizePercent.toFixed(2),
       });
 
       let entryOrderId: number | null = null;
       let actualEntryPrice = setup.entryPrice;
-      let actualQuantity = dynamicSize.quantity;
+      let actualQuantity = adjustedQuantity;
 
       if (isLiveExecution) {
         log('🔴 LIVE EXECUTION - Placing order on Binance', {
@@ -699,13 +785,13 @@ export class AutoTradingScheduler {
               symbol: watcher.symbol,
               side: setup.direction === 'LONG' ? 'BUY' : 'SELL',
               type: 'MARKET',
-              quantity: dynamicSize.quantity,
+              quantity: adjustedQuantity,
             }
           );
 
           entryOrderId = orderResult.orderId;
           actualEntryPrice = parseFloat(orderResult.price) || setup.entryPrice;
-          actualQuantity = parseFloat(orderResult.executedQty) || dynamicSize.quantity;
+          actualQuantity = parseFloat(orderResult.executedQty) || adjustedQuantity;
 
           log('✅ Binance order executed', {
             orderId: entryOrderId,

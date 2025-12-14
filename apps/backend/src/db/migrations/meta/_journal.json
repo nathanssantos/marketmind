@@ -43,6 +43,13 @@
       "when": 1765629493754,
       "tag": "0005_heavy_kitty_pryde",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1765681383684,
+      "tag": "0006_common_deadpool",
+      "breakpoints": true
     }
   ]
 }

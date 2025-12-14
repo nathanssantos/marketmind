@@ -10,6 +10,7 @@ export * from './fees';
 export * from './kline';
 export * from './klineUtils';
 export * from './market';
+export * from './marketContextConfig';
 export * from './news';
 export * from './pattern';
 export * from './setupConfig';

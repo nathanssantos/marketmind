@@ -53,6 +53,7 @@ export interface TradingSetup {
   triggeredAt?: number;
   urgency?: 'immediate' | 'wait_for_pullback' | 'wait_for_confirmation';
   contextualFactors?: string[];
+  positionSizeMultiplier?: number;
 }
 
 export interface PivotPoint {

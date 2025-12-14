@@ -65,6 +65,7 @@
       "aiTrading": "AI Auto-Trading",
       "context": "Context",
       "algorithmicAutoTrading": "Algorithmic Auto-Trading",
+      "marketContext": "Market Context",
       "setupDetection": "Setup Detection",
       "patternDetection": "Pattern Detection",
       "news": "News",
@@ -1226,5 +1227,51 @@
     "tips": "Tips",
     "to": "to",
     "hours": "h"
+  },
+  "marketContext": {
+    "title": "Market Context Filters",
+    "description": "Configure filters to adjust or block trades based on market conditions",
+    "masterSwitch": "Enable Market Context Filters",
+    "masterSwitchDescription": "Turn on/off all market context filters",
+    "shadowMode": "Shadow Mode",
+    "shadowModeDescription": "Log filter decisions without affecting trades (for testing)",
+    "currentData": "Current Market Data",
+    "configUpdated": "Market context configuration updated",
+    "configUpdateFailed": "Failed to update configuration",
+    "configNotFound": "Configuration not found",
+    "noWallet": "Please select a wallet first",
+    "action": "Action",
+    "sizeReduction": "Size Reduction (%)",
+    "penalty": "Penalty (%)",
+    "actions": {
+      "warnOnly": "Warn Only",
+      "reduceSize": "Reduce Size",
+      "penalize": "Penalize",
+      "block": "Block"
+    },
+    "fearGreed": {
+      "label": "Fear & Greed",
+      "title": "Fear & Greed Index",
+      "description": "Filter based on market sentiment (0=extreme fear, 100=extreme greed)",
+      "thresholdLow": "Low Threshold",
+      "thresholdHigh": "High Threshold"
+    },
+    "fundingRate": {
+      "label": "Funding Rate",
+      "title": "Funding Rate",
+      "description": "Filter based on perpetual futures funding rate",
+      "threshold": "Threshold (%)"
+    },
+    "btcDominance": {
+      "label": "BTC Dominance",
+      "title": "BTC Dominance",
+      "description": "Filter altcoin trades when BTC dominance is rising",
+      "changeThreshold": "Change Threshold (%)"
+    },
+    "openInterest": {
+      "title": "Open Interest",
+      "description": "Filter based on open interest changes",
+      "changeThreshold": "Change Threshold (%)"
+    }
   }
 }

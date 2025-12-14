@@ -405,3 +405,39 @@ export const activeWatchers = pgTable('active_watchers', {
 
 export type ActiveWatcher = typeof activeWatchers.$inferSelect;
 export type NewActiveWatcher = typeof activeWatchers.$inferInsert;
+
+export const marketContextConfig = pgTable('market_context_config', {
+  id: varchar({ length: 255 }).primaryKey(),
+  userId: varchar('user_id', { length: 255 })
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  walletId: varchar('wallet_id', { length: 255 })
+    .notNull()
+    .references(() => wallets.id, { onDelete: 'cascade' }),
+  enabled: boolean().default(true).notNull(),
+  shadowMode: boolean('shadow_mode').default(true).notNull(),
+  fearGreedEnabled: boolean('fear_greed_enabled').default(true).notNull(),
+  fearGreedThresholdLow: integer('fear_greed_threshold_low').default(20).notNull(),
+  fearGreedThresholdHigh: integer('fear_greed_threshold_high').default(80).notNull(),
+  fearGreedAction: varchar('fear_greed_action', { length: 20 }).default('reduce_size').notNull(),
+  fearGreedSizeReduction: integer('fear_greed_size_reduction').default(50).notNull(),
+  fundingRateEnabled: boolean('funding_rate_enabled').default(true).notNull(),
+  fundingRateThreshold: numeric('funding_rate_threshold', { precision: 10, scale: 4 }).default('0.05').notNull(),
+  fundingRateAction: varchar('funding_rate_action', { length: 20 }).default('penalize').notNull(),
+  fundingRatePenalty: integer('funding_rate_penalty').default(20).notNull(),
+  btcDominanceEnabled: boolean('btc_dominance_enabled').default(false).notNull(),
+  btcDominanceChangeThreshold: numeric('btc_dominance_change_threshold', { precision: 10, scale: 2 }).default('1.0').notNull(),
+  btcDominanceAction: varchar('btc_dominance_action', { length: 20 }).default('reduce_size').notNull(),
+  btcDominanceSizeReduction: integer('btc_dominance_size_reduction').default(25).notNull(),
+  openInterestEnabled: boolean('open_interest_enabled').default(false).notNull(),
+  openInterestChangeThreshold: numeric('open_interest_change_threshold', { precision: 10, scale: 2 }).default('10').notNull(),
+  openInterestAction: varchar('open_interest_action', { length: 20 }).default('warn_only').notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  walletIdIdx: index('market_context_config_wallet_id_idx').on(table.walletId),
+  userIdIdx: index('market_context_config_user_id_idx').on(table.userId),
+}));
+
+export type MarketContextConfigRow = typeof marketContextConfig.$inferSelect;
+export type NewMarketContextConfigRow = typeof marketContextConfig.$inferInsert;

@@ -5,6 +5,7 @@ import { autoTradingRouter } from '../routers/auto-trading';
 import { backtestRouter } from '../routers/backtest';
 import { healthRouter } from '../routers/health';
 import { klineRouter } from '../routers/kline';
+import { marketContextRouter } from '../routers/market-context';
 import { mlRouter } from '../routers/ml';
 import { setupRouter } from '../routers/setup';
 import { setupDetectionRouter } from '../routers/setup-detection';
@@ -25,6 +26,7 @@ export const appRouter = router({
   setupDetection: setupDetectionRouter,
   backtest: backtestRouter,
   ml: mlRouter,
+  marketContext: marketContextRouter,
 });
 
 export type AppRouter = typeof appRouter;
