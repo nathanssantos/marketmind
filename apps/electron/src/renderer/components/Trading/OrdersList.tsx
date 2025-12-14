@@ -1,10 +1,11 @@
 import { Badge, Box, Flex, IconButton, Portal, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
+import type { Order, OrderStatus } from '@marketmind/types';
 import { Select } from '@renderer/components/ui/select';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
-import type { Order, OrderStatus } from '@marketmind/types';
+import { type OrdersFilterOption, useUIStore } from '@renderer/store/uiStore';
 import {
   getOrderId,
   getOrderPrice,
@@ -13,7 +14,7 @@ import {
   isOrderLong,
   isOrderPending,
 } from '@shared/utils';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import { LuX } from 'react-icons/lu';
@@ -139,16 +140,24 @@ export const OrdersList = () => {
     }
   };
 
-  const [filterStatus, setFilterStatus] = useState<OrderStatus | 'all'>('all');
+  const filterStatus = useUIStore((s) => s.ordersFilterStatus);
+  const setFilterStatus = useUIStore((s) => s.setOrdersFilterStatus);
 
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
   const walletOrders = activeWallet
     ? orders.filter((o) => o.walletId === activeWallet.id)
     : [];
 
-  const filteredOrders = filterStatus === 'all'
-    ? walletOrders
-    : walletOrders.filter((o) => o.status === filterStatus);
+  const filteredOrders = walletOrders.filter((order) => {
+    if (filterStatus === 'all') return true;
+    if (filterStatus === 'pending') return isOrderPending(order);
+    if (filterStatus === 'active') return isOrderActive(order);
+    if (filterStatus === 'filled') return order.status === 'FILLED' && !order.closedAt;
+    if (filterStatus === 'closed') return !!order.closedAt;
+    if (filterStatus === 'cancelled') return order.status === 'CANCELED' || order.status === 'REJECTED';
+    if (filterStatus === 'expired') return order.status === 'EXPIRED' || order.status === 'EXPIRED_IN_MATCH';
+    return true;
+  });
 
   const activeOrders = walletOrders.filter((o) => isOrderActive(o)).length;
   const pendingOrders = walletOrders.filter((o) => isOrderPending(o)).length;
@@ -191,7 +200,7 @@ export const OrdersList = () => {
             <Select
               size="xs"
               value={filterStatus}
-              onChange={(value) => setFilterStatus(value as OrderStatus | 'all')}
+              onChange={(value) => setFilterStatus(value as OrdersFilterOption)}
               options={[
                 { value: 'all', label: t('trading.orders.allStatuses') },
                 { value: 'pending', label: t('trading.orders.statusPending') },
@@ -201,13 +210,13 @@ export const OrdersList = () => {
                 { value: 'cancelled', label: t('trading.orders.statusCancelled') },
                 { value: 'expired', label: t('trading.orders.statusExpired') },
               ]}
-              usePortal={false}
+              usePortal
             />
           </ChakraField.Root>
 
-          <Box maxH="calc(100vh - 400px)" overflowY="auto">
+          <Box maxH="calc(100vh - 400px)" overflowY="auto" overflowX="visible">
             {filteredOrders.length === 0 ? (
-              <Box p={4} textAlign="center">
+              <Box p={4} textAlign="center" minH="100px">
                 <Text fontSize="sm" color="fg.muted">
                   {t('trading.orders.empty')}
                 </Text>

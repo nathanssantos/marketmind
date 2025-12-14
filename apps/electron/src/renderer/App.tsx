@@ -291,6 +291,29 @@ function AppContent(): ReactElement {
   const previousPriceRef = useRef<number | null>(null);
   const pendingUpdateRef = useRef<{ kline: Kline; isFinal: boolean } | null>(null);
   const rafIdRef = useRef<number | null>(null);
+  const lastRefetchRef = useRef<number>(0);
+
+  const getIntervalMs = useCallback((tf: string): number => {
+    const intervals: Record<string, number> = {
+      '1s': 1000,
+      '1m': 60 * 1000,
+      '3m': 3 * 60 * 1000,
+      '5m': 5 * 60 * 1000,
+      '15m': 15 * 60 * 1000,
+      '30m': 30 * 60 * 1000,
+      '1h': 60 * 60 * 1000,
+      '2h': 2 * 60 * 60 * 1000,
+      '4h': 4 * 60 * 60 * 1000,
+      '6h': 6 * 60 * 60 * 1000,
+      '8h': 8 * 60 * 60 * 1000,
+      '12h': 12 * 60 * 60 * 1000,
+      '1d': 24 * 60 * 60 * 1000,
+      '3d': 3 * 24 * 60 * 60 * 1000,
+      '1w': 7 * 24 * 60 * 60 * 1000,
+      '1M': 30 * 24 * 60 * 60 * 1000,
+    };
+    return intervals[tf] || 60 * 1000;
+  }, []);
 
   useEffect(() => {
     setLiveKlines([]);
@@ -300,6 +323,7 @@ function AppContent(): ReactElement {
       rafIdRef.current = null;
     }
     pendingUpdateRef.current = null;
+    lastRefetchRef.current = 0;
   }, [symbol, timeframe]);
 
   const handleRealtimeUpdate = useCallback((kline: Kline, isFinal: boolean) => {
@@ -384,6 +408,31 @@ function AppContent(): ReactElement {
     };
   }, []);
 
+  useEffect(() => {
+    if (!marketData?.klines || liveKlines.length === 0) return;
+
+    const lastBaseKline = marketData.klines[marketData.klines.length - 1];
+    const firstLiveKline = liveKlines[0];
+
+    if (!lastBaseKline || !firstLiveKline) return;
+
+    const intervalMs = getIntervalMs(timeframe);
+    const gap = firstLiveKline.openTime - lastBaseKline.openTime;
+    const gapCandles = Math.floor(gap / intervalMs);
+
+    if (gapCandles > 1) {
+      const now = Date.now();
+      const minRefetchInterval = 30000;
+
+      if (now - lastRefetchRef.current > minRefetchInterval) {
+        console.log(`[App] Detected gap of ${gapCandles} candles, refetching klines...`);
+        lastRefetchRef.current = now;
+        setLiveKlines([]);
+        backendKlinesQuery.refetch();
+      }
+    }
+  }, [marketData?.klines, liveKlines, timeframe, getIntervalMs, backendKlinesQuery]);
+
   const displayKlines = useMemo(() => {
     if (!marketData?.klines) return [];
     if (liveKlines.length === 0) return marketData.klines;
@@ -392,11 +441,25 @@ function AppContent(): ReactElement {
     const lastBaseKline = baseKlines[baseKlines.length - 1];
     const firstLiveKline = liveKlines[0];
 
-    if (lastBaseKline && firstLiveKline && firstLiveKline.openTime === lastBaseKline.openTime) {
+    if (!lastBaseKline || !firstLiveKline) {
+      return [...baseKlines, ...liveKlines];
+    }
+
+    if (firstLiveKline.openTime === lastBaseKline.openTime) {
       return [...baseKlines.slice(0, -1), ...liveKlines];
     }
 
-    return [...baseKlines, ...liveKlines];
+    if (firstLiveKline.openTime > lastBaseKline.openTime) {
+      const filteredLiveKlines = liveKlines.filter(k => k.openTime > lastBaseKline.openTime);
+      return [...baseKlines, ...filteredLiveKlines];
+    }
+
+    const overlapIndex = baseKlines.findIndex(k => k.openTime >= firstLiveKline.openTime);
+    if (overlapIndex > 0) {
+      return [...baseKlines.slice(0, overlapIndex), ...liveKlines];
+    }
+
+    return liveKlines;
   }, [marketData?.klines, liveKlines]);
 
   const debouncedAdvancedConfig = useDebounce(advancedConfig, 300);

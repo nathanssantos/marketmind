@@ -1,5 +1,6 @@
 import type { BinanceNewOrderResult, BinanceOrderQueryResult } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
+import { MainClient } from 'binance';
 import { randomBytes } from 'crypto';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -12,6 +13,8 @@ import { protectedProcedure, router } from '../trpc';
 const generateId = (length: number): string => {
   return randomBytes(length).toString('base64url').slice(0, length);
 };
+
+const BINANCE_TAKER_FEE = 0.001;
 
 export const tradingRouter = router({
   createOrder: protectedProcedure
@@ -522,17 +525,24 @@ export const tradingRouter = router({
         }, 'Manual close position: Paper/disabled mode - simulating exit');
       }
 
-      let pnl = 0;
+      const entryValue = entryPrice * qty;
+      const exitValue = exitPrice * qty;
+      const entryFee = entryValue * BINANCE_TAKER_FEE;
+      const exitFee = exitValue * BINANCE_TAKER_FEE;
+      const totalFees = entryFee + exitFee;
+
+      let grossPnl = 0;
       if (position.side === 'LONG') {
-        pnl = (exitPrice - entryPrice) * qty;
+        grossPnl = (exitPrice - entryPrice) * qty;
       } else {
-        pnl = (entryPrice - exitPrice) * qty;
+        grossPnl = (entryPrice - exitPrice) * qty;
       }
 
-      const pnlPercent = (pnl / (entryPrice * qty)) * 100;
+      const netPnl = grossPnl - totalFees;
+      const pnlPercent = (netPnl / entryValue) * 100;
 
       const currentBalance = parseFloat(wallet.currentBalance || '0');
-      const newBalance = currentBalance + pnl;
+      const newBalance = currentBalance + netPnl;
 
       await ctx.db
         .update(wallets)
@@ -547,7 +557,7 @@ export const tradingRouter = router({
         .set({
           status: 'closed',
           currentPrice: exitPrice.toString(),
-          pnl: pnl.toString(),
+          pnl: netPnl.toString(),
           pnlPercent: pnlPercent.toString(),
           closedAt: new Date(),
           updatedAt: new Date(),
@@ -555,7 +565,9 @@ export const tradingRouter = router({
         .where(eq(positions.id, input.id));
 
       return {
-        pnl: pnl.toString(),
+        pnl: netPnl.toString(),
+        grossPnl: grossPnl.toString(),
+        fees: totalFees.toString(),
         pnlPercent: pnlPercent.toFixed(2),
         exitOrderId,
         exitPrice: exitPrice.toString(),
@@ -693,17 +705,24 @@ export const tradingRouter = router({
         }, 'Manual close: Paper/disabled mode - simulating exit');
       }
 
-      let pnl = 0;
+      const entryValue = entryPrice * qty;
+      const exitValue = exitPrice * qty;
+      const entryFee = entryValue * BINANCE_TAKER_FEE;
+      const exitFee = exitValue * BINANCE_TAKER_FEE;
+      const totalFees = entryFee + exitFee;
+
+      let grossPnl = 0;
       if (execution.side === 'LONG') {
-        pnl = (exitPrice - entryPrice) * qty;
+        grossPnl = (exitPrice - entryPrice) * qty;
       } else {
-        pnl = (entryPrice - exitPrice) * qty;
+        grossPnl = (entryPrice - exitPrice) * qty;
       }
 
-      const pnlPercent = (pnl / (entryPrice * qty)) * 100;
+      const netPnl = grossPnl - totalFees;
+      const pnlPercent = (netPnl / entryValue) * 100;
 
       const currentBalance = parseFloat(wallet.currentBalance || '0');
-      const newBalance = currentBalance + pnl;
+      const newBalance = currentBalance + netPnl;
 
       await ctx.db
         .update(wallets)
@@ -719,15 +738,18 @@ export const tradingRouter = router({
           status: 'closed',
           exitPrice: exitPrice.toString(),
           exitOrderId,
-          pnl: pnl.toString(),
+          pnl: netPnl.toString(),
           pnlPercent: pnlPercent.toString(),
+          fees: totalFees.toString(),
           closedAt: new Date(),
           updatedAt: new Date(),
         })
         .where(eq(tradeExecutions.id, input.id));
 
       return {
-        pnl: pnl.toString(),
+        pnl: netPnl.toString(),
+        grossPnl: grossPnl.toString(),
+        fees: totalFees.toString(),
         pnlPercent: pnlPercent.toFixed(2),
         exitOrderId,
         exitPrice: exitPrice.toString(),
@@ -763,5 +785,37 @@ export const tradingRouter = router({
         .where(eq(tradeExecutions.id, input.id));
 
       return { success: true };
+    }),
+
+  getTickerPrices: protectedProcedure
+    .input(
+      z.object({
+        symbols: z.array(z.string()),
+      })
+    )
+    .query(async ({ input }) => {
+      if (input.symbols.length === 0) return {};
+
+      try {
+        const client = new MainClient();
+        const prices: Record<string, string> = {};
+
+        const tickers = await client.getSymbolPriceTicker();
+        const tickersArray = Array.isArray(tickers) ? tickers : [tickers];
+
+        for (const symbol of input.symbols) {
+          const ticker = tickersArray.find((t) => t.symbol === symbol);
+          if (ticker?.price) prices[symbol] = ticker.price.toString();
+        }
+
+        return prices;
+      } catch (error) {
+        logger.error({ error, symbols: input.symbols }, 'Failed to fetch ticker prices');
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch ticker prices',
+          cause: error,
+        });
+      }
     }),
 });

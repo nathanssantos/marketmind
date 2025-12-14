@@ -1,13 +1,16 @@
 import { Box, Flex, IconButton, Portal, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
-import { Button } from '@renderer/components/ui/button';
-import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import type { Wallet } from '@marketmind/types';
+import { Button } from '@renderer/components/ui/button';
+import { TooltipWrapper } from '@renderer/components/ui/Tooltip';
+import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
+import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { LuPlus, LuTrash2 } from 'react-icons/lu';
+import { LuChartBar, LuInfo, LuPlus, LuTrash2 } from 'react-icons/lu';
 import { CreateWalletDialog } from './CreateWalletDialog';
+import { WalletPerformanceModal } from './WalletPerformanceModal';
 
 export const WalletManager = () => {
   const { t } = useTranslation();
@@ -72,6 +75,7 @@ export const WalletManager = () => {
   };
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [performanceWalletId, setPerformanceWalletId] = useState<string | null>(null);
 
   return (
     <Stack gap={2} p={4}>
@@ -111,6 +115,7 @@ export const WalletManager = () => {
                 wallet={wallet}
                 isActive={wallet.id === activeWalletId}
                 onDelete={() => handleDeleteWallet(wallet.id)}
+                onViewPerformance={() => setPerformanceWalletId(wallet.id)}
                 isDeleting={isDeleting}
               />
             ))}
@@ -123,6 +128,12 @@ export const WalletManager = () => {
         onClose={() => setShowCreateDialog(false)}
         onCreate={handleAddWallet}
       />
+
+      <WalletPerformanceModal
+        isOpen={performanceWalletId !== null}
+        onClose={() => setPerformanceWalletId(null)}
+        walletId={performanceWalletId}
+      />
     </Stack>
   );
 };
@@ -131,14 +142,22 @@ interface WalletCardProps {
   wallet: Wallet;
   isActive: boolean;
   onDelete: () => void;
+  onViewPerformance: () => void;
   isDeleting?: boolean;
 }
 
-const WalletCard = ({ wallet, isActive, onDelete, isDeleting = false }: WalletCardProps) => {
+const PERCENT_MULTIPLIER = 100;
+
+const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, isDeleting = false }: WalletCardProps) => {
   const { t } = useTranslation();
-  const totalPnL = wallet.balance - wallet.initialBalance;
-  const totalPnLPercent = wallet.initialBalance > 0 ? (totalPnL / wallet.initialBalance) * 100 : 0;
-  const isProfitable = totalPnL >= 0;
+  const { performance } = useBackendAnalytics(wallet.id, 'all');
+
+  const netPnL = wallet.balance - wallet.initialBalance;
+  const netPnLPercent = wallet.initialBalance > 0 ? (netPnL / wallet.initialBalance) * PERCENT_MULTIPLIER : 0;
+  const isProfitable = netPnL >= 0;
+
+  const totalFees = performance?.totalFees ?? 0;
+  const grossPnL = netPnL + totalFees;
 
   return (
     <Box
@@ -178,6 +197,16 @@ const WalletCard = ({ wallet, isActive, onDelete, isDeleting = false }: WalletCa
                 p={0}
               >
                 <MenuItem
+                  value="performance"
+                  onClick={onViewPerformance}
+                  px={4}
+                  py={2.5}
+                  _hover={{ bg: 'bg.muted' }}
+                >
+                  <LuChartBar />
+                  <Text>{t('trading.wallets.viewPerformance')}</Text>
+                </MenuItem>
+                <MenuItem
                   value="delete"
                   onClick={onDelete}
                   color="red.500"
@@ -209,11 +238,14 @@ const WalletCard = ({ wallet, isActive, onDelete, isDeleting = false }: WalletCa
           </Text>
         </Flex>
         <Flex justify="space-between">
-          <Text color="fg.muted">{t('trading.wallets.totalPnL')}</Text>
-          <Text color={isProfitable ? 'green.500' : 'red.500'} fontWeight="medium">
-            {isProfitable ? '+' : ''}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            {' '}({isProfitable ? '+' : ''}{totalPnLPercent.toFixed(2)}%)
-          </Text>
+          <Text color="fg.muted">{t('trading.wallets.netPnL')}</Text>
+          <TooltipWrapper label={`${t('trading.analytics.performance.grossPnL')}: ${grossPnL >= 0 ? '+' : ''}${grossPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | ${t('trading.analytics.performance.fees')}: ${totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} isDisabled={totalFees === 0}>
+            <Text color={isProfitable ? 'green.500' : 'red.500'} fontWeight="medium" cursor={totalFees > 0 ? 'help' : 'default'}>
+              {isProfitable ? '+' : ''}{netPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {' '}({isProfitable ? '+' : ''}{netPnLPercent.toFixed(2)}%)
+              {totalFees > 0 && <LuInfo style={{ display: 'inline', marginLeft: '4px', verticalAlign: 'middle' }} />}
+            </Text>
+          </TooltipWrapper>
         </Flex>
       </Stack>
     </Box>

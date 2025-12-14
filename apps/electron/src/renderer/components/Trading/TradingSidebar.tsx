@@ -1,6 +1,7 @@
 import { Box, Stack, Tabs, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useBackendWallet } from '../../hooks/useBackendWallet';
+import { type TradingSidebarTab, useUIStore } from '../../store/uiStore';
 import { SidebarContainer, SidebarHeader } from '../ui/Sidebar';
 import { OrdersList } from './OrdersList';
 import { OrderTicket } from './OrderTicket';
@@ -19,11 +20,18 @@ export const TradingSidebar = ({ width }: TradingSidebarProps) => {
   const { wallets: backendWallets } = useBackendWallet();
   const activeWalletId = backendWallets[0]?.id;
 
+  const tradingSidebarTab = useUIStore((s) => s.tradingSidebarTab);
+  const setTradingSidebarTab = useUIStore((s) => s.setTradingSidebarTab);
+
+  const handleTabChange = (details: { value: string }) => {
+    setTradingSidebarTab(details.value as TradingSidebarTab);
+  };
+
   return (
     <SidebarContainer width={width}>
       <SidebarHeader title={t('trading.sidebar.title')} />
 
-      <Tabs.Root defaultValue="ticket" fitted>
+      <Tabs.Root value={tradingSidebarTab} onValueChange={handleTabChange} fitted>
         <Tabs.List>
           <Tabs.Trigger value="ticket">
             <Text fontSize="xs">{t('trading.tabs.ticket')}</Text>

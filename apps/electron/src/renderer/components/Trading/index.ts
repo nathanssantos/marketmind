@@ -5,7 +5,7 @@ export { WalletManager } from './WalletManager';
 export { TradingSidebar } from './TradingSidebar';
 export { EquityCurveChart } from './EquityCurveChart';
 export { CreateWalletDialog } from './CreateWalletDialog';
-export { WalletPerformanceDialog } from './WalletPerformanceDialog';
+export { WalletPerformanceModal } from './WalletPerformanceModal';
 
 export { RiskDisplay } from './RiskDisplay';
 export { PerformancePanel } from './PerformancePanel';

@@ -9,9 +9,9 @@ import {
   Stack,
   Text,
 } from '@chakra-ui/react';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useBackendAnalytics, type AnalyticsPeriod } from '../../hooks/useBackendAnalytics';
+import { useBackendAnalytics } from '../../hooks/useBackendAnalytics';
+import { type AnalyticsPeriod, useUIStore } from '../../store/uiStore';
 
 interface PerformancePanelProps {
   walletId: string;
@@ -19,7 +19,8 @@ interface PerformancePanelProps {
 
 export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
   const { t } = useTranslation();
-  const [period, setPeriod] = useState<AnalyticsPeriod>('all');
+  const period = useUIStore((s) => s.performancePeriod);
+  const setPeriod = useUIStore((s) => s.setPerformancePeriod);
   const { performance, isLoadingPerformance } = useBackendAnalytics(walletId, period);
 
   if (isLoadingPerformance) {
@@ -65,6 +66,34 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
     { value: 'all', labelKey: 'trading.analytics.periods.all' },
   ];
 
+  const MetricCard = ({
+    label,
+    value,
+    valueColor,
+    subtext,
+  }: {
+    label: string;
+    value: string;
+    valueColor?: string;
+    subtext?: string;
+  }) => (
+    <GridItem>
+      <Box px={4} py={3} bg="bg.muted" borderRadius="md" h="100%">
+        <Text fontSize="xs" color="fg.muted" mb={1} textTransform="uppercase">
+          {label}
+        </Text>
+        <Text fontSize="lg" fontWeight="bold" color={valueColor}>
+          {value}
+        </Text>
+        {subtext && (
+          <Text fontSize="xs" color="fg.muted" mt={1}>
+            {subtext}
+          </Text>
+        )}
+      </Box>
+    </GridItem>
+  );
+
   return (
     <Stack gap={4} p={6} bg="gray.50" _dark={{ bg: 'gray.800' }} borderRadius="md" borderWidth="1px">
       <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px">
@@ -84,209 +113,56 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
         </ButtonGroup>
       </Flex>
 
-      <Grid
-        templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(5, 1fr)' }}
-        gap={4}
-      >
-        <GridItem>
-          <Box
-            p={4}
-            bg="white"
-            _dark={{ bg: 'gray.700' }}
-            borderRadius="md"
-            borderWidth="1px"
-            transition="all 0.2s"
-            _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-          >
-            <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              {t('trading.analytics.performance.totalReturn').toUpperCase()}
-            </Text>
-            <Text fontSize="2xl" fontWeight="bold" color={getValueColor(performance.totalReturn)}>
-              {formatPercent(performance.totalReturn)}
-            </Text>
-          </Box>
-        </GridItem>
+      <Grid templateColumns="repeat(4, 1fr)" gap={3}>
+        <MetricCard
+          label={t('trading.analytics.performance.totalReturn')}
+          value={formatPercent(performance.totalReturn)}
+          valueColor={getValueColor(performance.totalReturn)}
+        />
+        <MetricCard
+          label={t('trading.analytics.performance.netPnL')}
+          value={formatCurrency(performance.netPnL)}
+          valueColor={getValueColor(performance.netPnL)}
+          subtext={`${t('trading.analytics.performance.grossPnL')}: ${formatCurrency(performance.totalPnL)} - ${t('trading.analytics.performance.fees')}: $${performance.totalFees.toFixed(2)}`}
+        />
+        <MetricCard
+          label={t('trading.analytics.performance.winRate')}
+          value={`${performance.winRate.toFixed(1)}%`}
+          subtext={`${performance.winningTrades}W / ${performance.losingTrades}L`}
+        />
+        <MetricCard
+          label={t('trading.analytics.performance.profitFactor')}
+          value={performance.profitFactor.toFixed(2)}
+          valueColor={performance.profitFactor >= 1 ? 'green.500' : 'red.500'}
+        />
+      </Grid>
 
-        <GridItem>
-          <Box
-            p={4}
-            bg="white"
-            _dark={{ bg: 'gray.700' }}
-            borderRadius="md"
-            borderWidth="1px"
-            transition="all 0.2s"
-            _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-          >
-            <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              {t('trading.analytics.performance.netPnL').toUpperCase()}
-            </Text>
-            <Text fontSize="2xl" fontWeight="bold" color={getValueColor(performance.netPnL)}>
-              {formatCurrency(performance.netPnL)}
-            </Text>
-            <Text fontSize="xs" color="gray.500" mt={1}>
-              {t('trading.analytics.performance.grossPnL')}: {formatCurrency(performance.totalPnL)} - {t('trading.analytics.performance.fees')}: ${performance.totalFees.toFixed(2)}
-            </Text>
-          </Box>
-        </GridItem>
-
-        <GridItem>
-          <Box
-            p={4}
-            bg="white"
-            _dark={{ bg: 'gray.700' }}
-            borderRadius="md"
-            borderWidth="1px"
-            transition="all 0.2s"
-            _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-          >
-            <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              {t('trading.analytics.performance.winRate').toUpperCase()}
-            </Text>
-            <Text fontSize="2xl" fontWeight="bold">
-              {performance.winRate.toFixed(1)}%
-            </Text>
-            <Text fontSize="xs" color="gray.500" mt={1}>
-              {performance.winningTrades}W / {performance.losingTrades}L
-            </Text>
-          </Box>
-        </GridItem>
-
-        <GridItem>
-          <Box
-            p={4}
-            bg="white"
-            _dark={{ bg: 'gray.700' }}
-            borderRadius="md"
-            borderWidth="1px"
-            transition="all 0.2s"
-            _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-          >
-            <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              {t('trading.analytics.performance.profitFactor').toUpperCase()}
-            </Text>
-            <Text
-              fontSize="2xl"
-              fontWeight="bold"
-              color={performance.profitFactor >= 1 ? 'green.500' : 'red.500'}
-            >
-              {performance.profitFactor.toFixed(2)}
-            </Text>
-          </Box>
-        </GridItem>
-
-        <GridItem>
-          <Box
-            p={4}
-            bg="white"
-            _dark={{ bg: 'gray.700' }}
-            borderRadius="md"
-            borderWidth="1px"
-            transition="all 0.2s"
-            _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-          >
-            <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              {t('trading.analytics.performance.totalTrades').toUpperCase()}
-            </Text>
-            <Text fontSize="2xl" fontWeight="bold">
-              {performance.totalTrades}
-            </Text>
-          </Box>
-        </GridItem>
-
-        <GridItem>
-          <Box
-            p={4}
-            bg="white"
-            _dark={{ bg: 'gray.700' }}
-            borderRadius="md"
-            borderWidth="1px"
-            transition="all 0.2s"
-            _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-          >
-            <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              {t('trading.analytics.performance.avgWin').toUpperCase()}
-            </Text>
-            <Text fontSize="2xl" fontWeight="bold" color="green.500">
-              {formatCurrency(performance.avgWin)}
-            </Text>
-          </Box>
-        </GridItem>
-
-        <GridItem>
-          <Box
-            p={4}
-            bg="white"
-            _dark={{ bg: 'gray.700' }}
-            borderRadius="md"
-            borderWidth="1px"
-            transition="all 0.2s"
-            _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-          >
-            <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              {t('trading.analytics.performance.avgLoss').toUpperCase()}
-            </Text>
-            <Text fontSize="2xl" fontWeight="bold" color="red.500">
-              {formatCurrency(performance.avgLoss)}
-            </Text>
-          </Box>
-        </GridItem>
-
-        <GridItem>
-          <Box
-            p={4}
-            bg="white"
-            _dark={{ bg: 'gray.700' }}
-            borderRadius="md"
-            borderWidth="1px"
-            transition="all 0.2s"
-            _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-          >
-            <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              {t('trading.analytics.performance.maxDrawdown').toUpperCase()}
-            </Text>
-            <Text fontSize="2xl" fontWeight="bold" color="red.500">
-              -{performance.maxDrawdown.toFixed(2)}%
-            </Text>
-          </Box>
-        </GridItem>
-
-        <GridItem>
-          <Box
-            p={4}
-            bg="white"
-            _dark={{ bg: 'gray.700' }}
-            borderRadius="md"
-            borderWidth="1px"
-            transition="all 0.2s"
-            _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-          >
-            <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              {t('trading.analytics.performance.largestWin').toUpperCase()}
-            </Text>
-            <Text fontSize="2xl" fontWeight="bold" color="green.500">
-              {formatCurrency(performance.largestWin)}
-            </Text>
-          </Box>
-        </GridItem>
-
-        <GridItem>
-          <Box
-            p={4}
-            bg="white"
-            _dark={{ bg: 'gray.700' }}
-            borderRadius="md"
-            borderWidth="1px"
-            transition="all 0.2s"
-            _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-          >
-            <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} mb={2} fontWeight="medium">
-              {t('trading.analytics.performance.largestLoss').toUpperCase()}
-            </Text>
-            <Text fontSize="2xl" fontWeight="bold" color="red.500">
-              {formatCurrency(performance.largestLoss)}
-            </Text>
-          </Box>
-        </GridItem>
+      <Grid templateColumns="repeat(5, 1fr)" gap={3}>
+        <MetricCard
+          label={t('trading.analytics.performance.avgWin')}
+          value={formatCurrency(performance.avgWin)}
+          valueColor="green.500"
+        />
+        <MetricCard
+          label={t('trading.analytics.performance.avgLoss')}
+          value={formatCurrency(performance.avgLoss)}
+          valueColor="red.500"
+        />
+        <MetricCard
+          label={t('trading.analytics.performance.maxDrawdown')}
+          value={`-${performance.maxDrawdown.toFixed(2)}%`}
+          valueColor="red.500"
+        />
+        <MetricCard
+          label={t('trading.analytics.performance.largestWin')}
+          value={formatCurrency(performance.largestWin)}
+          valueColor="green.500"
+        />
+        <MetricCard
+          label={t('trading.analytics.performance.largestLoss')}
+          value={formatCurrency(performance.largestLoss)}
+          valueColor="red.500"
+        />
       </Grid>
     </Stack>
   );

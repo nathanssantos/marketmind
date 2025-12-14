@@ -764,7 +764,13 @@
       "performanceTitle": "Desempenho - {{name}}",
       "currentBalance": "Saldo Atual",
       "tradeDays": "Dias de Negociação",
-      "avgDailyReturn": "Retorno Médio Diário"
+      "avgDailyReturn": "Retorno Médio Diário",
+      "equity": "Patrimônio",
+      "equityCurve": "Curva de Patrimônio",
+      "pnl": "L/P",
+      "netPnL": "L/P Líquido",
+      "afterFees": "após taxas",
+      "noTradesYet": "Nenhuma operação ainda. Comece a negociar para ver sua curva de patrimônio."
     },
     "ticket": {
       "title": "Ticket de Ordem",

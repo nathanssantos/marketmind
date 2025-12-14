@@ -1,7 +1,7 @@
 import { Box, Button, ButtonGroup, Flex, Spinner, Stack, Table, Text } from '@chakra-ui/react';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useBackendAnalytics, type AnalyticsPeriod } from '../../hooks/useBackendAnalytics';
+import { useBackendAnalytics } from '../../hooks/useBackendAnalytics';
+import { type AnalyticsPeriod, useUIStore } from '../../store/uiStore';
 
 interface SetupStatsTableProps {
   walletId: string;
@@ -9,7 +9,8 @@ interface SetupStatsTableProps {
 
 export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
   const { t } = useTranslation();
-  const [period, setPeriod] = useState<AnalyticsPeriod>('all');
+  const period = useUIStore((s) => s.setupStatsPeriod);
+  const setPeriod = useUIStore((s) => s.setSetupStatsPeriod);
   const { setupStats, isLoadingSetupStats } = useBackendAnalytics(walletId, period);
 
   if (isLoadingSetupStats) {

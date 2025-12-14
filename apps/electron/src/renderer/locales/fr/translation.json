@@ -775,7 +775,13 @@
       "performanceTitle": "Performances - {{name}}",
       "currentBalance": "Solde Actuel",
       "tradeDays": "Jours de Trading",
-      "avgDailyReturn": "Retour Quotidien Moyen"
+      "avgDailyReturn": "Retour Quotidien Moyen",
+      "equity": "Capital",
+      "equityCurve": "Courbe de Capital",
+      "pnl": "P&L",
+      "netPnL": "P&L Net",
+      "afterFees": "après frais",
+      "noTradesYet": "Pas encore de transactions. Commencez à trader pour voir votre courbe de capital."
     },
     "ticket": {
       "title": "Ordre",

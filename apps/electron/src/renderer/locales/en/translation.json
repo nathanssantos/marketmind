@@ -797,7 +797,13 @@
       "performanceTitle": "Performance - {{name}}",
       "currentBalance": "Current Balance",
       "tradeDays": "Trade Days",
-      "avgDailyReturn": "Avg Daily Return"
+      "avgDailyReturn": "Avg Daily Return",
+      "equity": "Equity",
+      "equityCurve": "Equity Curve",
+      "pnl": "P&L",
+      "netPnL": "Net P&L",
+      "afterFees": "after fees",
+      "noTradesYet": "No trades yet. Start trading to see your equity curve."
     },
     "ticket": {
       "title": "Order Ticket",

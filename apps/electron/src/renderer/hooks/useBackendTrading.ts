@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { trpc } from '../utils/trpc';
 
 export const useBackendTrading = (walletId: string, symbol?: string) => {
@@ -15,6 +15,16 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
   const { data: tradeExecutions, isLoading: isLoadingExecutions } = trpc.trading.getTradeExecutions.useQuery(
     { walletId, symbol, limit: 50 },
     { enabled: !!walletId }
+  );
+
+  const openPositionSymbols = useMemo(() => {
+    const openExecutions = tradeExecutions?.filter((e) => e.status === 'open') ?? [];
+    return [...new Set(openExecutions.map((e) => e.symbol))];
+  }, [tradeExecutions]);
+
+  const { data: tickerPrices, isLoading: isLoadingPrices } = trpc.trading.getTickerPrices.useQuery(
+    { symbols: openPositionSymbols },
+    { enabled: openPositionSymbols.length > 0, refetchInterval: 10000 }
   );
   
   const createOrderMutation = trpc.trading.createOrder.useMutation({
@@ -132,9 +142,11 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
     orders: orders ?? [],
     positions: positions ?? [],
     tradeExecutions: tradeExecutions ?? [],
+    tickerPrices: tickerPrices ?? {},
     isLoadingOrders,
     isLoadingPositions,
     isLoadingExecutions,
+    isLoadingPrices,
     createOrder,
     cancelOrder,
     syncOrders,

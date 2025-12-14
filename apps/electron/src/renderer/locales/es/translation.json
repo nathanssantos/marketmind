@@ -793,7 +793,13 @@
       "performanceTitle": "Rendimiento - {{name}}",
       "currentBalance": "Saldo Actual",
       "tradeDays": "Días de Operación",
-      "avgDailyReturn": "Retorno Promedio Diario"
+      "avgDailyReturn": "Retorno Promedio Diario",
+      "equity": "Capital",
+      "equityCurve": "Curva de Capital",
+      "pnl": "P&L",
+      "netPnL": "P&L Neto",
+      "afterFees": "después de comisiones",
+      "noTradesYet": "Sin operaciones aún. Comienza a operar para ver tu curva de capital."
     },
     "ticket": {
       "title": "Ticket de Orden",

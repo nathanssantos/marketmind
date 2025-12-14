@@ -3,14 +3,17 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export type PatternDetectionMode = 'ai-only' | 'algorithmic-only' | 'hybrid';
+export type TradingSidebarTab = 'ticket' | 'orders' | 'portfolio' | 'wallets' | 'analytics';
+export type OrdersFilterOption = 'all' | 'pending' | 'active' | 'filled' | 'closed' | 'cancelled' | 'expired';
+export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'all';
 
 interface UIState {
   chatPosition: 'left' | 'right';
   setChatPosition: (position: 'left' | 'right') => void;
-  
+
   patternDetectionMode: PatternDetectionMode;
   setPatternDetectionMode: (mode: PatternDetectionMode) => void;
-  
+
   algorithmicDetectionSettings: {
     minConfidence: number;
     pivotSensitivity: number;
@@ -18,6 +21,18 @@ interface UIState {
     autoDisplayPatterns: boolean;
   };
   setAlgorithmicDetectionSettings: (settings: Partial<UIState['algorithmicDetectionSettings']>) => void;
+
+  tradingSidebarTab: TradingSidebarTab;
+  setTradingSidebarTab: (tab: TradingSidebarTab) => void;
+
+  ordersFilterStatus: OrdersFilterOption;
+  setOrdersFilterStatus: (filter: OrdersFilterOption) => void;
+
+  performancePeriod: AnalyticsPeriod;
+  setPerformancePeriod: (period: AnalyticsPeriod) => void;
+
+  setupStatsPeriod: AnalyticsPeriod;
+  setSetupStatsPeriod: (period: AnalyticsPeriod) => void;
 }
 
 const DEFAULT_ENABLED_PATTERNS: AIPatternType[] = [
@@ -61,10 +76,10 @@ export const useUIStore = create<UIState>()(
     (set) => ({
       chatPosition: 'right',
       setChatPosition: (position) => set({ chatPosition: position }),
-      
+
       patternDetectionMode: 'ai-only',
       setPatternDetectionMode: (mode) => set({ patternDetectionMode: mode }),
-      
+
       algorithmicDetectionSettings: {
         minConfidence: 0.6,
         pivotSensitivity: 5,
@@ -78,17 +93,39 @@ export const useUIStore = create<UIState>()(
             ...settings,
           },
         })),
+
+      tradingSidebarTab: 'orders',
+      setTradingSidebarTab: (tab) => set({ tradingSidebarTab: tab }),
+
+      ordersFilterStatus: 'pending',
+      setOrdersFilterStatus: (filter) => set({ ordersFilterStatus: filter }),
+
+      performancePeriod: 'all',
+      setPerformancePeriod: (period) => set({ performancePeriod: period }),
+
+      setupStatsPeriod: 'all',
+      setSetupStatsPeriod: (period) => set({ setupStatsPeriod: period }),
     }),
     {
       name: 'ui-storage',
-      version: 2,
+      version: 4,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as UIState;
-        
+
         if (version < 2 && state.algorithmicDetectionSettings) {
           state.algorithmicDetectionSettings.enabledPatterns = DEFAULT_ENABLED_PATTERNS;
         }
-        
+
+        if (version < 3) {
+          state.tradingSidebarTab = 'orders';
+        }
+
+        if (version < 4) {
+          state.ordersFilterStatus = 'pending';
+          state.performancePeriod = 'all';
+          state.setupStatsPeriod = 'all';
+        }
+
         return state;
       },
     }

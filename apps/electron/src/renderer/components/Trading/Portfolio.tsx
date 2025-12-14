@@ -24,7 +24,7 @@ export const Portfolio = () => {
 
   const { wallets: backendWallets } = useBackendWallet();
   const activeWalletId = backendWallets[0]?.id;
-  const { tradeExecutions } = useBackendTrading(activeWalletId || '', undefined);
+  const { tradeExecutions, tickerPrices } = useBackendTrading(activeWalletId || '', undefined);
 
   const positions: PortfolioPosition[] = useMemo(() => {
     return tradeExecutions
@@ -32,7 +32,8 @@ export const Portfolio = () => {
       .map((e) => {
         const entryPrice = parseFloat(e.entryPrice || '0');
         const quantity = parseFloat(e.quantity || '0');
-        const currentPrice = entryPrice;
+        const tickerPrice = tickerPrices[e.symbol];
+        const currentPrice = tickerPrice ? parseFloat(tickerPrice) : entryPrice;
 
         let pnl = 0;
         if (e.side === 'LONG') {
@@ -58,7 +59,7 @@ export const Portfolio = () => {
           openedAt: new Date(e.openedAt),
         };
       });
-  }, [tradeExecutions]);
+  }, [tradeExecutions, tickerPrices]);
 
   const wallets = backendWallets.map((w) => ({
     id: w.id,
@@ -183,6 +184,10 @@ const PositionCard = ({ position, currency }: PositionCardProps) => {
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.portfolio.avgPrice')}</Text>
           <Text>{currency} {position.avgPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+        </Flex>
+        <Flex justify="space-between">
+          <Text color="fg.muted">{t('trading.portfolio.currentPrice')}</Text>
+          <Text fontWeight="medium">{currency} {position.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
         </Flex>
         {position.stopLoss && (
           <Flex justify="space-between">
