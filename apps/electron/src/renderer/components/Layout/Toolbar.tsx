@@ -1,3 +1,4 @@
+import { useGlobalActionsOptional } from '@/renderer/context/GlobalActionsContext';
 import { useSetupStore } from '@/renderer/store/setupStore';
 import { useUIStore } from '@/renderer/store/uiStore';
 import { trpc } from '@/renderer/utils/trpc';
@@ -21,17 +22,22 @@ import {
   LuHistory,
   LuLightbulb,
   LuMessageSquare,
+  LuMoon,
   LuNewspaper,
   LuPlus,
   LuRadar,
   LuRuler,
   LuScan,
+  LuSettings,
+  LuSun,
+  LuTerminal,
 } from 'react-icons/lu';
 import { useChartWindows } from '../../hooks/useChartWindows';
 import type { MarketDataService } from '../../services/market/MarketDataService';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { SymbolSelector } from '../SymbolSelector';
+import { useColorMode } from '../ui/color-mode';
 import { TooltipWrapper } from '../ui/Tooltip';
 import { PatternTogglePopover } from './PatternTogglePopover';
 import { SetupTogglePopover } from './SetupTogglePopover';
@@ -56,7 +62,6 @@ export interface ToolbarProps {
   isBacktestOpen: boolean;
   showNewWindowButton?: boolean;
   showSidebarButtons?: boolean;
-  hideTopOffset?: boolean;
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
   onChartTypeChange: (type: 'kline' | 'line') => void;
@@ -96,7 +101,6 @@ export const Toolbar = memo(({
   isBacktestOpen,
   showNewWindowButton = true,
   showSidebarButtons = true,
-  hideTopOffset = false,
   onSymbolChange,
   onTimeframeChange,
   onChartTypeChange,
@@ -116,6 +120,8 @@ export const Toolbar = memo(({
   onDetectPatterns,
 }: ToolbarProps) => {
   const { t } = useTranslation();
+  const { colorMode, toggleColorMode } = useColorMode();
+  const globalActions = useGlobalActionsOptional();
   const toast = useToast();
   const { openChartWindow } = useChartWindows();
   const algorithmicDetectionSettings = useUIStore((state) => state.algorithmicDetectionSettings);
@@ -217,7 +223,7 @@ export const Toolbar = memo(({
   return (
     <Flex
       position="fixed"
-      top={hideTopOffset ? 0 : "48px"}
+      top={0}
       left={0}
       right={0}
       height="48px"
@@ -545,6 +551,39 @@ export const Toolbar = memo(({
               variant={isTradingOpen ? 'solid' : 'ghost'}
             >
               <LuDollarSign />
+            </IconButton>
+          </TooltipWrapper>
+
+          <Box w="1px" h="32px" bg="border" flexShrink={0} />
+
+          <TooltipWrapper label={`${t('header.theme')}: ${colorMode === 'dark' ? t('header.themeDark') : t('header.themeLight')}`} placement="bottom" showArrow>
+            <IconButton
+              aria-label={t('header.toggleColorMode')}
+              onClick={toggleColorMode}
+              variant="ghost"
+              size="2xs"
+            >
+              {colorMode === 'dark' ? <LuSun /> : <LuMoon />}
+            </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label={t('header.keyboardShortcuts')} placement="bottom" showArrow>
+            <IconButton
+              aria-label={t('header.showKeyboardShortcuts')}
+              onClick={globalActions?.showKeyboardShortcuts}
+              variant="ghost"
+              size="2xs"
+            >
+              <LuTerminal />
+            </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label={t('header.settings')} placement="bottom" showArrow>
+            <IconButton
+              aria-label={t('header.settings')}
+              onClick={globalActions?.openSettings}
+              variant="ghost"
+              size="2xs"
+            >
+              <LuSettings />
             </IconButton>
           </TooltipWrapper>
         </Flex>

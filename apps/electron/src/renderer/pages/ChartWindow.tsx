@@ -330,7 +330,6 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
           onMovingAveragesChange={setMovingAverages}
           showNewWindowButton={false}
           showSidebarButtons={false}
-          hideTopOffset={true}
           isTradingOpen={false}
           isChatOpen={false}
           isNewsOpen={false}

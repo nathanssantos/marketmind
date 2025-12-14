@@ -9,13 +9,15 @@ interface GlobalActionsContextType {
 
 const GlobalActionsContext = createContext<GlobalActionsContextType | null>(null);
 
-export const useGlobalActions = () => {
+export const useGlobalActions = (): GlobalActionsContextType => {
   const context = useContext(GlobalActionsContext);
   if (!context) {
     throw new Error('useGlobalActions must be used within GlobalActionsProvider');
   }
   return context;
 };
+
+export const useGlobalActionsOptional = (): GlobalActionsContextType | null => useContext(GlobalActionsContext);
 
 interface GlobalActionsProviderProps {
   children: ReactNode;

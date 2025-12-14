@@ -8,7 +8,6 @@ import { ChatSidebar } from '../Chat/ChatSidebar';
 import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { TradingSidebar } from '../Trading/TradingSidebar';
-import { Header } from './Header';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -39,10 +38,6 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
   const resizingTargetRef = useRef<'chat' | 'trading' | null>(null);
 
   const chatPosition = useUIStore((state) => state.chatPosition);
-
-  const handleSettingsClick = useCallback(() => {
-    setIsSettingsOpen(true);
-  }, []);
 
   const globalActions = useMemo(() => ({
     openSettings: () => setIsSettingsOpen(true),
@@ -99,15 +94,13 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
   return (
     <GlobalActionsProvider actions={globalActions}>
       <Box width="100vw" height="100vh" overflow="hidden">
-        <Header onSettingsClick={handleSettingsClick} />
-
         <Flex
           position="relative"
           top={0}
           left={0}
           right={0}
-          height="calc(100vh - 96px)"
-          marginTop="96px"
+          height="calc(100vh - 48px)"
+          marginTop="48px"
           overflow="hidden"
         >
           {chatPosition === 'left' && isChatOpen && (
