@@ -1,13 +1,10 @@
 import { useGlobalActionsOptional } from '@/renderer/context/GlobalActionsContext';
-import { useSetupStore } from '@/renderer/store/setupStore';
 import { useUIStore } from '@/renderer/store/uiStore';
-import { trpc } from '@/renderer/utils/trpc';
 import { Box, Flex, HStack, IconButton, Text } from '@chakra-ui/react';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
-import { useToast } from '@renderer/hooks/useToast';
 import { usePatternDetectionConfigStore } from '@renderer/store/patternDetectionConfigStore';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuActivity,
@@ -32,6 +29,7 @@ import {
   LuSun,
   LuTerminal,
 } from 'react-icons/lu';
+import { TradingProfilesModal } from '../Trading/TradingProfilesModal';
 import { useChartWindows } from '../../hooks/useChartWindows';
 import type { MarketDataService } from '../../services/market/MarketDataService';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
@@ -122,34 +120,20 @@ export const Toolbar = memo(({
   const { t } = useTranslation();
   const { colorMode, toggleColorMode } = useColorMode();
   const globalActions = useGlobalActionsOptional();
-  const toast = useToast();
   const { openChartWindow } = useChartWindows();
   const algorithmicDetectionSettings = useUIStore((state) => state.algorithmicDetectionSettings);
   const setAlgorithmicDetectionSettings = useUIStore((state) => state.setAlgorithmicDetectionSettings);
   const patternConfig = usePatternDetectionConfigStore((state) => state.config);
   const setPatternConfig = usePatternDetectionConfigStore((state) => state.setConfig);
-  const isAutoTradingActive = useSetupStore((state) => state.isAutoTradingActive);
-  const toggleAutoTrading = useSetupStore((state) => state.toggleAutoTrading);
 
-  const { wallets, isLoading: isLoadingWallets } = useBackendWallet();
+  const [isTradingProfilesModalOpen, setIsTradingProfilesModalOpen] = useState(false);
+
+  const { wallets } = useBackendWallet();
   const walletId = wallets[0]?.id;
-  const {
-    startWatcher,
-    stopAllWatchers,
-    watcherStatus,
-    isStartingWatcher,
-    isStoppingAllWatchers,
-    isLoadingWatcherStatus,
-  } = useBackendAutoTrading(walletId ?? '');
-
-  const { data: autoTradingConfig } = trpc.autoTrading.getConfig.useQuery(
-    { walletId: walletId ?? '' },
-    { enabled: !!walletId }
-  );
+  const { watcherStatus } = useBackendAutoTrading(walletId ?? '');
 
   const isPatternDetectionActive = algorithmicDetectionSettings.autoDisplayPatterns;
   const isExtensionsActive = patternConfig.showExtensions;
-  const isSetupDetectionActive = (autoTradingConfig?.enabledSetupTypes?.length ?? 0) > 0;
   const isBackendWatcherActive = watcherStatus?.active ?? false;
 
   const handleOpenNewWindow = (): void => {
@@ -162,47 +146,8 @@ export const Toolbar = memo(({
     });
   };
 
-  const handleToggleAutoTrading = async (): Promise<void> => {
-    if (isLoadingWallets) {
-      toast.info(t('common.loading'), t('trading.loadingWallets'));
-      return;
-    }
-
-    if (!walletId) {
-      toast.error(t('common.error'), t('trading.noWalletSelected'));
-      return;
-    }
-
-    if (!isAutoTradingActive && !isSetupDetectionActive) {
-      toast.error(
-        t('setupConfig.noSetupsEnabled'),
-        t('setupConfig.noSetupsEnabledDescription')
-      );
-      return;
-    }
-
-    try {
-      if (isBackendWatcherActive) {
-        await stopAllWatchers();
-        toggleAutoTrading();
-        toast.success(
-          t('setupConfig.watcherStopped'),
-          t('setupConfig.watcherStoppedDescription')
-        );
-      } else {
-        await startWatcher(symbol, timeframe);
-        toggleAutoTrading();
-        toast.success(
-          t('setupConfig.watcherStarted'),
-          `${t('setupConfig.watcherStartedDescription')} ${symbol} @ ${timeframe}`
-        );
-      }
-    } catch (error) {
-      toast.error(
-        t('common.error'),
-        error instanceof Error ? error.message : t('common.unknownError')
-      );
-    }
+  const handleOpenTradingProfilesModal = (): void => {
+    setIsTradingProfilesModalOpen(true);
   };
 
   const toggleExtensions = (): void => {
@@ -452,41 +397,6 @@ export const Toolbar = memo(({
             <Box w="1px" h="32px" bg="border" flexShrink={0} />
 
             <HStack gap={1} flexWrap="nowrap">
-              <SetupTogglePopover />
-              <TooltipWrapper
-                label={isBackendWatcherActive
-                  ? `${t('setupConfig.status.autoTrading')} (${symbol} @ ${timeframe})`
-                  : t('setupConfig.status.autoTrading')
-                }
-                showArrow
-                placement="top"
-              >
-                <IconButton
-                  size="2xs"
-                  aria-label={t('setupConfig.status.autoTrading')}
-                  onClick={() => void handleToggleAutoTrading()}
-                  colorPalette={isBackendWatcherActive ? 'green' : 'gray'}
-                  variant={isBackendWatcherActive ? 'solid' : 'ghost'}
-                  loading={isLoadingWallets || isStartingWatcher || isStoppingAllWatchers || (!!walletId && isLoadingWatcherStatus)}
-                >
-                  <LuBot />
-                </IconButton>
-              </TooltipWrapper>
-              <TooltipWrapper label="Backtest Strategy" showArrow placement="top">
-                <IconButton
-                  size="2xs"
-                  aria-label="Backtest Strategy"
-                  onClick={onToggleBacktest}
-                  colorPalette={isBacktestOpen ? 'purple' : 'gray'}
-                  variant={isBacktestOpen ? 'solid' : 'ghost'}
-                >
-                  <LuHistory />
-                </IconButton>
-              </TooltipWrapper>
-            </HStack>
-
-            <Box w="1px" h="32px" bg="border" flexShrink={0} />
-            <HStack gap={1} flexWrap="nowrap">
               {movingAverages.map((ma, index) => (
                 <TooltipWrapper
                   key={index}
@@ -512,6 +422,42 @@ export const Toolbar = memo(({
                 </TooltipWrapper>
               ))}
             </HStack>
+
+            {showSidebarButtons && (
+              <>
+                <Box w="1px" h="32px" bg="border" flexShrink={0} />
+
+                <HStack gap={1} flexWrap="nowrap">
+                  <SetupTogglePopover />
+                  <TooltipWrapper
+                    label={t('tradingProfiles.title')}
+                    showArrow
+                    placement="top"
+                  >
+                    <IconButton
+                      size="2xs"
+                      aria-label={t('tradingProfiles.title')}
+                      onClick={handleOpenTradingProfilesModal}
+                      colorPalette={isBackendWatcherActive ? 'green' : 'gray'}
+                      variant={isBackendWatcherActive ? 'solid' : 'ghost'}
+                    >
+                      <LuBot />
+                    </IconButton>
+                  </TooltipWrapper>
+                  <TooltipWrapper label="Backtest Strategy" showArrow placement="top">
+                    <IconButton
+                      size="2xs"
+                      aria-label="Backtest Strategy"
+                      onClick={onToggleBacktest}
+                      colorPalette={isBacktestOpen ? 'purple' : 'gray'}
+                      variant={isBacktestOpen ? 'solid' : 'ghost'}
+                    >
+                      <LuHistory />
+                    </IconButton>
+                  </TooltipWrapper>
+                </HStack>
+              </>
+            )}
           </>
         )}
       </Flex>
@@ -588,6 +534,11 @@ export const Toolbar = memo(({
           </TooltipWrapper>
         </Flex>
       )}
+
+      <TradingProfilesModal
+        isOpen={isTradingProfilesModalOpen}
+        onClose={() => setIsTradingProfilesModalOpen(false)}
+      />
     </Flex>
   );
 });
