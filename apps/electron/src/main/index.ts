@@ -333,7 +333,7 @@ const setupIpcHandlers = (): void => {
     handleStorageOperation(
       () => ({ apiKey: storageService.getApiKey(provider) }),
       `Failed to get ${provider} API key:`,
-      { returnData: false }
+      { returnData: true }
     ).then(result => result.success ? { success: true, apiKey: (result.data as { apiKey: string | null }).apiKey } : result)
   );
 

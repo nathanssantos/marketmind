@@ -70,6 +70,15 @@ export const findBestSwingStop = (
       .filter(sp => sp.price < currentPrice && sp.price > entryPrice)
       .sort((a, b) => b.price - a.price);
 
+    logger.debug({
+      side: 'LONG',
+      recentSwingsCount: recentSwings.length,
+      recentSwings: recentSwings.map(s => s.price),
+      validSwingLowsCount: validSwingLows.length,
+      validSwingLows: validSwingLows.map(s => s.price),
+      criteria: `price < ${currentPrice} AND price > ${entryPrice}`,
+    }, 'Finding best swing stop for LONG');
+
     if (validSwingLows.length > 0) {
       const swingLow = validSwingLows[0]!.price;
       const buffer = swingLow * minDistancePercent;
@@ -79,6 +88,15 @@ export const findBestSwingStop = (
     const validSwingHighs = recentSwings
       .filter(sp => sp.price > currentPrice && sp.price < entryPrice)
       .sort((a, b) => a.price - b.price);
+
+    logger.debug({
+      side: 'SHORT',
+      recentSwingsCount: recentSwings.length,
+      recentSwings: recentSwings.map(s => s.price),
+      validSwingHighsCount: validSwingHighs.length,
+      validSwingHighs: validSwingHighs.map(s => s.price),
+      criteria: `price > ${currentPrice} AND price < ${entryPrice}`,
+    }, 'Finding best swing stop for SHORT');
 
     if (validSwingHighs.length > 0) {
       const swingHigh = validSwingHighs[0]!.price;
@@ -136,6 +154,16 @@ export const computeTrailingStop = (
     isLong,
     config.minTrailingDistancePercent
   );
+
+  logger.debug({
+    entryPrice,
+    currentPrice,
+    profitPercent: (profitPercent * 100).toFixed(2),
+    breakevenPrice,
+    swingStop,
+    swingPointsCount: swingPoints.length,
+    relevantSwings: swingPoints.filter(sp => isLong ? sp.type === 'low' : sp.type === 'high').slice(-5),
+  }, 'Trailing stop calculation details');
 
   const newStopLoss = calculateNewStopLoss(breakevenPrice, swingStop, isLong);
 
