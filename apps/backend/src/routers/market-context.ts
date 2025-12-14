@@ -67,35 +67,39 @@ export const marketContextRouter = router({
         updatedAt: new Date(),
       };
 
-      if (updates.enabled !== undefined) updateData.enabled = updates.enabled;
-      if (updates.shadowMode !== undefined) updateData.shadowMode = updates.shadowMode;
+      if (updates['enabled'] !== undefined) updateData['enabled'] = updates['enabled'];
+      if (updates['shadowMode'] !== undefined) updateData['shadowMode'] = updates['shadowMode'];
 
-      if (updates.fearGreed) {
-        if (updates.fearGreed.enabled !== undefined) updateData.fearGreedEnabled = updates.fearGreed.enabled;
-        if (updates.fearGreed.thresholdLow !== undefined) updateData.fearGreedThresholdLow = updates.fearGreed.thresholdLow;
-        if (updates.fearGreed.thresholdHigh !== undefined) updateData.fearGreedThresholdHigh = updates.fearGreed.thresholdHigh;
-        if (updates.fearGreed.action !== undefined) updateData.fearGreedAction = updates.fearGreed.action;
-        if (updates.fearGreed.sizeReduction !== undefined) updateData.fearGreedSizeReduction = updates.fearGreed.sizeReduction;
+      const fearGreed = updates['fearGreed'];
+      if (fearGreed) {
+        if (fearGreed['enabled'] !== undefined) updateData['fearGreedEnabled'] = fearGreed['enabled'];
+        if (fearGreed['thresholdLow'] !== undefined) updateData['fearGreedThresholdLow'] = fearGreed['thresholdLow'];
+        if (fearGreed['thresholdHigh'] !== undefined) updateData['fearGreedThresholdHigh'] = fearGreed['thresholdHigh'];
+        if (fearGreed['action'] !== undefined) updateData['fearGreedAction'] = fearGreed['action'];
+        if (fearGreed['sizeReduction'] !== undefined) updateData['fearGreedSizeReduction'] = fearGreed['sizeReduction'];
       }
 
-      if (updates.fundingRate) {
-        if (updates.fundingRate.enabled !== undefined) updateData.fundingRateEnabled = updates.fundingRate.enabled;
-        if (updates.fundingRate.threshold !== undefined) updateData.fundingRateThreshold = updates.fundingRate.threshold.toString();
-        if (updates.fundingRate.action !== undefined) updateData.fundingRateAction = updates.fundingRate.action;
-        if (updates.fundingRate.penalty !== undefined) updateData.fundingRatePenalty = updates.fundingRate.penalty;
+      const fundingRate = updates['fundingRate'];
+      if (fundingRate) {
+        if (fundingRate['enabled'] !== undefined) updateData['fundingRateEnabled'] = fundingRate['enabled'];
+        if (fundingRate['threshold'] !== undefined) updateData['fundingRateThreshold'] = fundingRate['threshold'].toString();
+        if (fundingRate['action'] !== undefined) updateData['fundingRateAction'] = fundingRate['action'];
+        if (fundingRate['penalty'] !== undefined) updateData['fundingRatePenalty'] = fundingRate['penalty'];
       }
 
-      if (updates.btcDominance) {
-        if (updates.btcDominance.enabled !== undefined) updateData.btcDominanceEnabled = updates.btcDominance.enabled;
-        if (updates.btcDominance.changeThreshold !== undefined) updateData.btcDominanceChangeThreshold = updates.btcDominance.changeThreshold.toString();
-        if (updates.btcDominance.action !== undefined) updateData.btcDominanceAction = updates.btcDominance.action;
-        if (updates.btcDominance.sizeReduction !== undefined) updateData.btcDominanceSizeReduction = updates.btcDominance.sizeReduction;
+      const btcDominance = updates['btcDominance'];
+      if (btcDominance) {
+        if (btcDominance['enabled'] !== undefined) updateData['btcDominanceEnabled'] = btcDominance['enabled'];
+        if (btcDominance['changeThreshold'] !== undefined) updateData['btcDominanceChangeThreshold'] = btcDominance['changeThreshold'].toString();
+        if (btcDominance['action'] !== undefined) updateData['btcDominanceAction'] = btcDominance['action'];
+        if (btcDominance['sizeReduction'] !== undefined) updateData['btcDominanceSizeReduction'] = btcDominance['sizeReduction'];
       }
 
-      if (updates.openInterest) {
-        if (updates.openInterest.enabled !== undefined) updateData.openInterestEnabled = updates.openInterest.enabled;
-        if (updates.openInterest.changeThreshold !== undefined) updateData.openInterestChangeThreshold = updates.openInterest.changeThreshold.toString();
-        if (updates.openInterest.action !== undefined) updateData.openInterestAction = updates.openInterest.action;
+      const openInterest = updates['openInterest'];
+      if (openInterest) {
+        if (openInterest['enabled'] !== undefined) updateData['openInterestEnabled'] = openInterest['enabled'];
+        if (openInterest['changeThreshold'] !== undefined) updateData['openInterestChangeThreshold'] = openInterest['changeThreshold'].toString();
+        if (openInterest['action'] !== undefined) updateData['openInterestAction'] = openInterest['action'];
       }
 
       if (existing) {

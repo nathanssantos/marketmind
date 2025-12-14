@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import { AboutTab } from './AboutTab';
 import { AIConfigTab } from './AIConfigTab';
-import { AITradingConfigTab } from './AITradingConfigTab';
 import { AlgorithmicAutoTradingTab } from './AlgorithmicAutoTradingTab';
 import { ChartSettingsTab } from './ChartSettingsTab';
 import { ContextConfigTab } from './ContextConfigTab';
@@ -49,7 +48,6 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 <Tabs.Trigger value="general">{t('settings.tabs.general')}</Tabs.Trigger>
                 <Tabs.Trigger value="chart">{t('settings.tabs.chart')}</Tabs.Trigger>
                 <Tabs.Trigger value="ai">{t('settings.tabs.ai')}</Tabs.Trigger>
-                <Tabs.Trigger value="aiTrading">{t('settings.tabs.aiTrading')}</Tabs.Trigger>
                 <Tabs.Trigger value="context">{t('settings.tabs.context')}</Tabs.Trigger>
                 <Tabs.Trigger value="algorithmicAutoTrading">{t('settings.tabs.algorithmicAutoTrading')}</Tabs.Trigger>
                 <Tabs.Trigger value="marketContext">{t('settings.tabs.marketContext')}</Tabs.Trigger>
@@ -73,9 +71,6 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
 
                 <Tabs.Content value="ai">
                   <AIConfigTab />
-                </Tabs.Content>
-                <Tabs.Content value="aiTrading">
-                  <AITradingConfigTab />
                 </Tabs.Content>
 
                 <Tabs.Content value="context">
