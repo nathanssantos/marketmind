@@ -374,6 +374,8 @@ export class WalkForwardOptimizer {
 
   /**
    * Calculate performance degradation (in-sample vs out-of-sample)
+   * Returns value between -1 (OOS outperforms IS) and 1+ (OOS underperforms IS)
+   * Negative values indicate OOS is better than IS (good sign)
    */
   private static calculateDegradation(windows: WalkForwardWindow[]): number {
     const inSampleSharpes = windows
@@ -389,7 +391,10 @@ export class WalkForwardOptimizer {
     const avgOutOfSample =
       outOfSampleSharpes.reduce((sum, s) => sum + s, 0) / outOfSampleSharpes.length || 0;
 
-    if (avgInSample === 0) return 0;
+    if (avgInSample <= 0) {
+      if (avgOutOfSample > 0) return -1;
+      return 0;
+    }
 
     return (avgInSample - avgOutOfSample) / avgInSample;
   }

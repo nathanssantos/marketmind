@@ -82,7 +82,16 @@ export {
   updateThresholdForTimeframe,
   setThresholdsFromOptimization,
   getAllThresholds,
+  OPTIMIZED_STRATEGY_CONFIGS,
+  getOptimizedConfigsForStrategy,
+  getOptimizedConfigsForSymbol,
+  getOptimizedConfigsForInterval,
+  getOptimizedConfigsByTier,
+  getOptimizedConfig,
+  isOptimizedCombination,
 } from './constants/optimizedThresholds';
+
+export type { OptimizedStrategyConfig } from './constants/optimizedThresholds';
 
 export {
   DatasetBuilder,

@@ -9,8 +9,10 @@ import { generateTrainingDataCommand } from './commands/generate-training-data';
 import { montecarloCommand } from './commands/montecarlo';
 import { optimizeCommand } from './commands/optimize';
 import { optimizeFullSystemCommand } from './commands/optimize-full-system';
+import { permutationCommand } from './commands/permutation';
 import { sensitivityCommand } from './commands/sensitivity';
 import { validateCommand } from './commands/validate';
+import { validateRobustCommand } from './commands/validate-robust';
 import { walkforwardCommand } from './commands/walkforward';
 
 const program = new Command();
@@ -203,6 +205,40 @@ program
   .option('-o, --output <dir>', 'Output directory for results')
   .option('-v, --verbose', 'Show detailed logs', false)
   .action(optimizeFullSystemCommand);
+
+program
+  .command('validate-robust')
+  .description('Run walk-forward robustness validation on optimized strategy configurations')
+  .requiredOption('--start <date>', 'Start date (YYYY-MM-DD)')
+  .requiredOption('--end <date>', 'End date (YYYY-MM-DD)')
+  .option('--tier <n>', 'Filter by tier (1, 2, or 3)')
+  .option('-s, --strategy <type>', 'Filter by strategy name')
+  .option('--symbol <symbol>', 'Filter by symbol')
+  .option('-i, --interval <interval>', 'Filter by interval')
+  .option('-c, --capital <amount>', 'Initial capital in USD', '10000')
+  .option('--training-months <n>', 'Training window size in months', '6')
+  .option('--testing-months <n>', 'Testing window size in months', '2')
+  .option('--step-months <n>', 'Step size for moving windows in months', '2')
+  .option('--parallel <n>', 'Number of parallel workers', '4')
+  .option('-o, --output <dir>', 'Output directory for results')
+  .option('-v, --verbose', 'Show detailed window-by-window logs', false)
+  .action(validateRobustCommand);
+
+program
+  .command('permutation-test')
+  .description('Run Monte Carlo permutation test to validate statistical significance')
+  .requiredOption('--start <date>', 'Start date (YYYY-MM-DD)')
+  .requiredOption('--end <date>', 'End date (YYYY-MM-DD)')
+  .option('--tier <n>', 'Filter by tier (1, 2, or 3)')
+  .option('-s, --strategy <type>', 'Filter by strategy name')
+  .option('--symbol <symbol>', 'Filter by symbol')
+  .option('-i, --interval <interval>', 'Filter by interval')
+  .option('-c, --capital <amount>', 'Initial capital in USD', '10000')
+  .option('--permutations <n>', 'Number of permutations (100-10000)', '1000')
+  .option('--confidence <level>', 'Confidence level (0.90-0.99)', '0.95')
+  .option('-o, --output <dir>', 'Output directory for results')
+  .option('-v, --verbose', 'Show detailed metric breakdown', false)
+  .action(permutationCommand);
 
 program.exitOverride();
 

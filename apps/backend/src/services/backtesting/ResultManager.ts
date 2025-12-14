@@ -325,6 +325,33 @@ export class ResultManager {
   }
 
   /**
+   * Save a robustness validation result to disk
+   */
+  async saveRobustnessValidation(result: any): Promise<string> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `robustness_validation_${timestamp}.json`;
+    const filepath = path.join(this.baseDir, 'robustness', filename);
+
+    await fs.mkdir(path.join(this.baseDir, 'robustness'), { recursive: true });
+
+    await fs.writeFile(filepath, JSON.stringify(result, null, 2), 'utf-8');
+
+    return filepath;
+  }
+
+  /**
+   * List all robustness validation results
+   */
+  async listRobustnessValidations(): Promise<string[]> {
+    try {
+      const files = await fs.readdir(path.join(this.baseDir, 'robustness'));
+      return files.filter(f => f.endsWith('.json')).map(f => path.join(this.baseDir, 'robustness', f));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
    * Compare multiple results and generate comparison table
    */
   compareResults(results: Array<SavedBacktestResult | OptimizationSummary>): any {

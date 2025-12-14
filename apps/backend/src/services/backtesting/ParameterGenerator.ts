@@ -62,7 +62,8 @@ export class ParameterGenerator {
    */
   static range(start: number, end: number, step: number = 1): number[] {
     const result: number[] = [];
-    for (let i = start; i <= end; i += step) {
+    const epsilon = step * 1e-9;
+    for (let i = start; i <= end + epsilon; i += step) {
       result.push(Math.round(i * 1000) / 1000);
     }
     return result;
