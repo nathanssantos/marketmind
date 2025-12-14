@@ -867,7 +867,8 @@
       "takeProfit": "Take Profit",
       "pnl": "P&G",
       "close": "Cerrar Orden",
-      "cancel": "Cancelar Orden"
+      "cancel": "Cancelar Orden",
+      "autoTrade": "Orden automática"
     },
     "notifications": {
       "orderFilled": {

@@ -11,7 +11,11 @@ export const useTradingShortcuts = (config: TradingShortcutsConfig) => {
   const [altPressed, setAltPressed] = useState(false);
 
   useEffect(() => {
-    if (!config.enabled) return;
+    if (!config.enabled) {
+      setShiftPressed(false);
+      setAltPressed(false);
+      return;
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Shift') setShiftPressed(true);
@@ -29,8 +33,13 @@ export const useTradingShortcuts = (config: TradingShortcutsConfig) => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      setShiftPressed(false);
+      setAltPressed(false);
     };
   }, [config.enabled]);
 
-  return { shiftPressed, altPressed };
+  return {
+    shiftPressed: config.enabled && shiftPressed,
+    altPressed: config.enabled && altPressed,
+  };
 };

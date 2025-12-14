@@ -17,7 +17,7 @@ import {
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { LuX } from 'react-icons/lu';
+import { LuBot, LuX } from 'react-icons/lu';
 
 export const OrdersList = () => {
   const { t } = useTranslation();
@@ -299,16 +299,28 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
     >
       <Flex justify="space-between" align="flex-start" mb={2}>
         <Stack gap={1.5}>
-          <Text fontWeight="bold" fontSize="sm">
-            {order.symbol}
-          </Text>
-          <Flex gap={2} align="center">
+          <Flex align="center" gap={1.5}>
+            {order.isAutoTrade && (
+              <Box title={t('trading.orders.autoTrade')}>
+                <LuBot size={14} />
+              </Box>
+            )}
+            <Text fontWeight="bold" fontSize="sm">
+              {order.symbol}
+            </Text>
+          </Flex>
+          <Flex gap={2} align="center" flexWrap="wrap">
             <Badge colorPalette={getTypeColor(isOrderLong(order))} size="sm" px={2}>
               {t(`trading.ticket.${isOrderLong(order) ? 'long' : 'short'}`)}
             </Badge>
             <Badge colorPalette={getStatusColor(order.status)} size="sm" px={2}>
               {t(`trading.orders.${getStatusTranslationKey(order.status)}`)}
             </Badge>
+            {order.setupType && (
+              <Badge colorPalette="purple" size="sm" px={2}>
+                {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
+              </Badge>
+            )}
           </Flex>
         </Stack>
         {hasActions && (

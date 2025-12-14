@@ -14,6 +14,7 @@ import {
 import { Box, Portal } from '@chakra-ui/react';
 import { calculateMovingAverage, type StochasticResult } from '@marketmind/indicators';
 import type { AIPattern, AITradingContext, Kline, Order, Viewport } from '@marketmind/types';
+import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useMarketContext } from '@renderer/hooks/useMarketContext';
@@ -131,8 +132,10 @@ export const ChartCanvas = ({
   const detectedSetups = useSetupStore((state) => state.detectedSetups);
   const removeDetectedSetup = useSetupStore((state) => state.removeDetectedSetup);
   const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
-  const isAutoTradingActive = useSetupStore((state) => state.isAutoTradingActive);
   const { getContext } = useMarketContext();
+
+  const { watcherStatus } = useBackendAutoTrading(backendWalletId ?? '');
+  const isAutoTradingActive = watcherStatus?.active ?? false;
 
   const { data: backendExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
     { walletId: backendWalletId ?? '', limit: 50 },
@@ -507,7 +510,7 @@ export const ChartCanvas = ({
     const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
     const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
 
-    if (hasTradingEnabled && (shiftPressed || altPressed) && mouseY < timeScaleTop) {
+    if (hasTradingEnabled && !isAutoTradingActive && (shiftPressed || altPressed) && mouseY < timeScaleTop) {
       const price = manager.yToPrice(mouseY);
       setOrderPreview({
         price,
@@ -894,7 +897,7 @@ export const ChartCanvas = ({
       }
     }
 
-    if (hasTradingEnabled && (shiftPressed || altPressed)) {
+    if (hasTradingEnabled && !isAutoTradingActive && (shiftPressed || altPressed)) {
       event.preventDefault();
       event.stopPropagation();
 
@@ -1039,6 +1042,11 @@ export const ChartCanvas = ({
       return;
     }
 
+    if (isAutoTradingActive) {
+      setOrderPreview(null);
+      return;
+    }
+
     if (mousePosition && manager && hasTradingEnabled) {
       const dimensions = manager.getDimensions();
       if (!dimensions) return;
@@ -1053,7 +1061,7 @@ export const ChartCanvas = ({
         });
       }
     }
-  }, [shiftPressed, altPressed, mousePosition, manager, hasTradingEnabled]);
+  }, [shiftPressed, altPressed, mousePosition, manager, hasTradingEnabled, isAutoTradingActive]);
 
   useEffect(() => {
     if (!manager) return;
@@ -1151,7 +1159,7 @@ export const ChartCanvas = ({
       renderCurrentPriceLine_Label();
       renderCrosshairPriceLine();
 
-      if (orderPreview && manager) {
+      if (orderPreview && manager && !isAutoTradingActive) {
         const ctx = manager.getContext();
         const dimensions = manager.getDimensions();
         if (!ctx || !dimensions) return;

@@ -11,6 +11,13 @@ const { app, BrowserWindow, ipcMain, net, Notification } = electron;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const getIconPath = (): string => {
+  if (app.isPackaged) {
+    return join(process.resourcesPath, 'icon.png');
+  }
+  return join(__dirname, '../../build/icon.png');
+};
+
 const WINDOW_CONFIG = {
   WIDTH: 1280,
   HEIGHT: 800,
@@ -118,6 +125,7 @@ const createWindow = (): void => {
     minWidth: WINDOW_CONFIG.MIN_WIDTH,
     minHeight: WINDOW_CONFIG.MIN_HEIGHT,
     show: false,
+    icon: getIconPath(),
     webPreferences: {
       preload: join(__dirname, '../preload/preload.mjs'),
       nodeIntegration: false,

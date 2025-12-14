@@ -840,7 +840,8 @@
       "takeProfit": "Take Profit",
       "pnl": "L&P",
       "close": "Fechar Ordem",
-      "cancel": "Cancelar Ordem"
+      "cancel": "Cancelar Ordem",
+      "autoTrade": "Ordem automática"
     },
     "notifications": {
       "orderFilled": {

@@ -12,6 +12,33 @@ import {
 } from '@shared/utils';
 import { useMemo, useRef } from 'react';
 
+const CANVAS_GEOMETRY = {
+  FULL_CIRCLE: Math.PI + Math.PI,
+  HALF: 0.5,
+  DOUBLE: 2,
+} as const;
+
+const SVG_BOT_ICON = {
+  VIEWBOX_SIZE: 24,
+  STROKE_WIDTH_DIVISOR: 12,
+  ANTENNA_CENTER_X: 12,
+  ANTENNA_TOP_Y: 4,
+  ANTENNA_BOTTOM_Y: 8,
+  ANTENNA_LEFT_X: 8,
+  BODY_X: 4,
+  BODY_Y: 8,
+  BODY_WIDTH: 16,
+  BODY_HEIGHT: 12,
+  LEFT_EAR_X: 2,
+  RIGHT_EAR_START_X: 20,
+  RIGHT_EAR_END_X: 22,
+  EAR_Y: 14,
+  LEFT_EYE_X: 9,
+  RIGHT_EYE_X: 15,
+  EYE_TOP_Y: 13,
+  EYE_BOTTOM_Y: 15,
+} as const;
+
 export interface BackendExecution {
   id: string;
   symbol: string;
@@ -112,38 +139,47 @@ const drawBotIcon = (
   size: number
 ): void => {
   ctx.save();
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+  ctx.lineWidth = size / SVG_BOT_ICON.STROKE_WIDTH_DIVISOR;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
 
-  const headSize = size * 0.6;
-  const headX = x + (size - headSize) / 2;
-  const headY = y + size * 0.15;
+  const scale = size / SVG_BOT_ICON.VIEWBOX_SIZE;
 
   ctx.beginPath();
-  ctx.roundRect(headX, headY, headSize, headSize * 0.7, 2);
-  ctx.fill();
-
-  const eyeSize = size * 0.12;
-  const eyeY = headY + headSize * 0.25;
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-  ctx.beginPath();
-  ctx.arc(headX + headSize * 0.3, eyeY, eyeSize, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(headX + headSize * 0.7, eyeY, eyeSize, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-  const antennaX = x + size / 2;
-  const antennaY = headY - size * 0.1;
-  ctx.beginPath();
-  ctx.moveTo(antennaX, headY);
-  ctx.lineTo(antennaX, antennaY);
+  ctx.moveTo(x + SVG_BOT_ICON.ANTENNA_CENTER_X * scale, y + SVG_BOT_ICON.ANTENNA_BOTTOM_Y * scale);
+  ctx.lineTo(x + SVG_BOT_ICON.ANTENNA_CENTER_X * scale, y + SVG_BOT_ICON.ANTENNA_TOP_Y * scale);
+  ctx.lineTo(x + SVG_BOT_ICON.ANTENNA_LEFT_X * scale, y + SVG_BOT_ICON.ANTENNA_TOP_Y * scale);
   ctx.stroke();
+
+  const bodyX = x + SVG_BOT_ICON.BODY_X * scale;
+  const bodyY = y + SVG_BOT_ICON.BODY_Y * scale;
+  const bodyW = SVG_BOT_ICON.BODY_WIDTH * scale;
+  const bodyH = SVG_BOT_ICON.BODY_HEIGHT * scale;
+  const radius = CANVAS_GEOMETRY.DOUBLE * scale;
   ctx.beginPath();
-  ctx.arc(antennaX, antennaY, size * 0.08, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.roundRect(bodyX, bodyY, bodyW, bodyH, radius);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(x + SVG_BOT_ICON.LEFT_EAR_X * scale, y + SVG_BOT_ICON.EAR_Y * scale);
+  ctx.lineTo(x + SVG_BOT_ICON.BODY_X * scale, y + SVG_BOT_ICON.EAR_Y * scale);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(x + SVG_BOT_ICON.RIGHT_EAR_START_X * scale, y + SVG_BOT_ICON.EAR_Y * scale);
+  ctx.lineTo(x + SVG_BOT_ICON.RIGHT_EAR_END_X * scale, y + SVG_BOT_ICON.EAR_Y * scale);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(x + SVG_BOT_ICON.RIGHT_EYE_X * scale, y + SVG_BOT_ICON.EYE_TOP_Y * scale);
+  ctx.lineTo(x + SVG_BOT_ICON.RIGHT_EYE_X * scale, y + SVG_BOT_ICON.EYE_BOTTOM_Y * scale);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(x + SVG_BOT_ICON.LEFT_EYE_X * scale, y + SVG_BOT_ICON.EYE_TOP_Y * scale);
+  ctx.lineTo(x + SVG_BOT_ICON.LEFT_EYE_X * scale, y + SVG_BOT_ICON.EYE_BOTTOM_Y * scale);
+  ctx.stroke();
 
   ctx.restore();
 };
@@ -727,9 +763,12 @@ export const useOrderLinesRenderer = (
         ctx.textBaseline = 'middle';
 
         const fillColor = 'rgba(239, 68, 68, 0.9)';
-        const slPercent = ((consolidatedStopLoss - position.avgPrice) / position.avgPrice) * 100;
         const priceText = consolidatedStopLoss.toFixed(2);
-        const infoText = `SL (${slPercent.toFixed(2)}%)`;
+        const slResultPercent = isLongPosition
+          ? ((consolidatedStopLoss - position.avgPrice) / position.avgPrice) * 100
+          : ((position.avgPrice - consolidatedStopLoss) / position.avgPrice) * 100;
+        const slSign = slResultPercent >= 0 ? '+' : '';
+        const infoText = `SL (${slSign}${slResultPercent.toFixed(2)}%)`;
         
         priceTags.push({ priceText, y: stopY, fillColor });
         
@@ -807,9 +846,11 @@ export const useOrderLinesRenderer = (
         ctx.textBaseline = 'middle';
 
         const fillColor = 'rgba(34, 197, 94, 0.9)';
-        const tpPercent = ((consolidatedTakeProfit - position.avgPrice) / position.avgPrice) * 100;
         const priceText = consolidatedTakeProfit.toFixed(2);
-        const infoText = `TP (+${tpPercent.toFixed(2)}%)`;
+        const tpProfitPercent = isLongPosition
+          ? ((consolidatedTakeProfit - position.avgPrice) / position.avgPrice) * 100
+          : ((position.avgPrice - consolidatedTakeProfit) / position.avgPrice) * 100;
+        const infoText = `TP (+${tpProfitPercent.toFixed(2)}%)`;
         
         priceTags.push({ priceText, y: tpY, fillColor });
         

@@ -95,8 +95,18 @@ export const klineRouter = router({
       const now = new Date();
       const intervalMs = getIntervalMs(input.interval);
 
-      if (!latestKlineResult) {
-        logger.info({ symbol: input.symbol, interval: input.interval }, 'Database empty, fetching from Binance API');
+      const existingCount = await db.query.klines.findMany({
+        where: and(
+          eq(klines.symbol, input.symbol),
+          eq(klines.interval, input.interval as Interval)
+        ),
+      });
+
+      const minRequiredKlines = Math.floor(input.limit * 0.5);
+      const hasInsufficientData = !latestKlineResult || existingCount.length < minRequiredKlines;
+
+      if (hasInsufficientData) {
+        logger.info({ symbol: input.symbol, interval: input.interval, existingCount: existingCount.length, minRequired: minRequiredKlines }, 'Insufficient data, fetching from Binance API');
 
         const endTime = input.endTime || now;
         const startTime = input.startTime || calculateStartTime(input.interval as Interval, input.limit);
@@ -109,31 +119,41 @@ export const klineRouter = router({
         );
 
         if (apiKlines.length > 0) {
-          logger.info({ count: apiKlines.length, firstOpenTime: apiKlines[0].openTime }, 'Fetched klines from API');
-        }
+          logger.info({ count: apiKlines.length, firstOpenTime: apiKlines[0].openTime }, 'Fetched klines from API, inserting into database');
 
-        return apiKlines.map((k: any) => ({
-          symbol: input.symbol,
-          interval: input.interval,
-          openTime: new Date(k.openTime),
-          open: k.open,
-          high: k.high,
-          low: k.low,
-          close: k.close,
-          volume: k.volume,
-          closeTime: new Date(k.closeTime),
-          quoteVolume: k.quoteVolume,
-          trades: k.trades,
-          takerBuyBaseVolume: k.takerBuyBaseVolume,
-          takerBuyQuoteVolume: k.takerBuyQuoteVolume,
-          createdAt: new Date(),
-        }));
+          for (const k of apiKlines) {
+            await db.insert(klines).values({
+              symbol: input.symbol,
+              interval: input.interval as Interval,
+              openTime: new Date(k.openTime),
+              open: k.open,
+              high: k.high,
+              low: k.low,
+              close: k.close,
+              volume: k.volume,
+              closeTime: new Date(k.closeTime),
+              quoteVolume: k.quoteVolume,
+              trades: k.trades,
+              takerBuyBaseVolume: k.takerBuyBaseVolume || '0',
+              takerBuyQuoteVolume: k.takerBuyQuoteVolume || '0',
+            }).onConflictDoNothing();
+          }
+        }
       }
 
-      const staleCutoff = new Date(now.getTime() - intervalMs * 2);
-      const latestOpenTime = new Date(latestKlineResult.openTime);
+      const updatedLatestKline = await db.query.klines.findFirst({
+        where: and(
+          eq(klines.symbol, input.symbol),
+          eq(klines.interval, input.interval as Interval)
+        ),
+        orderBy: [desc(klines.openTime)],
+      });
 
-      if (latestOpenTime < staleCutoff) {
+      if (updatedLatestKline) {
+        const staleCutoff = new Date(now.getTime() - intervalMs * 2);
+        const latestOpenTime = new Date(updatedLatestKline.openTime);
+
+        if (latestOpenTime < staleCutoff) {
         logger.info({
           symbol: input.symbol,
           interval: input.interval,
@@ -188,6 +208,7 @@ export const klineRouter = router({
               });
             }
           }
+        }
         }
       }
 

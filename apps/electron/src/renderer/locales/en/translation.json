@@ -872,7 +872,8 @@
       "takeProfit": "Take Profit",
       "pnl": "P&L",
       "close": "Close Order",
-      "cancel": "Cancel Order"
+      "cancel": "Cancel Order",
+      "autoTrade": "Auto-trade order"
     },
     "notifications": {
       "orderFilled": {
