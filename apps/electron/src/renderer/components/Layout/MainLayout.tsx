@@ -4,10 +4,14 @@ import { useUIStore } from '@/renderer/store/uiStore';
 import { Box, Flex } from '@chakra-ui/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
+import type { Timeframe } from '../Chart/TimeframeSelector';
+import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { ChatSidebar } from '../Chat/ChatSidebar';
 import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { TradingSidebar } from '../Trading/TradingSidebar';
+import { Toolbar } from './Toolbar';
+import type { MarketDataService } from '../../services/market/MarketDataService';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -18,6 +22,36 @@ interface MainLayoutProps {
   onToggleChat: () => void;
   isTradingOpen: boolean;
   onToggleTrading: () => void;
+  marketService?: MarketDataService;
+  symbol: string;
+  timeframe: Timeframe;
+  chartType: 'kline' | 'line';
+  showVolume: boolean;
+  showGrid: boolean;
+  showCurrentPriceLine: boolean;
+  showCrosshair: boolean;
+  showMeasurementRuler: boolean;
+  showMeasurementArea: boolean;
+  showStochastic: boolean;
+  showRSI: boolean;
+  movingAverages: MovingAverageConfig[];
+  isNewsOpen: boolean;
+  isBacktestOpen: boolean;
+  onSymbolChange: (symbol: string) => void;
+  onTimeframeChange: (timeframe: Timeframe) => void;
+  onChartTypeChange: (type: 'kline' | 'line') => void;
+  onShowVolumeChange: (show: boolean) => void;
+  onShowGridChange: (show: boolean) => void;
+  onShowCurrentPriceLineChange: (show: boolean) => void;
+  onShowCrosshairChange: (show: boolean) => void;
+  onShowMeasurementRulerChange: (show: boolean) => void;
+  onShowMeasurementAreaChange: (show: boolean) => void;
+  onShowStochasticChange: (show: boolean) => void;
+  onShowRSIChange: (show: boolean) => void;
+  onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
+  onToggleNews: () => void;
+  onToggleBacktest: () => void;
+  onDetectPatterns: () => void;
 }
 
 const MIN_CHAT_WIDTH = 300;
@@ -27,7 +61,46 @@ const MIN_TRADING_WIDTH = 300;
 const MAX_TRADING_WIDTH = 600;
 const DEFAULT_TRADING_WIDTH = 400;
 
-export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onAdvancedConfigChange, isChatOpen, onToggleChat, isTradingOpen, onToggleTrading: _onToggleTrading }: MainLayoutProps) => {
+export const MainLayout = ({
+  children,
+  onOpenSymbolSelector,
+  advancedConfig,
+  onAdvancedConfigChange,
+  isChatOpen,
+  onToggleChat,
+  isTradingOpen,
+  onToggleTrading,
+  marketService,
+  symbol,
+  timeframe,
+  chartType,
+  showVolume,
+  showGrid,
+  showCurrentPriceLine,
+  showCrosshair,
+  showMeasurementRuler,
+  showMeasurementArea,
+  showStochastic,
+  showRSI,
+  movingAverages,
+  isNewsOpen,
+  isBacktestOpen,
+  onSymbolChange,
+  onTimeframeChange,
+  onChartTypeChange,
+  onShowVolumeChange,
+  onShowGridChange,
+  onShowCurrentPriceLineChange,
+  onShowCrosshairChange,
+  onShowMeasurementRulerChange,
+  onShowMeasurementAreaChange,
+  onShowStochasticChange,
+  onShowRSIChange,
+  onMovingAveragesChange,
+  onToggleNews,
+  onToggleBacktest,
+  onDetectPatterns,
+}: MainLayoutProps) => {
   const [chatWidth, setChatWidth] = useLocalStorage('chat-sidebar-width', DEFAULT_CHAT_WIDTH);
   const [tradingWidth, setTradingWidth] = useLocalStorage('trading-sidebar-width', DEFAULT_TRADING_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
@@ -94,6 +167,42 @@ export const MainLayout = ({ children, onOpenSymbolSelector, advancedConfig, onA
   return (
     <GlobalActionsProvider actions={globalActions}>
       <Box width="100vw" height="100vh" overflow="hidden">
+        <Toolbar
+          marketService={marketService}
+          symbol={symbol}
+          timeframe={timeframe}
+          chartType={chartType}
+          showVolume={showVolume}
+          showGrid={showGrid}
+          showCurrentPriceLine={showCurrentPriceLine}
+          showCrosshair={showCrosshair}
+          showMeasurementRuler={showMeasurementRuler}
+          showMeasurementArea={showMeasurementArea}
+          showStochastic={showStochastic}
+          showRSI={showRSI}
+          movingAverages={movingAverages}
+          isTradingOpen={isTradingOpen}
+          isChatOpen={isChatOpen}
+          isNewsOpen={isNewsOpen}
+          isBacktestOpen={isBacktestOpen}
+          onSymbolChange={onSymbolChange}
+          onTimeframeChange={onTimeframeChange}
+          onChartTypeChange={onChartTypeChange}
+          onShowVolumeChange={onShowVolumeChange}
+          onShowGridChange={onShowGridChange}
+          onShowCurrentPriceLineChange={onShowCurrentPriceLineChange}
+          onShowCrosshairChange={onShowCrosshairChange}
+          onShowMeasurementRulerChange={onShowMeasurementRulerChange}
+          onShowMeasurementAreaChange={onShowMeasurementAreaChange}
+          onShowStochasticChange={onShowStochasticChange}
+          onShowRSIChange={onShowRSIChange}
+          onMovingAveragesChange={onMovingAveragesChange}
+          onToggleTrading={onToggleTrading}
+          onToggleChat={onToggleChat}
+          onToggleNews={onToggleNews}
+          onToggleBacktest={onToggleBacktest}
+          onDetectPatterns={onDetectPatterns}
+        />
         <Flex
           position="relative"
           top={0}

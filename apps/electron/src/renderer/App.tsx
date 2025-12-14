@@ -12,7 +12,6 @@ import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext
 import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { MainLayout } from './components/Layout/MainLayout';
-import { Toolbar } from './components/Layout/Toolbar';
 import { NewsDialog } from './components/News/NewsDialog';
 import { OnboardingDialog } from './components/Onboarding/OnboardingDialog';
 import { BacktestDialog } from './components/Trading/BacktestDialog';
@@ -543,7 +542,14 @@ function AppContent(): ReactElement {
 
   return (
     <>
-      <Toolbar
+      <MainLayout
+        onOpenSymbolSelector={() => { }}
+        advancedConfig={advancedConfig}
+        onAdvancedConfigChange={setAdvancedConfig}
+        isChatOpen={isChatOpen}
+        onToggleChat={toggleChat}
+        isTradingOpen={isTradingOpen}
+        onToggleTrading={toggleTrading}
         symbol={symbol}
         timeframe={timeframe}
         chartType={chartType}
@@ -556,8 +562,6 @@ function AppContent(): ReactElement {
         showStochastic={showStochastic}
         showRSI={showRSI}
         movingAverages={movingAverages}
-        isTradingOpen={isTradingOpen}
-        isChatOpen={isChatOpen}
         isNewsOpen={isNewsOpen}
         isBacktestOpen={isBacktestOpen}
         onSymbolChange={setSymbol}
@@ -572,19 +576,9 @@ function AppContent(): ReactElement {
         onShowStochasticChange={setShowStochastic}
         onShowRSIChange={setShowRSI}
         onMovingAveragesChange={setMovingAverages}
-        onToggleBacktest={toggleBacktest}
-        onToggleTrading={toggleTrading}
-        onToggleChat={toggleChat}
         onToggleNews={toggleNews}
+        onToggleBacktest={toggleBacktest}
         onDetectPatterns={() => { }}
-      />      <MainLayout
-        onOpenSymbolSelector={() => { }}
-        advancedConfig={advancedConfig}
-        onAdvancedConfigChange={setAdvancedConfig}
-        isChatOpen={isChatOpen}
-        onToggleChat={toggleChat}
-        isTradingOpen={isTradingOpen}
-        onToggleTrading={toggleTrading}
       >
         <AppContentWithKeyboardShortcuts
           showVolume={showVolume}
