@@ -1,9 +1,9 @@
-import type { Kline as KlineType, Interval, TrailingStopOptimizationConfig } from '@marketmind/types';
-import { calculateSwingPoints, calculateATR } from '@marketmind/indicators';
+import { calculateATR, calculateSwingPoints } from '@marketmind/indicators';
+import type { Interval, Kline as KlineType, TrailingStopOptimizationConfig } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../db';
-import { klines, setupDetections, tradeExecutions } from '../db/schema';
 import type { TradeExecution } from '../db/schema';
+import { klines, setupDetections, tradeExecutions } from '../db/schema';
 import { logger } from './logger';
 
 export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
