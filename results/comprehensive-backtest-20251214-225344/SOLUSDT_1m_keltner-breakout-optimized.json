@@ -1,0 +1,22 @@
+[dotenv@17.2.3] injecting env (6) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+╔════════════════════════════════════════════════════════════════╗
+║  BACKTEST VALIDATION - KELTNER-BREAKOUT-OPTIMIZED [OPTIMIZED]  ║
+╠════════════════════════════════════════════════════════════════╣
+║ Symbol: SOLUSDT                                                ║
+║ Interval: 1m                                                   ║
+║ Period: 2024-01-01 → 2024-12-31                                ║
+║ Capital: $10,000.00                                            ║
+║ Mode: Using strategy optimizedParams                           ║
+╚════════════════════════════════════════════════════════════════╝
+
+- Fetching historical data...
+[Backtest] Starting backtest 2ug1wF_-p9Xsr6V5qYPeI for SOLUSDT 1m
+[Backtest] Date range: 2024-01-01 to 2024-12-31
+[Backtest] Fetching historical klines from Binance API...
+[Backtest] Including warmup period for EMA200: 2023-12-31T19:50:00.000Z to 2024-01-01
+[01:53:44 UTC] [32mINFO[39m: [36mFetching historical klines from Binance API[39m
+    [35menv[39m: "development"
+    [35msymbol[39m: "SOLUSDT"
+    [35minterval[39m: "1m"
+    [35mstartTime[39m: "2023-12-31T19:50:00.000Z"
+    [35mendTime[39m: "2024-12-31T00:00:00.000Z"

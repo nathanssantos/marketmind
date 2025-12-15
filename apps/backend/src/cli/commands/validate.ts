@@ -5,14 +5,14 @@ import { BacktestEngine } from '../../services/backtesting/BacktestEngine';
 import { ResultManager } from '../../services/backtesting/ResultManager';
 import { BacktestLogger, LogLevel } from '../utils/logger';
 import {
-  validateCapital,
-  validateDateRange,
-  validateInterval,
-  validatePercentage,
-  validateRiskReward,
-  validateStrategy,
-  validateSymbol,
-  ValidationError,
+    validateCapital,
+    validateDateRange,
+    validateInterval,
+    validatePercentage,
+    validateRiskReward,
+    validateStrategy,
+    validateSymbol,
+    ValidationError,
 } from '../utils/validators';
 
 interface ValidateOptions {
@@ -35,6 +35,7 @@ interface ValidateOptions {
   useAlgorithmicLevels: boolean;
   withTrend: boolean;
   trailingStop: boolean;
+  useMlFilter: boolean;
   optimized: boolean;
   verbose: boolean;
 }
@@ -114,6 +115,7 @@ export async function validateCommand(options: ValidateOptions) {
       useAlgorithmicLevels: options.useAlgorithmicLevels,
       onlyWithTrend: options.withTrend ?? false,
       useTrailingStop: options.trailingStop ?? false,
+      useMlFilter: options.useMlFilter ?? false,
       useOptimizedSettings: options.optimized,
     };
 

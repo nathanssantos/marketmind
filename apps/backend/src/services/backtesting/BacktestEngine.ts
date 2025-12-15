@@ -1,9 +1,11 @@
+import { getThresholdForTimeframe } from '@marketmind/ml';
 import type { BacktestConfig, BacktestResult, ComputedIndicators, EvaluationContext, Interval, Kline, OptimizedBacktestParams, StrategyDefinition } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { randomBytes } from 'crypto';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { fetchHistoricalKlinesFromAPI } from '../binance-historical';
+import { mlService } from '../ml';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
 import { ConditionEvaluator, IndicatorEngine, StrategyLoader } from '../setup-detection/dynamic';
 import { PositionSizer } from './PositionSizer';
@@ -235,6 +237,7 @@ export class BacktestEngine {
             commission: effectiveConfig.commission ?? (mergedParams.commission !== undefined ? mergedParams.commission / 100 : 0.001),
             stopLossPercent: effectiveConfig.stopLossPercent,  // Will be ignored if setup provides stopLoss
             takeProfitPercent: effectiveConfig.takeProfitPercent,  // Will be ignored if setup provides takeProfit
+            useMlFilter: effectiveConfig.useMlFilter ?? config.useMlFilter ?? false,
           };
         }
       }
@@ -276,11 +279,54 @@ export class BacktestEngine {
         console.log(`[Backtest] Excluded ${detectedSetups.length - setupsInRange.length} setups before startDate (warmup period)`);
       }
 
-      const tradableSetups = effectiveConfig.minConfidence && effectiveConfig.minConfidence > 0
+      let tradableSetups = effectiveConfig.minConfidence && effectiveConfig.minConfidence > 0
         ? setupsInRange.filter((s: any) => s.confidence >= effectiveConfig.minConfidence!)
         : setupsInRange;
 
       console.log('[Backtest] Filtered to', tradableSetups.length, 'tradable setups by confidence', effectiveConfig.minConfidence ? `(min: ${effectiveConfig.minConfidence}%)` : '(no filter)');
+
+      if (effectiveConfig.useMlFilter) {
+        try {
+          await mlService.initialize();
+          console.log('[Backtest] ML Service initialized, filtering setups...');
+
+          const threshold = getThresholdForTimeframe(config.interval);
+          const mlFilteredSetups: any[] = [];
+
+          for (const setup of tradableSetups) {
+            try {
+              const setupKlines = historicalKlines.filter(k => k.openTime <= setup.openTime).slice(-200);
+              
+              const prediction = await mlService.predictSetup(
+                setupKlines,
+                setup,
+                undefined,
+                config.symbol,
+                config.interval
+              );
+              
+              if (prediction.probability >= threshold.minProbability) {
+                const mlConfidence = prediction.probability * 100;
+                const blendedConfidence = (setup.confidence * 0.7) + (mlConfidence * 0.3);
+                
+                mlFilteredSetups.push({
+                  ...setup,
+                  mlConfidence,
+                  blendedConfidence,
+                  mlPrediction: prediction.label === 1,
+                });
+              }
+            } catch (error) {
+              console.error('[Backtest] ML prediction failed for setup:', error);
+            }
+          }
+
+          console.log(`[Backtest] ML filter: ${tradableSetups.length} → ${mlFilteredSetups.length} setups (min probability: ${threshold.minProbability})`);
+          tradableSetups = mlFilteredSetups;
+        } catch (error) {
+          console.error('[Backtest] ML initialization failed, continuing without ML filter:', error);
+        }
+      }
 
       const trades: any[] = [];
       let equity = config.initialCapital;

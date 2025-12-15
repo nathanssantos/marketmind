@@ -19,6 +19,7 @@ export interface BacktestConfig {
   maxPositionSize?: number; // Max % of capital per trade
   commission?: number; // Trading fee % (default 0.1%)
   slippagePercent?: number; // Slippage % for market orders - SL (default 0.05%)
+  useMlFilter?: boolean; // Use ML model to filter setups (same as auto trading)
   useOptimizedSettings?: boolean; // Use strategy's optimizedParams instead of config values
 
   positionSizingMethod?: 'fixed-fractional' | 'risk-based' | 'kelly' | 'volatility'; // Default: 'fixed-fractional'

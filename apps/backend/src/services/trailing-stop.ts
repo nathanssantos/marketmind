@@ -3,7 +3,7 @@ import type { Interval, Kline as KlineType, TrailingStopOptimizationConfig } fro
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
-import { klines, setupDetections, tradeExecutions } from '../db/schema';
+import { klines, priceCache, setupDetections, tradeExecutions } from '../db/schema';
 import { logger } from './logger';
 
 export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
@@ -201,8 +201,10 @@ export const computeTrailingStop = (
     newStopLoss = calculateNewStopLoss(breakevenPrice, swingStop, isLong);
     reason = 'swing_trail';
   } else if (atrStop !== null) {
-    newStopLoss = atrStop;
-    reason = 'atr_trail';
+    newStopLoss = isLong 
+      ? Math.max(breakevenPrice, atrStop)
+      : Math.min(breakevenPrice, atrStop);
+    reason = newStopLoss === breakevenPrice ? 'breakeven' : 'atr_trail';
   } else {
     newStopLoss = breakevenPrice;
     reason = 'breakeven';
@@ -228,6 +230,44 @@ export class TrailingStopService {
 
   getConfig(): TrailingStopOptimizationConfig {
     return { ...this.config };
+  }
+
+  private async getCurrentPrice(symbol: string): Promise<number> {
+    try {
+      const cached = await db.query.priceCache.findFirst({
+        where: eq(priceCache.symbol, symbol),
+      });
+
+      if (cached) {
+        const age = Date.now() - cached.timestamp.getTime();
+        if (age < 60000) {
+          return parseFloat(cached.price);
+        }
+      }
+
+      const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
+      const data = await response.json() as { price: string };
+      const price = parseFloat(data.price);
+
+      await db.insert(priceCache)
+        .values({
+          symbol,
+          price: data.price,
+          timestamp: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: priceCache.symbol,
+          set: {
+            price: data.price,
+            timestamp: new Date(),
+          },
+        });
+
+      return price;
+    } catch (error) {
+      logger.error({ symbol, error: error instanceof Error ? error.message : String(error) }, 'Failed to fetch current price');
+      throw error;
+    }
   }
 
   async updateTrailingStops(): Promise<TrailingStopUpdate[]> {
@@ -333,7 +373,7 @@ export class TrailingStopService {
         takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
       }));
 
-      const currentPrice = parseFloat(mappedKlines[mappedKlines.length - 1]!.close);
+      const currentPrice = await this.getCurrentPrice(symbol);
       const { swingPoints } = calculateSwingPoints(mappedKlines, this.config.swingLookback);
 
       const atrValues = this.config.useATRMultiplier ? calculateATR(mappedKlines, 14) : [];

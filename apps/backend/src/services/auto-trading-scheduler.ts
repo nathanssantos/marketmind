@@ -1,28 +1,28 @@
-import type { Interval, Kline, TradingSetup } from '@marketmind/types';
 import { getThresholdForTimeframe } from '@marketmind/ml';
+import type { Interval, Kline, TradingSetup } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from '../db';
 import {
-  activeWatchers as activeWatchersTable,
-  autoTradingConfig,
-  klines,
-  setupDetections,
-  tradeExecutions,
-  tradingProfiles,
-  wallets,
-  type Wallet,
+    activeWatchers as activeWatchersTable,
+    autoTradingConfig,
+    klines,
+    setupDetections,
+    tradeExecutions,
+    tradingProfiles,
+    wallets,
+    type Wallet,
 } from '../db/schema';
-import { StrategyInterpreter, StrategyLoader } from './setup-detection/dynamic';
-import { riskManagerService } from './risk-manager';
+import { env } from '../env';
+import { autoTradingService } from './auto-trading';
 import { backfillHistoricalKlines, calculateStartTime } from './binance-historical';
+import { marketContextFilter } from './market-context-filter';
 import { mlService } from './ml';
 import { pyramidingService } from './pyramiding';
-import { autoTradingService } from './auto-trading';
-import { marketContextFilter } from './market-context-filter';
-import { env } from '../env';
+import { riskManagerService } from './risk-manager';
+import { StrategyInterpreter, StrategyLoader } from './setup-detection/dynamic';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -645,6 +645,26 @@ export class AutoTradingScheduler {
           symbol: watcher.symbol,
           setupType: setup.type,
           existingExecutionId: existingOpenExecution.id,
+        });
+        return;
+      }
+
+      const existingSetupExecution = await db
+        .select()
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.walletId, watcher.walletId),
+            eq(tradeExecutions.setupId, setupId)
+          )
+        )
+        .limit(1);
+
+      if (existingSetupExecution.length > 0) {
+        log('⚠️ Setup already executed - preventing duplicate', {
+          setupId,
+          existingExecutionId: existingSetupExecution[0]?.id,
+          existingStatus: existingSetupExecution[0]?.status,
         });
         return;
       }

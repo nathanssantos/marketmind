@@ -227,8 +227,8 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
     .notNull()
     .references(() => wallets.id, { onDelete: 'cascade' }),
   isEnabled: boolean('is_enabled').default(false).notNull(),
-  maxConcurrentPositions: integer('max_concurrent_positions').default(3).notNull(),
-  maxPositionSize: numeric('max_position_size', { precision: 10, scale: 2 }).default('10').notNull(), // % of wallet balance
+  maxConcurrentPositions: integer('max_concurrent_positions').default(5).notNull(),
+  maxPositionSize: numeric('max_position_size', { precision: 10, scale: 2 }).default('15').notNull(), // % of wallet balance
   dailyLossLimit: numeric('daily_loss_limit', { precision: 10, scale: 2 }).default('5').notNull(), // % of wallet balance
   enabledSetupTypes: text('enabled_setup_types').notNull(), // JSON array of setup types
   positionSizing: varchar('position_sizing', { length: 20 }).default('percentage'), // 'fixed' | 'percentage' | 'kelly'

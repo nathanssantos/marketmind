@@ -44,6 +44,7 @@ program
   .option('--use-algorithmic-levels', 'Use strategy\'s calculated SL/TP instead of fixed percentages', false)
   .option('--with-trend', 'Enable EMA200 trend filter (only trade with trend)', false)
   .option('--trailing-stop', 'Use trailing stop instead of fixed take profit (let winners run)', false)
+  .option('--use-ml-filter', 'Use ML model to filter setups (same as auto trading)', false)
   .option('--optimized', 'Use strategy\'s optimized parameters (position size, trend filter, etc.)', false)
   .option('-v, --verbose', 'Show detailed trade-by-trade logs', false)
   .action(validateCommand);
