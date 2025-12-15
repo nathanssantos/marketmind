@@ -5,7 +5,7 @@ import type { Order, OrderStatus } from '@marketmind/types';
 import { Select } from '@renderer/components/ui/select';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
-import { type OrdersFilterOption, useUIStore } from '@renderer/store/uiStore';
+import { type OrdersFilterOption, type OrdersSortOption, useUIStore } from '@renderer/store/uiStore';
 import {
   getOrderId,
   getOrderPrice,
@@ -142,22 +142,59 @@ export const OrdersList = () => {
 
   const filterStatus = useUIStore((s) => s.ordersFilterStatus);
   const setFilterStatus = useUIStore((s) => s.setOrdersFilterStatus);
+  const sortBy = useUIStore((s) => s.ordersSortBy);
+  const setSortBy = useUIStore((s) => s.setOrdersSortBy);
 
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
   const walletOrders = activeWallet
     ? orders.filter((o) => o.walletId === activeWallet.id)
     : [];
 
-  const filteredOrders = walletOrders.filter((order) => {
-    if (filterStatus === 'all') return true;
-    if (filterStatus === 'pending') return isOrderPending(order);
-    if (filterStatus === 'active') return isOrderActive(order);
-    if (filterStatus === 'filled') return order.status === 'FILLED' && !order.closedAt;
-    if (filterStatus === 'closed') return !!order.closedAt;
-    if (filterStatus === 'cancelled') return order.status === 'CANCELED' || order.status === 'REJECTED';
-    if (filterStatus === 'expired') return order.status === 'EXPIRED' || order.status === 'EXPIRED_IN_MATCH';
-    return true;
-  });
+  const filteredOrders = useMemo(() => {
+    const filtered = walletOrders.filter((order) => {
+      if (filterStatus === 'all') return true;
+      if (filterStatus === 'pending') return isOrderPending(order);
+      if (filterStatus === 'active') return isOrderActive(order);
+      if (filterStatus === 'filled') return order.status === 'FILLED';
+      if (filterStatus === 'closed') return !!order.closedAt;
+      if (filterStatus === 'cancelled') return order.status === 'CANCELED' || order.status === 'REJECTED';
+      if (filterStatus === 'expired') return order.status === 'EXPIRED' || order.status === 'EXPIRED_IN_MATCH';
+      return true;
+    });
+
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return (b.updateTime || b.time) - (a.updateTime || a.time);
+        case 'oldest':
+          return (a.updateTime || a.time) - (b.updateTime || b.time);
+        case 'symbol-asc':
+          return a.symbol.localeCompare(b.symbol);
+        case 'symbol-desc':
+          return b.symbol.localeCompare(a.symbol);
+        case 'quantity-desc':
+          return b.quantity - a.quantity;
+        case 'quantity-asc':
+          return a.quantity - b.quantity;
+        case 'pnl-desc': {
+          const pnlA = a.pnl ?? 0;
+          const pnlB = b.pnl ?? 0;
+          return pnlB - pnlA;
+        }
+        case 'pnl-asc': {
+          const pnlA = a.pnl ?? 0;
+          const pnlB = b.pnl ?? 0;
+          return pnlA - pnlB;
+        }
+        case 'price-desc':
+          return b.entryPrice - a.entryPrice;
+        case 'price-asc':
+          return a.entryPrice - b.entryPrice;
+        default:
+          return (b.updateTime || b.time) - (a.updateTime || a.time);
+      }
+    });
+  }, [walletOrders, filterStatus, sortBy]);
 
   const activeOrders = walletOrders.filter((o) => isOrderActive(o)).length;
   const pendingOrders = walletOrders.filter((o) => isOrderPending(o)).length;
@@ -195,24 +232,48 @@ export const OrdersList = () => {
             </Stack>
           </Box>
 
-          <ChakraField.Root>
-            <ChakraField.Label fontSize="xs">{t('trading.orders.filterByStatus')}</ChakraField.Label>
-            <Select
-              size="xs"
-              value={filterStatus}
-              onChange={(value) => setFilterStatus(value as OrdersFilterOption)}
-              options={[
-                { value: 'all', label: t('trading.orders.allStatuses') },
-                { value: 'pending', label: t('trading.orders.statusPending') },
-                { value: 'active', label: t('trading.orders.statusActive') },
-                { value: 'filled', label: t('trading.orders.statusFilled') },
-                { value: 'closed', label: t('trading.orders.statusClosed') },
-                { value: 'cancelled', label: t('trading.orders.statusCancelled') },
-                { value: 'expired', label: t('trading.orders.statusExpired') },
-              ]}
-              usePortal
-            />
-          </ChakraField.Root>
+          <Flex gap={2}>
+            <ChakraField.Root flex={1}>
+              <ChakraField.Label fontSize="xs">{t('trading.orders.filterByStatus')}</ChakraField.Label>
+              <Select
+                size="xs"
+                value={filterStatus}
+                onChange={(value) => setFilterStatus(value as OrdersFilterOption)}
+                options={[
+                  { value: 'all', label: t('trading.orders.allStatuses') },
+                  { value: 'pending', label: t('trading.orders.statusPending') },
+                  { value: 'active', label: t('trading.orders.statusActive') },
+                  { value: 'filled', label: t('trading.orders.statusFilled') },
+                  { value: 'closed', label: t('trading.orders.statusClosed') },
+                  { value: 'cancelled', label: t('trading.orders.statusCancelled') },
+                  { value: 'expired', label: t('trading.orders.statusExpired') },
+                ]}
+                usePortal
+              />
+            </ChakraField.Root>
+
+            <ChakraField.Root flex={1}>
+              <ChakraField.Label fontSize="xs">{t('trading.orders.sortBy')}</ChakraField.Label>
+              <Select
+                size="xs"
+                value={sortBy}
+                onChange={(value) => setSortBy(value as OrdersSortOption)}
+                options={[
+                  { value: 'newest', label: t('trading.orders.sortNewest') },
+                  { value: 'oldest', label: t('trading.orders.sortOldest') },
+                  { value: 'symbol-asc', label: t('trading.orders.sortSymbolAsc') },
+                  { value: 'symbol-desc', label: t('trading.orders.sortSymbolDesc') },
+                  { value: 'quantity-desc', label: t('trading.orders.sortQuantityDesc') },
+                  { value: 'quantity-asc', label: t('trading.orders.sortQuantityAsc') },
+                  { value: 'pnl-desc', label: t('trading.orders.sortPnlDesc') },
+                  { value: 'pnl-asc', label: t('trading.orders.sortPnlAsc') },
+                  { value: 'price-desc', label: t('trading.orders.sortPriceDesc') },
+                  { value: 'price-asc', label: t('trading.orders.sortPriceAsc') },
+                ]}
+                usePortal
+              />
+            </ChakraField.Root>
+          </Flex>
 
           <Box maxH="calc(100vh - 400px)" overflowY="auto" overflowX="visible">
             {filteredOrders.length === 0 ? (

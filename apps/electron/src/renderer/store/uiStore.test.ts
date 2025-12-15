@@ -14,6 +14,7 @@ describe('uiStore', () => {
       },
       tradingSidebarTab: 'orders',
       ordersFilterStatus: 'pending',
+      ordersSortBy: 'newest',
       performancePeriod: 'all',
       setupStatsPeriod: 'all',
     });

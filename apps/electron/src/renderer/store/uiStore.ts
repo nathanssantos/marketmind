@@ -5,6 +5,7 @@ import { persist } from 'zustand/middleware';
 export type PatternDetectionMode = 'ai-only' | 'algorithmic-only' | 'hybrid';
 export type TradingSidebarTab = 'ticket' | 'orders' | 'portfolio' | 'wallets' | 'analytics';
 export type OrdersFilterOption = 'all' | 'pending' | 'active' | 'filled' | 'closed' | 'cancelled' | 'expired';
+export type OrdersSortOption = 'newest' | 'oldest' | 'symbol-asc' | 'symbol-desc' | 'quantity-desc' | 'quantity-asc' | 'pnl-desc' | 'pnl-asc' | 'price-desc' | 'price-asc';
 export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'all';
 
 interface UIState {
@@ -27,6 +28,9 @@ interface UIState {
 
   ordersFilterStatus: OrdersFilterOption;
   setOrdersFilterStatus: (filter: OrdersFilterOption) => void;
+
+  ordersSortBy: OrdersSortOption;
+  setOrdersSortBy: (sort: OrdersSortOption) => void;
 
   performancePeriod: AnalyticsPeriod;
   setPerformancePeriod: (period: AnalyticsPeriod) => void;
@@ -96,6 +100,9 @@ export const useUIStore = create<UIState>()(
 
       tradingSidebarTab: 'orders',
       setTradingSidebarTab: (tab) => set({ tradingSidebarTab: tab }),
+
+      ordersSortBy: 'newest',
+      setOrdersSortBy: (sort) => set({ ordersSortBy: sort }),
 
       ordersFilterStatus: 'pending',
       setOrdersFilterStatus: (filter) => set({ ordersFilterStatus: filter }),
