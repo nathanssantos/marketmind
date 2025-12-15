@@ -5,6 +5,7 @@ import {
   findBestSwingStop,
   shouldUpdateStopLoss,
   calculateNewStopLoss,
+  calculateATRTrailingStop,
   computeTrailingStop,
   DEFAULT_TRAILING_STOP_CONFIG,
   type TrailingStopInput,
@@ -131,6 +132,30 @@ describe('Trailing Stop Pure Functions', () => {
       ];
       const result = findBestSwingStop(manySwings, 105, 89, true, 0.001);
       expect(result).not.toBeNull();
+    });
+  });
+
+  describe('calculateATRTrailingStop', () => {
+    it('should calculate trailing stop below highest price for LONG', () => {
+      const result = calculateATRTrailingStop(110, 2, true, 2.0);
+      expect(result).toBe(106);
+    });
+
+    it('should calculate trailing stop above lowest price for SHORT', () => {
+      const result = calculateATRTrailingStop(90, 2, false, 2.0);
+      expect(result).toBe(94);
+    });
+
+    it('should respect ATR multiplier', () => {
+      const result1x = calculateATRTrailingStop(100, 2, true, 1.0);
+      const result3x = calculateATRTrailingStop(100, 2, true, 3.0);
+      expect(result1x).toBe(98);
+      expect(result3x).toBe(94);
+    });
+
+    it('should handle large ATR values', () => {
+      const result = calculateATRTrailingStop(1000, 50, true, 2.0);
+      expect(result).toBe(900);
     });
   });
 
@@ -270,8 +295,8 @@ describe('Trailing Stop Pure Functions', () => {
       expect(DEFAULT_TRAILING_STOP_CONFIG.breakevenProfitThreshold).toBe(0.005);
       expect(DEFAULT_TRAILING_STOP_CONFIG.minTrailingDistancePercent).toBe(0.002);
       expect(DEFAULT_TRAILING_STOP_CONFIG.swingLookback).toBe(3);
-      expect(DEFAULT_TRAILING_STOP_CONFIG.useATRMultiplier).toBe(false);
-      expect(DEFAULT_TRAILING_STOP_CONFIG.atrMultiplier).toBe(2.5);
+      expect(DEFAULT_TRAILING_STOP_CONFIG.useATRMultiplier).toBe(true);
+      expect(DEFAULT_TRAILING_STOP_CONFIG.atrMultiplier).toBe(2.0);
     });
   });
 });

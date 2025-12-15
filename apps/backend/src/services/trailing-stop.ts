@@ -1,5 +1,5 @@
 import type { Kline as KlineType, Interval, TrailingStopOptimizationConfig } from '@marketmind/types';
-import { calculateSwingPoints } from '@marketmind/indicators';
+import { calculateSwingPoints, calculateATR } from '@marketmind/indicators';
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { klines, tradeExecutions } from '../db/schema';
@@ -10,15 +10,15 @@ export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
   breakevenProfitThreshold: 0.005,
   minTrailingDistancePercent: 0.002,
   swingLookback: 3,
-  useATRMultiplier: false,
-  atrMultiplier: 2.5,
+  useATRMultiplier: true,
+  atrMultiplier: 2.0,
 };
 
 export interface TrailingStopUpdate {
   executionId: string;
   oldStopLoss: number | null;
   newStopLoss: number;
-  reason: 'breakeven' | 'swing_trail';
+  reason: 'breakeven' | 'swing_trail' | 'atr_trail';
 }
 
 export interface TrailingStopInput {
@@ -27,11 +27,14 @@ export interface TrailingStopInput {
   currentStopLoss: number | null;
   side: 'LONG' | 'SHORT';
   swingPoints: Array<{ price: number; type: 'high' | 'low' }>;
+  atr?: number;
+  highestPrice?: number;
+  lowestPrice?: number;
 }
 
 export interface TrailingStopResult {
   newStopLoss: number;
-  reason: 'breakeven' | 'swing_trail';
+  reason: 'breakeven' | 'swing_trail' | 'atr_trail';
 }
 
 export const calculateProfitPercent = (
@@ -128,11 +131,23 @@ export const calculateNewStopLoss = (
     : Math.min(breakevenPrice, swingStop);
 };
 
+export const calculateATRTrailingStop = (
+  highestOrLowestPrice: number,
+  atr: number,
+  isLong: boolean,
+  atrMultiplier: number
+): number => {
+  const atrDistance = atr * atrMultiplier;
+  return isLong
+    ? highestOrLowestPrice - atrDistance
+    : highestOrLowestPrice + atrDistance;
+};
+
 export const computeTrailingStop = (
   input: TrailingStopInput,
   config: TrailingStopOptimizationConfig
 ): TrailingStopResult | null => {
-  const { entryPrice, currentPrice, currentStopLoss, side, swingPoints } = input;
+  const { entryPrice, currentPrice, currentStopLoss, side, swingPoints, atr, highestPrice, lowestPrice } = input;
   const isLong = side === 'LONG';
 
   const profitPercent = calculateProfitPercent(entryPrice, currentPrice, isLong);
@@ -143,10 +158,6 @@ export const computeTrailingStop = (
 
   const breakevenPrice = calculateBreakevenPrice(entryPrice, isLong);
 
-  if (!shouldUpdateStopLoss(breakevenPrice, currentStopLoss, isLong)) {
-    return null;
-  }
-
   const swingStop = findBestSwingStop(
     swingPoints,
     currentPrice,
@@ -155,26 +166,53 @@ export const computeTrailingStop = (
     config.minTrailingDistancePercent
   );
 
+  let atrStop: number | null = null;
+  if (swingStop === null && config.useATRMultiplier && atr && atr > 0) {
+    const extremePrice = isLong ? highestPrice : lowestPrice;
+    if (extremePrice !== undefined) {
+      const candidateAtrStop = calculateATRTrailingStop(extremePrice, atr, isLong, config.atrMultiplier);
+      if (shouldUpdateStopLoss(candidateAtrStop, currentStopLoss, isLong)) {
+        atrStop = candidateAtrStop;
+        logger.debug({
+          extremePrice,
+          atr,
+          atrMultiplier: config.atrMultiplier,
+          atrStop,
+        }, 'ATR trailing stop calculated');
+      }
+    }
+  }
+
   logger.debug({
     entryPrice,
     currentPrice,
     profitPercent: (profitPercent * 100).toFixed(2),
     breakevenPrice,
     swingStop,
+    atrStop,
     swingPointsCount: swingPoints.length,
     relevantSwings: swingPoints.filter(sp => isLong ? sp.type === 'low' : sp.type === 'high').slice(-5),
   }, 'Trailing stop calculation details');
 
-  const newStopLoss = calculateNewStopLoss(breakevenPrice, swingStop, isLong);
+  let newStopLoss: number;
+  let reason: 'breakeven' | 'swing_trail' | 'atr_trail';
+
+  if (swingStop !== null) {
+    newStopLoss = calculateNewStopLoss(breakevenPrice, swingStop, isLong);
+    reason = 'swing_trail';
+  } else if (atrStop !== null) {
+    newStopLoss = atrStop;
+    reason = 'atr_trail';
+  } else {
+    newStopLoss = breakevenPrice;
+    reason = 'breakeven';
+  }
 
   if (!shouldUpdateStopLoss(newStopLoss, currentStopLoss, isLong)) {
     return null;
   }
 
-  return {
-    newStopLoss,
-    reason: swingStop !== null ? 'swing_trail' : 'breakeven',
-  };
+  return { newStopLoss, reason };
 };
 
 export class TrailingStopService {
@@ -274,11 +312,16 @@ export class TrailingStopService {
     const currentPrice = parseFloat(mappedKlines[mappedKlines.length - 1]!.close);
     const { swingPoints } = calculateSwingPoints(mappedKlines, this.config.swingLookback);
 
+    const atrValues = this.config.useATRMultiplier ? calculateATR(mappedKlines, 14) : [];
+    const currentATR = atrValues.length > 0 ? atrValues[atrValues.length - 1] : undefined;
+
     for (const execution of executions) {
       const update = this.calculateTrailingStop(
         execution,
         currentPrice,
-        swingPoints
+        swingPoints,
+        mappedKlines,
+        currentATR
       );
 
       if (update) {
@@ -293,10 +336,24 @@ export class TrailingStopService {
   private calculateTrailingStop(
     execution: TradeExecution,
     currentPrice: number,
-    swingPoints: Array<{ index: number; type: 'high' | 'low'; price: number; timestamp: number }>
+    swingPoints: Array<{ index: number; type: 'high' | 'low'; price: number; timestamp: number }>,
+    klines: KlineType[],
+    atr?: number
   ): TrailingStopUpdate | null {
     const entryPrice = parseFloat(execution.entryPrice);
     const currentStopLoss = execution.stopLoss ? parseFloat(execution.stopLoss) : null;
+    const isLong = execution.side === 'LONG';
+
+    const entryTime = new Date(execution.openedAt).getTime();
+    const klinesAfterEntry = klines.filter(k => k.openTime >= entryTime);
+
+    let highestPrice: number | undefined;
+    let lowestPrice: number | undefined;
+
+    if (klinesAfterEntry.length > 0) {
+      highestPrice = Math.max(...klinesAfterEntry.map(k => parseFloat(k.high)));
+      lowestPrice = Math.min(...klinesAfterEntry.map(k => parseFloat(k.low)));
+    }
 
     const input: TrailingStopInput = {
       entryPrice,
@@ -304,6 +361,9 @@ export class TrailingStopService {
       currentStopLoss,
       side: execution.side as 'LONG' | 'SHORT',
       swingPoints: swingPoints.map(sp => ({ price: sp.price, type: sp.type })),
+      atr,
+      highestPrice: isLong ? highestPrice : undefined,
+      lowestPrice: isLong ? undefined : lowestPrice,
     };
 
     const result = computeTrailingStop(input, this.config);
