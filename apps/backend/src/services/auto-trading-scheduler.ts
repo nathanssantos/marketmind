@@ -649,26 +649,6 @@ export class AutoTradingScheduler {
         return;
       }
 
-      const existingSetupExecution = await db
-        .select()
-        .from(tradeExecutions)
-        .where(
-          and(
-            eq(tradeExecutions.walletId, watcher.walletId),
-            eq(tradeExecutions.setupId, setupId)
-          )
-        )
-        .limit(1);
-
-      if (existingSetupExecution.length > 0) {
-        log('⚠️ Setup already executed - preventing duplicate', {
-          setupId,
-          existingExecutionId: existingSetupExecution[0]?.id,
-          existingStatus: existingSetupExecution[0]?.status,
-        });
-        return;
-      }
-
       const oppositeDirectionPosition = openPositions.find(
         (pos) => pos.symbol === watcher.symbol && pos.side !== setup.direction
       );
@@ -808,6 +788,26 @@ export class AutoTradingScheduler {
         });
 
         log('📝 Created setup detection', { setupId });
+      }
+
+      const existingSetupExecution = await db
+        .select()
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.walletId, watcher.walletId),
+            eq(tradeExecutions.setupId, setupId)
+          )
+        )
+        .limit(1);
+
+      if (existingSetupExecution.length > 0) {
+        log('⚠️ Setup already executed - preventing duplicate', {
+          setupId,
+          existingExecutionId: existingSetupExecution[0]?.id,
+          existingStatus: existingSetupExecution[0]?.status,
+        });
+        return;
       }
 
       const executionId = `exec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
