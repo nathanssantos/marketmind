@@ -6,14 +6,14 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from '../db';
 import {
-    activeWatchers as activeWatchersTable,
-    autoTradingConfig,
-    klines,
-    setupDetections,
-    tradeExecutions,
-    tradingProfiles,
-    wallets,
-    type Wallet,
+  activeWatchers as activeWatchersTable,
+  autoTradingConfig,
+  klines,
+  setupDetections,
+  tradeExecutions,
+  tradingProfiles,
+  wallets,
+  type Wallet,
 } from '../db/schema';
 import { env } from '../env';
 import { autoTradingService } from './auto-trading';
@@ -46,7 +46,7 @@ const log = (message: string, data?: Record<string, unknown>): void => {
 
   try {
     ensureLogDir();
-    fs.appendFileSync(LOG_FILE, logLine + '\n');
+    fs.appendFileSync(LOG_FILE, `${logLine  }\n`);
   } catch {
     // Ignore file write errors
   }
@@ -149,7 +149,7 @@ export class AutoTradingScheduler {
       )
       .limit(1);
 
-    if (!config || !config.isEnabled) {
+    if (!config?.isEnabled) {
       log('⚠️ Auto-trading not enabled for wallet', { walletId });
       await db
         .delete(activeWatchersTable)
@@ -589,7 +589,7 @@ export class AutoTradingScheduler {
         )
         .limit(1);
 
-      if (!config || !config.isEnabled) {
+      if (!config?.isEnabled) {
         log('⚠️ Auto-trading disabled during execution');
         return;
       }
@@ -684,7 +684,7 @@ export class AutoTradingScheduler {
             reason: pyramidEval.reason,
             currentEntries: pyramidEval.currentEntries,
             maxEntries: pyramidEval.maxEntries,
-            profitPercent: (pyramidEval.profitPercent * 100).toFixed(2) + '%',
+            profitPercent: `${(pyramidEval.profitPercent * 100).toFixed(2)  }%`,
           });
           return;
         }
@@ -693,7 +693,7 @@ export class AutoTradingScheduler {
           symbol: watcher.symbol,
           direction: setup.direction,
           currentEntries: pyramidEval.currentEntries,
-          profitPercent: (pyramidEval.profitPercent * 100).toFixed(2) + '%',
+          profitPercent: `${(pyramidEval.profitPercent * 100).toFixed(2)  }%`,
           suggestedSize: pyramidEval.suggestedSize,
         });
       }
