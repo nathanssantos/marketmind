@@ -21,6 +21,7 @@ import {
 } from '@marketmind/types';
 
 import { IndicatorEngine } from './IndicatorEngine';
+import { logger } from '../../logger';
 
 const MATH_EXPRESSION_REGEX = /^(.+?)\s*([*+\-/])\s*(\d+\.?\d*)$/;
 
@@ -85,7 +86,23 @@ export class ConditionEvaluator {
       return false;
     }
 
-    return this.compare(leftValue, rightValue, op);
+    const result = this.compare(leftValue, rightValue, op);
+
+    const leftStr = typeof condition.left === 'string' ? condition.left : JSON.stringify(condition.left);
+    const rightStr = typeof condition.right === 'string' ? condition.right : JSON.stringify(condition.right);
+    const hasPrev = leftStr.includes('.prev') || rightStr.includes('.prev');
+
+    if (hasPrev || result) {
+      logger.debug({
+        condition: `${leftStr} ${op} ${rightStr}`,
+        leftValue: leftValue.toFixed(4),
+        rightValue: rightValue.toFixed(4),
+        result,
+        index: context.currentIndex,
+      }, 'Condition evaluated');
+    }
+
+    return result;
   }
 
   /**

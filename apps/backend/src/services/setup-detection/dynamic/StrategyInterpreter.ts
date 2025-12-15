@@ -18,6 +18,7 @@ import {
     type SetupDetectorResult,
 } from '../BaseSetupDetector';
 
+import { logger } from '../../logger';
 import { ConditionEvaluator } from './ConditionEvaluator';
 import { ExitCalculator } from './ExitCalculator';
 import { IndicatorEngine } from './IndicatorEngine';
@@ -150,6 +151,22 @@ export class StrategyInterpreter extends BaseSetupDetector {
         resolvedParams: this.resolvedParams,
       }
     );
+
+    const currentKline = klines[currentIndex];
+    logger.info({
+      setupId: setup.id,
+      strategy: this.strategy.id,
+      direction,
+      symbol: currentKline ? `Candle at ${new Date(currentKline.openTime).toISOString()}` : 'Unknown',
+      entryPrice: entryPrice.toFixed(4),
+      stopLoss: stopLoss?.toFixed(4) ?? 'None',
+      takeProfit: takeProfit?.toFixed(4) ?? 'None',
+      riskReward: riskReward.toFixed(2),
+      confidence,
+      volumeConfirmation,
+      indicatorConfluence: indicatorConfluence.toFixed(2),
+      resolvedParams: this.resolvedParams,
+    }, '✅ Setup detected');
 
     return { setup, confidence };
   }

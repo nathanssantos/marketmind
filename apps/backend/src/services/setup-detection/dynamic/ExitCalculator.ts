@@ -8,6 +8,7 @@ import type {
 import { isParameterReference } from '@marketmind/types';
 
 import { EXIT_CALCULATOR, FLOAT_COMPARISON } from '../../../constants';
+import { logger } from '../../logger';
 import type { IndicatorEngine } from './IndicatorEngine';
 
 const {
@@ -39,11 +40,21 @@ export class ExitCalculator {
     const { direction, entryPrice } = context;
     const distance = this.calculateExitDistance(exit, context);
 
-    if (direction === 'LONG') {
-      return entryPrice - distance;
-    } else {
-      return entryPrice + distance;
-    }
+    const stopLoss = direction === 'LONG' 
+      ? entryPrice - distance 
+      : entryPrice + distance;
+
+    logger.debug({
+      type: 'stopLoss',
+      exitType: exit.type,
+      direction,
+      entryPrice: entryPrice.toFixed(4),
+      distance: distance.toFixed(4),
+      stopLoss: stopLoss.toFixed(4),
+      percentFromEntry: (((stopLoss - entryPrice) / entryPrice) * 100).toFixed(2) + '%',
+    }, 'Stop loss calculated');
+
+    return stopLoss;
   }
 
   /**
@@ -61,11 +72,24 @@ export class ExitCalculator {
       const multiplier = this.resolveOperand(exit.multiplier ?? DEFAULT_MULTIPLIER, context);
       const tpDistance = slDistance * multiplier;
 
-      if (direction === 'LONG') {
-        return entryPrice + tpDistance;
-      } else {
-        return entryPrice - tpDistance;
-      }
+      const takeProfit = direction === 'LONG' 
+        ? entryPrice + tpDistance 
+        : entryPrice - tpDistance;
+
+      logger.debug({
+        type: 'takeProfit',
+        exitType: 'riskReward',
+        direction,
+        entryPrice: entryPrice.toFixed(4),
+        stopLoss: stopLossPrice.toFixed(4),
+        slDistance: slDistance.toFixed(4),
+        multiplier: multiplier.toFixed(2),
+        tpDistance: tpDistance.toFixed(4),
+        takeProfit: takeProfit.toFixed(4),
+        riskReward: multiplier.toFixed(2) + ':1',
+      }, 'Take profit calculated (R:R)');
+
+      return takeProfit;
     }
 
     if (exit.type === 'indicator') {
@@ -218,17 +242,34 @@ export class ExitCalculator {
     }
 
     let confidence = config.base;
+    const appliedBonuses: Array<{ description: string; bonus: number }> = [];
 
     if (config.bonuses) {
       for (const bonus of config.bonuses) {
         if (this.evaluateBonusCondition(bonus.condition, context)) {
           confidence += bonus.bonus;
+          appliedBonuses.push({
+            description: bonus.description ?? 'Unknown',
+            bonus: bonus.bonus,
+          });
         }
       }
     }
 
     const maxConfidence = config.max ?? DEFAULT_MAX_CONFIDENCE;
-    return Math.min(Math.max(confidence, 0), maxConfidence);
+    const finalConfidence = Math.min(Math.max(confidence, 0), maxConfidence);
+
+    logger.debug({
+      strategy: strategy.id,
+      baseConfidence: config.base,
+      appliedBonuses,
+      totalBonus: appliedBonuses.reduce((sum, b) => sum + b.bonus, 0),
+      rawConfidence: confidence,
+      maxConfidence,
+      finalConfidence,
+    }, 'Confidence calculated');
+
+    return finalConfidence;
   }
 
   /**
