@@ -11,6 +11,8 @@ export const TrpcProvider = ({ children }: { children: React.ReactNode }) => {
             queries: {
                 staleTime: 5000,
                 retry: 1,
+                refetchOnWindowFocus: false,
+                refetchIntervalInBackground: true,
             },
         },
     }));

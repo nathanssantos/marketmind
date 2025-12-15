@@ -6,15 +6,15 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
 
   const { data: orders, isLoading: isLoadingOrders } = trpc.trading.getOrders.useQuery(
     { walletId, symbol, limit: 50 },
-    { enabled: !!walletId }
+    { enabled: !!walletId, refetchInterval: 5000 }
   );
   const { data: positions, isLoading: isLoadingPositions } = trpc.trading.getPositions.useQuery(
     { walletId, limit: 50 },
-    { enabled: !!walletId }
+    { enabled: !!walletId, refetchInterval: 5000 }
   );
   const { data: tradeExecutions, isLoading: isLoadingExecutions } = trpc.trading.getTradeExecutions.useQuery(
     { walletId, symbol, limit: 50 },
-    { enabled: !!walletId }
+    { enabled: !!walletId, refetchInterval: 5000 }
   );
 
   const openPositionSymbols = useMemo(() => {

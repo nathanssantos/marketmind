@@ -212,13 +212,74 @@ export const klineRouter = router({
         }
       }
 
-      const result = await db.query.klines.findMany({
+      let result = await db.query.klines.findMany({
         where: and(...conditions),
         orderBy: [desc(klines.openTime)],
         limit: input.limit,
       });
 
       result.sort((a, b) => new Date(a.openTime).getTime() - new Date(b.openTime).getTime());
+
+      if (result.length > 1) {
+        const intervalMs = getIntervalMs(input.interval);
+        const gaps: Array<{ start: Date; end: Date }> = [];
+
+        for (let i = 1; i < result.length; i++) {
+          const prevTime = new Date(result[i - 1].openTime).getTime();
+          const currTime = new Date(result[i].openTime).getTime();
+          const expectedNext = prevTime + intervalMs;
+          
+          if (currTime - expectedNext > intervalMs) {
+            gaps.push({
+              start: new Date(expectedNext),
+              end: new Date(currTime - intervalMs),
+            });
+          }
+        }
+
+        if (gaps.length > 0) {
+          logger.info({ symbol: input.symbol, interval: input.interval, gapsCount: gaps.length }, '🔍 Detected gaps in klines, fetching missing data');
+
+          for (const gap of gaps) {
+            const gapKlines = await fetchHistoricalKlinesFromAPI(
+              input.symbol,
+              input.interval as Interval,
+              gap.start,
+              gap.end
+            );
+
+            if (gapKlines.length > 0) {
+              for (const k of gapKlines) {
+                await db.insert(klines).values({
+                  symbol: input.symbol,
+                  interval: input.interval as Interval,
+                  openTime: new Date(k.openTime),
+                  open: k.open,
+                  high: k.high,
+                  low: k.low,
+                  close: k.close,
+                  volume: k.volume,
+                  closeTime: new Date(k.closeTime),
+                  quoteVolume: k.quoteVolume,
+                  trades: k.trades,
+                  takerBuyBaseVolume: k.takerBuyBaseVolume || '0',
+                  takerBuyQuoteVolume: k.takerBuyQuoteVolume || '0',
+                }).onConflictDoNothing();
+              }
+            }
+          }
+
+          result = await db.query.klines.findMany({
+            where: and(...conditions),
+            orderBy: [desc(klines.openTime)],
+            limit: input.limit,
+          });
+          result.sort((a, b) => new Date(a.openTime).getTime() - new Date(b.openTime).getTime());
+        }
+      }
+
+      binanceKlineStreamService.subscribe(input.symbol, input.interval as Interval);
+      logger.info({ symbol: input.symbol, interval: input.interval }, '📊 Auto-subscribed to kline stream after list query');
 
       return result;
     }),

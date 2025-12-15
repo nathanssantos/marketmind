@@ -20,7 +20,8 @@ const COINMARKETCAP_BASE_URL = 'https://pro-api.coinmarketcap.com/v1';
 export class BTCDominanceDataService {
   private cache: { data: BTCDominanceData | null; timestamp: number } = { data: null, timestamp: 0 };
   private cacheTTL: number = 120000;
-  private previousDominance: number | null = null;
+  private history: Array<{ dominance: number; timestamp: number }> = [];
+  private readonly HISTORY_TTL_MS = 24 * 60 * 60 * 1000;
   private cmcApiKey: string | null = null;
 
   setCMCApiKey(apiKey: string): void {
@@ -58,9 +59,16 @@ export class BTCDominanceDataService {
       };
     }
 
+    const now = Date.now();
+    this.history.push({ dominance: data.btcDominance, timestamp: now });
+    this.history = this.history.filter(h => now - h.timestamp < this.HISTORY_TTL_MS);
+
     let change24h: number | null = null;
-    if (this.previousDominance !== null) {
-      change24h = data.btcDominance - this.previousDominance;
+    const day24hAgo = now - (24 * 60 * 60 * 1000);
+    const oldestEntry = this.history.find(h => h.timestamp >= day24hAgo - 600000);
+
+    if (oldestEntry) {
+      change24h = data.btcDominance - oldestEntry.dominance;
     }
 
     let trend: 'increasing' | 'decreasing' | 'stable' = 'stable';
@@ -71,8 +79,6 @@ export class BTCDominanceDataService {
         trend = 'decreasing';
       }
     }
-
-    this.previousDominance = data.btcDominance;
 
     return {
       current: data.btcDominance,

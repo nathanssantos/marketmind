@@ -1,4 +1,5 @@
 import { and, eq, gte } from 'drizzle-orm';
+import { RISK_MANAGER } from '../constants';
 import { db } from '../db';
 import type { AutoTradingConfig } from '../db/schema';
 import { tradeExecutions, wallets } from '../db/schema';
@@ -211,7 +212,7 @@ export class RiskManagerService {
       const totalValue = this.calculateTotalExposure(openPositions);
       const walletBalance = parseFloat(wallet.currentBalance || '0');
 
-      const maxAllowed = walletBalance * 0.5;
+      const maxAllowed = walletBalance * (RISK_MANAGER.MAX_EXPOSURE_PERCENT / 100);
 
       return {
         totalValue,

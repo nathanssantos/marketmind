@@ -89,7 +89,7 @@ export const CONTEXT_AGGREGATOR = {
 } as const;
 
 export const RISK_MANAGER = {
-  MAX_EXPOSURE_PERCENT: 50,
+  MAX_EXPOSURE_PERCENT: 100,
   PERCENT_DIVISOR: 100,
 } as const;
 

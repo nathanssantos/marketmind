@@ -249,6 +249,10 @@ export class AutoTradingScheduler {
 
     this.activeWatchers.set(watcherId, watcher);
 
+    const { binanceKlineStreamService } = await import('./binance-kline-stream');
+    binanceKlineStreamService.subscribe(symbol, interval);
+    log('📊 Subscribed to kline stream', { symbol, interval });
+
     await this.processWatcher(watcherId);
   }
 
@@ -263,6 +267,10 @@ export class AutoTradingScheduler {
 
     clearInterval(watcher.intervalId);
     this.activeWatchers.delete(watcherId);
+
+    const { binanceKlineStreamService } = await import('./binance-kline-stream');
+    binanceKlineStreamService.unsubscribe(symbol, interval);
+    log('📊 Unsubscribed from kline stream', { symbol, interval });
 
     await db
       .delete(activeWatchersTable)

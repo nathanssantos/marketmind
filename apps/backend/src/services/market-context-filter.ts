@@ -1,15 +1,15 @@
 import type {
-  MarketContextAction,
-  MarketContextConfig,
-  MarketContextData,
-  MarketContextFilterResult,
-  TradingSetup,
+    MarketContextAction,
+    MarketContextConfig,
+    MarketContextData,
+    MarketContextFilterResult,
+    TradingSetup,
 } from '@marketmind/types';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { marketContextConfig, type MarketContextConfigRow } from '../db/schema';
-import { BTCDominanceDataService } from './btc-dominance-data';
 import { BinanceFuturesDataService } from './binance-futures-data';
+import { BTCDominanceDataService } from './btc-dominance-data';
 import { logger } from './logger';
 
 const btcDominanceService = new BTCDominanceDataService();
@@ -118,11 +118,12 @@ export class MarketContextFilter {
   }
 
   async fetchMarketData(symbol: string): Promise<MarketContextData> {
-    const [fearGreed, btcDom, funding, oi] = await Promise.all([
+    const [fearGreed, btcDom, funding, oi, oiChange] = await Promise.all([
       this.fetchFearGreedIndex(),
       this.fetchBtcDominance(),
       this.fetchFundingRate(symbol),
       this.fetchOpenInterest(symbol),
+      this.fetchOpenInterestChange24h(symbol),
     ]);
 
     return {
@@ -131,7 +132,7 @@ export class MarketContextFilter {
       btcDominanceChange24h: btcDom.change24h,
       fundingRate: funding,
       openInterest: oi?.openInterest,
-      openInterestChange24h: undefined,
+      openInterestChange24h: oiChange,
       timestamp: new Date(),
     };
   }
@@ -172,6 +173,23 @@ export class MarketContextFilter {
     try {
       const result = await binanceFuturesService.getCurrentOpenInterest(symbol);
       return result ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async fetchOpenInterestChange24h(symbol: string): Promise<number | undefined> {
+    try {
+      const history = await binanceFuturesService.getOpenInterest(symbol);
+      if (history.length < 2) return undefined;
+
+      const now = history[history.length - 1];
+      const day24hAgo = history[0];
+
+      if (!now || !day24hAgo || day24hAgo.value === 0) return undefined;
+
+      const change = ((now.value - day24hAgo.value) / day24hAgo.value) * 100;
+      return change;
     } catch {
       return undefined;
     }

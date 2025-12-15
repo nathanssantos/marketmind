@@ -187,9 +187,7 @@ export class BinanceKlineStreamService {
         wsService.emitKlineUpdate(update);
       }
 
-      if (update.isClosed) {
-        await this.persistKline(update);
-      }
+      await this.persistKline(update);
     } catch (error) {
       logger.error({
         symbol: update.symbol,
