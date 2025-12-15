@@ -1,9 +1,9 @@
 import type {
-    Condition,
-    ConditionOperand,
-    ExitContext,
-    ExitLevel,
-    StrategyDefinition,
+  Condition,
+  ConditionOperand,
+  ExitContext,
+  ExitLevel,
+  StrategyDefinition,
 } from '@marketmind/types';
 import { isParameterReference } from '@marketmind/types';
 
@@ -40,6 +40,16 @@ export class ExitCalculator {
     const { direction, entryPrice } = context;
     const distance = this.calculateExitDistance(exit, context);
 
+    if (distance < 0) {
+      logger.warn({
+        direction,
+        entryPrice,
+        distance,
+        exitType: exit.type,
+      }, '⚠️  Negative distance for stop loss - using absolute value');
+      throw new Error(`Invalid negative distance (${distance}) for stop loss calculation`);
+    }
+
     const stopLoss = direction === 'LONG' 
       ? entryPrice - distance 
       : entryPrice + distance;
@@ -51,7 +61,8 @@ export class ExitCalculator {
       entryPrice: entryPrice.toFixed(4),
       distance: distance.toFixed(4),
       stopLoss: stopLoss.toFixed(4),
-      percentFromEntry: (((stopLoss - entryPrice) / entryPrice) * 100).toFixed(2) + '%',
+      percentFromEntry: `${(((stopLoss - entryPrice) / entryPrice) * 100).toFixed(2)  }%`,
+      note: 'Initial SL - trailing stop may adjust this later',
     }, 'Stop loss calculated');
 
     return stopLoss;
@@ -86,7 +97,7 @@ export class ExitCalculator {
         multiplier: multiplier.toFixed(2),
         tpDistance: tpDistance.toFixed(4),
         takeProfit: takeProfit.toFixed(4),
-        riskReward: multiplier.toFixed(2) + ':1',
+        riskReward: `${multiplier.toFixed(2)  }:1`,
       }, 'Take profit calculated (R:R)');
 
       return takeProfit;

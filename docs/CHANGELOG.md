@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Position Close Tracking** 🔍 🆕
+  - Novo campo `exit_source` na tabela `trade_executions`: 'ALGORITHM' ou 'MANUAL'
+  - Novo campo `exit_reason` na tabela `trade_executions`: 'STOP_LOSS', 'TAKE_PROFIT', 'USER_CLOSE'
+  - Logs detalhados identificando origem de cada fechamento de posição
+  - Emojis visuais nos logs: 🤖 para algoritmo, 👤 para ação manual
+  - Mensagens em português nos logs para melhor UX
+  - Rastreamento completo: SL/TP automáticos vs fechamentos manuais
+  - Benefícios: análise de performance, debugging, auditoria
+  - Migration: 0010_early_sleepwalker.sql
+  - Documentação: POSITION_CLOSE_TRACKING.md
+  - 579 testes backend passando
+
 - **Backtest Chart Visualization** 📊 🆕
   - Complete BacktestChart component (171 lines) with visual trade markers
   - Candlestick chart rendering with Canvas API

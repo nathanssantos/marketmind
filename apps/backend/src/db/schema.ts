@@ -1,16 +1,16 @@
 import {
-  bigint,
-  boolean,
-  index,
-  integer,
-  numeric,
-  pgTable,
-  primaryKey,
-  serial,
-  text,
-  timestamp,
-  unique,
-  varchar
+    bigint,
+    boolean,
+    index,
+    integer,
+    numeric,
+    pgTable,
+    primaryKey,
+    serial,
+    text,
+    timestamp,
+    unique,
+    varchar
 } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
@@ -265,6 +265,8 @@ export const tradeExecutions = pgTable('trade_executions', {
   pnl: numeric({ precision: 20, scale: 8 }),
   pnlPercent: numeric('pnl_percent', { precision: 10, scale: 2 }),
   fees: numeric({ precision: 20, scale: 8 }).default('0'),
+  exitSource: varchar('exit_source', { length: 50 }),
+  exitReason: varchar('exit_reason', { length: 50 }),
   openedAt: timestamp('opened_at', { mode: 'date' }).notNull(),
   closedAt: timestamp('closed_at', { mode: 'date' }),
   status: varchar({ length: 20 }).default('open'), // 'open' | 'closed' | 'cancelled'

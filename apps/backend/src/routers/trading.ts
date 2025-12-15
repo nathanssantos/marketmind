@@ -5,8 +5,8 @@ import { randomBytes } from 'crypto';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { orders, positions, tradeExecutions, wallets } from '../db/schema';
-import { createBinanceClient, isPaperWallet } from '../services/binance-client';
 import { env } from '../env';
+import { createBinanceClient, isPaperWallet } from '../services/binance-client';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 
@@ -499,7 +499,9 @@ export const tradingRouter = router({
             side: orderSide,
             quantity: qty,
             exitPrice,
-          }, 'Manual close position: Binance exit order executed');
+          exitSource: 'MANUAL',
+          message: 'Posição fechada manualmente pelo usuário',
+          }, '👤 [MANUAL] Manual close position: Binance exit order executed');
         } catch (error) {
           logger.error({
             positionId: position.id,
@@ -522,7 +524,9 @@ export const tradingRouter = router({
           positionId: position.id,
           walletType: wallet.walletType,
           liveEnabled: env.ENABLE_LIVE_TRADING,
-        }, 'Manual close position: Paper/disabled mode - simulating exit');
+          exitSource: 'MANUAL',
+          message: 'Posição fechada manualmente pelo usuário (paper trading)',
+        }, '👤 [MANUAL] Manual close position: Paper/disabled mode - simulating exit');
       }
 
       const entryValue = entryPrice * qty;
@@ -558,6 +562,8 @@ export const tradingRouter = router({
           status: 'closed',
           currentPrice: exitPrice.toString(),
           pnl: netPnl.toString(),
+          exitSource: 'MANUAL',
+          exitReason: 'USER_CLOSE',
           pnlPercent: pnlPercent.toString(),
           closedAt: new Date(),
           updatedAt: new Date(),

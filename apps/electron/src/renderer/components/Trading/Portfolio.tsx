@@ -107,6 +107,10 @@ export const Portfolio = () => {
                 <Text color="fg.muted">{t('trading.portfolio.totalExposure')}</Text>
                 <Text fontWeight="medium">
                   {activeWallet.currency} {positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {' '}
+                  <Text as="span" color="fg.muted" fontSize="2xs">
+                    ({((positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0) / activeWallet.balance) * 100).toFixed(1)}%)
+                  </Text>
                 </Text>
               </Flex>
               <Flex justify="space-between">

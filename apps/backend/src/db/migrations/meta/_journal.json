@@ -71,6 +71,13 @@
       "when": 1765803391542,
       "tag": "0009_conscious_zaladane",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1765827964467,
+      "tag": "0010_early_sleepwalker",
+      "breakpoints": true
     }
   ]
 }

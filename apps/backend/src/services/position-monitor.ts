@@ -303,6 +303,8 @@ export class PositionMonitorService {
           exitOrderId,
           pnl: pnl.toString(),
           pnlPercent: adjustedPnlPercent.toString(),
+          exitSource: 'ALGORITHM',
+          exitReason: reason,
           status: 'closed',
           closedAt: new Date(),
           updatedAt: new Date(),
@@ -312,13 +314,17 @@ export class PositionMonitorService {
       logger.info({
         executionId: execution.id,
         symbol: execution.symbol,
+        exitSource: 'ALGORITHM',
         reason,
         exitPrice,
+        entryPrice,
+        quantity,
         pnl: pnl.toFixed(2),
         pnlPercent: adjustedPnlPercent.toFixed(2),
         newBalance: newBalance.toFixed(2),
         isPaperTrading: isPaperWallet(wallet),
-      }, 'Position exit executed');
+        message: `Posição fechada automaticamente: ${reason === 'STOP_LOSS' ? 'Stop Loss atingido' : 'Take Profit atingido'}`,
+      }, '🤖 [ALGORITHM] Position closed automatically');
 
       await strategyPerformanceService.updatePerformance(execution.id);
     } catch (error) {
