@@ -2,7 +2,7 @@ import type { Kline as KlineType, Interval, TrailingStopOptimizationConfig } fro
 import { calculateSwingPoints, calculateATR } from '@marketmind/indicators';
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../db';
-import { klines, tradeExecutions } from '../db/schema';
+import { klines, setupDetections, tradeExecutions } from '../db/schema';
 import type { TradeExecution } from '../db/schema';
 import { logger } from './logger';
 
@@ -263,7 +263,7 @@ export class TrailingStopService {
     const groups = new Map<string, TradeExecution[]>();
 
     for (const execution of executions) {
-      const existing = groups.get(execution.symbol) || [];
+      const existing = groups.get(execution.symbol) ?? [];
       existing.push(execution);
       groups.set(execution.symbol, existing);
     }
@@ -277,56 +277,81 @@ export class TrailingStopService {
   ): Promise<TrailingStopUpdate[]> {
     const updates: TrailingStopUpdate[] = [];
 
-    const klinesData = await db.query.klines.findMany({
-      where: and(
-        eq(klines.symbol, symbol),
-        eq(klines.interval, '1h')
-      ),
-      orderBy: [desc(klines.openTime)],
-      limit: 100,
-    });
+    const executionsByInterval = new Map<string, TradeExecution[]>();
+    
+    for (const execution of executions) {
+      if (!execution.setupId) {
+        logger.warn({ executionId: execution.id }, 'Trade execution missing setupId, skipping trailing stop');
+        continue;
+      }
 
-    if (klinesData.length < 20) {
-      logger.debug({ symbol, count: klinesData.length }, 'Insufficient klines for trailing stop calculation');
-      return updates;
+      const setup = await db.query.setupDetections.findFirst({
+        where: eq(setupDetections.id, execution.setupId),
+      });
+
+      if (!setup) {
+        logger.warn({ executionId: execution.id, setupId: execution.setupId }, 'Setup not found for execution');
+        continue;
+      }
+
+      const interval = setup.interval;
+      const existing = executionsByInterval.get(interval) ?? [];
+      existing.push(execution);
+      executionsByInterval.set(interval, existing);
     }
 
-    klinesData.reverse();
+    for (const [interval, groupExecutions] of executionsByInterval) {
+      const klinesData = await db.query.klines.findMany({
+        where: and(
+          eq(klines.symbol, symbol),
+          eq(klines.interval, interval)
+        ),
+        orderBy: [desc(klines.openTime)],
+        limit: 100,
+      });
 
-    const mappedKlines: KlineType[] = klinesData.map((k) => ({
-      symbol: k.symbol,
-      interval: k.interval as Interval,
-      openTime: k.openTime.getTime(),
-      closeTime: k.closeTime.getTime(),
-      open: k.open,
-      high: k.high,
-      low: k.low,
-      close: k.close,
-      volume: k.volume,
-      quoteVolume: k.quoteVolume ?? '0',
-      trades: k.trades ?? 0,
-      takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
-      takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
-    }));
+      if (klinesData.length < 20) {
+        logger.debug({ symbol, interval, count: klinesData.length }, 'Insufficient klines for trailing stop calculation');
+        continue;
+      }
 
-    const currentPrice = parseFloat(mappedKlines[mappedKlines.length - 1]!.close);
-    const { swingPoints } = calculateSwingPoints(mappedKlines, this.config.swingLookback);
+      klinesData.reverse();
 
-    const atrValues = this.config.useATRMultiplier ? calculateATR(mappedKlines, 14) : [];
-    const currentATR = atrValues.length > 0 ? atrValues[atrValues.length - 1] : undefined;
+      const mappedKlines: KlineType[] = klinesData.map((k) => ({
+        symbol: k.symbol,
+        interval: k.interval as Interval,
+        openTime: k.openTime.getTime(),
+        closeTime: k.closeTime.getTime(),
+        open: k.open,
+        high: k.high,
+        low: k.low,
+        close: k.close,
+        volume: k.volume,
+        quoteVolume: k.quoteVolume ?? '0',
+        trades: k.trades ?? 0,
+        takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
+        takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
+      }));
 
-    for (const execution of executions) {
-      const update = this.calculateTrailingStop(
-        execution,
-        currentPrice,
-        swingPoints,
-        mappedKlines,
-        currentATR
-      );
+      const currentPrice = parseFloat(mappedKlines[mappedKlines.length - 1]!.close);
+      const { swingPoints } = calculateSwingPoints(mappedKlines, this.config.swingLookback);
 
-      if (update) {
-        await this.applyStopLossUpdate(execution.id, update.newStopLoss);
-        updates.push(update);
+      const atrValues = this.config.useATRMultiplier ? calculateATR(mappedKlines, 14) : [];
+      const currentATR = atrValues.length > 0 ? atrValues[atrValues.length - 1] : undefined;
+
+      for (const execution of groupExecutions) {
+        const update = this.calculateTrailingStop(
+          execution,
+          currentPrice,
+          swingPoints,
+          mappedKlines,
+          currentATR
+        );
+
+        if (update) {
+          await this.applyStopLossUpdate(execution.id, update.newStopLoss);
+          updates.push(update);
+        }
       }
     }
 
@@ -359,7 +384,7 @@ export class TrailingStopService {
       entryPrice,
       currentPrice,
       currentStopLoss,
-      side: execution.side as 'LONG' | 'SHORT',
+      side: execution.side,
       swingPoints: swingPoints.map(sp => ({ price: sp.price, type: sp.type })),
       atr,
       highestPrice: isLong ? highestPrice : undefined,
