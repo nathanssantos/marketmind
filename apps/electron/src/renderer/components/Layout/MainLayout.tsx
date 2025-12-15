@@ -34,6 +34,8 @@ interface MainLayoutProps {
   showMeasurementArea: boolean;
   showStochastic: boolean;
   showRSI: boolean;
+  showBollingerBands: boolean;
+  showATR: boolean;
   movingAverages: MovingAverageConfig[];
   isNewsOpen: boolean;
   isBacktestOpen: boolean;
@@ -48,6 +50,8 @@ interface MainLayoutProps {
   onShowMeasurementAreaChange: (show: boolean) => void;
   onShowStochasticChange: (show: boolean) => void;
   onShowRSIChange: (show: boolean) => void;
+  onShowBollingerBandsChange: (show: boolean) => void;
+  onShowATRChange: (show: boolean) => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onToggleNews: () => void;
   onToggleBacktest: () => void;
@@ -82,6 +86,8 @@ export const MainLayout = ({
   showMeasurementArea,
   showStochastic,
   showRSI,
+  showBollingerBands,
+  showATR,
   movingAverages,
   isNewsOpen,
   isBacktestOpen,
@@ -96,6 +102,8 @@ export const MainLayout = ({
   onShowMeasurementAreaChange,
   onShowStochasticChange,
   onShowRSIChange,
+  onShowBollingerBandsChange,
+  onShowATRChange,
   onMovingAveragesChange,
   onToggleNews,
   onToggleBacktest,
@@ -180,6 +188,8 @@ export const MainLayout = ({
           showMeasurementArea={showMeasurementArea}
           showStochastic={showStochastic}
           showRSI={showRSI}
+          showBollingerBands={showBollingerBands}
+          showATR={showATR}
           movingAverages={movingAverages}
           isTradingOpen={isTradingOpen}
           isChatOpen={isChatOpen}
@@ -196,6 +206,8 @@ export const MainLayout = ({
           onShowMeasurementAreaChange={onShowMeasurementAreaChange}
           onShowStochasticChange={onShowStochasticChange}
           onShowRSIChange={onShowRSIChange}
+          onShowBollingerBandsChange={onShowBollingerBandsChange}
+          onShowATRChange={onShowATRChange}
           onMovingAveragesChange={onMovingAveragesChange}
           onToggleTrading={onToggleTrading}
           onToggleChat={onToggleChat}

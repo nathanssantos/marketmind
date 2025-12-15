@@ -28,6 +28,8 @@ import {
   LuSettings,
   LuSun,
   LuTerminal,
+  LuTrendingUp,
+  LuGauge,
 } from 'react-icons/lu';
 import { TradingProfilesModal } from '../Trading/TradingProfilesModal';
 import { useChartWindows } from '../../hooks/useChartWindows';
@@ -53,6 +55,8 @@ export interface ToolbarProps {
   showMeasurementArea: boolean;
   showStochastic: boolean;
   showRSI: boolean;
+  showBollingerBands: boolean;
+  showATR: boolean;
   movingAverages: MovingAverageConfig[];
   isTradingOpen: boolean;
   isChatOpen: boolean;
@@ -71,6 +75,8 @@ export interface ToolbarProps {
   onShowMeasurementAreaChange: (show: boolean) => void;
   onShowStochasticChange: (show: boolean) => void;
   onShowRSIChange: (show: boolean) => void;
+  onShowBollingerBandsChange: (show: boolean) => void;
+  onShowATRChange: (show: boolean) => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onToggleTrading: () => void;
   onToggleChat: () => void;
@@ -92,6 +98,8 @@ export const Toolbar = memo(({
   showMeasurementArea,
   showStochastic,
   showRSI,
+  showBollingerBands,
+  showATR,
   movingAverages,
   isTradingOpen,
   isChatOpen,
@@ -110,6 +118,8 @@ export const Toolbar = memo(({
   onShowMeasurementAreaChange,
   onShowStochasticChange,
   onShowRSIChange,
+  onShowBollingerBandsChange,
+  onShowATRChange,
   onMovingAveragesChange,
   onToggleTrading,
   onToggleChat,
@@ -294,6 +304,28 @@ export const Toolbar = memo(({
               variant={showRSI ? 'solid' : 'ghost'}
             >
               <LuActivity />
+            </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label={t('chart.controls.bollingerBands')} showArrow>
+            <IconButton
+              size="2xs"
+              aria-label={t('chart.controls.bollingerBands')}
+              onClick={() => onShowBollingerBandsChange(!showBollingerBands)}
+              colorPalette={showBollingerBands ? 'blue' : 'gray'}
+              variant={showBollingerBands ? 'solid' : 'ghost'}
+            >
+              <LuTrendingUp />
+            </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label={t('chart.controls.atr')} showArrow>
+            <IconButton
+              size="2xs"
+              aria-label={t('chart.controls.atr')}
+              onClick={() => onShowATRChange(!showATR)}
+              colorPalette={showATR ? 'blue' : 'gray'}
+              variant={showATR ? 'solid' : 'ghost'}
+            >
+              <LuGauge />
             </IconButton>
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.grid')} showArrow>

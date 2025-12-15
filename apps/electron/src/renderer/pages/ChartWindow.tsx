@@ -79,6 +79,8 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   const [showMeasurementArea, setShowMeasurementArea] = useLocalStorage('marketmind:showMeasurementArea', false);
   const [showStochastic, setShowStochastic] = useLocalStorage('marketmind:showStochastic', false);
   const [showRSI, setShowRSI] = useLocalStorage('marketmind:showRSI', false);
+  const [showBollingerBands, setShowBollingerBands] = useLocalStorage('marketmind:showBollingerBands', false);
+  const [showATR, setShowATR] = useLocalStorage('marketmind:showATR', false);
   const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', (routeTimeframe as Timeframe) || '1d');
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
@@ -324,6 +326,10 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
           onShowStochasticChange={setShowStochastic}
           showRSI={showRSI}
           onShowRSIChange={setShowRSI}
+          showBollingerBands={showBollingerBands}
+          onShowBollingerBandsChange={setShowBollingerBands}
+          showATR={showATR}
+          onShowATRChange={setShowATR}
           chartType={chartType}
           onChartTypeChange={setChartType}
           movingAverages={movingAverages}
@@ -369,6 +375,8 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
             showMeasurementArea={showMeasurementArea}
             showStochastic={showStochastic}
             showRSI={showRSI}
+            showBollingerBands={showBollingerBands}
+            showATR={showATR}
             chartType={chartType}
             movingAverages={movingAverages}
             advancedConfig={debouncedAdvancedConfig}

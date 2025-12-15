@@ -108,10 +108,13 @@ export class BinancePriceStreamService {
         .from(tradeExecutions)
         .where(eq(tradeExecutions.symbol, update.symbol));
 
-      for (const execution of openExecutions) {
-        if (execution.status === 'open') {
-          await positionMonitorService.checkPositionByPrice(execution, update.price);
-        }
+      const openOnly = openExecutions.filter(e => e.status === 'open');
+      if (openOnly.length === 0) return;
+
+      const groups = positionMonitorService.groupExecutionsBySymbolAndSidePublic(openOnly);
+
+      for (const [_groupKey, groupExecutions] of groups) {
+        await positionMonitorService.checkPositionGroupByPrice(groupExecutions, update.price);
       }
     } catch (error) {
       logger.error({

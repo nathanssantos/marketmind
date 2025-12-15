@@ -38,6 +38,15 @@ export interface ChartThemeColors extends ChartColors {
     line: string;
     zone: string;
   };
+  bollingerBands?: {
+    upper: string;
+    middle: string;
+    lower: string;
+    fill: string;
+  };
+  atr?: {
+    line: string;
+  };
 }
 
 export const useChartColors = (): ChartThemeColors => {

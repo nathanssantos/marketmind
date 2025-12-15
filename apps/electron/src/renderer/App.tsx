@@ -162,6 +162,8 @@ function AppContent(): ReactElement {
   const [showMeasurementArea, setShowMeasurementArea] = useLocalStorage('marketmind:showMeasurementArea', false);
   const [showStochastic, setShowStochastic] = useLocalStorage('marketmind:showStochastic', false);
   const [showRSI, setShowRSI] = useLocalStorage('marketmind:showRSI', false);
+  const [showBollingerBands, setShowBollingerBands] = useLocalStorage('marketmind:showBollingerBands', false);
+  const [showATR, setShowATR] = useLocalStorage('marketmind:showATR', false);
   const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
   const [showOnboarding, setShowOnboarding] = useLocalStorage('marketmind:showOnboarding', true);
@@ -561,6 +563,8 @@ function AppContent(): ReactElement {
         showMeasurementArea={showMeasurementArea}
         showStochastic={showStochastic}
         showRSI={showRSI}
+        showBollingerBands={showBollingerBands}
+        showATR={showATR}
         movingAverages={movingAverages}
         isNewsOpen={isNewsOpen}
         isBacktestOpen={isBacktestOpen}
@@ -575,6 +579,8 @@ function AppContent(): ReactElement {
         onShowMeasurementAreaChange={setShowMeasurementArea}
         onShowStochasticChange={setShowStochastic}
         onShowRSIChange={setShowRSI}
+        onShowBollingerBandsChange={setShowBollingerBands}
+        onShowATRChange={setShowATR}
         onMovingAveragesChange={setMovingAverages}
         onToggleNews={toggleNews}
         onToggleBacktest={toggleBacktest}
@@ -619,6 +625,8 @@ function AppContent(): ReactElement {
             showMeasurementArea={showMeasurementArea}
             showStochastic={showStochastic}
             showRSI={showRSI}
+            showBollingerBands={showBollingerBands}
+            showATR={showATR}
             chartType={chartType}
             movingAverages={movingAverages}
             advancedConfig={debouncedAdvancedConfig}

@@ -307,6 +307,8 @@
       "volume": "Volume",
       "stochastic": "Estocástico",
       "rsi": "IFR (2)",
+      "bollingerBands": "Bandas de Bollinger",
+      "atr": "ATR Trailing Stop",
       "grid": "Grade",
       "currentPrice": "Preço Atual",
       "crosshair": "Mira",

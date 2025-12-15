@@ -1,3 +1,4 @@
+import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import {
   AVAILABLE_SETUPS,
@@ -9,6 +10,7 @@ import {
   getInitialState,
   toggleGroup,
   toggleSetup,
+  useProfileEditor,
   type ProfileEditorState,
 } from './useProfileEditor';
 
@@ -370,6 +372,194 @@ describe('useProfileEditor', () => {
         const setups = AVAILABLE_SETUPS.filter((s) => s.group === group.id);
         expect(setups.length).toBeGreaterThan(0);
       }
+    });
+  });
+
+  describe('useProfileEditor hook', () => {
+    const mockProfile = {
+      id: 'test-id',
+      userId: 'user-id',
+      name: 'Test Profile',
+      description: 'Test description',
+      enabledSetupTypes: ['larry-williams-9-1'],
+      maxPositionSize: 10,
+      maxConcurrentPositions: 3,
+      isDefault: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    it('should initialize with empty state when profile is null', () => {
+      const { result } = renderHook(() => useProfileEditor(null, true));
+
+      expect(result.current.state.name).toBe('');
+      expect(result.current.state.enabledSetupTypes).toEqual([]);
+      expect(result.current.isEditing).toBe(false);
+    });
+
+    it('should initialize with profile data when provided', () => {
+      const { result } = renderHook(() => useProfileEditor(mockProfile, true));
+
+      expect(result.current.state.name).toBe('Test Profile');
+      expect(result.current.state.enabledSetupTypes).toEqual(['larry-williams-9-1']);
+      expect(result.current.isEditing).toBe(true);
+    });
+
+    it('should update name', () => {
+      const { result } = renderHook(() => useProfileEditor(null, true));
+
+      act(() => {
+        result.current.setName('New Name');
+      });
+
+      expect(result.current.state.name).toBe('New Name');
+    });
+
+    it('should update description', () => {
+      const { result } = renderHook(() => useProfileEditor(null, true));
+
+      act(() => {
+        result.current.setDescription('New Description');
+      });
+
+      expect(result.current.state.description).toBe('New Description');
+    });
+
+    it('should update isDefault', () => {
+      const { result } = renderHook(() => useProfileEditor(null, true));
+
+      act(() => {
+        result.current.setIsDefault(true);
+      });
+
+      expect(result.current.state.isDefault).toBe(true);
+    });
+
+    it('should update maxPositionSize', () => {
+      const { result } = renderHook(() => useProfileEditor(null, true));
+
+      act(() => {
+        result.current.setMaxPositionSize(25);
+      });
+
+      expect(result.current.state.maxPositionSize).toBe(25);
+    });
+
+    it('should update maxConcurrentPositions', () => {
+      const { result } = renderHook(() => useProfileEditor(null, true));
+
+      act(() => {
+        result.current.setMaxConcurrentPositions(5);
+      });
+
+      expect(result.current.state.maxConcurrentPositions).toBe(5);
+    });
+
+    it('should toggle overridePositionSize and clear value when disabled', () => {
+      const { result } = renderHook(() => useProfileEditor(null, true));
+
+      act(() => {
+        result.current.setMaxPositionSize(25);
+        result.current.setOverridePositionSize(true);
+      });
+
+      expect(result.current.state.overridePositionSize).toBe(true);
+      expect(result.current.state.maxPositionSize).toBe(25);
+
+      act(() => {
+        result.current.setOverridePositionSize(false);
+      });
+
+      expect(result.current.state.overridePositionSize).toBe(false);
+      expect(result.current.state.maxPositionSize).toBeUndefined();
+    });
+
+    it('should toggle overrideConcurrentPositions and clear value when disabled', () => {
+      const { result } = renderHook(() => useProfileEditor(null, true));
+
+      act(() => {
+        result.current.setMaxConcurrentPositions(3);
+        result.current.setOverrideConcurrentPositions(true);
+      });
+
+      expect(result.current.state.overrideConcurrentPositions).toBe(true);
+      expect(result.current.state.maxConcurrentPositions).toBe(3);
+
+      act(() => {
+        result.current.setOverrideConcurrentPositions(false);
+      });
+
+      expect(result.current.state.overrideConcurrentPositions).toBe(false);
+      expect(result.current.state.maxConcurrentPositions).toBeUndefined();
+    });
+
+    it('should toggle setup', () => {
+      const { result } = renderHook(() => useProfileEditor(null, true));
+
+      act(() => {
+        result.current.handleToggleSetup('larry-williams-9-1');
+      });
+
+      expect(result.current.state.enabledSetupTypes).toContain('larry-williams-9-1');
+
+      act(() => {
+        result.current.handleToggleSetup('larry-williams-9-1');
+      });
+
+      expect(result.current.state.enabledSetupTypes).not.toContain('larry-williams-9-1');
+    });
+
+    it('should toggle group', () => {
+      const { result } = renderHook(() => useProfileEditor(null, true));
+
+      act(() => {
+        result.current.handleToggleGroup('larry-williams');
+      });
+
+      const larryWilliamsSetups = AVAILABLE_SETUPS.filter((s) => s.group === 'larry-williams').map((s) => s.id);
+      for (const setupId of larryWilliamsSetups) {
+        expect(result.current.state.enabledSetupTypes).toContain(setupId);
+      }
+    });
+
+    it('should provide groupsWithStats', () => {
+      const { result } = renderHook(() => useProfileEditor(null, true));
+
+      expect(result.current.groupsWithStats).toHaveLength(SETUP_GROUPS.length);
+
+      const larryWilliamsGroup = result.current.groupsWithStats.find((g) => g.id === 'larry-williams');
+      expect(larryWilliamsGroup).toBeDefined();
+      expect(larryWilliamsGroup?.stats.total).toBe(4);
+      expect(larryWilliamsGroup?.stats.enabled).toBe(0);
+    });
+
+    it('should update groupsWithStats when setups change', () => {
+      const { result } = renderHook(() => useProfileEditor(null, true));
+
+      act(() => {
+        result.current.handleToggleSetup('larry-williams-9-1');
+      });
+
+      const larryWilliamsGroup = result.current.groupsWithStats.find((g) => g.id === 'larry-williams');
+      expect(larryWilliamsGroup?.stats.enabled).toBe(1);
+    });
+
+    it('should reset state when profile or isOpen changes', () => {
+      const { result, rerender } = renderHook(
+        ({ profile, isOpen }) => useProfileEditor(profile, isOpen),
+        { initialProps: { profile: mockProfile, isOpen: true } }
+      );
+
+      act(() => {
+        result.current.setName('Changed Name');
+      });
+
+      expect(result.current.state.name).toBe('Changed Name');
+
+      rerender({ profile: mockProfile, isOpen: false });
+      rerender({ profile: mockProfile, isOpen: true });
+
+      expect(result.current.state.name).toBe('Test Profile');
     });
   });
 });

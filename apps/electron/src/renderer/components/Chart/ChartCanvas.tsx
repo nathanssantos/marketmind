@@ -52,6 +52,8 @@ import { useRSIRenderer } from './useRSIRenderer';
 import { useStochasticRenderer } from './useStochasticRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
 import { useWatermarkRenderer } from './useWatermarkRenderer';
+import { useBollingerBandsRenderer } from './useBollingerBandsRenderer';
+import { useATRRenderer } from './useATRRenderer';
 
 const MOUSE_POSITION_THROTTLE_MS = 16;
 const RIGHT_MOUSE_BUTTON = 2;
@@ -67,6 +69,8 @@ export interface ChartCanvasProps {
   showVolume?: boolean;
   showStochastic?: boolean;
   showRSI?: boolean;
+  showBollingerBands?: boolean;
+  showATR?: boolean;
   showCurrentPriceLine?: boolean;
   showCrosshair?: boolean;
   showMeasurementRuler?: boolean;
@@ -96,6 +100,8 @@ export const ChartCanvas = ({
   showVolume = true,
   showStochastic = false,
   showRSI = false,
+  showBollingerBands = false,
+  showATR = false,
   showCurrentPriceLine = true,
   showCrosshair = true,
   showMeasurementRuler = false,
@@ -359,6 +365,18 @@ export const ChartCanvas = ({
     rsiData: rsiWorkerData,
     colors,
     enabled: showRSI,
+  });
+
+  const { render: renderBollingerBands } = useBollingerBandsRenderer({
+    manager,
+    colors,
+    enabled: showBollingerBands,
+  });
+
+  const { render: renderATR } = useATRRenderer({
+    manager,
+    colors,
+    enabled: showATR,
   });
 
   const { renderLine: renderCurrentPriceLine_Line, renderLabel: renderCurrentPriceLine_Label } = useCurrentPriceLineRenderer({
@@ -1035,7 +1053,6 @@ export const ChartCanvas = ({
     manager.setRSIPanelHeight(height);
   }, [manager, showRSI]);
 
-
   useEffect(() => {
     if (!shiftPressed && !altPressed) {
       setOrderPreview(null);
@@ -1079,6 +1096,8 @@ export const ChartCanvas = ({
       renderMovingAverages();
       renderStochastic();
       renderRSI();
+      renderBollingerBands();
+      renderATR();
       renderCurrentPriceLine_Line();
       renderOrderLines();
 

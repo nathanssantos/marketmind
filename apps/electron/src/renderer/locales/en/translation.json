@@ -337,6 +337,8 @@
       "volume": "Volume",
       "stochastic": "Stochastic",
       "rsi": "RSI (2)",
+      "bollingerBands": "Bollinger Bands",
+      "atr": "ATR Trailing Stop",
       "grid": "Grid",
       "currentPrice": "Current Price",
       "crosshair": "Crosshair",

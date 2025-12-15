@@ -461,6 +461,57 @@ export class PositionMonitorService {
 
     return result;
   }
+
+  async checkPositionGroupByPrice(executions: TradeExecution[], currentPrice: number): Promise<void> {
+    if (executions.length === 0) return;
+
+    const firstExecution = executions[0];
+    if (!firstExecution) return;
+
+    const isLong = firstExecution.side === 'LONG';
+    const groupKey = `${firstExecution.symbol}-${firstExecution.side}`;
+
+    const consolidatedSL = this.calculateConsolidatedStopLoss(executions, isLong);
+    const consolidatedTP = this.calculateConsolidatedTakeProfit(executions, isLong);
+
+    const slTriggered = consolidatedSL !== null && (
+      isLong ? currentPrice <= consolidatedSL : currentPrice >= consolidatedSL
+    );
+
+    const tpTriggered = consolidatedTP !== null && (
+      isLong ? currentPrice >= consolidatedTP : currentPrice <= consolidatedTP
+    );
+
+    if (slTriggered) {
+      logger.info({
+        groupKey,
+        reason: 'STOP_LOSS',
+        currentPrice,
+        consolidatedSL,
+        executionCount: executions.length,
+      }, 'Consolidated stop loss triggered (real-time) - closing all positions in group');
+
+      for (const execution of executions) {
+        await this.executeExit(execution, currentPrice, 'STOP_LOSS');
+      }
+    } else if (tpTriggered) {
+      logger.info({
+        groupKey,
+        reason: 'TAKE_PROFIT',
+        currentPrice,
+        consolidatedTP,
+        executionCount: executions.length,
+      }, 'Consolidated take profit triggered (real-time) - closing all positions in group');
+
+      for (const execution of executions) {
+        await this.executeExit(execution, currentPrice, 'TAKE_PROFIT');
+      }
+    }
+  }
+
+  groupExecutionsBySymbolAndSidePublic(executions: TradeExecution[]): Map<string, TradeExecution[]> {
+    return this.groupExecutionsBySymbolAndSide(executions);
+  }
 }
 
 export const positionMonitorService = new PositionMonitorService();

@@ -8,6 +8,7 @@ import {
   calculateATRTrailingStop,
   computeTrailingStop,
   DEFAULT_TRAILING_STOP_CONFIG,
+  TrailingStopService,
   type TrailingStopInput,
 } from '../services/trailing-stop';
 import type { TrailingStopOptimizationConfig } from '@marketmind/types';
@@ -297,6 +298,126 @@ describe('Trailing Stop Pure Functions', () => {
       expect(DEFAULT_TRAILING_STOP_CONFIG.swingLookback).toBe(3);
       expect(DEFAULT_TRAILING_STOP_CONFIG.useATRMultiplier).toBe(true);
       expect(DEFAULT_TRAILING_STOP_CONFIG.atrMultiplier).toBe(2.0);
+    });
+  });
+});
+
+describe('TrailingStopService', () => {
+  describe('constructor', () => {
+    it('should initialize with default config when no config provided', () => {
+      const service = new TrailingStopService();
+      const config = service.getConfig();
+
+      expect(config.breakevenProfitThreshold).toBe(0.005);
+      expect(config.minTrailingDistancePercent).toBe(0.002);
+      expect(config.swingLookback).toBe(3);
+      expect(config.useATRMultiplier).toBe(true);
+      expect(config.atrMultiplier).toBe(2.0);
+    });
+
+    it('should merge partial config with defaults', () => {
+      const service = new TrailingStopService({
+        breakevenProfitThreshold: 0.01,
+        atrMultiplier: 3.0,
+      });
+      const config = service.getConfig();
+
+      expect(config.breakevenProfitThreshold).toBe(0.01);
+      expect(config.atrMultiplier).toBe(3.0);
+      expect(config.minTrailingDistancePercent).toBe(0.002);
+      expect(config.swingLookback).toBe(3);
+    });
+
+    it('should override all default values when full config provided', () => {
+      const customConfig: TrailingStopOptimizationConfig = {
+        breakevenProfitThreshold: 0.02,
+        minTrailingDistancePercent: 0.005,
+        swingLookback: 5,
+        useATRMultiplier: false,
+        atrMultiplier: 1.5,
+      };
+      const service = new TrailingStopService(customConfig);
+      const config = service.getConfig();
+
+      expect(config.breakevenProfitThreshold).toBe(0.02);
+      expect(config.minTrailingDistancePercent).toBe(0.005);
+      expect(config.swingLookback).toBe(5);
+      expect(config.useATRMultiplier).toBe(false);
+      expect(config.atrMultiplier).toBe(1.5);
+    });
+  });
+
+  describe('updateConfig', () => {
+    it('should update single config value', () => {
+      const service = new TrailingStopService();
+      service.updateConfig({ breakevenProfitThreshold: 0.015 });
+      const config = service.getConfig();
+
+      expect(config.breakevenProfitThreshold).toBe(0.015);
+      expect(config.minTrailingDistancePercent).toBe(0.002);
+    });
+
+    it('should update multiple config values', () => {
+      const service = new TrailingStopService();
+      service.updateConfig({
+        breakevenProfitThreshold: 0.02,
+        atrMultiplier: 2.5,
+        useATRMultiplier: false,
+      });
+      const config = service.getConfig();
+
+      expect(config.breakevenProfitThreshold).toBe(0.02);
+      expect(config.atrMultiplier).toBe(2.5);
+      expect(config.useATRMultiplier).toBe(false);
+    });
+
+    it('should preserve existing values when updating', () => {
+      const service = new TrailingStopService({
+        breakevenProfitThreshold: 0.01,
+        swingLookback: 4,
+      });
+
+      service.updateConfig({ atrMultiplier: 3.0 });
+      const config = service.getConfig();
+
+      expect(config.breakevenProfitThreshold).toBe(0.01);
+      expect(config.swingLookback).toBe(4);
+      expect(config.atrMultiplier).toBe(3.0);
+    });
+
+    it('should allow chaining multiple updates', () => {
+      const service = new TrailingStopService();
+
+      service.updateConfig({ breakevenProfitThreshold: 0.01 });
+      service.updateConfig({ atrMultiplier: 2.5 });
+      service.updateConfig({ swingLookback: 5 });
+
+      const config = service.getConfig();
+
+      expect(config.breakevenProfitThreshold).toBe(0.01);
+      expect(config.atrMultiplier).toBe(2.5);
+      expect(config.swingLookback).toBe(5);
+    });
+  });
+
+  describe('getConfig', () => {
+    it('should return a copy of the config', () => {
+      const service = new TrailingStopService();
+      const config1 = service.getConfig();
+      const config2 = service.getConfig();
+
+      expect(config1).not.toBe(config2);
+      expect(config1).toEqual(config2);
+    });
+
+    it('should not allow external mutation of internal config', () => {
+      const service = new TrailingStopService();
+      const config = service.getConfig();
+
+      config.breakevenProfitThreshold = 0.999;
+
+      const freshConfig = service.getConfig();
+      expect(freshConfig.breakevenProfitThreshold).toBe(0.005);
     });
   });
 });

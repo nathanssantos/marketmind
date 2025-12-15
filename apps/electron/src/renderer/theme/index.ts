@@ -220,6 +220,36 @@ const customConfig = defineConfig({
             _dark: 'rgba(128, 128, 128, 0.7)',
           },
         },
+        'chart.bollingerBands.upper': {
+          value: {
+            base: 'rgba(33, 150, 243, 0.6)',
+            _dark: 'rgba(33, 150, 243, 0.6)',
+          },
+        },
+        'chart.bollingerBands.middle': {
+          value: {
+            base: 'rgba(33, 150, 243, 0.9)',
+            _dark: 'rgba(33, 150, 243, 0.9)',
+          },
+        },
+        'chart.bollingerBands.lower': {
+          value: {
+            base: 'rgba(33, 150, 243, 0.6)',
+            _dark: 'rgba(33, 150, 243, 0.6)',
+          },
+        },
+        'chart.bollingerBands.fill': {
+          value: {
+            base: 'rgba(33, 150, 243, 0.08)',
+            _dark: 'rgba(33, 150, 243, 0.08)',
+          },
+        },
+        'chart.atr.line': {
+          value: {
+            base: '#ff9800',
+            _dark: '#ff9800',
+          },
+        },
       },
     },
   },
@@ -287,6 +317,15 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
     rsi: {
       line: resolveValue(tokens['chart.rsi.line']),
       zone: resolveValue(tokens['chart.rsi.zone']),
+    },
+    bollingerBands: {
+      upper: resolveValue(tokens['chart.bollingerBands.upper']),
+      middle: resolveValue(tokens['chart.bollingerBands.middle']),
+      lower: resolveValue(tokens['chart.bollingerBands.lower']),
+      fill: resolveValue(tokens['chart.bollingerBands.fill']),
+    },
+    atr: {
+      line: resolveValue(tokens['chart.atr.line']),
     },
   };
 };
