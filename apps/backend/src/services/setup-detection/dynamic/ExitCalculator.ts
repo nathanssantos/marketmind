@@ -1,9 +1,9 @@
 import type {
-  Condition,
-  ConditionOperand,
-  ExitContext,
-  ExitLevel,
-  StrategyDefinition,
+    Condition,
+    ConditionOperand,
+    ExitContext,
+    ExitLevel,
+    StrategyDefinition,
 } from '@marketmind/types';
 import { isParameterReference } from '@marketmind/types';
 

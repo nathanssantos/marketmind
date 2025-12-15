@@ -20,8 +20,8 @@ import {
     isParameterReference,
 } from '@marketmind/types';
 
-import { IndicatorEngine } from './IndicatorEngine';
 import { logger } from '../../logger';
+import { IndicatorEngine } from './IndicatorEngine';
 
 const MATH_EXPRESSION_REGEX = /^(.+?)\s*([*+\-/])\s*(\d+\.?\d*)$/;
 
