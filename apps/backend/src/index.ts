@@ -98,8 +98,14 @@ const start = async (): Promise<void> => {
     const { binanceKlineStreamService } = await import('./services/binance-kline-stream');
     binanceKlineStreamService.start();
 
+    const { binanceUserStreamService } = await import('./services/binance-user-stream');
+    await binanceUserStreamService.start();
+
     const { autoTradingScheduler } = await import('./services/auto-trading-scheduler');
     await autoTradingScheduler.restoreWatchersFromDb();
+
+    const { cooldownService } = await import('./services/cooldown');
+    cooldownService.startCleanupScheduler(60);
 
     fastify.log.info(`🚀 Backend server running on http://localhost:${port}`);
     fastify.log.info(`📡 tRPC endpoint: http://localhost:${port}/trpc`);
@@ -108,6 +114,7 @@ const start = async (): Promise<void> => {
     fastify.log.info(`📈 Position monitor service started`);
     fastify.log.info(`💹 Binance price stream service started`);
     fastify.log.info(`📉 Binance kline stream service started`);
+    fastify.log.info(`👤 Binance user stream service started`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

@@ -1,11 +1,12 @@
 import { eq } from 'drizzle-orm';
-import type { TradeExecution, Wallet } from '../db/schema';
-import { tradeExecutions, priceCache, wallets } from '../db/schema';
 import { db } from '../db';
+import type { TradeExecution, Wallet } from '../db/schema';
+import { priceCache, tradeExecutions, wallets } from '../db/schema';
+import { env } from '../env';
 import { createBinanceClient, createBinanceClientForPrices, isPaperWallet } from './binance-client';
 import { logger } from './logger';
+import { strategyPerformanceService } from './strategy-performance';
 import { trailingStopService } from './trailing-stop';
-import { env } from '../env';
 
 export interface PositionCheckResult {
   executionId: string;
@@ -16,35 +17,45 @@ export interface PositionCheckResult {
 }
 
 export class PositionMonitorService {
-  private monitoringInterval: NodeJS.Timeout | null = null;
-  private readonly CHECK_INTERVAL_MS = 60000; // 1 minute
+  private monitoringTimeout: NodeJS.Timeout | null = null;
+  private readonly CHECK_INTERVAL_MS = 60000;
 
   start(): void {
-    if (this.monitoringInterval) {
+    if (this.monitoringTimeout) {
       logger.warn('Position monitor already running');
       return;
     }
 
     logger.info('Starting position monitor service');
-    this.monitoringInterval = setInterval(() => {
-      this.checkAllPositions().catch((error) => {
+
+    const scheduleNext = () => {
+      this.monitoringTimeout = setTimeout(async () => {
+        try {
+          await this.checkAllPositions();
+        } catch (error) {
+          logger.error({
+            error: error instanceof Error ? error.message : String(error),
+          }, 'Error in position monitoring loop');
+        }
+        scheduleNext();
+      }, this.CHECK_INTERVAL_MS);
+    };
+
+    this.checkAllPositions()
+      .catch((error) => {
         logger.error({
           error: error instanceof Error ? error.message : String(error),
-        }, 'Error in position monitoring loop');
+        }, 'Error in initial position check');
+      })
+      .finally(() => {
+        scheduleNext();
       });
-    }, this.CHECK_INTERVAL_MS);
-
-    this.checkAllPositions().catch((error) => {
-      logger.error({
-        error: error instanceof Error ? error.message : String(error),
-      }, 'Error in initial position check');
-    });
   }
 
   stop(): void {
-    if (this.monitoringInterval) {
-      clearInterval(this.monitoringInterval);
-      this.monitoringInterval = null;
+    if (this.monitoringTimeout) {
+      clearTimeout(this.monitoringTimeout);
+      this.monitoringTimeout = null;
       logger.info('Position monitor service stopped');
     }
   }
@@ -59,7 +70,7 @@ export class PositionMonitorService {
       return;
     }
 
-    logger.info(`Checking ${openExecutions.length} open positions`);
+    await this.invalidatePriceCache();
 
     try {
       const trailingUpdates = await trailingStopService.updateTrailingStops();
@@ -110,15 +121,6 @@ export class PositionMonitorService {
 
     const consolidatedSL = this.calculateConsolidatedStopLoss(executions, isLong);
     const consolidatedTP = this.calculateConsolidatedTakeProfit(executions, isLong);
-
-    logger.debug({
-      groupKey,
-      executionCount: executions.length,
-      currentPrice,
-      consolidatedSL,
-      consolidatedTP,
-      isLong,
-    }, 'Checking position group');
 
     const slTriggered = consolidatedSL !== null && (
       isLong ? currentPrice <= consolidatedSL : currentPrice >= consolidatedSL
@@ -278,13 +280,21 @@ export class PositionMonitorService {
       const currentBalance = parseFloat(wallet.currentBalance || '0');
       const newBalance = currentBalance + pnl;
 
-      await db
-        .update(wallets)
-        .set({
-          currentBalance: newBalance.toString(),
-          updatedAt: new Date(),
-        })
-        .where(eq(wallets.id, wallet.id));
+      if (wallet.walletType !== 'paper') {
+        await db
+          .update(wallets)
+          .set({
+            currentBalance: newBalance.toString(),
+            updatedAt: new Date(),
+          })
+          .where(eq(wallets.id, wallet.id));
+      } else {
+        logger.info({
+          walletId: wallet.id,
+          pnl,
+          simulatedBalance: newBalance,
+        }, 'Paper trading: balance update skipped');
+      }
 
       await db
         .update(tradeExecutions)
@@ -309,6 +319,8 @@ export class PositionMonitorService {
         newBalance: newBalance.toFixed(2),
         isPaperTrading: isPaperWallet(wallet),
       }, 'Position exit executed');
+
+      await strategyPerformanceService.updatePerformance(execution.id);
     } catch (error) {
       logger.error({
         executionId: execution.id,
@@ -358,7 +370,7 @@ export class PositionMonitorService {
         ? Date.now() - new Date(cached.timestamp).getTime()
         : Infinity;
 
-      if (cached && cacheAge < 5000) {
+      if (cached && cacheAge < 3000) {
         return parseFloat(cached.price);
       }
 
@@ -416,6 +428,24 @@ export class PositionMonitorService {
         price,
         error: error instanceof Error ? error.message : String(error),
       }, 'Failed to update price cache');
+    }
+  }
+
+  async invalidatePriceCache(symbol?: string): Promise<void> {
+    try {
+      if (symbol) {
+        await db
+          .update(priceCache)
+          .set({ timestamp: new Date(0) })
+          .where(eq(priceCache.symbol, symbol));
+      } else {
+        await db.update(priceCache).set({ timestamp: new Date(0) });
+      }
+    } catch (error) {
+      logger.error({
+        symbol,
+        error: error instanceof Error ? error.message : String(error),
+      }, 'Failed to invalidate price cache');
     }
   }
 

@@ -1,6 +1,10 @@
-import type { SetupDetection, Wallet, AutoTradingConfig } from '../db/schema';
-import { logger } from './logger';
+import { calculateATR } from '@marketmind/indicators';
+import { and, eq, sql } from 'drizzle-orm';
+import { db } from '../db';
+import type { AutoTradingConfig, SetupDetection, Wallet } from '../db/schema';
+import { klines, tradeExecutions } from '../db/schema';
 import { createBinanceClient, isPaperWallet } from './binance-client';
+import { logger } from './logger';
 
 export interface OrderParams {
   symbol: string;
@@ -24,19 +28,22 @@ export interface PositionSizeCalculation {
 }
 
 export class AutoTradingService {
-  createOrderFromSetup(
+  async createOrderFromSetup(
     setup: SetupDetection,
     config: AutoTradingConfig,
     walletBalance: number
-  ): OrderParams {
+  ): Promise<OrderParams> {
     const entryPrice = parseFloat(setup.entryPrice);
     const stopLoss = setup.stopLoss ? parseFloat(setup.stopLoss) : entryPrice * 0.98;
 
-    const positionSize = this.calculatePositionSize(
+    const positionSize = await this.calculatePositionSize(
       config,
       walletBalance,
       entryPrice,
-      stopLoss
+      stopLoss,
+      setup.setupType,
+      setup.symbol,
+      setup.interval
     );
 
     const side = setup.direction === 'LONG' ? 'BUY' : 'SELL';
@@ -51,12 +58,15 @@ export class AutoTradingService {
     };
   }
 
-  calculatePositionSize(
+  async calculatePositionSize(
     config: AutoTradingConfig,
     walletBalance: number,
     entryPrice: number,
-    stopLoss: number
-  ): PositionSizeCalculation {
+    stopLoss: number,
+    setupType?: string,
+    symbol?: string,
+    interval?: string
+  ): Promise<PositionSizeCalculation> {
     const maxPositionSizePercent = parseFloat(config.maxPositionSize);
     const maxPositionValue = (walletBalance * maxPositionSizePercent) / 100;
 
@@ -75,7 +85,12 @@ export class AutoTradingService {
 
       case 'kelly': {
         const riskPercent = Math.abs((entryPrice - stopLoss) / entryPrice);
-        const kellyFraction = this.calculateKellyCriterion(riskPercent);
+        const kellyFraction = await this.calculateKellyCriterion(
+          riskPercent,
+          setupType,
+          symbol,
+          interval
+        );
         const kellyPositionValue = walletBalance * kellyFraction;
         const constrainedValue = Math.min(kellyPositionValue, maxPositionValue);
         quantity = constrainedValue / entryPrice;
@@ -86,26 +101,174 @@ export class AutoTradingService {
         quantity = maxPositionValue / entryPrice;
     }
 
-    const notionalValue = quantity * entryPrice;
-    const riskAmount = quantity * Math.abs(entryPrice - stopLoss);
+    const volatilityFactor = await this.calculateVolatilityAdjustment(
+      symbol,
+      interval,
+      entryPrice
+    );
+    
+    const adjustedQuantity = quantity * volatilityFactor;
+    const notionalValue = adjustedQuantity * entryPrice;
+    const riskAmount = adjustedQuantity * Math.abs(entryPrice - stopLoss);
 
     return {
-      quantity: this.roundQuantity(quantity),
+      quantity: this.roundQuantity(adjustedQuantity),
       notionalValue,
       riskAmount,
     };
   }
 
-  private calculateKellyCriterion(_riskPercent: number): number {
-    const winRate = 0.55;
-    const avgWin = 2.0;
-    const avgLoss = 1.0;
+  private async calculateVolatilityAdjustment(
+    symbol?: string,
+    interval?: string,
+    currentPrice?: number
+  ): Promise<number> {
+    if (!symbol || !interval || !currentPrice) return 1.0;
 
-    const kelly = (winRate * avgWin - (1 - winRate) * avgLoss) / avgWin;
+    try {
+      const recentKlines = await db
+        .select()
+        .from(klines)
+        .where(and(eq(klines.symbol, symbol), eq(klines.interval, interval)))
+        .orderBy(sql`${klines.openTime} DESC`)
+        .limit(50);
 
-    const fractionalKelly = kelly * 0.25;
+      if (recentKlines.length < 14) return 1.0;
 
-    return Math.max(0, Math.min(fractionalKelly, 0.1));
+      const mappedKlines = recentKlines.reverse().map((k): import('@marketmind/types').Kline => ({
+        open: k.open,
+        high: k.high,
+        low: k.low,
+        close: k.close,
+        volume: k.volume,
+        quoteVolume: k.quoteVolume || '0',
+        takerBuyBaseVolume: k.takerBuyBaseVolume || '0',
+        takerBuyQuoteVolume: k.takerBuyQuoteVolume || '0',
+        trades: k.trades || 0,
+        openTime: k.openTime.getTime(),
+        closeTime: k.closeTime.getTime(),
+      }));
+
+      const atrValues = calculateATR(mappedKlines, 14);
+      if (atrValues.length === 0) return 1.0;
+
+      const lastATR = atrValues[atrValues.length - 1];
+      if (!lastATR) return 1.0;
+      
+      const atrPercent = (lastATR / currentPrice) * 100;
+
+      const HIGH_VOLATILITY_THRESHOLD = 3.0;
+      const REDUCTION_FACTOR = 0.7;
+
+      if (atrPercent > HIGH_VOLATILITY_THRESHOLD) {
+        logger.info({
+          symbol,
+          interval,
+          atrPercent: atrPercent.toFixed(2),
+          reduction: `${((1 - REDUCTION_FACTOR) * 100).toFixed(0)}%`,
+        }, 'High volatility detected - reducing position size');
+        return REDUCTION_FACTOR;
+      }
+
+      return 1.0;
+    } catch (error) {
+      logger.error({
+        error: error instanceof Error ? error.message : String(error),
+        symbol,
+        interval,
+      }, 'Error calculating volatility adjustment');
+      return 1.0;
+    }
+  }
+
+  private async calculateKellyCriterion(
+    _riskPercent: number,
+    strategyId?: string,
+    symbol?: string,
+    interval?: string
+  ): Promise<number> {
+    const DEFAULT_WIN_RATE = 0.50;
+    const DEFAULT_AVG_RR = 1.5;
+    const FRACTIONAL_KELLY = 0.25;
+    const MIN_TRADES = 20;
+
+    let winRate = DEFAULT_WIN_RATE;
+    let avgRR = DEFAULT_AVG_RR;
+
+    if (strategyId && symbol && interval) {
+      try {
+        const stats = await this.getStrategyStatistics(strategyId, symbol, interval);
+        
+        if (stats && stats.totalTrades >= MIN_TRADES) {
+          winRate = stats.winRate;
+          avgRR = stats.avgRR;
+          
+          logger.info({
+            strategyId,
+            symbol,
+            interval,
+            winRate: (winRate * 100).toFixed(1) + '%',
+            avgRR: avgRR.toFixed(2),
+            trades: stats.totalTrades,
+          }, 'Kelly using real strategy statistics');
+        } else {
+          logger.warn({
+            strategyId,
+            trades: stats?.totalTrades || 0,
+            minRequired: MIN_TRADES,
+          }, 'Insufficient trades for Kelly, using defaults');
+        }
+      } catch (error) {
+        logger.error({ error }, 'Failed to fetch strategy statistics for Kelly');
+      }
+    }
+
+    const kelly = (winRate * avgRR - (1 - winRate)) / avgRR;
+    const fractionalKelly = Math.max(0, kelly * FRACTIONAL_KELLY);
+    const cappedKelly = Math.min(fractionalKelly, 0.1);
+
+    return cappedKelly;
+  }
+
+  private async getStrategyStatistics(
+    strategyId: string,
+    symbol: string,
+    _interval: string
+  ): Promise<{ winRate: number; avgRR: number; totalTrades: number } | null> {
+    try {
+      const results = await db
+        .select({
+          totalTrades: sql<number>`COUNT(*)`,
+          wins: sql<number>`SUM(CASE WHEN ${tradeExecutions.pnlPercent} > 0 THEN 1 ELSE 0 END)`,
+          avgWin: sql<number>`AVG(CASE WHEN ${tradeExecutions.pnlPercent} > 0 THEN ABS(${tradeExecutions.pnlPercent}) ELSE NULL END)`,
+          avgLoss: sql<number>`AVG(CASE WHEN ${tradeExecutions.pnlPercent} < 0 THEN ABS(${tradeExecutions.pnlPercent}) ELSE NULL END)`,
+        })
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.setupType, strategyId),
+            eq(tradeExecutions.symbol, symbol),
+            eq(tradeExecutions.status, 'closed')
+          )
+        );
+
+      const row = results[0];
+      if (!row || !row.totalTrades || row.totalTrades === 0) {
+        return null;
+      }
+
+      const totalTrades = Number(row.totalTrades);
+      const wins = Number(row.wins || 0);
+      const winRate = wins / totalTrades;
+      const avgWin = Number(row.avgWin || 1.5);
+      const avgLoss = Number(row.avgLoss || 1.0);
+      const avgRR = avgLoss > 0 ? avgWin / avgLoss : 1.5;
+
+      return { winRate, avgRR, totalTrades };
+    } catch (error) {
+      logger.error({ error }, 'Error calculating strategy statistics');
+      return null;
+    }
   }
 
   private roundQuantity(quantity: number): number {

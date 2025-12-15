@@ -1,14 +1,16 @@
 import {
-    bigint,
-    boolean,
-    index,
-    integer,
-    numeric,
-    pgTable,
-    primaryKey,
-    text,
-    timestamp,
-    varchar,
+  bigint,
+  boolean,
+  index,
+  integer,
+  numeric,
+  pgTable,
+  primaryKey,
+  serial,
+  text,
+  timestamp,
+  unique,
+  varchar
 } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
@@ -252,6 +254,8 @@ export const tradeExecutions = pgTable('trade_executions', {
   symbol: varchar({ length: 20 }).notNull(),
   side: varchar({ length: 10 }).$type<'LONG' | 'SHORT'>().notNull(),
   entryOrderId: bigint('entry_order_id', { mode: 'number' }).references(() => orders.orderId),
+  stopLossOrderId: bigint('stop_loss_order_id', { mode: 'number' }),
+  takeProfitOrderId: bigint('take_profit_order_id', { mode: 'number' }),
   exitOrderId: bigint('exit_order_id', { mode: 'number' }).references(() => orders.orderId),
   entryPrice: numeric('entry_price', { precision: 20, scale: 8 }).notNull(),
   exitPrice: numeric('exit_price', { precision: 20, scale: 8 }),
@@ -464,3 +468,57 @@ export const marketContextConfig = pgTable('market_context_config', {
 
 export type MarketContextConfigRow = typeof marketContextConfig.$inferSelect;
 export type NewMarketContextConfigRow = typeof marketContextConfig.$inferInsert;
+
+export const strategyPerformance = pgTable('strategy_performance', {
+  id: serial('id').primaryKey(),
+  strategyId: varchar('strategy_id', { length: 100 }).notNull(),
+  symbol: varchar({ length: 20 }).notNull(),
+  interval: varchar({ length: 10 }).notNull(),
+  totalTrades: integer('total_trades').default(0).notNull(),
+  winningTrades: integer('winning_trades').default(0).notNull(),
+  losingTrades: integer('losing_trades').default(0).notNull(),
+  breakevenTrades: integer('breakeven_trades').default(0).notNull(),
+  winRate: numeric('win_rate', { precision: 5, scale: 2 }).default('0').notNull(),
+  totalPnl: numeric('total_pnl', { precision: 20, scale: 8 }).default('0').notNull(),
+  totalPnlPercent: numeric('total_pnl_percent', { precision: 10, scale: 4 }).default('0').notNull(),
+  avgWin: numeric('avg_win', { precision: 10, scale: 4 }).default('0').notNull(),
+  avgLoss: numeric('avg_loss', { precision: 10, scale: 4 }).default('0').notNull(),
+  avgRr: numeric('avg_rr', { precision: 10, scale: 4 }).default('0').notNull(),
+  maxDrawdown: numeric('max_drawdown', { precision: 10, scale: 4 }).default('0').notNull(),
+  maxConsecutiveLosses: integer('max_consecutive_losses').default(0).notNull(),
+  currentConsecutiveLosses: integer('current_consecutive_losses').default(0).notNull(),
+  avgSlippagePercent: numeric('avg_slippage_percent', { precision: 10, scale: 4 }).default('0').notNull(),
+  avgExecutionTimeMs: integer('avg_execution_time_ms').default(0).notNull(),
+  lastTradeAt: timestamp('last_trade_at', { mode: 'date' }),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueStrategy: unique().on(table.strategyId, table.symbol, table.interval),
+  lookupIdx: index('strategy_performance_lookup_idx').on(table.strategyId, table.symbol, table.interval),
+  updatedIdx: index('strategy_performance_updated_idx').on(table.updatedAt),
+  winRateIdx: index('strategy_performance_win_rate_idx').on(table.winRate),
+}));
+
+export const tradeCooldowns = pgTable('trade_cooldowns', {
+  id: serial('id').primaryKey(),
+  strategyId: varchar('strategy_id', { length: 100 }).notNull(),
+  symbol: varchar({ length: 20 }).notNull(),
+  interval: varchar({ length: 10 }).notNull(),
+  lastExecutionId: varchar('last_execution_id', { length: 50 }).notNull(),
+  lastExecutionAt: timestamp('last_execution_at', { mode: 'date' }).notNull(),
+  cooldownUntil: timestamp('cooldown_until', { mode: 'date' }).notNull(),
+  cooldownMinutes: integer('cooldown_minutes').notNull(),
+  walletId: varchar('wallet_id', { length: 50 }).notNull(),
+  reason: varchar({ length: 100 }),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueCooldown: unique().on(table.strategyId, table.symbol, table.interval, table.walletId),
+  lookupIdx: index('trade_cooldowns_lookup_idx').on(table.strategyId, table.symbol, table.interval, table.walletId),
+  expiryIdx: index('trade_cooldowns_expiry_idx').on(table.cooldownUntil),
+  walletIdx: index('trade_cooldowns_wallet_idx').on(table.walletId),
+}));
+
+export type StrategyPerformance = typeof strategyPerformance.$inferSelect;
+export type NewStrategyPerformance = typeof strategyPerformance.$inferInsert;
+export type TradeCooldown = typeof tradeCooldowns.$inferSelect;
+export type NewTradeCooldown = typeof tradeCooldowns.$inferInsert;

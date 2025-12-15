@@ -151,18 +151,20 @@ export class ExitCalculator {
   ): number | null {
     const { indicators, currentIndex } = context;
 
-    if (exit.value === undefined) {
+    const indicatorRef = exit.value ?? exit.indicator;
+
+    if (indicatorRef === undefined) {
       return null;
     }
 
-    if (typeof exit.value === 'number') {
-      return exit.value;
+    if (typeof indicatorRef === 'number') {
+      return indicatorRef;
     }
 
-    if (typeof exit.value === 'string') {
+    if (typeof indicatorRef === 'string') {
       return this.indicatorEngine.resolveIndicatorValue(
         indicators,
-        exit.value,
+        indicatorRef,
         currentIndex
       );
     }

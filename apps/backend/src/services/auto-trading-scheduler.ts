@@ -18,8 +18,10 @@ import {
 import { env } from '../env';
 import { autoTradingService } from './auto-trading';
 import { backfillHistoricalKlines, calculateStartTime } from './binance-historical';
+import { cooldownService } from './cooldown';
 import { marketContextFilter } from './market-context-filter';
 import { mlService } from './ml';
+import { positionMonitorService } from './position-monitor';
 import { pyramidingService } from './pyramiding';
 import { riskManagerService } from './risk-manager';
 import { StrategyInterpreter, StrategyLoader } from './setup-detection/dynamic';
@@ -636,18 +638,44 @@ export class AutoTradingScheduler {
         return;
       }
 
-      const existingOpenExecution = openPositions.find(
-        (pos) => pos.symbol === watcher.symbol && pos.setupType === setup.type
+      log('🔍 Checking cooldown', {
+        setupType: setup.type,
+        symbol: watcher.symbol,
+        interval: watcher.interval,
+        walletId: watcher.walletId,
+      });
+
+      const cooldownCheck = await cooldownService.checkCooldown(
+        setup.type,
+        watcher.symbol,
+        watcher.interval,
+        watcher.walletId
       );
 
-      if (existingOpenExecution) {
-        log('⚠️ Duplicate execution prevented - already have open position for this setup', {
-          symbol: watcher.symbol,
+      log('🔎 Cooldown check result', {
+        setupType: setup.type,
+        inCooldown: cooldownCheck.inCooldown,
+        cooldownUntil: cooldownCheck.cooldownUntil,
+        reason: cooldownCheck.reason,
+      });
+
+      if (cooldownCheck.inCooldown) {
+        const remainingMs = cooldownCheck.cooldownUntil
+          ? cooldownCheck.cooldownUntil.getTime() - Date.now()
+          : 0;
+        const remainingMinutes = Math.ceil(remainingMs / 60000);
+        log('⏳ Trade cooldown active', {
           setupType: setup.type,
-          existingExecutionId: existingOpenExecution.id,
+          direction: setup.direction,
+          reason: cooldownCheck.reason,
+          remainingMinutes,
         });
         return;
       }
+
+      log('✅ No cooldown active - proceeding with execution', {
+        setupType: setup.type,
+      });
 
       const oppositeDirectionPosition = openPositions.find(
         (pos) => pos.symbol === watcher.symbol && pos.side !== setup.direction
@@ -748,67 +776,28 @@ export class AutoTradingScheduler {
         return;
       }
 
-      const existingSetup = await db
-        .select()
-        .from(setupDetections)
-        .where(
-          and(
-            eq(setupDetections.symbol, watcher.symbol),
-            eq(setupDetections.setupType, setup.type),
-            eq(setupDetections.userId, watcher.userId)
-          )
-        )
-        .limit(1);
+      const setupId = `setup-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-      let setupId: string;
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
 
-      if (existingSetup.length > 0 && existingSetup[0]) {
-        setupId = existingSetup[0].id;
-        log('📝 Using existing setup detection', { setupId });
-      } else {
-        setupId = `setup-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      await db.insert(setupDetections).values({
+        id: setupId,
+        userId: watcher.userId,
+        symbol: watcher.symbol,
+        interval: watcher.interval,
+        setupType: setup.type,
+        direction: setup.direction,
+        entryPrice: setup.entryPrice.toString(),
+        stopLoss: setup.stopLoss?.toString(),
+        takeProfit: setup.takeProfit?.toString(),
+        confidence: Math.round(setup.confidence),
+        riskReward: setup.riskRewardRatio.toString(),
+        detectedAt: new Date(),
+        expiresAt,
+      });
 
-        const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 24);
-
-        await db.insert(setupDetections).values({
-          id: setupId,
-          userId: watcher.userId,
-          symbol: watcher.symbol,
-          interval: watcher.interval,
-          setupType: setup.type,
-          direction: setup.direction,
-          entryPrice: setup.entryPrice.toString(),
-          stopLoss: setup.stopLoss?.toString(),
-          takeProfit: setup.takeProfit?.toString(),
-          confidence: Math.round(setup.confidence),
-          riskReward: setup.riskRewardRatio.toString(),
-          detectedAt: new Date(),
-          expiresAt,
-        });
-
-        log('📝 Created setup detection', { setupId });
-      }
-
-      const existingSetupExecution = await db
-        .select()
-        .from(tradeExecutions)
-        .where(
-          and(
-            eq(tradeExecutions.walletId, watcher.walletId),
-            eq(tradeExecutions.setupId, setupId)
-          )
-        )
-        .limit(1);
-
-      if (existingSetupExecution.length > 0) {
-        log('⚠️ Setup already executed - preventing duplicate', {
-          setupId,
-          existingExecutionId: existingSetupExecution[0]?.id,
-          existingStatus: existingSetupExecution[0]?.status,
-        });
-        return;
-      }
+      log('📝 Created setup detection', { setupId });
 
       const executionId = `exec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -822,9 +811,24 @@ export class AutoTradingScheduler {
         sizePercent: adjustedSizePercent.toFixed(2),
       });
 
+      const SLIPPAGE_PERCENT = 0.1;
+      const COMMISSION_PERCENT = 0.1;
+      const slippageFactor = setup.direction === 'LONG' ? (1 + SLIPPAGE_PERCENT / 100) : (1 - SLIPPAGE_PERCENT / 100);
+      const expectedEntryWithSlippage = setup.entryPrice * slippageFactor;
+
       let entryOrderId: number | null = null;
-      let actualEntryPrice = setup.entryPrice;
+      let actualEntryPrice = expectedEntryWithSlippage;
       let actualQuantity = adjustedQuantity;
+      let stopLossOrderId: number | null = null;
+      let takeProfitOrderId: number | null = null;
+
+      log('💸 Entry price adjusted for slippage', {
+        originalEntry: setup.entryPrice,
+        expectedEntry: expectedEntryWithSlippage,
+        slippagePercent: SLIPPAGE_PERCENT,
+        commissionPercent: COMMISSION_PERCENT,
+        direction: setup.direction,
+      });
 
       if (isLiveExecution) {
         log('🔴 LIVE EXECUTION - Placing order on Binance', {
@@ -857,14 +861,14 @@ export class AutoTradingScheduler {
 
           if (setup.stopLoss) {
             try {
-              const slOrderId = await autoTradingService.createStopLossOrder(
+              stopLossOrderId = await autoTradingService.createStopLossOrder(
                 wallet as Wallet,
                 watcher.symbol,
                 actualQuantity,
                 setup.stopLoss,
                 setup.direction
               );
-              log('🛡️ Stop loss order placed', { slOrderId, stopLoss: setup.stopLoss });
+              log('🛡️ Stop loss order placed', { stopLossOrderId, stopLoss: setup.stopLoss });
             } catch (slError) {
               log('⚠️ Failed to place stop loss order', {
                 error: slError instanceof Error ? slError.message : String(slError),
@@ -874,14 +878,14 @@ export class AutoTradingScheduler {
 
           if (setup.takeProfit) {
             try {
-              const tpOrderId = await autoTradingService.createTakeProfitOrder(
+              takeProfitOrderId = await autoTradingService.createTakeProfitOrder(
                 wallet as Wallet,
                 watcher.symbol,
                 actualQuantity,
                 setup.takeProfit,
                 setup.direction
               );
-              log('🎯 Take profit order placed', { tpOrderId, takeProfit: setup.takeProfit });
+              log('🎯 Take profit order placed', { takeProfitOrderId, takeProfit: setup.takeProfit });
             } catch (tpError) {
               log('⚠️ Failed to place take profit order', {
                 error: tpError instanceof Error ? tpError.message : String(tpError),
@@ -900,22 +904,72 @@ export class AutoTradingScheduler {
         });
       }
 
-      await db.insert(tradeExecutions).values({
-        id: executionId,
-        userId: watcher.userId,
-        walletId: watcher.walletId,
-        setupId,
+      log('💾 Inserting trade execution into database', {
+        executionId,
         setupType: setup.type,
         symbol: watcher.symbol,
-        side: setup.direction,
-        entryPrice: actualEntryPrice.toString(),
-        entryOrderId,
-        quantity: actualQuantity.toFixed(8),
-        stopLoss: setup.stopLoss?.toString(),
-        takeProfit: setup.takeProfit?.toString(),
-        openedAt: new Date(),
-        status: 'open',
+        direction: setup.direction,
       });
+
+      try {
+        await db.insert(tradeExecutions).values({
+          id: executionId,
+          userId: watcher.userId,
+          walletId: watcher.walletId,
+          setupId,
+          setupType: setup.type,
+          symbol: watcher.symbol,
+          side: setup.direction,
+          entryPrice: actualEntryPrice.toString(),
+          entryOrderId,
+          stopLossOrderId,
+          takeProfitOrderId,
+          quantity: actualQuantity.toFixed(8),
+          stopLoss: setup.stopLoss?.toString(),
+          takeProfit: setup.takeProfit?.toString(),
+          openedAt: new Date(),
+          status: 'open',
+        });
+
+        log('✅ Trade execution inserted into database', { executionId });
+      } catch (dbError) {
+        log('❌ Failed to insert trade execution into database', {
+          executionId,
+          error: dbError instanceof Error ? dbError.message : String(dbError),
+          stack: dbError instanceof Error ? dbError.stack : undefined,
+        });
+        throw dbError;
+      }
+
+      log('⏱️ Setting cooldown', {
+        setupType: setup.type,
+        symbol: watcher.symbol,
+        interval: watcher.interval,
+        walletId: watcher.walletId,
+        cooldownMinutes: 15,
+      });
+
+      try {
+        await cooldownService.setCooldown(
+          setup.type,
+          watcher.symbol,
+          watcher.interval,
+          watcher.walletId,
+          executionId,
+          15,
+          'Trade executed'
+        );
+
+        log('✅ Cooldown set successfully', {
+          setupType: setup.type,
+          cooldownMinutes: 15,
+        });
+      } catch (cooldownError) {
+        log('❌ Failed to set cooldown', {
+          setupType: setup.type,
+          error: cooldownError instanceof Error ? cooldownError.message : String(cooldownError),
+        });
+      }
 
       log('✅ Trade execution created', {
         executionId,
@@ -930,7 +984,10 @@ export class AutoTradingScheduler {
         confidence: setup.confidence,
         isLiveExecution,
         entryOrderId,
+        cooldownMinutes: 15,
       });
+
+      await positionMonitorService.invalidatePriceCache(watcher.symbol);
 
       const allOpenExecutions = await db
         .select()
