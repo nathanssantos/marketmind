@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Scalable Connection Management** 🔌 🆕
+  - Pool PostgreSQL escalável: max 50 conexões, min 0 (cria sob demanda)
+  - Conexões idle fecham automaticamente após 10s
+  - Logging em tempo real de conexões (acquire/remove)
+  - Endpoint `health.poolStats` para monitoramento
+  - Badge visual no frontend mostrando estado do pool
+  - Cores indicativas: verde (<10), amarelo (10-30), vermelho (>30)
+  - Estatísticas a cada 60s no console backend
+  - Permite abrir quantos watchers/gráficos o hardware aguentar
+  - Sem limites artificiais, escala dinamicamente
+  - Documentação: SCALABLE_CONNECTION_MANAGEMENT.md
+
 - **Position Close Tracking** 🔍 🆕
   - Novo campo `exit_source` na tabela `trade_executions`: 'ALGORITHM' ou 'MANUAL'
   - Novo campo `exit_reason` na tabela `trade_executions`: 'STOP_LOSS', 'TAKE_PROFIT', 'USER_CLOSE'

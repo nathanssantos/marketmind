@@ -18,7 +18,7 @@ export interface PositionCheckResult {
 
 export class PositionMonitorService {
   private monitoringTimeout: NodeJS.Timeout | null = null;
-  private readonly CHECK_INTERVAL_MS = 60000;
+  private readonly CHECK_INTERVAL_MS = 15000;
 
   start(): void {
     if (this.monitoringTimeout) {
@@ -244,12 +244,19 @@ export class PositionMonitorService {
       }
 
       const entryPrice = parseFloat(execution.entryPrice);
-      let pnl = 0;
+      let grossPnl = 0;
       if (execution.side === 'LONG') {
-        pnl = (exitPrice - entryPrice) * quantity;
+        grossPnl = (exitPrice - entryPrice) * quantity;
       } else {
-        pnl = (entryPrice - exitPrice) * quantity;
+        grossPnl = (entryPrice - exitPrice) * quantity;
       }
+
+      const entryValue = entryPrice * quantity;
+      const exitValue = exitPrice * quantity;
+      const entryFee = entryValue * 0.001;
+      const exitFee = exitValue * 0.001;
+      const totalFees = entryFee + exitFee;
+      const pnl = grossPnl - totalFees;
 
       const pnlPercent = ((exitPrice - entryPrice) / entryPrice) * 100;
       const adjustedPnlPercent = execution.side === 'LONG' ? pnlPercent : -pnlPercent;
@@ -280,21 +287,21 @@ export class PositionMonitorService {
       const currentBalance = parseFloat(wallet.currentBalance || '0');
       const newBalance = currentBalance + pnl;
 
-      if (wallet.walletType !== 'paper') {
-        await db
-          .update(wallets)
-          .set({
-            currentBalance: newBalance.toString(),
-            updatedAt: new Date(),
-          })
-          .where(eq(wallets.id, wallet.id));
-      } else {
-        logger.info({
-          walletId: wallet.id,
-          pnl,
-          simulatedBalance: newBalance,
-        }, 'Paper trading: balance update skipped');
-      }
+      await db
+        .update(wallets)
+        .set({
+          currentBalance: newBalance.toString(),
+          updatedAt: new Date(),
+        })
+        .where(eq(wallets.id, wallet.id));
+
+      logger.info({
+        walletId: wallet.id,
+        walletType: wallet.walletType,
+        pnl,
+        oldBalance: currentBalance,
+        newBalance,
+      }, '💰 Wallet balance updated after position exit');
 
       await db
         .update(tradeExecutions)

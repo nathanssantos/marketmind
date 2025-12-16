@@ -90,7 +90,7 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
         </Badge>
       </Flex>
 
-      <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }} gap={4}>
+      <Grid templateColumns="repeat(auto-fit, 1fr)" gap={4}>
         {/* Open Positions */}
         <GridItem>
           <Stack gap={2}>

@@ -1,6 +1,6 @@
+import type { Order } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants';
-import type { Order } from '@marketmind/types';
 import {
     getKlineClose,
     getOrderId,
@@ -229,7 +229,7 @@ const drawInfoTag = (
     ctx.fill();
     
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     const crossPadding = 3;
     ctx.beginPath();
     ctx.moveTo(closeButtonX + crossPadding, closeButtonY + crossPadding);
@@ -442,7 +442,7 @@ export const useOrderLinesRenderer = (
 
       const tagStartX = chartWidth;
       ctx.strokeStyle = lineColor;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(tagStartX, y);
@@ -545,7 +545,7 @@ export const useOrderLinesRenderer = (
       
       const tagStartX = chartWidth;
       ctx.strokeStyle = lineColor;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(tagStartX, y);
@@ -604,7 +604,7 @@ export const useOrderLinesRenderer = (
         drawPriceTag(ctx, priceText, y, tagStartX, fillColor, 'left', tagStartX);
 
         ctx.strokeStyle = lineColor;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(tagStartX, y);
@@ -672,7 +672,7 @@ export const useOrderLinesRenderer = (
         drawPriceTag(ctx, priceText, y, tagStartX, fillColor, 'left', tagStartX);
 
         ctx.strokeStyle = lineColor;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(tagStartX, y);

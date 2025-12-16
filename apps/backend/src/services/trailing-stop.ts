@@ -7,7 +7,7 @@ import { klines, priceCache, setupDetections, tradeExecutions } from '../db/sche
 import { logger } from './logger';
 
 export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
-  breakevenProfitThreshold: 0.005,
+  breakevenProfitThreshold: 0.006,
   minTrailingDistancePercent: 0.002,
   swingLookback: 3,
   useATRMultiplier: true,
@@ -50,7 +50,7 @@ export const calculateProfitPercent = (
 export const calculateBreakevenPrice = (
   entryPrice: number,
   isLong: boolean,
-  buffer: number = 0.001
+  buffer: number = 0.002
 ): number => {
   return entryPrice * (isLong ? 1 + buffer : 1 - buffer);
 };

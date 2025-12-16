@@ -29,7 +29,7 @@ export const TradingSidebar = ({ width }: TradingSidebarProps) => {
 
   return (
     <SidebarContainer width={width}>
-      <Tabs.Root value={tradingSidebarTab} onValueChange={handleTabChange} fitted>
+      <Tabs.Root value={tradingSidebarTab} onValueChange={handleTabChange} fitted h="full" display="flex" flexDirection="column">
         <Tabs.List>
           <Tabs.Trigger value="ticket">
             <Text fontSize="xs">{t('trading.tabs.ticket')}</Text>
@@ -68,8 +68,8 @@ export const TradingSidebar = ({ width }: TradingSidebarProps) => {
           </Tabs.Content>
 
           {activeWalletId && (
-            <Tabs.Content value="analytics">
-              <Stack gap={4} p={4}>
+            <Tabs.Content value="analytics" h="full">
+              <Stack gap={4} p={4} h="full" overflowY="auto">
                 <RiskDisplay walletId={activeWalletId} />
                 <PerformancePanel walletId={activeWalletId} />
                 <SetupStatsTable walletId={activeWalletId} />

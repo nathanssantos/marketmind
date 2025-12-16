@@ -113,7 +113,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
         </ButtonGroup>
       </Flex>
 
-      <Grid templateColumns="repeat(4, 1fr)" gap={3}>
+      <Grid templateColumns="repeat(auto-fit, 1fr)" gap={3}>
         <MetricCard
           label={t('trading.analytics.performance.totalReturn')}
           value={formatPercent(performance.totalReturn)}
@@ -137,7 +137,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
         />
       </Grid>
 
-      <Grid templateColumns="repeat(5, 1fr)" gap={3}>
+      <Grid templateColumns="repeat(auto-fit, 1fr)" gap={3}>
         <MetricCard
           label={t('trading.analytics.performance.avgWin')}
           value={formatCurrency(performance.avgWin)}

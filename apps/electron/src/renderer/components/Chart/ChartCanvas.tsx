@@ -15,16 +15,16 @@ import { Box, Portal } from '@chakra-ui/react';
 import { calculateMovingAverage, type StochasticResult } from '@marketmind/indicators';
 import type { AIPattern, AITradingContext, Kline, Order, Viewport } from '@marketmind/types';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
+import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useChartColors } from '@renderer/hooks/useChartColors';
+import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
 import { useMarketContext } from '@renderer/hooks/useMarketContext';
 import { useRSIWorker } from '@renderer/hooks/useRSIWorker';
 import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
 import { useSetupStore } from '@renderer/store';
-import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
-import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
 import { trpc } from '@renderer/utils/trpc';
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume, isOrderLong, isOrderPending } from '@shared/utils';
@@ -39,6 +39,8 @@ import { ChartTooltip } from './ChartTooltip';
 import { KlineTimer } from './KlineTimer';
 import { PatternRenderer } from './PatternRenderer';
 import { SetupRenderer } from './SetupRenderer';
+import { useATRRenderer } from './useATRRenderer';
+import { useBollingerBandsRenderer } from './useBollingerBandsRenderer';
 import { useChartCanvas } from './useChartCanvas';
 import { useCrosshairPriceLineRenderer } from './useCrosshairPriceLineRenderer';
 import { useCurrentPriceLineRenderer } from './useCurrentPriceLineRenderer';
@@ -52,8 +54,6 @@ import { useRSIRenderer } from './useRSIRenderer';
 import { useStochasticRenderer } from './useStochasticRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
 import { useWatermarkRenderer } from './useWatermarkRenderer';
-import { useBollingerBandsRenderer } from './useBollingerBandsRenderer';
-import { useATRRenderer } from './useATRRenderer';
 
 const MOUSE_POSITION_THROTTLE_MS = 16;
 const RIGHT_MOUSE_BUTTON = 2;
@@ -147,7 +147,7 @@ export const ChartCanvas = ({
     { walletId: backendWalletId ?? '', limit: 50 },
     {
       enabled: !!backendWalletId && !!symbol,
-      refetchInterval: 5000,
+      refetchInterval: 10000,
     }
   );
 
@@ -415,7 +415,7 @@ export const ChartCanvas = ({
 
   const orderDragHandler = useOrderDragHandler({
     orders: [],
-    updateOrder: () => {},
+    updateOrder: () => { },
     priceToY: (price) => manager?.priceToY(price) ?? 0,
     yToPrice: (y) => manager?.yToPrice(y) ?? 0,
     enabled: false,

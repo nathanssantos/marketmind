@@ -243,32 +243,40 @@ export class BinanceUserStreamService {
         const quantity = parseFloat(executedQty);
         const entryPrice = parseFloat(execution.entryPrice);
 
-        let pnl = 0;
+        let grossPnl = 0;
         if (execution.side === 'LONG') {
-          pnl = (exitPrice - entryPrice) * quantity;
+          grossPnl = (exitPrice - entryPrice) * quantity;
         } else {
-          pnl = (entryPrice - exitPrice) * quantity;
+          grossPnl = (entryPrice - exitPrice) * quantity;
         }
+
+        const entryValue = entryPrice * quantity;
+        const exitValue = exitPrice * quantity;
+        const entryFee = entryValue * 0.001;
+        const exitFee = exitValue * 0.001;
+        const totalFees = entryFee + exitFee;
+        const pnl = grossPnl - totalFees;
 
         const pnlPercent = (pnl / (entryPrice * quantity)) * 100;
 
         const currentBalance = parseFloat(wallet.currentBalance || '0');
         const newBalance = currentBalance + pnl;
 
-        if (wallet.walletType !== 'paper') {
-          await db
-            .update(wallets)
-            .set({
-              currentBalance: newBalance.toString(),
-              totalPnl: (parseFloat(wallet.totalPnl || '0') + pnl).toString(),
-            })
-            .where(eq(wallets.id, walletId));
-        } else {
-          logger.info('Paper trading: balance update skipped in user stream', {
-            walletId,
-            pnl,
-          });
-        }
+        await db
+          .update(wallets)
+          .set({
+            currentBalance: newBalance.toString(),
+            totalPnl: (parseFloat(wallet.totalPnl || '0') + pnl).toString(),
+          })
+          .where(eq(wallets.id, walletId));
+
+        logger.info({
+          walletId,
+          walletType: wallet.walletType,
+          pnl,
+          oldBalance: currentBalance,
+          newBalance,
+        }, '💰 Wallet balance updated via user stream');
 
         await db
           .update(tradeExecutions)

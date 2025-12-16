@@ -123,13 +123,11 @@ export const Portfolio = () => {
             </Stack>
           </Box>
 
-          <Box maxH="calc(100vh - 400px)" overflowY="auto">
-            <Stack gap={2}>
-              {positions.map((position) => (
-                <PositionCard key={position.id} position={position} currency={activeWallet.currency} />
-              ))}
-            </Stack>
-          </Box>
+          <Stack gap={2}>
+            {positions.map((position) => (
+              <PositionCard key={position.id} position={position} currency={activeWallet.currency} />
+            ))}
+          </Stack>
         </>
       )}
     </Stack>

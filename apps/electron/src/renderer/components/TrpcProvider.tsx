@@ -9,10 +9,11 @@ export const TrpcProvider = ({ children }: { children: React.ReactNode }) => {
     const [queryClient] = useState(() => new QueryClient({
         defaultOptions: {
             queries: {
-                staleTime: 5000,
+                staleTime: 30000,
+                gcTime: 60000,
                 retry: 1,
                 refetchOnWindowFocus: false,
-                refetchIntervalInBackground: true,
+                refetchIntervalInBackground: false,
             },
         },
     }));

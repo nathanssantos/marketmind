@@ -275,27 +275,25 @@ export const OrdersList = () => {
             </ChakraField.Root>
           </Flex>
 
-          <Box maxH="calc(100vh - 400px)" overflowY="auto" overflowX="visible">
-            {filteredOrders.length === 0 ? (
-              <Box p={4} textAlign="center" minH="100px">
-                <Text fontSize="sm" color="fg.muted">
-                  {t('trading.orders.empty')}
-                </Text>
-              </Box>
-            ) : (
-              <Stack gap={2}>
-                {filteredOrders.map((order) => (
-                  <OrderCard
-                    key={getOrderId(order)}
-                    order={order}
-                    currency={activeWallet.currency}
-                    onCancel={() => cancelOrder(getOrderId(order))}
-                    onClose={(price) => closeOrder(getOrderId(order), price)}
-                  />
-                ))}
-              </Stack>
-            )}
-          </Box>
+          {filteredOrders.length === 0 ? (
+            <Box p={4} textAlign="center" minH="100px">
+              <Text fontSize="sm" color="fg.muted">
+                {t('trading.orders.empty')}
+              </Text>
+            </Box>
+          ) : (
+            <Stack gap={2}>
+              {filteredOrders.map((order) => (
+                <OrderCard
+                  key={getOrderId(order)}
+                  order={order}
+                  currency={activeWallet.currency}
+                  onCancel={() => cancelOrder(getOrderId(order))}
+                  onClose={(price) => closeOrder(getOrderId(order), price)}
+                />
+              ))}
+            </Stack>
+          )}
         </>
       )}
     </Stack>
