@@ -12,7 +12,7 @@ import { appRouter } from './trpc/router';
 
 const fastify = Fastify({
   logger: {
-    level: env.NODE_ENV === 'development' ? 'info' : 'warn',
+    level: 'warn',
   },
   maxParamLength: 5000,
 });

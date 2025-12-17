@@ -24,7 +24,7 @@ export const usePositionUpdates = (walletId: string, enabled = true) => {
       off('position:update', handlePositionUpdate);
       unsubscribe.positions(walletId);
     };
-  }, [enabled, isConnected, walletId, subscribe, unsubscribe, on, off, utils]);
+  }, [enabled, isConnected, walletId, utils]);
 
   return {
     isConnected,

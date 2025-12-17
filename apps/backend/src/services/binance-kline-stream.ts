@@ -187,7 +187,14 @@ export class BinanceKlineStreamService {
         wsService.emitKlineUpdate(update);
       }
 
-      await this.persistKline(update);
+      if (update.isClosed) {
+        await this.persistKline(update);
+        logger.info({ 
+          symbol: update.symbol, 
+          interval: update.interval, 
+          openTime: new Date(update.openTime).toISOString(),
+        }, '✅ Persisted closed kline');
+      }
     } catch (error) {
       logger.error({
         symbol: update.symbol,
@@ -198,6 +205,15 @@ export class BinanceKlineStreamService {
 
   private async persistKline(update: KlineUpdate): Promise<void> {
     try {
+      if (!update.isClosed) {
+        logger.warn({
+          symbol: update.symbol,
+          interval: update.interval,
+          openTime: new Date(update.openTime).toISOString(),
+        }, '🚨 CRITICAL: Attempted to persist an OPEN candle - This should NEVER happen!');
+        return;
+      }
+
       const openTime = new Date(update.openTime);
       const interval = update.interval as Interval;
 
@@ -239,8 +255,6 @@ export class BinanceKlineStreamService {
       } else {
         await db.insert(klines).values(klineData);
       }
-
-      // logger.debug({ symbol: update.symbol, interval, openTime: openTime.toISOString() }, 'Persisted closed kline');
     } catch (error) {
       logger.error({
         symbol: update.symbol,

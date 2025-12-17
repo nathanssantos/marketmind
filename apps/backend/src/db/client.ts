@@ -7,24 +7,11 @@ const { Pool } = pg;
 
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
-  max: 50,
-  min: 0,
-  idleTimeoutMillis: 10000,
+  max: 10,
+  min: 2,
+  idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
   allowExitOnIdle: true,
-});
-
-pool.on('connect', (client) => {
-  const totalCount = pool.totalCount;
-  const idleCount = pool.idleCount;
-  const waitingCount = pool.waitingCount;
-  console.log(`[DB Pool] Connection acquired - Total: ${totalCount}, Idle: ${idleCount}, Waiting: ${waitingCount}`);
-});
-
-pool.on('remove', (client) => {
-  const totalCount = pool.totalCount;
-  const idleCount = pool.idleCount;
-  console.log(`[DB Pool] Connection removed - Total: ${totalCount}, Idle: ${idleCount}`);
 });
 
 pool.on('error', (err, client) => {

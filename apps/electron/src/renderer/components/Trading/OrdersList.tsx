@@ -5,6 +5,7 @@ import type { Order, OrderStatus } from '@marketmind/types';
 import { Select } from '@renderer/components/ui/select';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
 import { type OrdersFilterOption, type OrdersSortOption, useUIStore } from '@renderer/store/uiStore';
 import {
   getOrderId,
@@ -24,6 +25,7 @@ export const OrdersList = () => {
 
   const { wallets: backendWallets } = useBackendWallet();
   const activeWalletId = backendWallets[0]?.id;
+  useOrderUpdates(activeWalletId);
   const {
     orders: backendOrdersData,
     tradeExecutions,

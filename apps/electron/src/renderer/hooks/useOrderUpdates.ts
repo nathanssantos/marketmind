@@ -41,7 +41,7 @@ export const useOrderUpdates = (walletId: string, enabled = true) => {
       off('order:cancelled', handleOrderCancelled);
       unsubscribe.orders(walletId);
     };
-  }, [enabled, isConnected, walletId, subscribe, unsubscribe, on, off, utils]);
+  }, [enabled, isConnected, walletId, utils]);
 
   return {
     isConnected,

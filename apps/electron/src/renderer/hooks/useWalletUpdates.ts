@@ -24,7 +24,7 @@ export const useWalletUpdates = (walletId: string, enabled = true) => {
       off('wallet:update', handleWalletUpdate);
       unsubscribe.wallet(walletId);
     };
-  }, [enabled, isConnected, walletId, subscribe, unsubscribe, on, off, utils]);
+  }, [enabled, isConnected, walletId, utils]);
 
   return {
     isConnected,

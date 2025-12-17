@@ -5,7 +5,6 @@ import { db } from '../db';
 import { klines } from '../db/schema';
 import { backfillHistoricalKlines, calculateStartTime, fetchHistoricalKlinesFromAPI } from '../services/binance-historical';
 import { binanceKlineStreamService } from '../services/binance-kline-stream';
-import { getBinanceKlineSync } from '../services/binance-kline-sync';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 
@@ -40,9 +39,7 @@ export const klineRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const sync = getBinanceKlineSync();
-      sync.subscribe(input.symbol, input.interval as Interval);
-
+      binanceKlineStreamService.subscribe(input.symbol, input.interval);
       return { success: true, message: `Subscribed to ${input.symbol}@${input.interval}` };
     }),
 
@@ -54,9 +51,7 @@ export const klineRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const sync = getBinanceKlineSync();
-      sync.unsubscribe(input.symbol, input.interval as Interval);
-
+      binanceKlineStreamService.unsubscribe(input.symbol, input.interval);
       return { success: true, message: `Unsubscribed from ${input.symbol}@${input.interval}` };
     }),
 
@@ -293,9 +288,15 @@ export const klineRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const sync = getBinanceKlineSync();
-      const latestKline = await sync.getLatestKline(input.symbol, input.interval as Interval);
-
+      const latestKlineResult = await db.query.klines.findFirst({
+        where: and(
+          eq(klines.symbol, input.symbol),
+          eq(klines.interval, input.interval as Interval)
+        ),
+        orderBy: [desc(klines.openTime)],
+      });
+      
+      const latestKline = latestKlineResult?.openTime || null;
       const startTime = latestKline || calculateStartTime(input.interval as Interval, input.periodsBack);
       const endTime = new Date();
 
