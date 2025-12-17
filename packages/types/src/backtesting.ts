@@ -156,6 +156,7 @@ export interface TrailingStopOptimizationConfig {
   useATRMultiplier: boolean;
   atrMultiplier: number;
   feePercent?: number;
+  trailingDistancePercent?: number;
 }
 
 export interface TimeframeThreshold {

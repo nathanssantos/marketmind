@@ -44,25 +44,26 @@ describe('StrategyPerformanceService', () => {
         interval: '1h',
         totalTrades: 10,
         winRate: '75.00',
-      };
-
-      vi.mocked(db.query.strategyPerformance.findFirst).mockResolvedValue({
-        ...perfRecord,
         winningTrades: 7,
         losingTrades: 3,
         breakevenTrades: 0,
         totalPnl: '100.00',
         maxConsecutiveLosses: 2,
         currentConsecutiveLosses: 0,
-        lastTradeAt: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        lastTradeAt: new Date('2024-01-01'),
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
         totalPnlPercent: '10.00',
         avgWin: '20.00',
         avgLoss: '-10.00',
         avgRr: '2.00',
         profitFactor: '2.00',
-      });
+        maxDrawdown: '5.00',
+        avgSlippagePercent: '0.10',
+        avgExecutionTimeMs: 150,
+      };
+
+      vi.mocked(db.query.strategyPerformance.findFirst).mockResolvedValue(perfRecord);
 
       const result = await service.getPerformance('larry-williams-9-1', 'BTCUSDT', '1h');
 
