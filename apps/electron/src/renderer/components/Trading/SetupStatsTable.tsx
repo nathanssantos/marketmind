@@ -54,11 +54,11 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
 
   return (
     <Stack gap={4} p={6} bg="gray.50" _dark={{ bg: 'gray.800' }} borderRadius="md" borderWidth="1px">
-      <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px">
+      <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px" flexWrap="wrap" gap={2}>
         <Text fontSize="lg" fontWeight="bold">
           {t('trading.analytics.setupStats.title')}
         </Text>
-        <ButtonGroup size="sm" variant="outline">
+        <ButtonGroup size="sm" variant="outline" flexWrap="wrap">
           {periods.map((p) => (
             <Button
               key={p.value}

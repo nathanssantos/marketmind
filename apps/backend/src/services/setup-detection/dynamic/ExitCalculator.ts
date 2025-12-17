@@ -54,6 +54,18 @@ export class ExitCalculator {
       ? entryPrice - distance 
       : entryPrice + distance;
 
+    const isValid = direction === 'LONG' ? stopLoss < entryPrice : stopLoss > entryPrice;
+    if (!isValid) {
+      logger.error({
+        direction,
+        entryPrice: entryPrice.toFixed(4),
+        stopLoss: stopLoss.toFixed(4),
+        distance: distance.toFixed(4),
+        exitType: exit.type,
+      }, '❌ INVALID STOP LOSS - SL must be below entry for LONG and above entry for SHORT');
+      throw new Error(`Invalid stop loss: ${direction} SL ${stopLoss.toFixed(4)} must be ${direction === 'LONG' ? 'below' : 'above'} entry ${entryPrice.toFixed(4)}`);
+    }
+
     logger.debug({
       type: 'stopLoss',
       exitType: exit.type,
@@ -106,17 +118,42 @@ export class ExitCalculator {
     if (exit.type === 'indicator') {
       const target = this.resolveIndicatorTarget(exit, context);
       if (target !== null) {
+        const isValid = direction === 'LONG' ? target > entryPrice : target < entryPrice;
+        if (!isValid) {
+          logger.warn({
+            direction,
+            entryPrice: entryPrice.toFixed(4),
+            indicatorTarget: target.toFixed(4),
+            exitType: exit.type,
+          }, '⚠️ Indicator-based TP is in loss zone - using fallback or throwing');
+          if (exit.fallback) {
+            logger.info('Using fallback TP calculation');
+            return this.calculateTakeProfit(exit.fallback, context, stopLossPrice);
+          }
+          throw new Error(`Invalid take profit from indicator: ${direction} TP ${target.toFixed(4)} must be ${direction === 'LONG' ? 'above' : 'below'} entry ${entryPrice.toFixed(4)}`);
+        }
         return target;
       }
     }
 
     const distance = this.calculateExitDistance(exit, context);
+    const takeProfit = direction === 'LONG' 
+      ? entryPrice + distance 
+      : entryPrice - distance;
 
-    if (direction === 'LONG') {
-      return entryPrice + distance;
-    } else {
-      return entryPrice - distance;
+    const isValid = direction === 'LONG' ? takeProfit > entryPrice : takeProfit < entryPrice;
+    if (!isValid) {
+      logger.error({
+        direction,
+        entryPrice: entryPrice.toFixed(4),
+        takeProfit: takeProfit.toFixed(4),
+        distance: distance.toFixed(4),
+        exitType: exit.type,
+      }, '❌ INVALID TAKE PROFIT - TP must be above entry for LONG and below entry for SHORT');
+      throw new Error(`Invalid take profit: ${direction} TP ${takeProfit.toFixed(4)} must be ${direction === 'LONG' ? 'above' : 'below'} entry ${entryPrice.toFixed(4)}`);
     }
+
+    return takeProfit;
   }
 
   /**

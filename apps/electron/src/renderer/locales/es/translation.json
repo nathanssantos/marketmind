@@ -832,6 +832,8 @@
       "noWallet": "Por favor, crea y selecciona una cartera primero.",
       "empty": "No hay posiciones abiertas.",
       "activePositions": "Posiciones Activas",
+      "profitable": "Rentables",
+      "losing": "Perdiendo",
       "totalExposure": "Exposición Total",
       "unrealizedPnL": "PyG No Realizado",
       "orders": "órdenes",
@@ -842,7 +844,28 @@
       "currentPrice": "Precio Actual",
       "pnl": "PyG",
       "position": "Posición",
-      "setups": "Setups"
+      "setups": "Setups",
+      "filterBy": "Filtrar por",
+      "filterAll": "Todas las Posiciones",
+      "filterLong": "Solo Long",
+      "filterShort": "Solo Short",
+      "filterProfitable": "Solo Rentables",
+      "filterLosing": "Solo Perdiendo",
+      "sortBy": "Ordenar por",
+      "sortPnlDesc": "Mayor Ganancia",
+      "sortPnlAsc": "Mayor Pérdida",
+      "sortNewest": "Más Recientes",
+      "sortOldest": "Más Antiguas",
+      "sortSymbolAsc": "Símbolo (A-Z)",
+      "sortSymbolDesc": "Símbolo (Z-A)"
+    },
+    "trailingStop": {
+      "reasons": {
+        "breakeven": "Punto de Equilibrio",
+        "breakeven_with_fees": "Punto de Equilibrio (con tasas)",
+        "swing_trail": "Trailing por Swing",
+        "atr_trail": "Trailing por ATR"
+      }
     },
     "orders": {
       "title": "Órdenes",
@@ -879,6 +902,7 @@
       "stopLoss": "Stop Loss",
       "takeProfit": "Take Profit",
       "pnl": "P&G",
+      "fees": "Tasas Pagadas",
       "close": "Cerrar Orden",
       "cancel": "Cancelar Orden",
       "autoTrade": "Orden automática"

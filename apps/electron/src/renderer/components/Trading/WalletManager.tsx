@@ -5,6 +5,7 @@ import { Button } from '@renderer/components/ui/button';
 import { TooltipWrapper } from '@renderer/components/ui/Tooltip';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useWalletUpdates } from '@renderer/hooks/useWalletUpdates';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
@@ -57,6 +58,8 @@ export const WalletManager = () => {
   }, [backendWalletsData]);
 
   const activeWalletId = wallets[0]?.id ?? null;
+
+  useWalletUpdates(activeWalletId ?? undefined);
 
   const handleAddWallet = async (params: {
     name: string;

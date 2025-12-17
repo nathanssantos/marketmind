@@ -150,10 +150,12 @@ export interface PyramidingConfig {
 
 export interface TrailingStopOptimizationConfig {
   breakevenProfitThreshold: number;
+  breakevenWithFeesThreshold?: number;
   minTrailingDistancePercent: number;
   swingLookback: number;
   useATRMultiplier: boolean;
   atrMultiplier: number;
+  feePercent?: number;
 }
 
 export interface TimeframeThreshold {

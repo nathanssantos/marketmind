@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { wallets } from '../db/schema';
 import { decryptApiKey, encryptApiKey } from '../services/encryption';
+import { getWebSocketService } from '../services/websocket';
 import { protectedProcedure, router } from '../trpc';
 
 const generateId = (length: number): string => {
@@ -81,13 +82,20 @@ export const walletRouter = router({
         isActive: true,
       });
 
-      return {
+      const walletData = {
         id: walletId,
         name: input.name,
         initialBalance: input.initialBalance,
         currentBalance: input.initialBalance,
         currency: input.currency,
       };
+
+      const wsService = getWebSocketService();
+      if (wsService) {
+        wsService.emitWalletUpdate(walletId, walletData);
+      }
+
+      return walletData;
     }),
 
   create: protectedProcedure
@@ -186,6 +194,24 @@ export const walletRouter = router({
 
       await ctx.db.update(wallets).set(updateData).where(eq(wallets.id, input.id));
 
+      const [updatedWallet] = await ctx.db
+        .select({
+          id: wallets.id,
+          name: wallets.name,
+          currency: wallets.currency,
+          initialBalance: wallets.initialBalance,
+          currentBalance: wallets.currentBalance,
+          isActive: wallets.isActive,
+        })
+        .from(wallets)
+        .where(eq(wallets.id, input.id))
+        .limit(1);
+
+      const wsService = getWebSocketService();
+      if (wsService && updatedWallet) {
+        wsService.emitWalletUpdate(input.id, updatedWallet);
+      }
+
       return { success: true };
     }),
 
@@ -230,6 +256,24 @@ export const walletRouter = router({
         const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
         const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
 
+
+        const [updatedWallet] = await ctx.db
+          .select({
+            id: wallets.id,
+            name: wallets.name,
+            currency: wallets.currency,
+            initialBalance: wallets.initialBalance,
+            currentBalance: wallets.currentBalance,
+            isActive: wallets.isActive,
+          })
+          .from(wallets)
+          .where(eq(wallets.id, input.id))
+          .limit(1);
+
+        const wsService = getWebSocketService();
+        if (wsService && updatedWallet) {
+          wsService.emitWalletUpdate(input.id, updatedWallet);
+        }
         const client = new MainClient({
           api_key: apiKey,
           api_secret: apiSecret,

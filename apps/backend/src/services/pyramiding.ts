@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
-import { tradeExecutions, autoTradingConfig } from '../db/schema';
 import type { TradeExecution } from '../db/schema';
+import { autoTradingConfig, tradeExecutions } from '../db/schema';
 import { logger } from './logger';
 import { positionMonitorService } from './position-monitor';
 
@@ -331,10 +331,10 @@ export class PyramidingService {
 
       if (mlConfidence) {
         baseSizePercent = maxPositionSizePercent * mlConfidence;
-        baseSizePercent = Math.max(baseSizePercent, maxPositionSizePercent * 0.2);
+        baseSizePercent = Math.max(baseSizePercent, maxPositionSizePercent * 0.8);
         baseSizePercent = Math.min(baseSizePercent, maxPositionSizePercent);
       } else {
-        baseSizePercent = maxPositionSizePercent * 0.5;
+        baseSizePercent = maxPositionSizePercent;
       }
 
       const positionValue = (walletBalance * baseSizePercent) / 100;
@@ -343,7 +343,7 @@ export class PyramidingService {
       return {
         quantity: roundQuantity(quantity),
         sizePercent: baseSizePercent,
-        reason: `Initial entry: ${baseSizePercent.toFixed(1)}% position (ML confidence: ${mlConfidence ? (mlConfidence * 100).toFixed(0) + '%' : 'N/A'})`,
+        reason: `Initial entry: ${baseSizePercent.toFixed(1)}% position (ML confidence: ${mlConfidence ? `${(mlConfidence * 100).toFixed(0)  }%` : 'N/A'})`,
       };
     }
 
@@ -395,7 +395,7 @@ export class PyramidingService {
     return {
       quantity: roundQuantity(finalQuantity),
       sizePercent,
-      reason: `Pyramid entry #${openExecutions.length + 1}: ${sizePercent.toFixed(1)}% (profit: ${(profitPercent * 100).toFixed(2)}%, ML: ${mlConfidence ? (mlConfidence * 100).toFixed(0) + '%' : 'N/A'})`,
+      reason: `Pyramid entry #${openExecutions.length + 1}: ${sizePercent.toFixed(1)}% (profit: ${(profitPercent * 100).toFixed(2)}%, ML: ${mlConfidence ? `${(mlConfidence * 100).toFixed(0)  }%` : 'N/A'})`,
     };
   }
 

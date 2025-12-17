@@ -7,18 +7,20 @@ import { klines, priceCache, setupDetections, tradeExecutions } from '../db/sche
 import { logger } from './logger';
 
 export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
-  breakevenProfitThreshold: 0.006,
+  breakevenProfitThreshold: 0.005,
+  breakevenWithFeesThreshold: 0.007,
   minTrailingDistancePercent: 0.002,
   swingLookback: 3,
   useATRMultiplier: true,
   atrMultiplier: 2.0,
+  feePercent: 0.002,
 };
 
 export interface TrailingStopUpdate {
   executionId: string;
   oldStopLoss: number | null;
   newStopLoss: number;
-  reason: 'breakeven' | 'swing_trail' | 'atr_trail';
+  reason: 'breakeven' | 'breakeven_with_fees' | 'swing_trail' | 'atr_trail';
 }
 
 export interface TrailingStopInput {
@@ -34,7 +36,7 @@ export interface TrailingStopInput {
 
 export interface TrailingStopResult {
   newStopLoss: number;
-  reason: 'breakeven' | 'swing_trail' | 'atr_trail';
+  reason: 'breakeven' | 'breakeven_with_fees' | 'swing_trail' | 'atr_trail';
 }
 
 export const calculateProfitPercent = (
@@ -50,9 +52,17 @@ export const calculateProfitPercent = (
 export const calculateBreakevenPrice = (
   entryPrice: number,
   isLong: boolean,
-  buffer: number = 0.002
+  buffer: number = 0
 ): number => {
   return entryPrice * (isLong ? 1 + buffer : 1 - buffer);
+};
+
+export const calculateBreakevenWithFeesPrice = (
+  entryPrice: number,
+  isLong: boolean,
+  feePercent: number = 0.002
+): number => {
+  return entryPrice * (isLong ? 1 + feePercent : 1 - feePercent);
 };
 
 export const findBestSwingStop = (
@@ -157,64 +167,81 @@ export const computeTrailingStop = (
   }
 
   const breakevenPrice = calculateBreakevenPrice(entryPrice, isLong);
+  const breakevenWithFeesPrice = calculateBreakevenWithFeesPrice(entryPrice, isLong, config.feePercent || 0.002);
 
-  const swingStop = findBestSwingStop(
-    swingPoints,
-    currentPrice,
-    entryPrice,
-    isLong,
-    config.minTrailingDistancePercent
-  );
+  if (profitPercent >= config.breakevenProfitThreshold && profitPercent < (config.breakevenWithFeesThreshold || 0.007)) {
+    if (!shouldUpdateStopLoss(breakevenPrice, currentStopLoss, isLong)) {
+      return null;
+    }
+    return { newStopLoss: breakevenPrice, reason: 'breakeven' };
+  }
 
-  let atrStop: number | null = null;
-  if (swingStop === null && config.useATRMultiplier && atr && atr > 0) {
-    const extremePrice = isLong ? highestPrice : lowestPrice;
-    if (extremePrice !== undefined) {
-      const candidateAtrStop = calculateATRTrailingStop(extremePrice, atr, isLong, config.atrMultiplier);
-      if (shouldUpdateStopLoss(candidateAtrStop, currentStopLoss, isLong)) {
-        atrStop = candidateAtrStop;
-        logger.debug({
-          extremePrice,
-          atr,
-          atrMultiplier: config.atrMultiplier,
-          atrStop,
-        }, 'ATR trailing stop calculated');
+  if (profitPercent >= (config.breakevenWithFeesThreshold || 0.007)) {
+    const minStopLoss = breakevenWithFeesPrice;
+
+    const swingStop = findBestSwingStop(
+      swingPoints,
+      currentPrice,
+      entryPrice,
+      isLong,
+      config.minTrailingDistancePercent
+    );
+
+    let atrStop: number | null = null;
+    if (swingStop === null && config.useATRMultiplier && atr && atr > 0) {
+      const extremePrice = isLong ? highestPrice : lowestPrice;
+      if (extremePrice !== undefined) {
+        const candidateAtrStop = calculateATRTrailingStop(extremePrice, atr, isLong, config.atrMultiplier);
+        if (shouldUpdateStopLoss(candidateAtrStop, currentStopLoss, isLong)) {
+          atrStop = candidateAtrStop;
+          logger.debug({
+            extremePrice,
+            atr,
+            atrMultiplier: config.atrMultiplier,
+            atrStop,
+          }, 'ATR trailing stop calculated');
+        }
       }
     }
+
+    logger.debug({
+      entryPrice,
+      currentPrice,
+      profitPercent: (profitPercent * 100).toFixed(2),
+      breakevenPrice,
+      breakevenWithFeesPrice,
+      swingStop,
+      atrStop,
+      swingPointsCount: swingPoints.length,
+      relevantSwings: swingPoints.filter(sp => isLong ? sp.type === 'low' : sp.type === 'high').slice(-5),
+    }, 'Trailing stop calculation details');
+
+    let newStopLoss: number;
+    let reason: 'breakeven_with_fees' | 'swing_trail' | 'atr_trail';
+
+    if (swingStop !== null) {
+      newStopLoss = isLong
+        ? Math.max(minStopLoss, swingStop)
+        : Math.min(minStopLoss, swingStop);
+      reason = newStopLoss === minStopLoss ? 'breakeven_with_fees' : 'swing_trail';
+    } else if (atrStop !== null) {
+      newStopLoss = isLong 
+        ? Math.max(minStopLoss, atrStop)
+        : Math.min(minStopLoss, atrStop);
+      reason = newStopLoss === minStopLoss ? 'breakeven_with_fees' : 'atr_trail';
+    } else {
+      newStopLoss = minStopLoss;
+      reason = 'breakeven_with_fees';
+    }
+
+    if (!shouldUpdateStopLoss(newStopLoss, currentStopLoss, isLong)) {
+      return null;
+    }
+
+    return { newStopLoss, reason };
   }
 
-  logger.debug({
-    entryPrice,
-    currentPrice,
-    profitPercent: (profitPercent * 100).toFixed(2),
-    breakevenPrice,
-    swingStop,
-    atrStop,
-    swingPointsCount: swingPoints.length,
-    relevantSwings: swingPoints.filter(sp => isLong ? sp.type === 'low' : sp.type === 'high').slice(-5),
-  }, 'Trailing stop calculation details');
-
-  let newStopLoss: number;
-  let reason: 'breakeven' | 'swing_trail' | 'atr_trail';
-
-  if (swingStop !== null) {
-    newStopLoss = calculateNewStopLoss(breakevenPrice, swingStop, isLong);
-    reason = 'swing_trail';
-  } else if (atrStop !== null) {
-    newStopLoss = isLong 
-      ? Math.max(breakevenPrice, atrStop)
-      : Math.min(breakevenPrice, atrStop);
-    reason = newStopLoss === breakevenPrice ? 'breakeven' : 'atr_trail';
-  } else {
-    newStopLoss = breakevenPrice;
-    reason = 'breakeven';
-  }
-
-  if (!shouldUpdateStopLoss(newStopLoss, currentStopLoss, isLong)) {
-    return null;
-  }
-
-  return { newStopLoss, reason };
+  return null;
 };
 
 export class TrailingStopService {

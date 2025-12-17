@@ -837,6 +837,8 @@
       "noWallet": "Please create and select a wallet first.",
       "empty": "No open positions.",
       "activePositions": "Active Positions",
+      "profitable": "Profitable",
+      "losing": "Losing",
       "totalExposure": "Total Exposure",
       "unrealizedPnL": "Unrealized P&L",
       "orders": "orders",
@@ -847,7 +849,28 @@
       "currentPrice": "Current Price",
       "pnl": "P&L",
       "position": "Position",
-      "setups": "Setups"
+      "setups": "Setups",
+      "filterBy": "Filter by",
+      "filterAll": "All Positions",
+      "filterLong": "Long Only",
+      "filterShort": "Short Only",
+      "filterProfitable": "Profitable Only",
+      "filterLosing": "Losing Only",
+      "sortBy": "Sort by",
+      "sortPnlDesc": "Highest Profit",
+      "sortPnlAsc": "Highest Loss",
+      "sortNewest": "Newest First",
+      "sortOldest": "Oldest First",
+      "sortSymbolAsc": "Symbol (A-Z)",
+      "sortSymbolDesc": "Symbol (Z-A)"
+    },
+    "trailingStop": {
+      "reasons": {
+        "breakeven": "Breakeven",
+        "breakeven_with_fees": "Breakeven (with fees)",
+        "swing_trail": "Swing Trailing",
+        "atr_trail": "ATR Trailing"
+      }
     },
     "orders": {
       "title": "Orders",
@@ -884,6 +907,7 @@
       "stopLoss": "Stop Loss",
       "takeProfit": "Take Profit",
       "pnl": "P&L",
+      "fees": "Fees Paid",
       "close": "Close Order",
       "cancel": "Cancel Order",
       "autoTrade": "Auto-trade order"

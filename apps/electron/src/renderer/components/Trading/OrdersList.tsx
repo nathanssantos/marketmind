@@ -87,6 +87,7 @@ export const OrdersList = () => {
       pnlPercent: e.pnlPercent || undefined,
       closedAt: e.closedAt ? new Date(e.closedAt) : undefined,
       setupType: e.setupType || undefined,
+      fees: e.fees ? parseFloat(e.fees) : undefined,
       isAutoTrade: true,
     }));
 
@@ -504,6 +505,12 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
               {parseFloat(order.pnl) >= 0 ? '+' : ''}{parseFloat(order.pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               {order.pnlPercent !== undefined && ` (${parseFloat(order.pnl) >= 0 ? '+' : ''}${parseFloat(order.pnlPercent).toFixed(2)}%)`}
             </Text>
+          </Flex>
+        )}
+        {order.fees !== undefined && order.fees > 0 && (
+          <Flex justify="space-between">
+            <Text color="fg.muted">{t('trading.orders.fees')}</Text>
+            <Text color="orange.500">{currency} {order.fees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</Text>
           </Flex>
         )}
       </Stack>

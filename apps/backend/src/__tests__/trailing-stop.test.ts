@@ -1,17 +1,17 @@
+import type { TrailingStopOptimizationConfig } from '@marketmind/types';
 import { describe, expect, it } from 'vitest';
 import {
-  calculateProfitPercent,
-  calculateBreakevenPrice,
-  findBestSwingStop,
-  shouldUpdateStopLoss,
-  calculateNewStopLoss,
-  calculateATRTrailingStop,
-  computeTrailingStop,
-  DEFAULT_TRAILING_STOP_CONFIG,
-  TrailingStopService,
-  type TrailingStopInput,
+    calculateATRTrailingStop,
+    calculateBreakevenPrice,
+    calculateNewStopLoss,
+    calculateProfitPercent,
+    computeTrailingStop,
+    DEFAULT_TRAILING_STOP_CONFIG,
+    findBestSwingStop,
+    shouldUpdateStopLoss,
+    TrailingStopService,
+    type TrailingStopInput,
 } from '../services/trailing-stop';
-import type { TrailingStopOptimizationConfig } from '@marketmind/types';
 
 describe('Trailing Stop Pure Functions', () => {
   describe('calculateProfitPercent', () => {
@@ -418,6 +418,322 @@ describe('TrailingStopService', () => {
 
       const freshConfig = service.getConfig();
       expect(freshConfig.breakevenProfitThreshold).toBe(0.005);
+    });
+  });
+
+  describe('Two-Stage Breakeven System', () => {
+    describe('calculateBreakevenWithFeesPrice', () => {
+      it('should calculate breakeven with fees for LONG position', () => {
+        const result = calculateBreakevenPrice(100, true, 0.002);
+        expect(result).toBeCloseTo(100.2, 4);
+      });
+
+      it('should calculate breakeven with fees for SHORT position', () => {
+        const result = calculateBreakevenPrice(100, false, 0.002);
+        expect(result).toBeCloseTo(99.8, 4);
+      });
+
+      it('should handle custom fee percentage', () => {
+        const result = calculateBreakevenPrice(1000, true, 0.003);
+        expect(result).toBeCloseTo(1003, 4);
+      });
+
+      it('should handle zero fee', () => {
+        expect(calculateBreakevenPrice(100, true, 0)).toBe(100);
+        expect(calculateBreakevenPrice(100, false, 0)).toBe(100);
+      });
+    });
+
+    describe('computeTrailingStop - Stage 1: Simple Breakeven at 0.5%', () => {
+      it('should move stop to entry price for LONG when profit >= 0.5%', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 100.5,
+          currentStopLoss: 98,
+          side: 'LONG',
+          swingPoints: [],
+          highestPrice: 100.5,
+        };
+
+        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+
+        expect(result.newStopLoss).toBeCloseTo(100, 4);
+        expect(result.reason).toBe('breakeven');
+      });
+
+      it('should move stop to entry price for SHORT when profit >= 0.5%', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 99.5,
+          currentStopLoss: 102,
+          side: 'SHORT',
+          swingPoints: [],
+          lowestPrice: 99.5,
+        };
+
+        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+
+        expect(result.newStopLoss).toBeCloseTo(100, 4);
+        expect(result.reason).toBe('breakeven');
+      });
+
+      it('should not trigger breakeven if profit < 0.5%', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 100.4,
+          currentStopLoss: 98,
+          side: 'LONG',
+          swingPoints: [],
+          highestPrice: 100.4,
+        };
+
+        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+
+        expect(result.newStopLoss).not.toBe(100);
+      });
+    });
+
+    describe('computeTrailingStop - Stage 2: Breakeven with Fees at 0.7%', () => {
+      it('should move stop to entry + fees for LONG when profit >= 0.7%', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 100.8,
+          currentStopLoss: 100,
+          side: 'LONG',
+          swingPoints: [{ price: 100.3, type: 'low' }],
+          atr: 0.5,
+          highestPrice: 100.8,
+        };
+
+        const result = computeTrailingStop(input, {
+          ...DEFAULT_TRAILING_STOP_CONFIG,
+          useATRMultiplier: false,
+        });
+
+        expect(result.newStopLoss).toBeGreaterThanOrEqual(100.2);
+        expect(result.reason).toBe('breakeven_with_fees');
+      });
+
+      it('should move stop to entry + fees for SHORT when profit >= 0.7%', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 99.2,
+          currentStopLoss: 100,
+          side: 'SHORT',
+          swingPoints: [{ price: 99.7, type: 'high' }],
+          atr: 0.5,
+          lowestPrice: 99.2,
+        };
+
+        const result = computeTrailingStop(input, {
+          ...DEFAULT_TRAILING_STOP_CONFIG,
+          useATRMultiplier: false,
+        });
+
+        expect(result.newStopLoss).toBeLessThanOrEqual(99.8);
+        expect(result.reason).toBe('breakeven_with_fees');
+      });
+
+      it('should use swing trailing above breakeven with fees floor', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 102,
+          currentStopLoss: 100.2,
+          side: 'LONG',
+          swingPoints: [{ price: 101, type: 'low' }],
+          highestPrice: 102,
+        };
+
+        const result = computeTrailingStop(input, {
+          ...DEFAULT_TRAILING_STOP_CONFIG,
+          useATRMultiplier: false,
+        });
+
+        expect(result.newStopLoss).toBeGreaterThanOrEqual(100.2);
+        expect(['swing_trail', 'breakeven_with_fees']).toContain(result.reason);
+      });
+
+      it('should not trigger breakeven with fees if profit between 0.5% and 0.7%', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 100.6,
+          currentStopLoss: 98,
+          side: 'LONG',
+          swingPoints: [],
+          highestPrice: 100.6,
+        };
+
+        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+
+        expect(result.newStopLoss).toBeCloseTo(100, 4);
+        expect(result.reason).toBe('breakeven');
+      });
+    });
+
+    describe('computeTrailingStop - ATR Trailing with Breakeven Floor', () => {
+      it('should use ATR trailing but not below breakeven with fees', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 103,
+          currentStopLoss: 100.2,
+          side: 'LONG',
+          swingPoints: [],
+          atr: 2,
+          highestPrice: 103,
+        };
+
+        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+
+        expect(result.newStopLoss).toBeGreaterThanOrEqual(100.2);
+        expect(['atr_trail', 'breakeven_with_fees']).toContain(result.reason);
+      });
+
+      it('should prefer ATR over swing when ATR is higher', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 105,
+          currentStopLoss: 100.2,
+          side: 'LONG',
+          swingPoints: [{ price: 102, type: 'low' }],
+          atr: 1,
+          highestPrice: 105,
+        };
+
+        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+
+        expect(result.newStopLoss).toBeGreaterThan(100.2);
+        expect(result.reason).toBe('atr_trail');
+      });
+    });
+
+    describe('computeTrailingStop - Edge Cases', () => {
+      it('should handle exactly 0.5% profit', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 100.5,
+          currentStopLoss: null,
+          side: 'LONG',
+          swingPoints: [],
+          highestPrice: 100.5,
+        };
+
+        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+
+        expect(result.reason).toBe('breakeven');
+      });
+
+      it('should handle exactly 0.7% profit', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 100.7,
+          currentStopLoss: 100,
+          side: 'LONG',
+          swingPoints: [],
+          highestPrice: 100.7,
+        };
+
+        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+
+        expect(['breakeven_with_fees', 'swing_trail', 'atr_trail']).toContain(result.reason);
+      });
+
+      it('should not lower stop loss once at breakeven', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 100.4,
+          currentStopLoss: 100,
+          side: 'LONG',
+          swingPoints: [],
+          highestPrice: 100.8,
+        };
+
+        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+
+        expect(result.newStopLoss).toBeGreaterThanOrEqual(100);
+      });
+
+      it('should handle large price movements', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 150,
+          currentStopLoss: 100.2,
+          side: 'LONG',
+          swingPoints: [{ price: 145, type: 'low' }],
+          atr: 3,
+          highestPrice: 150,
+        };
+
+        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+
+        expect(result.newStopLoss).toBeGreaterThan(100.2);
+        expect(result.newStopLoss).toBeLessThan(150);
+      });
+
+      it('should handle volatile conditions with multiple swings', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 102,
+          currentStopLoss: 100.2,
+          side: 'LONG',
+          swingPoints: [
+            { price: 99, type: 'low' },
+            { price: 103, type: 'high' },
+            { price: 100.5, type: 'low' },
+            { price: 104, type: 'high' },
+            { price: 101, type: 'low' },
+          ],
+          atr: 1.5,
+          highestPrice: 104,
+        };
+
+        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+
+        expect(result.newStopLoss).toBeGreaterThanOrEqual(100.2);
+      });
+    });
+
+    describe('Custom Configuration', () => {
+      it('should respect custom breakeven thresholds', () => {
+        const customConfig: TrailingStopOptimizationConfig = {
+          ...DEFAULT_TRAILING_STOP_CONFIG,
+          breakevenProfitThreshold: 0.01,
+          breakevenWithFeesThreshold: 0.015,
+        };
+
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 101,
+          currentStopLoss: 98,
+          side: 'LONG',
+          swingPoints: [],
+          highestPrice: 101,
+        };
+
+        const result = computeTrailingStop(input, customConfig);
+
+        expect(result.newStopLoss).toBeCloseTo(100, 4);
+        expect(result.reason).toBe('breakeven');
+      });
+
+      it('should respect custom fee percentage', () => {
+        const customConfig: TrailingStopOptimizationConfig = {
+          ...DEFAULT_TRAILING_STOP_CONFIG,
+          feePercent: 0.003,
+        };
+
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 100.8,
+          currentStopLoss: 100,
+          side: 'LONG',
+          swingPoints: [],
+          highestPrice: 100.8,
+        };
+
+        const result = computeTrailingStop(input, customConfig);
+
+        expect(result.newStopLoss).toBeGreaterThanOrEqual(100.3);
+      });
     });
   });
 });

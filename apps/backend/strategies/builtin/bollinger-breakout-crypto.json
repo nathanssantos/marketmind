@@ -112,7 +112,11 @@
     },
     "takeProfit": {
       "type": "indicator",
-      "indicator": "bb.middle"
+      "indicator": "bb.middle",
+      "fallback": {
+        "type": "riskReward",
+        "multiplier": 2
+      }
     },
     "conditions": {
       "long": {

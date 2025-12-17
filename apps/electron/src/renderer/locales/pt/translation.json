@@ -805,6 +805,8 @@
       "noWallet": "Por favor, crie e selecione uma carteira primeiro.",
       "empty": "Nenhuma posição aberta.",
       "activePositions": "Posições Ativas",
+      "profitable": "Lucrativas",
+      "losing": "Perdendo",
       "totalExposure": "Exposição Total",
       "unrealizedPnL": "L&P Não Realizado",
       "orders": "ordens",
@@ -815,7 +817,28 @@
       "currentPrice": "Preço Atual",
       "pnl": "L&P",
       "position": "Posição",
-      "setups": "Setups"
+      "setups": "Setups",
+      "filterBy": "Filtrar por",
+      "filterAll": "Todas as Posições",
+      "filterLong": "Apenas Long",
+      "filterShort": "Apenas Short",
+      "filterProfitable": "Apenas Lucrativas",
+      "filterLosing": "Apenas Perdendo",
+      "sortBy": "Ordenar por",
+      "sortPnlDesc": "Maior Lucro",
+      "sortPnlAsc": "Maior Perda",
+      "sortNewest": "Mais Recentes",
+      "sortOldest": "Mais Antigas",
+      "sortSymbolAsc": "Símbolo (A-Z)",
+      "sortSymbolDesc": "Símbolo (Z-A)"
+    },
+    "trailingStop": {
+      "reasons": {
+        "breakeven": "Ponto de Equilíbrio",
+        "breakeven_with_fees": "Ponto de Equilíbrio (com taxas)",
+        "swing_trail": "Trailing por Swing",
+        "atr_trail": "Trailing por ATR"
+      }
     },
     "orders": {
       "title": "Ordens",
@@ -852,6 +875,7 @@
       "stopLoss": "Stop Loss",
       "takeProfit": "Take Profit",
       "pnl": "L&P",
+      "fees": "Taxas Pagas",
       "close": "Fechar Ordem",
       "cancel": "Cancelar Ordem",
       "autoTrade": "Ordem automática"

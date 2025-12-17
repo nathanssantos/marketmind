@@ -15,6 +15,7 @@ interface WebSocketEvents {
   'order:created': (order: unknown) => void;
   'order:cancelled': (data: { orderId: string }) => void;
   'position:update': (position: unknown) => void;
+  'wallet:update': (wallet: unknown) => void;
   'price:update': (data: { symbol: string; price: number; timestamp: number }) => void;
   'kline:update': (kline: {
     symbol: string;
@@ -101,6 +102,9 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     positions: (walletId: string) => {
       socketRef.current?.emit('subscribe:positions', walletId);
     },
+    wallet: (walletId: string) => {
+      socketRef.current?.emit('subscribe:wallet', walletId);
+    },
     prices: (symbol: string) => {
       socketRef.current?.emit('subscribe:prices', symbol);
     },
@@ -118,6 +122,9 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     },
     positions: (walletId: string) => {
       socketRef.current?.emit('unsubscribe:positions', walletId);
+    },
+    wallet: (walletId: string) => {
+      socketRef.current?.emit('unsubscribe:wallet', walletId);
     },
     prices: (symbol: string) => {
       socketRef.current?.emit('unsubscribe:prices', symbol);

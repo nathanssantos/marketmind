@@ -82,17 +82,42 @@ const ML_TRAINED_STRATEGIES = [
 ];
 
 
+const INTERVAL_TO_MS: Record<string, number> = {
+  '1m': 60 * 1000,
+  '3m': 3 * 60 * 1000,
+  '5m': 5 * 60 * 1000,
+  '15m': 15 * 60 * 1000,
+  '30m': 30 * 60 * 1000,
+  '1h': 60 * 60 * 1000,
+  '2h': 2 * 60 * 60 * 1000,
+  '4h': 4 * 60 * 60 * 1000,
+  '6h': 6 * 60 * 60 * 1000,
+  '8h': 8 * 60 * 60 * 1000,
+  '12h': 12 * 60 * 60 * 1000,
+  '1d': 24 * 60 * 60 * 1000,
+  '3d': 3 * 24 * 60 * 60 * 1000,
+  '1w': 7 * 24 * 60 * 60 * 1000,
+  '1M': 30 * 24 * 60 * 60 * 1000,
+};
+
+const getPollingIntervalForTimeframe = (interval: string): number => {
+  const intervalMs = INTERVAL_TO_MS[interval];
+  if (!intervalMs) {
+    log(`⚠️ Unknown interval ${interval}, defaulting to 1 minute polling`);
+    return 60 * 1000;
+  }
+  return Math.max(intervalMs, 60 * 1000);
+};
+
 export class AutoTradingScheduler {
   private activeWatchers: Map<string, ActiveWatcher> = new Map();
   private strategyLoader: StrategyLoader;
-  private pollIntervalMs: number;
   private mlInitialized: boolean = false;
   private mlInitializing: boolean = false;
 
-  constructor(pollIntervalMs: number = 60000) {
+  constructor() {
     this.strategyLoader = new StrategyLoader([STRATEGIES_DIR]);
-    this.pollIntervalMs = pollIntervalMs;
-    log('🚀 AutoTradingScheduler initialized', { pollIntervalMs });
+    log('🚀 AutoTradingScheduler initialized');
   }
 
   private async ensureMLInitialized(): Promise<boolean> {
@@ -222,6 +247,11 @@ export class AutoTradingScheduler {
       }
     }
 
+    const pollIntervalMs = getPollingIntervalForTimeframe(interval);
+    const now = Date.now();
+    const nextCandleClose = Math.ceil(now / pollIntervalMs) * pollIntervalMs;
+    const delayUntilNextCandle = nextCandleClose - now;
+
     log('🟢 Starting watcher', {
       watcherId,
       symbol,
@@ -229,11 +259,30 @@ export class AutoTradingScheduler {
       enabledStrategies: mlStrategies,
       profileId,
       profileName,
+      pollIntervalMs: `${pollIntervalMs / 1000}s`,
+      nextCandleClose: new Date(nextCandleClose).toISOString(),
+      delayUntilSync: `${Math.round(delayUntilNextCandle / 1000)}s`,
     });
 
-    const intervalId = setInterval(async () => {
-      await this.processWatcher(watcherId);
-    }, this.pollIntervalMs);
+    const syncTimeoutId = setTimeout(() => {
+      log('🔄 Watcher synchronized with candle close', {
+        watcherId,
+        symbol,
+        interval,
+        syncedAt: new Date().toISOString(),
+      });
+
+      this.processWatcher(watcherId);
+
+      const intervalId = setInterval(async () => {
+        await this.processWatcher(watcherId);
+      }, pollIntervalMs);
+
+      const watcher = this.activeWatchers.get(watcherId);
+      if (watcher) {
+        watcher.intervalId = intervalId;
+      }
+    }, delayUntilNextCandle);
 
     const watcher: ActiveWatcher = {
       walletId,
@@ -243,7 +292,7 @@ export class AutoTradingScheduler {
       enabledStrategies: mlStrategies,
       profileId,
       profileName,
-      intervalId,
+      intervalId: syncTimeoutId as unknown as NodeJS.Timeout,
       lastProcessedTime: Date.now(),
     };
 
@@ -252,8 +301,6 @@ export class AutoTradingScheduler {
     const { binanceKlineStreamService } = await import('./binance-kline-stream');
     binanceKlineStreamService.subscribe(symbol, interval);
     log('📊 Subscribed to kline stream', { symbol, interval });
-
-    await this.processWatcher(watcherId);
   }
 
   async stopWatcher(walletId: string, symbol: string, interval: string): Promise<void> {
@@ -266,6 +313,7 @@ export class AutoTradingScheduler {
     }
 
     clearInterval(watcher.intervalId);
+    clearTimeout(watcher.intervalId);
     this.activeWatchers.delete(watcherId);
 
     const { binanceKlineStreamService } = await import('./binance-kline-stream');
@@ -390,10 +438,30 @@ export class AutoTradingScheduler {
         watcher.enabledStrategies.includes(s.id)
       );
 
+      const lastCandle = mappedKlines[mappedKlines.length - 1];
+      const now = Date.now();
+      const intervalMs = INTERVAL_TO_MS[watcher.interval] || 60000;
+      const candleCloseTime = lastCandle.openTime + intervalMs;
+      const isCandleClosed = now >= candleCloseTime;
+
+      if (!isCandleClosed) {
+        const remainingMs = candleCloseTime - now;
+        const remainingMinutes = Math.ceil(remainingMs / 60000);
+        log('⏳ Waiting for candle to close', {
+          symbol: watcher.symbol,
+          interval: watcher.interval,
+          candleOpenTime: new Date(lastCandle.openTime).toISOString(),
+          candleCloseTime: new Date(candleCloseTime).toISOString(),
+          remainingMinutes,
+        });
+        return;
+      }
+
       log('📊 Scanning for setups', {
         symbol: watcher.symbol,
         strategies: filteredStrategies.length,
         klines: mappedKlines.length,
+        lastCandleTime: new Date(lastCandle.openTime).toISOString(),
       });
 
       const detectedSetups: TradingSetup[] = [];
@@ -416,6 +484,7 @@ export class AutoTradingScheduler {
             direction: result.setup.direction,
             confidence: result.confidence,
             entryPrice: result.setup.entryPrice,
+            candleCloseTime: new Date(candleCloseTime).toISOString(),
           });
         }
       }
@@ -907,9 +976,32 @@ export class AutoTradingScheduler {
           return;
         }
       } else {
-        log('📝 PAPER TRADING - Recording execution without Binance order', {
+        log('📝 PAPER TRADING - Using current market price', {
           walletType: wallet.walletType,
+          setupPrice: setup.entryPrice,
         });
+
+        try {
+          const currentMarketPrice = await positionMonitorService.getCurrentPrice(watcher.symbol);
+          
+          if (currentMarketPrice) {
+            actualEntryPrice = currentMarketPrice;
+            log('✅ Using live market price for paper trading', {
+              setupPrice: setup.entryPrice,
+              marketPrice: currentMarketPrice,
+              difference: `${((currentMarketPrice - setup.entryPrice) / setup.entryPrice * 100).toFixed(2)  }%`,
+            });
+          } else {
+            log('⚠️ No live price available, using setup price with slippage', {
+              setupPrice: setup.entryPrice,
+              priceUsed: expectedEntryWithSlippage,
+            });
+          }
+        } catch (priceError) {
+          log('⚠️ Failed to get market price, using setup price with slippage', {
+            error: priceError instanceof Error ? priceError.message : String(priceError),
+          });
+        }
       }
 
       log('💾 Inserting trade execution into database', {
@@ -917,6 +1009,7 @@ export class AutoTradingScheduler {
         setupType: setup.type,
         symbol: watcher.symbol,
         direction: setup.direction,
+        finalEntryPrice: actualEntryPrice,
       });
 
       try {

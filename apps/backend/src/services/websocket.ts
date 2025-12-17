@@ -81,6 +81,16 @@ export class WebSocketService {
         logger.info({ socketId: socket.id, symbol }, 'Unsubscribed from prices');
       });
 
+      socket.on('subscribe:wallet', (walletId: string) => {
+        socket.join(`wallet:${walletId}`);
+        logger.info({ socketId: socket.id, walletId }, 'Subscribed to wallet');
+      });
+
+      socket.on('unsubscribe:wallet', (walletId: string) => {
+        socket.leave(`wallet:${walletId}`);
+        logger.info({ socketId: socket.id, walletId }, 'Unsubscribed from wallet');
+      });
+
       socket.on('subscribe:setups', (userId: string) => {
         socket.join(`user:${userId}`);
         logger.info({ socketId: socket.id, userId }, 'Subscribed to setups');
@@ -111,6 +121,10 @@ export class WebSocketService {
 
   public emitPositionUpdate(walletId: string, position: unknown): void {
     this.io.to(`positions:${walletId}`).emit('position:update', position);
+  }
+
+  public emitWalletUpdate(walletId: string, wallet: unknown): void {
+    this.io.to(`wallet:${walletId}`).emit('wallet:update', wallet);
   }
 
   public emitPriceUpdate(symbol: string, price: number, timestamp: number): void {

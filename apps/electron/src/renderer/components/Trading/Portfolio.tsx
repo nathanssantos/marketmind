@@ -1,6 +1,12 @@
 import { Badge, Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { Field as ChakraField } from '@chakra-ui/react/field';
+import { Select } from '@renderer/components/ui/select';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
+import { usePortfolioFilters } from '@renderer/hooks/usePortfolioFilters';
+import { usePositionUpdates } from '@renderer/hooks/usePositionUpdates';
+import { type PortfolioFilterOption, type PortfolioSortOption, useUIStore } from '@renderer/store/uiStore';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -24,7 +30,14 @@ export const Portfolio = () => {
 
   const { wallets: backendWallets } = useBackendWallet();
   const activeWalletId = backendWallets[0]?.id;
+  useOrderUpdates(activeWalletId);
+  usePositionUpdates(activeWalletId || '');
   const { tradeExecutions, tickerPrices } = useBackendTrading(activeWalletId || '', undefined);
+
+  const filterOption = useUIStore((s) => s.portfolioFilterOption);
+  const setFilterOption = useUIStore((s) => s.setPortfolioFilterOption);
+  const sortBy = useUIStore((s) => s.portfolioSortBy);
+  const setSortBy = useUIStore((s) => s.setPortfolioSortBy);
 
   const positions: PortfolioPosition[] = useMemo(() => {
     return tradeExecutions
@@ -66,14 +79,15 @@ export const Portfolio = () => {
     name: w.name,
     balance: parseFloat(w.currentBalance || '0'),
     initialBalance: parseFloat(w.initialBalance || '0'),
-    currency: (w.currency || 'USDT') as any,
+    currency: (w.currency || 'USDT'),
     createdAt: new Date(w.createdAt),
   }));
 
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
 
-  const totalPnL = positions.reduce((sum, pos) => sum + pos.pnl, 0);
-  const totalPnLPercent = positions.reduce((sum, pos) => sum + pos.pnlPercent, 0) / (positions.length || 1);
+  const { positions: filteredPositions, stats } = usePortfolioFilters(positions, filterOption, sortBy);
+
+  const { totalPnL, totalPnLPercent, profitableCount, losingCount } = stats;
 
   return (
     <Stack gap={3} p={4}>
@@ -104,6 +118,14 @@ export const Portfolio = () => {
                 <Text fontWeight="medium">{positions.length}</Text>
               </Flex>
               <Flex justify="space-between">
+                <Text color="fg.muted">{t('trading.portfolio.profitable')}</Text>
+                <Text fontWeight="medium" color="green.500">{profitableCount}</Text>
+              </Flex>
+              <Flex justify="space-between">
+                <Text color="fg.muted">{t('trading.portfolio.losing')}</Text>
+                <Text fontWeight="medium" color="red.500">{losingCount}</Text>
+              </Flex>
+              <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.portfolio.totalExposure')}</Text>
                 <Text fontWeight="medium">
                   {activeWallet.currency} {positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -123,8 +145,47 @@ export const Portfolio = () => {
             </Stack>
           </Box>
 
+          <Flex gap={2}>
+            <ChakraField.Root flex={1}>
+              <ChakraField.Label fontSize="xs">{t('trading.portfolio.filterBy')}</ChakraField.Label>
+              <Select
+                size="xs"
+                value={filterOption}
+                onChange={(value) => setFilterOption(value as PortfolioFilterOption)}
+                options={[
+                  { value: 'all', label: t('trading.portfolio.filterAll') },
+                  { value: 'long', label: t('trading.portfolio.filterLong') },
+                  { value: 'short', label: t('trading.portfolio.filterShort') },
+                  { value: 'profitable', label: t('trading.portfolio.filterProfitable') },
+                  { value: 'losing', label: t('trading.portfolio.filterLosing') },
+                ]}
+                usePortal
+              />
+            </ChakraField.Root>
+
+            <ChakraField.Root flex={1}>
+              <ChakraField.Label fontSize="xs">{t('trading.portfolio.sortBy')}</ChakraField.Label>
+              <Select
+                size="xs"
+                value={sortBy}
+                onChange={(value) => setSortBy(value as PortfolioSortOption)}
+                options={[
+                  { value: 'pnl-desc', label: t('trading.portfolio.sortPnlDesc') },
+                  { value: 'pnl-asc', label: t('trading.portfolio.sortPnlAsc') },
+                  { value: 'newest', label: t('trading.portfolio.sortNewest') },
+                  { value: 'oldest', label: t('trading.portfolio.sortOldest') },
+                  { value: 'symbol-asc', label: t('trading.portfolio.sortSymbolAsc') },
+                  { value: 'symbol-desc', label: t('trading.portfolio.sortSymbolDesc') },
+                  { value: 'exposure-desc', label: t('trading.portfolio.sortExposureDesc') },
+                  { value: 'exposure-asc', label: t('trading.portfolio.sortExposureAsc') },
+                ]}
+                usePortal
+              />
+            </ChakraField.Root>
+          </Flex>
+
           <Stack gap={2}>
-            {positions.map((position) => (
+            {filteredPositions.map((position) => (
               <PositionCard key={position.id} position={position} currency={activeWallet.currency} />
             ))}
           </Stack>
@@ -152,31 +213,31 @@ const PositionCard = ({ position, currency }: PositionCardProps) => {
       borderLeft="4px solid"
       borderColor={isLong ? 'green.500' : 'red.500'}
     >
-      <Flex justify="space-between" align="flex-start" mb={2}>
-        <Stack gap={1.5}>
+      <Stack gap={1.5} mb={2}>
+        <Flex justify="space-between" align="center">
           <Text fontWeight="bold" fontSize="sm">
             {position.symbol}
           </Text>
-          <Flex gap={2} align="center">
-            <Badge colorPalette={isLong ? 'green' : 'red'} size="sm" px={2}>
-              {t(`trading.ticket.${isLong ? 'long' : 'short'}`)}
+          <Text fontSize="xs" color="fg.muted">
+            {position.openedAt.toLocaleString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </Text>
+        </Flex>
+        <Flex gap={2} align="center">
+          <Badge colorPalette={isLong ? 'green' : 'red'} size="sm" px={2}>
+            {t(`trading.ticket.${isLong ? 'long' : 'short'}`)}
+          </Badge>
+          {position.setupType && (
+            <Badge colorPalette="purple" size="sm" px={2}>
+              {position.setupType}
             </Badge>
-            {position.setupType && (
-              <Badge colorPalette="purple" size="sm" px={2}>
-                {position.setupType}
-              </Badge>
-            )}
-          </Flex>
-        </Stack>
-        <Text fontSize="xs" color="fg.muted">
-          {position.openedAt.toLocaleString(undefined, {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </Text>
-      </Flex>
+          )}
+        </Flex>
+      </Stack>
 
       <Stack gap={1} fontSize="xs">
         <Flex justify="space-between">
