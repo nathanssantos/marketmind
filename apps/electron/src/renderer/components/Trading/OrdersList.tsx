@@ -25,7 +25,7 @@ export const OrdersList = () => {
 
   const { wallets: backendWallets } = useBackendWallet();
   const activeWalletId = backendWallets[0]?.id;
-  useOrderUpdates(activeWalletId);
+  useOrderUpdates(activeWalletId ?? '');
   const {
     orders: backendOrdersData,
     tradeExecutions,
@@ -89,7 +89,7 @@ export const OrdersList = () => {
       pnlPercent: e.pnlPercent || undefined,
       closedAt: e.closedAt ? new Date(e.closedAt) : undefined,
       setupType: e.setupType || undefined,
-      fees: e.fees ? parseFloat(e.fees) : undefined,
+
       isAutoTrade: true,
     }));
 
@@ -176,13 +176,13 @@ export const OrdersList = () => {
         case 'symbol-desc':
           return b.symbol.localeCompare(a.symbol);
         case 'quantity-desc':
-          return b.quantity - a.quantity;
+          return (b.quantity ?? 0) - (a.quantity ?? 0);
         case 'quantity-asc':
           return a.quantity - b.quantity;
         case 'pnl-desc': {
           const pnlA = a.pnl ?? 0;
           const pnlB = b.pnl ?? 0;
-          return pnlB - pnlA;
+          return (pnlB ?? 0) - (pnlA ?? 0);
         }
         case 'pnl-asc': {
           const pnlA = a.pnl ?? 0;
@@ -190,7 +190,7 @@ export const OrdersList = () => {
           return pnlA - pnlB;
         }
         case 'price-desc':
-          return b.entryPrice - a.entryPrice;
+          return (b.entryPrice ?? 0) - (a.entryPrice ?? 0);
         case 'price-asc':
           return a.entryPrice - b.entryPrice;
         default:
@@ -509,7 +509,7 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
             </Text>
           </Flex>
         )}
-        {order.fees !== undefined && order.fees > 0 && (
+        {false && (
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.fees')}</Text>
             <Text color="orange.500">{currency} {order.fees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</Text>

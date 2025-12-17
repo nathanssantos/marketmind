@@ -52,19 +52,15 @@ export class ExchangeTrailingStopService {
     try {
       const client = createBinanceClient(wallet);
 
-      const orderParams: Record<string, string> = {
+      const orderParams = {
         symbol: params.symbol,
         side: params.side,
         type: 'TRAILING_STOP_MARKET',
-        quantity: params.quantity.toString(),
+        quantity: params.quantity,
         callbackRate: params.callbackRate.toString(),
+        ...(params.activationPrice && { activationPrice: params.activationPrice.toString() }),
       };
-
-      if (params.activationPrice) {
-        orderParams.activationPrice = params.activationPrice.toString();
-      }
-
-      const result = await client.submitNewOrder(orderParams);
+      const result = await client.submitNewOrder(orderParams as never);
 
       logger.info({
         symbol: params.symbol,

@@ -7,6 +7,12 @@ export type TradingSidebarTab = 'ticket' | 'orders' | 'portfolio' | 'wallets' | 
 export type OrdersFilterOption = 'all' | 'pending' | 'active' | 'filled' | 'closed' | 'cancelled' | 'expired';
 export type OrdersSortOption = 'newest' | 'oldest' | 'symbol-asc' | 'symbol-desc' | 'quantity-desc' | 'quantity-asc' | 'pnl-desc' | 'pnl-asc' | 'price-desc' | 'price-asc';
 export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'all';
+export type PortfolioFilterOption = 'all' | 'long' | 'short' | 'profitable' | 'losing';
+export type PortfolioSortOption = 'newest' | 'oldest' | 'pnl-desc' | 'pnl-asc' | 'size-desc' | 'size-asc';
+
+const MIGRATION_VERSION_2 = 2;
+const MIGRATION_VERSION_3 = 3;
+const MIGRATION_VERSION_4 = 4;
 
 interface UIState {
   chatPosition: 'left' | 'right';
@@ -37,6 +43,12 @@ interface UIState {
 
   setupStatsPeriod: AnalyticsPeriod;
   setSetupStatsPeriod: (period: AnalyticsPeriod) => void;
+
+  portfolioFilterOption: PortfolioFilterOption;
+  setPortfolioFilterOption: (filter: PortfolioFilterOption) => void;
+
+  portfolioSortBy: PortfolioSortOption;
+  setPortfolioSortBy: (sort: PortfolioSortOption) => void;
 }
 
 const DEFAULT_ENABLED_PATTERNS: AIPatternType[] = [
@@ -112,6 +124,12 @@ export const useUIStore = create<UIState>()(
 
       setupStatsPeriod: 'all',
       setSetupStatsPeriod: (period) => set({ setupStatsPeriod: period }),
+
+      portfolioFilterOption: 'all',
+      setPortfolioFilterOption: (filter) => set({ portfolioFilterOption: filter }),
+
+      portfolioSortBy: 'newest',
+      setPortfolioSortBy: (sort) => set({ portfolioSortBy: sort }),
     }),
     {
       name: 'ui-storage',
@@ -119,15 +137,15 @@ export const useUIStore = create<UIState>()(
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as UIState;
 
-        if (version < 2 && state.algorithmicDetectionSettings) {
+        if (version < MIGRATION_VERSION_2 && state.algorithmicDetectionSettings) {
           state.algorithmicDetectionSettings.enabledPatterns = DEFAULT_ENABLED_PATTERNS;
         }
 
-        if (version < 3) {
+        if (version < MIGRATION_VERSION_3) {
           state.tradingSidebarTab = 'orders';
         }
 
-        if (version < 4) {
+        if (version < MIGRATION_VERSION_4) {
           state.ordersFilterStatus = 'pending';
           state.performancePeriod = 'all';
           state.setupStatsPeriod = 'all';

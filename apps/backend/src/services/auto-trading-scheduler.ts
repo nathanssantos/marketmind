@@ -62,7 +62,7 @@ interface ActiveWatcher {
   enabledStrategies: string[];
   profileId?: string;
   profileName?: string;
-  intervalId: NodeJS.Timeout;
+  intervalId: ReturnType<typeof setInterval>;
   lastProcessedTime: number;
 }
 
@@ -272,10 +272,10 @@ export class AutoTradingScheduler {
         syncedAt: new Date().toISOString(),
       });
 
-      this.processWatcher(watcherId);
+      void this.processWatcher(watcherId);
 
-      const intervalId = setInterval(async () => {
-        await this.processWatcher(watcherId);
+      const intervalId = setInterval(() => {
+        void this.processWatcher(watcherId);
       }, pollIntervalMs);
 
       const watcher = this.activeWatchers.get(watcherId);
@@ -292,7 +292,7 @@ export class AutoTradingScheduler {
       enabledStrategies: mlStrategies,
       profileId,
       profileName,
-      intervalId: syncTimeoutId as unknown as NodeJS.Timeout,
+      intervalId: syncTimeoutId as unknown as ReturnType<typeof setInterval>,
       lastProcessedTime: Date.now(),
     };
 
@@ -357,6 +357,7 @@ export class AutoTradingScheduler {
     log('🔴 All watchers stopped for wallet', { walletId, count: watchersToStop.length });
   }
 
+  // eslint-disable-next-line complexity
   private async processWatcher(watcherId: string): Promise<void> {
     const watcher = this.activeWatchers.get(watcherId);
     if (!watcher) return;
@@ -439,8 +440,13 @@ export class AutoTradingScheduler {
       );
 
       const lastCandle = mappedKlines[mappedKlines.length - 1];
+      if (!lastCandle) {
+        log('⚠️ No candles available', { symbol: watcher.symbol });
+        return;
+      }
+
       const now = Date.now();
-      const intervalMs = INTERVAL_TO_MS[watcher.interval] || 60000;
+      const intervalMs = INTERVAL_TO_MS[watcher.interval] ?? 60000;
       const candleCloseTime = lastCandle.openTime + intervalMs;
       const isCandleClosed = now >= candleCloseTime;
 
@@ -649,6 +655,7 @@ export class AutoTradingScheduler {
     }
   }
 
+  // eslint-disable-next-line complexity
   private async executeSetup(watcher: ActiveWatcher, setup: TradingSetup): Promise<void> {
     log('🚀 Attempting to execute setup', {
       type: setup.type,
@@ -803,7 +810,7 @@ export class AutoTradingScheduler {
         });
       }
 
-      const walletBalance = parseFloat(wallet.currentBalance || '0');
+      const walletBalance = parseFloat(wallet.currentBalance ?? '0');
 
       const dynamicSize = await pyramidingService.calculateDynamicPositionSize(
         watcher.userId,
@@ -1220,4 +1227,4 @@ export class AutoTradingScheduler {
   }
 }
 
-export const autoTradingScheduler = new AutoTradingScheduler(60000);
+export const autoTradingScheduler = new AutoTradingScheduler();

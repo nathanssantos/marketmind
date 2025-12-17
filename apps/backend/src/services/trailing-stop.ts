@@ -6,14 +6,15 @@ import type { TradeExecution } from '../db/schema';
 import { klines, priceCache, setupDetections, tradeExecutions } from '../db/schema';
 import { logger } from './logger';
 
+const DEFAULT_FEE_PERCENT = 0.002;
+const DEFAULT_BREAKEVEN_WITH_FEES_THRESHOLD = 0.007;
+
 export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
   breakevenProfitThreshold: 0.005,
-  breakevenWithFeesThreshold: 0.007,
   minTrailingDistancePercent: 0.002,
   swingLookback: 3,
   useATRMultiplier: true,
   atrMultiplier: 2.0,
-  feePercent: 0.002,
 };
 
 export interface TrailingStopUpdate {
@@ -153,6 +154,7 @@ export const calculateATRTrailingStop = (
     : highestOrLowestPrice + atrDistance;
 };
 
+ 
 export const computeTrailingStop = (
   input: TrailingStopInput,
   config: TrailingStopOptimizationConfig
@@ -167,16 +169,16 @@ export const computeTrailingStop = (
   }
 
   const breakevenPrice = calculateBreakevenPrice(entryPrice, isLong);
-  const breakevenWithFeesPrice = calculateBreakevenWithFeesPrice(entryPrice, isLong, config.feePercent || 0.002);
+  const breakevenWithFeesPrice = calculateBreakevenWithFeesPrice(entryPrice, isLong, DEFAULT_FEE_PERCENT);
 
-  if (profitPercent >= config.breakevenProfitThreshold && profitPercent < (config.breakevenWithFeesThreshold || 0.007)) {
+  if (profitPercent >= config.breakevenProfitThreshold && profitPercent < DEFAULT_BREAKEVEN_WITH_FEES_THRESHOLD) {
     if (!shouldUpdateStopLoss(breakevenPrice, currentStopLoss, isLong)) {
       return null;
     }
     return { newStopLoss: breakevenPrice, reason: 'breakeven' };
   }
 
-  if (profitPercent >= (config.breakevenWithFeesThreshold || 0.007)) {
+  if (profitPercent >= DEFAULT_BREAKEVEN_WITH_FEES_THRESHOLD) {
     const minStopLoss = breakevenWithFeesPrice;
 
     const swingStop = findBestSwingStop(

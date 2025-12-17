@@ -364,13 +364,13 @@ export const walletRouter = router({
 
       if (wallet.apiKeyEncrypted === 'paper-trading') {
         return {
-          totalValueUSDT: wallet.currentBalance || '0',
+          totalValueUSDT: wallet.currentBalance ?? '0',
           assets: [
             {
               asset: 'USDT',
-              free: wallet.currentBalance || '0',
+              free: wallet.currentBalance ?? '0',
               locked: '0',
-              valueUSDT: wallet.currentBalance || '0',
+              valueUSDT: wallet.currentBalance ?? '0',
             },
           ],
         };

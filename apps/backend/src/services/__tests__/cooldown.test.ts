@@ -47,7 +47,7 @@ describe('CooldownService', () => {
           }]),
         }),
       });
-      vi.mocked(db.insert).mockReturnValue(mockInsert() as any);
+      vi.mocked(db.insert).mockReturnValue(mockInsert() as unknown as typeof db.insert);
 
       const result = await service.setCooldown(
         'larry-williams-9-1',
@@ -70,7 +70,7 @@ describe('CooldownService', () => {
           returning: vi.fn().mockRejectedValue(new Error('DB error')),
         }),
       });
-      vi.mocked(db.insert).mockReturnValue(mockInsert() as any);
+      vi.mocked(db.insert).mockReturnValue(mockInsert() as unknown as typeof db.insert);
 
       await expect(
         service.setCooldown(
@@ -87,7 +87,7 @@ describe('CooldownService', () => {
 
   describe('checkCooldown', () => {
     it('should return false if no cooldown exists', async () => {
-      vi.mocked(db.query.tradeCooldowns.findFirst).mockResolvedValue(null);
+      vi.mocked(db.query.tradeCooldowns.findFirst).mockResolvedValue(undefined);
 
       const result = await service.checkCooldown(
         'larry-williams-9-1',
@@ -111,7 +111,12 @@ describe('CooldownService', () => {
         createdAt: new Date(),
       };
 
-      vi.mocked(db.query.tradeCooldowns.findFirst).mockResolvedValue(futureCooldown as any);
+      vi.mocked(db.query.tradeCooldowns.findFirst).mockResolvedValue({
+        ...futureCooldown,
+        lastExecutionId: 'exec-123',
+        lastExecutionAt: new Date(),
+        cooldownMinutes: 15,
+      });
 
       const result = await service.checkCooldown(
         'larry-williams-9-1',
@@ -135,12 +140,17 @@ describe('CooldownService', () => {
         createdAt: new Date(),
       };
 
-      vi.mocked(db.query.tradeCooldowns.findFirst).mockResolvedValue(pastCooldown as any);
+      vi.mocked(db.query.tradeCooldowns.findFirst).mockResolvedValue({
+        ...pastCooldown,
+        lastExecutionId: 'exec-123',
+        lastExecutionAt: new Date(),
+        cooldownMinutes: 15,
+      });
 
       const mockDelete = vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue(undefined),
       });
-      vi.mocked(db.delete).mockReturnValue(mockDelete() as any);
+      vi.mocked(db.delete).mockReturnValue(mockDelete() as unknown as typeof db.delete);
 
       const result = await service.checkCooldown(
         'larry-williams-9-1',
@@ -173,7 +183,7 @@ describe('CooldownService', () => {
       const mockDelete = vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue({ rowCount: 5 }),
       });
-      vi.mocked(db.delete).mockReturnValue(mockDelete() as any);
+      vi.mocked(db.delete).mockReturnValue(mockDelete() as unknown as typeof db.delete);
 
       const result = await service.cleanupExpired();
 
@@ -185,7 +195,7 @@ describe('CooldownService', () => {
       const mockDelete = vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue({ rowCount: 0 }),
       });
-      vi.mocked(db.delete).mockReturnValue(mockDelete() as any);
+      vi.mocked(db.delete).mockReturnValue(mockDelete() as unknown as typeof db.delete);
 
       const result = await service.cleanupExpired();
 
@@ -196,7 +206,7 @@ describe('CooldownService', () => {
       const mockDelete = vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue({ rowCount: null }),
       });
-      vi.mocked(db.delete).mockReturnValue(mockDelete() as any);
+      vi.mocked(db.delete).mockReturnValue(mockDelete() as unknown as typeof db.delete);
 
       const result = await service.cleanupExpired();
 
@@ -207,7 +217,7 @@ describe('CooldownService', () => {
       const mockDelete = vi.fn().mockReturnValue({
         where: vi.fn().mockRejectedValue(new Error('DB error')),
       });
-      vi.mocked(db.delete).mockReturnValue(mockDelete() as any);
+      vi.mocked(db.delete).mockReturnValue(mockDelete() as unknown as typeof db.delete);
 
       const result = await service.cleanupExpired();
 

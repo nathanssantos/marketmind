@@ -46,7 +46,23 @@ describe('StrategyPerformanceService', () => {
         winRate: '75.00',
       };
 
-      vi.mocked(db.query.strategyPerformance.findFirst).mockResolvedValue(perfRecord as any);
+      vi.mocked(db.query.strategyPerformance.findFirst).mockResolvedValue({
+        ...perfRecord,
+        winningTrades: 7,
+        losingTrades: 3,
+        breakevenTrades: 0,
+        totalPnl: '100.00',
+        maxConsecutiveLosses: 2,
+        currentConsecutiveLosses: 0,
+        lastTradeAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        totalPnlPercent: '10.00',
+        avgWin: '20.00',
+        avgLoss: '-10.00',
+        avgRr: '2.00',
+        profitFactor: '2.00',
+      });
 
       const result = await service.getPerformance('larry-williams-9-1', 'BTCUSDT', '1h');
 
@@ -55,7 +71,7 @@ describe('StrategyPerformanceService', () => {
 
     it('should return null if no performance record exists', async () => {
       const { db } = await import('../../db');
-      vi.mocked(db.query.strategyPerformance.findFirst).mockResolvedValue(null);
+      vi.mocked(db.query.strategyPerformance.findFirst).mockResolvedValue(undefined);
 
       const result = await service.getPerformance('unknown-strategy', 'BTCUSDT', '1h');
 

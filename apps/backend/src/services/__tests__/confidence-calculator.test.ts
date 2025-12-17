@@ -40,10 +40,10 @@ describe('ConfidenceCalculator', () => {
         close: close.toString(),
         volume: (Math.random() * 1000000).toString(),
         closeTime: now - (count - i - 1) * 60000,
-        quoteAssetVolume: '0',
+        quoteVolume: '0',
         trades: 100,
-        takerBuyBaseAssetVolume: '0',
-        takerBuyQuoteAssetVolume: '0',
+        takerBuyBaseVolume: '0',
+        takerBuyQuoteVolume: '0',
       });
     }
 
@@ -70,14 +70,16 @@ describe('ConfidenceCalculator', () => {
         breakevenTrades: 0,
         winRate: '80.00',
         totalPnl: '150.00',
-        avgPnl: '5.00',
-        avgWinningTrade: '8.00',
-        avgLosingTrade: '-3.00',
         maxConsecutiveLosses: 2,
         currentConsecutiveLosses: 0,
         lastTradeAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
+        totalPnlPercent: '5.00',
+        avgWin: '8.00',
+        avgLoss: '-3.00',
+        avgRr: '2.67',
+        profitFactor: '2.67',
       });
 
       const params: ConfidenceParams = {
@@ -111,14 +113,16 @@ describe('ConfidenceCalculator', () => {
         breakevenTrades: 0,
         winRate: '33.33',
         totalPnl: '-50.00',
-        avgPnl: '-1.67',
-        avgWinningTrade: '5.00',
-        avgLosingTrade: '-4.00',
         maxConsecutiveLosses: 5,
         currentConsecutiveLosses: 3,
         lastTradeAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
+        totalPnlPercent: '5.00',
+        avgWin: '8.00',
+        avgLoss: '-3.00',
+        avgRr: '2.67',
+        profitFactor: '2.67',
       });
 
       const params: ConfidenceParams = {
@@ -172,14 +176,16 @@ describe('ConfidenceCalculator', () => {
         breakevenTrades: 0,
         winRate: '80.00',
         totalPnl: '150.00',
-        avgPnl: '5.00',
-        avgWinningTrade: '8.00',
-        avgLosingTrade: '-3.00',
         maxConsecutiveLosses: 4,
         currentConsecutiveLosses: 3,
         lastTradeAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
+        totalPnlPercent: '5.00',
+        avgWin: '8.00',
+        avgLoss: '-3.00',
+        avgRr: '2.67',
+        profitFactor: '2.67',
       });
 
       const params: ConfidenceParams = {
@@ -275,14 +281,16 @@ describe('ConfidenceCalculator', () => {
         breakevenTrades: 0,
         winRate: '96.00',
         totalPnl: '500.00',
-        avgPnl: '10.00',
-        avgWinningTrade: '12.00',
-        avgLosingTrade: '-2.00',
         maxConsecutiveLosses: 1,
         currentConsecutiveLosses: 0,
         lastTradeAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
+        totalPnlPercent: '5.00',
+        avgWin: '8.00',
+        avgLoss: '-3.00',
+        avgRr: '2.67',
+        profitFactor: '2.67',
       });
 
       const params: ConfidenceParams = {
@@ -314,14 +322,16 @@ describe('ConfidenceCalculator', () => {
         breakevenTrades: 0,
         winRate: '16.67',
         totalPnl: '-200.00',
-        avgPnl: '-6.67',
-        avgWinningTrade: '5.00',
-        avgLosingTrade: '-9.00',
         maxConsecutiveLosses: 10,
         currentConsecutiveLosses: 8,
         lastTradeAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
+        totalPnlPercent: '5.00',
+        avgWin: '8.00',
+        avgLoss: '-3.00',
+        avgRr: '2.67',
+        profitFactor: '2.67',
       });
 
       const params: ConfidenceParams = {

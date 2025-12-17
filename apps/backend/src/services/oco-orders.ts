@@ -61,8 +61,8 @@ export class OCOOrderService {
         symbol: params.symbol,
         side: params.side,
         type: 'LIMIT',
-        quantity: params.quantity.toString(),
-        price: params.price.toString(),
+        quantity: params.quantity,
+        price: params.price,
         timeInForce: 'GTC',
       });
 
@@ -72,7 +72,7 @@ export class OCOOrderService {
         orders: 1,
       }, 'Order placed (OCO simulated with single limit order)');
 
-      return result as OCOOrderResult;
+      return result as unknown as OCOOrderResult;
     } catch (error) {
       logger.error({
         error: error instanceof Error ? error.message : String(error),
@@ -94,9 +94,9 @@ export class OCOOrderService {
     try {
       const client = createBinanceClient(wallet);
 
-      await client.cancelOCOOrder({
+      await client.cancelOrder({
         symbol,
-        orderListId,
+        orderId: orderListId,
       });
 
       logger.info({
