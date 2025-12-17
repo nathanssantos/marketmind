@@ -13,7 +13,21 @@ export class WebSocketService {
   constructor(httpServer: HTTPServer) {
     this.io = new SocketIOServer(httpServer, {
       cors: {
-        origin: process.env['CORS_ORIGIN'] ?? 'http://localhost:5173',
+        origin: (origin, callback) => {
+          if (!origin) {
+            callback(null, true);
+            return;
+          }
+          
+          const isDev = process.env['NODE_ENV'] === 'development';
+          if (isDev) {
+            const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
+            callback(null, isLocalhost);
+          } else {
+            const allowedOrigin = process.env['CORS_ORIGIN'] ?? 'http://localhost:5173';
+            callback(null, origin === allowedOrigin);
+          }
+        },
         credentials: true,
       },
       transports: ['websocket', 'polling'],

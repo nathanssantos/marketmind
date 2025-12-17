@@ -9,7 +9,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   ENCRYPTION_KEY: z.string().length(64),
   SESSION_SECRET: z.string().min(32),
-  CORS_ORIGIN: z.string().url().default('http://localhost:5173'),
+  CORS_ORIGIN: z.string().url().default('http://localhost:5174'),
   ENABLE_LIVE_TRADING: z.string().default('false').transform(v => v === 'true'),
 });
 

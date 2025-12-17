@@ -42,7 +42,19 @@ const start = async (): Promise<void> => {
     });
 
     await fastify.register(cors, {
-      origin: env.CORS_ORIGIN,
+      origin: (origin, callback) => {
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+        
+        if (env.NODE_ENV === 'development') {
+          const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
+          callback(null, isLocalhost);
+        } else {
+          callback(null, origin === env.CORS_ORIGIN);
+        }
+      },
       credentials: true,
     });
 
