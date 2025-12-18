@@ -43,6 +43,30 @@ export interface BacktestConfig {
 
   maxConcurrentPositions?: number; // Max simultaneous positions (default: 5)
   maxTotalExposure?: number; // Max % of capital in all positions (default: 0.5 = 50%)
+
+  useMarketContextFilter?: boolean; // Use historical market context (Fear/Greed, Funding Rate) same as auto-trading
+  marketContextConfig?: {
+    fearGreed?: {
+      enabled?: boolean;
+      thresholdLow?: number; // default: 20 (extreme fear)
+      thresholdHigh?: number; // default: 80 (extreme greed)
+      action?: 'block' | 'reduce_size' | 'warn_only';
+      sizeReduction?: number; // default: 50 (%)
+    };
+    fundingRate?: {
+      enabled?: boolean;
+      threshold?: number; // default: 0.05 (%)
+      action?: 'block' | 'penalize' | 'warn_only';
+      penalty?: number; // default: 20 (confidence points)
+    };
+  };
+
+  useCooldown?: boolean; // Simulate cooldown between trades (same as auto-trading)
+  cooldownMinutes?: number; // Minutes of cooldown per strategy-symbol-interval (default: 15)
+
+  dailyLossLimit?: number; // Max daily loss as % of capital before stopping (default: 5%)
+
+  onlyLong?: boolean; // Only allow LONG positions (buy only, no shorts)
 }
 
 export interface BacktestTrade {

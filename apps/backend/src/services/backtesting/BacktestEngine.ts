@@ -1,5 +1,7 @@
+import { calculateATR } from '@marketmind/indicators';
 import { getThresholdForTimeframe } from '@marketmind/ml';
 import type { BacktestConfig, BacktestResult, ComputedIndicators, EvaluationContext, Interval, Kline, OptimizedBacktestParams, StrategyDefinition } from '@marketmind/types';
+import { HistoricalMarketContextService } from '../historical-market-context';
 import { TRPCError } from '@trpc/server';
 import { randomBytes } from 'crypto';
 import { dirname, resolve } from 'path';
@@ -307,7 +309,7 @@ export class BacktestEngine {
               
               if (prediction.probability >= threshold.minProbability) {
                 const mlConfidence = prediction.probability * 100;
-                const blendedConfidence = (setup.confidence * 0.7) + (mlConfidence * 0.3);
+                const blendedConfidence = (setup.confidence + mlConfidence) / 2;
                 
                 mlFilteredSetups.push({
                   ...setup,
@@ -364,6 +366,45 @@ export class BacktestEngine {
       let skippedMinProfit = 0;
       let skippedMaxPositions = 0;
       let skippedMaxExposure = 0;
+      let skippedMarketContext = 0;
+      let skippedCooldown = 0;
+      let skippedDailyLossLimit = 0;
+      let skippedVolatility = 0;
+
+      const cooldownMap = new Map<string, number>();
+      const cooldownMinutes = effectiveConfig.cooldownMinutes ?? 15;
+      const cooldownMs = cooldownMinutes * 60 * 1000;
+
+      let dailyPnl = 0;
+      let currentDay = '';
+      const dailyLossLimitPercent = effectiveConfig.dailyLossLimit ?? 5;
+      let dailyLossLimitReached = false;
+
+      let marketContextService: HistoricalMarketContextService | null = null;
+      if (effectiveConfig.useMarketContextFilter) {
+        console.log('[Backtest] Initializing historical market context data...');
+        marketContextService = new HistoricalMarketContextService({
+          fearGreed: {
+            enabled: effectiveConfig.marketContextConfig?.fearGreed?.enabled ?? true,
+            thresholdLow: effectiveConfig.marketContextConfig?.fearGreed?.thresholdLow ?? 20,
+            thresholdHigh: effectiveConfig.marketContextConfig?.fearGreed?.thresholdHigh ?? 80,
+            action: effectiveConfig.marketContextConfig?.fearGreed?.action ?? 'reduce_size',
+            sizeReduction: effectiveConfig.marketContextConfig?.fearGreed?.sizeReduction ?? 50,
+          },
+          fundingRate: {
+            enabled: effectiveConfig.marketContextConfig?.fundingRate?.enabled ?? true,
+            threshold: effectiveConfig.marketContextConfig?.fundingRate?.threshold ?? 0.05,
+            action: effectiveConfig.marketContextConfig?.fundingRate?.action ?? 'penalize',
+            penalty: effectiveConfig.marketContextConfig?.fundingRate?.penalty ?? 20,
+          },
+        });
+        await marketContextService.initialize(
+          new Date(config.startDate),
+          new Date(config.endDate),
+          [config.symbol]
+        );
+        console.log('[Backtest] Market context data loaded:', marketContextService.getStats());
+      }
 
       for (const setup of sortedSetups) {
         openPositions.splice(0, openPositions.length, 
@@ -373,6 +414,52 @@ export class BacktestEngine {
         if (openPositions.length >= MAX_CONCURRENT_POSITIONS) {
           skippedMaxPositions++;
           continue;
+        }
+
+        const setupDate = new Date(setup.openTime);
+        const setupDay = setupDate.toISOString().slice(0, 10);
+        if (setupDay !== currentDay) {
+          currentDay = setupDay;
+          dailyPnl = 0;
+          dailyLossLimitReached = false;
+        }
+
+        if (effectiveConfig.dailyLossLimit && dailyLossLimitReached) {
+          skippedDailyLossLimit++;
+          continue;
+        }
+
+        if (effectiveConfig.useCooldown) {
+          const cooldownKey = `${setup.type}-${config.symbol}-${config.interval}`;
+          const lastTradeTime = cooldownMap.get(cooldownKey);
+          if (lastTradeTime && setup.openTime - lastTradeTime < cooldownMs) {
+            skippedCooldown++;
+            continue;
+          }
+        }
+
+        if (effectiveConfig.onlyLong && setup.direction === 'SHORT') {
+          continue;
+        }
+
+        let marketContextMultiplier = 1.0;
+        if (marketContextService) {
+          const contextResult = marketContextService.evaluateSetup(
+            setup.openTime,
+            config.symbol,
+            setup.direction
+          );
+
+          if (!contextResult.shouldTrade) {
+            skippedMarketContext++;
+            continue;
+          }
+
+          marketContextMultiplier = contextResult.positionSizeMultiplier;
+
+          if (contextResult.warnings.length > 0 && trades.length < 5) {
+            console.log(`[Backtest] Market context warnings for setup ${setup.type}:`, contextResult.warnings);
+          }
         }
 
         const entryKline = klineMap.get(setup.openTime);
@@ -468,6 +555,34 @@ export class BacktestEngine {
           if (effectiveConfig.minConfidence !== undefined) {
             console.log(`[Position Sizing] ${sizingResult.rationale}`);
           }
+        }
+
+        const setupIndex = historicalKlines.findIndex(k => k.openTime === setup.openTime);
+        if (setupIndex >= 14) {
+          const recentKlines = historicalKlines.slice(setupIndex - 13, setupIndex + 1);
+          const atrValues = calculateATR(recentKlines, 14);
+          if (atrValues.length > 0) {
+            const currentATR = atrValues[atrValues.length - 1];
+            if (currentATR !== null && currentATR !== undefined) {
+              const atrPercent = (currentATR / entryPrice) * 100;
+              const HIGH_VOLATILITY_THRESHOLD = 3.0;
+              const VOLATILITY_REDUCTION_FACTOR = 0.7;
+
+              if (atrPercent > HIGH_VOLATILITY_THRESHOLD) {
+                const originalSize = positionSize;
+                positionSize *= VOLATILITY_REDUCTION_FACTOR;
+                positionValue = positionSize * entryPrice;
+                if (trades.length < 3) {
+                  console.log(`[Backtest] High volatility adjustment: ATR=${atrPercent.toFixed(2)}% > ${HIGH_VOLATILITY_THRESHOLD}%, size reduced from ${originalSize.toFixed(6)} to ${positionSize.toFixed(6)}`);
+                }
+              }
+            }
+          }
+        }
+
+        if (marketContextMultiplier < 1.0) {
+          positionSize *= marketContextMultiplier;
+          positionValue = positionSize * entryPrice;
         }
 
         const currentExposure = openPositions.reduce((sum, p) => sum + p.positionValue, 0);
@@ -714,6 +829,20 @@ export class BacktestEngine {
 
         trades.push(trade);
 
+        if (effectiveConfig.useCooldown) {
+          const cooldownKey = `${setup.type}-${config.symbol}-${config.interval}`;
+          cooldownMap.set(cooldownKey, setup.openTime);
+        }
+
+        if (effectiveConfig.dailyLossLimit) {
+          dailyPnl += netPnl;
+          const dailyLossLimitAmount = (config.initialCapital * dailyLossLimitPercent) / 100;
+          if (dailyPnl < -dailyLossLimitAmount) {
+            dailyLossLimitReached = true;
+            console.log(`[Backtest] Daily loss limit reached on ${currentDay}: ${dailyPnl.toFixed(2)} < -${dailyLossLimitAmount.toFixed(2)}`);
+          }
+        }
+
         if (exitTime) {
           openPositions.push({
             exitTime: new Date(exitTime).getTime(),
@@ -821,7 +950,11 @@ export class BacktestEngine {
         trendFilter: skippedTrend,
         minNotional: skippedMinNotional,
         minProfit: skippedMinProfit,
-        total: skippedMaxPositions + skippedMaxExposure + skippedKlineNotFound + skippedTrend + skippedMinNotional + skippedMinProfit,
+        marketContext: skippedMarketContext,
+        cooldown: skippedCooldown,
+        dailyLossLimit: skippedDailyLossLimit,
+        volatility: skippedVolatility,
+        total: skippedMaxPositions + skippedMaxExposure + skippedKlineNotFound + skippedTrend + skippedMinNotional + skippedMinProfit + skippedMarketContext + skippedCooldown + skippedDailyLossLimit + skippedVolatility,
       });
       console.log('[Backtest] Results:', {
         trades: trades.length,

@@ -46,6 +46,11 @@ program
   .option('--trailing-stop', 'Use trailing stop instead of fixed take profit (let winners run)', false)
   .option('--use-ml-filter', 'Use ML model to filter setups (same as auto trading)', false)
   .option('--optimized', 'Use strategy\'s optimized parameters (position size, trend filter, etc.)', false)
+  .option('--use-market-context', 'Use historical market context filter (Fear/Greed, Funding Rate)', false)
+  .option('--use-cooldown', 'Simulate cooldown between trades (same as auto trading)', false)
+  .option('--cooldown-minutes <n>', 'Minutes of cooldown per strategy-symbol-interval', '15')
+  .option('--daily-loss-limit <percent>', 'Max daily loss as % of capital before stopping')
+  .option('--only-long', 'Only allow LONG positions (buy only, no shorts)', false)
   .option('-v, --verbose', 'Show detailed trade-by-trade logs', false)
   .action(validateCommand);
 

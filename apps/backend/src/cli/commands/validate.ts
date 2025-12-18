@@ -38,6 +38,11 @@ interface ValidateOptions {
   useMlFilter: boolean;
   optimized: boolean;
   verbose: boolean;
+  useMarketContext: boolean;
+  useCooldown: boolean;
+  cooldownMinutes: string;
+  dailyLossLimit: string;
+  onlyLong: boolean;
 }
 
 export async function validateCommand(options: ValidateOptions) {
@@ -117,6 +122,11 @@ export async function validateCommand(options: ValidateOptions) {
       useTrailingStop: options.trailingStop ?? false,
       useMlFilter: options.useMlFilter ?? false,
       useOptimizedSettings: options.optimized,
+      useMarketContextFilter: options.useMarketContext ?? false,
+      useCooldown: options.useCooldown ?? false,
+      cooldownMinutes: options.cooldownMinutes ? parseInt(options.cooldownMinutes, 10) : undefined,
+      dailyLossLimit: options.dailyLossLimit ? parseFloat(options.dailyLossLimit) : undefined,
+      onlyLong: options.onlyLong ?? false,
     };
 
     const engine = new BacktestEngine();
