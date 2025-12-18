@@ -67,6 +67,7 @@ export interface BacktestConfig {
   dailyLossLimit?: number; // Max daily loss as % of capital before stopping (default: 5%)
 
   onlyLong?: boolean; // Only allow LONG positions (buy only, no shorts)
+  trendFilterPeriod?: number; // EMA period for trend filter (default: 200)
 }
 
 export interface BacktestTrade {

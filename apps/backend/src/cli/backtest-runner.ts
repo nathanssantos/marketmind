@@ -51,6 +51,7 @@ program
   .option('--cooldown-minutes <n>', 'Minutes of cooldown per strategy-symbol-interval', '15')
   .option('--daily-loss-limit <percent>', 'Max daily loss as % of capital before stopping')
   .option('--only-long', 'Only allow LONG positions (buy only, no shorts)', false)
+  .option('--trend-period <n>', 'EMA period for trend filter (9, 21, 50, 70, 100, 200)')
   .option('-v, --verbose', 'Show detailed trade-by-trade logs', false)
   .action(validateCommand);
 

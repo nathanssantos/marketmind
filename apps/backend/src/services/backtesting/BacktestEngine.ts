@@ -246,7 +246,7 @@ export class BacktestEngine {
 
       let detectedSetups: any[] = [];
       try {
-        const warmupPeriod = this.calculateWarmupPeriod(loadedStrategies);
+        const warmupPeriod = this.calculateWarmupPeriod(loadedStrategies, effectiveConfig.trendFilterPeriod);
         const startIndex = warmupPeriod;
         const endIndex = historicalKlines.length - 1;
 
@@ -350,7 +350,8 @@ export class BacktestEngine {
       );
 
       const { calculateEMA } = await import('@marketmind/indicators');
-      const ema200 = calculateEMA(historicalKlines, 200);
+      const trendPeriod = effectiveConfig.trendFilterPeriod ?? 200;
+      const emaTrend = calculateEMA(historicalKlines, trendPeriod);
 
       const sortedSetups = tradableSetups.sort(
         (a: any, b: any) => a.openTime - b.openTime
@@ -474,22 +475,23 @@ export class BacktestEngine {
 
         const setupStrategy = strategyMap.get(setup.type);
         const strategyOnlyWithTrend = setupStrategy?.optimizedParams?.onlyWithTrend ?? false;
-        
-        if (strategyOnlyWithTrend && ema200.length > 0) {
-          const setupIndex = historicalKlines.findIndex(k => k.openTime === setup.openTime);
-          const ema200Value = ema200[setupIndex];
+        const useTrendFilter = effectiveConfig.onlyWithTrend || strategyOnlyWithTrend || effectiveConfig.trendFilterPeriod !== undefined;
 
-          if (ema200Value !== null && ema200Value !== undefined) {
-            const isBullishTrend = entryPrice > ema200Value;
-            const isBearishTrend = entryPrice < ema200Value;
+        if (useTrendFilter && emaTrend.length > 0) {
+          const setupIndex = historicalKlines.findIndex(k => k.openTime === setup.openTime);
+          const emaTrendValue = emaTrend[setupIndex];
+
+          if (emaTrendValue !== null && emaTrendValue !== undefined) {
+            const isBullishTrend = entryPrice > emaTrendValue;
+            const isBearishTrend = entryPrice < emaTrendValue;
 
             if (setup.direction === 'LONG' && !isBullishTrend) {
-              console.warn('[Backtest] Skipping LONG setup - price below EMA200 (counter-trend)');
+              if (trades.length < 3) console.warn(`[Backtest] Skipping LONG setup - price below EMA${trendPeriod} (counter-trend)`);
               skippedTrend++;
               continue;
             }
             if (setup.direction === 'SHORT' && !isBearishTrend) {
-              console.warn('[Backtest] Skipping SHORT setup - price above EMA200 (counter-trend)');
+              if (trades.length < 3) console.warn(`[Backtest] Skipping SHORT setup - price above EMA${trendPeriod} (counter-trend)`);
               skippedTrend++;
               continue;
             }
@@ -996,9 +998,9 @@ export class BacktestEngine {
    * Calculate the warmup period needed for indicators in the strategies.
    * This ensures we have enough historical data for all indicators to produce valid values.
    */
-  private calculateWarmupPeriod(strategies: StrategyDefinition[]): number {
+  private calculateWarmupPeriod(strategies: StrategyDefinition[], trendFilterPeriod?: number): number {
     const MIN_WARMUP = 50; // Minimum warmup for basic indicators
-    let maxPeriod = MIN_WARMUP;
+    let maxPeriod = trendFilterPeriod ? Math.max(MIN_WARMUP, trendFilterPeriod) : MIN_WARMUP;
 
     for (const strategy of strategies) {
       if (strategy.indicators) {
@@ -1038,7 +1040,7 @@ export class BacktestEngine {
         }
       }
 
-      if (strategy.optimizedParams?.onlyWithTrend) {
+      if (strategy.optimizedParams?.onlyWithTrend && !trendFilterPeriod) {
         maxPeriod = Math.max(maxPeriod, 200);
       }
     }

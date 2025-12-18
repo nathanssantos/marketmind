@@ -43,6 +43,7 @@ interface ValidateOptions {
   cooldownMinutes: string;
   dailyLossLimit: string;
   onlyLong: boolean;
+  trendPeriod: string;
 }
 
 export async function validateCommand(options: ValidateOptions) {
@@ -127,6 +128,7 @@ export async function validateCommand(options: ValidateOptions) {
       cooldownMinutes: options.cooldownMinutes ? parseInt(options.cooldownMinutes, 10) : undefined,
       dailyLossLimit: options.dailyLossLimit ? parseFloat(options.dailyLossLimit) : undefined,
       onlyLong: options.onlyLong ?? false,
+      trendFilterPeriod: options.trendPeriod ? parseInt(options.trendPeriod, 10) : undefined,
     };
 
     const engine = new BacktestEngine();
