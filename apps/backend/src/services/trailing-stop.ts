@@ -457,6 +457,14 @@ export class TrailingStopService {
 
     const entryTime = new Date(execution.openedAt).getTime();
     const klinesAfterEntry = klines.filter(k => k.openTime >= entryTime);
+
+    // Trailing stop only starts after the first candle of the timeframe has closed
+    // We need at least 2 klines: entry kline (must be complete) + at least one more
+    if (klinesAfterEntry.length < 2) {
+      logger.debug({ executionId: execution.id, klinesCount: klinesAfterEntry.length }, 'Trailing stop waiting for first candle to close');
+      return null;
+    }
+
     const swingPointsAfterEntry = swingPoints.filter(sp => sp.timestamp >= entryTime);
 
     let highestPrice: number | undefined;

@@ -674,7 +674,8 @@ export class BacktestEngine {
           const open = parseFloat(futureKline.open);
           const close = parseFloat(futureKline.close);
 
-          if (useTrailingStop && stopLoss) {
+          // Trailing stop only starts after first candle closes (barsInTrade > 1)
+          if (useTrailingStop && stopLoss && barsInTrade > 1) {
             if (setup.direction === 'LONG') {
               if (high > highestHigh) {
                 highestHigh = high;
