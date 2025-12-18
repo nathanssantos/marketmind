@@ -372,6 +372,7 @@ export class BacktestEngine {
       let skippedCooldown = 0;
       let skippedDailyLossLimit = 0;
       let skippedVolatility = 0;
+      let skippedRiskReward = 0;
 
       const cooldownMap = new Map<string, number>();
       const cooldownMinutes = effectiveConfig.cooldownMinutes ?? 15;
@@ -618,6 +619,35 @@ export class BacktestEngine {
             );
             skippedMinProfit++;
             continue;
+          }
+        }
+
+        const MIN_RISK_REWARD_RATIO = effectiveConfig.minRiskRewardRatio ?? 1.5;
+
+        if (stopLoss && takeProfit) {
+          let risk: number;
+          let reward: number;
+
+          if (setup.direction === 'LONG') {
+            risk = entryPrice - stopLoss;
+            reward = takeProfit - entryPrice;
+          } else {
+            risk = stopLoss - entryPrice;
+            reward = entryPrice - takeProfit;
+          }
+
+          if (risk > 0) {
+            const riskRewardRatio = reward / risk;
+
+            if (riskRewardRatio < MIN_RISK_REWARD_RATIO) {
+              if (trades.length < 3) {
+                console.warn(
+                  `[Backtest] Skipping setup - R:R ${riskRewardRatio.toFixed(2)}:1 below minimum ${MIN_RISK_REWARD_RATIO}:1`
+                );
+              }
+              skippedRiskReward++;
+              continue;
+            }
           }
         }
 
@@ -954,11 +984,12 @@ export class BacktestEngine {
         trendFilter: skippedTrend,
         minNotional: skippedMinNotional,
         minProfit: skippedMinProfit,
+        riskReward: skippedRiskReward,
         marketContext: skippedMarketContext,
         cooldown: skippedCooldown,
         dailyLossLimit: skippedDailyLossLimit,
         volatility: skippedVolatility,
-        total: skippedMaxPositions + skippedMaxExposure + skippedKlineNotFound + skippedTrend + skippedMinNotional + skippedMinProfit + skippedMarketContext + skippedCooldown + skippedDailyLossLimit + skippedVolatility,
+        total: skippedMaxPositions + skippedMaxExposure + skippedKlineNotFound + skippedTrend + skippedMinNotional + skippedMinProfit + skippedRiskReward + skippedMarketContext + skippedCooldown + skippedDailyLossLimit + skippedVolatility,
       });
       console.log('[Backtest] Results:', {
         trades: trades.length,

@@ -10,6 +10,7 @@ export interface BacktestConfig {
   endDate: string; // ISO date
   initialCapital: number;
   minProfitPercent?: number; // Min expected profit % per trade after fees (filters out low R:R setups)
+  minRiskRewardRatio?: number; // Min risk/reward ratio to enter trade (default: 1.5)
   setupTypes?: string[]; // Which setups to trade (empty = all)
   minConfidence?: number; // Minimum confidence to enter trade
   onlyWithTrend?: boolean; // Only trade setups aligned with higher timeframe trend
