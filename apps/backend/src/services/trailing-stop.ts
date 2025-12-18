@@ -456,7 +456,7 @@ export class TrailingStopService {
     const isLong = execution.side === 'LONG';
 
     const entryTime = new Date(execution.openedAt).getTime();
-    const klinesAfterEntry = klines.filter(k => k.openTime <= entryTime);
+    const klinesAfterEntry = klines.filter(k => k.openTime >= entryTime);
 
     let highestPrice: number | undefined;
     let lowestPrice: number | undefined;

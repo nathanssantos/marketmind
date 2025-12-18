@@ -3,6 +3,7 @@ import type {
   OpenInterestData,
   LiquidationData,
 } from '@marketmind/indicators';
+import type { FuturesSymbolInfo, FuturesContractType } from '@marketmind/types';
 import { logger } from './logger';
 
 const FUTURES_BASE_URL = 'https://fapi.binance.com';
@@ -357,6 +358,246 @@ export class BinanceFuturesDataService {
 
   setCacheTTL(ttl: number): void {
     this.cacheTTL = ttl;
+  }
+
+  async getExchangeInfo(): Promise<FuturesSymbolInfo[]> {
+    const cacheKey = 'exchangeInfo';
+    const cached = this.getFromCache<FuturesSymbolInfo[]>(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const response = await fetch(`${FUTURES_BASE_URL}/fapi/v1/exchangeInfo`);
+
+      if (!response.ok) {
+        logger.warn({ status: response.status }, 'Failed to fetch futures exchange info');
+        return [];
+      }
+
+      const data = await response.json();
+
+      const result: FuturesSymbolInfo[] = data.symbols
+        .filter((s: { contractType: string; status: string }) =>
+          s.contractType === 'PERPETUAL' && s.status === 'TRADING'
+        )
+        .map((s: {
+          symbol: string;
+          pair: string;
+          baseAsset: string;
+          quoteAsset: string;
+          contractType: string;
+          deliveryDate: number;
+          onboardDate: number;
+          status: string;
+          pricePrecision: number;
+          quantityPrecision: number;
+          baseAssetPrecision: number;
+          quotePrecision: number;
+          maintMarginPercent: string;
+          requiredMarginPercent: string;
+          underlyingType: string;
+          underlyingSubType: string[];
+        }) => ({
+          symbol: s.symbol,
+          pair: s.pair,
+          baseAsset: s.baseAsset,
+          quoteAsset: s.quoteAsset,
+          contractType: s.contractType as FuturesContractType,
+          deliveryDate: s.deliveryDate,
+          onboardDate: s.onboardDate,
+          status: s.status,
+          pricePrecision: s.pricePrecision,
+          quantityPrecision: s.quantityPrecision,
+          baseAssetPrecision: s.baseAssetPrecision,
+          quotePrecision: s.quotePrecision,
+          maxLeverage: 125,
+          maintMarginPercent: s.maintMarginPercent,
+          requiredMarginPercent: s.requiredMarginPercent,
+          underlyingType: s.underlyingType,
+          underlyingSubType: s.underlyingSubType || [],
+        }));
+
+      this.setCache(cacheKey, result);
+      return result;
+    } catch (error) {
+      logger.error({ error }, 'Error fetching futures exchange info');
+      return [];
+    }
+  }
+
+  async getHistoricalFundingRates(
+    symbol: string,
+    startTime?: number,
+    endTime?: number,
+    limit = 1000
+  ): Promise<FundingRateData[]> {
+    const cacheKey = `historicalFunding:${symbol}:${startTime}:${endTime}:${limit}`;
+    const cached = this.getFromCache<FundingRateData[]>(cacheKey);
+    if (cached) return cached;
+
+    try {
+      let url = `${FUTURES_BASE_URL}/fapi/v1/fundingRate?symbol=${symbol}&limit=${limit}`;
+      if (startTime) url += `&startTime=${startTime}`;
+      if (endTime) url += `&endTime=${endTime}`;
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        logger.warn({ symbol, status: response.status }, 'Failed to fetch historical funding rates');
+        return [];
+      }
+
+      const data: BinanceFundingRateResponse[] = await response.json();
+
+      const result: FundingRateData[] = data.map((item) => ({
+        timestamp: item.fundingTime,
+        rate: parseFloat(item.fundingRate) * 100,
+        markPrice: parseFloat(item.markPrice),
+      }));
+
+      this.setCache(cacheKey, result);
+      return result;
+    } catch (error) {
+      logger.error({ error, symbol }, 'Error fetching historical funding rates');
+      return [];
+    }
+  }
+
+  async getFuturesKlines(
+    symbol: string,
+    interval: string,
+    startTime?: number,
+    endTime?: number,
+    limit = 1000
+  ): Promise<{
+    openTime: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+    closeTime: number;
+    quoteVolume: number;
+    trades: number;
+    takerBuyBaseVolume: number;
+    takerBuyQuoteVolume: number;
+  }[]> {
+    try {
+      let url = `${FUTURES_BASE_URL}/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+      if (startTime) url += `&startTime=${startTime}`;
+      if (endTime) url += `&endTime=${endTime}`;
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        logger.warn({ symbol, interval, status: response.status }, 'Failed to fetch futures klines');
+        return [];
+      }
+
+      const data: (string | number)[][] = await response.json();
+
+      return data.map((k) => ({
+        openTime: k[0] as number,
+        open: parseFloat(k[1] as string),
+        high: parseFloat(k[2] as string),
+        low: parseFloat(k[3] as string),
+        close: parseFloat(k[4] as string),
+        volume: parseFloat(k[5] as string),
+        closeTime: k[6] as number,
+        quoteVolume: parseFloat(k[7] as string),
+        trades: k[8] as number,
+        takerBuyBaseVolume: parseFloat(k[9] as string),
+        takerBuyQuoteVolume: parseFloat(k[10] as string),
+      }));
+    } catch (error) {
+      logger.error({ error, symbol, interval }, 'Error fetching futures klines');
+      return [];
+    }
+  }
+
+  async getMarkPrice(symbol: string): Promise<{
+    symbol: string;
+    markPrice: number;
+    indexPrice: number;
+    estimatedSettlePrice: number;
+    lastFundingRate: number;
+    nextFundingTime: number;
+    interestRate: number;
+    time: number;
+  } | null> {
+    try {
+      const response = await fetch(`${FUTURES_BASE_URL}/fapi/v1/premiumIndex?symbol=${symbol}`);
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+
+      return {
+        symbol: data.symbol,
+        markPrice: parseFloat(data.markPrice),
+        indexPrice: parseFloat(data.indexPrice),
+        estimatedSettlePrice: parseFloat(data.estimatedSettlePrice || '0'),
+        lastFundingRate: parseFloat(data.lastFundingRate) * 100,
+        nextFundingTime: data.nextFundingTime,
+        interestRate: parseFloat(data.interestRate) * 100,
+        time: data.time,
+      };
+    } catch (error) {
+      logger.error({ error, symbol }, 'Error fetching mark price');
+      return null;
+    }
+  }
+
+  async getAllMarkPrices(): Promise<{
+    symbol: string;
+    markPrice: number;
+    indexPrice: number;
+    lastFundingRate: number;
+    nextFundingTime: number;
+    time: number;
+  }[]> {
+    const cacheKey = 'allMarkPrices';
+    const cached = this.getFromCache<{
+      symbol: string;
+      markPrice: number;
+      indexPrice: number;
+      lastFundingRate: number;
+      nextFundingTime: number;
+      time: number;
+    }[]>(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const response = await fetch(`${FUTURES_BASE_URL}/fapi/v1/premiumIndex`);
+
+      if (!response.ok) {
+        logger.warn({ status: response.status }, 'Failed to fetch all mark prices');
+        return [];
+      }
+
+      const data = await response.json();
+
+      const result = data.map((item: {
+        symbol: string;
+        markPrice: string;
+        indexPrice: string;
+        lastFundingRate: string;
+        nextFundingTime: number;
+        time: number;
+      }) => ({
+        symbol: item.symbol,
+        markPrice: parseFloat(item.markPrice),
+        indexPrice: parseFloat(item.indexPrice),
+        lastFundingRate: parseFloat(item.lastFundingRate) * 100,
+        nextFundingTime: item.nextFundingTime,
+        time: item.time,
+      }));
+
+      this.setCache(cacheKey, result);
+      return result;
+    } catch (error) {
+      logger.error({ error }, 'Error fetching all mark prices');
+      return [];
+    }
   }
 }
 

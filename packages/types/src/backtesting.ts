@@ -17,10 +17,16 @@ export interface BacktestConfig {
   stopLossPercent?: number; // SL as % of entry (ignored if useAlgorithmicLevels = true)
   takeProfitPercent?: number; // TP as % of entry (ignored if useAlgorithmicLevels = true)
   maxPositionSize?: number; // Max % of capital per trade
-  commission?: number; // Trading fee % (default 0.1%)
+  commission?: number; // Trading fee % (default 0.1% spot, 0.04% futures)
   slippagePercent?: number; // Slippage % for market orders - SL (default 0.05%)
   useMlFilter?: boolean; // Use ML model to filter setups (same as auto trading)
   useOptimizedSettings?: boolean; // Use strategy's optimizedParams instead of config values
+
+  marketType?: 'SPOT' | 'FUTURES'; // Market type (default: SPOT)
+  leverage?: number; // Futures leverage 1-125 (default: 1)
+  marginType?: 'ISOLATED' | 'CROSSED'; // Futures margin type (default: ISOLATED)
+  simulateFundingRates?: boolean; // Simulate funding rate payments every 8h
+  simulateLiquidation?: boolean; // Simulate position liquidation
 
   positionSizingMethod?: 'fixed-fractional' | 'risk-based' | 'kelly' | 'volatility'; // Default: 'fixed-fractional'
   riskPerTrade?: number; // % of equity to risk per trade (for risk-based sizing, default: 2%)
@@ -87,8 +93,16 @@ export interface BacktestTrade {
   pnlPercent?: number;
   commission: number;
   netPnl?: number;
-  exitReason?: 'STOP_LOSS' | 'TAKE_PROFIT' | 'MANUAL' | 'END_OF_PERIOD';
+  exitReason?: 'STOP_LOSS' | 'TAKE_PROFIT' | 'MANUAL' | 'END_OF_PERIOD' | 'LIQUIDATION';
   status: 'OPEN' | 'CLOSED';
+
+  marketType?: 'SPOT' | 'FUTURES';
+  leverage?: number;
+  marginType?: 'ISOLATED' | 'CROSSED';
+  liquidationPrice?: number;
+  fundingPayments?: number;
+  liquidationFee?: number;
+  leveragedPnlPercent?: number;
 }
 
 export interface BacktestMetrics {

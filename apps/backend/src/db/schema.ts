@@ -67,6 +67,8 @@ export const orders = pgTable('orders', {
   setupId: varchar('setup_id', { length: 255 }),
   setupType: varchar('setup_type', { length: 100 }),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('SPOT'),
+  reduceOnly: boolean('reduce_only').default(false),
 });
 
 export const positions = pgTable('positions', {
@@ -91,6 +93,11 @@ export const positions = pgTable('positions', {
   setupId: varchar('setup_id', { length: 255 }),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+  marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('SPOT'),
+  leverage: integer().default(1),
+  marginType: varchar('margin_type', { length: 10 }).$type<'ISOLATED' | 'CROSSED'>(),
+  liquidationPrice: numeric('liquidation_price', { precision: 20, scale: 8 }),
+  accumulatedFunding: numeric('accumulated_funding', { precision: 20, scale: 8 }).default('0'),
 });
 
 export const klines = pgTable(

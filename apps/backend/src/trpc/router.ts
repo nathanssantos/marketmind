@@ -3,6 +3,7 @@ import { analyticsRouter } from '../routers/analytics';
 import { authRouter } from '../routers/auth';
 import { autoTradingRouter } from '../routers/auto-trading';
 import { backtestRouter } from '../routers/backtest';
+import { futuresTradingRouter } from '../routers/futures-trading';
 import { healthRouter } from '../routers/health';
 import { klineRouter } from '../routers/kline';
 import { marketContextRouter } from '../routers/market-context';
@@ -19,6 +20,7 @@ export const appRouter = router({
   auth: authRouter,
   wallet: walletRouter,
   trading: tradingRouter,
+  futuresTrading: futuresTradingRouter,
   autoTrading: autoTradingRouter,
   aiTrading: aiTradingRouter,
   analytics: analyticsRouter,
