@@ -127,12 +127,17 @@ export class StrategyPerformanceService {
       };
     }
 
+    const totalPnl = Number(stats.totalPnl) || 0;
+    const totalPnlPercent = Number(stats.totalPnlPercent) || 0;
+    const avgWin = Number(stats.avgWin) || 0;
+    const avgLoss = Number(stats.avgLoss) || 0;
+
     const winRate = stats.totalTrades > 0
       ? ((stats.winningTrades / stats.totalTrades) * 100).toFixed(2)
       : '0';
 
-    const avgRr = stats.avgLoss && stats.avgLoss > 0
-      ? (stats.avgWin / stats.avgLoss).toFixed(4)
+    const avgRr = avgLoss > 0
+      ? (avgWin / avgLoss).toFixed(4)
       : '0';
 
     const consecutiveLosses = await this.calculateConsecutiveLosses(
@@ -147,10 +152,10 @@ export class StrategyPerformanceService {
       losingTrades: stats.losingTrades,
       breakevenTrades: stats.breakevenTrades,
       winRate,
-      totalPnl: stats.totalPnl.toFixed(8),
-      totalPnlPercent: stats.totalPnlPercent.toFixed(4),
-      avgWin: (stats.avgWin || 0).toFixed(4),
-      avgLoss: (stats.avgLoss || 0).toFixed(4),
+      totalPnl: totalPnl.toFixed(8),
+      totalPnlPercent: totalPnlPercent.toFixed(4),
+      avgWin: avgWin.toFixed(4),
+      avgLoss: avgLoss.toFixed(4),
       avgRr,
       maxDrawdown: '0',
       maxConsecutiveLosses: consecutiveLosses.max,

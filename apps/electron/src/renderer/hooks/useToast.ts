@@ -5,7 +5,7 @@ export interface ToastOptions {
   title: string;
   description?: string;
   type?: 'success' | 'error' | 'warning' | 'info';
-  duration?: number;
+  duration?: number | null;
 }
 
 export const useToast = () => {
@@ -15,7 +15,7 @@ export const useToast = () => {
         title: options.title,
         description: options.description,
         type: options.type || 'info',
-        duration: options.duration || 5000,
+        duration: options.duration === null ? undefined : (options.duration || 5000),
       });
     });
   }, []);
@@ -36,11 +36,31 @@ export const useToast = () => {
     showToast({ title, ...(description && { description }), type: 'info' });
   }, [showToast]);
 
+  const persistentSuccess = useCallback((title: string, description?: string) => {
+    showToast({ title, ...(description && { description }), type: 'success', duration: null });
+  }, [showToast]);
+
+  const persistentError = useCallback((title: string, description?: string) => {
+    showToast({ title, ...(description && { description }), type: 'error', duration: null });
+  }, [showToast]);
+
+  const persistentWarning = useCallback((title: string, description?: string) => {
+    showToast({ title, ...(description && { description }), type: 'warning', duration: null });
+  }, [showToast]);
+
+  const persistentInfo = useCallback((title: string, description?: string) => {
+    showToast({ title, ...(description && { description }), type: 'info', duration: null });
+  }, [showToast]);
+
   return {
     showToast,
     success,
     error,
     warning,
     info,
+    persistentSuccess,
+    persistentError,
+    persistentWarning,
+    persistentInfo,
   };
 };

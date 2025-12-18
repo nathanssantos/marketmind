@@ -456,23 +456,48 @@ export class TrailingStopService {
     const isLong = execution.side === 'LONG';
 
     const entryTime = new Date(execution.openedAt).getTime();
-    const klinesAfterEntry = klines.filter(k => k.openTime >= entryTime);
+    const now = Date.now();
 
-    // Trailing stop only starts after the first candle of the timeframe has closed
-    // We need at least 2 klines: entry kline (must be complete) + at least one more
-    if (klinesAfterEntry.length < 2) {
-      logger.debug({ executionId: execution.id, klinesCount: klinesAfterEntry.length }, 'Trailing stop waiting for first candle to close');
+    // Find klines that include the entry candle (closeTime > entryTime) or started after
+    const klinesFromEntry = klines.filter(k => k.closeTime > entryTime);
+
+    if (klinesFromEntry.length === 0) {
+      logger.debug({ executionId: execution.id, klinesCount: 0 }, 'Trailing stop waiting for entry candle data');
       return null;
     }
 
-    const swingPointsAfterEntry = swingPoints.filter(sp => sp.timestamp >= entryTime);
+    // The first kline is the entry candle
+    const entryCandle = klinesFromEntry[0]!;
+
+    // Trailing stop only starts after the entry candle has closed
+    if (now < entryCandle.closeTime) {
+      logger.debug({
+        executionId: execution.id,
+        entryCandle: new Date(entryCandle.openTime).toISOString(),
+        closesAt: new Date(entryCandle.closeTime).toISOString(),
+        now: new Date(now).toISOString(),
+      }, 'Trailing stop waiting for entry candle to close');
+      return null;
+    }
+
+    // Entry candle has closed - skip it and use only subsequent klines for highestPrice/lowestPrice
+    const klinesForTrailing = klinesFromEntry.slice(1);
+    const firstKlineAfterTrailingStarts = klinesForTrailing[0];
+
+    const swingPointsAfterEntry = swingPoints.filter(sp =>
+      firstKlineAfterTrailingStarts ? sp.timestamp >= firstKlineAfterTrailingStarts.openTime : sp.timestamp >= entryCandle.closeTime
+    );
 
     let highestPrice: number | undefined;
     let lowestPrice: number | undefined;
 
-    if (klinesAfterEntry.length > 0) {
-      highestPrice = Math.max(...klinesAfterEntry.map(k => parseFloat(k.high)));
-      lowestPrice = Math.min(...klinesAfterEntry.map(k => parseFloat(k.low)));
+    if (klinesForTrailing.length > 0) {
+      highestPrice = Math.max(...klinesForTrailing.map(k => parseFloat(k.high)));
+      lowestPrice = Math.min(...klinesForTrailing.map(k => parseFloat(k.low)));
+    } else {
+      // No subsequent candles yet, use current price as starting point
+      highestPrice = currentPrice;
+      lowestPrice = currentPrice;
     }
 
     const input: TrailingStopInput = {

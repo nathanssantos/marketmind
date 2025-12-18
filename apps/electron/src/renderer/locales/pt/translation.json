@@ -894,7 +894,38 @@
       "orderCancelled": "Ordem Cancelada",
       "orderCancelledDesc": "{{order}} foi cancelada",
       "orderExpired": "Ordem Expirada",
-      "orderExpiredDesc": "{{order}} expirou"
+      "orderExpiredDesc": "{{order}} expirou",
+      "positionOpened": {
+        "title": "Posição Aberta",
+        "body": "{{side}} {{symbol}} aberta a ${{price}} (qtd: {{quantity}})"
+      },
+      "positionClosed": {
+        "body": "{{side}} {{symbol}}: ${{entryPrice}} → ${{exitPrice}} | PnL: {{pnl}} ({{pnlPercent}}%) | {{reason}}"
+      },
+      "positionClosedProfit": {
+        "title": "Posição Fechada - Lucro ✓"
+      },
+      "positionClosedLoss": {
+        "title": "Posição Fechada - Prejuízo ✗"
+      },
+      "stopLossProfit": {
+        "title": "Stop Loss Atingido - Lucro ✓"
+      },
+      "stopLossLoss": {
+        "title": "Stop Loss Atingido - Prejuízo ✗"
+      },
+      "takeProfit": {
+        "title": "Take Profit Atingido ✓"
+      },
+      "trailingStopUpdated": {
+        "title": "Trailing Stop Atualizado",
+        "body": "{{side}} {{symbol}}: Stop movido de ${{oldStop}} para ${{newStop}}"
+      },
+      "exitReasons": {
+        "stopLoss": "Stop Loss",
+        "takeProfit": "Take Profit",
+        "manual": "Manual"
+      }
     },
     "order": {
       "long": "COMPRA",
