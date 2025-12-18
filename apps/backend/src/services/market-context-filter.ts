@@ -8,6 +8,7 @@ import type {
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { marketContextConfig, type MarketContextConfigRow } from '../db/schema';
+import { env } from '../env';
 import { BinanceFuturesDataService } from './binance-futures-data';
 import { BTCDominanceDataService } from './btc-dominance-data';
 import { logger } from './logger';
@@ -200,6 +201,10 @@ export class MarketContextFilter {
     symbol: string,
     walletId: string
   ): Promise<MarketContextFilterResult> {
+    if (!env.MARKET_CONTEXT_FILTER_ENABLED) {
+      return this.passResult();
+    }
+
     const config = await this.getConfig(walletId);
 
     if (!config.enabled) {

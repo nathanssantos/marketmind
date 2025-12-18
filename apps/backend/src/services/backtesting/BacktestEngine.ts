@@ -6,6 +6,7 @@ import { TRPCError } from '@trpc/server';
 import { randomBytes } from 'crypto';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { env } from '../../env';
 import { fetchHistoricalKlinesFromAPI } from '../binance-historical';
 import { mlService } from '../ml';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
@@ -382,7 +383,7 @@ export class BacktestEngine {
       let dailyLossLimitReached = false;
 
       let marketContextService: HistoricalMarketContextService | null = null;
-      if (effectiveConfig.useMarketContextFilter) {
+      if (env.MARKET_CONTEXT_FILTER_ENABLED && effectiveConfig.useMarketContextFilter) {
         console.log('[Backtest] Initializing historical market context data...');
         marketContextService = new HistoricalMarketContextService({
           fearGreed: {
