@@ -394,6 +394,48 @@ export const futuresTradingRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
       }
 
+      const MIN_RISK_REWARD_RATIO = 1.5;
+
+      if (input.stopLoss && input.takeProfit) {
+        const entryPrice = parseFloat(input.entryPrice);
+        const stopLoss = parseFloat(input.stopLoss);
+        const takeProfit = parseFloat(input.takeProfit);
+
+        let risk: number;
+        let reward: number;
+
+        if (input.side === 'LONG') {
+          risk = entryPrice - stopLoss;
+          reward = takeProfit - entryPrice;
+        } else {
+          risk = stopLoss - entryPrice;
+          reward = entryPrice - takeProfit;
+        }
+
+        if (risk <= 0) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid stop loss - stop loss must be below entry for LONG or above entry for SHORT',
+          });
+        }
+
+        const riskRewardRatio = reward / risk;
+
+        if (riskRewardRatio < MIN_RISK_REWARD_RATIO) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${MIN_RISK_REWARD_RATIO}:1)`,
+          });
+        }
+
+        logger.info({
+          symbol: input.symbol,
+          side: input.side,
+          leverage: input.leverage,
+          riskRewardRatio: riskRewardRatio.toFixed(2),
+        }, '✅ Risk/Reward ratio validated for futures position');
+      }
+
       const positionId = generateId(21);
       const entryPrice = parseFloat(input.entryPrice);
       const liquidationPrice = calculateLiquidationPrice(entryPrice, input.leverage, input.side);

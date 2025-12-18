@@ -295,6 +295,73 @@ export const autoTradingRouter = router({
 
       log('✅ Risk validation passed');
 
+      const MIN_RISK_REWARD_RATIO = 1.5;
+
+      if (setup.stopLoss && setup.takeProfit) {
+        const entryPrice = parseFloat(setup.entryPrice);
+        const stopLoss = parseFloat(setup.stopLoss);
+        const takeProfit = parseFloat(setup.takeProfit);
+
+        let risk: number;
+        let reward: number;
+
+        if (setup.direction === 'LONG') {
+          risk = entryPrice - stopLoss;
+          reward = takeProfit - entryPrice;
+        } else {
+          risk = stopLoss - entryPrice;
+          reward = entryPrice - takeProfit;
+        }
+
+        if (risk <= 0) {
+          log('❌ Invalid stop loss - no risk', {
+            setupType: setup.setupType,
+            direction: setup.direction,
+            entryPrice,
+            stopLoss,
+          });
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid stop loss - stop loss must be below entry for LONG or above entry for SHORT',
+          });
+        }
+
+        const riskRewardRatio = reward / risk;
+
+        if (riskRewardRatio < MIN_RISK_REWARD_RATIO) {
+          log('❌ Setup rejected - insufficient risk/reward ratio', {
+            setupType: setup.setupType,
+            direction: setup.direction,
+            entryPrice,
+            stopLoss,
+            takeProfit,
+            riskRewardRatio: riskRewardRatio.toFixed(2),
+            minRequired: MIN_RISK_REWARD_RATIO,
+          });
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${MIN_RISK_REWARD_RATIO}:1)`,
+          });
+        }
+
+        log('✅ Risk/Reward ratio validated', {
+          setupType: setup.setupType,
+          riskRewardRatio: riskRewardRatio.toFixed(2),
+        });
+      } else if (!setup.stopLoss) {
+        log('❌ Missing stop loss', {
+          setupType: setup.setupType,
+        });
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Stop loss is required for trade execution',
+        });
+      } else {
+        log('ℹ️ Setup without take profit - skipping R:R validation', {
+          setupType: setup.setupType,
+        });
+      }
+
       const executionId = generateId(21);
 
       await ctx.db.insert(tradeExecutions).values({

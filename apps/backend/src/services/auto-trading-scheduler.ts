@@ -663,6 +663,68 @@ export class AutoTradingScheduler {
       entryPrice: setup.entryPrice,
     });
 
+    const MIN_RISK_REWARD_RATIO = 1.5;
+
+    if (setup.stopLoss && setup.takeProfit) {
+      const entryPrice = setup.entryPrice;
+      const stopLoss = setup.stopLoss;
+      const takeProfit = setup.takeProfit;
+
+      let risk: number;
+      let reward: number;
+
+      if (setup.direction === 'LONG') {
+        risk = entryPrice - stopLoss;
+        reward = takeProfit - entryPrice;
+      } else {
+        risk = stopLoss - entryPrice;
+        reward = entryPrice - takeProfit;
+      }
+
+      if (risk <= 0) {
+        log('❌ Invalid stop loss - no risk', {
+          type: setup.type,
+          direction: setup.direction,
+          entryPrice,
+          stopLoss,
+        });
+        return;
+      }
+
+      const riskRewardRatio = reward / risk;
+
+      if (riskRewardRatio < MIN_RISK_REWARD_RATIO) {
+        log('❌ Setup rejected - insufficient risk/reward ratio', {
+          type: setup.type,
+          direction: setup.direction,
+          entryPrice,
+          stopLoss,
+          takeProfit,
+          risk: risk.toFixed(2),
+          reward: reward.toFixed(2),
+          riskRewardRatio: riskRewardRatio.toFixed(2),
+          minRequired: MIN_RISK_REWARD_RATIO,
+        });
+        return;
+      }
+
+      log('✅ Risk/Reward ratio validated', {
+        type: setup.type,
+        riskRewardRatio: riskRewardRatio.toFixed(2),
+        risk: risk.toFixed(2),
+        reward: reward.toFixed(2),
+      });
+    } else if (!setup.stopLoss) {
+      log('⚠️ Missing stop loss - cannot execute', {
+        type: setup.type,
+      });
+      return;
+    } else {
+      log('ℹ️ Setup without take profit - skipping R:R validation', {
+        type: setup.type,
+      });
+    }
+
     try {
       const [config] = await db
         .select()
