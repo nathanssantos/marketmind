@@ -339,6 +339,7 @@
       "rsi": "RSI (2)",
       "bollingerBands": "Bollinger Bands",
       "atr": "ATR Trailing Stop",
+      "vwap": "Monthly VWAP",
       "grid": "Grid",
       "currentPrice": "Current Price",
       "crosshair": "Crosshair",

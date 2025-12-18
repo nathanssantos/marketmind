@@ -36,6 +36,7 @@ interface MainLayoutProps {
   showRSI: boolean;
   showBollingerBands: boolean;
   showATR: boolean;
+  showVWAP: boolean;
   movingAverages: MovingAverageConfig[];
   isNewsOpen: boolean;
   isBacktestOpen: boolean;
@@ -52,6 +53,7 @@ interface MainLayoutProps {
   onShowRSIChange: (show: boolean) => void;
   onShowBollingerBandsChange: (show: boolean) => void;
   onShowATRChange: (show: boolean) => void;
+  onShowVWAPChange: (show: boolean) => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onToggleNews: () => void;
   onToggleBacktest: () => void;
@@ -88,6 +90,7 @@ export const MainLayout = ({
   showRSI,
   showBollingerBands,
   showATR,
+  showVWAP,
   movingAverages,
   isNewsOpen,
   isBacktestOpen,
@@ -104,6 +107,7 @@ export const MainLayout = ({
   onShowRSIChange,
   onShowBollingerBandsChange,
   onShowATRChange,
+  onShowVWAPChange,
   onMovingAveragesChange,
   onToggleNews,
   onToggleBacktest,
@@ -190,6 +194,7 @@ export const MainLayout = ({
           showRSI={showRSI}
           showBollingerBands={showBollingerBands}
           showATR={showATR}
+          showVWAP={showVWAP}
           movingAverages={movingAverages}
           isTradingOpen={isTradingOpen}
           isChatOpen={isChatOpen}
@@ -208,6 +213,7 @@ export const MainLayout = ({
           onShowRSIChange={onShowRSIChange}
           onShowBollingerBandsChange={onShowBollingerBandsChange}
           onShowATRChange={onShowATRChange}
+          onShowVWAPChange={onShowVWAPChange}
           onMovingAveragesChange={onMovingAveragesChange}
           onToggleTrading={onToggleTrading}
           onToggleChat={onToggleChat}

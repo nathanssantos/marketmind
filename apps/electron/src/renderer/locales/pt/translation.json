@@ -309,6 +309,7 @@
       "rsi": "IFR (2)",
       "bollingerBands": "Bandas de Bollinger",
       "atr": "ATR Trailing Stop",
+      "vwap": "VWAP Mensal",
       "grid": "Grade",
       "currentPrice": "Preço Atual",
       "crosshair": "Mira",

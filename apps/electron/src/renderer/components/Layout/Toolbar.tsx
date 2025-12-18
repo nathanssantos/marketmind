@@ -13,8 +13,10 @@ import {
   LuChartBar,
   LuChartCandlestick,
   LuChartLine,
+  LuChartSpline,
   LuCrosshair,
   LuDollarSign,
+  LuGauge,
   LuGrid3X3,
   LuHistory,
   LuLightbulb,
@@ -29,14 +31,13 @@ import {
   LuSun,
   LuTerminal,
   LuTrendingUp,
-  LuGauge,
 } from 'react-icons/lu';
-import { TradingProfilesModal } from '../Trading/TradingProfilesModal';
 import { useChartWindows } from '../../hooks/useChartWindows';
 import type { MarketDataService } from '../../services/market/MarketDataService';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { SymbolSelector } from '../SymbolSelector';
+import { TradingProfilesModal } from '../Trading/TradingProfilesModal';
 import { useColorMode } from '../ui/color-mode';
 import { TooltipWrapper } from '../ui/Tooltip';
 import { PatternTogglePopover } from './PatternTogglePopover';
@@ -57,6 +58,7 @@ export interface ToolbarProps {
   showRSI: boolean;
   showBollingerBands: boolean;
   showATR: boolean;
+  showVWAP: boolean;
   movingAverages: MovingAverageConfig[];
   isTradingOpen: boolean;
   isChatOpen: boolean;
@@ -77,6 +79,7 @@ export interface ToolbarProps {
   onShowRSIChange: (show: boolean) => void;
   onShowBollingerBandsChange: (show: boolean) => void;
   onShowATRChange: (show: boolean) => void;
+  onShowVWAPChange: (show: boolean) => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onToggleTrading: () => void;
   onToggleChat: () => void;
@@ -100,6 +103,7 @@ export const Toolbar = memo(({
   showRSI,
   showBollingerBands,
   showATR,
+  showVWAP,
   movingAverages,
   isTradingOpen,
   isChatOpen,
@@ -120,6 +124,7 @@ export const Toolbar = memo(({
   onShowRSIChange,
   onShowBollingerBandsChange,
   onShowATRChange,
+  onShowVWAPChange,
   onMovingAveragesChange,
   onToggleTrading,
   onToggleChat,
@@ -326,6 +331,17 @@ export const Toolbar = memo(({
               variant={showATR ? 'solid' : 'ghost'}
             >
               <LuGauge />
+            </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label={t('chart.controls.vwap')} showArrow>
+            <IconButton
+              size="2xs"
+              aria-label={t('chart.controls.vwap')}
+              onClick={() => onShowVWAPChange(!showVWAP)}
+              colorPalette={showVWAP ? 'blue' : 'gray'}
+              variant={showVWAP ? 'solid' : 'ghost'}
+            >
+              <LuChartSpline />
             </IconButton>
           </TooltipWrapper>
           <TooltipWrapper label={t('chart.controls.grid')} showArrow>

@@ -5,6 +5,9 @@ import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose, getKlineHigh, getKlineLow } from '@shared/utils';
 import { useCallback, useMemo } from 'react';
 
+const ATR_LONG_COLOR = '#00e5ff';
+const ATR_SHORT_COLOR = '#ff6d00';
+
 interface UseATRRendererProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
@@ -94,8 +97,7 @@ export const useATRRenderer = ({
 
     if (!ctx || !dimensions) return;
 
-    const { chartWidth } = dimensions;
-    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
+    const effectiveWidth = dimensions.chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
     const klineWidth = effectiveWidth / (viewport.end - viewport.start);
 
     const visibleStartIndex = Math.floor(viewport.start);
@@ -118,8 +120,7 @@ export const useATRRenderer = ({
         ctx.beginPath();
         ctx.moveTo(x, y);
       } else if (data.isLong !== currentIsLong) {
-        ctx.strokeStyle = currentIsLong ? '#26a69a' : '#ef5350';
-        ctx.lineTo(x, y);
+        ctx.strokeStyle = currentIsLong ? ATR_LONG_COLOR : ATR_SHORT_COLOR;
         ctx.stroke();
 
         currentIsLong = data.isLong;
@@ -131,38 +132,8 @@ export const useATRRenderer = ({
     }
 
     if (currentIsLong !== null) {
-      ctx.strokeStyle = currentIsLong ? '#26a69a' : '#ef5350';
+      ctx.strokeStyle = currentIsLong ? ATR_LONG_COLOR : ATR_SHORT_COLOR;
       ctx.stroke();
-    }
-
-    const lastVisible = trailingStopData[Math.min(visibleEndIndex, trailingStopData.length - 1)];
-    if (lastVisible && lastVisible.stopPrice > 0) {
-      const lastX = (Math.min(visibleEndIndex, trailingStopData.length - 1) - viewport.start) * klineWidth + klineWidth / 2;
-      const lastY = manager.priceToY(lastVisible.stopPrice);
-
-      ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = lastVisible.isLong ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)';
-      ctx.beginPath();
-      ctx.moveTo(lastX, lastY);
-      ctx.lineTo(chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN + 5, lastY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      const labelBg = lastVisible.isLong ? '#26a69a' : '#ef5350';
-      const labelText = lastVisible.stopPrice.toFixed(2);
-      ctx.font = '10px monospace';
-      const textWidth = ctx.measureText(labelText).width;
-      const labelX = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN + 8;
-      const labelHeight = 14;
-      const labelY = lastY - labelHeight / 2;
-
-      ctx.fillStyle = labelBg;
-      ctx.fillRect(labelX, labelY, textWidth + 6, labelHeight);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(labelText, labelX + 3, lastY);
     }
 
     ctx.restore();

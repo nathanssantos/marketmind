@@ -53,6 +53,7 @@ import { useOrderLinesRenderer, type BackendExecution } from './useOrderLinesRen
 import { useRSIRenderer } from './useRSIRenderer';
 import { useStochasticRenderer } from './useStochasticRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
+import { useVWAPRenderer } from './useVWAPRenderer';
 import { useWatermarkRenderer } from './useWatermarkRenderer';
 
 const MOUSE_POSITION_THROTTLE_MS = 16;
@@ -71,6 +72,7 @@ export interface ChartCanvasProps {
   showRSI?: boolean;
   showBollingerBands?: boolean;
   showATR?: boolean;
+  showVWAP?: boolean;
   showCurrentPriceLine?: boolean;
   showCrosshair?: boolean;
   showMeasurementRuler?: boolean;
@@ -102,6 +104,7 @@ export const ChartCanvas = ({
   showRSI = false,
   showBollingerBands = false,
   showATR = false,
+  showVWAP = false,
   showCurrentPriceLine = true,
   showCrosshair = true,
   showMeasurementRuler = false,
@@ -377,6 +380,11 @@ export const ChartCanvas = ({
     manager,
     colors,
     enabled: showATR,
+  });
+
+  const { render: renderVWAP } = useVWAPRenderer({
+    manager,
+    enabled: showVWAP,
   });
 
   const { renderLine: renderCurrentPriceLine_Line, renderLabel: renderCurrentPriceLine_Label } = useCurrentPriceLineRenderer({
@@ -1098,6 +1106,7 @@ export const ChartCanvas = ({
       renderRSI();
       renderBollingerBands();
       renderATR();
+      renderVWAP();
       renderCurrentPriceLine_Line();
       renderOrderLines();
 
@@ -1299,6 +1308,7 @@ export const ChartCanvas = ({
     renderMovingAverages,
     renderStochastic,
     renderRSI,
+    renderVWAP,
     renderCurrentPriceLine_Line,
     renderCurrentPriceLine_Label,
     renderCrosshairPriceLine,

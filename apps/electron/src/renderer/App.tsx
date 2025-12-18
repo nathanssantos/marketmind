@@ -164,6 +164,7 @@ function AppContent(): ReactElement {
   const [showRSI, setShowRSI] = useLocalStorage('marketmind:showRSI', false);
   const [showBollingerBands, setShowBollingerBands] = useLocalStorage('marketmind:showBollingerBands', false);
   const [showATR, setShowATR] = useLocalStorage('marketmind:showATR', false);
+  const [showVWAP, setShowVWAP] = useLocalStorage('marketmind:showVWAP', false);
   const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
   const [showOnboarding, setShowOnboarding] = useLocalStorage('marketmind:showOnboarding', true);
@@ -565,6 +566,7 @@ function AppContent(): ReactElement {
         showRSI={showRSI}
         showBollingerBands={showBollingerBands}
         showATR={showATR}
+        showVWAP={showVWAP}
         movingAverages={movingAverages}
         isNewsOpen={isNewsOpen}
         isBacktestOpen={isBacktestOpen}
@@ -581,6 +583,7 @@ function AppContent(): ReactElement {
         onShowRSIChange={setShowRSI}
         onShowBollingerBandsChange={setShowBollingerBands}
         onShowATRChange={setShowATR}
+        onShowVWAPChange={setShowVWAP}
         onMovingAveragesChange={setMovingAverages}
         onToggleNews={toggleNews}
         onToggleBacktest={toggleBacktest}
@@ -627,6 +630,7 @@ function AppContent(): ReactElement {
             showRSI={showRSI}
             showBollingerBands={showBollingerBands}
             showATR={showATR}
+            showVWAP={showVWAP}
             chartType={chartType}
             movingAverages={movingAverages}
             advancedConfig={debouncedAdvancedConfig}
