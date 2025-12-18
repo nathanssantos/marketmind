@@ -457,6 +457,7 @@ export class TrailingStopService {
 
     const entryTime = new Date(execution.openedAt).getTime();
     const klinesAfterEntry = klines.filter(k => k.openTime >= entryTime);
+    const swingPointsAfterEntry = swingPoints.filter(sp => sp.timestamp >= entryTime);
 
     let highestPrice: number | undefined;
     let lowestPrice: number | undefined;
@@ -471,7 +472,7 @@ export class TrailingStopService {
       currentPrice,
       currentStopLoss,
       side: execution.side,
-      swingPoints: swingPoints.map(sp => ({ price: sp.price, type: sp.type })),
+      swingPoints: swingPointsAfterEntry.map(sp => ({ price: sp.price, type: sp.type })),
       atr,
       highestPrice: isLong ? highestPrice : undefined,
       lowestPrice: isLong ? undefined : lowestPrice,
