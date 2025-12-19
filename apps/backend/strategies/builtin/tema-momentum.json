@@ -96,6 +96,11 @@
           "right": "tema.prev"
         }
       ]
+    },
+    "entryPrice": {
+      "type": "swingHighLow",
+      "lookback": 2,
+      "expirationBars": 3
     }
   },
   "exit": {

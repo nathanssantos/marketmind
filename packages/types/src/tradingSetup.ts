@@ -54,6 +54,9 @@ export interface TradingSetup {
   urgency?: 'immediate' | 'wait_for_pullback' | 'wait_for_confirmation';
   contextualFactors?: string[];
   positionSizeMultiplier?: number;
+  entryOrderType?: 'MARKET' | 'LIMIT';
+  limitEntryPrice?: number;
+  expirationBars?: number;
 }
 
 export interface PivotPoint {

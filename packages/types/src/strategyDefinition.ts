@@ -316,11 +316,34 @@ export interface OptimizedBacktestParams {
 
 
 /**
+ * Types of entry price calculations
+ */
+export type EntryPriceType =
+  | 'market'        // Execute at current market price (immediate)
+  | 'close'         // Use close price of triggering candle
+  | 'swingHighLow'  // Use swing high (SHORT) or swing low (LONG) for better entry
+  | 'percent'       // Percentage retracement from swing
+  | 'indicator';    // Use indicator value (e.g., EMA, VWAP)
+
+/**
+ * Entry price configuration
+ */
+export interface EntryPriceConfig {
+  type: EntryPriceType;
+  lookback?: number;              // For swingHighLow: candles to consider (default: 2)
+  retracementPercent?: number;    // For percent: how much retracement to wait for (0-100)
+  indicator?: string;             // For indicator: indicator reference
+  buffer?: ConditionOperand;      // Buffer to add (ATR multiplier or percent)
+  expirationBars?: number;        // How many bars to wait before canceling unfilled order
+}
+
+/**
  * Entry conditions for long and short positions
  */
 export interface EntryConditions {
   long?: ConditionGroup;
   short?: ConditionGroup;
+  entryPrice?: EntryPriceConfig;  // How to calculate entry price (default: market)
 }
 
 /**

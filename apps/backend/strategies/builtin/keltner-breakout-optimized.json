@@ -142,6 +142,11 @@
           "right": 20
         }
       ]
+    },
+    "entryPrice": {
+      "type": "swingHighLow",
+      "lookback": 2,
+      "expirationBars": 3
     }
   },
   "exit": {

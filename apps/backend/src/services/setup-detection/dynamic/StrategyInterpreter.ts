@@ -20,6 +20,7 @@ import {
 
 import { logger } from '../../logger';
 import { ConditionEvaluator } from './ConditionEvaluator';
+import { EntryCalculator } from './EntryCalculator';
 import { ExitCalculator } from './ExitCalculator';
 import { IndicatorEngine } from './IndicatorEngine';
 
@@ -40,6 +41,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
   private indicatorEngine: IndicatorEngine;
   private conditionEvaluator: ConditionEvaluator;
   private exitCalculator: ExitCalculator;
+  private entryCalculator: EntryCalculator;
 
   constructor(config: StrategyInterpreterConfig) {
     super({
@@ -53,6 +55,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
     this.indicatorEngine = new IndicatorEngine();
     this.conditionEvaluator = new ConditionEvaluator(this.indicatorEngine);
     this.exitCalculator = new ExitCalculator(this.indicatorEngine);
+    this.entryCalculator = new EntryCalculator(this.indicatorEngine);
   }
 
   /**
@@ -82,15 +85,24 @@ export class StrategyInterpreter extends BaseSetupDetector {
       return { setup: null, confidence: 0 };
     }
 
-    const entryPrice = parseFloat(klines[currentIndex]?.close ?? '0');
+    const closePrice = parseFloat(klines[currentIndex]?.close ?? '0');
 
-    const exitContext: ExitContext = {
+    const baseExitContext: ExitContext = {
       direction,
-      entryPrice,
+      entryPrice: closePrice,
       klines,
       currentIndex,
       indicators,
       params: this.resolvedParams,
+    };
+
+    const entryPriceConfig = this.strategy.entry.entryPrice;
+    const entryCalcResult = this.entryCalculator.calculateEntryPrice(entryPriceConfig, baseExitContext);
+    const entryPrice = entryCalcResult.orderType === 'LIMIT' ? entryCalcResult.price : closePrice;
+
+    const exitContext: ExitContext = {
+      ...baseExitContext,
+      entryPrice,
     };
 
     const stopLoss = this.strategy.exit.stopLoss
@@ -133,7 +145,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
       currentIndex
     );
 
-    const setup = this.createSetup(
+    const baseSetup = this.createSetup(
       this.strategy.id,
       direction,
       klines,
@@ -152,6 +164,13 @@ export class StrategyInterpreter extends BaseSetupDetector {
       }
     );
 
+    const setup = {
+      ...baseSetup,
+      entryOrderType: entryCalcResult.orderType,
+      limitEntryPrice: entryCalcResult.orderType === 'LIMIT' ? entryCalcResult.price : undefined,
+      expirationBars: entryCalcResult.orderType === 'LIMIT' ? entryCalcResult.expirationBars : undefined,
+    };
+
     const currentKline = klines[currentIndex];
     logger.info({
       setupId: setup.id,
@@ -159,6 +178,8 @@ export class StrategyInterpreter extends BaseSetupDetector {
       direction,
       symbol: currentKline ? `Candle at ${new Date(currentKline.openTime).toISOString()}` : 'Unknown',
       entryPrice: entryPrice.toFixed(4),
+      entryOrderType: setup.entryOrderType,
+      limitEntryPrice: setup.limitEntryPrice?.toFixed(4) ?? 'N/A',
       stopLoss: stopLoss?.toFixed(4) ?? 'None',
       takeProfit: takeProfit?.toFixed(4) ?? 'None',
       riskReward: riskReward.toFixed(2),

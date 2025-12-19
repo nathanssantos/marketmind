@@ -983,12 +983,17 @@ export class AutoTradingScheduler {
         direction: setup.direction,
       });
 
+      const useLimit = setup.entryOrderType === 'LIMIT' && setup.limitEntryPrice;
+      const orderType = useLimit ? 'LIMIT' : 'MARKET';
+
       if (isLiveExecution) {
-        log('🔴 LIVE EXECUTION - Placing order on Binance', {
+        log(`🔴 LIVE EXECUTION - Placing ${orderType} order on Binance`, {
           walletType: wallet.walletType,
           symbol: watcher.symbol,
           side: setup.direction === 'LONG' ? 'BUY' : 'SELL',
           quantity: quantityFormatted,
+          orderType,
+          limitPrice: useLimit ? setup.limitEntryPrice : undefined,
         });
 
         try {
@@ -997,8 +1002,9 @@ export class AutoTradingScheduler {
             {
               symbol: watcher.symbol,
               side: setup.direction === 'LONG' ? 'BUY' : 'SELL',
-              type: 'MARKET',
+              type: orderType,
               quantity: adjustedQuantity,
+              price: useLimit ? setup.limitEntryPrice : undefined,
             }
           );
 
@@ -1052,31 +1058,43 @@ export class AutoTradingScheduler {
           return;
         }
       } else {
-        log('📝 PAPER TRADING - Using current market price', {
-          walletType: wallet.walletType,
-          setupPrice: setup.entryPrice,
-        });
+        if (useLimit && setup.limitEntryPrice) {
+          actualEntryPrice = setup.limitEntryPrice;
+          log('📝 PAPER TRADING - Using LIMIT entry price', {
+            walletType: wallet.walletType,
+            setupClosePrice: setup.entryPrice,
+            limitEntryPrice: setup.limitEntryPrice,
+            orderType: 'LIMIT',
+            improvement: `${(((setup.entryPrice - setup.limitEntryPrice) / setup.entryPrice) * 100).toFixed(2)}%`,
+          });
+        } else {
+          log('📝 PAPER TRADING - Using current market price', {
+            walletType: wallet.walletType,
+            setupPrice: setup.entryPrice,
+            orderType: 'MARKET',
+          });
 
-        try {
-          const currentMarketPrice = await positionMonitorService.getCurrentPrice(watcher.symbol);
-          
-          if (currentMarketPrice) {
-            actualEntryPrice = currentMarketPrice;
-            log('✅ Using live market price for paper trading', {
-              setupPrice: setup.entryPrice,
-              marketPrice: currentMarketPrice,
-              difference: `${((currentMarketPrice - setup.entryPrice) / setup.entryPrice * 100).toFixed(2)  }%`,
-            });
-          } else {
-            log('⚠️ No live price available, using setup price with slippage', {
-              setupPrice: setup.entryPrice,
-              priceUsed: expectedEntryWithSlippage,
+          try {
+            const currentMarketPrice = await positionMonitorService.getCurrentPrice(watcher.symbol);
+
+            if (currentMarketPrice) {
+              actualEntryPrice = currentMarketPrice;
+              log('✅ Using live market price for paper trading', {
+                setupPrice: setup.entryPrice,
+                marketPrice: currentMarketPrice,
+                difference: `${((currentMarketPrice - setup.entryPrice) / setup.entryPrice * 100).toFixed(2)}%`,
+              });
+            } else {
+              log('⚠️ No live price available, using setup price with slippage', {
+                setupPrice: setup.entryPrice,
+                priceUsed: expectedEntryWithSlippage,
+              });
+            }
+          } catch (priceError) {
+            log('⚠️ Failed to get market price, using setup price with slippage', {
+              error: priceError instanceof Error ? priceError.message : String(priceError),
             });
           }
-        } catch (priceError) {
-          log('⚠️ Failed to get market price, using setup price with slippage', {
-            error: priceError instanceof Error ? priceError.message : String(priceError),
-          });
         }
       }
 
