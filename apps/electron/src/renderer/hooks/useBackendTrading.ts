@@ -31,42 +31,56 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
     onSuccess: () => {
       utils.trading.getOrders.invalidate();
       utils.trading.getPositions.invalidate();
+      utils.analytics.getPerformance.invalidate();
+      utils.wallet.list.invalidate();
     },
   });
   
   const cancelOrderMutation = trpc.trading.cancelOrder.useMutation({
     onSuccess: () => {
       utils.trading.getOrders.invalidate();
+      utils.analytics.getPerformance.invalidate();
+      utils.wallet.list.invalidate();
     },
   });
   
   const syncOrdersMutation = trpc.trading.syncOrders.useMutation({
     onSuccess: () => {
       utils.trading.getOrders.invalidate();
+      utils.analytics.getPerformance.invalidate();
+      utils.wallet.list.invalidate();
     },
   });
   
   const createPositionMutation = trpc.trading.createPosition.useMutation({
     onSuccess: () => {
       utils.trading.getPositions.invalidate();
+      utils.analytics.getPerformance.invalidate();
+      utils.wallet.list.invalidate();
     },
   });
   
   const closePositionMutation = trpc.trading.closePosition.useMutation({
     onSuccess: () => {
       utils.trading.getPositions.invalidate();
+      utils.analytics.getPerformance.invalidate();
+      utils.wallet.list.invalidate();
     },
   });
 
   const closeExecutionMutation = trpc.trading.closeTradeExecution.useMutation({
     onSuccess: () => {
       utils.trading.getTradeExecutions.invalidate();
+      utils.analytics.getPerformance.invalidate();
+      utils.wallet.list.invalidate();
     },
   });
 
   const cancelExecutionMutation = trpc.trading.cancelTradeExecution.useMutation({
     onSuccess: () => {
       utils.trading.getTradeExecutions.invalidate();
+      utils.analytics.getPerformance.invalidate();
+      utils.wallet.list.invalidate();
     },
   });
   

@@ -123,7 +123,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
           label={t('trading.analytics.performance.netPnL')}
           value={formatCurrency(performance.netPnL)}
           valueColor={getValueColor(performance.netPnL)}
-          subtext={`${t('trading.analytics.performance.grossPnL')}: ${formatCurrency(performance.totalPnL)} - ${t('trading.analytics.performance.fees')}: $${performance.totalFees.toFixed(2)}`}
+          subtext={`${t('trading.analytics.performance.grossPnL')}: ${formatCurrency(performance.grossPnL)} - ${t('trading.analytics.performance.fees')}: $${performance.totalFees.toFixed(2)}`}
         />
         <MetricCard
           label={t('trading.analytics.performance.winRate')}

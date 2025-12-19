@@ -589,27 +589,27 @@ export const tradingRouter = router({
       const currentBalance = parseFloat(wallet.currentBalance || '0');
       const newBalance = currentBalance + netPnl;
 
-      await ctx.db
-        .update(wallets)
-        .set({
-          currentBalance: newBalance.toString(),
-          updatedAt: new Date(),
-        })
-        .where(eq(wallets.id, wallet.id));
+      await ctx.db.transaction(async (tx) => {
+        await tx
+          .update(positions)
+          .set({
+            status: 'closed',
+            currentPrice: exitPrice.toString(),
+            pnl: netPnl.toString(),
+            pnlPercent: pnlPercent.toString(),
+            closedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(positions.id, input.id));
 
-      await ctx.db
-        .update(positions)
-        .set({
-          status: 'closed',
-          currentPrice: exitPrice.toString(),
-          pnl: netPnl.toString(),
-          exitSource: 'MANUAL',
-          exitReason: 'USER_CLOSE',
-          pnlPercent: pnlPercent.toString(),
-          closedAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(positions.id, input.id));
+        await tx
+          .update(wallets)
+          .set({
+            currentBalance: newBalance.toString(),
+            updatedAt: new Date(),
+          })
+          .where(eq(wallets.id, wallet.id));
+      });
 
       return {
         pnl: netPnl.toString(),
@@ -771,27 +771,29 @@ export const tradingRouter = router({
       const currentBalance = parseFloat(wallet.currentBalance || '0');
       const newBalance = currentBalance + netPnl;
 
-      await ctx.db
-        .update(wallets)
-        .set({
-          currentBalance: newBalance.toString(),
-          updatedAt: new Date(),
-        })
-        .where(eq(wallets.id, wallet.id));
+      await ctx.db.transaction(async (tx) => {
+        await tx
+          .update(tradeExecutions)
+          .set({
+            status: 'closed',
+            exitPrice: exitPrice.toString(),
+            exitOrderId,
+            pnl: netPnl.toString(),
+            pnlPercent: pnlPercent.toString(),
+            fees: totalFees.toString(),
+            closedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(tradeExecutions.id, input.id));
 
-      await ctx.db
-        .update(tradeExecutions)
-        .set({
-          status: 'closed',
-          exitPrice: exitPrice.toString(),
-          exitOrderId,
-          pnl: netPnl.toString(),
-          pnlPercent: pnlPercent.toString(),
-          fees: totalFees.toString(),
-          closedAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(tradeExecutions.id, input.id));
+        await tx
+          .update(wallets)
+          .set({
+            currentBalance: newBalance.toString(),
+            updatedAt: new Date(),
+          })
+          .where(eq(wallets.id, wallet.id));
+      });
 
       return {
         pnl: netPnl.toString(),

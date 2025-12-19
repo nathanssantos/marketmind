@@ -179,7 +179,7 @@ export const analyticsRouter = router({
         winningTrades: winningTrades.length,
         losingTrades: losingTrades.length,
         winRate: parseFloat(winRate.toFixed(2)),
-        totalPnL: parseFloat(grossPnL.toFixed(2)),
+        grossPnL: parseFloat(grossPnL.toFixed(2)),
         totalFees: parseFloat(totalFees.toFixed(2)),
         netPnL: parseFloat(netPnL.toFixed(2)),
         avgWin: parseFloat(avgWin.toFixed(2)),

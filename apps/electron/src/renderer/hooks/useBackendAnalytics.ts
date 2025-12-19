@@ -6,7 +6,7 @@ export const useBackendAnalytics = (walletId: string, period: AnalyticsPeriod = 
   const { data: performance, isLoading: isLoadingPerformance } =
     trpc.analytics.getPerformance.useQuery(
       { walletId, period },
-      { enabled: !!walletId, refetchInterval: 30000 }
+      { enabled: !!walletId, refetchInterval: 5000, staleTime: 0, refetchOnMount: true }
     );
 
   const { data: setupStats, isLoading: isLoadingSetupStats } =

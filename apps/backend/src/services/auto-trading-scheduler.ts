@@ -489,7 +489,10 @@ export class AutoTradingScheduler {
             type: result.setup.type,
             direction: result.setup.direction,
             confidence: result.confidence,
-            entryPrice: result.setup.entryPrice,
+            entryPrice: result.setup.entryPrice?.toFixed(6),
+            stopLoss: result.setup.stopLoss?.toFixed(6),
+            takeProfit: result.setup.takeProfit?.toFixed(6),
+            riskRewardRatio: result.setup.riskRewardRatio?.toFixed(2),
             candleCloseTime: new Date(candleCloseTime).toISOString(),
           });
         }
@@ -710,9 +713,13 @@ export class AutoTradingScheduler {
 
       log('✅ Risk/Reward ratio validated', {
         type: setup.type,
+        direction: setup.direction,
+        entryPrice: entryPrice.toFixed(6),
+        stopLoss: stopLoss.toFixed(6),
+        takeProfit: takeProfit.toFixed(6),
+        risk: risk.toFixed(6),
+        reward: reward.toFixed(6),
         riskRewardRatio: riskRewardRatio.toFixed(2),
-        risk: risk.toFixed(2),
-        reward: reward.toFixed(2),
       });
     } else if (!setup.stopLoss) {
       log('⚠️ Missing stop loss - cannot execute', {
