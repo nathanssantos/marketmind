@@ -1,4 +1,4 @@
-import type { Order } from '@marketmind/types';
+import type { Order, TradingSetup } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants';
 import {
@@ -285,11 +285,27 @@ const drawPercentBadge = (
   return { width: badgeWidth, height: percentHeight };
 };
 
+export interface PendingSetup {
+  id: string;
+  type: string;
+  direction: 'LONG' | 'SHORT';
+  entryPrice: number;
+  limitEntryPrice?: number;
+  entryOrderType?: 'MARKET' | 'LIMIT';
+  stopLoss?: number;
+  takeProfit?: number;
+  riskRewardRatio: number;
+  confidence: number;
+  klineIndex: number;
+  label?: string;
+}
+
 export const useOrderLinesRenderer = (
   manager: CanvasManager | null,
   hasTradingEnabled: boolean,
   hoveredOrderId: string | null = null,
-  backendExecutions: BackendExecution[] = []
+  backendExecutions: BackendExecution[] = [],
+  pendingSetups: TradingSetup[] = []
 ) => {
   const activeOrders = useMemo((): Order[] => {
     return backendExecutions
@@ -330,8 +346,9 @@ export const useOrderLinesRenderer = (
 
   const renderOrderLines = (): void => {
     const hasOrders = activeOrders.length > 0;
-    if (!manager || !hasOrders) return;
-    if (!hasTradingEnabled && activeOrders.length === 0) return;
+    const hasPendingSetups = pendingSetups.filter(s => s.visible).length > 0;
+    if (!manager || (!hasOrders && !hasPendingSetups)) return;
+    if (!hasTradingEnabled && activeOrders.length === 0 && !hasPendingSetups) return;
 
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
@@ -879,14 +896,105 @@ export const useOrderLinesRenderer = (
         ctx.restore();
       }
     });
-    
+
+    pendingSetups.forEach((setup) => {
+      if (!setup.visible) return;
+
+      const effectiveEntryPrice = setup.entryOrderType === 'LIMIT' && setup.limitEntryPrice
+        ? setup.limitEntryPrice
+        : setup.entryPrice;
+
+      const entryY = manager.priceToY(effectiveEntryPrice);
+      if (entryY < 0 || entryY > chartHeight) return;
+
+      const isLong = setup.direction === 'LONG';
+      const isLimitOrder = setup.entryOrderType === 'LIMIT';
+      const pendingAlpha = 0.5;
+
+      ctx.save();
+      ctx.globalAlpha = pendingAlpha;
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+
+      const lineColor = isLong ? 'rgba(34, 197, 94, 0.6)' : 'rgba(239, 68, 68, 0.6)';
+      const fillColor = isLong ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)';
+
+      const priceText = effectiveEntryPrice.toFixed(2);
+      priceTags.push({ priceText, y: entryY, fillColor });
+
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 1;
+      if (isLimitOrder) {
+        ctx.setLineDash([6, 3]);
+      }
+      ctx.beginPath();
+      ctx.moveTo(0, entryY);
+      ctx.lineTo(chartWidth, entryY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const setupLabel = setup.label ?? setup.type;
+      const directionSymbol = isLong ? '↑' : '↓';
+      const orderTypeLabel = isLimitOrder ? 'LIMIT' : 'MKT';
+      const infoText = `${directionSymbol} ${setupLabel} (${orderTypeLabel})`;
+
+      drawInfoTag(ctx, infoText, entryY, fillColor, false, null, true);
+
+      if (setup.stopLoss) {
+        const slY = manager.priceToY(setup.stopLoss);
+        ctx.globalAlpha = pendingAlpha * 0.7;
+
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(0, slY);
+        ctx.lineTo(chartWidth, slY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const slPriceText = setup.stopLoss.toFixed(2);
+        const slPercent = isLong
+          ? ((setup.stopLoss - effectiveEntryPrice) / effectiveEntryPrice) * 100
+          : ((effectiveEntryPrice - setup.stopLoss) / effectiveEntryPrice) * 100;
+        const slInfoText = `SL (${slPercent.toFixed(2)}%)`;
+
+        priceTags.push({ priceText: slPriceText, y: slY, fillColor: 'rgba(239, 68, 68, 0.6)' });
+        drawInfoTag(ctx, slInfoText, slY, 'rgba(239, 68, 68, 0.6)', false, null, false);
+      }
+
+      if (setup.takeProfit) {
+        const tpY = manager.priceToY(setup.takeProfit);
+        ctx.globalAlpha = pendingAlpha * 0.7;
+
+        ctx.strokeStyle = 'rgba(34, 197, 94, 0.4)';
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(0, tpY);
+        ctx.lineTo(chartWidth, tpY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const tpPriceText = setup.takeProfit.toFixed(2);
+        const tpPercent = isLong
+          ? ((setup.takeProfit - effectiveEntryPrice) / effectiveEntryPrice) * 100
+          : ((effectiveEntryPrice - setup.takeProfit) / effectiveEntryPrice) * 100;
+        const tpInfoText = `TP (+${tpPercent.toFixed(2)}%)`;
+
+        priceTags.push({ priceText: tpPriceText, y: tpY, fillColor: 'rgba(34, 197, 94, 0.6)' });
+        drawInfoTag(ctx, tpInfoText, tpY, 'rgba(34, 197, 94, 0.6)', false, null, false);
+      }
+
+      ctx.restore();
+    });
+
     ctx.restore();
-    
+
     ctx.save();
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    
+
     priceTags.forEach(({ priceText, y, fillColor }) => {
       if (y >= 0 && y <= chartHeight) {
         const tagStartX = width - CHART_CONFIG.CHART_RIGHT_MARGIN;

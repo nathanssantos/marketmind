@@ -14,7 +14,9 @@ const fastify = Fastify({
   logger: {
     level: 'warn',
   },
-  maxParamLength: 5000,
+  routerOptions: {
+    maxParamLength: 5000,
+  },
 });
 
 const start = async (): Promise<void> => {

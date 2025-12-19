@@ -19,7 +19,6 @@ import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
-import { useMarketContext } from '@renderer/hooks/useMarketContext';
 import { useRSIWorker } from '@renderer/hooks/useRSIWorker';
 import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
 import { useToast } from '@renderer/hooks/useToast';
@@ -38,7 +37,6 @@ import { ChartNavigation } from './ChartNavigation';
 import { ChartTooltip } from './ChartTooltip';
 import { KlineTimer } from './KlineTimer';
 import { PatternRenderer } from './PatternRenderer';
-import { SetupRenderer } from './SetupRenderer';
 import { useATRRenderer } from './useATRRenderer';
 import { useBollingerBandsRenderer } from './useBollingerBandsRenderer';
 import { useChartCanvas } from './useChartCanvas';
@@ -141,7 +139,6 @@ export const ChartCanvas = ({
   const detectedSetups = useSetupStore((state) => state.detectedSetups);
   const removeDetectedSetup = useSetupStore((state) => state.removeDetectedSetup);
   const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
-  const { getContext } = useMarketContext();
 
   const { watcherStatus } = useBackendAutoTrading(backendWalletId ?? '');
   const isAutoTradingActive = watcherStatus?.active ?? false;
@@ -170,7 +167,7 @@ export const ChartCanvas = ({
         setupType: exec.setupType,
       }));
   }, [backendExecutions, symbol]);
-  const [hoveredSetup, setHoveredSetup] = useState<ReturnType<typeof useSetupStore.getState>['detectedSetups'][0] | null>(null);
+  const hoveredSetup = null as ReturnType<typeof useSetupStore.getState>['detectedSetups'][0] | null;
 
   const handleLongEntry = useCallback((price: number) => {
     if (!backendWalletId) {
@@ -283,21 +280,6 @@ export const ChartCanvas = ({
     ...(onViewportChange !== undefined && { onViewportChange }),
   });
 
-  const handleSetupHover = useCallback((setup: typeof hoveredSetup) => {
-    setHoveredSetup(setup);
-    if (setup && mousePosition && symbol) {
-      const context = getContext(symbol);
-      setTooltipData({
-        kline: null,
-        x: mousePosition.x,
-        y: mousePosition.y,
-        visible: true,
-        setup,
-        setupContext: context ?? null,
-      });
-    }
-  }, [mousePosition, getContext, symbol]);
-
   const handleConfirmCloseOrder = useCallback(async (): Promise<void> => {
     if (!orderToClose || !manager) return;
 
@@ -407,7 +389,7 @@ export const ChartCanvas = ({
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
   });
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderId, filteredBackendExecutions);
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderId, filteredBackendExecutions, detectedSetups.filter(s => s.visible));
 
   const { render: renderWatermark } = useWatermarkRenderer({
     manager,
@@ -1458,17 +1440,6 @@ export const ChartCanvas = ({
             mousePosition={mousePosition}
             onPatternHover={handleAIPatternHover}
             advancedConfig={advancedConfig}
-          />
-        )}
-        {manager && !isInteracting && (
-          <SetupRenderer
-            canvasManager={manager}
-            klines={klines}
-            setups={detectedSetups.filter((s) => s.visible)}
-            width={canvasRef.current?.width ?? 0}
-            height={canvasRef.current?.height ?? 0}
-            mousePosition={mousePosition}
-            onSetupHover={handleSetupHover}
           />
         )}
         <ChartNavigation
