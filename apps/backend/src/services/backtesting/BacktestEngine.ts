@@ -373,6 +373,7 @@ export class BacktestEngine {
       let skippedDailyLossLimit = 0;
       let skippedVolatility = 0;
       let skippedRiskReward = 0;
+      let skippedLimitExpired = 0;
 
       const cooldownMap = new Map<string, number>();
       const cooldownMinutes = effectiveConfig.cooldownMinutes ?? 15;
@@ -473,7 +474,51 @@ export class BacktestEngine {
           continue;
         }
 
-        const entryPrice = parseFloat(entryKline.close);
+        let entryPrice: number;
+        let actualEntryKlineIndex: number = historicalKlines.findIndex(k => k.openTime === setup.openTime);
+
+        if (setup.entryOrderType === 'LIMIT' && setup.limitEntryPrice !== undefined) {
+          const limitPrice = setup.limitEntryPrice;
+          const expirationBars = setup.expirationBars ?? 3;
+
+          let limitFilled = false;
+          let filledAtIndex = actualEntryKlineIndex;
+
+          for (let i = actualEntryKlineIndex + 1; i <= actualEntryKlineIndex + expirationBars && i < historicalKlines.length; i++) {
+            const kline = historicalKlines[i];
+            if (!kline) continue;
+
+            const high = parseFloat(kline.high);
+            const low = parseFloat(kline.low);
+
+            if (setup.direction === 'LONG' && low <= limitPrice) {
+              limitFilled = true;
+              filledAtIndex = i;
+              break;
+            } else if (setup.direction === 'SHORT' && high >= limitPrice) {
+              limitFilled = true;
+              filledAtIndex = i;
+              break;
+            }
+          }
+
+          if (!limitFilled) {
+            if (trades.length < 3) {
+              console.log(`[Backtest] Limit order expired - ${setup.direction} at ${limitPrice.toFixed(4)} not filled within ${expirationBars} bars`);
+            }
+            skippedLimitExpired++;
+            continue;
+          }
+
+          entryPrice = limitPrice;
+          actualEntryKlineIndex = filledAtIndex;
+
+          if (trades.length < 3) {
+            console.log(`[Backtest] Limit order filled - ${setup.direction} at ${limitPrice.toFixed(4)} (bar ${filledAtIndex - historicalKlines.findIndex(k => k.openTime === setup.openTime)})`);
+          }
+        } else {
+          entryPrice = parseFloat(entryKline.close);
+        }
 
         const setupStrategy = strategyMap.get(setup.type);
         const strategyOnlyWithTrend = setupStrategy?.optimizedParams?.onlyWithTrend ?? false;
@@ -622,7 +667,7 @@ export class BacktestEngine {
           }
         }
 
-        const MIN_RISK_REWARD_RATIO = effectiveConfig.minRiskRewardRatio ?? 1.5;
+        const MIN_RISK_REWARD_RATIO = effectiveConfig.minRiskRewardRatio ?? 1.25;
 
         if (stopLoss && takeProfit) {
           let risk: number;
@@ -682,8 +727,11 @@ export class BacktestEngine {
 
         let barsInTrade = 0;
 
+        const actualEntryKline = historicalKlines[actualEntryKlineIndex];
+        const actualEntryTime = actualEntryKline?.openTime ?? setup.openTime;
+
         const futureKlines = historicalKlines.filter(
-          (k) => k.openTime > setup.openTime
+          (k) => k.openTime > actualEntryTime
         );
 
         const trailingStopConfig = strategy?.exit?.trailingStop;
@@ -845,7 +893,7 @@ export class BacktestEngine {
           setupId: setup.id,
           setupType: setup.type,
           setupConfidence: setup.confidence,
-          entryTime: new Date(setup.openTime).toISOString(),
+          entryTime: new Date(actualEntryTime).toISOString(),
           entryPrice,
           exitTime,
           exitPrice,
@@ -859,6 +907,7 @@ export class BacktestEngine {
           netPnl,
           exitReason,
           status: 'CLOSED' as const,
+          entryOrderType: setup.entryOrderType,
         };
 
         trades.push(trade);
@@ -989,7 +1038,8 @@ export class BacktestEngine {
         cooldown: skippedCooldown,
         dailyLossLimit: skippedDailyLossLimit,
         volatility: skippedVolatility,
-        total: skippedMaxPositions + skippedMaxExposure + skippedKlineNotFound + skippedTrend + skippedMinNotional + skippedMinProfit + skippedRiskReward + skippedMarketContext + skippedCooldown + skippedDailyLossLimit + skippedVolatility,
+        limitExpired: skippedLimitExpired,
+        total: skippedMaxPositions + skippedMaxExposure + skippedKlineNotFound + skippedTrend + skippedMinNotional + skippedMinProfit + skippedRiskReward + skippedMarketContext + skippedCooldown + skippedDailyLossLimit + skippedVolatility + skippedLimitExpired,
       });
       console.log('[Backtest] Results:', {
         trades: trades.length,

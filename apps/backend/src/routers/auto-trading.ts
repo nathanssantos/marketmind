@@ -295,7 +295,7 @@ export const autoTradingRouter = router({
 
       log('✅ Risk validation passed');
 
-      const MIN_RISK_REWARD_RATIO = 1.5;
+      const MIN_RISK_REWARD_RATIO = 1.25;
 
       if (setup.stopLoss && setup.takeProfit) {
         const entryPrice = parseFloat(setup.entryPrice);

@@ -407,7 +407,7 @@ export const tradingRouter = router({
         });
       }
 
-      const MIN_RISK_REWARD_RATIO = 1.5;
+      const MIN_RISK_REWARD_RATIO = 1.25;
 
       if (input.stopLoss && input.takeProfit) {
         const entryPrice = parseFloat(input.entryPrice);

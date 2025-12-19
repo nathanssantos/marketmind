@@ -394,7 +394,7 @@ export const futuresTradingRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
       }
 
-      const MIN_RISK_REWARD_RATIO = 1.5;
+      const MIN_RISK_REWARD_RATIO = 1.25;
 
       if (input.stopLoss && input.takeProfit) {
         const entryPrice = parseFloat(input.entryPrice);

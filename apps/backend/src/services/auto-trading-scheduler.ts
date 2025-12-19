@@ -666,7 +666,7 @@ export class AutoTradingScheduler {
       entryPrice: setup.entryPrice,
     });
 
-    const MIN_RISK_REWARD_RATIO = 1.5;
+    const MIN_RISK_REWARD_RATIO = 1.25;
 
     if (setup.stopLoss && setup.takeProfit) {
       const entryPrice = setup.entryPrice;
@@ -1121,7 +1121,7 @@ export class AutoTradingScheduler {
         }
 
         const finalRiskRewardRatio = reward / risk;
-        const MIN_RISK_REWARD_RATIO = 1.5;
+        const MIN_RISK_REWARD_RATIO = 1.25;
 
         if (finalRiskRewardRatio < MIN_RISK_REWARD_RATIO) {
           log('❌ Setup rejected after price adjustment - insufficient final R:R ratio', {
