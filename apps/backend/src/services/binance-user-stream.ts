@@ -73,7 +73,7 @@ export class BinanceUserStreamService {
     try {
       const allWallets = await db.select().from(wallets);
 
-      const liveWallets = allWallets.filter(w => !isPaperWallet(w) && w.apiKey && w.apiSecret);
+      const liveWallets = allWallets.filter(w => !isPaperWallet(w) && w.apiKeyEncrypted && w.apiSecretEncrypted);
 
       for (const wallet of liveWallets) {
         if (!this.connections.has(wallet.id)) {
@@ -98,7 +98,7 @@ export class BinanceUserStreamService {
 
     try {
       const client = createBinanceClient(wallet);
-      const response = await client.getUserDataListenKey();
+      const response = await client.getSpotUserDataListenKey();
       const listenKey = response.listenKey;
 
       const wsClient = new WebsocketClient({
@@ -110,18 +110,19 @@ export class BinanceUserStreamService {
         this.handleUserDataMessage(wallet.id, data);
       });
 
-      wsClient.on('error', (error: unknown) => {
+      wsClient.on('exception', (error) => {
         logger.error({
           walletId: wallet.id,
           error: error instanceof Error ? error.message : String(error),
-        }, 'Binance User Stream error');
+        }, 'Binance User Stream exception');
       });
 
       wsClient.on('reconnected', () => {
         logger.info({ walletId: wallet.id }, 'Binance User Stream reconnected');
       });
 
-      wsClient.subscribeSpotUserDataStream(listenKey);
+      const wsKey = wallet.walletType === 'testnet' ? 'mainTestnetUserData' : 'main';
+      wsClient.subscribeSpotUserDataStreamWithListenKey(wsKey, listenKey);
 
       this.connections.set(wallet.id, { client: wsClient, listenKey });
 
@@ -143,7 +144,7 @@ export class BinanceUserStreamService {
   private async refreshListenKey(wallet: Wallet, listenKey: string): Promise<void> {
     try {
       const client = createBinanceClient(wallet);
-      await client.keepAliveUserDataListenKey(listenKey);
+      await client.keepAliveSpotUserDataListenKey(listenKey);
       logger.debug({ walletId: wallet.id }, 'Listen key refreshed');
     } catch (error) {
       logger.error({
@@ -162,7 +163,7 @@ export class BinanceUserStreamService {
       const message = data as Record<string, unknown>;
 
       if (message['e'] === 'executionReport') {
-        void this.handleOrderUpdate(walletId, message as OrderUpdateEvent);
+        void this.handleOrderUpdate(walletId, message as unknown as OrderUpdateEvent);
       }
     } catch (error) {
       logger.error({
@@ -174,7 +175,7 @@ export class BinanceUserStreamService {
 
   private async handleOrderUpdate(walletId: string, event: OrderUpdateEvent): Promise<void> {
     try {
-      const { s: symbol, X: status, x: execType, i: orderId, L: lastFilledPrice, z: executedQty } = event;
+      const { s: symbol, X: status, x: execType, i: orderId, L: lastFilledPrice, z: executedQty, o: orderType } = event;
 
       logger.info({
         walletId,
@@ -182,9 +183,53 @@ export class BinanceUserStreamService {
         orderId,
         status,
         execType,
+        orderType,
       }, 'Order update received');
 
       if (execType === 'TRADE' && status === 'FILLED') {
+        const [pendingExecution] = await db
+          .select()
+          .from(tradeExecutions)
+          .where(
+            and(
+              eq(tradeExecutions.walletId, walletId),
+              eq(tradeExecutions.symbol, symbol),
+              eq(tradeExecutions.status, 'pending'),
+            )
+          )
+          .limit(1);
+
+        if (pendingExecution && pendingExecution.entryOrderId === orderId) {
+          const fillPrice = parseFloat(lastFilledPrice);
+          logger.info({
+            executionId: pendingExecution.id,
+            symbol,
+            orderId,
+            fillPrice,
+          }, '✅ Pending LIMIT order FILLED via WebSocket - activating position');
+
+          await db
+            .update(tradeExecutions)
+            .set({
+              status: 'open',
+              entryPrice: fillPrice.toString(),
+              openedAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(tradeExecutions.id, pendingExecution.id));
+
+          const wsService = getWebSocketService();
+          if (wsService) {
+            wsService.emitPositionUpdate(walletId, {
+              ...pendingExecution,
+              status: 'open',
+              entryPrice: fillPrice.toString(),
+            });
+          }
+
+          return;
+        }
+
         const [execution] = await db
           .select()
           .from(tradeExecutions)
@@ -266,7 +311,6 @@ export class BinanceUserStreamService {
           .update(wallets)
           .set({
             currentBalance: newBalance.toString(),
-            totalPnl: (parseFloat(wallet.totalPnl || '0') + pnl).toString(),
           })
           .where(eq(wallets.id, walletId));
 

@@ -626,7 +626,7 @@ export const tradingRouter = router({
       z.object({
         walletId: z.string(),
         symbol: z.string().optional(),
-        status: z.enum(['open', 'closed', 'cancelled']).optional(),
+        status: z.enum(['pending', 'open', 'closed', 'cancelled']).optional(),
         limit: z.number().min(1).max(100).default(50),
       })
     )

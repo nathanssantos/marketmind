@@ -7,6 +7,7 @@ import { createBinanceClient, createBinanceClientForPrices, isPaperWallet } from
 import { logger } from './logger';
 import { strategyPerformanceService } from './strategy-performance';
 import { trailingStopService } from './trailing-stop';
+import { getWebSocketService } from './websocket';
 
 export interface PositionCheckResult {
   executionId: string;
@@ -18,7 +19,7 @@ export interface PositionCheckResult {
 
 export class PositionMonitorService {
   private monitoringTimeout: NodeJS.Timeout | null = null;
-  private readonly CHECK_INTERVAL_MS = 15000;
+  private readonly CHECK_INTERVAL_MS = 5000;
 
   start(): void {
     if (this.monitoringTimeout) {
@@ -61,6 +62,8 @@ export class PositionMonitorService {
   }
 
   async checkAllPositions(): Promise<void> {
+    await this.checkPendingOrders();
+
     const openExecutions = await db
       .select()
       .from(tradeExecutions)
@@ -93,6 +96,123 @@ export class PositionMonitorService {
           groupKey,
           error: error instanceof Error ? error.message : String(error),
         }, 'Error checking position group');
+      }
+    }
+  }
+
+  async checkPendingOrders(): Promise<void> {
+    const pendingExecutions = await db
+      .select()
+      .from(tradeExecutions)
+      .where(eq(tradeExecutions.status, 'pending'));
+
+    if (pendingExecutions.length === 0) {
+      return;
+    }
+
+    const now = new Date();
+
+    for (const execution of pendingExecutions) {
+      try {
+        if (execution.expiresAt && execution.expiresAt < now) {
+          logger.info({
+            executionId: execution.id,
+            symbol: execution.symbol,
+            limitPrice: execution.limitEntryPrice,
+            expiresAt: execution.expiresAt,
+          }, '📋 Pending LIMIT order expired - cancelling');
+
+          await db
+            .update(tradeExecutions)
+            .set({
+              status: 'cancelled',
+              exitReason: 'LIMIT_EXPIRED',
+              closedAt: now,
+              updatedAt: now,
+            })
+            .where(eq(tradeExecutions.id, execution.id));
+
+          const wsService = getWebSocketService();
+          if (wsService) {
+            wsService.emitPositionUpdate(execution.walletId, {
+              ...execution,
+              status: 'cancelled',
+              exitReason: 'LIMIT_EXPIRED',
+            });
+          }
+
+          continue;
+        }
+
+        if (!execution.limitEntryPrice) {
+          logger.warn({
+            executionId: execution.id,
+          }, 'Pending order missing limit price - cancelling');
+
+          await db
+            .update(tradeExecutions)
+            .set({
+              status: 'cancelled',
+              exitReason: 'INVALID_ORDER',
+              closedAt: now,
+              updatedAt: now,
+            })
+            .where(eq(tradeExecutions.id, execution.id));
+
+          const wsServiceInvalid = getWebSocketService();
+          if (wsServiceInvalid) {
+            wsServiceInvalid.emitPositionUpdate(execution.walletId, {
+              ...execution,
+              status: 'cancelled',
+              exitReason: 'INVALID_ORDER',
+            });
+          }
+
+          continue;
+        }
+
+        const currentPrice = await this.getCurrentPrice(execution.symbol);
+        const limitPrice = parseFloat(execution.limitEntryPrice);
+        const isLong = execution.side === 'LONG';
+
+        const shouldFill = isLong
+          ? currentPrice <= limitPrice
+          : currentPrice >= limitPrice;
+
+        if (shouldFill) {
+          logger.info({
+            executionId: execution.id,
+            symbol: execution.symbol,
+            side: execution.side,
+            limitPrice,
+            currentPrice,
+            fillPrice: currentPrice,
+          }, '✅ Pending LIMIT order FILLED - activating position');
+
+          await db
+            .update(tradeExecutions)
+            .set({
+              status: 'open',
+              entryPrice: currentPrice.toString(),
+              openedAt: now,
+              updatedAt: now,
+            })
+            .where(eq(tradeExecutions.id, execution.id));
+
+          const wsServiceFill = getWebSocketService();
+          if (wsServiceFill) {
+            wsServiceFill.emitPositionUpdate(execution.walletId, {
+              ...execution,
+              status: 'open',
+              entryPrice: currentPrice.toString(),
+            });
+          }
+        }
+      } catch (error) {
+        logger.error({
+          executionId: execution.id,
+          error: error instanceof Error ? error.message : String(error),
+        }, 'Error checking pending order');
       }
     }
   }

@@ -239,6 +239,15 @@ export const ChartTooltip = ({
             </>
           )}
 
+          {!isPosition && order.setupType && (
+            <HStack justify="space-between" flexWrap="wrap">
+              <Text color="fg.muted">{t('trading.portfolio.setup')}:</Text>
+              <Badge colorScheme="purple" fontSize="2xs">
+                {order.setupType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </Badge>
+            </HStack>
+          )}
+
           <HStack justify="space-between">
             <Text color="fg.muted">{t('trading.ticket.symbol')}:</Text>
             <Text fontWeight="medium">{order.symbol}</Text>

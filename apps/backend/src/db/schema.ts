@@ -276,7 +276,10 @@ export const tradeExecutions = pgTable('trade_executions', {
   exitReason: varchar('exit_reason', { length: 50 }),
   openedAt: timestamp('opened_at', { mode: 'date' }).notNull(),
   closedAt: timestamp('closed_at', { mode: 'date' }),
-  status: varchar({ length: 20 }).default('open'), // 'open' | 'closed' | 'cancelled'
+  status: varchar({ length: 20 }).default('open'), // 'pending' | 'open' | 'closed' | 'cancelled'
+  entryOrderType: varchar('entry_order_type', { length: 10 }).$type<'MARKET' | 'LIMIT'>().default('MARKET'),
+  limitEntryPrice: numeric('limit_entry_price', { precision: 20, scale: 8 }),
+  expiresAt: timestamp('expires_at', { mode: 'date' }),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({

@@ -522,7 +522,10 @@ export class BacktestEngine {
 
         const setupStrategy = strategyMap.get(setup.type);
         const strategyOnlyWithTrend = setupStrategy?.optimizedParams?.onlyWithTrend ?? false;
-        const useTrendFilter = effectiveConfig.onlyWithTrend || strategyOnlyWithTrend || effectiveConfig.trendFilterPeriod !== undefined;
+        const configExplicitlyDisablesTrend = config.onlyWithTrend === false;
+        const useTrendFilter = configExplicitlyDisablesTrend
+          ? false
+          : (effectiveConfig.onlyWithTrend || strategyOnlyWithTrend || effectiveConfig.trendFilterPeriod !== undefined);
 
         if (useTrendFilter && emaTrend.length > 0) {
           const setupIndex = historicalKlines.findIndex(k => k.openTime === setup.openTime);
@@ -741,8 +744,12 @@ export class BacktestEngine {
         let lowestLow = entryPrice;
         let breakEvenReached = false;
         const trailMultiplier = effectiveConfig.trailingATRMultiplier ?? trailingStopConfig?.trailMultiplier ?? 2;
-        const breakEvenAfterR = effectiveConfig.breakEvenAfterR ?? trailingStopConfig?.breakEvenAfterR ?? 1;
         const atrAtEntry = setup.atr ?? (stopLoss ? Math.abs(entryPrice - stopLoss) / 1.5 : entryPrice * 0.02);
+
+        const BREAKEVEN_THRESHOLD = 0.005; // 0.5% profit for breakeven (consistent with auto-trading)
+        const FEES_COVERED_THRESHOLD = 0.0075; // 0.75% profit for fees covered
+        const FEE_PERCENT = 0.002; // 0.2% total fees (entry + exit)
+        const TRAILING_DISTANCE_PERCENT = 0.5; // Keep 50% of peak profit
 
         for (const futureKline of futureKlines) {
           barsInTrade++;
@@ -752,38 +759,69 @@ export class BacktestEngine {
           const open = parseFloat(futureKline.open);
           const close = parseFloat(futureKline.close);
 
-          // Trailing stop only starts after first candle closes (barsInTrade > 1)
           if (useTrailingStop && stopLoss && barsInTrade > 1) {
             if (setup.direction === 'LONG') {
-              if (high > highestHigh) {
-                highestHigh = high;
-                const riskAmount = entryPrice - stopLoss;
-                const unrealizedR = (highestHigh - entryPrice) / riskAmount;
-                if (unrealizedR >= breakEvenAfterR && !breakEvenReached) {
-                  trailingStop = entryPrice + (atrAtEntry * 0.1);
+              if (high > highestHigh) highestHigh = high;
+
+              const profitPercent = (close - entryPrice) / entryPrice;
+
+              if (profitPercent >= BREAKEVEN_THRESHOLD && !breakEvenReached) {
+                const breakevenPrice = entryPrice;
+                if (breakevenPrice > trailingStop!) {
+                  trailingStop = breakevenPrice;
                   breakEvenReached = true;
                 }
-                if (breakEvenReached) {
-                  const newTrailingStop = highestHigh - (atrAtEntry * trailMultiplier);
-                  if (newTrailingStop > trailingStop!) {
-                    trailingStop = newTrailingStop;
-                  }
+              }
+
+              if (profitPercent >= FEES_COVERED_THRESHOLD && breakEvenReached) {
+                const candidates: number[] = [];
+
+                const feesCoveredPrice = entryPrice * (1 + FEE_PERCENT);
+                candidates.push(feesCoveredPrice);
+
+                const peakProfit = (highestHigh - entryPrice) / entryPrice;
+                const floorProfit = peakProfit * (1 - TRAILING_DISTANCE_PERCENT);
+                const progressiveFloor = entryPrice * (1 + floorProfit);
+                if (progressiveFloor > entryPrice) candidates.push(progressiveFloor);
+
+                const atrTrail = highestHigh - (atrAtEntry * trailMultiplier);
+                if (atrTrail > entryPrice) candidates.push(atrTrail);
+
+                const bestCandidate = Math.max(...candidates);
+                if (bestCandidate > trailingStop!) {
+                  trailingStop = bestCandidate;
                 }
               }
             } else {
-              if (low < lowestLow) {
-                lowestLow = low;
-                const riskAmount = stopLoss - entryPrice;
-                const unrealizedR = (entryPrice - lowestLow) / riskAmount;
-                if (unrealizedR >= breakEvenAfterR && !breakEvenReached) {
-                  trailingStop = entryPrice - (atrAtEntry * 0.1);
+              if (low < lowestLow) lowestLow = low;
+
+              const profitPercent = (entryPrice - close) / entryPrice;
+
+              if (profitPercent >= BREAKEVEN_THRESHOLD && !breakEvenReached) {
+                const breakevenPrice = entryPrice;
+                if (breakevenPrice < trailingStop!) {
+                  trailingStop = breakevenPrice;
                   breakEvenReached = true;
                 }
-                if (breakEvenReached) {
-                  const newTrailingStop = lowestLow + (atrAtEntry * trailMultiplier);
-                  if (newTrailingStop < trailingStop!) {
-                    trailingStop = newTrailingStop;
-                  }
+              }
+
+              if (profitPercent >= FEES_COVERED_THRESHOLD && breakEvenReached) {
+                const candidates: number[] = [];
+
+                const feesCoveredPrice = entryPrice * (1 - FEE_PERCENT);
+                candidates.push(feesCoveredPrice);
+
+                const peakProfit = (entryPrice - lowestLow) / entryPrice;
+                const floorProfit = peakProfit * (1 - TRAILING_DISTANCE_PERCENT);
+                const progressiveFloor = entryPrice * (1 - floorProfit);
+                if (progressiveFloor < entryPrice) candidates.push(progressiveFloor);
+
+                const atrTrail = lowestLow + (atrAtEntry * trailMultiplier);
+                if (atrTrail < entryPrice) candidates.push(atrTrail);
+
+                const bestCandidate = Math.min(...candidates);
+                if (bestCandidate < trailingStop!) {
+                  trailingStop = bestCandidate;
                 }
               }
             }
@@ -855,12 +893,18 @@ export class BacktestEngine {
           exitReason = 'END_OF_PERIOD';
         }
 
-        if (exitReason === 'STOP_LOSS') {
-          const slippagePercent = effectiveConfig.slippagePercent ?? 0.05; // 0.05% default
+        if (exitReason === 'STOP_LOSS' || exitReason === 'TAKE_PROFIT') {
+          const slippagePercent = effectiveConfig.slippagePercent ?? 0.1; // 0.1% default (consistent with auto-trading)
           const slippageAmount = exitPrice * (slippagePercent / 100);
-          exitPrice = setup.direction === 'LONG'
-            ? exitPrice - slippageAmount
-            : exitPrice + slippageAmount;
+          if (exitReason === 'STOP_LOSS') {
+            exitPrice = setup.direction === 'LONG'
+              ? exitPrice - slippageAmount
+              : exitPrice + slippageAmount;
+          } else {
+            exitPrice = setup.direction === 'LONG'
+              ? exitPrice - slippageAmount
+              : exitPrice + slippageAmount;
+          }
         }
 
         const priceDiff =

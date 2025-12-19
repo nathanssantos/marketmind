@@ -2,6 +2,7 @@
 
 import chalk from 'chalk';
 import { Command } from 'commander';
+import { batchBacktestCommand } from './commands/batch-backtest';
 import { benchmarkCommand } from './commands/benchmark';
 import { compareCommand } from './commands/compare';
 import { exportCommand } from './commands/export';
@@ -246,6 +247,20 @@ program
   .option('-o, --output <dir>', 'Output directory for results')
   .option('-v, --verbose', 'Show detailed metric breakdown', false)
   .action(permutationCommand);
+
+program
+  .command('batch')
+  .description('Run batch backtests across all ML strategies, symbols, and timeframes')
+  .requiredOption('--start <date>', 'Start date (YYYY-MM-DD)')
+  .requiredOption('--end <date>', 'End date (YYYY-MM-DD)')
+  .option('-c, --capital <amount>', 'Initial capital in USD', '10000')
+  .option('--parallel <n>', 'Number of parallel workers', '4')
+  .option('--strategies <list>', 'Comma-separated strategy IDs (default: all ML strategies)')
+  .option('--symbols <list>', 'Comma-separated symbols (default: BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT)')
+  .option('--intervals <list>', 'Comma-separated intervals (default: 1m,5m,15m,30m,1h,4h,1d,1w)')
+  .option('-o, --output <path>', 'Output file path for CSV results')
+  .option('-v, --verbose', 'Show detailed logs', false)
+  .action(batchBacktestCommand);
 
 program.exitOverride();
 

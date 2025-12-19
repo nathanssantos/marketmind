@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { randomBytes } from 'crypto';
-import { and, desc, eq, gte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   autoTradingConfig,
@@ -465,7 +465,7 @@ export const autoTradingRouter = router({
           and(
             eq(tradeExecutions.walletId, input.walletId),
             eq(tradeExecutions.userId, ctx.user.id),
-            eq(tradeExecutions.status, 'open')
+            inArray(tradeExecutions.status, ['open', 'pending'])
           )
         )
         .orderBy(desc(tradeExecutions.openedAt))

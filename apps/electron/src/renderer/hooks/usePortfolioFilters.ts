@@ -14,6 +14,9 @@ interface PortfolioPosition {
   setupType?: string;
   openedAt: Date;
   id: string;
+  status: 'open' | 'pending';
+  limitEntryPrice?: number;
+  expiresAt?: Date;
 }
 
 export const filterPositions = (

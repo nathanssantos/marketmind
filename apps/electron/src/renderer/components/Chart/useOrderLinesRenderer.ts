@@ -309,7 +309,7 @@ export const useOrderLinesRenderer = (
 ) => {
   const activeOrders = useMemo((): Order[] => {
     return backendExecutions
-      .filter(exec => exec.status === 'open')
+      .filter(exec => exec.status === 'open' || exec.status === 'pending')
       .map(exec => ({
         id: exec.id,
         symbol: exec.symbol,
@@ -318,11 +318,11 @@ export const useOrderLinesRenderer = (
         clientOrderId: exec.id,
         price: exec.entryPrice,
         origQty: exec.quantity,
-        executedQty: exec.quantity,
+        executedQty: exec.status === 'pending' ? '0' : exec.quantity,
         cummulativeQuoteQty: '0',
-        status: 'FILLED' as const,
+        status: exec.status === 'pending' ? 'NEW' as const : 'FILLED' as const,
         timeInForce: 'GTC' as const,
-        type: 'MARKET' as const,
+        type: exec.status === 'pending' ? 'LIMIT' as const : 'MARKET' as const,
         side: exec.side === 'LONG' ? 'BUY' : 'SELL',
         time: Date.now(),
         updateTime: Date.now(),
@@ -336,6 +336,7 @@ export const useOrderLinesRenderer = (
         isAutoTrade: true,
         walletId: '',
         setupType: exec.setupType ?? undefined,
+        isPendingLimitOrder: exec.status === 'pending',
       } as Order));
   }, [backendExecutions]);
   
@@ -431,6 +432,23 @@ export const useOrderLinesRenderer = (
           totalPnL: orderPnL,
         });
       }
+    });
+
+    pendingOrders.forEach((order) => {
+      const isLong = isOrderLong(order);
+      const key = `${order.symbol}-${isLong ? 'LONG' : 'SHORT'}-pending`;
+      const entryPrice = getOrderPrice(order);
+      const quantity = getOrderQuantity(order);
+      const orderQuantity = isLong ? quantity : -quantity;
+
+      groupedPositions.set(key, {
+        symbol: order.symbol,
+        netQuantity: orderQuantity,
+        avgPrice: entryPrice,
+        orderIds: [getOrderId(order)],
+        orders: [order],
+        totalPnL: 0,
+      });
     });
 
     pendingOrdersToRender.forEach((order) => {
@@ -731,6 +749,9 @@ export const useOrderLinesRenderer = (
     }
 
     allPositions.forEach((position) => {
+      const isPendingPosition = position.orders.some(o => (o as Order & { isPendingLimitOrder?: boolean }).isPendingLimitOrder);
+      const pendingAlpha = isPendingPosition ? 0.35 : 1;
+
       const anyOrderHasStopLoss = position.orders.some(o => o.stopLoss);
       if (anyOrderHasStopLoss) {
         const stopLossOrders = position.orders.filter(o => o.stopLoss);
@@ -739,9 +760,9 @@ export const useOrderLinesRenderer = (
           ? Math.max(...stopLossOrders.map(o => o.stopLoss || 0))
           : Math.min(...stopLossOrders.map(o => o.stopLoss || Infinity));
         const stopY = manager.priceToY(consolidatedStopLoss);
-        
+
         const firstOrderId = position.orderIds[0] || '';
-        
+
         orderHitboxesRef.current.push({
           orderId: firstOrderId,
           y: stopY,
@@ -763,17 +784,18 @@ export const useOrderLinesRenderer = (
             price: consolidatedStopLoss,
           });
         });
-        
+
         ctx.save();
+        ctx.globalAlpha = pendingAlpha;
         ctx.setLineDash([3, 3]);
         ctx.lineWidth = 1;
         ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
-        
+
         ctx.beginPath();
         ctx.moveTo(0, stopY);
         ctx.lineTo(chartWidth, stopY);
         ctx.stroke();
-        
+
         ctx.setLineDash([]);
         ctx.font = '11px monospace';
         ctx.textAlign = 'left';
@@ -785,10 +807,11 @@ export const useOrderLinesRenderer = (
           ? ((consolidatedStopLoss - position.avgPrice) / position.avgPrice) * 100
           : ((position.avgPrice - consolidatedStopLoss) / position.avgPrice) * 100;
         const slSign = slResultPercent >= 0 ? '+' : '';
-        const infoText = `SL (${slSign}${slResultPercent.toFixed(2)}%)`;
-        
+        const pendingLabel = isPendingPosition ? ' [PENDING]' : '';
+        const infoText = `SL (${slSign}${slResultPercent.toFixed(2)}%)${pendingLabel}`;
+
         priceTags.push({ priceText, y: stopY, fillColor });
-        
+
         const tagStartX = chartWidth;
         ctx.setLineDash([3, 3]);
         ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
@@ -798,10 +821,10 @@ export const useOrderLinesRenderer = (
         ctx.lineTo(tagStartX, stopY);
         ctx.stroke();
         ctx.setLineDash([]);
-        
+
         const closeButtonRef = { x: 0, y: 0, size: 14 };
         drawInfoTag(ctx, infoText, stopY, fillColor, true, closeButtonRef);
-        
+
         sltpCloseButtonsRef.current.push({
           orderIds: position.orderIds,
           x: closeButtonRef.x,
@@ -822,9 +845,9 @@ export const useOrderLinesRenderer = (
           ? Math.min(...takeProfitOrders.map(o => o.takeProfit || Infinity))
           : Math.max(...takeProfitOrders.map(o => o.takeProfit || 0));
         const tpY = manager.priceToY(consolidatedTakeProfit);
-        
+
         const firstOrderId = position.orderIds[0] || '';
-        
+
         orderHitboxesRef.current.push({
           orderId: firstOrderId,
           y: tpY,
@@ -846,17 +869,18 @@ export const useOrderLinesRenderer = (
             price: consolidatedTakeProfit,
           });
         });
-        
+
         ctx.save();
+        ctx.globalAlpha = pendingAlpha;
         ctx.setLineDash([3, 3]);
         ctx.lineWidth = 1;
         ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
-        
+
         ctx.beginPath();
         ctx.moveTo(0, tpY);
         ctx.lineTo(chartWidth, tpY);
         ctx.stroke();
-        
+
         ctx.setLineDash([]);
         ctx.font = '11px monospace';
         ctx.textAlign = 'left';
@@ -867,10 +891,11 @@ export const useOrderLinesRenderer = (
         const tpProfitPercent = isLongPosition
           ? ((consolidatedTakeProfit - position.avgPrice) / position.avgPrice) * 100
           : ((position.avgPrice - consolidatedTakeProfit) / position.avgPrice) * 100;
-        const infoText = `TP (+${tpProfitPercent.toFixed(2)}%)`;
-        
+        const pendingLabel = isPendingPosition ? ' [PENDING]' : '';
+        const infoText = `TP (+${tpProfitPercent.toFixed(2)}%)${pendingLabel}`;
+
         priceTags.push({ priceText, y: tpY, fillColor });
-        
+
         const tagStartX = chartWidth;
         ctx.setLineDash([3, 3]);
         ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
@@ -880,10 +905,10 @@ export const useOrderLinesRenderer = (
         ctx.lineTo(tagStartX, tpY);
         ctx.stroke();
         ctx.setLineDash([]);
-        
+
         const closeButtonRef = { x: 0, y: 0, size: 14 };
         drawInfoTag(ctx, infoText, tpY, fillColor, true, closeButtonRef);
-        
+
         sltpCloseButtonsRef.current.push({
           orderIds: position.orderIds,
           x: closeButtonRef.x,
@@ -892,7 +917,7 @@ export const useOrderLinesRenderer = (
           height: closeButtonRef.size,
           type: 'takeProfit',
         });
-        
+
         ctx.restore();
       }
     });

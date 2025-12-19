@@ -25,6 +25,7 @@ import { positionMonitorService } from './position-monitor';
 import { pyramidingService } from './pyramiding';
 import { riskManagerService } from './risk-manager';
 import { StrategyInterpreter, StrategyLoader } from './setup-detection/dynamic';
+import { getWebSocketService } from './websocket';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -118,6 +119,20 @@ export class AutoTradingScheduler {
   constructor() {
     this.strategyLoader = new StrategyLoader([STRATEGIES_DIR]);
     log('🚀 AutoTradingScheduler initialized');
+  }
+
+  private getIntervalMs(interval: string): number {
+    const units: Record<string, number> = {
+      'm': 60 * 1000,
+      'h': 60 * 60 * 1000,
+      'd': 24 * 60 * 60 * 1000,
+      'w': 7 * 24 * 60 * 60 * 1000,
+    };
+    const match = interval.match(/^(\d+)([mhdw])$/);
+    if (!match?.[1] || !match[2]) return 4 * 60 * 60 * 1000;
+    const unitMs = units[match[2]];
+    if (!unitMs) return 4 * 60 * 60 * 1000;
+    return parseInt(match[1]) * unitMs;
   }
 
   private calculateRequiredKlines(strategies: { id: string; indicators?: Record<string, { params: Record<string, number | string> }>; parameters?: Record<string, { default: number }>; filters?: { trendFilter?: { period: number } }; optimizedParams?: { onlyWithTrend?: boolean } }[]): number {
@@ -1118,24 +1133,107 @@ export class AutoTradingScheduler {
           return;
         }
       } else {
-        if (useLimit && setup.limitEntryPrice) {
-          actualEntryPrice = setup.limitEntryPrice;
-          log('📝 PAPER TRADING - Using LIMIT entry price', {
-            walletType: wallet.walletType,
-            setupClosePrice: setup.entryPrice,
-            limitEntryPrice: setup.limitEntryPrice,
-            orderType: 'LIMIT',
-            improvement: `${(((setup.entryPrice - setup.limitEntryPrice) / setup.entryPrice) * 100).toFixed(2)}%`,
-          });
-        } else {
-          log('📝 PAPER TRADING - Using current market price', {
-            walletType: wallet.walletType,
-            setupPrice: setup.entryPrice,
-            orderType: 'MARKET',
-          });
+        try {
+          const currentMarketPrice = await positionMonitorService.getCurrentPrice(watcher.symbol);
 
-          try {
-            const currentMarketPrice = await positionMonitorService.getCurrentPrice(watcher.symbol);
+          if (useLimit && setup.limitEntryPrice) {
+            const wouldLimitFill = setup.direction === 'LONG'
+              ? currentMarketPrice && currentMarketPrice <= setup.limitEntryPrice
+              : currentMarketPrice && currentMarketPrice >= setup.limitEntryPrice;
+
+            if (!wouldLimitFill) {
+              log('📋 PAPER TRADING - Creating PENDING limit order', {
+                walletType: wallet.walletType,
+                direction: setup.direction,
+                limitEntryPrice: setup.limitEntryPrice,
+                currentMarketPrice,
+                reason: setup.direction === 'LONG'
+                  ? `Waiting for price to drop to ${setup.limitEntryPrice} (pullback)`
+                  : `Waiting for price to rise to ${setup.limitEntryPrice} (bounce)`,
+              });
+
+              const expirationBars = setup.expirationBars ?? 3;
+              const intervalMs = this.getIntervalMs(watcher.interval);
+              const expiresAt = new Date(Date.now() + (expirationBars * intervalMs));
+
+              try {
+                await db.insert(tradeExecutions).values({
+                  id: executionId,
+                  userId: watcher.userId,
+                  walletId: watcher.walletId,
+                  setupId,
+                  setupType: setup.type,
+                  symbol: watcher.symbol,
+                  side: setup.direction,
+                  entryPrice: setup.limitEntryPrice.toString(),
+                  quantity: actualQuantity.toFixed(8),
+                  stopLoss: setup.stopLoss?.toString(),
+                  takeProfit: setup.takeProfit?.toString(),
+                  openedAt: new Date(),
+                  status: 'pending',
+                  entryOrderType: 'LIMIT',
+                  limitEntryPrice: setup.limitEntryPrice.toString(),
+                  expiresAt,
+                });
+
+                log('✅ PENDING order created - waiting for price to reach limit', {
+                  executionId,
+                  limitEntryPrice: setup.limitEntryPrice,
+                  currentMarketPrice,
+                  expiresAt: expiresAt.toISOString(),
+                  expirationBars,
+                });
+
+                const wsService = getWebSocketService();
+                if (wsService) {
+                  wsService.emitPositionUpdate(watcher.walletId, {
+                    id: executionId,
+                    symbol: watcher.symbol,
+                    side: setup.direction,
+                    status: 'pending',
+                    entryPrice: setup.limitEntryPrice.toString(),
+                    limitEntryPrice: setup.limitEntryPrice.toString(),
+                    quantity: actualQuantity.toFixed(8),
+                    stopLoss: setup.stopLoss?.toString(),
+                    takeProfit: setup.takeProfit?.toString(),
+                    setupType: setup.type,
+                    expiresAt: expiresAt.toISOString(),
+                  });
+                }
+
+                await cooldownService.setCooldown(
+                  setup.type,
+                  watcher.symbol,
+                  watcher.interval,
+                  watcher.walletId,
+                  executionId,
+                  15,
+                  'Pending order created'
+                );
+              } catch (pendingError) {
+                log('❌ Failed to create pending order', {
+                  error: pendingError instanceof Error ? pendingError.message : String(pendingError),
+                });
+              }
+
+              return;
+            }
+
+            actualEntryPrice = currentMarketPrice || setup.limitEntryPrice;
+            log('📝 PAPER TRADING - LIMIT order filled immediately at market price', {
+              walletType: wallet.walletType,
+              direction: setup.direction,
+              setupClosePrice: setup.entryPrice,
+              limitEntryPrice: setup.limitEntryPrice,
+              actualFillPrice: actualEntryPrice,
+              orderType: 'LIMIT',
+            });
+          } else {
+            log('📝 PAPER TRADING - Using current market price', {
+              walletType: wallet.walletType,
+              setupPrice: setup.entryPrice,
+              orderType: 'MARKET',
+            });
 
             if (currentMarketPrice) {
               actualEntryPrice = currentMarketPrice;
@@ -1150,11 +1248,11 @@ export class AutoTradingScheduler {
                 priceUsed: expectedEntryWithSlippage,
               });
             }
-          } catch (priceError) {
-            log('⚠️ Failed to get market price, using setup price with slippage', {
-              error: priceError instanceof Error ? priceError.message : String(priceError),
-            });
           }
+        } catch (priceError) {
+          log('⚠️ Failed to get market price, using setup price with slippage', {
+            error: priceError instanceof Error ? priceError.message : String(priceError),
+          });
         }
       }
 
@@ -1241,9 +1339,25 @@ export class AutoTradingScheduler {
           takeProfit: setup.takeProfit?.toString(),
           openedAt: new Date(),
           status: 'open',
+          entryOrderType: useLimit ? 'LIMIT' : 'MARKET',
         });
 
         log('✅ Trade execution inserted into database', { executionId });
+
+        const wsServiceOpen = getWebSocketService();
+        if (wsServiceOpen) {
+          wsServiceOpen.emitPositionUpdate(watcher.walletId, {
+            id: executionId,
+            symbol: watcher.symbol,
+            side: setup.direction,
+            status: 'open',
+            entryPrice: actualEntryPrice.toString(),
+            quantity: actualQuantity.toFixed(8),
+            stopLoss: setup.stopLoss?.toString(),
+            takeProfit: setup.takeProfit?.toString(),
+            setupType: setup.type,
+          });
+        }
       } catch (dbError) {
         log('❌ Failed to insert trade execution into database', {
           executionId,

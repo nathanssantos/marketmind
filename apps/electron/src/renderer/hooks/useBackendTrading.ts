@@ -1,31 +1,56 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { trpc } from '../utils/trpc';
+import { useRealtimeTradingSync } from './useRealtimeTradingSync';
+
+const BACKUP_POLLING_INTERVAL = 30000;
 
 export const useBackendTrading = (walletId: string, symbol?: string) => {
   const utils = trpc.useUtils();
+  const { subscribeToPrice } = useRealtimeTradingSync(walletId);
+  const [realtimePrices, setRealtimePrices] = useState<Record<string, number>>({});
 
   const { data: orders, isLoading: isLoadingOrders } = trpc.trading.getOrders.useQuery(
     { walletId, symbol, limit: 50 },
-    { enabled: !!walletId, refetchInterval: 5000 }
+    { enabled: !!walletId, refetchInterval: BACKUP_POLLING_INTERVAL, staleTime: 5000 }
   );
   const { data: positions, isLoading: isLoadingPositions } = trpc.trading.getPositions.useQuery(
     { walletId, limit: 50 },
-    { enabled: !!walletId, refetchInterval: 5000 }
+    { enabled: !!walletId, refetchInterval: BACKUP_POLLING_INTERVAL, staleTime: 5000 }
   );
   const { data: tradeExecutions, isLoading: isLoadingExecutions } = trpc.trading.getTradeExecutions.useQuery(
     { walletId, symbol, limit: 50 },
-    { enabled: !!walletId, refetchInterval: 5000 }
+    { enabled: !!walletId, refetchInterval: BACKUP_POLLING_INTERVAL, staleTime: 5000 }
   );
 
   const openPositionSymbols = useMemo(() => {
-    const openExecutions = tradeExecutions?.filter((e) => e.status === 'open') ?? [];
+    const openExecutions = tradeExecutions?.filter((e) => e.status === 'open' || e.status === 'pending') ?? [];
     return [...new Set(openExecutions.map((e) => e.symbol))];
   }, [tradeExecutions]);
 
   const { data: tickerPrices, isLoading: isLoadingPrices } = trpc.trading.getTickerPrices.useQuery(
     { symbols: openPositionSymbols },
-    { enabled: openPositionSymbols.length > 0, refetchInterval: 10000 }
+    { enabled: openPositionSymbols.length > 0, refetchInterval: BACKUP_POLLING_INTERVAL, staleTime: 5000 }
   );
+
+  useEffect(() => {
+    const unsubscribes: Array<() => void> = [];
+
+    for (const sym of openPositionSymbols) {
+      const unsub = subscribeToPrice(sym, (price) => {
+        setRealtimePrices(prev => ({ ...prev, [sym]: price }));
+      });
+      unsubscribes.push(unsub);
+    }
+
+    return () => {
+      unsubscribes.forEach(unsub => unsub());
+    };
+  }, [openPositionSymbols, subscribeToPrice]);
+
+  const mergedTickerPrices = useMemo(() => {
+    const base = tickerPrices ?? {};
+    return { ...base, ...realtimePrices };
+  }, [tickerPrices, realtimePrices]);
   
   const createOrderMutation = trpc.trading.createOrder.useMutation({
     onSuccess: () => {
@@ -156,7 +181,7 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
     orders: orders ?? [],
     positions: positions ?? [],
     tradeExecutions: tradeExecutions ?? [],
-    tickerPrices: tickerPrices ?? {},
+    tickerPrices: mergedTickerPrices,
     isLoadingOrders,
     isLoadingPositions,
     isLoadingExecutions,
