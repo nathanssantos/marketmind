@@ -85,6 +85,20 @@
       "when": 1766178804262,
       "tag": "0011_purple_nicolaos",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1766185341935,
+      "tag": "0012_sudden_blizzard",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1766186819680,
+      "tag": "0013_furry_landau",
+      "breakpoints": true
     }
   ]
 }

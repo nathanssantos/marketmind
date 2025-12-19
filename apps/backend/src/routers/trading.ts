@@ -675,10 +675,10 @@ export const tradingRouter = router({
         });
       }
 
-      if (execution.status !== 'open') {
+      if (execution.status !== 'open' && execution.status !== 'pending') {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Trade execution is not open',
+          message: 'Trade execution is not open or pending',
         });
       }
 
@@ -695,18 +695,89 @@ export const tradingRouter = router({
         });
       }
 
+      const walletSupportsLive = !isPaperWallet(wallet);
+      const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
+
+      if (execution.status === 'pending') {
+        logger.info({
+          executionId: execution.id,
+          symbol: execution.symbol,
+          entryOrderId: execution.entryOrderId,
+          stopLossOrderId: execution.stopLossOrderId,
+          takeProfitOrderId: execution.takeProfitOrderId,
+        }, 'Cancelling pending execution and associated orders');
+
+        if (shouldExecuteReal) {
+          const client = createBinanceClient(wallet);
+          const orderIdsToCancel = [
+            execution.entryOrderId,
+            execution.stopLossOrderId,
+            execution.takeProfitOrderId,
+          ].filter((id): id is number => id !== null);
+
+          for (const orderId of orderIdsToCancel) {
+            try {
+              await client.cancelOrder({
+                symbol: execution.symbol,
+                orderId,
+              });
+              logger.info({ orderId, symbol: execution.symbol }, 'Cancelled Binance order');
+            } catch (error) {
+              logger.warn({
+                orderId,
+                symbol: execution.symbol,
+                error: error instanceof Error ? error.message : String(error),
+              }, 'Failed to cancel Binance order (may already be filled/cancelled)');
+            }
+          }
+        }
+
+        await ctx.db
+          .update(tradeExecutions)
+          .set({
+            status: 'cancelled',
+            closedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(tradeExecutions.id, input.id));
+
+        return {
+          pnl: '0',
+          grossPnl: '0',
+          fees: '0',
+          pnlPercent: '0.00',
+          exitOrderId: null,
+          exitPrice: '0',
+          cancelled: true,
+        };
+      }
+
       const entryPrice = parseFloat(execution.entryPrice);
       const qty = parseFloat(execution.quantity);
       let exitPrice = input.exitPrice ? parseFloat(input.exitPrice) : 0;
       let exitOrderId: number | null = null;
 
-      const walletSupportsLive = !isPaperWallet(wallet);
-      const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
-
       if (shouldExecuteReal) {
         try {
           const client = createBinanceClient(wallet);
           const orderSide = execution.side === 'LONG' ? 'SELL' : 'BUY';
+
+          if (execution.stopLossOrderId) {
+            try {
+              await client.cancelOrder({ symbol: execution.symbol, orderId: execution.stopLossOrderId });
+              logger.info({ orderId: execution.stopLossOrderId }, 'Cancelled SL order');
+            } catch (e) {
+              logger.warn({ orderId: execution.stopLossOrderId, error: e }, 'Failed to cancel SL order');
+            }
+          }
+          if (execution.takeProfitOrderId) {
+            try {
+              await client.cancelOrder({ symbol: execution.symbol, orderId: execution.takeProfitOrderId });
+              logger.info({ orderId: execution.takeProfitOrderId }, 'Cancelled TP order');
+            } catch (e) {
+              logger.warn({ orderId: execution.takeProfitOrderId, error: e }, 'Failed to cancel TP order');
+            }
+          }
 
           const order = await client.submitNewOrder({
             symbol: execution.symbol,
@@ -823,6 +894,48 @@ export const tradingRouter = router({
           code: 'NOT_FOUND',
           message: 'Trade execution not found',
         });
+      }
+
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(eq(wallets.id, execution.walletId))
+        .limit(1);
+
+      if (wallet && !isPaperWallet(wallet) && env.ENABLE_LIVE_TRADING) {
+        const client = createBinanceClient(wallet);
+
+        const orderIdsToCancel = [
+          execution.entryOrderId,
+          execution.stopLossOrderId,
+          execution.takeProfitOrderId,
+        ].filter((id): id is number => id !== null);
+
+        for (const orderId of orderIdsToCancel) {
+          try {
+            await client.cancelOrder({ symbol: execution.symbol, orderId });
+            logger.info({ orderId, symbol: execution.symbol }, 'Cancelled Binance order during execution cancel');
+          } catch (error) {
+            logger.warn({
+              orderId,
+              symbol: execution.symbol,
+              error: error instanceof Error ? error.message : String(error),
+            }, 'Failed to cancel Binance order (may already be filled/cancelled)');
+          }
+        }
+
+        if (execution.orderListId) {
+          try {
+            await client.cancelOCO({ symbol: execution.symbol, orderListId: execution.orderListId });
+            logger.info({ orderListId: execution.orderListId, symbol: execution.symbol }, 'Cancelled OCO order list');
+          } catch (error) {
+            logger.warn({
+              orderListId: execution.orderListId,
+              symbol: execution.symbol,
+              error: error instanceof Error ? error.message : String(error),
+            }, 'Failed to cancel OCO order list (may already be executed)');
+          }
+        }
       }
 
       await ctx.db

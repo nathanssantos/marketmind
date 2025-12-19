@@ -119,8 +119,8 @@
   "exit": {
     "stopLoss": {
       "type": "swingHighLow",
-      "lookback": 2,
-      "buffer": 0.1,
+      "lookback": 5,
+      "buffer": 0.3,
       "indicator": "atr"
     },
     "takeProfit": {

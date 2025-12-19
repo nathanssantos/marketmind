@@ -1,22 +1,18 @@
 import { useGlobalActionsOptional } from '@/renderer/context/GlobalActionsContext';
 import { useUIStore } from '@/renderer/store/uiStore';
-import { Box, Flex, HStack, IconButton, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, IconButton } from '@chakra-ui/react';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { usePatternDetectionConfigStore } from '@renderer/store/patternDetectionConfigStore';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  LuActivity,
   LuArrowRightToLine,
   LuBot,
-  LuChartBar,
   LuChartCandlestick,
   LuChartLine,
-  LuChartSpline,
   LuCrosshair,
   LuDollarSign,
-  LuGauge,
   LuGrid3X3,
   LuHistory,
   LuLightbulb,
@@ -30,7 +26,6 @@ import {
   LuSettings,
   LuSun,
   LuTerminal,
-  LuTrendingUp,
 } from 'react-icons/lu';
 import { useChartWindows } from '../../hooks/useChartWindows';
 import type { MarketDataService } from '../../services/market/MarketDataService';
@@ -42,6 +37,7 @@ import { useColorMode } from '../ui/color-mode';
 import { TooltipWrapper } from '../ui/Tooltip';
 import { PatternTogglePopover } from './PatternTogglePopover';
 import { SetupTogglePopover } from './SetupTogglePopover';
+import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 
 export interface ToolbarProps {
   marketService?: MarketDataService;
@@ -66,7 +62,7 @@ export interface ToolbarProps {
   isBacktestOpen: boolean;
   showNewWindowButton?: boolean;
   showSidebarButtons?: boolean;
-  onSymbolChange: (symbol: string) => void;
+  onSymbolChange: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
   onChartTypeChange: (type: 'kline' | 'line') => void;
   onShowVolumeChange: (show: boolean) => void;
@@ -215,6 +211,7 @@ export const Toolbar = memo(({
           marketService={marketService}
           value={symbol}
           onChange={onSymbolChange}
+          showMarketTypeToggle
         />
       </Box>
 
@@ -276,74 +273,22 @@ export const Toolbar = memo(({
         <Box w="1px" h="32px" bg="border" flexShrink={0} />
 
         <HStack gap={1}>
-          <TooltipWrapper label={t('chart.controls.volume')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('chart.controls.volume')}
-              onClick={() => onShowVolumeChange(!showVolume)}
-              colorPalette={showVolume ? 'blue' : 'gray'}
-              variant={showVolume ? 'solid' : 'ghost'}
-            >
-              <Box transform="rotate(-90deg)">
-                <LuChartBar />
-              </Box>
-            </IconButton>
-          </TooltipWrapper>
-          <TooltipWrapper label={t('chart.controls.stochastic')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('chart.controls.stochastic')}
-              onClick={() => onShowStochasticChange(!showStochastic)}
-              colorPalette={showStochastic ? 'blue' : 'gray'}
-              variant={showStochastic ? 'solid' : 'ghost'}
-            >
-              <LuChartLine />
-            </IconButton>
-          </TooltipWrapper>
-          <TooltipWrapper label={t('chart.controls.rsi')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('chart.controls.rsi')}
-              onClick={() => onShowRSIChange(!showRSI)}
-              colorPalette={showRSI ? 'blue' : 'gray'}
-              variant={showRSI ? 'solid' : 'ghost'}
-            >
-              <LuActivity />
-            </IconButton>
-          </TooltipWrapper>
-          <TooltipWrapper label={t('chart.controls.bollingerBands')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('chart.controls.bollingerBands')}
-              onClick={() => onShowBollingerBandsChange(!showBollingerBands)}
-              colorPalette={showBollingerBands ? 'blue' : 'gray'}
-              variant={showBollingerBands ? 'solid' : 'ghost'}
-            >
-              <LuTrendingUp />
-            </IconButton>
-          </TooltipWrapper>
-          <TooltipWrapper label={t('chart.controls.atr')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('chart.controls.atr')}
-              onClick={() => onShowATRChange(!showATR)}
-              colorPalette={showATR ? 'blue' : 'gray'}
-              variant={showATR ? 'solid' : 'ghost'}
-            >
-              <LuGauge />
-            </IconButton>
-          </TooltipWrapper>
-          <TooltipWrapper label={t('chart.controls.vwap')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('chart.controls.vwap')}
-              onClick={() => onShowVWAPChange(!showVWAP)}
-              colorPalette={showVWAP ? 'blue' : 'gray'}
-              variant={showVWAP ? 'solid' : 'ghost'}
-            >
-              <LuChartSpline />
-            </IconButton>
-          </TooltipWrapper>
+          <IndicatorTogglePopover
+            showVolume={showVolume}
+            showStochastic={showStochastic}
+            showRSI={showRSI}
+            showBollingerBands={showBollingerBands}
+            showATR={showATR}
+            showVWAP={showVWAP}
+            movingAverages={movingAverages}
+            onShowVolumeChange={onShowVolumeChange}
+            onShowStochasticChange={onShowStochasticChange}
+            onShowRSIChange={onShowRSIChange}
+            onShowBollingerBandsChange={onShowBollingerBandsChange}
+            onShowATRChange={onShowATRChange}
+            onShowVWAPChange={onShowVWAPChange}
+            onMovingAverageToggle={toggleMA}
+          />
           <TooltipWrapper label={t('chart.controls.grid')} showArrow>
             <IconButton
               size="2xs"
@@ -441,71 +386,42 @@ export const Toolbar = memo(({
               </TooltipWrapper>
               <PatternTogglePopover />
             </HStack>
+          </>
+        )}
 
+        {movingAverages.length > 0 && showSidebarButtons && (
+          <>
             <Box w="1px" h="32px" bg="border" flexShrink={0} />
 
             <HStack gap={1} flexWrap="nowrap">
-              {movingAverages.map((ma, index) => (
-                <TooltipWrapper
-                  key={index}
-                  label={`${ma.type === 'EMA' ? 'EMA' : 'SMA'}${ma.period}`}
-                  showArrow
+              <SetupTogglePopover />
+              <TooltipWrapper
+                label={t('tradingProfiles.title')}
+                showArrow
+                placement="top"
+              >
+                <IconButton
+                  size="2xs"
+                  aria-label={t('tradingProfiles.title')}
+                  onClick={handleOpenTradingProfilesModal}
+                  colorPalette={isBackendWatcherActive ? 'green' : 'gray'}
+                  variant={isBackendWatcherActive ? 'solid' : 'ghost'}
                 >
-                  <IconButton
-                    size="2xs"
-                    aria-label={`${ma.type === 'EMA' ? 'EMA' : 'SMA'}${ma.period}`}
-                    onClick={() => toggleMA(index)}
-                    colorPalette={ma.visible !== false ? 'blue' : 'gray'}
-                    variant={ma.visible !== false ? 'solid' : 'ghost'}
-                    px={2}
-                    style={{
-                      position: 'relative',
-                      borderLeft: ma.visible !== false ? `3px solid ${ma.color}` : undefined
-                    }}
-                  >
-                    <Text fontSize="xs" fontWeight="medium">
-                      {ma.type === 'EMA' ? 'EMA' : 'SMA'}{ma.period}
-                    </Text>
-                  </IconButton>
-                </TooltipWrapper>
-              ))}
+                  <LuBot />
+                </IconButton>
+              </TooltipWrapper>
+              <TooltipWrapper label="Backtest Strategy" showArrow placement="top">
+                <IconButton
+                  size="2xs"
+                  aria-label="Backtest Strategy"
+                  onClick={onToggleBacktest}
+                  colorPalette="green"
+                  variant="solid"
+                >
+                  <LuHistory />
+                </IconButton>
+              </TooltipWrapper>
             </HStack>
-
-            {showSidebarButtons && (
-              <>
-                <Box w="1px" h="32px" bg="border" flexShrink={0} />
-
-                <HStack gap={1} flexWrap="nowrap">
-                  <SetupTogglePopover />
-                  <TooltipWrapper
-                    label={t('tradingProfiles.title')}
-                    showArrow
-                    placement="top"
-                  >
-                    <IconButton
-                      size="2xs"
-                      aria-label={t('tradingProfiles.title')}
-                      onClick={handleOpenTradingProfilesModal}
-                      colorPalette={isBackendWatcherActive ? 'green' : 'gray'}
-                      variant={isBackendWatcherActive ? 'solid' : 'ghost'}
-                    >
-                      <LuBot />
-                    </IconButton>
-                  </TooltipWrapper>
-                  <TooltipWrapper label="Backtest Strategy" showArrow placement="top">
-                    <IconButton
-                      size="2xs"
-                      aria-label="Backtest Strategy"
-                      onClick={onToggleBacktest}
-                      colorPalette={isBacktestOpen ? 'purple' : 'gray'}
-                      variant={isBacktestOpen ? 'solid' : 'ghost'}
-                    >
-                      <LuHistory />
-                    </IconButton>
-                  </TooltipWrapper>
-                </HStack>
-              </>
-            )}
           </>
         )}
       </Flex>

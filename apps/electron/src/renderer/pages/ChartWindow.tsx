@@ -1,5 +1,5 @@
 import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
-import type { Kline } from '@marketmind/types';
+import type { Kline, MarketType } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
@@ -70,6 +70,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   const navigate = useNavigate();
   const { symbol: routeSymbol, timeframe: routeTimeframe } = useParams<{ symbol?: string; timeframe?: string }>();
   const [symbol, setSymbol] = useLocalStorage('marketmind:chartwindow:symbol', routeSymbol || initialSymbol || 'BTCUSDT');
+  const [marketType, setMarketType] = useLocalStorage<MarketType>('marketmind:chartwindow:marketType', 'SPOT');
 
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
@@ -107,6 +108,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   const backendKlinesQuery = useKlineList({
     symbol,
     interval: timeframe as any,
+    marketType,
     limit: 500,
   });
 
@@ -158,7 +160,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
       rafIdRef.current = null;
     }
     pendingUpdateRef.current = null;
-  }, [symbol, timeframe]);
+  }, [symbol, timeframe, marketType]);
 
   useEffect(() => {
     if (!marketData?.klines?.length) return;
@@ -237,7 +239,8 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
     symbol,
     timeframe as any,
     handleKlineStreamUpdate,
-    !!marketData
+    !!marketData,
+    marketType
   );
 
   useEffect(() => {
@@ -296,6 +299,11 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
     }
   }, [symbol, timeframe, navigate]);
 
+  const handleSymbolChange = useCallback((newSymbol: string, newMarketType?: MarketType): void => {
+    setSymbol(newSymbol);
+    if (newMarketType) setMarketType(newMarketType);
+  }, [setSymbol, setMarketType]);
+
   return (
     <Box
       display="flex"
@@ -308,7 +316,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
       <Box flexShrink={0} height="48px">
         <Toolbar
           symbol={symbol}
-          onSymbolChange={setSymbol}
+          onSymbolChange={handleSymbolChange}
           timeframe={timeframe}
           onTimeframeChange={setTimeframe}
           showVolume={showVolume}
@@ -368,6 +376,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
           <ChartCanvas
             klines={displayKlines}
             symbol={symbol}
+            marketType={marketType}
             width="100%"
             height="100%"
             showVolume={showVolume}

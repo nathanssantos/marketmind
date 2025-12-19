@@ -1,5 +1,5 @@
 import { getThresholdForTimeframe } from '@marketmind/ml';
-import type { Interval, Kline, TradingSetup } from '@marketmind/types';
+import type { Interval, Kline, MarketType, TradingSetup } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
@@ -17,6 +17,7 @@ import {
 } from '../db/schema';
 import { env } from '../env';
 import { autoTradingService } from './auto-trading';
+import { ocoOrderService } from './oco-orders';
 import { backfillHistoricalKlines, calculateStartTime } from './binance-historical';
 import { cooldownService } from './cooldown';
 import { marketContextFilter } from './market-context-filter';
@@ -60,6 +61,7 @@ interface ActiveWatcher {
   userId: string;
   symbol: string;
   interval: string;
+  marketType: MarketType;
   enabledStrategies: string[];
   profileId?: string;
   profileName?: string;
@@ -216,9 +218,10 @@ export class AutoTradingScheduler {
     symbol: string,
     interval: string,
     profileId?: string,
-    skipDbPersist: boolean = false
+    skipDbPersist: boolean = false,
+    marketType: MarketType = 'SPOT'
   ): Promise<void> {
-    const watcherId = `${walletId}-${symbol}-${interval}`;
+    const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
 
     if (this.activeWatchers.has(watcherId)) {
       log('⚠️ Watcher already exists', { watcherId });
@@ -282,7 +285,8 @@ export class AutoTradingScheduler {
           and(
             eq(activeWatchersTable.walletId, walletId),
             eq(activeWatchersTable.symbol, symbol),
-            eq(activeWatchersTable.interval, interval)
+            eq(activeWatchersTable.interval, interval),
+            eq(activeWatchersTable.marketType, marketType)
           )
         )
         .limit(1);
@@ -294,10 +298,11 @@ export class AutoTradingScheduler {
           walletId,
           symbol,
           interval,
+          marketType,
           profileId: profileId ?? null,
           startedAt: new Date(),
         });
-        log('💾 Persisted watcher to database', { watcherId, profileId });
+        log('💾 Persisted watcher to database', { watcherId, profileId, marketType });
       } else if (existingWatcher[0] && existingWatcher[0].profileId !== profileId) {
         await db
           .update(activeWatchersTable)
@@ -349,6 +354,7 @@ export class AutoTradingScheduler {
       userId,
       symbol,
       interval,
+      marketType,
       enabledStrategies: mlStrategies,
       profileId,
       profileName,
@@ -358,13 +364,17 @@ export class AutoTradingScheduler {
 
     this.activeWatchers.set(watcherId, watcher);
 
-    const { binanceKlineStreamService } = await import('./binance-kline-stream');
-    binanceKlineStreamService.subscribe(symbol, interval);
-    log('📊 Subscribed to kline stream', { symbol, interval });
+    const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('./binance-kline-stream');
+    if (marketType === 'FUTURES') {
+      binanceFuturesKlineStreamService.subscribe(symbol, interval);
+    } else {
+      binanceKlineStreamService.subscribe(symbol, interval);
+    }
+    log('📊 Subscribed to kline stream', { symbol, interval, marketType });
   }
 
-  async stopWatcher(walletId: string, symbol: string, interval: string): Promise<void> {
-    const watcherId = `${walletId}-${symbol}-${interval}`;
+  async stopWatcher(walletId: string, symbol: string, interval: string, marketType: MarketType = 'SPOT'): Promise<void> {
+    const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
     const watcher = this.activeWatchers.get(watcherId);
 
     if (!watcher) {
@@ -376,9 +386,13 @@ export class AutoTradingScheduler {
     clearTimeout(watcher.intervalId);
     this.activeWatchers.delete(watcherId);
 
-    const { binanceKlineStreamService } = await import('./binance-kline-stream');
-    binanceKlineStreamService.unsubscribe(symbol, interval);
-    log('📊 Unsubscribed from kline stream', { symbol, interval });
+    const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('./binance-kline-stream');
+    if (watcher.marketType === 'FUTURES') {
+      binanceFuturesKlineStreamService.unsubscribe(symbol, interval);
+    } else {
+      binanceKlineStreamService.unsubscribe(symbol, interval);
+    }
+    log('📊 Unsubscribed from kline stream', { symbol, interval, marketType: watcher.marketType });
 
     await db
       .delete(activeWatchersTable)
@@ -386,11 +400,12 @@ export class AutoTradingScheduler {
         and(
           eq(activeWatchersTable.walletId, walletId),
           eq(activeWatchersTable.symbol, symbol),
-          eq(activeWatchersTable.interval, interval)
+          eq(activeWatchersTable.interval, interval),
+          eq(activeWatchersTable.marketType, marketType)
         )
       );
 
-    log('🔴 Watcher stopped', { watcherId });
+    log('🔴 Watcher stopped', { watcherId, marketType });
   }
 
   async stopAllWatchersForWallet(walletId: string): Promise<void> {
@@ -440,7 +455,8 @@ export class AutoTradingScheduler {
       const klinesData = await db.query.klines.findMany({
         where: and(
           eq(klines.symbol, watcher.symbol),
-          eq(klines.interval, watcher.interval)
+          eq(klines.interval, watcher.interval),
+          eq(klines.marketType, watcher.marketType)
         ),
         orderBy: [desc(klines.openTime)],
         limit: requiredKlines,
@@ -465,7 +481,8 @@ export class AutoTradingScheduler {
           const refreshedKlines = await db.query.klines.findMany({
             where: and(
               eq(klines.symbol, watcher.symbol),
-              eq(klines.interval, watcher.interval)
+              eq(klines.interval, watcher.interval),
+              eq(klines.marketType, watcher.marketType)
             ),
             orderBy: [desc(klines.openTime)],
             limit: requiredKlines,
@@ -1037,6 +1054,7 @@ export class AutoTradingScheduler {
       let actualQuantity = adjustedQuantity;
       let stopLossOrderId: number | null = null;
       let takeProfitOrderId: number | null = null;
+      let orderListId: number | null = null;
 
       log('💸 Entry price adjusted for slippage', {
         originalEntry: setup.entryPrice,
@@ -1093,7 +1111,79 @@ export class AutoTradingScheduler {
             });
           }
 
-          if (orderFilled && setup.stopLoss) {
+          if (orderFilled && setup.stopLoss && setup.takeProfit) {
+            try {
+              const ocoResult = await ocoOrderService.createExitOCO(
+                wallet as Wallet,
+                watcher.symbol,
+                actualQuantity,
+                setup.stopLoss,
+                setup.takeProfit,
+                setup.direction
+              );
+
+              if (ocoResult) {
+                orderListId = ocoResult.orderListId;
+                stopLossOrderId = ocoResult.stopLossOrderId;
+                takeProfitOrderId = ocoResult.takeProfitOrderId;
+                log('✅ OCO exit orders placed', {
+                  orderListId,
+                  stopLossOrderId,
+                  takeProfitOrderId,
+                  stopLoss: setup.stopLoss,
+                  takeProfit: setup.takeProfit,
+                });
+              } else {
+                log('⚠️ OCO placement returned null, falling back to separate orders');
+                stopLossOrderId = await autoTradingService.createStopLossOrder(
+                  wallet as Wallet,
+                  watcher.symbol,
+                  actualQuantity,
+                  setup.stopLoss,
+                  setup.direction
+                );
+                takeProfitOrderId = await autoTradingService.createTakeProfitOrder(
+                  wallet as Wallet,
+                  watcher.symbol,
+                  actualQuantity,
+                  setup.takeProfit,
+                  setup.direction
+                );
+              }
+            } catch (ocoError) {
+              log('⚠️ Failed to place OCO exit orders, falling back to separate orders', {
+                error: ocoError instanceof Error ? ocoError.message : String(ocoError),
+              });
+              try {
+                stopLossOrderId = await autoTradingService.createStopLossOrder(
+                  wallet as Wallet,
+                  watcher.symbol,
+                  actualQuantity,
+                  setup.stopLoss,
+                  setup.direction
+                );
+                log('🛡️ Stop loss order placed (fallback)', { stopLossOrderId });
+              } catch (slError) {
+                log('⚠️ Failed to place stop loss order', {
+                  error: slError instanceof Error ? slError.message : String(slError),
+                });
+              }
+              try {
+                takeProfitOrderId = await autoTradingService.createTakeProfitOrder(
+                  wallet as Wallet,
+                  watcher.symbol,
+                  actualQuantity,
+                  setup.takeProfit,
+                  setup.direction
+                );
+                log('🎯 Take profit order placed (fallback)', { takeProfitOrderId });
+              } catch (tpError) {
+                log('⚠️ Failed to place take profit order', {
+                  error: tpError instanceof Error ? tpError.message : String(tpError),
+                });
+              }
+            }
+          } else if (orderFilled && setup.stopLoss) {
             try {
               stopLossOrderId = await autoTradingService.createStopLossOrder(
                 wallet as Wallet,
@@ -1102,27 +1192,10 @@ export class AutoTradingScheduler {
                 setup.stopLoss,
                 setup.direction
               );
-              log('🛡️ Stop loss order placed', { stopLossOrderId, stopLoss: setup.stopLoss });
+              log('🛡️ Stop loss order placed (no TP)', { stopLossOrderId, stopLoss: setup.stopLoss });
             } catch (slError) {
               log('⚠️ Failed to place stop loss order', {
                 error: slError instanceof Error ? slError.message : String(slError),
-              });
-            }
-          }
-
-          if (orderFilled && setup.takeProfit) {
-            try {
-              takeProfitOrderId = await autoTradingService.createTakeProfitOrder(
-                wallet as Wallet,
-                watcher.symbol,
-                actualQuantity,
-                setup.takeProfit,
-                setup.direction
-              );
-              log('🎯 Take profit order placed', { takeProfitOrderId, takeProfit: setup.takeProfit });
-            } catch (tpError) {
-              log('⚠️ Failed to place take profit order', {
-                error: tpError instanceof Error ? tpError.message : String(tpError),
               });
             }
           }
@@ -1334,6 +1407,7 @@ export class AutoTradingScheduler {
           entryOrderId,
           stopLossOrderId,
           takeProfitOrderId,
+          orderListId,
           quantity: actualQuantity.toFixed(8),
           stopLoss: setup.stopLoss?.toString(),
           takeProfit: setup.takeProfit?.toString(),
@@ -1457,11 +1531,12 @@ export class AutoTradingScheduler {
     }
   }
 
-  getActiveWatchers(): { watcherId: string; symbol: string; interval: string; profileId?: string; profileName?: string }[] {
+  getActiveWatchers(): { watcherId: string; symbol: string; interval: string; marketType: MarketType; profileId?: string; profileName?: string }[] {
     return Array.from(this.activeWatchers.entries()).map(([watcherId, watcher]) => ({
       watcherId,
       symbol: watcher.symbol,
       interval: watcher.interval,
+      marketType: watcher.marketType,
       profileId: watcher.profileId,
       profileName: watcher.profileName,
     }));
@@ -1477,13 +1552,13 @@ export class AutoTradingScheduler {
     return { active: count > 0, watchers: count };
   }
 
-  async getWatcherStatusFromDb(walletId: string): Promise<{ active: boolean; watchers: number; watcherDetails: { symbol: string; interval: string; profileId?: string; profileName?: string }[] }> {
+  async getWatcherStatusFromDb(walletId: string): Promise<{ active: boolean; watchers: number; watcherDetails: { symbol: string; interval: string; marketType: MarketType; profileId?: string; profileName?: string }[] }> {
     const persistedWatchers = await db
       .select()
       .from(activeWatchersTable)
       .where(eq(activeWatchersTable.walletId, walletId));
 
-    const watcherDetails: { symbol: string; interval: string; profileId?: string; profileName?: string }[] = [];
+    const watcherDetails: { symbol: string; interval: string; marketType: MarketType; profileId?: string; profileName?: string }[] = [];
 
     for (const w of persistedWatchers) {
       let profileName: string | undefined;
@@ -1498,6 +1573,7 @@ export class AutoTradingScheduler {
       watcherDetails.push({
         symbol: w.symbol,
         interval: w.interval,
+        marketType: (w.marketType as MarketType) ?? 'SPOT',
         profileId: w.profileId ?? undefined,
         profileName,
       });
@@ -1532,9 +1608,10 @@ export class AutoTradingScheduler {
           pw.symbol,
           pw.interval,
           pw.profileId ?? undefined,
-          true
+          true,
+          (pw.marketType as MarketType) ?? 'SPOT'
         );
-        log('✅ Restored watcher', { watcherId: pw.id, symbol: pw.symbol, interval: pw.interval, profileId: pw.profileId });
+        log('✅ Restored watcher', { watcherId: pw.id, symbol: pw.symbol, interval: pw.interval, profileId: pw.profileId, marketType: pw.marketType });
       } catch (error) {
         log('❌ Failed to restore watcher', {
           watcherId: pw.id,

@@ -352,6 +352,16 @@
       "indicators": "Indicators",
       "quickSettings": "Quick Settings"
     },
+    "indicators": {
+      "title": "Indicators",
+      "configure": "Configure Indicators",
+      "categories": {
+        "oscillators": "Oscillators",
+        "volatility": "Volatility",
+        "volume": "Volume",
+        "movingAverages": "Moving Averages"
+      }
+    },
     "contextMenu": {
       "deletePattern": "Delete Pattern",
       "deletePattern": "Delete Pattern",
@@ -784,7 +794,7 @@
     },
     "tabs": {
       "wallets": "Wallets",
-      "ticket": "Order Ticket",
+      "ticket": "Ticket",
       "portfolio": "Portfolio",
       "orders": "Orders",
       "analytics": "Analytics"
@@ -816,7 +826,7 @@
       "noTradesYet": "No trades yet. Start trading to see your equity curve."
     },
     "ticket": {
-      "title": "Order Ticket",
+      "title": "Ticket",
       "noWallet": "Please create and select a wallet first.",
       "activeWallet": "Active Wallet",
       "symbol": "Symbol",

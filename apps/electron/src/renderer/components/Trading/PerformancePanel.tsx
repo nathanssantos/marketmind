@@ -25,21 +25,17 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
 
   if (isLoadingPerformance) {
     return (
-      <Stack gap={4} p={4} bg="gray.50" _dark={{ bg: 'gray.800' }} borderRadius="md" borderWidth="1px">
-        <Flex justify="center" align="center" py={8}>
-          <Spinner size="lg" />
-        </Flex>
-      </Stack>
+      <Flex justify="center" align="center" py={8}>
+        <Spinner size="lg" />
+      </Flex>
     );
   }
 
   if (!performance) {
     return (
-      <Stack gap={4} p={4} bg="gray.50" _dark={{ bg: 'gray.800' }} borderRadius="md" borderWidth="1px">
-        <Text textAlign="center" color="gray.500" py={8}>
-          {t('trading.analytics.performance.noData')}
-        </Text>
-      </Stack>
+      <Text textAlign="center" color="gray.500" py={8}>
+        {t('trading.analytics.performance.noData')}
+      </Text>
     );
   }
 
@@ -95,7 +91,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
   );
 
   return (
-    <Stack gap={4} p={6} bg="gray.50" _dark={{ bg: 'gray.800' }} borderRadius="md" borderWidth="1px">
+    <Stack gap={4}>
       <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px" flexWrap="wrap" gap={2}>
         <Text fontSize="lg" fontWeight="bold">
           {t('trading.analytics.performance.title')}
@@ -106,6 +102,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
               key={p.value}
               onClick={() => setPeriod(p.value)}
               variant={period === p.value ? 'solid' : 'outline'}
+              px={3}
             >
               {t(p.labelKey)}
             </Button>

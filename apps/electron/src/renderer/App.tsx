@@ -1,5 +1,5 @@
 import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
-import type { AIPattern, Kline, Viewport } from '@marketmind/types';
+import type { AIPattern, Kline, MarketType, Viewport } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
@@ -141,6 +141,7 @@ function App(): ReactElement {
 function AppContent(): ReactElement {
   const { t } = useTranslation();
   const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
+  const [marketType, setMarketType] = useLocalStorage<MarketType>('marketmind:marketType', 'SPOT');
   const [viewport, setViewport] = useState<Viewport | undefined>(undefined);
 
   useOrderNotifications();
@@ -491,6 +492,10 @@ function AppContent(): ReactElement {
     void deletePattern(patternId);
   }, []);
 
+  const handleSymbolChange = useCallback((newSymbol: string, newMarketType?: MarketType): void => {
+    setSymbol(newSymbol);
+    if (newMarketType) setMarketType(newMarketType);
+  }, [setSymbol, setMarketType]);
 
   const currentSymbolCode = extractSymbolCode(symbol);
   const isCrypto = symbol.endsWith('USDT') || symbol.endsWith('USD');
@@ -525,6 +530,7 @@ function AppContent(): ReactElement {
     chartType,
     showVolume,
     movingAverages,
+    marketType,
     news: newsArticles,
     events: relevantEvents,
   });
@@ -575,7 +581,7 @@ function AppContent(): ReactElement {
         movingAverages={movingAverages}
         isNewsOpen={isNewsOpen}
         isBacktestOpen={isBacktestOpen}
-        onSymbolChange={setSymbol}
+        onSymbolChange={handleSymbolChange}
         onTimeframeChange={setTimeframe}
         onChartTypeChange={setChartType}
         onShowVolumeChange={setShowVolume}
@@ -623,6 +629,7 @@ function AppContent(): ReactElement {
           <ChartCanvas
             klines={displayKlines}
             symbol={symbol}
+            marketType={marketType}
             width="100%"
             height="100%"
             showVolume={showVolume}

@@ -208,19 +208,24 @@ export function SymbolSelector({
                   borderBottomWidth="1px"
                   borderColor="border"
                 >
-                  <Flex align="center" gap={2}>
-                    <Text fontWeight={value === symbol.symbol ? 'semibold' : 'medium'} fontSize="xs" color="fg">
-                      {symbol.displayName}
-                    </Text>
-                    {isFutures && (
-                      <Badge size="xs" colorPalette="orange" variant="surface">
-                        PERP
-                      </Badge>
-                    )}
+                  <Flex align="center" justify="space-between">
+                    <Flex direction="column">
+                      <Text fontWeight={value === symbol.symbol ? 'semibold' : 'medium'} fontSize="xs" color="fg">
+                        {symbol.baseAsset}/{symbol.quoteAsset}
+                      </Text>
+                      <Text fontSize="2xs" color="fg.muted">
+                        {symbol.displayName}
+                      </Text>
+                    </Flex>
+                    <Badge
+                      size="xs"
+                      colorPalette={isFutures ? 'purple' : 'blue'}
+                      variant="subtle"
+                      px={2}
+                    >
+                      {isFutures ? 'FUTURES' : 'SPOT'}
+                    </Badge>
                   </Flex>
-                  <Text fontSize="2xs" color="fg.muted">
-                    {symbol.symbol}
-                  </Text>
                 </Box>
               ))}
             </VStack>

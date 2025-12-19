@@ -16,6 +16,8 @@ const {
   DEFAULT_PERCENTAGE,
   DEFAULT_DISTANCE_PERCENT,
   DEFAULT_SWING_BUFFER_PERCENT,
+  MIN_SWING_BUFFER_ATR,
+  DEFAULT_STOP_LOOKBACK,
   BASE_CONFIDENCE,
   VOLUME_CONFIRMATION_BONUS,
   MAX_CONFIDENCE,
@@ -225,10 +227,14 @@ export class ExitCalculator {
    * For SHORT: uses max high of lookback candles (including current) + buffer
    * For LONG: uses min low of lookback candles (including current) - buffer
    * Buffer adds a few ticks beyond the swing point to avoid premature stops
+   *
+   * Uses priorSwingLookback or lookback (default: DEFAULT_STOP_LOOKBACK=5) for finding
+   * a swing point that is different from the entry swing point.
+   * Enforces minimum ATR buffer of MIN_SWING_BUFFER_ATR=0.3 to prevent tight stops.
    */
   private calculateSwingHighLowStop(exit: ExitLevel, context: ExitContext): number {
     const { direction, entryPrice, klines, currentIndex, indicators } = context;
-    const lookback = exit.lookback ?? 2;
+    const lookback = exit.priorSwingLookback ?? exit.lookback ?? DEFAULT_STOP_LOOKBACK;
 
     const startIdx = Math.max(0, currentIndex - lookback + 1);
     const relevantKlines = [];
@@ -252,17 +258,28 @@ export class ExitCalculator {
     }
 
     let bufferApplied = false;
+    const atrValue = this.indicatorEngine.resolveIndicatorValue(
+      indicators,
+      'atr',
+      currentIndex
+    ) ?? 0;
+
     if (exit.buffer !== undefined) {
       const bufferValue = this.resolveOperand(exit.buffer, context);
       if (exit.indicator === 'atr') {
-        const atrValue = this.indicatorEngine.resolveIndicatorValue(
-          indicators,
-          'atr',
-          currentIndex
-        ) ?? 0;
-        const bufferAmount = atrValue * bufferValue;
+        const effectiveBuffer = Math.max(bufferValue, MIN_SWING_BUFFER_ATR);
+        const bufferAmount = atrValue * effectiveBuffer;
         stopLoss = direction === 'SHORT' ? stopLoss + bufferAmount : stopLoss - bufferAmount;
         bufferApplied = true;
+
+        if (bufferValue < MIN_SWING_BUFFER_ATR) {
+          logger.debug({
+            direction,
+            requestedBuffer: bufferValue,
+            appliedBuffer: effectiveBuffer,
+            minBuffer: MIN_SWING_BUFFER_ATR,
+          }, 'Buffer increased to minimum ATR buffer');
+        }
       } else {
         const bufferAmount = entryPrice * (bufferValue / 100);
         stopLoss = direction === 'SHORT' ? stopLoss + bufferAmount : stopLoss - bufferAmount;
@@ -271,13 +288,16 @@ export class ExitCalculator {
     }
 
     if (!bufferApplied) {
-      const defaultBufferAmount = stopLoss * (DEFAULT_SWING_BUFFER_PERCENT / 100);
+      const minAtrBuffer = atrValue * MIN_SWING_BUFFER_ATR;
+      const defaultPercentBuffer = stopLoss * (DEFAULT_SWING_BUFFER_PERCENT / 100);
+      const defaultBufferAmount = Math.max(minAtrBuffer, defaultPercentBuffer);
       stopLoss = direction === 'SHORT' ? stopLoss + defaultBufferAmount : stopLoss - defaultBufferAmount;
       logger.debug({
         direction,
         defaultBufferPercent: DEFAULT_SWING_BUFFER_PERCENT,
+        minAtrBuffer: minAtrBuffer.toFixed(4),
         bufferAmount: defaultBufferAmount.toFixed(4),
-      }, 'Applied default swing buffer');
+      }, 'Applied default swing buffer (max of ATR and percent)');
     }
 
     const isValid = direction === 'LONG' ? stopLoss < entryPrice : stopLoss > entryPrice;

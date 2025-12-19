@@ -107,6 +107,56 @@ describe('useWatermarkRenderer', () => {
       expect(mockCtx.restore).toHaveBeenCalled();
     });
 
+    it('should render watermark with PERP label for FUTURES market type', () => {
+      const { result } = renderHook(() =>
+        useWatermarkRenderer({
+          manager: mockManager,
+          colors: mockColors,
+          symbol: 'BTCUSDT',
+          timeframe: '1h',
+          marketType: 'FUTURES',
+          enabled: true,
+        })
+      );
+
+      result.current.render();
+
+      expect(mockCtx.fillText).toHaveBeenCalledWith('BTCUSDT 1h PERP', 364, 287.5);
+    });
+
+    it('should render watermark without PERP label for SPOT market type', () => {
+      const { result } = renderHook(() =>
+        useWatermarkRenderer({
+          manager: mockManager,
+          colors: mockColors,
+          symbol: 'BTCUSDT',
+          timeframe: '1h',
+          marketType: 'SPOT',
+          enabled: true,
+        })
+      );
+
+      result.current.render();
+
+      expect(mockCtx.fillText).toHaveBeenCalledWith('BTCUSDT 1h', 364, 287.5);
+    });
+
+    it('should render FUTURES watermark with symbol only (no timeframe)', () => {
+      const { result } = renderHook(() =>
+        useWatermarkRenderer({
+          manager: mockManager,
+          colors: mockColors,
+          symbol: 'ETHUSDT',
+          marketType: 'FUTURES',
+          enabled: true,
+        })
+      );
+
+      result.current.render();
+
+      expect(mockCtx.fillText).toHaveBeenCalledWith('ETHUSDT PERP', 364, 287.5);
+    });
+
     it('should not render when manager is null', () => {
       const { result } = renderHook(() =>
         useWatermarkRenderer({

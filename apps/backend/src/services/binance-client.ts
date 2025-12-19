@@ -1,4 +1,4 @@
-import { MainClient } from 'binance';
+import { MainClient, USDMClient } from 'binance';
 import { decryptApiKey } from './encryption';
 import type { Wallet } from '../db/schema';
 
@@ -31,6 +31,27 @@ export function createBinanceClient(wallet: Wallet): MainClient {
   });
 }
 
+export function createBinanceFuturesClient(wallet: Wallet): USDMClient {
+  const walletType = getWalletType(wallet);
+
+  if (walletType === 'paper') {
+    throw new Error('Paper wallets cannot execute real orders on Binance Futures');
+  }
+
+  const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
+  const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
+
+  return new USDMClient({
+    api_key: apiKey,
+    api_secret: apiSecret,
+    testnet: walletType === 'testnet',
+  });
+}
+
 export function createBinanceClientForPrices(): MainClient {
   return new MainClient();
+}
+
+export function createBinanceFuturesClientForPrices(): USDMClient {
+  return new USDMClient();
 }

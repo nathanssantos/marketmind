@@ -1,4 +1,4 @@
-import type { Interval } from '@marketmind/types';
+import type { Interval, MarketType } from '@marketmind/types';
 import { useEffect, useRef } from 'react';
 import { trpc } from '../utils/trpc';
 import { useWebSocket } from './useWebSocket';
@@ -6,6 +6,7 @@ import { useWebSocket } from './useWebSocket';
 interface ListParams {
   symbol: string;
   interval: Interval;
+  marketType?: MarketType;
   startTime?: Date;
   endTime?: Date;
   limit?: number;
@@ -29,19 +30,25 @@ export const useBackendKlines = () => {
   });
 
   const useKlineList = (params: ListParams) =>
-    trpc.kline.list.useQuery(params, {
-      enabled: !!params.symbol && !!params.interval,
-    });
+    trpc.kline.list.useQuery(
+      {
+        ...params,
+        marketType: params.marketType ?? 'SPOT',
+      },
+      {
+        enabled: !!params.symbol && !!params.interval,
+      }
+    );
 
-  const useLatestKline = (symbol: string, interval: Interval) =>
+  const useLatestKline = (symbol: string, interval: Interval, marketType: MarketType = 'SPOT') =>
     trpc.kline.latest.useQuery(
-      { symbol, interval },
+      { symbol, interval, marketType },
       { enabled: !!symbol && !!interval }
     );
 
-  const useKlineCount = (symbol: string, interval: Interval) =>
+  const useKlineCount = (symbol: string, interval: Interval, marketType: MarketType = 'SPOT') =>
     trpc.kline.count.useQuery(
-      { symbol, interval },
+      { symbol, interval, marketType },
       { enabled: !!symbol && !!interval }
     );
 
@@ -66,6 +73,7 @@ export const useKlineStream = (
   onKlineUpdate: (kline: {
     symbol: string;
     interval: string;
+    marketType?: MarketType;
     openTime: number;
     closeTime: number;
     open: string;
@@ -76,7 +84,8 @@ export const useKlineStream = (
     isClosed: boolean;
     timestamp: number;
   }) => void,
-  enabled = true
+  enabled = true,
+  marketType: MarketType = 'SPOT'
 ) => {
   const { subscribeStream, unsubscribeStream } = useBackendKlines();
   const { isConnected, on, off, subscribe, unsubscribe } = useWebSocket({ autoConnect: enabled });
@@ -94,18 +103,24 @@ export const useKlineStream = (
       console.log('[useBackendKlines] Received kline update:', {
         symbol: kline.symbol,
         interval: kline.interval,
+        marketType: kline.marketType,
         close: kline.close,
         expectedSymbol: symbol,
         expectedInterval: interval,
+        expectedMarketType: marketType,
       });
-      
-      if (kline.symbol === symbol && kline.interval === interval) {
+
+      if (
+        kline.symbol === symbol &&
+        kline.interval === interval &&
+        (kline.marketType === marketType || !kline.marketType)
+      ) {
         onKlineUpdateRef.current(kline);
       }
     };
 
     if (!subscribedRef.current) {
-      subscribeStream.mutate({ symbol, interval });
+      subscribeStream.mutate({ symbol, interval, marketType });
       subscribedRef.current = true;
     }
 
@@ -119,11 +134,11 @@ export const useKlineStream = (
       unsubscribe.klines({ symbol, interval });
 
       if (subscribedRef.current) {
-        unsubscribeStream.mutate({ symbol, interval });
+        unsubscribeStream.mutate({ symbol, interval, marketType });
         subscribedRef.current = false;
       }
     };
-  }, [enabled, isConnected, symbol, interval]);
+  }, [enabled, isConnected, symbol, interval, marketType]);
 
   return {
     isConnected,

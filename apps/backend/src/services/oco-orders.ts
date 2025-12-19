@@ -1,5 +1,5 @@
 import type { Wallet } from '../db/schema';
-import { createBinanceClient } from './binance-client';
+import { createBinanceClient, isPaperWallet } from './binance-client';
 import { logger } from './logger';
 
 export interface OCOOrderParams {
@@ -14,12 +14,27 @@ export interface OCOOrderParams {
 export interface OCOOrderResult {
   orderListId: number;
   contingencyType: string;
+  listStatusType: string;
+  listOrderStatus: string;
+  orders: Array<{
+    orderId: number;
+    symbol: string;
+  }>;
   orderReports: Array<{
     orderId: number;
     clientOrderId: string;
     type: string;
+    side: string;
     status: string;
+    price: string;
+    stopPrice?: string;
   }>;
+}
+
+export interface ExitOCOResult {
+  orderListId: number;
+  stopLossOrderId: number;
+  takeProfitOrderId: number;
 }
 
 export class OCOOrderService {
@@ -28,7 +43,7 @@ export class OCOOrderService {
   constructor() {
     const testnetEnabled = process.env.BINANCE_TESTNET_ENABLED === 'true';
     const hasTestnetKey = !!process.env.BINANCE_TESTNET_API_KEY;
-    
+
     this.enabled = testnetEnabled && hasTestnetKey;
 
     if (this.enabled) {
@@ -42,42 +57,65 @@ export class OCOOrderService {
     return this.enabled;
   }
 
-  async placeOCO(
+  async createExitOCO(
     wallet: Wallet,
-    params: OCOOrderParams
-  ): Promise<OCOOrderResult | null> {
-    if (!this.enabled) {
-      logger.warn({
-        symbol: params.symbol,
-        reason: 'OCO orders disabled',
-      }, 'Skipped OCO order placement');
+    symbol: string,
+    quantity: number,
+    stopLoss: number,
+    takeProfit: number,
+    side: 'LONG' | 'SHORT'
+  ): Promise<ExitOCOResult | null> {
+    if (isPaperWallet(wallet)) {
+      logger.warn({ symbol }, 'Paper wallet cannot place real OCO orders');
       return null;
     }
+
+    const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
+    const slLimitPrice = stopLoss * (orderSide === 'SELL' ? 0.995 : 1.005);
 
     try {
       const client = createBinanceClient(wallet);
 
-      const result = await client.submitNewOrder({
-        symbol: params.symbol,
-        side: params.side,
-        type: 'LIMIT',
-        quantity: params.quantity,
-        price: params.price,
-        timeInForce: 'GTC',
+      const result = await client.submitNewOCO({
+        symbol,
+        side: orderSide,
+        quantity,
+        price: takeProfit,
+        stopPrice: stopLoss,
+        stopLimitPrice: slLimitPrice,
+        stopLimitTimeInForce: 'GTC',
       });
 
-      logger.info({
-        symbol: params.symbol,
-        orderId: result.orderId,
-        orders: 1,
-      }, 'Order placed (OCO simulated with single limit order)');
+      const ocoResult = result as unknown as OCOOrderResult;
 
-      return result as unknown as OCOOrderResult;
+      const stopLossOrder = ocoResult.orderReports.find(o => o.type === 'STOP_LOSS_LIMIT');
+      const takeProfitOrder = ocoResult.orderReports.find(o => o.type === 'LIMIT_MAKER' || o.type === 'LIMIT');
+
+      logger.info({
+        symbol,
+        side,
+        orderListId: ocoResult.orderListId,
+        stopLossOrderId: stopLossOrder?.orderId,
+        takeProfitOrderId: takeProfitOrder?.orderId,
+        stopLoss,
+        takeProfit,
+        quantity,
+      }, '✅ OCO exit orders placed successfully');
+
+      return {
+        orderListId: ocoResult.orderListId,
+        stopLossOrderId: stopLossOrder?.orderId ?? 0,
+        takeProfitOrderId: takeProfitOrder?.orderId ?? 0,
+      };
     } catch (error) {
       logger.error({
         error: error instanceof Error ? error.message : String(error),
-        symbol: params.symbol,
-      }, 'Failed to place OCO order');
+        symbol,
+        side,
+        stopLoss,
+        takeProfit,
+        quantity,
+      }, '❌ Failed to place OCO exit orders');
       return null;
     }
   }
@@ -87,22 +125,22 @@ export class OCOOrderService {
     symbol: string,
     orderListId: number
   ): Promise<boolean> {
-    if (!this.enabled) {
+    if (isPaperWallet(wallet)) {
       return false;
     }
 
     try {
       const client = createBinanceClient(wallet);
 
-      await client.cancelOrder({
+      await client.cancelOCO({
         symbol,
-        orderId: orderListId,
+        orderListId,
       });
 
       logger.info({
         symbol,
         orderListId,
-      }, 'OCO order cancelled');
+      }, '✅ OCO order cancelled');
 
       return true;
     } catch (error) {
@@ -110,8 +148,51 @@ export class OCOOrderService {
         error: error instanceof Error ? error.message : String(error),
         symbol,
         orderListId,
-      }, 'Failed to cancel OCO order');
+      }, '❌ Failed to cancel OCO order');
       return false;
+    }
+  }
+
+  async placeOCO(
+    wallet: Wallet,
+    params: OCOOrderParams
+  ): Promise<OCOOrderResult | null> {
+    if (isPaperWallet(wallet)) {
+      logger.warn({
+        symbol: params.symbol,
+        reason: 'Paper wallet cannot place real OCO orders',
+      }, 'Skipped OCO order placement');
+      return null;
+    }
+
+    try {
+      const client = createBinanceClient(wallet);
+
+      const result = await client.submitNewOCO({
+        symbol: params.symbol,
+        side: params.side,
+        quantity: params.quantity,
+        price: params.price,
+        stopPrice: params.stopPrice,
+        stopLimitPrice: params.stopLimitPrice,
+        stopLimitTimeInForce: 'GTC',
+      });
+
+      const ocoResult = result as unknown as OCOOrderResult;
+
+      logger.info({
+        symbol: params.symbol,
+        orderListId: ocoResult.orderListId,
+        orders: ocoResult.orders?.length ?? 0,
+      }, '✅ OCO order placed successfully');
+
+      return ocoResult;
+    } catch (error) {
+      logger.error({
+        error: error instanceof Error ? error.message : String(error),
+        symbol: params.symbol,
+      }, '❌ Failed to place OCO order');
+      return null;
     }
   }
 
@@ -130,7 +211,7 @@ export class OCOOrderService {
         quantity: 0,
         price: takeProfit,
         stopPrice: stopLoss,
-        stopLimitPrice: stopLoss * 0.999,
+        stopLimitPrice: stopLoss * 0.995,
       };
     }
 
@@ -140,7 +221,7 @@ export class OCOOrderService {
       quantity: 0,
       price: takeProfit,
       stopPrice: stopLoss,
-      stopLimitPrice: stopLoss * 1.001,
+      stopLimitPrice: stopLoss * 1.005,
     };
   }
 }

@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { useCallback } from 'react';
@@ -7,6 +8,7 @@ export interface UseWatermarkRendererProps {
   colors: ChartThemeColors;
   symbol?: string;
   timeframe?: string;
+  marketType?: MarketType;
   enabled?: boolean;
 }
 
@@ -19,6 +21,7 @@ export const useWatermarkRenderer = ({
   colors,
   symbol,
   timeframe,
+  marketType,
   enabled = true,
 }: UseWatermarkRendererProps): UseWatermarkRendererReturn => {
   const render = useCallback((): void => {
@@ -33,8 +36,11 @@ export const useWatermarkRenderer = ({
 
     ctx.save();
 
-    const text = timeframe ? `${symbol} ${timeframe}` : symbol;
-    
+    const marketLabel = marketType === 'FUTURES' ? 'PERP' : '';
+    const text = timeframe
+      ? `${symbol} ${timeframe}${marketLabel ? ` ${marketLabel}` : ''}`
+      : `${symbol}${marketLabel ? ` ${marketLabel}` : ''}`;
+
     ctx.globalAlpha = 0.05;
     ctx.font = 'bold 96px sans-serif';
     ctx.fillStyle = colors.text;
@@ -47,7 +53,7 @@ export const useWatermarkRenderer = ({
     ctx.fillText(text, centerX, centerY);
 
     ctx.restore();
-  }, [manager, colors, symbol, timeframe, enabled]);
+  }, [manager, colors, symbol, timeframe, marketType, enabled]);
 
   return { render };
 };

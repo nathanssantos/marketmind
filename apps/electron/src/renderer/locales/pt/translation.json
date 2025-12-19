@@ -322,6 +322,16 @@
       "indicators": "Indicadores",
       "quickSettings": "Configurações Rápidas"
     },
+    "indicators": {
+      "title": "Indicadores",
+      "configure": "Configurar Indicadores",
+      "categories": {
+        "oscillators": "Osciladores",
+        "volatility": "Volatilidade",
+        "volume": "Volume",
+        "movingAverages": "Médias Móveis"
+      }
+    },
     "contextMenu": {
       "deletePattern": "Deletar Padrão",
       "deletePattern": "Deletar Padrão",
@@ -784,7 +794,7 @@
       "noTradesYet": "Nenhuma operação ainda. Comece a negociar para ver sua curva de patrimônio."
     },
     "ticket": {
-      "title": "Ticket de Ordem",
+      "title": "Ordem",
       "noWallet": "Por favor, crie e selecione uma carteira primeiro.",
       "activeWallet": "Carteira Ativa",
       "symbol": "Símbolo",

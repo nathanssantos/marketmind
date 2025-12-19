@@ -664,20 +664,21 @@ export const useOrderLinesRenderer = (
     }
 
     if (hoveredPosition) {
-      const position: PositionData = hoveredPosition;
-      const y = manager.priceToY(position.avgPrice);
+      const hPos = hoveredPosition;
+      const y = manager.priceToY(hPos.avgPrice);
       if (y >= 0 && y <= chartHeight) {
-        const isLong = position.type === 'long';
-        const positionId = `position-${position.symbol}-${isLong ? 'LONG' : 'SHORT'}`;
+        const isLong = hPos.netQuantity > 0;
+        const absQuantity = Math.abs(hPos.netQuantity);
+        const positionId = `position-${hPos.symbol}-${isLong ? 'LONG' : 'SHORT'}`;
 
-        const setupTypes = [...new Set(position.orders.map(o => o.setupType).filter(Boolean))] as string[];
+        const setupTypes = [...new Set(hPos.orders.map((o: Order) => o.setupType).filter(Boolean))] as string[];
         const positionData = {
-          symbol: position.symbol,
-          type: position.type,
-          avgPrice: position.avgPrice,
-          totalQuantity: position.totalQuantity,
-          totalPnL: position.totalPnL,
-          orders: position.orders,
+          symbol: hPos.symbol,
+          type: isLong ? ('long' as const) : ('short' as const),
+          avgPrice: hPos.avgPrice,
+          totalQuantity: absQuantity,
+          totalPnL: hPos.totalPnL,
+          orders: hPos.orders,
           setupTypes,
         };
 
@@ -686,10 +687,10 @@ export const useOrderLinesRenderer = (
           y,
           tolerance: 8,
           order: {
-            ...position.orders[0],
+            ...hPos.orders[0],
             id: positionId,
-            entryPrice: position.avgPrice,
-            quantity: position.totalQuantity,
+            entryPrice: hPos.avgPrice,
+            quantity: absQuantity,
             metadata: { isPosition: true, positionData },
           } as Order,
         });
@@ -702,7 +703,7 @@ export const useOrderLinesRenderer = (
         const lineColor = isLong ? 'rgba(59, 130, 246, 0.8)' : 'rgba(251, 146, 60, 0.8)';
         const fillColor = isLong ? 'rgba(59, 130, 246, 0.9)' : 'rgba(251, 146, 60, 0.9)';
 
-        const priceText = position.avgPrice.toFixed(2);
+        const priceText = hPos.avgPrice.toFixed(2);
         const tagStartX = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
         drawPriceTag(ctx, priceText, y, tagStartX, fillColor, 'left', tagStartX);
 
@@ -713,25 +714,25 @@ export const useOrderLinesRenderer = (
         ctx.lineTo(tagStartX, y);
         ctx.stroke();
 
-        const priceChange = currentPrice - position.avgPrice;
+        const priceChange = currentPrice - hPos.avgPrice;
         const percentChange = isLong
-          ? (priceChange / position.avgPrice) * 100
-          : (-priceChange / position.avgPrice) * 100;
+          ? (priceChange / hPos.avgPrice) * 100
+          : (-priceChange / hPos.avgPrice) * 100;
 
         const percentSign = percentChange >= 0 ? '+' : '';
         const percentText = `${percentSign}${percentChange.toFixed(2)}%`;
 
-        const typeLabel = position.type === 'long' ? 'L' : 'S';
-        const quantityPrefix = position.orders.length > 1
-          ? `(${position.orders.length}x) `
+        const typeLabel = isLong ? 'L' : 'S';
+        const quantityPrefix = hPos.orders.length > 1
+          ? `(${hPos.orders.length}x) `
           : '';
-        const infoText = `${quantityPrefix}${typeLabel} (${position.totalQuantity})`;
-        const hasAutoTrade = position.orders.some(o => o.isAutoTrade);
+        const infoText = `${quantityPrefix}${typeLabel} (${absQuantity})`;
+        const hasAutoTrade = hPos.orders.some((o: Order) => o.isAutoTrade);
 
         const closeButtonRef = { x: 0, y: 0, size: 14 };
         const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, hasAutoTrade);
 
-        position.orderIds.forEach((orderId) => {
+        hPos.orderIds.forEach((orderId: string) => {
           closeButtonsRef.current.push({
             orderId,
             x: closeButtonRef.x,

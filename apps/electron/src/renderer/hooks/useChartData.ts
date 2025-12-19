@@ -1,4 +1,4 @@
-import type { CalendarEvent, Kline, NewsArticle } from '@marketmind/types';
+import type { CalendarEvent, Kline, MarketType, NewsArticle } from '@marketmind/types';
 import { useEffect, useRef } from 'react';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
@@ -11,6 +11,7 @@ interface UseChartDataParams {
   chartType: 'kline' | 'line';
   showVolume: boolean;
   movingAverages: MovingAverageConfig[];
+  marketType?: MarketType;
   news?: NewsArticle[] | undefined;
   events?: CalendarEvent[] | undefined;
 }
@@ -29,6 +30,7 @@ export const useChartData = (params: UseChartDataParams) => {
       chartType: params.chartType,
       showVolume: params.showVolume,
       movingAverages: params.movingAverages,
+      marketType: params.marketType,
       newsCount: params.news?.length,
       eventsCount: params.events?.length,
     });

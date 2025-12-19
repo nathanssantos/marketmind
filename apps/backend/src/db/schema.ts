@@ -105,6 +105,7 @@ export const klines = pgTable(
   {
     symbol: varchar({ length: 20 }).notNull(),
     interval: varchar({ length: 5 }).notNull(),
+    marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('SPOT').notNull(),
     openTime: timestamp('open_time', { mode: 'date' }).notNull(),
     closeTime: timestamp('close_time', { mode: 'date' }).notNull(),
     open: numeric({ precision: 20, scale: 8 }).notNull(),
@@ -119,7 +120,7 @@ export const klines = pgTable(
     createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   },
   (table) => ({
-    pk: primaryKey({ columns: [table.symbol, table.interval, table.openTime] }),
+    pk: primaryKey({ columns: [table.symbol, table.interval, table.marketType, table.openTime] }),
   })
 );
 
@@ -263,6 +264,7 @@ export const tradeExecutions = pgTable('trade_executions', {
   entryOrderId: bigint('entry_order_id', { mode: 'number' }).references(() => orders.orderId),
   stopLossOrderId: bigint('stop_loss_order_id', { mode: 'number' }),
   takeProfitOrderId: bigint('take_profit_order_id', { mode: 'number' }),
+  orderListId: bigint('order_list_id', { mode: 'number' }),
   exitOrderId: bigint('exit_order_id', { mode: 'number' }).references(() => orders.orderId),
   entryPrice: numeric('entry_price', { precision: 20, scale: 8 }).notNull(),
   exitPrice: numeric('exit_price', { precision: 20, scale: 8 }),
@@ -434,12 +436,14 @@ export const activeWatchers = pgTable('active_watchers', {
     .references(() => tradingProfiles.id, { onDelete: 'set null' }),
   symbol: varchar({ length: 20 }).notNull(),
   interval: varchar({ length: 5 }).notNull(),
+  marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('SPOT').notNull(),
   startedAt: timestamp('started_at', { mode: 'date' }).defaultNow().notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
   walletIdIdx: index('active_watchers_wallet_id_idx').on(table.walletId),
   userIdIdx: index('active_watchers_user_id_idx').on(table.userId),
   profileIdIdx: index('active_watchers_profile_id_idx').on(table.profileId),
+  marketTypeIdx: index('active_watchers_market_type_idx').on(table.marketType),
 }));
 
 export type ActiveWatcherRow = typeof activeWatchers.$inferSelect;

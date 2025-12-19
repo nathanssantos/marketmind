@@ -340,6 +340,16 @@
       "indicators": "Indicateurs",
       "quickSettings": "Paramètres Rapides"
     },
+    "indicators": {
+      "title": "Indicateurs",
+      "configure": "Configurer les Indicateurs",
+      "categories": {
+        "oscillators": "Oscillateurs",
+        "volatility": "Volatilité",
+        "volume": "Volume",
+        "movingAverages": "Moyennes Mobiles"
+      }
+    },
     "contextMenu": {
       "deletePattern": "Supprimer le Motif",
       "deletePattern": "Supprimer le Motif",

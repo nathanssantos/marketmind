@@ -18,11 +18,14 @@ import {
     type SetupDetectorResult,
 } from '../BaseSetupDetector';
 
+import { EXIT_CALCULATOR } from '../../../constants';
 import { logger } from '../../logger';
 import { ConditionEvaluator } from './ConditionEvaluator';
 import { EntryCalculator } from './EntryCalculator';
 import { ExitCalculator } from './ExitCalculator';
 import { IndicatorEngine } from './IndicatorEngine';
+
+const { MIN_ENTRY_STOP_SEPARATION_PERCENT } = EXIT_CALCULATOR;
 
 /**
  * Configuration for StrategyInterpreter
@@ -112,6 +115,21 @@ export class StrategyInterpreter extends BaseSetupDetector {
     const stopLoss = this.strategy.exit.stopLoss
       ? this.exitCalculator.calculateStopLoss(this.strategy.exit.stopLoss, exitContext)
       : null;
+
+    if (stopLoss !== null) {
+      const entryStopSeparation = (Math.abs(entryPrice - stopLoss) / entryPrice) * 100;
+      if (entryStopSeparation < MIN_ENTRY_STOP_SEPARATION_PERCENT) {
+        logger.warn({
+          strategy: this.strategy.id,
+          direction,
+          entryPrice: entryPrice.toFixed(4),
+          stopLoss: stopLoss.toFixed(4),
+          separationPercent: entryStopSeparation.toFixed(3),
+          minRequired: MIN_ENTRY_STOP_SEPARATION_PERCENT,
+        }, '⚠️ Entry and stop are too close - setup rejected');
+        return { setup: null, confidence: 0 };
+      }
+    }
 
     const takeProfit = this.strategy.exit.takeProfit
       ? this.exitCalculator.calculateTakeProfit(this.strategy.exit.takeProfit, exitContext, stopLoss ?? 0)

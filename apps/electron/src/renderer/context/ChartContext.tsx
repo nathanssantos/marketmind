@@ -1,4 +1,4 @@
-import type { AIPattern, CalendarEvent, Kline, NewsArticle } from '@marketmind/types';
+import type { AIPattern, CalendarEvent, Kline, MarketType, NewsArticle } from '@marketmind/types';
 import React, { createContext, useContext, useMemo, type ReactNode } from 'react';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
@@ -10,6 +10,7 @@ export interface ChartContextData {
   chartType: 'kline' | 'line';
   showVolume: boolean;
   movingAverages: MovingAverageConfig[];
+  marketType?: MarketType;
   news?: NewsArticle[] | undefined;
   events?: CalendarEvent[] | undefined;
   detectedPatterns?: AIPattern[];

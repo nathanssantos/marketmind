@@ -181,8 +181,9 @@ export interface ExitLevel {
   value?: ConditionOperand;       // For fixed, indicator, percent
   multiplier?: ConditionOperand;  // For atr, riskReward
   indicator?: string;             // Indicator reference for atr type
-  lookback?: number;              // For swingHighLow: number of candles to consider (default: 2)
-  buffer?: ConditionOperand;      // For swingHighLow: buffer to add (ATR multiplier or percent)
+  lookback?: number;              // For swingHighLow: number of candles to consider (default: 5 for SL, 2 for entry)
+  priorSwingLookback?: number;    // For swingHighLow SL: lookback for finding PRIOR swing (different from entry)
+  buffer?: ConditionOperand;      // For swingHighLow: buffer to add (ATR multiplier or percent, min 0.3 for SL)
   fallback?: ExitLevel;           // Fallback if primary fails
 }
 

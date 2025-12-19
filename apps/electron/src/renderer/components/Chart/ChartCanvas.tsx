@@ -13,7 +13,7 @@ import {
 } from '@/renderer/components/ui/dialog';
 import { Box, Portal } from '@chakra-ui/react';
 import { calculateMovingAverage, type StochasticResult } from '@marketmind/indicators';
-import type { AIPattern, AITradingContext, Kline, Order, Viewport } from '@marketmind/types';
+import type { AIPattern, AITradingContext, Kline, MarketType, Order, Viewport } from '@marketmind/types';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
@@ -60,6 +60,7 @@ const RIGHT_MOUSE_BUTTON = 2;
 export interface ChartCanvasProps {
   klines: Kline[];
   symbol?: string;
+  marketType?: MarketType;
   width?: string | number;
   height?: string | number;
   initialViewport?: Viewport;
@@ -92,6 +93,7 @@ export interface ChartCanvasProps {
 export const ChartCanvas = ({
   klines,
   symbol,
+  marketType,
   width = '100%',
   height = '600px',
   initialViewport,
@@ -396,6 +398,7 @@ export const ChartCanvas = ({
     colors,
     symbol,
     timeframe,
+    marketType,
     enabled: true,
   });
 

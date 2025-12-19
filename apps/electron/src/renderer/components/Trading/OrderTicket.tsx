@@ -1,9 +1,10 @@
-import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { Button } from '@renderer/components/ui/button';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { Select } from '@renderer/components/ui/select';
 import { useChartContext } from '@renderer/context/ChartContext';
+import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
@@ -12,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 type OrderDirection = 'long' | 'short';
+type MarketType = 'SPOT' | 'FUTURES';
 
 export const OrderTicket = () => {
   const { t } = useTranslation();
@@ -23,14 +25,16 @@ export const OrderTicket = () => {
 
   const { wallets: backendWallets } = useBackendWallet();
   const activeWalletId = backendWallets[0]?.id;
-  const { createOrder } = useBackendTrading(activeWalletId || '', symbol);
+
+  const spotTrading = useBackendTrading(activeWalletId || '', symbol);
+  const futuresTrading = useBackendFuturesTrading(activeWalletId || '', symbol);
 
   const wallets = backendWallets.map((w) => ({
     id: w.id,
     name: w.name,
     balance: parseFloat(w.currentBalance || '0'),
     initialBalance: parseFloat(w.initialBalance || '0'),
-    currency: (w.currency || 'USDT') as any,
+    currency: (w.currency || 'USDT') as 'USDT' | 'BTC' | 'ETH',
     createdAt: new Date(w.createdAt),
   }));
 
@@ -52,11 +56,14 @@ export const OrderTicket = () => {
   const symbolQuantity = getQuantityForSymbol(symbol);
   const defaultQuantity = symbolQuantity > 0 ? symbolQuantity : calculateDefaultQuantity();
 
+  const [marketType, setMarketType] = useState<MarketType>('SPOT');
   const [orderType, setOrderType] = useState<OrderDirection>('long');
   const [quantity, setQuantity] = useState(defaultQuantity.toFixed(8));
   const [entryPrice, setEntryPrice] = useState('');
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
+  const [leverage, setLeverage] = useState(1);
+  const [marginType, setMarginType] = useState<'ISOLATED' | 'CROSSED'>('ISOLATED');
 
   useEffect(() => {
     const storedQty = getQuantityForSymbol(symbol);
@@ -78,6 +85,7 @@ export const OrderTicket = () => {
     const qty = Number(quantity);
     const entry = Number(entryPrice);
     const stop = stopLoss ? Number(stopLoss) : undefined;
+    const tp = takeProfit ? Number(takeProfit) : undefined;
 
     if (isNaN(qty) || qty <= 0) return;
     if (isNaN(entry) || entry <= 0) return;
@@ -86,15 +94,29 @@ export const OrderTicket = () => {
     const cost = qty * entry;
     if (cost > activeWallet.balance) return;
 
-    await createOrder({
-      walletId: activeWalletId,
-      symbol,
-      side: orderType === 'long' ? 'BUY' : 'SELL',
-      type: 'LIMIT',
-      quantity: qty.toString(),
-      price: entry.toString(),
-      ...(stop !== undefined && { stopPrice: stop.toString() }),
-    });
+    if (marketType === 'FUTURES') {
+      await futuresTrading.createOrder({
+        walletId: activeWalletId,
+        symbol,
+        side: orderType === 'long' ? 'BUY' : 'SELL',
+        type: 'LIMIT',
+        quantity: qty.toString(),
+        price: entry.toString(),
+        leverage,
+        marginType,
+        ...(stop !== undefined && { stopPrice: stop.toString() }),
+      });
+    } else {
+      await spotTrading.createOrder({
+        walletId: activeWalletId,
+        symbol,
+        side: orderType === 'long' ? 'BUY' : 'SELL',
+        type: 'LIMIT',
+        quantity: qty.toString(),
+        price: entry.toString(),
+        ...(stop !== undefined && { stopPrice: stop.toString() }),
+      });
+    }
 
     setEntryPrice('');
     setStopLoss('');
@@ -109,8 +131,20 @@ export const OrderTicket = () => {
   const qty = Number(quantity) || 0;
   const entry = Number(entryPrice) || 0;
   const cost = qty * entry;
-  const canAfford = activeWallet ? cost <= activeWallet.balance : false;
+  const effectiveCost = marketType === 'FUTURES' ? cost / leverage : cost;
+  const canAfford = activeWallet ? effectiveCost <= activeWallet.balance : false;
   const isValid = qty > 0 && entry > 0 && canAfford;
+
+  const leverageOptions = [1, 2, 3, 5, 10, 20, 50, 75, 100, 125].map((l) => ({
+    value: l.toString(),
+    label: `${l}x`,
+  }));
+
+  const getLeverageColor = () => {
+    if (leverage <= 10) return 'green';
+    if (leverage <= 50) return 'orange';
+    return 'red';
+  };
 
   return (
     <Stack gap={3} p={4}>
@@ -118,6 +152,28 @@ export const OrderTicket = () => {
         <Text fontSize="sm" fontWeight="bold">
           {t('trading.ticket.title')}
         </Text>
+        <HStack gap={1}>
+          <Badge
+            size="sm"
+            colorPalette={marketType === 'SPOT' ? 'blue' : 'gray'}
+            cursor="pointer"
+            onClick={() => setMarketType('SPOT')}
+            variant={marketType === 'SPOT' ? 'solid' : 'subtle'}
+            px={3}
+          >
+            SPOT
+          </Badge>
+          <Badge
+            size="sm"
+            colorPalette={marketType === 'FUTURES' ? 'purple' : 'gray'}
+            cursor="pointer"
+            onClick={() => setMarketType('FUTURES')}
+            variant={marketType === 'FUTURES' ? 'solid' : 'subtle'}
+            px={3}
+          >
+            FUTURES
+          </Badge>
+        </HStack>
       </Flex>
 
       {!activeWallet ? (
@@ -155,6 +211,46 @@ export const OrderTicket = () => {
                 usePortal={false}
               />
             </ChakraField.Root>
+
+            {marketType === 'FUTURES' && (
+              <>
+                <ChakraField.Root>
+                  <Flex justify="space-between" align="center" mb={1}>
+                    <ChakraField.Label fontSize="xs" mb={0}>Leverage</ChakraField.Label>
+                    <Badge size="sm" colorPalette={getLeverageColor()}>{leverage}x</Badge>
+                  </Flex>
+                  <Select
+                    size="xs"
+                    value={leverage.toString()}
+                    onChange={(value) => setLeverage(Number(value))}
+                    options={leverageOptions}
+                    usePortal={false}
+                  />
+                </ChakraField.Root>
+
+                <ChakraField.Root>
+                  <ChakraField.Label fontSize="xs">Margin Type</ChakraField.Label>
+                  <Select
+                    size="xs"
+                    value={marginType}
+                    onChange={(value) => setMarginType(value as 'ISOLATED' | 'CROSSED')}
+                    options={[
+                      { value: 'ISOLATED', label: 'Isolated' },
+                      { value: 'CROSSED', label: 'Cross' },
+                    ]}
+                    usePortal={false}
+                  />
+                </ChakraField.Root>
+
+                {leverage > 20 && (
+                  <Box p={2} bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900' }}>
+                    <Text fontSize="xs" color="orange.600" _dark={{ color: 'orange.300' }}>
+                      ⚠️ High leverage ({leverage}x) increases liquidation risk
+                    </Text>
+                  </Box>
+                )}
+              </>
+            )}
 
             <ChakraField.Root>
               <ChakraField.Label fontSize="xs">{t('trading.ticket.quantity')}</ChakraField.Label>
@@ -218,12 +314,20 @@ export const OrderTicket = () => {
 
             {cost > 0 && (
               <Box p={3} bg="bg.muted" borderRadius="md">
-                <Flex justify="space-between" fontSize="xs">
+                <Flex justify="space-between" fontSize="xs" mb={marketType === 'FUTURES' ? 1 : 0}>
                   <Text color="fg.muted">{t('trading.ticket.totalCost')}</Text>
                   <Text fontWeight="medium" color={canAfford ? 'fg.default' : 'red.500'}>
                     {activeWallet.currency} {cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Text>
                 </Flex>
+                {marketType === 'FUTURES' && (
+                  <Flex justify="space-between" fontSize="xs">
+                    <Text color="fg.muted">Margin Required</Text>
+                    <Text fontWeight="medium" color={canAfford ? 'fg.default' : 'red.500'}>
+                      {activeWallet.currency} {effectiveCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </Text>
+                  </Flex>
+                )}
               </Box>
             )}
 
@@ -234,7 +338,11 @@ export const OrderTicket = () => {
               disabled={!isValid}
               width="full"
             >
-              {orderType === 'long' ? t('trading.ticket.buy') : t('trading.ticket.sell')}
+              {marketType === 'FUTURES' ? (
+                orderType === 'long' ? `Long ${leverage}x` : `Short ${leverage}x`
+              ) : (
+                orderType === 'long' ? t('trading.ticket.buy') : t('trading.ticket.sell')
+              )}
             </Button>
           </Stack>
         </>

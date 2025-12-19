@@ -80,12 +80,12 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
   }
 
   return (
-    <Stack gap={4} p={6} bg="gray.50" _dark={{ bg: 'gray.800' }} borderRadius="md" borderWidth="1px">
+    <Stack gap={4}>
       <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px">
         <Text fontSize="sm" fontWeight="bold" textTransform="uppercase" letterSpacing="wide">
           Risk Metrics
         </Text>
-        <Badge colorScheme={config.isEnabled ? 'green' : 'gray'}>
+        <Badge colorScheme={config.isEnabled ? 'green' : 'gray'} px={3}>
           {config.isEnabled ? 'Active' : 'Inactive'}
         </Badge>
       </Flex>

@@ -164,3 +164,63 @@ export const fetchHistoricalKlinesFromAPI = async (
   logger.info({ symbol, interval, totalFetched: allKlines.length }, 'Historical klines fetch complete');
   return allKlines;
 };
+
+export const fetchFuturesKlinesFromAPI = async (
+  symbol: string,
+  interval: Interval,
+  startTime: Date,
+  endTime: Date = new Date()
+): Promise<any[]> => {
+  logger.info(
+    { symbol, interval, startTime: startTime.toISOString(), endTime: endTime.toISOString() },
+    'Fetching futures klines from Binance Futures API'
+  );
+
+  const intervalMs = getIntervalMilliseconds(interval);
+  const allKlines: any[] = [];
+  let currentStartTime = startTime.getTime();
+  const finalEndTime = endTime.getTime();
+
+  while (currentStartTime < finalEndTime) {
+    try {
+      const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&startTime=${currentStartTime}&limit=${BATCH_SIZE}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Binance Futures API error: ${response.status} ${response.statusText}`);
+      }
+
+      const candles = await response.json();
+
+      if (candles.length === 0) break;
+
+      const lastCandle = candles[candles.length - 1];
+      if (!lastCandle) break;
+
+      const klinesData = candles.map((candle: any) => ({
+        openTime: candle[0],
+        open: candle[1],
+        high: candle[2],
+        low: candle[3],
+        close: candle[4],
+        volume: candle[5],
+        closeTime: candle[6],
+        quoteVolume: candle[7],
+        trades: candle[8],
+        takerBuyBaseVolume: candle[9],
+        takerBuyQuoteVolume: candle[10],
+      }));
+
+      allKlines.push(...klinesData);
+      currentStartTime = lastCandle[0] + intervalMs;
+
+      await sleep(RATE_LIMIT_DELAY);
+    } catch (error) {
+      logger.error({ error }, 'Error fetching futures klines from API');
+      throw error;
+    }
+  }
+
+  logger.info({ symbol, interval, totalFetched: allKlines.length }, 'Futures klines fetch complete');
+  return allKlines;
+};

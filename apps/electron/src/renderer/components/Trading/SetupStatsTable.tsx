@@ -15,21 +15,17 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
 
   if (isLoadingSetupStats) {
     return (
-      <Stack gap={4} p={4} bg="gray.50" _dark={{ bg: 'gray.800' }} borderRadius="md" borderWidth="1px">
-        <Flex justify="center" align="center" py={8}>
-          <Spinner size="lg" />
-        </Flex>
-      </Stack>
+      <Flex justify="center" align="center" py={8}>
+        <Spinner size="lg" />
+      </Flex>
     );
   }
 
   if (setupStats.length === 0) {
     return (
-      <Stack gap={4} p={4} bg="gray.50" _dark={{ bg: 'gray.800' }} borderRadius="md" borderWidth="1px">
-        <Text textAlign="center" color="gray.500" py={8}>
-          {t('trading.analytics.setupStats.noData')}
-        </Text>
-      </Stack>
+      <Text textAlign="center" color="gray.500" py={8}>
+        {t('trading.analytics.setupStats.noData')}
+      </Text>
     );
   }
 
@@ -53,7 +49,7 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
   ];
 
   return (
-    <Stack gap={4} p={6} bg="gray.50" _dark={{ bg: 'gray.800' }} borderRadius="md" borderWidth="1px">
+    <Stack gap={4}>
       <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px" flexWrap="wrap" gap={2}>
         <Text fontSize="lg" fontWeight="bold">
           {t('trading.analytics.setupStats.title')}
@@ -64,6 +60,7 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
               key={p.value}
               onClick={() => setPeriod(p.value)}
               variant={period === p.value ? 'solid' : 'outline'}
+              px={3}
             >
               {t(p.labelKey)}
             </Button>
