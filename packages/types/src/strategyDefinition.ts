@@ -170,7 +170,8 @@ export type ExitLevelType =
   | 'percent'       // Percentage of entry price
   | 'fixed'         // Fixed price value
   | 'indicator'     // Value from indicator (e.g., "bb.middle")
-  | 'riskReward';   // Multiple of stop loss distance
+  | 'riskReward'    // Multiple of stop loss distance
+  | 'swingHighLow'; // Swing high/low of recent candles (including trigger candle)
 
 /**
  * Stop loss or take profit level definition
@@ -180,6 +181,8 @@ export interface ExitLevel {
   value?: ConditionOperand;       // For fixed, indicator, percent
   multiplier?: ConditionOperand;  // For atr, riskReward
   indicator?: string;             // Indicator reference for atr type
+  lookback?: number;              // For swingHighLow: number of candles to consider (default: 2)
+  buffer?: ConditionOperand;      // For swingHighLow: buffer to add (ATR multiplier or percent)
   fallback?: ExitLevel;           // Fallback if primary fails
 }
 

@@ -151,7 +151,7 @@
     },
     "exitLevelType": {
       "type": "string",
-      "enum": ["atr", "percent", "fixed", "indicator", "riskReward"]
+      "enum": ["atr", "percent", "fixed", "indicator", "riskReward", "swingHighLow"]
     },
     "exitLevel": {
       "type": "object",
@@ -161,6 +161,8 @@
         "value": { "$ref": "#/definitions/conditionOperand" },
         "multiplier": { "$ref": "#/definitions/conditionOperand" },
         "indicator": { "type": "string" },
+        "lookback": { "type": "integer", "minimum": 1, "description": "Number of candles to consider for swingHighLow" },
+        "buffer": { "$ref": "#/definitions/conditionOperand", "description": "Buffer to add (ATR multiplier or percent)" },
         "fallback": { "$ref": "#/definitions/exitLevel" }
       },
       "allOf": [

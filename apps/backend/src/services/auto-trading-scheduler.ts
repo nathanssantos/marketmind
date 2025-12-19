@@ -1080,6 +1080,63 @@ export class AutoTradingScheduler {
         }
       }
 
+      if (setup.stopLoss && setup.takeProfit) {
+        let risk: number;
+        let reward: number;
+
+        if (setup.direction === 'LONG') {
+          risk = actualEntryPrice - setup.stopLoss;
+          reward = setup.takeProfit - actualEntryPrice;
+        } else {
+          risk = setup.stopLoss - actualEntryPrice;
+          reward = actualEntryPrice - setup.takeProfit;
+        }
+
+        if (risk <= 0) {
+          log('❌ Invalid stop loss after price adjustment - no risk', {
+            type: setup.type,
+            direction: setup.direction,
+            actualEntryPrice,
+            stopLoss: setup.stopLoss,
+          });
+          return;
+        }
+
+        const finalRiskRewardRatio = reward / risk;
+        const MIN_RISK_REWARD_RATIO = 1.5;
+
+        if (finalRiskRewardRatio < MIN_RISK_REWARD_RATIO) {
+          log('❌ Setup rejected after price adjustment - insufficient final R:R ratio', {
+            type: setup.type,
+            direction: setup.direction,
+            setupEntryPrice: setup.entryPrice,
+            actualEntryPrice,
+            stopLoss: setup.stopLoss,
+            takeProfit: setup.takeProfit,
+            risk: risk.toFixed(2),
+            reward: reward.toFixed(2),
+            originalRR: setup.riskRewardRatio.toFixed(2),
+            finalRR: finalRiskRewardRatio.toFixed(2),
+            minRequired: MIN_RISK_REWARD_RATIO,
+            priceDeviation: ((actualEntryPrice - setup.entryPrice) / setup.entryPrice * 100).toFixed(2) + '%',
+          });
+          return;
+        }
+
+        log('✅ Final Risk/Reward ratio validated after price adjustment', {
+          type: setup.type,
+          direction: setup.direction,
+          setupEntryPrice: setup.entryPrice.toFixed(6),
+          actualEntryPrice: actualEntryPrice.toFixed(6),
+          stopLoss: setup.stopLoss.toFixed(6),
+          takeProfit: setup.takeProfit.toFixed(6),
+          risk: risk.toFixed(6),
+          reward: reward.toFixed(6),
+          originalRR: setup.riskRewardRatio.toFixed(2),
+          finalRR: finalRiskRewardRatio.toFixed(2),
+        });
+      }
+
       log('💾 Inserting trade execution into database', {
         executionId,
         setupType: setup.type,

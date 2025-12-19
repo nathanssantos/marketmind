@@ -115,8 +115,10 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "indicator",
-      "indicator": "supertrend.value"
+      "type": "swingHighLow",
+      "lookback": 2,
+      "buffer": 0.1,
+      "indicator": "atr"
     },
     "takeProfit": {
       "type": "riskReward",

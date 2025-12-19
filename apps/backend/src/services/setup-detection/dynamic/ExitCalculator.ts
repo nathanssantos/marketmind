@@ -38,6 +38,11 @@ export class ExitCalculator {
    */
   calculateStopLoss(exit: ExitLevel, context: ExitContext): number {
     const { direction, entryPrice } = context;
+
+    if (exit.type === 'swingHighLow') {
+      return this.calculateSwingHighLowStop(exit, context);
+    }
+
     const distance = this.calculateExitDistance(exit, context);
 
     if (distance < 0) {
@@ -50,8 +55,8 @@ export class ExitCalculator {
       throw new Error(`Invalid negative distance (${distance}) for stop loss calculation`);
     }
 
-    const stopLoss = direction === 'LONG' 
-      ? entryPrice - distance 
+    const stopLoss = direction === 'LONG'
+      ? entryPrice - distance
       : entryPrice + distance;
 
     const isValid = direction === 'LONG' ? stopLoss < entryPrice : stopLoss > entryPrice;
@@ -212,6 +217,78 @@ export class ExitCalculator {
     );
 
     return value ?? 0;
+  }
+
+  /**
+   * Calculate stop loss based on swing high/low of recent candles
+   * For SHORT: uses max high of lookback candles (including current)
+   * For LONG: uses min low of lookback candles (including current)
+   */
+  private calculateSwingHighLowStop(exit: ExitLevel, context: ExitContext): number {
+    const { direction, entryPrice, klines, currentIndex, indicators } = context;
+    const lookback = exit.lookback ?? 2;
+
+    const startIdx = Math.max(0, currentIndex - lookback + 1);
+    const relevantKlines = [];
+    for (let i = startIdx; i <= currentIndex; i++) {
+      const kline = klines[i];
+      if (kline) relevantKlines.push(kline);
+    }
+
+    if (relevantKlines.length === 0) {
+      throw new Error('No klines available for swing high/low calculation');
+    }
+
+    let stopLoss: number;
+
+    if (direction === 'SHORT') {
+      const highs = relevantKlines.map((k) => parseFloat(String((k as { high: string }).high)));
+      stopLoss = Math.max(...highs);
+    } else {
+      const lows = relevantKlines.map((k) => parseFloat(String((k as { low: string }).low)));
+      stopLoss = Math.min(...lows);
+    }
+
+    if (exit.buffer !== undefined) {
+      const bufferValue = this.resolveOperand(exit.buffer, context);
+      if (exit.indicator === 'atr') {
+        const atrValue = this.indicatorEngine.resolveIndicatorValue(
+          indicators,
+          'atr',
+          currentIndex
+        ) ?? 0;
+        const bufferAmount = atrValue * bufferValue;
+        stopLoss = direction === 'SHORT' ? stopLoss + bufferAmount : stopLoss - bufferAmount;
+      } else {
+        const bufferAmount = entryPrice * (bufferValue / 100);
+        stopLoss = direction === 'SHORT' ? stopLoss + bufferAmount : stopLoss - bufferAmount;
+      }
+    }
+
+    const isValid = direction === 'LONG' ? stopLoss < entryPrice : stopLoss > entryPrice;
+    if (!isValid) {
+      logger.error({
+        direction,
+        entryPrice: entryPrice.toFixed(4),
+        stopLoss: stopLoss.toFixed(4),
+        lookback,
+        exitType: exit.type,
+      }, '❌ INVALID SWING HIGH/LOW STOP - SL must be below entry for LONG and above entry for SHORT');
+      throw new Error(`Invalid swing high/low stop loss: ${direction} SL ${stopLoss.toFixed(4)} must be ${direction === 'LONG' ? 'below' : 'above'} entry ${entryPrice.toFixed(4)}`);
+    }
+
+    logger.debug({
+      type: 'stopLoss',
+      exitType: 'swingHighLow',
+      direction,
+      entryPrice: entryPrice.toFixed(4),
+      stopLoss: stopLoss.toFixed(4),
+      lookback,
+      candlesConsidered: relevantKlines.length,
+      percentFromEntry: `${(((stopLoss - entryPrice) / entryPrice) * 100).toFixed(2)}%`,
+    }, 'Swing high/low stop loss calculated');
+
+    return stopLoss;
   }
 
   /**
