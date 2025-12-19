@@ -2,7 +2,7 @@
   "id": "macd-divergence",
   "name": "MACD Signal Line Crossover",
   "version": "1.0.0",
-  "description": "Long quando linha MACD cruza acima da linha de sinal. Short no cruzamento inverso. Estratégia clássica de momentum.",
+  "description": "Long quando linha MACD cruza acima da linha de sinal. Short no cruzamento inverso. Estrat\u00e9gia cl\u00e1ssica de momentum.",
   "author": "MarketMind",
   "tags": [
     "momentum",
@@ -45,21 +45,21 @@
       "min": 8,
       "max": 16,
       "step": 1,
-      "description": "Período da EMA rápida do MACD"
+      "description": "Per\u00edodo da EMA r\u00e1pida do MACD"
     },
     "slowPeriod": {
       "default": 26,
       "min": 20,
       "max": 32,
       "step": 1,
-      "description": "Período da EMA lenta do MACD"
+      "description": "Per\u00edodo da EMA lenta do MACD"
     },
     "signalPeriod": {
       "default": 9,
       "min": 5,
       "max": 12,
       "step": 1,
-      "description": "Período da linha de sinal"
+      "description": "Per\u00edodo da linha de sinal"
     },
     "atrMultiplier": {
       "default": 1.5,
@@ -125,13 +125,21 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
       "type": "riskReward",
       "multiplier": 2
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {
@@ -144,7 +152,7 @@
           "right": "volume.sma20"
         },
         "bonus": 10,
-        "description": "Volume acima da média"
+        "description": "Volume acima da m\u00e9dia"
       },
       {
         "condition": {
@@ -153,7 +161,7 @@
           "right": "ema50"
         },
         "bonus": 10,
-        "description": "Tendência de alta (LONG)"
+        "description": "Tend\u00eancia de alta (LONG)"
       },
       {
         "condition": {
@@ -162,7 +170,7 @@
           "right": "ema50"
         },
         "bonus": 10,
-        "description": "Tendência de baixa (SHORT)"
+        "description": "Tend\u00eancia de baixa (SHORT)"
       }
     ],
     "max": 90

@@ -2,7 +2,7 @@
   "id": "triple-screen",
   "name": "Triple Screen",
   "version": "1.0.0",
-  "description": "Sistema Triple Screen de Elder. Três timeframes: weekly para tendência, daily para entry, 4h para timing. Filtragem multi-nível.",
+  "description": "Sistema Triple Screen de Elder. Tr\u00eas timeframes: weekly para tend\u00eancia, daily para entry, 4h para timing. Filtragem multi-n\u00edvel.",
   "author": "MarketMind",
   "tags": [
     "multi-timeframe",
@@ -42,7 +42,7 @@
       "min": 20,
       "max": 30,
       "step": 2,
-      "description": "EMA para tendência (weekly)"
+      "description": "EMA para tend\u00eancia (weekly)"
     },
     "entryOscillator": {
       "default": 14,
@@ -123,8 +123,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

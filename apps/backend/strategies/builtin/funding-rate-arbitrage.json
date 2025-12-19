@@ -2,7 +2,7 @@
   "id": "funding-rate-arbitrage",
   "name": "Funding Rate Arbitrage",
   "version": "1.0.0",
-  "description": "Estratégia baseada em funding rates de futuros. Entry contra posições extremas de funding. Mean reversion de sentiment.",
+  "description": "Estrat\u00e9gia baseada em funding rates de futuros. Entry contra posi\u00e7\u00f5es extremas de funding. Mean reversion de sentiment.",
   "author": "MarketMind",
   "tags": [
     "funding-rate",
@@ -96,8 +96,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
@@ -125,6 +126,13 @@
           }
         ]
       }
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

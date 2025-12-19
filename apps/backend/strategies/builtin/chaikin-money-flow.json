@@ -2,7 +2,7 @@
   "id": "chaikin-money-flow",
   "name": "Chaikin Money Flow",
   "version": "1.0.0",
-  "description": "Chaikin Money Flow (CMF) para medir acumulação/distribuição. Entry quando CMF cruza zero indicando mudança no fluxo de dinheiro.",
+  "description": "Chaikin Money Flow (CMF) para medir acumula\u00e7\u00e3o/distribui\u00e7\u00e3o. Entry quando CMF cruza zero indicando mudan\u00e7a no fluxo de dinheiro.",
   "author": "MarketMind",
   "tags": [
     "volume",
@@ -39,14 +39,14 @@
       "min": 14,
       "max": 30,
       "step": 2,
-      "description": "Período do CMF"
+      "description": "Per\u00edodo do CMF"
     },
     "threshold": {
       "default": 0.05,
       "min": 0,
       "max": 0.1,
       "step": 0.025,
-      "description": "Threshold para confirmação"
+      "description": "Threshold para confirma\u00e7\u00e3o"
     },
     "atrMultiplier": {
       "default": 2,
@@ -96,8 +96,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
@@ -125,6 +126,13 @@
           }
         ]
       }
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

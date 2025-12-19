@@ -25,12 +25,12 @@
     "commission": 0.001
   },
   "backtestSummary": {
-    "profitFactor": 1.70,
+    "profitFactor": 1.7,
     "winRate": 53.7,
     "sharpeRatio": 1.93,
     "maxDrawdownPercent": 22.39,
     "totalTrades": 41,
-    "netPnlPercent": 32.20,
+    "netPnlPercent": 32.2,
     "testedAt": "2024-12-09",
     "testedPeriod": "2024-01-01 to 2024-10-01",
     "testedTimeframe": "4h",
@@ -132,8 +132,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$slMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

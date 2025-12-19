@@ -2,7 +2,7 @@
   "id": "engulfing-pattern",
   "name": "Engulfing Pattern",
   "version": "1.0.0",
-  "description": "Bullish/Bearish Engulfing candlestick pattern. Padrão forte de reversão onde candle atual engolfa a anterior completamente.",
+  "description": "Bullish/Bearish Engulfing candlestick pattern. Padr\u00e3o forte de revers\u00e3o onde candle atual engolfa a anterior completamente.",
   "author": "MarketMind",
   "tags": [
     "reversal",
@@ -40,7 +40,7 @@
       "min": 1.2,
       "max": 2,
       "step": 0.1,
-      "description": "Ratio mínimo engulfing/engulfed"
+      "description": "Ratio m\u00ednimo engulfing/engulfed"
     },
     "atrMultiplier": {
       "default": 2,
@@ -112,13 +112,21 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
       "type": "riskReward",
       "multiplier": 2
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

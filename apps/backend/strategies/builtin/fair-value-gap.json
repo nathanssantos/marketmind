@@ -2,7 +2,7 @@
   "id": "fair-value-gap",
   "name": "Fair Value Gap",
   "version": "1.0.0",
-  "description": "Trading em Fair Value Gaps (FVG/imbalances). Entry quando preço retorna a FVGs não preenchidos. Smart Money Concept.",
+  "description": "Trading em Fair Value Gaps (FVG/imbalances). Entry quando pre\u00e7o retorna a FVGs n\u00e3o preenchidos. Smart Money Concept.",
   "author": "MarketMind",
   "tags": [
     "price-action",
@@ -42,14 +42,14 @@
       "min": 0.25,
       "max": 1,
       "step": 0.25,
-      "description": "Gap mínimo %"
+      "description": "Gap m\u00ednimo %"
     },
     "maxAge": {
       "default": 20,
       "min": 10,
       "max": 50,
       "step": 10,
-      "description": "Idade máxima do FVG em candles"
+      "description": "Idade m\u00e1xima do FVG em candles"
     },
     "atrMultiplier": {
       "default": 2,
@@ -124,8 +124,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

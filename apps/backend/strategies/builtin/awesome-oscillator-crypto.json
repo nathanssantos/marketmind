@@ -2,7 +2,7 @@
   "id": "awesome-oscillator-crypto",
   "name": "Awesome Oscillator Crypto",
   "version": "1.0.0",
-  "description": "Bill Williams Awesome Oscillator strategy. Mede momentum do mercado com diferença SMA(5)-SMA(34) de HL/2. Entry em saucer patterns.",
+  "description": "Bill Williams Awesome Oscillator strategy. Mede momentum do mercado com diferen\u00e7a SMA(5)-SMA(34) de HL/2. Entry em saucer patterns.",
   "author": "MarketMind",
   "tags": [
     "momentum",
@@ -39,14 +39,14 @@
       "min": 3,
       "max": 7,
       "step": 1,
-      "description": "Período SMA rápida"
+      "description": "Per\u00edodo SMA r\u00e1pida"
     },
     "slowPeriod": {
       "default": 34,
       "min": 30,
       "max": 40,
       "step": 2,
-      "description": "Período SMA lenta"
+      "description": "Per\u00edodo SMA lenta"
     },
     "atrMultiplier": {
       "default": 2,
@@ -95,8 +95,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
@@ -124,6 +125,13 @@
           }
         ]
       }
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

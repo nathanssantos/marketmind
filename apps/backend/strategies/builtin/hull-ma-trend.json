@@ -2,7 +2,7 @@
   "id": "hull-ma-trend",
   "name": "Hull MA Trend",
   "version": "1.0.0",
-  "description": "Hull Moving Average trend following. HMA é muito responsiva com menos lag que EMA. Entry quando HMA muda de direção.",
+  "description": "Hull Moving Average trend following. HMA \u00e9 muito responsiva com menos lag que EMA. Entry quando HMA muda de dire\u00e7\u00e3o.",
   "author": "MarketMind",
   "tags": [
     "trend-following",
@@ -42,7 +42,7 @@
       "min": 14,
       "max": 30,
       "step": 2,
-      "description": "Período do HMA"
+      "description": "Per\u00edodo do HMA"
     },
     "atrMultiplier": {
       "default": 2,
@@ -100,8 +100,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

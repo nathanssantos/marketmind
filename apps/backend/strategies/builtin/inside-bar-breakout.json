@@ -2,7 +2,7 @@
   "id": "inside-bar-breakout",
   "name": "Inside Bar Breakout",
   "version": "1.0.0",
-  "description": "Inside bar pattern breakout. Inside bar indica consolidação. Entry quando preço quebra high/low da mother bar.",
+  "description": "Inside bar pattern breakout. Inside bar indica consolida\u00e7\u00e3o. Entry quando pre\u00e7o quebra high/low da mother bar.",
   "author": "MarketMind",
   "tags": [
     "breakout",
@@ -97,8 +97,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

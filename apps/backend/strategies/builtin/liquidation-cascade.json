@@ -2,7 +2,7 @@
   "id": "liquidation-cascade",
   "name": "Liquidation Cascade",
   "version": "1.0.0",
-  "description": "Entry após cascatas de liquidação. Liquidações massivas criam oportunidades de reversão. Entry contra o movimento extremo.",
+  "description": "Entry ap\u00f3s cascatas de liquida\u00e7\u00e3o. Liquida\u00e7\u00f5es massivas criam oportunidades de revers\u00e3o. Entry contra o movimento extremo.",
   "author": "MarketMind",
   "tags": [
     "liquidation",
@@ -40,14 +40,14 @@
       "min": 20,
       "max": 100,
       "step": 10,
-      "description": "Liquidação mínima (milhões USD)"
+      "description": "Liquida\u00e7\u00e3o m\u00ednima (milh\u00f5es USD)"
     },
     "priceDropPercent": {
       "default": 5,
       "min": 3,
       "max": 10,
       "step": 1,
-      "description": "Queda mínima de preço %"
+      "description": "Queda m\u00ednima de pre\u00e7o %"
     },
     "atrMultiplier": {
       "default": 2.5,
@@ -129,8 +129,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
@@ -158,6 +159,13 @@
           }
         ]
       }
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

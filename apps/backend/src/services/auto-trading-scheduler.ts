@@ -1053,6 +1053,7 @@ export class AutoTradingScheduler {
               type: orderType,
               quantity: adjustedQuantity,
               price: useLimit ? setup.limitEntryPrice : undefined,
+              timeInForce: useLimit ? 'GTC' : undefined,
             }
           );
 
@@ -1060,13 +1061,24 @@ export class AutoTradingScheduler {
           actualEntryPrice = parseFloat(orderResult.price) || setup.entryPrice;
           actualQuantity = parseFloat(orderResult.executedQty) || adjustedQuantity;
 
+          const orderFilled = parseFloat(orderResult.executedQty) > 0;
+
           log('✅ Binance order executed', {
             orderId: entryOrderId,
             executedQty: orderResult.executedQty,
             price: orderResult.price,
+            orderType,
+            filled: orderFilled,
           });
 
-          if (setup.stopLoss) {
+          if (!orderFilled && useLimit) {
+            log('📋 LIMIT order pending - will create SL/TP when filled', {
+              orderId: entryOrderId,
+              limitPrice: setup.limitEntryPrice,
+            });
+          }
+
+          if (orderFilled && setup.stopLoss) {
             try {
               stopLossOrderId = await autoTradingService.createStopLossOrder(
                 wallet as Wallet,
@@ -1083,7 +1095,7 @@ export class AutoTradingScheduler {
             }
           }
 
-          if (setup.takeProfit) {
+          if (orderFilled && setup.takeProfit) {
             try {
               takeProfitOrderId = await autoTradingService.createTakeProfitOrder(
                 wallet as Wallet,

@@ -2,7 +2,7 @@
   "id": "ultimate-oscillator-crypto",
   "name": "Ultimate Oscillator Crypto",
   "version": "1.0.0",
-  "description": "Ultimate Oscillator com 3 timeframes (7,14,28). Reduz falsos sinais combinando múltiplos períodos. Entry em divergências ou níveis extremos.",
+  "description": "Ultimate Oscillator com 3 timeframes (7,14,28). Reduz falsos sinais combinando m\u00faltiplos per\u00edodos. Entry em diverg\u00eancias ou n\u00edveis extremos.",
   "author": "MarketMind",
   "tags": [
     "momentum",
@@ -38,35 +38,35 @@
       "min": 5,
       "max": 10,
       "step": 1,
-      "description": "Período curto"
+      "description": "Per\u00edodo curto"
     },
     "mediumPeriod": {
       "default": 14,
       "min": 12,
       "max": 18,
       "step": 2,
-      "description": "Período médio"
+      "description": "Per\u00edodo m\u00e9dio"
     },
     "longPeriod": {
       "default": 28,
       "min": 24,
       "max": 35,
       "step": 1,
-      "description": "Período longo"
+      "description": "Per\u00edodo longo"
     },
     "oversold": {
       "default": 30,
       "min": 20,
       "max": 35,
       "step": 5,
-      "description": "Nível oversold"
+      "description": "N\u00edvel oversold"
     },
     "overbought": {
       "default": 70,
       "min": 65,
       "max": 80,
       "step": 5,
-      "description": "Nível overbought"
+      "description": "N\u00edvel overbought"
     },
     "atrMultiplier": {
       "default": 2,
@@ -116,8 +116,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
@@ -145,6 +146,13 @@
           }
         ]
       }
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

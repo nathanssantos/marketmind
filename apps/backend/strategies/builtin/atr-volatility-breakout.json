@@ -2,7 +2,7 @@
   "id": "atr-volatility-breakout",
   "name": "ATR Volatility Breakout",
   "version": "1.0.0",
-  "description": "Estratégia de breakout baseada em ATR: entry quando preço move mais de 2x ATR da abertura. Stop loss em 1.5x ATR. Captura movimentos explosivos.",
+  "description": "Estrat\u00e9gia de breakout baseada em ATR: entry quando pre\u00e7o move mais de 2x ATR da abertura. Stop loss em 1.5x ATR. Captura movimentos explosivos.",
   "author": "MarketMind",
   "tags": [
     "breakout",
@@ -42,7 +42,7 @@
       "min": 10,
       "max": 21,
       "step": 1,
-      "description": "Período do ATR"
+      "description": "Per\u00edodo do ATR"
     },
     "breakoutMultiplier": {
       "default": 2,
@@ -95,8 +95,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$stopMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

@@ -2,7 +2,7 @@
   "id": "ema9-21-rsi-confirmation",
   "name": "EMA 9/21 RSI Confirmation",
   "version": "1.0.0",
-  "description": "Estratégia de day trading para crypto: EMA 9 cruza EMA 21 COM confirmação RSI acima de 50 (long) ou abaixo de 50 (short). Combina trend-following com momentum confirmation. Ideal para 15m-4h.",
+  "description": "Estrat\u00e9gia de day trading para crypto: EMA 9 cruza EMA 21 COM confirma\u00e7\u00e3o RSI acima de 50 (long) ou abaixo de 50 (short). Combina trend-following com momentum confirmation. Ideal para 15m-4h.",
   "author": "MarketMind",
   "tags": [
     "trend-following",
@@ -50,35 +50,35 @@
       "min": 5,
       "max": 15,
       "step": 1,
-      "description": "Período da EMA rápida"
+      "description": "Per\u00edodo da EMA r\u00e1pida"
     },
     "slowPeriod": {
       "default": 21,
       "min": 15,
       "max": 30,
       "step": 1,
-      "description": "Período da EMA lenta"
+      "description": "Per\u00edodo da EMA lenta"
     },
     "rsiPeriod": {
       "default": 14,
       "min": 10,
       "max": 21,
       "step": 1,
-      "description": "Período do RSI"
+      "description": "Per\u00edodo do RSI"
     },
     "rsiLongThreshold": {
       "default": 50,
       "min": 45,
       "max": 55,
       "step": 5,
-      "description": "RSI mínimo para long"
+      "description": "RSI m\u00ednimo para long"
     },
     "rsiShortThreshold": {
       "default": 50,
       "min": 45,
       "max": 55,
       "step": 5,
-      "description": "RSI máximo para short"
+      "description": "RSI m\u00e1ximo para short"
     },
     "rsiOverbought": {
       "default": 70,
@@ -167,8 +167,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

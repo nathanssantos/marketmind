@@ -15,6 +15,7 @@ const {
   DEFAULT_MULTIPLIER,
   DEFAULT_PERCENTAGE,
   DEFAULT_DISTANCE_PERCENT,
+  DEFAULT_SWING_BUFFER_PERCENT,
   BASE_CONFIDENCE,
   VOLUME_CONFIRMATION_BONUS,
   MAX_CONFIDENCE,
@@ -221,8 +222,9 @@ export class ExitCalculator {
 
   /**
    * Calculate stop loss based on swing high/low of recent candles
-   * For SHORT: uses max high of lookback candles (including current)
-   * For LONG: uses min low of lookback candles (including current)
+   * For SHORT: uses max high of lookback candles (including current) + buffer
+   * For LONG: uses min low of lookback candles (including current) - buffer
+   * Buffer adds a few ticks beyond the swing point to avoid premature stops
    */
   private calculateSwingHighLowStop(exit: ExitLevel, context: ExitContext): number {
     const { direction, entryPrice, klines, currentIndex, indicators } = context;
@@ -249,6 +251,7 @@ export class ExitCalculator {
       stopLoss = Math.min(...lows);
     }
 
+    let bufferApplied = false;
     if (exit.buffer !== undefined) {
       const bufferValue = this.resolveOperand(exit.buffer, context);
       if (exit.indicator === 'atr') {
@@ -259,10 +262,22 @@ export class ExitCalculator {
         ) ?? 0;
         const bufferAmount = atrValue * bufferValue;
         stopLoss = direction === 'SHORT' ? stopLoss + bufferAmount : stopLoss - bufferAmount;
+        bufferApplied = true;
       } else {
         const bufferAmount = entryPrice * (bufferValue / 100);
         stopLoss = direction === 'SHORT' ? stopLoss + bufferAmount : stopLoss - bufferAmount;
+        bufferApplied = true;
       }
+    }
+
+    if (!bufferApplied) {
+      const defaultBufferAmount = stopLoss * (DEFAULT_SWING_BUFFER_PERCENT / 100);
+      stopLoss = direction === 'SHORT' ? stopLoss + defaultBufferAmount : stopLoss - defaultBufferAmount;
+      logger.debug({
+        direction,
+        defaultBufferPercent: DEFAULT_SWING_BUFFER_PERCENT,
+        bufferAmount: defaultBufferAmount.toFixed(4),
+      }, 'Applied default swing buffer');
     }
 
     const isValid = direction === 'LONG' ? stopLoss < entryPrice : stopLoss > entryPrice;
@@ -286,6 +301,7 @@ export class ExitCalculator {
       lookback,
       candlesConsidered: relevantKlines.length,
       percentFromEntry: `${(((stopLoss - entryPrice) / entryPrice) * 100).toFixed(2)}%`,
+      bufferApplied: bufferApplied ? 'custom' : 'default',
     }, 'Swing high/low stop loss calculated');
 
     return stopLoss;

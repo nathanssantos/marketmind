@@ -2,7 +2,7 @@
   "id": "morning-star",
   "name": "Morning Star",
   "version": "1.0.0",
-  "description": "Morning Star e Evening Star patterns. Padrão de 3 candles de reversão forte. Star indica indecisão após tendência.",
+  "description": "Morning Star e Evening Star patterns. Padr\u00e3o de 3 candles de revers\u00e3o forte. Star indica indecis\u00e3o ap\u00f3s tend\u00eancia.",
   "author": "MarketMind",
   "tags": [
     "reversal",
@@ -117,13 +117,21 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
       "type": "riskReward",
       "multiplier": 2.5
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

@@ -2,7 +2,7 @@
   "id": "mean-reversion-extreme",
   "name": "Mean Reversion Extreme",
   "version": "1.0.0",
-  "description": "Mean reversion em condições extremas. RSI < 10 ou > 90 com Bollinger Bands. Entry em extremos para reversão à média.",
+  "description": "Mean reversion em condi\u00e7\u00f5es extremas. RSI < 10 ou > 90 com Bollinger Bands. Entry em extremos para revers\u00e3o \u00e0 m\u00e9dia.",
   "author": "MarketMind",
   "tags": [
     "mean-reversion",
@@ -47,14 +47,14 @@
       "min": 15,
       "max": 25,
       "step": 5,
-      "description": "BB período"
+      "description": "BB per\u00edodo"
     },
     "bbStdDev": {
       "default": 2.5,
       "min": 2,
       "max": 3,
       "step": 0.25,
-      "description": "BB desvio padrão"
+      "description": "BB desvio padr\u00e3o"
     },
     "extremeOversold": {
       "default": 10,
@@ -133,8 +133,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
@@ -162,6 +163,13 @@
           }
         ]
       }
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

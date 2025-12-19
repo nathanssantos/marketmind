@@ -2,7 +2,7 @@
   "id": "rsi-sma-filter",
   "name": "RSI SMA Filter",
   "version": "1.0.0",
-  "description": "RSI com filtro de SMA200 para confirmar tendência. Entry RSI < 30 quando preço acima da SMA200. Combina mean-reversion com trend filter.",
+  "description": "RSI com filtro de SMA200 para confirmar tend\u00eancia. Entry RSI < 30 quando pre\u00e7o acima da SMA200. Combina mean-reversion com trend filter.",
   "author": "MarketMind",
   "tags": [
     "mean-reversion",
@@ -39,28 +39,28 @@
       "min": 10,
       "max": 21,
       "step": 1,
-      "description": "Período do RSI"
+      "description": "Per\u00edodo do RSI"
     },
     "smaPeriod": {
       "default": 200,
       "min": 100,
       "max": 250,
       "step": 50,
-      "description": "Período da SMA para filtro"
+      "description": "Per\u00edodo da SMA para filtro"
     },
     "oversold": {
       "default": 30,
       "min": 20,
       "max": 35,
       "step": 5,
-      "description": "Nível oversold"
+      "description": "N\u00edvel oversold"
     },
     "overbought": {
       "default": 70,
       "min": 65,
       "max": 80,
       "step": 5,
-      "description": "Nível overbought"
+      "description": "N\u00edvel overbought"
     },
     "atrMultiplier": {
       "default": 2,
@@ -124,8 +124,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
@@ -153,6 +154,13 @@
           }
         ]
       }
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

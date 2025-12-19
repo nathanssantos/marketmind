@@ -2,7 +2,7 @@
   "id": "marubozu-momentum",
   "name": "Marubozu Momentum",
   "version": "1.0.0",
-  "description": "Marubozu candlestick pattern (sem sombras). Indica forte convicção direcional. Entry na direção do Marubozu com confirmação.",
+  "description": "Marubozu candlestick pattern (sem sombras). Indica forte convic\u00e7\u00e3o direcional. Entry na dire\u00e7\u00e3o do Marubozu com confirma\u00e7\u00e3o.",
   "author": "MarketMind",
   "tags": [
     "momentum",
@@ -42,7 +42,7 @@
       "min": 0.05,
       "max": 0.2,
       "step": 0.05,
-      "description": "Tolerância máxima para wicks (%)"
+      "description": "Toler\u00e2ncia m\u00e1xima para wicks (%)"
     },
     "atrMultiplier": {
       "default": 2,
@@ -112,8 +112,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

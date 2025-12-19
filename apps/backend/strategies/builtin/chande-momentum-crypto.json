@@ -2,7 +2,7 @@
   "id": "chande-momentum-crypto",
   "name": "Chande Momentum Crypto",
   "version": "1.0.0",
-  "description": "Chande Momentum Oscillator (CMO) strategy. CMO mede força de momentum entre -100 e +100. Entry em níveis extremos ou cruzamentos zero.",
+  "description": "Chande Momentum Oscillator (CMO) strategy. CMO mede for\u00e7a de momentum entre -100 e +100. Entry em n\u00edveis extremos ou cruzamentos zero.",
   "author": "MarketMind",
   "tags": [
     "momentum",
@@ -39,21 +39,21 @@
       "min": 9,
       "max": 21,
       "step": 1,
-      "description": "Período do CMO"
+      "description": "Per\u00edodo do CMO"
     },
     "oversold": {
       "default": -50,
       "min": -60,
       "max": -40,
       "step": 5,
-      "description": "Nível oversold"
+      "description": "N\u00edvel oversold"
     },
     "overbought": {
       "default": 50,
       "min": 40,
       "max": 60,
       "step": 5,
-      "description": "Nível overbought"
+      "description": "N\u00edvel overbought"
     },
     "atrMultiplier": {
       "default": 2,
@@ -101,8 +101,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
@@ -130,6 +131,13 @@
           }
         ]
       }
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

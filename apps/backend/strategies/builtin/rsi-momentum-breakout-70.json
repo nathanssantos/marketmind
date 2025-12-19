@@ -2,7 +2,7 @@
   "id": "rsi-momentum-breakout-70",
   "name": "RSI Momentum Breakout 70",
   "version": "1.0.0",
-  "description": "Estratégia de momentum Bitcoin: entry quando RSI(5) cruza acima de 70, exit após 8 dias. Backtestada com ~3% avg gain em BTC. Contraintuitivo mas efetivo: comprar força, não fraqueza.",
+  "description": "Estrat\u00e9gia de momentum Bitcoin: entry quando RSI(5) cruza acima de 70, exit ap\u00f3s 8 dias. Backtestada com ~3% avg gain em BTC. Contraintuitivo mas efetivo: comprar for\u00e7a, n\u00e3o fraqueza.",
   "author": "MarketMind",
   "tags": [
     "momentum",
@@ -48,7 +48,7 @@
       "min": 2,
       "max": 10,
       "step": 1,
-      "description": "Período do RSI (2 ou 5 recomendado)"
+      "description": "Per\u00edodo do RSI (2 ou 5 recomendado)"
     },
     "rsiThreshold": {
       "default": 70,
@@ -62,14 +62,14 @@
       "min": 5,
       "max": 15,
       "step": 1,
-      "description": "Dias para manter posição"
+      "description": "Dias para manter posi\u00e7\u00e3o"
     },
     "atrMultiplier": {
       "default": 3,
       "min": 2,
       "max": 5,
       "step": 0.5,
-      "description": "Multiplicador ATR para stop de emergência"
+      "description": "Multiplicador ATR para stop de emerg\u00eancia"
     }
   },
   "indicators": {
@@ -100,8 +100,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "maxBarsInTrade": "$holdingBars",
@@ -116,6 +117,13 @@
           }
         ]
       }
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {
@@ -137,7 +145,7 @@
           "right": 85
         },
         "bonus": 5,
-        "description": "RSI não extremamente sobrecomprado"
+        "description": "RSI n\u00e3o extremamente sobrecomprado"
       }
     ],
     "max": 90

@@ -2,7 +2,7 @@
   "id": "golden-cross-sma",
   "name": "Golden Cross SMA 50/200",
   "version": "1.0.0",
-  "description": "Estratégia clássica de Golden Cross: SMA 50 cruza acima da SMA 200 (buy), Death Cross quando cruza abaixo (sell). Backtestada com 1030% retorno cumulativo em 10 anos, Sharpe 1.19.",
+  "description": "Estrat\u00e9gia cl\u00e1ssica de Golden Cross: SMA 50 cruza acima da SMA 200 (buy), Death Cross quando cruza abaixo (sell). Backtestada com 1030% retorno cumulativo em 10 anos, Sharpe 1.19.",
   "author": "MarketMind",
   "tags": [
     "trend-following",
@@ -51,14 +51,14 @@
       "min": 30,
       "max": 70,
       "step": 10,
-      "description": "Período da SMA rápida"
+      "description": "Per\u00edodo da SMA r\u00e1pida"
     },
     "slowPeriod": {
       "default": 200,
       "min": 150,
       "max": 250,
       "step": 25,
-      "description": "Período da SMA lenta"
+      "description": "Per\u00edodo da SMA lenta"
     },
     "atrMultiplier": {
       "default": 3,
@@ -112,8 +112,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

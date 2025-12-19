@@ -2,7 +2,7 @@
   "id": "bitcoin-macd-momentum",
   "name": "Bitcoin MACD Momentum",
   "version": "1.0.0",
-  "description": "Estratégia MACD para Bitcoin com configurações padrão (12/26/9). Backtestada com 77% CAGR vs 61% buy-and-hold, e drawdown reduzido de 83% para 62%. Investido apenas 54% do tempo.",
+  "description": "Estrat\u00e9gia MACD para Bitcoin com configura\u00e7\u00f5es padr\u00e3o (12/26/9). Backtestada com 77% CAGR vs 61% buy-and-hold, e drawdown reduzido de 83% para 62%. Investido apenas 54% do tempo.",
   "author": "MarketMind",
   "tags": [
     "momentum",
@@ -51,21 +51,21 @@
       "min": 8,
       "max": 15,
       "step": 1,
-      "description": "Período da EMA rápida do MACD"
+      "description": "Per\u00edodo da EMA r\u00e1pida do MACD"
     },
     "slowPeriod": {
       "default": 26,
       "min": 20,
       "max": 30,
       "step": 2,
-      "description": "Período da EMA lenta do MACD"
+      "description": "Per\u00edodo da EMA lenta do MACD"
     },
     "signalPeriod": {
       "default": 9,
       "min": 7,
       "max": 12,
       "step": 1,
-      "description": "Período da linha de sinal"
+      "description": "Per\u00edodo da linha de sinal"
     },
     "atrMultiplier": {
       "default": 2.5,
@@ -115,8 +115,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

@@ -2,7 +2,7 @@
   "id": "momentum-rotation",
   "name": "Momentum Rotation",
   "version": "1.0.0",
-  "description": "Rotação baseada em momentum relativo. Compra ativos com maior momentum recente. Sistema de ranking e rotação.",
+  "description": "Rota\u00e7\u00e3o baseada em momentum relativo. Compra ativos com maior momentum recente. Sistema de ranking e rota\u00e7\u00e3o.",
   "author": "MarketMind",
   "tags": [
     "momentum",
@@ -43,14 +43,14 @@
       "min": 10,
       "max": 30,
       "step": 5,
-      "description": "Período momentum"
+      "description": "Per\u00edodo momentum"
     },
     "minMomentum": {
       "default": 5,
       "min": 0,
       "max": 15,
       "step": 2.5,
-      "description": "Momentum mínimo %"
+      "description": "Momentum m\u00ednimo %"
     },
     "atrMultiplier": {
       "default": 2,
@@ -99,8 +99,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

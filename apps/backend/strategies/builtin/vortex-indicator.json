@@ -2,7 +2,7 @@
   "id": "vortex-indicator",
   "name": "Vortex Indicator",
   "version": "1.0.0",
-  "description": "Vortex Indicator (VI+ e VI-) para trend direction. Mede movimento positivo/negativo em relação ao range. Entry quando VI+ cruza VI-.",
+  "description": "Vortex Indicator (VI+ e VI-) para trend direction. Mede movimento positivo/negativo em rela\u00e7\u00e3o ao range. Entry quando VI+ cruza VI-.",
   "author": "MarketMind",
   "tags": [
     "trend-following",
@@ -40,7 +40,7 @@
       "min": 10,
       "max": 21,
       "step": 1,
-      "description": "Período do Vortex"
+      "description": "Per\u00edodo do Vortex"
     },
     "atrMultiplier": {
       "default": 2,
@@ -88,8 +88,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

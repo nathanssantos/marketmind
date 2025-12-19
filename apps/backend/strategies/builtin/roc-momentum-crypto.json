@@ -2,7 +2,7 @@
   "id": "roc-momentum-crypto",
   "name": "ROC Momentum Crypto",
   "version": "1.0.0",
-  "description": "Rate of Change momentum strategy para crypto. ROC mede velocidade de mudança de preço. Entry quando ROC cruza zero ou níveis extremos.",
+  "description": "Rate of Change momentum strategy para crypto. ROC mede velocidade de mudan\u00e7a de pre\u00e7o. Entry quando ROC cruza zero ou n\u00edveis extremos.",
   "author": "MarketMind",
   "tags": [
     "momentum",
@@ -39,7 +39,7 @@
       "min": 8,
       "max": 20,
       "step": 2,
-      "description": "Período do ROC"
+      "description": "Per\u00edodo do ROC"
     },
     "atrMultiplier": {
       "default": 2,
@@ -87,8 +87,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
@@ -116,6 +117,13 @@
           }
         ]
       }
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

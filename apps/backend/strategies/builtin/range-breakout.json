@@ -2,7 +2,7 @@
   "id": "range-breakout",
   "name": "Range Breakout",
   "version": "1.0.0",
-  "description": "Breakout de range consolidado. Identifica consolidações e entra no breakout. Stop dentro do range, target na extensão.",
+  "description": "Breakout de range consolidado. Identifica consolida\u00e7\u00f5es e entra no breakout. Stop dentro do range, target na extens\u00e3o.",
   "author": "MarketMind",
   "tags": [
     "breakout",
@@ -42,14 +42,14 @@
       "min": 10,
       "max": 30,
       "step": 5,
-      "description": "Período para identificar range"
+      "description": "Per\u00edodo para identificar range"
     },
     "rangeThreshold": {
       "default": 5,
       "min": 3,
       "max": 10,
       "step": 1,
-      "description": "Range max % para consolidação"
+      "description": "Range max % para consolida\u00e7\u00e3o"
     },
     "atrMultiplier": {
       "default": 1.5,
@@ -111,8 +111,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

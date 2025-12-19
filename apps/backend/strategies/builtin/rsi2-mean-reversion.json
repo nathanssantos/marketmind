@@ -130,14 +130,21 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$slMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$tpMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
       "type": "atr",
-      "multiplier": "$tpMultiplier",
-      "indicator": "atr"
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

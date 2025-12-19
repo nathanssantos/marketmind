@@ -2,7 +2,7 @@
   "id": "volume-price-breakout",
   "name": "Volume Price Breakout",
   "version": "1.0.0",
-  "description": "Estratégia de breakout com confirmação de volume: entry quando preço quebra high de N dias COM volume > 150% da média. Volume confirma força do breakout.",
+  "description": "Estrat\u00e9gia de breakout com confirma\u00e7\u00e3o de volume: entry quando pre\u00e7o quebra high de N dias COM volume > 150% da m\u00e9dia. Volume confirma for\u00e7a do breakout.",
   "author": "MarketMind",
   "tags": [
     "breakout",
@@ -42,14 +42,14 @@
       "min": 5,
       "max": 20,
       "step": 5,
-      "description": "Período de lookback para high/low"
+      "description": "Per\u00edodo de lookback para high/low"
     },
     "volumeMultiplier": {
       "default": 1.5,
       "min": 1.2,
       "max": 2,
       "step": 0.1,
-      "description": "Multiplicador de volume mínimo"
+      "description": "Multiplicador de volume m\u00ednimo"
     },
     "atrMultiplier": {
       "default": 2,
@@ -118,8 +118,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

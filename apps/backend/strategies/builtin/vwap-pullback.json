@@ -21,7 +21,7 @@
   },
   "backtestSummary": {
     "profitFactor": 0.92,
-    "winRate": 36.00,
+    "winRate": 36.0,
     "totalTrades": 25,
     "netPnlPercent": -1.89,
     "testedAt": "2025-12-07",
@@ -134,14 +134,21 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$slMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$tpMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
       "type": "atr",
-      "multiplier": "$tpMultiplier",
-      "indicator": "atr"
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

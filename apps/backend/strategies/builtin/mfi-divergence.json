@@ -2,7 +2,7 @@
   "id": "mfi-divergence",
   "name": "MFI Divergence",
   "version": "1.0.0",
-  "description": "Money Flow Index divergence strategy. MFI é RSI com volume. Entry em oversold/overbought com confirmação de volume.",
+  "description": "Money Flow Index divergence strategy. MFI \u00e9 RSI com volume. Entry em oversold/overbought com confirma\u00e7\u00e3o de volume.",
   "author": "MarketMind",
   "tags": [
     "mean-reversion",
@@ -39,21 +39,21 @@
       "min": 10,
       "max": 21,
       "step": 1,
-      "description": "Período do MFI"
+      "description": "Per\u00edodo do MFI"
     },
     "oversold": {
       "default": 20,
       "min": 10,
       "max": 30,
       "step": 5,
-      "description": "Nível oversold"
+      "description": "N\u00edvel oversold"
     },
     "overbought": {
       "default": 80,
       "min": 70,
       "max": 90,
       "step": 5,
-      "description": "Nível overbought"
+      "description": "N\u00edvel overbought"
     },
     "atrMultiplier": {
       "default": 2,
@@ -101,8 +101,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
@@ -130,6 +131,13 @@
           }
         ]
       }
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

@@ -2,7 +2,7 @@
   "id": "ema20-trend-crypto",
   "name": "EMA20 Trend Crypto",
   "version": "1.0.0",
-  "description": "Estratégia de trend-following com EMA de 20 dias para Bitcoin. Backtestada com 126% CAGR, 39% max DD, profit factor 2.69 em 127 trades. Win rate baixo (33%) mas alto avg gain por trade (5.99%).",
+  "description": "Estrat\u00e9gia de trend-following com EMA de 20 dias para Bitcoin. Backtestada com 126% CAGR, 39% max DD, profit factor 2.69 em 127 trades. Win rate baixo (33%) mas alto avg gain por trade (5.99%).",
   "author": "MarketMind",
   "tags": [
     "trend-following",
@@ -52,7 +52,7 @@
       "min": 15,
       "max": 30,
       "step": 5,
-      "description": "Período da EMA"
+      "description": "Per\u00edodo da EMA"
     },
     "atrMultiplier": {
       "default": 2,
@@ -107,8 +107,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

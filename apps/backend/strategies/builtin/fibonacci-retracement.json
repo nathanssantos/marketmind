@@ -2,7 +2,7 @@
   "id": "fibonacci-retracement",
   "name": "Fibonacci Retracement",
   "version": "1.0.0",
-  "description": "Entry em níveis Fibonacci de retracement (38.2%, 50%, 61.8%). Espera pullback em tendência para níveis clássicos de Fibonacci.",
+  "description": "Entry em n\u00edveis Fibonacci de retracement (38.2%, 50%, 61.8%). Espera pullback em tend\u00eancia para n\u00edveis cl\u00e1ssicos de Fibonacci.",
   "author": "MarketMind",
   "tags": [
     "fibonacci",
@@ -42,14 +42,14 @@
       "min": 30,
       "max": 100,
       "step": 10,
-      "description": "Período lookback para swing high/low"
+      "description": "Per\u00edodo lookback para swing high/low"
     },
     "fibLevel": {
       "default": 0.618,
       "min": 0.382,
       "max": 0.786,
       "step": 0.118,
-      "description": "Nível Fibonacci target"
+      "description": "N\u00edvel Fibonacci target"
     },
     "atrMultiplier": {
       "default": 2,
@@ -123,8 +123,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

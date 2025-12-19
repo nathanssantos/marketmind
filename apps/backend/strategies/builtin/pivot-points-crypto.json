@@ -2,7 +2,7 @@
   "id": "pivot-points-crypto",
   "name": "Pivot Points Crypto",
   "version": "1.0.0",
-  "description": "Classic Pivot Points strategy para crypto. Entry em bounces de níveis de suporte/resistência calculados (S1, R1, etc).",
+  "description": "Classic Pivot Points strategy para crypto. Entry em bounces de n\u00edveis de suporte/resist\u00eancia calculados (S1, R1, etc).",
   "author": "MarketMind",
   "tags": [
     "support-resistance",
@@ -99,8 +99,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
@@ -128,6 +129,13 @@
           }
         ]
       }
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

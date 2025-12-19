@@ -2,7 +2,7 @@
   "id": "order-flow-imbalance",
   "name": "Order Flow Imbalance",
   "version": "1.0.0",
-  "description": "Detecta desequilíbrios de orderflow via volume. Entry quando volume de compra/venda é significativamente desbalanceado.",
+  "description": "Detecta desequil\u00edbrios de orderflow via volume. Entry quando volume de compra/venda \u00e9 significativamente desbalanceado.",
   "author": "MarketMind",
   "tags": [
     "orderflow",
@@ -42,14 +42,14 @@
       "min": 1.5,
       "max": 3,
       "step": 0.5,
-      "description": "Ratio mínimo buy/sell"
+      "description": "Ratio m\u00ednimo buy/sell"
     },
     "volumeMultiplier": {
       "default": 1.5,
       "min": 1.2,
       "max": 2,
       "step": 0.1,
-      "description": "Volume > média"
+      "description": "Volume > m\u00e9dia"
     },
     "atrMultiplier": {
       "default": 2,
@@ -130,8 +130,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

@@ -24,9 +24,9 @@
     "commission": 0.001
   },
   "backtestSummary": {
-    "profitFactor": 1.80,
+    "profitFactor": 1.8,
     "winRate": 41.4,
-    "sharpeRatio": 2.40,
+    "sharpeRatio": 2.4,
     "maxDrawdownPercent": 16.8,
     "totalTrades": 29,
     "netPnlPercent": 32.64,
@@ -148,13 +148,21 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
       "type": "riskReward",
       "multiplier": "$rrMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {

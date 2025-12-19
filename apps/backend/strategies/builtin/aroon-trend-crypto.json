@@ -2,7 +2,7 @@
   "id": "aroon-trend-crypto",
   "name": "Aroon Trend Crypto",
   "version": "1.0.0",
-  "description": "Aroon indicator para identificar início de novas tendências. Aroon Up/Down medem tempo desde último high/low. Entry quando Aroon cruza.",
+  "description": "Aroon indicator para identificar in\u00edcio de novas tend\u00eancias. Aroon Up/Down medem tempo desde \u00faltimo high/low. Entry quando Aroon cruza.",
   "author": "MarketMind",
   "tags": [
     "trend-following",
@@ -41,7 +41,7 @@
       "min": 14,
       "max": 30,
       "step": 5,
-      "description": "Período do Aroon"
+      "description": "Per\u00edodo do Aroon"
     },
     "threshold": {
       "default": 70,
@@ -106,8 +106,9 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {

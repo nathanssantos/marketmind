@@ -2,7 +2,7 @@
   "id": "mean-reversion-bb-rsi",
   "name": "Mean Reversion (Bollinger + RSI)",
   "version": "1.0.0",
-  "description": "Long quando preço toca banda inferior do Bollinger + RSI oversold. Short quando toca banda superior + RSI overbought.",
+  "description": "Long quando pre\u00e7o toca banda inferior do Bollinger + RSI oversold. Short quando toca banda superior + RSI overbought.",
   "author": "MarketMind",
   "tags": [
     "mean-reversion",
@@ -36,35 +36,35 @@
       "min": 10,
       "max": 50,
       "step": 5,
-      "description": "Período das Bollinger Bands"
+      "description": "Per\u00edodo das Bollinger Bands"
     },
     "bbStdDev": {
       "default": 2,
       "min": 1.5,
       "max": 3,
       "step": 0.5,
-      "description": "Desvio padrão das bandas"
+      "description": "Desvio padr\u00e3o das bandas"
     },
     "rsiPeriod": {
       "default": 14,
       "min": 7,
       "max": 21,
       "step": 1,
-      "description": "Período do RSI"
+      "description": "Per\u00edodo do RSI"
     },
     "rsiOversold": {
       "default": 30,
       "min": 20,
       "max": 40,
       "step": 5,
-      "description": "Nível de oversold do RSI"
+      "description": "N\u00edvel de oversold do RSI"
     },
     "rsiOverbought": {
       "default": 70,
       "min": 60,
       "max": 80,
       "step": 5,
-      "description": "Nível de overbought do RSI"
+      "description": "N\u00edvel de overbought do RSI"
     },
     "atrMultiplier": {
       "default": 2,
@@ -129,13 +129,21 @@
   },
   "exit": {
     "stopLoss": {
-      "type": "atr",
-      "multiplier": "$atrMultiplier",
+      "type": "swingHighLow",
+      "lookback": 3,
+      "buffer": 0.1,
       "indicator": "atr"
     },
     "takeProfit": {
       "type": "indicator",
       "value": "bb.middle"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
     }
   },
   "confidence": {
@@ -166,7 +174,7 @@
           "right": "volume.sma20"
         },
         "bonus": 10,
-        "description": "Volume acima da média"
+        "description": "Volume acima da m\u00e9dia"
       }
     ],
     "max": 95

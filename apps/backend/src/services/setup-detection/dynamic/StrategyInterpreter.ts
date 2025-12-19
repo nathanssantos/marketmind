@@ -96,7 +96,11 @@ export class StrategyInterpreter extends BaseSetupDetector {
       params: this.resolvedParams,
     };
 
-    const entryPriceConfig = this.strategy.entry.entryPrice;
+    const entryPriceConfig = this.strategy.entry.entryPrice ?? {
+      type: 'swingHighLow' as const,
+      lookback: 2,
+      expirationBars: 3,
+    };
     const entryCalcResult = this.entryCalculator.calculateEntryPrice(entryPriceConfig, baseExitContext);
     const entryPrice = entryCalcResult.orderType === 'LIMIT' ? entryCalcResult.price : closePrice;
 
