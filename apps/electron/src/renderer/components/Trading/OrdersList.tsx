@@ -15,12 +15,12 @@ import {
   isOrderLong,
   isOrderPending,
 } from '@shared/utils';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import { LuBot, LuX } from 'react-icons/lu';
 
-export const OrdersList = () => {
+const OrdersListComponent = () => {
   const { t } = useTranslation();
 
   const { wallets: backendWallets } = useBackendWallet();
@@ -519,3 +519,5 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
     </Box>
   );
 };
+
+export const OrdersList = memo(OrdersListComponent);

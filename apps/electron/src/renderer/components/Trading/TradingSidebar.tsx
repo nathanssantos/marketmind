@@ -1,4 +1,5 @@
 import { Box, Stack, Tabs, Text } from '@chakra-ui/react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBackendWallet } from '../../hooks/useBackendWallet';
 import { type TradingSidebarTab, useUIStore } from '../../store/uiStore';
@@ -15,7 +16,7 @@ interface TradingSidebarProps {
   width: number;
 }
 
-export const TradingSidebar = ({ width }: TradingSidebarProps) => {
+const TradingSidebarComponent = ({ width }: TradingSidebarProps) => {
   const { t } = useTranslation();
   const { wallets: backendWallets } = useBackendWallet();
   const activeWalletId = backendWallets[0]?.id;
@@ -81,3 +82,5 @@ export const TradingSidebar = ({ width }: TradingSidebarProps) => {
     </SidebarContainer>
   );
 };
+
+export const TradingSidebar = memo(TradingSidebarComponent);

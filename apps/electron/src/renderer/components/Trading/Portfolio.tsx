@@ -7,7 +7,7 @@ import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
 import { usePortfolioFilters } from '@renderer/hooks/usePortfolioFilters';
 import { usePositionUpdates } from '@renderer/hooks/usePositionUpdates';
 import { type PortfolioFilterOption, type PortfolioSortOption, useUIStore } from '@renderer/store/uiStore';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface PortfolioPosition {
@@ -25,7 +25,7 @@ interface PortfolioPosition {
   id: string;
 }
 
-export const Portfolio = () => {
+const PortfolioComponent = () => {
   const { t } = useTranslation();
 
   const { wallets: backendWallets } = useBackendWallet();
@@ -275,3 +275,5 @@ const PositionCard = ({ position, currency }: PositionCardProps) => {
     </Box>
   );
 };
+
+export const Portfolio = memo(PortfolioComponent);
