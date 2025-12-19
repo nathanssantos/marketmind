@@ -120,6 +120,51 @@ export class AutoTradingScheduler {
     log('🚀 AutoTradingScheduler initialized');
   }
 
+  private calculateRequiredKlines(strategies: { id: string; indicators?: Record<string, { params: Record<string, number | string> }>; parameters?: Record<string, { default: number }>; filters?: { trendFilter?: { period: number } }; optimizedParams?: { onlyWithTrend?: boolean } }[]): number {
+    const MIN_KLINES = 100;
+    const MAX_KLINES = 500;
+    let maxPeriod = 50;
+
+    for (const strategy of strategies) {
+      if (strategy.indicators) {
+        for (const [, indicator] of Object.entries(strategy.indicators)) {
+          const params = indicator.params || {};
+          const period = params['period'] || params['emaPeriod'] || params['smaPeriod'] ||
+                        params['lookback'] || params['kPeriod'] || params['slowPeriod'] || 0;
+
+          const periodValue = typeof period === 'string' && period.startsWith('$')
+            ? strategy.parameters?.[period.slice(1)]?.default || 0
+            : period;
+
+          if (typeof periodValue === 'number' && periodValue > maxPeriod) {
+            maxPeriod = periodValue;
+          }
+        }
+      }
+
+      if (strategy.parameters) {
+        for (const [paramName, paramDef] of Object.entries(strategy.parameters)) {
+          if (paramName.toLowerCase().includes('trend') ||
+              paramName.toLowerCase().includes('ema') ||
+              paramName.toLowerCase().includes('sma')) {
+            if (paramDef.default > maxPeriod) maxPeriod = paramDef.default;
+          }
+        }
+      }
+
+      if (strategy.filters?.trendFilter?.period && strategy.filters.trendFilter.period > maxPeriod) {
+        maxPeriod = strategy.filters.trendFilter.period;
+      }
+
+      if (strategy.optimizedParams?.onlyWithTrend) {
+        maxPeriod = Math.max(maxPeriod, 200);
+      }
+    }
+
+    const requiredKlines = Math.ceil(maxPeriod * 1.5);
+    return Math.min(Math.max(requiredKlines, MIN_KLINES), MAX_KLINES);
+  }
+
   private async ensureMLInitialized(): Promise<boolean> {
     if (this.mlInitialized) return true;
     if (this.mlInitializing) {
@@ -369,19 +414,27 @@ export class AutoTradingScheduler {
     });
 
     try {
+      const strategies = await this.strategyLoader.loadAll({ includeUnprofitable: false });
+      const filteredStrategies = strategies.filter((s) =>
+        watcher.enabledStrategies.includes(s.id)
+      );
+
+      const requiredKlines = this.calculateRequiredKlines(filteredStrategies);
+      const minRequired = Math.max(50, Math.ceil(requiredKlines * 0.5));
+
       const klinesData = await db.query.klines.findMany({
         where: and(
           eq(klines.symbol, watcher.symbol),
           eq(klines.interval, watcher.interval)
         ),
         orderBy: [desc(klines.openTime)],
-        limit: 500,
+        limit: requiredKlines,
       });
 
-      if (klinesData.length < 50) {
-        log('📥 Insufficient klines data, fetching historical...', { count: klinesData.length, required: 50 });
+      if (klinesData.length < minRequired) {
+        log('📥 Insufficient klines data, fetching historical...', { count: klinesData.length, required: minRequired, target: requiredKlines });
         try {
-          const startTime = calculateStartTime(watcher.interval as Interval, 500);
+          const startTime = calculateStartTime(watcher.interval as Interval, requiredKlines);
           const inserted = await backfillHistoricalKlines(
             watcher.symbol,
             watcher.interval as Interval,
@@ -389,7 +442,7 @@ export class AutoTradingScheduler {
           );
           log('✅ Historical klines fetched', { symbol: watcher.symbol, interval: watcher.interval, inserted });
 
-          if (inserted < 50) {
+          if (inserted < minRequired) {
             log('⚠️ Still insufficient klines after backfill', { inserted });
             return;
           }
@@ -400,10 +453,10 @@ export class AutoTradingScheduler {
               eq(klines.interval, watcher.interval)
             ),
             orderBy: [desc(klines.openTime)],
-            limit: 500,
+            limit: requiredKlines,
           });
 
-          if (refreshedKlines.length < 50) {
+          if (refreshedKlines.length < minRequired) {
             log('⚠️ Still insufficient klines after refresh', { count: refreshedKlines.length });
             return;
           }
@@ -433,11 +486,6 @@ export class AutoTradingScheduler {
         takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
         takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
       }));
-
-      const strategies = await this.strategyLoader.loadAll({ includeUnprofitable: false });
-      const filteredStrategies = strategies.filter((s) =>
-        watcher.enabledStrategies.includes(s.id)
-      );
 
       const lastCandle = mappedKlines[mappedKlines.length - 1];
       if (!lastCandle) {
@@ -1136,7 +1184,7 @@ export class AutoTradingScheduler {
             originalRR: setup.riskRewardRatio.toFixed(2),
             finalRR: finalRiskRewardRatio.toFixed(2),
             minRequired: MIN_RISK_REWARD_RATIO,
-            priceDeviation: ((actualEntryPrice - setup.entryPrice) / setup.entryPrice * 100).toFixed(2) + '%',
+            priceDeviation: `${((actualEntryPrice - setup.entryPrice) / setup.entryPrice * 100).toFixed(2)  }%`,
           });
           return;
         }
