@@ -122,7 +122,7 @@
     "stopLoss": {
       "type": "swingHighLow",
       "lookback": 5,
-      "buffer": 0.3,
+      "buffer": 0.6,
       "indicator": "atr"
     },
     "takeProfit": {
