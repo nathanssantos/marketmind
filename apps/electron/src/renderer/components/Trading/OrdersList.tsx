@@ -82,7 +82,7 @@ const OrdersListComponent = () => {
       orderDirection: e.side === 'LONG' ? ('long' as const) : ('short' as const),
       entryPrice: parseFloat(e.entryPrice),
       quantity: parseFloat(e.quantity),
-      createdAt: new Date(e.openedAt),
+      createdAt: new Date(e.createdAt),
       stopLoss: e.stopLoss ? parseFloat(e.stopLoss) : undefined,
       takeProfit: e.takeProfit ? parseFloat(e.takeProfit) : undefined,
       pnl: e.pnl || undefined,
