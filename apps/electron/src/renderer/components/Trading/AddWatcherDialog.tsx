@@ -1,17 +1,14 @@
+import { Box, HStack, Stack, Text } from '@chakra-ui/react';
 import {
-  Box,
+  DialogBackdrop,
   DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
+  DialogPositioner,
   DialogRoot,
   DialogTitle,
-  Flex,
-  HStack,
-  Input,
-  Stack,
-  Text,
-} from '@chakra-ui/react';
+} from '@renderer/components/ui/dialog';
 import type { MarketType, TradingProfile } from '@marketmind/types';
 import { Button } from '@renderer/components/ui/button';
 import { Checkbox } from '@renderer/components/ui/checkbox';
@@ -20,21 +17,8 @@ import { Select } from '@renderer/components/ui/select';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-const MARKET_TYPES: { value: MarketType; label: string }[] = [
-  { value: 'SPOT', label: 'Spot' },
-  { value: 'FUTURES', label: 'Futures' },
-];
-
-const INTERVALS = [
-  { value: '1m', label: '1m' },
-  { value: '5m', label: '5m' },
-  { value: '15m', label: '15m' },
-  { value: '30m', label: '30m' },
-  { value: '1h', label: '1h' },
-  { value: '4h', label: '4h' },
-  { value: '1d', label: '1d' },
-];
+import { type Timeframe, TimeframeSelector } from '../Chart/TimeframeSelector';
+import { SymbolSelector } from '../SymbolSelector';
 
 interface AddWatcherDialogProps {
   isOpen: boolean;
@@ -53,10 +37,15 @@ export const AddWatcherDialog = ({
   const { startWatcher, isStartingWatcher } = useBackendAutoTrading(walletId);
 
   const [symbol, setSymbol] = useState('BTCUSDT');
-  const [interval, setInterval] = useState('1d');
+  const [interval, setInterval] = useState<Timeframe>('1d');
   const [profileId, setProfileId] = useState<string | null>(null);
   const [useDefault, setUseDefault] = useState(true);
   const [marketType, setMarketType] = useState<MarketType>('SPOT');
+
+  const handleSymbolChange = (newSymbol: string, newMarketType?: MarketType) => {
+    setSymbol(newSymbol);
+    if (newMarketType) setMarketType(newMarketType);
+  };
 
   const handleSubmit = async () => {
     if (!symbol.trim()) return;
@@ -73,7 +62,7 @@ export const AddWatcherDialog = ({
 
   const resetForm = () => {
     setSymbol('BTCUSDT');
-    setInterval('1d');
+    setInterval('1d' as Timeframe);
     setProfileId(null);
     setUseDefault(true);
     setMarketType('SPOT');
@@ -96,55 +85,36 @@ export const AddWatcherDialog = ({
 
   return (
     <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && handleClose()} size="md">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t('tradingProfiles.watchers.addTitle')}</DialogTitle>
-        </DialogHeader>
+      <DialogBackdrop />
+      <DialogPositioner>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('tradingProfiles.watchers.addTitle')}</DialogTitle>
+          </DialogHeader>
 
-        <DialogBody>
-          <Stack gap={5}>
-            <Field label={t('tradingProfiles.watchers.symbol')} required>
-              <Input
-                value={symbol}
-                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                placeholder="BTCUSDT"
-                maxLength={20}
-              />
-            </Field>
+          <DialogBody>
+            <Stack gap={5}>
+              <HStack gap={4} align="flex-end">
+                <Field label={t('tradingProfiles.watchers.symbol')} required flex={1}>
+                  <SymbolSelector
+                    value={symbol}
+                    onChange={handleSymbolChange}
+                    marketType={marketType}
+                    onMarketTypeChange={setMarketType}
+                    showMarketTypeToggle
+                  />
+                </Field>
 
-            <Field label={t('tradingProfiles.watchers.interval')}>
-              <Flex gap={2} flexWrap="wrap">
-                {INTERVALS.map((int) => (
-                  <Button
-                    key={int.value}
-                    size="sm"
-                    variant={interval === int.value ? 'solid' : 'outline'}
-                    colorPalette={interval === int.value ? 'blue' : 'gray'}
-                    onClick={() => setInterval(int.value)}
-                  >
-                    {int.label}
-                  </Button>
-                ))}
-              </Flex>
-            </Field>
+                <Field label={t('tradingProfiles.watchers.interval')}>
+                  <TimeframeSelector
+                    selectedTimeframe={interval}
+                    onTimeframeChange={setInterval}
+                  />
+                </Field>
+              </HStack>
 
-            <Field label={t('tradingProfiles.watchers.marketType', 'Market Type')}>
-              <Flex gap={2}>
-                {MARKET_TYPES.map((mt) => (
-                  <Button
-                    key={mt.value}
-                    size="sm"
-                    variant={marketType === mt.value ? 'solid' : 'outline'}
-                    colorPalette={marketType === mt.value ? 'blue' : 'gray'}
-                    onClick={() => setMarketType(mt.value)}
-                  >
-                    {mt.label}
-                  </Button>
-                ))}
-              </Flex>
               {marketType === 'FUTURES' && (
                 <Box
-                  mt={2}
                   p={2}
                   borderRadius="sm"
                   bg="orange.50"
@@ -157,74 +127,74 @@ export const AddWatcherDialog = ({
                   </Text>
                 </Box>
               )}
-            </Field>
 
-            <Box>
-              <HStack mb={3}>
-                <Checkbox
-                  checked={useDefault}
-                  onCheckedChange={setUseDefault}
-                />
-                <Text fontSize="sm">{t('tradingProfiles.watchers.useWalletDefault')}</Text>
-              </HStack>
-
-              {!useDefault && (
-                <Field label={t('tradingProfiles.watchers.profile')}>
-                  <Select
-                    value={profileId ?? ''}
-                    onChange={(value) => setProfileId(value || null)}
-                    options={profileOptions}
-                    usePortal={false}
+              <Box>
+                <HStack mb={3}>
+                  <Checkbox
+                    checked={useDefault}
+                    onCheckedChange={setUseDefault}
                   />
-                </Field>
-              )}
+                  <Text fontSize="sm">{t('tradingProfiles.watchers.useWalletDefault')}</Text>
+                </HStack>
 
-              {!useDefault && profiles.length === 0 && (
-                <Box
-                  p={3}
-                  mt={2}
-                  borderRadius="md"
-                  bg="orange.50"
-                  borderWidth="1px"
-                  borderColor="orange.200"
-                  _dark={{ bg: 'orange.950', borderColor: 'orange.800' }}
-                >
-                  <Text fontSize="xs" color="orange.700" _dark={{ color: 'orange.300' }}>
-                    {t('tradingProfiles.watchers.noProfiles')}
-                  </Text>
-                </Box>
-              )}
-            </Box>
+                {!useDefault && (
+                  <Field label={t('tradingProfiles.watchers.profile')}>
+                    <Select
+                      value={profileId ?? ''}
+                      onChange={(value) => setProfileId(value || null)}
+                      options={profileOptions}
+                      usePortal={false}
+                    />
+                  </Field>
+                )}
 
-            <Box
-              p={3}
-              borderRadius="md"
-              bg="blue.50"
-              borderWidth="1px"
-              borderColor="blue.200"
-              _dark={{ bg: 'blue.950', borderColor: 'blue.800' }}
+                {!useDefault && profiles.length === 0 && (
+                  <Box
+                    p={3}
+                    mt={2}
+                    borderRadius="md"
+                    bg="orange.50"
+                    borderWidth="1px"
+                    borderColor="orange.200"
+                    _dark={{ bg: 'orange.950', borderColor: 'orange.800' }}
+                  >
+                    <Text fontSize="xs" color="orange.700" _dark={{ color: 'orange.300' }}>
+                      {t('tradingProfiles.watchers.noProfiles')}
+                    </Text>
+                  </Box>
+                )}
+              </Box>
+
+              <Box
+                p={3}
+                borderRadius="md"
+                bg="blue.50"
+                borderWidth="1px"
+                borderColor="blue.200"
+                _dark={{ bg: 'blue.950', borderColor: 'blue.800' }}
+              >
+                <Text fontSize="xs" color="blue.700" _dark={{ color: 'blue.300' }}>
+                  {t('tradingProfiles.watchers.info')}
+                </Text>
+              </Box>
+            </Stack>
+          </DialogBody>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={handleClose} disabled={isStartingWatcher}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              colorPalette="green"
+              onClick={() => void handleSubmit()}
+              loading={isStartingWatcher}
+              disabled={!canSubmit}
             >
-              <Text fontSize="xs" color="blue.700" _dark={{ color: 'blue.300' }}>
-                {t('tradingProfiles.watchers.info')}
-              </Text>
-            </Box>
-          </Stack>
-        </DialogBody>
-
-        <DialogFooter>
-          <Button variant="ghost" onClick={handleClose} disabled={isStartingWatcher}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            colorPalette="green"
-            onClick={handleSubmit}
-            loading={isStartingWatcher}
-            disabled={!canSubmit}
-          >
-            {t('tradingProfiles.watchers.start')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+              {t('tradingProfiles.watchers.start')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </DialogPositioner>
     </DialogRoot>
   );
 };
