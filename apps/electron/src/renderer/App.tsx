@@ -13,7 +13,6 @@ import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { MainLayout } from './components/Layout/MainLayout';
 import { NewsDialog } from './components/News/NewsDialog';
-import { OnboardingDialog } from './components/Onboarding/OnboardingDialog';
 import { BacktestDialog } from './components/Trading/BacktestDialog';
 import { TrpcProvider } from './components/TrpcProvider';
 import { ErrorMessage } from './components/ui/ErrorMessage';
@@ -180,7 +179,6 @@ function AppContent(): ReactElement {
   const [showVWAP, setShowVWAP] = useLocalStorage('marketmind:showVWAP', false);
   const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
-  const [showOnboarding, setShowOnboarding] = useLocalStorage('marketmind:showOnboarding', true);
   const [isChatOpen, setIsChatOpen] = useLocalStorage('chat-sidebar-open', false);
   const [isTradingOpen, setIsTradingOpen] = useLocalStorage('trading-sidebar-open', false);
   const [isNewsOpen, setIsNewsOpen] = useLocalStorage('news-sidebar-open', false);
@@ -673,11 +671,6 @@ function AppContent(): ReactElement {
       />
 
       <UpdateNotification />
-
-      <OnboardingDialog
-        isOpen={showOnboarding}
-        onClose={() => setShowOnboarding(false)}
-      />
     </>
   );
 }
