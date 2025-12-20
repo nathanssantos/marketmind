@@ -3,7 +3,6 @@ import { randomBytes } from 'crypto';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { orders, positions, wallets } from '../db/schema';
-import { env } from '../env';
 import {
   createBinanceFuturesClient,
   isPaperWallet,
@@ -500,16 +499,64 @@ export const futuresTradingRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Position not found' });
           }
 
+          const dataService = getBinanceFuturesDataService();
+          const markPriceData = await dataService.getMarkPrice(position.symbol);
+          const exitPrice = markPriceData ? markPriceData.markPrice : parseFloat(position.currentPrice ?? position.entryPrice);
+
+          const entryPrice = parseFloat(position.entryPrice);
+          const quantity = parseFloat(position.entryQty);
+          const leverage = position.leverage ?? 1;
+          const accumulatedFunding = parseFloat(position.accumulatedFunding ?? '0');
+
+          const positionValue = entryPrice * quantity;
+          const exitValue = exitPrice * quantity;
+
+          const grossPnl = position.side === 'LONG'
+            ? exitValue - positionValue
+            : positionValue - exitValue;
+
+          const entryFee = positionValue * FUTURES_TAKER_FEE;
+          const exitFee = exitValue * FUTURES_TAKER_FEE;
+          const totalFees = entryFee + exitFee;
+
+          const netPnl = grossPnl - totalFees + accumulatedFunding;
+          const marginValue = positionValue / leverage;
+          const pnlPercent = (netPnl / marginValue) * 100;
+
           await ctx.db
             .update(positions)
             .set({
               status: 'closed',
               closedAt: new Date(),
               updatedAt: new Date(),
+              currentPrice: exitPrice.toString(),
+              pnl: netPnl.toString(),
+              pnlPercent: pnlPercent.toString(),
             })
             .where(eq(positions.id, input.positionId));
 
-          return { success: true, positionId: input.positionId };
+          logger.info({
+            positionId: input.positionId,
+            symbol: position.symbol,
+            side: position.side,
+            entryPrice,
+            exitPrice,
+            quantity,
+            leverage,
+            grossPnl: grossPnl.toFixed(4),
+            fees: totalFees.toFixed(4),
+            accumulatedFunding: accumulatedFunding.toFixed(4),
+            netPnl: netPnl.toFixed(4),
+            pnlPercent: pnlPercent.toFixed(2),
+          }, 'Paper futures position closed with funding');
+
+          return {
+            success: true,
+            positionId: input.positionId,
+            pnl: netPnl,
+            pnlPercent,
+            accumulatedFunding,
+          };
         }
 
         const client = createBinanceFuturesClient(wallet);

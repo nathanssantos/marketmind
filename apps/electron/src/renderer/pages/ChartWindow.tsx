@@ -32,7 +32,7 @@ const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
     visible: true,
   },
   {
-    period: 20,
+    period: 21,
     type: 'EMA',
     color: '#2196f3',
     lineWidth: 2,
@@ -42,6 +42,13 @@ const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
     period: 50,
     type: 'EMA',
     color: '#4caf50',
+    lineWidth: 2,
+    visible: false,
+  },
+  {
+    period: 70,
+    type: 'EMA',
+    color: '#00bcd4',
     lineWidth: 2,
     visible: false,
   },
@@ -146,6 +153,21 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
 
   const loading = backendKlinesQuery.isLoading;
   const error = backendKlinesQuery.error ? new Error(backendKlinesQuery.error.message) : null;
+
+  useEffect(() => {
+    const migrateMovingAverages = () => {
+      const hasOldConfig = movingAverages.some(ma => ma.period === 20) ||
+        movingAverages.length !== 6 ||
+        !movingAverages.some(ma => ma.period === 70) ||
+        !movingAverages.some(ma => ma.period === 200);
+
+      if (hasOldConfig) {
+        setMovingAverages(DEFAULT_MOVING_AVERAGES);
+      }
+    };
+
+    migrateMovingAverages();
+  }, []);
 
   const [liveKlines, setLiveKlines] = useState<Kline[]>([]);
   const previousPriceRef = useRef<number | null>(null);

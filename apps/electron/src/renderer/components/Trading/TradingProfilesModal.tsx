@@ -26,7 +26,7 @@ export const TradingProfilesModal = memo(({ isOpen, onClose }: TradingProfilesMo
             size="sm"
           />
           <Dialog.Header borderBottom="1px solid" borderColor="border">
-            <Dialog.Title>{t('tradingProfiles.title')}</Dialog.Title>
+            <Dialog.Title>{t('tradingProfiles.modalTitle')}</Dialog.Title>
           </Dialog.Header>
 
           <Dialog.Body overflowY="auto" pb={6}>

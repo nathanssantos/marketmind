@@ -2,10 +2,10 @@ import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Select } from '@/renderer/components/ui/select';
 import { Switch } from '@/renderer/components/ui/switch';
 import { Box, HStack, Separator, Spinner, Stack, Text } from '@chakra-ui/react';
+import type { MarketContextAction } from '@marketmind/types';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useMarketContextConfig } from '@renderer/hooks/useMarketContextConfig';
 import { useToast } from '@renderer/hooks/useToast';
-import type { MarketContextAction } from '@marketmind/types';
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -99,7 +99,7 @@ export const MarketContextConfigTab = (): ReactElement => {
   }
 
   return (
-    <Stack gap={6}>
+    <Stack gap={6} py={4}>
       <Box>
         <Text fontSize="lg" fontWeight="bold" mb={1}>
           {t('marketContext.title')}

@@ -1,19 +1,21 @@
 import { calculateATR } from '@marketmind/indicators';
+import type { MarketType } from '@marketmind/types';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import type { AutoTradingConfig, SetupDetection, Wallet } from '../db/schema';
 import { klines, tradeExecutions } from '../db/schema';
-import { createBinanceClient, isPaperWallet } from './binance-client';
+import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from './binance-client';
 import { logger } from './logger';
 
 export interface OrderParams {
   symbol: string;
   side: 'BUY' | 'SELL';
-  type: 'LIMIT' | 'MARKET' | 'STOP_LOSS_LIMIT';
+  type: 'LIMIT' | 'MARKET' | 'STOP_LOSS_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET';
   quantity: number;
   price?: number;
   stopPrice?: number;
   timeInForce?: 'GTC' | 'IOC' | 'FOK';
+  reduceOnly?: boolean;
 }
 
 export interface RiskValidationResult {
@@ -324,19 +326,51 @@ export class AutoTradingService {
 
   async executeBinanceOrder(
     wallet: Wallet,
-    orderParams: OrderParams
+    orderParams: OrderParams,
+    marketType: MarketType = 'SPOT'
   ): Promise<{ orderId: number; executedQty: string; price: string }> {
     if (isPaperWallet(wallet)) {
       throw new Error('Paper wallets cannot execute real orders on Binance');
     }
 
     try {
+      if (marketType === 'FUTURES') {
+        const client = createBinanceFuturesClient(wallet);
+
+        const order = await client.submitNewOrder({
+          symbol: orderParams.symbol,
+          side: orderParams.side,
+          type: orderParams.type as 'LIMIT' | 'MARKET' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
+          quantity: orderParams.quantity,
+          price: orderParams.price,
+          stopPrice: orderParams.stopPrice,
+          timeInForce: orderParams.timeInForce,
+          reduceOnly: orderParams.reduceOnly ? 'true' : undefined,
+        });
+
+        logger.info({
+          orderId: order.orderId,
+          symbol: order.symbol,
+          side: order.side,
+          quantity: order.origQty,
+          price: order.price,
+          walletType: wallet.walletType,
+          marketType: 'FUTURES',
+        }, 'Binance Futures order executed');
+
+        return {
+          orderId: order.orderId,
+          executedQty: order.executedQty?.toString() || '0',
+          price: order.price?.toString() || '0',
+        };
+      }
+
       const client = createBinanceClient(wallet);
 
       const order = await client.submitNewOrder({
         symbol: orderParams.symbol,
         side: orderParams.side,
-        type: orderParams.type,
+        type: orderParams.type as 'LIMIT' | 'MARKET' | 'STOP_LOSS_LIMIT',
         quantity: orderParams.quantity,
         price: orderParams.price,
         stopPrice: orderParams.stopPrice,
@@ -350,7 +384,8 @@ export class AutoTradingService {
         quantity: 'origQty' in order ? order.origQty : '0',
         price: 'price' in order ? order.price : '0',
         walletType: wallet.walletType,
-      }, 'Binance order executed');
+        marketType: 'SPOT',
+      }, 'Binance Spot order executed');
 
       return {
         orderId: order.orderId,
@@ -362,6 +397,7 @@ export class AutoTradingService {
         error: error instanceof Error ? error.message : String(error),
         orderParams,
         walletType: wallet.walletType,
+        marketType,
       }, 'Failed to execute Binance order');
       throw error;
     }
@@ -395,9 +431,24 @@ export class AutoTradingService {
     symbol: string,
     quantity: number,
     stopLoss: number,
-    side: 'LONG' | 'SHORT'
+    side: 'LONG' | 'SHORT',
+    marketType: MarketType = 'SPOT'
   ): Promise<number> {
     const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
+
+    if (marketType === 'FUTURES') {
+      const orderParams: OrderParams = {
+        symbol,
+        side: orderSide,
+        type: 'STOP_MARKET',
+        quantity,
+        stopPrice: stopLoss,
+        reduceOnly: true,
+      };
+
+      const result = await this.executeBinanceOrder(wallet, orderParams, 'FUTURES');
+      return result.orderId;
+    }
 
     const orderParams: OrderParams = {
       symbol,
@@ -409,7 +460,7 @@ export class AutoTradingService {
       timeInForce: 'GTC',
     };
 
-    const result = await this.executeBinanceOrder(wallet, orderParams);
+    const result = await this.executeBinanceOrder(wallet, orderParams, 'SPOT');
     return result.orderId;
   }
 
@@ -418,9 +469,24 @@ export class AutoTradingService {
     symbol: string,
     quantity: number,
     takeProfit: number,
-    side: 'LONG' | 'SHORT'
+    side: 'LONG' | 'SHORT',
+    marketType: MarketType = 'SPOT'
   ): Promise<number> {
     const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
+
+    if (marketType === 'FUTURES') {
+      const orderParams: OrderParams = {
+        symbol,
+        side: orderSide,
+        type: 'TAKE_PROFIT_MARKET',
+        quantity,
+        stopPrice: takeProfit,
+        reduceOnly: true,
+      };
+
+      const result = await this.executeBinanceOrder(wallet, orderParams, 'FUTURES');
+      return result.orderId;
+    }
 
     const orderParams: OrderParams = {
       symbol,
@@ -431,8 +497,68 @@ export class AutoTradingService {
       timeInForce: 'GTC',
     };
 
-    const result = await this.executeBinanceOrder(wallet, orderParams);
+    const result = await this.executeBinanceOrder(wallet, orderParams, 'SPOT');
     return result.orderId;
+  }
+
+  async setFuturesLeverage(
+    wallet: Wallet,
+    symbol: string,
+    leverage: number
+  ): Promise<void> {
+    if (isPaperWallet(wallet)) {
+      logger.info({ symbol, leverage }, 'Paper wallet: simulating leverage setting');
+      return;
+    }
+
+    const client = createBinanceFuturesClient(wallet);
+    await client.setLeverage({ symbol, leverage });
+    logger.info({ symbol, leverage }, 'Futures leverage set');
+  }
+
+  async setFuturesMarginType(
+    wallet: Wallet,
+    symbol: string,
+    marginType: 'ISOLATED' | 'CROSSED'
+  ): Promise<void> {
+    if (isPaperWallet(wallet)) {
+      logger.info({ symbol, marginType }, 'Paper wallet: simulating margin type setting');
+      return;
+    }
+
+    const client = createBinanceFuturesClient(wallet);
+    try {
+      await client.setMarginType({ symbol, marginType });
+      logger.info({ symbol, marginType }, 'Futures margin type set');
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('No need to change margin type')) {
+        logger.info({ symbol, marginType }, 'Margin type already set');
+        return;
+      }
+      throw error;
+    }
+  }
+
+  async setFuturesPositionMode(
+    wallet: Wallet,
+    dualSidePosition: boolean
+  ): Promise<void> {
+    if (isPaperWallet(wallet)) {
+      logger.info({ dualSidePosition }, 'Paper wallet: simulating position mode setting');
+      return;
+    }
+
+    const client = createBinanceFuturesClient(wallet);
+    try {
+      await client.setPositionMode({ dualSidePosition: dualSidePosition ? 'true' : 'false' });
+      logger.info({ dualSidePosition }, 'Futures position mode set');
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('No need to change position side')) {
+        logger.info({ dualSidePosition }, 'Position mode already set');
+        return;
+      }
+      throw error;
+    }
   }
 }
 

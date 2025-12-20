@@ -9,6 +9,7 @@ import { usePositionUpdates } from '@renderer/hooks/usePositionUpdates';
 import { type PortfolioFilterOption, type PortfolioSortOption, useUIStore } from '@renderer/store/uiStore';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FuturesPositionsPanel } from './FuturesPositionsPanel';
 
 interface PortfolioPosition {
   symbol: string;
@@ -102,6 +103,8 @@ const PortfolioComponent = () => {
 
   return (
     <Stack gap={3} p={4}>
+      <FuturesPositionsPanel />
+
       <Flex justify="space-between" align="center" mb={1}>
         <Text fontSize="sm" fontWeight="bold">
           {t('trading.portfolio.title')}

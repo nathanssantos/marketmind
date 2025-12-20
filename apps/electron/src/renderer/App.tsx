@@ -46,7 +46,7 @@ const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
     visible: true,
   },
   {
-    period: 20,
+    period: 21,
     type: 'EMA',
     color: '#2196f3',
     lineWidth: 2,
@@ -56,6 +56,13 @@ const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
     period: 50,
     type: 'EMA',
     color: '#4caf50',
+    lineWidth: 2,
+    visible: false,
+  },
+  {
+    period: 70,
+    type: 'EMA',
+    color: '#00bcd4',
     lineWidth: 2,
     visible: false,
   },
@@ -174,7 +181,7 @@ function AppContent(): ReactElement {
   const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
   const [showOnboarding, setShowOnboarding] = useLocalStorage('marketmind:showOnboarding', true);
-  const [isChatOpen, setIsChatOpen] = useLocalStorage('chat-sidebar-open', true);
+  const [isChatOpen, setIsChatOpen] = useLocalStorage('chat-sidebar-open', false);
   const [isTradingOpen, setIsTradingOpen] = useLocalStorage('trading-sidebar-open', false);
   const [isNewsOpen, setIsNewsOpen] = useLocalStorage('news-sidebar-open', false);
   const [isBacktestOpen, setIsBacktestOpen] = useState(false);
@@ -203,6 +210,21 @@ function AppContent(): ReactElement {
 
   useEffect(() => {
     void syncAIStore();
+  }, []);
+
+  useEffect(() => {
+    const migrateMovingAverages = () => {
+      const hasOldConfig = movingAverages.some(ma => ma.period === 20) ||
+        movingAverages.length !== 6 ||
+        !movingAverages.some(ma => ma.period === 70) ||
+        !movingAverages.some(ma => ma.period === 200);
+
+      if (hasOldConfig) {
+        setMovingAverages(DEFAULT_MOVING_AVERAGES);
+      }
+    };
+
+    migrateMovingAverages();
   }, []);
 
   const restoreActiveConversation = useAIStore((state) => state.restoreActiveConversation);

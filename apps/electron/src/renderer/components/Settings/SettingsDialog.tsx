@@ -6,15 +6,11 @@ import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import { AboutTab } from './AboutTab';
 import { AIConfigTab } from './AIConfigTab';
-import { AlgorithmicAutoTradingTab } from './AlgorithmicAutoTradingTab';
 import { ChartSettingsTab } from './ChartSettingsTab';
 import { ContextConfigTab } from './ContextConfigTab';
 import { GeneralTab } from './GeneralTab';
 import { MarketContextConfigTab } from './MarketContextConfigTab';
-import { NewsConfigTab } from './NewsConfigTab';
 import { PatternDetectionTab } from './PatternDetectionTab';
-import { SetupConfigTab } from './SetupConfigTab';
-import { TradingProfilesTab } from './TradingProfilesTab';
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -50,12 +46,8 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 <Tabs.Trigger value="chart">{t('settings.tabs.chart')}</Tabs.Trigger>
                 <Tabs.Trigger value="ai">{t('settings.tabs.ai')}</Tabs.Trigger>
                 <Tabs.Trigger value="context">{t('settings.tabs.context')}</Tabs.Trigger>
-                <Tabs.Trigger value="algorithmicAutoTrading">{t('settings.tabs.algorithmicAutoTrading')}</Tabs.Trigger>
-                <Tabs.Trigger value="tradingProfiles">{t('settings.tabs.tradingProfiles')}</Tabs.Trigger>
                 <Tabs.Trigger value="marketContext">{t('settings.tabs.marketContext')}</Tabs.Trigger>
-                <Tabs.Trigger value="setupDetection">{t('settings.tabs.setupDetection')}</Tabs.Trigger>
                 <Tabs.Trigger value="patternDetection">{t('settings.tabs.patternDetection')}</Tabs.Trigger>
-                <Tabs.Trigger value="news">{t('settings.tabs.news')}</Tabs.Trigger>
                 <Tabs.Trigger value="about">{t('settings.tabs.about')}</Tabs.Trigger>
               </Tabs.List>
 
@@ -79,28 +71,12 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                   <ContextConfigTab />
                 </Tabs.Content>
 
-                <Tabs.Content value="algorithmicAutoTrading">
-                  <AlgorithmicAutoTradingTab />
-                </Tabs.Content>
-
-                <Tabs.Content value="tradingProfiles">
-                  <TradingProfilesTab />
-                </Tabs.Content>
-
                 <Tabs.Content value="marketContext">
                   <MarketContextConfigTab />
                 </Tabs.Content>
 
-                <Tabs.Content value="setupDetection">
-                  <SetupConfigTab />
-                </Tabs.Content>
-
                 <Tabs.Content value="patternDetection">
                   <PatternDetectionTab />
-                </Tabs.Content>
-
-                <Tabs.Content value="news">
-                  <NewsConfigTab />
                 </Tabs.Content>
 
                 <Tabs.Content value="about">

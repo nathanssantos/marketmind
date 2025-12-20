@@ -206,7 +206,7 @@ export const IndicatorTogglePopover = memo(
                     </Flex>
                 }
             >
-                <Box p={4} maxH="500px" overflowY="auto">
+                <Box p={4} maxH="600px" overflowY="auto">
                     <Stack gap={4}>
                         <Flex justify="space-between" align="center">
                             <Text fontSize="sm" fontWeight="bold">
@@ -217,7 +217,7 @@ export const IndicatorTogglePopover = memo(
                             </Text>
                         </Flex>
 
-                        <Stack gap={4} maxH="400px" overflowY="auto">
+                        <Stack gap={4} maxH="500px" overflowY="auto">
                             {categories.map((category) => (
                                 <Stack key={category.title} gap={2}>
                                     <Text

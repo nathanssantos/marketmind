@@ -242,6 +242,9 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   dailyLossLimit: numeric('daily_loss_limit', { precision: 10, scale: 2 }).default('5').notNull(), // % of wallet balance
   enabledSetupTypes: text('enabled_setup_types').notNull(), // JSON array of setup types
   positionSizing: varchar('position_sizing', { length: 20 }).default('percentage'), // 'fixed' | 'percentage' | 'kelly'
+  leverage: integer().default(1),
+  marginType: varchar('margin_type', { length: 10 }).$type<'ISOLATED' | 'CROSSED'>().default('ISOLATED'),
+  positionMode: varchar('position_mode', { length: 10 }).$type<'ONE_WAY' | 'HEDGE'>().default('ONE_WAY'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
@@ -282,6 +285,8 @@ export const tradeExecutions = pgTable('trade_executions', {
   entryOrderType: varchar('entry_order_type', { length: 10 }).$type<'MARKET' | 'LIMIT'>().default('MARKET'),
   limitEntryPrice: numeric('limit_entry_price', { precision: 20, scale: 8 }),
   expiresAt: timestamp('expires_at', { mode: 'date' }),
+  marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('SPOT'),
+  leverage: integer().default(1),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
@@ -290,6 +295,7 @@ export const tradeExecutions = pgTable('trade_executions', {
   statusIdx: index('trade_executions_status_idx').on(table.status),
   openedAtIdx: index('trade_executions_opened_at_idx').on(table.openedAt),
   setupTypeIdx: index('trade_executions_setup_type_idx').on(table.setupType),
+  marketTypeIdx: index('trade_executions_market_type_idx').on(table.marketType),
 }));
 
 export const priceCache = pgTable('price_cache', {

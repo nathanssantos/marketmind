@@ -111,7 +111,7 @@ export const SetupTogglePopover = memo(() => {
                             aria-label={t('setupConfig.configureSetups')}
                             size="2xs"
                             variant="solid"
-                            colorPalette="green"
+                            colorPalette="blue"
                         >
                             <HiAdjustmentsHorizontal />
                         </IconButton>

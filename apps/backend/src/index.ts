@@ -121,6 +121,9 @@ const start = async (): Promise<void> => {
     const { cooldownService } = await import('./services/cooldown');
     cooldownService.startCleanupScheduler(60);
 
+    const { fundingRateService } = await import('./services/funding-rate-service');
+    fundingRateService.start();
+
     fastify.log.info(`🚀 Backend server running on http://localhost:${port}`);
     fastify.log.info(`📡 tRPC endpoint: http://localhost:${port}/trpc`);
     fastify.log.info(`🔌 WebSocket server initialized`);

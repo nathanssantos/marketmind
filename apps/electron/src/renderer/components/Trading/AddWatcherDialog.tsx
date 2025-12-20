@@ -12,7 +12,7 @@ import {
   Stack,
   Text,
 } from '@chakra-ui/react';
-import type { TradingProfile } from '@marketmind/types';
+import type { MarketType, TradingProfile } from '@marketmind/types';
 import { Button } from '@renderer/components/ui/button';
 import { Checkbox } from '@renderer/components/ui/checkbox';
 import { Field } from '@renderer/components/ui/field';
@@ -20,6 +20,11 @@ import { Select } from '@renderer/components/ui/select';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+const MARKET_TYPES: { value: MarketType; label: string }[] = [
+  { value: 'SPOT', label: 'Spot' },
+  { value: 'FUTURES', label: 'Futures' },
+];
 
 const INTERVALS = [
   { value: '1m', label: '1m' },
@@ -51,11 +56,17 @@ export const AddWatcherDialog = ({
   const [interval, setInterval] = useState('1d');
   const [profileId, setProfileId] = useState<string | null>(null);
   const [useDefault, setUseDefault] = useState(true);
+  const [marketType, setMarketType] = useState<MarketType>('SPOT');
 
   const handleSubmit = async () => {
     if (!symbol.trim()) return;
 
-    await startWatcher(symbol.trim().toUpperCase(), interval, useDefault ? undefined : profileId ?? undefined);
+    await startWatcher(
+      symbol.trim().toUpperCase(),
+      interval,
+      useDefault ? undefined : profileId ?? undefined,
+      marketType
+    );
     onClose();
     resetForm();
   };
@@ -65,6 +76,7 @@ export const AddWatcherDialog = ({
     setInterval('1d');
     setProfileId(null);
     setUseDefault(true);
+    setMarketType('SPOT');
   };
 
   const handleClose = () => {
@@ -114,6 +126,37 @@ export const AddWatcherDialog = ({
                   </Button>
                 ))}
               </Flex>
+            </Field>
+
+            <Field label={t('tradingProfiles.watchers.marketType', 'Market Type')}>
+              <Flex gap={2}>
+                {MARKET_TYPES.map((mt) => (
+                  <Button
+                    key={mt.value}
+                    size="sm"
+                    variant={marketType === mt.value ? 'solid' : 'outline'}
+                    colorPalette={marketType === mt.value ? 'blue' : 'gray'}
+                    onClick={() => setMarketType(mt.value)}
+                  >
+                    {mt.label}
+                  </Button>
+                ))}
+              </Flex>
+              {marketType === 'FUTURES' && (
+                <Box
+                  mt={2}
+                  p={2}
+                  borderRadius="sm"
+                  bg="orange.50"
+                  borderWidth="1px"
+                  borderColor="orange.200"
+                  _dark={{ bg: 'orange.950', borderColor: 'orange.800' }}
+                >
+                  <Text fontSize="xs" color="orange.700" _dark={{ color: 'orange.300' }}>
+                    ⚠️ {t('tradingProfiles.watchers.futuresWarning', 'Futures trading involves higher risk due to leverage. Ensure your wallet has Futures API permissions enabled.')}
+                  </Text>
+                </Box>
+              )}
             </Field>
 
             <Box>

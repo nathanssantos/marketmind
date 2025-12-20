@@ -1,14 +1,17 @@
-import type { BinanceNewOrderResult, BinanceOrderQueryResult } from '@marketmind/types';
+import type { BinanceNewOrderResult, BinanceOrderQueryResult, MarketType } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
-import { MainClient } from 'binance';
+import { MainClient, USDMClient } from 'binance';
 import { randomBytes } from 'crypto';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { orders, positions, tradeExecutions, wallets } from '../db/schema';
 import { env } from '../env';
-import { createBinanceClient, isPaperWallet } from '../services/binance-client';
+import { autoTradingService } from '../services/auto-trading';
+import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from '../services/binance-client';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
+
+const BINANCE_FUTURES_TAKER_FEE = 0.0004;
 
 const generateId = (length: number): string => {
   return randomBytes(length).toString('base64url').slice(0, length);
@@ -30,12 +33,16 @@ export const tradingRouter = router({
           'STOP_LOSS_LIMIT',
           'TAKE_PROFIT',
           'TAKE_PROFIT_LIMIT',
+          'STOP_MARKET',
+          'TAKE_PROFIT_MARKET',
         ]),
         quantity: z.string(),
         price: z.string().optional(),
         stopPrice: z.string().optional(),
         setupId: z.string().optional(),
         setupType: z.string().optional(),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        reduceOnly: z.boolean().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -81,6 +88,8 @@ export const tradingRouter = router({
             updateTime: simulatedOrderId,
             setupId: input.setupId,
             setupType: input.setupType,
+            marketType: input.marketType,
+            reduceOnly: input.reduceOnly,
           });
 
           return {
@@ -92,6 +101,54 @@ export const tradingRouter = router({
             price,
             quantity,
             executedQty: input.type === 'MARKET' ? quantity : '0',
+            marketType: input.marketType,
+          };
+        }
+
+        if (input.marketType === 'FUTURES') {
+          const client = createBinanceFuturesClient(wallet);
+
+          const binanceOrder = await client.submitNewOrder({
+            symbol: input.symbol,
+            side: input.side,
+            type: input.type as 'LIMIT' | 'MARKET' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
+            quantity: parseFloat(input.quantity),
+            price: input.price ? parseFloat(input.price) : undefined,
+            stopPrice: input.stopPrice ? parseFloat(input.stopPrice) : undefined,
+            timeInForce: input.type.includes('LIMIT') ? 'GTC' : undefined,
+            reduceOnly: input.reduceOnly ? 'true' : undefined,
+          });
+
+          await ctx.db.insert(orders).values({
+            orderId: binanceOrder.orderId,
+            userId: ctx.user.id,
+            walletId: input.walletId,
+            symbol: binanceOrder.symbol,
+            side: binanceOrder.side,
+            type: binanceOrder.type,
+            price: binanceOrder.price?.toString(),
+            origQty: binanceOrder.origQty?.toString(),
+            executedQty: binanceOrder.executedQty?.toString(),
+            status: binanceOrder.status,
+            timeInForce: binanceOrder.timeInForce,
+            time: binanceOrder.updateTime,
+            updateTime: binanceOrder.updateTime,
+            setupId: input.setupId,
+            setupType: input.setupType,
+            marketType: 'FUTURES',
+            reduceOnly: input.reduceOnly,
+          });
+
+          return {
+            orderId: binanceOrder.orderId,
+            symbol: binanceOrder.symbol,
+            side: binanceOrder.side,
+            type: binanceOrder.type,
+            status: binanceOrder.status,
+            price: binanceOrder.price,
+            quantity: binanceOrder.origQty,
+            executedQty: binanceOrder.executedQty,
+            marketType: 'FUTURES' as MarketType,
           };
         }
 
@@ -100,7 +157,7 @@ export const tradingRouter = router({
         const binanceOrder = await client.submitNewOrder({
           symbol: input.symbol,
           side: input.side,
-          type: input.type,
+          type: input.type as 'LIMIT' | 'MARKET' | 'STOP_LOSS' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT' | 'TAKE_PROFIT_LIMIT',
           quantity: parseFloat(input.quantity),
           price: input.price ? parseFloat(input.price) : undefined,
           stopPrice: input.stopPrice ? parseFloat(input.stopPrice) : undefined,
@@ -125,6 +182,7 @@ export const tradingRouter = router({
           updateTime: orderData.transactTime,
           setupId: input.setupId,
           setupType: input.setupType,
+          marketType: 'SPOT',
         });
 
         return {
@@ -136,6 +194,7 @@ export const tradingRouter = router({
           price: orderData.price,
           quantity: orderData.origQty,
           executedQty: orderData.executedQty,
+          marketType: 'SPOT' as MarketType,
         };
       } catch (error) {
         throw new TRPCError({
@@ -152,6 +211,7 @@ export const tradingRouter = router({
         walletId: z.string(),
         symbol: z.string(),
         orderId: z.number(),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -181,6 +241,29 @@ export const tradingRouter = router({
           return {
             orderId: input.orderId,
             symbol: input.symbol,
+            status: 'CANCELED',
+          };
+        }
+
+        if (input.marketType === 'FUTURES') {
+          const client = createBinanceFuturesClient(wallet);
+
+          const canceledOrder = await client.cancelOrder({
+            symbol: input.symbol,
+            orderId: input.orderId,
+          });
+
+          await ctx.db
+            .update(orders)
+            .set({
+              status: 'CANCELED',
+              updateTime: Date.now(),
+            })
+            .where(eq(orders.orderId, input.orderId));
+
+          return {
+            orderId: canceledOrder.orderId,
+            symbol: canceledOrder.symbol,
             status: 'CANCELED',
           };
         }
@@ -277,6 +360,7 @@ export const tradingRouter = router({
       z.object({
         walletId: z.string(),
         symbol: z.string(),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -296,6 +380,54 @@ export const tradingRouter = router({
       try {
         if (isPaperWallet(wallet)) {
           return { synced: 0, message: 'Paper wallets do not sync with Binance' };
+        }
+
+        if (input.marketType === 'FUTURES') {
+          const client = createBinanceFuturesClient(wallet);
+
+          const binanceOrders = await client.getAllOrders({
+            symbol: input.symbol,
+            limit: 100,
+          });
+
+          for (const binanceOrder of binanceOrders) {
+            const [existingOrder] = await ctx.db
+              .select()
+              .from(orders)
+              .where(eq(orders.orderId, binanceOrder.orderId))
+              .limit(1);
+
+            if (existingOrder) {
+              await ctx.db
+                .update(orders)
+                .set({
+                  status: binanceOrder.status,
+                  executedQty: binanceOrder.executedQty?.toString(),
+                  updateTime: binanceOrder.updateTime,
+                })
+                .where(eq(orders.orderId, binanceOrder.orderId));
+            } else {
+              await ctx.db.insert(orders).values({
+                orderId: binanceOrder.orderId,
+                userId: ctx.user.id,
+                walletId: input.walletId,
+                symbol: binanceOrder.symbol,
+                side: binanceOrder.side,
+                type: binanceOrder.type,
+                price: binanceOrder.price?.toString(),
+                origQty: binanceOrder.origQty?.toString(),
+                executedQty: binanceOrder.executedQty?.toString(),
+                status: binanceOrder.status,
+                timeInForce: binanceOrder.timeInForce,
+                time: binanceOrder.time,
+                updateTime: binanceOrder.updateTime,
+                marketType: 'FUTURES',
+                reduceOnly: binanceOrder.reduceOnly,
+              });
+            }
+          }
+
+          return { synced: binanceOrders.length };
         }
 
         const client = createBinanceClient(wallet);
@@ -338,6 +470,7 @@ export const tradingRouter = router({
               timeInForce: orderData.timeInForce,
               time: orderData.time,
               updateTime: orderData.updateTime,
+              marketType: 'SPOT',
             });
           }
         }
@@ -517,21 +650,39 @@ export const tradingRouter = router({
       const walletSupportsLive = !isPaperWallet(wallet);
       const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
 
+      const isFutures = position.marketType === 'FUTURES';
+      const leverage = position.leverage || 1;
+
       if (shouldExecuteReal) {
         try {
-          const client = createBinanceClient(wallet);
           const orderSide = position.side === 'LONG' ? 'SELL' : 'BUY';
 
-          const order = await client.submitNewOrder({
-            symbol: position.symbol,
-            side: orderSide,
-            type: 'MARKET',
-            quantity: qty,
-          });
+          if (isFutures) {
+            const client = createBinanceFuturesClient(wallet);
+            const order = await client.submitNewOrder({
+              symbol: position.symbol,
+              side: orderSide,
+              type: 'MARKET',
+              quantity: qty,
+              reduceOnly: 'true',
+            });
 
-          exitOrderId = order.orderId;
-          const filledPrice = 'price' in order ? parseFloat(order.price?.toString() || '0') : 0;
-          if (filledPrice > 0) exitPrice = filledPrice;
+            exitOrderId = order.orderId;
+            const filledPrice = parseFloat(order.avgPrice?.toString() || order.price?.toString() || '0');
+            if (filledPrice > 0) exitPrice = filledPrice;
+          } else {
+            const client = createBinanceClient(wallet);
+            const order = await client.submitNewOrder({
+              symbol: position.symbol,
+              side: orderSide,
+              type: 'MARKET',
+              quantity: qty,
+            });
+
+            exitOrderId = order.orderId;
+            const filledPrice = 'price' in order ? parseFloat(order.price?.toString() || '0') : 0;
+            if (filledPrice > 0) exitPrice = filledPrice;
+          }
 
           logger.info({
             positionId: position.id,
@@ -540,8 +691,10 @@ export const tradingRouter = router({
             side: orderSide,
             quantity: qty,
             exitPrice,
-          exitSource: 'MANUAL',
-          message: 'Posição fechada manualmente pelo usuário',
+            exitSource: 'MANUAL',
+            marketType: position.marketType,
+            leverage,
+            message: 'Position closed manually by user',
           }, '👤 [MANUAL] Manual close position: Binance exit order executed');
         } catch (error) {
           logger.error({
@@ -566,14 +719,17 @@ export const tradingRouter = router({
           walletType: wallet.walletType,
           liveEnabled: env.ENABLE_LIVE_TRADING,
           exitSource: 'MANUAL',
-          message: 'Posição fechada manualmente pelo usuário (paper trading)',
+          marketType: position.marketType,
+          leverage,
+          message: 'Position closed manually by user (paper trading)',
         }, '👤 [MANUAL] Manual close position: Paper/disabled mode - simulating exit');
       }
 
+      const feeRate = isFutures ? BINANCE_FUTURES_TAKER_FEE : BINANCE_TAKER_FEE;
       const entryValue = entryPrice * qty;
       const exitValue = exitPrice * qty;
-      const entryFee = entryValue * BINANCE_TAKER_FEE;
-      const exitFee = exitValue * BINANCE_TAKER_FEE;
+      const entryFee = entryValue * feeRate;
+      const exitFee = exitValue * feeRate;
       const totalFees = entryFee + exitFee;
 
       let grossPnl = 0;
@@ -584,7 +740,8 @@ export const tradingRouter = router({
       }
 
       const netPnl = grossPnl - totalFees;
-      const pnlPercent = (netPnl / entryValue) * 100;
+      const marginValue = entryValue / leverage;
+      const pnlPercent = (netPnl / marginValue) * 100;
 
       const currentBalance = parseFloat(wallet.currentBalance || '0');
       const newBalance = currentBalance + netPnl;
@@ -618,6 +775,8 @@ export const tradingRouter = router({
         pnlPercent: pnlPercent.toFixed(2),
         exitOrderId,
         exitPrice: exitPrice.toString(),
+        leverage: isFutures ? leverage : undefined,
+        marketType: position.marketType,
       };
     }),
 
@@ -697,6 +856,8 @@ export const tradingRouter = router({
 
       const walletSupportsLive = !isPaperWallet(wallet);
       const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
+      const isFutures = execution.marketType === 'FUTURES';
+      const leverage = execution.leverage || 1;
 
       if (execution.status === 'pending') {
         logger.info({
@@ -705,29 +866,43 @@ export const tradingRouter = router({
           entryOrderId: execution.entryOrderId,
           stopLossOrderId: execution.stopLossOrderId,
           takeProfitOrderId: execution.takeProfitOrderId,
+          marketType: execution.marketType,
         }, 'Cancelling pending execution and associated orders');
 
         if (shouldExecuteReal) {
-          const client = createBinanceClient(wallet);
           const orderIdsToCancel = [
             execution.entryOrderId,
             execution.stopLossOrderId,
             execution.takeProfitOrderId,
           ].filter((id): id is number => id !== null);
 
-          for (const orderId of orderIdsToCancel) {
-            try {
-              await client.cancelOrder({
-                symbol: execution.symbol,
-                orderId,
-              });
-              logger.info({ orderId, symbol: execution.symbol }, 'Cancelled Binance order');
-            } catch (error) {
-              logger.warn({
-                orderId,
-                symbol: execution.symbol,
-                error: error instanceof Error ? error.message : String(error),
-              }, 'Failed to cancel Binance order (may already be filled/cancelled)');
+          if (isFutures) {
+            const client = createBinanceFuturesClient(wallet);
+            for (const orderId of orderIdsToCancel) {
+              try {
+                await client.cancelOrder({ symbol: execution.symbol, orderId });
+                logger.info({ orderId, symbol: execution.symbol }, 'Cancelled Binance Futures order');
+              } catch (error) {
+                logger.warn({
+                  orderId,
+                  symbol: execution.symbol,
+                  error: error instanceof Error ? error.message : String(error),
+                }, 'Failed to cancel Binance Futures order (may already be filled/cancelled)');
+              }
+            }
+          } else {
+            const client = createBinanceClient(wallet);
+            for (const orderId of orderIdsToCancel) {
+              try {
+                await client.cancelOrder({ symbol: execution.symbol, orderId });
+                logger.info({ orderId, symbol: execution.symbol }, 'Cancelled Binance order');
+              } catch (error) {
+                logger.warn({
+                  orderId,
+                  symbol: execution.symbol,
+                  error: error instanceof Error ? error.message : String(error),
+                }, 'Failed to cancel Binance order (may already be filled/cancelled)');
+              }
             }
           }
         }
@@ -759,36 +934,70 @@ export const tradingRouter = router({
 
       if (shouldExecuteReal) {
         try {
-          const client = createBinanceClient(wallet);
           const orderSide = execution.side === 'LONG' ? 'SELL' : 'BUY';
 
-          if (execution.stopLossOrderId) {
-            try {
-              await client.cancelOrder({ symbol: execution.symbol, orderId: execution.stopLossOrderId });
-              logger.info({ orderId: execution.stopLossOrderId }, 'Cancelled SL order');
-            } catch (e) {
-              logger.warn({ orderId: execution.stopLossOrderId, error: e }, 'Failed to cancel SL order');
-            }
-          }
-          if (execution.takeProfitOrderId) {
-            try {
-              await client.cancelOrder({ symbol: execution.symbol, orderId: execution.takeProfitOrderId });
-              logger.info({ orderId: execution.takeProfitOrderId }, 'Cancelled TP order');
-            } catch (e) {
-              logger.warn({ orderId: execution.takeProfitOrderId, error: e }, 'Failed to cancel TP order');
-            }
-          }
+          if (isFutures) {
+            const client = createBinanceFuturesClient(wallet);
 
-          const order = await client.submitNewOrder({
-            symbol: execution.symbol,
-            side: orderSide,
-            type: 'MARKET',
-            quantity: qty,
-          });
+            if (execution.stopLossOrderId) {
+              try {
+                await client.cancelOrder({ symbol: execution.symbol, orderId: execution.stopLossOrderId });
+                logger.info({ orderId: execution.stopLossOrderId }, 'Cancelled SL order');
+              } catch (e) {
+                logger.warn({ orderId: execution.stopLossOrderId, error: e }, 'Failed to cancel SL order');
+              }
+            }
+            if (execution.takeProfitOrderId) {
+              try {
+                await client.cancelOrder({ symbol: execution.symbol, orderId: execution.takeProfitOrderId });
+                logger.info({ orderId: execution.takeProfitOrderId }, 'Cancelled TP order');
+              } catch (e) {
+                logger.warn({ orderId: execution.takeProfitOrderId, error: e }, 'Failed to cancel TP order');
+              }
+            }
 
-          exitOrderId = order.orderId;
-          const filledPrice = 'price' in order ? parseFloat(order.price?.toString() || '0') : 0;
-          if (filledPrice > 0) exitPrice = filledPrice;
+            const order = await client.submitNewOrder({
+              symbol: execution.symbol,
+              side: orderSide,
+              type: 'MARKET',
+              quantity: qty,
+              reduceOnly: 'true',
+            });
+
+            exitOrderId = order.orderId;
+            const filledPrice = parseFloat(order.avgPrice?.toString() || order.price?.toString() || '0');
+            if (filledPrice > 0) exitPrice = filledPrice;
+          } else {
+            const client = createBinanceClient(wallet);
+
+            if (execution.stopLossOrderId) {
+              try {
+                await client.cancelOrder({ symbol: execution.symbol, orderId: execution.stopLossOrderId });
+                logger.info({ orderId: execution.stopLossOrderId }, 'Cancelled SL order');
+              } catch (e) {
+                logger.warn({ orderId: execution.stopLossOrderId, error: e }, 'Failed to cancel SL order');
+              }
+            }
+            if (execution.takeProfitOrderId) {
+              try {
+                await client.cancelOrder({ symbol: execution.symbol, orderId: execution.takeProfitOrderId });
+                logger.info({ orderId: execution.takeProfitOrderId }, 'Cancelled TP order');
+              } catch (e) {
+                logger.warn({ orderId: execution.takeProfitOrderId, error: e }, 'Failed to cancel TP order');
+              }
+            }
+
+            const order = await client.submitNewOrder({
+              symbol: execution.symbol,
+              side: orderSide,
+              type: 'MARKET',
+              quantity: qty,
+            });
+
+            exitOrderId = order.orderId;
+            const filledPrice = 'price' in order ? parseFloat(order.price?.toString() || '0') : 0;
+            if (filledPrice > 0) exitPrice = filledPrice;
+          }
 
           logger.info({
             executionId: execution.id,
@@ -797,6 +1006,8 @@ export const tradingRouter = router({
             side: orderSide,
             quantity: qty,
             exitPrice,
+            marketType: execution.marketType,
+            leverage,
           }, 'Manual close: Binance exit order executed');
         } catch (error) {
           logger.error({
@@ -820,13 +1031,16 @@ export const tradingRouter = router({
           executionId: execution.id,
           walletType: wallet.walletType,
           liveEnabled: env.ENABLE_LIVE_TRADING,
+          marketType: execution.marketType,
+          leverage,
         }, 'Manual close: Paper/disabled mode - simulating exit');
       }
 
+      const feeRate = isFutures ? BINANCE_FUTURES_TAKER_FEE : BINANCE_TAKER_FEE;
       const entryValue = entryPrice * qty;
       const exitValue = exitPrice * qty;
-      const entryFee = entryValue * BINANCE_TAKER_FEE;
-      const exitFee = exitValue * BINANCE_TAKER_FEE;
+      const entryFee = entryValue * feeRate;
+      const exitFee = exitValue * feeRate;
       const totalFees = entryFee + exitFee;
 
       let grossPnl = 0;
@@ -837,7 +1051,8 @@ export const tradingRouter = router({
       }
 
       const netPnl = grossPnl - totalFees;
-      const pnlPercent = (netPnl / entryValue) * 100;
+      const marginValue = entryValue / leverage;
+      const pnlPercent = (netPnl / marginValue) * 100;
 
       const currentBalance = parseFloat(wallet.currentBalance || '0');
       const newBalance = currentBalance + netPnl;
@@ -873,6 +1088,8 @@ export const tradingRouter = router({
         pnlPercent: pnlPercent.toFixed(2),
         exitOrderId,
         exitPrice: exitPrice.toString(),
+        leverage: isFutures ? leverage : undefined,
+        marketType: execution.marketType,
       };
     }),
 
@@ -903,37 +1120,55 @@ export const tradingRouter = router({
         .limit(1);
 
       if (wallet && !isPaperWallet(wallet) && env.ENABLE_LIVE_TRADING) {
-        const client = createBinanceClient(wallet);
-
+        const isFutures = execution.marketType === 'FUTURES';
         const orderIdsToCancel = [
           execution.entryOrderId,
           execution.stopLossOrderId,
           execution.takeProfitOrderId,
         ].filter((id): id is number => id !== null);
 
-        for (const orderId of orderIdsToCancel) {
-          try {
-            await client.cancelOrder({ symbol: execution.symbol, orderId });
-            logger.info({ orderId, symbol: execution.symbol }, 'Cancelled Binance order during execution cancel');
-          } catch (error) {
-            logger.warn({
-              orderId,
-              symbol: execution.symbol,
-              error: error instanceof Error ? error.message : String(error),
-            }, 'Failed to cancel Binance order (may already be filled/cancelled)');
-          }
-        }
+        if (isFutures) {
+          const client = createBinanceFuturesClient(wallet);
 
-        if (execution.orderListId) {
-          try {
-            await client.cancelOCO({ symbol: execution.symbol, orderListId: execution.orderListId });
-            logger.info({ orderListId: execution.orderListId, symbol: execution.symbol }, 'Cancelled OCO order list');
-          } catch (error) {
-            logger.warn({
-              orderListId: execution.orderListId,
-              symbol: execution.symbol,
-              error: error instanceof Error ? error.message : String(error),
-            }, 'Failed to cancel OCO order list (may already be executed)');
+          for (const orderId of orderIdsToCancel) {
+            try {
+              await client.cancelOrder({ symbol: execution.symbol, orderId });
+              logger.info({ orderId, symbol: execution.symbol }, 'Cancelled Binance Futures order during execution cancel');
+            } catch (error) {
+              logger.warn({
+                orderId,
+                symbol: execution.symbol,
+                error: error instanceof Error ? error.message : String(error),
+              }, 'Failed to cancel Binance Futures order (may already be filled/cancelled)');
+            }
+          }
+        } else {
+          const client = createBinanceClient(wallet);
+
+          for (const orderId of orderIdsToCancel) {
+            try {
+              await client.cancelOrder({ symbol: execution.symbol, orderId });
+              logger.info({ orderId, symbol: execution.symbol }, 'Cancelled Binance order during execution cancel');
+            } catch (error) {
+              logger.warn({
+                orderId,
+                symbol: execution.symbol,
+                error: error instanceof Error ? error.message : String(error),
+              }, 'Failed to cancel Binance order (may already be filled/cancelled)');
+            }
+          }
+
+          if (execution.orderListId) {
+            try {
+              await client.cancelOCO({ symbol: execution.symbol, orderListId: execution.orderListId });
+              logger.info({ orderListId: execution.orderListId, symbol: execution.symbol }, 'Cancelled OCO order list');
+            } catch (error) {
+              logger.warn({
+                orderListId: execution.orderListId,
+                symbol: execution.symbol,
+                error: error instanceof Error ? error.message : String(error),
+              }, 'Failed to cancel OCO order list (may already be executed)');
+            }
           }
         }
       }
@@ -953,15 +1188,29 @@ export const tradingRouter = router({
     .input(
       z.object({
         symbols: z.array(z.string()),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
       })
     )
     .query(async ({ input }) => {
       if (input.symbols.length === 0) return {};
 
       try {
-        const client = new MainClient();
         const prices: Record<string, string> = {};
 
+        if (input.marketType === 'FUTURES') {
+          const client = new USDMClient();
+          const tickers = await client.getSymbolPriceTicker();
+          const tickersArray = Array.isArray(tickers) ? tickers : [tickers];
+
+          for (const symbol of input.symbols) {
+            const ticker = tickersArray.find((t) => t.symbol === symbol);
+            if (ticker?.price) prices[symbol] = ticker.price.toString();
+          }
+
+          return prices;
+        }
+
+        const client = new MainClient();
         const tickers = await client.getSymbolPriceTicker();
         const tickersArray = Array.isArray(tickers) ? tickers : [tickers];
 
@@ -976,6 +1225,163 @@ export const tradingRouter = router({
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Failed to fetch ticker prices',
+          cause: error,
+        });
+      }
+    }),
+
+  setFuturesLeverage: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        symbol: z.string(),
+        leverage: z.number().min(1).max(125),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      try {
+        await autoTradingService.setFuturesLeverage(wallet, input.symbol, input.leverage);
+        return { success: true, leverage: input.leverage };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to set leverage',
+          cause: error,
+        });
+      }
+    }),
+
+  setFuturesMarginType: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        symbol: z.string(),
+        marginType: z.enum(['ISOLATED', 'CROSSED']),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      try {
+        await autoTradingService.setFuturesMarginType(wallet, input.symbol, input.marginType);
+        return { success: true, marginType: input.marginType };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to set margin type',
+          cause: error,
+        });
+      }
+    }),
+
+  setFuturesPositionMode: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        dualSidePosition: z.boolean(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      try {
+        await autoTradingService.setFuturesPositionMode(wallet, input.dualSidePosition);
+        return { success: true, dualSidePosition: input.dualSidePosition };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to set position mode',
+          cause: error,
+        });
+      }
+    }),
+
+  getFuturesAccountInfo: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      if (isPaperWallet(wallet)) {
+        return {
+          totalWalletBalance: wallet.currentBalance || '0',
+          availableBalance: wallet.currentBalance || '0',
+          positions: [],
+        };
+      }
+
+      try {
+        const client = createBinanceFuturesClient(wallet);
+        const account = await client.getAccountInformation();
+
+        return {
+          totalWalletBalance: account.totalWalletBalance,
+          availableBalance: account.availableBalance,
+          positions: account.positions
+            .filter((p) => parseFloat(String(p.positionAmt)) !== 0)
+            .map((p) => ({
+              symbol: p.symbol,
+              positionAmt: String(p.positionAmt),
+              entryPrice: String(p.entryPrice),
+              unrealizedProfit: String(p.unrealizedProfit),
+              leverage: String(p.leverage),
+              marginType: (p as unknown as { marginType?: string }).marginType,
+              liquidationPrice: (p as unknown as { liquidationPrice?: string }).liquidationPrice,
+            })),
+        };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to get futures account info',
           cause: error,
         });
       }

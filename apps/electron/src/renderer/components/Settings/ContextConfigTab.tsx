@@ -53,7 +53,7 @@ export const ContextConfigTab = () => {
     };
 
     return (
-        <Stack gap={6} maxW="800px">
+        <Stack gap={6} py={4}>
             <Box>
                 <Heading size="md" mb={4}>
                     {t('settings.contextConfig.title')}

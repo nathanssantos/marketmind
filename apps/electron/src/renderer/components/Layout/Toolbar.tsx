@@ -16,16 +16,13 @@ import {
   LuGrid3X3,
   LuHistory,
   LuLightbulb,
-  LuMessageSquare,
   LuMoon,
-  LuNewspaper,
   LuPlus,
   LuRadar,
   LuRuler,
   LuScan,
   LuSettings,
-  LuSun,
-  LuTerminal,
+  LuSun
 } from 'react-icons/lu';
 import { useChartWindows } from '../../hooks/useChartWindows';
 import type { MarketDataService } from '../../services/market/MarketDataService';
@@ -34,10 +31,11 @@ import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { SymbolSelector } from '../SymbolSelector';
 import { TradingProfilesModal } from '../Trading/TradingProfilesModal';
 import { useColorMode } from '../ui/color-mode';
+import { Logo } from '../ui/logo';
 import { TooltipWrapper } from '../ui/Tooltip';
+import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 import { PatternTogglePopover } from './PatternTogglePopover';
 import { SetupTogglePopover } from './SetupTogglePopover';
-import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 
 export interface ToolbarProps {
   marketService?: MarketDataService;
@@ -207,6 +205,12 @@ export const Toolbar = memo(({
       }}
     >
       <Box flexShrink={0}>
+        <Logo size={24} />
+      </Box>
+
+      <Box w="1px" h="32px" bg="border" flexShrink={0} />
+
+      <Box flexShrink={0}>
         <SymbolSelector
           marketService={marketService}
           value={symbol}
@@ -216,21 +220,17 @@ export const Toolbar = memo(({
       </Box>
 
       {showNewWindowButton && (
-        <>
-          <Box w="1px" h="32px" bg="border" flexShrink={0} />
-
-          <TooltipWrapper label={t('chart.controls.newWindow')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('chart.controls.newWindow')}
-              onClick={handleOpenNewWindow}
-              colorPalette="blue"
-              variant="ghost"
-            >
-              <LuPlus />
-            </IconButton>
-          </TooltipWrapper>
-        </>
+        <TooltipWrapper label={t('chart.controls.newWindow')} showArrow>
+          <IconButton
+            size="2xs"
+            aria-label={t('chart.controls.newWindow')}
+            onClick={handleOpenNewWindow}
+            colorPalette="blue"
+            variant="ghost"
+          >
+            <LuPlus />
+          </IconButton>
+        </TooltipWrapper>
       )}
 
       <Box w="1px" h="32px" bg="border" flexShrink={0} />
@@ -322,28 +322,6 @@ export const Toolbar = memo(({
               <LuCrosshair />
             </IconButton>
           </TooltipWrapper>
-          <TooltipWrapper label={t('chart.controls.measurementRuler')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('chart.controls.measurementRuler')}
-              onClick={() => onShowMeasurementRulerChange(!showMeasurementRuler)}
-              colorPalette={showMeasurementRuler ? 'blue' : 'gray'}
-              variant={showMeasurementRuler ? 'solid' : 'ghost'}
-            >
-              <LuRuler />
-            </IconButton>
-          </TooltipWrapper>
-          <TooltipWrapper label={t('chart.controls.measurementArea')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('chart.controls.measurementArea')}
-              onClick={() => onShowMeasurementAreaChange(!showMeasurementArea)}
-              colorPalette={showMeasurementArea ? 'blue' : 'gray'}
-              variant={showMeasurementArea ? 'solid' : 'ghost'}
-            >
-              <LuScan />
-            </IconButton>
-          </TooltipWrapper>
         </HStack>
 
         {movingAverages.length > 0 && (
@@ -404,8 +382,8 @@ export const Toolbar = memo(({
                   size="2xs"
                   aria-label={t('tradingProfiles.title')}
                   onClick={handleOpenTradingProfilesModal}
-                  colorPalette={isBackendWatcherActive ? 'green' : 'gray'}
-                  variant={isBackendWatcherActive ? 'solid' : 'ghost'}
+                  colorPalette="blue"
+                  variant="solid"
                 >
                   <LuBot />
                 </IconButton>
@@ -415,7 +393,7 @@ export const Toolbar = memo(({
                   size="2xs"
                   aria-label="Backtest Strategy"
                   onClick={onToggleBacktest}
-                  colorPalette="green"
+                  colorPalette="blue"
                   variant="solid"
                 >
                   <LuHistory />
@@ -424,80 +402,81 @@ export const Toolbar = memo(({
             </HStack>
           </>
         )}
+
+        {showSidebarButtons && (
+          <>
+            <Box w="1px" h="32px" bg="border" flexShrink={0} />
+
+            <HStack gap={1}>
+              <TooltipWrapper label={`${t('header.theme')}: ${colorMode === 'dark' ? t('header.themeDark') : t('header.themeLight')}`} placement="bottom" showArrow>
+                <IconButton
+                  aria-label={t('header.toggleColorMode')}
+                  onClick={toggleColorMode}
+                  variant="solid"
+                  colorPalette="blue"
+                  size="2xs"
+                >
+                  {colorMode === 'dark' ? <LuSun /> : <LuMoon />}
+                </IconButton>
+              </TooltipWrapper>
+              <TooltipWrapper label={t('header.settings')} placement="bottom" showArrow>
+                <IconButton
+                  aria-label={t('header.settings')}
+                  onClick={globalActions?.openSettings}
+                  variant="solid"
+                  colorPalette="blue"
+                  size="2xs"
+                >
+                  <LuSettings />
+                </IconButton>
+              </TooltipWrapper>
+            </HStack>
+
+            <Box w="1px" h="32px" bg="border" flexShrink={0} />
+
+            <HStack gap={1}>
+              <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
+                <IconButton
+                  size="2xs"
+                  aria-label={t('trading.sidebar.title')}
+                  onClick={onToggleTrading}
+                  colorPalette={isTradingOpen ? 'blue' : 'gray'}
+                  variant={isTradingOpen ? 'solid' : 'ghost'}
+                >
+                  <LuDollarSign />
+                </IconButton>
+              </TooltipWrapper>
+            </HStack>
+
+            <Box w="1px" h="32px" bg="border" flexShrink={0} />
+
+            <HStack gap={1}>
+              <TooltipWrapper label={t('chart.controls.measurementRuler')} showArrow>
+                <IconButton
+                  size="2xs"
+                  aria-label={t('chart.controls.measurementRuler')}
+                  onClick={() => onShowMeasurementRulerChange(!showMeasurementRuler)}
+                  colorPalette={showMeasurementRuler ? 'blue' : 'gray'}
+                  variant={showMeasurementRuler ? 'solid' : 'ghost'}
+                >
+                  <LuRuler />
+                </IconButton>
+              </TooltipWrapper>
+              <TooltipWrapper label={t('chart.controls.measurementArea')} showArrow>
+                <IconButton
+                  size="2xs"
+                  aria-label={t('chart.controls.measurementArea')}
+                  onClick={() => onShowMeasurementAreaChange(!showMeasurementArea)}
+                  colorPalette={showMeasurementArea ? 'blue' : 'gray'}
+                  variant={showMeasurementArea ? 'solid' : 'ghost'}
+                >
+                  <LuScan />
+                </IconButton>
+              </TooltipWrapper>
+            </HStack>
+          </>
+        )}
       </Flex>
-
-      <Box flex={1} />
-
-      {showSidebarButtons && (
-        <Flex gap={1} align="center" flexShrink={0}>
-          <TooltipWrapper label={t('news.title')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('news.title')}
-              onClick={onToggleNews}
-              colorPalette={isNewsOpen ? 'blue' : 'gray'}
-              variant={isNewsOpen ? 'solid' : 'ghost'}
-            >
-              <LuNewspaper />
-            </IconButton>
-          </TooltipWrapper>
-          <TooltipWrapper label={t('common.openChat')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('common.openChat')}
-              onClick={onToggleChat}
-              colorPalette={isChatOpen ? 'blue' : 'gray'}
-              variant={isChatOpen ? 'solid' : 'ghost'}
-            >
-              <LuMessageSquare />
-            </IconButton>
-          </TooltipWrapper>
-          <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('trading.sidebar.title')}
-              onClick={onToggleTrading}
-              colorPalette={isTradingOpen ? 'green' : 'gray'}
-              variant={isTradingOpen ? 'solid' : 'ghost'}
-            >
-              <LuDollarSign />
-            </IconButton>
-          </TooltipWrapper>
-
-          <Box w="1px" h="32px" bg="border" flexShrink={0} />
-
-          <TooltipWrapper label={`${t('header.theme')}: ${colorMode === 'dark' ? t('header.themeDark') : t('header.themeLight')}`} placement="bottom" showArrow>
-            <IconButton
-              aria-label={t('header.toggleColorMode')}
-              onClick={toggleColorMode}
-              variant="ghost"
-              size="2xs"
-            >
-              {colorMode === 'dark' ? <LuSun /> : <LuMoon />}
-            </IconButton>
-          </TooltipWrapper>
-          <TooltipWrapper label={t('header.keyboardShortcuts')} placement="bottom" showArrow>
-            <IconButton
-              aria-label={t('header.showKeyboardShortcuts')}
-              onClick={globalActions?.showKeyboardShortcuts}
-              variant="ghost"
-              size="2xs"
-            >
-              <LuTerminal />
-            </IconButton>
-          </TooltipWrapper>
-          <TooltipWrapper label={t('header.settings')} placement="bottom" showArrow>
-            <IconButton
-              aria-label={t('header.settings')}
-              onClick={globalActions?.openSettings}
-              variant="ghost"
-              size="2xs"
-            >
-              <LuSettings />
-            </IconButton>
-          </TooltipWrapper>
-        </Flex>
-      )}
 
       <TradingProfilesModal
         isOpen={isTradingProfilesModalOpen}

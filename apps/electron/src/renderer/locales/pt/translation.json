@@ -757,7 +757,7 @@
       "inactive": "Simulador Inativo"
     },
     "sidebar": {
-      "title": "Simulador",
+      "title": "Trading",
       "close": "Fechar barra de trading"
     },
     "tabs": {
@@ -1257,6 +1257,7 @@
   },
   "tradingProfiles": {
     "title": "Perfis de Trading",
+    "modalTitle": "Trade Automático",
     "description": "Crie perfis com configurações de setups diferentes para trading multi-ativos",
     "create": "Novo Perfil",
     "createFirst": "Crie Seu Primeiro Perfil",
