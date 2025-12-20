@@ -20,6 +20,8 @@ export interface PositionCheckResult {
 export class PositionMonitorService {
   private monitoringTimeout: NodeJS.Timeout | null = null;
   private readonly CHECK_INTERVAL_MS = 5000;
+  private processingExits: Set<string> = new Set();
+  private processingGroups: Set<string> = new Set();
 
   start(): void {
     if (this.monitoringTimeout) {
@@ -257,6 +259,11 @@ export class PositionMonitorService {
     const firstExecution = executions[0];
     if (!firstExecution) return;
 
+    if (this.processingGroups.has(groupKey)) {
+      logger.debug({ groupKey }, 'Skipping group check (polling) - already processing');
+      return;
+    }
+
     const currentPrice = await this.getCurrentPrice(firstExecution.symbol);
     const isLong = firstExecution.side === 'LONG';
 
@@ -271,30 +278,40 @@ export class PositionMonitorService {
       isLong ? currentPrice >= consolidatedTP : currentPrice <= consolidatedTP
     );
 
-    if (slTriggered) {
-      logger.info({
-        groupKey,
-        reason: 'STOP_LOSS',
-        currentPrice,
-        consolidatedSL,
-        executionCount: executions.length,
-      }, 'Consolidated stop loss triggered - closing all positions in group');
+    if (!slTriggered && !tpTriggered) {
+      return;
+    }
 
-      for (const execution of executions) {
-        await this.executeExit(execution, currentPrice, 'STOP_LOSS');
-      }
-    } else if (tpTriggered) {
-      logger.info({
-        groupKey,
-        reason: 'TAKE_PROFIT',
-        currentPrice,
-        consolidatedTP,
-        executionCount: executions.length,
-      }, 'Consolidated take profit triggered - closing all positions in group');
+    this.processingGroups.add(groupKey);
 
-      for (const execution of executions) {
-        await this.executeExit(execution, currentPrice, 'TAKE_PROFIT');
+    try {
+      if (slTriggered) {
+        logger.info({
+          groupKey,
+          reason: 'STOP_LOSS',
+          currentPrice,
+          consolidatedSL,
+          executionCount: executions.length,
+        }, 'Consolidated stop loss triggered - closing all positions in group');
+
+        for (const execution of executions) {
+          await this.executeExit(execution, currentPrice, 'STOP_LOSS');
+        }
+      } else if (tpTriggered) {
+        logger.info({
+          groupKey,
+          reason: 'TAKE_PROFIT',
+          currentPrice,
+          consolidatedTP,
+          executionCount: executions.length,
+        }, 'Consolidated take profit triggered - closing all positions in group');
+
+        for (const execution of executions) {
+          await this.executeExit(execution, currentPrice, 'TAKE_PROFIT');
+        }
       }
+    } finally {
+      this.processingGroups.delete(groupKey);
     }
   }
 
@@ -365,7 +382,25 @@ export class PositionMonitorService {
     exitPrice: number,
     reason: 'STOP_LOSS' | 'TAKE_PROFIT'
   ): Promise<void> {
+    if (this.processingExits.has(execution.id)) {
+      return;
+    }
+
+    this.processingExits.add(execution.id);
+
     try {
+      const currentExecution = await db.query.tradeExecutions.findFirst({
+        where: eq(tradeExecutions.id, execution.id),
+      });
+
+      if (!currentExecution || currentExecution.status !== 'open') {
+        logger.debug({
+          executionId: execution.id,
+          status: currentExecution?.status,
+        }, 'Skipping exit - position already closed or not found');
+        return;
+      }
+
       const [wallet] = await db
         .select()
         .from(wallets)
@@ -482,6 +517,8 @@ export class PositionMonitorService {
         error: error instanceof Error ? error.message : String(error),
       }, 'Failed to execute exit');
       throw error;
+    } finally {
+      this.processingExits.delete(execution.id);
     }
   }
 
@@ -655,6 +692,11 @@ export class PositionMonitorService {
     const isLong = firstExecution.side === 'LONG';
     const groupKey = `${firstExecution.symbol}-${firstExecution.side}`;
 
+    if (this.processingGroups.has(groupKey)) {
+      logger.debug({ groupKey }, 'Skipping group check - already processing');
+      return;
+    }
+
     const consolidatedSL = this.calculateConsolidatedStopLoss(executions, isLong);
     const consolidatedTP = this.calculateConsolidatedTakeProfit(executions, isLong);
 
@@ -666,30 +708,40 @@ export class PositionMonitorService {
       isLong ? currentPrice >= consolidatedTP : currentPrice <= consolidatedTP
     );
 
-    if (slTriggered) {
-      logger.info({
-        groupKey,
-        reason: 'STOP_LOSS',
-        currentPrice,
-        consolidatedSL,
-        executionCount: executions.length,
-      }, 'Consolidated stop loss triggered (real-time) - closing all positions in group');
+    if (!slTriggered && !tpTriggered) {
+      return;
+    }
 
-      for (const execution of executions) {
-        await this.executeExit(execution, currentPrice, 'STOP_LOSS');
-      }
-    } else if (tpTriggered) {
-      logger.info({
-        groupKey,
-        reason: 'TAKE_PROFIT',
-        currentPrice,
-        consolidatedTP,
-        executionCount: executions.length,
-      }, 'Consolidated take profit triggered (real-time) - closing all positions in group');
+    this.processingGroups.add(groupKey);
 
-      for (const execution of executions) {
-        await this.executeExit(execution, currentPrice, 'TAKE_PROFIT');
+    try {
+      if (slTriggered) {
+        logger.info({
+          groupKey,
+          reason: 'STOP_LOSS',
+          currentPrice,
+          consolidatedSL,
+          executionCount: executions.length,
+        }, 'Consolidated stop loss triggered (real-time) - closing all positions in group');
+
+        for (const execution of executions) {
+          await this.executeExit(execution, currentPrice, 'STOP_LOSS');
+        }
+      } else if (tpTriggered) {
+        logger.info({
+          groupKey,
+          reason: 'TAKE_PROFIT',
+          currentPrice,
+          consolidatedTP,
+          executionCount: executions.length,
+        }, 'Consolidated take profit triggered (real-time) - closing all positions in group');
+
+        for (const execution of executions) {
+          await this.executeExit(execution, currentPrice, 'TAKE_PROFIT');
+        }
       }
+    } finally {
+      this.processingGroups.delete(groupKey);
     }
   }
 

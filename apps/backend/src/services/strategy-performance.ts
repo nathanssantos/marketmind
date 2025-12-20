@@ -146,6 +146,10 @@ export class StrategyPerformanceService {
       interval
     );
 
+    const lastTradeAt = stats.lastTradeAt
+      ? (stats.lastTradeAt instanceof Date ? stats.lastTradeAt : new Date(stats.lastTradeAt))
+      : null;
+
     return {
       totalTrades: stats.totalTrades,
       winningTrades: stats.winningTrades,
@@ -162,7 +166,7 @@ export class StrategyPerformanceService {
       currentConsecutiveLosses: consecutiveLosses.current,
       avgSlippagePercent: '0',
       avgExecutionTimeMs: 0,
-      lastTradeAt: stats.lastTradeAt,
+      lastTradeAt,
     };
   }
 
