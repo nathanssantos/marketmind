@@ -12,11 +12,15 @@
   ],
   "status": "active",
   "optimizedParams": {
-    "maxPositionSize": 50,
+    "maxPositionSize": 100,
     "useAlgorithmicLevels": true,
     "onlyWithTrend": true,
     "minConfidence": 60,
-    "commission": 0.001
+    "commission": 0.001,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 70,
+    "trailingATRMultiplier": 3,
+    "breakEvenAfterR": 2
   },
   "recommendedTimeframes": {
     "primary": "4h",

@@ -12,14 +12,16 @@
   "source": "Dr. Alexander Elder - Trading for a Living",
   "status": "active",
   "optimizedParams": {
-    "maxPositionSize": 70,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 80,
+    "maxPositionSize": 100,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 70,
     "useAlgorithmicLevels": true,
     "useTrailingStop": false,
     "onlyWithTrend": true,
     "minConfidence": 70,
-    "commission": 0.001
+    "commission": 0.001,
+    "trailingATRMultiplier": 3,
+    "breakEvenAfterR": 2
   },
   "recommendedTimeframes": {
     "primary": "1d",

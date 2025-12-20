@@ -13,11 +13,15 @@
   ],
   "status": "active",
   "optimizedParams": {
-    "maxPositionSize": 65,
+    "maxPositionSize": 60,
     "useAlgorithmicLevels": true,
     "onlyWithTrend": false,
     "minConfidence": 70,
-    "commission": 0.001
+    "commission": 0.001,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 90,
+    "trailingATRMultiplier": 3,
+    "breakEvenAfterR": 2
   },
   "backtestSummary": {
     "profitFactor": 0.92,

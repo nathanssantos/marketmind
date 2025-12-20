@@ -726,7 +726,7 @@ export class AutoTradingScheduler {
       }
 
       for (const setup of contextFilteredSetups) {
-        await this.executeSetup(watcher, setup);
+        await this.executeSetup(watcher, setup, filteredStrategies);
       }
 
       watcher.lastProcessedTime = Date.now();
@@ -739,7 +739,11 @@ export class AutoTradingScheduler {
   }
 
   // eslint-disable-next-line complexity
-  private async executeSetup(watcher: ActiveWatcher, setup: TradingSetup): Promise<void> {
+  private async executeSetup(
+    watcher: ActiveWatcher,
+    setup: TradingSetup,
+    strategies: { id: string; optimizedParams?: { maxPositionSize?: number; maxConcurrentPositions?: number; maxTotalExposure?: number; trailingATRMultiplier?: number; breakEvenAfterR?: number } }[]
+  ): Promise<void> {
     log('🚀 Attempting to execute setup', {
       type: setup.type,
       direction: setup.direction,
@@ -829,6 +833,27 @@ export class AutoTradingScheduler {
         return;
       }
 
+      const strategy = strategies.find(s => s.id === setup.type);
+      const strategyParams = strategy?.optimizedParams;
+
+      const effectiveMaxConcurrentPositions = strategyParams?.maxConcurrentPositions
+        ?? config.maxConcurrentPositions;
+
+      const effectiveMaxPositionSize = strategyParams?.maxPositionSize
+        ?? parseFloat(config.maxPositionSize);
+
+      if (strategyParams) {
+        log('📈 Using strategy optimizedParams (profit-maximized)', {
+          strategyId: setup.type,
+          walletMaxPositionSize: parseFloat(config.maxPositionSize),
+          strategyMaxPositionSize: strategyParams.maxPositionSize,
+          effectiveMaxPositionSize,
+          walletMaxConcurrent: config.maxConcurrentPositions,
+          strategyMaxConcurrent: strategyParams.maxConcurrentPositions,
+          effectiveMaxConcurrent: effectiveMaxConcurrentPositions,
+        });
+      }
+
       const [wallet] = await db
         .select()
         .from(wallets)
@@ -868,10 +893,10 @@ export class AutoTradingScheduler {
         open: openPositions.length,
         pending: pendingPositions.length,
         total: activePositions.length,
-        max: config.maxConcurrentPositions,
+        max: effectiveMaxConcurrentPositions,
       });
 
-      if (activePositions.length >= config.maxConcurrentPositions) {
+      if (activePositions.length >= effectiveMaxConcurrentPositions) {
         log('⚠️ Max concurrent positions reached');
         return;
       }
@@ -1003,9 +1028,15 @@ export class AutoTradingScheduler {
         reason: dynamicSize.reason,
       });
 
+      const effectiveConfig = {
+        ...config,
+        maxPositionSize: effectiveMaxPositionSize.toString(),
+        maxConcurrentPositions: effectiveMaxConcurrentPositions,
+      };
+
       const riskValidation = await riskManagerService.validateNewPosition(
         watcher.walletId,
-        config,
+        effectiveConfig,
         positionValue
       );
 

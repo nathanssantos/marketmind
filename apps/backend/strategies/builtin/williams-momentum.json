@@ -12,14 +12,18 @@
   ],
   "status": "active",
   "optimizedParams": {
-    "maxPositionSize": 50,
+    "maxPositionSize": 60,
     "useAlgorithmicLevels": true,
     "onlyWithTrend": false,
     "minConfidence": 55,
-    "commission": 0.001
+    "commission": 0.001,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 90,
+    "trailingATRMultiplier": 3,
+    "breakEvenAfterR": 2
   },
   "backtestSummary": {
-    "profitFactor": 1.20,
+    "profitFactor": 1.2,
     "winRate": 47.14,
     "totalTrades": 70,
     "netPnlPercent": -0.15,

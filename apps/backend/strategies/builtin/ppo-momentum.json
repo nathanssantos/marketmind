@@ -13,14 +13,16 @@
   "source": "Technical Analysis Library",
   "status": "active",
   "optimizedParams": {
-    "maxPositionSize": 70,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 80,
+    "maxPositionSize": 100,
+    "maxConcurrentPositions": 1,
+    "maxTotalExposure": 70,
     "useAlgorithmicLevels": true,
     "useTrailingStop": false,
     "onlyWithTrend": false,
     "minConfidence": 65,
-    "commission": 0.001
+    "commission": 0.001,
+    "trailingATRMultiplier": 3,
+    "breakEvenAfterR": 2
   },
   "recommendedTimeframes": {
     "primary": "1d",
