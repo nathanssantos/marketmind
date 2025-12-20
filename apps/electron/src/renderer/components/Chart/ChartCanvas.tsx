@@ -32,7 +32,6 @@ import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from './AdvancedControls';
-import { ChartContextMenuManager } from './ChartContextMenuManager';
 import { ChartNavigation } from './ChartNavigation';
 import { ChartTooltip } from './ChartTooltip';
 import { KlineTimer } from './KlineTimer';
@@ -246,8 +245,6 @@ export const ChartCanvas = ({
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [orderPreview, setOrderPreview] = useState<{ price: number; type: 'long' | 'short' } | null>(null);
   const [hoveredAIPattern, setHoveredAIPattern] = useState<AIPattern | null>(null);
-  const [contextMenuPattern, setContextMenuPattern] = useState<AIPattern | null>(null);
-  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   const [hoveredMAIndex, setHoveredMAIndex] = useState<number | undefined>(undefined);
   const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null);
   const lastHoveredOrderRef = useRef<string | null>(null);
@@ -820,31 +817,17 @@ export const ChartCanvas = ({
   };
 
   const handleAIPatternHover = useCallback((pattern: AIPattern | null): void => {
-    if (isContextMenuOpen) return;
     setHoveredAIPattern(pattern);
-  }, [isContextMenuOpen]);
-
-  const handleContextMenuOpenChange = useCallback((open: boolean): void => {
-    if (open) {
-      setContextMenuPattern(hoveredAIPattern);
-    } else {
-      setContextMenuPattern(null);
-    }
-    setIsContextMenuOpen(open);
-  }, [hoveredAIPattern]);
+  }, []);
 
   const handleDeleteSinglePattern = (patternId: number): void => {
     if (!patternId) return;
     console.log('[ChartCanvas] handleDeleteSinglePatterncalled:', patternId, 'onDeleteAIPattern exists:', !!onDeleteAIPattern);
     onDeleteAIPattern?.(patternId);
-    setContextMenuPattern(null);
-    setIsContextMenuOpen(false);
   };
 
   const handleDeletePatterns = (): void => {
     onDeleteAIPatterns?.();
-    setContextMenuPattern(null);
-    setIsContextMenuOpen(false);
   };
 
   const handleTogglePatternsVisibility = (): void => {
@@ -1402,37 +1385,20 @@ export const ChartCanvas = ({
         bg={colors.background}
         userSelect="none"
       >
-        <ChartContextMenuManager
-          hoveredPattern={contextMenuPattern ?? hoveredAIPattern}
-          hoveredSetup={hoveredSetup}
-          onDeletePattern={handleDeleteSinglePattern}
-          onDeleteDetectedPattern={onDeletePattern ?? (() => { })}
-          onDeleteAllPatterns={handleDeletePatterns}
-          onDeleteSetup={handleDeleteSingleSetup}
-          onDeleteAllSetups={handleDeleteAllSetups}
-          onTogglePatternsVisibility={handleTogglePatternsVisibility}
-          onToggleSetupsVisibility={handleToggleSetupsVisibility}
-          hasPatterns={aiPatterns.length > 0}
-          hasSetups={detectedSetups.length > 0}
-          patternsVisible={aiPatternsVisible}
-          setupsVisible={setupsVisible}
-          onOpenChange={handleContextMenuOpenChange}
-        >
-          <canvas
-            ref={canvasRef}
-            onMouseDown={handleCanvasMouseDown}
-            onMouseMove={handleCanvasMouseMove}
-            onMouseUp={handleCanvasMouseUp}
-            onMouseLeave={handleCanvasMouseLeave}
-            onWheel={handleWheel}
-            style={{
-              width: '100%',
-              height: '100%',
-              cursor,
-              display: 'block',
-            }}
-          />
-        </ChartContextMenuManager>
+        <canvas
+          ref={canvasRef}
+          onMouseDown={handleCanvasMouseDown}
+          onMouseMove={handleCanvasMouseMove}
+          onMouseUp={handleCanvasMouseUp}
+          onMouseLeave={handleCanvasMouseLeave}
+          onWheel={handleWheel}
+          style={{
+            width: '100%',
+            height: '100%',
+            cursor,
+            display: 'block',
+          }}
+        />
         {manager && !isInteracting && (
           <PatternRenderer
             canvasManager={manager}
