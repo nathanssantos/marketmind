@@ -16,6 +16,7 @@ export class BinancePriceStreamService {
   private client: WebsocketClient | null = null;
   private subscribedSymbols: Set<string> = new Set();
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+  private isReconnecting = false;
   private readonly RECONNECT_DELAY_MS = 5000;
 
   start(): void {
@@ -43,8 +44,19 @@ export class BinancePriceStreamService {
     });
 
     this.client.on('reconnected', () => {
-      logger.info('Binance WebSocket reconnected');
+      if (this.isReconnecting) {
+        logger.debug('Ignoring duplicate reconnected event');
+        return;
+      }
+      this.isReconnecting = true;
+      logger.info({
+        symbolCount: this.subscribedSymbols.size,
+        symbols: Array.from(this.subscribedSymbols),
+      }, 'Binance WebSocket reconnected - resubscribing');
       this.resubscribeAll();
+      setTimeout(() => {
+        this.isReconnecting = false;
+      }, 2000);
     });
 
     void this.subscribeToActivePositions();
@@ -138,22 +150,34 @@ export class BinancePriceStreamService {
       }
 
       const currentSymbols = new Set(this.subscribedSymbols);
+      const unsubscribed: string[] = [];
       for (const symbol of currentSymbols) {
         if (!symbolsToSubscribe.has(symbol)) {
           this.unsubscribe(symbol);
+          unsubscribed.push(symbol);
         }
       }
 
+      const newSubscriptions: string[] = [];
       for (const symbol of symbolsToSubscribe) {
         if (!this.subscribedSymbols.has(symbol)) {
           this.subscribe(symbol);
+          newSubscriptions.push(symbol);
         }
       }
 
-      if (symbolsToSubscribe.size > 0) {
-        logger.info(
-          `Subscribed to ${symbolsToSubscribe.size} symbols: ${Array.from(symbolsToSubscribe).join(', ')}`
-        );
+      if (newSubscriptions.length > 0) {
+        logger.info({
+          newSymbols: newSubscriptions,
+          totalSubscribed: this.subscribedSymbols.size,
+        }, `Subscribed to ${newSubscriptions.length} new symbol(s)`);
+      }
+
+      if (unsubscribed.length > 0) {
+        logger.info({
+          removedSymbols: unsubscribed,
+          totalSubscribed: this.subscribedSymbols.size,
+        }, `Unsubscribed from ${unsubscribed.length} symbol(s) - no open positions`);
       }
     } catch (error) {
       logger.error({
@@ -170,7 +194,6 @@ export class BinancePriceStreamService {
     try {
       void this.client.subscribeTrades(symbol, 'spot');
       this.subscribedSymbols.add(symbol);
-      logger.info(`Subscribed to trades for ${symbol}`);
     } catch (error) {
       logger.error({
         error: error instanceof Error ? error.message : String(error),
@@ -183,23 +206,26 @@ export class BinancePriceStreamService {
       return;
     }
 
-    try {
-      this.subscribedSymbols.delete(symbol);
-      logger.info(`Unsubscribed from trades for ${symbol}`);
-    } catch (error) {
-      logger.error({
-        error: error instanceof Error ? error.message : String(error),
-      }, `Failed to unsubscribe from ${symbol}`);
-    }
+    this.subscribedSymbols.delete(symbol);
   }
 
   private resubscribeAll(): void {
     const symbols = Array.from(this.subscribedSymbols);
+    if (symbols.length === 0) {
+      logger.debug('No symbols to resubscribe');
+      return;
+    }
+
     this.subscribedSymbols.clear();
 
     for (const symbol of symbols) {
       this.subscribe(symbol);
     }
+
+    logger.info({
+      resubscribedCount: symbols.length,
+      symbols,
+    }, 'Resubscription complete');
   }
 
   public subscribeSymbol(symbol: string): void {

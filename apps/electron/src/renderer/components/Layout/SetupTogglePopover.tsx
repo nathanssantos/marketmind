@@ -28,6 +28,10 @@ const ML_TRAINED_STRATEGIES = [
     'ppo-momentum',
     'parabolic-sar-crypto',
     'supertrend-follow',
+    'percent-b-connors',
+    'triple-confirmation-reversal',
+    'momentum-rotation',
+    'momentum-breakout-2025',
 ];
 
 export const SetupTogglePopover = memo(() => {

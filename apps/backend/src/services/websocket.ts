@@ -64,14 +64,19 @@ export class WebSocketService {
       });
 
       socket.on('subscribe:prices', (symbol: string) => {
-        socket.join(`prices:${symbol}`);
-        logger.info({ socketId: socket.id, symbol }, 'Subscribed to prices');
+        const room = `prices:${symbol}`;
+        if (!socket.rooms.has(room)) {
+          socket.join(room);
+          logger.debug({ socketId: socket.id, symbol }, 'Subscribed to prices');
+        }
       });
 
       socket.on('subscribe:klines', (data: { symbol: string; interval: string }) => {
         const room = `klines:${data.symbol}:${data.interval}`;
-        socket.join(room);
-        logger.info({ socketId: socket.id, symbol: data.symbol, interval: data.interval }, 'Subscribed to klines');
+        if (!socket.rooms.has(room)) {
+          socket.join(room);
+          logger.info({ socketId: socket.id, symbol: data.symbol, interval: data.interval }, 'Subscribed to klines');
+        }
       });
 
       socket.on('unsubscribe:klines', (data: { symbol: string; interval: string }) => {
