@@ -116,7 +116,6 @@ class FundingRateService {
       for (const { position } of positionsData) {
         const entryPrice = parseFloat(position.entryPrice);
         const quantity = parseFloat(position.entryQty);
-        const leverage = position.leverage ?? 1;
         const positionValue = entryPrice * quantity;
 
         const fundingPayment = calculateFundingPayment(
@@ -150,15 +149,11 @@ class FundingRateService {
       this.fundingCache.set(symbol, {
         rate: fundingRate,
         nextFundingTime,
-        lastAppliedTime: fundingTime,
+        lastAppliedTime: lastFundingTime,
       });
     } catch (error) {
       logger.error({ symbol, error }, '[FundingRateService] Error applying funding to positions');
     }
-  }
-
-  private getNextFundingTime(currentFundingTime: number): number {
-    return currentFundingTime + FUNDING_INTERVAL_MS;
   }
 
   async getFundingRateForSymbol(symbol: string): Promise<{ rate: number; nextFundingTime: Date } | null> {
@@ -169,8 +164,8 @@ class FundingRateService {
       if (!fundingInfo) return null;
 
       return {
-        rate: parseFloat(fundingInfo.fundingRate),
-        nextFundingTime: new Date(this.getNextFundingTime(fundingInfo.fundingTime)),
+        rate: fundingInfo.rate,
+        nextFundingTime: new Date(fundingInfo.nextFundingTime),
       };
     } catch (error) {
       logger.error({ symbol, error }, '[FundingRateService] Error getting funding rate');
