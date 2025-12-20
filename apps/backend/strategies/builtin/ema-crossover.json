@@ -13,7 +13,7 @@
   "status": "active",
   "optimizedParams": {
     "maxPositionSize": 90,
-    "maxConcurrentPositions": 1,
+    "maxConcurrentPositions": 2,
     "maxTotalExposure": 90,
     "useAlgorithmicLevels": true,
     "useTrailingStop": true,

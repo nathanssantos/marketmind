@@ -17,7 +17,7 @@
     "onlyWithTrend": true,
     "minConfidence": 60,
     "commission": 0.001,
-    "maxConcurrentPositions": 1,
+    "maxConcurrentPositions": 2,
     "maxTotalExposure": 70,
     "trailingATRMultiplier": 3,
     "breakEvenAfterR": 2

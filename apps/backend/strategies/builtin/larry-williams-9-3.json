@@ -16,6 +16,7 @@
     "useAlgorithmicLevels": true,
     "onlyWithTrend": true,
     "minConfidence": 65,
+    "maxConcurrentPositions": 2,
     "commission": 0.001
   },
   "recommendedTimeframes": {

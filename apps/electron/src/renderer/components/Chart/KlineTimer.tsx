@@ -87,7 +87,7 @@ export const KlineTimer = ({ timeframe, lastKlineTime, stochasticPanelHeight = 0
             bottom={`${8 + stochasticPanelHeight + rsiPanelHeight}px`}
             right="8px"
             color={colors.axisLabel}
-            fontSize="14px"
+            fontSize="11px"
             fontFamily="monospace"
             fontWeight="600"
             zIndex={10}

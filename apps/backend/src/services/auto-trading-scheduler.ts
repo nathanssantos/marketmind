@@ -813,8 +813,8 @@ export class AutoTradingScheduler {
       const strategy = strategies.find(s => s.id === setup.type);
       const strategyParams = strategy?.optimizedParams;
 
-      const effectiveMaxConcurrentPositions = strategyParams?.maxConcurrentPositions
-        ?? config.maxConcurrentPositions;
+      const walletMaxConcurrent = config.maxConcurrentPositions;
+      const strategyMaxConcurrent = strategyParams?.maxConcurrentPositions;
 
       const effectiveMaxPositionSize = strategyParams?.maxPositionSize
         ?? parseFloat(config.maxPositionSize);
@@ -825,9 +825,8 @@ export class AutoTradingScheduler {
           walletMaxPositionSize: parseFloat(config.maxPositionSize),
           strategyMaxPositionSize: strategyParams.maxPositionSize,
           effectiveMaxPositionSize,
-          walletMaxConcurrent: config.maxConcurrentPositions,
-          strategyMaxConcurrent: strategyParams.maxConcurrentPositions,
-          effectiveMaxConcurrent: effectiveMaxConcurrentPositions,
+          walletMaxConcurrent,
+          strategyMaxConcurrent,
         });
       }
 
@@ -866,15 +865,31 @@ export class AutoTradingScheduler {
       const openPositions = activePositions.filter(p => p.status === 'open');
       const pendingPositions = activePositions.filter(p => p.status === 'pending');
 
+      const strategyPositions = activePositions.filter(p => p.setupType === setup.type);
+
       log('📊 Current positions', {
         open: openPositions.length,
         pending: pendingPositions.length,
         total: activePositions.length,
-        max: effectiveMaxConcurrentPositions,
+        walletMax: walletMaxConcurrent,
+        strategyPositions: strategyPositions.length,
+        strategyMax: strategyMaxConcurrent ?? 'unlimited',
       });
 
-      if (activePositions.length >= effectiveMaxConcurrentPositions) {
-        log('⚠️ Max concurrent positions reached');
+      if (activePositions.length >= walletMaxConcurrent) {
+        log('⚠️ Wallet max concurrent positions reached', {
+          total: activePositions.length,
+          walletMax: walletMaxConcurrent,
+        });
+        return;
+      }
+
+      if (strategyMaxConcurrent && strategyPositions.length >= strategyMaxConcurrent) {
+        log('⚠️ Strategy max concurrent positions reached', {
+          strategy: setup.type,
+          strategyPositions: strategyPositions.length,
+          strategyMax: strategyMaxConcurrent,
+        });
         return;
       }
 
@@ -1008,7 +1023,7 @@ export class AutoTradingScheduler {
       const effectiveConfig = {
         ...config,
         maxPositionSize: effectiveMaxPositionSize.toString(),
-        maxConcurrentPositions: effectiveMaxConcurrentPositions,
+        maxConcurrentPositions: walletMaxConcurrent,
       };
 
       const riskValidation = await riskManagerService.validateNewPosition(

@@ -85,11 +85,11 @@ export const useGridRenderer = ({
           ctx,
           formatPrice(price),
           chartRightBoundary + 10,
-          y - 6,
+          y + 1,
           labelColor,
           CHART_CONFIG.AXIS_LABEL_FONT,
           'left',
-          'top',
+          'middle',
         );
 
         drawLine(
@@ -126,9 +126,9 @@ export const useGridRenderer = ({
             ctx,
             timeLabel,
             x,
-            timeAxisY + 8,
+            timeAxisY + 10,
             labelColor,
-            '12px monospace',
+            CHART_CONFIG.AXIS_LABEL_FONT,
             'center',
             'top',
           );
