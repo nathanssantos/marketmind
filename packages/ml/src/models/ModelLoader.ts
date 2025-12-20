@@ -62,6 +62,11 @@ export class ModelLoader {
     return this.loadModel(model.id);
   }
 
+  async loadModelForInterval(type: MLModelType, interval: string): Promise<BaseInferenceEngine> {
+    const model = await this.registry.getModelForInterval(type, interval);
+    return this.loadModel(model.id);
+  }
+
   async switchModel(modelId: string): Promise<BaseInferenceEngine> {
     if (this.activeModelId === modelId && this.activeEngine) {
       return this.activeEngine;

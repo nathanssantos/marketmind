@@ -18,6 +18,7 @@ interface BinanceKlineData {
   V: string;
   Q: string;
   B: string;
+  x: boolean;
 }
 
 interface BinanceKlineMessage {
@@ -87,6 +88,8 @@ class BinanceKlineSync {
   }
 
   private async processKline(symbol: string, interval: Interval, kline: BinanceKlineData): Promise<void> {
+    if (!kline.x) return;
+
     try {
       const klineData = {
         symbol,

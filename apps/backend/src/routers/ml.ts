@@ -224,6 +224,15 @@ export const mlRouter = router({
     };
   }),
 
+  getStats: publicProcedure.query(() => {
+    return mlService.getMLStats();
+  }),
+
+  logStatsReport: protectedProcedure.mutation(() => {
+    mlService.logMLStatsReport();
+    return { success: true };
+  }),
+
   clearCache: protectedProcedure.mutation(() => {
     mlService.clearCache();
     return { success: true };

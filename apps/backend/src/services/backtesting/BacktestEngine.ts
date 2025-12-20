@@ -7,6 +7,7 @@ import { randomBytes } from 'crypto';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { env } from '../../env';
+import { calculateRequiredKlinesForML, DEFAULT_KLINES_FOR_ML } from '../../utils/kline-calculator';
 import { fetchHistoricalKlinesFromAPI } from '../binance-historical';
 import { mlService } from '../ml';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
@@ -298,8 +299,9 @@ export class BacktestEngine {
 
           for (const setup of tradableSetups) {
             try {
-              const setupKlines = historicalKlines.filter(k => k.openTime <= setup.openTime).slice(-200);
-              
+              const requiredKlines = calculateRequiredKlinesForML(loadedStrategies as any) || DEFAULT_KLINES_FOR_ML;
+              const setupKlines = historicalKlines.filter(k => k.openTime <= setup.openTime).slice(-requiredKlines);
+
               const prediction = await mlService.predictSetup(
                 setupKlines,
                 setup,
@@ -307,14 +309,13 @@ export class BacktestEngine {
                 config.symbol,
                 config.interval
               );
-              
+
               if (prediction.probability >= threshold.minProbability) {
-                const mlConfidence = prediction.probability * 100;
-                const blendedConfidence = (setup.confidence + mlConfidence) / 2;
-                
+                const blendedConfidence = Math.round((setup.confidence + prediction.confidence) / 2);
+
                 mlFilteredSetups.push({
                   ...setup,
-                  mlConfidence,
+                  mlConfidence: prediction.confidence,
                   blendedConfidence,
                   mlPrediction: prediction.label === 1,
                 });

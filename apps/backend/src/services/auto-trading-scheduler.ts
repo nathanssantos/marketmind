@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from '../db';
+import { calculateRequiredKlinesForML } from '../utils/kline-calculator';
 import {
   activeWatchers as activeWatchersTable,
   autoTradingConfig,
@@ -135,51 +136,6 @@ export class AutoTradingScheduler {
     const unitMs = units[match[2]];
     if (!unitMs) return 4 * 60 * 60 * 1000;
     return parseInt(match[1]) * unitMs;
-  }
-
-  private calculateRequiredKlines(strategies: { id: string; indicators?: Record<string, { params: Record<string, number | string> }>; parameters?: Record<string, { default: number }>; filters?: { trendFilter?: { period: number } }; optimizedParams?: { onlyWithTrend?: boolean } }[]): number {
-    const MIN_KLINES = 100;
-    const MAX_KLINES = 500;
-    let maxPeriod = 50;
-
-    for (const strategy of strategies) {
-      if (strategy.indicators) {
-        for (const [, indicator] of Object.entries(strategy.indicators)) {
-          const params = indicator.params || {};
-          const period = params['period'] || params['emaPeriod'] || params['smaPeriod'] ||
-                        params['lookback'] || params['kPeriod'] || params['slowPeriod'] || 0;
-
-          const periodValue = typeof period === 'string' && period.startsWith('$')
-            ? strategy.parameters?.[period.slice(1)]?.default || 0
-            : period;
-
-          if (typeof periodValue === 'number' && periodValue > maxPeriod) {
-            maxPeriod = periodValue;
-          }
-        }
-      }
-
-      if (strategy.parameters) {
-        for (const [paramName, paramDef] of Object.entries(strategy.parameters)) {
-          if (paramName.toLowerCase().includes('trend') ||
-              paramName.toLowerCase().includes('ema') ||
-              paramName.toLowerCase().includes('sma')) {
-            if (paramDef.default > maxPeriod) maxPeriod = paramDef.default;
-          }
-        }
-      }
-
-      if (strategy.filters?.trendFilter?.period && strategy.filters.trendFilter.period > maxPeriod) {
-        maxPeriod = strategy.filters.trendFilter.period;
-      }
-
-      if (strategy.optimizedParams?.onlyWithTrend) {
-        maxPeriod = Math.max(maxPeriod, 200);
-      }
-    }
-
-    const requiredKlines = Math.ceil(maxPeriod * 1.5);
-    return Math.min(Math.max(requiredKlines, MIN_KLINES), MAX_KLINES);
   }
 
   private async ensureMLInitialized(): Promise<boolean> {
@@ -449,7 +405,7 @@ export class AutoTradingScheduler {
         watcher.enabledStrategies.includes(s.id)
       );
 
-      const requiredKlines = this.calculateRequiredKlines(filteredStrategies);
+      const requiredKlines = calculateRequiredKlinesForML(filteredStrategies);
       const minRequired = Math.max(50, Math.ceil(requiredKlines * 0.5));
 
       const klinesData = await db.query.klines.findMany({
@@ -603,6 +559,15 @@ export class AutoTradingScheduler {
 
             const mlThreshold = getThresholdForTimeframe(watcher.interval);
 
+            const accepted = prediction.probability >= mlThreshold.minProbability;
+
+            mlService.recordPredictionOutcome(
+              watcher.interval,
+              prediction.probability,
+              accepted,
+              prediction.latencyMs ?? 0
+            );
+
             log('🔮 ML prediction', {
               setupType: setup.type,
               probability: prediction.probability.toFixed(3),
@@ -610,9 +575,11 @@ export class AutoTradingScheduler {
               label: prediction.label,
               threshold: mlThreshold.minProbability,
               interval: watcher.interval,
+              accepted,
+              latencyMs: prediction.latencyMs,
             });
 
-            if (prediction.probability >= mlThreshold.minProbability) {
+            if (accepted) {
               filteredSetups.push({
                 ...setup,
                 confidence: Math.round((setup.confidence + prediction.confidence) / 2),
@@ -638,10 +605,20 @@ export class AutoTradingScheduler {
           }
         }
 
+        const mlStats = mlService.getMLStats();
+        const intervalStats = mlStats[watcher.interval];
+
         log('📊 ML filtering complete', {
           original: detectedSetups.length,
           afterFilter: filteredSetups.length,
           rejected: detectedSetups.length - filteredSetups.length,
+          modelUsed: intervalStats?.modelId,
+          sessionStats: intervalStats ? {
+            totalPredictions: intervalStats.predictions,
+            acceptanceRate: `${intervalStats.acceptanceRate.toFixed(1)}%`,
+            avgProbability: `${(intervalStats.avgProbability * 100).toFixed(1)}%`,
+            avgLatencyMs: `${intervalStats.avgLatencyMs.toFixed(0)}ms`,
+          } : undefined,
         });
       } else {
         log('⚠️ ML not available, using all detected setups');

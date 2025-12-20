@@ -28,6 +28,14 @@ const DEFAULT_CONFIG: MLServiceConfig = {
   blendWeight: 0.4,
 };
 
+interface MLStats {
+  predictions: number;
+  accepted: number;
+  rejected: number;
+  avgProbability: number;
+  avgLatencyMs: number;
+}
+
 class MLServiceImpl {
   private config: MLServiceConfig;
   private registry: ModelRegistry | null = null;
@@ -36,6 +44,9 @@ class MLServiceImpl {
   private realtimePredictor: RealtimePredictor | null = null;
   private isInitialized = false;
   private activeModelId: string | null = null;
+  private predictorCache: Map<string, RealtimePredictor> = new Map();
+  private modelIdByInterval: Map<string, string> = new Map();
+  private statsByInterval: Map<string, MLStats> = new Map();
 
   constructor(config: Partial<MLServiceConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -91,7 +102,8 @@ class MLServiceImpl {
   ): Promise<PredictionResult & { setupId: string }> {
     this.ensureInitialized();
 
-    const prediction = await this.realtimePredictor!.predictSetup(klines, setup, marketContext);
+    const predictor = await this.getPredictorForInterval(interval ?? '1h');
+    const prediction = await predictor.predictSetup(klines, setup, marketContext);
 
     await this.logPrediction(setup, prediction, symbol, interval);
 
@@ -99,6 +111,100 @@ class MLServiceImpl {
       ...prediction,
       setupId: setup.id,
     };
+  }
+
+  private async getPredictorForInterval(interval: string): Promise<RealtimePredictor> {
+    if (this.predictorCache.has(interval)) {
+      return this.predictorCache.get(interval)!;
+    }
+
+    const engine = await this.loader!.loadModelForInterval('setup-classifier', interval);
+    const modelId = this.loader!.getActiveModelId();
+    const modelInfo = engine.getModelInfo();
+
+    console.log(`[ML] 📊 Loading model for interval ${interval}:`, {
+      modelId,
+      version: modelInfo.version,
+      featureCount: modelInfo.featureCount,
+    });
+
+    this.modelIdByInterval.set(interval, modelId ?? 'unknown');
+
+    if (!this.statsByInterval.has(interval)) {
+      this.statsByInterval.set(interval, {
+        predictions: 0,
+        accepted: 0,
+        rejected: 0,
+        avgProbability: 0,
+        avgLatencyMs: 0,
+      });
+    }
+
+    const predictor = new RealtimePredictor(engine, this.featureExtractor!, {
+      cacheFeatures: true,
+      cacheTTLMs: 60000,
+    });
+
+    this.predictorCache.set(interval, predictor);
+    return predictor;
+  }
+
+  recordPredictionOutcome(interval: string, probability: number, accepted: boolean, latencyMs: number): void {
+    const stats = this.statsByInterval.get(interval);
+    if (!stats) return;
+
+    stats.predictions++;
+    if (accepted) stats.accepted++;
+    else stats.rejected++;
+
+    stats.avgProbability = (stats.avgProbability * (stats.predictions - 1) + probability) / stats.predictions;
+    stats.avgLatencyMs = (stats.avgLatencyMs * (stats.predictions - 1) + latencyMs) / stats.predictions;
+  }
+
+  getMLStats(): Record<string, MLStats & { modelId: string; acceptanceRate: number }> {
+    const result: Record<string, MLStats & { modelId: string; acceptanceRate: number }> = {};
+
+    for (const [interval, stats] of this.statsByInterval) {
+      result[interval] = {
+        ...stats,
+        modelId: this.modelIdByInterval.get(interval) ?? 'unknown',
+        acceptanceRate: stats.predictions > 0 ? (stats.accepted / stats.predictions) * 100 : 0,
+      };
+    }
+
+    return result;
+  }
+
+  logMLStatsReport(): void {
+    const stats = this.getMLStats();
+    const intervals = Object.keys(stats);
+
+    if (intervals.length === 0) {
+      console.log('[ML] 📊 No ML predictions recorded yet');
+      return;
+    }
+
+    console.log('\n[ML] ═══════════════════════════════════════════════════════════════');
+    console.log('[ML] 📊 ML IMPACT REPORT');
+    console.log('[ML] ═══════════════════════════════════════════════════════════════');
+
+    let totalPredictions = 0;
+    let totalAccepted = 0;
+
+    for (const interval of intervals) {
+      const s = stats[interval]!;
+      totalPredictions += s.predictions;
+      totalAccepted += s.accepted;
+
+      console.log(`[ML] ${interval.padEnd(4)} | Model: ${s.modelId}`);
+      console.log(`[ML]      | Predictions: ${s.predictions} | Accepted: ${s.accepted} | Rejected: ${s.rejected}`);
+      console.log(`[ML]      | Acceptance Rate: ${s.acceptanceRate.toFixed(1)}% | Avg Prob: ${(s.avgProbability * 100).toFixed(1)}% | Avg Latency: ${s.avgLatencyMs.toFixed(0)}ms`);
+    }
+
+    const overallRate = totalPredictions > 0 ? (totalAccepted / totalPredictions) * 100 : 0;
+    console.log('[ML] ───────────────────────────────────────────────────────────────');
+    console.log(`[ML] TOTAL: ${totalPredictions} predictions | ${totalAccepted} accepted | ${overallRate.toFixed(1)}% acceptance rate`);
+    console.log('[ML] ═══════════════════════════════════════════════════════════════\n');
   }
 
   async enhanceSetup(
@@ -295,6 +401,9 @@ class MLServiceImpl {
     this.featureExtractor = null;
     this.loader = null;
     this.registry = null;
+    this.predictorCache.clear();
+    this.modelIdByInterval.clear();
+    this.statsByInterval.clear();
   }
 
   private ensureInitialized(): void {

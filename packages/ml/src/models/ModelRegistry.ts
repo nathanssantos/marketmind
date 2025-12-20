@@ -20,6 +20,7 @@ export interface RegisteredModel {
     featureNames: string[];
     normalizationParams?: Record<string, unknown>;
   };
+  intervals?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,13 +41,18 @@ export interface ModelManifest {
     feature_count?: number;
     trained_at?: string;
     metrics?: Record<string, number>;
+    intervals?: string[];
   }>;
+  default_model?: string;
+  fallback_model?: string;
 }
 
 export class ModelRegistry {
   private models: Map<string, RegisteredModel> = new Map();
   private config: ModelRegistryConfig;
   private manifest: ModelManifest | null = null;
+  private defaultModelId: string | null = null;
+  private fallbackModelId: string | null = null;
 
   constructor(config: ModelRegistryConfig) {
     this.config = {
@@ -61,6 +67,9 @@ export class ModelRegistry {
       const manifestContent = await fs.readFile(this.config.manifestPath!, 'utf-8');
       this.manifest = JSON.parse(manifestContent);
 
+      this.defaultModelId = this.manifest?.default_model ?? null;
+      this.fallbackModelId = this.manifest?.fallback_model ?? null;
+
       for (const model of this.manifest!.models) {
         const registered: RegisteredModel = {
           id: model.id,
@@ -74,6 +83,7 @@ export class ModelRegistry {
           featureConfig: model.feature_count
             ? { featureNames: Array(model.feature_count).fill('') }
             : undefined,
+          intervals: model.intervals,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -102,6 +112,37 @@ export class ModelRegistry {
     }
 
     return modelsOfType[0]!;
+  }
+
+  async getModelForInterval(type: MLModelType, interval: string): Promise<RegisteredModel> {
+    const modelsOfType = Array.from(this.models.values())
+      .filter((m) => m.type === type && m.status === 'active');
+
+    const matchingModel = modelsOfType.find(m =>
+      m.intervals?.includes(interval) || m.intervals?.includes('*')
+    );
+
+    if (matchingModel) return matchingModel;
+
+    if (this.fallbackModelId) {
+      const fallback = this.models.get(this.fallbackModelId);
+      if (fallback && fallback.status === 'active') return fallback;
+    }
+
+    if (this.defaultModelId) {
+      const defaultModel = this.models.get(this.defaultModelId);
+      if (defaultModel && defaultModel.status === 'active') return defaultModel;
+    }
+
+    return this.getLatestModel(type);
+  }
+
+  getDefaultModelId(): string | null {
+    return this.defaultModelId;
+  }
+
+  getFallbackModelId(): string | null {
+    return this.fallbackModelId;
   }
 
   async listModels(type?: MLModelType): Promise<RegisteredModel[]> {
