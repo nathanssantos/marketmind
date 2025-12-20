@@ -149,13 +149,18 @@ export class RiskManagerService {
 
       const currentExposure = this.calculateTotalExposure(openPositions);
       const totalExposure = currentExposure + positionValue;
-      const maxTotalExposure =
+      const configuredMaxExposure =
         (walletBalance * maxPositionSize * config.maxConcurrentPositions) / 100;
+      const absoluteMaxExposure = walletBalance * (RISK_MANAGER.MAX_EXPOSURE_PERCENT / 100);
+      const maxTotalExposure = Math.min(configuredMaxExposure, absoluteMaxExposure);
 
       if (totalExposure > maxTotalExposure) {
+        const isAbsoluteLimit = totalExposure > absoluteMaxExposure;
         return {
           isValid: false,
-          reason: `Total exposure would exceed maximum (${maxTotalExposure.toFixed(2)} ${wallet.currency})`,
+          reason: isAbsoluteLimit
+            ? `Total exposure would exceed wallet balance (${absoluteMaxExposure.toFixed(2)} ${wallet.currency})`
+            : `Total exposure would exceed maximum (${maxTotalExposure.toFixed(2)} ${wallet.currency})`,
           details: {
             currentExposure: totalExposure,
             maxExposure: maxTotalExposure,

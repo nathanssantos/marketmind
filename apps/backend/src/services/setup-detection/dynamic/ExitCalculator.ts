@@ -17,6 +17,8 @@ const {
   DEFAULT_DISTANCE_PERCENT,
   DEFAULT_SWING_BUFFER_PERCENT,
   MIN_SWING_BUFFER_ATR,
+  SWING_SKIP_RECENT,
+  MIN_ENTRY_STOP_SEPARATION_PERCENT,
   BASE_CONFIDENCE,
   VOLUME_CONFIRMATION_BONUS,
   MAX_CONFIDENCE,
@@ -237,13 +239,11 @@ export class ExitCalculator {
       throw new Error('Insufficient klines for swing high/low calculation');
     }
 
-    let stopLoss: number;
+    const rawSwingPrice = direction === 'SHORT'
+      ? this.findSwingHigh(klines, currentIndex, SWING_SKIP_RECENT)
+      : this.findSwingLow(klines, currentIndex, SWING_SKIP_RECENT);
 
-    if (direction === 'SHORT') {
-      stopLoss = this.findSwingHigh(klines, currentIndex);
-    } else {
-      stopLoss = this.findSwingLow(klines, currentIndex);
-    }
+    let stopLoss = rawSwingPrice;
 
     let bufferApplied = false;
     const atrValue = this.indicatorEngine.resolveIndicatorValue(
@@ -288,6 +288,31 @@ export class ExitCalculator {
       }, 'Applied default swing buffer (max of ATR and percent)');
     }
 
+    const isOnWrongSide = direction === 'LONG' ? stopLoss >= entryPrice : stopLoss <= entryPrice;
+    const separationPercent = (Math.abs(entryPrice - stopLoss) / entryPrice) * 100;
+    let usedFallback = false;
+
+    if (isOnWrongSide || separationPercent < MIN_ENTRY_STOP_SEPARATION_PERCENT) {
+      const minDistance = entryPrice * (MIN_ENTRY_STOP_SEPARATION_PERCENT / 100);
+      const atrFallback = atrValue * 1.5;
+      const fallbackDistance = Math.max(minDistance, atrFallback);
+
+      stopLoss = direction === 'LONG'
+        ? entryPrice - fallbackDistance
+        : entryPrice + fallbackDistance;
+      usedFallback = true;
+
+      logger.debug({
+        direction,
+        originalStopLoss: rawSwingPrice.toFixed(4),
+        wasOnWrongSide: isOnWrongSide,
+        originalSeparation: `${separationPercent.toFixed(3)}%`,
+        minRequired: `${MIN_ENTRY_STOP_SEPARATION_PERCENT}%`,
+        fallbackDistance: fallbackDistance.toFixed(4),
+        newStopLoss: stopLoss.toFixed(4),
+      }, 'Swing stop invalid or too close - applied ATR-based fallback');
+    }
+
     const isValid = direction === 'LONG' ? stopLoss < entryPrice : stopLoss > entryPrice;
     if (!isValid) {
       logger.error({
@@ -299,16 +324,21 @@ export class ExitCalculator {
       throw new Error(`Invalid swing high/low stop loss: ${direction} SL ${stopLoss.toFixed(4)} must be ${direction === 'LONG' ? 'below' : 'above'} entry ${entryPrice.toFixed(4)}`);
     }
 
+    const finalSeparation = (Math.abs(entryPrice - stopLoss) / entryPrice) * 100;
     const maxLookback = Math.min(50, currentIndex);
+
     logger.debug({
       type: 'stopLoss',
       exitType: 'swingHighLow',
       direction,
       entryPrice: entryPrice.toFixed(4),
+      rawSwingPrice: rawSwingPrice.toFixed(4),
       stopLoss: stopLoss.toFixed(4),
       maxCandlesConsidered: maxLookback,
-      percentFromEntry: `${(((stopLoss - entryPrice) / entryPrice) * 100).toFixed(2)}%`,
+      skipRecent: SWING_SKIP_RECENT,
+      percentFromEntry: `${finalSeparation.toFixed(2)}%`,
       bufferApplied: bufferApplied ? 'custom' : 'default',
+      usedFallback,
     }, 'Swing high/low stop loss calculated');
 
     return stopLoss;
@@ -528,11 +558,13 @@ export class ExitCalculator {
   /**
    * Find true swing low - searches backwards for first pivot low
    * A swing low is confirmed when the low is lower than both neighbors
+   * @param skipRecent - Number of recent candles to skip (ensures different swing from entry)
    */
-  private findSwingLow(klines: Kline[], currentIndex: number): number {
+  private findSwingLow(klines: Kline[], currentIndex: number, skipRecent: number = 0): number {
     const maxLookback = Math.min(50, currentIndex);
+    const searchEndIndex = currentIndex - skipRecent;
 
-    for (let i = currentIndex - 1; i >= Math.max(1, currentIndex - maxLookback); i--) {
+    for (let i = searchEndIndex - 1; i >= Math.max(1, currentIndex - maxLookback); i--) {
       const kline = klines[i];
       if (!kline) continue;
 
@@ -546,22 +578,25 @@ export class ExitCalculator {
     }
 
     const fallbackStart = Math.max(0, currentIndex - 20);
+    const fallbackEnd = Math.max(fallbackStart, searchEndIndex);
     const lows = [];
-    for (let i = fallbackStart; i <= currentIndex; i++) {
+    for (let i = fallbackStart; i <= fallbackEnd; i++) {
       const kline = klines[i];
       if (kline) lows.push(parseFloat(String((kline as { low: string }).low)));
     }
-    return Math.min(...lows);
+    return lows.length > 0 ? Math.min(...lows) : parseFloat(String((klines[currentIndex] as { low: string }).low));
   }
 
   /**
    * Find true swing high - searches backwards for first pivot high
    * A swing high is confirmed when the high is higher than both neighbors
+   * @param skipRecent - Number of recent candles to skip (ensures different swing from entry)
    */
-  private findSwingHigh(klines: Kline[], currentIndex: number): number {
+  private findSwingHigh(klines: Kline[], currentIndex: number, skipRecent: number = 0): number {
     const maxLookback = Math.min(50, currentIndex);
+    const searchEndIndex = currentIndex - skipRecent;
 
-    for (let i = currentIndex - 1; i >= Math.max(1, currentIndex - maxLookback); i--) {
+    for (let i = searchEndIndex - 1; i >= Math.max(1, currentIndex - maxLookback); i--) {
       const kline = klines[i];
       if (!kline) continue;
 
@@ -575,12 +610,13 @@ export class ExitCalculator {
     }
 
     const fallbackStart = Math.max(0, currentIndex - 20);
+    const fallbackEnd = Math.max(fallbackStart, searchEndIndex);
     const highs = [];
-    for (let i = fallbackStart; i <= currentIndex; i++) {
+    for (let i = fallbackStart; i <= fallbackEnd; i++) {
       const kline = klines[i];
       if (kline) highs.push(parseFloat(String((kline as { high: string }).high)));
     }
-    return Math.max(...highs);
+    return highs.length > 0 ? Math.max(...highs) : parseFloat(String((klines[currentIndex] as { high: string }).high));
   }
 }
 
