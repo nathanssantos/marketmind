@@ -105,14 +105,12 @@
     },
     "entryPrice": {
       "type": "swingHighLow",
-      "lookback": 2,
       "expirationBars": 3
     }
   },
   "exit": {
     "stopLoss": {
       "type": "swingHighLow",
-      "lookback": 3,
       "buffer": 0.6,
       "indicator": "atr"
     },

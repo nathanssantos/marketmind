@@ -17,7 +17,6 @@ const {
   DEFAULT_DISTANCE_PERCENT,
   DEFAULT_SWING_BUFFER_PERCENT,
   MIN_SWING_BUFFER_ATR,
-  DEFAULT_STOP_LOOKBACK,
   BASE_CONFIDENCE,
   VOLUME_CONFIRMATION_BONUS,
   MAX_CONFIDENCE,
@@ -223,38 +222,27 @@ export class ExitCalculator {
   }
 
   /**
-   * Calculate stop loss based on swing high/low of recent candles
-   * For SHORT: uses max high of lookback candles (including current) + buffer
-   * For LONG: uses min low of lookback candles (including current) - buffer
-   * Buffer adds a few ticks beyond the swing point to avoid premature stops
+   * Calculate stop loss based on true swing high/low (pivot points)
+   * For SHORT: finds most recent swing high (peak confirmed by lower highs around it)
+   * For LONG: finds most recent swing low (trough confirmed by higher lows around it)
+   * Buffer adds ATR-based distance beyond the swing point to avoid premature stops
    *
-   * Uses priorSwingLookback or lookback (default: DEFAULT_STOP_LOOKBACK=5) for finding
-   * a swing point that is different from the entry swing point.
-   * Enforces minimum ATR buffer of MIN_SWING_BUFFER_ATR=0.3 to prevent tight stops.
+   * Searches backwards up to 50 candles to find the first confirmed swing point.
+   * If no swing point is found, falls back to min/max of last 20 candles.
    */
   private calculateSwingHighLowStop(exit: ExitLevel, context: ExitContext): number {
     const { direction, entryPrice, klines, currentIndex, indicators } = context;
-    const lookback = exit.priorSwingLookback ?? exit.lookback ?? DEFAULT_STOP_LOOKBACK;
 
-    const startIdx = Math.max(0, currentIndex - lookback + 1);
-    const relevantKlines = [];
-    for (let i = startIdx; i <= currentIndex; i++) {
-      const kline = klines[i];
-      if (kline) relevantKlines.push(kline);
-    }
-
-    if (relevantKlines.length === 0) {
-      throw new Error('No klines available for swing high/low calculation');
+    if (klines.length === 0 || currentIndex < 2) {
+      throw new Error('Insufficient klines for swing high/low calculation');
     }
 
     let stopLoss: number;
 
     if (direction === 'SHORT') {
-      const highs = relevantKlines.map((k) => parseFloat(String((k as { high: string }).high)));
-      stopLoss = Math.max(...highs);
+      stopLoss = this.findSwingHigh(klines, currentIndex);
     } else {
-      const lows = relevantKlines.map((k) => parseFloat(String((k as { low: string }).low)));
-      stopLoss = Math.min(...lows);
+      stopLoss = this.findSwingLow(klines, currentIndex);
     }
 
     let bufferApplied = false;
@@ -537,4 +525,63 @@ export class ExitCalculator {
 
     return rewardDistance / riskDistance;
   }
+
+  /**
+   * Find true swing low - searches backwards for first pivot low
+   * A swing low is confirmed when the low is lower than both neighbors
+   */
+  private findSwingLow(klines: Kline[], currentIndex: number): number {
+    const maxLookback = Math.min(50, currentIndex);
+
+    for (let i = currentIndex - 1; i >= Math.max(1, currentIndex - maxLookback); i--) {
+      const kline = klines[i];
+      if (!kline) continue;
+
+      const low = parseFloat(String((kline as { low: string }).low));
+      const prevLow = parseFloat(String((klines[i - 1] as { low: string }).low));
+      const nextLow = parseFloat(String((klines[i + 1] as { low: string }).low));
+
+      if (low <= prevLow && low <= nextLow) {
+        return low;
+      }
+    }
+
+    const fallbackStart = Math.max(0, currentIndex - 20);
+    const lows = [];
+    for (let i = fallbackStart; i <= currentIndex; i++) {
+      const kline = klines[i];
+      if (kline) lows.push(parseFloat(String((kline as { low: string }).low)));
+    }
+    return Math.min(...lows);
+  }
+
+  /**
+   * Find true swing high - searches backwards for first pivot high
+   * A swing high is confirmed when the high is higher than both neighbors
+   */
+  private findSwingHigh(klines: Kline[], currentIndex: number): number {
+    const maxLookback = Math.min(50, currentIndex);
+
+    for (let i = currentIndex - 1; i >= Math.max(1, currentIndex - maxLookback); i--) {
+      const kline = klines[i];
+      if (!kline) continue;
+
+      const high = parseFloat(String((kline as { high: string }).high));
+      const prevHigh = parseFloat(String((klines[i - 1] as { high: string }).high));
+      const nextHigh = parseFloat(String((klines[i + 1] as { high: string }).high));
+
+      if (high >= prevHigh && high >= nextHigh) {
+        return high;
+      }
+    }
+
+    const fallbackStart = Math.max(0, currentIndex - 20);
+    const highs = [];
+    for (let i = fallbackStart; i <= currentIndex; i++) {
+      const kline = klines[i];
+      if (kline) highs.push(parseFloat(String((kline as { high: string }).high)));
+    }
+    return Math.max(...highs);
+  }
 }
+
