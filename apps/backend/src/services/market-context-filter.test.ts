@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { TradingSetup, MarketContextData, MarketContextConfig } from '@marketmind/types';
+import type { MarketContextConfig, MarketContextData, TradingSetup } from '@marketmind/types';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../db', () => ({
   db: {
