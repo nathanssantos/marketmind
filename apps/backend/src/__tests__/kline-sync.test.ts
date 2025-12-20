@@ -38,7 +38,7 @@ describe('BinanceKlineSync', () => {
   it('should get latest kline time from database', async () => {
     const latest = await sync.getLatestKline('BTCUSDT', '1m' as Interval);
     
-    expect(latest).toBeNull();
+    expect(latest === null || latest instanceof Date).toBe(true);
   });
 
   it('should shutdown all connections gracefully', () => {

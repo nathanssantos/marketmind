@@ -56,7 +56,7 @@ describe('OCOOrderService', () => {
 
       expect(result?.price).toBe(54000);
       expect(result?.stopPrice).toBe(48000);
-      expect(result?.stopLimitPrice).toBeCloseTo(48000 * 0.999, 0);
+      expect(result?.stopLimitPrice).toBeCloseTo(48000 * 0.995, 0);
     });
 
     it('should calculate correct prices for SHORT order', () => {
@@ -71,10 +71,10 @@ describe('OCOOrderService', () => {
 
       expect(result?.price).toBe(46000);
       expect(result?.stopPrice).toBe(52000);
-      expect(result?.stopLimitPrice).toBeCloseTo(52000 * 1.001, 0);
+      expect(result?.stopLimitPrice).toBeCloseTo(52000 * 1.005, 0);
     });
 
-    it('should apply 0.1% buffer to stop limit price for LONG', () => {
+    it('should apply 0.5% buffer to stop limit price for LONG', () => {
       const params = {
         entryPrice: 50000,
         stopLoss: 48000,
@@ -83,12 +83,12 @@ describe('OCOOrderService', () => {
       };
 
       const result = service.calculateOCOPrices(params);
-      const expectedStopLimit = 48000 * 0.999;
+      const expectedStopLimit = 48000 * 0.995;
 
       expect(result?.stopLimitPrice).toBeCloseTo(expectedStopLimit, 0);
     });
 
-    it('should apply 0.1% buffer to stop limit price for SHORT', () => {
+    it('should apply 0.5% buffer to stop limit price for SHORT', () => {
       const params = {
         entryPrice: 50000,
         stopLoss: 52000,
@@ -97,7 +97,7 @@ describe('OCOOrderService', () => {
       };
 
       const result = service.calculateOCOPrices(params);
-      const expectedStopLimit = 52000 * 1.001;
+      const expectedStopLimit = 52000 * 1.005;
 
       expect(result?.stopLimitPrice).toBeCloseTo(expectedStopLimit, 0);
     });

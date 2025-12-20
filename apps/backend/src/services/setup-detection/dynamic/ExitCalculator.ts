@@ -294,20 +294,19 @@ export class ExitCalculator {
         direction,
         entryPrice: entryPrice.toFixed(4),
         stopLoss: stopLoss.toFixed(4),
-        lookback,
         exitType: exit.type,
       }, '❌ INVALID SWING HIGH/LOW STOP - SL must be below entry for LONG and above entry for SHORT');
       throw new Error(`Invalid swing high/low stop loss: ${direction} SL ${stopLoss.toFixed(4)} must be ${direction === 'LONG' ? 'below' : 'above'} entry ${entryPrice.toFixed(4)}`);
     }
 
+    const maxLookback = Math.min(50, currentIndex);
     logger.debug({
       type: 'stopLoss',
       exitType: 'swingHighLow',
       direction,
       entryPrice: entryPrice.toFixed(4),
       stopLoss: stopLoss.toFixed(4),
-      lookback,
-      candlesConsidered: relevantKlines.length,
+      maxCandlesConsidered: maxLookback,
       percentFromEntry: `${(((stopLoss - entryPrice) / entryPrice) * 100).toFixed(2)}%`,
       bufferApplied: bufferApplied ? 'custom' : 'default',
     }, 'Swing high/low stop loss calculated');
