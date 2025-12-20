@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
-import { io } from 'socket.io-client';
+import { socketService } from '../services/socketService';
 
 interface UseWebSocketOptions {
   url?: string;
@@ -61,79 +61,93 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   useEffect(() => {
     if (!autoConnect) return;
 
-    const socket = io(url, {
-      autoConnect: true,
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-      transports: ['websocket', 'polling'],
-      auth: auth ?? {},
-    });
+    const socket = socketService.connect();
 
-    socket.on('connect', () => {
-      console.log('WebSocket connected');
+    const handleConnect = () => {
       setIsConnected(true);
       setError(null);
-    });
+    };
 
-    socket.on('disconnect', () => {
-      console.log('WebSocket disconnected');
+    const handleDisconnect = () => {
       setIsConnected(false);
-    });
+    };
 
-    socket.on('connect_error', (err: Error) => {
-      console.error('WebSocket connection error:', err);
+    const handleConnectError = (err: Error) => {
       setError(err);
       setIsConnected(false);
-    });
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('connect_error', handleConnectError);
 
     socketRef.current = socket;
 
+    if (socket.connected) {
+      setIsConnected(true);
+    }
+
     return () => {
-      socket.disconnect();
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('connect_error', handleConnectError);
+      
+      socketService.disconnect();
       socketRef.current = null;
     };
-  }, [url, autoConnect, auth]);
+  }, [autoConnect]);
 
   const subscribe = {
     orders: (walletId: string) => {
-      socketRef.current?.emit('subscribe:orders', walletId);
+      const socket = socketService.getSocket();
+      socket?.emit('subscribe:orders', walletId);
     },
     positions: (walletId: string) => {
-      socketRef.current?.emit('subscribe:positions', walletId);
+      const socket = socketService.getSocket();
+      socket?.emit('subscribe:positions', walletId);
     },
     wallet: (walletId: string) => {
-      socketRef.current?.emit('subscribe:wallet', walletId);
+      const socket = socketService.getSocket();
+      socket?.emit('subscribe:wallet', walletId);
     },
     prices: (symbol: string) => {
-      socketRef.current?.emit('subscribe:prices', symbol);
+      const socket = socketService.getSocket();
+      socket?.emit('subscribe:prices', symbol);
     },
     klines: (data: { symbol: string; interval: string }) => {
-      socketRef.current?.emit('subscribe:klines', data);
+      const socket = socketService.getSocket();
+      socket?.emit('subscribe:klines', data);
     },
     setups: (userId: string) => {
-      socketRef.current?.emit('subscribe:setups', userId);
+      const socket = socketService.getSocket();
+      socket?.emit('subscribe:setups', userId);
     },
   };
 
   const unsubscribe = {
     orders: (walletId: string) => {
-      socketRef.current?.emit('unsubscribe:orders', walletId);
+      const socket = socketService.getSocket();
+      socket?.emit('unsubscribe:orders', walletId);
     },
     positions: (walletId: string) => {
-      socketRef.current?.emit('unsubscribe:positions', walletId);
+      const socket = socketService.getSocket();
+      socket?.emit('unsubscribe:positions', walletId);
     },
     wallet: (walletId: string) => {
-      socketRef.current?.emit('unsubscribe:wallet', walletId);
+      const socket = socketService.getSocket();
+      socket?.emit('unsubscribe:wallet', walletId);
     },
     prices: (symbol: string) => {
-      socketRef.current?.emit('unsubscribe:prices', symbol);
+      const socket = socketService.getSocket();
+      socket?.emit('unsubscribe:prices', symbol);
     },
     klines: (data: { symbol: string; interval: string }) => {
-      socketRef.current?.emit('unsubscribe:klines', data);
+      const socket = socketService.getSocket();
+      socket?.emit('unsubscribe:klines', data);
     },
     setups: (userId: string) => {
-      socketRef.current?.emit('unsubscribe:setups', userId);
+      const socket = socketService.getSocket();
+      socket?.emit('unsubscribe:setups', userId);
     },
   };
 
@@ -141,14 +155,16 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     event: K,
     handler: WebSocketEvents[K]
   ): void => {
-    socketRef.current?.on(event, handler as never);
+    const socket = socketService.getSocket();
+    socket?.on(event, handler as never);
   };
 
   const off = <K extends keyof WebSocketEvents>(
     event: K,
     handler: WebSocketEvents[K]
   ): void => {
-    socketRef.current?.off(event, handler as never);
+    const socket = socketService.getSocket();
+    socket?.off(event, handler as never);
   };
 
   return {

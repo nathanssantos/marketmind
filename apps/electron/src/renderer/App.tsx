@@ -272,15 +272,7 @@ function AppContent(): ReactElement {
     limit: 500,
   });
 
-  useEffect(() => {
-    console.log('[App] Backend klines query state:', {
-      isLoading: backendKlinesQuery.isLoading,
-      dataLength: backendKlinesQuery.data?.length ?? 0,
-      error: backendKlinesQuery.error?.message,
-      symbol,
-      timeframe,
-    });
-  }, [backendKlinesQuery.isLoading, backendKlinesQuery.data, backendKlinesQuery.error, symbol, timeframe]);
+
 
   const marketData = useMemo(() => {
     if (!backendKlinesQuery.data || backendKlinesQuery.data.length === 0) {
@@ -398,15 +390,9 @@ function AppContent(): ReactElement {
       rafIdRef.current = null;
       pendingUpdateRef.current = null;
     });
-  }, [symbol]);
+  }, []);
 
   const handleKlineStreamUpdate = useCallback((backendKline: any) => {
-    console.log('[App] WebSocket kline update:', {
-      close: backendKline.close,
-      volume: backendKline.volume,
-      isClosed: backendKline.isClosed,
-    });
-
     const kline: Kline = {
       openTime: backendKline.openTime,
       closeTime: backendKline.closeTime,
@@ -564,16 +550,11 @@ function AppContent(): ReactElement {
   const stopTrading = async () => { };
 
   useEffect(() => {
-    console.log('[App] isAutoTradingActive changed:', isAutoTradingActive);
-
     if (isAutoTradingActive) {
-      console.log('[App] Calling startTrading()...');
       void startTrading();
     } else {
-      console.log('[App] Calling stopTrading()...');
       void stopTrading();
     }
-
   }, [isAutoTradingActive]);
 
   return (

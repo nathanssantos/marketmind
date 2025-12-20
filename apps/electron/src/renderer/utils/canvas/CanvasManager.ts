@@ -1,13 +1,13 @@
-import { CHART_CONFIG } from '@shared/constants';
 import type { Kline, Viewport } from '@marketmind/types';
+import { CHART_CONFIG } from '@shared/constants';
 import {
-  calculateBounds,
-  clampViewport,
-  priceToY,
-  volumeToHeight,
-  yToPrice,
-  type Bounds,
-  type Dimensions,
+    calculateBounds,
+    clampViewport,
+    priceToY,
+    volumeToHeight,
+    yToPrice,
+    type Bounds,
+    type Dimensions,
 } from './coordinateSystem';
 import { clearCanvas, setupCanvas } from './drawingUtils';
 

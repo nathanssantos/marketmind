@@ -1,6 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { Socket } from 'socket.io-client';
-import { io } from 'socket.io-client';
+import { socketService } from '../services/socketService';
 import { trpc } from '../utils/trpc';
 
 interface PriceUpdate {
@@ -24,7 +24,6 @@ interface OrderUpdate {
   symbol: string;
 }
 
-const BACKEND_URL = 'http://localhost:3001';
 const BACKUP_POLLING_INTERVAL = 30000;
 
 export const useRealtimeTradingSync = (walletId: string | undefined) => {
@@ -62,15 +61,7 @@ export const useRealtimeTradingSync = (walletId: string | undefined) => {
   useEffect(() => {
     if (!walletId) return;
 
-    const socket = io(BACKEND_URL, {
-      autoConnect: true,
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: Infinity,
-      transports: ['websocket'],
-      timeout: 10000,
-    });
+    const socket = socketService.connect();
 
     socket.on('connect', () => {
       console.log('[RealtimeSync] WebSocket connected');
@@ -128,7 +119,7 @@ export const useRealtimeTradingSync = (walletId: string | undefined) => {
       socket.emit('unsubscribe:positions', walletId);
       socket.emit('unsubscribe:orders', walletId);
       socket.emit('unsubscribe:wallet', walletId);
-      socket.disconnect();
+      socketService.disconnect();
       socketRef.current = null;
       isConnectedRef.current = false;
     };

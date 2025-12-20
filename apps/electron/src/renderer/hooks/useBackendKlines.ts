@@ -100,16 +100,6 @@ export const useKlineStream = (
     if (!enabled || !isConnected || !symbol || !interval) return;
 
     const handleKlineUpdate = (kline: any) => {
-      console.log('[useBackendKlines] Received kline update:', {
-        symbol: kline.symbol,
-        interval: kline.interval,
-        marketType: kline.marketType,
-        close: kline.close,
-        expectedSymbol: symbol,
-        expectedInterval: interval,
-        expectedMarketType: marketType,
-      });
-
       if (
         kline.symbol === symbol &&
         kline.interval === interval &&
