@@ -74,7 +74,7 @@ const OrdersListComponent = () => {
       type: 'MARKET',
       side: e.side === 'LONG' ? 'BUY' : 'SELL',
       time: new Date(e.openedAt).getTime(),
-      updateTime: e.closedAt ? new Date(e.closedAt).getTime() : new Date(e.openedAt).getTime(),
+      updateTime: new Date(e.openedAt).getTime(),
       isWorking: e.status === 'open',
       origQuoteOrderQty: '0',
       id: e.id,

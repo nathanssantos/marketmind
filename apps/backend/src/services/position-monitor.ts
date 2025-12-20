@@ -110,6 +110,11 @@ export class PositionMonitorService {
       return;
     }
 
+    logger.debug({
+      pendingCount: pendingExecutions.length,
+      symbols: [...new Set(pendingExecutions.map(e => e.symbol))],
+    }, '📋 Checking pending LIMIT orders');
+
     const now = new Date();
 
     for (const execution of pendingExecutions) {
@@ -179,6 +184,21 @@ export class PositionMonitorService {
           ? currentPrice <= limitPrice
           : currentPrice >= limitPrice;
 
+        const priceDiff = isLong
+          ? ((limitPrice - currentPrice) / limitPrice) * 100
+          : ((currentPrice - limitPrice) / limitPrice) * 100;
+
+        logger.debug({
+          executionId: execution.id,
+          symbol: execution.symbol,
+          side: execution.side,
+          limitPrice,
+          currentPrice,
+          priceDiff: `${priceDiff.toFixed(3)}%`,
+          shouldFill,
+          condition: isLong ? `current (${currentPrice}) <= limit (${limitPrice})` : `current (${currentPrice}) >= limit (${limitPrice})`,
+        }, '📊 Pending order price check');
+
         if (shouldFill) {
           logger.info({
             executionId: execution.id,
@@ -187,7 +207,8 @@ export class PositionMonitorService {
             limitPrice,
             currentPrice,
             fillPrice: currentPrice,
-          }, '✅ Pending LIMIT order FILLED - activating position');
+            improvement: `${Math.abs(((currentPrice - limitPrice) / limitPrice) * 100).toFixed(3)}%`,
+          }, '🎯 LIMIT ORDER FILLED - Position now OPEN');
 
           await db
             .update(tradeExecutions)

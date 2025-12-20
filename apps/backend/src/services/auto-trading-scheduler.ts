@@ -1,6 +1,6 @@
 import { getThresholdForTimeframe } from '@marketmind/ml';
 import type { Interval, Kline, MarketType, TradingSetup } from '@marketmind/types';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -851,22 +851,27 @@ export class AutoTradingScheduler {
 
       log('📋 Wallet type', { walletType: wallet.walletType, isLiveExecution, enableLiveTrading: env.ENABLE_LIVE_TRADING });
 
-      const openPositions = await db
+      const activePositions = await db
         .select()
         .from(tradeExecutions)
         .where(
           and(
             eq(tradeExecutions.walletId, watcher.walletId),
-            eq(tradeExecutions.status, 'open')
+            inArray(tradeExecutions.status, ['open', 'pending'])
           )
         );
 
+      const openPositions = activePositions.filter(p => p.status === 'open');
+      const pendingPositions = activePositions.filter(p => p.status === 'pending');
+
       log('📊 Current positions', {
         open: openPositions.length,
+        pending: pendingPositions.length,
+        total: activePositions.length,
         max: config.maxConcurrentPositions,
       });
 
-      if (openPositions.length >= config.maxConcurrentPositions) {
+      if (activePositions.length >= config.maxConcurrentPositions) {
         log('⚠️ Max concurrent positions reached');
         return;
       }
