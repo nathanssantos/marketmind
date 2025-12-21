@@ -7,21 +7,20 @@
  */
 
 import type {
-    ComparisonOperator,
-    ComputedIndicators,
-    Condition,
-    ConditionGroup,
-    ConditionOperand,
-    EvaluationContext,
+  ComparisonOperator,
+  ComputedIndicators,
+  Condition,
+  ConditionGroup,
+  ConditionOperand,
+  EvaluationContext,
 } from '@marketmind/types';
 import {
-    isCalcExpression,
-    isConditionGroup,
-    isParameterReference,
+  isCalcExpression,
+  isConditionGroup,
+  isParameterReference,
 } from '@marketmind/types';
 
-import { logger } from '../../logger';
-import { IndicatorEngine } from './IndicatorEngine';
+import type { IndicatorEngine } from './IndicatorEngine';
 
 const MATH_EXPRESSION_REGEX = /^(.+?)\s*([*+\-/])\s*(\d+\.?\d*)$/;
 
@@ -88,19 +87,19 @@ export class ConditionEvaluator {
 
     const result = this.compare(leftValue, rightValue, op);
 
-    const leftStr = typeof condition.left === 'string' ? condition.left : JSON.stringify(condition.left);
-    const rightStr = typeof condition.right === 'string' ? condition.right : JSON.stringify(condition.right);
-    const hasPrev = leftStr.includes('.prev') || rightStr.includes('.prev');
+    // const leftStr = typeof condition.left === 'string' ? condition.left : JSON.stringify(condition.left);
+    // const rightStr = typeof condition.right === 'string' ? condition.right : JSON.stringify(condition.right);
+    // const hasPrev = leftStr.includes('.prev') || rightStr.includes('.prev');
 
-    if (hasPrev || result) {
-      logger.debug({
-        condition: `${leftStr} ${op} ${rightStr}`,
-        leftValue: leftValue.toFixed(4),
-        rightValue: rightValue.toFixed(4),
-        result,
-        index: context.currentIndex,
-      }, 'Condition evaluated');
-    }
+    // if (hasPrev || result) {
+    //   logger.debug({
+    //     condition: `${leftStr} ${op} ${rightStr}`,
+    //     leftValue: leftValue.toFixed(4),
+    //     rightValue: rightValue.toFixed(4),
+    //     result,
+    //     index: context.currentIndex,
+    //   }, 'Condition evaluated');
+    // }
 
     return result;
   }
@@ -230,7 +229,7 @@ export class ConditionEvaluator {
   private getIndicatorLength(indicators: ComputedIndicators): number {
     const priceIndicator = indicators['_price'];
     if (priceIndicator && !Array.isArray(priceIndicator.values)) {
-      const values = priceIndicator.values as Record<string, (number | null)[]>;
+      const values = priceIndicator.values;
       return values['close']?.length ?? 0;
     }
     return 0;
