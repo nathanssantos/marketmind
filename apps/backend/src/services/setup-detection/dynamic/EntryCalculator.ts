@@ -5,11 +5,13 @@ import type {
 } from '@marketmind/types';
 import { isParameterReference } from '@marketmind/types';
 
+import { EXIT_CALCULATOR } from '../../../constants';
 import { logger } from '../../logger';
 import type { IndicatorEngine } from './IndicatorEngine';
 
 const DEFAULT_LOOKBACK = 2;
 const DEFAULT_EXPIRATION_BARS = 3;
+const { MAX_LIMIT_ENTRY_DISTANCE_PERCENT } = EXIT_CALCULATOR;
 
 export class EntryCalculator {
   private indicatorEngine: IndicatorEngine;
@@ -195,6 +197,18 @@ export class EntryCalculator {
     closePrice: number,
     direction: 'LONG' | 'SHORT'
   ): boolean {
+    const distancePercent = Math.abs(calculatedPrice - closePrice) / closePrice * 100;
+    if (distancePercent > MAX_LIMIT_ENTRY_DISTANCE_PERCENT) {
+      logger.warn({
+        direction,
+        closePrice: closePrice.toFixed(4),
+        calculatedPrice: calculatedPrice.toFixed(4),
+        distancePercent: `${distancePercent.toFixed(2)}%`,
+        maxAllowed: `${MAX_LIMIT_ENTRY_DISTANCE_PERCENT}%`,
+      }, '⚠️ Limit entry price too far from close - exceeds max distance');
+      return false;
+    }
+
     if (direction === 'LONG') {
       return calculatedPrice <= closePrice;
     }

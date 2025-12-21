@@ -25,7 +25,7 @@ import { EntryCalculator } from './EntryCalculator';
 import { ExitCalculator } from './ExitCalculator';
 import { IndicatorEngine } from './IndicatorEngine';
 
-const { MIN_ENTRY_STOP_SEPARATION_PERCENT } = EXIT_CALCULATOR;
+const { MIN_ENTRY_STOP_SEPARATION_PERCENT, DEFAULT_ENTRY_BUFFER_ATR } = EXIT_CALCULATOR;
 
 /**
  * Configuration for StrategyInterpreter
@@ -103,6 +103,8 @@ export class StrategyInterpreter extends BaseSetupDetector {
       type: 'swingHighLow' as const,
       lookback: 2,
       expirationBars: 3,
+      buffer: DEFAULT_ENTRY_BUFFER_ATR,
+      indicator: 'atr',
     };
     const entryCalcResult = this.entryCalculator.calculateEntryPrice(entryPriceConfig, baseExitContext);
     const entryPrice = entryCalcResult.orderType === 'LIMIT' ? entryCalcResult.price : closePrice;
