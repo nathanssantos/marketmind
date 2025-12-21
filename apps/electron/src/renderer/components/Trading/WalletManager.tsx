@@ -1,4 +1,4 @@
-import { Box, Flex, IconButton, Portal, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Flex, IconButton, Portal, Spinner, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Wallet } from '@marketmind/types';
 import { Button } from '@renderer/components/ui/button';
@@ -9,9 +9,15 @@ import { useWalletUpdates } from '@renderer/hooks/useWalletUpdates';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { LuChartBar, LuInfo, LuPlus, LuTrash2 } from 'react-icons/lu';
+import { LuChartBar, LuInfo, LuPlus, LuRefreshCw, LuTrash2 } from 'react-icons/lu';
 import { CreateWalletDialog } from './CreateWalletDialog';
 import { WalletPerformanceModal } from './WalletPerformanceModal';
+
+type WalletType = 'paper' | 'testnet' | 'live' | null;
+
+interface ExtendedWallet extends Wallet {
+  walletType: WalletType;
+}
 
 export const WalletManager = () => {
   const { t } = useTranslation();
@@ -21,14 +27,19 @@ export const WalletManager = () => {
     isLoading,
     deleteWallet,
     createPaperWallet,
+    createWallet,
+    syncBalance,
     isDeleting,
-    isCreatingPaper: isCreatingPaperWallet,
+    isCreatingPaper,
+    isCreating,
+    isSyncing,
   } = useBackendWallet();
 
-  const wallets: Wallet[] = useMemo(() => {
-    return backendWalletsData.map((w): Wallet => ({
+  const wallets: ExtendedWallet[] = useMemo(() => {
+    return backendWalletsData.map((w): ExtendedWallet => ({
       id: w.id,
       name: w.name,
+      walletType: (w.walletType ?? 'paper') as WalletType,
       balance: parseFloat(w.currentBalance || '0'),
       initialBalance: parseFloat(w.initialBalance || '0'),
       currency: (w.currency || 'USDT') as 'USD' | 'BRL' | 'EUR' | 'USDT' | 'BTC' | 'ETH',
@@ -58,10 +69,11 @@ export const WalletManager = () => {
   }, [backendWalletsData]);
 
   const activeWalletId = wallets[0]?.id ?? null;
+  const [syncingWalletId, setSyncingWalletId] = useState<string | null>(null);
 
   useWalletUpdates(activeWalletId ?? '');
 
-  const handleAddWallet = async (params: {
+  const handleAddPaperWallet = async (params: {
     name: string;
     initialBalance: number;
     currency: 'USD' | 'BRL' | 'EUR' | 'USDT' | 'BTC' | 'ETH';
@@ -73,8 +85,26 @@ export const WalletManager = () => {
     });
   };
 
+  const handleAddRealWallet = async (params: {
+    name: string;
+    apiKey: string;
+    apiSecret: string;
+    walletType: 'testnet' | 'live';
+  }) => {
+    await createWallet(params);
+  };
+
   const handleDeleteWallet = async (id: string) => {
     await deleteWallet(id);
+  };
+
+  const handleSyncBalance = async (id: string) => {
+    setSyncingWalletId(id);
+    try {
+      await syncBalance(id);
+    } finally {
+      setSyncingWalletId(null);
+    }
   };
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -90,7 +120,7 @@ export const WalletManager = () => {
           size="2xs"
           colorPalette="blue"
           onClick={() => setShowCreateDialog(true)}
-          loading={isCreatingPaperWallet}
+          loading={isCreatingPaper || isCreating}
         >
           <LuPlus />
           {t('trading.wallets.create')}
@@ -119,7 +149,9 @@ export const WalletManager = () => {
                 isActive={wallet.id === activeWalletId}
                 onDelete={() => handleDeleteWallet(wallet.id)}
                 onViewPerformance={() => setPerformanceWalletId(wallet.id)}
+                onSync={() => handleSyncBalance(wallet.id)}
                 isDeleting={isDeleting}
+                isSyncing={syncingWalletId === wallet.id || isSyncing}
               />
             ))}
           </Stack>
@@ -129,7 +161,9 @@ export const WalletManager = () => {
       <CreateWalletDialog
         isOpen={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
-        onCreate={handleAddWallet}
+        onCreate={handleAddPaperWallet}
+        onCreateReal={handleAddRealWallet}
+        isCreating={isCreatingPaper || isCreating}
       />
 
       <WalletPerformanceModal
@@ -142,16 +176,30 @@ export const WalletManager = () => {
 };
 
 interface WalletCardProps {
-  wallet: Wallet;
+  wallet: ExtendedWallet;
   isActive: boolean;
   onDelete: () => void;
   onViewPerformance: () => void;
+  onSync: () => void;
   isDeleting?: boolean;
+  isSyncing?: boolean;
 }
 
 const PERCENT_MULTIPLIER = 100;
 
-const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, isDeleting = false }: WalletCardProps) => {
+const getWalletTypeBadge = (walletType: WalletType) => {
+  switch (walletType) {
+    case 'testnet':
+      return { label: '🧪 Testnet', colorPalette: 'yellow' };
+    case 'live':
+      return { label: '🔴 Live', colorPalette: 'red' };
+    case 'paper':
+    default:
+      return { label: '📝 Paper', colorPalette: 'green' };
+  }
+};
+
+const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isDeleting = false, isSyncing = false }: WalletCardProps) => {
   const { t } = useTranslation();
   const { performance } = useBackendAnalytics(wallet.id, 'all');
 
@@ -161,6 +209,9 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, isDeleting 
 
   const totalFees = performance?.totalFees ?? 0;
   const grossPnL = netPnL + totalFees;
+
+  const badgeInfo = getWalletTypeBadge(wallet.walletType);
+  const canSync = wallet.walletType === 'testnet' || wallet.walletType === 'live';
 
   return (
     <Box
@@ -174,57 +225,80 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, isDeleting 
       }}
     >
       <Flex justify="space-between" align="center" mb={2}>
-        <Text fontWeight="bold" fontSize="sm">
-          {wallet.name}
-        </Text>
-        <MenuRoot id={`wallet-menu-${wallet.id}`} positioning={{ placement: 'bottom-end' }}>
-          <MenuTrigger asChild>
-            <IconButton
-              size="2xs"
-              variant="ghost"
-              aria-label="Wallet options"
-              onClick={(e) => e.stopPropagation()}
-              disabled={isDeleting}
-            >
-              <BsThreeDotsVertical />
-            </IconButton>
-          </MenuTrigger>
-          <Portal>
-            <MenuPositioner>
-              <MenuContent
-                bg="bg.panel"
-                borderColor="border"
-                shadow="lg"
-                minW="180px"
-                zIndex={99999}
-                p={0}
+        <Flex align="center" gap={2}>
+          <Text fontWeight="bold" fontSize="sm">
+            {wallet.name}
+          </Text>
+          <Badge size="xs" colorPalette={badgeInfo.colorPalette} variant="subtle">
+            {badgeInfo.label}
+          </Badge>
+        </Flex>
+        <Flex align="center" gap={1}>
+          {canSync && (
+            <TooltipWrapper label={t('trading.wallets.syncBalance', 'Sync balance from Binance')}>
+              <IconButton
+                size="2xs"
+                variant="ghost"
+                aria-label="Sync balance"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSync();
+                }}
+                disabled={isSyncing}
               >
-                <MenuItem
-                  value="performance"
-                  onClick={onViewPerformance}
-                  px={4}
-                  py={2.5}
-                  _hover={{ bg: 'bg.muted' }}
+                {isSyncing ? <Spinner size="xs" /> : <LuRefreshCw />}
+              </IconButton>
+            </TooltipWrapper>
+          )}
+          <MenuRoot id={`wallet-menu-${wallet.id}`} positioning={{ placement: 'bottom-end' }}>
+            <MenuTrigger asChild>
+              <IconButton
+                size="2xs"
+                variant="ghost"
+                aria-label="Wallet options"
+                onClick={(e) => e.stopPropagation()}
+                disabled={isDeleting}
+              >
+                <BsThreeDotsVertical />
+              </IconButton>
+            </MenuTrigger>
+            <Portal>
+              <MenuPositioner>
+                <MenuContent
+                  bg="bg.panel"
+                  borderColor="border"
+                  shadow="lg"
+                  minW="180px"
+                  zIndex={99999}
+                  p={0}
                 >
-                  <LuChartBar />
-                  <Text>{t('trading.wallets.viewPerformance')}</Text>
-                </MenuItem>
-                <MenuItem
-                  value="delete"
-                  onClick={onDelete}
-                  color="red.500"
-                  px={4}
-                  py={2.5}
-                  _hover={{ bg: 'bg.muted' }}
-                  disabled={isDeleting}
-                >
-                  <LuTrash2 />
-                  <Text>{t('trading.wallets.delete')}</Text>
-                </MenuItem>
-              </MenuContent>
-            </MenuPositioner>
-          </Portal>
-        </MenuRoot>
+                  <MenuItem
+                    value="performance"
+                    onClick={onViewPerformance}
+                    px={4}
+                    py={2.5}
+                    _hover={{ bg: 'bg.muted' }}
+                  >
+                    <LuChartBar />
+                    <Text>{t('trading.wallets.viewPerformance')}</Text>
+                  </MenuItem>
+                  <MenuItem
+                    value="delete"
+                    onClick={onDelete}
+                    color="red.500"
+                    px={4}
+                    py={2.5}
+                    _hover={{ bg: 'bg.muted' }}
+                    disabled={isDeleting}
+                  >
+                    <LuTrash2 />
+                    <Text>{t('trading.wallets.delete')}</Text>
+                  </MenuItem>
+                </MenuContent>
+              </MenuPositioner>
+            </Portal>
+          </MenuRoot>
+        </Flex>
       </Flex>
 
       <Stack gap={1} fontSize="xs">

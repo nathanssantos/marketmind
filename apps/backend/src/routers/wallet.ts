@@ -1,10 +1,10 @@
 import { TRPCError } from '@trpc/server';
-import { MainClient } from 'binance';
 import { randomBytes } from 'crypto';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { wallets } from '../db/schema';
-import { decryptApiKey, encryptApiKey } from '../services/encryption';
+import { wallets, type Wallet } from '../db/schema';
+import { createBinanceClient, isPaperWallet } from '../services/binance-client';
+import { encryptApiKey } from '../services/encryption';
 import { getWebSocketService } from '../services/websocket';
 import { protectedProcedure, router } from '../trpc';
 
@@ -18,6 +18,7 @@ export const walletRouter = router({
       .select({
         id: wallets.id,
         name: wallets.name,
+        walletType: wallets.walletType,
         currency: wallets.currency,
         initialBalance: wallets.initialBalance,
         currentBalance: wallets.currentBalance,
@@ -38,6 +39,7 @@ export const walletRouter = router({
         .select({
           id: wallets.id,
           name: wallets.name,
+          walletType: wallets.walletType,
           currency: wallets.currency,
           initialBalance: wallets.initialBalance,
           currentBalance: wallets.currentBalance,
@@ -104,16 +106,18 @@ export const walletRouter = router({
         name: z.string().min(1).max(255),
         apiKey: z.string().min(1),
         apiSecret: z.string().min(1),
-        testMode: z.boolean().default(false),
+        walletType: z.enum(['live', 'testnet']).default('testnet'),
       })
     )
     .mutation(async ({ input, ctx }) => {
       try {
-        const client = new MainClient({
-          api_key: input.apiKey,
-          api_secret: input.apiSecret,
-        });
+        const tempWallet = {
+          apiKeyEncrypted: input.apiKey,
+          apiSecretEncrypted: input.apiSecret,
+          walletType: input.walletType,
+        } as Wallet;
 
+        const client = createBinanceClient(tempWallet);
         const accountInfo = await client.getAccountInformation();
 
         if (!accountInfo) {
@@ -137,6 +141,7 @@ export const walletRouter = router({
           id: walletId,
           userId: ctx.user.id,
           name: input.name,
+          walletType: input.walletType,
           apiKeyEncrypted,
           apiSecretEncrypted,
           initialBalance: initialBalance.toString(),
@@ -148,6 +153,7 @@ export const walletRouter = router({
         return {
           id: walletId,
           name: input.name,
+          walletType: input.walletType,
           initialBalance: initialBalance.toString(),
           currentBalance: initialBalance.toString(),
           currency: 'USDT',
@@ -155,9 +161,10 @@ export const walletRouter = router({
       } catch (error) {
         if (error instanceof TRPCError) throw error;
 
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to create wallet',
+          code: 'BAD_REQUEST',
+          message: `Failed to connect to Binance ${input.walletType}: ${errorMessage}`,
           cause: error,
         });
       }
@@ -252,33 +259,16 @@ export const walletRouter = router({
         });
       }
 
+      if (isPaperWallet(wallet)) {
+        return {
+          currentBalance: wallet.currentBalance ?? '0',
+          currency: wallet.currency ?? 'USDT',
+          walletType: 'paper' as const,
+        };
+      }
+
       try {
-        const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
-        const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
-
-
-        const [updatedWallet] = await ctx.db
-          .select({
-            id: wallets.id,
-            name: wallets.name,
-            currency: wallets.currency,
-            initialBalance: wallets.initialBalance,
-            currentBalance: wallets.currentBalance,
-            isActive: wallets.isActive,
-          })
-          .from(wallets)
-          .where(eq(wallets.id, input.id))
-          .limit(1);
-
-        const wsService = getWebSocketService();
-        if (wsService && updatedWallet) {
-          wsService.emitWalletUpdate(input.id, updatedWallet);
-        }
-        const client = new MainClient({
-          api_key: apiKey,
-          api_secret: apiSecret,
-        });
-
+        const client = createBinanceClient(wallet);
         const accountInfo = await client.getAccountInformation();
         const usdtBalance = accountInfo.balances?.find((b) => b.asset === 'USDT');
         const currentBalance = usdtBalance?.free
@@ -293,14 +283,25 @@ export const walletRouter = router({
           })
           .where(eq(wallets.id, input.id));
 
+        const wsService = getWebSocketService();
+        if (wsService) {
+          wsService.emitWalletUpdate(input.id, {
+            id: wallet.id,
+            name: wallet.name,
+            currentBalance: currentBalance.toString(),
+          });
+        }
+
         return {
           currentBalance: currentBalance.toString(),
           currency: 'USDT',
+          walletType: wallet.walletType,
         };
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to sync balance',
+          message: `Failed to sync balance from Binance ${wallet.walletType}: ${errorMessage}`,
           cause: error,
         });
       }
@@ -322,25 +323,28 @@ export const walletRouter = router({
         });
       }
 
+      if (isPaperWallet(wallet)) {
+        return {
+          connected: true,
+          walletType: 'paper' as const,
+          message: 'Paper wallet - no API connection needed',
+        };
+      }
+
       try {
-        const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
-        const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
-
-        const client = new MainClient({
-          api_key: apiKey,
-          api_secret: apiSecret,
-        });
-
+        const client = createBinanceClient(wallet);
         await client.testConnectivity();
         const serverTime = await client.getServerTime();
 
         return {
           connected: true,
+          walletType: wallet.walletType,
           serverTime: Number(serverTime),
         };
       } catch (error) {
         return {
           connected: false,
+          walletType: wallet.walletType,
           error: error instanceof Error ? error.message : 'Unknown error',
         };
       }
@@ -362,9 +366,10 @@ export const walletRouter = router({
         });
       }
 
-      if (wallet.apiKeyEncrypted === 'paper-trading') {
+      if (isPaperWallet(wallet)) {
         return {
           totalValueUSDT: wallet.currentBalance ?? '0',
+          walletType: 'paper' as const,
           assets: [
             {
               asset: 'USDT',
@@ -377,14 +382,7 @@ export const walletRouter = router({
       }
 
       try {
-        const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
-        const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
-
-        const client = new MainClient({
-          api_key: apiKey,
-          api_secret: apiSecret,
-        });
-
+        const client = createBinanceClient(wallet);
         const accountInfo = await client.getAccountInformation();
 
         const nonZeroBalances = accountInfo.balances?.filter((b) => {
@@ -455,12 +453,14 @@ export const walletRouter = router({
 
         return {
           totalValueUSDT: totalValueUSDT.toFixed(2),
+          walletType: wallet.walletType,
           assets: sortedAssets,
         };
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch portfolio',
+          message: `Failed to fetch portfolio from Binance ${wallet.walletType}: ${errorMessage}`,
           cause: error,
         });
       }

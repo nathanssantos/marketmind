@@ -37,7 +37,7 @@ export const useBackendWallet = () => {
   });
 
   const createWallet = useCallback(
-    async (data: { name: string; exchange: string; apiKey: string; apiSecret: string }) => {
+    async (data: { name: string; apiKey: string; apiSecret: string; walletType: 'testnet' | 'live' }) => {
       return createMutation.mutateAsync(data);
     },
     [createMutation]
