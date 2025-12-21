@@ -434,22 +434,6 @@ export const useOrderLinesRenderer = (
       }
     });
 
-    pendingOrders.forEach((order) => {
-      const isLong = isOrderLong(order);
-      const key = `${order.symbol}-${isLong ? 'LONG' : 'SHORT'}-pending`;
-      const entryPrice = getOrderPrice(order);
-      const quantity = getOrderQuantity(order);
-      const orderQuantity = isLong ? quantity : -quantity;
-
-      groupedPositions.set(key, {
-        symbol: order.symbol,
-        netQuantity: orderQuantity,
-        avgPrice: entryPrice,
-        orderIds: [getOrderId(order)],
-        orders: [order],
-        totalPnL: 0,
-      });
-    });
 
     pendingOrdersToRender.forEach((order) => {
       const y = manager.priceToY(getOrderPrice(order));
@@ -498,6 +482,108 @@ export const useOrderLinesRenderer = (
       });
 
       ctx.restore();
+
+      const pendingAlpha = 0.35;
+      const entryPrice = getOrderPrice(order);
+
+      if (order.stopLoss) {
+        const stopY = manager.priceToY(order.stopLoss);
+
+        sltpHitboxesRef.current.push({
+          orderId: getOrderId(order),
+          y: stopY,
+          tolerance: 8,
+          type: 'stopLoss',
+          price: order.stopLoss,
+        });
+
+        ctx.save();
+        ctx.globalAlpha = pendingAlpha;
+        ctx.setLineDash([3, 3]);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+
+        ctx.beginPath();
+        ctx.moveTo(0, stopY);
+        ctx.lineTo(chartWidth, stopY);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+
+        const slResultPercent = isLong
+          ? ((order.stopLoss - entryPrice) / entryPrice) * 100
+          : ((entryPrice - order.stopLoss) / entryPrice) * 100;
+        const slSign = slResultPercent >= 0 ? '+' : '';
+        const slInfoText = `SL (${slSign}${slResultPercent.toFixed(2)}%) [PENDING]`;
+
+        priceTags.push({ priceText: order.stopLoss.toFixed(2), y: stopY, fillColor: 'rgba(239, 68, 68, 0.9)' });
+
+        const slCloseButtonRef = { x: 0, y: 0, size: 14 };
+        drawInfoTag(ctx, slInfoText, stopY, 'rgba(239, 68, 68, 0.9)', true, slCloseButtonRef);
+
+        sltpCloseButtonsRef.current.push({
+          orderIds: [getOrderId(order)],
+          x: slCloseButtonRef.x,
+          y: slCloseButtonRef.y,
+          width: slCloseButtonRef.size,
+          height: slCloseButtonRef.size,
+          type: 'stopLoss',
+        });
+
+        ctx.restore();
+      }
+
+      if (order.takeProfit) {
+        const tpY = manager.priceToY(order.takeProfit);
+
+        sltpHitboxesRef.current.push({
+          orderId: getOrderId(order),
+          y: tpY,
+          tolerance: 8,
+          type: 'takeProfit',
+          price: order.takeProfit,
+        });
+
+        ctx.save();
+        ctx.globalAlpha = pendingAlpha;
+        ctx.setLineDash([3, 3]);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
+
+        ctx.beginPath();
+        ctx.moveTo(0, tpY);
+        ctx.lineTo(chartWidth, tpY);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+
+        const tpProfitPercent = isLong
+          ? ((order.takeProfit - entryPrice) / entryPrice) * 100
+          : ((entryPrice - order.takeProfit) / entryPrice) * 100;
+        const tpInfoText = `TP (+${tpProfitPercent.toFixed(2)}%) [PENDING]`;
+
+        priceTags.push({ priceText: order.takeProfit.toFixed(2), y: tpY, fillColor: 'rgba(34, 197, 94, 0.9)' });
+
+        const tpCloseButtonRef = { x: 0, y: 0, size: 14 };
+        drawInfoTag(ctx, tpInfoText, tpY, 'rgba(34, 197, 94, 0.9)', true, tpCloseButtonRef);
+
+        sltpCloseButtonsRef.current.push({
+          orderIds: [getOrderId(order)],
+          x: tpCloseButtonRef.x,
+          y: tpCloseButtonRef.y,
+          width: tpCloseButtonRef.size,
+          height: tpCloseButtonRef.size,
+          type: 'takeProfit',
+        });
+
+        ctx.restore();
+      }
     });
 
     type GroupedPosition = {
@@ -660,6 +746,66 @@ export const useOrderLinesRenderer = (
         });
 
         ctx.restore();
+
+        const pendingAlpha = 0.35;
+        const entryPrice = getOrderPrice(order);
+
+        if (order.stopLoss) {
+          const stopY = manager.priceToY(order.stopLoss);
+
+          ctx.save();
+          ctx.globalAlpha = pendingAlpha;
+          ctx.setLineDash([3, 3]);
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+
+          ctx.beginPath();
+          ctx.moveTo(0, stopY);
+          ctx.lineTo(chartWidth, stopY);
+          ctx.stroke();
+
+          ctx.setLineDash([]);
+          ctx.font = '11px monospace';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+
+          const slResultPercent = isLong
+            ? ((order.stopLoss - entryPrice) / entryPrice) * 100
+            : ((entryPrice - order.stopLoss) / entryPrice) * 100;
+          const slSign = slResultPercent >= 0 ? '+' : '';
+          const slInfoText = `SL (${slSign}${slResultPercent.toFixed(2)}%) [PENDING]`;
+
+          drawInfoTag(ctx, slInfoText, stopY, 'rgba(239, 68, 68, 0.9)', true, null);
+          ctx.restore();
+        }
+
+        if (order.takeProfit) {
+          const tpY = manager.priceToY(order.takeProfit);
+
+          ctx.save();
+          ctx.globalAlpha = pendingAlpha;
+          ctx.setLineDash([3, 3]);
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
+
+          ctx.beginPath();
+          ctx.moveTo(0, tpY);
+          ctx.lineTo(chartWidth, tpY);
+          ctx.stroke();
+
+          ctx.setLineDash([]);
+          ctx.font = '11px monospace';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+
+          const tpProfitPercent = isLong
+            ? ((order.takeProfit - entryPrice) / entryPrice) * 100
+            : ((entryPrice - order.takeProfit) / entryPrice) * 100;
+          const tpInfoText = `TP (+${tpProfitPercent.toFixed(2)}%) [PENDING]`;
+
+          drawInfoTag(ctx, tpInfoText, tpY, 'rgba(34, 197, 94, 0.9)', true, null);
+          ctx.restore();
+        }
       }
     }
 

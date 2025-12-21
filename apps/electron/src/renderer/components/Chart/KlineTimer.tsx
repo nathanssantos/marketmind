@@ -81,13 +81,17 @@ export const KlineTimer = ({ timeframe, lastKlineTime, stochasticPanelHeight = 0
         return null;
     }
 
+    const hours = Math.floor(timeRemaining / 3600);
+    const fontSize = hours >= 10 ? '9px' : '11px';
+    const rightMargin = hours >= 10 ? '8px' : '12px';
+
     return (
         <Box
             position="absolute"
             bottom={`${8 + stochasticPanelHeight + rsiPanelHeight}px`}
-            right="8px"
+            right={rightMargin}
             color={colors.axisLabel}
-            fontSize="11px"
+            fontSize={fontSize}
             fontFamily="monospace"
             fontWeight="600"
             zIndex={10}

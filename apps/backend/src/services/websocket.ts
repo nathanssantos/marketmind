@@ -54,13 +54,19 @@ export class WebSocketService {
       logger.info({ socketId: socket.id }, 'Client connected');
 
       socket.on('subscribe:orders', (walletId: string) => {
-        socket.join(`orders:${walletId}`);
-        logger.info({ socketId: socket.id, walletId }, 'Subscribed to orders');
+        const room = `orders:${walletId}`;
+        if (!socket.rooms.has(room)) {
+          socket.join(room);
+          logger.info({ socketId: socket.id, walletId }, 'Subscribed to orders');
+        }
       });
 
       socket.on('subscribe:positions', (walletId: string) => {
-        socket.join(`positions:${walletId}`);
-        logger.info({ socketId: socket.id, walletId }, 'Subscribed to positions');
+        const room = `positions:${walletId}`;
+        if (!socket.rooms.has(room)) {
+          socket.join(room);
+          logger.info({ socketId: socket.id, walletId }, 'Subscribed to positions');
+        }
       });
 
       socket.on('subscribe:prices', (symbol: string) => {
@@ -101,8 +107,11 @@ export class WebSocketService {
       });
 
       socket.on('subscribe:wallet', (walletId: string) => {
-        socket.join(`wallet:${walletId}`);
-        logger.info({ socketId: socket.id, walletId }, 'Subscribed to wallet');
+        const room = `wallet:${walletId}`;
+        if (!socket.rooms.has(room)) {
+          socket.join(room);
+          logger.info({ socketId: socket.id, walletId }, 'Subscribed to wallet');
+        }
       });
 
       socket.on('unsubscribe:wallet', (walletId: string) => {
@@ -111,8 +120,11 @@ export class WebSocketService {
       });
 
       socket.on('subscribe:setups', (userId: string) => {
-        socket.join(`user:${userId}`);
-        logger.info({ socketId: socket.id, userId }, 'Subscribed to setups');
+        const room = `user:${userId}`;
+        if (!socket.rooms.has(room)) {
+          socket.join(room);
+          logger.info({ socketId: socket.id, userId }, 'Subscribed to setups');
+        }
       });
 
       socket.on('unsubscribe:setups', (userId: string) => {

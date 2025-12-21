@@ -68,7 +68,6 @@ export const useRealtimeTradingSync = (walletId: string | undefined) => {
       isConnectedRef.current = true;
 
       socket.emit('subscribe:positions', walletId);
-      socket.emit('subscribe:orders', walletId);
       socket.emit('subscribe:wallet', walletId);
     });
 
@@ -117,7 +116,6 @@ export const useRealtimeTradingSync = (walletId: string | undefined) => {
 
     return () => {
       socket.emit('unsubscribe:positions', walletId);
-      socket.emit('unsubscribe:orders', walletId);
       socket.emit('unsubscribe:wallet', walletId);
       socketService.disconnect();
       socketRef.current = null;
