@@ -24,9 +24,7 @@ interface PortfolioPosition {
   setupType?: string;
   openedAt: Date;
   id: string;
-  status: 'open' | 'pending';
-  limitEntryPrice?: number;
-  expiresAt?: Date;
+  status: 'open';
 }
 
 const PortfolioComponent = () => {
@@ -45,26 +43,21 @@ const PortfolioComponent = () => {
 
   const positions: PortfolioPosition[] = useMemo(() => {
     return tradeExecutions
-      .filter((e) => e.status === 'open' || e.status === 'pending')
+      .filter((e) => e.status === 'open')
       .map((e) => {
-        const isPending = e.status === 'pending';
         const entryPrice = parseFloat(e.entryPrice || '0');
-        const limitEntryPrice = e.limitEntryPrice ? parseFloat(e.limitEntryPrice) : undefined;
         const quantity = parseFloat(e.quantity || '0');
         const tickerPrice = tickerPrices[e.symbol];
         const currentPrice = tickerPrice ? parseFloat(String(tickerPrice)) : entryPrice;
 
         let pnl = 0;
-        let adjustedPnlPercent = 0;
-        if (!isPending) {
-          if (e.side === 'LONG') {
-            pnl = (currentPrice - entryPrice) * quantity;
-          } else {
-            pnl = (entryPrice - currentPrice) * quantity;
-          }
-          const pnlPercent = entryPrice > 0 ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0;
-          adjustedPnlPercent = e.side === 'LONG' ? pnlPercent : -pnlPercent;
+        if (e.side === 'LONG') {
+          pnl = (currentPrice - entryPrice) * quantity;
+        } else {
+          pnl = (entryPrice - currentPrice) * quantity;
         }
+        const pnlPercent = entryPrice > 0 ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0;
+        const adjustedPnlPercent = e.side === 'LONG' ? pnlPercent : -pnlPercent;
 
         return {
           id: e.id,
@@ -79,9 +72,7 @@ const PortfolioComponent = () => {
           takeProfit: e.takeProfit ? parseFloat(e.takeProfit) : undefined,
           setupType: e.setupType || undefined,
           openedAt: new Date(e.openedAt),
-          status: isPending ? 'pending' : 'open',
-          limitEntryPrice,
-          expiresAt: e.expiresAt ? new Date(e.expiresAt) : undefined,
+          status: 'open',
         };
       });
   }, [tradeExecutions, tickerPrices]);
@@ -218,7 +209,6 @@ const PositionCard = ({ position, currency }: PositionCardProps) => {
   const { t } = useTranslation();
   const isProfitable = position.pnl >= 0;
   const isLong = position.side === 'LONG';
-  const isPending = position.status === 'pending';
 
   return (
     <Box
@@ -226,8 +216,7 @@ const PositionCard = ({ position, currency }: PositionCardProps) => {
       bg="bg.muted"
       borderRadius="md"
       borderLeft="4px solid"
-      borderColor={isPending ? 'yellow.500' : isLong ? 'green.500' : 'red.500'}
-      opacity={isPending ? 0.85 : 1}
+      borderColor={isLong ? 'green.500' : 'red.500'}
     >
       <Stack gap={1.5} mb={2}>
         <Flex justify="space-between" align="center">
@@ -247,9 +236,6 @@ const PositionCard = ({ position, currency }: PositionCardProps) => {
           <Badge colorPalette={isLong ? 'green' : 'red'} size="sm" px={2}>
             {t(`trading.ticket.${isLong ? 'long' : 'short'}`)}
           </Badge>
-          <Badge colorPalette={isPending ? 'yellow' : 'blue'} size="sm" px={2}>
-            {isPending ? 'Pending' : 'Filled'}
-          </Badge>
           {position.setupType && (
             <Badge colorPalette="purple" size="sm" px={2}>
               {position.setupType}
@@ -264,38 +250,13 @@ const PositionCard = ({ position, currency }: PositionCardProps) => {
           <Text fontWeight="medium">{position.quantity.toFixed(8)}</Text>
         </Flex>
         <Flex justify="space-between">
-          <Text color="fg.muted">{isPending ? 'Limit Entry' : t('trading.portfolio.avgPrice')}</Text>
+          <Text color="fg.muted">{t('trading.portfolio.avgPrice')}</Text>
           <Text>{currency} {position.avgPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
         </Flex>
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.portfolio.currentPrice')}</Text>
           <Text fontWeight="medium">{currency} {position.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
         </Flex>
-        {isPending && (
-          <Flex justify="space-between">
-            <Text color="fg.muted">Distance</Text>
-            <Text fontWeight="medium" color={
-              (isLong && position.currentPrice > position.avgPrice) || (!isLong && position.currentPrice < position.avgPrice)
-                ? 'yellow.500'
-                : 'green.500'
-            }>
-              {((Math.abs(position.currentPrice - position.avgPrice) / position.avgPrice) * 100).toFixed(2)}%
-            </Text>
-          </Flex>
-        )}
-        {isPending && position.expiresAt && (
-          <Flex justify="space-between">
-            <Text color="fg.muted">Expires</Text>
-            <Text fontWeight="medium" color="yellow.500">
-              {position.expiresAt.toLocaleString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </Text>
-          </Flex>
-        )}
         {position.stopLoss && (
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.stopLoss')}</Text>
@@ -308,15 +269,13 @@ const PositionCard = ({ position, currency }: PositionCardProps) => {
             <Text color="green.500">{currency} {position.takeProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
           </Flex>
         )}
-        {!isPending && (
-          <Flex justify="space-between">
-            <Text color="fg.muted">{t('trading.portfolio.pnl')}</Text>
-            <Text fontWeight="medium" color={isProfitable ? 'green.500' : 'red.500'}>
-              {isProfitable ? '+' : ''}{position.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              {' '}({isProfitable ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
-            </Text>
-          </Flex>
-        )}
+        <Flex justify="space-between">
+          <Text color="fg.muted">{t('trading.portfolio.pnl')}</Text>
+          <Text fontWeight="medium" color={isProfitable ? 'green.500' : 'red.500'}>
+            {isProfitable ? '+' : ''}{position.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {' '}({isProfitable ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
+          </Text>
+        </Flex>
       </Stack>
     </Box>
   );

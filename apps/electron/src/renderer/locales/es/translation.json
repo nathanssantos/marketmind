@@ -868,7 +868,9 @@
       "sortNewest": "Más Recientes",
       "sortOldest": "Más Antiguas",
       "sortSymbolAsc": "Símbolo (A-Z)",
-      "sortSymbolDesc": "Símbolo (Z-A)"
+      "sortSymbolDesc": "Símbolo (Z-A)",
+      "sortExposureDesc": "Mayor Exposición",
+      "sortExposureAsc": "Menor Exposición"
     },
     "trailingStop": {
       "reasons": {

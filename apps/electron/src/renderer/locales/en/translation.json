@@ -873,7 +873,9 @@
       "sortNewest": "Newest First",
       "sortOldest": "Oldest First",
       "sortSymbolAsc": "Symbol (A-Z)",
-      "sortSymbolDesc": "Symbol (Z-A)"
+      "sortSymbolDesc": "Symbol (Z-A)",
+      "sortExposureDesc": "Highest Exposure",
+      "sortExposureAsc": "Lowest Exposure"
     },
     "trailingStop": {
       "reasons": {

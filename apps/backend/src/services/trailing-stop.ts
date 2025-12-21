@@ -462,7 +462,7 @@ export class TrailingStopService {
     const klinesFromEntry = klines.filter(k => k.closeTime > entryTime);
 
     if (klinesFromEntry.length === 0) {
-      logger.debug({ executionId: execution.id, klinesCount: 0 }, 'Trailing stop waiting for entry candle data');
+      // logger.debug({ executionId: execution.id, klinesCount: 0 }, 'Trailing stop waiting for entry candle data');
       return null;
     }
 
