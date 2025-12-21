@@ -34,7 +34,7 @@ const PortfolioComponent = () => {
 
   const { wallets: backendWallets } = useBackendWallet();
   const activeWalletId = backendWallets[0]?.id;
-  useOrderUpdates(activeWalletId);
+  useOrderUpdates(activeWalletId ?? '');
   usePositionUpdates(activeWalletId || '');
   const { tradeExecutions, tickerPrices } = useBackendTrading(activeWalletId || '', undefined);
 
@@ -52,7 +52,7 @@ const PortfolioComponent = () => {
         const limitEntryPrice = e.limitEntryPrice ? parseFloat(e.limitEntryPrice) : undefined;
         const quantity = parseFloat(e.quantity || '0');
         const tickerPrice = tickerPrices[e.symbol];
-        const currentPrice = tickerPrice ? parseFloat(tickerPrice) : entryPrice;
+        const currentPrice = tickerPrice ? parseFloat(String(tickerPrice)) : entryPrice;
 
         let pnl = 0;
         let adjustedPnlPercent = 0;

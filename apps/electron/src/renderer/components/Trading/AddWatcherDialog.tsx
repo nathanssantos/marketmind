@@ -95,7 +95,7 @@ export const AddWatcherDialog = ({
           <DialogBody>
             <Stack gap={5}>
               <HStack gap={4} align="flex-end">
-                <Field label={t('tradingProfiles.watchers.symbol')} required flex={1}>
+                <Field label={t('tradingProfiles.watchers.symbol')} required>
                   <SymbolSelector
                     value={symbol}
                     onChange={handleSymbolChange}

@@ -23,6 +23,7 @@ export class BTCDominanceDataService {
   private history: Array<{ dominance: number; timestamp: number }> = [];
   private readonly HISTORY_TTL_MS = 24 * 60 * 60 * 1000;
   private cmcApiKey: string | null = null;
+  private previousDominance: number | null = null;
 
   setCMCApiKey(apiKey: string): void {
     this.cmcApiKey = apiKey;

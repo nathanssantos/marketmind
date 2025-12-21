@@ -251,8 +251,8 @@ export const WalletPerformanceModal = ({
                   />
                   <MetricCard
                     label={t('trading.analytics.performance.grossPnL')}
-                    value={formatCurrency(performance?.totalPnL ?? 0, true)}
-                    valueColor={getValueColor(performance?.totalPnL ?? 0)}
+                    value={formatCurrency(performance?.grossPnL ?? 0, true)}
+                    valueColor={getValueColor(performance?.grossPnL ?? 0)}
                   />
                   <MetricCard
                     label={t('trading.analytics.performance.fees')}

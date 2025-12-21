@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } 
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { AutoAuth } from './components/Auth/AutoAuth';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
@@ -83,9 +84,10 @@ const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
 
 function App(): ReactElement {
   return (
-    <TrpcProvider>
-      <ChakraProvider value={system}>
-        <AutoAuth>
+    <ErrorBoundary>
+      <TrpcProvider>
+        <ChakraProvider value={system}>
+          <AutoAuth>
           <Toaster toaster={toaster}>
             {(toast) => {
               const { t } = useTranslation();
@@ -138,9 +140,10 @@ function App(): ReactElement {
               </PinnedControlsProvider>
             </ChartProvider>
           </PatternHoverProvider>
-        </AutoAuth>
-      </ChakraProvider>
-    </TrpcProvider>
+          </AutoAuth>
+        </ChakraProvider>
+      </TrpcProvider>
+    </ErrorBoundary>
   );
 }
 

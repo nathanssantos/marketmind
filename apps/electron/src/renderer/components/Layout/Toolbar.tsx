@@ -1,9 +1,5 @@
 import { useGlobalActionsOptional } from '@/renderer/context/GlobalActionsContext';
-import { useUIStore } from '@/renderer/store/uiStore';
 import { Box, Flex, HStack, IconButton } from '@chakra-ui/react';
-import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
-import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
-import { usePatternDetectionConfigStore } from '@renderer/store/patternDetectionConfigStore';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -96,9 +92,9 @@ export const Toolbar = memo(({
   showVWAP,
   movingAverages,
   isTradingOpen,
-  isChatOpen,
-  isNewsOpen,
-  isBacktestOpen,
+  isChatOpen: _isChatOpen,
+  isNewsOpen: _isNewsOpen,
+  isBacktestOpen: _isBacktestOpen,
   showNewWindowButton = true,
   showSidebarButtons = true,
   onSymbolChange,
@@ -117,48 +113,24 @@ export const Toolbar = memo(({
   onShowVWAPChange,
   onMovingAveragesChange,
   onToggleTrading,
-  onToggleChat,
-  onToggleNews,
+  onToggleChat: _onToggleChat,
+  onToggleNews: _onToggleNews,
   onToggleBacktest,
-  onDetectPatterns,
+  onDetectPatterns: _onDetectPatterns,
 }: ToolbarProps) => {
   const { t } = useTranslation();
   const { colorMode, toggleColorMode } = useColorMode();
   const globalActions = useGlobalActionsOptional();
   const { openChartWindow } = useChartWindows();
-  const algorithmicDetectionSettings = useUIStore((state) => state.algorithmicDetectionSettings);
-  const setAlgorithmicDetectionSettings = useUIStore((state) => state.setAlgorithmicDetectionSettings);
-  const patternConfig = usePatternDetectionConfigStore((state) => state.config);
-  const setPatternConfig = usePatternDetectionConfigStore((state) => state.setConfig);
 
   const [isTradingProfilesModalOpen, setIsTradingProfilesModalOpen] = useState(false);
-
-  const { wallets } = useBackendWallet();
-  const walletId = wallets[0]?.id;
-  const { watcherStatus } = useBackendAutoTrading(walletId ?? '');
-
-  const isPatternDetectionActive = algorithmicDetectionSettings.autoDisplayPatterns;
-  const isExtensionsActive = patternConfig.showExtensions;
-  const isBackendWatcherActive = watcherStatus?.active ?? false;
 
   const handleOpenNewWindow = (): void => {
     void openChartWindow(symbol, timeframe);
   };
 
-  const togglePatternDetection = (): void => {
-    setAlgorithmicDetectionSettings({
-      autoDisplayPatterns: !algorithmicDetectionSettings.autoDisplayPatterns,
-    });
-  };
-
   const handleOpenTradingProfilesModal = (): void => {
     setIsTradingProfilesModalOpen(true);
-  };
-
-  const toggleExtensions = (): void => {
-    setPatternConfig({
-      showExtensions: !patternConfig.showExtensions,
-    });
   };
 
   const toggleMA = (index: number): void => {

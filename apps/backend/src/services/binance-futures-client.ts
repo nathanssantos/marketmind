@@ -52,7 +52,7 @@ export async function setLeverage(
     const result = await client.setLeverage({ symbol, leverage });
     return {
       leverage: result.leverage,
-      maxNotionalValue: result.maxNotionalValue,
+      maxNotionalValue: String(result.maxNotionalValue),
       symbol: result.symbol,
     };
   } catch (error) {
@@ -81,20 +81,20 @@ export async function getPositions(client: USDMClient): Promise<FuturesPosition[
   try {
     const positions = await client.getPositions();
     return positions
-      .filter((p) => parseFloat(p.positionAmt) !== 0)
+      .filter((p) => parseFloat(String(p.positionAmt)) !== 0)
       .map((p) => ({
         symbol: p.symbol,
         positionSide: p.positionSide as 'LONG' | 'SHORT' | 'BOTH',
-        positionAmt: p.positionAmt,
-        entryPrice: p.entryPrice,
-        markPrice: p.markPrice || '0',
-        unrealizedPnl: p.unRealizedProfit,
-        liquidationPrice: p.liquidationPrice,
-        leverage: p.leverage,
+        positionAmt: String(p.positionAmt),
+        entryPrice: String(p.entryPrice),
+        markPrice: String(p.markPrice || '0'),
+        unrealizedPnl: String(p.unRealizedProfit),
+        liquidationPrice: String(p.liquidationPrice),
+        leverage: Number(p.leverage),
         marginType: p.marginType as MarginType,
-        isolatedMargin: p.isolatedMargin,
-        notional: p.notional,
-        isolatedWallet: p.isolatedWallet,
+        isolatedMargin: String(p.isolatedMargin),
+        notional: String(p.notional),
+        isolatedWallet: String(p.isolatedWallet),
         updateTime: p.updateTime,
       }));
   } catch (error) {
@@ -110,7 +110,7 @@ export async function getPosition(
   try {
     const positions = await client.getPositions({ symbol });
     const position = positions.find(
-      (p) => p.symbol === symbol && parseFloat(p.positionAmt) !== 0
+      (p) => p.symbol === symbol && parseFloat(String(p.positionAmt)) !== 0
     );
 
     if (!position) return null;
@@ -118,16 +118,16 @@ export async function getPosition(
     return {
       symbol: position.symbol,
       positionSide: position.positionSide as 'LONG' | 'SHORT' | 'BOTH',
-      positionAmt: position.positionAmt,
-      entryPrice: position.entryPrice,
-      markPrice: position.markPrice || '0',
-      unrealizedPnl: position.unRealizedProfit,
-      liquidationPrice: position.liquidationPrice,
-      leverage: position.leverage,
+      positionAmt: String(position.positionAmt),
+      entryPrice: String(position.entryPrice),
+      markPrice: String(position.markPrice || '0'),
+      unrealizedPnl: String(position.unRealizedProfit),
+      liquidationPrice: String(position.liquidationPrice),
+      leverage: Number(position.leverage),
       marginType: position.marginType as MarginType,
-      isolatedMargin: position.isolatedMargin,
-      notional: position.notional,
-      isolatedWallet: position.isolatedWallet,
+      isolatedMargin: String(position.isolatedMargin),
+      notional: String(position.notional),
+      isolatedWallet: String(position.isolatedWallet),
       updateTime: position.updateTime,
     };
   } catch (error) {
@@ -140,53 +140,53 @@ export async function getAccountInfo(client: USDMClient): Promise<FuturesAccount
   try {
     const account = await client.getAccountInformation();
     return {
-      feeTier: account.feeTier,
+      feeTier: Number(account.feeTier),
       canTrade: account.canTrade,
       canDeposit: account.canDeposit,
       canWithdraw: account.canWithdraw,
-      updateTime: account.updateTime,
-      totalInitialMargin: account.totalInitialMargin,
-      totalMaintMargin: account.totalMaintMargin,
-      totalWalletBalance: account.totalWalletBalance,
-      totalUnrealizedProfit: account.totalUnrealizedProfit,
-      totalMarginBalance: account.totalMarginBalance,
-      totalPositionInitialMargin: account.totalPositionInitialMargin,
-      totalOpenOrderInitialMargin: account.totalOpenOrderInitialMargin,
-      totalCrossWalletBalance: account.totalCrossWalletBalance,
-      totalCrossUnPnl: account.totalCrossUnPnl,
-      availableBalance: account.availableBalance,
-      maxWithdrawAmount: account.maxWithdrawAmount,
+      updateTime: Number(account.updateTime),
+      totalInitialMargin: String(account.totalInitialMargin),
+      totalMaintMargin: String(account.totalMaintMargin),
+      totalWalletBalance: String(account.totalWalletBalance),
+      totalUnrealizedProfit: String(account.totalUnrealizedProfit),
+      totalMarginBalance: String(account.totalMarginBalance),
+      totalPositionInitialMargin: String(account.totalPositionInitialMargin),
+      totalOpenOrderInitialMargin: String(account.totalOpenOrderInitialMargin),
+      totalCrossWalletBalance: String(account.totalCrossWalletBalance),
+      totalCrossUnPnl: String(account.totalCrossUnPnl),
+      availableBalance: String(account.availableBalance),
+      maxWithdrawAmount: String(account.maxWithdrawAmount),
       assets: account.assets.map((a) => ({
         asset: a.asset,
-        walletBalance: a.walletBalance,
-        unrealizedProfit: a.unrealizedProfit,
-        marginBalance: a.marginBalance,
-        maintMargin: a.maintMargin,
-        initialMargin: a.initialMargin,
-        positionInitialMargin: a.positionInitialMargin,
-        openOrderInitialMargin: a.openOrderInitialMargin,
-        crossWalletBalance: a.crossWalletBalance,
-        crossUnPnl: a.crossUnPnl,
-        availableBalance: a.availableBalance,
-        maxWithdrawAmount: a.maxWithdrawAmount,
+        walletBalance: String(a.walletBalance),
+        unrealizedProfit: String(a.unrealizedProfit),
+        marginBalance: String(a.marginBalance),
+        maintMargin: String(a.maintMargin),
+        initialMargin: String(a.initialMargin),
+        positionInitialMargin: String(a.positionInitialMargin),
+        openOrderInitialMargin: String(a.openOrderInitialMargin),
+        crossWalletBalance: String(a.crossWalletBalance),
+        crossUnPnl: String(a.crossUnPnl),
+        availableBalance: String(a.availableBalance),
+        maxWithdrawAmount: String(a.maxWithdrawAmount),
         marginAvailable: a.marginAvailable,
         updateTime: a.updateTime,
       })),
       positions: account.positions
-        .filter((p) => parseFloat(p.positionAmt) !== 0)
+        .filter((p) => parseFloat(String(p.positionAmt)) !== 0)
         .map((p) => ({
           symbol: p.symbol,
           positionSide: p.positionSide as 'LONG' | 'SHORT' | 'BOTH',
-          positionAmt: p.positionAmt,
-          entryPrice: p.entryPrice,
+          positionAmt: String(p.positionAmt),
+          entryPrice: String(p.entryPrice),
           markPrice: '0',
-          unrealizedPnl: p.unrealizedProfit,
+          unrealizedPnl: String(p.unrealizedProfit),
           liquidationPrice: '0',
-          leverage: p.leverage,
+          leverage: Number(p.leverage),
           marginType: 'ISOLATED' as MarginType,
-          isolatedMargin: p.isolatedMargin,
-          notional: p.notional,
-          isolatedWallet: p.isolatedWallet,
+          isolatedMargin: '0',
+          notional: String(p.notional),
+          isolatedWallet: String(p.isolatedWallet),
           updateTime: p.updateTime,
         })),
     };
@@ -218,11 +218,11 @@ export async function submitFuturesOrder(
       symbol: params.symbol,
       side: params.side,
       type: params.type,
-      quantity: params.quantity,
+      quantity: Number(params.quantity),
     };
 
-    if (params.price) orderParams.price = params.price;
-    if (params.stopPrice) orderParams.stopPrice = params.stopPrice;
+    if (params.price) orderParams.price = Number(params.price);
+    if (params.stopPrice) orderParams.stopPrice = Number(params.stopPrice);
     if (params.timeInForce) orderParams.timeInForce = params.timeInForce;
     if (params.reduceOnly !== undefined) orderParams.reduceOnly = params.reduceOnly ? 'true' : 'false';
     if (params.closePosition !== undefined) orderParams.closePosition = params.closePosition ? 'true' : 'false';
@@ -235,18 +235,18 @@ export async function submitFuturesOrder(
       symbol: result.symbol,
       status: result.status,
       clientOrderId: result.clientOrderId,
-      price: result.price,
-      avgPrice: result.avgPrice,
-      origQty: result.origQty,
-      executedQty: result.executedQty,
-      cumQuote: result.cumQuote || '0',
+      price: String(result.price),
+      avgPrice: String(result.avgPrice),
+      origQty: String(result.origQty),
+      executedQty: String(result.executedQty),
+      cumQuote: String(result.cumQuote || '0'),
       timeInForce: result.timeInForce,
       type: result.type,
       reduceOnly: result.reduceOnly,
       closePosition: result.closePosition,
       side: result.side as 'BUY' | 'SELL',
       positionSide: (result.positionSide || 'BOTH') as 'LONG' | 'SHORT' | 'BOTH',
-      stopPrice: result.stopPrice || '0',
+      stopPrice: String(result.stopPrice || '0'),
       workingType: result.workingType || 'CONTRACT_PRICE',
       priceProtect: result.priceProtect || false,
       origType: result.origType || result.type,
@@ -315,18 +315,18 @@ export async function getOpenOrders(
       symbol: o.symbol,
       status: o.status,
       clientOrderId: o.clientOrderId,
-      price: o.price,
-      avgPrice: o.avgPrice,
-      origQty: o.origQty,
-      executedQty: o.executedQty,
-      cumQuote: o.cumQuote || '0',
+      price: String(o.price),
+      avgPrice: String(o.avgPrice),
+      origQty: String(o.origQty),
+      executedQty: String(o.executedQty),
+      cumQuote: String(o.cumQuote || '0'),
       timeInForce: o.timeInForce,
       type: o.type,
       reduceOnly: o.reduceOnly,
       closePosition: o.closePosition,
       side: o.side as 'BUY' | 'SELL',
       positionSide: (o.positionSide || 'BOTH') as 'LONG' | 'SHORT' | 'BOTH',
-      stopPrice: o.stopPrice || '0',
+      stopPrice: String(o.stopPrice || '0'),
       workingType: o.workingType || 'CONTRACT_PRICE',
       priceProtect: o.priceProtect || false,
       origType: o.origType || o.type,

@@ -178,21 +178,21 @@ const OrdersListComponent = () => {
         case 'quantity-desc':
           return (b.quantity ?? 0) - (a.quantity ?? 0);
         case 'quantity-asc':
-          return a.quantity - b.quantity;
+          return (a.quantity ?? 0) - (b.quantity ?? 0);
         case 'pnl-desc': {
-          const pnlA = a.pnl ?? 0;
-          const pnlB = b.pnl ?? 0;
-          return (pnlB ?? 0) - (pnlA ?? 0);
+          const pnlA = parseFloat(String(a.pnl ?? 0));
+          const pnlB = parseFloat(String(b.pnl ?? 0));
+          return pnlB - pnlA;
         }
         case 'pnl-asc': {
-          const pnlA = a.pnl ?? 0;
-          const pnlB = b.pnl ?? 0;
+          const pnlA = parseFloat(String(a.pnl ?? 0));
+          const pnlB = parseFloat(String(b.pnl ?? 0));
           return pnlA - pnlB;
         }
         case 'price-desc':
           return (b.entryPrice ?? 0) - (a.entryPrice ?? 0);
         case 'price-asc':
-          return a.entryPrice - b.entryPrice;
+          return (a.entryPrice ?? 0) - (b.entryPrice ?? 0);
         default:
           return (b.updateTime || b.time) - (a.updateTime || a.time);
       }
@@ -512,7 +512,7 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
         {false && (
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.fees')}</Text>
-            <Text color="orange.500">{currency} {order.fees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</Text>
+            <Text color="orange.500">{currency} {(order.commission ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</Text>
           </Flex>
         )}
       </Stack>

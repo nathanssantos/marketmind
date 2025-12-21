@@ -112,13 +112,13 @@ export const ChartCanvas = ({
   chartType = 'kline',
   advancedConfig,
   aiPatterns = [],
-  onDeleteAIPatterns,
-  onDeleteAIPattern,
-  onToggleAIPatternsVisibility,
-  aiPatternsVisible = true,
-  onDeletePattern,
-  onToggleSetupsVisibility,
-  setupsVisible = true,
+  onDeleteAIPatterns: _onDeleteAIPatterns,
+  onDeleteAIPattern: _onDeleteAIPattern,
+  onToggleAIPatternsVisibility: _onToggleAIPatternsVisibility,
+  aiPatternsVisible: _aiPatternsVisible = true,
+  onDeletePattern: _onDeletePattern,
+  onToggleSetupsVisibility: _onToggleSetupsVisibility,
+  setupsVisible: _setupsVisible = true,
   timeframe = '1h',
 }: ChartCanvasProps): ReactElement => {
   const { t } = useTranslation();
@@ -138,8 +138,6 @@ export const ChartCanvas = ({
   const getQuantityForSymbol = (sym: string) => quantityBySymbol[sym] ?? 1;
 
   const detectedSetups = useSetupStore((state) => state.detectedSetups);
-  const removeDetectedSetup = useSetupStore((state) => state.removeDetectedSetup);
-  const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
 
   const { watcherStatus } = useBackendAutoTrading(backendWalletId ?? '');
   const isAutoTradingActive = watcherStatus?.active ?? false;
@@ -819,32 +817,6 @@ export const ChartCanvas = ({
   const handleAIPatternHover = useCallback((pattern: AIPattern | null): void => {
     setHoveredAIPattern(pattern);
   }, []);
-
-  const handleDeleteSinglePattern = (patternId: number): void => {
-    if (!patternId) return;
-    console.log('[ChartCanvas] handleDeleteSinglePatterncalled:', patternId, 'onDeleteAIPattern exists:', !!onDeleteAIPattern);
-    onDeleteAIPattern?.(patternId);
-  };
-
-  const handleDeletePatterns = (): void => {
-    onDeleteAIPatterns?.();
-  };
-
-  const handleTogglePatternsVisibility = (): void => {
-    onToggleAIPatternsVisibility?.();
-  };
-
-  const handleToggleSetupsVisibility = (): void => {
-    onToggleSetupsVisibility?.();
-  };
-
-  const handleDeleteSingleSetup = (setupId: string): void => {
-    removeDetectedSetup(setupId);
-  };
-
-  const handleDeleteAllSetups = (): void => {
-    clearDetectedSetups();
-  };
 
   const startInteraction = (): void => {
     setIsInteracting(true);

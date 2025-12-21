@@ -85,7 +85,6 @@ export const OrderTicket = () => {
     const qty = Number(quantity);
     const entry = Number(entryPrice);
     const stop = stopLoss ? Number(stopLoss) : undefined;
-    const tp = takeProfit ? Number(takeProfit) : undefined;
 
     if (isNaN(qty) || qty <= 0) return;
     if (isNaN(entry) || entry <= 0) return;

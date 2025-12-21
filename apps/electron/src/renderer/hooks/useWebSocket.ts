@@ -49,9 +49,9 @@ interface WebSocketEvents {
 
 export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   const {
-    url = 'http://localhost:3001',
+    url: _url = 'http://localhost:3001',
     autoConnect = true,
-    auth,
+    auth: _auth,
   } = options;
 
   const socketRef = useRef<Socket | null>(null);

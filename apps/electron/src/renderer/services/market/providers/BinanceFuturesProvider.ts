@@ -195,7 +195,7 @@ export class BinanceFuturesProvider extends BaseMarketProvider {
         ...s,
         displayName: `${s.baseAsset}/${s.quoteAsset} PERP`,
         marketType: 'FUTURES' as const,
-      }) as Symbol);
+      }) as unknown as Symbol);
   }
 
   async getPopularSymbols(): Promise<Symbol[]> {
@@ -213,7 +213,7 @@ export class BinanceFuturesProvider extends BaseMarketProvider {
         ...s,
         displayName: `${s.baseAsset}/${s.quoteAsset} PERP`,
         marketType: 'FUTURES' as const,
-      }) as Symbol);
+      }) as unknown as Symbol);
   }
 
   async getSymbolInfo(symbol: string): Promise<SymbolInfo & { maxLeverage: number; maintMarginPercent: string }> {

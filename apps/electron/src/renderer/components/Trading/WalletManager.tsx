@@ -59,7 +59,7 @@ export const WalletManager = () => {
 
   const activeWalletId = wallets[0]?.id ?? null;
 
-  useWalletUpdates(activeWalletId ?? undefined);
+  useWalletUpdates(activeWalletId ?? '');
 
   const handleAddWallet = async (params: {
     name: string;

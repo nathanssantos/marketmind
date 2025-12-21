@@ -41,8 +41,8 @@ export class OCOOrderService {
   private enabled = false;
 
   constructor() {
-    const testnetEnabled = process.env.BINANCE_TESTNET_ENABLED === 'true';
-    const hasTestnetKey = !!process.env.BINANCE_TESTNET_API_KEY;
+    const testnetEnabled = process.env['BINANCE_TESTNET_ENABLED'] === 'true';
+    const hasTestnetKey = !!process.env['BINANCE_TESTNET_API_KEY'];
 
     this.enabled = testnetEnabled && hasTestnetKey;
 

@@ -9,7 +9,7 @@ import {
 } from '@chakra-ui/react';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuAlertTriangle } from 'react-icons/lu';
+import { LuTriangleAlert } from 'react-icons/lu';
 
 interface LeverageSelectorProps {
   value: number;
@@ -31,11 +31,11 @@ export function LeverageSelector({
 
   const handleSliderChange = useCallback(
     (details: { value: number[] }) => {
-      const newValue = details.value[0];
+      const newValue = details.value[0] ?? value;
       setSliderValue(newValue);
       onChange(newValue);
     },
-    [onChange]
+    [onChange, value]
   );
 
   const handlePresetClick = useCallback(
@@ -68,7 +68,7 @@ export function LeverageSelector({
           </Text>
           {isHighRisk && (
             <Box color="orange.500">
-              <LuAlertTriangle size={16} />
+              <LuTriangleAlert size={16} />
             </Box>
           )}
         </Flex>
@@ -118,7 +118,7 @@ export function LeverageSelector({
         >
           <HStack gap={2}>
             <Box color={isExtremeRisk ? 'red.fg' : 'orange.fg'}>
-              <LuAlertTriangle size={14} />
+              <LuTriangleAlert size={14} />
             </Box>
             <Text fontSize="2xs" color={isExtremeRisk ? 'red.fg' : 'orange.fg'}>
               {isExtremeRisk

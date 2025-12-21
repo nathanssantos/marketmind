@@ -8,7 +8,7 @@ export type OrdersFilterOption = 'all' | 'pending' | 'active' | 'filled' | 'clos
 export type OrdersSortOption = 'newest' | 'oldest' | 'symbol-asc' | 'symbol-desc' | 'quantity-desc' | 'quantity-asc' | 'pnl-desc' | 'pnl-asc' | 'price-desc' | 'price-asc';
 export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'all';
 export type PortfolioFilterOption = 'all' | 'long' | 'short' | 'profitable' | 'losing';
-export type PortfolioSortOption = 'newest' | 'oldest' | 'pnl-desc' | 'pnl-asc' | 'size-desc' | 'size-asc';
+export type PortfolioSortOption = 'newest' | 'oldest' | 'pnl-desc' | 'pnl-asc' | 'size-desc' | 'size-asc' | 'symbol-asc' | 'symbol-desc' | 'exposure-desc' | 'exposure-asc';
 
 const MIGRATION_VERSION_2 = 2;
 const MIGRATION_VERSION_3 = 3;

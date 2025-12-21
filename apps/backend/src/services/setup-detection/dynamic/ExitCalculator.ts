@@ -3,6 +3,7 @@ import type {
   ConditionOperand,
   ExitContext,
   ExitLevel,
+  Kline,
   StrategyDefinition,
 } from '@marketmind/types';
 import { isParameterReference } from '@marketmind/types';
@@ -240,8 +241,8 @@ export class ExitCalculator {
     }
 
     const rawSwingPrice = direction === 'SHORT'
-      ? this.findSwingHigh(klines, currentIndex, SWING_SKIP_RECENT)
-      : this.findSwingLow(klines, currentIndex, SWING_SKIP_RECENT);
+      ? this.findSwingHigh(klines as Kline[], currentIndex, SWING_SKIP_RECENT)
+      : this.findSwingLow(klines as Kline[], currentIndex, SWING_SKIP_RECENT);
 
     let stopLoss = rawSwingPrice;
 

@@ -1,8 +1,8 @@
 import { Badge, Box, Flex, Progress, Text, VStack } from '@chakra-ui/react';
-import type { FuturesPosition, MarginType } from '@marketmind/types';
+import type { FuturesPosition } from '@marketmind/types';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuAlertTriangle, LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
+import { LuTrendingDown, LuTrendingUp, LuTriangleAlert } from 'react-icons/lu';
 
 interface FuturesPositionInfoProps {
   position: FuturesPosition;
@@ -138,7 +138,7 @@ export function FuturesPositionInfo({ position, currentPrice }: FuturesPositionI
               </Text>
               {isWarning && (
                 <Box color={isInDanger ? 'red.500' : 'orange.500'}>
-                  <LuAlertTriangle size={12} />
+                  <LuTriangleAlert size={12} />
                 </Box>
               )}
             </Flex>
@@ -180,7 +180,7 @@ export function FuturesPositionInfo({ position, currentPrice }: FuturesPositionI
           <Box p={2} bg="red.subtle" borderRadius="md" borderWidth="1px" borderColor="red.emphasized">
             <Flex align="center" gap={2}>
               <Box color="red.fg">
-                <LuAlertTriangle size={14} />
+                <LuTriangleAlert size={14} />
               </Box>
               <Text fontSize="2xs" color="red.fg" fontWeight="medium">
                 {t('futures.liquidationWarning', 'Warning: Position is close to liquidation. Consider reducing position size or adding margin.')}

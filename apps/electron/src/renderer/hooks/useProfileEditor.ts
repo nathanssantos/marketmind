@@ -69,7 +69,7 @@ export const toggleSetup = (currentSetups: string[], setupId: string): string[] 
 };
 
 export const toggleGroup = (currentSetups: string[], groupId: string): string[] => {
-  const groupSetups = AVAILABLE_SETUPS.filter((s) => s.group === groupId).map((s) => s.id);
+  const groupSetups: string[] = AVAILABLE_SETUPS.filter((s) => s.group === groupId).map((s) => s.id);
   const allEnabled = groupSetups.every((id) => currentSetups.includes(id));
 
   if (allEnabled) {

@@ -1,5 +1,5 @@
 import { Box, Flex, IconButton, Stack, Text } from '@chakra-ui/react';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuGauge } from 'react-icons/lu';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
@@ -134,30 +134,6 @@ export const IndicatorTogglePopover = memo(
                 onShowVWAPChange,
                 onMovingAverageToggle,
             ]
-        );
-
-        const toggleAll = useCallback((): void => {
-            const allActive = categories.every((category) =>
-                category.indicators.every((ind) => ind.isActive)
-            );
-
-            categories.forEach((category) => {
-                category.indicators.forEach((ind) => {
-                    if (allActive && ind.isActive) {
-                        ind.onToggle();
-                    } else if (!allActive && !ind.isActive) {
-                        ind.onToggle();
-                    }
-                });
-            });
-        }, [categories]);
-
-        const allActive = useMemo(
-            () =>
-                categories.every((category) =>
-                    category.indicators.every((ind) => ind.isActive)
-                ),
-            [categories]
         );
 
         const activeCount = useMemo(

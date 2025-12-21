@@ -384,14 +384,16 @@ export const useOrderLinesRenderer = (
     ctx.rect(0, 0, chartWidth, chartHeight);
     ctx.clip();
 
-    const groupedPositions = new Map<string, {
+    type GroupedPosition = {
       symbol: string;
       netQuantity: number;
       avgPrice: number;
       orderIds: string[];
       orders: Order[];
       totalPnL: number;
-    }>();
+    };
+
+    const groupedPositions = new Map<string, GroupedPosition>();
 
     activeOrdersList.forEach((order) => {
       const isLong = isOrderLong(order);
@@ -585,25 +587,6 @@ export const useOrderLinesRenderer = (
         ctx.restore();
       }
     });
-
-    type GroupedPosition = {
-      symbol: string;
-      netQuantity: number;
-      avgPrice: number;
-      orderIds: string[];
-      orders: Order[];
-      totalPnL: number;
-    };
-
-    type PositionData = {
-      symbol: string;
-      type: 'long' | 'short';
-      avgPrice: number;
-      totalQuantity: number;
-      orderIds: string[];
-      orders: Order[];
-      totalPnL: number;
-    };
 
     let hoveredPosition: GroupedPosition | null = null;
     const positionsToRender: GroupedPosition[] = [];
@@ -810,7 +793,7 @@ export const useOrderLinesRenderer = (
     }
 
     if (hoveredPosition) {
-      const hPos = hoveredPosition;
+      const hPos = hoveredPosition as GroupedPosition;
       const y = manager.priceToY(hPos.avgPrice);
       if (y >= 0 && y <= chartHeight) {
         const isLong = hPos.netQuantity > 0;
