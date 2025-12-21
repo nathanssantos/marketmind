@@ -1,5 +1,6 @@
 import { Box } from '@chakra-ui/react';
 import { useChartColors } from '@renderer/hooks/useChartColors';
+import { CHART_CONFIG } from '@shared/constants';
 import type { ReactElement } from 'react';
 import { useEffect, useState } from 'react';
 
@@ -81,15 +82,18 @@ export const KlineTimer = ({ timeframe, lastKlineTime, stochasticPanelHeight = 0
         return null;
     }
 
+    const intervalMinutes = TIMEFRAME_MINUTES[timeframe] ?? 60;
+    const isShortTimeframe = intervalMinutes <= 60;
     const hours = Math.floor(timeRemaining / 3600);
-    const fontSize = hours >= 10 ? '9px' : '11px';
-    const rightMargin = hours >= 10 ? '8px' : '12px';
+    const fontSize = isShortTimeframe ? '15px' : hours >= 10 ? '9px' : '11px';
 
     return (
         <Box
             position="absolute"
             bottom={`${8 + stochasticPanelHeight + rsiPanelHeight}px`}
-            right={rightMargin}
+            right={0}
+            width={`${CHART_CONFIG.CANVAS_PADDING_RIGHT}px`}
+            textAlign="center"
             color={colors.axisLabel}
             fontSize={fontSize}
             fontFamily="monospace"
