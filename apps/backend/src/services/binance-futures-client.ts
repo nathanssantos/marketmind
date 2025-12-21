@@ -8,7 +8,7 @@ import type {
   MarginType,
   FuturesOrder,
 } from '@marketmind/types';
-import { logger } from './logger';
+import { logger, serializeError } from './logger';
 
 export type WalletType = 'live' | 'testnet' | 'paper';
 
@@ -56,7 +56,7 @@ export async function setLeverage(
       symbol: result.symbol,
     };
   } catch (error) {
-    logger.error({ error, symbol, leverage }, 'Failed to set leverage');
+    logger.error({ error: serializeError(error), symbol, leverage }, 'Failed to set leverage');
     throw error;
   }
 }
@@ -72,7 +72,7 @@ export async function setMarginType(
     if (error instanceof Error && error.message.includes('No need to change margin type')) {
       return;
     }
-    logger.error({ error, symbol, marginType }, 'Failed to set margin type');
+    logger.error({ error: serializeError(error), symbol, marginType }, 'Failed to set margin type');
     throw error;
   }
 }
@@ -131,7 +131,7 @@ export async function getPosition(
       updateTime: position.updateTime,
     };
   } catch (error) {
-    logger.error({ error, symbol }, 'Failed to get futures position');
+    logger.error({ error: serializeError(error), symbol }, 'Failed to get futures position');
     throw error;
   }
 }
@@ -254,7 +254,7 @@ export async function submitFuturesOrder(
       updateTime: result.updateTime,
     };
   } catch (error) {
-    logger.error({ error, params }, 'Failed to submit futures order');
+    logger.error({ error: serializeError(error), params }, 'Failed to submit futures order');
     throw error;
   }
 }
@@ -267,7 +267,7 @@ export async function cancelFuturesOrder(
   try {
     await client.cancelOrder({ symbol, orderId });
   } catch (error) {
-    logger.error({ error, symbol, orderId }, 'Failed to cancel futures order');
+    logger.error({ error: serializeError(error), symbol, orderId }, 'Failed to cancel futures order');
     throw error;
   }
 }
@@ -279,7 +279,7 @@ export async function cancelAllFuturesOrders(
   try {
     await client.cancelAllOpenOrders({ symbol });
   } catch (error) {
-    logger.error({ error, symbol }, 'Failed to cancel all futures orders');
+    logger.error({ error: serializeError(error), symbol }, 'Failed to cancel all futures orders');
     throw error;
   }
 }
@@ -334,7 +334,7 @@ export async function getOpenOrders(
       updateTime: o.updateTime,
     }));
   } catch (error) {
-    logger.error({ error, symbol }, 'Failed to get open futures orders');
+    logger.error({ error: serializeError(error), symbol }, 'Failed to get open futures orders');
     throw error;
   }
 }
@@ -357,7 +357,7 @@ export async function getSymbolLeverageBrackets(
       cum: b.cum,
     }));
   } catch (error) {
-    logger.error({ error, symbol }, 'Failed to get leverage brackets');
+    logger.error({ error: serializeError(error), symbol }, 'Failed to get leverage brackets');
     throw error;
   }
 }
