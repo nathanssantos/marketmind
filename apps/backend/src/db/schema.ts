@@ -245,6 +245,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   leverage: integer().default(1),
   marginType: varchar('margin_type', { length: 10 }).$type<'ISOLATED' | 'CROSSED'>().default('ISOLATED'),
   positionMode: varchar('position_mode', { length: 10 }).$type<'ONE_WAY' | 'HEDGE'>().default('ONE_WAY'),
+  useLimitOrders: boolean('use_limit_orders').default(false).notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({

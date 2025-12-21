@@ -1092,8 +1092,15 @@ export class AutoTradingScheduler {
         direction: setup.direction,
       });
 
-      const useLimit = setup.entryOrderType === 'LIMIT' && setup.limitEntryPrice;
+      const useLimit = config.useLimitOrders && setup.entryOrderType === 'LIMIT' && setup.limitEntryPrice;
       const orderType = useLimit ? 'LIMIT' : 'MARKET';
+
+      log('📋 Order type decision', {
+        useLimitOrdersConfig: config.useLimitOrders,
+        setupEntryOrderType: setup.entryOrderType,
+        hasLimitEntryPrice: !!setup.limitEntryPrice,
+        finalOrderType: orderType,
+      });
 
       if (isLiveExecution) {
         log(`🔴 LIVE EXECUTION - Placing ${orderType} order on Binance`, {
