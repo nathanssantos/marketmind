@@ -108,7 +108,14 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
       utils.wallet.list.invalidate();
     },
   });
-  
+
+  const updateExecutionSLTPMutation = trpc.trading.updateTradeExecutionSLTP.useMutation({
+    onSuccess: () => {
+      utils.trading.getTradeExecutions.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
+    },
+  });
+
   const createOrder = useCallback(
     async (data: {
       walletId: string;
@@ -177,6 +184,13 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
     [cancelExecutionMutation]
   );
 
+  const updateExecutionSLTP = useCallback(
+    async (id: string, updates: { stopLoss?: number; takeProfit?: number }) => {
+      return updateExecutionSLTPMutation.mutateAsync({ id, ...updates });
+    },
+    [updateExecutionSLTPMutation]
+  );
+
   return {
     orders: orders ?? [],
     positions: positions ?? [],
@@ -193,6 +207,7 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
     closePosition,
     closeExecution,
     cancelExecution,
+    updateExecutionSLTP,
     isCreatingOrder: createOrderMutation.isPending,
     isCancelingOrder: cancelOrderMutation.isPending,
     isSyncingOrders: syncOrdersMutation.isPending,
@@ -200,6 +215,7 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
     isClosingPosition: closePositionMutation.isPending,
     isClosingExecution: closeExecutionMutation.isPending,
     isCancelingExecution: cancelExecutionMutation.isPending,
+    isUpdatingExecutionSLTP: updateExecutionSLTPMutation.isPending,
     createOrderError: createOrderMutation.error,
     cancelOrderError: cancelOrderMutation.error,
     syncOrdersError: syncOrdersMutation.error,
@@ -207,5 +223,6 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
     closePositionError: closePositionMutation.error,
     closeExecutionError: closeExecutionMutation.error,
     cancelExecutionError: cancelExecutionMutation.error,
+    updateExecutionSLTPError: updateExecutionSLTPMutation.error,
   };
 };

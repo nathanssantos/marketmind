@@ -747,8 +747,8 @@ export class BacktestEngine {
         const trailMultiplier = effectiveConfig.trailingATRMultiplier ?? trailingStopConfig?.trailMultiplier ?? 2;
         const atrAtEntry = setup.atr ?? (stopLoss ? Math.abs(entryPrice - stopLoss) / 1.5 : entryPrice * 0.02);
 
-        const BREAKEVEN_THRESHOLD = 0.005; // 0.5% profit for breakeven (consistent with auto-trading)
-        const FEES_COVERED_THRESHOLD = 0.0075; // 0.75% profit for fees covered
+        const BREAKEVEN_THRESHOLD = 0.0075; // 0.75% profit for breakeven (consistent with auto-trading)
+        const FEES_COVERED_THRESHOLD = 0.01; // 1% profit for fees covered
         const FEE_PERCENT = 0.002; // 0.2% total fees (entry + exit)
         const TRAILING_DISTANCE_PERCENT = 0.5; // Keep 50% of peak profit
 

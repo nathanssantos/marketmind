@@ -7,8 +7,8 @@ import { klines, priceCache, setupDetections, tradeExecutions } from '../db/sche
 import { logger } from './logger';
 
 export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
-  breakevenProfitThreshold: 0.005,
-  breakevenWithFeesThreshold: 0.0075,
+  breakevenProfitThreshold: 0.0075,
+  breakevenWithFeesThreshold: 0.01,
   minTrailingDistancePercent: 0.002,
   swingLookback: 3,
   useATRMultiplier: true,

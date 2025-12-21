@@ -50,7 +50,7 @@ export const OPTIMIZATION_PRESETS: Record<string, FullSystemPreset> = {
       maxEntries: [3, 5],
     },
     trailingStop: {
-      breakevenProfitThreshold: [0.005],
+      breakevenProfitThreshold: [0.0075],
       minTrailingDistancePercent: [0.002],
     },
     walkForward: false,
@@ -65,7 +65,7 @@ export const OPTIMIZATION_PRESETS: Record<string, FullSystemPreset> = {
       maxEntries: [3, 5],
     },
     trailingStop: {
-      breakevenProfitThreshold: [0.003, 0.005, 0.007],
+      breakevenProfitThreshold: [0.005, 0.0075, 0.01],
       minTrailingDistancePercent: [0.001, 0.002],
     },
     walkForward: true,
@@ -80,7 +80,7 @@ export const OPTIMIZATION_PRESETS: Record<string, FullSystemPreset> = {
       maxEntries: [2, 3, 4, 5],
     },
     trailingStop: {
-      breakevenProfitThreshold: [0.002, 0.003, 0.005, 0.007, 0.01],
+      breakevenProfitThreshold: [0.005, 0.0075, 0.01, 0.012, 0.015],
       minTrailingDistancePercent: [0.001, 0.0015, 0.002, 0.003],
     },
     walkForward: true,

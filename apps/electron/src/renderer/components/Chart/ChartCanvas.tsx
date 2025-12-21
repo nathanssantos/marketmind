@@ -130,6 +130,7 @@ export const ChartCanvas = ({
   const {
     createOrder: addBackendOrder,
     closeExecution,
+    updateExecutionSLTP,
   } = useBackendTrading(backendWalletId || '', symbol);
 
   const hasTradingEnabled = !!backendWalletId;
@@ -401,12 +402,64 @@ export const ChartCanvas = ({
   const lastKline = currentKlines[currentKlines.length - 1];
   const currentPrice = lastKline ? getKlineClose(lastKline) : 0;
 
+  const draggableOrders = useMemo((): Order[] => {
+    return filteredBackendExecutions
+      .filter(exec => exec.status === 'open' || exec.status === 'pending')
+      .map(exec => ({
+        id: exec.id,
+        symbol: exec.symbol,
+        orderId: 0,
+        orderListId: -1,
+        clientOrderId: exec.id,
+        price: exec.entryPrice,
+        origQty: exec.quantity,
+        executedQty: exec.status === 'pending' ? '0' : exec.quantity,
+        cummulativeQuoteQty: '0',
+        status: exec.status === 'pending' ? 'NEW' as const : 'FILLED' as const,
+        timeInForce: 'GTC' as const,
+        type: exec.status === 'pending' ? 'LIMIT' as const : 'MARKET' as const,
+        side: exec.side === 'LONG' ? 'BUY' : 'SELL',
+        time: Date.now(),
+        updateTime: Date.now(),
+        isWorking: true,
+        origQuoteOrderQty: '0',
+        entryPrice: parseFloat(exec.entryPrice),
+        quantity: parseFloat(exec.quantity),
+        orderDirection: exec.side === 'LONG' ? 'long' : 'short',
+        stopLoss: exec.stopLoss ? parseFloat(exec.stopLoss) : undefined,
+        takeProfit: exec.takeProfit ? parseFloat(exec.takeProfit) : undefined,
+        isAutoTrade: true,
+        walletId: backendWalletId ?? '',
+        setupType: exec.setupType ?? undefined,
+        isPendingLimitOrder: exec.status === 'pending',
+      } as Order));
+  }, [filteredBackendExecutions, backendWalletId]);
+
+  const handleUpdateOrder = useCallback((id: string, updates: Partial<Order>) => {
+    if (!id) return;
+
+    const updatePayload: { stopLoss?: number; takeProfit?: number } = {};
+
+    if (updates.stopLoss !== undefined) {
+      updatePayload.stopLoss = updates.stopLoss;
+    }
+    if (updates.takeProfit !== undefined) {
+      updatePayload.takeProfit = updates.takeProfit;
+    }
+
+    if (Object.keys(updatePayload).length > 0) {
+      updateExecutionSLTP(id, updatePayload).catch((error) => {
+        console.error('Failed to update SL/TP:', error);
+      });
+    }
+  }, [updateExecutionSLTP]);
+
   const orderDragHandler = useOrderDragHandler({
-    orders: [],
-    updateOrder: () => { },
+    orders: draggableOrders,
+    updateOrder: handleUpdateOrder,
     priceToY: (price) => manager?.priceToY(price) ?? 0,
     yToPrice: (y) => manager?.yToPrice(y) ?? 0,
-    enabled: false,
+    enabled: hasTradingEnabled && draggableOrders.length > 0,
     getOrderAtPosition: (x, y) => getOrderAtPosition(x, y),
     currentPrice,
   });

@@ -1184,6 +1184,231 @@ export const tradingRouter = router({
       return { success: true };
     }),
 
+  updateTradeExecutionSLTP: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        stopLoss: z.number().optional(),
+        takeProfit: z.number().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (input.stopLoss === undefined && input.takeProfit === undefined) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'At least one of stopLoss or takeProfit must be provided',
+        });
+      }
+
+      const [execution] = await ctx.db
+        .select()
+        .from(tradeExecutions)
+        .where(and(eq(tradeExecutions.id, input.id), eq(tradeExecutions.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!execution) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Trade execution not found',
+        });
+      }
+
+      if (execution.status !== 'open' && execution.status !== 'pending') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Trade execution is not open or pending',
+        });
+      }
+
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(eq(wallets.id, execution.walletId))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      const walletSupportsLive = !isPaperWallet(wallet);
+      const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
+      const isFutures = execution.marketType === 'FUTURES';
+      const qty = parseFloat(execution.quantity);
+
+      let newStopLossOrderId: number | null = execution.stopLossOrderId;
+      let newTakeProfitOrderId: number | null = execution.takeProfitOrderId;
+
+      if (shouldExecuteReal) {
+        try {
+          if (isFutures) {
+            const client = createBinanceFuturesClient(wallet);
+
+            if (input.stopLoss !== undefined) {
+              if (execution.stopLossOrderId) {
+                try {
+                  await client.cancelOrder({ symbol: execution.symbol, orderId: execution.stopLossOrderId });
+                  logger.info({ orderId: execution.stopLossOrderId }, 'Cancelled old SL order');
+                } catch (e) {
+                  logger.warn({ orderId: execution.stopLossOrderId, error: e }, 'Failed to cancel old SL order');
+                }
+              }
+
+              const closeSide = execution.side === 'LONG' ? 'SELL' : 'BUY';
+              const newSLOrder = await client.submitNewOrder({
+                symbol: execution.symbol,
+                side: closeSide,
+                type: 'STOP_MARKET',
+                stopPrice: input.stopLoss,
+                closePosition: 'false',
+                quantity: qty,
+                reduceOnly: 'true',
+                timeInForce: 'GTE_GTC',
+                workingType: 'MARK_PRICE',
+                priceProtect: 'TRUE',
+              });
+              newStopLossOrderId = newSLOrder.orderId;
+              logger.info({ orderId: newStopLossOrderId, stopPrice: input.stopLoss }, 'Created new SL order');
+            }
+
+            if (input.takeProfit !== undefined) {
+              if (execution.takeProfitOrderId) {
+                try {
+                  await client.cancelOrder({ symbol: execution.symbol, orderId: execution.takeProfitOrderId });
+                  logger.info({ orderId: execution.takeProfitOrderId }, 'Cancelled old TP order');
+                } catch (e) {
+                  logger.warn({ orderId: execution.takeProfitOrderId, error: e }, 'Failed to cancel old TP order');
+                }
+              }
+
+              const closeSide = execution.side === 'LONG' ? 'SELL' : 'BUY';
+              const newTPOrder = await client.submitNewOrder({
+                symbol: execution.symbol,
+                side: closeSide,
+                type: 'TAKE_PROFIT_MARKET',
+                stopPrice: input.takeProfit,
+                closePosition: 'false',
+                quantity: qty,
+                reduceOnly: 'true',
+                timeInForce: 'GTE_GTC',
+                workingType: 'MARK_PRICE',
+                priceProtect: 'TRUE',
+              });
+              newTakeProfitOrderId = newTPOrder.orderId;
+              logger.info({ orderId: newTakeProfitOrderId, stopPrice: input.takeProfit }, 'Created new TP order');
+            }
+          } else {
+            const client = createBinanceClient(wallet);
+
+            if (input.stopLoss !== undefined) {
+              if (execution.stopLossOrderId) {
+                try {
+                  await client.cancelOrder({ symbol: execution.symbol, orderId: execution.stopLossOrderId });
+                  logger.info({ orderId: execution.stopLossOrderId }, 'Cancelled old SL order');
+                } catch (e) {
+                  logger.warn({ orderId: execution.stopLossOrderId, error: e }, 'Failed to cancel old SL order');
+                }
+              }
+
+              const closeSide = execution.side === 'LONG' ? 'SELL' : 'BUY';
+              const newSLOrder = await client.submitNewOrder({
+                symbol: execution.symbol,
+                side: closeSide,
+                type: 'STOP_LOSS_LIMIT',
+                stopPrice: input.stopLoss,
+                price: input.stopLoss,
+                quantity: qty,
+                timeInForce: 'GTC',
+              });
+              const slResult = newSLOrder as BinanceNewOrderResult;
+              newStopLossOrderId = slResult.orderId;
+              logger.info({ orderId: newStopLossOrderId, stopPrice: input.stopLoss }, 'Created new SL order');
+            }
+
+            if (input.takeProfit !== undefined) {
+              if (execution.takeProfitOrderId) {
+                try {
+                  await client.cancelOrder({ symbol: execution.symbol, orderId: execution.takeProfitOrderId });
+                  logger.info({ orderId: execution.takeProfitOrderId }, 'Cancelled old TP order');
+                } catch (e) {
+                  logger.warn({ orderId: execution.takeProfitOrderId, error: e }, 'Failed to cancel old TP order');
+                }
+              }
+
+              const closeSide = execution.side === 'LONG' ? 'SELL' : 'BUY';
+              const newTPOrder = await client.submitNewOrder({
+                symbol: execution.symbol,
+                side: closeSide,
+                type: 'TAKE_PROFIT_LIMIT',
+                stopPrice: input.takeProfit,
+                price: input.takeProfit,
+                quantity: qty,
+                timeInForce: 'GTC',
+              });
+              const tpResult = newTPOrder as BinanceNewOrderResult;
+              newTakeProfitOrderId = tpResult.orderId;
+              logger.info({ orderId: newTakeProfitOrderId, stopPrice: input.takeProfit }, 'Created new TP order');
+            }
+          }
+        } catch (error) {
+          logger.error({
+            executionId: execution.id,
+            error: error instanceof Error ? error.message : String(error),
+          }, 'Failed to update SL/TP orders on Binance');
+
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Failed to update orders on Binance',
+          });
+        }
+      }
+
+      const updateData: {
+        updatedAt: Date;
+        stopLoss?: string;
+        stopLossOrderId?: number | null;
+        takeProfit?: string;
+        takeProfitOrderId?: number | null;
+      } = {
+        updatedAt: new Date(),
+      };
+
+      if (input.stopLoss !== undefined) {
+        updateData.stopLoss = input.stopLoss.toString();
+        updateData.stopLossOrderId = newStopLossOrderId;
+      }
+
+      if (input.takeProfit !== undefined) {
+        updateData.takeProfit = input.takeProfit.toString();
+        updateData.takeProfitOrderId = newTakeProfitOrderId;
+      }
+
+      await ctx.db
+        .update(tradeExecutions)
+        .set(updateData)
+        .where(eq(tradeExecutions.id, input.id));
+
+      logger.info({
+        executionId: execution.id,
+        symbol: execution.symbol,
+        stopLoss: input.stopLoss,
+        takeProfit: input.takeProfit,
+        isLive: shouldExecuteReal,
+        newStopLossOrderId,
+        newTakeProfitOrderId,
+      }, 'Updated trade execution SL/TP');
+
+      return {
+        success: true,
+        stopLoss: input.stopLoss?.toString(),
+        takeProfit: input.takeProfit?.toString(),
+        stopLossOrderId: newStopLossOrderId,
+        takeProfitOrderId: newTakeProfitOrderId,
+      };
+    }),
+
   getTickerPrices: protectedProcedure
     .input(
       z.object({
