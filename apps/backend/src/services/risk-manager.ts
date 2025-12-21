@@ -103,7 +103,8 @@ export class RiskManagerService {
   async validateNewPosition(
     walletId: string,
     config: AutoTradingConfig,
-    positionValue: number
+    positionValue: number,
+    activeWatchersCount?: number
   ): Promise<RiskValidationResult> {
     try {
       const [wallet] = await db
@@ -122,19 +123,26 @@ export class RiskManagerService {
       const walletBalance = parseFloat(wallet.currentBalance || '0');
 
       const openPositions = await this.getOpenPositions(walletId);
-      if (openPositions.length >= config.maxConcurrentPositions) {
+
+      const effectiveMaxPositions = activeWatchersCount ?? config.maxConcurrentPositions;
+
+      if (openPositions.length >= effectiveMaxPositions) {
         return {
           isValid: false,
-          reason: `Maximum concurrent positions reached (${config.maxConcurrentPositions})`,
+          reason: `Maximum concurrent positions reached (${effectiveMaxPositions})`,
           details: {
             openPositions: openPositions.length,
-            maxPositions: config.maxConcurrentPositions,
+            maxPositions: effectiveMaxPositions,
           },
         };
       }
 
       const maxPositionSize = parseFloat(config.maxPositionSize);
-      const maxPositionValue = (walletBalance * maxPositionSize) / 100;
+
+      const perWatcherExposurePercent = activeWatchersCount
+        ? 100 / activeWatchersCount
+        : maxPositionSize;
+      const maxPositionValue = (walletBalance * Math.min(perWatcherExposurePercent, maxPositionSize)) / 100;
 
       if (positionValue > maxPositionValue) {
         return {
@@ -149,8 +157,9 @@ export class RiskManagerService {
 
       const currentExposure = this.calculateTotalExposure(openPositions);
       const totalExposure = currentExposure + positionValue;
-      const configuredMaxExposure =
-        (walletBalance * maxPositionSize * config.maxConcurrentPositions) / 100;
+      const configuredMaxExposure = activeWatchersCount
+        ? walletBalance
+        : (walletBalance * maxPositionSize * config.maxConcurrentPositions) / 100;
       const absoluteMaxExposure = walletBalance * (RISK_MANAGER.MAX_EXPOSURE_PERCENT / 100);
       const maxTotalExposure = Math.min(configuredMaxExposure, absoluteMaxExposure);
 

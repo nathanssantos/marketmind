@@ -1020,16 +1020,25 @@ export class AutoTradingScheduler {
         reason: dynamicSize.reason,
       });
 
+      const activeWatchersForWallet = this.getWatcherStatus(watcher.walletId).watchers;
+
       const effectiveConfig = {
         ...config,
         maxPositionSize: effectiveMaxPositionSize.toString(),
-        maxConcurrentPositions: walletMaxConcurrent,
+        maxConcurrentPositions: activeWatchersForWallet || walletMaxConcurrent,
       };
+
+      log('📊 Dynamic exposure calculation', {
+        activeWatchers: activeWatchersForWallet,
+        exposurePerWatcher: activeWatchersForWallet > 0 ? `${(100 / activeWatchersForWallet).toFixed(1)}%` : 'N/A',
+        walletMaxConcurrent,
+      });
 
       const riskValidation = await riskManagerService.validateNewPosition(
         watcher.walletId,
         effectiveConfig,
-        positionValue
+        positionValue,
+        activeWatchersForWallet > 0 ? activeWatchersForWallet : undefined
       );
 
       if (!riskValidation.isValid) {

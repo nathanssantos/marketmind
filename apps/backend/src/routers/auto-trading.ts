@@ -248,13 +248,21 @@ export const autoTradingRouter = router({
           )
         );
 
-      log('📊 Current open positions', { count: openPositions.length, max: config.maxConcurrentPositions });
+      const watcherStatus = autoTradingScheduler.getWatcherStatus(input.walletId);
+      const effectiveMaxPositions = watcherStatus.watchers > 0 ? watcherStatus.watchers : config.maxConcurrentPositions;
 
-      if (openPositions.length >= config.maxConcurrentPositions) {
-        log('⚠️ Max concurrent positions reached', { current: openPositions.length, max: config.maxConcurrentPositions });
+      log('📊 Current open positions', {
+        count: openPositions.length,
+        max: effectiveMaxPositions,
+        activeWatchers: watcherStatus.watchers,
+        configMax: config.maxConcurrentPositions,
+      });
+
+      if (openPositions.length >= effectiveMaxPositions) {
+        log('⚠️ Max concurrent positions reached', { current: openPositions.length, max: effectiveMaxPositions });
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: `Maximum concurrent positions (${config.maxConcurrentPositions}) reached`,
+          message: `Maximum concurrent positions (${effectiveMaxPositions}) reached`,
         });
       }
 
@@ -274,18 +282,27 @@ export const autoTradingRouter = router({
 
       const walletBalance = parseFloat(wallet.currentBalance || '0');
       const maxPositionSizePercent = parseFloat(config.maxPositionSize);
-      const positionValue = (walletBalance * maxPositionSizePercent) / 100;
+
+      const perWatcherExposurePercent = watcherStatus.watchers > 0
+        ? 100 / watcherStatus.watchers
+        : maxPositionSizePercent;
+      const effectivePositionSizePercent = Math.min(perWatcherExposurePercent, maxPositionSizePercent);
+      const positionValue = (walletBalance * effectivePositionSizePercent) / 100;
 
       log('💰 Position sizing', {
         walletBalance: walletBalance.toFixed(2),
         maxPositionSizePercent,
+        activeWatchers: watcherStatus.watchers,
+        perWatcherExposurePercent: perWatcherExposurePercent.toFixed(1),
+        effectivePositionSizePercent: effectivePositionSizePercent.toFixed(1),
         positionValue: positionValue.toFixed(2),
       });
 
       const riskValidation = await riskManagerService.validateNewPosition(
         input.walletId,
         config,
-        positionValue
+        positionValue,
+        watcherStatus.watchers > 0 ? watcherStatus.watchers : undefined
       );
 
       if (!riskValidation.isValid) {
