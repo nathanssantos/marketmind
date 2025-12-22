@@ -1,4 +1,4 @@
-import { calculateATR } from '@marketmind/indicators';
+import { calculateATR, calculateStochastic } from '@marketmind/indicators';
 import { getThresholdForTimeframe } from '@marketmind/ml';
 import type { BacktestConfig, BacktestResult, ComputedIndicators, EvaluationContext, Interval, Kline, OptimizedBacktestParams, StrategyDefinition } from '@marketmind/types';
 import { HistoricalMarketContextService } from '../historical-market-context';
@@ -375,6 +375,7 @@ export class BacktestEngine {
       let skippedVolatility = 0;
       let skippedRiskReward = 0;
       let skippedLimitExpired = 0;
+      let skippedStochastic = 0;
 
       const cooldownMap = new Map<string, number>();
       const cooldownMinutes = effectiveConfig.cooldownMinutes ?? 15;
@@ -445,6 +446,34 @@ export class BacktestEngine {
 
         if (effectiveConfig.onlyLong && setup.direction === 'SHORT') {
           continue;
+        }
+
+        if (effectiveConfig.useStochasticFilter) {
+          const stochasticPeriod = 14;
+          const setupIndex = historicalKlines.findIndex(k => k.openTime === setup.openTime);
+
+          if (setupIndex >= stochasticPeriod) {
+            const stochasticKlines = historicalKlines.slice(setupIndex - stochasticPeriod - 10, setupIndex + 1);
+            const stochResult = calculateStochastic(stochasticKlines as Kline[], stochasticPeriod, 3);
+            const lastStochK = stochResult.k[stochResult.k.length - 1];
+
+            if (lastStochK !== null && lastStochK !== undefined) {
+              const isLongAllowed = setup.direction === 'LONG' && lastStochK < 20;
+              const isShortAllowed = setup.direction === 'SHORT' && lastStochK > 80;
+
+              if (!isLongAllowed && !isShortAllowed) {
+                skippedStochastic++;
+                if (trades.length < 3) {
+                  console.log(`[Backtest] Stochastic filter blocked ${setup.direction} trade - K=${lastStochK.toFixed(2)} (LONG requires <20, SHORT requires >80)`);
+                }
+                continue;
+              }
+
+              if (trades.length < 3) {
+                console.log(`[Backtest] Stochastic filter passed ${setup.direction} trade - K=${lastStochK.toFixed(2)}`);
+              }
+            }
+          }
         }
 
         let marketContextMultiplier = 1.0;
@@ -1079,12 +1108,13 @@ export class BacktestEngine {
         minNotional: skippedMinNotional,
         minProfit: skippedMinProfit,
         riskReward: skippedRiskReward,
+        stochastic: skippedStochastic,
         marketContext: skippedMarketContext,
         cooldown: skippedCooldown,
         dailyLossLimit: skippedDailyLossLimit,
         volatility: skippedVolatility,
         limitExpired: skippedLimitExpired,
-        total: skippedMaxPositions + skippedMaxExposure + skippedKlineNotFound + skippedTrend + skippedMinNotional + skippedMinProfit + skippedRiskReward + skippedMarketContext + skippedCooldown + skippedDailyLossLimit + skippedVolatility + skippedLimitExpired,
+        total: skippedMaxPositions + skippedMaxExposure + skippedKlineNotFound + skippedTrend + skippedMinNotional + skippedMinProfit + skippedRiskReward + skippedStochastic + skippedMarketContext + skippedCooldown + skippedDailyLossLimit + skippedVolatility + skippedLimitExpired,
       });
       console.log('[Backtest] Results:', {
         trades: trades.length,

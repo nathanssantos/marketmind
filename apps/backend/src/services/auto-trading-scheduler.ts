@@ -1,3 +1,4 @@
+import { calculateStochastic } from '@marketmind/indicators';
 import { getThresholdForTimeframe } from '@marketmind/ml';
 import type { Interval, Kline, MarketType, TradingSetup } from '@marketmind/types';
 import { and, desc, eq, inArray } from 'drizzle-orm';
@@ -931,6 +932,74 @@ export class AutoTradingScheduler {
       log('✅ No cooldown active - proceeding with execution', {
         setupType: setup.type,
       });
+
+      if (config.useStochasticFilter) {
+        const stochasticPeriod = 14;
+        const stochasticKlines = await db
+          .select()
+          .from(klines)
+          .where(
+            and(
+              eq(klines.symbol, watcher.symbol),
+              eq(klines.interval, watcher.interval)
+            )
+          )
+          .orderBy(desc(klines.openTime))
+          .limit(stochasticPeriod + 10);
+
+        if (stochasticKlines.length < stochasticPeriod) {
+          log('⚠️ Insufficient klines for Stochastic calculation', {
+            required: stochasticPeriod,
+            available: stochasticKlines.length,
+          });
+          return;
+        }
+
+        const klinesForStochastic = stochasticKlines.reverse().map(k => ({
+          ...k,
+          openTime: k.openTime.getTime(),
+          closeTime: k.closeTime.getTime(),
+        })) as Kline[];
+        const stochResult = calculateStochastic(klinesForStochastic, stochasticPeriod, 3);
+        const lastStochK = stochResult.k[stochResult.k.length - 1];
+
+        if (lastStochK === null || lastStochK === undefined) {
+          log('⚠️ Stochastic calculation returned null', {
+            symbol: watcher.symbol,
+            interval: watcher.interval,
+          });
+          return;
+        }
+
+        const isLongAllowed = setup.direction === 'LONG' && lastStochK < 20;
+        const isShortAllowed = setup.direction === 'SHORT' && lastStochK > 80;
+
+        log('📊 Stochastic Filter Check', {
+          symbol: watcher.symbol,
+          interval: watcher.interval,
+          direction: setup.direction,
+          stochK: lastStochK.toFixed(2),
+          oversoldThreshold: 20,
+          overboughtThreshold: 80,
+          isAllowed: isLongAllowed || isShortAllowed,
+        });
+
+        if (!isLongAllowed && !isShortAllowed) {
+          log('🚫 Stochastic filter blocked trade', {
+            direction: setup.direction,
+            stochK: lastStochK.toFixed(2),
+            reason: setup.direction === 'LONG'
+              ? `Stochastic ${lastStochK.toFixed(2)} not oversold (must be < 20)`
+              : `Stochastic ${lastStochK.toFixed(2)} not overbought (must be > 80)`,
+          });
+          return;
+        }
+
+        log('✅ Stochastic filter passed', {
+          direction: setup.direction,
+          stochK: lastStochK.toFixed(2),
+        });
+      }
 
       const oppositeDirectionPosition = openPositions.find(
         (pos) => pos.symbol === watcher.symbol && pos.side !== setup.direction
