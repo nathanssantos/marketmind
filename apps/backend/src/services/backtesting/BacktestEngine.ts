@@ -452,25 +452,34 @@ export class BacktestEngine {
           const stochasticPeriod = 14;
           const setupIndex = historicalKlines.findIndex(k => k.openTime === setup.openTime);
 
-          if (setupIndex >= stochasticPeriod) {
+          if (setupIndex >= stochasticPeriod + 1) {
             const stochasticKlines = historicalKlines.slice(setupIndex - stochasticPeriod - 10, setupIndex + 1);
             const stochResult = calculateStochastic(stochasticKlines as Kline[], stochasticPeriod, 3);
-            const lastStochK = stochResult.k[stochResult.k.length - 1];
+            const currentStochK = stochResult.k[stochResult.k.length - 1];
+            const previousStochK = stochResult.k[stochResult.k.length - 2];
 
-            if (lastStochK !== null && lastStochK !== undefined) {
-              const isLongAllowed = setup.direction === 'LONG' && lastStochK < 20;
-              const isShortAllowed = setup.direction === 'SHORT' && lastStochK > 80;
+            if (currentStochK !== null && currentStochK !== undefined && previousStochK !== null && previousStochK !== undefined) {
+              const inOversold = currentStochK < 20;
+              const reversalFromOversold = previousStochK < 20 && currentStochK >= 20;
+              const isLongAllowed = setup.direction === 'LONG' && (inOversold || reversalFromOversold);
+
+              const inOverbought = currentStochK > 80;
+              const reversalFromOverbought = previousStochK > 80 && currentStochK <= 80;
+              const isShortAllowed = setup.direction === 'SHORT' && (inOverbought || reversalFromOverbought);
 
               if (!isLongAllowed && !isShortAllowed) {
                 skippedStochastic++;
                 if (trades.length < 3) {
-                  console.log(`[Backtest] Stochastic filter blocked ${setup.direction} trade - K=${lastStochK.toFixed(2)} (LONG requires <20, SHORT requires >80)`);
+                  console.log(`[Backtest] Stochastic filter blocked ${setup.direction} trade - prevK=${previousStochK.toFixed(2)}, currK=${currentStochK.toFixed(2)} (LONG: oversold or reversal from oversold, SHORT: overbought or reversal from overbought)`);
                 }
                 continue;
               }
 
               if (trades.length < 3) {
-                console.log(`[Backtest] Stochastic filter passed ${setup.direction} trade - K=${lastStochK.toFixed(2)}`);
+                const longReason = inOversold ? 'in oversold' : 'reversal from oversold';
+                const shortReason = inOverbought ? 'in overbought' : 'reversal from overbought';
+                const reason = setup.direction === 'LONG' ? longReason : shortReason;
+                console.log(`[Backtest] Stochastic filter passed ${setup.direction} trade - prevK=${previousStochK.toFixed(2)}, currK=${currentStochK.toFixed(2)} (${reason})`);
               }
             }
           }

@@ -947,9 +947,9 @@ export class AutoTradingScheduler {
           .orderBy(desc(klines.openTime))
           .limit(stochasticPeriod + 10);
 
-        if (stochasticKlines.length < stochasticPeriod) {
+        if (stochasticKlines.length < stochasticPeriod + 1) {
           log('⚠️ Insufficient klines for Stochastic calculation', {
-            required: stochasticPeriod,
+            required: stochasticPeriod + 1,
             available: stochasticKlines.length,
           });
           return;
@@ -961,9 +961,10 @@ export class AutoTradingScheduler {
           closeTime: k.closeTime.getTime(),
         })) as Kline[];
         const stochResult = calculateStochastic(klinesForStochastic, stochasticPeriod, 3);
-        const lastStochK = stochResult.k[stochResult.k.length - 1];
+        const currentStochK = stochResult.k[stochResult.k.length - 1];
+        const previousStochK = stochResult.k[stochResult.k.length - 2];
 
-        if (lastStochK === null || lastStochK === undefined) {
+        if (currentStochK === null || currentStochK === undefined || previousStochK === null || previousStochK === undefined) {
           log('⚠️ Stochastic calculation returned null', {
             symbol: watcher.symbol,
             interval: watcher.interval,
@@ -971,33 +972,46 @@ export class AutoTradingScheduler {
           return;
         }
 
-        const isLongAllowed = setup.direction === 'LONG' && lastStochK < 20;
-        const isShortAllowed = setup.direction === 'SHORT' && lastStochK > 80;
+        const inOversold = currentStochK < 20;
+        const reversalFromOversold = previousStochK < 20 && currentStochK >= 20;
+        const isLongAllowed = setup.direction === 'LONG' && (inOversold || reversalFromOversold);
+
+        const inOverbought = currentStochK > 80;
+        const reversalFromOverbought = previousStochK > 80 && currentStochK <= 80;
+        const isShortAllowed = setup.direction === 'SHORT' && (inOverbought || reversalFromOverbought);
+
+        const longReason = inOversold ? 'in oversold zone' : reversalFromOversold ? 'reversal from oversold' : null;
+        const shortReason = inOverbought ? 'in overbought zone' : reversalFromOverbought ? 'reversal from overbought' : null;
 
         log('📊 Stochastic Filter Check', {
           symbol: watcher.symbol,
           interval: watcher.interval,
           direction: setup.direction,
-          stochK: lastStochK.toFixed(2),
+          previousK: previousStochK.toFixed(2),
+          currentK: currentStochK.toFixed(2),
           oversoldThreshold: 20,
           overboughtThreshold: 80,
           isAllowed: isLongAllowed || isShortAllowed,
+          reason: setup.direction === 'LONG' ? longReason : shortReason,
         });
 
         if (!isLongAllowed && !isShortAllowed) {
           log('🚫 Stochastic filter blocked trade', {
             direction: setup.direction,
-            stochK: lastStochK.toFixed(2),
+            previousK: previousStochK.toFixed(2),
+            currentK: currentStochK.toFixed(2),
             reason: setup.direction === 'LONG'
-              ? `Stochastic ${lastStochK.toFixed(2)} not oversold (must be < 20)`
-              : `Stochastic ${lastStochK.toFixed(2)} not overbought (must be > 80)`,
+              ? `Not in oversold (${currentStochK.toFixed(2)} >= 20) and no reversal from oversold`
+              : `Not in overbought (${currentStochK.toFixed(2)} <= 80) and no reversal from overbought`,
           });
           return;
         }
 
         log('✅ Stochastic filter passed', {
           direction: setup.direction,
-          stochK: lastStochK.toFixed(2),
+          previousK: previousStochK.toFixed(2),
+          currentK: currentStochK.toFixed(2),
+          condition: setup.direction === 'LONG' ? longReason : shortReason,
         });
       }
 
