@@ -983,6 +983,8 @@ export class AutoTradingScheduler {
 
       const walletBalance = parseFloat(wallet.currentBalance ?? '0');
 
+      const activeWatchersForWallet = this.getWatcherStatus(watcher.walletId).watchers;
+
       const dynamicSize = await pyramidingService.calculateDynamicPositionSize(
         watcher.userId,
         watcher.walletId,
@@ -990,7 +992,8 @@ export class AutoTradingScheduler {
         setup.direction,
         walletBalance,
         setup.entryPrice,
-        setup.confidence ? setup.confidence / 100 : undefined
+        setup.confidence ? setup.confidence / 100 : undefined,
+        activeWatchersForWallet > 0 ? activeWatchersForWallet : undefined
       );
 
       if (dynamicSize.quantity <= 0) {
@@ -1019,8 +1022,6 @@ export class AutoTradingScheduler {
         positionValue: positionValue.toFixed(2),
         reason: dynamicSize.reason,
       });
-
-      const activeWatchersForWallet = this.getWatcherStatus(watcher.walletId).watchers;
 
       const effectiveConfig = {
         ...config,

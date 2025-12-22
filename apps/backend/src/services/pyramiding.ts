@@ -290,7 +290,8 @@ export class PyramidingService {
     direction: 'LONG' | 'SHORT',
     walletBalance: number,
     entryPrice: number,
-    mlConfidence?: number
+    mlConfidence?: number,
+    activeWatchersCount?: number
   ): Promise<{ quantity: number; sizePercent: number; reason: string }> {
     const openExecutions = await db
       .select()
@@ -323,8 +324,19 @@ export class PyramidingService {
       };
     }
 
-    const maxPositionSizePercent = parseFloat(tradingConfig.maxPositionSize);
-    const maxTotalExposure = (walletBalance * maxPositionSizePercent * tradingConfig.maxConcurrentPositions) / 100;
+    const configMaxPositionSize = parseFloat(tradingConfig.maxPositionSize);
+
+    let maxPositionSizePercent: number;
+    if (activeWatchersCount && activeWatchersCount > 0) {
+      const perWatcherExposurePercent = 100 / activeWatchersCount;
+      maxPositionSizePercent = Math.min(perWatcherExposurePercent, configMaxPositionSize);
+    } else {
+      maxPositionSizePercent = configMaxPositionSize;
+    }
+
+    const maxTotalExposure = activeWatchersCount && activeWatchersCount > 0
+      ? walletBalance
+      : (walletBalance * configMaxPositionSize * tradingConfig.maxConcurrentPositions) / 100;
 
     if (openExecutions.length === 0) {
       let baseSizePercent: number;
