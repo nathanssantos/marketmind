@@ -71,22 +71,6 @@ interface ActiveWatcher {
   lastProcessedTime: number;
 }
 
-const ML_TRAINED_STRATEGIES = [
-  'keltner-breakout-optimized',
-  'bollinger-breakout-crypto',
-  'larry-williams-9-1',
-  'larry-williams-9-2',
-  'larry-williams-9-3',
-  'larry-williams-9-4',
-  'williams-momentum',
-  'tema-momentum',
-  'elder-ray-crypto',
-  'ppo-momentum',
-  'parabolic-sar-crypto',
-  'supertrend-follow',
-];
-
-
 const INTERVAL_TO_MS: Record<string, number> = {
   '1m': 60 * 1000,
   '3m': 3 * 60 * 1000,
@@ -117,8 +101,6 @@ const getPollingIntervalForTimeframe = (interval: string): number => {
 export class AutoTradingScheduler {
   private activeWatchers: Map<string, ActiveWatcher> = new Map();
   private strategyLoader: StrategyLoader;
-  private mlInitialized: boolean = false;
-  private mlInitializing: boolean = false;
 
   constructor() {
     this.strategyLoader = new StrategyLoader([STRATEGIES_DIR]);
@@ -140,33 +122,7 @@ export class AutoTradingScheduler {
   }
 
   private async ensureMLInitialized(): Promise<boolean> {
-    if (this.mlInitialized) return true;
-    if (this.mlInitializing) {
-      while (this.mlInitializing) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      return this.mlInitialized;
-    }
-
-    this.mlInitializing = true;
-    try {
-      const result = await mlService.initialize('setup-classifier');
-      this.mlInitialized = result.success;
-      log('🤖 ML Service initialized', {
-        success: result.success,
-        modelVersion: result.modelVersion,
-        featureCount: result.featureCount,
-      });
-      return result.success;
-    } catch (error) {
-      log('⚠️ ML Service initialization failed (will continue without ML filter)', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      this.mlInitialized = false;
-      return false;
-    } finally {
-      this.mlInitializing = false;
-    }
+    return false;
   }
 
   async startWatcher(
@@ -227,10 +183,8 @@ export class AutoTradingScheduler {
       enabledStrategies = JSON.parse(config.enabledSetupTypes) as string[];
     }
 
-    const mlStrategies = enabledStrategies.filter(s => ML_TRAINED_STRATEGIES.includes(s));
-
-    if (mlStrategies.length === 0) {
-      log('⚠️ No ML strategies enabled', { walletId, enabledStrategies, profileId });
+    if (enabledStrategies.length === 0) {
+      log('⚠️ No strategies enabled', { walletId, enabledStrategies, profileId });
       return;
     }
 
@@ -278,7 +232,7 @@ export class AutoTradingScheduler {
       watcherId,
       symbol,
       interval,
-      enabledStrategies: mlStrategies,
+      enabledStrategies,
       profileId,
       profileName,
       pollIntervalMs: `${pollIntervalMs / 1000}s`,
@@ -312,7 +266,7 @@ export class AutoTradingScheduler {
       symbol,
       interval,
       marketType,
-      enabledStrategies: mlStrategies,
+      enabledStrategies,
       profileId,
       profileName,
       intervalId: syncTimeoutId as unknown as ReturnType<typeof setInterval>,
@@ -962,9 +916,8 @@ export class AutoTradingScheduler {
         })) as Kline[];
         const stochResult = calculateStochastic(klinesForStochastic, stochasticPeriod, 3);
         const currentStochK = stochResult.k[stochResult.k.length - 1];
-        const previousStochK = stochResult.k[stochResult.k.length - 2];
 
-        if (currentStochK === null || currentStochK === undefined || previousStochK === null || previousStochK === undefined) {
+        if (currentStochK === null || currentStochK === undefined) {
           log('⚠️ Stochastic calculation returned null', {
             symbol: watcher.symbol,
             interval: watcher.interval,
@@ -972,23 +925,36 @@ export class AutoTradingScheduler {
           return;
         }
 
-        const inOversold = currentStochK < 20;
-        const reversalFromOversold = previousStochK < 20 && currentStochK >= 20;
-        const isLongAllowed = setup.direction === 'LONG' && (inOversold || reversalFromOversold);
+        let hadOversold = false;
+        let hadOverbought = false;
 
-        const inOverbought = currentStochK > 80;
-        const reversalFromOverbought = previousStochK > 80 && currentStochK <= 80;
-        const isShortAllowed = setup.direction === 'SHORT' && (inOverbought || reversalFromOverbought);
+        for (let i = stochResult.k.length - 1; i >= 0; i -= 1) {
+          const k = stochResult.k[i];
+          if (k === null || k === undefined) continue;
 
-        const longReason = inOversold ? 'in oversold zone' : reversalFromOversold ? 'reversal from oversold' : null;
-        const shortReason = inOverbought ? 'in overbought zone' : reversalFromOverbought ? 'reversal from overbought' : null;
+          if (!hadOversold && k < 20) hadOversold = true;
+          if (!hadOverbought && k > 80) hadOverbought = true;
+
+          if (hadOversold && hadOverbought) break;
+        }
+
+        const isLongAllowed = setup.direction === 'LONG' && hadOversold && currentStochK < 50;
+        const isShortAllowed = setup.direction === 'SHORT' && hadOverbought && currentStochK > 50;
+
+        const longReason = hadOversold && currentStochK < 50
+          ? `K was in oversold and hasn't crossed 50 yet (current K: ${currentStochK.toFixed(2)})`
+          : null;
+        const shortReason = hadOverbought && currentStochK > 50
+          ? `K was in overbought and hasn't crossed 50 yet (current K: ${currentStochK.toFixed(2)})`
+          : null;
 
         log('📊 Stochastic Filter Check', {
           symbol: watcher.symbol,
           interval: watcher.interval,
           direction: setup.direction,
-          previousK: previousStochK.toFixed(2),
           currentK: currentStochK.toFixed(2),
+          hadOversold,
+          hadOverbought,
           oversoldThreshold: 20,
           overboughtThreshold: 80,
           isAllowed: isLongAllowed || isShortAllowed,
@@ -998,19 +964,25 @@ export class AutoTradingScheduler {
         if (!isLongAllowed && !isShortAllowed) {
           log('🚫 Stochastic filter blocked trade', {
             direction: setup.direction,
-            previousK: previousStochK.toFixed(2),
             currentK: currentStochK.toFixed(2),
+            hadOversold,
+            hadOverbought,
             reason: setup.direction === 'LONG'
-              ? `Not in oversold (${currentStochK.toFixed(2)} >= 20) and no reversal from oversold`
-              : `Not in overbought (${currentStochK.toFixed(2)} <= 80) and no reversal from overbought`,
+              ? hadOversold
+                ? `K already crossed 50 on the way back (${currentStochK.toFixed(2)} >= 50)`
+                : `K never reached oversold zone (< 20)`
+              : hadOverbought
+                ? `K already crossed 50 on the way back (${currentStochK.toFixed(2)} <= 50)`
+                : `K never reached overbought zone (> 80)`,
           });
           return;
         }
 
         log('✅ Stochastic filter passed', {
           direction: setup.direction,
-          previousK: previousStochK.toFixed(2),
           currentK: currentStochK.toFixed(2),
+          hadOversold,
+          hadOverbought,
           condition: setup.direction === 'LONG' ? longReason : shortReason,
         });
       }

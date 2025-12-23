@@ -32,6 +32,7 @@ const ML_TRAINED_STRATEGIES = [
     'triple-confirmation-reversal',
     'momentum-rotation',
     'momentum-breakout-2025',
+    'stochastic-double-touch',
 ];
 
 export const SetupTogglePopover = memo(() => {

@@ -1,7 +1,7 @@
 /**
  * Built-in setup types (legacy detectors)
  */
-export type BuiltinSetupType = '123-reversal' | 'bear-trap' | 'mean-reversion';
+export type BuiltinSetupType = '123-reversal' | 'bear-trap' | 'mean-reversion' | 'stochastic-double-touch';
 
 /**
  * Setup type - supports both built-in types and dynamic strategy IDs

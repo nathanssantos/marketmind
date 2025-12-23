@@ -37,7 +37,7 @@ export const AddWatcherDialog = ({
   const { startWatcher, isStartingWatcher } = useBackendAutoTrading(walletId);
 
   const [symbol, setSymbol] = useState('BTCUSDT');
-  const [interval, setInterval] = useState<Timeframe>('1d');
+  const [interval, setInterval] = useState<Timeframe>('1h');
   const [profileId, setProfileId] = useState<string | null>(null);
   const [useDefault, setUseDefault] = useState(true);
   const [marketType, setMarketType] = useState<MarketType>('SPOT');
@@ -62,7 +62,7 @@ export const AddWatcherDialog = ({
 
   const resetForm = () => {
     setSymbol('BTCUSDT');
-    setInterval('1d' as Timeframe);
+    setInterval('1h' as Timeframe);
     setProfileId(null);
     setUseDefault(true);
     setMarketType('SPOT');

@@ -104,16 +104,48 @@ export const createDefaultMeanReversionConfig = (): MeanReversionConfig => ({
 });
 
 
+export interface StochasticDoubleTouchConfig extends BaseSetupConfig {
+  stochPeriod: number;
+  stochSmoothK: number;
+  oversoldThreshold: number;
+  overboughtThreshold: number;
+  volumeMultiplier: number;
+}
+
+export const STOCHASTIC_DOUBLE_TOUCH_DEFAULTS = {
+  STOCH_PERIOD: 14,
+  STOCH_SMOOTH_K: 3,
+  OVERSOLD_THRESHOLD: 20,
+  OVERBOUGHT_THRESHOLD: 80,
+  VOLUME_MULTIPLIER: 1.2,
+  MIN_CONFIDENCE: 70,
+  MIN_RISK_REWARD: 2.0,
+} as const;
+
+export const createDefaultStochasticDoubleTouchConfig = (): StochasticDoubleTouchConfig => ({
+  enabled: false,
+  minConfidence: STOCHASTIC_DOUBLE_TOUCH_DEFAULTS.MIN_CONFIDENCE,
+  minRiskReward: STOCHASTIC_DOUBLE_TOUCH_DEFAULTS.MIN_RISK_REWARD,
+  stochPeriod: STOCHASTIC_DOUBLE_TOUCH_DEFAULTS.STOCH_PERIOD,
+  stochSmoothK: STOCHASTIC_DOUBLE_TOUCH_DEFAULTS.STOCH_SMOOTH_K,
+  oversoldThreshold: STOCHASTIC_DOUBLE_TOUCH_DEFAULTS.OVERSOLD_THRESHOLD,
+  overboughtThreshold: STOCHASTIC_DOUBLE_TOUCH_DEFAULTS.OVERBOUGHT_THRESHOLD,
+  volumeMultiplier: STOCHASTIC_DOUBLE_TOUCH_DEFAULTS.VOLUME_MULTIPLIER,
+});
+
+
 export interface SetupDetectionConfig {
   pattern123: Pattern123Config;
   bearTrap: BearTrapConfig;
   meanReversion: MeanReversionConfig;
+  stochasticDoubleTouch: StochasticDoubleTouchConfig;
 }
 
 export const createDefaultSetupDetectionConfig = (): SetupDetectionConfig => ({
   pattern123: createDefault123Config(),
   bearTrap: createDefaultBearTrapConfig(),
   meanReversion: createDefaultMeanReversionConfig(),
+  stochasticDoubleTouch: createDefaultStochasticDoubleTouchConfig(),
 });
 
 
@@ -121,6 +153,7 @@ export const SETUP_STRATEGY_KEYS = [
   'pattern123',
   'bearTrap',
   'meanReversion',
+  'stochasticDoubleTouch',
 ] as const;
 
 export type SetupStrategyKey = (typeof SETUP_STRATEGY_KEYS)[number];

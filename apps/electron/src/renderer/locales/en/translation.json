@@ -1405,7 +1405,8 @@
       "elder-ray-crypto": "Elder Ray",
       "ppo-momentum": "PPO Momentum",
       "parabolic-sar-crypto": "Parabolic SAR",
-      "supertrend-follow": "Supertrend"
+      "supertrend-follow": "Supertrend",
+      "stochastic-double-touch": "Stochastic Double Touch"
     },
     "watchers": {
       "title": "Active Watchers",
