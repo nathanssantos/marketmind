@@ -73,7 +73,7 @@ export class WebSocketService {
         const room = `prices:${symbol}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
-          logger.debug({ socketId: socket.id, symbol }, 'Subscribed to prices');
+          // logger.debug({ socketId: socket.id, symbol }, 'Subscribed to prices');
         }
       });
 
