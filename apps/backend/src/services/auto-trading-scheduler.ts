@@ -826,18 +826,10 @@ export class AutoTradingScheduler {
         open: openPositions.length,
         pending: pendingPositions.length,
         total: activePositions.length,
-        walletMax: walletMaxConcurrent,
+        activeWatchers: activeWatchersForWallet,
         strategyPositions: strategyPositions.length,
         strategyMax: strategyMaxConcurrent ?? 'unlimited',
       });
-
-      if (activePositions.length >= walletMaxConcurrent) {
-        log('⚠️ Wallet max concurrent positions reached', {
-          total: activePositions.length,
-          walletMax: walletMaxConcurrent,
-        });
-        return;
-      }
 
       if (strategyMaxConcurrent && strategyPositions.length >= strategyMaxConcurrent) {
         log('⚠️ Strategy max concurrent positions reached', {

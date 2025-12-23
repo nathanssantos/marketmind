@@ -3,8 +3,8 @@ import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db';
 import { klines } from '../db/schema';
-import { backfillHistoricalKlines, calculateStartTime, fetchHistoricalKlinesFromAPI, fetchFuturesKlinesFromAPI } from '../services/binance-historical';
-import { binanceKlineStreamService, binanceFuturesKlineStreamService } from '../services/binance-kline-stream';
+import { backfillHistoricalKlines, calculateStartTime, fetchFuturesKlinesFromAPI, fetchHistoricalKlinesFromAPI } from '../services/binance-historical';
+import { binanceFuturesKlineStreamService, binanceKlineStreamService } from '../services/binance-kline-stream';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 
@@ -325,7 +325,7 @@ export const klineRouter = router({
       }
 
       subscribeToStream(input.symbol, input.interval as Interval, marketType);
-      logger.info({ symbol: input.symbol, interval: input.interval, marketType }, '📊 Auto-subscribed to kline stream after list query');
+      // logger.info({ symbol: input.symbol, interval: input.interval, marketType }, '📊 Auto-subscribed to kline stream after list query');
 
       return result;
     }),

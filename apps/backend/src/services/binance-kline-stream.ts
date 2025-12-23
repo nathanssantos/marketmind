@@ -103,7 +103,7 @@ export class BinanceKlineStreamService {
         clientCount: 1,
       });
 
-      logger.info(`Subscribed to kline stream: ${stream}`);
+      // logger.info(`Subscribed to kline stream: ${stream}`);
     } catch (error) {
       logger.error({
         symbol,
