@@ -1,6 +1,5 @@
 import type { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
-import { logger } from './logger';
 
 export interface SocketData {
   userId?: number;
@@ -51,13 +50,13 @@ export class WebSocketService {
 
   private setupEventHandlers(): void {
     this.io.on('connection', (socket) => {
-      logger.info({ socketId: socket.id }, 'Client connected');
+      // logger.info({ socketId: socket.id }, 'Client connected');
 
       socket.on('subscribe:orders', (walletId: string) => {
         const room = `orders:${walletId}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
-          logger.info({ socketId: socket.id, walletId }, 'Subscribed to orders');
+          // logger.info({ socketId: socket.id, walletId }, 'Subscribed to orders');
         }
       });
 
@@ -65,7 +64,7 @@ export class WebSocketService {
         const room = `positions:${walletId}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
-          logger.info({ socketId: socket.id, walletId }, 'Subscribed to positions');
+          // logger.info({ socketId: socket.id, walletId }, 'Subscribed to positions');
         }
       });
 
@@ -81,59 +80,59 @@ export class WebSocketService {
         const room = `klines:${data.symbol}:${data.interval}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
-          logger.info({ socketId: socket.id, symbol: data.symbol, interval: data.interval }, 'Subscribed to klines');
+          // logger.info({ socketId: socket.id, symbol: data.symbol, interval: data.interval }, 'Subscribed to klines');
         }
       });
 
       socket.on('unsubscribe:klines', (data: { symbol: string; interval: string }) => {
         const room = `klines:${data.symbol}:${data.interval}`;
         socket.leave(room);
-        logger.info({ socketId: socket.id, symbol: data.symbol, interval: data.interval }, 'Unsubscribed from klines');
+        // logger.info({ socketId: socket.id, symbol: data.symbol, interval: data.interval }, 'Unsubscribed from klines');
       });
 
       socket.on('unsubscribe:orders', (walletId: string) => {
         socket.leave(`orders:${walletId}`);
-        logger.info({ socketId: socket.id, walletId }, 'Unsubscribed from orders');
+        // logger.info({ socketId: socket.id, walletId }, 'Unsubscribed from orders');
       });
 
       socket.on('unsubscribe:positions', (walletId: string) => {
         socket.leave(`positions:${walletId}`);
-        logger.info({ socketId: socket.id, walletId }, 'Unsubscribed from positions');
+        // logger.info({ socketId: socket.id, walletId }, 'Unsubscribed from positions');
       });
 
       socket.on('unsubscribe:prices', (symbol: string) => {
         socket.leave(`prices:${symbol}`);
-        logger.info({ socketId: socket.id, symbol }, 'Unsubscribed from prices');
+        // logger.info({ socketId: socket.id, symbol }, 'Unsubscribed from prices');
       });
 
       socket.on('subscribe:wallet', (walletId: string) => {
         const room = `wallet:${walletId}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
-          logger.info({ socketId: socket.id, walletId }, 'Subscribed to wallet');
+          // logger.info({ socketId: socket.id, walletId }, 'Subscribed to wallet');
         }
       });
 
       socket.on('unsubscribe:wallet', (walletId: string) => {
         socket.leave(`wallet:${walletId}`);
-        logger.info({ socketId: socket.id, walletId }, 'Unsubscribed from wallet');
+        // logger.info({ socketId: socket.id, walletId }, 'Unsubscribed from wallet');
       });
 
       socket.on('subscribe:setups', (userId: string) => {
         const room = `user:${userId}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
-          logger.info({ socketId: socket.id, userId }, 'Subscribed to setups');
+          // logger.info({ socketId: socket.id, userId }, 'Subscribed to setups');
         }
       });
 
       socket.on('unsubscribe:setups', (userId: string) => {
         socket.leave(`user:${userId}`);
-        logger.info({ socketId: socket.id, userId }, 'Unsubscribed from setups');
+        // logger.info({ socketId: socket.id, userId }, 'Unsubscribed from setups');
       });
 
       socket.on('disconnect', () => {
-        logger.info({ socketId: socket.id }, 'Client disconnected');
+        // logger.info({ socketId: socket.id }, 'Client disconnected');
       });
     });
   }
