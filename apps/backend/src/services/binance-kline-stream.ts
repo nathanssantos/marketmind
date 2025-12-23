@@ -103,7 +103,7 @@ export class BinanceKlineStreamService {
         clientCount: 1,
       });
 
-      // logger.info(`Subscribed to kline stream: ${stream}`);
+      logger.info(`Subscribed to kline stream: ${stream}`);
     } catch (error) {
       logger.error({
         symbol,
@@ -126,7 +126,7 @@ export class BinanceKlineStreamService {
     if (existing.clientCount <= 0) {
       if (this.client) {
         try {
-          // logger.info(`Unsubscribed from kline stream: ${key}`);
+          logger.info(`Unsubscribed from kline stream: ${key}`);
         } catch (error) {
           logger.error({
             symbol,
@@ -192,10 +192,10 @@ export class BinanceKlineStreamService {
       if (update.isClosed) {
         await this.persistKline(update);
         // logger.info({ 
-          symbol: update.symbol, 
-          interval: update.interval, 
-          openTime: new Date(update.openTime).toISOString(),
-        }, '✅ Persisted closed kline');
+        //   symbol: update.symbol, 
+        //   interval: update.interval, 
+        //   openTime: new Date(update.openTime).toISOString(),
+        // }, '✅ Persisted closed kline');
       }
     } catch (error) {
       logger.error({
@@ -371,7 +371,7 @@ export class BinanceFuturesKlineStreamService {
         clientCount: 1,
       });
 
-      // logger.info(`Subscribed to futures kline stream: ${stream}`);
+      logger.info(`Subscribed to futures kline stream: ${stream}`);
     } catch (error) {
       logger.error({
         symbol,
@@ -394,7 +394,7 @@ export class BinanceFuturesKlineStreamService {
     if (existing.clientCount <= 0) {
       if (this.client) {
         try {
-          // logger.info(`Unsubscribed from futures kline stream: ${key}`);
+          logger.info(`Unsubscribed from futures kline stream: ${key}`);
         } catch (error) {
           logger.error({
             symbol,
@@ -460,10 +460,10 @@ export class BinanceFuturesKlineStreamService {
       if (update.isClosed) {
         await this.persistKline(update);
         // logger.info({
-          symbol: update.symbol,
-          interval: update.interval,
-          openTime: new Date(update.openTime).toISOString(),
-        }, '✅ Persisted closed futures kline');
+        //   symbol: update.symbol,
+        //   interval: update.interval,
+        //   openTime: new Date(update.openTime).toISOString(),
+        // }, '✅ Persisted closed futures kline');
       }
     } catch (error) {
       logger.error({
