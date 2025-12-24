@@ -826,7 +826,6 @@ export class AutoTradingScheduler {
         open: openPositions.length,
         pending: pendingPositions.length,
         total: activePositions.length,
-        activeWatchers: activeWatchersForWallet,
         strategyPositions: strategyPositions.length,
         strategyMax: strategyMaxConcurrent ?? 'unlimited',
       });
@@ -1079,7 +1078,7 @@ export class AutoTradingScheduler {
       log('📊 Dynamic exposure calculation', {
         activeWatchers: activeWatchersForWallet,
         exposurePerWatcher: activeWatchersForWallet > 0 ? `${(100 / activeWatchersForWallet).toFixed(1)}%` : 'N/A',
-        walletMaxConcurrent,
+        effectiveMaxConcurrent: activeWatchersForWallet || walletMaxConcurrent,
       });
 
       const riskValidation = await riskManagerService.validateNewPosition(
