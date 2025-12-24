@@ -247,6 +247,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   positionMode: varchar('position_mode', { length: 10 }).$type<'ONE_WAY' | 'HEDGE'>().default('ONE_WAY'),
   useLimitOrders: boolean('use_limit_orders').default(false).notNull(),
   useStochasticFilter: boolean('use_stochastic_filter').default(false).notNull(),
+  useAdxFilter: boolean('use_adx_filter').default(true).notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({

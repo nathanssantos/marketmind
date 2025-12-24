@@ -22,6 +22,7 @@ export interface BacktestConfig {
   slippagePercent?: number; // Slippage % for market orders - SL (default 0.05%)
   useMlFilter?: boolean; // Use ML model to filter setups (same as auto trading)
   useStochasticFilter?: boolean; // Only allow LONG when Stochastic K < 20, SHORT when K > 80
+  useAdxFilter?: boolean; // Only allow LONG when +DI > -DI, SHORT when -DI > +DI (ADX >= 20)
   useOptimizedSettings?: boolean; // Use strategy's optimizedParams instead of config values
 
   marketType?: 'SPOT' | 'FUTURES'; // Market type (default: SPOT)

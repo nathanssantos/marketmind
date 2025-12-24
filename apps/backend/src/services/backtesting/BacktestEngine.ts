@@ -1,8 +1,9 @@
-import { calculateATR, calculateStochastic } from '@marketmind/indicators';
+import { calculateADX, calculateATR, calculateStochastic } from '@marketmind/indicators';
 import { getThresholdForTimeframe } from '@marketmind/ml';
 import type { BacktestConfig, BacktestResult, ComputedIndicators, EvaluationContext, Interval, Kline, OptimizedBacktestParams, StrategyDefinition } from '@marketmind/types';
 import { HistoricalMarketContextService } from '../historical-market-context';
 import { TRPCError } from '@trpc/server';
+import { ADX_FILTER } from '../../constants';
 import { randomBytes } from 'crypto';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -376,6 +377,7 @@ export class BacktestEngine {
       let skippedRiskReward = 0;
       let skippedLimitExpired = 0;
       let skippedStochastic = 0;
+      let skippedAdx = 0;
 
       const cooldownMap = new Map<string, number>();
       const cooldownMinutes = effectiveConfig.cooldownMinutes ?? 15;
@@ -487,6 +489,50 @@ export class BacktestEngine {
                 const shortReason = `K was in overbought and hasn't crossed 50 yet (current K: ${currentStochK.toFixed(2)})`;
                 const reason = setup.direction === 'LONG' ? longReason : shortReason;
                 console.log(`[Backtest] Stochastic filter passed ${setup.direction} trade - ${reason}`);
+              }
+            }
+          }
+        }
+
+        if (effectiveConfig.useAdxFilter) {
+          const setupIndex = historicalKlines.findIndex(k => k.openTime === setup.openTime);
+
+          if (setupIndex >= ADX_FILTER.MIN_KLINES_REQUIRED) {
+            const adxKlines = historicalKlines.slice(
+              setupIndex - ADX_FILTER.MIN_KLINES_REQUIRED,
+              setupIndex + 1
+            );
+            const adxResult = calculateADX(adxKlines as Kline[], ADX_FILTER.PERIOD);
+            const currentAdx = adxResult.adx[adxResult.adx.length - 1];
+            const currentPlusDI = adxResult.plusDI[adxResult.plusDI.length - 1];
+            const currentMinusDI = adxResult.minusDI[adxResult.minusDI.length - 1];
+
+            if (currentAdx !== null && currentPlusDI !== null && currentMinusDI !== null) {
+              const isBullish = currentPlusDI > currentMinusDI;
+              const isBearish = currentMinusDI > currentPlusDI;
+              const isStrongTrend = currentAdx >= ADX_FILTER.TREND_THRESHOLD;
+
+              const isLongAllowed = setup.direction === 'LONG' && isBullish && isStrongTrend;
+              const isShortAllowed = setup.direction === 'SHORT' && isBearish && isStrongTrend;
+
+              if (!isLongAllowed && !isShortAllowed) {
+                skippedAdx++;
+                if (trades.length < 3) {
+                  const reason = !isStrongTrend
+                    ? `ADX (${currentAdx.toFixed(2)}) below threshold (${ADX_FILTER.TREND_THRESHOLD})`
+                    : setup.direction === 'LONG'
+                      ? `+DI (${currentPlusDI.toFixed(2)}) <= -DI (${currentMinusDI.toFixed(2)})`
+                      : `-DI (${currentMinusDI.toFixed(2)}) <= +DI (${currentPlusDI.toFixed(2)})`;
+                  console.log(`[Backtest] ADX filter blocked ${setup.direction} trade - ${reason}`);
+                }
+                continue;
+              }
+
+              if (trades.length < 3) {
+                const condition = setup.direction === 'LONG'
+                  ? `+DI (${currentPlusDI.toFixed(2)}) > -DI (${currentMinusDI.toFixed(2)}) with ADX (${currentAdx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`
+                  : `-DI (${currentMinusDI.toFixed(2)}) > +DI (${currentPlusDI.toFixed(2)}) with ADX (${currentAdx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`;
+                console.log(`[Backtest] ADX filter passed ${setup.direction} trade - ${condition}`);
               }
             }
           }
@@ -1125,12 +1171,13 @@ export class BacktestEngine {
         minProfit: skippedMinProfit,
         riskReward: skippedRiskReward,
         stochastic: skippedStochastic,
+        adx: skippedAdx,
         marketContext: skippedMarketContext,
         cooldown: skippedCooldown,
         dailyLossLimit: skippedDailyLossLimit,
         volatility: skippedVolatility,
         limitExpired: skippedLimitExpired,
-        total: skippedMaxPositions + skippedMaxExposure + skippedKlineNotFound + skippedTrend + skippedMinNotional + skippedMinProfit + skippedRiskReward + skippedStochastic + skippedMarketContext + skippedCooldown + skippedDailyLossLimit + skippedVolatility + skippedLimitExpired,
+        total: skippedMaxPositions + skippedMaxExposure + skippedKlineNotFound + skippedTrend + skippedMinNotional + skippedMinProfit + skippedRiskReward + skippedStochastic + skippedAdx + skippedMarketContext + skippedCooldown + skippedDailyLossLimit + skippedVolatility + skippedLimitExpired,
       });
       console.log('[Backtest] Results:', {
         trades: trades.length,

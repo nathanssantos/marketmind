@@ -1,7 +1,8 @@
-import { calculateStochastic } from '@marketmind/indicators';
+import { calculateADX, calculateStochastic } from '@marketmind/indicators';
 import { getThresholdForTimeframe } from '@marketmind/ml';
 import type { Interval, Kline, MarketType, TradingSetup } from '@marketmind/types';
 import { and, desc, eq, inArray } from 'drizzle-orm';
+import { ADX_FILTER } from '../constants';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -976,6 +977,97 @@ export class AutoTradingScheduler {
           hadOversold,
           hadOverbought,
           condition: setup.direction === 'LONG' ? longReason : shortReason,
+        });
+      }
+
+      if (config.useAdxFilter) {
+        const adxKlines = await db
+          .select()
+          .from(klines)
+          .where(
+            and(
+              eq(klines.symbol, watcher.symbol),
+              eq(klines.interval, watcher.interval)
+            )
+          )
+          .orderBy(desc(klines.openTime))
+          .limit(ADX_FILTER.MIN_KLINES_REQUIRED);
+
+        if (adxKlines.length < ADX_FILTER.MIN_KLINES_REQUIRED) {
+          log('⚠️ Insufficient klines for ADX calculation', {
+            required: ADX_FILTER.MIN_KLINES_REQUIRED,
+            available: adxKlines.length,
+          });
+          return;
+        }
+
+        const klinesForAdx = adxKlines.reverse().map(k => ({
+          ...k,
+          openTime: k.openTime.getTime(),
+          closeTime: k.closeTime.getTime(),
+        })) as Kline[];
+        const adxResult = calculateADX(klinesForAdx, ADX_FILTER.PERIOD);
+        const currentAdx = adxResult.adx[adxResult.adx.length - 1];
+        const currentPlusDI = adxResult.plusDI[adxResult.plusDI.length - 1];
+        const currentMinusDI = adxResult.minusDI[adxResult.minusDI.length - 1];
+
+        if (currentAdx === null || currentPlusDI === null || currentMinusDI === null) {
+          log('⚠️ ADX calculation returned null values', {
+            symbol: watcher.symbol,
+            interval: watcher.interval,
+            adx: currentAdx,
+            plusDI: currentPlusDI,
+            minusDI: currentMinusDI,
+          });
+          return;
+        }
+
+        const isBullish = currentPlusDI > currentMinusDI;
+        const isBearish = currentMinusDI > currentPlusDI;
+        const isStrongTrend = currentAdx >= ADX_FILTER.TREND_THRESHOLD;
+
+        const isLongAllowed = setup.direction === 'LONG' && isBullish && isStrongTrend;
+        const isShortAllowed = setup.direction === 'SHORT' && isBearish && isStrongTrend;
+
+        log('📊 ADX Filter Check', {
+          symbol: watcher.symbol,
+          interval: watcher.interval,
+          direction: setup.direction,
+          adx: currentAdx.toFixed(2),
+          plusDI: currentPlusDI.toFixed(2),
+          minusDI: currentMinusDI.toFixed(2),
+          trendThreshold: ADX_FILTER.TREND_THRESHOLD,
+          isBullish,
+          isBearish,
+          isStrongTrend,
+          isAllowed: isLongAllowed || isShortAllowed,
+        });
+
+        if (!isLongAllowed && !isShortAllowed) {
+          const reason = !isStrongTrend
+            ? `ADX (${currentAdx.toFixed(2)}) below threshold (${ADX_FILTER.TREND_THRESHOLD}) - weak trend`
+            : setup.direction === 'LONG'
+              ? `+DI (${currentPlusDI.toFixed(2)}) <= -DI (${currentMinusDI.toFixed(2)}) - bearish bias`
+              : `-DI (${currentMinusDI.toFixed(2)}) <= +DI (${currentPlusDI.toFixed(2)}) - bullish bias`;
+
+          log('🚫 ADX filter blocked trade', {
+            direction: setup.direction,
+            adx: currentAdx.toFixed(2),
+            plusDI: currentPlusDI.toFixed(2),
+            minusDI: currentMinusDI.toFixed(2),
+            reason,
+          });
+          return;
+        }
+
+        log('✅ ADX filter passed', {
+          direction: setup.direction,
+          adx: currentAdx.toFixed(2),
+          plusDI: currentPlusDI.toFixed(2),
+          minusDI: currentMinusDI.toFixed(2),
+          condition: setup.direction === 'LONG'
+            ? `+DI (${currentPlusDI.toFixed(2)}) > -DI (${currentMinusDI.toFixed(2)}) with ADX (${currentAdx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`
+            : `-DI (${currentMinusDI.toFixed(2)}) > +DI (${currentPlusDI.toFixed(2)}) with ADX (${currentAdx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`,
         });
       }
 

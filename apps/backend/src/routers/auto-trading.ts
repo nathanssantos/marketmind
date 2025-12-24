@@ -106,6 +106,8 @@ export const autoTradingRouter = router({
         enabledSetupTypes: z.array(z.string()).optional(),
         positionSizing: z.enum(['fixed', 'percentage', 'kelly']).optional(),
         useLimitOrders: z.boolean().optional(),
+        useStochasticFilter: z.boolean().optional(),
+        useAdxFilter: z.boolean().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -147,6 +149,10 @@ export const autoTradingRouter = router({
         {updateData.positionSizing = input.positionSizing;}
       if (input.useLimitOrders !== undefined)
         {updateData.useLimitOrders = input.useLimitOrders;}
+      if (input.useStochasticFilter !== undefined)
+        {updateData.useStochasticFilter = input.useStochasticFilter;}
+      if (input.useAdxFilter !== undefined)
+        {updateData.useAdxFilter = input.useAdxFilter;}
 
       await ctx.db
         .update(autoTradingConfig)

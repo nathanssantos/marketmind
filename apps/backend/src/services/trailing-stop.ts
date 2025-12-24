@@ -440,16 +440,16 @@ export class TrailingStopService {
           minTrailingDistancePercent: profile.minTrailingDistance,
         };
 
-        logger.info({
-          symbol,
-          interval,
-          atr: currentATR.toFixed(6),
-          price: currentPrice,
-          atrPercent: atrPercent.toFixed(2),
-          volatilityLevel: profile.level,
-          adjustedMultiplier: profile.atrMultiplier,
-          adjustedBreakeven: `${(profile.breakevenThreshold * 100).toFixed(2)}%`,
-        }, 'Using volatility-based trailing stop config');
+        // logger.info({
+        //   symbol,
+        //   interval,
+        //   atr: currentATR.toFixed(6),
+        //   price: currentPrice,
+        //   atrPercent: atrPercent.toFixed(2),
+        //   volatilityLevel: profile.level,
+        //   adjustedMultiplier: profile.atrMultiplier,
+        //   adjustedBreakeven: `${(profile.breakevenThreshold * 100).toFixed(2)}%`,
+        // }, 'Using volatility-based trailing stop config');
       }
 
       for (const execution of groupExecutions) {

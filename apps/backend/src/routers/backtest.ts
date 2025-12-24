@@ -29,6 +29,8 @@ export const backtestRouter = router({
         takeProfitPercent: z.number().positive().optional(),
         maxPositionSize: z.number().min(0).max(100).optional().default(10),
         commission: z.number().min(0).max(1).optional().default(0.001), // 0.1%
+        useStochasticFilter: z.boolean().optional().default(false),
+        useAdxFilter: z.boolean().optional().default(true),
       })
     )
     .mutation(async ({ input }) => {
@@ -63,6 +65,8 @@ export const backtestRouter = router({
           takeProfitPercent: input.takeProfitPercent,
           maxPositionSize: input.maxPositionSize,
           commission: input.commission,
+          useStochasticFilter: input.useStochasticFilter,
+          useAdxFilter: input.useAdxFilter,
         };
 
         const engine = new BacktestEngine();

@@ -36,6 +36,7 @@ interface ValidateOptions {
   withTrend: boolean;
   trailingStop: boolean;
   useMlFilter: boolean;
+  useAdxFilter: boolean;
   optimized: boolean;
   verbose: boolean;
   useMarketContext: boolean;
@@ -122,6 +123,7 @@ export async function validateCommand(options: ValidateOptions) {
       onlyWithTrend: options.withTrend ?? false,
       useTrailingStop: options.trailingStop ?? false,
       useMlFilter: options.useMlFilter ?? false,
+      useAdxFilter: options.useAdxFilter ?? true,
       useOptimizedSettings: options.optimized,
       useMarketContextFilter: options.useMarketContext ?? false,
       useCooldown: options.useCooldown ?? false,

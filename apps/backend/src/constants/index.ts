@@ -102,9 +102,16 @@ export const RISK_MANAGER = {
   PERCENT_DIVISOR: 100,
 } as const;
 
+export const ADX_FILTER = {
+  PERIOD: 14,
+  TREND_THRESHOLD: 20,
+  MIN_KLINES_REQUIRED: 35,
+} as const;
+
 export type FloatComparisonConstants = typeof FLOAT_COMPARISON;
 export type PositionSizingConstants = typeof POSITION_SIZING;
 export type ExitCalculatorConstants = typeof EXIT_CALCULATOR;
 export type BacktestEngineConstants = typeof BACKTEST_ENGINE;
 export type ContextAggregatorConstants = typeof CONTEXT_AGGREGATOR;
 export type RiskManagerConstants = typeof RISK_MANAGER;
+export type AdxFilterConstants = typeof ADX_FILTER;

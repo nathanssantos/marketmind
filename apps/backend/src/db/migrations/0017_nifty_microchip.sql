@@ -1,0 +1,1 @@
+ALTER TABLE "auto_trading_config" ADD COLUMN "use_adx_filter" boolean DEFAULT true NOT NULL;
