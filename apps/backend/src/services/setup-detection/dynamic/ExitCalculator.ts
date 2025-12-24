@@ -10,7 +10,7 @@ import { isParameterReference } from '@marketmind/types';
 
 import { EXIT_CALCULATOR, FLOAT_COMPARISON } from '../../../constants';
 import { logger } from '../../logger';
-import { calculateATRPercent, getVolatilityAdjustedMultiplier } from '../../volatility-profile';
+import { calculateATRPercent, getVolatilityAdjustedMultiplier, getVolatilityProfile } from '../../volatility-profile';
 import type { IndicatorEngine } from './IndicatorEngine';
 
 const {
@@ -19,6 +19,7 @@ const {
   DEFAULT_DISTANCE_PERCENT,
   DEFAULT_SWING_BUFFER_PERCENT,
   MIN_SWING_BUFFER_ATR,
+  MIN_STOP_DISTANCE_PERCENT,
   SWING_SKIP_RECENT,
   MIN_ENTRY_STOP_SEPARATION_PERCENT,
   BASE_CONFIDENCE,
@@ -41,29 +42,58 @@ export class ExitCalculator {
 
   /**
    * Calculate stop loss price
+   * Enforces volatility-based minimum distance from entry
    */
   calculateStopLoss(exit: ExitLevel, context: ExitContext): number {
-    const { direction, entryPrice } = context;
+    const { direction, entryPrice, indicators, currentIndex } = context;
+
+    let stopLoss: number;
 
     if (exit.type === 'swingHighLow') {
-      return this.calculateSwingHighLowStop(exit, context);
+      stopLoss = this.calculateSwingHighLowStop(exit, context);
+    } else {
+      const distance = this.calculateExitDistance(exit, context);
+
+      if (distance < 0) {
+        logger.warn({
+          direction,
+          entryPrice,
+          distance,
+          exitType: exit.type,
+        }, '⚠️  Negative distance for stop loss - using absolute value');
+        throw new Error(`Invalid negative distance (${distance}) for stop loss calculation`);
+      }
+
+      stopLoss = direction === 'LONG'
+        ? entryPrice - distance
+        : entryPrice + distance;
     }
 
-    const distance = this.calculateExitDistance(exit, context);
+    const atrValue = this.indicatorEngine.resolveIndicatorValue(indicators, 'atr', currentIndex) ?? 0;
+    const atrPercent = atrValue > 0 && entryPrice > 0 ? calculateATRPercent(atrValue, entryPrice) : 0;
+    const volatilityProfile = getVolatilityProfile(atrPercent);
+    const minStopPercent = volatilityProfile.breakevenThreshold * 100;
+    const minDistance = entryPrice * volatilityProfile.breakevenThreshold;
+    const currentDistance = Math.abs(entryPrice - stopLoss);
 
-    if (distance < 0) {
-      logger.warn({
+    if (currentDistance < minDistance) {
+      const adjustedStopLoss = direction === 'LONG'
+        ? entryPrice - minDistance
+        : entryPrice + minDistance;
+
+      logger.info({
         direction,
-        entryPrice,
-        distance,
-        exitType: exit.type,
-      }, '⚠️  Negative distance for stop loss - using absolute value');
-      throw new Error(`Invalid negative distance (${distance}) for stop loss calculation`);
-    }
+        entryPrice: entryPrice.toFixed(4),
+        originalStop: stopLoss.toFixed(4),
+        adjustedStop: adjustedStopLoss.toFixed(4),
+        originalDistance: `${((currentDistance / entryPrice) * 100).toFixed(2)}%`,
+        volatilityLevel: volatilityProfile.level,
+        atrPercent: atrPercent.toFixed(2),
+        minDistance: `${minStopPercent.toFixed(2)}%`,
+      }, '⚠️ Stop too tight - enforcing volatility-based minimum (same as trailing breakeven)');
 
-    const stopLoss = direction === 'LONG'
-      ? entryPrice - distance
-      : entryPrice + distance;
+      stopLoss = adjustedStopLoss;
+    }
 
     const isValid = direction === 'LONG' ? stopLoss < entryPrice : stopLoss > entryPrice;
     if (!isValid) {
@@ -71,7 +101,6 @@ export class ExitCalculator {
         direction,
         entryPrice: entryPrice.toFixed(4),
         stopLoss: stopLoss.toFixed(4),
-        distance: distance.toFixed(4),
         exitType: exit.type,
       }, '❌ INVALID STOP LOSS - SL must be below entry for LONG and above entry for SHORT');
       throw new Error(`Invalid stop loss: ${direction} SL ${stopLoss.toFixed(4)} must be ${direction === 'LONG' ? 'below' : 'above'} entry ${entryPrice.toFixed(4)}`);
@@ -82,9 +111,8 @@ export class ExitCalculator {
       exitType: exit.type,
       direction,
       entryPrice: entryPrice.toFixed(4),
-      distance: distance.toFixed(4),
       stopLoss: stopLoss.toFixed(4),
-      percentFromEntry: `${(((stopLoss - entryPrice) / entryPrice) * 100).toFixed(2)  }%`,
+      percentFromEntry: `${(((stopLoss - entryPrice) / entryPrice) * 100).toFixed(2)}%`,
       note: 'Initial SL - trailing stop may adjust this later',
     }, 'Stop loss calculated');
 

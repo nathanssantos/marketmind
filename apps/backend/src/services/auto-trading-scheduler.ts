@@ -89,6 +89,8 @@ const INTERVAL_TO_MS: Record<string, number> = {
   '1M': 30 * 24 * 60 * 60 * 1000,
 };
 
+const CANDLE_CLOSE_SAFETY_BUFFER_MS = 2000;
+
 const getPollingIntervalForTimeframe = (interval: string): number => {
   const intervalMs = INTERVAL_TO_MS[interval];
   if (!intervalMs) {
@@ -418,7 +420,7 @@ export class AutoTradingScheduler {
         symbol: k.symbol,
         interval: k.interval,
         openTime: k.openTime.getTime(),
-        closeTime: k.openTime.getTime(),
+        closeTime: k.closeTime.getTime(),
         open: k.open,
         high: k.high,
         low: k.low,
@@ -437,19 +439,18 @@ export class AutoTradingScheduler {
       }
 
       const now = Date.now();
-      const intervalMs = INTERVAL_TO_MS[watcher.interval] ?? 60000;
-      const candleCloseTime = lastCandle.openTime + intervalMs;
-      const isCandleClosed = now >= candleCloseTime;
+      const candleCloseTime = lastCandle.closeTime;
+      const safeCloseTime = candleCloseTime + CANDLE_CLOSE_SAFETY_BUFFER_MS;
+      const isCandleClosed = now >= safeCloseTime;
 
       if (!isCandleClosed) {
-        const remainingMs = candleCloseTime - now;
-        const remainingMinutes = Math.ceil(remainingMs / 60000);
-        log('⏳ Waiting for candle to close', {
+        log('⏳ Waiting for candle to close (with safety buffer)', {
           symbol: watcher.symbol,
           interval: watcher.interval,
           candleOpenTime: new Date(lastCandle.openTime).toISOString(),
           candleCloseTime: new Date(candleCloseTime).toISOString(),
-          remainingMinutes,
+          safeCloseTime: new Date(safeCloseTime).toISOString(),
+          remainingMs: safeCloseTime - now,
         });
         return;
       }
