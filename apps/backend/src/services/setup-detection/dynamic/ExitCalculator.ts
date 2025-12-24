@@ -10,6 +10,7 @@ import { isParameterReference } from '@marketmind/types';
 
 import { EXIT_CALCULATOR, FLOAT_COMPARISON } from '../../../constants';
 import { logger } from '../../logger';
+import { calculateATRPercent, getVolatilityAdjustedMultiplier } from '../../volatility-profile';
 import type { IndicatorEngine } from './IndicatorEngine';
 
 const {
@@ -168,6 +169,7 @@ export class ExitCalculator {
 
   /**
    * Calculate the distance from entry price for exit level
+   * Uses volatility-based adjustments for ATR multipliers
    */
   private calculateExitDistance(exit: ExitLevel, context: ExitContext): number {
     const { entryPrice } = context;
@@ -175,8 +177,26 @@ export class ExitCalculator {
     switch (exit.type) {
       case 'atr': {
         const atrValue = this.getATRValue(exit, context);
-        const multiplier = this.resolveOperand(exit.multiplier ?? DEFAULT_MULTIPLIER, context);
-        return atrValue * multiplier;
+        const baseMultiplier = this.resolveOperand(exit.multiplier ?? DEFAULT_MULTIPLIER, context);
+
+        let adjustedMultiplier = baseMultiplier;
+        if (atrValue > 0 && entryPrice > 0) {
+          const atrPercent = calculateATRPercent(atrValue, entryPrice);
+          adjustedMultiplier = getVolatilityAdjustedMultiplier(baseMultiplier, atrPercent);
+
+          if (adjustedMultiplier !== baseMultiplier) {
+            logger.debug({
+              exitType: 'atr',
+              atrValue: atrValue.toFixed(6),
+              entryPrice: entryPrice.toFixed(4),
+              atrPercent: atrPercent.toFixed(2),
+              baseMultiplier,
+              adjustedMultiplier: adjustedMultiplier.toFixed(2),
+            }, 'Volatility-adjusted ATR multiplier for exit distance');
+          }
+        }
+
+        return atrValue * adjustedMultiplier;
       }
 
       case 'percent': {
@@ -253,15 +273,28 @@ export class ExitCalculator {
       currentIndex
     ) ?? 0;
 
+    const atrPercent = atrValue > 0 && entryPrice > 0 ? calculateATRPercent(atrValue, entryPrice) : 0;
+
     if (exit.buffer !== undefined) {
       const bufferValue = this.resolveOperand(exit.buffer, context);
       if (exit.indicator === 'atr') {
         const effectiveBuffer = Math.max(bufferValue, MIN_SWING_BUFFER_ATR);
-        const bufferAmount = atrValue * effectiveBuffer;
+        const adjustedBuffer = atrPercent > 0
+          ? getVolatilityAdjustedMultiplier(effectiveBuffer, atrPercent)
+          : effectiveBuffer;
+        const bufferAmount = atrValue * adjustedBuffer;
         stopLoss = direction === 'SHORT' ? stopLoss + bufferAmount : stopLoss - bufferAmount;
         bufferApplied = true;
 
-        if (bufferValue < MIN_SWING_BUFFER_ATR) {
+        if (adjustedBuffer !== effectiveBuffer) {
+          logger.debug({
+            direction,
+            requestedBuffer: bufferValue,
+            baseBuffer: effectiveBuffer,
+            adjustedBuffer: adjustedBuffer.toFixed(3),
+            atrPercent: atrPercent.toFixed(2),
+          }, 'Volatility-adjusted ATR buffer for swing stop');
+        } else if (bufferValue < MIN_SWING_BUFFER_ATR) {
           logger.debug({
             direction,
             requestedBuffer: bufferValue,
@@ -277,7 +310,11 @@ export class ExitCalculator {
     }
 
     if (!bufferApplied) {
-      const minAtrBuffer = atrValue * MIN_SWING_BUFFER_ATR;
+      const baseMinAtrBuffer = MIN_SWING_BUFFER_ATR;
+      const adjustedMinAtrBuffer = atrPercent > 0
+        ? getVolatilityAdjustedMultiplier(baseMinAtrBuffer, atrPercent)
+        : baseMinAtrBuffer;
+      const minAtrBuffer = atrValue * adjustedMinAtrBuffer;
       const defaultPercentBuffer = stopLoss * (DEFAULT_SWING_BUFFER_PERCENT / 100);
       const defaultBufferAmount = Math.max(minAtrBuffer, defaultPercentBuffer);
       stopLoss = direction === 'SHORT' ? stopLoss + defaultBufferAmount : stopLoss - defaultBufferAmount;
@@ -285,6 +322,7 @@ export class ExitCalculator {
         direction,
         defaultBufferPercent: DEFAULT_SWING_BUFFER_PERCENT,
         minAtrBuffer: minAtrBuffer.toFixed(4),
+        adjustedAtrMultiplier: adjustedMinAtrBuffer.toFixed(3),
         bufferAmount: defaultBufferAmount.toFixed(4),
       }, 'Applied default swing buffer (max of ATR and percent)');
     }

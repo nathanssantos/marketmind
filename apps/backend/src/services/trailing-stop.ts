@@ -5,6 +5,7 @@ import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
 import { klines, priceCache, setupDetections, tradeExecutions } from '../db/schema';
 import { logger } from './logger';
+import { calculateATRPercent, getVolatilityProfile } from './volatility-profile';
 
 export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
   breakevenProfitThreshold: 0.0075,
@@ -15,6 +16,7 @@ export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
   atrMultiplier: 2.0,
   feePercent: 0.002,
   trailingDistancePercent: 0.5,
+  useVolatilityBasedThresholds: true,
 };
 
 export interface TrailingStopUpdate {
@@ -425,13 +427,39 @@ export class TrailingStopService {
       const atrValues = this.config.useATRMultiplier ? calculateATR(mappedKlines, 14) : [];
       const currentATR = atrValues.length > 0 ? atrValues[atrValues.length - 1] : undefined;
 
+      let effectiveConfig = this.config;
+      if (this.config.useVolatilityBasedThresholds && currentATR && currentATR > 0 && currentPrice > 0) {
+        const atrPercent = calculateATRPercent(currentATR, currentPrice);
+        const profile = getVolatilityProfile(atrPercent);
+
+        effectiveConfig = {
+          ...this.config,
+          atrMultiplier: profile.atrMultiplier,
+          breakevenProfitThreshold: profile.breakevenThreshold,
+          breakevenWithFeesThreshold: profile.feesThreshold,
+          minTrailingDistancePercent: profile.minTrailingDistance,
+        };
+
+        logger.info({
+          symbol,
+          interval,
+          atr: currentATR.toFixed(6),
+          price: currentPrice,
+          atrPercent: atrPercent.toFixed(2),
+          volatilityLevel: profile.level,
+          adjustedMultiplier: profile.atrMultiplier,
+          adjustedBreakeven: `${(profile.breakevenThreshold * 100).toFixed(2)}%`,
+        }, 'Using volatility-based trailing stop config');
+      }
+
       for (const execution of groupExecutions) {
-        const update = this.calculateTrailingStop(
+        const update = this.calculateTrailingStopWithConfig(
           execution,
           currentPrice,
           swingPoints,
           mappedKlines,
-          currentATR
+          currentATR,
+          effectiveConfig
         );
 
         if (update) {
@@ -444,12 +472,13 @@ export class TrailingStopService {
     return updates;
   }
 
-  private calculateTrailingStop(
+  private calculateTrailingStopWithConfig(
     execution: TradeExecution,
     currentPrice: number,
     swingPoints: Array<{ index: number; type: 'high' | 'low'; price: number; timestamp: number }>,
     klines: KlineType[],
-    atr?: number
+    atr: number | undefined,
+    config: TrailingStopOptimizationConfig
   ): TrailingStopUpdate | null {
     const entryPrice = parseFloat(execution.entryPrice);
     const currentStopLoss = execution.stopLoss ? parseFloat(execution.stopLoss) : null;
@@ -458,18 +487,14 @@ export class TrailingStopService {
     const entryTime = new Date(execution.openedAt).getTime();
     const now = Date.now();
 
-    // Find klines that include the entry candle (closeTime > entryTime) or started after
     const klinesFromEntry = klines.filter(k => k.closeTime > entryTime);
 
     if (klinesFromEntry.length === 0) {
-      // logger.debug({ executionId: execution.id, klinesCount: 0 }, 'Trailing stop waiting for entry candle data');
       return null;
     }
 
-    // The first kline is the entry candle
     const entryCandle = klinesFromEntry[0]!;
 
-    // Trailing stop only starts after the entry candle has closed
     if (now < entryCandle.closeTime) {
       logger.debug({
         executionId: execution.id,
@@ -480,7 +505,6 @@ export class TrailingStopService {
       return null;
     }
 
-    // Entry candle has closed - skip it and use only subsequent klines for highestPrice/lowestPrice
     const klinesForTrailing = klinesFromEntry.slice(1);
     const firstKlineAfterTrailingStarts = klinesForTrailing[0];
 
@@ -495,7 +519,6 @@ export class TrailingStopService {
       highestPrice = Math.max(...klinesForTrailing.map(k => parseFloat(k.high)));
       lowestPrice = Math.min(...klinesForTrailing.map(k => parseFloat(k.low)));
     } else {
-      // No subsequent candles yet, use current price as starting point
       highestPrice = currentPrice;
       lowestPrice = currentPrice;
     }
@@ -511,7 +534,7 @@ export class TrailingStopService {
       lowestPrice: isLong ? undefined : lowestPrice,
     };
 
-    const result = computeTrailingStop(input, this.config);
+    const result = computeTrailingStop(input, config);
 
     if (!result) return null;
 
@@ -523,7 +546,7 @@ export class TrailingStopService {
       side: execution.side,
       entryPrice,
       currentPrice,
-      profitPercent: (profitPercent * 100).toFixed(2),
+      profitPercent: `${(profitPercent * 100).toFixed(2)}%`,
       oldStopLoss: currentStopLoss,
       newStopLoss: result.newStopLoss,
       reason: result.reason,

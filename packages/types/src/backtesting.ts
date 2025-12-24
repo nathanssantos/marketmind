@@ -189,6 +189,17 @@ export interface PyramidingConfig {
   mlConfidenceBoost: number;
 }
 
+export type VolatilityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH' | 'EXTREME';
+
+export interface VolatilityProfile {
+  level: VolatilityLevel;
+  atrPercent: number;
+  atrMultiplier: number;
+  breakevenThreshold: number;
+  feesThreshold: number;
+  minTrailingDistance: number;
+}
+
 export interface TrailingStopOptimizationConfig {
   breakevenProfitThreshold: number;
   breakevenWithFeesThreshold?: number;
@@ -198,6 +209,7 @@ export interface TrailingStopOptimizationConfig {
   atrMultiplier: number;
   feePercent?: number;
   trailingDistancePercent?: number;
+  useVolatilityBasedThresholds?: boolean;
 }
 
 export interface TimeframeThreshold {
