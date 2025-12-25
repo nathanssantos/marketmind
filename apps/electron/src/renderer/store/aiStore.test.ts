@@ -1,13 +1,76 @@
 import { AIService } from '@/renderer/services/ai';
-import type { AIProviderType } from '@marketmind/types';
+import type { AIProviderType, Kline } from '@marketmind/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useAISettingsStore } from './aiSettingsStore';
 import type { ChartData } from './aiStore';
 import { useAIStore } from './aiStore';
+import { useAITradingStore } from './aiTradingStore';
+import { useConversationStore } from './conversationStore';
 
 vi.mock('@/renderer/services/ai');
 
+vi.mock('@/renderer/store/aiStore', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./aiStore')>();
+  return {
+    ...actual,
+  };
+});
+
+Object.defineProperty(globalThis, 'window', {
+  value: {
+    electron: {
+      secureStorage: {
+        getAIData: vi.fn().mockResolvedValue({ success: false }),
+        setAIData: vi.fn().mockResolvedValue({ success: true }),
+      },
+    },
+  },
+  writable: true,
+});
+
 describe('aiStore', () => {
   beforeEach(() => {
+    useConversationStore.setState({
+      conversations: [],
+      activeConversationId: null,
+      messages: [],
+    });
+
+    useAISettingsStore.setState({
+      settings: null,
+      provider: null,
+      model: null,
+      enableAIPatterns: true,
+    });
+
+    useAITradingStore.setState({
+      isAutoTradingActive: false,
+      tradingConfig: {
+        enabled: false,
+        riskProfile: 'moderate',
+        analysisInterval: '15m',
+        maxPositionSize: 10,
+        defaultStopLoss: 2,
+        defaultTakeProfit: 4,
+        maxTradesPerDay: 10,
+        maxTradesPerHour: 3,
+        minTimeBetweenTrades: 5,
+        enabledTimeframes: ['1m', '5m', '15m', '30m', '1h', '4h', '1d'],
+        emergencyStopLosses: 3,
+        notifyOnTrade: true,
+        notifyOnProfit: true,
+        notifyOnLoss: true,
+        maxDailyLoss: 5,
+        accountRiskPercent: 1,
+      },
+      trades: [],
+      tradingStats: null,
+      lastAnalysisTime: null,
+      lastTradeTime: null,
+      analysisInProgress: false,
+      tradingError: null,
+    });
+
     useAIStore.setState({
       conversations: [],
       activeConversationId: null,
@@ -19,6 +82,7 @@ describe('aiStore', () => {
       provider: null,
       model: null,
       responseProcessor: null,
+      enableAIPatterns: true,
     });
     vi.clearAllMocks();
   });
@@ -383,6 +447,7 @@ describe('aiStore', () => {
 
       const exported = useAIStore.getState().exportConversation(id);
 
+      useConversationStore.setState({ conversations: [], activeConversationId: null, messages: [] });
       useAIStore.setState({ conversations: [], activeConversationId: null });
 
       useAIStore.getState().importConversation(exported);

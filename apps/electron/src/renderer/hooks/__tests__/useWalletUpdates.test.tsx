@@ -1,33 +1,46 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { type ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useWalletUpdates } from '../useWalletUpdates';
+
+const mockSubscribeWallet = vi.fn();
+const mockUnsubscribeWallet = vi.fn();
+const mockOn = vi.fn();
+const mockOff = vi.fn();
+
+let mockIsConnected = true;
 
 vi.mock('../useWebSocket', () => ({
   useWebSocket: vi.fn(() => ({
+    isConnected: mockIsConnected,
     subscribe: {
-      wallet: vi.fn(),
+      wallet: mockSubscribeWallet,
     },
     unsubscribe: {
-      wallet: vi.fn(),
+      wallet: mockUnsubscribeWallet,
     },
+    on: mockOn,
+    off: mockOff,
   })),
 }));
 
-const mockTrpcUtils = {
-  wallet: {
-    list: {
-      invalidate: vi.fn(),
-    },
-    getById: {
-      invalidate: vi.fn(),
-    },
-  },
-};
+const mockInvalidateList = vi.fn();
+const mockInvalidateGetById = vi.fn();
 
-vi.mock('@renderer/services/trpc', () => ({
-  trpcUtils: mockTrpcUtils,
+vi.mock('../../utils/trpc', () => ({
+  trpc: {
+    useUtils: () => ({
+      wallet: {
+        list: {
+          invalidate: mockInvalidateList,
+        },
+        getById: {
+          invalidate: mockInvalidateGetById,
+        },
+      },
+    }),
+  },
 }));
 
 const createWrapper = () => {
@@ -44,101 +57,74 @@ const createWrapper = () => {
 };
 
 describe('useWalletUpdates', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIsConnected = true;
+  });
+
   it('should subscribe to wallet events when walletId is provided', async () => {
-    const { useWebSocket } = await import('../useWebSocket');
-    const mockSubscribe = vi.fn();
-    const mockUnsubscribe = vi.fn();
-
-    (useWebSocket as ReturnType<typeof vi.fn>).mockReturnValue({
-      subscribe: { wallet: mockSubscribe },
-      unsubscribe: { wallet: mockUnsubscribe },
-    });
-
-    const { result } = renderHook(() => useWalletUpdates('wallet-123'), {
+    renderHook(() => useWalletUpdates('wallet-123'), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => {
-      expect(mockSubscribe).toHaveBeenCalledWith('wallet-123', expect.any(Function));
+      expect(mockSubscribeWallet).toHaveBeenCalledWith('wallet-123');
     });
   });
 
   it('should not subscribe when walletId is not provided', async () => {
-    const { useWebSocket } = await import('../useWebSocket');
-    const mockSubscribe = vi.fn();
-
-    (useWebSocket as ReturnType<typeof vi.fn>).mockReturnValue({
-      subscribe: { wallet: mockSubscribe },
-      unsubscribe: { wallet: vi.fn() },
-    });
-
-    renderHook(() => useWalletUpdates(undefined), {
+    renderHook(() => useWalletUpdates(''), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => {
-      expect(mockSubscribe).not.toHaveBeenCalled();
+      expect(mockSubscribeWallet).not.toHaveBeenCalled();
     });
   });
 
   it('should unsubscribe on unmount', async () => {
-    const { useWebSocket } = await import('../useWebSocket');
-    const mockUnsubscribe = vi.fn();
-
-    (useWebSocket as ReturnType<typeof vi.fn>).mockReturnValue({
-      subscribe: { wallet: vi.fn() },
-      unsubscribe: { wallet: mockUnsubscribe },
-    });
-
     const { unmount } = renderHook(() => useWalletUpdates('wallet-123'), {
       wrapper: createWrapper(),
     });
 
+    await waitFor(() => {
+      expect(mockSubscribeWallet).toHaveBeenCalled();
+    });
+
     unmount();
 
-    await waitFor(() => {
-      expect(mockUnsubscribe).toHaveBeenCalledWith('wallet-123');
-    });
+    expect(mockUnsubscribeWallet).toHaveBeenCalledWith('wallet-123');
+    expect(mockOff).toHaveBeenCalledWith('wallet:update', expect.any(Function));
   });
 
   it('should resubscribe when walletId changes', async () => {
-    const { useWebSocket } = await import('../useWebSocket');
-    const mockSubscribe = vi.fn();
-    const mockUnsubscribe = vi.fn();
-
-    (useWebSocket as ReturnType<typeof vi.fn>).mockReturnValue({
-      subscribe: { wallet: mockSubscribe },
-      unsubscribe: { wallet: mockUnsubscribe },
-    });
-
-    const { rerender } = renderHook(({ walletId }) => useWalletUpdates(walletId), {
-      wrapper: createWrapper(),
-      initialProps: { walletId: 'wallet-123' as string | undefined },
-    });
+    const { rerender } = renderHook(
+      ({ walletId }) => useWalletUpdates(walletId),
+      {
+        wrapper: createWrapper(),
+        initialProps: { walletId: 'wallet-123' },
+      }
+    );
 
     await waitFor(() => {
-      expect(mockSubscribe).toHaveBeenCalledWith('wallet-123', expect.any(Function));
+      expect(mockSubscribeWallet).toHaveBeenCalledWith('wallet-123');
     });
 
     rerender({ walletId: 'wallet-456' });
 
     await waitFor(() => {
-      expect(mockUnsubscribe).toHaveBeenCalledWith('wallet-123');
-      expect(mockSubscribe).toHaveBeenCalledWith('wallet-456', expect.any(Function));
+      expect(mockUnsubscribeWallet).toHaveBeenCalledWith('wallet-123');
+      expect(mockSubscribeWallet).toHaveBeenCalledWith('wallet-456');
     });
   });
 
   it('should invalidate queries when wallet:update event received', async () => {
-    const { useWebSocket } = await import('../useWebSocket');
-    let walletUpdateCallback: ((wallet: unknown) => void) | undefined;
+    let capturedCallback: ((wallet: unknown) => void) | undefined;
 
-    (useWebSocket as ReturnType<typeof vi.fn>).mockReturnValue({
-      subscribe: {
-        wallet: vi.fn((_, cb) => {
-          walletUpdateCallback = cb;
-        }),
-      },
-      unsubscribe: { wallet: vi.fn() },
+    mockOn.mockImplementation((event: string, cb: (wallet: unknown) => void) => {
+      if (event === 'wallet:update') {
+        capturedCallback = cb;
+      }
     });
 
     renderHook(() => useWalletUpdates('wallet-123'), {
@@ -146,34 +132,46 @@ describe('useWalletUpdates', () => {
     });
 
     await waitFor(() => {
-      expect(walletUpdateCallback).toBeDefined();
+      expect(mockOn).toHaveBeenCalledWith('wallet:update', expect.any(Function));
     });
 
-    walletUpdateCallback?.({ id: 'wallet-123', balance: 10000 });
+    expect(capturedCallback).toBeDefined();
+
+    act(() => {
+      capturedCallback?.({ id: 'wallet-123', balance: 10000 });
+    });
 
     await waitFor(() => {
-      expect(mockTrpcUtils.wallet.list.invalidate).toHaveBeenCalled();
-      expect(mockTrpcUtils.wallet.getById.invalidate).toHaveBeenCalledWith({
-        id: 'wallet-123',
-      });
+      expect(mockInvalidateList).toHaveBeenCalled();
+      expect(mockInvalidateGetById).toHaveBeenCalled();
     });
   });
 
   it('should handle empty walletId string', async () => {
-    const { useWebSocket } = await import('../useWebSocket');
-    const mockSubscribe = vi.fn();
-
-    (useWebSocket as ReturnType<typeof vi.fn>).mockReturnValue({
-      subscribe: { wallet: mockSubscribe },
-      unsubscribe: { wallet: vi.fn() },
-    });
-
     renderHook(() => useWalletUpdates(''), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => {
-      expect(mockSubscribe).not.toHaveBeenCalled();
+      expect(mockSubscribeWallet).not.toHaveBeenCalled();
+    });
+  });
+
+  it('should return isConnected status', async () => {
+    const { result } = renderHook(() => useWalletUpdates('wallet-123'), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.isConnected).toBe(true);
+  });
+
+  it('should not subscribe when disabled', async () => {
+    renderHook(() => useWalletUpdates('wallet-123', false), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(mockSubscribeWallet).not.toHaveBeenCalled();
     });
   });
 });

@@ -129,7 +129,9 @@ describe('SettingsDialog', () => {
         expect(screen.getByText('settings.tabs.general')).toBeDefined();
         expect(screen.getByText('settings.tabs.chart')).toBeDefined();
         expect(screen.getByText('settings.tabs.ai')).toBeDefined();
-        expect(screen.getByText('settings.tabs.news')).toBeDefined();
+        expect(screen.getByText('settings.tabs.context')).toBeDefined();
+        expect(screen.getByText('settings.tabs.marketContext')).toBeDefined();
+        expect(screen.getByText('settings.tabs.patternDetection')).toBeDefined();
         expect(screen.getByText('settings.tabs.about')).toBeDefined();
     });
 
@@ -176,22 +178,6 @@ describe('SettingsDialog', () => {
         fireEvent.click(aiTab);
 
         expect(screen.getByText('AIConfigTab Content')).toBeDefined();
-    });
-
-    it('renders NewsConfigTab when news tab is clicked', () => {
-        renderWithChakra(
-            <SettingsDialog
-                isOpen={true}
-                onClose={mockOnClose}
-                advancedConfig={mockAdvancedConfig}
-                onAdvancedConfigChange={mockOnAdvancedConfigChange}
-            />
-        );
-
-        const newsTab = screen.getByText('settings.tabs.news');
-        fireEvent.click(newsTab);
-
-        expect(screen.getByText('NewsConfigTab Content')).toBeDefined();
     });
 
     it('renders AboutTab when about tab is clicked', () => {

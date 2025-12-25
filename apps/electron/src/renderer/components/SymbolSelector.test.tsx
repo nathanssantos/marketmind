@@ -166,7 +166,7 @@ describe('SymbolSelector', () => {
 
     await user.click(screen.getByText('Ethereum / USDT'));
 
-    expect(mockOnChange).toHaveBeenCalledWith('ETHUSDT');
+    expect(mockOnChange).toHaveBeenCalledWith('ETHUSDT', 'SPOT');
   });
 
   it('should close popover after selecting a symbol', async () => {
