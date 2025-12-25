@@ -171,7 +171,13 @@ export type ExitLevelType =
   | 'fixed'         // Fixed price value
   | 'indicator'     // Value from indicator (e.g., "bb.middle")
   | 'riskReward'    // Multiple of stop loss distance
-  | 'swingHighLow'; // Swing high/low of recent candles (including trigger candle)
+  | 'swingHighLow'  // Swing high/low of recent candles (including trigger candle)
+  | 'pivotBased';   // Enhanced pivot detection with volume confirmation and strength
+
+/**
+ * Pivot strength filter for pivotBased exits
+ */
+export type PivotStrengthFilter = 'weak' | 'medium' | 'strong' | 'any';
 
 /**
  * Stop loss or take profit level definition
@@ -185,6 +191,12 @@ export interface ExitLevel {
   priorSwingLookback?: number;    // For swingHighLow SL: lookback for finding PRIOR swing (different from entry)
   buffer?: ConditionOperand;      // For swingHighLow: buffer to add (ATR multiplier or percent, min 0.3 for SL)
   fallback?: ExitLevel;           // Fallback if primary fails
+  pivotConfig?: {                 // For pivotBased exits
+    minStrength?: PivotStrengthFilter;  // Minimum pivot strength (default: 'any')
+    requireVolumeConfirmation?: boolean; // Only use volume-confirmed pivots (default: false)
+    volumeLookback?: number;      // Volume averaging lookback (default: 20)
+    volumeMultiplier?: number;    // Volume confirmation multiplier (default: 1.2)
+  };
 }
 
 /**
