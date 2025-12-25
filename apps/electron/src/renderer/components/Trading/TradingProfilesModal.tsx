@@ -1,5 +1,6 @@
 import { Dialog } from '@/renderer/components/ui/dialog';
 import { CloseButton, Separator, Stack } from '@chakra-ui/react';
+import { SetupToggleSection } from '@renderer/components/Trading/SetupToggleSection';
 import { TradingProfilesManager } from '@renderer/components/Trading/TradingProfilesManager';
 import { WatcherManager } from '@renderer/components/Trading/WatcherManager';
 import { memo } from 'react';
@@ -32,6 +33,8 @@ export const TradingProfilesModal = memo(({ isOpen, onClose }: TradingProfilesMo
           <Dialog.Body overflowY="auto" pb={6}>
             <Stack gap={6}>
               <TradingProfilesManager />
+              <Separator />
+              <SetupToggleSection />
               <Separator />
               <WatcherManager />
             </Stack>

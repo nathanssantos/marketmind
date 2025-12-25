@@ -1126,6 +1126,7 @@
   "setupConfig": {
     "configureSetups": "Configurar Setups de Trading",
     "enabledSetups": "Setups Habilitados",
+    "enabledSetupsDescription": "Seleccione qué setups de trading monitorearán los watchers",
     "toggleAll": "Alternar Todos los Setups",
     "tips": {
       "confidence": "Filtros de confianza más altos muestran solo las configuraciones más fuertes",

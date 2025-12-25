@@ -10,12 +10,10 @@ import {
   LuDollarSign,
   LuGrid3X3,
   LuHistory,
-  LuMoon,
   LuPlus,
   LuRuler,
   LuScan,
-  LuSettings,
-  LuSun
+  LuSettings
 } from 'react-icons/lu';
 import { useChartWindows } from '../../hooks/useChartWindows';
 import type { MarketDataService } from '../../services/market/MarketDataService';
@@ -23,11 +21,9 @@ import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { SymbolSelector } from '../SymbolSelector';
 import { TradingProfilesModal } from '../Trading/TradingProfilesModal';
-import { useColorMode } from '../ui/color-mode';
 import { Logo } from '../ui/logo';
 import { TooltipWrapper } from '../ui/Tooltip';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
-import { SetupTogglePopover } from './SetupTogglePopover';
 
 export interface ToolbarProps {
   marketService?: MarketDataService;
@@ -119,7 +115,6 @@ export const Toolbar = memo(({
   onDetectPatterns: _onDetectPatterns,
 }: ToolbarProps) => {
   const { t } = useTranslation();
-  const { colorMode, toggleColorMode } = useColorMode();
   const globalActions = useGlobalActionsOptional();
   const { openChartWindow } = useChartWindows();
 
@@ -326,7 +321,6 @@ export const Toolbar = memo(({
               <Box w="1px" h="32px" bg="border" flexShrink={0} />
 
               <HStack gap={1} flexWrap="nowrap">
-                <SetupTogglePopover />
                 <TooltipWrapper
                   label={t('tradingProfiles.title')}
                   showArrow
@@ -361,30 +355,17 @@ export const Toolbar = memo(({
             <>
               <Box w="1px" h="32px" bg="border" flexShrink={0} />
 
-              <HStack gap={1}>
-                <TooltipWrapper label={`${t('header.theme')}: ${colorMode === 'dark' ? t('header.themeDark') : t('header.themeLight')}`} placement="bottom" showArrow>
-                  <IconButton
-                    aria-label={t('header.toggleColorMode')}
-                    onClick={toggleColorMode}
-                    variant="solid"
-                    colorPalette="blue"
-                    size="2xs"
-                  >
-                    {colorMode === 'dark' ? <LuSun /> : <LuMoon />}
-                  </IconButton>
-                </TooltipWrapper>
-                <TooltipWrapper label={t('header.settings')} placement="bottom" showArrow>
-                  <IconButton
-                    aria-label={t('header.settings')}
-                    onClick={globalActions?.openSettings}
-                    variant="solid"
-                    colorPalette="blue"
-                    size="2xs"
-                  >
-                    <LuSettings />
-                  </IconButton>
-                </TooltipWrapper>
-              </HStack>
+              <TooltipWrapper label={t('header.settings')} placement="bottom" showArrow>
+                <IconButton
+                  aria-label={t('header.settings')}
+                  onClick={globalActions?.openSettings}
+                  variant="solid"
+                  colorPalette="blue"
+                  size="2xs"
+                >
+                  <LuSettings />
+                </IconButton>
+              </TooltipWrapper>
             </>
           )}
         </Flex>
