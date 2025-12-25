@@ -382,7 +382,9 @@ export class AutoTradingScheduler {
           const inserted = await backfillHistoricalKlines(
             watcher.symbol,
             watcher.interval as Interval,
-            startTime
+            startTime,
+            new Date(),
+            watcher.marketType
           );
           log('✅ Historical klines fetched', { symbol: watcher.symbol, interval: watcher.interval, inserted });
 

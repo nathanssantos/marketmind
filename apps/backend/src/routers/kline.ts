@@ -358,7 +358,8 @@ export const klineRouter = router({
         input.symbol,
         input.interval as Interval,
         startTime,
-        endTime
+        endTime,
+        marketType
       );
 
       return {

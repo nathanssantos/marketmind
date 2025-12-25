@@ -1,5 +1,4 @@
 import type { Interval } from '@marketmind/types';
-import BinanceModule from 'binance-api-node';
 import { db } from '../db';
 import { klines } from '../db/schema';
 import { logger } from './logger';
@@ -7,19 +6,17 @@ import { logger } from './logger';
 const BATCH_SIZE = 1000;
 const RATE_LIMIT_DELAY = 200;
 
-const Binance = (BinanceModule as any).default || BinanceModule;
-const binanceClient = typeof Binance === 'function' ? Binance() : null;
-
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const backfillHistoricalKlines = async (
   symbol: string,
   interval: Interval,
   startTime: Date,
-  endTime: Date = new Date()
+  endTime: Date = new Date(),
+  marketType: 'SPOT' | 'FUTURES' = 'SPOT'
 ): Promise<number> => {
   logger.info(
-    { symbol, interval, startTime: startTime.toISOString(), endTime: endTime.toISOString() },
+    { symbol, interval, marketType, startTime: startTime.toISOString(), endTime: endTime.toISOString() },
     'Starting historical klines backfill'
   );
 
@@ -28,14 +25,20 @@ export const backfillHistoricalKlines = async (
   let currentStartTime = startTime.getTime();
   const finalEndTime = endTime.getTime();
 
+  const baseUrl = marketType === 'FUTURES'
+    ? 'https://fapi.binance.com/fapi/v1/klines'
+    : 'https://api.binance.com/api/v3/klines';
+
   while (currentStartTime < finalEndTime) {
     try {
-      const candles = await binanceClient.candles({
-        symbol,
-        interval,
-        startTime: currentStartTime,
-        limit: BATCH_SIZE,
-      });
+      const url = `${baseUrl}?symbol=${symbol}&interval=${interval}&startTime=${currentStartTime}&limit=${BATCH_SIZE}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Binance ${marketType} API error: ${response.status} ${response.statusText}`);
+      }
+
+      const candles = await response.json();
 
       if (candles.length === 0) break;
 
@@ -45,34 +48,35 @@ export const backfillHistoricalKlines = async (
       const klinesData = candles.map((candle: any) => ({
         symbol,
         interval,
-        openTime: new Date(candle.openTime),
-        open: candle.open,
-        high: candle.high,
-        low: candle.low,
-        close: candle.close,
-        volume: candle.volume,
-        closeTime: new Date(candle.closeTime),
-        quoteVolume: candle.quoteVolume,
-        trades: candle.trades,
-        takerBuyBaseVolume: candle.baseAssetVolume || candle.takerBuyBaseVolume || '0',
-        takerBuyQuoteVolume: candle.quoteAssetVolume || candle.takerBuyQuoteVolume || '0',
+        marketType,
+        openTime: new Date(candle[0]),
+        open: candle[1],
+        high: candle[2],
+        low: candle[3],
+        close: candle[4],
+        volume: candle[5],
+        closeTime: new Date(candle[6]),
+        quoteVolume: candle[7],
+        trades: candle[8],
+        takerBuyBaseVolume: candle[9] || '0',
+        takerBuyQuoteVolume: candle[10] || '0',
       }));
 
       await db.insert(klines).values(klinesData).onConflictDoNothing();
 
       totalInserted += klinesData.length;
-      currentStartTime = lastCandle.openTime + intervalMs;
+      currentStartTime = lastCandle[0] + intervalMs;
 
       logger.debug({ inserted: klinesData.length, total: totalInserted }, 'Inserted klines batch');
 
       await sleep(RATE_LIMIT_DELAY);
     } catch (error) {
-      logger.error({ error }, 'Error fetching historical klines');
+      logger.error({ error, marketType }, 'Error fetching historical klines');
       throw error;
     }
   }
 
-  logger.info({ symbol, interval, totalInserted }, 'Historical klines backfill complete');
+  logger.info({ symbol, interval, marketType, totalInserted }, 'Historical klines backfill complete');
   return totalInserted;
 };
 
