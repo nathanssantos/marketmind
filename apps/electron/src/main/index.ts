@@ -187,6 +187,28 @@ const createWindow = (): void => {
     }
   });
 
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error('[Main] Renderer process gone:', details.reason, details.exitCode);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (details.reason === 'crashed' || details.reason === 'oom' || details.reason === 'killed') {
+        console.log('[Main] Attempting to reload window after crash...');
+        setTimeout(() => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.reload();
+          }
+        }, 1000);
+      }
+    }
+  });
+
+  mainWindow.webContents.on('unresponsive', () => {
+    console.warn('[Main] Renderer process became unresponsive');
+  });
+
+  mainWindow.webContents.on('responsive', () => {
+    console.log('[Main] Renderer process is responsive again');
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
     updateManager?.stopAutoCheckInterval();

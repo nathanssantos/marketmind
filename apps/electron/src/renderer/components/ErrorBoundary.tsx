@@ -1,5 +1,6 @@
 import { Box, Button, Heading, Text, VStack } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
+import { useCallback, useState } from 'react';
 import { ErrorBoundary as ReactErrorBoundary } from 'react-error-boundary';
 import type { FallbackProps } from 'react-error-boundary';
 
@@ -36,6 +37,11 @@ const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => (
           <Text color="red.300" fontSize="sm" fontFamily="mono">
             {error.message}
           </Text>
+          {error.stack && (
+            <Text color="gray.500" fontSize="xs" fontFamily="mono" mt={2}>
+              {error.stack.split('\n').slice(0, 5).join('\n')}
+            </Text>
+          )}
         </Box>
       )}
       <Box display="flex" gap={4}>
@@ -51,14 +57,47 @@ const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => (
 );
 
 const handleError = (error: Error, info: { componentStack?: string | null }) => {
-  console.error('[ErrorBoundary] Caught error:', error, info);
+  console.error('[ErrorBoundary] Caught error:', error);
+  console.error('[ErrorBoundary] Component stack:', info.componentStack);
+  try {
+    const errorLog = {
+      message: error.message,
+      stack: error.stack,
+      componentStack: info.componentStack,
+      timestamp: new Date().toISOString(),
+      url: window.location.href,
+    };
+    localStorage.setItem('marketmind:lastError', JSON.stringify(errorLog));
+  } catch (e) {
+    console.error('[ErrorBoundary] Failed to save error log:', e);
+  }
 };
 
-export const ErrorBoundary = ({ children, fallback }: Props) => (
-  <ReactErrorBoundary
-    FallbackComponent={fallback ? () => <>{fallback}</> : ErrorFallback}
-    onError={handleError}
-  >
-    {children}
-  </ReactErrorBoundary>
-);
+const handleReset = () => {
+  console.log('[ErrorBoundary] Resetting error boundary...');
+  try {
+    sessionStorage.removeItem('marketmind:errorState');
+  } catch (e) {
+    console.error('[ErrorBoundary] Failed to clear error state:', e);
+  }
+};
+
+export const ErrorBoundary = ({ children, fallback }: Props) => {
+  const [resetKey, setResetKey] = useState(0);
+
+  const onReset = useCallback(() => {
+    handleReset();
+    setResetKey(prev => prev + 1);
+  }, []);
+
+  return (
+    <ReactErrorBoundary
+      key={resetKey}
+      FallbackComponent={fallback ? () => <>{fallback}</> : ErrorFallback}
+      onError={handleError}
+      onReset={onReset}
+    >
+      {children}
+    </ReactErrorBoundary>
+  );
+};
