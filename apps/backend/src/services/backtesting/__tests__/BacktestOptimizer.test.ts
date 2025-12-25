@@ -20,36 +20,43 @@ const createBaseConfig = (): BacktestConfig => ({
 });
 
 const createMockResult = (config: BacktestConfig): BacktestResult => {
-  const sl = (config as Record<string, number>).stopLossPercent ?? 2;
-  const tp = (config as Record<string, number>).takeProfitPercent ?? 4;
+  const sl = (config as unknown as Record<string, number>).stopLossPercent ?? 2;
+  const tp = (config as unknown as Record<string, number>).takeProfitPercent ?? 4;
   const score = tp / sl;
 
   return {
     id: 'test',
-    status: 'SUCCESS',
-    startDate: config.startDate,
-    endDate: config.endDate,
+    status: 'COMPLETED',
+    startTime: config.startDate,
+    endTime: config.endDate,
+    duration: 1000,
     trades: [],
     metrics: {
       totalTrades: 50,
+      winningTrades: 25,
+      losingTrades: 25,
       winRate: 50 + score * 5,
       totalPnl: 1000 * score,
       totalPnlPercent: 10 * score,
+      avgPnl: 20 * score,
+      avgPnlPercent: score * 0.2,
+      grossWinRate: 50 + score * 5,
+      grossProfitFactor: 1 + score * 0.3,
+      totalGrossPnl: 1100 * score,
       maxDrawdown: 500,
       maxDrawdownPercent: 5,
       profitFactor: 1 + score * 0.3,
       sharpeRatio: score,
       avgWin: 100,
       avgLoss: 50,
-      avgWinPercent: 2,
-      avgLossPercent: 1,
       largestWin: 300,
       largestLoss: 150,
+      totalCommission: 100,
       avgTradeDuration: 24,
-      avgBarsInTrade: 6,
+      avgWinDuration: 30,
+      avgLossDuration: 18,
     } as BacktestMetrics,
     equityCurve: [],
-    drawdownCurve: [],
     config,
   } as BacktestResult;
 };

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PositionSizer, type PositionSizingConfig } from '../PositionSizer';
+import { PositionSizer } from '../PositionSizer';
 
 describe('PositionSizer', () => {
   describe('calculatePositionSize', () => {

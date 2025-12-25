@@ -36,7 +36,7 @@ async function debugShortFilter() {
 
     const kline = klines[idx];
     const close = parseFloat(kline.close);
-    const ema = ema200[idx];
+    const ema = ema200[idx] ?? null;
 
     const isBelowEMA = ema !== null && close < ema;
     const status = isBelowEMA ? '✅ ALLOWED' : '❌ SHOULD BE BLOCKED';

@@ -5,7 +5,6 @@ import type { BacktestTrade } from '@marketmind/types';
 const createMockTrade = (pnl: number): BacktestTrade => ({
   id: `trade-${Math.random()}`,
   setupId: 'test-setup',
-  symbol: 'BTCUSDT',
   side: 'LONG',
   entryPrice: 50000,
   exitPrice: pnl > 0 ? 51000 : 49000,
@@ -17,6 +16,7 @@ const createMockTrade = (pnl: number): BacktestTrade => ({
   commission: 10,
   netPnl: pnl - 10,
   exitReason: 'TAKE_PROFIT',
+  status: 'CLOSED',
 });
 
 describe('PermutationTest', () => {

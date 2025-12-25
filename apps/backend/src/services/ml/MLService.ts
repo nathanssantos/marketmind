@@ -28,7 +28,7 @@ const DEFAULT_CONFIG: MLServiceConfig = {
   blendWeight: 0.4,
 };
 
-interface MLStats {
+export interface MLStats {
   predictions: number;
   accepted: number;
   rejected: number;

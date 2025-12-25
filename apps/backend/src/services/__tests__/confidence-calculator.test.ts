@@ -79,7 +79,9 @@ describe('ConfidenceCalculator', () => {
         avgWin: '8.00',
         avgLoss: '-3.00',
         avgRr: '2.67',
-        profitFactor: '2.67',
+        maxDrawdown: '5.00',
+        avgSlippagePercent: '0.01',
+        avgExecutionTimeMs: 50,
       });
 
       const params: ConfidenceParams = {
@@ -122,7 +124,9 @@ describe('ConfidenceCalculator', () => {
         avgWin: '8.00',
         avgLoss: '-3.00',
         avgRr: '2.67',
-        profitFactor: '2.67',
+        maxDrawdown: '15.00',
+        avgSlippagePercent: '0.01',
+        avgExecutionTimeMs: 50,
       });
 
       const params: ConfidenceParams = {
@@ -185,7 +189,9 @@ describe('ConfidenceCalculator', () => {
         avgWin: '8.00',
         avgLoss: '-3.00',
         avgRr: '2.67',
-        profitFactor: '2.67',
+        maxDrawdown: '5.00',
+        avgSlippagePercent: '0.01',
+        avgExecutionTimeMs: 50,
       });
 
       const params: ConfidenceParams = {
@@ -290,7 +296,9 @@ describe('ConfidenceCalculator', () => {
         avgWin: '8.00',
         avgLoss: '-3.00',
         avgRr: '2.67',
-        profitFactor: '2.67',
+        maxDrawdown: '2.00',
+        avgSlippagePercent: '0.01',
+        avgExecutionTimeMs: 50,
       });
 
       const params: ConfidenceParams = {
@@ -331,7 +339,9 @@ describe('ConfidenceCalculator', () => {
         avgWin: '8.00',
         avgLoss: '-3.00',
         avgRr: '2.67',
-        profitFactor: '2.67',
+        maxDrawdown: '25.00',
+        avgSlippagePercent: '0.01',
+        avgExecutionTimeMs: 50,
       });
 
       const params: ConfidenceParams = {

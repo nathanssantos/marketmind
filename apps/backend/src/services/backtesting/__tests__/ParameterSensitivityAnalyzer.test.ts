@@ -8,30 +8,37 @@ import type { BacktestConfig, BacktestResult, Interval } from '@marketmind/types
 
 const createMockBacktestResult = (sharpeRatio: number, totalPnlPercent: number): BacktestResult => ({
   id: 'test-result',
-  status: 'SUCCESS',
-  startDate: '2024-01-01',
-  endDate: '2024-03-01',
+  status: 'COMPLETED',
+  startTime: '2024-01-01T00:00:00Z',
+  endTime: '2024-03-01T00:00:00Z',
+  duration: 1000,
   trades: [],
   metrics: {
     totalTrades: 10,
+    winningTrades: 5,
+    losingTrades: 5,
     winRate: 50,
     totalPnl: 1000,
     totalPnlPercent,
+    avgPnl: 100,
+    avgPnlPercent: 1,
+    grossWinRate: 50,
+    grossProfitFactor: 1.5,
+    totalGrossPnl: 1100,
     maxDrawdown: 0.1,
     maxDrawdownPercent: 10,
     profitFactor: 1.5,
     sharpeRatio,
     avgWin: 200,
     avgLoss: 100,
-    avgWinPercent: 2,
-    avgLossPercent: 1,
     largestWin: 500,
     largestLoss: 200,
+    totalCommission: 100,
     avgTradeDuration: 24,
-    avgBarsInTrade: 6,
+    avgWinDuration: 30,
+    avgLossDuration: 18,
   },
   equityCurve: [],
-  drawdownCurve: [],
   config: {} as BacktestConfig,
 });
 
@@ -80,8 +87,8 @@ describe('ParameterSensitivityAnalyzer', () => {
       };
 
       const mockRunner = vi.fn(async (cfg: BacktestConfig) => {
-        const sl = (cfg as Record<string, number>).stopLoss ?? 1;
-        const tp = (cfg as Record<string, number>).takeProfit ?? 3;
+        const sl = (cfg as unknown as Record<string, number>).stopLoss ?? 1;
+        const tp = (cfg as unknown as Record<string, number>).takeProfit ?? 3;
         return createMockBacktestResult(sl + tp * 0.1, sl * tp);
       });
 

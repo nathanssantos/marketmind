@@ -27,7 +27,7 @@ async function debugSolShorts() {
   for (let i = 250; i < klines.length; i++) {
     const kline = klines[i];
     const close = parseFloat(kline.close);
-    const ema = ema200[i];
+    const ema = ema200[i] ?? null;
 
     for (const trade of shortTrades) {
       if (Math.abs(close - trade.entry) < 0.5) {
@@ -50,17 +50,17 @@ async function debugSolShorts() {
   for (let i = userStartIdx; i < Math.min(userStartIdx + 20, klines.length); i++) {
     const k = klines[i];
     const close = parseFloat(k.close);
-    const ema = ema200[i];
+    const ema = ema200[i] ?? null;
     const date = new Date(k.openTime).toISOString().slice(0, 10);
     const trend = ema !== null ? (close > ema ? 'BULL' : 'BEAR') : 'N/A';
-    console.log(`${date}: Close=$${close.toFixed(2)}, EMA200=$${ema?.toFixed(2) || 'NULL'}, Trend=${trend}`);
+    console.log(`${date}: Close=$${close.toFixed(2)}, EMA200=$${ema?.toFixed(2) ?? 'NULL'}, Trend=${trend}`);
   }
 
   console.log('\n=== Count days above/below EMA200 in trading period ===');
   let above = 0, below = 0, nullCount = 0;
   for (let i = userStartIdx; i < klines.length; i++) {
     const close = parseFloat(klines[i].close);
-    const ema = ema200[i];
+    const ema = ema200[i] ?? null;
     if (ema === null) nullCount++;
     else if (close > ema) above++;
     else below++;
