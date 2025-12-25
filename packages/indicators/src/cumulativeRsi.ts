@@ -6,23 +6,6 @@ export interface CumulativeRSIResult {
   rsiValues: (number | null)[];
 }
 
-/**
- * Cumulative RSI Indicator (Larry Connors)
- *
- * Sum of RSI values over N periods.
- * Used to identify extended oversold/overbought conditions.
- *
- * Original rules from "Short Term Trading Strategies That Work":
- * - Buy when Cumulative RSI(2, 2 days) < 10
- * - Sell when close > 5-day SMA
- *
- * Research shows 83% win rate with this strategy
- *
- * @param klines - Array of candlestick data
- * @param rsiPeriod - RSI calculation period (default: 2)
- * @param sumPeriod - Number of periods to sum (default: 2)
- * @returns Object with cumulative RSI values and underlying RSI values
- */
 export const calculateCumulativeRSI = (
   klines: Kline[],
   rsiPeriod: number = 2,
@@ -62,15 +45,6 @@ export const calculateCumulativeRSI = (
   };
 };
 
-/**
- * Check if RSI has dropped for N consecutive days
- * Used in R3 Strategy
- *
- * @param klines - Array of candlestick data
- * @param rsiPeriod - RSI calculation period (default: 2)
- * @param consecutiveDays - Days required dropping (default: 3)
- * @returns Array of booleans indicating consecutive drops
- */
 export const calculateRSIConsecutiveDrops = (
   klines: Kline[],
   rsiPeriod: number = 2,
@@ -103,18 +77,6 @@ export const calculateRSIConsecutiveDrops = (
   return result;
 };
 
-/**
- * R3 Strategy Entry Detection
- *
- * Rules:
- * 1. RSI(2) drops 3 days in a row
- * 2. First day's drop is from a reading below 60
- * 3. RSI(2) is today below 10
- *
- * @param klines - Array of candlestick data
- * @param rsiPeriod - RSI calculation period (default: 2)
- * @returns Array of booleans indicating R3 entry signal
- */
 export const calculateR3Entry = (
   klines: Kline[],
   rsiPeriod: number = 2

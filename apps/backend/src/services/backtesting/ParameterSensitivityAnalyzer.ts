@@ -1,23 +1,3 @@
-/**
- * Parameter Sensitivity Analyzer
- *
- * Analyzes strategy robustness by testing parameter variations:
- * - Identifies critical vs robust parameters
- * - Generates sensitivity heatmaps
- * - Tests parameter ranges systematically
- * - Measures performance degradation
- *
- * Process:
- * 1. Define parameter ranges to test
- * 2. Run backtests for each parameter combination
- * 3. Analyze performance across variations
- * 4. Identify stable parameter regions
- * 5. Flag over-optimized parameters
- *
- * References:
- * - Pardo, R. (2008) "The Evaluation and Optimization of Trading Strategies"
- * - Aronson, D. (2006) "Evidence-Based Technical Analysis"
- */
 
 import type { BacktestConfig, BacktestResult } from '@marketmind/types';
 
@@ -77,9 +57,6 @@ export class ParameterSensitivityAnalyzer {
     CRITICAL: 1.0,
   };
 
-  /**
-   * Analyze parameter sensitivity
-   */
   static async analyze(
     config: ParameterTestConfig,
     backtestRunner: (config: BacktestConfig) => Promise<BacktestResult>
@@ -130,9 +107,6 @@ export class ParameterSensitivityAnalyzer {
     };
   }
 
-  /**
-   * Generate all parameter combinations
-   */
   private static generateParameterCombinations(
     ranges: ParameterRange[]
   ): Array<Record<string, number>> {
@@ -158,9 +132,6 @@ export class ParameterSensitivityAnalyzer {
     return combinations;
   }
 
-  /**
-   * Apply parameter values to config
-   */
   private static applyParameters(
     baseConfig: BacktestConfig,
     parameters: Record<string, number>
@@ -171,9 +142,6 @@ export class ParameterSensitivityAnalyzer {
     };
   }
 
-  /**
-   * Extract metric value from backtest result
-   */
   private static extractMetric(
     result: BacktestResult,
     metric: 'sharpeRatio' | 'totalReturn' | 'profitFactor' | 'winRate'
@@ -190,9 +158,6 @@ export class ParameterSensitivityAnalyzer {
     }
   }
 
-  /**
-   * Analyze single parameter sensitivity
-   */
   private static analyzeParameter(
     paramRange: ParameterRange,
     allTests: ParameterTestResult[],
@@ -252,9 +217,6 @@ export class ParameterSensitivityAnalyzer {
     };
   }
 
-  /**
-   * Classify parameter sensitivity
-   */
   private static classifySensitivity(maxDeviation: number): 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' {
     if (maxDeviation >= this.SENSITIVITY_THRESHOLDS.CRITICAL) return 'CRITICAL';
     if (maxDeviation >= this.SENSITIVITY_THRESHOLDS.HIGH) return 'HIGH';
@@ -262,9 +224,6 @@ export class ParameterSensitivityAnalyzer {
     return 'LOW';
   }
 
-  /**
-   * Calculate overall robustness score (0-100)
-   */
   private static calculateRobustnessScore(analyses: SensitivityAnalysis[]): number {
     if (analyses.length === 0) return 0;
 
@@ -284,9 +243,6 @@ export class ParameterSensitivityAnalyzer {
     return scores.reduce((sum: number, score) => sum + score, 0) / scores.length;
   }
 
-  /**
-   * Generate 2D heatmap for two parameters
-   */
   private static generateHeatmap(
     allTests: ParameterTestResult[],
     parameters: ParameterRange[]
@@ -303,9 +259,6 @@ export class ParameterSensitivityAnalyzer {
     }));
   }
 
-  /**
-   * Find optimal parameter plateau (stable high-performance region)
-   */
   static findOptimalPlateau(
     analysis: SensitivityAnalysis,
     minPlateauSize = 3
@@ -344,9 +297,6 @@ export class ParameterSensitivityAnalyzer {
     return bestPlateau;
   }
 
-  /**
-   * Detect over-optimization
-   */
   static detectOverOptimization(analysis: SensitivityAnalysis): {
     isOverOptimized: boolean;
     reason: string;

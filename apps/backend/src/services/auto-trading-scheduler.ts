@@ -55,7 +55,6 @@ const log = (message: string, data?: Record<string, unknown>): void => {
     ensureLogDir();
     fs.appendFileSync(LOG_FILE, `${logLine  }\n`);
   } catch {
-    // Ignore file write errors
   }
 };
 

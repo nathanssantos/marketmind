@@ -54,7 +54,7 @@ export const WalletPerformanceModal = ({
     name: backendWallet.name,
     balance: parseFloat(backendWallet.currentBalance || '0'),
     initialBalance: parseFloat(backendWallet.initialBalance || '0'),
-    currency: (backendWallet.currency || 'USDT') as string,
+    currency: (backendWallet.currency || 'USDT'),
     createdAt: new Date(backendWallet.createdAt),
   };
 

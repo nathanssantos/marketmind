@@ -6,13 +6,6 @@ export interface BollingerBands {
     lower: number;
 }
 
-/**
- * Calculate Bollinger Bands
- * @param klines - Array of klines
- * @param period - Period for SMA calculation (default: 20)
- * @param stdDev - Number of standard deviations (default: 2)
- * @returns Bollinger Bands values
- */
 export const calculateBollingerBands = (
     klines: Kline[],
     period: number = 20,
@@ -42,13 +35,6 @@ export const calculateBollingerBands = (
     };
 };
 
-/**
- * Calculate Bollinger Bands for all klines
- * @param klines - Array of klines
- * @param period - Period for SMA calculation (default: 20)
- * @param stdDev - Number of standard deviations (default: 2)
- * @returns Array of Bollinger Bands or null for each kline
- */
 export const calculateBollingerBandsArray = (
     klines: Kline[],
     period: number = 20,
@@ -69,17 +55,10 @@ export const calculateBollingerBandsArray = (
     return result;
 };
 
-/**
- * Calculate Bollinger Band Width (for volatility measurement)
- */
 export const calculateBBWidth = (bb: BollingerBands): number => {
     return (bb.upper - bb.lower) / bb.middle;
 };
 
-/**
- * Calculate %B (price position within bands)
- * Returns 0-1 range (0 = lower band, 0.5 = middle, 1 = upper band)
- */
 export const calculateBBPercentB = (price: number, bb: BollingerBands): number => {
     return (price - bb.lower) / (bb.upper - bb.lower);
 };

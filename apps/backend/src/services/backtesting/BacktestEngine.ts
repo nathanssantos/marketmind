@@ -55,18 +55,6 @@ export class BacktestEngine {
     return parseInt(match[1]) * unitMs;
   }
 
-  /**
-   * Merge optimizedParams from multiple strategies.
-   * When multiple strategies are tested together:
-   * - Uses the most conservative (lowest) maxPositionSize
-   * - onlyWithTrend is DISABLED here (applied per-strategy instead)
-   * - useAlgorithmicLevels is true if ANY strategy uses it
-   * - useTrailingStop is true if ANY strategy uses it
-   * - minConfidence is the highest of all strategies
-   * - commission uses the highest value
-   * - trailingATRMultiplier uses the average
-   * - breakEvenAfterR uses the lowest (most conservative)
-   */
   private mergeOptimizedParams(strategies: StrategyDefinition[]): OptimizedBacktestParams | null {
     const strategiesWithParams = strategies.filter(s => s.optimizedParams);
     if (strategiesWithParams.length === 0) return null;
@@ -96,12 +84,6 @@ export class BacktestEngine {
     };
   }
 
-  /**
-   * Run a backtest with the given configuration
-   * @param config Backtest configuration
-   * @param klines Optional pre-fetched klines (for optimization - reuse data)
-   * @returns Backtest result with trades, metrics, and equity curve
-   */
   async run(config: BacktestConfig, klines?: any[]): Promise<BacktestResult> {
     const backtestId = generateEntityId();
     const startTime = Date.now();
@@ -1211,10 +1193,6 @@ export class BacktestEngine {
     }
   }
 
-  /**
-   * Calculate the warmup period needed for indicators in the strategies.
-   * This ensures we have enough historical data for all indicators to produce valid values.
-   */
   private calculateWarmupPeriod(strategies: StrategyDefinition[], trendFilterPeriod?: number): number {
     const MIN_WARMUP = 50; // Minimum warmup for basic indicators
     let maxPeriod = trendFilterPeriod ? Math.max(MIN_WARMUP, trendFilterPeriod) : MIN_WARMUP;

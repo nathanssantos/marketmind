@@ -1,7 +1,3 @@
-/**
- * Backtesting Types
- * Types for historical strategy backtesting
- */
 
 export interface BacktestConfig {
   symbol: string;

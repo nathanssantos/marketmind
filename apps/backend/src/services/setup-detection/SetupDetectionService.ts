@@ -53,9 +53,6 @@ export class SetupDetectionService {
     }
   }
 
-  /**
-   * Load strategies from a directory
-   */
   async loadStrategiesFromDirectory(directory: string): Promise<void> {
     this.strategyLoader = new StrategyLoader([directory]);
     const strategies = await this.strategyLoader.loadAll();
@@ -65,9 +62,6 @@ export class SetupDetectionService {
     this.debugLog(`Loaded ${strategies.length} dynamic strategies from ${directory}`);
   }
 
-  /**
-   * Load a single strategy definition
-   */
   loadStrategy(definition: StrategyDefinition, params?: Record<string, number>): void {
     const interpreter = new StrategyInterpreter({
       enabled: true,
@@ -81,9 +75,6 @@ export class SetupDetectionService {
     this.debugLog(`Loaded dynamic strategy: ${definition.id} (${definition.name})`);
   }
 
-  /**
-   * Load a strategy from JSON string (for copy/paste support)
-   */
   loadStrategyFromJson(jsonContent: string, params?: Record<string, number>): StrategyDefinition {
     if (!this.strategyLoader) {
       this.strategyLoader = new StrategyLoader([]);
@@ -93,9 +84,6 @@ export class SetupDetectionService {
     return definition;
   }
 
-  /**
-   * Unload a dynamic strategy
-   */
   unloadStrategy(strategyId: string): boolean {
     const removed = this.dynamicInterpreters.delete(strategyId);
     if (removed) {
@@ -104,16 +92,10 @@ export class SetupDetectionService {
     return removed;
   }
 
-  /**
-   * Get list of loaded strategy IDs
-   */
   getLoadedStrategies(): string[] {
     return Array.from(this.dynamicInterpreters.keys());
   }
 
-  /**
-   * Load inline strategies from config
-   */
   private loadInlineStrategies(strategies: StrategyDefinition[]): void {
     for (const strategy of strategies) {
       this.loadStrategy(strategy);

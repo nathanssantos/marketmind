@@ -9,20 +9,6 @@ export interface NR7Result {
   minRange: (number | null)[];
 }
 
-/**
- * NR7 (Narrow Range 7) Indicator
- *
- * Identifies bars with the narrowest range in the last 7 bars.
- * NR7 patterns suggest low volatility and potential breakout.
- *
- * From Tony Crabel's "Day Trading with Short Term Price Patterns"
- *
- * Research shows CAGR of 7.8% with 899 trades on SPY since 1993
- *
- * @param klines - Array of candlestick data
- * @param period - Lookback period (default: 7)
- * @returns Object with NR7 detection and range values
- */
 export const calculateNR7 = (klines: Kline[], period: number = 7): NR7Result => {
   const isNR7: boolean[] = [];
   const ranges: (number | null)[] = [];
@@ -67,15 +53,6 @@ export const calculateNR7 = (klines: Kline[], period: number = 7): NR7Result => 
   return { isNR7, ranges, minRange };
 };
 
-/**
- * Detect Inside Bar pattern
- *
- * An inside bar has its high lower than previous high
- * and its low higher than previous low.
- *
- * @param klines - Array of candlestick data
- * @returns Array of booleans indicating inside bar detection
- */
 export const calculateInsideBar = (klines: Kline[]): boolean[] => {
   const result: boolean[] = [];
 
@@ -104,17 +81,6 @@ export const calculateInsideBar = (klines: Kline[]): boolean[] => {
   return result;
 };
 
-/**
- * Detect NR7 + Inside Bar combination pattern
- *
- * This powerful pattern combines:
- * 1. NR7: Narrowest range in 7 bars (low volatility)
- * 2. Inside Bar: Bar contained within previous bar
- *
- * @param klines - Array of candlestick data
- * @param period - NR7 lookback period (default: 7)
- * @returns Array of booleans indicating NR7 Inside Bar pattern
- */
 export const calculateNR7InsideBar = (
   klines: Kline[],
   period: number = 7
@@ -132,26 +98,10 @@ export const calculateNR7InsideBar = (
   return result;
 };
 
-/**
- * NR4 (Narrow Range 4) Indicator
- *
- * Similar to NR7 but uses 4-bar lookback.
- * Faster signals but may have more false positives.
- *
- * @param klines - Array of candlestick data
- * @returns Object with NR4 detection and range values
- */
 export const calculateNR4 = (klines: Kline[]): NR7Result => {
   return calculateNR7(klines, 4);
 };
 
-/**
- * Calculate breakout levels from NR7 bar
- *
- * @param klines - Array of candlestick data
- * @param period - NR7 lookback period (default: 7)
- * @returns Object with breakout levels
- */
 export interface NR7BreakoutLevels {
   longEntry: (number | null)[];
   shortEntry: (number | null)[];

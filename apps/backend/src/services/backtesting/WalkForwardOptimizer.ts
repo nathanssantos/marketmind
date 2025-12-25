@@ -1,20 +1,3 @@
-/**
- * Walk-Forward Optimization
- *
- * Implements walk-forward analysis to prevent overfitting and validate strategy robustness.
- * Divides historical data into in-sample (training) and out-of-sample (testing) periods.
- *
- * Process:
- * 1. Split data into windows (e.g., 6 months training + 2 months testing)
- * 2. Optimize parameters on training window
- * 3. Validate on testing window (forward period)
- * 4. Move window forward and repeat
- * 5. Aggregate results across all windows
- *
- * References:
- * - Pardo, R. (2008) "The Evaluation and Optimization of Trading Strategies"
- * - Aronson, D. (2006) "Evidence-Based Technical Analysis"
- */
 
 import type { Kline, BacktestConfig, BacktestResult } from '@marketmind/types';
 import { BacktestEngine } from './BacktestEngine';
@@ -78,9 +61,6 @@ export class WalkForwardOptimizer {
 
   private static readonly DEGRADATION_THRESHOLD = 0.3;
 
-  /**
-   * Split data into walk-forward windows
-   */
   static createWindows(
     klines: Kline[],
     config: WalkForwardConfig = this.DEFAULT_CONFIG
@@ -156,9 +136,6 @@ export class WalkForwardOptimizer {
     return windows;
   }
 
-  /**
-   * Optimize parameters on training data using grid search
-   */
   static async optimizeWindow(
     window: WalkForwardWindow,
     baseConfig: BacktestConfig,
@@ -203,9 +180,6 @@ export class WalkForwardOptimizer {
     return bestResult;
   }
 
-  /**
-   * Test optimized parameters on out-of-sample data
-   */
   static async testWindow(
     window: WalkForwardWindow,
     baseConfig: BacktestConfig,
@@ -223,9 +197,6 @@ export class WalkForwardOptimizer {
     return engine.run(testingConfig, window.testingKlines);
   }
 
-  /**
-   * Run complete walk-forward analysis
-   */
   static async run(
     klines: Kline[],
     baseConfig: BacktestConfig,
@@ -255,9 +226,6 @@ export class WalkForwardOptimizer {
     };
   }
 
-  /**
-   * Generate all parameter combinations for grid search
-   */
   private static generateParameterCombinations(
     ranges: ParameterRange[]
   ): Array<Record<string, number>> {
@@ -283,9 +251,6 @@ export class WalkForwardOptimizer {
     return combinations;
   }
 
-  /**
-   * Apply parameters to config
-   */
   private static applyParameters(
     baseConfig: BacktestConfig,
     params: Record<string, number>
@@ -296,9 +261,6 @@ export class WalkForwardOptimizer {
     };
   }
 
-  /**
-   * Calculate optimization score (higher is better)
-   */
   private static calculateScore(result: BacktestResult): number {
     const { sharpeRatio, profitFactor, maxDrawdown } = result.metrics;
 
@@ -317,9 +279,6 @@ export class WalkForwardOptimizer {
     );
   }
 
-  /**
-   * Calculate aggregated metrics across all windows
-   */
   private static calculateAggregatedMetrics(windows: WalkForwardWindow[]) {
     const inSampleSharpes = windows
       .map((w) => w.optimizationResult?.sharpeRatio || 0)
@@ -372,11 +331,6 @@ export class WalkForwardOptimizer {
     };
   }
 
-  /**
-   * Calculate performance degradation (in-sample vs out-of-sample)
-   * Returns value between -1 (OOS outperforms IS) and 1+ (OOS underperforms IS)
-   * Negative values indicate OOS is better than IS (good sign)
-   */
   private static calculateDegradation(windows: WalkForwardWindow[]): number {
     const inSampleSharpes = windows
       .map((w) => w.optimizationResult?.sharpeRatio || 0)

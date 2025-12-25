@@ -1,8 +1,3 @@
-/**
- * Sensitivity Analysis CLI Command
- *
- * Analyzes parameter sensitivity to detect over-optimization and identify robust parameter regions.
- */
 
 import type { Kline, TimeInterval } from '@marketmind/types';
 import chalk from 'chalk';
@@ -201,9 +196,6 @@ export async function sensitivityCommand(options: SensitivityOptions): Promise<v
   }
 }
 
-/**
- * Display sensitivity analysis results
- */
 function displayResults(
   result: any,
   metric: string,
@@ -250,9 +242,6 @@ function displayResults(
   interpretResults(result);
 }
 
-/**
- * Display single parameter analysis
- */
 function displayParameterAnalysis(
   analysis: SensitivityAnalysis,
   metric: string,
@@ -306,9 +295,6 @@ function displayParameterAnalysis(
   console.log('');
 }
 
-/**
- * Interpret and provide feedback
- */
 function interpretResults(result: any) {
   console.log(chalk.cyan.bold('INTERPRETATION:'));
   console.log('');

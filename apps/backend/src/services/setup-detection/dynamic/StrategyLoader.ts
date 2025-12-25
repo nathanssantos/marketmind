@@ -1,9 +1,3 @@
-/**
- * Strategy Loader
- *
- * Loads strategy definitions from JSON files in the strategies directory.
- * Supports validation, hot-reloading, and strategy metadata.
- */
 
 import * as fs from 'fs';
 import * as path from 'path';
@@ -16,9 +10,6 @@ import type {
   StrategyStatus,
 } from '@marketmind/types';
 
-/**
- * Options for loading strategies
- */
 export interface StrategyLoadOptions {
   includeStatuses?: StrategyStatus[];
   excludeStatuses?: StrategyStatus[];
@@ -27,9 +18,6 @@ export interface StrategyLoadOptions {
 
 const DEFAULT_EXCLUDED_STATUSES: StrategyStatus[] = ['unprofitable', 'deprecated'];
 
-/**
- * Error thrown when strategy validation fails
- */
 export class StrategyValidationException extends Error {
   constructor(
     public strategyId: string,
@@ -42,9 +30,6 @@ export class StrategyValidationException extends Error {
   }
 }
 
-/**
- * Loads and validates strategy definitions from files
- */
 export class StrategyLoader {
   private strategies: Map<string, StrategyFile> = new Map();
   private strategyPaths: string[];
@@ -54,10 +39,6 @@ export class StrategyLoader {
     this.strategyPaths = strategyPaths;
   }
 
-  /**
-   * Load all strategies from configured paths
-   * @param options - Options for filtering strategies by status
-   */
   async loadAll(options: StrategyLoadOptions = {}): Promise<StrategyDefinition[]> {
     this.strategies.clear();
     const definitions: StrategyDefinition[] = [];
@@ -84,9 +65,6 @@ export class StrategyLoader {
     return definitions;
   }
 
-  /**
-   * Check if a strategy should be included based on options
-   */
   private shouldIncludeStrategy(
     definition: StrategyDefinition,
     options: StrategyLoadOptions
@@ -99,9 +77,6 @@ export class StrategyLoader {
     return !excludeStatuses.includes(status);
   }
 
-  /**
-   * Load a single strategy from a file
-   */
   async loadStrategy(filePath: string): Promise<StrategyDefinition> {
     const content = await fs.promises.readFile(filePath, 'utf-8');
     const hash = this.calculateHash(content);
@@ -133,9 +108,6 @@ export class StrategyLoader {
     return strategyDef;
   }
 
-  /**
-   * Load strategy from JSON string (for copy/paste support)
-   */
   loadFromString(jsonContent: string): StrategyDefinition {
     let definition: unknown;
     try {
@@ -155,9 +127,6 @@ export class StrategyLoader {
     return definition as StrategyDefinition;
   }
 
-  /**
-   * Validate a strategy definition
-   */
   validateStrategy(definition: unknown): StrategyValidationResult {
     const errors: StrategyValidationError[] = [];
     const warnings: StrategyValidationError[] = [];
@@ -220,23 +189,14 @@ export class StrategyLoader {
     };
   }
 
-  /**
-   * Get all loaded strategies
-   */
   getLoadedStrategies(): StrategyFile[] {
     return Array.from(this.strategies.values());
   }
 
-  /**
-   * Get a specific strategy by ID
-   */
   getStrategy(id: string): StrategyDefinition | undefined {
     return this.strategies.get(id)?.definition;
   }
 
-  /**
-   * Check if a strategy has changed since last load
-   */
   async hasChanged(strategyId: string): Promise<boolean> {
     const strategyFile = this.strategies.get(strategyId);
     if (!strategyFile) {
@@ -252,9 +212,6 @@ export class StrategyLoader {
     }
   }
 
-  /**
-   * Watch for strategy file changes
-   */
   watchForChanges(
     callback: (strategies: StrategyDefinition[]) => void
   ): void {
@@ -284,9 +241,6 @@ export class StrategyLoader {
     }
   }
 
-  /**
-   * Stop watching for changes
-   */
   stopWatching(): void {
     for (const watcher of this.watchHandlers) {
       watcher.close();
@@ -294,9 +248,6 @@ export class StrategyLoader {
     this.watchHandlers = [];
   }
 
-  /**
-   * Find all strategy JSON files in a directory
-   */
   private async findStrategyFiles(basePath: string): Promise<string[]> {
     const files: string[] = [];
 
@@ -316,16 +267,10 @@ export class StrategyLoader {
     return files;
   }
 
-  /**
-   * Calculate hash of file content
-   */
   private calculateHash(content: string): string {
     return crypto.createHash('md5').update(content).digest('hex');
   }
 
-  /**
-   * Validate a required field
-   */
   private validateRequired(
     obj: Record<string, unknown>,
     field: string,
@@ -347,9 +292,6 @@ export class StrategyLoader {
     }
   }
 
-  /**
-   * Validate indicator definitions
-   */
   private validateIndicators(
     indicators: Record<string, unknown>,
     errors: StrategyValidationError[],
@@ -447,9 +389,6 @@ export class StrategyLoader {
     }
   }
 
-  /**
-   * Validate entry conditions
-   */
   private validateEntry(
     entry: Record<string, unknown>,
     errors: StrategyValidationError[]
@@ -471,9 +410,6 @@ export class StrategyLoader {
     }
   }
 
-  /**
-   * Validate a condition group
-   */
   private validateConditionGroup(
     group: unknown,
     path: string,
@@ -507,13 +443,6 @@ export class StrategyLoader {
     }
   }
 
-  /**
-   * Validate exit configuration
-   * Exit can use:
-   * 1. Traditional SL/TP (stopLoss + takeProfit required)
-   * 2. Indicator-based exit (conditions + optional stopLoss as safety)
-   * 3. Both combined
-   */
   private validateExit(
     exit: Record<string, unknown>,
     errors: StrategyValidationError[]
@@ -551,9 +480,6 @@ export class StrategyLoader {
     }
   }
 
-  /**
-   * Validate exit conditions
-   */
   private validateExitConditions(
     conditions: unknown,
     errors: StrategyValidationError[]
@@ -586,9 +512,6 @@ export class StrategyLoader {
     }
   }
 
-  /**
-   * Validate an exit level
-   */
   private validateExitLevel(
     level: unknown,
     path: string,

@@ -37,9 +37,6 @@ const {
 
 const { EPSILON } = FLOAT_COMPARISON;
 
-/**
- * Calculates exit levels (stop loss, take profit) for strategies
- */
 export class ExitCalculator {
   private indicatorEngine: IndicatorEngine;
 
@@ -47,10 +44,6 @@ export class ExitCalculator {
     this.indicatorEngine = indicatorEngine;
   }
 
-  /**
-   * Calculate stop loss price
-   * Enforces volatility-based minimum distance from entry
-   */
   calculateStopLoss(exit: ExitLevel, context: ExitContext): number {
     const { direction, entryPrice, indicators, currentIndex } = context;
 
@@ -128,9 +121,6 @@ export class ExitCalculator {
     return stopLoss;
   }
 
-  /**
-   * Calculate take profit price
-   */
   calculateTakeProfit(
     exit: ExitLevel,
     context: ExitContext,
@@ -208,10 +198,6 @@ export class ExitCalculator {
     return takeProfit;
   }
 
-  /**
-   * Calculate the distance from entry price for exit level
-   * Uses volatility-based adjustments for ATR multipliers
-   */
   private calculateExitDistance(exit: ExitLevel, context: ExitContext): number {
     const { entryPrice } = context;
 
@@ -269,9 +255,6 @@ export class ExitCalculator {
     }
   }
 
-  /**
-   * Get ATR value from indicator reference
-   */
   private getATRValue(exit: ExitLevel, context: ExitContext): number {
     const { indicators, currentIndex } = context;
     const indicatorRef = exit.indicator ?? 'atr';
@@ -285,15 +268,6 @@ export class ExitCalculator {
     return value ?? 0;
   }
 
-  /**
-   * Calculate stop loss based on true swing high/low (pivot points)
-   * For SHORT: finds most recent swing high (peak confirmed by lower highs around it)
-   * For LONG: finds most recent swing low (trough confirmed by higher lows around it)
-   * Buffer adds ATR-based distance beyond the swing point to avoid premature stops
-   *
-   * Searches backwards up to 50 candles to find the first confirmed swing point.
-   * If no swing point is found, falls back to min/max of last 20 candles.
-   */
   private calculateSwingHighLowStop(exit: ExitLevel, context: ExitContext): number {
     const { direction, entryPrice, klines, currentIndex, indicators } = context;
 
@@ -424,9 +398,6 @@ export class ExitCalculator {
     return stopLoss;
   }
 
-  /**
-   * Resolve indicator target value (e.g., "bb.middle")
-   */
   private resolveIndicatorTarget(
     exit: ExitLevel,
     context: ExitContext
@@ -454,9 +425,6 @@ export class ExitCalculator {
     return 0;
   }
 
-  /**
-   * Resolve an operand (number or parameter reference) to a value
-   */
   private resolveOperand(
     operand: ConditionOperand | undefined,
     context: ExitContext
@@ -486,9 +454,6 @@ export class ExitCalculator {
     return 0;
   }
 
-  /**
-   * Calculate confidence score for a strategy signal
-   */
   calculateConfidence(
     strategy: StrategyDefinition,
     context: ExitContext
@@ -530,9 +495,6 @@ export class ExitCalculator {
     return finalConfidence;
   }
 
-  /**
-   * Evaluate a bonus condition
-   */
   private evaluateBonusCondition(
     condition: Condition,
     context: ExitContext
@@ -562,9 +524,6 @@ export class ExitCalculator {
     }
   }
 
-  /**
-   * Resolve a condition operand for bonus evaluation
-   */
   private resolveConditionOperand(
     operand: ConditionOperand,
     context: ExitContext
@@ -589,9 +548,6 @@ export class ExitCalculator {
     return null;
   }
 
-  /**
-   * Calculate default confidence when no config is provided
-   */
   private calculateDefaultConfidence(context: ExitContext): number {
     const { indicators, currentIndex } = context;
 
@@ -615,10 +571,6 @@ export class ExitCalculator {
     return Math.min(confidence, MAX_CONFIDENCE);
   }
 
-  /**
-   * Calculate risk-reward ratio
-   * Returns 0 if stopLoss or takeProfit is null (indicator-based exit strategies)
-   */
   calculateRiskReward(
     entryPrice: number,
     stopLoss: number | null,
@@ -635,11 +587,6 @@ export class ExitCalculator {
     return rewardDistance / riskDistance;
   }
 
-  /**
-   * Find true swing low - searches backwards for first pivot low
-   * A swing low is confirmed when the low is lower than both neighbors
-   * @param skipRecent - Number of recent candles to skip (ensures different swing from entry)
-   */
   private findSwingLow(klines: Kline[], currentIndex: number, skipRecent: number = 0): number {
     const maxLookback = Math.min(50, currentIndex);
     const searchEndIndex = currentIndex - skipRecent;
@@ -667,11 +614,6 @@ export class ExitCalculator {
     return lows.length > 0 ? Math.min(...lows) : parseFloat(String((klines[currentIndex] as { low: string }).low));
   }
 
-  /**
-   * Find true swing high - searches backwards for first pivot high
-   * A swing high is confirmed when the high is higher than both neighbors
-   * @param skipRecent - Number of recent candles to skip (ensures different swing from entry)
-   */
   private findSwingHigh(klines: Kline[], currentIndex: number, skipRecent: number = 0): number {
     const maxLookback = Math.min(50, currentIndex);
     const searchEndIndex = currentIndex - skipRecent;

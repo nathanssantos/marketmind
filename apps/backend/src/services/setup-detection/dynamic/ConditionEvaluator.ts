@@ -1,10 +1,3 @@
-/**
- * Condition Evaluator
- *
- * Evaluates entry/exit conditions defined in strategy JSON.
- * Supports comparison operators, crossover detection, nested condition groups,
- * and mathematical expressions (e.g., "volume.sma20 * 1.5").
- */
 
 import type {
   ComparisonOperator,
@@ -24,9 +17,6 @@ import type { IndicatorEngine } from './IndicatorEngine';
 
 const MATH_EXPRESSION_REGEX = /^(.+?)\s*([*+\-/])\s*(\d+\.?\d*)$/;
 
-/**
- * Evaluates conditions against market data and indicators
- */
 export class ConditionEvaluator {
   private indicatorEngine: IndicatorEngine;
 
@@ -34,9 +24,6 @@ export class ConditionEvaluator {
     this.indicatorEngine = indicatorEngine;
   }
 
-  /**
-   * Evaluate a condition or condition group
-   */
   evaluate(
     condition: Condition | ConditionGroup,
     context: EvaluationContext
@@ -47,9 +34,6 @@ export class ConditionEvaluator {
     return this.evaluateSimple(condition, context);
   }
 
-  /**
-   * Evaluate a condition group (AND/OR)
-   */
   private evaluateGroup(
     group: ConditionGroup,
     context: EvaluationContext
@@ -65,9 +49,6 @@ export class ConditionEvaluator {
     }
   }
 
-  /**
-   * Evaluate a simple condition
-   */
   private evaluateSimple(
     condition: Condition,
     context: EvaluationContext
@@ -87,29 +68,11 @@ export class ConditionEvaluator {
 
     const result = this.compare(leftValue, rightValue, op);
 
-    // const leftStr = typeof condition.left === 'string' ? condition.left : JSON.stringify(condition.left);
-    // const rightStr = typeof condition.right === 'string' ? condition.right : JSON.stringify(condition.right);
-    // const hasPrev = leftStr.includes('.prev') || rightStr.includes('.prev');
 
-    // if (hasPrev || result) {
-    //   logger.debug({
-    //     condition: `${leftStr} ${op} ${rightStr}`,
-    //     leftValue: leftValue.toFixed(4),
-    //     rightValue: rightValue.toFixed(4),
-    //     result,
-    //     index: context.currentIndex,
-    //   }, 'Condition evaluated');
-    // }
 
     return result;
   }
 
-  /**
-   * Evaluate crossover/crossunder conditions
-   *
-   * Crossover: left was below right, now is above
-   * Crossunder: left was above right, now is below
-   */
   private evaluateCrossover(
     condition: Condition,
     context: EvaluationContext,
@@ -153,11 +116,6 @@ export class ConditionEvaluator {
     }
   }
 
-  /**
-   * Get value series for an operand (for crossover detection)
-   * Supports mathematical expressions like "emaFast * 1.01"
-   * and calc expressions like {calc: "open + (atr * $multiplier)"}
-   */
   private getSeriesForOperand(
     operand: ConditionOperand,
     indicators: ComputedIndicators,
@@ -223,9 +181,6 @@ export class ConditionEvaluator {
     return this.indicatorEngine.getIndicatorSeries(indicators, operand);
   }
 
-  /**
-   * Get length of indicator arrays
-   */
   private getIndicatorLength(indicators: ComputedIndicators): number {
     const priceIndicator = indicators['_price'];
     if (priceIndicator && !Array.isArray(priceIndicator.values)) {
@@ -235,11 +190,6 @@ export class ConditionEvaluator {
     return 0;
   }
 
-  /**
-   * Resolve an operand to a numeric value at the current index
-   * Supports mathematical expressions like "volume.sma20 * 1.5"
-   * and calc expressions like {calc: "open + (atr * $multiplier)"}
-   */
   private resolveValue(
     operand: ConditionOperand,
     context: EvaluationContext
@@ -296,10 +246,6 @@ export class ConditionEvaluator {
     );
   }
 
-  /**
-   * Evaluate a calc expression like "open + (atr * $multiplier)"
-   * Supports: +, -, *, /, parentheses, indicator/price references, and parameters
-   */
   private evaluateCalcExpression(
     expression: string,
     context: EvaluationContext
@@ -400,9 +346,6 @@ export class ConditionEvaluator {
     }
   }
 
-  /**
-   * Compare two values with a comparison operator
-   */
   private compare(
     left: number,
     right: number,

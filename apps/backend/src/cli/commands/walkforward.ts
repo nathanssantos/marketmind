@@ -291,9 +291,6 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
   }
 }
 
-/**
- * Display walk-forward analysis results
- */
 function displayResults(
   windows: any[],
   aggregatedMetrics: any,
@@ -361,9 +358,6 @@ function displayResults(
   interpretResults(aggregatedMetrics, degradation, isRobust);
 }
 
-/**
- * Interpret and provide feedback on walk-forward results
- */
 function interpretResults(
   metrics: any,
   degradation: number,

@@ -6,9 +6,6 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/**
- * Validation utilities for CLI commands
- */
 
 export class ValidationError extends Error {
   constructor(message: string) {
@@ -17,9 +14,6 @@ export class ValidationError extends Error {
   }
 }
 
-/**
- * Validate trading symbol format
- */
 export function validateSymbol(symbol: string): string {
   if (!symbol || symbol.length < 5) {
     throw new ValidationError('Symbol must be at least 5 characters (e.g., BTCUSDT)');
@@ -32,9 +26,6 @@ export function validateSymbol(symbol: string): string {
   return symbol;
 }
 
-/**
- * Validate timeframe interval
- */
 export function validateInterval(interval: string): string {
   const validIntervals = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w'];
 
@@ -47,9 +38,6 @@ export function validateInterval(interval: string): string {
   return interval;
 }
 
-/**
- * Validate date format and range
- */
 export function validateDateRange(startDate: string, endDate: string): { startDate: string; endDate: string } {
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -93,9 +81,6 @@ export function validateDateRange(startDate: string, endDate: string): { startDa
   return { startDate, endDate };
 }
 
-/**
- * Get dynamic strategies from the strategies directory
- */
 function getDynamicStrategies(): string[] {
   const strategiesDir = path.resolve(__dirname, '../../../strategies/builtin');
 
@@ -109,9 +94,6 @@ function getDynamicStrategies(): string[] {
   }
 }
 
-/**
- * Validate strategy name
- */
 export function validateStrategy(strategy: string): void {
   const legacyStrategies = [
     'pattern123',
@@ -132,9 +114,6 @@ export function validateStrategy(strategy: string): void {
   }
 }
 
-/**
- * Validate numeric parameter
- */
 export function validateNumeric(
   value: string,
   name: string,
@@ -158,9 +137,6 @@ export function validateNumeric(
   return num;
 }
 
-/**
- * Validate capital amount
- */
 export function validateCapital(capital: string): number {
   const amount = validateNumeric(capital, 'Capital', 100, 1000000);
 
@@ -171,9 +147,6 @@ export function validateCapital(capital: string): number {
   return amount;
 }
 
-/**
- * Validate percentage parameter
- */
 export function validatePercentage(
   value: string,
   name: string,
@@ -183,9 +156,6 @@ export function validatePercentage(
   return validateNumeric(value, name, min, max);
 }
 
-/**
- * Validate stop loss and take profit relationship
- */
 export function validateRiskReward(
   stopLoss: number | undefined,
   takeProfit: number | undefined,
@@ -205,9 +175,6 @@ export function validateRiskReward(
   }
 }
 
-/**
- * Validate parameter grid for optimization
- */
 export function validateParameterGrid(params: string[]): void {
   if (!params || params.length === 0) {
     throw new ValidationError('At least one parameter must be specified for optimization');
@@ -246,9 +213,6 @@ export function validateParameterGrid(params: string[]): void {
   }
 }
 
-/**
- * Validate file paths exist
- */
 export async function validateFilePath(filepath: string): Promise<void> {
   const fs = await import('fs/promises');
 
@@ -269,9 +233,6 @@ export async function validateFilePath(filepath: string): Promise<void> {
   }
 }
 
-/**
- * Validate parallel workers count
- */
 export function validateParallelWorkers(workers: string): number {
   const count = validateNumeric(workers, 'Parallel workers', 1, 16);
 
@@ -282,9 +243,6 @@ export function validateParallelWorkers(workers: string): number {
   return count;
 }
 
-/**
- * Estimate grid search combinations and warn if too many
- */
 export function validateGridSearchSize(params: string[]): void {
   let totalCombinations = 1;
 

@@ -1,23 +1,3 @@
-/**
- * Monte Carlo Simulator
- *
- * Performs Monte Carlo simulation on backtest results to:
- * - Assess statistical significance
- * - Calculate confidence intervals
- * - Estimate probability of specific outcomes
- * - Stress test strategy under different scenarios
- *
- * Process:
- * 1. Take completed backtest trades
- * 2. Randomly shuffle trade order N times (1000+ simulations)
- * 3. Calculate metrics for each simulation
- * 4. Generate distribution of outcomes
- * 5. Calculate percentiles and confidence intervals
- *
- * References:
- * - Vince, R. (1992) "The Mathematics of Money Management"
- * - Tharp, V. K. (1998) "Trade Your Way to Financial Freedom"
- */
 
 import type { BacktestTrade } from '@marketmind/types';
 
@@ -75,9 +55,6 @@ export class MonteCarloSimulator {
     confidenceLevel: 0.95,
   };
 
-  /**
-   * Run Monte Carlo simulation on backtest trades
-   */
   static simulate(
     trades: BacktestTrade[],
     initialCapital: number,
@@ -119,9 +96,6 @@ export class MonteCarloSimulator {
     };
   }
 
-  /**
-   * Shuffle trades randomly (Fisher-Yates algorithm)
-   */
   private static shuffleTrades(trades: BacktestTrade[]): BacktestTrade[] {
     const shuffled = [...trades];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -136,9 +110,6 @@ export class MonteCarloSimulator {
     return shuffled;
   }
 
-  /**
-   * Run single simulation with shuffled trades
-   */
   private static runSimulation(
     trades: BacktestTrade[],
     initialCapital: number,
@@ -180,9 +151,6 @@ export class MonteCarloSimulator {
     };
   }
 
-  /**
-   * Calculate Sharpe ratio for simulation
-   */
   private static calculateSharpeRatio(trades: BacktestTrade[], initialCapital: number): number {
     if (trades.length === 0) return 0;
 
@@ -198,9 +166,6 @@ export class MonteCarloSimulator {
     return (meanReturn / stdDev) * Math.sqrt(252);
   }
 
-  /**
-   * Calculate profit factor for simulation
-   */
   private static calculateProfitFactor(trades: BacktestTrade[]): number {
     const grossProfit = trades.filter((t) => (t.pnl ?? 0) > 0).reduce((sum, t) => sum + (t.pnl ?? 0), 0);
     const grossLoss = Math.abs(trades.filter((t) => (t.pnl ?? 0) <= 0).reduce((sum, t) => sum + (t.pnl ?? 0), 0));
@@ -208,9 +173,6 @@ export class MonteCarloSimulator {
     return grossLoss > 0 ? grossProfit / grossLoss : 0;
   }
 
-  /**
-   * Calculate statistics across all simulations
-   */
   private static calculateStatistics(simulations: SimulationRun[]) {
     const finalEquities = simulations.map((s) => s.finalEquity);
     const maxDrawdowns = simulations.map((s) => s.maxDrawdown);
@@ -230,9 +192,6 @@ export class MonteCarloSimulator {
     };
   }
 
-  /**
-   * Calculate confidence intervals
-   */
   private static calculateConfidenceIntervals(
     simulations: SimulationRun[],
     confidenceLevel: number
@@ -266,9 +225,6 @@ export class MonteCarloSimulator {
     };
   }
 
-  /**
-   * Calculate probabilities of specific outcomes
-   */
   private static calculateProbabilities(simulations: SimulationRun[]) {
     const total = simulations.length;
 
@@ -290,17 +246,11 @@ export class MonteCarloSimulator {
     };
   }
 
-  /**
-   * Calculate mean of array
-   */
   private static mean(values: number[]): number {
     if (values.length === 0) return 0;
     return values.reduce((sum, v) => sum + v, 0) / values.length;
   }
 
-  /**
-   * Calculate median of array
-   */
   private static median(values: number[]): number {
     if (values.length === 0) return 0;
     const sorted = [...values].sort((a, b) => a - b);
@@ -313,9 +263,6 @@ export class MonteCarloSimulator {
     return midValue ?? 0;
   }
 
-  /**
-   * Calculate standard deviation
-   */
   private static stdDev(values: number[]): number {
     if (values.length === 0) return 0;
     const avg = this.mean(values);
@@ -323,18 +270,12 @@ export class MonteCarloSimulator {
     return Math.sqrt(variance);
   }
 
-  /**
-   * Calculate percentile
-   */
   private static percentile(sortedValues: number[], percentile: number): number {
     if (sortedValues.length === 0) return 0;
     const index = Math.floor(sortedValues.length * percentile);
     return sortedValues[Math.min(index, sortedValues.length - 1)] ?? 0;
   }
 
-  /**
-   * Get distribution buckets for histogram
-   */
   static getDistribution(
     simulations: SimulationRun[],
     metric: 'finalEquity' | 'maxDrawdown' | 'sharpeRatio' | 'totalReturn',

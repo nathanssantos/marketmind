@@ -51,9 +51,6 @@ export class ResultManager {
     this.baseDir = baseDir;
   }
 
-  /**
-   * Save a validation result to disk
-   */
   async saveValidation(
     strategy: string,
     symbol: string,
@@ -85,9 +82,6 @@ export class ResultManager {
     return filepath;
   }
 
-  /**
-   * Save an optimization result to disk
-   */
   async saveOptimization(
     strategy: string,
     symbol: string,
@@ -121,17 +115,11 @@ export class ResultManager {
     return filepath;
   }
 
-  /**
-   * Load a saved result from disk
-   */
   async load(filepath: string): Promise<SavedBacktestResult | OptimizationSummary> {
     const content = await fs.readFile(filepath, 'utf-8');
     return JSON.parse(content);
   }
 
-  /**
-   * List all saved results
-   */
   async listValidations(): Promise<string[]> {
     try {
       const files = await fs.readdir(path.join(this.baseDir, 'validations'));
@@ -150,9 +138,6 @@ export class ResultManager {
     }
   }
 
-  /**
-   * Export a backtest result to CSV
-   */
   async exportToCSV(result: SavedBacktestResult, outputPath: string): Promise<void> {
     const trades = result.result.trades;
 
@@ -190,9 +175,6 @@ export class ResultManager {
     await fs.writeFile(outputPath, csv, 'utf-8');
   }
 
-  /**
-   * Export optimization results to CSV
-   */
   async exportOptimizationToCSV(summary: OptimizationSummary, outputPath: string): Promise<void> {
     let csv = 'Rank,';
 
@@ -228,9 +210,6 @@ export class ResultManager {
     await fs.writeFile(outputPath, csv, 'utf-8');
   }
 
-  /**
-   * Save a walk-forward analysis result to disk
-   */
   async saveWalkForward(
     strategy: string,
     symbol: string,
@@ -248,9 +227,6 @@ export class ResultManager {
     return filepath;
   }
 
-  /**
-   * List all walk-forward results
-   */
   async listWalkForward(): Promise<string[]> {
     try {
       const files = await fs.readdir(path.join(this.baseDir, 'walkforward'));
@@ -260,9 +236,6 @@ export class ResultManager {
     }
   }
 
-  /**
-   * Save a Monte Carlo analysis result to disk
-   */
   async saveMonteCarlo(
     strategy: string,
     symbol: string,
@@ -280,9 +253,6 @@ export class ResultManager {
     return filepath;
   }
 
-  /**
-   * List all Monte Carlo results
-   */
   async listMonteCarlo(): Promise<string[]> {
     try {
       const files = await fs.readdir(path.join(this.baseDir, 'montecarlo'));
@@ -292,9 +262,6 @@ export class ResultManager {
     }
   }
 
-  /**
-   * Save a sensitivity analysis result to disk
-   */
   async saveSensitivity(
     strategy: string,
     symbol: string,
@@ -312,9 +279,6 @@ export class ResultManager {
     return filepath;
   }
 
-  /**
-   * List all sensitivity analysis results
-   */
   async listSensitivity(): Promise<string[]> {
     try {
       const files = await fs.readdir(path.join(this.baseDir, 'sensitivity'));
@@ -324,9 +288,6 @@ export class ResultManager {
     }
   }
 
-  /**
-   * Save a robustness validation result to disk
-   */
   async saveRobustnessValidation(result: any): Promise<string> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `robustness_validation_${timestamp}.json`;
@@ -339,9 +300,6 @@ export class ResultManager {
     return filepath;
   }
 
-  /**
-   * List all robustness validation results
-   */
   async listRobustnessValidations(): Promise<string[]> {
     try {
       const files = await fs.readdir(path.join(this.baseDir, 'robustness'));
@@ -351,9 +309,6 @@ export class ResultManager {
     }
   }
 
-  /**
-   * Compare multiple results and generate comparison table
-   */
   compareResults(results: Array<SavedBacktestResult | OptimizationSummary>): any {
     return results.map(result => {
       if (result.type === 'validation') {

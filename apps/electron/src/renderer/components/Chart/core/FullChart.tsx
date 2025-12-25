@@ -34,20 +34,6 @@ export interface FullChartProps {
     onOrderClick?: (order: Order) => void;
 }
 
-/**
- * FullChart - Complete production trading chart with all features
- * 
- * This is the main chart component for the trading interface.
- * It uses LayeredCanvas for optimized rendering performance.
- * 
- * Features:
- * - Multi-layer canvas rendering (6 layers)
- * - Real-time updates
- * - Interactive controls (zoom, pan)
- * - Trade and order visualization
- * - Setup detection markers
- * - Tooltips and crosshair
- */
 export const FullChart = ({
     timeframe,
     klines,

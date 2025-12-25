@@ -1,12 +1,5 @@
-/**
- * Built-in setup types (legacy detectors)
- */
 export type BuiltinSetupType = '123-reversal' | 'bear-trap' | 'mean-reversion' | 'stochastic-double-touch';
 
-/**
- * Setup type - supports both built-in types and dynamic strategy IDs
- * Dynamic strategies use their strategy ID as the type (e.g., "ema-crossover-9-21")
- */
 export type SetupType = BuiltinSetupType | string;
 
 export type SetupDirection = 'LONG' | 'SHORT';

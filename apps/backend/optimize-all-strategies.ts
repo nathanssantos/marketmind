@@ -1,10 +1,4 @@
 #!/usr/bin/env tsx
-/**
- * Batch Strategy Optimization Script
- * 
- * Optimizes all active strategies and only updates parameters if results improve.
- * Compares new optimization results against current optimized parameters.
- */
 
 import chalk from 'chalk';
 import { execSync } from 'child_process';

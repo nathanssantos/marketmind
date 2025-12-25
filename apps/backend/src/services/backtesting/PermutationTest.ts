@@ -1,21 +1,3 @@
-/**
- * Monte Carlo Permutation Test
- *
- * Tests statistical significance of trading strategy results.
- * Shuffles trade returns N times and compares with actual results
- * to determine if performance is due to skill or chance.
- *
- * Process:
- * 1. Calculate actual strategy metric (Sharpe, PnL, etc.)
- * 2. Permute (shuffle) trade returns N times
- * 3. Calculate metric for each permutation
- * 4. Compute p-value: % of permutations >= actual
- * 5. Strategy is significant if p-value < 0.05 (5%)
- *
- * References:
- * - Aronson, D. (2006) "Evidence-Based Technical Analysis"
- * - White, H. (2000) "A Reality Check for Data Snooping"
- */
 
 import type { BacktestTrade } from '@marketmind/types';
 

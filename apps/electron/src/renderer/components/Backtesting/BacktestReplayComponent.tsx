@@ -1,17 +1,3 @@
-/**
- * Backtest Replay Component
- * 
- * Provides interactive candle-by-candle replay of backtest results:
- * - Play/Pause/Step controls
- * - Speed adjustment (1x, 2x, 5x, 10x)
- * - Visual trade markers (entry/exit)
- * - Real-time metrics update
- * - Jump to specific dates
- * 
- * References:
- * - Interactive visualization best practices
- * - TradingView-style replay functionality
- */
 
 import { Box, Button, HStack, Text, VStack } from '@chakra-ui/react';
 import type { Kline } from '@marketmind/types';

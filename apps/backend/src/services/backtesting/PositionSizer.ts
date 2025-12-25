@@ -47,9 +47,6 @@ export interface PositionSizingResult {
 }
 
 export class PositionSizer {
-  /**
-   * Calculate optimal position size based on configuration
-   */
   static calculatePositionSize(
     equity: number,
     entryPrice: number,
@@ -116,12 +113,6 @@ export class PositionSizer {
     };
   }
 
-  /**
-   * Risk-Based Position Sizing
-   * Size position so that a stop loss hit = X% of equity
-   * 
-   * Formula: Position Size = (Risk Amount) / (Entry - Stop)
-   */
   private static calculateRiskBased(
     equity: number,
     entryPrice: number,
@@ -148,18 +139,6 @@ export class PositionSizer {
     };
   }
 
-  /**
-   * Kelly Criterion Position Sizing
-   * Optimal position size based on edge
-   * 
-   * Formula: f = (p * b - q) / b
-   * Where:
-   * - p = win probability
-   * - q = loss probability (1 - p)
-   * - b = win/loss ratio (avgWin / avgLoss)
-   * 
-   * Returns fraction of bankroll to bet
-   */
   private static calculateKelly(
     winRate: number,
     avgWinPercent: number,
@@ -182,12 +161,6 @@ export class PositionSizer {
     };
   }
 
-  /**
-   * Volatility-Based Position Sizing
-   * Reduce position size in high volatility, increase in low volatility
-   * 
-   * Uses ATR as volatility proxy
-   */
   private static calculateVolatilityBased(
     atr: number,
     entryPrice: number,
@@ -212,10 +185,6 @@ export class PositionSizer {
     };
   }
 
-  /**
-   * Calculate optimal Kelly fraction based on historical performance
-   * Returns recommended Kelly fraction (0.1 to 0.5)
-   */
   static calculateOptimalKellyFraction(
     winRate: number,
     profitFactor: number,

@@ -216,9 +216,6 @@ export async function montecarloCommand(options: MonteCarloOptions) {
   }
 }
 
-/**
- * Display Monte Carlo simulation results
- */
 function displayResults(
   backtestResult: any,
   mcResult: any,
@@ -323,9 +320,6 @@ function displayResults(
   interpretResults(mcResult);
 }
 
-/**
- * Interpret and provide feedback on Monte Carlo results
- */
 function interpretResults(mcResult: any) {
   console.log(chalk.cyan.bold('INTERPRETATION:'));
   console.log('');

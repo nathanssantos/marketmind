@@ -24,12 +24,6 @@ export class BacktestOptimizer {
     this.engine = new BacktestEngine();
   }
 
-  /**
-   * Run grid search optimization
-   * @param config - Optimization configuration
-   * @param klines - Optional pre-fetched klines (for performance)
-   * @returns Array of optimization results sorted by the specified metric
-   */
   async optimize(
     config: OptimizationConfig,
     klines?: any[]
@@ -99,10 +93,6 @@ export class BacktestOptimizer {
     return sortedResults;
   }
 
-  /**
-   * Run a single backtest with specific parameters
-   * @private
-   */
   private async runSingle(
     baseConfig: BacktestConfig,
     params: ParameterCombination,
@@ -151,10 +141,6 @@ export class BacktestOptimizer {
     };
   }
 
-  /**
-   * Sort optimization results by a metric
-   * @private
-   */
   private sortResults(
     results: OptimizationResult[],
     sortBy: keyof BacktestMetrics
@@ -175,9 +161,6 @@ export class BacktestOptimizer {
     });
   }
 
-  /**
-   * Get statistics about the optimization results
-   */
   getStatistics(results: OptimizationResult[]) {
     if (results.length === 0) {
       return null;
@@ -212,9 +195,6 @@ export class BacktestOptimizer {
     };
   }
 
-  /**
-   * Filter results by minimum criteria
-   */
   filterResults(
     results: OptimizationResult[],
     criteria: {

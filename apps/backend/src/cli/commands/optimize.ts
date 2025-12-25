@@ -327,9 +327,6 @@ export async function optimizeCommand(options: OptimizeOptions) {
   }
 }
 
-/**
- * Interpret and provide feedback on optimization results
- */
 function interpretResults(best: any, _logger: BacktestLogger) {
   const m = best.metrics;
 
