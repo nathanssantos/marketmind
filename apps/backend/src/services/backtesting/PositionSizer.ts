@@ -242,9 +242,6 @@ export class PositionSizer {
     return Math.max(KELLY_BOUNDS.MIN, Math.min(KELLY_BOUNDS.MAX, kellyFraction));
   }
 
-  /**
-   * Get recommended position sizing method based on strategy characteristics
-   */
   static recommendMethod(
     winRate: number,
     profitFactor: number,
@@ -264,5 +261,78 @@ export class PositionSizer {
     }
 
     return 'fixed-fractional';
+  }
+
+  static calculateAdaptiveSize(
+    basePositionPercent: number,
+    conditions: {
+      drawdownPercent: number;
+      volatilityLevel: 'low' | 'normal' | 'high' | 'extreme';
+      consecutiveLosses: number;
+      consecutiveWins: number;
+      recentWinRate?: number;
+    }
+  ): { adjustedPercent: number; rationale: string } {
+    let multiplier = 1.0;
+    const adjustments: string[] = [];
+
+    if (conditions.drawdownPercent >= 20) {
+      multiplier *= 0.25;
+      adjustments.push(`DD≥20%: ×0.25`);
+    } else if (conditions.drawdownPercent >= 15) {
+      multiplier *= 0.50;
+      adjustments.push(`DD≥15%: ×0.50`);
+    } else if (conditions.drawdownPercent >= 10) {
+      multiplier *= 0.75;
+      adjustments.push(`DD≥10%: ×0.75`);
+    }
+
+    const volatilityMultipliers: Record<string, number> = {
+      low: 1.15,
+      normal: 1.0,
+      high: 0.75,
+      extreme: 0.50,
+    };
+    const volMult = volatilityMultipliers[conditions.volatilityLevel] ?? 1.0;
+    if (volMult !== 1.0) {
+      multiplier *= volMult;
+      adjustments.push(`Vol=${conditions.volatilityLevel}: ×${volMult}`);
+    }
+
+    if (conditions.consecutiveLosses >= 4) {
+      multiplier *= 0.50;
+      adjustments.push(`LossStreak≥4: ×0.50`);
+    } else if (conditions.consecutiveLosses >= 3) {
+      multiplier *= 0.75;
+      adjustments.push(`LossStreak≥3: ×0.75`);
+    }
+
+    if (conditions.consecutiveWins >= 4 && conditions.drawdownPercent < 5) {
+      multiplier *= 1.1;
+      adjustments.push(`WinStreak≥4: ×1.10`);
+    }
+
+    if (conditions.recentWinRate !== undefined) {
+      if (conditions.recentWinRate < 0.35) {
+        multiplier *= 0.75;
+        adjustments.push(`WR<35%: ×0.75`);
+      } else if (conditions.recentWinRate > 0.65 && conditions.drawdownPercent < 10) {
+        multiplier *= 1.15;
+        adjustments.push(`WR>65%: ×1.15`);
+      }
+    }
+
+    const minMult = 0.25;
+    const maxMult = 1.5;
+    multiplier = Math.max(minMult, Math.min(maxMult, multiplier));
+
+    const adjustedPercent = basePositionPercent * multiplier;
+    const finalPercent = Math.max(DEFAULT_MIN_PERCENT, Math.min(DEFAULT_MAX_PERCENT, adjustedPercent));
+
+    const rationale = adjustments.length > 0
+      ? `Base: ${basePositionPercent.toFixed(1)}% | ${adjustments.join(' | ')} | Final: ${finalPercent.toFixed(1)}%`
+      : `No adjustments needed: ${basePositionPercent.toFixed(1)}%`;
+
+    return { adjustedPercent: finalPercent, rationale };
   }
 }
