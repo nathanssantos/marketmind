@@ -1,6 +1,7 @@
 import { calculateATR, calculateSwingPoints } from '@marketmind/indicators';
 import type { Interval, Kline as KlineType, TrailingStopOptimizationConfig } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
+import { TRAILING_STOP } from '../constants';
 import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
 import { klines, priceCache, setupDetections, tradeExecutions } from '../db/schema';
@@ -8,14 +9,14 @@ import { logger } from './logger';
 import { calculateATRPercent, getVolatilityProfile } from './volatility-profile';
 
 export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
-  breakevenProfitThreshold: 0.0075,
-  breakevenWithFeesThreshold: 0.01,
-  minTrailingDistancePercent: 0.002,
+  breakevenProfitThreshold: TRAILING_STOP.BREAKEVEN_THRESHOLD,
+  breakevenWithFeesThreshold: TRAILING_STOP.FEES_COVERAGE_THRESHOLD,
+  minTrailingDistancePercent: TRAILING_STOP.ATR_MULTIPLIER,
   swingLookback: 3,
   useATRMultiplier: true,
   atrMultiplier: 2.0,
-  feePercent: 0.002,
-  trailingDistancePercent: 0.5,
+  feePercent: TRAILING_STOP.ATR_MULTIPLIER,
+  trailingDistancePercent: TRAILING_STOP.PEAK_PROFIT_FLOOR,
   useVolatilityBasedThresholds: true,
 };
 
@@ -63,7 +64,7 @@ export const calculateBreakevenPrice = (
 export const calculateFeesCoveredPrice = (
   entryPrice: number,
   isLong: boolean,
-  feePercent: number = 0.002
+  feePercent: number = TRAILING_STOP.ATR_MULTIPLIER
 ): number => {
   return entryPrice * (isLong ? 1 + feePercent : 1 - feePercent);
 };
@@ -73,7 +74,7 @@ export const calculateProgressiveFloor = (
   highestPrice: number | undefined,
   lowestPrice: number | undefined,
   isLong: boolean,
-  trailingDistancePercent: number = 0.5
+  trailingDistancePercent: number = TRAILING_STOP.PEAK_PROFIT_FLOOR
 ): number | null => {
   if (isLong) {
     if (highestPrice === undefined || highestPrice <= entryPrice) return null;

@@ -11,6 +11,7 @@ import type {
 import { TRPCError } from '@trpc/server';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { BACKTEST_ENGINE } from '../../constants';
 import { env } from '../../env';
 import { calculateRequiredKlinesForML, DEFAULT_KLINES_FOR_ML } from '../../utils/kline-calculator';
 import { generateEntityId } from '../../utils/id';
@@ -192,8 +193,6 @@ export class BacktestEngine {
   }
 
   private async fetchKlines(config: BacktestConfig, klines?: any[]): Promise<any[]> {
-    const EMA200_WARMUP_BARS = 250;
-
     if (klines && klines.length > 0) {
       console.log('[Backtest] Using pre-fetched klines:', klines.length);
       return klines;
@@ -202,7 +201,7 @@ export class BacktestEngine {
     console.log('[Backtest] Fetching historical klines from Binance API...');
 
     const intervalMs = this.getIntervalMs(config.interval);
-    const warmupMs = EMA200_WARMUP_BARS * intervalMs;
+    const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
     const warmupStartDate = new Date(new Date(config.startDate).getTime() - warmupMs);
 
     console.log('[Backtest] Including warmup period for EMA200:', warmupStartDate.toISOString(), 'to', config.startDate);
