@@ -1419,11 +1419,27 @@ export const tradingRouter = router({
     .query(async ({ input }) => {
       if (input.symbols.length === 0) return {};
 
-      try {
-        const prices: Record<string, string> = {};
+      const MAX_RETRIES = 3;
+      const RETRY_DELAY_MS = 1000;
 
-        if (input.marketType === 'FUTURES') {
-          const client = new USDMClient();
+      const fetchPrices = async (attempt: number): Promise<Record<string, string>> => {
+        try {
+          const prices: Record<string, string> = {};
+
+          if (input.marketType === 'FUTURES') {
+            const client = new USDMClient();
+            const tickers = await client.getSymbolPriceTicker();
+            const tickersArray = Array.isArray(tickers) ? tickers : [tickers];
+
+            for (const symbol of input.symbols) {
+              const ticker = tickersArray.find((t) => t.symbol === symbol);
+              if (ticker?.price) prices[symbol] = ticker.price.toString();
+            }
+
+            return prices;
+          }
+
+          const client = new MainClient();
           const tickers = await client.getSymbolPriceTicker();
           const tickersArray = Array.isArray(tickers) ? tickers : [tickers];
 
@@ -1433,23 +1449,40 @@ export const tradingRouter = router({
           }
 
           return prices;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          const isRetryable = errorMessage.includes('ETIMEDOUT') ||
+            errorMessage.includes('ECONNRESET') ||
+            errorMessage.includes('ENOTFOUND') ||
+            errorMessage.includes('socket hang up');
+
+          if (isRetryable && attempt < MAX_RETRIES) {
+            logger.warn({
+              attempt,
+              maxRetries: MAX_RETRIES,
+              errorMessage,
+              symbols: input.symbols,
+            }, 'Retrying ticker price fetch after network error');
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            return fetchPrices(attempt + 1);
+          }
+
+          throw error;
         }
+      };
 
-        const client = new MainClient();
-        const tickers = await client.getSymbolPriceTicker();
-        const tickersArray = Array.isArray(tickers) ? tickers : [tickers];
-
-        for (const symbol of input.symbols) {
-          const ticker = tickersArray.find((t) => t.symbol === symbol);
-          if (ticker?.price) prices[symbol] = ticker.price.toString();
-        }
-
-        return prices;
+      try {
+        return await fetchPrices(1);
       } catch (error) {
-        logger.error({ error, symbols: input.symbols }, 'Failed to fetch ticker prices');
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error({
+          errorMessage,
+          symbols: input.symbols,
+          marketType: input.marketType,
+        }, 'Failed to fetch ticker prices from Binance after retries');
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch ticker prices',
+          message: `Failed to fetch ticker prices: ${errorMessage}`,
           cause: error,
         });
       }
