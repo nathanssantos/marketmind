@@ -272,6 +272,7 @@ function AppContent(): ReactElement {
     symbol,
     interval: timeframe as any,
     limit: 500,
+    marketType,
   });
 
 
@@ -350,7 +351,7 @@ function AppContent(): ReactElement {
     }
     pendingUpdateRef.current = null;
     lastRefetchRef.current = 0;
-  }, [symbol, timeframe]);
+  }, [symbol, timeframe, marketType]);
 
   const handleRealtimeUpdate = useCallback((kline: Kline, isFinal: boolean) => {
     const now = Date.now();
@@ -426,7 +427,8 @@ function AppContent(): ReactElement {
     symbol,
     timeframe as any,
     handleKlineStreamUpdate,
-    !!marketData
+    !!marketData,
+    marketType
   );
 
   useEffect(() => {
