@@ -11,8 +11,6 @@ import {
   LuGrid3X3,
   LuHistory,
   LuPlus,
-  LuRuler,
-  LuScan,
   LuSettings
 } from 'react-icons/lu';
 import { useChartWindows } from '../../hooks/useChartWindows';
@@ -34,8 +32,6 @@ export interface ToolbarProps {
   showGrid: boolean;
   showCurrentPriceLine: boolean;
   showCrosshair: boolean;
-  showMeasurementRuler: boolean;
-  showMeasurementArea: boolean;
   showStochastic: boolean;
   showRSI: boolean;
   showBollingerBands: boolean;
@@ -55,8 +51,6 @@ export interface ToolbarProps {
   onShowGridChange: (show: boolean) => void;
   onShowCurrentPriceLineChange: (show: boolean) => void;
   onShowCrosshairChange: (show: boolean) => void;
-  onShowMeasurementRulerChange: (show: boolean) => void;
-  onShowMeasurementAreaChange: (show: boolean) => void;
   onShowStochasticChange: (show: boolean) => void;
   onShowRSIChange: (show: boolean) => void;
   onShowBollingerBandsChange: (show: boolean) => void;
@@ -79,8 +73,6 @@ export const Toolbar = memo(({
   showGrid,
   showCurrentPriceLine,
   showCrosshair,
-  showMeasurementRuler,
-  showMeasurementArea,
   showStochastic,
   showRSI,
   showBollingerBands,
@@ -100,8 +92,6 @@ export const Toolbar = memo(({
   onShowGridChange,
   onShowCurrentPriceLineChange,
   onShowCrosshairChange,
-  onShowMeasurementRulerChange,
-  onShowMeasurementAreaChange,
   onShowStochasticChange,
   onShowRSIChange,
   onShowBollingerBandsChange,
@@ -285,33 +275,6 @@ export const Toolbar = memo(({
                 variant={showCrosshair ? 'solid' : 'ghost'}
               >
                 <LuCrosshair />
-              </IconButton>
-            </TooltipWrapper>
-          </HStack>
-
-          <Box w="1px" h="32px" bg="border" flexShrink={0} />
-
-          <HStack gap={1}>
-            <TooltipWrapper label={t('chart.controls.measurementRuler')} showArrow>
-              <IconButton
-                size="2xs"
-                aria-label={t('chart.controls.measurementRuler')}
-                onClick={() => onShowMeasurementRulerChange(!showMeasurementRuler)}
-                colorPalette={showMeasurementRuler ? 'blue' : 'gray'}
-                variant={showMeasurementRuler ? 'solid' : 'ghost'}
-              >
-                <LuRuler />
-              </IconButton>
-            </TooltipWrapper>
-            <TooltipWrapper label={t('chart.controls.measurementArea')} showArrow>
-              <IconButton
-                size="2xs"
-                aria-label={t('chart.controls.measurementArea')}
-                onClick={() => onShowMeasurementAreaChange(!showMeasurementArea)}
-                colorPalette={showMeasurementArea ? 'blue' : 'gray'}
-                variant={showMeasurementArea ? 'solid' : 'ghost'}
-              >
-                <LuScan />
               </IconButton>
             </TooltipWrapper>
           </HStack>

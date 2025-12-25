@@ -11,6 +11,7 @@ import { ChartCanvas } from '../components/Chart/ChartCanvas';
 import { PinnedControlsProvider } from '../components/Chart/PinnedControlsContext';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
+import { ChartToolsToolbar } from '../components/Layout/ChartToolsToolbar';
 import { Toolbar } from '../components/Layout/Toolbar';
 import { TrpcProvider } from '../components/TrpcProvider';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
@@ -349,10 +350,6 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
           onShowCurrentPriceLineChange={setShowCurrentPriceLine}
           showCrosshair={showCrosshair}
           onShowCrosshairChange={setShowCrosshair}
-          showMeasurementRuler={showMeasurementRuler}
-          onShowMeasurementRulerChange={setShowMeasurementRuler}
-          showMeasurementArea={showMeasurementArea}
-          onShowMeasurementAreaChange={setShowMeasurementArea}
           showStochastic={showStochastic}
           onShowStochasticChange={setShowStochastic}
           showRSI={showRSI}
@@ -382,6 +379,12 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
       </Box>
 
       <Box flex="1" position="relative" overflow="hidden">
+        <ChartToolsToolbar
+          showMeasurementRuler={showMeasurementRuler}
+          showMeasurementArea={showMeasurementArea}
+          onShowMeasurementRulerChange={setShowMeasurementRuler}
+          onShowMeasurementAreaChange={setShowMeasurementArea}
+        />
         {loading && (
           <LoadingSpinner message={t('app.loadingMarketData')} />
         )}

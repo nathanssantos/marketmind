@@ -10,6 +10,7 @@ import { ChatSidebar } from '../Chat/ChatSidebar';
 import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { TradingSidebar } from '../Trading/TradingSidebar';
+import { ChartToolsToolbar } from './ChartToolsToolbar';
 import { Toolbar } from './Toolbar';
 import type { MarketDataService } from '../../services/market/MarketDataService';
 
@@ -188,8 +189,6 @@ export const MainLayout = ({
           showGrid={showGrid}
           showCurrentPriceLine={showCurrentPriceLine}
           showCrosshair={showCrosshair}
-          showMeasurementRuler={showMeasurementRuler}
-          showMeasurementArea={showMeasurementArea}
           showStochastic={showStochastic}
           showRSI={showRSI}
           showBollingerBands={showBollingerBands}
@@ -207,8 +206,6 @@ export const MainLayout = ({
           onShowGridChange={onShowGridChange}
           onShowCurrentPriceLineChange={onShowCurrentPriceLineChange}
           onShowCrosshairChange={onShowCrosshairChange}
-          onShowMeasurementRulerChange={onShowMeasurementRulerChange}
-          onShowMeasurementAreaChange={onShowMeasurementAreaChange}
           onShowStochasticChange={onShowStochasticChange}
           onShowRSIChange={onShowRSIChange}
           onShowBollingerBandsChange={onShowBollingerBandsChange}
@@ -263,6 +260,12 @@ export const MainLayout = ({
             }
             transition="width 0.2s ease"
           >
+            <ChartToolsToolbar
+              showMeasurementRuler={showMeasurementRuler}
+              showMeasurementArea={showMeasurementArea}
+              onShowMeasurementRulerChange={onShowMeasurementRulerChange}
+              onShowMeasurementAreaChange={onShowMeasurementAreaChange}
+            />
             {children}
           </Box>
 
