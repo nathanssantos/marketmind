@@ -123,6 +123,7 @@ export const WatcherManager = () => {
                 interval={watcher.interval}
                 profileName={profile?.name ?? watcher.profileName}
                 profileId={watcher.profileId}
+                marketType={watcher.marketType}
                 isActive={true}
                 onStop={() => handleStopWatcher(watcher.symbol, watcher.interval)}
                 isStopping={isStoppingWatcher}
@@ -147,6 +148,7 @@ interface WatcherCardProps {
   interval: string;
   profileName?: string;
   profileId?: string;
+  marketType?: 'SPOT' | 'FUTURES';
   isActive: boolean;
   onStop: () => void;
   isStopping?: boolean;
@@ -156,6 +158,7 @@ const WatcherCard = ({
   symbol,
   interval,
   profileName,
+  marketType = 'SPOT',
   isActive,
   onStop,
   isStopping = false,
@@ -193,6 +196,21 @@ const WatcherCard = ({
                 _dark={{ bg: 'blue.900', color: 'blue.200' }}
               >
                 {interval}
+              </Box>
+              <Box
+                px={2}
+                py={0.5}
+                bg={marketType === 'FUTURES' ? 'orange.100' : 'green.100'}
+                color={marketType === 'FUTURES' ? 'orange.800' : 'green.800'}
+                borderRadius="sm"
+                fontSize="xs"
+                fontWeight="medium"
+                _dark={{
+                  bg: marketType === 'FUTURES' ? 'orange.900' : 'green.900',
+                  color: marketType === 'FUTURES' ? 'orange.200' : 'green.200',
+                }}
+              >
+                {marketType}
               </Box>
             </Flex>
             <Text fontSize="xs" color="fg.muted">

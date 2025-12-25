@@ -168,6 +168,48 @@ export class WebSocketService {
     this.io.to(`user:${userId}`).emit('setup-detected', data);
   }
 
+  public emitRiskAlert(walletId: string, alert: {
+    type: 'LIQUIDATION_RISK' | 'DAILY_LOSS_LIMIT' | 'MAX_DRAWDOWN' | 'POSITION_CLOSED' | 'MARGIN_TOP_UP';
+    level: 'info' | 'warning' | 'danger' | 'critical';
+    positionId?: string;
+    symbol?: string;
+    message: string;
+    data: Record<string, unknown>;
+    timestamp: number;
+  }): void {
+    this.io.to(`wallet:${walletId}`).emit('risk:alert', alert);
+  }
+
+  public emitPositionClosed(walletId: string, data: {
+    positionId: string;
+    symbol: string;
+    side: string;
+    exitReason: string;
+    pnl: number;
+    pnlPercent: number;
+  }): void {
+    this.io.to(`positions:${walletId}`).emit('position:closed', data);
+  }
+
+  public emitDailyLossLimitReached(walletId: string, data: {
+    currentLoss: number;
+    limit: number;
+    percentUsed: number;
+  }): void {
+    this.io.to(`wallet:${walletId}`).emit('risk:daily-loss-limit', data);
+  }
+
+  public emitLiquidationWarning(walletId: string, data: {
+    symbol: string;
+    side: 'LONG' | 'SHORT';
+    markPrice: number;
+    liquidationPrice: number;
+    distancePercent: number;
+    riskLevel: 'warning' | 'danger' | 'critical';
+  }): void {
+    this.io.to(`wallet:${walletId}`).emit('risk:liquidation-warning', data);
+  }
+
   public getIO(): SocketIOServer {
     return this.io;
   }

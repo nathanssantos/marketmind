@@ -127,6 +127,20 @@
       "when": 1766614115082,
       "tag": "0017_nifty_microchip",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1766696920928,
+      "tag": "0018_sudden_ego",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1766699841566,
+      "tag": "0019_numerous_naoko",
+      "breakpoints": true
     }
   ]
 }

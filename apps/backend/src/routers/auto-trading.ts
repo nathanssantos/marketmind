@@ -626,10 +626,11 @@ export const autoTradingRouter = router({
         symbol: z.string(),
         interval: z.string(),
         profileId: z.string().optional(),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      log('🚀 startWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId });
+      log('🚀 startWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId, marketType: input.marketType });
 
       const [wallet] = await ctx.db
         .select()
@@ -660,10 +661,12 @@ export const autoTradingRouter = router({
         ctx.user.id,
         input.symbol,
         input.interval,
-        input.profileId
+        input.profileId,
+        false,
+        input.marketType
       );
 
-      log('✅ Watcher started', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId });
+      log('✅ Watcher started', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId, marketType: input.marketType });
 
       return { success: true };
     }),
