@@ -23,9 +23,9 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
       top={0}
       left={0}
       right={0}
-      height="48px"
+      height="41px"
       px={4}
-      py={2}
+      py={1}
       align="center"
       justify="space-between"
       bg="bg.panel"

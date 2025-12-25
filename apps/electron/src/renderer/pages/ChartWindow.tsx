@@ -335,7 +335,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
       overflow="hidden"
       bg="var(--chakra-colors-chakra-body-bg)"
     >
-      <Box flexShrink={0} height="48px">
+      <Box flexShrink={0} height="41px">
         <Toolbar
           symbol={symbol}
           onSymbolChange={handleSymbolChange}

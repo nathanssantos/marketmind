@@ -226,8 +226,8 @@ export const MainLayout = ({
           top={0}
           left={0}
           right={0}
-          height="calc(100vh - 48px)"
-          marginTop="48px"
+          height="calc(100vh - 41px)"
+          marginTop="41px"
           overflow="hidden"
         >
           {chatPosition === 'left' && isChatOpen && (
