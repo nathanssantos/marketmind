@@ -158,7 +158,7 @@ export const ChartCanvas = ({
       .map(exec => ({
         id: exec.id,
         symbol: exec.symbol,
-        side: exec.side as 'LONG' | 'SHORT',
+        side: exec.side,
         entryPrice: exec.entryPrice,
         quantity: exec.quantity,
         stopLoss: exec.stopLoss,

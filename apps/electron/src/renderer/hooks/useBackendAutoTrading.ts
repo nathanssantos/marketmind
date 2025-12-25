@@ -120,8 +120,8 @@ export const useBackendAutoTrading = (walletId: string) => {
   );
 
   const startWatcher = useCallback(
-    async (symbol: string, interval: string, profileId?: string, _marketType?: 'SPOT' | 'FUTURES') => {
-      return startWatcherMutation.mutateAsync({ walletId, symbol, interval, profileId });
+    async (symbol: string, interval: string, profileId?: string, marketType?: 'SPOT' | 'FUTURES') => {
+      return startWatcherMutation.mutateAsync({ walletId, symbol, interval, profileId, marketType });
     },
     [walletId, startWatcherMutation]
   );

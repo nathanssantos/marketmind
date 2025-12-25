@@ -55,7 +55,6 @@ const log = (message: string, data?: Record<string, unknown>): void => {
     ensureLogDir();
     fs.appendFileSync(LOG_FILE, `${logLine  }\n`);
   } catch {
-    // Ignore file write errors
   }
 };
 
@@ -1011,7 +1010,7 @@ export class AutoTradingScheduler {
         const currentPlusDI = adxResult.plusDI[adxResult.plusDI.length - 1];
         const currentMinusDI = adxResult.minusDI[adxResult.minusDI.length - 1];
 
-        if (currentAdx === null || currentPlusDI === null || currentMinusDI === null) {
+        if (currentAdx == null || currentPlusDI == null || currentMinusDI == null) {
           log('⚠️ ADX calculation returned null values', {
             symbol: watcher.symbol,
             interval: watcher.interval,
@@ -1022,9 +1021,13 @@ export class AutoTradingScheduler {
           return;
         }
 
-        const isBullish = currentPlusDI > currentMinusDI;
-        const isBearish = currentMinusDI > currentPlusDI;
-        const isStrongTrend = currentAdx >= ADX_FILTER.TREND_THRESHOLD;
+        const adx = currentAdx;
+        const plusDI = currentPlusDI;
+        const minusDI = currentMinusDI;
+
+        const isBullish = plusDI > minusDI;
+        const isBearish = minusDI > plusDI;
+        const isStrongTrend = adx >= ADX_FILTER.TREND_THRESHOLD;
 
         const isLongAllowed = setup.direction === 'LONG' && isBullish && isStrongTrend;
         const isShortAllowed = setup.direction === 'SHORT' && isBearish && isStrongTrend;
@@ -1033,9 +1036,9 @@ export class AutoTradingScheduler {
           symbol: watcher.symbol,
           interval: watcher.interval,
           direction: setup.direction,
-          adx: currentAdx.toFixed(2),
-          plusDI: currentPlusDI.toFixed(2),
-          minusDI: currentMinusDI.toFixed(2),
+          adx: adx.toFixed(2),
+          plusDI: plusDI.toFixed(2),
+          minusDI: minusDI.toFixed(2),
           trendThreshold: ADX_FILTER.TREND_THRESHOLD,
           isBullish,
           isBearish,
@@ -1045,16 +1048,16 @@ export class AutoTradingScheduler {
 
         if (!isLongAllowed && !isShortAllowed) {
           const reason = !isStrongTrend
-            ? `ADX (${currentAdx.toFixed(2)}) below threshold (${ADX_FILTER.TREND_THRESHOLD}) - weak trend`
+            ? `ADX (${adx.toFixed(2)}) below threshold (${ADX_FILTER.TREND_THRESHOLD}) - weak trend`
             : setup.direction === 'LONG'
-              ? `+DI (${currentPlusDI.toFixed(2)}) <= -DI (${currentMinusDI.toFixed(2)}) - bearish bias`
-              : `-DI (${currentMinusDI.toFixed(2)}) <= +DI (${currentPlusDI.toFixed(2)}) - bullish bias`;
+              ? `+DI (${plusDI.toFixed(2)}) <= -DI (${minusDI.toFixed(2)}) - bearish bias`
+              : `-DI (${minusDI.toFixed(2)}) <= +DI (${plusDI.toFixed(2)}) - bullish bias`;
 
           log('🚫 ADX filter blocked trade', {
             direction: setup.direction,
-            adx: currentAdx.toFixed(2),
-            plusDI: currentPlusDI.toFixed(2),
-            minusDI: currentMinusDI.toFixed(2),
+            adx: adx.toFixed(2),
+            plusDI: plusDI.toFixed(2),
+            minusDI: minusDI.toFixed(2),
             reason,
           });
           return;
@@ -1062,12 +1065,12 @@ export class AutoTradingScheduler {
 
         log('✅ ADX filter passed', {
           direction: setup.direction,
-          adx: currentAdx.toFixed(2),
-          plusDI: currentPlusDI.toFixed(2),
-          minusDI: currentMinusDI.toFixed(2),
+          adx: adx.toFixed(2),
+          plusDI: plusDI.toFixed(2),
+          minusDI: minusDI.toFixed(2),
           condition: setup.direction === 'LONG'
-            ? `+DI (${currentPlusDI.toFixed(2)}) > -DI (${currentMinusDI.toFixed(2)}) with ADX (${currentAdx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`
-            : `-DI (${currentMinusDI.toFixed(2)}) > +DI (${currentPlusDI.toFixed(2)}) with ADX (${currentAdx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`,
+            ? `+DI (${plusDI.toFixed(2)}) > -DI (${minusDI.toFixed(2)}) with ADX (${adx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`
+            : `-DI (${minusDI.toFixed(2)}) > +DI (${plusDI.toFixed(2)}) with ADX (${adx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`,
         });
       }
 

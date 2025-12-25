@@ -192,7 +192,6 @@ export class ModelRegistry {
       const fs = await import('fs/promises');
       await fs.unlink(model.filePath);
     } catch {
-      // File may not exist
     }
 
     this.models.delete(modelId);
@@ -217,7 +216,6 @@ export class ModelRegistry {
       const fs = await import('fs/promises');
       await fs.writeFile(this.config.manifestPath!, JSON.stringify(manifest, null, 2));
     } catch {
-      // Ignore write errors in read-only environments
     }
   }
 

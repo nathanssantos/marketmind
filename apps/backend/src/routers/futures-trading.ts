@@ -1,8 +1,8 @@
 import { TRPCError } from '@trpc/server';
-import { randomBytes } from 'crypto';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { orders, positions, wallets } from '../db/schema';
+import { orders, positions } from '../db/schema';
+import { walletQueries } from '../services/database/walletQueries';
 import {
   createBinanceFuturesClient,
   isPaperWallet,
@@ -20,10 +20,7 @@ import { getBinanceFuturesDataService } from '../services/binance-futures-data';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 import { calculateLiquidationPrice, FUTURES_DEFAULTS } from '@marketmind/types';
-
-const generateId = (length: number): string => {
-  return randomBytes(length).toString('base64url').slice(0, length);
-};
+import { generateEntityId } from '../utils/id';
 
 const FUTURES_TAKER_FEE = FUTURES_DEFAULTS.TAKER_FEE;
 
@@ -37,15 +34,7 @@ export const futuresTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
-      }
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (isPaperWallet(wallet)) {
         return { leverage: input.leverage, maxNotionalValue: '0', symbol: input.symbol };
@@ -73,15 +62,7 @@ export const futuresTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
-      }
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (isPaperWallet(wallet)) {
         return { success: true, marginType: input.marginType };
@@ -118,15 +99,7 @@ export const futuresTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
-      }
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (!wallet.isActive) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Wallet is inactive' });
@@ -234,15 +207,7 @@ export const futuresTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
-      }
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       try {
         if (isPaperWallet(wallet)) {
@@ -279,15 +244,7 @@ export const futuresTradingRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
-      }
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (isPaperWallet(wallet)) {
         const dbPositions = await ctx.db
@@ -327,15 +284,7 @@ export const futuresTradingRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
-      }
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (isPaperWallet(wallet)) {
         const [dbPosition] = await ctx.db
@@ -383,15 +332,7 @@ export const futuresTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
-      }
+      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       const MIN_RISK_REWARD_RATIO = 1.25;
 
@@ -435,7 +376,7 @@ export const futuresTradingRouter = router({
         }, '✅ Risk/Reward ratio validated for futures position');
       }
 
-      const positionId = generateId(21);
+      const positionId = generateEntityId();
       const entryPrice = parseFloat(input.entryPrice);
       const liquidationPrice = calculateLiquidationPrice(entryPrice, input.leverage, input.side);
 
@@ -471,15 +412,7 @@ export const futuresTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
-      }
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       try {
         if (isPaperWallet(wallet) && input.positionId) {
@@ -594,15 +527,7 @@ export const futuresTradingRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
-      }
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (isPaperWallet(wallet)) {
         const whereConditions = [
@@ -639,15 +564,7 @@ export const futuresTradingRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
-      }
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (isPaperWallet(wallet)) {
         return [

@@ -1,12 +1,10 @@
 import { TRPCError } from '@trpc/server';
-import { randomBytes } from 'crypto';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db';
 import { activeWatchers, tradingProfiles } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
-
-const generateId = (): string => randomBytes(16).toString('base64url').slice(0, 21);
+import { generateEntityId } from '../utils/id';
 
 const createProfileSchema = z.object({
   name: z.string().min(1).max(100),
@@ -63,7 +61,7 @@ export const tradingProfilesRouter = router({
     }),
 
   create: protectedProcedure.input(createProfileSchema).mutation(async ({ ctx, input }) => {
-    const id = generateId();
+    const id = generateEntityId();
 
     if (input.isDefault) {
       await db
@@ -159,7 +157,7 @@ export const tradingProfilesRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
       }
 
-      const id = generateId();
+      const id = generateEntityId();
 
       await db.insert(tradingProfiles).values({
         id,

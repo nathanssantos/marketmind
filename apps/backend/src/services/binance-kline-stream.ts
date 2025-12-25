@@ -43,7 +43,6 @@ export class BinanceKlineStreamService {
       return;
     }
 
-    // logger.info('Starting Binance kline stream service');
 
     this.client = new WebsocketClient({
       beautify: true,
@@ -62,7 +61,6 @@ export class BinanceKlineStreamService {
     });
 
     this.client.on('reconnected', () => {
-      // logger.info('Binance kline WebSocket reconnected');
       this.resubscribeAll();
     });
   }
@@ -72,7 +70,6 @@ export class BinanceKlineStreamService {
       this.client.closeAll(true);
       this.client = null;
       this.subscriptions.clear();
-      // logger.info('Binance kline stream service stopped');
     }
   }
 
@@ -94,7 +91,6 @@ export class BinanceKlineStreamService {
     }
 
     try {
-      const stream = `${symbol.toLowerCase()}@kline_${interval}`;
       void this.client.subscribeSpotKline(symbol, interval as KlineInterval);
 
       this.subscriptions.set(key, {
@@ -103,7 +99,6 @@ export class BinanceKlineStreamService {
         clientCount: 1,
       });
 
-      // logger.info(`Subscribed to kline stream: ${stream}`);
     } catch (error) {
       logger.error({
         symbol,
@@ -191,11 +186,6 @@ export class BinanceKlineStreamService {
 
       if (update.isClosed) {
         await this.persistKline(update);
-        // logger.info({ 
-        //   symbol: update.symbol, 
-        //   interval: update.interval, 
-        //   openTime: new Date(update.openTime).toISOString(),
-        // }, '✅ Persisted closed kline');
       }
     } catch (error) {
       logger.error({
@@ -270,7 +260,6 @@ export class BinanceKlineStreamService {
   }
 
   private resubscribeAll(): void {
-    // logger.info('Resubscribing to all kline streams');
 
     const subs = Array.from(this.subscriptions.values());
     this.subscriptions.clear();
@@ -307,7 +296,6 @@ export class BinanceFuturesKlineStreamService {
       return;
     }
 
-    // logger.info('Starting Binance futures kline stream service');
 
     this.client = new WebsocketClient({
       beautify: true,
@@ -326,7 +314,6 @@ export class BinanceFuturesKlineStreamService {
     });
 
     this.client.on('reconnected', () => {
-      // logger.info('Binance futures kline WebSocket reconnected');
       this.resubscribeAll();
     });
   }
@@ -336,7 +323,6 @@ export class BinanceFuturesKlineStreamService {
       this.client.closeAll(true);
       this.client = null;
       this.subscriptions.clear();
-      // logger.info('Binance futures kline stream service stopped');
     }
   }
 
@@ -459,11 +445,6 @@ export class BinanceFuturesKlineStreamService {
 
       if (update.isClosed) {
         await this.persistKline(update);
-        // logger.info({
-        //   symbol: update.symbol,
-        //   interval: update.interval,
-        //   openTime: new Date(update.openTime).toISOString(),
-        // }, '✅ Persisted closed futures kline');
       }
     } catch (error) {
       logger.error({
@@ -538,7 +519,6 @@ export class BinanceFuturesKlineStreamService {
   }
 
   private resubscribeAll(): void {
-    // logger.info('Resubscribing to all futures kline streams');
 
     const subs = Array.from(this.subscriptions.values());
     this.subscriptions.clear();

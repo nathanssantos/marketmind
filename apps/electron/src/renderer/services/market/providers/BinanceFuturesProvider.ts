@@ -257,7 +257,7 @@ export class BinanceFuturesProvider extends BaseMarketProvider {
     const normalizedSymbol = this.normalizeSymbol(symbol);
     const symbolData = this.symbolsCache.find(s => s.symbol === normalizedSymbol);
 
-    if (!symbolData || symbolData.contractType !== 'PERPETUAL') return null;
+    if (symbolData?.contractType !== 'PERPETUAL') return null;
 
     return {
       symbol: symbolData.symbol,

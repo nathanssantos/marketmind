@@ -29,10 +29,6 @@ export type ListStatusType = BinanceListStatusType;
 
 export type ListOrderStatus = BinanceListOrderStatus;
 
-/**
- * Exchange-standard order structure (Binance format)
- * Note: In Binance, stop-loss and take-profit are separate orders linked via OrderList (OCO)
- */
 export interface Order {
   symbol: string;
   orderId: number;
@@ -94,9 +90,6 @@ export type Balance = BinanceBalance;
 
 export interface Account extends BinanceAccount {}
 
-/**
- * Simulator wallet (extends Account with simulator-specific fields)
- */
 export interface Wallet extends Account {
   id: string;
   name: string;
@@ -114,10 +107,6 @@ export interface WalletPerformancePoint {
   pnlPercent: number;
 }
 
-/**
- * Position structure (calculated from filled orders)
- * Not a direct Binance API type, but derived from account orders
- */
 export interface Position {
   symbol: string;
   side?: 'LONG' | 'SHORT';

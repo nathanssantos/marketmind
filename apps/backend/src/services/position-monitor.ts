@@ -4,10 +4,29 @@ import type { TradeExecution, Wallet } from '../db/schema';
 import { priceCache, tradeExecutions, wallets } from '../db/schema';
 import { env } from '../env';
 import { createBinanceClient, createBinanceClientForPrices, isPaperWallet } from './binance-client';
+import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
 import { strategyPerformanceService } from './strategy-performance';
 import { trailingStopService } from './trailing-stop';
 import { getWebSocketService } from './websocket';
+
+const LIQUIDATION_THRESHOLDS = {
+  WARNING: 0.50,
+  DANGER: 0.25,
+  CRITICAL: 0.10,
+} as const;
+
+type LiquidationRiskLevel = 'safe' | 'warning' | 'danger' | 'critical';
+
+interface LiquidationRiskCheck {
+  executionId: string;
+  symbol: string;
+  side: 'LONG' | 'SHORT';
+  markPrice: number;
+  liquidationPrice: number;
+  distancePercent: number;
+  riskLevel: LiquidationRiskLevel;
+}
 
 export interface PositionCheckResult {
   executionId: string;
@@ -98,6 +117,17 @@ export class PositionMonitorService {
           groupKey,
           error: error instanceof Error ? error.message : String(error),
         }, 'Error checking position group');
+      }
+    }
+
+    const futuresExecutions = openExecutions.filter(e => e.marketType === 'FUTURES');
+    if (futuresExecutions.length > 0) {
+      try {
+        await this.checkLiquidationRisk(futuresExecutions);
+      } catch (error) {
+        logger.error({
+          error: error instanceof Error ? error.message : String(error),
+        }, 'Error checking liquidation risk');
       }
     }
   }
@@ -747,6 +777,123 @@ export class PositionMonitorService {
 
   groupExecutionsBySymbolAndSidePublic(executions: TradeExecution[]): Map<string, TradeExecution[]> {
     return this.groupExecutionsBySymbolAndSide(executions);
+  }
+
+  private lastLiquidationAlerts: Map<string, { level: LiquidationRiskLevel; timestamp: number }> = new Map();
+  private readonly LIQUIDATION_ALERT_COOLDOWN_MS = 60000;
+
+  async checkLiquidationRisk(futuresExecutions: TradeExecution[]): Promise<LiquidationRiskCheck[]> {
+    const results: LiquidationRiskCheck[] = [];
+    const symbolsToCheck = [...new Set(futuresExecutions.map(e => e.symbol))];
+
+    for (const symbol of symbolsToCheck) {
+      try {
+        const markPriceData = await getBinanceFuturesDataService().getMarkPrice(symbol);
+        if (!markPriceData) continue;
+
+        const markPrice = markPriceData.markPrice;
+        const executionsForSymbol = futuresExecutions.filter(e => e.symbol === symbol);
+
+        for (const execution of executionsForSymbol) {
+          if (!execution.liquidationPrice) continue;
+
+          const liquidationPrice = parseFloat(execution.liquidationPrice);
+          if (liquidationPrice <= 0) continue;
+
+          const distancePercent = execution.side === 'LONG'
+            ? (markPrice - liquidationPrice) / markPrice
+            : (liquidationPrice - markPrice) / markPrice;
+
+          let riskLevel: LiquidationRiskLevel = 'safe';
+          if (distancePercent <= LIQUIDATION_THRESHOLDS.CRITICAL) {
+            riskLevel = 'critical';
+          } else if (distancePercent <= LIQUIDATION_THRESHOLDS.DANGER) {
+            riskLevel = 'danger';
+          } else if (distancePercent <= LIQUIDATION_THRESHOLDS.WARNING) {
+            riskLevel = 'warning';
+          }
+
+          const result: LiquidationRiskCheck = {
+            executionId: execution.id,
+            symbol,
+            side: execution.side as 'LONG' | 'SHORT',
+            markPrice,
+            liquidationPrice,
+            distancePercent,
+            riskLevel,
+          };
+
+          results.push(result);
+
+          if (riskLevel !== 'safe') {
+            await this.emitLiquidationAlert(execution.walletId, result);
+          }
+        }
+      } catch (error) {
+        logger.error({
+          symbol,
+          error: error instanceof Error ? error.message : String(error),
+        }, 'Error checking liquidation risk for symbol');
+      }
+    }
+
+    return results;
+  }
+
+  private async emitLiquidationAlert(walletId: string, risk: LiquidationRiskCheck): Promise<void> {
+    const alertKey = `${risk.executionId}-${risk.riskLevel}`;
+    const lastAlert = this.lastLiquidationAlerts.get(alertKey);
+    const now = Date.now();
+
+    if (lastAlert && (now - lastAlert.timestamp) < this.LIQUIDATION_ALERT_COOLDOWN_MS) {
+      return;
+    }
+
+    this.lastLiquidationAlerts.set(alertKey, { level: risk.riskLevel, timestamp: now });
+
+    const wsService = getWebSocketService();
+    if (!wsService) return;
+
+    const distancePercentFormatted = (risk.distancePercent * 100).toFixed(2);
+    const message = risk.riskLevel === 'critical'
+      ? `⚠️ CRITICAL: ${risk.symbol} ${risk.side} position ${distancePercentFormatted}% from liquidation!`
+      : risk.riskLevel === 'danger'
+        ? `⚠️ DANGER: ${risk.symbol} ${risk.side} position ${distancePercentFormatted}% from liquidation`
+        : `⚠️ WARNING: ${risk.symbol} ${risk.side} position ${distancePercentFormatted}% from liquidation`;
+
+    wsService.emitLiquidationWarning(walletId, {
+      symbol: risk.symbol,
+      side: risk.side,
+      markPrice: risk.markPrice,
+      liquidationPrice: risk.liquidationPrice,
+      distancePercent: risk.distancePercent,
+      riskLevel: risk.riskLevel as 'warning' | 'danger' | 'critical',
+    });
+
+    wsService.emitRiskAlert(walletId, {
+      type: 'LIQUIDATION_RISK',
+      level: risk.riskLevel as 'warning' | 'danger' | 'critical',
+      positionId: risk.executionId,
+      symbol: risk.symbol,
+      message,
+      data: {
+        side: risk.side,
+        markPrice: risk.markPrice,
+        liquidationPrice: risk.liquidationPrice,
+        distancePercent: risk.distancePercent,
+      },
+      timestamp: now,
+    });
+
+    logger.warn({
+      executionId: risk.executionId,
+      symbol: risk.symbol,
+      side: risk.side,
+      markPrice: risk.markPrice,
+      liquidationPrice: risk.liquidationPrice,
+      distancePercent: distancePercentFormatted,
+      riskLevel: risk.riskLevel,
+    }, `[LIQUIDATION RISK] ${risk.riskLevel.toUpperCase()} - Position approaching liquidation`);
   }
 }
 

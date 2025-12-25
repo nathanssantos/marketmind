@@ -79,7 +79,7 @@ export async function montecarloCommand(options: MonteCarloOptions) {
       maxPositionSize: maxPosition,
       commission: commission / 100,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
-      onlyWithTrend: options.onlyWithTrend,
+      onlyWithTrend: options.withTrend,
     };
 
     if (minConfidence !== undefined) {
@@ -216,9 +216,6 @@ export async function montecarloCommand(options: MonteCarloOptions) {
   }
 }
 
-/**
- * Display Monte Carlo simulation results
- */
 function displayResults(
   backtestResult: any,
   mcResult: any,
@@ -323,9 +320,6 @@ function displayResults(
   interpretResults(mcResult);
 }
 
-/**
- * Interpret and provide feedback on Monte Carlo results
- */
 function interpretResults(mcResult: any) {
   console.log(chalk.cyan.bold('INTERPRETATION:'));
   console.log('');

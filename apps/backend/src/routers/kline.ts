@@ -325,7 +325,6 @@ export const klineRouter = router({
       }
 
       subscribeToStream(input.symbol, input.interval as Interval, marketType);
-      // logger.info({ symbol: input.symbol, interval: input.interval, marketType }, '📊 Auto-subscribed to kline stream after list query');
 
       return result;
     }),

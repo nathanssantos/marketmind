@@ -1,6 +1,7 @@
 import { calculateATR } from '@marketmind/indicators';
 import type { MarketType } from '@marketmind/types';
 import { and, eq, sql } from 'drizzle-orm';
+import { VOLATILITY } from '../constants';
 import { db } from '../db';
 import type { AutoTradingConfig, SetupDetection, Wallet } from '../db/schema';
 import { klines, tradeExecutions } from '../db/schema';
@@ -159,10 +160,9 @@ export class AutoTradingService {
       
       const atrPercent = (lastATR / currentPrice) * 100;
 
-      const HIGH_VOLATILITY_THRESHOLD = 3.0;
       const REDUCTION_FACTOR = 0.7;
 
-      if (atrPercent > HIGH_VOLATILITY_THRESHOLD) {
+      if (atrPercent > VOLATILITY.HIGH_THRESHOLD) {
         logger.info({
           symbol,
           interval,

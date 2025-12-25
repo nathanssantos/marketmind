@@ -24,20 +24,20 @@ const log = {
 
 function shouldPreserveComment(comment) {
     const preservePatterns = [
-        /^\/\*\*/,
         /@ts-ignore/,
         /@ts-expect-error/,
         /@ts-nocheck/,
         /eslint-disable/,
+        /eslint-enable/,
         /prettier-ignore/,
         /webpack/,
-        /@param/,
-        /@returns/,
-        /@description/,
-        /@example/,
         /SPDX-License/,
         /Copyright/,
         /MIT License/,
+        /vitest/,
+        /jest/,
+        /c8 ignore/,
+        /istanbul ignore/,
     ];
 
     return preservePatterns.some(pattern => pattern.test(comment));
@@ -81,7 +81,7 @@ function removeComments(content, filePath) {
             continue;
         }
 
-        if (line.trim().startsWith('/*') && !line.trim().startsWith('/**')) {
+        if (line.trim().startsWith('/*')) {
             inMultiLineComment = true;
             multiLineComment = `${line}\n`;
             multiLineStartLine = i;
@@ -237,12 +237,12 @@ function runTests() {
 function main() {
     console.log('🧹 MarketMind Comment Removal Script');
     console.log('=====================================\n');
-    console.log('This script safely removes comments while preserving:');
-    console.log('  ✅ JSDoc comments (/** ... */)');
-    console.log('  ✅ License headers');
-    console.log('  ✅ Type definition documentation');
-    console.log('  ✅ @ts-ignore, @ts-expect-error directives');
-    console.log('  ✅ eslint-disable comments\n');
+    console.log('This script removes ALL comments including JSDoc, preserving only:');
+    console.log('  ✅ @ts-ignore, @ts-expect-error, @ts-nocheck directives');
+    console.log('  ✅ eslint-disable/enable comments');
+    console.log('  ✅ prettier-ignore, webpack comments');
+    console.log('  ✅ License headers (SPDX, Copyright, MIT)');
+    console.log('  ✅ Test coverage comments (vitest, jest, c8, istanbul)\n');
 
     log.info('Checking baseline type errors...');
     const baselineErrors = countTypeErrors();

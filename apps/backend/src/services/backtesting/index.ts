@@ -1,0 +1,15 @@
+export { BacktestEngine } from './BacktestEngine';
+export { BacktestOptimizer, type OptimizationConfig, type OptimizationResult } from './BacktestOptimizer';
+export { ExitManager, type ExitConfig, type ExitResult, type TrailingStopState } from './ExitManager';
+export { FilterManager, type FilterConfig, type FilterStats, type MarketContextResult } from './FilterManager';
+export { FuturesBacktestEngine } from './FuturesBacktestEngine';
+export { FullSystemOptimizer } from './FullSystemOptimizer';
+export { IndicatorCache } from './IndicatorCache';
+export { MonteCarloSimulator, type MonteCarloResult } from './MonteCarloSimulator';
+export { ParameterGenerator } from './ParameterGenerator';
+export { ParameterSensitivityAnalyzer, type ParameterTestConfig, type SensitivityAnalysis } from './ParameterSensitivityAnalyzer';
+export { PermutationTest, type PermutationTestResult, type PermutationTestConfig } from './PermutationTest';
+export { PositionSizer, type PositionSizingConfig } from './PositionSizer';
+export { ResultManager } from './ResultManager';
+export { TradeExecutor, type TradeExecutorConfig, type TradeResult, type PositionSizeResult } from './TradeExecutor';
+export { WalkForwardOptimizer, type WalkForwardConfig, type WalkForwardResult } from './WalkForwardOptimizer';

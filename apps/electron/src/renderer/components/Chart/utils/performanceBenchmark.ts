@@ -1,8 +1,3 @@
-/**
- * Performance Benchmark Utility
- * 
- * Compares single-canvas vs multi-layer canvas rendering performance
- */
 
 export interface BenchmarkResult {
     name: string;
@@ -19,9 +14,6 @@ export interface BenchmarkConfig {
     name: string;
 }
 
-/**
- * Run a performance benchmark
- */
 export const runBenchmark = async (config: BenchmarkConfig): Promise<BenchmarkResult> => {
     const { duration, operations, name } = config;
     const startTime = performance.now();
@@ -71,9 +63,6 @@ export const runBenchmark = async (config: BenchmarkConfig): Promise<BenchmarkRe
     });
 };
 
-/**
- * Compare two rendering approaches
- */
 export const compareBenchmarks = async (
     singleCanvas: BenchmarkConfig,
     multiLayer: BenchmarkConfig
@@ -117,9 +106,6 @@ export const compareBenchmarks = async (
     };
 };
 
-/**
- * Render benchmark results to console table
- */
 export const printBenchmarkResults = (results: BenchmarkResult[]) => {
     console.table(
         results.map((r) => ({
@@ -133,9 +119,6 @@ export const printBenchmarkResults = (results: BenchmarkResult[]) => {
     );
 };
 
-/**
- * Example usage for chart rendering
- */
 export const runChartBenchmark = async (
     klines: any[],
     _viewport: any

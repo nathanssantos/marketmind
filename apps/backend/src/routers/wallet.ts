@@ -1,5 +1,4 @@
 import { TRPCError } from '@trpc/server';
-import { randomBytes } from 'crypto';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { wallets, type Wallet } from '../db/schema';
@@ -7,10 +6,7 @@ import { createBinanceClient, isPaperWallet } from '../services/binance-client';
 import { encryptApiKey } from '../services/encryption';
 import { getWebSocketService } from '../services/websocket';
 import { protectedProcedure, router } from '../trpc';
-
-const generateId = (length: number): string => {
-  return randomBytes(length).toString('base64url').slice(0, length);
-};
+import { generateEntityId } from '../utils/id';
 
 export const walletRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
@@ -70,7 +66,7 @@ export const walletRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const walletId = generateId(21);
+      const walletId = generateEntityId();
 
       await ctx.db.insert(wallets).values({
         id: walletId,
@@ -135,7 +131,7 @@ export const walletRouter = router({
           ? parseFloat(usdtBalance.free.toString())
           : 0;
 
-        const walletId = generateId(21);
+        const walletId = generateEntityId();
 
         await ctx.db.insert(wallets).values({
           id: walletId,

@@ -1,10 +1,3 @@
-/**
- * Strategy Interpreter
- *
- * Main orchestrator that interprets JSON strategy definitions and produces
- * TradingSetup objects compatible with the existing BacktestEngine.
- * Extends BaseSetupDetector to integrate with SetupDetectionService.
- */
 
 import type {
     ComputedIndicators,
@@ -27,17 +20,11 @@ import { IndicatorEngine } from './IndicatorEngine';
 
 const { MIN_ENTRY_STOP_SEPARATION_PERCENT, DEFAULT_ENTRY_BUFFER_ATR } = EXIT_CALCULATOR;
 
-/**
- * Configuration for StrategyInterpreter
- */
 export interface StrategyInterpreterConfig extends SetupDetectorConfig {
   strategy: StrategyDefinition;
   parameterOverrides?: Record<string, number>;
 }
 
-/**
- * Interprets JSON strategy definitions and produces TradingSetup objects
- */
 export class StrategyInterpreter extends BaseSetupDetector {
   private strategy: StrategyDefinition;
   private resolvedParams: Record<string, number>;
@@ -61,9 +48,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
     this.entryCalculator = new EntryCalculator(this.indicatorEngine);
   }
 
-  /**
-   * Detect setups at the current kline index
-   */
   detect(klines: Kline[], currentIndex: number): SetupDetectorResult {
     if (!this.config.enabled) {
       return { setup: null, confidence: 0 };
@@ -216,9 +200,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
     return { setup, confidence };
   }
 
-  /**
-   * Check entry conditions for both long and short
-   */
   private checkEntryConditions(context: EvaluationContext): {
     direction: SetupDirection | null;
     triggered: boolean;
@@ -242,9 +223,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
     return { direction: null, triggered: false };
   }
 
-  /**
-   * Check if setup passes strategy filters
-   */
   private passesFilters(confidence: number, riskReward: number): boolean {
     const { filters, exit } = this.strategy;
 
@@ -264,9 +242,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
     return true;
   }
 
-  /**
-   * Calculate indicator confluence score
-   */
   private calculateIndicatorConfluence(
     indicators: ComputedIndicators,
     currentIndex: number
@@ -297,9 +272,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
     return count > 0 ? Math.min((confluence / count) * 2, 2) : 0;
   }
 
-  /**
-   * Check volume confirmation
-   */
   private checkVolumeConfirmation(
     indicators: ComputedIndicators,
     currentIndex: number
@@ -322,9 +294,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
     return volumeCurrent > volumeSma20;
   }
 
-  /**
-   * Resolve strategy parameters with defaults and overrides
-   */
   private resolveParameters(
     overrides?: Record<string, number>
   ): Record<string, number> {
@@ -341,23 +310,14 @@ export class StrategyInterpreter extends BaseSetupDetector {
     return resolved;
   }
 
-  /**
-   * Get the strategy definition
-   */
   getStrategy(): StrategyDefinition {
     return this.strategy;
   }
 
-  /**
-   * Get resolved parameters
-   */
   getResolvedParams(): Record<string, number> {
     return { ...this.resolvedParams };
   }
 
-  /**
-   * Update parameters at runtime (for optimization)
-   */
   updateParameters(params: Record<string, number>): void {
     for (const [key, value] of Object.entries(params)) {
       if (this.strategy.parameters[key] !== undefined) {
@@ -367,9 +327,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
     this.indicatorEngine.clearCache();
   }
 
-  /**
-   * Get parameter optimization ranges
-   */
   getParameterRanges(): Record<
     string,
     { min: number; max: number; step: number; default: number }

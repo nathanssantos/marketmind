@@ -70,9 +70,6 @@ export class BacktestLogger {
     }
   }
 
-  /**
-   * Print a header box
-   */
   header(title: string, details?: Record<string, string>) {
     if (!this.shouldLog(LogLevel.INFO)) return;
 
@@ -96,17 +93,11 @@ export class BacktestLogger {
     console.log('');
   }
 
-  /**
-   * Print a separator line
-   */
   separator() {
     if (!this.shouldLog(LogLevel.INFO)) return;
     console.log(chalk.gray('─'.repeat(64)));
   }
 
-  /**
-   * Print backtest metrics in a table
-   */
   metrics(metrics: BacktestMetrics) {
     if (!this.shouldLog(LogLevel.INFO)) return;
 
@@ -152,9 +143,6 @@ export class BacktestLogger {
     console.log('');
   }
 
-  /**
-   * Print individual trades
-   */
   trades(trades: BacktestTrade[], limit: number = 5) {
     if (!this.shouldLog(LogLevel.VERBOSE)) return;
 
@@ -184,9 +172,6 @@ export class BacktestLogger {
     }
   }
 
-  /**
-   * Print optimization results in a table
-   */
   optimizationResults(results: Array<{ params: any; metrics: BacktestMetrics }>, top: number = 10) {
     if (!this.shouldLog(LogLevel.INFO)) return;
 
@@ -245,9 +230,6 @@ export class BacktestLogger {
     }
   }
 
-  /**
-   * Print comparison table for multiple backtests
-   */
   comparison(results: Array<{ name: string; metrics: BacktestMetrics }>) {
     if (!this.shouldLog(LogLevel.INFO)) return;
 

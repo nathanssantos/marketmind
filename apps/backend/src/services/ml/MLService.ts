@@ -12,7 +12,7 @@ import {
   type EnhancedSetup,
   type ModelRegistryConfig,
 } from '@marketmind/ml';
-import { generateId } from '../../utils/id';
+import { generateEntityId } from '../../utils/id';
 
 export interface MLServiceConfig {
   modelsDir: string;
@@ -28,7 +28,7 @@ const DEFAULT_CONFIG: MLServiceConfig = {
   blendWeight: 0.4,
 };
 
-interface MLStats {
+export interface MLStats {
   predictions: number;
   accepted: number;
   rejected: number;
@@ -420,7 +420,7 @@ class MLServiceImpl {
   ): Promise<void> {
     try {
       await db.insert(mlPredictions).values({
-        id: generateId(21),
+        id: generateEntityId(),
         modelId: this.activeModelId ?? 'unknown',
         setupDetectionId: setup.id,
         probability: prediction.probability.toString(),

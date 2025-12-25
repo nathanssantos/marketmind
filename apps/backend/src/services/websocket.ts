@@ -50,13 +50,11 @@ export class WebSocketService {
 
   private setupEventHandlers(): void {
     this.io.on('connection', (socket) => {
-      // logger.info({ socketId: socket.id }, 'Client connected');
 
       socket.on('subscribe:orders', (walletId: string) => {
         const room = `orders:${walletId}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
-          // logger.info({ socketId: socket.id, walletId }, 'Subscribed to orders');
         }
       });
 
@@ -64,7 +62,6 @@ export class WebSocketService {
         const room = `positions:${walletId}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
-          // logger.info({ socketId: socket.id, walletId }, 'Subscribed to positions');
         }
       });
 
@@ -72,7 +69,6 @@ export class WebSocketService {
         const room = `prices:${symbol}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
-          // logger.debug({ socketId: socket.id, symbol }, 'Subscribed to prices');
         }
       });
 
@@ -80,59 +76,49 @@ export class WebSocketService {
         const room = `klines:${data.symbol}:${data.interval}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
-          // logger.info({ socketId: socket.id, symbol: data.symbol, interval: data.interval }, 'Subscribed to klines');
         }
       });
 
       socket.on('unsubscribe:klines', (data: { symbol: string; interval: string }) => {
         const room = `klines:${data.symbol}:${data.interval}`;
         socket.leave(room);
-        // logger.info({ socketId: socket.id, symbol: data.symbol, interval: data.interval }, 'Unsubscribed from klines');
       });
 
       socket.on('unsubscribe:orders', (walletId: string) => {
         socket.leave(`orders:${walletId}`);
-        // logger.info({ socketId: socket.id, walletId }, 'Unsubscribed from orders');
       });
 
       socket.on('unsubscribe:positions', (walletId: string) => {
         socket.leave(`positions:${walletId}`);
-        // logger.info({ socketId: socket.id, walletId }, 'Unsubscribed from positions');
       });
 
       socket.on('unsubscribe:prices', (symbol: string) => {
         socket.leave(`prices:${symbol}`);
-        // logger.info({ socketId: socket.id, symbol }, 'Unsubscribed from prices');
       });
 
       socket.on('subscribe:wallet', (walletId: string) => {
         const room = `wallet:${walletId}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
-          // logger.info({ socketId: socket.id, walletId }, 'Subscribed to wallet');
         }
       });
 
       socket.on('unsubscribe:wallet', (walletId: string) => {
         socket.leave(`wallet:${walletId}`);
-        // logger.info({ socketId: socket.id, walletId }, 'Unsubscribed from wallet');
       });
 
       socket.on('subscribe:setups', (userId: string) => {
         const room = `user:${userId}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
-          // logger.info({ socketId: socket.id, userId }, 'Subscribed to setups');
         }
       });
 
       socket.on('unsubscribe:setups', (userId: string) => {
         socket.leave(`user:${userId}`);
-        // logger.info({ socketId: socket.id, userId }, 'Unsubscribed from setups');
       });
 
       socket.on('disconnect', () => {
-        // logger.info({ socketId: socket.id }, 'Client disconnected');
       });
     });
   }
@@ -180,6 +166,48 @@ export class WebSocketService {
 
   public emitSetupDetected(userId: string, data: unknown): void {
     this.io.to(`user:${userId}`).emit('setup-detected', data);
+  }
+
+  public emitRiskAlert(walletId: string, alert: {
+    type: 'LIQUIDATION_RISK' | 'DAILY_LOSS_LIMIT' | 'MAX_DRAWDOWN' | 'POSITION_CLOSED' | 'MARGIN_TOP_UP';
+    level: 'info' | 'warning' | 'danger' | 'critical';
+    positionId?: string;
+    symbol?: string;
+    message: string;
+    data: Record<string, unknown>;
+    timestamp: number;
+  }): void {
+    this.io.to(`wallet:${walletId}`).emit('risk:alert', alert);
+  }
+
+  public emitPositionClosed(walletId: string, data: {
+    positionId: string;
+    symbol: string;
+    side: string;
+    exitReason: string;
+    pnl: number;
+    pnlPercent: number;
+  }): void {
+    this.io.to(`positions:${walletId}`).emit('position:closed', data);
+  }
+
+  public emitDailyLossLimitReached(walletId: string, data: {
+    currentLoss: number;
+    limit: number;
+    percentUsed: number;
+  }): void {
+    this.io.to(`wallet:${walletId}`).emit('risk:daily-loss-limit', data);
+  }
+
+  public emitLiquidationWarning(walletId: string, data: {
+    symbol: string;
+    side: 'LONG' | 'SHORT';
+    markPrice: number;
+    liquidationPrice: number;
+    distancePercent: number;
+    riskLevel: 'warning' | 'danger' | 'critical';
+  }): void {
+    this.io.to(`wallet:${walletId}`).emit('risk:liquidation-warning', data);
   }
 
   public getIO(): SocketIOServer {

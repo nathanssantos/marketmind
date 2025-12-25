@@ -1,7 +1,3 @@
-/**
- * Price and Quantity Utilities
- * Helpers for converting between string (exchange format) and number (calculation format)
- */
 
 const DEFAULT_PRICE_PRECISION = 8;
 const DEFAULT_QTY_PRECISION = 8;

@@ -4,6 +4,7 @@ import { db } from '../db';
 import type { AutoTradingConfig } from '../db/schema';
 import { tradeExecutions, wallets } from '../db/schema';
 import { logger } from './logger';
+import { getWebSocketService } from './websocket';
 
 export interface PositionLike {
   entryPrice: string;
@@ -192,6 +193,12 @@ export class RiskManagerService {
         };
       }
 
+      const maxDrawdownPercent = parseFloat(config.maxDrawdownPercent || '15');
+      const drawdownResult = await this.validateDrawdownForNewPosition(walletId, maxDrawdownPercent);
+      if (!drawdownResult.isValid) {
+        return drawdownResult;
+      }
+
       return { isValid: true };
     } catch (error) {
       logger.error({
@@ -366,6 +373,49 @@ export class RiskManagerService {
         isExceeded: false,
       };
     }
+  }
+
+  async validateDrawdownForNewPosition(
+    walletId: string,
+    maxDrawdownPercent: number
+  ): Promise<RiskValidationResult> {
+    const drawdownCheck = await this.checkDrawdown(walletId, maxDrawdownPercent);
+
+    if (drawdownCheck.isExceeded) {
+      const wsService = getWebSocketService();
+      if (wsService) {
+        wsService.emitRiskAlert(walletId, {
+          type: 'MAX_DRAWDOWN',
+          level: 'critical',
+          message: `Max drawdown exceeded: ${drawdownCheck.currentDrawdown.toFixed(2)}% (limit: ${maxDrawdownPercent}%)`,
+          data: {
+            currentDrawdown: drawdownCheck.currentDrawdown,
+            maxDrawdown: maxDrawdownPercent,
+          },
+          timestamp: Date.now(),
+        });
+      }
+
+      logger.warn(
+        {
+          walletId,
+          currentDrawdown: drawdownCheck.currentDrawdown.toFixed(2),
+          maxDrawdown: maxDrawdownPercent,
+        },
+        '[RiskManager] ⚠️ Max drawdown exceeded - blocking new positions'
+      );
+
+      return {
+        isValid: false,
+        reason: `Maximum drawdown limit exceeded (${drawdownCheck.currentDrawdown.toFixed(2)}% > ${maxDrawdownPercent}%)`,
+        details: {
+          currentExposure: drawdownCheck.currentDrawdown,
+          maxExposure: maxDrawdownPercent,
+        },
+      };
+    }
+
+    return { isValid: true };
   }
 
   async validateOrderSize(

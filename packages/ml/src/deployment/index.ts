@@ -1,12 +1,3 @@
-/**
- * Deployment Module
- *
- * Future implementations:
- * - Model serving API
- * - Model versioning
- * - A/B testing deployment
- * - Model monitoring
- */
 
 export interface DeploymentConfig {
   modelPath: string;

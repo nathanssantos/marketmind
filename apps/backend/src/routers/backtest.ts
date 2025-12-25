@@ -1,13 +1,9 @@
 import type { Interval, BacktestConfig } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
-import { randomBytes } from 'crypto';
 import { z } from 'zod';
 import { BacktestEngine } from '../services/backtesting/BacktestEngine';
 import { protectedProcedure, router } from '../trpc';
-
-const generateId = (length: number): string => {
-  return randomBytes(length).toString('base64url').slice(0, length);
-};
+import { generateEntityId } from '../utils/id';
 
 const backtestResults = new Map<string, any>();
 
@@ -34,7 +30,7 @@ export const backtestRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const backtestId = generateId(21);
+      const backtestId = generateEntityId();
       const startTime = Date.now();
 
       try {

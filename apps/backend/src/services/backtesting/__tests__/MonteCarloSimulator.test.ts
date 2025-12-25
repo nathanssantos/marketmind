@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MonteCarloSimulator, type MonteCarloConfig } from '../MonteCarloSimulator';
+import { MonteCarloSimulator } from '../MonteCarloSimulator';
 import type { BacktestTrade } from '@marketmind/types';
 
 const createMockTrades = (count: number, avgPnl: number, winRate: number): BacktestTrade[] => {
@@ -10,16 +10,17 @@ const createMockTrades = (count: number, avgPnl: number, winRate: number): Backt
     return {
       id: `trade-${i}`,
       setupType: 'test-setup',
-      symbol: 'BTCUSDT',
-      entryTime: Date.now() + i * 3600000,
+      entryTime: new Date(Date.now() + i * 3600000).toISOString(),
       entryPrice: 50000,
-      exitTime: Date.now() + i * 3600000 + 1800000,
+      exitTime: new Date(Date.now() + i * 3600000 + 1800000).toISOString(),
       exitPrice: 50000 + pnl,
       quantity: 1,
       side: 'LONG' as const,
       pnl,
       pnlPercent: (pnl / 50000) * 100,
-      exitReason: 'takeProfit',
+      exitReason: 'TAKE_PROFIT' as const,
+      commission: 0,
+      status: 'CLOSED' as const,
     };
   });
 };
@@ -110,16 +111,17 @@ describe('MonteCarloSimulator', () => {
       const trades: BacktestTrade[] = Array.from({ length: 20 }, (_, i) => ({
         id: `trade-${i}`,
         setupType: 'test-setup',
-        symbol: 'BTCUSDT',
-        entryTime: Date.now() + i * 3600000,
+        entryTime: new Date(Date.now() + i * 3600000).toISOString(),
         entryPrice: 50000,
-        exitTime: Date.now() + i * 3600000 + 1800000,
+        exitTime: new Date(Date.now() + i * 3600000 + 1800000).toISOString(),
         exitPrice: 49900,
         quantity: 1,
         side: 'LONG' as const,
         pnl: -100,
         pnlPercent: -0.2,
-        exitReason: 'stopLoss',
+        exitReason: 'STOP_LOSS' as const,
+        commission: 0,
+        status: 'CLOSED' as const,
       }));
 
       const result = MonteCarloSimulator.simulate(trades, 10000, {
@@ -135,16 +137,17 @@ describe('MonteCarloSimulator', () => {
       const trades: BacktestTrade[] = Array.from({ length: 20 }, (_, i) => ({
         id: `trade-${i}`,
         setupType: 'test-setup',
-        symbol: 'BTCUSDT',
-        entryTime: Date.now() + i * 3600000,
+        entryTime: new Date(Date.now() + i * 3600000).toISOString(),
         entryPrice: 50000,
-        exitTime: Date.now() + i * 3600000 + 1800000,
+        exitTime: new Date(Date.now() + i * 3600000 + 1800000).toISOString(),
         exitPrice: 50100,
         quantity: 1,
         side: 'LONG' as const,
         pnl: 100,
         pnlPercent: 0.2,
-        exitReason: 'takeProfit',
+        exitReason: 'TAKE_PROFIT' as const,
+        commission: 0,
+        status: 'CLOSED' as const,
       }));
 
       const result = MonteCarloSimulator.simulate(trades, 10000, {
@@ -203,16 +206,17 @@ describe('MonteCarloSimulator', () => {
       const trades: BacktestTrade[] = [{
         id: 'trade-1',
         setupType: 'test-setup',
-        symbol: 'BTCUSDT',
-        entryTime: Date.now(),
+        entryTime: new Date().toISOString(),
         entryPrice: 50000,
-        exitTime: Date.now() + 3600000,
+        exitTime: new Date(Date.now() + 3600000).toISOString(),
         exitPrice: 50100,
         quantity: 1,
         side: 'LONG' as const,
         pnl: 100,
         pnlPercent: 0.2,
-        exitReason: 'takeProfit',
+        exitReason: 'TAKE_PROFIT' as const,
+        commission: 0,
+        status: 'CLOSED' as const,
       }];
 
       const result = MonteCarloSimulator.simulate(trades, 10000, {
@@ -256,16 +260,17 @@ describe('MonteCarloSimulator', () => {
       const trades: BacktestTrade[] = [{
         id: 'trade-1',
         setupType: 'test-setup',
-        symbol: 'BTCUSDT',
-        entryTime: Date.now(),
+        entryTime: new Date().toISOString(),
         entryPrice: 50000,
-        exitTime: Date.now() + 3600000,
+        exitTime: new Date(Date.now() + 3600000).toISOString(),
         exitPrice: 50500,
         quantity: 1,
         side: 'LONG' as const,
         pnl: 500,
         pnlPercent: 1,
-        exitReason: 'takeProfit',
+        exitReason: 'TAKE_PROFIT' as const,
+        commission: 0,
+        status: 'CLOSED' as const,
       }];
 
       const result = MonteCarloSimulator.simulate(trades, 10000, {
@@ -281,16 +286,17 @@ describe('MonteCarloSimulator', () => {
       const trades: BacktestTrade[] = Array.from({ length: 10 }, (_, i) => ({
         id: `trade-${i}`,
         setupType: 'test-setup',
-        symbol: 'BTCUSDT',
-        entryTime: Date.now() + i * 3600000,
+        entryTime: new Date(Date.now() + i * 3600000).toISOString(),
         entryPrice: 50000,
-        exitTime: Date.now() + i * 3600000 + 1800000,
+        exitTime: new Date(Date.now() + i * 3600000 + 1800000).toISOString(),
         exitPrice: 50000,
         quantity: 1,
         side: 'LONG' as const,
         pnl: 0,
         pnlPercent: 0,
-        exitReason: 'breakeven',
+        exitReason: 'MANUAL' as const,
+        commission: 0,
+        status: 'CLOSED' as const,
       }));
 
       const result = MonteCarloSimulator.simulate(trades, 10000, {
@@ -306,16 +312,17 @@ describe('MonteCarloSimulator', () => {
       const trades: BacktestTrade[] = [{
         id: 'trade-1',
         setupType: 'test-setup',
-        symbol: 'BTCUSDT',
-        entryTime: Date.now(),
+        entryTime: new Date().toISOString(),
         entryPrice: 50000,
-        exitTime: Date.now() + 3600000,
+        exitTime: new Date(Date.now() + 3600000).toISOString(),
         exitPrice: 50000,
         quantity: 1,
         side: 'LONG' as const,
         pnl: undefined as unknown as number,
         pnlPercent: 0,
-        exitReason: 'breakeven',
+        exitReason: 'MANUAL' as const,
+        commission: 0,
+        status: 'CLOSED' as const,
       }];
 
       const result = MonteCarloSimulator.simulate(trades, 10000, {

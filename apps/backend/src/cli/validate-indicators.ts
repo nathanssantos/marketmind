@@ -32,11 +32,12 @@ function validateEMA() {
   console.log('------|-------|----------|----------|------');
 
   for (let i = 0; i < prices.length; i++) {
-    const sma = sma9[i];
-    const ema = ema9[i];
+    const sma = sma9[i] ?? null;
+    const ema = ema9[i] ?? null;
+    const price = prices[i] ?? 0;
     const diff = sma !== null && ema !== null ? (ema - sma).toFixed(4) : 'N/A';
     console.log(
-      `${i.toString().padStart(5)} | ${prices[i].toString().padStart(5)} | ${sma?.toFixed(4).padStart(8) || 'null'.padStart(8)} | ${ema?.toFixed(4).padStart(8) || 'null'.padStart(8)} | ${diff}`
+      `${i.toString().padStart(5)} | ${price.toString().padStart(5)} | ${sma?.toFixed(4).padStart(8) ?? 'null'.padStart(8)} | ${ema?.toFixed(4).padStart(8) ?? 'null'.padStart(8)} | ${diff}`
     );
   }
 
@@ -49,13 +50,14 @@ function validateEMA() {
 
   for (let i = 9; i < prices.length; i++) {
     const prev = manualEMA9;
-    manualEMA9 = (prices[i] - prev) * multiplier + prev;
-    const systemEMA = ema9[i];
+    const currentPrice = prices[i] ?? 0;
+    manualEMA9 = (currentPrice - prev) * multiplier + prev;
+    const systemEMA = ema9[i] ?? null;
     const match = systemEMA !== null && Math.abs(systemEMA - manualEMA9) < 0.0001 ? '✅' : '❌';
-    console.log(`Index ${i}: Manual=${manualEMA9.toFixed(4)}, Sistema=${systemEMA?.toFixed(4)}, ${match}`);
+    console.log(`Index ${i}: Manual=${manualEMA9.toFixed(4)}, Sistema=${systemEMA?.toFixed(4) ?? 'null'}, ${match}`);
   }
 
-  const _allMatch = ema9.slice(8).every((v, i) => {
+  ema9.slice(8).every((v, i) => {
     if (i === 0) return Math.abs((v ?? 0) - manualEMA9Seed) < 0.0001;
     return true;
   });
@@ -80,14 +82,17 @@ function validateRSI() {
   console.log('--- RSI14 Calculado pelo Sistema ---');
   for (let i = 0; i < prices.length; i++) {
     const rsi = rsi14.values[i];
-    console.log(`Index ${i.toString().padStart(2)}: Price=${prices[i].toFixed(2)}, RSI=${rsi?.toFixed(2) || 'null'}`);
+    const price = prices[i] ?? 0;
+    console.log(`Index ${i.toString().padStart(2)}: Price=${price.toFixed(2)}, RSI=${rsi?.toFixed(2) ?? 'null'}`);
   }
 
   console.log('\n--- Cálculo Manual RSI14 (Wilders) ---');
 
   const changes: number[] = [];
   for (let i = 1; i < prices.length; i++) {
-    changes.push(prices[i] - prices[i - 1]);
+    const curr = prices[i] ?? 0;
+    const prev = prices[i - 1] ?? 0;
+    changes.push(curr - prev);
   }
 
   console.log('Mudanças de preço:', changes.map((c) => c.toFixed(2)).join(', '));
@@ -110,7 +115,7 @@ function validateRSI() {
   console.log('------|------------|-------------|------');
 
   for (let i = 14; i < prices.length; i++) {
-    const change = changes[i - 1];
+    const change = changes[i - 1] ?? 0;
     const currentGain = change > 0 ? change : 0;
     const currentLoss = change < 0 ? Math.abs(change) : 0;
 
@@ -120,16 +125,17 @@ function validateRSI() {
     rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
     rsi = avgLoss === 0 ? 100 : 100 - 100 / (1 + rs);
 
-    const systemRSI = rsi14.values[i];
+    const systemRSI = rsi14.values[i] ?? null;
     const diff = systemRSI !== null ? Math.abs(rsi - systemRSI) : 999;
     const match = diff < 1.0 ? '✅' : `❌ (diff: ${diff.toFixed(2)})`;
 
-    console.log(`${i.toString().padStart(5)} | ${rsi.toFixed(2).padStart(10)} | ${systemRSI?.toFixed(2).padStart(11) || 'null'.padStart(11)} | ${match}`);
+    console.log(`${i.toString().padStart(5)} | ${rsi.toFixed(2).padStart(10)} | ${systemRSI?.toFixed(2).padStart(11) ?? 'null'.padStart(11)} | ${match}`);
   }
 
+  const expectedRSIs = [72.98, 68.50, 68.72, 71.46, 68.24, 59.44];
   const allMatch = rsi14.values.slice(14).every((v, idx) => {
     if (v === null) return false;
-    const expectedRSI = [72.98, 68.50, 68.72, 71.46, 68.24, 59.44][idx];
+    const expectedRSI = expectedRSIs[idx] ?? 0;
     return Math.abs(v - expectedRSI) < 1.0;
   });
 
@@ -155,11 +161,12 @@ function validateRSI2() {
 
   console.log('\n--- RSI(2) Calculado ---');
   for (let i = 0; i < prices.length; i++) {
-    const rsi = rsi2.values[i];
+    const rsi = rsi2.values[i] ?? null;
+    const price = prices[i] ?? 0;
     let signal = '';
     if (rsi !== null && rsi < 10) signal = ' <- BUY SIGNAL (RSI < 10)';
     if (rsi !== null && rsi > 90) signal = ' <- SELL SIGNAL (RSI > 90)';
-    console.log(`Index ${i.toString().padStart(2)}: Price=${prices[i].toString().padStart(3)}, RSI(2)=${rsi?.toFixed(2).padStart(6) || 'null'.padStart(6)}${signal}`);
+    console.log(`Index ${i.toString().padStart(2)}: Price=${price.toString().padStart(3)}, RSI(2)=${rsi?.toFixed(2).padStart(6) ?? 'null'.padStart(6)}${signal}`);
   }
 
   console.log('\n--- Análise de Sinais RSI(2) ---');

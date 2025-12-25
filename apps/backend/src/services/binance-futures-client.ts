@@ -77,6 +77,39 @@ export async function setMarginType(
   }
 }
 
+export async function modifyIsolatedPositionMargin(
+  client: USDMClient,
+  symbol: string,
+  amount: number,
+  type: '0' | '1',
+  positionSide?: 'LONG' | 'SHORT' | 'BOTH'
+): Promise<{ amount: string; type: number; code: number; msg: string }> {
+  try {
+    const result = await client.setIsolatedPositionMargin({
+      symbol,
+      amount,
+      type,
+      positionSide,
+    });
+    logger.info(
+      { symbol, amount, type: type === '1' ? 'ADD' : 'REDUCE', positionSide },
+      '[Futures] Isolated margin modified successfully'
+    );
+    return {
+      amount: String(result.amount),
+      type: result.type,
+      code: result.code,
+      msg: result.msg,
+    };
+  } catch (error) {
+    logger.error(
+      { error: serializeError(error), symbol, amount, type },
+      'Failed to modify isolated position margin'
+    );
+    throw error;
+  }
+}
+
 export async function getPositions(client: USDMClient): Promise<FuturesPosition[]> {
   try {
     const positions = await client.getPositions();

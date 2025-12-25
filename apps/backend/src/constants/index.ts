@@ -71,6 +71,41 @@ export const BACKTEST_ENGINE = {
   },
   DEFAULT_INTERVAL_MS: 4 * 60 * 60 * 1000,
   EMA200_WARMUP_BARS: 250,
+  MIN_NOTIONAL_VALUE: 10,
+  MAX_BARS_IN_TRADE: 100,
+  COOLDOWN_BARS: 10,
+  DEFAULT_COMMISSION: 0.001,
+} as const;
+
+export const TRAILING_STOP = {
+  BREAKEVEN_THRESHOLD: 0.0075,
+  FEES_COVERAGE_THRESHOLD: 0.01,
+  PEAK_PROFIT_FLOOR: 0.5,
+  ATR_MULTIPLIER: 0.002,
+  DEFAULT_ACTIVATION_PERCENT: 1.5,
+  DEFAULT_TRAIL_PERCENT: 0.75,
+} as const;
+
+export const VOLATILITY = {
+  HIGH_THRESHOLD: 3.0,
+  POSITION_REDUCTION: 0.5,
+  LOW_THRESHOLD: 1.0,
+  NORMAL_RANGE: {
+    MIN: 1.0,
+    MAX: 3.0,
+  },
+} as const;
+
+export const PIVOT_DETECTION = {
+  DEFAULT_LOOKBACK: 5,
+  DEFAULT_LOOKFORWARD: 2,
+  MIN_PIVOT_DISTANCE_PERCENT: 0.5,
+  VOLUME_CONFIRMATION_MULTIPLIER: 1.2,
+  STRENGTH_THRESHOLDS: {
+    WEAK: 0.3,
+    MEDIUM: 0.6,
+    STRONG: 0.8,
+  },
 } as const;
 
 export const CONTEXT_AGGREGATOR = {
@@ -112,6 +147,9 @@ export type FloatComparisonConstants = typeof FLOAT_COMPARISON;
 export type PositionSizingConstants = typeof POSITION_SIZING;
 export type ExitCalculatorConstants = typeof EXIT_CALCULATOR;
 export type BacktestEngineConstants = typeof BACKTEST_ENGINE;
+export type TrailingStopConstants = typeof TRAILING_STOP;
+export type VolatilityConstants = typeof VOLATILITY;
+export type PivotDetectionConstants = typeof PIVOT_DETECTION;
 export type ContextAggregatorConstants = typeof CONTEXT_AGGREGATOR;
 export type RiskManagerConstants = typeof RISK_MANAGER;
 export type AdxFilterConstants = typeof ADX_FILTER;

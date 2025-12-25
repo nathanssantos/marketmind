@@ -1,8 +1,4 @@
 #!/usr/bin/env tsx
-/**
- * Quick Strategy Validation Script
- * Tests all active strategies and displays results in a formatted table
- */
 
 import chalk from 'chalk';
 import { execSync } from 'child_process';

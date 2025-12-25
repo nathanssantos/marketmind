@@ -9,14 +9,12 @@ import type {
   PyramidingConfig,
   TrailingStopOptimizationConfig,
 } from '@marketmind/types';
-import { randomBytes } from 'crypto';
 import { BacktestEngine } from './BacktestEngine';
 import { WalkForwardOptimizer, type WalkForwardConfig } from './WalkForwardOptimizer';
 import { ParameterGenerator } from './ParameterGenerator';
 import { DEFAULT_PYRAMIDING_CONFIG } from '../pyramiding';
 import { DEFAULT_TRAILING_STOP_CONFIG } from '../trailing-stop';
-
-const generateId = (): string => randomBytes(16).toString('hex');
+import { generateShortId } from '../../utils/id';
 
 export interface FullSystemCombination {
   mlThreshold: number;
@@ -127,11 +125,21 @@ export class FullSystemOptimizer {
       parallelWorkers?: number;
       minTrades?: number;
       onProgress?: (current: number, total: number, currentBest?: OptimizationResultEntry) => void;
+      earlyStopDegradationCount?: number;
+      minSharpeRatio?: number;
+      earlyStopEnabled?: boolean;
     } = {}
   ): Promise<FullOptimizationResult> {
-    const { parallelWorkers = 1, minTrades = 10, onProgress } = options;
+    const {
+      parallelWorkers = 1,
+      minTrades = 10,
+      onProgress,
+      earlyStopDegradationCount = 50,
+      minSharpeRatio = -0.5,
+      earlyStopEnabled = true,
+    } = options;
 
-    const id = generateId();
+    const id = generateShortId();
     const startTime = new Date().toISOString();
 
     const combinations = this.generateCombinations(preset);
@@ -144,6 +152,9 @@ export class FullSystemOptimizer {
     const results: OptimizationResultEntry[] = [];
     let completed = 0;
     let currentBest: OptimizationResultEntry | undefined;
+    let consecutiveNonImprovements = 0;
+    let earlyStopped = false;
+    let prunedCount = 0;
 
     const runBacktest = async (combination: FullSystemCombination): Promise<OptimizationResultEntry | null> => {
       try {
@@ -154,8 +165,13 @@ export class FullSystemOptimizer {
           return null;
         }
 
+        if ((result.metrics.sharpeRatio ?? 0) < minSharpeRatio) {
+          prunedCount++;
+          return null;
+        }
+
         const entry: OptimizationResultEntry = {
-          id: generateId(),
+          id: generateShortId(),
           params: {
             mlThreshold: combination.mlThreshold,
             pyramiding: combination.pyramiding,
@@ -175,6 +191,8 @@ export class FullSystemOptimizer {
       const chunks = ParameterGenerator.chunk(combinations, parallelWorkers);
 
       for (const chunk of chunks) {
+        if (earlyStopped) break;
+
         const batchResults = await Promise.all(chunk.map(runBacktest));
 
         for (const result of batchResults) {
@@ -183,8 +201,20 @@ export class FullSystemOptimizer {
             results.push(result);
             if (!currentBest || this.compareResults(result, currentBest) > 0) {
               currentBest = result;
+              consecutiveNonImprovements = 0;
+            } else {
+              consecutiveNonImprovements++;
             }
+          } else {
+            consecutiveNonImprovements++;
           }
+
+          if (earlyStopEnabled && consecutiveNonImprovements >= earlyStopDegradationCount) {
+            console.log(`[FullSystemOptimizer] Early stopping: ${consecutiveNonImprovements} consecutive non-improvements`);
+            earlyStopped = true;
+            break;
+          }
+
           if (onProgress) {
             onProgress(completed, totalCombinations, currentBest);
           }
@@ -192,18 +222,38 @@ export class FullSystemOptimizer {
       }
     } else {
       for (const combination of combinations) {
+        if (earlyStopped) break;
+
         const result = await runBacktest(combination);
         completed++;
         if (result) {
           results.push(result);
           if (!currentBest || this.compareResults(result, currentBest) > 0) {
             currentBest = result;
+            consecutiveNonImprovements = 0;
+          } else {
+            consecutiveNonImprovements++;
           }
+        } else {
+          consecutiveNonImprovements++;
         }
+
+        if (earlyStopEnabled && consecutiveNonImprovements >= earlyStopDegradationCount) {
+          console.log(`[FullSystemOptimizer] Early stopping: ${consecutiveNonImprovements} consecutive non-improvements`);
+          earlyStopped = true;
+        }
+
         if (onProgress) {
           onProgress(completed, totalCombinations, currentBest);
         }
       }
+    }
+
+    if (prunedCount > 0) {
+      console.log(`[FullSystemOptimizer] Pruned ${prunedCount} combinations with Sharpe < ${minSharpeRatio}`);
+    }
+    if (earlyStopped) {
+      console.log(`[FullSystemOptimizer] Completed ${completed}/${totalCombinations} (early stopped)`);
     }
 
     const sortedResults = this.sortResults(results);

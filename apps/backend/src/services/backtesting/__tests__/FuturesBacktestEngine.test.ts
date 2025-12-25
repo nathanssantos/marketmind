@@ -39,7 +39,25 @@ const createMockTrade = (
   exitPrice: number,
   side: 'LONG' | 'SHORT',
   quantity: number = 0.1
-) => ({
+): {
+  id: string;
+  setupId: string;
+  setupType: string;
+  entryTime: string;
+  entryPrice: number;
+  exitTime: string;
+  exitPrice: number;
+  side: 'LONG' | 'SHORT';
+  quantity: number;
+  stopLoss: number;
+  takeProfit: number;
+  pnl: number;
+  pnlPercent: number;
+  commission: number;
+  netPnl: number;
+  exitReason: 'TAKE_PROFIT' | 'STOP_LOSS' | 'MANUAL' | 'END_OF_PERIOD' | 'LIQUIDATION';
+  status: 'OPEN' | 'CLOSED';
+} => ({
   id: 'trade-1',
   setupId: 'setup-1',
   setupType: 'test-setup',
@@ -57,8 +75,8 @@ const createMockTrade = (
     : ((entryPrice - exitPrice) / entryPrice) * 100,
   commission: entryPrice * quantity * 0.001 * 2,
   netPnl: 0,
-  exitReason: 'TAKE_PROFIT' as const,
-  status: 'CLOSED' as const,
+  exitReason: 'TAKE_PROFIT',
+  status: 'CLOSED',
 });
 
 describe('FuturesBacktestEngine', () => {

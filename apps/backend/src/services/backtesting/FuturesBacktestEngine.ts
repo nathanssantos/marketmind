@@ -1,15 +1,14 @@
-import type { BacktestConfig, BacktestResult, BacktestTrade, MarginType } from '@marketmind/types';
+import type { BacktestConfig, BacktestResult, BacktestTrade } from '@marketmind/types';
 import {
   calculateLiquidationPrice,
   calculateLeveragedPnl,
   calculateFundingPayment,
-  wouldLiquidate,
   FUTURES_DEFAULTS,
 } from '@marketmind/types';
 import { BacktestEngine } from './BacktestEngine';
 import { BinanceFuturesDataService } from '../binance-futures-data';
 
-interface FundingRateData {
+interface LocalFundingRateData {
   fundingTime: number;
   fundingRate: number;
 }
@@ -18,7 +17,7 @@ const FUNDING_INTERVAL_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 export class FuturesBacktestEngine {
   private spotEngine: BacktestEngine;
-  private fundingRatesCache: Map<string, FundingRateData[]> = new Map();
+  private fundingRatesCache: Map<string, LocalFundingRateData[]> = new Map();
   private futuresDataService: BinanceFuturesDataService;
 
   constructor() {
@@ -30,7 +29,7 @@ export class FuturesBacktestEngine {
     symbol: string,
     startDate: string,
     endDate: string
-  ): Promise<FundingRateData[]> {
+  ): Promise<LocalFundingRateData[]> {
     const cacheKey = `${symbol}-${startDate}-${endDate}`;
     const cached = this.fundingRatesCache.get(cacheKey);
     if (cached) return cached;
@@ -44,9 +43,9 @@ export class FuturesBacktestEngine {
         endTime
       );
 
-      const formattedRates: FundingRateData[] = rates.map((r) => ({
-        fundingTime: r.fundingTime,
-        fundingRate: parseFloat(r.fundingRate),
+      const formattedRates: LocalFundingRateData[] = rates.map((r) => ({
+        fundingTime: r.timestamp,
+        fundingRate: r.rate / 100,
       }));
 
       this.fundingRatesCache.set(cacheKey, formattedRates);
@@ -60,8 +59,8 @@ export class FuturesBacktestEngine {
     }
   }
 
-  private generateDefaultFundingRates(startTime: number, endTime: number): FundingRateData[] {
-    const rates: FundingRateData[] = [];
+  private generateDefaultFundingRates(startTime: number, endTime: number): LocalFundingRateData[] {
+    const rates: LocalFundingRateData[] = [];
     const startFunding = Math.ceil(startTime / FUNDING_INTERVAL_MS) * FUNDING_INTERVAL_MS;
 
     for (let time = startFunding; time <= endTime; time += FUNDING_INTERVAL_MS) {
@@ -79,7 +78,7 @@ export class FuturesBacktestEngine {
     side: 'LONG' | 'SHORT',
     entryTime: number,
     exitTime: number,
-    fundingRates: FundingRateData[]
+    fundingRates: LocalFundingRateData[]
   ): { totalPayments: number; paymentCount: number } {
     let totalPayments = 0;
     let paymentCount = 0;
@@ -153,7 +152,7 @@ export class FuturesBacktestEngine {
       return spotResult;
     }
 
-    let fundingRates: FundingRateData[] = [];
+    let fundingRates: LocalFundingRateData[] = [];
     if (simulateFundingRates) {
       fundingRates = await this.loadFundingRates(
         config.symbol,
@@ -164,8 +163,6 @@ export class FuturesBacktestEngine {
     }
 
     const klineData = spotResult.klines ?? [];
-    const klineMap = new Map(klineData.map((k) => [k.openTime, k]));
-
     const futuresTrades: BacktestTrade[] = [];
     let equity = config.initialCapital;
     let peakEquity = config.initialCapital;
@@ -238,7 +235,7 @@ export class FuturesBacktestEngine {
         totalFundingPaid += Math.abs(fundingPayments);
       }
 
-      const { pnlPercent, leveragedPnlPercent } = calculateLeveragedPnl(
+      const { leveragedPnlPercent } = calculateLeveragedPnl(
         entryPrice,
         exitPrice,
         leverage,

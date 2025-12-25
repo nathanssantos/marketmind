@@ -61,13 +61,12 @@ async function runBenchmark(
     const engine = new BacktestEngine();
     const result = await engine.run({
       symbol,
-      interval: interval as any,
-      startDate,
-      endDate,
+      interval: interval as string,
+      startDate: startDate.toISOString().split('T')[0] as string,
+      endDate: endDate.toISOString().split('T')[0] as string,
       initialCapital: 1000,
-      strategies: [],
+      setupTypes: [strategy],
       riskPerTrade: 0.02,
-      dynamicStrategies: [strategy],
     });
 
     return {
@@ -83,13 +82,6 @@ async function runBenchmark(
     console.error(`Error running ${strategy}:`, error);
     return null;
   }
-}
-
-function _formatComparison(actual: number, expected: number, tolerance: number): string {
-  const diff = actual - expected;
-  const within = Math.abs(diff) <= tolerance;
-  const sign = diff >= 0 ? '+' : '';
-  return within ? `✅ ${sign}${diff.toFixed(2)}` : `❌ ${sign}${diff.toFixed(2)}`;
 }
 
 async function main() {
@@ -113,7 +105,9 @@ async function main() {
   const results: BenchmarkResult[] = [];
 
   for (const strategy of strategies) {
-    console.log(`\n━━━ Testing ${BENCHMARKS[strategy].name} (${strategy}) ━━━`);
+    const benchmarkDef = BENCHMARKS[strategy];
+    if (!benchmarkDef) continue;
+    console.log(`\n━━━ Testing ${benchmarkDef.name} (${strategy}) ━━━`);
     const result = await runBenchmark(strategy, symbol, interval, startDate, endDate);
     if (result) {
       results.push(result);
@@ -137,6 +131,7 @@ async function main() {
 
   for (const result of results) {
     const bench = BENCHMARKS[result.strategy];
+    if (!bench) continue;
     const stratName = bench.name.padEnd(19);
     const trades = result.trades.toString().padStart(9);
     const wrActual = `${result.winRate.toFixed(1)}%`.padStart(9);
@@ -156,6 +151,7 @@ async function main() {
 
   for (const result of results) {
     const bench = BENCHMARKS[result.strategy];
+    if (!bench) continue;
     const wrDiff = Math.abs(result.winRate - bench.expectedWinRate);
     const pfDiff = Math.abs(result.profitFactor - bench.expectedPF);
 

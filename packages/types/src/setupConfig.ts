@@ -1,16 +1,3 @@
-/**
- * Centralized Setup Detection Configuration
- *
- * Single source of truth for all setup detector default parameters.
- * Used by both frontend (electron) and backend services.
- *
- * Only includes profitable strategies validated through backtesting:
- * - pattern123: +7.06% PnL
- * - bearTrap: +3.53% PnL
- * - meanReversion: +1.34% PnL
- *
- * @package @marketmind/types
- */
 
 
 export interface BaseSetupConfig {

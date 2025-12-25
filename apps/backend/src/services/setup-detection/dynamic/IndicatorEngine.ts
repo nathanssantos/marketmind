@@ -1,10 +1,4 @@
 /* eslint-disable complexity */
-/**
- * Indicator Engine
- *
- * Computes technical indicators based on strategy definitions.
- * Maps JSON indicator definitions to @marketmind/indicators functions.
- */
 
 import type {
   ComputedIndicator,
@@ -93,17 +87,11 @@ const toNumber = (value: string | number | undefined, defaultValue: number): num
   return typeof value === 'string' ? parseFloat(value) : value;
 };
 
-/**
- * Engine for computing indicators defined in strategy JSON
- */
 export class IndicatorEngine {
   private cache: Map<string, ComputedIndicators> = new Map();
   private cryptoDataCache: Map<string, { data: CryptoData; timestamp: number }> = new Map();
   private cryptoDataCacheTTL: number = 60000;
 
-  /**
-   * Compute all indicators defined in a strategy
-   */
   computeIndicators(
     klines: Kline[],
     indicators: Record<string, IndicatorDefinition>,
@@ -145,9 +133,6 @@ export class IndicatorEngine {
     return result;
   }
 
-  /**
-   * Compute all indicators with async crypto data from Binance Futures API
-   */
   async computeIndicatorsWithCryptoData(
     klines: Kline[],
     indicators: Record<string, IndicatorDefinition>,
@@ -175,9 +160,6 @@ export class IndicatorEngine {
     return result;
   }
 
-  /**
-   * Fetch crypto-specific data from Binance Futures API and BTC Dominance
-   */
   private async fetchCryptoData(symbol: string, needsBtcDominance: boolean = false): Promise<CryptoData> {
     const cacheKey = `crypto:${symbol}:${needsBtcDominance}`;
     const cached = this.cryptoDataCache.get(cacheKey);
@@ -945,9 +927,6 @@ export class IndicatorEngine {
     return handler(klines, resolvedParams);
   }
 
-  /**
-   * Resolve parameter references ($paramName) to actual values
-   */
   private resolveParams(
     indicatorParams: Record<string, number | string>,
     strategyParams: Record<string, number>
@@ -972,17 +951,6 @@ export class IndicatorEngine {
     return resolved;
   }
 
-  /**
-   * Parse a reference string to extract base indicator, sub-key, and offset
-   *
-   * Examples:
-   * - "close" -> { base: "close", subKey: null, offset: 0 }
-   * - "close.prev" -> { base: "close", subKey: null, offset: 1 }
-   * - "close.prev2" -> { base: "close", subKey: null, offset: 2 }
-   * - "ema9.prev" -> { base: "ema9", subKey: null, offset: 1 }
-   * - "bb.upper.prev" -> { base: "bb", subKey: "upper", offset: 1 }
-   * - "macd.signal.prev3" -> { base: "macd", subKey: "signal", offset: 3 }
-   */
   private parseReference(reference: string): { base: string; subKey: string | null; offset: number } {
     const parts = reference.split('.');
     const base = parts[0] ?? '';
@@ -1006,17 +974,6 @@ export class IndicatorEngine {
     return { base, subKey, offset };
   }
 
-  /**
-   * Resolve an indicator reference to a value at a specific index
-   *
-   * Supports:
-   * - "close", "open", "high", "low", "volume" - price data
-   * - "rsi" - simple indicator value
-   * - "bb.upper", "bb.lower", "bb.middle" - nested indicator values
-   * - "macd.signal", "macd.histogram" - nested indicator values
-   * - ".prev", ".prev2", ".prev3" suffixes for historical values
-   *   e.g., "close.prev", "ema9.prev2", "bb.upper.prev"
-   */
   resolveIndicatorValue(
     indicators: ComputedIndicators,
     reference: string,
@@ -1059,10 +1016,6 @@ export class IndicatorEngine {
     return defaultKey ? (values[defaultKey]?.[effectiveIndex] ?? null) : null;
   }
 
-  /**
-   * Get indicator values as array for crossover detection
-   * Supports .prev, .prev2, etc. offsets - returns shifted arrays
-   */
   getIndicatorSeries(
     indicators: ComputedIndicators,
     reference: string
@@ -1111,16 +1064,10 @@ export class IndicatorEngine {
     return baseSeries;
   }
 
-  /**
-   * Clear the indicator cache
-   */
   clearCache(): void {
     this.cache.clear();
   }
 
-  /**
-   * Calculate SMA of volume values (not close prices)
-   */
   private calculateVolumeSMA(klines: Kline[], period: number): (number | null)[] {
     if (period <= 0 || klines.length === 0) {
       return [];
@@ -1147,9 +1094,6 @@ export class IndicatorEngine {
     return result;
   }
 
-  /**
-   * Generate a cache key for computed indicators
-   */
   private generateCacheKey(
     klines: Kline[],
     indicators: Record<string, IndicatorDefinition>,

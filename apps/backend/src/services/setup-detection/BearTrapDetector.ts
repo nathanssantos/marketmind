@@ -1,10 +1,9 @@
-import { calculateEMA, findPivotPoints } from '@marketmind/indicators';
+import { calculateEMA, findPivotPoints, isVolumeConfirmed } from '@marketmind/indicators';
 import type { Kline, BearTrapConfig } from '@marketmind/types';
 import {
     createDefaultBearTrapConfig,
     getKlineClose,
     getKlineHigh,
-    getKlineVolume,
 } from '@marketmind/types';
 import type { SetupDetectorResult } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';
@@ -150,16 +149,7 @@ export class BearTrapDetector extends BaseSetupDetector {
     klines: Kline[],
     currentIndex: number,
   ): SetupDetectorResult | null {
-    const volumeData = klines.slice(
-      Math.max(0, currentIndex - VOLUME_LOOKBACK),
-      currentIndex,
-    );
-    const avgVolume =
-      volumeData.reduce((sum, c) => sum + getKlineVolume(c), 0) /
-      volumeData.length;
-    const currentVolume = getKlineVolume(trap.current);
-    const volumeConfirmation =
-      currentVolume > avgVolume * this.bearTrapConfig.volumeMultiplier;
+    const volumeConfirmation = isVolumeConfirmed(klines, currentIndex, VOLUME_LOOKBACK, this.bearTrapConfig.volumeMultiplier);
 
     const ema = calculateEMA(klines, this.bearTrapConfig.emaPeriod);
     const emaCurrent = ema[currentIndex];

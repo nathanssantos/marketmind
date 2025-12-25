@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs/promises';
-import path from 'path';
 import { ResultManager, type SavedBacktestResult, type OptimizationSummary } from '../ResultManager';
 import type { BacktestResult, BacktestMetrics, Interval } from '@marketmind/types';
 
@@ -8,49 +7,56 @@ vi.mock('fs/promises');
 
 const createMockMetrics = (): BacktestMetrics => ({
   totalTrades: 50,
+  winningTrades: 30,
+  losingTrades: 20,
   winRate: 55,
   totalPnl: 1500,
   totalPnlPercent: 15,
+  avgPnl: 30,
+  avgPnlPercent: 0.6,
+  grossWinRate: 55,
+  grossProfitFactor: 1.8,
+  totalGrossPnl: 1600,
   maxDrawdown: 500,
   maxDrawdownPercent: 5,
   profitFactor: 1.8,
   sharpeRatio: 1.5,
   avgWin: 100,
   avgLoss: 50,
-  avgWinPercent: 2,
-  avgLossPercent: 1,
   largestWin: 300,
   largestLoss: 150,
+  totalCommission: 100,
   avgTradeDuration: 24,
-  avgBarsInTrade: 6,
+  avgWinDuration: 30,
+  avgLossDuration: 18,
 });
 
 const createMockBacktestResult = (): BacktestResult => ({
   id: 'test-result',
-  status: 'SUCCESS',
-  startDate: '2024-01-01',
-  endDate: '2024-03-01',
+  status: 'COMPLETED',
+  startTime: '2024-01-01T00:00:00Z',
+  endTime: '2024-03-01T00:00:00Z',
+  duration: 1000,
   trades: [
     {
       id: 'trade-1',
       setupType: 'test-setup',
-      symbol: 'BTCUSDT',
-      entryTime: Date.now(),
+      entryTime: new Date().toISOString(),
       entryPrice: 50000,
-      exitTime: Date.now() + 3600000,
+      exitTime: new Date(Date.now() + 3600000).toISOString(),
       exitPrice: 50500,
       quantity: 1,
       side: 'LONG' as const,
       pnl: 500,
       pnlPercent: 1,
-      exitReason: 'takeProfit',
+      exitReason: 'TAKE_PROFIT' as const,
       commission: 10,
       netPnl: 490,
+      status: 'CLOSED' as const,
     },
   ],
   metrics: createMockMetrics(),
   equityCurve: [],
-  drawdownCurve: [],
   config: {
     symbol: 'BTCUSDT',
     interval: '1d' as Interval,

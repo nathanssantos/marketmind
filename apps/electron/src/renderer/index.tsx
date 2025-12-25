@@ -53,7 +53,7 @@ const showFatalErrorScreen = (error: Error | string) => {
 
 window.onerror = (message, source, lineno, colno, error) => {
   console.error('[Global Error]', { message, source, lineno, colno, error });
-  if (error && error.message?.includes('ResizeObserver')) return true;
+  if (error?.message?.includes('ResizeObserver')) return true;
   return false;
 };
 

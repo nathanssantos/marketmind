@@ -13,16 +13,6 @@ export interface NDayHighLowResult {
   lowestLow: (number | null)[];
 }
 
-/**
- * N-Day High/Low Indicator
- *
- * Calculates whether current bar is at N-day high or low.
- * Used in Double Seven and 3-Day High/Low strategies.
- *
- * @param klines - Array of candlestick data
- * @param period - Lookback period (default: 7 for Double Seven)
- * @returns Object with high/low detection arrays and actual values
- */
 export const calculateNDayHighLow = (
   klines: Kline[],
   period: number = 7
@@ -93,14 +83,6 @@ export const calculateNDayHighLow = (
   };
 };
 
-/**
- * Check if current bar has N consecutive lower highs and lower lows
- * Used in 3-Day High/Low strategy
- *
- * @param klines - Array of candlestick data
- * @param consecutiveDays - Number of consecutive days required (default: 3)
- * @returns Array of booleans indicating pattern detection
- */
 export const calculateConsecutiveLowerHighsLows = (
   klines: Kline[],
   consecutiveDays: number = 3
@@ -141,15 +123,6 @@ export const calculateConsecutiveLowerHighsLows = (
   return result;
 };
 
-/**
- * Check number of down days in last N days
- * Used in Multiple Days Down strategy
- *
- * @param klines - Array of candlestick data
- * @param lookbackDays - Total days to look back (default: 5)
- * @param minDownDays - Minimum down days required (default: 4)
- * @returns Array of booleans indicating if condition is met
- */
 export const calculateMultipleDaysDown = (
   klines: Kline[],
   lookbackDays: number = 5,

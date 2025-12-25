@@ -63,7 +63,7 @@ export async function permutationCommand(options: PermutationTestOptions): Promi
   let configs: OptimizedStrategyConfig[] = [...OPTIMIZED_STRATEGY_CONFIGS];
 
   if (tier) {
-    const tierNum = parseInt(tier, 10);
+    const tierNum = parseInt(tier, 10) as 1 | 2 | 3;
     configs = getOptimizedConfigsByTier(tierNum);
   }
 

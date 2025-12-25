@@ -149,7 +149,6 @@ describe('WalkForwardOptimizer', () => {
   describe('edge cases', () => {
     it('should handle exact minimum data for one window', () => {
       const startTime = new Date('2024-01-01').getTime();
-      const monthMs = 30 * 24 * 60 * 60 * 1000;
       const daysNeeded = Math.ceil((6 + 2) * 30) + 5;
       const klines = createMockKlines(daysNeeded, startTime);
 

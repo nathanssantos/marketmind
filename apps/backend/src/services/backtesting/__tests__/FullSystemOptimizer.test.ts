@@ -3,7 +3,6 @@ import {
   FullSystemOptimizer,
   OPTIMIZATION_PRESETS,
   type FullSystemPreset,
-  type FullSystemCombination,
 } from '../FullSystemOptimizer';
 
 describe('FullSystemOptimizer', () => {

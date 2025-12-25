@@ -1,38 +1,52 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { type ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useOrderUpdates } from '../useOrderUpdates';
+
+const mockSubscribeOrders = vi.fn();
+const mockUnsubscribeOrders = vi.fn();
+const mockOn = vi.fn();
+const mockOff = vi.fn();
+
+let mockIsConnected = true;
 
 vi.mock('../useWebSocket', () => ({
   useWebSocket: vi.fn(() => ({
+    isConnected: mockIsConnected,
     subscribe: {
-      orders: vi.fn(),
+      orders: mockSubscribeOrders,
     },
     unsubscribe: {
-      orders: vi.fn(),
+      orders: mockUnsubscribeOrders,
     },
+    on: mockOn,
+    off: mockOff,
   })),
 }));
 
-const mockTrpcUtils = {
-  autoTrading: {
-    getActiveExecutions: {
-      invalidate: vi.fn(),
-    },
-  },
-  trading: {
-    getOrders: {
-      invalidate: vi.fn(),
-    },
-    getPositions: {
-      invalidate: vi.fn(),
-    },
-  },
-};
+const mockInvalidateExecutions = vi.fn();
+const mockInvalidateOrders = vi.fn();
+const mockInvalidatePositions = vi.fn();
 
-vi.mock('@renderer/services/trpc', () => ({
-  trpcUtils: mockTrpcUtils,
+vi.mock('../../utils/trpc', () => ({
+  trpc: {
+    useUtils: () => ({
+      autoTrading: {
+        getActiveExecutions: {
+          invalidate: mockInvalidateExecutions,
+        },
+      },
+      trading: {
+        getOrders: {
+          invalidate: mockInvalidateOrders,
+        },
+        getPositions: {
+          invalidate: mockInvalidatePositions,
+        },
+      },
+    }),
+  },
 }));
 
 const createWrapper = () => {
@@ -49,101 +63,76 @@ const createWrapper = () => {
 };
 
 describe('useOrderUpdates', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIsConnected = true;
+  });
+
   it('should subscribe to order events when walletId is provided', async () => {
-    const { useWebSocket } = await import('../useWebSocket');
-    const mockSubscribe = vi.fn();
-    const mockUnsubscribe = vi.fn();
-
-    (useWebSocket as ReturnType<typeof vi.fn>).mockReturnValue({
-      subscribe: { orders: mockSubscribe },
-      unsubscribe: { orders: mockUnsubscribe },
-    });
-
-    const { result } = renderHook(() => useOrderUpdates('wallet-123'), {
+    renderHook(() => useOrderUpdates('wallet-123'), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => {
-      expect(mockSubscribe).toHaveBeenCalledWith('wallet-123', expect.any(Function));
+      expect(mockSubscribeOrders).toHaveBeenCalledWith('wallet-123');
     });
   });
 
   it('should not subscribe when walletId is not provided', async () => {
-    const { useWebSocket } = await import('../useWebSocket');
-    const mockSubscribe = vi.fn();
-
-    (useWebSocket as ReturnType<typeof vi.fn>).mockReturnValue({
-      subscribe: { orders: mockSubscribe },
-      unsubscribe: { orders: vi.fn() },
-    });
-
-    renderHook(() => useOrderUpdates(undefined), {
+    renderHook(() => useOrderUpdates(''), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => {
-      expect(mockSubscribe).not.toHaveBeenCalled();
+      expect(mockSubscribeOrders).not.toHaveBeenCalled();
     });
   });
 
   it('should unsubscribe on unmount', async () => {
-    const { useWebSocket } = await import('../useWebSocket');
-    const mockUnsubscribe = vi.fn();
-
-    (useWebSocket as ReturnType<typeof vi.fn>).mockReturnValue({
-      subscribe: { orders: vi.fn() },
-      unsubscribe: { orders: mockUnsubscribe },
-    });
-
     const { unmount } = renderHook(() => useOrderUpdates('wallet-123'), {
       wrapper: createWrapper(),
     });
 
+    await waitFor(() => {
+      expect(mockSubscribeOrders).toHaveBeenCalled();
+    });
+
     unmount();
 
-    await waitFor(() => {
-      expect(mockUnsubscribe).toHaveBeenCalledWith('wallet-123');
-    });
+    expect(mockUnsubscribeOrders).toHaveBeenCalledWith('wallet-123');
+    expect(mockOff).toHaveBeenCalledWith('order:created', expect.any(Function));
+    expect(mockOff).toHaveBeenCalledWith('order:update', expect.any(Function));
+    expect(mockOff).toHaveBeenCalledWith('order:cancelled', expect.any(Function));
   });
 
   it('should resubscribe when walletId changes', async () => {
-    const { useWebSocket } = await import('../useWebSocket');
-    const mockSubscribe = vi.fn();
-    const mockUnsubscribe = vi.fn();
-
-    (useWebSocket as ReturnType<typeof vi.fn>).mockReturnValue({
-      subscribe: { orders: mockSubscribe },
-      unsubscribe: { orders: mockUnsubscribe },
-    });
-
-    const { rerender } = renderHook(({ walletId }) => useOrderUpdates(walletId), {
-      wrapper: createWrapper(),
-      initialProps: { walletId: 'wallet-123' as string | undefined },
-    });
+    const { rerender } = renderHook(
+      ({ walletId }) => useOrderUpdates(walletId),
+      {
+        wrapper: createWrapper(),
+        initialProps: { walletId: 'wallet-123' },
+      }
+    );
 
     await waitFor(() => {
-      expect(mockSubscribe).toHaveBeenCalledWith('wallet-123', expect.any(Function));
+      expect(mockSubscribeOrders).toHaveBeenCalledWith('wallet-123');
     });
 
     rerender({ walletId: 'wallet-456' });
 
     await waitFor(() => {
-      expect(mockUnsubscribe).toHaveBeenCalledWith('wallet-123');
-      expect(mockSubscribe).toHaveBeenCalledWith('wallet-456', expect.any(Function));
+      expect(mockUnsubscribeOrders).toHaveBeenCalledWith('wallet-123');
+      expect(mockSubscribeOrders).toHaveBeenCalledWith('wallet-456');
     });
   });
 
   it('should invalidate queries when order:created event received', async () => {
-    const { useWebSocket } = await import('../useWebSocket');
-    let orderCreatedCallback: ((order: unknown) => void) | undefined;
+    let capturedCallback: ((order: unknown) => void) | undefined;
 
-    (useWebSocket as ReturnType<typeof vi.fn>).mockReturnValue({
-      subscribe: {
-        orders: vi.fn((_, cb) => {
-          orderCreatedCallback = cb;
-        }),
-      },
-      unsubscribe: { orders: vi.fn() },
+    mockOn.mockImplementation((event: string, cb: (order: unknown) => void) => {
+      if (event === 'order:created') {
+        capturedCallback = cb;
+      }
     });
 
     renderHook(() => useOrderUpdates('wallet-123'), {
@@ -151,15 +140,37 @@ describe('useOrderUpdates', () => {
     });
 
     await waitFor(() => {
-      expect(orderCreatedCallback).toBeDefined();
+      expect(mockOn).toHaveBeenCalledWith('order:created', expect.any(Function));
     });
 
-    orderCreatedCallback?.({ id: '1', symbol: 'BTCUSDT' });
+    expect(capturedCallback).toBeDefined();
+
+    act(() => {
+      capturedCallback?.({ id: '1', symbol: 'BTCUSDT' });
+    });
 
     await waitFor(() => {
-      expect(mockTrpcUtils.autoTrading.getActiveExecutions.invalidate).toHaveBeenCalled();
-      expect(mockTrpcUtils.trading.getOrders.invalidate).toHaveBeenCalled();
-      expect(mockTrpcUtils.trading.getPositions.invalidate).toHaveBeenCalled();
+      expect(mockInvalidateExecutions).toHaveBeenCalled();
+      expect(mockInvalidateOrders).toHaveBeenCalled();
+      expect(mockInvalidatePositions).toHaveBeenCalled();
+    });
+  });
+
+  it('should return isConnected status', async () => {
+    const { result } = renderHook(() => useOrderUpdates('wallet-123'), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.isConnected).toBe(true);
+  });
+
+  it('should not subscribe when disabled', async () => {
+    renderHook(() => useOrderUpdates('wallet-123', false), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(mockSubscribeOrders).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,7 +1,3 @@
-/**
- * Backtesting Types
- * Types for historical strategy backtesting
- */
 
 export interface BacktestConfig {
   symbol: string;
@@ -96,7 +92,7 @@ export interface BacktestTrade {
   pnlPercent?: number;
   commission: number;
   netPnl?: number;
-  exitReason?: 'STOP_LOSS' | 'TAKE_PROFIT' | 'MANUAL' | 'END_OF_PERIOD' | 'LIQUIDATION';
+  exitReason?: 'STOP_LOSS' | 'TAKE_PROFIT' | 'MANUAL' | 'END_OF_PERIOD' | 'LIQUIDATION' | 'EXIT_CONDITION' | 'MAX_BARS';
   status: 'OPEN' | 'CLOSED';
 
   marketType?: 'SPOT' | 'FUTURES';

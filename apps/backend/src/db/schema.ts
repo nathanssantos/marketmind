@@ -248,6 +248,11 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   useLimitOrders: boolean('use_limit_orders').default(false).notNull(),
   useStochasticFilter: boolean('use_stochastic_filter').default(false).notNull(),
   useAdxFilter: boolean('use_adx_filter').default(true).notNull(),
+  maxDrawdownPercent: numeric('max_drawdown_percent', { precision: 5, scale: 2 }).default('15'),
+  marginTopUpEnabled: boolean('margin_top_up_enabled').default(false),
+  marginTopUpThreshold: numeric('margin_top_up_threshold', { precision: 5, scale: 2 }).default('30'),
+  marginTopUpPercent: numeric('margin_top_up_percent', { precision: 5, scale: 2 }).default('10'),
+  marginTopUpMaxCount: integer('margin_top_up_max_count').default(3),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
@@ -290,6 +295,10 @@ export const tradeExecutions = pgTable('trade_executions', {
   expiresAt: timestamp('expires_at', { mode: 'date' }),
   marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('SPOT'),
   leverage: integer().default(1),
+  liquidationPrice: numeric('liquidation_price', { precision: 20, scale: 8 }),
+  accumulatedFunding: numeric('accumulated_funding', { precision: 20, scale: 8 }).default('0'),
+  positionSide: varchar('position_side', { length: 10 }).$type<'LONG' | 'SHORT' | 'BOTH'>().default('BOTH'),
+  marginTopUpCount: integer('margin_top_up_count').default(0),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({

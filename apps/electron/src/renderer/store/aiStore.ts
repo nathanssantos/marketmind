@@ -4,61 +4,12 @@ import { AIService } from '@/renderer/services/ai';
 import type { AIAnalysisResponse, AIMessage, AIProviderType, AITrade, AITradingConfig, AITradingStats, Kline } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '@shared/utils';
 import { create } from 'zustand';
+import { useAISettingsStore, type AISettings, DEFAULT_MODELS } from './aiSettingsStore';
+import { useAITradingStore, DEFAULT_TRADING_CONFIG, DEFAULT_TRADING_STATS } from './aiTradingStore';
+import { useConversationStore, type Conversation } from './conversationStore';
 
-export const DEFAULT_MODELS: Record<AIProviderType, string> = {
-  openai: 'gpt-4o',
-  anthropic: 'claude-sonnet-4-5',
-  gemini: 'gemini-2.5-flash',
-};
-
-const MAX_MESSAGES_PER_CONVERSATION = 100;
-const MAX_STORED_CONVERSATIONS = 50;
-
-const DEFAULT_TRADING_CONFIG: AITradingConfig = {
-  enabled: false,
-  riskProfile: 'moderate',
-  analysisInterval: '15m',
-  maxPositionSize: 10,
-  defaultStopLoss: 2,
-  defaultTakeProfit: 4,
-  maxTradesPerDay: 10,
-  maxTradesPerHour: 3,
-  minTimeBetweenTrades: 5,
-  enabledTimeframes: ['1m', '5m', '15m', '30m', '1h', '4h', '1d'],
-  emergencyStopLosses: 3,
-  notifyOnTrade: true,
-  notifyOnProfit: true,
-  notifyOnLoss: true,
-  maxDailyLoss: 5,
-  accountRiskPercent: 1,
-};
-
-const DEFAULT_TRADING_STATS: AITradingStats = {
-  totalTrades: 0,
-  openTrades: 0,
-  closedTrades: 0,
-  winningTrades: 0,
-  losingTrades: 0,
-  winRate: 0,
-  totalProfit: 0,
-  totalLoss: 0,
-  netProfit: 0,
-  avgProfit: 0,
-  avgLoss: 0,
-  profitFactor: 0,
-  largestWin: 0,
-  largestLoss: 0,
-  consecutiveWins: 0,
-  consecutiveLosses: 0,
-  maxConsecutiveWins: 0,
-  maxConsecutiveLosses: 0,
-  totalTokensUsed: 0,
-  estimatedCost: 0,
-  avgHoldingTime: 0,
-  bestTrade: undefined,
-  worstTrade: undefined,
-  patternSuccess: new Map(),
-};
+export { DEFAULT_MODELS };
+export type { AISettings, Conversation };
 
 export interface ChartData {
   klines: Kline[];
@@ -67,24 +18,6 @@ export interface ChartData {
   chartType: 'kline' | 'line';
   showVolume: boolean;
   movingAverages: MovingAverageConfig[];
-}
-
-export interface Conversation {
-  id: string;
-  title: string;
-  messages: AIMessage[];
-  createdAt: number;
-  updatedAt: number;
-  symbol?: string;
-  patternDataId?: string;
-}
-
-export interface AISettings {
-  provider: AIProviderType;
-  model?: string;
-  temperature?: number;
-  maxTokens?: number;
-  detailedKlinesCount?: number;
 }
 
 interface AIState {
@@ -99,7 +32,7 @@ interface AIState {
   provider: AIProviderType | null;
   model: string | null;
   enableAIPatterns: boolean;
-  
+
   responseProcessor: ((response: string) => Promise<string>) | null;
 
   isAutoTradingActive: boolean;
@@ -158,7 +91,16 @@ interface AIState {
   clearAll: () => void;
 }
 
-const loadFromElectron = async (): Promise<Partial<AIState>> => {
+const loadFromElectron = async (): Promise<{
+  conversations?: Conversation[];
+  activeConversationId?: string | null;
+  settings?: AISettings | null;
+  enableAIPatterns?: boolean;
+  isAutoTradingActive?: boolean;
+  tradingConfig?: AITradingConfig;
+  trades?: AITrade[];
+  tradingStats?: AITradingStats | null;
+}> => {
   try {
     const result = await window.electron.secureStorage.getAIData();
     if (result.success && result.data) {
@@ -167,8 +109,6 @@ const loadFromElectron = async (): Promise<Partial<AIState>> => {
         activeConversationId: result.data.activeConversationId,
         settings: result.data.settings,
         enableAIPatterns: result.data.enableAIPatterns,
-        provider: result.data.settings?.provider || null,
-        model: result.data.settings?.model || null,
         isAutoTradingActive: result.data.isAutoTradingActive || false,
         tradingConfig: result.data.tradingConfig || DEFAULT_TRADING_CONFIG,
         trades: result.data.trades || [],
@@ -198,33 +138,17 @@ const saveToElectron = async (state: AIState): Promise<void> => {
   }
 };
 
-const generateId = (): string => {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-};
-
-const generateTitle = (messages: AIMessage[]): string => {
-  if (messages.length === 0) return 'New Conversation';
-  
-  const firstUserMessage = messages.find(m => m.role === 'user');
-  if (!firstUserMessage) return 'New Conversation';
-  
-  const preview = firstUserMessage.content.slice(0, 50);
-  return preview.length < firstUserMessage.content.length 
-    ? `${preview}...` 
-    : preview;
-};
-
 const formatAIError = (error: Error, provider?: AIProviderType, model?: string): string => {
   const errorMessage = error.message;
-  
-  const providerName = provider === 'anthropic' ? 'Claude' : 
-                      provider === 'openai' ? 'OpenAI' : 
+
+  const providerName = provider === 'anthropic' ? 'Claude' :
+                      provider === 'openai' ? 'OpenAI' :
                       provider === 'gemini' ? 'Gemini' : 'AI';
-  
+
   if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests') || errorMessage.includes('quota')) {
     if (provider === 'gemini') {
       const waitTime = errorMessage.match(/retry in (\d+)/i)?.[1] || '60';
-      
+
       if (model === 'gemini-2.0-flash-exp') {
         return `⚠️ **Cota do Gemini 2.0 Flash Exp esgotada**\n\n` +
           `O tier gratuito tem limite de **10 requisições por minuto**.\n\n` +
@@ -284,34 +208,34 @@ const formatAIError = (error: Error, provider?: AIProviderType, model?: string):
       `• Clique em "Clear Chat" para limpar o histórico\n` +
       `• Ou reduza o tamanho da mensagem`;
   }
-  
+
   return errorMessage;
 };
 
 const formatChartDataContext = (chartData: ChartData): string => {
   const recentKlines = chartData.klines.slice(-100);
   const lastKline = recentKlines[recentKlines.length - 1];
-  
+
   if (!lastKline) return '';
 
   const visibleMAs = chartData.movingAverages.filter(ma => ma.visible);
-  
+
   const highs = recentKlines.map(c => getKlineHigh(c));
   const lows = recentKlines.map(c => getKlineLow(c));
   const volumes = recentKlines.map(c => getKlineVolume(c));
-  
+
   const highestPrice = Math.max(...highs);
   const lowestPrice = Math.min(...lows);
   const avgVolume = volumes.reduce((a, b) => a + b, 0) / volumes.length;
   const priceRange = ((highestPrice - lowestPrice) / lowestPrice * 100).toFixed(2);
-  
+
   const first = recentKlines[0];
   const last = recentKlines[recentKlines.length - 1];
   const overallChange = first && last ? ((getKlineClose(last) - getKlineClose(first)) / getKlineClose(first) * 100).toFixed(2) : '0';
-  
+
   const bullishCount = recentKlines.filter(c => getKlineClose(c) > getKlineOpen(c)).length;
   const bearishCount = recentKlines.length - bullishCount;
-  
+
   let context = `\n\n--- CHART DATA CONTEXT ---\n`;
   context += `Market: ${chartData.symbol}\n`;
   context += `Timeframe: ${chartData.timeframe}\n`;
@@ -324,7 +248,7 @@ const formatChartDataContext = (chartData: ChartData): string => {
   context += `Low: $${getKlineLow(lastKline).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}\n`;
   context += `Volume: ${getKlineVolume(lastKline).toLocaleString()}\n`;
   context += `Current Kline Change: ${((getKlineClose(lastKline) - getKlineOpen(lastKline)) / getKlineOpen(lastKline) * 100).toFixed(2)}%\n`;
-  
+
   context += `\n=== STATISTICAL ANALYSIS (Last 100 klines) ===\n`;
   context += `Highest Price: $${highestPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}\n`;
   context += `Lowest Price: $${lowestPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}\n`;
@@ -333,41 +257,45 @@ const formatChartDataContext = (chartData: ChartData): string => {
   context += `Average Volume: ${avgVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })}\n`;
   context += `Bullish Klines: ${bullishCount} (${(bullishCount / recentKlines.length * 100).toFixed(1)}%)\n`;
   context += `Bearish Klines: ${bearishCount} (${(bearishCount / recentKlines.length * 100).toFixed(1)}%)\n`;
-  
+
   context += `\n=== TIMESTAMP INFORMATION FOR DRAWING PATTERNS ===\n`;
   context += `⚠️ IMPORTANT: When creating patterns (support, resistance, zones), use these timestamps:\n`;
   context += `First Kline Timestamp: ${recentKlines[0]?.openTime} (${new Date(recentKlines[0]?.openTime || 0).toISOString()})\n`;
   context += `Last Kline Timestamp: ${lastKline.openTime} (${new Date(lastKline.openTime).toISOString()})\n`;
   context += `Timeframe: ${chartData.timeframe} (use appropriate timestamps based on this interval)\n`;
   context += `Total Visible Klines: ${chartData.klines.length}\n`;
-  
+
   if (visibleMAs.length > 0) {
     context += `\n=== ACTIVE INDICATORS ===\n`;
     visibleMAs.forEach(ma => {
       context += `• ${ma.type}(${ma.period}) - ${ma.color}\n`;
     });
   }
-  
+
   context += `\n=== RECENT PRICE ACTION (Last 20 klines) ===\n`;
   recentKlines.slice(-20).forEach((kline, i) => {
     const change = ((getKlineClose(kline) - getKlineOpen(kline)) / getKlineOpen(kline) * 100).toFixed(2);
-    const trend = getKlineClose(kline) > getKlineOpen(kline) ? '�' : '�';
+    const trend = getKlineClose(kline) > getKlineOpen(kline) ? '📗' : '📕';
     const volumeRatio = (getKlineVolume(kline) / avgVolume).toFixed(2);
-    const timestamp = new Date(kline.openTime).toLocaleString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    const timestamp = new Date(kline.openTime).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
     context += `${i + 1}. ${trend} ${timestamp} | O: $${getKlineOpen(kline).toFixed(2)} H: $${getKlineHigh(kline).toFixed(2)} L: $${getKlineLow(kline).toFixed(2)} C: $${getKlineClose(kline).toFixed(2)} | Δ${change}% | Vol: ${volumeRatio}x avg\n`;
   });
-  
+
   context += `\n--- END CHART DATA ---\n\n`;
-  
+
   return context;
 };
 
 export const useAIStore = create<AIState>((set, get) => {
+  const conversationStore = useConversationStore.getState();
+  const settingsStore = useAISettingsStore.getState();
+  const tradingStore = useAITradingStore.getState();
+
   const setWithSync = (
     partial: Partial<AIState> | ((state: AIState) => Partial<AIState>)
   ): void => {
@@ -376,511 +304,363 @@ export const useAIStore = create<AIState>((set, get) => {
   };
 
   return {
-    conversations: [],
-    activeConversationId: null,
-    settings: { provider: 'openai', model: 'gpt-4o' },
+    conversations: conversationStore.conversations,
+    activeConversationId: conversationStore.activeConversationId,
+    settings: settingsStore.settings,
     isLoading: false,
     error: null,
     lastAnalysis: null,
-    messages: [],
-    provider: 'openai',
-    model: 'gpt-4o',
-    enableAIPatterns: true,
+    messages: conversationStore.messages,
+    provider: settingsStore.provider,
+    model: settingsStore.model,
+    enableAIPatterns: settingsStore.enableAIPatterns,
     responseProcessor: null,
 
-    isAutoTradingActive: false,
-    tradingConfig: DEFAULT_TRADING_CONFIG,
-    trades: [],
-    tradingStats: DEFAULT_TRADING_STATS,
-    lastAnalysisTime: null,
-    lastTradeTime: null,
-    analysisInProgress: false,
-    tradingError: null,
+    isAutoTradingActive: tradingStore.isAutoTradingActive,
+    tradingConfig: tradingStore.tradingConfig,
+    trades: tradingStore.trades,
+    tradingStats: tradingStore.tradingStats,
+    lastAnalysisTime: tradingStore.lastAnalysisTime,
+    lastTradeTime: tradingStore.lastTradeTime,
+    analysisInProgress: tradingStore.analysisInProgress,
+    tradingError: tradingStore.tradingError,
 
-    setSettings: (settings) => setWithSync({ 
-      settings,
-      provider: settings.provider,
-      model: settings.model || null,
-    }),
-      
-      updateSettings: (partialSettings) => set((state) => {
-        const currentSettings = state.settings || { provider: 'openai' as AIProviderType, model: 'gpt-4o' };
-        const newProvider = partialSettings.provider || currentSettings.provider;
-        let newModel = partialSettings.model || currentSettings.model;
-        
-        if (partialSettings.provider && newProvider && !partialSettings.model) {
-          newModel = DEFAULT_MODELS[newProvider];
-        }
-        
-        const newSettings = { 
-          ...currentSettings, 
-          ...partialSettings, 
-          ...(newModel ? { model: newModel } : {}) 
-        };
-        
-        return {
-          settings: newSettings,
-          provider: newSettings.provider,
-          model: newSettings.model || null,
-        };
-      }),
+    setSettings: (settings) => {
+      useAISettingsStore.getState().setSettings(settings);
+      setWithSync({
+        settings,
+        provider: settings.provider,
+        model: settings.model || null,
+      });
+    },
 
-      clearSettings: () => set({ 
+    updateSettings: (partialSettings) => {
+      useAISettingsStore.getState().updateSettings(partialSettings);
+      const newSettings = useAISettingsStore.getState().settings;
+      set({
+        settings: newSettings,
+        provider: newSettings?.provider || null,
+        model: newSettings?.model || null,
+      });
+    },
+
+    clearSettings: () => {
+      useAISettingsStore.getState().clearSettings();
+      set({
         settings: null,
         provider: null,
         model: null,
-      }),
+      });
+    },
 
-      setResponseProcessor: (processor) => set({ responseProcessor: processor }),
+    setResponseProcessor: (processor) => set({ responseProcessor: processor }),
 
-      toggleAIPatterns: () => set((state) => ({ enableAIPatterns: !state.enableAIPatterns })),
+    toggleAIPatterns: () => {
+      useAISettingsStore.getState().toggleAIPatterns();
+      set((state) => ({ enableAIPatterns: !state.enableAIPatterns }));
+    },
 
-      createConversation: (title, symbol) => {
-        const id = generateId();
-        const now = Date.now();
-        
-        const conversation: Conversation = {
-          id,
-          title: title || 'New Conversation',
-          messages: [],
-          createdAt: now,
-          updatedAt: now,
-          ...(symbol ? { symbol } : {}),
-        };
+    createConversation: (title, symbol) => {
+      const id = useConversationStore.getState().createConversation(title, symbol);
+      set((state) => ({
+        conversations: [...state.conversations, useConversationStore.getState().conversations.find(c => c.id === id)!],
+        activeConversationId: id,
+      }));
+      return id;
+    },
 
-        set((state) => ({
-          conversations: [...state.conversations, conversation],
-          activeConversationId: id,
-        }));
+    startNewConversation: (symbol) => {
+      const newId = useConversationStore.getState().startNewConversation(symbol);
+      set({
+        activeConversationId: newId,
+        messages: [],
+        conversations: useConversationStore.getState().conversations,
+      });
+      return newId;
+    },
 
-        return id;
-      },
+    deleteConversation: (id) => {
+      useConversationStore.getState().deleteConversation(id);
+      const convState = useConversationStore.getState();
+      set({
+        conversations: convState.conversations,
+        activeConversationId: convState.activeConversationId,
+        messages: convState.messages,
+      });
+    },
 
-      startNewConversation: (symbol) => {
-        const newId = get().createConversation(undefined, symbol);
-        set({ 
-          activeConversationId: newId,
-          messages: [],
-        });
-        return newId;
-      },
+    setActiveConversation: (id) => {
+      useConversationStore.getState().setActiveConversation(id);
+      const convState = useConversationStore.getState();
+      set({
+        activeConversationId: id,
+        messages: convState.messages,
+      });
+    },
 
-      deleteConversation: (id) => set((state) => {
-        const wasActive = state.activeConversationId === id;
-        return {
-          conversations: state.conversations.filter(c => c.id !== id),
-          activeConversationId: wasActive ? null : state.activeConversationId,
-          messages: wasActive ? [] : state.messages,
-        };
-      }),
+    setActiveConversationBySymbol: (symbol) => {
+      useConversationStore.getState().setActiveConversationBySymbol(symbol);
+      const convState = useConversationStore.getState();
+      set({
+        activeConversationId: convState.activeConversationId,
+        messages: convState.messages,
+        conversations: convState.conversations,
+      });
+    },
 
-      setActiveConversation: (id) => {
-        const state = get();
-        const conversation = state.conversations.find(c => c.id === id);
-        set({ 
-          activeConversationId: id,
-          messages: conversation?.messages || [],
-        });
-      },
+    restoreActiveConversation: () => {
+      useConversationStore.getState().restoreActiveConversation();
+      set({ messages: useConversationStore.getState().messages });
+    },
 
-      setActiveConversationBySymbol: (symbol) => {
-        const state = get();
-        const conversationForSymbol = state.conversations
-          .filter(c => c.symbol === symbol)
-          .sort((a, b) => b.updatedAt - a.updatedAt)[0];
-        
-        if (conversationForSymbol) {
-          set({ 
-            activeConversationId: conversationForSymbol.id,
-            messages: conversationForSymbol.messages,
-          });
-        } else {
-          const newId = get().createConversation(undefined, symbol);
-          set({ 
-            activeConversationId: newId,
-            messages: [],
-          });
-        }
-      },
+    updateConversationTitle: (id, title) => {
+      useConversationStore.getState().updateConversationTitle(id, title);
+      set({ conversations: useConversationStore.getState().conversations });
+    },
 
-      restoreActiveConversation: () => {
-        const state = get();
-        if (!state.activeConversationId) return;
-        
-        const conversation = state.conversations.find(c => c.id === state.activeConversationId);
-        if (conversation) {
-          set({ messages: conversation.messages });
-        }
-      },
+    updateConversationPatternDataId: (id, patternDataId) => {
+      useConversationStore.getState().updateConversationPatternDataId(id, patternDataId);
+      set({ conversations: useConversationStore.getState().conversations });
+    },
 
-      updateConversationTitle: (id, title) => set((state) => ({
-        conversations: state.conversations.map(c =>
-          c.id === id ? { ...c, title, updatedAt: Date.now() } : c
-        ),
-      })),
+    addMessage: (conversationId, message) => {
+      useConversationStore.getState().addMessage(conversationId, message);
+      set({ conversations: useConversationStore.getState().conversations });
+    },
 
-      updateConversationPatternDataId: (id, patternDataId) => set((state) => ({
-        conversations: state.conversations.map(c => {
-          if (c.id !== id) return c;
-          const updated: Conversation = { ...c, updatedAt: Date.now() };
-          if (patternDataId !== undefined) {
-            updated.patternDataId = patternDataId;
-          } else {
-            delete updated.patternDataId;
-          }
-          return updated;
-        }),
-      })),
+    updateMessage: (conversationId, messageId, content) => {
+      useConversationStore.getState().updateMessage(conversationId, messageId, content);
+      set({ conversations: useConversationStore.getState().conversations });
+    },
 
-      addMessage: (conversationId, message) => set((state) => {
-        const conversations = state.conversations.map(c => {
-          if (c.id !== conversationId) return c;
+    deleteMessage: (conversationId, messageId) => {
+      useConversationStore.getState().deleteMessage(conversationId, messageId);
+      set({ conversations: useConversationStore.getState().conversations });
+    },
 
-          const newMessage: AIMessage = {
-            ...message,
-            id: generateId(),
-            openTime: Date.now(),
-          };
+    clearMessages: (conversationId) => {
+      useConversationStore.getState().clearMessages(conversationId);
+      set({ conversations: useConversationStore.getState().conversations });
+    },
 
-          let updatedMessages = [...c.messages, newMessage];
-          
-          if (updatedMessages.length > MAX_MESSAGES_PER_CONVERSATION) {
-            updatedMessages = updatedMessages.slice(-MAX_MESSAGES_PER_CONVERSATION);
-          }
-          
-          const title = c.title === 'New Conversation' 
-            ? generateTitle(updatedMessages)
-            : c.title;
+    setLoading: (loading) => set({ isLoading: loading }),
 
-          return {
-            ...c,
-            messages: updatedMessages,
-            title,
-            updatedAt: Date.now(),
-          };
-        });
+    setError: (error) => set({ error }),
 
-        let limitedConversations = conversations;
-        if (limitedConversations.length > MAX_STORED_CONVERSATIONS) {
-          limitedConversations = limitedConversations
-            .sort((a, b) => b.updatedAt - a.updatedAt)
-            .slice(0, MAX_STORED_CONVERSATIONS);
-        }
+    setLastAnalysis: (analysis) => set({ lastAnalysis: analysis }),
 
-        return { conversations: limitedConversations };
-      }),
+    getActiveConversation: () => useConversationStore.getState().getActiveConversation(),
 
-      updateMessage: (conversationId, messageId, content) => set((state) => ({
-        conversations: state.conversations.map(c => {
-          if (c.id !== conversationId) return c;
+    getConversationMessages: (id) => useConversationStore.getState().getConversationMessages(id),
 
-          return {
-            ...c,
-            messages: c.messages.map(m =>
-              m.id === messageId ? { ...m, content } : m
-            ),
-            updatedAt: Date.now(),
-          };
-        }),
-      })),
+    getConversationsBySymbol: (symbol) => useConversationStore.getState().getConversationsBySymbol(symbol),
 
-      deleteMessage: (conversationId, messageId) => set((state) => ({
-        conversations: state.conversations.map(c => {
-          if (c.id !== conversationId) return c;
+    exportConversation: (id) => useConversationStore.getState().exportConversation(id),
 
-          return {
-            ...c,
-            messages: c.messages.filter(m => m.id !== messageId),
-            updatedAt: Date.now(),
-          };
-        }),
-      })),
+    importConversation: (data) => {
+      useConversationStore.getState().importConversation(data);
+      const convState = useConversationStore.getState();
+      set({
+        conversations: convState.conversations,
+        activeConversationId: convState.activeConversationId,
+      });
+    },
 
-      clearMessages: (conversationId) => set((state) => ({
-        conversations: state.conversations.map(c => {
-          if (c.id !== conversationId) return c;
+    sendMessage: async (content, chartData) => {
+      const state = get();
+      const { settings, enableAIPatterns } = state;
 
-          return {
-            ...c,
-            messages: [],
-            title: 'New Conversation',
-            updatedAt: Date.now(),
-          };
-        }),
-      })),
+      if (!settings?.provider) {
+        set({ error: 'Please configure AI settings first' });
+        return;
+      }
 
-      setLoading: (loading) => set({ isLoading: loading }),
-      
-      setError: (error) => set({ error }),
-      
-      setLastAnalysis: (analysis) => set({ lastAnalysis: analysis }),
+      let conversationId = state.activeConversationId;
+      const currentSymbol = chartData?.symbol;
 
-      getActiveConversation: () => {
-        const state = get();
-        if (!state.activeConversationId) return null;
-        
-        return state.conversations.find(c => c.id === state.activeConversationId) || null;
-      },
-
-      getConversationMessages: (id) => {
-        const conversation = get().conversations.find(c => c.id === id);
-        return conversation?.messages || [];
-      },
-
-      getConversationsBySymbol: (symbol) => {
-        return get().conversations
-          .filter(c => c.symbol === symbol)
-          .sort((a, b) => b.updatedAt - a.updatedAt);
-      },
-
-      exportConversation: (id) => {
-        const conversation = get().conversations.find(c => c.id === id);
-        if (!conversation) throw new Error('Conversation not found');
-        
-        return JSON.stringify(conversation, null, 2);
-      },
-
-      importConversation: (data) => {
-        try {
-          const conversation = JSON.parse(data) as Conversation;
-          
-          const newId = generateId();
-          const importedConversation: Conversation = {
-            ...conversation,
-            id: newId,
-            title: `${conversation.title} (Imported)`,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          };
-
-          set((state) => ({
-            conversations: [...state.conversations, importedConversation],
-            activeConversationId: newId,
-          }));
-        } catch {
-          throw new Error('Invalid conversation data');
-        }
-      },
-
-      sendMessage: async (content, chartData) => {
-        const state = get();
-        const { settings, enableAIPatterns } = state;
-
-        if (!settings?.provider) {
-          set({ error: 'Please configure AI settings first' });
-          return;
-        }
-
-        let conversationId = state.activeConversationId;
-        const currentSymbol = chartData?.symbol;
-        
-        if (!conversationId) {
+      if (!conversationId) {
+        conversationId = get().createConversation(undefined, currentSymbol);
+      } else {
+        const activeConversation = get().getActiveConversation();
+        if (activeConversation && currentSymbol && activeConversation.symbol !== currentSymbol) {
           conversationId = get().createConversation(undefined, currentSymbol);
-        } else {
-          const activeConversation = get().getActiveConversation();
-          if (activeConversation && currentSymbol && activeConversation.symbol !== currentSymbol) {
-            conversationId = get().createConversation(undefined, currentSymbol);
-          }
+        }
+      }
+
+      const userMessage: Partial<AIMessage> = {
+        role: 'user',
+        content,
+      };
+      if (settings.model) userMessage.model = settings.model;
+
+      get().addMessage(conversationId, userMessage as Omit<AIMessage, 'id' | 'openTime'>);
+
+      const conversation = get().getActiveConversation();
+      if (!conversation) return;
+
+      set({
+        isLoading: true,
+        error: null,
+        messages: conversation.messages,
+      });
+
+      try {
+        const aiService = new AIService({
+          ...settings,
+          enableAIPatterns,
+        });
+
+        const messagesForAPI = chartData
+          ? [
+              ...conversation.messages.slice(0, -1),
+              {
+                ...conversation.messages[conversation.messages.length - 1]!,
+                content: content + formatChartDataContext(chartData)
+              }
+            ]
+          : conversation.messages;
+
+        const response = await aiService.sendMessage(messagesForAPI);
+
+        let processedContent = response.text;
+        if (state.responseProcessor) {
+          processedContent = await state.responseProcessor(response.text);
         }
 
-        const userMessage: Partial<AIMessage> = {
-          role: 'user',
-          content,
+        const assistantMessage: Partial<AIMessage> = {
+          role: 'assistant',
+          content: processedContent,
         };
-        if (settings.model) userMessage.model = settings.model;
-        
-        get().addMessage(conversationId, userMessage as Omit<AIMessage, 'id' | 'openTime'>);
+        if (settings.model) assistantMessage.model = settings.model;
 
-        const conversation = get().getActiveConversation();
-        if (!conversation) return;
+        get().addMessage(conversationId, assistantMessage as Omit<AIMessage, 'id' | 'openTime'>);
 
-        set({ 
-          isLoading: true, 
-          error: null,
-          messages: conversation.messages,
+        const updatedConversation = get().getActiveConversation();
+
+        set({
+          isLoading: false,
+          messages: updatedConversation?.messages || [],
+          lastAnalysis: response,
         });
+      } catch (error) {
+        const errorMessage = error instanceof Error
+          ? formatAIError(error, settings.provider, settings.model)
+          : 'Failed to send message';
 
-        try {
-          const aiService = new AIService({
-            ...settings,
-            enableAIPatterns,
-          });
-          
-          const messagesForAPI = chartData 
-            ? [
-                ...conversation.messages.slice(0, -1),
-                { 
-                  ...conversation.messages[conversation.messages.length - 1]!,
-                  content: content + formatChartDataContext(chartData)
-                }
-              ]
-            : conversation.messages;
-          
-          const response = await aiService.sendMessage(messagesForAPI);
-
-          let processedContent = response.text;
-          if (state.responseProcessor) {
-            processedContent = await state.responseProcessor(response.text);
-          }
-
-          const assistantMessage: Partial<AIMessage> = {
-            role: 'assistant',
-            content: processedContent,
-          };
-          if (settings.model) assistantMessage.model = settings.model;
-          
-          get().addMessage(conversationId, assistantMessage as Omit<AIMessage, 'id' | 'openTime'>);
-
-          const updatedConversation = get().getActiveConversation();
-          
-          set({ 
-            isLoading: false,
-            messages: updatedConversation?.messages || [],
-            lastAnalysis: response,
-          });
-        } catch (error) {
-          const errorMessage = error instanceof Error 
-            ? formatAIError(error, settings.provider, settings.model)
-            : 'Failed to send message';
-          
-          set({ 
-            isLoading: false,
-            error: errorMessage,
-          });
-        }
-      },
-
-      toggleAutoTrading: () => setWithSync((state) => ({ 
-        isAutoTradingActive: !state.isAutoTradingActive,
-        tradingError: null,
-      })),
-
-      updateTradingConfig: (config) => setWithSync((state) => ({
-        tradingConfig: { ...state.tradingConfig, ...config },
-      })),
-
-      addTrade: (trade) => setWithSync((state) => {
-        const newTrades = [...state.trades, trade];
-        return {
-          trades: newTrades,
-          lastTradeTime: new Date(),
-        };
-      }),
-
-      updateTrade: (tradeId, updates) => setWithSync((state) => ({
-        trades: state.trades.map(trade =>
-          trade.id === tradeId ? { ...trade, ...updates } : trade
-        ),
-      })),
-
-      setTradingAnalysisProgress: (inProgress) => set({ analysisInProgress: inProgress }),
-
-      setTradingError: (error) => set({ tradingError: error }),
-
-      calculateTradingStats: () => set((state) => {
-        const trades = state.trades;
-        const closedTrades = trades.filter(t => t.status !== 'open');
-        const winningTrades = closedTrades.filter(t => (t.pnl || 0) > 0);
-        const losingTrades = closedTrades.filter(t => (t.pnl || 0) < 0);
-        
-        const totalProfit = winningTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-        const totalLoss = Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl || 0), 0));
-        const netProfit = totalProfit - totalLoss;
-        
-        const patternSuccess = new Map<string, { wins: number; losses: number; winRate: number }>();
-        closedTrades.forEach(trade => {
-          trade.patterns.forEach(pattern => {
-            const current = patternSuccess.get(pattern) || { wins: 0, losses: 0, winRate: 0 };
-            if ((trade.pnl || 0) > 0) {
-              current.wins++;
-            } else {
-              current.losses++;
-            }
-            current.winRate = (current.wins / (current.wins + current.losses)) * 100;
-            patternSuccess.set(pattern, current);
-          });
+        set({
+          isLoading: false,
+          error: errorMessage,
         });
-        
-        let consecutiveWins = 0;
-        let consecutiveLosses = 0;
-        let maxConsecutiveWins = 0;
-        let maxConsecutiveLosses = 0;
-        
-        closedTrades.forEach(trade => {
-          if ((trade.pnl || 0) > 0) {
-            consecutiveWins++;
-            consecutiveLosses = 0;
-            maxConsecutiveWins = Math.max(maxConsecutiveWins, consecutiveWins);
-          } else {
-            consecutiveLosses++;
-            consecutiveWins = 0;
-            maxConsecutiveLosses = Math.max(maxConsecutiveLosses, consecutiveLosses);
-          }
-        });
-        
-        const totalHoldingTime = closedTrades.reduce((sum, trade) => {
-          if (trade.closedAt) {
-            return sum + (trade.closedAt.getTime() - trade.openTime.getTime());
-          }
-          return sum;
-        }, 0);
-        
-        const bestTrade: AITrade | undefined = winningTrades.length > 0 
-          ? winningTrades.reduce((best, t) => ((t.pnl || 0) > (best.pnl || 0) ? t : best))
-          : undefined;
-          
-        const worstTrade: AITrade | undefined = losingTrades.length > 0
-          ? losingTrades.reduce((worst, t) => ((t.pnl || 0) < (worst.pnl || 0) ? t : worst))
-          : undefined;
-        
-        const newStats: AITradingStats = {
-          totalTrades: trades.length,
-          openTrades: trades.filter(t => t.status === 'open').length,
-          closedTrades: closedTrades.length,
-          winningTrades: winningTrades.length,
-          losingTrades: losingTrades.length,
-          winRate: closedTrades.length > 0 ? (winningTrades.length / closedTrades.length) * 100 : 0,
-          totalProfit,
-          totalLoss,
-          netProfit,
-          avgProfit: winningTrades.length > 0 ? totalProfit / winningTrades.length : 0,
-          avgLoss: losingTrades.length > 0 ? totalLoss / losingTrades.length : 0,
-          profitFactor: totalLoss > 0 ? totalProfit / totalLoss : totalProfit > 0 ? Infinity : 0,
-          largestWin: Math.max(...winningTrades.map(t => t.pnl || 0), 0),
-          largestLoss: Math.abs(Math.min(...losingTrades.map(t => t.pnl || 0), 0)),
-          consecutiveWins,
-          consecutiveLosses,
-          maxConsecutiveWins,
-          maxConsecutiveLosses,
-          totalTokensUsed: trades.reduce((sum, t) => sum + t.analysisTokens, 0),
-          estimatedCost: trades.reduce((sum, t) => sum + (t.analysisTokens * 0.000003), 0),
-          avgHoldingTime: closedTrades.length > 0 ? totalHoldingTime / closedTrades.length : 0,
-          bestTrade,
-          worstTrade,
-          patternSuccess,
-        };
-        
-        return { tradingStats: newStats };
-      }),
+      }
+    },
 
-      clearTradingHistory: () => setWithSync({
-        trades: [],
-        tradingStats: DEFAULT_TRADING_STATS,
-        lastTradeTime: null,
-      }),
+    toggleAutoTrading: () => {
+      useAITradingStore.getState().toggleAutoTrading();
+      const tradState = useAITradingStore.getState();
+      setWithSync({
+        isAutoTradingActive: tradState.isAutoTradingActive,
+        tradingError: tradState.tradingError,
+      });
+    },
 
-      clearAll: () => setWithSync({
+    updateTradingConfig: (config) => {
+      useAITradingStore.getState().updateTradingConfig(config);
+      setWithSync({
+        tradingConfig: useAITradingStore.getState().tradingConfig,
+      });
+    },
+
+    addTrade: (trade) => {
+      useAITradingStore.getState().addTrade(trade);
+      const tradState = useAITradingStore.getState();
+      setWithSync({
+        trades: tradState.trades,
+        lastTradeTime: tradState.lastTradeTime,
+      });
+    },
+
+    updateTrade: (tradeId, updates) => {
+      useAITradingStore.getState().updateTrade(tradeId, updates);
+      setWithSync({
+        trades: useAITradingStore.getState().trades,
+      });
+    },
+
+    setTradingAnalysisProgress: (inProgress) => {
+      useAITradingStore.getState().setTradingAnalysisProgress(inProgress);
+      set({ analysisInProgress: inProgress });
+    },
+
+    setTradingError: (error) => {
+      useAITradingStore.getState().setTradingError(error);
+      set({ tradingError: error });
+    },
+
+    calculateTradingStats: () => {
+      useAITradingStore.getState().calculateTradingStats();
+      set({ tradingStats: useAITradingStore.getState().tradingStats });
+    },
+
+    clearTradingHistory: () => {
+      useAITradingStore.getState().clearTradingHistory();
+      const tradState = useAITradingStore.getState();
+      setWithSync({
+        trades: tradState.trades,
+        tradingStats: tradState.tradingStats,
+        lastTradeTime: tradState.lastTradeTime,
+      });
+    },
+
+    clearAll: () => {
+      useConversationStore.getState().clearAll();
+      setWithSync({
         conversations: [],
         activeConversationId: null,
         isLoading: false,
         error: null,
         lastAnalysis: null,
         messages: [],
-      }),
+      });
+    },
 
     syncWithElectron: async () => {
       const data = await loadFromElectron();
-      set(data);
+
+      if (data.conversations) {
+        useConversationStore.getState().loadFromStorage({
+          conversations: data.conversations,
+          activeConversationId: data.activeConversationId,
+        });
+      }
+
+      if (data.settings) {
+        useAISettingsStore.getState().loadFromStorage({
+          settings: data.settings,
+          enableAIPatterns: data.enableAIPatterns,
+          provider: data.settings.provider,
+          model: data.settings.model || null,
+        });
+      }
+
+      useAITradingStore.getState().loadFromStorage({
+        isAutoTradingActive: data.isAutoTradingActive,
+        tradingConfig: data.tradingConfig,
+        trades: data.trades,
+        tradingStats: data.tradingStats,
+      });
+
+      set({
+        conversations: data.conversations || [],
+        activeConversationId: data.activeConversationId || null,
+        settings: data.settings || null,
+        enableAIPatterns: data.enableAIPatterns ?? true,
+        provider: data.settings?.provider || null,
+        model: data.settings?.model || null,
+        isAutoTradingActive: data.isAutoTradingActive || false,
+        tradingConfig: data.tradingConfig || DEFAULT_TRADING_CONFIG,
+        trades: data.trades || [],
+        tradingStats: data.tradingStats || DEFAULT_TRADING_STATS,
+      });
     },
 
     saveToElectron: async () => {
@@ -890,7 +670,7 @@ export const useAIStore = create<AIState>((set, get) => {
 });
 
 useAIStore.subscribe((state, prevState) => {
-  const hasChanged = 
+  const hasChanged =
     state.conversations !== prevState.conversations ||
     state.activeConversationId !== prevState.activeConversationId ||
     state.settings !== prevState.settings ||
