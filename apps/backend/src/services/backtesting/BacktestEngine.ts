@@ -20,6 +20,7 @@ import { SetupDetectionService } from '../setup-detection/SetupDetectionService'
 import { ConditionEvaluator, IndicatorEngine, StrategyLoader } from '../setup-detection/dynamic';
 import { ExitManager } from './ExitManager';
 import { FilterManager } from './FilterManager';
+import { IndicatorCache } from './IndicatorCache';
 import { TradeExecutor, type TradeResult } from './TradeExecutor';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -83,6 +84,12 @@ export class BacktestEngine {
 
       const indicatorEngine = new IndicatorEngine();
       const conditionEvaluator = new ConditionEvaluator(indicatorEngine);
+
+      const indicatorCache = new IndicatorCache();
+      if (loadedStrategies.length > 0) {
+        indicatorCache.initialize(historicalKlines as Kline[]);
+        indicatorCache.precomputeForStrategies(loadedStrategies, config.strategyParams || {});
+      }
 
       const filterManager = new FilterManager({
         onlyLong: effectiveConfig.onlyLong,
@@ -148,7 +155,8 @@ export class BacktestEngine {
         filterManager,
         tradeExecutor,
         exitManager,
-        indicatorEngine
+        indicatorEngine,
+        indicatorCache
       );
 
       const metrics = this.calculateMetrics(trades, config.initialCapital, maxDrawdown, equity);
@@ -453,7 +461,8 @@ export class BacktestEngine {
     filterManager: FilterManager,
     tradeExecutor: TradeExecutor,
     exitManager: ExitManager,
-    indicatorEngine: IndicatorEngine
+    indicatorEngine: IndicatorEngine,
+    indicatorCache: IndicatorCache
   ): { trades: TradeResult[]; equity: number; maxDrawdown: number; equityCurve: any[] } {
     const trades: TradeResult[] = [];
     let equity = config.initialCapital;
@@ -580,11 +589,43 @@ export class BacktestEngine {
             },
             {} as Record<string, number>
           );
-          computedIndicators = indicatorEngine.computeIndicators(
-            historicalKlines as Kline[],
-            setupStrategy.indicators,
-            resolvedParams
-          );
+
+          if (setupStrategy.indicators && indicatorCache.getStats().cacheSize > 0) {
+            computedIndicators = {};
+            let allCached = true;
+
+            for (const [id, definition] of Object.entries(setupStrategy.indicators)) {
+              const cached = indicatorCache.getForDefinition(definition, resolvedParams, setupStrategy.parameters);
+              if (cached) {
+                computedIndicators[id] = cached;
+              } else {
+                allCached = false;
+                break;
+              }
+            }
+
+            if (allCached) {
+              const priceData = indicatorCache.getPriceData();
+              if (priceData) {
+                computedIndicators['_price'] = {
+                  type: 'sma',
+                  values: priceData,
+                };
+              }
+            } else {
+              computedIndicators = indicatorEngine.computeIndicators(
+                historicalKlines as Kline[],
+                setupStrategy.indicators,
+                resolvedParams
+              );
+            }
+          } else {
+            computedIndicators = indicatorEngine.computeIndicators(
+              historicalKlines as Kline[],
+              setupStrategy.indicators,
+              resolvedParams
+            );
+          }
         }
       }
 
