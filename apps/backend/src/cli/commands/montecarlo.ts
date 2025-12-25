@@ -79,7 +79,7 @@ export async function montecarloCommand(options: MonteCarloOptions) {
       maxPositionSize: maxPosition,
       commission: commission / 100,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
-      onlyWithTrend: options.onlyWithTrend,
+      onlyWithTrend: options.withTrend,
     };
 
     if (minConfidence !== undefined) {

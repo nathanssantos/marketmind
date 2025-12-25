@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import ora from 'ora';
-// @ts-expect-error - cli-progress doesn't have types
 import type { BacktestConfig, Interval } from '@marketmind/types';
+// @ts-expect-error - cli-progress doesn't have types
 import cliProgress from 'cli-progress';
 import { BacktestOptimizer } from '../../services/backtesting/BacktestOptimizer';
 import { ParameterGenerator } from '../../services/backtesting/ParameterGenerator';
@@ -93,7 +93,7 @@ export async function optimizeCommand(options: OptimizeOptions) {
     validateDateRange(options.start, options.end);
 
     if (!options.preset && (!options.param || options.param.length === 0)) {
-      throw new ValidationError('Parameters', 'none', 'Either --preset or --param is required');
+      throw new ValidationError('Parameters: Either --preset or --param is required');
     }
 
     if (options.param && options.param.length > 0) {
@@ -123,11 +123,11 @@ export async function optimizeCommand(options: OptimizeOptions) {
 
     const validMethods = ['fixed-fractional', 'risk-based', 'kelly', 'volatility-based'];
     if (!validMethods.includes(options.positionMethod)) {
-      throw new ValidationError('Position sizing method', options.positionMethod, validMethods.join(', '));
+      throw new ValidationError(`Position sizing method: "${options.positionMethod}" is not valid. Use: ${validMethods.join(', ')}`);
     }
 
     if (isNaN(kellyFraction) || kellyFraction <= 0 || kellyFraction > 1) {
-      throw new ValidationError('Kelly fraction', options.kellyFraction, '0 < fraction <= 1');
+      throw new ValidationError(`Kelly fraction: "${options.kellyFraction}" is not valid. Expected: 0 < fraction <= 1`);
     }
 
     if (!options.useAlgorithmicLevels) {
@@ -144,7 +144,7 @@ export async function optimizeCommand(options: OptimizeOptions) {
     if (options.preset) {
       const presetName = options.preset.toLowerCase();
       if (!OPTIMIZATION_PRESETS[presetName]) {
-        throw new ValidationError('Preset', options.preset, Object.keys(OPTIMIZATION_PRESETS).join(', '));
+        throw new ValidationError(`Preset: "${options.preset}" is not valid. Use: ${Object.keys(OPTIMIZATION_PRESETS).join(', ')}`);
       }
       parameterGrid = { ...OPTIMIZATION_PRESETS[presetName] };
       logger.info(`Using optimization preset: ${presetName}`);
@@ -188,10 +188,10 @@ export async function optimizeCommand(options: OptimizeOptions) {
       maxPositionSize: maxPosition,
       maxConcurrentPositions: maxConcurrent,
       maxTotalExposure: maxExposure,
-      positionSizingMethod: options.positionMethod as 'fixed-fractional' | 'risk-based' | 'kelly' | 'volatility-based',
+      positionSizingMethod: options.positionMethod === 'volatility-based' ? 'volatility' : options.positionMethod as 'fixed-fractional' | 'risk-based' | 'kelly',
       riskPerTrade: riskPerTrade,
       kellyFraction: kellyFraction,
-      commission: commission / 100,
+      commission: commission !== undefined ? commission / 100 : undefined,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
       onlyWithTrend: options.withTrend ?? false,
       useTrailingStop: options.trailingStop ?? false,

@@ -1,9 +1,8 @@
-import type { BacktestConfig, BacktestResult, BacktestTrade, MarginType } from '@marketmind/types';
+import type { BacktestConfig, BacktestResult, BacktestTrade } from '@marketmind/types';
 import {
   calculateLiquidationPrice,
   calculateLeveragedPnl,
   calculateFundingPayment,
-  wouldLiquidate,
   FUTURES_DEFAULTS,
 } from '@marketmind/types';
 import { BacktestEngine } from './BacktestEngine';
@@ -163,9 +162,6 @@ export class FuturesBacktestEngine {
       console.log(`[FuturesBacktest] Loaded ${fundingRates.length} funding rate periods`);
     }
 
-    const klineData = spotResult.klines ?? [];
-    const klineMap = new Map(klineData.map((k) => [k.openTime, k]));
-
     const futuresTrades: BacktestTrade[] = [];
     let equity = config.initialCapital;
     let peakEquity = config.initialCapital;
@@ -238,7 +234,7 @@ export class FuturesBacktestEngine {
         totalFundingPaid += Math.abs(fundingPayments);
       }
 
-      const { pnlPercent, leveragedPnlPercent } = calculateLeveragedPnl(
+      const { leveragedPnlPercent } = calculateLeveragedPnl(
         entryPrice,
         exitPrice,
         leverage,

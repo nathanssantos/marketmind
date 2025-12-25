@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import ora from 'ora';
-// @ts-expect-error - cli-progress doesn't have types
 import type { BacktestConfig, Interval } from '@marketmind/types';
+// @ts-expect-error - cli-progress doesn't have types
 import cliProgress from 'cli-progress';
 import { ResultManager } from '../../services/backtesting/ResultManager';
 import { WalkForwardOptimizer, type ParameterRange, type WalkForwardConfig } from '../../services/backtesting/WalkForwardOptimizer';
@@ -115,7 +115,7 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
       maxPositionSize: maxPosition,
       commission: commission / 100,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
-      onlyWithTrend: options.onlyWithTrend,
+      onlyWithTrend: options.withTrend,
     };
 
     if (minConfidence !== undefined) {

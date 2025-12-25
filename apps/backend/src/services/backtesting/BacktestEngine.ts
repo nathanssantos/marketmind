@@ -485,10 +485,14 @@ export class BacktestEngine {
             const currentPlusDI = adxResult.plusDI[adxResult.plusDI.length - 1];
             const currentMinusDI = adxResult.minusDI[adxResult.minusDI.length - 1];
 
-            if (currentAdx !== null && currentPlusDI !== null && currentMinusDI !== null) {
-              const isBullish = currentPlusDI > currentMinusDI;
-              const isBearish = currentMinusDI > currentPlusDI;
-              const isStrongTrend = currentAdx >= ADX_FILTER.TREND_THRESHOLD;
+            if (currentAdx != null && currentPlusDI != null && currentMinusDI != null) {
+              const adx = currentAdx;
+              const plusDI = currentPlusDI;
+              const minusDI = currentMinusDI;
+
+              const isBullish = plusDI > minusDI;
+              const isBearish = minusDI > plusDI;
+              const isStrongTrend = adx >= ADX_FILTER.TREND_THRESHOLD;
 
               const isLongAllowed = setup.direction === 'LONG' && isBullish && isStrongTrend;
               const isShortAllowed = setup.direction === 'SHORT' && isBearish && isStrongTrend;
@@ -497,10 +501,10 @@ export class BacktestEngine {
                 skippedAdx++;
                 if (trades.length < 3) {
                   const reason = !isStrongTrend
-                    ? `ADX (${currentAdx.toFixed(2)}) below threshold (${ADX_FILTER.TREND_THRESHOLD})`
+                    ? `ADX (${adx.toFixed(2)}) below threshold (${ADX_FILTER.TREND_THRESHOLD})`
                     : setup.direction === 'LONG'
-                      ? `+DI (${currentPlusDI.toFixed(2)}) <= -DI (${currentMinusDI.toFixed(2)})`
-                      : `-DI (${currentMinusDI.toFixed(2)}) <= +DI (${currentPlusDI.toFixed(2)})`;
+                      ? `+DI (${plusDI.toFixed(2)}) <= -DI (${minusDI.toFixed(2)})`
+                      : `-DI (${minusDI.toFixed(2)}) <= +DI (${plusDI.toFixed(2)})`;
                   console.log(`[Backtest] ADX filter blocked ${setup.direction} trade - ${reason}`);
                 }
                 continue;
@@ -508,8 +512,8 @@ export class BacktestEngine {
 
               if (trades.length < 3) {
                 const condition = setup.direction === 'LONG'
-                  ? `+DI (${currentPlusDI.toFixed(2)}) > -DI (${currentMinusDI.toFixed(2)}) with ADX (${currentAdx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`
-                  : `-DI (${currentMinusDI.toFixed(2)}) > +DI (${currentPlusDI.toFixed(2)}) with ADX (${currentAdx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`;
+                  ? `+DI (${plusDI.toFixed(2)}) > -DI (${minusDI.toFixed(2)}) with ADX (${adx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`
+                  : `-DI (${minusDI.toFixed(2)}) > +DI (${plusDI.toFixed(2)}) with ADX (${adx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`;
                 console.log(`[Backtest] ADX filter passed ${setup.direction} trade - ${condition}`);
               }
             }

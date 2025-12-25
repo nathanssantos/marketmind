@@ -79,11 +79,11 @@ export async function validateCommand(options: ValidateOptions) {
 
     const validMethods = ['fixed-fractional', 'risk-based', 'kelly', 'volatility-based'];
     if (!validMethods.includes(options.positionMethod)) {
-      throw new ValidationError('Position sizing method', options.positionMethod, validMethods.join(', '));
+      throw new ValidationError(`Position sizing method: "${options.positionMethod}" is not valid. Use: ${validMethods.join(', ')}`);
     }
 
     if (isNaN(kellyFraction) || kellyFraction <= 0 || kellyFraction > 1) {
-      throw new ValidationError('Kelly fraction', options.kellyFraction, '0 < fraction <= 1');
+      throw new ValidationError(`Kelly fraction: "${options.kellyFraction}" is not valid. Expected: 0 < fraction <= 1`);
     }
 
     if (!options.useAlgorithmicLevels) {
@@ -115,10 +115,10 @@ export async function validateCommand(options: ValidateOptions) {
       maxPositionSize: maxPosition,
       maxConcurrentPositions: maxConcurrent,
       maxTotalExposure: maxExposure,
-      positionSizingMethod: options.positionMethod as 'fixed-fractional' | 'risk-based' | 'kelly' | 'volatility-based',
+      positionSizingMethod: options.positionMethod === 'volatility-based' ? 'volatility' : options.positionMethod as 'fixed-fractional' | 'risk-based' | 'kelly',
       riskPerTrade: riskPerTrade,
       kellyFraction: kellyFraction,
-      commission: commission / 100,
+      commission: commission !== undefined ? commission / 100 : undefined,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
       onlyWithTrend: options.withTrend ?? false,
       useTrailingStop: options.trailingStop ?? false,

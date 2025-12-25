@@ -91,7 +91,6 @@ export class BinanceKlineStreamService {
     }
 
     try {
-      const stream = `${symbol.toLowerCase()}@kline_${interval}`;
       void this.client.subscribeSpotKline(symbol, interval as KlineInterval);
 
       this.subscriptions.set(key, {

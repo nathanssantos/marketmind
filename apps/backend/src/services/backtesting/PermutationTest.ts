@@ -170,19 +170,6 @@ export class PermutationTest {
     });
   }
 
-  private static shuffleArray<T>(array: T[]): T[] {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      const temp = array[i];
-      const swapItem = array[j];
-      if (temp !== undefined && swapItem !== undefined) {
-        array[i] = swapItem;
-        array[j] = temp;
-      }
-    }
-    return array;
-  }
-
   private static mean(values: number[]): number {
     if (values.length === 0) return 0;
     return values.reduce((sum, v) => sum + v, 0) / values.length;
