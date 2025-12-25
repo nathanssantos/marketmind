@@ -125,30 +125,28 @@ export class IndicatorCache {
   private computeIndicator(type: IndicatorType, params: Record<string, number>): ComputedIndicator | null {
     if (!this.priceData || this.klines.length === 0) return null;
 
-    const { close, high, low, volume } = this.priceData;
-
     switch (type) {
       case 'sma': {
-        const period = params.period ?? 20;
-        const values = calculateSMA(close, period);
+        const period = params['period'] ?? 20;
+        const values = calculateSMA(this.klines, period);
         return { type, values };
       }
 
       case 'ema': {
-        const period = params.period ?? 20;
+        const period = params['period'] ?? 20;
         const result = calculateEMA(this.klines, period);
         return { type, values: result };
       }
 
       case 'rsi': {
-        const period = params.period ?? 14;
+        const period = params['period'] ?? 14;
         const result = calculateRSI(this.klines, period);
         return { type, values: result.values };
       }
 
       case 'bollingerBands': {
-        const period = params.period ?? 20;
-        const stdDev = params.stdDev ?? 2;
+        const period = params['period'] ?? 20;
+        const stdDev = params['stdDev'] ?? 2;
         const result = calculateBollingerBandsArray(this.klines, period, stdDev);
         return {
           type,
@@ -161,31 +159,30 @@ export class IndicatorCache {
       }
 
       case 'atr': {
-        const period = params.period ?? 14;
+        const period = params['period'] ?? 14;
         const result = calculateATR(this.klines, period);
         return { type, values: result };
       }
 
       case 'macd': {
-        const fast = params.fastPeriod ?? 12;
-        const slow = params.slowPeriod ?? 26;
-        const signal = params.signalPeriod ?? 9;
+        const fast = params['fastPeriod'] ?? 12;
+        const slow = params['slowPeriod'] ?? 26;
+        const signal = params['signalPeriod'] ?? 9;
         const result = calculateMACD(this.klines, fast, slow, signal);
         return {
           type,
           values: {
-            macd: result.macdLine,
-            signal: result.signalLine,
+            macd: result.macd,
+            signal: result.signal,
             histogram: result.histogram,
           },
         };
       }
 
       case 'stochastic': {
-        const kPeriod = params.kPeriod ?? 14;
-        const dPeriod = params.dPeriod ?? 3;
-        const smooth = params.smooth ?? 3;
-        const result = calculateStochastic(this.klines, kPeriod, dPeriod, smooth);
+        const kPeriod = params['kPeriod'] ?? 14;
+        const dPeriod = params['dPeriod'] ?? 3;
+        const result = calculateStochastic(this.klines, kPeriod, dPeriod);
         return {
           type,
           values: {
@@ -196,7 +193,7 @@ export class IndicatorCache {
       }
 
       case 'adx': {
-        const period = params.period ?? 14;
+        const period = params['period'] ?? 14;
         const result = calculateADX(this.klines, period);
         return {
           type,
@@ -209,15 +206,15 @@ export class IndicatorCache {
       }
 
       case 'cci': {
-        const period = params.period ?? 20;
+        const period = params['period'] ?? 20;
         const result = calculateCCI(this.klines, period);
         return { type, values: result };
       }
 
       case 'keltner': {
-        const emaPeriod = params.emaPeriod ?? 20;
-        const atrPeriod = params.atrPeriod ?? 10;
-        const multiplier = params.multiplier ?? 2;
+        const emaPeriod = params['emaPeriod'] ?? 20;
+        const atrPeriod = params['atrPeriod'] ?? 10;
+        const multiplier = params['multiplier'] ?? 2;
         const result = calculateKeltner(this.klines, emaPeriod, atrPeriod, multiplier);
         return {
           type,
@@ -230,20 +227,20 @@ export class IndicatorCache {
       }
 
       case 'supertrend': {
-        const period = params.period ?? 10;
-        const multiplier = params.multiplier ?? 3;
+        const period = params['period'] ?? 10;
+        const multiplier = params['multiplier'] ?? 3;
         const result = calculateSupertrend(this.klines, period, multiplier);
         return {
           type,
           values: {
-            supertrend: result.supertrend,
-            direction: result.direction,
+            value: result.value,
+            trend: result.trend.map(v => v === 'up' ? 1 : v === 'down' ? -1 : null),
           },
         };
       }
 
       case 'donchian': {
-        const period = params.period ?? 20;
+        const period = params['period'] ?? 20;
         const result = calculateDonchian(this.klines, period);
         return {
           type,
@@ -257,38 +254,40 @@ export class IndicatorCache {
 
       case 'ibs': {
         const result = calculateIBS(this.klines);
-        return { type, values: result };
+        return { type, values: result.values };
       }
 
       case 'cumulativeRsi': {
-        const rsiPeriod = params.rsiPeriod ?? 2;
-        const cumulativePeriod = params.cumulativePeriod ?? 2;
+        const rsiPeriod = params['rsiPeriod'] ?? 2;
+        const cumulativePeriod = params['cumulativePeriod'] ?? 2;
         const result = calculateCumulativeRSI(this.klines, rsiPeriod, cumulativePeriod);
         return { type, values: result.values };
       }
 
       case 'nr7': {
         const result = calculateNR7(this.klines);
-        return { type, values: result.isNR7 };
+        return { type, values: result.isNR7.map(v => v ? 1 : 0) };
       }
 
       case 'nDayHighLow': {
-        const days = params.days ?? 7;
+        const days = params['days'] ?? 7;
         const result = calculateNDayHighLow(this.klines, days);
         return {
           type,
           values: {
-            isHighest: result.isHighest,
-            isLowest: result.isLowest,
+            isNDayHigh: result.isNDayHigh.map(v => v ? 1 : 0),
+            isNDayLow: result.isNDayLow.map(v => v ? 1 : 0),
+            highestClose: result.highestClose,
+            lowestClose: result.lowestClose,
           },
         };
       }
 
       case 'percentB': {
-        const period = params.period ?? 20;
-        const stdDev = params.stdDev ?? 2;
+        const period = params['period'] ?? 20;
+        const stdDev = params['stdDev'] ?? 2;
         const result = calculatePercentBSeries(this.klines, period, stdDev);
-        return { type, values: result };
+        return { type, values: result.values };
       }
 
       default:

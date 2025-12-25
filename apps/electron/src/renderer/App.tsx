@@ -2,7 +2,7 @@ import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@c
 import type { AIPattern, Kline, MarketType, Viewport } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { AutoAuth } from './components/Auth/AutoAuth';
@@ -13,9 +13,10 @@ import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext
 import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { MainLayout } from './components/Layout/MainLayout';
-import { NewsDialog } from './components/News/NewsDialog';
-import { BacktestDialog } from './components/Trading/BacktestDialog';
 import { TrpcProvider } from './components/TrpcProvider';
+
+const NewsDialog = lazy(() => import('./components/News/NewsDialog').then(m => ({ default: m.NewsDialog })));
+const BacktestDialog = lazy(() => import('./components/Trading/BacktestDialog').then(m => ({ default: m.BacktestDialog })));
 import { ErrorMessage } from './components/ui/ErrorMessage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
@@ -315,6 +316,8 @@ function AppContent(): ReactElement {
   const pendingUpdateRef = useRef<{ kline: Kline; isFinal: boolean } | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const lastRefetchRef = useRef<number>(0);
+  const lastUpdateRef = useRef<number>(0);
+  const MIN_UPDATE_INTERVAL = 100;
 
   const getIntervalMs = useCallback((tf: string): number => {
     const intervals: Record<string, number> = {
@@ -350,6 +353,14 @@ function AppContent(): ReactElement {
   }, [symbol, timeframe]);
 
   const handleRealtimeUpdate = useCallback((kline: Kline, isFinal: boolean) => {
+    const now = Date.now();
+    const timeSinceLastUpdate = now - lastUpdateRef.current;
+
+    if (!isFinal && timeSinceLastUpdate < MIN_UPDATE_INTERVAL) {
+      pendingUpdateRef.current = { kline, isFinal };
+      return;
+    }
+
     pendingUpdateRef.current = { kline, isFinal };
 
     if (rafIdRef.current !== null) {
@@ -364,6 +375,7 @@ function AppContent(): ReactElement {
       const currentPrice = getKlineClose(latestKline);
 
       previousPriceRef.current = currentPrice;
+      lastUpdateRef.current = Date.now();
 
       setLiveKlines(prev => {
         if (prev.length === 0) return [latestKline];
@@ -662,16 +674,24 @@ function AppContent(): ReactElement {
         )}
       </MainLayout>
 
-      <NewsDialog
-        open={isNewsOpen}
-        onClose={toggleNews}
-        symbols={[extractSymbolCode(symbol)]}
-      />
+      <Suspense fallback={null}>
+        {isNewsOpen && (
+          <NewsDialog
+            open={isNewsOpen}
+            onClose={toggleNews}
+            symbols={[extractSymbolCode(symbol)]}
+          />
+        )}
+      </Suspense>
 
-      <BacktestDialog
-        isOpen={isBacktestOpen}
-        onClose={toggleBacktest}
-      />
+      <Suspense fallback={null}>
+        {isBacktestOpen && (
+          <BacktestDialog
+            isOpen={isBacktestOpen}
+            onClose={toggleBacktest}
+          />
+        )}
+      </Suspense>
 
       <UpdateNotification />
     </>
