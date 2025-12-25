@@ -1,5 +1,4 @@
 import { TRPCError } from '@trpc/server';
-import { randomBytes } from 'crypto';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { orders, positions, wallets } from '../db/schema';
@@ -20,10 +19,7 @@ import { getBinanceFuturesDataService } from '../services/binance-futures-data';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 import { calculateLiquidationPrice, FUTURES_DEFAULTS } from '@marketmind/types';
-
-const generateId = (length: number): string => {
-  return randomBytes(length).toString('base64url').slice(0, length);
-};
+import { generateEntityId } from '../utils/id';
 
 const FUTURES_TAKER_FEE = FUTURES_DEFAULTS.TAKER_FEE;
 
@@ -435,7 +431,7 @@ export const futuresTradingRouter = router({
         }, '✅ Risk/Reward ratio validated for futures position');
       }
 
-      const positionId = generateId(21);
+      const positionId = generateEntityId();
       const entryPrice = parseFloat(input.entryPrice);
       const liquidationPrice = calculateLiquidationPrice(entryPrice, input.leverage, input.side);
 

@@ -12,7 +12,7 @@ import {
   type EnhancedSetup,
   type ModelRegistryConfig,
 } from '@marketmind/ml';
-import { generateId } from '../../utils/id';
+import { generateEntityId } from '../../utils/id';
 
 export interface MLServiceConfig {
   modelsDir: string;
@@ -420,7 +420,7 @@ class MLServiceImpl {
   ): Promise<void> {
     try {
       await db.insert(mlPredictions).values({
-        id: generateId(21),
+        id: generateEntityId(),
         modelId: this.activeModelId ?? 'unknown',
         setupDetectionId: setup.id,
         probability: prediction.probability.toString(),

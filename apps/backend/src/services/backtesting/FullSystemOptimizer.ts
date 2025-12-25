@@ -9,14 +9,12 @@ import type {
   PyramidingConfig,
   TrailingStopOptimizationConfig,
 } from '@marketmind/types';
-import { randomBytes } from 'crypto';
 import { BacktestEngine } from './BacktestEngine';
 import { WalkForwardOptimizer, type WalkForwardConfig } from './WalkForwardOptimizer';
 import { ParameterGenerator } from './ParameterGenerator';
 import { DEFAULT_PYRAMIDING_CONFIG } from '../pyramiding';
 import { DEFAULT_TRAILING_STOP_CONFIG } from '../trailing-stop';
-
-const generateId = (): string => randomBytes(16).toString('hex');
+import { generateShortId } from '../../utils/id';
 
 export interface FullSystemCombination {
   mlThreshold: number;
@@ -131,7 +129,7 @@ export class FullSystemOptimizer {
   ): Promise<FullOptimizationResult> {
     const { parallelWorkers = 1, minTrades = 10, onProgress } = options;
 
-    const id = generateId();
+    const id = generateShortId();
     const startTime = new Date().toISOString();
 
     const combinations = this.generateCombinations(preset);
@@ -155,7 +153,7 @@ export class FullSystemOptimizer {
         }
 
         const entry: OptimizationResultEntry = {
-          id: generateId(),
+          id: generateShortId(),
           params: {
             mlThreshold: combination.mlThreshold,
             pyramiding: combination.pyramiding,

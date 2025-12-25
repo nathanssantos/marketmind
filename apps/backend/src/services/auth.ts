@@ -1,12 +1,8 @@
 import { hash, verify } from '@node-rs/argon2';
-import { randomBytes } from 'crypto';
 import { eq } from 'drizzle-orm';
 import { db } from '../db/client';
 import { sessions, users } from '../db/schema';
-
-const generateId = (length: number): string => {
-  return randomBytes(length).toString('base64url').slice(0, length);
-};
+import { generateEntityId, generateSessionId } from '../utils/id';
 
 export const createUser = async (email: string, password: string) => {
   const passwordHash = await hash(password, {
@@ -15,7 +11,7 @@ export const createUser = async (email: string, password: string) => {
     outputLen: 32,
     parallelism: 1,
   });
-  const userId = generateId(21);
+  const userId = generateEntityId();
 
   await db.insert(users).values({
     id: userId,
@@ -35,7 +31,7 @@ export const verifyPassword = async (userId: string, password: string) => {
 };
 
 export const createSession = async (userId: string) => {
-  const sessionId = generateId(40);
+  const sessionId = generateSessionId();
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
 
   await db.insert(sessions).values({

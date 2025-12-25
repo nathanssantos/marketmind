@@ -1,7 +1,6 @@
 import type { BinanceNewOrderResult, BinanceOrderQueryResult, MarketType } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { MainClient, USDMClient } from 'binance';
-import { randomBytes } from 'crypto';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { orders, positions, tradeExecutions, wallets } from '../db/schema';
@@ -10,12 +9,9 @@ import { autoTradingService } from '../services/auto-trading';
 import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from '../services/binance-client';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
+import { generateEntityId } from '../utils/id';
 
 const BINANCE_FUTURES_TAKER_FEE = 0.0004;
-
-const generateId = (length: number): string => {
-  return randomBytes(length).toString('base64url').slice(0, length);
-};
 
 const BINANCE_TAKER_FEE = 0.001;
 
@@ -581,7 +577,7 @@ export const tradingRouter = router({
         }, '✅ Risk/Reward ratio validated for manual position');
       }
 
-      const positionId = generateId(21);
+      const positionId = generateEntityId();
 
       await ctx.db.insert(positions).values({
         id: positionId,

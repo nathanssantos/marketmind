@@ -1,5 +1,4 @@
 import { TRPCError } from '@trpc/server';
-import { randomBytes } from 'crypto';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
@@ -11,10 +10,7 @@ import {
 import { riskManagerService } from '../services/risk-manager';
 import { autoTradingScheduler } from '../services/auto-trading-scheduler';
 import { protectedProcedure, router } from '../trpc';
-
-const generateId = (length: number): string => {
-  return randomBytes(length).toString('base64url').slice(0, length);
-};
+import { generateEntityId } from '../utils/id';
 
 const log = (message: string, data?: Record<string, unknown>): void => {
   const timestamp = new Date().toISOString();
@@ -58,7 +54,7 @@ export const autoTradingRouter = router({
         .limit(1);
 
       if (!config) {
-        const configId = generateId(21);
+        const configId = generateEntityId();
         const defaultEnabledSetups = JSON.stringify([
           'larry-williams-9-1',
           'larry-williams-9-2',
@@ -388,7 +384,7 @@ export const autoTradingRouter = router({
         });
       }
 
-      const executionId = generateId(21);
+      const executionId = generateEntityId();
 
       await ctx.db.insert(tradeExecutions).values({
         id: executionId,

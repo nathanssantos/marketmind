@@ -4,11 +4,11 @@ import type { BacktestConfig, BacktestResult, ComputedIndicators, EvaluationCont
 import { HistoricalMarketContextService } from '../historical-market-context';
 import { TRPCError } from '@trpc/server';
 import { ADX_FILTER } from '../../constants';
-import { randomBytes } from 'crypto';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { env } from '../../env';
 import { calculateRequiredKlinesForML, DEFAULT_KLINES_FOR_ML } from '../../utils/kline-calculator';
+import { generateEntityId, generateShortId } from '../../utils/id';
 import { fetchHistoricalKlinesFromAPI } from '../binance-historical';
 import { mlService } from '../ml';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
@@ -17,10 +17,6 @@ import { PositionSizer } from './PositionSizer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-const generateId = (length: number): string => {
-  return randomBytes(length).toString('base64url').slice(0, length);
-};
 
 interface TradeStats {
   winRate: number;
@@ -107,7 +103,7 @@ export class BacktestEngine {
    * @returns Backtest result with trades, metrics, and equity curve
    */
   async run(config: BacktestConfig, klines?: any[]): Promise<BacktestResult> {
-    const backtestId = generateId(21);
+    const backtestId = generateEntityId();
     const startTime = Date.now();
 
     try {
@@ -1025,7 +1021,7 @@ export class BacktestEngine {
         }
 
         const trade = {
-          id: generateId(16),
+          id: generateShortId(),
           setupId: setup.id,
           setupType: setup.type,
           setupConfidence: setup.confidence,
