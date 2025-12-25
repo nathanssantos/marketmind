@@ -4,7 +4,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.31.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.33.0-blue.svg)
 ![Tests](https://img.shields.io/badge/tests-1,864%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-92.15%25-brightgreen.svg)
 ![Code Quality](https://img.shields.io/badge/code%20quality-A--_(8.5%2F10)-brightgreen.svg)

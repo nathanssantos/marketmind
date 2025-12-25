@@ -418,14 +418,15 @@ Track progress in `IMPLEMENTATION_PLAN.md`. Update this section when starting ne
 **Recent Updates:** Complete backend with tRPC, PostgreSQL, TimescaleDB, authentication
 **Blockers:** None
 
-### Backend Integration Status (v0.31.0+)
+### Backend Integration Status (v0.33.0+)
 - **✅ Backend Infrastructure**: Fastify 5.6.2 + tRPC 11.7.2 operational
 - **✅ Database**: PostgreSQL 17 + TimescaleDB 2.23.1 with 9 tables
 - **✅ Authentication**: Argon2 password hashing + session management
 - **✅ API Routers**: health, auth, wallet, trading endpoints implemented
 - **✅ Frontend Hooks**: useBackendWallets, useBackendOrders created
+- **✅ Futures Auto-Trading**: User stream, liquidation monitoring, margin manager, max drawdown
+- **✅ Risk Management**: Real-time alerts, margin top-up, position sizing
 - **🟡 Component Migration**: In progress (TradingSidebar, WalletManager pending)
-- **⏳ Real Trading**: Pending (Phases 6-10)
 
 ### Frontend Status (Production Ready)
 - **8 Trading Setups**: Complete Larry Williams suite (9.1, 9.2, 9.3, 9.4) + 4 pattern-based setups
