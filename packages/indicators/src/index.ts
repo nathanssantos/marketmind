@@ -50,6 +50,7 @@ export * from './tema';
 export * from './tsi';
 export * from './ultimateOscillator';
 export * from './vortex';
+export * from './volumeUtils';
 export * from './vwap';
 export * from './williamsR';
 export * from './wma';
