@@ -1,9 +1,8 @@
-import { calculateStochastic } from '@marketmind/indicators';
+import { calculateStochastic, isVolumeConfirmed } from '@marketmind/indicators';
 import type { Kline, StochasticDoubleTouchConfig } from '@marketmind/types';
 import {
   createDefaultStochasticDoubleTouchConfig,
   getKlineClose,
-  getKlineVolume,
 } from '@marketmind/types';
 import type { SetupDetectorResult } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';
@@ -57,8 +56,7 @@ export class StochasticDoubleTouchDetector extends BaseSetupDetector {
       return { setup: null, confidence: 0 };
     }
 
-    const avgVolume = this.calculateAverageVolume(klines, currentIndex, VOLUME_LOOKBACK);
-    const volumeConfirmed = getKlineVolume(current) >= avgVolume * this.stochConfig.volumeMultiplier;
+    const volumeConfirmed = isVolumeConfirmed(klines, currentIndex, VOLUME_LOOKBACK, this.stochConfig.volumeMultiplier);
 
     if (!volumeConfirmed) {
       return { setup: null, confidence: 0 };
@@ -267,17 +265,6 @@ export class StochasticDoubleTouchDetector extends BaseSetupDetector {
     else if (riskReward >= 2.0) confidence += 5;
 
     return Math.min(confidence, MAX_CONFIDENCE);
-  }
-
-  private calculateAverageVolume(
-    klines: Kline[],
-    currentIndex: number,
-    period: number
-  ): number {
-    const start = Math.max(0, currentIndex - period + 1);
-    const slice = klines.slice(start, currentIndex + 1);
-    const sum = slice.reduce((acc, k) => acc + getKlineVolume(k), 0);
-    return sum / slice.length;
   }
 
   private calculateATR(klines: Kline[], currentIndex: number, period: number): number {
