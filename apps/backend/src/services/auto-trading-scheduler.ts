@@ -1136,7 +1136,7 @@ export class AutoTradingScheduler {
         setup.direction,
         walletBalance,
         setup.entryPrice,
-        setup.confidence ? setup.confidence / 100 : undefined,
+        undefined,
         activeWatchersForWallet > 0 ? activeWatchersForWallet : undefined
       );
 
