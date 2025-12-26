@@ -1246,29 +1246,8 @@ export class AutoTradingScheduler {
         direction: setup.direction,
       });
 
-      const useLimit = config.useLimitOrders && setup.entryOrderType === 'LIMIT' && setup.limitEntryPrice;
-      const orderType = useLimit ? 'LIMIT' : 'MARKET';
-
-      const isLimitForcedToMarket = !config.useLimitOrders && setup.entryOrderType === 'LIMIT' && setup.limitEntryPrice;
-
-      if (isLimitForcedToMarket) {
-        log('⚠️ LIMIT order forced to MARKET - useLimitOrders is disabled in config', {
-          setupType: setup.type,
-          symbol: watcher.symbol,
-          direction: setup.direction,
-          setupEntryPrice: setup.entryPrice,
-          limitEntryPrice: setup.limitEntryPrice,
-          priceDifference: `${(((setup.limitEntryPrice! - setup.entryPrice) / setup.entryPrice) * 100).toFixed(2)}%`,
-          hint: 'Enable useLimitOrders in auto-trading config to use LIMIT orders',
-        });
-      }
-
-      log('📋 Order type decision', {
-        useLimitOrdersConfig: config.useLimitOrders,
-        setupEntryOrderType: setup.entryOrderType,
-        hasLimitEntryPrice: !!setup.limitEntryPrice,
-        finalOrderType: orderType,
-      });
+      const useLimit = false;
+      const orderType = 'MARKET' as const;
 
       if (isLiveExecution) {
         log(`🔴 LIVE EXECUTION - Placing ${orderType} order on Binance`, {
@@ -1573,11 +1552,6 @@ export class AutoTradingScheduler {
             minRequired: MIN_RISK_REWARD_RATIO,
             priceDeviation: `${((actualEntryPrice - setup.entryPrice) / setup.entryPrice * 100).toFixed(2)}%`,
             orderType,
-            wasLimitForcedToMarket: isLimitForcedToMarket,
-            limitEntryPrice: setup.limitEntryPrice,
-            suggestion: isLimitForcedToMarket
-              ? 'Enable useLimitOrders in config to enter at better prices'
-              : undefined,
           });
           return;
         }

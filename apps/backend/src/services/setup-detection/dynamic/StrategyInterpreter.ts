@@ -174,9 +174,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
 
     const setup = {
       ...baseSetup,
-      entryOrderType: entryCalcResult.orderType,
-      limitEntryPrice: entryCalcResult.orderType === 'LIMIT' ? entryCalcResult.price : undefined,
-      expirationBars: entryCalcResult.orderType === 'LIMIT' ? entryCalcResult.expirationBars : undefined,
+      entryOrderType: 'MARKET' as const,
     };
 
     const currentKline = klines[currentIndex];
@@ -187,7 +185,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
       symbol: currentKline ? `Candle at ${new Date(currentKline.openTime).toISOString()}` : 'Unknown',
       entryPrice: entryPrice.toFixed(4),
       entryOrderType: setup.entryOrderType,
-      limitEntryPrice: setup.limitEntryPrice?.toFixed(4) ?? 'N/A',
       stopLoss: stopLoss?.toFixed(4) ?? 'None',
       takeProfit: takeProfit?.toFixed(4) ?? 'None',
       riskReward: riskReward.toFixed(2),

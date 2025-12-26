@@ -77,56 +77,15 @@ export class TradeExecutor {
   }
 
   resolveEntryPrice(
-    setup: any,
+    _setup: any,
     entryKline: any,
-    klines: Kline[],
+    _klines: Kline[],
     entryKlineIndex: number,
-    tradesCount: number
+    _tradesCount: number
   ): { entryPrice: number; actualEntryKlineIndex: number; skipped: 'limitExpired' | null } {
-    let actualEntryKlineIndex = entryKlineIndex;
-
-    if (setup.entryOrderType === 'LIMIT' && setup.limitEntryPrice !== undefined) {
-      const limitPrice = setup.limitEntryPrice;
-      const expirationBars = setup.expirationBars ?? 3;
-
-      let limitFilled = false;
-      let filledAtIndex = entryKlineIndex;
-
-      for (let i = entryKlineIndex + 1; i <= entryKlineIndex + expirationBars && i < klines.length; i++) {
-        const kline = klines[i];
-        if (!kline) continue;
-
-        const high = parseFloat(String(kline.high));
-        const low = parseFloat(String(kline.low));
-
-        if (setup.direction === 'LONG' && low <= limitPrice) {
-          limitFilled = true;
-          filledAtIndex = i;
-          break;
-        } else if (setup.direction === 'SHORT' && high >= limitPrice) {
-          limitFilled = true;
-          filledAtIndex = i;
-          break;
-        }
-      }
-
-      if (!limitFilled) {
-        if (tradesCount < 3) {
-          console.log(`[TradeExecutor] Limit order expired - ${setup.direction} at ${limitPrice.toFixed(4)} not filled within ${expirationBars} bars`);
-        }
-        return { entryPrice: 0, actualEntryKlineIndex: entryKlineIndex, skipped: 'limitExpired' };
-      }
-
-      if (tradesCount < 3) {
-        console.log(`[TradeExecutor] Limit order filled - ${setup.direction} at ${limitPrice.toFixed(4)} (bar ${filledAtIndex - entryKlineIndex})`);
-      }
-
-      return { entryPrice: limitPrice, actualEntryKlineIndex: filledAtIndex, skipped: null };
-    }
-
     return {
       entryPrice: parseFloat(String(entryKline.close)),
-      actualEntryKlineIndex,
+      actualEntryKlineIndex: entryKlineIndex,
       skipped: null,
     };
   }
