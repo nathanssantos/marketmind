@@ -340,6 +340,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
         <Toolbar
           symbol={symbol}
           marketType={marketType}
+          onMarketTypeChange={setMarketType}
           onSymbolChange={handleSymbolChange}
           timeframe={timeframe}
           onTimeframeChange={setTimeframe}

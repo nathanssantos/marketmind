@@ -191,7 +191,7 @@ function AppContent(): ReactElement {
   const [showCrosshair, setShowCrosshair] = useLocalStorage('marketmind:showCrosshair', true);
   const [showMeasurementRuler, setShowMeasurementRuler] = useLocalStorage('marketmind:showMeasurementRuler', false);
   const [showMeasurementArea, setShowMeasurementArea] = useLocalStorage('marketmind:showMeasurementArea', false);
-  const [showStochastic, setShowStochastic] = useLocalStorage('marketmind:showStochastic', false);
+  const [showStochastic, setShowStochastic] = useLocalStorage('marketmind:showStochastic', true);
   const [showRSI, setShowRSI] = useLocalStorage('marketmind:showRSI', false);
   const [showBollingerBands, setShowBollingerBands] = useLocalStorage('marketmind:showBollingerBands', false);
   const [showATR, setShowATR] = useLocalStorage('marketmind:showATR', false);
@@ -599,6 +599,7 @@ function AppContent(): ReactElement {
         onToggleTrading={toggleTrading}
         symbol={symbol}
         marketType={marketType}
+        onMarketTypeChange={setMarketType}
         timeframe={timeframe}
         chartType={chartType}
         showVolume={showVolume}

@@ -27,6 +27,7 @@ export interface ToolbarProps {
   marketService?: MarketDataService;
   symbol: string;
   marketType?: 'SPOT' | 'FUTURES';
+  onMarketTypeChange?: (marketType: 'SPOT' | 'FUTURES') => void;
   timeframe: Timeframe;
   chartType: 'kline' | 'line';
   showVolume: boolean;
@@ -69,6 +70,7 @@ export const Toolbar = memo(({
   marketService,
   symbol,
   marketType,
+  onMarketTypeChange,
   timeframe,
   chartType,
   showVolume,
@@ -172,6 +174,7 @@ export const Toolbar = memo(({
             marketService={marketService}
             value={symbol}
             marketType={marketType}
+            onMarketTypeChange={onMarketTypeChange}
             onChange={onSymbolChange}
             showMarketTypeToggle
           />

@@ -26,6 +26,7 @@ interface MainLayoutProps {
   marketService?: MarketDataService;
   symbol: string;
   marketType?: 'SPOT' | 'FUTURES';
+  onMarketTypeChange?: (marketType: 'SPOT' | 'FUTURES') => void;
   timeframe: Timeframe;
   chartType: 'kline' | 'line';
   showVolume: boolean;
@@ -81,6 +82,7 @@ export const MainLayout = ({
   marketService,
   symbol,
   marketType,
+  onMarketTypeChange,
   timeframe,
   chartType,
   showVolume,
@@ -186,6 +188,7 @@ export const MainLayout = ({
           marketService={marketService}
           symbol={symbol}
           marketType={marketType}
+          onMarketTypeChange={onMarketTypeChange}
           timeframe={timeframe}
           chartType={chartType}
           showVolume={showVolume}

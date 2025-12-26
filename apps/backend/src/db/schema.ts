@@ -246,7 +246,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   marginType: varchar('margin_type', { length: 10 }).$type<'ISOLATED' | 'CROSSED'>().default('ISOLATED'),
   positionMode: varchar('position_mode', { length: 10 }).$type<'ONE_WAY' | 'HEDGE'>().default('ONE_WAY'),
   useLimitOrders: boolean('use_limit_orders').default(false).notNull(),
-  useStochasticFilter: boolean('use_stochastic_filter').default(false).notNull(),
+  useStochasticFilter: boolean('use_stochastic_filter').default(true).notNull(),
   useAdxFilter: boolean('use_adx_filter').default(true).notNull(),
   maxDrawdownPercent: numeric('max_drawdown_percent', { precision: 5, scale: 2 }).default('15'),
   marginTopUpEnabled: boolean('margin_top_up_enabled').default(false),
