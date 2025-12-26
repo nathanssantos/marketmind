@@ -36,7 +36,7 @@ export const useWatermarkRenderer = ({
 
     ctx.save();
 
-    const marketLabel = marketType === 'FUTURES' ? 'PERP' : '';
+    const marketLabel = marketType === 'FUTURES' ? 'FUTURES' : '';
     const text = timeframe
       ? `${symbol} ${timeframe}${marketLabel ? ` ${marketLabel}` : ''}`
       : `${symbol}${marketLabel ? ` ${marketLabel}` : ''}`;

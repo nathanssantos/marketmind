@@ -58,6 +58,7 @@ const OrdersListComponent = () => {
       entryPrice: parseFloat(o.price || '0'),
       quantity: parseFloat(o.origQty || '0'),
       createdAt: new Date(o.createdAt),
+      marketType: o.marketType || 'SPOT',
     }));
 
     const ordersFromExecutions = tradeExecutions.map((e): Order => ({
@@ -89,6 +90,7 @@ const OrdersListComponent = () => {
       pnlPercent: e.pnlPercent || undefined,
       closedAt: e.closedAt ? new Date(e.closedAt) : undefined,
       setupType: e.setupType || undefined,
+      marketType: e.marketType || 'SPOT',
 
       isAutoTrade: true,
     }));
@@ -378,6 +380,11 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
             <Badge colorPalette={getStatusColor(order.status)} size="sm" px={2}>
               {t(`trading.orders.${getStatusTranslationKey(order.status)}`)}
             </Badge>
+            {order.marketType === 'FUTURES' && (
+              <Badge colorPalette="orange" size="sm" px={2}>
+                FUTURES
+              </Badge>
+            )}
             {order.setupType && (
               <Badge colorPalette="purple" size="sm" px={2}>
                 {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}

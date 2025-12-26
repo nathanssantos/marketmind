@@ -10,6 +10,7 @@ import type {
     BinanceOrderType,
     BinanceTimeInForce,
 } from './binance';
+import type { MarketType } from './futures';
 
 export type OrderStatus = BinanceOrderStatus | 'EXPIRED_IN_MATCH' | 'PENDING_NEW';
 
@@ -82,6 +83,7 @@ export interface Order {
 
   isAutoTrade?: boolean;
   mlConfidence?: number;
+  marketType?: MarketType;
 }
 
 export interface OrderList extends BinanceOrderList {}

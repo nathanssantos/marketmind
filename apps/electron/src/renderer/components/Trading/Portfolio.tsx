@@ -27,6 +27,7 @@ interface PortfolioPosition {
   status: 'open' | 'pending';
   limitEntryPrice?: number;
   expiresAt?: Date;
+  marketType?: 'SPOT' | 'FUTURES';
 }
 
 const PortfolioComponent = () => {
@@ -75,6 +76,7 @@ const PortfolioComponent = () => {
           setupType: e.setupType || undefined,
           openedAt: new Date(e.openedAt),
           status: 'open',
+          marketType: e.marketType || 'SPOT',
         };
       });
   }, [tradeExecutions, tickerPrices]);
@@ -238,6 +240,11 @@ const PositionCard = ({ position, currency }: PositionCardProps) => {
           <Badge colorPalette={isLong ? 'green' : 'red'} size="sm" px={2}>
             {t(`trading.ticket.${isLong ? 'long' : 'short'}`)}
           </Badge>
+          {position.marketType === 'FUTURES' && (
+            <Badge colorPalette="orange" size="sm" px={2}>
+              FUTURES
+            </Badge>
+          )}
           {position.setupType && (
             <Badge colorPalette="purple" size="sm" px={2}>
               {position.setupType}

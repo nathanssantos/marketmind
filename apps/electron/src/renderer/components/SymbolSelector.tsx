@@ -32,14 +32,14 @@ const POPULAR_SPOT_SYMBOLS = [
 ];
 
 const POPULAR_FUTURES_SYMBOLS = [
-  { symbol: 'BTCUSDT', displayName: 'Bitcoin / USDT PERP', baseAsset: 'BTC', quoteAsset: 'USDT' },
-  { symbol: 'ETHUSDT', displayName: 'Ethereum / USDT PERP', baseAsset: 'ETH', quoteAsset: 'USDT' },
-  { symbol: 'BNBUSDT', displayName: 'BNB / USDT PERP', baseAsset: 'BNB', quoteAsset: 'USDT' },
-  { symbol: 'SOLUSDT', displayName: 'Solana / USDT PERP', baseAsset: 'SOL', quoteAsset: 'USDT' },
-  { symbol: 'XRPUSDT', displayName: 'XRP / USDT PERP', baseAsset: 'XRP', quoteAsset: 'USDT' },
-  { symbol: 'DOGEUSDT', displayName: 'Dogecoin / USDT PERP', baseAsset: 'DOGE', quoteAsset: 'USDT' },
-  { symbol: 'ADAUSDT', displayName: 'Cardano / USDT PERP', baseAsset: 'ADA', quoteAsset: 'USDT' },
-  { symbol: 'AVAXUSDT', displayName: 'Avalanche / USDT PERP', baseAsset: 'AVAX', quoteAsset: 'USDT' },
+  { symbol: 'BTCUSDT', displayName: 'Bitcoin / USDT FUTURES', baseAsset: 'BTC', quoteAsset: 'USDT' },
+  { symbol: 'ETHUSDT', displayName: 'Ethereum / USDT FUTURES', baseAsset: 'ETH', quoteAsset: 'USDT' },
+  { symbol: 'BNBUSDT', displayName: 'BNB / USDT FUTURES', baseAsset: 'BNB', quoteAsset: 'USDT' },
+  { symbol: 'SOLUSDT', displayName: 'Solana / USDT FUTURES', baseAsset: 'SOL', quoteAsset: 'USDT' },
+  { symbol: 'XRPUSDT', displayName: 'XRP / USDT FUTURES', baseAsset: 'XRP', quoteAsset: 'USDT' },
+  { symbol: 'DOGEUSDT', displayName: 'Dogecoin / USDT FUTURES', baseAsset: 'DOGE', quoteAsset: 'USDT' },
+  { symbol: 'ADAUSDT', displayName: 'Cardano / USDT FUTURES', baseAsset: 'ADA', quoteAsset: 'USDT' },
+  { symbol: 'AVAXUSDT', displayName: 'Avalanche / USDT FUTURES', baseAsset: 'AVAX', quoteAsset: 'USDT' },
 ];
 
 const createDefaultMarketService = (marketType: MarketType = 'SPOT'): MarketDataService => {
@@ -82,7 +82,7 @@ export function SymbolSelector({
   const displaySymbols = useMemo(() => {
     if (searchQuery.length >= 2) {
       return isFutures
-        ? symbols.map(s => ({ ...s, displayName: `${s.displayName} PERP` }))
+        ? symbols.map(s => ({ ...s, displayName: `${s.displayName} FUTURES` }))
         : symbols;
     }
     return popularSymbols;
@@ -135,8 +135,8 @@ export function SymbolSelector({
             {currentSymbol}
           </Text>
           {isFutures && (
-            <Badge size="xs" colorPalette="orange" variant="subtle">
-              PERP
+            <Badge size="xs" colorPalette="orange" variant="subtle" px={1}>
+              FUTURES
             </Badge>
           )}
         </Flex>
@@ -219,7 +219,7 @@ export function SymbolSelector({
                     </Flex>
                     <Badge
                       size="xs"
-                      colorPalette={isFutures ? 'purple' : 'blue'}
+                      colorPalette={isFutures ? 'orange' : 'blue'}
                       variant="subtle"
                       px={2}
                     >

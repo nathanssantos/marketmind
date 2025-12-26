@@ -1450,6 +1450,7 @@ export class AutoTradingScheduler {
                   entryOrderType: 'LIMIT',
                   limitEntryPrice: setup.limitEntryPrice.toString(),
                   expiresAt,
+                  marketType: watcher.marketType,
                 });
 
                 log('✅ PENDING order created - waiting for price to reach limit', {
@@ -1623,6 +1624,7 @@ export class AutoTradingScheduler {
           openedAt: new Date(),
           status: 'open',
           entryOrderType: useLimit ? 'LIMIT' : 'MARKET',
+          marketType: watcher.marketType,
         });
 
         log('✅ Trade execution inserted into database', { executionId });

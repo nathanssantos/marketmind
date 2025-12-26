@@ -103,7 +103,7 @@ const FuturesPositionCard = memo(({
               </Flex>
             </Badge>
             <Badge colorPalette="purple" size="sm">{leverage}x</Badge>
-            <Badge colorPalette="blue" size="sm" variant="outline">FUTURES</Badge>
+            <Badge colorPalette="orange" size="sm" variant="outline">FUTURES</Badge>
           </Flex>
           <Button
             size="2xs"

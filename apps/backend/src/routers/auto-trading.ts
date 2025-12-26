@@ -170,6 +170,7 @@ export const autoTradingRouter = router({
       z.object({
         setupId: z.string(),
         walletId: z.string(),
+        marketType: z.enum(['SPOT', 'FUTURES']).optional().default('SPOT'),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -400,6 +401,7 @@ export const autoTradingRouter = router({
         takeProfit: setup.takeProfit,
         openedAt: new Date(),
         status: 'open',
+        marketType: input.marketType,
       });
 
       log('✅ Trade execution created', {

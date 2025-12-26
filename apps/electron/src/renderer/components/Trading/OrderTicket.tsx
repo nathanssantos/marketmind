@@ -164,7 +164,7 @@ export const OrderTicket = () => {
           </Badge>
           <Badge
             size="sm"
-            colorPalette={marketType === 'FUTURES' ? 'purple' : 'gray'}
+            colorPalette={marketType === 'FUTURES' ? 'orange' : 'gray'}
             cursor="pointer"
             onClick={() => setMarketType('FUTURES')}
             variant={marketType === 'FUTURES' ? 'solid' : 'subtle'}
