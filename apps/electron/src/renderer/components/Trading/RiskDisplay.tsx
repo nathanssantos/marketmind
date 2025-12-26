@@ -1,10 +1,9 @@
 import {
-  Badge,
   Flex,
   Grid,
   GridItem,
   Stack,
-  Text,
+  Text
 } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { trpc } from '../../utils/trpc';
@@ -84,9 +83,6 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
         <Text fontSize="sm" fontWeight="bold" textTransform="uppercase" letterSpacing="wide">
           Risk Metrics
         </Text>
-        <Badge colorScheme={config.isEnabled ? 'green' : 'gray'} px={3}>
-          {config.isEnabled ? 'Active' : 'Inactive'}
-        </Badge>
       </Flex>
 
       <Grid templateColumns="repeat(auto-fit, 1fr)" gap={4}>
