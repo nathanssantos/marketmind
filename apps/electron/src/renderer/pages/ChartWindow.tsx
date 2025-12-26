@@ -339,6 +339,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
       <Box flexShrink={0} height="41px">
         <Toolbar
           symbol={symbol}
+          marketType={marketType}
           onSymbolChange={handleSymbolChange}
           timeframe={timeframe}
           onTimeframeChange={setTimeframe}

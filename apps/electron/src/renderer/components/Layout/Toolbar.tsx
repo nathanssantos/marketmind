@@ -26,6 +26,7 @@ import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 export interface ToolbarProps {
   marketService?: MarketDataService;
   symbol: string;
+  marketType?: 'SPOT' | 'FUTURES';
   timeframe: Timeframe;
   chartType: 'kline' | 'line';
   showVolume: boolean;
@@ -67,6 +68,7 @@ export interface ToolbarProps {
 export const Toolbar = memo(({
   marketService,
   symbol,
+  marketType,
   timeframe,
   chartType,
   showVolume,
@@ -169,6 +171,7 @@ export const Toolbar = memo(({
           <SymbolSelector
             marketService={marketService}
             value={symbol}
+            marketType={marketType}
             onChange={onSymbolChange}
             showMarketTypeToggle
           />

@@ -23,6 +23,8 @@ import { UpdateNotification } from './components/Update/UpdateNotification';
 import { ChartProvider, useChartContext } from './context/ChartContext';
 import { useGlobalActions } from './context/GlobalActionsContext';
 import { PatternHoverProvider } from './context/PatternHoverContext';
+import { RealtimeTradingSyncProvider } from './context/RealtimeTradingSyncContext';
+import { useBackendWallet } from './hooks/useBackendWallet';
 import { useAppSettings } from './hooks/useAppSettings';
 import { useBackendKlines, useKlineStream } from './hooks/useBackendKlines';
 import { useCalendar } from './hooks/useCalendar';
@@ -37,6 +39,17 @@ import { usePatterns } from './hooks/usePatterns';
 import { useAIStore } from './store/aiStore';
 import { system } from './theme';
 import { toaster } from './utils/toaster';
+
+function RealtimeSyncWrapper({ children }: { children: React.ReactNode }) {
+  const { wallets } = useBackendWallet();
+  const activeWalletId = wallets[0]?.id;
+
+  return (
+    <RealtimeTradingSyncProvider walletId={activeWalletId}>
+      {children}
+    </RealtimeTradingSyncProvider>
+  );
+}
 
 const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
   {
@@ -137,7 +150,9 @@ function App(): ReactElement {
           <PatternHoverProvider>
             <ChartProvider>
               <PinnedControlsProvider>
-                <AppContent />
+                <RealtimeSyncWrapper>
+                  <AppContent />
+                </RealtimeSyncWrapper>
               </PinnedControlsProvider>
             </ChartProvider>
           </PatternHoverProvider>
@@ -583,6 +598,7 @@ function AppContent(): ReactElement {
         isTradingOpen={isTradingOpen}
         onToggleTrading={toggleTrading}
         symbol={symbol}
+        marketType={marketType}
         timeframe={timeframe}
         chartType={chartType}
         showVolume={showVolume}

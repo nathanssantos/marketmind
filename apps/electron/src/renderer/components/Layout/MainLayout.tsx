@@ -25,6 +25,7 @@ interface MainLayoutProps {
   onToggleTrading: () => void;
   marketService?: MarketDataService;
   symbol: string;
+  marketType?: 'SPOT' | 'FUTURES';
   timeframe: Timeframe;
   chartType: 'kline' | 'line';
   showVolume: boolean;
@@ -79,6 +80,7 @@ export const MainLayout = ({
   onToggleTrading,
   marketService,
   symbol,
+  marketType,
   timeframe,
   chartType,
   showVolume,
@@ -183,6 +185,7 @@ export const MainLayout = ({
         <Toolbar
           marketService={marketService}
           symbol={symbol}
+          marketType={marketType}
           timeframe={timeframe}
           chartType={chartType}
           showVolume={showVolume}
