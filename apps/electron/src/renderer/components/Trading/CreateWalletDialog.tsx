@@ -1,5 +1,17 @@
-import { Alert, Box, Button, DialogBackdrop, DialogBody, DialogCloseTrigger, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTitle, Flex, Link, Stack, Text } from '@chakra-ui/react';
-import { Field as ChakraField } from '@chakra-ui/react/field';
+import { Alert, Box, Flex, Link, Stack, Text } from '@chakra-ui/react';
+import {
+  DialogBackdrop,
+  DialogBody,
+  DialogCloseTrigger,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogPositioner,
+  DialogRoot,
+  DialogTitle,
+} from '@renderer/components/ui/dialog';
+import { Button } from '@renderer/components/ui/button';
+import { Field } from '@renderer/components/ui/field';
 import type { WalletCurrency } from '@marketmind/types';
 import { Input } from '@renderer/components/ui/input';
 import { NumberInput } from '@renderer/components/ui/number-input';
@@ -97,16 +109,16 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
   return (
     <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && handleClose()} size="md">
       <DialogBackdrop />
-      <DialogContent>
-        <DialogHeader>
+      <DialogPositioner>
+        <DialogContent>
+          <DialogHeader px={4} pt={4}>
           <DialogTitle>{t('trading.wallets.createTitle')}</DialogTitle>
         </DialogHeader>
         <DialogCloseTrigger />
 
-        <DialogBody>
+        <DialogBody p={4}>
           <Stack gap={4}>
-            <ChakraField.Root>
-              <ChakraField.Label>{t('trading.wallets.walletType', 'Wallet Type')}</ChakraField.Label>
+            <Field label={t('trading.wallets.walletType', 'Wallet Type')}>
               <Select
                 size="xs"
                 value={walletType}
@@ -118,7 +130,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
                 ]}
                 usePortal={false}
               />
-            </ChakraField.Root>
+            </Field>
 
             {walletType === 'testnet' && (
               <Alert.Root status="info" size="sm">
@@ -156,20 +168,18 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
               </Alert.Root>
             )}
 
-            <ChakraField.Root>
-              <ChakraField.Label>{t('trading.wallets.name')}</ChakraField.Label>
+            <Field label={t('trading.wallets.name')}>
               <Input
                 size="xs"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t('trading.wallets.namePlaceholder')}
               />
-            </ChakraField.Root>
+            </Field>
 
             {walletType === 'paper' ? (
               <>
-                <ChakraField.Root>
-                  <ChakraField.Label>{t('trading.wallets.initialBalance')}</ChakraField.Label>
+                <Field label={t('trading.wallets.initialBalance')}>
                   <NumberInput
                     size="xs"
                     value={initialBalance}
@@ -177,10 +187,9 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
                     min={1}
                     step={100}
                   />
-                </ChakraField.Root>
+                </Field>
 
-                <ChakraField.Root>
-                  <ChakraField.Label>{t('trading.wallets.currency')}</ChakraField.Label>
+                <Field label={t('trading.wallets.currency')}>
                   <Select
                     size="xs"
                     value={currency}
@@ -193,12 +202,11 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
                     ]}
                     usePortal={false}
                   />
-                </ChakraField.Root>
+                </Field>
               </>
             ) : (
               <>
-                <ChakraField.Root>
-                  <ChakraField.Label>API Key</ChakraField.Label>
+                <Field label="API Key">
                   <Input
                     size="xs"
                     value={apiKey}
@@ -206,10 +214,9 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
                     placeholder="Enter your Binance API Key"
                     fontFamily="mono"
                   />
-                </ChakraField.Root>
+                </Field>
 
-                <ChakraField.Root>
-                  <ChakraField.Label>API Secret</ChakraField.Label>
+                <Field label="API Secret">
                   <Input
                     size="xs"
                     type="password"
@@ -218,7 +225,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
                     placeholder="Enter your Binance API Secret"
                     fontFamily="mono"
                   />
-                </ChakraField.Root>
+                </Field>
               </>
             )}
 
@@ -231,8 +238,8 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
           </Stack>
         </DialogBody>
 
-        <DialogFooter>
-          <Button size="2xs" variant="ghost" onClick={handleClose} disabled={isCreating}>
+        <DialogFooter px={4} pb={4}>
+          <Button size="2xs" variant="ghost" onClick={handleClose} disabled={isCreating} px={3}>
             {t('common.cancel')}
           </Button>
           <Button
@@ -241,11 +248,13 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
             onClick={handleSubmit}
             disabled={!isValid || isCreating}
             loading={isCreating}
+            px={3}
           >
             {t('trading.wallets.create')}
           </Button>
         </DialogFooter>
-      </DialogContent>
+        </DialogContent>
+      </DialogPositioner>
     </DialogRoot>
   );
 };
