@@ -61,6 +61,7 @@ interface MainLayoutProps {
   onToggleNews: () => void;
   onToggleBacktest: () => void;
   onDetectPatterns: () => void;
+  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }
 
 const MIN_CHAT_WIDTH = 300;
@@ -117,6 +118,7 @@ export const MainLayout = ({
   onToggleNews,
   onToggleBacktest,
   onDetectPatterns,
+  onNavigateToSymbol,
 }: MainLayoutProps) => {
   const [chatWidth, setChatWidth] = useLocalStorage('chat-sidebar-width', DEFAULT_CHAT_WIDTH);
   const [tradingWidth, setTradingWidth] = useLocalStorage('trading-sidebar-width', DEFAULT_TRADING_WIDTH);
@@ -136,7 +138,8 @@ export const MainLayout = ({
     },
     showKeyboardShortcuts: () => setShowKeyboardShortcuts(true),
     openSymbolSelector: () => onOpenSymbolSelector?.(),
-  }), [onToggleChat, isChatOpen, onOpenSymbolSelector]);
+    navigateToSymbol: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => onNavigateToSymbol?.(symbol, marketType),
+  }), [onToggleChat, isChatOpen, onOpenSymbolSelector, onNavigateToSymbol]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent, target: 'chat' | 'trading') => {
     e.preventDefault();

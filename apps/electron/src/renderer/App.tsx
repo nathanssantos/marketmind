@@ -634,6 +634,7 @@ function AppContent(): ReactElement {
         onToggleNews={toggleNews}
         onToggleBacktest={toggleBacktest}
         onDetectPatterns={() => { }}
+        onNavigateToSymbol={handleSymbolChange}
       >
         <AppContentWithKeyboardShortcuts
           showVolume={showVolume}

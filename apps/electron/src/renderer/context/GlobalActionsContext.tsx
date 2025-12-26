@@ -1,10 +1,12 @@
 import { createContext, useContext, type ReactNode } from 'react';
+import type { MarketType } from '@marketmind/types';
 
 interface GlobalActionsContextType {
   openSettings: () => void;
   focusChatInput: () => void;
   showKeyboardShortcuts: () => void;
   openSymbolSelector: () => void;
+  navigateToSymbol: (symbol: string, marketType?: MarketType) => void;
 }
 
 const GlobalActionsContext = createContext<GlobalActionsContextType | null>(null);

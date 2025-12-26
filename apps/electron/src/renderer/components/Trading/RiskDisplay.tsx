@@ -16,17 +16,14 @@ interface RiskDisplayProps {
 interface RiskMetrics {
   exposure: {
     current: number;
-    max: number;
-    percent: number;
   };
   dailyPnL: {
     value: number;
     limit: number;
-    percent: number;
   };
   positions: {
     open: number;
-    max: number;
+    activeWatchers: number;
   };
 }
 
@@ -43,6 +40,11 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
     { enabled: !!walletId, refetchInterval: 10000 }
   );
 
+  const { data: watcherStatus } = trpc.autoTrading.getWatcherStatus.useQuery(
+    { walletId },
+    { enabled: !!walletId, refetchInterval: 10000 }
+  );
+
   useEffect(() => {
     if (!config || !activeExecutions) return;
 
@@ -54,26 +56,23 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
       return sum + price * qty;
     }, 0);
 
-    const maxExposure = totalExposure * 2;
     const dailyPnL = 0;
+    const activeWatchersCount = watcherStatus?.watchers ?? 0;
 
     setMetrics({
       exposure: {
         current: totalExposure,
-        max: maxExposure,
-        percent: maxExposure > 0 ? (totalExposure / maxExposure) * 100 : 0,
       },
       dailyPnL: {
         value: dailyPnL,
         limit: parseFloat(config.dailyLossLimit),
-        percent: 0,
       },
       positions: {
         open: openPositions.length,
-        max: config.maxConcurrentPositions,
+        activeWatchers: activeWatchersCount,
       },
     });
-  }, [config, activeExecutions]);
+  }, [config, activeExecutions, watcherStatus]);
 
   if (!metrics || !config) {
     return null;
@@ -101,16 +100,12 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
               <Text fontSize="2xl" fontWeight="bold">
                 {metrics.positions.open}
               </Text>
-              <Text fontSize="sm" color="gray.500">
-                / {metrics.positions.max}
-              </Text>
+              {metrics.positions.activeWatchers > 0 && (
+                <Text fontSize="sm" color="gray.500">
+                  / {metrics.positions.activeWatchers} watchers
+                </Text>
+              )}
             </Flex>
-            {/* <Progress
-              value={positionPercent}
-              size="sm"
-              colorScheme={getProgressColorScheme(positionPercent)}
-              borderRadius="full"
-            /> */}
           </Stack>
         </GridItem>
 
@@ -123,15 +118,6 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
             <Text fontSize="2xl" fontWeight="bold">
               ${metrics.exposure.current.toFixed(2)}
             </Text>
-            <Text fontSize="xs" color="gray.500">
-              {metrics.exposure.percent.toFixed(1)}% of max
-            </Text>
-            {/* <Progress
-              value={Math.min(metrics.exposure.percent, 100)}
-              size="sm"
-              colorScheme={getProgressColorScheme(metrics.exposure.percent)}
-              borderRadius="full"
-            /> */}
           </Stack>
         </GridItem>
 
@@ -160,60 +146,23 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
           </Stack>
         </GridItem>
 
-        {/* Position Sizing */}
-        <GridItem>
-          <Stack gap={2}>
-            <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} fontWeight="medium">
-              Max Position Size
-            </Text>
-            <Text fontSize="2xl" fontWeight="bold">
-              {config.maxPositionSize}%
-            </Text>
-            <Text fontSize="xs" color="gray.500" textTransform="capitalize">
-              Strategy: {config.positionSizing}
-            </Text>
-          </Stack>
-        </GridItem>
+        {/* Position Size per Watcher */}
+        {metrics.positions.activeWatchers > 0 && (
+          <GridItem>
+            <Stack gap={2}>
+              <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} fontWeight="medium">
+                Size per Watcher
+              </Text>
+              <Text fontSize="2xl" fontWeight="bold">
+                {(100 / metrics.positions.activeWatchers).toFixed(1)}%
+              </Text>
+              <Text fontSize="xs" color="gray.500">
+                100% / {metrics.positions.activeWatchers} watchers
+              </Text>
+            </Stack>
+          </GridItem>
+        )}
       </Grid>
-
-      {/* Warnings */}
-      <Stack gap={2}>
-        {metrics.positions.open >= metrics.positions.max && (
-          <Flex
-            p={3}
-            bg="orange.50"
-            _dark={{ bg: 'orange.900', borderColor: 'orange.700', color: 'orange.200' }}
-            borderRadius="md"
-            borderWidth="1px"
-            borderColor="orange.200"
-            fontSize="sm"
-            color="orange.800"
-            align="center"
-            gap={2}
-          >
-            <Text>⚠️</Text>
-            <Text>Maximum concurrent positions reached</Text>
-          </Flex>
-        )}
-
-        {metrics.exposure.percent > 80 && (
-          <Flex
-            p={3}
-            bg="orange.50"
-            _dark={{ bg: 'orange.900', borderColor: 'orange.700', color: 'orange.200' }}
-            borderRadius="md"
-            borderWidth="1px"
-            borderColor="orange.200"
-            fontSize="sm"
-            color="orange.800"
-            align="center"
-            gap={2}
-          >
-            <Text>⚠️</Text>
-            <Text>High exposure - approaching limits</Text>
-          </Flex>
-        )}
-      </Stack>
     </Stack>
   );
 };

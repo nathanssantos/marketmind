@@ -2,6 +2,7 @@ import { Badge, Box, Flex, IconButton, Portal, Stack, Text } from '@chakra-ui/re
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Order, OrderStatus } from '@marketmind/types';
+import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { Select } from '@renderer/components/ui/select';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
@@ -22,6 +23,7 @@ import { LuBot, LuX } from 'react-icons/lu';
 
 const OrdersListComponent = () => {
   const { t } = useTranslation();
+  const globalActions = useGlobalActionsOptional();
 
   const { wallets: backendWallets } = useBackendWallet();
   const activeWalletId = backendWallets[0]?.id;
@@ -295,6 +297,7 @@ const OrdersListComponent = () => {
                   currency={activeWallet.currency}
                   onCancel={() => cancelOrder(getOrderId(order))}
                   onClose={(price) => closeOrder(getOrderId(order), price)}
+                  onNavigateToSymbol={globalActions?.navigateToSymbol}
                 />
               ))}
             </Stack>
@@ -310,9 +313,10 @@ interface OrderCardProps {
   currency: import('@marketmind/types').WalletCurrency;
   onCancel: () => void;
   onClose: (price: number) => void;
+  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }
 
-const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
+const OrderCard = ({ order, currency, onCancel, onClose, onNavigateToSymbol }: OrderCardProps) => {
   const { t } = useTranslation();
 
   const getStatusColor = (status: OrderStatus): string => {
@@ -369,7 +373,13 @@ const OrderCard = ({ order, currency, onCancel, onClose }: OrderCardProps) => {
                 <LuBot size={14} />
               </Box>
             )}
-            <Text fontWeight="bold" fontSize="sm">
+            <Text
+              fontWeight="bold"
+              fontSize="sm"
+              cursor={onNavigateToSymbol ? 'pointer' : 'default'}
+              _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
+              onClick={() => onNavigateToSymbol?.(order.symbol, order.marketType)}
+            >
               {order.symbol}
             </Text>
           </Flex>

@@ -1,5 +1,6 @@
 import { Badge, Box, Flex, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
+import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { Select } from '@renderer/components/ui/select';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
@@ -9,6 +10,7 @@ import { usePositionUpdates } from '@renderer/hooks/usePositionUpdates';
 import { type PortfolioFilterOption, type PortfolioSortOption, useUIStore } from '@renderer/store/uiStore';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LuBot } from 'react-icons/lu';
 import { FuturesPositionsPanel } from './FuturesPositionsPanel';
 
 interface PortfolioPosition {
@@ -28,10 +30,12 @@ interface PortfolioPosition {
   limitEntryPrice?: number;
   expiresAt?: Date;
   marketType?: 'SPOT' | 'FUTURES';
+  isAutoTrade?: boolean;
 }
 
 const PortfolioComponent = () => {
   const { t } = useTranslation();
+  const globalActions = useGlobalActionsOptional();
 
   const { wallets: backendWallets } = useBackendWallet();
   const activeWalletId = backendWallets[0]?.id;
@@ -77,6 +81,7 @@ const PortfolioComponent = () => {
           openedAt: new Date(e.openedAt),
           status: 'open',
           marketType: e.marketType || 'SPOT',
+          isAutoTrade: true,
         };
       });
   }, [tradeExecutions, tickerPrices]);
@@ -195,7 +200,7 @@ const PortfolioComponent = () => {
 
           <Stack gap={2}>
             {filteredPositions.map((position) => (
-              <PositionCard key={position.id} position={position} currency={activeWallet.currency} />
+              <PositionCard key={position.id} position={position} currency={activeWallet.currency} onNavigateToSymbol={globalActions?.navigateToSymbol} />
             ))}
           </Stack>
         </>
@@ -207,9 +212,10 @@ const PortfolioComponent = () => {
 interface PositionCardProps {
   position: PortfolioPosition;
   currency: string;
+  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }
 
-const PositionCard = ({ position, currency }: PositionCardProps) => {
+const PositionCard = ({ position, currency, onNavigateToSymbol }: PositionCardProps) => {
   const { t } = useTranslation();
   const isProfitable = position.pnl >= 0;
   const isLong = position.side === 'LONG';
@@ -224,9 +230,22 @@ const PositionCard = ({ position, currency }: PositionCardProps) => {
     >
       <Stack gap={1.5} mb={2}>
         <Flex justify="space-between" align="center">
-          <Text fontWeight="bold" fontSize="sm">
-            {position.symbol}
-          </Text>
+          <Flex align="center" gap={1.5}>
+            {position.isAutoTrade && (
+              <Box title={t('trading.orders.autoTrade')}>
+                <LuBot size={14} />
+              </Box>
+            )}
+            <Text
+              fontWeight="bold"
+              fontSize="sm"
+              cursor={onNavigateToSymbol ? 'pointer' : 'default'}
+              _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
+              onClick={() => onNavigateToSymbol?.(position.symbol, position.marketType)}
+            >
+              {position.symbol}
+            </Text>
+          </Flex>
           <Text fontSize="xs" color="fg.muted">
             {position.openedAt.toLocaleString(undefined, {
               month: 'short',

@@ -1,10 +1,11 @@
 import { Badge, Box, Button, Flex, Progress, Stack, Text, VStack } from '@chakra-ui/react';
 import { wouldLiquidate } from '@marketmind/types';
+import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuTriangleAlert, LuTrendingDown, LuTrendingUp, LuX } from 'react-icons/lu';
+import { LuBot, LuTriangleAlert, LuTrendingDown, LuTrendingUp, LuX } from 'react-icons/lu';
 
 interface FuturesPosition {
   id: string;
@@ -27,11 +28,13 @@ const FuturesPositionCard = memo(({
   currentPrice,
   onClose,
   isClosing,
+  onNavigateToSymbol,
 }: {
   position: FuturesPosition;
   currentPrice?: number;
   onClose: () => void;
   isClosing: boolean;
+  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }) => {
   const { t } = useTranslation();
 
@@ -95,7 +98,18 @@ const FuturesPositionCard = memo(({
       <VStack gap={2} align="stretch">
         <Flex justify="space-between" align="center">
           <Flex align="center" gap={2}>
-            <Text fontWeight="bold" fontSize="sm">{position.symbol}</Text>
+            <Box title={t('trading.orders.autoTrade')}>
+              <LuBot size={14} />
+            </Box>
+            <Text
+              fontWeight="bold"
+              fontSize="sm"
+              cursor={onNavigateToSymbol ? 'pointer' : 'default'}
+              _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
+              onClick={() => onNavigateToSymbol?.(position.symbol, 'FUTURES')}
+            >
+              {position.symbol}
+            </Text>
             <Badge colorPalette={side === 'LONG' ? 'green' : 'red'} size="sm">
               <Flex align="center" gap={1}>
                 {side === 'LONG' ? <LuTrendingUp size={10} /> : <LuTrendingDown size={10} />}
@@ -204,6 +218,7 @@ FuturesPositionCard.displayName = 'FuturesPositionCard';
 
 const FuturesPositionsPanelComponent = () => {
   const { t } = useTranslation();
+  const globalActions = useGlobalActionsOptional();
   const { wallets } = useBackendWallet();
   const activeWalletId = wallets[0]?.id;
 
@@ -278,6 +293,7 @@ const FuturesPositionsPanelComponent = () => {
             currentPrice={realtimePrices[position.symbol]}
             onClose={() => handleClosePosition(position.id, position.symbol)}
             isClosing={isClosingPosition}
+            onNavigateToSymbol={globalActions?.navigateToSymbol}
           />
         ))}
       </Stack>
