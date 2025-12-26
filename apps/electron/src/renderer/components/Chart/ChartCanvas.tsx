@@ -153,8 +153,9 @@ export const ChartCanvas = ({
 
   const filteredBackendExecutions = useMemo((): BackendExecution[] => {
     if (!backendExecutions || !symbol) return [];
+    const currentMarketType = marketType || 'SPOT';
     return backendExecutions
-      .filter(exec => exec.symbol === symbol)
+      .filter(exec => exec.symbol === symbol && (exec.marketType || 'SPOT') === currentMarketType)
       .map(exec => ({
         id: exec.id,
         symbol: exec.symbol,
@@ -165,8 +166,9 @@ export const ChartCanvas = ({
         takeProfit: exec.takeProfit,
         status: exec.status,
         setupType: exec.setupType,
+        marketType: exec.marketType,
       }));
-  }, [backendExecutions, symbol]);
+  }, [backendExecutions, symbol, marketType]);
   const hoveredSetup = null as ReturnType<typeof useSetupStore.getState>['detectedSetups'][0] | null;
 
   const handleLongEntry = useCallback((price: number) => {

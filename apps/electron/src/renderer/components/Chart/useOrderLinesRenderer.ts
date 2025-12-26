@@ -49,6 +49,7 @@ export interface BackendExecution {
   takeProfit: string | null;
   status: string | null;
   setupType: string | null;
+  marketType?: 'SPOT' | 'FUTURES' | null;
 }
 
 interface OrderCloseButton {
