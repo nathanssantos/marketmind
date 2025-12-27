@@ -1,6 +1,7 @@
-import { calculateADX, calculateEMA, calculateStochastic } from '@marketmind/indicators';
+import { calculateADX, calculateEMA } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 import { ADX_FILTER } from '../../constants';
+import { checkStochasticCondition, STOCHASTIC_FILTER } from '../../utils/stochastic-filter';
 import { HistoricalMarketContextService } from '../historical-market-context';
 
 export interface FilterConfig {
@@ -210,44 +211,23 @@ export class FilterManager {
   ): boolean {
     if (!this.config.useStochasticFilter) return true;
 
-    const STOCHASTIC_PERIOD = 14;
-    if (setupIndex < STOCHASTIC_PERIOD + 1) return true;
+    const { PERIOD, LOOKBACK_BUFFER } = STOCHASTIC_FILTER;
+    if (setupIndex < PERIOD + 1) return true;
 
-    const stochasticKlines = klines.slice(setupIndex - STOCHASTIC_PERIOD - 10, setupIndex + 1);
-    const stochResult = calculateStochastic(stochasticKlines, STOCHASTIC_PERIOD, 3);
-    const currentStochK = stochResult.k[stochResult.k.length - 1];
+    const stochasticKlines = klines.slice(setupIndex - PERIOD - LOOKBACK_BUFFER, setupIndex + 1);
+    const result = checkStochasticCondition(stochasticKlines, direction);
 
-    if (currentStochK === null || currentStochK === undefined) return true;
-
-    let hadOversold = false;
-    let hadOverbought = false;
-
-    for (let i = stochResult.k.length - 1; i >= 0; i -= 1) {
-      const k = stochResult.k[i];
-      if (k === null || k === undefined) continue;
-
-      if (!hadOversold && k < 20) hadOversold = true;
-      if (!hadOverbought && k > 80) hadOverbought = true;
-
-      if (hadOversold && hadOverbought) break;
-    }
-
-    const isLongAllowed = direction === 'LONG' && hadOversold && currentStochK < 50;
-    const isShortAllowed = direction === 'SHORT' && hadOverbought && currentStochK > 50;
-
-    if (!isLongAllowed && !isShortAllowed) {
+    if (!result.isAllowed) {
       this.stats.skippedStochastic++;
       if (tradesCount < 3) {
-        console.log(`[FilterManager] Stochastic filter blocked ${direction} trade - currK=${currentStochK.toFixed(2)}, hadOversold=${hadOversold}, hadOverbought=${hadOverbought}`);
+        const currK = result.currentK?.toFixed(2) ?? 'null';
+        console.log(`[FilterManager] Stochastic filter blocked ${direction} trade - currK=${currK}, hadOversold=${result.hadOversold}, hadOverbought=${result.hadOverbought}, oversoldMoreRecent=${result.oversoldMoreRecent}`);
       }
       return false;
     }
 
     if (tradesCount < 3) {
-      const longReason = `K was in oversold and hasn't crossed 50 yet (current K: ${currentStochK.toFixed(2)})`;
-      const shortReason = `K was in overbought and hasn't crossed 50 yet (current K: ${currentStochK.toFixed(2)})`;
-      const reason = direction === 'LONG' ? longReason : shortReason;
-      console.log(`[FilterManager] Stochastic filter passed ${direction} trade - ${reason}`);
+      console.log(`[FilterManager] Stochastic filter passed ${direction} trade - ${result.reason}`);
     }
 
     return true;

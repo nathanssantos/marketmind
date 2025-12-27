@@ -1,4 +1,5 @@
-import { calculateADX, calculateStochastic } from '@marketmind/indicators';
+import { calculateADX } from '@marketmind/indicators';
+import { checkStochasticCondition, STOCHASTIC_FILTER } from '../utils/stochastic-filter';
 import { getThresholdForTimeframe } from '@marketmind/ml';
 import type { Interval, Kline, MarketType, TradingSetup } from '@marketmind/types';
 import { and, desc, eq, inArray } from 'drizzle-orm';
@@ -882,7 +883,7 @@ export class AutoTradingScheduler {
       });
 
       if (config.useStochasticFilter) {
-        const stochasticPeriod = 14;
+        const { PERIOD, LOOKBACK_BUFFER } = STOCHASTIC_FILTER;
         const stochasticKlines = await db
           .select()
           .from(klines)
@@ -893,11 +894,11 @@ export class AutoTradingScheduler {
             )
           )
           .orderBy(desc(klines.openTime))
-          .limit(stochasticPeriod + 10);
+          .limit(PERIOD + LOOKBACK_BUFFER);
 
-        if (stochasticKlines.length < stochasticPeriod + 1) {
+        if (stochasticKlines.length < PERIOD + 1) {
           log('⚠️ Insufficient klines for Stochastic calculation', {
-            required: stochasticPeriod + 1,
+            required: PERIOD + 1,
             available: stochasticKlines.length,
           });
           return;
@@ -908,76 +909,39 @@ export class AutoTradingScheduler {
           openTime: k.openTime.getTime(),
           closeTime: k.closeTime.getTime(),
         })) as Kline[];
-        const stochResult = calculateStochastic(klinesForStochastic, stochasticPeriod, 3);
-        const currentStochK = stochResult.k[stochResult.k.length - 1];
 
-        if (currentStochK === null || currentStochK === undefined) {
-          log('⚠️ Stochastic calculation returned null', {
-            symbol: watcher.symbol,
-            interval: watcher.interval,
-          });
-          return;
-        }
-
-        let hadOversold = false;
-        let hadOverbought = false;
-
-        for (let i = stochResult.k.length - 1; i >= 0; i -= 1) {
-          const k = stochResult.k[i];
-          if (k === null || k === undefined) continue;
-
-          if (!hadOversold && k < 20) hadOversold = true;
-          if (!hadOverbought && k > 80) hadOverbought = true;
-
-          if (hadOversold && hadOverbought) break;
-        }
-
-        const isLongAllowed = setup.direction === 'LONG' && hadOversold && currentStochK < 50;
-        const isShortAllowed = setup.direction === 'SHORT' && hadOverbought && currentStochK > 50;
-
-        const longReason = hadOversold && currentStochK < 50
-          ? `K was in oversold and hasn't crossed 50 yet (current K: ${currentStochK.toFixed(2)})`
-          : null;
-        const shortReason = hadOverbought && currentStochK > 50
-          ? `K was in overbought and hasn't crossed 50 yet (current K: ${currentStochK.toFixed(2)})`
-          : null;
+        const stochResult = checkStochasticCondition(klinesForStochastic, setup.direction);
 
         log('📊 Stochastic Filter Check', {
           symbol: watcher.symbol,
           interval: watcher.interval,
           direction: setup.direction,
-          currentK: currentStochK.toFixed(2),
-          hadOversold,
-          hadOverbought,
-          oversoldThreshold: 20,
-          overboughtThreshold: 80,
-          isAllowed: isLongAllowed || isShortAllowed,
-          reason: setup.direction === 'LONG' ? longReason : shortReason,
+          currentK: stochResult.currentK?.toFixed(2) ?? 'null',
+          hadOversold: stochResult.hadOversold,
+          hadOverbought: stochResult.hadOverbought,
+          oversoldMoreRecent: stochResult.oversoldMoreRecent,
+          overboughtMoreRecent: stochResult.overboughtMoreRecent,
+          isAllowed: stochResult.isAllowed,
+          reason: stochResult.reason,
         });
 
-        if (!isLongAllowed && !isShortAllowed) {
+        if (!stochResult.isAllowed) {
           log('🚫 Stochastic filter blocked trade', {
             direction: setup.direction,
-            currentK: currentStochK.toFixed(2),
-            hadOversold,
-            hadOverbought,
-            reason: setup.direction === 'LONG'
-              ? hadOversold
-                ? `K already crossed 50 on the way back (${currentStochK.toFixed(2)} >= 50)`
-                : `K never reached oversold zone (< 20)`
-              : hadOverbought
-                ? `K already crossed 50 on the way back (${currentStochK.toFixed(2)} <= 50)`
-                : `K never reached overbought zone (> 80)`,
+            currentK: stochResult.currentK?.toFixed(2) ?? 'null',
+            hadOversold: stochResult.hadOversold,
+            hadOverbought: stochResult.hadOverbought,
+            reason: stochResult.reason,
           });
           return;
         }
 
         log('✅ Stochastic filter passed', {
           direction: setup.direction,
-          currentK: currentStochK.toFixed(2),
-          hadOversold,
-          hadOverbought,
-          condition: setup.direction === 'LONG' ? longReason : shortReason,
+          currentK: stochResult.currentK?.toFixed(2) ?? 'null',
+          hadOversold: stochResult.hadOversold,
+          hadOverbought: stochResult.hadOverbought,
+          condition: stochResult.reason,
         });
       }
 
