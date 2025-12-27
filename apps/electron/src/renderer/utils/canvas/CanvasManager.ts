@@ -1,5 +1,5 @@
 import type { Kline, Viewport } from '@marketmind/types';
-import { CHART_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, PANEL_RENDER_ORDER, type PanelId } from '@shared/constants';
 import {
     calculateBounds,
     clampViewport,
@@ -19,6 +19,12 @@ export interface DirtyFlags {
   all: boolean;
 }
 
+export interface PanelConfig {
+  id: string;
+  height: number;
+  order: number;
+}
+
 export class CanvasManager {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D | null = null;
@@ -31,8 +37,7 @@ export class CanvasManager {
   private priceOffset: number = 0;
   private priceScale: number = 1;
   private rightMargin: number = CHART_CONFIG.CHART_RIGHT_MARGIN;
-  private stochasticPanelHeight: number = 0;
-  private rsiPanelHeight: number = 0;
+  private panels: Map<string, PanelConfig> = new Map();
   private animationFrameId: number | null = null;
   private isAnimating: boolean = false;
   private dirtyFlags: DirtyFlags = {
@@ -129,7 +134,8 @@ export class CanvasManager {
 
   private updateDimensions(): void {
     const rect = this.canvas.getBoundingClientRect();
-    const chartHeight = rect.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM - this.stochasticPanelHeight - this.rsiPanelHeight;
+    const totalPanelHeight = this.getTotalPanelHeight();
+    const chartHeight = rect.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM - totalPanelHeight;
     const chartWidth = rect.width - CHART_CONFIG.CANVAS_PADDING_RIGHT;
 
     this.dimensions = {
@@ -139,7 +145,7 @@ export class CanvasManager {
       volumeHeight: 0,
       chartWidth,
     };
-    
+
     this.markDirty('dimensions');
   }
 
@@ -223,28 +229,78 @@ export class CanvasManager {
     this.markDirty('dimensions');
   }
 
-  public setStochasticPanelHeight(height: number): void {
-    if (this.stochasticPanelHeight !== height) {
-      this.stochasticPanelHeight = height;
+  public setPanelHeight(panelId: string, height: number): void {
+    const existingPanel = this.panels.get(panelId);
+    const order = PANEL_RENDER_ORDER.indexOf(panelId as PanelId);
+    const panelOrder = order >= 0 ? order : this.panels.size;
+
+    if (height === 0) {
+      if (existingPanel) {
+        this.panels.delete(panelId);
+        this.updateDimensions();
+        this.markDirty('dimensions');
+      }
+      return;
+    }
+
+    if (!existingPanel || existingPanel.height !== height) {
+      this.panels.set(panelId, { id: panelId, height, order: panelOrder });
       this.updateDimensions();
       this.markDirty('dimensions');
     }
+  }
+
+  public getPanelHeight(panelId: string): number {
+    return this.panels.get(panelId)?.height ?? 0;
+  }
+
+  public getTotalPanelHeight(): number {
+    let total = 0;
+    for (const panel of this.panels.values()) {
+      total += panel.height;
+    }
+    return total;
+  }
+
+  public getPanelTop(panelId: string): number {
+    if (!this.dimensions) return 0;
+    const sortedPanels = this.getActivePanels();
+    let top = this.dimensions.chartHeight;
+
+    for (const panel of sortedPanels) {
+      if (panel.id === panelId) return top;
+      top += panel.height;
+    }
+    return top;
+  }
+
+  public getActivePanels(): PanelConfig[] {
+    return Array.from(this.panels.values()).sort((a, b) => a.order - b.order);
+  }
+
+  public setStochasticPanelHeight(height: number): void {
+    this.setPanelHeight('stochastic', height);
   }
 
   public getStochasticPanelHeight(): number {
-    return this.stochasticPanelHeight;
+    return this.getPanelHeight('stochastic');
   }
 
   public setRSIPanelHeight(height: number): void {
-    if (this.rsiPanelHeight !== height) {
-      this.rsiPanelHeight = height;
-      this.updateDimensions();
-      this.markDirty('dimensions');
-    }
+    this.setPanelHeight('rsi', height);
   }
 
   public getRSIPanelHeight(): number {
-    return this.rsiPanelHeight;
+    return this.getPanelHeight('rsi');
+  }
+
+  public getPanelInfo(panelId: string): { y: number; height: number } | null {
+    const height = this.getPanelHeight(panelId);
+    if (height === 0) return null;
+    if (!this.dimensions) return null;
+    const panelTop = this.getPanelTop(panelId);
+    const chartHeight = this.dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM - this.getTotalPanelHeight();
+    return { y: chartHeight + panelTop, height };
   }
 
   public clear(): void {

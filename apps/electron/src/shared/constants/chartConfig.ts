@@ -22,4 +22,35 @@ export const CHART_CONFIG = {
   PERCENT_MULTIPLIER: 100,
 } as const;
 
+export const INDICATOR_PANEL_HEIGHTS = {
+  SMALL: 60,
+  STANDARD: 80,
+  LARGE: 100,
+} as const;
+
+export const PANEL_RENDER_ORDER = [
+  'rsi',
+  'stochastic',
+  'macd',
+  'adx',
+  'cci',
+  'williamsR',
+  'stochRsi',
+  'cmo',
+  'mfi',
+  'ultimateOsc',
+  'tsi',
+  'ppo',
+  'roc',
+  'ao',
+  'aroon',
+  'vortex',
+  'elderRay',
+  'obv',
+  'cmf',
+  'klinger',
+] as const;
+
+export type PanelId = (typeof PANEL_RENDER_ORDER)[number];
+
 export const DEFAULT_MA_PERIODS = [20, 50, 200] as const;

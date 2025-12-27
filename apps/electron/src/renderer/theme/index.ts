@@ -250,6 +250,228 @@ const customConfig = defineConfig({
             _dark: '#ff9800',
           },
         },
+        'chart.macd.macdLine': {
+          value: {
+            base: '#2563eb',
+            _dark: '#2196f3',
+          },
+        },
+        'chart.macd.signalLine': {
+          value: {
+            base: '#ea580c',
+            _dark: '#ff9800',
+          },
+        },
+        'chart.macd.histogramPositive': {
+          value: {
+            base: 'rgba(22, 163, 74, 0.7)',
+            _dark: 'rgba(38, 166, 154, 0.7)',
+          },
+        },
+        'chart.macd.histogramNegative': {
+          value: {
+            base: 'rgba(220, 38, 38, 0.7)',
+            _dark: 'rgba(239, 83, 80, 0.7)',
+          },
+        },
+        'chart.macd.zeroLine': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.5)',
+            _dark: 'rgba(128, 128, 128, 0.5)',
+          },
+        },
+        'chart.adx.adxLine': {
+          value: {
+            base: '#f59e0b',
+            _dark: '#ffc107',
+          },
+        },
+        'chart.adx.plusDI': {
+          value: {
+            base: '#16a34a',
+            _dark: '#4caf50',
+          },
+        },
+        'chart.adx.minusDI': {
+          value: {
+            base: '#dc2626',
+            _dark: '#f44336',
+          },
+        },
+        'chart.adx.threshold': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.5)',
+            _dark: 'rgba(128, 128, 128, 0.5)',
+          },
+        },
+        'chart.williamsR.line': {
+          value: {
+            base: '#8b5cf6',
+            _dark: '#a855f7',
+          },
+        },
+        'chart.williamsR.zone': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.7)',
+            _dark: 'rgba(128, 128, 128, 0.7)',
+          },
+        },
+        'chart.cci.line': {
+          value: {
+            base: '#06b6d4',
+            _dark: '#22d3ee',
+          },
+        },
+        'chart.cci.zone': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.7)',
+            _dark: 'rgba(128, 128, 128, 0.7)',
+          },
+        },
+        'chart.ichimoku.tenkan': {
+          value: {
+            base: '#2563eb',
+            _dark: '#2196f3',
+          },
+        },
+        'chart.ichimoku.kijun': {
+          value: {
+            base: '#dc2626',
+            _dark: '#f44336',
+          },
+        },
+        'chart.ichimoku.senkouAFill': {
+          value: {
+            base: 'rgba(22, 163, 74, 0.2)',
+            _dark: 'rgba(76, 175, 80, 0.2)',
+          },
+        },
+        'chart.ichimoku.senkouBFill': {
+          value: {
+            base: 'rgba(220, 38, 38, 0.2)',
+            _dark: 'rgba(244, 67, 54, 0.2)',
+          },
+        },
+        'chart.ichimoku.chikou': {
+          value: {
+            base: '#16a34a',
+            _dark: '#4caf50',
+          },
+        },
+        'chart.supertrend.up': {
+          value: {
+            base: '#16a34a',
+            _dark: '#4caf50',
+          },
+        },
+        'chart.supertrend.down': {
+          value: {
+            base: '#dc2626',
+            _dark: '#f44336',
+          },
+        },
+        'chart.parabolicSar.bullish': {
+          value: {
+            base: '#16a34a',
+            _dark: '#4caf50',
+          },
+        },
+        'chart.parabolicSar.bearish': {
+          value: {
+            base: '#dc2626',
+            _dark: '#f44336',
+          },
+        },
+        'chart.obv.line': {
+          value: {
+            base: '#7c3aed',
+            _dark: '#9c27b0',
+          },
+        },
+        'chart.obv.sma': {
+          value: {
+            base: '#ea580c',
+            _dark: '#ff9800',
+          },
+        },
+        'chart.cmf.positive': {
+          value: {
+            base: 'rgba(22, 163, 74, 0.7)',
+            _dark: 'rgba(38, 166, 154, 0.7)',
+          },
+        },
+        'chart.cmf.negative': {
+          value: {
+            base: 'rgba(220, 38, 38, 0.7)',
+            _dark: 'rgba(239, 83, 80, 0.7)',
+          },
+        },
+        'chart.keltner.upper': {
+          value: {
+            base: '#7c3aed',
+            _dark: '#9c27b0',
+          },
+        },
+        'chart.keltner.middle': {
+          value: {
+            base: '#7c3aed',
+            _dark: '#9c27b0',
+          },
+        },
+        'chart.keltner.lower': {
+          value: {
+            base: '#7c3aed',
+            _dark: '#9c27b0',
+          },
+        },
+        'chart.keltner.fill': {
+          value: {
+            base: 'rgba(124, 58, 237, 0.1)',
+            _dark: 'rgba(156, 39, 176, 0.1)',
+          },
+        },
+        'chart.donchian.upper': {
+          value: {
+            base: '#0d9488',
+            _dark: '#009688',
+          },
+        },
+        'chart.donchian.middle': {
+          value: {
+            base: '#0d9488',
+            _dark: '#009688',
+          },
+        },
+        'chart.donchian.lower': {
+          value: {
+            base: '#0d9488',
+            _dark: '#009688',
+          },
+        },
+        'chart.donchian.fill': {
+          value: {
+            base: 'rgba(13, 148, 136, 0.1)',
+            _dark: 'rgba(0, 150, 136, 0.1)',
+          },
+        },
+        'chart.stochRsi.k': {
+          value: {
+            base: '#2563eb',
+            _dark: '#2196f3',
+          },
+        },
+        'chart.stochRsi.d': {
+          value: {
+            base: '#ea580c',
+            _dark: '#ff9800',
+          },
+        },
+        'chart.indicator.zone': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.7)',
+            _dark: 'rgba(128, 128, 128, 0.7)',
+          },
+        },
       },
     },
   },
@@ -327,5 +549,66 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
     atr: {
       line: resolveValue(tokens['chart.atr.line']),
     },
+    macd: {
+      macdLine: resolveValue(tokens['chart.macd.macdLine']),
+      signalLine: resolveValue(tokens['chart.macd.signalLine']),
+      histogramPositive: resolveValue(tokens['chart.macd.histogramPositive']),
+      histogramNegative: resolveValue(tokens['chart.macd.histogramNegative']),
+      zeroLine: resolveValue(tokens['chart.macd.zeroLine']),
+    },
+    adx: {
+      adxLine: resolveValue(tokens['chart.adx.adxLine']),
+      plusDI: resolveValue(tokens['chart.adx.plusDI']),
+      minusDI: resolveValue(tokens['chart.adx.minusDI']),
+      threshold: resolveValue(tokens['chart.adx.threshold']),
+    },
+    williamsR: {
+      line: resolveValue(tokens['chart.williamsR.line']),
+      zone: resolveValue(tokens['chart.williamsR.zone']),
+    },
+    cci: {
+      line: resolveValue(tokens['chart.cci.line']),
+      zone: resolveValue(tokens['chart.cci.zone']),
+    },
+    ichimoku: {
+      tenkan: resolveValue(tokens['chart.ichimoku.tenkan']),
+      kijun: resolveValue(tokens['chart.ichimoku.kijun']),
+      senkouAFill: resolveValue(tokens['chart.ichimoku.senkouAFill']),
+      senkouBFill: resolveValue(tokens['chart.ichimoku.senkouBFill']),
+      chikou: resolveValue(tokens['chart.ichimoku.chikou']),
+    },
+    supertrend: {
+      up: resolveValue(tokens['chart.supertrend.up']),
+      down: resolveValue(tokens['chart.supertrend.down']),
+    },
+    parabolicSar: {
+      bullish: resolveValue(tokens['chart.parabolicSar.bullish']),
+      bearish: resolveValue(tokens['chart.parabolicSar.bearish']),
+    },
+    keltner: {
+      upper: resolveValue(tokens['chart.keltner.upper']),
+      middle: resolveValue(tokens['chart.keltner.middle']),
+      lower: resolveValue(tokens['chart.keltner.lower']),
+      fill: resolveValue(tokens['chart.keltner.fill']),
+    },
+    donchian: {
+      upper: resolveValue(tokens['chart.donchian.upper']),
+      middle: resolveValue(tokens['chart.donchian.middle']),
+      lower: resolveValue(tokens['chart.donchian.lower']),
+      fill: resolveValue(tokens['chart.donchian.fill']),
+    },
+    obv: {
+      line: resolveValue(tokens['chart.obv.line']),
+      sma: resolveValue(tokens['chart.obv.sma']),
+    },
+    cmf: {
+      positive: resolveValue(tokens['chart.cmf.positive']),
+      negative: resolveValue(tokens['chart.cmf.negative']),
+    },
+    stochRsi: {
+      k: resolveValue(tokens['chart.stochRsi.k']),
+      d: resolveValue(tokens['chart.stochRsi.d']),
+    },
+    indicatorZone: resolveValue(tokens['chart.indicator.zone']),
   };
 };

@@ -1,6 +1,7 @@
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ColorModeProvider } from '../ui/color-mode';
 import { GeneralTab } from './GeneralTab';
 
 vi.mock('react-i18next', () => ({
@@ -49,7 +50,9 @@ vi.mock('@/renderer/hooks/useDebounceCallback', () => ({
 const renderWithChakra = (component: React.ReactElement) => {
     return render(
         <ChakraProvider value={defaultSystem}>
-            {component}
+            <ColorModeProvider>
+                {component}
+            </ColorModeProvider>
         </ChakraProvider>
     );
 };
@@ -74,6 +77,7 @@ describe('GeneralTab', () => {
         });
 
         mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
+            if (key === 'chakra-ui-color-mode') return ['dark', vi.fn()];
             if (key === 'autoCheckUpdates') return [true, mockSetAutoCheckUpdates];
             if (key === 'autoDownloadUpdates') return [false, mockSetAutoDownloadUpdates];
             if (key === 'updateCheckInterval') return [24, mockSetUpdateCheckInterval];
@@ -237,6 +241,7 @@ describe('GeneralTab', () => {
 
     it('does not render update interval slider when auto check is disabled', () => {
         mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
+            if (key === 'chakra-ui-color-mode') return ['dark', vi.fn()];
             if (key === 'autoCheckUpdates') return [false, mockSetAutoCheckUpdates];
             if (key === 'autoDownloadUpdates') return [false, mockSetAutoDownloadUpdates];
             if (key === 'updateCheckInterval') return [24, mockSetUpdateCheckInterval];
@@ -251,6 +256,7 @@ describe('GeneralTab', () => {
 
     it('renders interval slider when auto check is enabled', () => {
         mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
+            if (key === 'chakra-ui-color-mode') return ['dark', vi.fn()];
             if (key === 'autoCheckUpdates') return [true, mockSetAutoCheckUpdates];
             if (key === 'autoDownloadUpdates') return [false, mockSetAutoDownloadUpdates];
             if (key === 'updateCheckInterval') return [48, mockSetUpdateCheckInterval];
@@ -265,6 +271,7 @@ describe('GeneralTab', () => {
 
     it('renders with auto download enabled', () => {
         mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
+            if (key === 'chakra-ui-color-mode') return ['dark', vi.fn()];
             if (key === 'autoCheckUpdates') return [true, mockSetAutoCheckUpdates];
             if (key === 'autoDownloadUpdates') return [true, mockSetAutoDownloadUpdates];
             if (key === 'updateCheckInterval') return [24, mockSetUpdateCheckInterval];
@@ -278,6 +285,7 @@ describe('GeneralTab', () => {
 
     it('renders correctly when both auto features are disabled', () => {
         mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
+            if (key === 'chakra-ui-color-mode') return ['dark', vi.fn()];
             if (key === 'autoCheckUpdates') return [false, mockSetAutoCheckUpdates];
             if (key === 'autoDownloadUpdates') return [false, mockSetAutoDownloadUpdates];
             if (key === 'updateCheckInterval') return [24, mockSetUpdateCheckInterval];
@@ -292,6 +300,7 @@ describe('GeneralTab', () => {
 
     it('renders with different interval values', () => {
         mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
+            if (key === 'chakra-ui-color-mode') return ['dark', vi.fn()];
             if (key === 'autoCheckUpdates') return [true, mockSetAutoCheckUpdates];
             if (key === 'autoDownloadUpdates') return [false, mockSetAutoDownloadUpdates];
             if (key === 'updateCheckInterval') return [72, mockSetUpdateCheckInterval];

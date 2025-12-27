@@ -19,11 +19,42 @@ import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
+import { useADXWorker } from '@renderer/hooks/useADXWorker';
+import { useAOWorker } from '@renderer/hooks/useAOWorker';
+import { useAroonWorker } from '@renderer/hooks/useAroonWorker';
+import { useCCIWorker } from '@renderer/hooks/useCCIWorker';
+import { useCMFWorker } from '@renderer/hooks/useCMFWorker';
+import { useDonchianWorker } from '@renderer/hooks/useDonchianWorker';
+import { useElderRayWorker } from '@renderer/hooks/useElderRayWorker';
+import { useIchimokuWorker } from '@renderer/hooks/useIchimokuWorker';
+import { useKeltnerWorker } from '@renderer/hooks/useKeltnerWorker';
+import { useKlingerWorker } from '@renderer/hooks/useKlingerWorker';
+import { useMACDWorker } from '@renderer/hooks/useMACDWorker';
+import { useMFIWorker } from '@renderer/hooks/useMFIWorker';
+import { useOBVWorker } from '@renderer/hooks/useOBVWorker';
+import { useParabolicSARWorker } from '@renderer/hooks/useParabolicSARWorker';
+import { useROCWorker } from '@renderer/hooks/useROCWorker';
 import { useRSIWorker } from '@renderer/hooks/useRSIWorker';
 import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
+import { useStochRSIWorker } from '@renderer/hooks/useStochRSIWorker';
+import { useSupertrendWorker } from '@renderer/hooks/useSupertrendWorker';
+import { useVortexWorker } from '@renderer/hooks/useVortexWorker';
+import { useWilliamsRWorker } from '@renderer/hooks/useWilliamsRWorker';
+import { useTSIWorker } from '@renderer/hooks/useTSIWorker';
+import { usePPOWorker } from '@renderer/hooks/usePPOWorker';
+import { useCMOWorker } from '@renderer/hooks/useCMOWorker';
+import { useUltimateOscWorker } from '@renderer/hooks/useUltimateOscWorker';
+import { useDEMAWorker } from '@renderer/hooks/useDEMAWorker';
+import { useTEMAWorker } from '@renderer/hooks/useTEMAWorker';
+import { useWMAWorker } from '@renderer/hooks/useWMAWorker';
+import { useHMAWorker } from '@renderer/hooks/useHMAWorker';
+import { usePivotPointsWorker } from '@renderer/hooks/usePivotPointsWorker';
+import { useFibonacciWorker } from '@renderer/hooks/useFibonacciWorker';
+import { useFVGWorker } from '@renderer/hooks/useFVGWorker';
+import { useLiquidityLevelsWorker } from '@renderer/hooks/useLiquidityLevelsWorker';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
-import { useSetupStore } from '@renderer/store';
+import { useIndicatorStore, useSetupStore } from '@renderer/store';
 import { trpc } from '@renderer/utils/trpc';
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume, isOrderLong, isOrderPending } from '@shared/utils';
@@ -52,6 +83,37 @@ import { useStochasticRenderer } from './useStochasticRenderer';
 import { useVolumeRenderer } from './useVolumeRenderer';
 import { useVWAPRenderer } from './useVWAPRenderer';
 import { useWatermarkRenderer } from './useWatermarkRenderer';
+import { useADXRenderer } from './useADXRenderer';
+import { useAORenderer } from './useAORenderer';
+import { useAroonRenderer } from './useAroonRenderer';
+import { useCCIRenderer } from './useCCIRenderer';
+import { useCMFRenderer } from './useCMFRenderer';
+import { useDonchianRenderer } from './useDonchianRenderer';
+import { useElderRayRenderer } from './useElderRayRenderer';
+import { useIchimokuRenderer } from './useIchimokuRenderer';
+import { useKeltnerRenderer } from './useKeltnerRenderer';
+import { useKlingerRenderer } from './useKlingerRenderer';
+import { useMACDRenderer } from './useMACDRenderer';
+import { useMFIRenderer } from './useMFIRenderer';
+import { useOBVRenderer } from './useOBVRenderer';
+import { useParabolicSARRenderer } from './useParabolicSARRenderer';
+import { useROCRenderer } from './useROCRenderer';
+import { useStochRSIRenderer } from './useStochRSIRenderer';
+import { useSupertrendRenderer } from './useSupertrendRenderer';
+import { useVortexRenderer } from './useVortexRenderer';
+import { useWilliamsRRenderer } from './useWilliamsRRenderer';
+import { useTSIRenderer } from './useTSIRenderer';
+import { usePPORenderer } from './usePPORenderer';
+import { useCMORenderer } from './useCMORenderer';
+import { useUltimateOscRenderer } from './useUltimateOscRenderer';
+import { useDEMARenderer } from './useDEMARenderer';
+import { useTEMARenderer } from './useTEMARenderer';
+import { useWMARenderer } from './useWMARenderer';
+import { useHMARenderer } from './useHMARenderer';
+import { usePivotPointsRenderer } from './usePivotPointsRenderer';
+import { useFibonacciRenderer } from './useFibonacciRenderer';
+import { useFVGRenderer } from './useFVGRenderer';
+import { useLiquidityLevelsRenderer } from './useLiquidityLevelsRenderer';
 
 const MOUSE_POSITION_THROTTLE_MS = 16;
 const RIGHT_MOUSE_BUTTON = 2;
@@ -267,6 +329,42 @@ export const ChartCanvas = ({
   const [stochasticData, setStochasticData] = useState<StochasticResult | null>(null);
   const { calculateStochastic } = useStochasticWorker();
   const rsiWorkerData = useRSIWorker(klines, 2, showRSI);
+
+  const { activeIndicators } = useIndicatorStore();
+  const isIndicatorActive = (id: string): boolean => activeIndicators.includes(id as never);
+
+  const parabolicSarData = useParabolicSARWorker(klines, isIndicatorActive('parabolicSar'));
+  const keltnerData = useKeltnerWorker(klines, isIndicatorActive('keltner'));
+  const donchianData = useDonchianWorker(klines, isIndicatorActive('donchian'));
+  const obvData = useOBVWorker(klines, isIndicatorActive('obv'));
+  const cmfData = useCMFWorker(klines, isIndicatorActive('cmf'));
+  const stochRsiData = useStochRSIWorker(klines, isIndicatorActive('stochRsi'));
+  const macdData = useMACDWorker(klines, isIndicatorActive('macd'));
+  const adxData = useADXWorker(klines, isIndicatorActive('adx'));
+  const williamsRData = useWilliamsRWorker(klines, isIndicatorActive('williamsR'));
+  const cciData = useCCIWorker(klines, isIndicatorActive('cci'));
+  const supertrendData = useSupertrendWorker(klines, isIndicatorActive('supertrend'));
+  const ichimokuData = useIchimokuWorker(klines, isIndicatorActive('ichimoku'));
+  const klingerData = useKlingerWorker(klines, isIndicatorActive('klinger'));
+  const elderRayData = useElderRayWorker(klines, isIndicatorActive('elderRay'));
+  const aroonData = useAroonWorker(klines, isIndicatorActive('aroon'));
+  const vortexData = useVortexWorker(klines, isIndicatorActive('vortex'));
+  const mfiData = useMFIWorker(klines, isIndicatorActive('mfi'));
+  const rocData = useROCWorker(klines, isIndicatorActive('roc'));
+  const aoData = useAOWorker(klines, isIndicatorActive('ao'));
+  const tsiData = useTSIWorker(klines, isIndicatorActive('tsi'));
+  const ppoData = usePPOWorker(klines, isIndicatorActive('ppo'));
+  const cmoData = useCMOWorker(klines, isIndicatorActive('cmo'));
+  const ultimateOscData = useUltimateOscWorker(klines, isIndicatorActive('ultimateOsc'));
+  const demaData = useDEMAWorker(klines, isIndicatorActive('dema'));
+  const temaData = useTEMAWorker(klines, isIndicatorActive('tema'));
+  const wmaData = useWMAWorker(klines, isIndicatorActive('wma'));
+  const hmaData = useHMAWorker(klines, isIndicatorActive('hma'));
+  const pivotPointsData = usePivotPointsWorker(klines, isIndicatorActive('pivotPoints'));
+  const fibonacciData = useFibonacciWorker(klines, isIndicatorActive('fibonacci'));
+  const fvgData = useFVGWorker(klines, isIndicatorActive('fvg'));
+  const liquidityLevelsData = useLiquidityLevelsWorker(klines, isIndicatorActive('liquidityLevels'));
+
   const {
     canvasRef,
     manager,
@@ -367,6 +465,223 @@ export const ChartCanvas = ({
   const { render: renderVWAP } = useVWAPRenderer({
     manager,
     enabled: showVWAP,
+  });
+
+  const { render: renderParabolicSAR } = useParabolicSARRenderer({
+    manager,
+    parabolicSarData,
+    colors,
+    enabled: isIndicatorActive('parabolicSar'),
+  });
+
+  const { render: renderKeltner } = useKeltnerRenderer({
+    manager,
+    keltnerData,
+    colors,
+    enabled: isIndicatorActive('keltner'),
+  });
+
+  const { render: renderDonchian } = useDonchianRenderer({
+    manager,
+    donchianData,
+    colors,
+    enabled: isIndicatorActive('donchian'),
+  });
+
+  const { render: renderOBV } = useOBVRenderer({
+    manager,
+    obvData,
+    colors,
+    enabled: isIndicatorActive('obv'),
+  });
+
+  const { render: renderCMF } = useCMFRenderer({
+    manager,
+    cmfData,
+    colors,
+    enabled: isIndicatorActive('cmf'),
+  });
+
+  const { render: renderStochRSI } = useStochRSIRenderer({
+    manager,
+    stochRsiData,
+    colors,
+    enabled: isIndicatorActive('stochRsi'),
+  });
+
+  const { render: renderMACD } = useMACDRenderer({
+    manager,
+    macdData,
+    colors,
+    enabled: isIndicatorActive('macd'),
+  });
+
+  const { render: renderADX } = useADXRenderer({
+    manager,
+    adxData,
+    colors,
+    enabled: isIndicatorActive('adx'),
+  });
+
+  const { render: renderWilliamsR } = useWilliamsRRenderer({
+    manager,
+    williamsRData,
+    colors,
+    enabled: isIndicatorActive('williamsR'),
+  });
+
+  const { render: renderCCI } = useCCIRenderer({
+    manager,
+    cciData,
+    colors,
+    enabled: isIndicatorActive('cci'),
+  });
+
+  const { render: renderSupertrend } = useSupertrendRenderer({
+    manager,
+    supertrendData,
+    colors,
+    enabled: isIndicatorActive('supertrend'),
+  });
+
+  const { render: renderIchimoku } = useIchimokuRenderer({
+    manager,
+    ichimokuData,
+    colors,
+    enabled: isIndicatorActive('ichimoku'),
+  });
+
+  const { render: renderKlinger } = useKlingerRenderer({
+    manager,
+    klingerData,
+    colors,
+    enabled: isIndicatorActive('klinger'),
+  });
+
+  const { render: renderElderRay } = useElderRayRenderer({
+    manager,
+    elderRayData,
+    colors,
+    enabled: isIndicatorActive('elderRay'),
+  });
+
+  const { render: renderAroon } = useAroonRenderer({
+    manager,
+    aroonData,
+    colors,
+    enabled: isIndicatorActive('aroon'),
+  });
+
+  const { render: renderVortex } = useVortexRenderer({
+    manager,
+    vortexData,
+    colors,
+    enabled: isIndicatorActive('vortex'),
+  });
+
+  const { render: renderMFI } = useMFIRenderer({
+    manager,
+    mfiData,
+    colors,
+    enabled: isIndicatorActive('mfi'),
+  });
+
+  const { render: renderROC } = useROCRenderer({
+    manager,
+    rocData,
+    colors,
+    enabled: isIndicatorActive('roc'),
+  });
+
+  const { render: renderAO } = useAORenderer({
+    manager,
+    aoData,
+    colors,
+    enabled: isIndicatorActive('ao'),
+  });
+
+  const { render: renderTSI } = useTSIRenderer({
+    manager,
+    tsiData,
+    colors,
+    enabled: isIndicatorActive('tsi'),
+  });
+
+  const { render: renderPPO } = usePPORenderer({
+    manager,
+    ppoData,
+    colors,
+    enabled: isIndicatorActive('ppo'),
+  });
+
+  const { render: renderCMO } = useCMORenderer({
+    manager,
+    cmoData,
+    colors,
+    enabled: isIndicatorActive('cmo'),
+  });
+
+  const { render: renderUltimateOsc } = useUltimateOscRenderer({
+    manager,
+    ultimateOscData,
+    colors,
+    enabled: isIndicatorActive('ultimateOsc'),
+  });
+
+  const { render: renderDEMA } = useDEMARenderer({
+    manager,
+    demaData,
+    colors,
+    enabled: isIndicatorActive('dema'),
+  });
+
+  const { render: renderTEMA } = useTEMARenderer({
+    manager,
+    temaData,
+    colors,
+    enabled: isIndicatorActive('tema'),
+  });
+
+  const { render: renderWMA } = useWMARenderer({
+    manager,
+    wmaData,
+    colors,
+    enabled: isIndicatorActive('wma'),
+  });
+
+  const { render: renderHMA } = useHMARenderer({
+    manager,
+    hmaData,
+    colors,
+    enabled: isIndicatorActive('hma'),
+  });
+
+  const { render: renderPivotPoints } = usePivotPointsRenderer({
+    manager,
+    pivotData: pivotPointsData,
+    colors,
+    enabled: isIndicatorActive('pivotPoints'),
+  });
+
+  const { render: renderFibonacci } = useFibonacciRenderer({
+    manager,
+    fibonacciData,
+    colors,
+    enabled: isIndicatorActive('fibonacci'),
+  });
+
+  const { render: renderFVG } = useFVGRenderer({
+    manager,
+    fvgData,
+    colors,
+    enabled: isIndicatorActive('fvg'),
+  });
+
+  const { render: renderLiquidityLevels } = useLiquidityLevelsRenderer({
+    manager,
+    liquidityData: liquidityLevelsData,
+    colors,
+    enabled: isIndicatorActive('liquidityLevels'),
   });
 
   const { renderLine: renderCurrentPriceLine_Line, renderLabel: renderCurrentPriceLine_Label } = useCurrentPriceLineRenderer({
@@ -1057,6 +1372,114 @@ export const ChartCanvas = ({
   }, [manager, showRSI]);
 
   useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('obv') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('obv', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('cmf') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('cmf', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('stochRsi') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('stochRsi', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('macd') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('macd', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('adx') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('adx', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('williamsR') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('williamsR', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('cci') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('cci', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('klinger') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('klinger', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('elderRay') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('elderRay', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('aroon') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('aroon', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('vortex') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('vortex', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('mfi') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('mfi', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('roc') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('roc', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('ao') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('ao', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('tsi') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('tsi', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('ppo') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('ppo', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('cmo') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('cmo', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const height = isIndicatorActive('ultimateOsc') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    manager.setPanelHeight('ultimateOsc', height);
+  }, [manager, activeIndicators]);
+
+  useEffect(() => {
     if (!shiftPressed && !altPressed) {
       setOrderPreview(null);
       return;
@@ -1102,6 +1525,37 @@ export const ChartCanvas = ({
       renderBollingerBands();
       renderATR();
       renderVWAP();
+      renderParabolicSAR();
+      renderKeltner();
+      renderDonchian();
+      renderSupertrend();
+      renderIchimoku();
+      renderDEMA();
+      renderTEMA();
+      renderWMA();
+      renderHMA();
+      renderPivotPoints();
+      renderFibonacci();
+      renderFVG();
+      renderLiquidityLevels();
+      renderOBV();
+      renderCMF();
+      renderStochRSI();
+      renderMACD();
+      renderADX();
+      renderWilliamsR();
+      renderCCI();
+      renderKlinger();
+      renderElderRay();
+      renderAroon();
+      renderVortex();
+      renderMFI();
+      renderROC();
+      renderAO();
+      renderTSI();
+      renderPPO();
+      renderCMO();
+      renderUltimateOsc();
       renderCurrentPriceLine_Line();
       renderOrderLines();
 
@@ -1303,7 +1757,40 @@ export const ChartCanvas = ({
     renderMovingAverages,
     renderStochastic,
     renderRSI,
+    renderBollingerBands,
+    renderATR,
     renderVWAP,
+    renderParabolicSAR,
+    renderKeltner,
+    renderDonchian,
+    renderSupertrend,
+    renderIchimoku,
+    renderOBV,
+    renderCMF,
+    renderStochRSI,
+    renderMACD,
+    renderADX,
+    renderWilliamsR,
+    renderCCI,
+    renderKlinger,
+    renderElderRay,
+    renderAroon,
+    renderVortex,
+    renderMFI,
+    renderROC,
+    renderAO,
+    renderTSI,
+    renderPPO,
+    renderCMO,
+    renderUltimateOsc,
+    renderDEMA,
+    renderTEMA,
+    renderWMA,
+    renderHMA,
+    renderPivotPoints,
+    renderFibonacci,
+    renderFVG,
+    renderLiquidityLevels,
     renderCurrentPriceLine_Line,
     renderCurrentPriceLine_Label,
     renderCrosshairPriceLine,
