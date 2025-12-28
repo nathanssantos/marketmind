@@ -50,6 +50,8 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     if (!currentWalletIdRef.current) return;
     utils.trading.getTradeExecutions.invalidate({ walletId: currentWalletIdRef.current });
     utils.trading.getPositions.invalidate({ walletId: currentWalletIdRef.current });
+    utils.autoTrading.getActiveExecutions.invalidate({ walletId: currentWalletIdRef.current });
+    utils.autoTrading.getExecutionHistory.invalidate({ walletId: currentWalletIdRef.current });
   }, [utils]);
 
   const invalidateOrders = useCallback(() => {
@@ -68,6 +70,8 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     utils.trading.getTradeExecutions.invalidate({ walletId: currentWalletIdRef.current });
     utils.trading.getOrders.invalidate({ walletId: currentWalletIdRef.current });
     utils.trading.getPositions.invalidate({ walletId: currentWalletIdRef.current });
+    utils.autoTrading.getActiveExecutions.invalidate({ walletId: currentWalletIdRef.current });
+    utils.autoTrading.getExecutionHistory.invalidate({ walletId: currentWalletIdRef.current });
     utils.wallet.list.invalidate();
     utils.analytics.getPerformance.invalidate({ walletId: currentWalletIdRef.current });
   }, [utils]);
