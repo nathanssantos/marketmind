@@ -1,4 +1,4 @@
-import { Badge, Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Flex, Group, IconButton, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { Select } from '@renderer/components/ui/select';
@@ -8,8 +8,10 @@ import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
 import { usePortfolioFilters } from '@renderer/hooks/usePortfolioFilters';
 import { usePositionUpdates } from '@renderer/hooks/usePositionUpdates';
 import { type PortfolioFilterOption, type PortfolioSortOption, useUIStore } from '@renderer/store/uiStore';
+import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from './TradingTable';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { BsGrid, BsTable } from 'react-icons/bs';
 import { LuBot } from 'react-icons/lu';
 import { FuturesPositionsPanel } from './FuturesPositionsPanel';
 
@@ -47,6 +49,8 @@ const PortfolioComponent = () => {
   const setFilterOption = useUIStore((s) => s.setPortfolioFilterOption);
   const sortBy = useUIStore((s) => s.portfolioSortBy);
   const setSortBy = useUIStore((s) => s.setPortfolioSortBy);
+  const viewMode = useUIStore((s) => s.portfolioViewMode);
+  const setViewMode = useUIStore((s) => s.setPortfolioViewMode);
 
   const positions: PortfolioPosition[] = useMemo(() => {
     return tradeExecutions
@@ -159,7 +163,7 @@ const PortfolioComponent = () => {
             </Stack>
           </Box>
 
-          <Flex gap={2}>
+          <Flex gap={2} align="flex-end">
             <ChakraField.Root flex={1}>
               <ChakraField.Label fontSize="xs">{t('trading.portfolio.filterBy')}</ChakraField.Label>
               <Select
@@ -196,16 +200,139 @@ const PortfolioComponent = () => {
                 usePortal
               />
             </ChakraField.Root>
+
+            <Group attached>
+              <IconButton
+                aria-label={t('trading.viewMode.cards')}
+                size="xs"
+                variant={viewMode === 'cards' ? 'solid' : 'outline'}
+                onClick={() => setViewMode('cards')}
+              >
+                <BsGrid />
+              </IconButton>
+              <IconButton
+                aria-label={t('trading.viewMode.table')}
+                size="xs"
+                variant={viewMode === 'table' ? 'solid' : 'outline'}
+                onClick={() => setViewMode('table')}
+              >
+                <BsTable />
+              </IconButton>
+            </Group>
           </Flex>
 
-          <Stack gap={2}>
-            {filteredPositions.map((position) => (
-              <PositionCard key={position.id} position={position} currency={activeWallet.currency} onNavigateToSymbol={globalActions?.navigateToSymbol} />
-            ))}
-          </Stack>
+          {viewMode === 'cards' ? (
+            <Stack gap={2}>
+              {filteredPositions.map((position) => (
+                <PositionCard key={position.id} position={position} currency={activeWallet.currency} onNavigateToSymbol={globalActions?.navigateToSymbol} />
+              ))}
+            </Stack>
+          ) : (
+            <PortfolioTable positions={filteredPositions} currency={activeWallet.currency} onNavigateToSymbol={globalActions?.navigateToSymbol} />
+          )}
         </>
       )}
     </Stack>
+  );
+};
+
+interface PortfolioTableProps {
+  positions: PortfolioPosition[];
+  currency: string;
+  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+}
+
+const PortfolioTable = ({ positions, currency, onNavigateToSymbol }: PortfolioTableProps) => {
+  const { t } = useTranslation();
+
+  const formatPrice = (price: number | undefined) => {
+    if (price === undefined) return '-';
+    return `${currency} ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const columns: TradingTableColumn[] = [
+    { key: 'symbol', header: t('trading.orders.symbol'), sticky: true, minW: '100px' },
+    { key: 'pnl', header: t('trading.portfolio.pnl'), textAlign: 'right', minW: '130px' },
+    { key: 'side', header: t('trading.orders.side'), minW: '80px' },
+    { key: 'type', header: t('trading.orders.type'), minW: '90px' },
+    { key: 'setup', header: t('trading.orders.setup'), minW: '100px' },
+    { key: 'opened', header: t('trading.portfolio.opened'), minW: '110px' },
+    { key: 'quantity', header: t('trading.portfolio.quantity'), textAlign: 'right', minW: '100px' },
+    { key: 'avgPrice', header: t('trading.portfolio.avgPrice'), textAlign: 'right', minW: '110px' },
+    { key: 'currentPrice', header: t('trading.portfolio.currentPrice'), textAlign: 'right', minW: '110px' },
+    { key: 'stopLoss', header: t('trading.orders.stopLoss'), textAlign: 'right', minW: '100px' },
+    { key: 'takeProfit', header: t('trading.orders.takeProfit'), textAlign: 'right', minW: '100px' },
+  ];
+
+  return (
+    <TradingTable columns={columns} minW="1100px">
+      {positions.map((position) => {
+        const isProfitable = position.pnl >= 0;
+        const isLong = position.side === 'LONG';
+
+        return (
+          <TradingTableRow key={position.id}>
+            <TradingTableCell sticky>
+              <Flex align="center" gap={1}>
+                {position.isAutoTrade && <LuBot size={12} />}
+                <Text
+                  fontWeight="medium"
+                  cursor={onNavigateToSymbol ? 'pointer' : 'default'}
+                  _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
+                  onClick={() => onNavigateToSymbol?.(position.symbol, position.marketType)}
+                >
+                  {position.symbol}
+                </Text>
+              </Flex>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">
+              <Text fontWeight="medium" color={isProfitable ? 'green.500' : 'red.500'}>
+                {isProfitable ? '+' : ''}{position.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {' '}({isProfitable ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
+              </Text>
+            </TradingTableCell>
+            <TradingTableCell>
+              <Badge colorPalette={isLong ? 'green' : 'red'} size="sm" px={2}>
+                {t(`trading.ticket.${isLong ? 'long' : 'short'}`)}
+              </Badge>
+            </TradingTableCell>
+            <TradingTableCell>
+              {position.marketType === 'FUTURES' ? (
+                <Badge colorPalette="orange" size="sm" px={2}>FUTURES</Badge>
+              ) : (
+                <Badge colorPalette="gray" size="sm" px={2}>SPOT</Badge>
+              )}
+            </TradingTableCell>
+            <TradingTableCell>
+              {position.setupType ? (
+                <Badge colorPalette="purple" size="sm" px={2}>{position.setupType}</Badge>
+              ) : '-'}
+            </TradingTableCell>
+            <TradingTableCell>
+              <Text color="fg.muted">
+                {position.openedAt.toLocaleString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">{position.quantity.toFixed(8)}</TradingTableCell>
+            <TradingTableCell textAlign="right">{formatPrice(position.avgPrice)}</TradingTableCell>
+            <TradingTableCell textAlign="right">
+              <Text fontWeight="medium">{formatPrice(position.currentPrice)}</Text>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">
+              <Text color="red.500">{formatPrice(position.stopLoss)}</Text>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">
+              <Text color="green.500">{formatPrice(position.takeProfit)}</Text>
+            </TradingTableCell>
+          </TradingTableRow>
+        );
+      })}
+    </TradingTable>
   );
 };
 

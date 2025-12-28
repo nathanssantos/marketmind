@@ -912,7 +912,12 @@
       "sortSymbolAsc": "Symbol (A-Z)",
       "sortSymbolDesc": "Symbol (Z-A)",
       "sortExposureDesc": "Highest Exposure",
-      "sortExposureAsc": "Lowest Exposure"
+      "sortExposureAsc": "Lowest Exposure",
+      "opened": "Opened"
+    },
+    "viewMode": {
+      "cards": "Card view",
+      "table": "Table view"
     },
     "trailingStop": {
       "reasons": {
@@ -929,6 +934,12 @@
       "total": "Total Orders",
       "active": "Active",
       "pending": "Pending",
+      "symbol": "Symbol",
+      "side": "Side",
+      "type": "Type",
+      "setup": "Setup",
+      "status": "Status",
+      "actions": "Actions",
       "filterByStatus": "Filter by Status",
       "sortBy": "Sort by",
       "sortNewest": "Newest First",

@@ -1,13 +1,14 @@
-import { Badge, Box, Flex, IconButton, Portal, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Flex, Group, IconButton, Portal, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
-import type { Order, OrderStatus } from '@marketmind/types';
+import type { Order, OrderStatus, WalletCurrency } from '@marketmind/types';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { Select } from '@renderer/components/ui/select';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
 import { type OrdersFilterOption, type OrdersSortOption, useUIStore } from '@renderer/store/uiStore';
+import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from './TradingTable';
 import {
   getOrderId,
   getOrderPrice,
@@ -18,7 +19,7 @@ import {
 } from '@shared/utils';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BsThreeDotsVertical } from 'react-icons/bs';
+import { BsGrid, BsTable, BsThreeDotsVertical } from 'react-icons/bs';
 import { LuBot, LuX } from 'react-icons/lu';
 
 const OrdersListComponent = () => {
@@ -151,6 +152,8 @@ const OrdersListComponent = () => {
   const setFilterStatus = useUIStore((s) => s.setOrdersFilterStatus);
   const sortBy = useUIStore((s) => s.ordersSortBy);
   const setSortBy = useUIStore((s) => s.setOrdersSortBy);
+  const viewMode = useUIStore((s) => s.ordersViewMode);
+  const setViewMode = useUIStore((s) => s.setOrdersViewMode);
 
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
   const walletOrders = activeWallet
@@ -239,7 +242,7 @@ const OrdersListComponent = () => {
             </Stack>
           </Box>
 
-          <Flex gap={2}>
+          <Flex gap={2} align="flex-end">
             <ChakraField.Root flex={1}>
               <ChakraField.Label fontSize="xs">{t('trading.orders.filterByStatus')}</ChakraField.Label>
               <Select
@@ -280,6 +283,25 @@ const OrdersListComponent = () => {
                 usePortal
               />
             </ChakraField.Root>
+
+            <Group attached>
+              <IconButton
+                aria-label={t('trading.viewMode.cards')}
+                size="xs"
+                variant={viewMode === 'cards' ? 'solid' : 'outline'}
+                onClick={() => setViewMode('cards')}
+              >
+                <BsGrid />
+              </IconButton>
+              <IconButton
+                aria-label={t('trading.viewMode.table')}
+                size="xs"
+                variant={viewMode === 'table' ? 'solid' : 'outline'}
+                onClick={() => setViewMode('table')}
+              >
+                <BsTable />
+              </IconButton>
+            </Group>
           </Flex>
 
           {filteredOrders.length === 0 ? (
@@ -288,6 +310,14 @@ const OrdersListComponent = () => {
                 {t('trading.orders.empty')}
               </Text>
             </Box>
+          ) : viewMode === 'table' ? (
+            <OrdersTable
+              orders={filteredOrders}
+              currency={activeWallet.currency}
+              onCancel={(id) => cancelOrder(id)}
+              onClose={(id, price) => closeOrder(id, price)}
+              onNavigateToSymbol={globalActions?.navigateToSymbol}
+            />
           ) : (
             <Stack gap={2}>
               {filteredOrders.map((order) => (
@@ -534,6 +564,194 @@ const OrderCard = ({ order, currency, onCancel, onClose, onNavigateToSymbol }: O
         )}
       </Stack>
     </Box>
+  );
+};
+
+interface OrdersTableProps {
+  orders: Order[];
+  currency: WalletCurrency;
+  onCancel: (id: string) => void;
+  onClose: (id: string, price: number) => void;
+  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+}
+
+const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }: OrdersTableProps) => {
+  const { t } = useTranslation();
+
+  const getStatusColor = (status: OrderStatus): string => {
+    const colors: Record<OrderStatus, string> = {
+      NEW: 'orange',
+      PARTIALLY_FILLED: 'green',
+      FILLED: 'blue',
+      CANCELED: 'red',
+      PENDING_CANCEL: 'orange',
+      REJECTED: 'red',
+      EXPIRED: 'gray',
+      EXPIRED_IN_MATCH: 'gray',
+      PENDING_NEW: 'orange',
+    };
+    return colors[status];
+  };
+
+  const getStatusTranslationKey = (status: OrderStatus): string => {
+    const statusMap: Record<OrderStatus, string> = {
+      NEW: 'statusPending',
+      PENDING_NEW: 'statusPending',
+      PARTIALLY_FILLED: 'statusActive',
+      FILLED: 'statusFilled',
+      CANCELED: 'statusCancelled',
+      PENDING_CANCEL: 'statusCancelled',
+      REJECTED: 'statusCancelled',
+      EXPIRED: 'statusExpired',
+      EXPIRED_IN_MATCH: 'statusExpired',
+    };
+    return statusMap[status] || 'statusPending';
+  };
+
+  const formatDate = (date: Date | number | undefined) => {
+    if (!date) return '-';
+    const d = new Date(date);
+    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatPrice = (price: number | undefined) => {
+    if (price === undefined) return '-';
+    return `${currency} ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const columns: TradingTableColumn[] = [
+    { key: 'symbol', header: t('trading.orders.symbol'), sticky: true, minW: '100px' },
+    { key: 'side', header: t('trading.orders.side') },
+    { key: 'status', header: t('trading.orders.status') },
+    { key: 'type', header: t('trading.orders.type') },
+    { key: 'setup', header: t('trading.orders.setup') },
+    { key: 'createdAt', header: t('trading.orders.createdAt') },
+    { key: 'filledAt', header: t('trading.orders.filledAt') },
+    { key: 'closedAt', header: t('trading.orders.closedAt') },
+    { key: 'quantity', header: t('trading.orders.quantity'), textAlign: 'right' },
+    { key: 'entryPrice', header: t('trading.orders.entryPrice'), textAlign: 'right' },
+    { key: 'currentPrice', header: t('trading.orders.currentPrice'), textAlign: 'right' },
+    { key: 'stopLoss', header: t('trading.orders.stopLoss'), textAlign: 'right' },
+    { key: 'takeProfit', header: t('trading.orders.takeProfit'), textAlign: 'right' },
+    { key: 'pnl', header: t('trading.orders.pnl'), textAlign: 'right' },
+    { key: 'actions', header: t('trading.orders.actions'), textAlign: 'center' },
+  ];
+
+  return (
+    <TradingTable columns={columns} minW="1400px">
+      {orders.map((order) => {
+        const canCancel = isOrderPending(order) || isOrderActive(order);
+        const canClose = isOrderActive(order);
+        const pnl = order.pnl ? parseFloat(order.pnl) : undefined;
+        const pnlPercent = order.pnlPercent ? parseFloat(order.pnlPercent) : undefined;
+
+        return (
+          <TradingTableRow key={getOrderId(order)}>
+            <TradingTableCell sticky>
+              <Flex align="center" gap={1}>
+                {order.isAutoTrade && <LuBot size={12} />}
+                <Text
+                  fontWeight="medium"
+                  cursor={onNavigateToSymbol ? 'pointer' : 'default'}
+                  _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
+                  onClick={() => onNavigateToSymbol?.(order.symbol, order.marketType)}
+                >
+                  {order.symbol}
+                </Text>
+              </Flex>
+            </TradingTableCell>
+            <TradingTableCell>
+              <Badge colorPalette={isOrderLong(order) ? 'green' : 'red'} size="sm" px={2}>
+                {t(`trading.ticket.${isOrderLong(order) ? 'long' : 'short'}`)}
+              </Badge>
+            </TradingTableCell>
+            <TradingTableCell>
+              <Badge colorPalette={getStatusColor(order.status)} size="sm" px={2}>
+                {t(`trading.orders.${getStatusTranslationKey(order.status)}`)}
+              </Badge>
+            </TradingTableCell>
+            <TradingTableCell>
+              {order.marketType === 'FUTURES' ? (
+                <Badge colorPalette="orange" size="sm" px={2}>FUTURES</Badge>
+              ) : (
+                <Badge colorPalette="gray" size="sm" px={2}>SPOT</Badge>
+              )}
+            </TradingTableCell>
+            <TradingTableCell>
+              {order.setupType ? (
+                <Badge colorPalette="purple" size="sm" px={2}>
+                  {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
+                </Badge>
+              ) : '-'}
+            </TradingTableCell>
+            <TradingTableCell>{formatDate(order.createdAt)}</TradingTableCell>
+            <TradingTableCell>{formatDate(order.updateTime)}</TradingTableCell>
+            <TradingTableCell>{formatDate(order.closedAt)}</TradingTableCell>
+            <TradingTableCell textAlign="right">{getOrderQuantity(order).toFixed(8)}</TradingTableCell>
+            <TradingTableCell textAlign="right">{formatPrice(getOrderPrice(order))}</TradingTableCell>
+            <TradingTableCell textAlign="right">
+              <Text color="blue.500">{formatPrice(order.currentPrice)}</Text>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">
+              <Text color="red.500">{formatPrice(order.stopLoss)}</Text>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">
+              <Text color="green.500">{formatPrice(order.takeProfit)}</Text>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">
+              {pnl !== undefined ? (
+                <Text fontWeight="medium" color={pnl >= 0 ? 'green.500' : 'red.500'}>
+                  {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}
+                  {pnlPercent !== undefined && ` (${pnl >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%)`}
+                </Text>
+              ) : '-'}
+            </TradingTableCell>
+            <TradingTableCell textAlign="center">
+              {(canClose || canCancel) && (
+                <MenuRoot id={`order-table-menu-${getOrderId(order)}`} positioning={{ placement: 'bottom-end' }}>
+                  <MenuTrigger asChild>
+                    <IconButton size="2xs" variant="ghost" aria-label="Order options">
+                      <BsThreeDotsVertical />
+                    </IconButton>
+                  </MenuTrigger>
+                  <Portal>
+                    <MenuPositioner>
+                      <MenuContent bg="bg.panel" borderColor="border" shadow="lg" minW="120px" zIndex={99999} p={0}>
+                        {canClose && (
+                          <MenuItem
+                            value="close"
+                            onClick={() => onClose(getOrderId(order), order.currentPrice || getOrderPrice(order))}
+                            px={3}
+                            py={2}
+                            _hover={{ bg: 'bg.muted' }}
+                          >
+                            <LuX />
+                            <Text fontSize="sm">{t('trading.orders.close')}</Text>
+                          </MenuItem>
+                        )}
+                        {canCancel && (
+                          <MenuItem
+                            value="cancel"
+                            onClick={() => onCancel(getOrderId(order))}
+                            color="red.500"
+                            px={3}
+                            py={2}
+                            _hover={{ bg: 'bg.muted' }}
+                          >
+                            <LuX />
+                            <Text fontSize="sm">{t('trading.orders.cancel')}</Text>
+                          </MenuItem>
+                        )}
+                      </MenuContent>
+                    </MenuPositioner>
+                  </Portal>
+                </MenuRoot>
+              )}
+            </TradingTableCell>
+          </TradingTableRow>
+        );
+      })}
+    </TradingTable>
   );
 };
 

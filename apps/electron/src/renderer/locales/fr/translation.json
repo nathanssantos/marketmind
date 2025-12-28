@@ -906,7 +906,12 @@
       "sortSymbolAsc": "Symbole (A-Z)",
       "sortSymbolDesc": "Symbole (Z-A)",
       "sortExposureDesc": "Plus Grande Exposition",
-      "sortExposureAsc": "Plus Petite Exposition"
+      "sortExposureAsc": "Plus Petite Exposition",
+      "opened": "Ouverture"
+    },
+    "viewMode": {
+      "cards": "Vue en cartes",
+      "table": "Vue en tableau"
     },
     "trailingStop": {
       "reasons": {
@@ -923,6 +928,12 @@
       "total": "Total des Ordres",
       "active": "Actifs",
       "pending": "En Attente",
+      "symbol": "Symbole",
+      "side": "Côté",
+      "type": "Type",
+      "setup": "Setup",
+      "status": "Statut",
+      "actions": "Actions",
       "filterByStatus": "Filtrer par Statut",
       "sortBy": "Trier par",
       "sortNewest": "Plus Récents",

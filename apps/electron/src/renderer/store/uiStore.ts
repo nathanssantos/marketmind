@@ -9,6 +9,7 @@ export type OrdersSortOption = 'newest' | 'oldest' | 'symbol-asc' | 'symbol-desc
 export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'all';
 export type PortfolioFilterOption = 'all' | 'long' | 'short' | 'profitable' | 'losing';
 export type PortfolioSortOption = 'newest' | 'oldest' | 'pnl-desc' | 'pnl-asc' | 'size-desc' | 'size-asc' | 'symbol-asc' | 'symbol-desc' | 'exposure-desc' | 'exposure-asc';
+export type ViewMode = 'cards' | 'table';
 
 const MIGRATION_VERSION_2 = 2;
 const MIGRATION_VERSION_3 = 3;
@@ -49,6 +50,12 @@ interface UIState {
 
   portfolioSortBy: PortfolioSortOption;
   setPortfolioSortBy: (sort: PortfolioSortOption) => void;
+
+  ordersViewMode: ViewMode;
+  setOrdersViewMode: (mode: ViewMode) => void;
+
+  portfolioViewMode: ViewMode;
+  setPortfolioViewMode: (mode: ViewMode) => void;
 }
 
 const DEFAULT_ENABLED_PATTERNS: AIPatternType[] = [
@@ -130,6 +137,12 @@ export const useUIStore = create<UIState>()(
 
       portfolioSortBy: 'newest',
       setPortfolioSortBy: (sort) => set({ portfolioSortBy: sort }),
+
+      ordersViewMode: 'cards',
+      setOrdersViewMode: (mode) => set({ ordersViewMode: mode }),
+
+      portfolioViewMode: 'cards',
+      setPortfolioViewMode: (mode) => set({ portfolioViewMode: mode }),
     }),
     {
       name: 'ui-storage',
