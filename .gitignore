@@ -19,6 +19,7 @@ pnpm-lock.yaml
 # ===========================
 dist/
 dist-electron/
+dist-web/
 out/
 # build/ - Commented out: build/ contains assets needed for electron-builder
 *.app

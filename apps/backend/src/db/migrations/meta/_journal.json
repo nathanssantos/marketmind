@@ -148,6 +148,13 @@
       "when": 1766885670005,
       "tag": "0020_cuddly_wiccan",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1766960850970,
+      "tag": "0021_rapid_wolfsbane",
+      "breakpoints": true
     }
   ]
 }

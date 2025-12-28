@@ -2,6 +2,7 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import electron from 'vite-plugin-electron/simple';
+import { VitePWA } from 'vite-plugin-pwa';
 
 const target = process.env.VITE_TARGET || 'electron';
 const isWeb = target === 'web';
@@ -12,6 +13,53 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
+      isWeb && VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'robots.txt'],
+        manifest: {
+          name: 'MarketMind',
+          short_name: 'MarketMind',
+          description: 'AI-powered trading analysis platform',
+          theme_color: '#1e222d',
+          background_color: '#1e222d',
+          display: 'standalone',
+          icons: [
+            {
+              src: 'icon-192x192.png',
+              sizes: '192x192',
+              type: 'image/png',
+            },
+            {
+              src: 'icon-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+            },
+            {
+              src: 'icon-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
+            },
+          ],
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/api\.binance\.com\/.*/i,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'binance-api-cache',
+                expiration: {
+                  maxEntries: 100,
+                  maxAgeSeconds: 60 * 5,
+                },
+              },
+            },
+          ],
+        },
+      }),
       !isWeb && electron({
         main: {
           entry: 'src/main/index.ts',
