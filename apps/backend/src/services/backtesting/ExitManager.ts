@@ -21,10 +21,10 @@ export interface TrailingStopState {
   breakEvenReached: boolean;
 }
 
-const BREAKEVEN_THRESHOLD = 0.0075;
-const FEES_COVERED_THRESHOLD = 0.01;
+const BREAKEVEN_THRESHOLD = 0.01;
+const FEES_COVERED_THRESHOLD = 0.015;
 const FEE_PERCENT = 0.002;
-const TRAILING_DISTANCE_PERCENT = 0.5;
+const TRAILING_DISTANCE_PERCENT = 0.4;
 
 export class ExitManager {
   private config: ExitConfig;

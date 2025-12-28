@@ -37,8 +37,8 @@ describe('volatility-profile', () => {
       const profile = getVolatilityProfile(0.5);
       expect(profile.level).toBe('LOW');
       expect(profile.atrMultiplier).toBe(2.0);
-      expect(profile.breakevenThreshold).toBe(0.0075);
-      expect(profile.feesThreshold).toBe(0.01);
+      expect(profile.breakevenThreshold).toBe(0.01);
+      expect(profile.feesThreshold).toBe(0.015);
       expect(profile.minTrailingDistance).toBe(0.003);
     });
 
@@ -46,8 +46,8 @@ describe('volatility-profile', () => {
       const profile = getVolatilityProfile(1.5);
       expect(profile.level).toBe('MEDIUM');
       expect(profile.atrMultiplier).toBe(2.5);
-      expect(profile.breakevenThreshold).toBe(0.0125);
-      expect(profile.feesThreshold).toBe(0.0175);
+      expect(profile.breakevenThreshold).toBe(0.015);
+      expect(profile.feesThreshold).toBe(0.02);
       expect(profile.minTrailingDistance).toBe(0.004);
     });
 
@@ -55,8 +55,8 @@ describe('volatility-profile', () => {
       const profile = getVolatilityProfile(2.5);
       expect(profile.level).toBe('HIGH');
       expect(profile.atrMultiplier).toBe(3.0);
-      expect(profile.breakevenThreshold).toBe(0.0175);
-      expect(profile.feesThreshold).toBe(0.0225);
+      expect(profile.breakevenThreshold).toBe(0.02);
+      expect(profile.feesThreshold).toBe(0.025);
       expect(profile.minTrailingDistance).toBe(0.005);
     });
 
@@ -64,16 +64,16 @@ describe('volatility-profile', () => {
       const profile = getVolatilityProfile(3.5);
       expect(profile.level).toBe('VERY_HIGH');
       expect(profile.atrMultiplier).toBe(3.5);
-      expect(profile.breakevenThreshold).toBe(0.0225);
-      expect(profile.feesThreshold).toBe(0.0275);
+      expect(profile.breakevenThreshold).toBe(0.025);
+      expect(profile.feesThreshold).toBe(0.03);
       expect(profile.minTrailingDistance).toBe(0.006);
     });
 
     it('should return EXTREME for ATR% > 4%', () => {
       const profile = getVolatilityProfile(5.0);
       expect(profile.level).toBe('EXTREME');
-      expect(profile.breakevenThreshold).toBe(0.0275);
-      expect(profile.feesThreshold).toBe(0.0325);
+      expect(profile.breakevenThreshold).toBe(0.03);
+      expect(profile.feesThreshold).toBe(0.035);
       expect(profile.minTrailingDistance).toBe(0.007);
     });
 

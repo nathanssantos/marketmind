@@ -527,7 +527,7 @@ export class StrategyLoader {
     }
 
     const l = level as Record<string, unknown>;
-    const validTypes = ['atr', 'percent', 'fixed', 'indicator', 'riskReward', 'swingHighLow'];
+    const validTypes = ['atr', 'percent', 'fixed', 'indicator', 'riskReward', 'swingHighLow', 'pivotBased'];
 
     if (!l['type'] || !validTypes.includes(l['type'] as string)) {
       errors.push({
