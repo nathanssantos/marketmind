@@ -1003,6 +1003,7 @@ export class AutoTradingScheduler {
 
       if (config.useTrendFilter) {
         const { MIN_KLINES_REQUIRED } = TREND_FILTER;
+
         const trendKlines = await db
           .select()
           .from(klines)
@@ -1014,6 +1015,15 @@ export class AutoTradingScheduler {
           )
           .orderBy(desc(klines.openTime))
           .limit(MIN_KLINES_REQUIRED);
+
+        log('🔍 Trend Filter Debug - Klines fetched', {
+          symbol: watcher.symbol,
+          interval: watcher.interval,
+          requested: MIN_KLINES_REQUIRED,
+          received: trendKlines.length,
+          newestClose: trendKlines[0]?.close ?? 'null',
+          newestTime: trendKlines[0]?.openTime?.toISOString() ?? 'null',
+        });
 
         if (trendKlines.length < MIN_KLINES_REQUIRED) {
           log('⚠️ Insufficient klines for Trend (EMA200) calculation', {
@@ -1028,6 +1038,16 @@ export class AutoTradingScheduler {
           openTime: k.openTime.getTime(),
           closeTime: k.closeTime.getTime(),
         })) as Kline[];
+
+        const confirmationCandle = klinesForTrend[klinesForTrend.length - 2];
+        const currentCandle = klinesForTrend[klinesForTrend.length - 1];
+
+        log('🔍 Trend Filter Debug - Candles', {
+          confirmationClose: confirmationCandle?.close ?? 'null',
+          confirmationTime: confirmationCandle ? new Date(confirmationCandle.openTime).toISOString() : 'null',
+          currentClose: currentCandle?.close ?? 'null',
+          currentTime: currentCandle ? new Date(currentCandle.openTime).toISOString() : 'null',
+        });
 
         const trendResult = checkTrendCondition(klinesForTrend, setup.direction);
 

@@ -135,7 +135,7 @@ describe('checkTrendCondition', () => {
   describe('TREND_FILTER constants', () => {
     it('should have correct default values', () => {
       expect(TREND_FILTER.DEFAULT_PERIOD).toBe(200);
-      expect(TREND_FILTER.MIN_KLINES_REQUIRED).toBe(200);
+      expect(TREND_FILTER.MIN_KLINES_REQUIRED).toBe(250);
     });
   });
 
@@ -174,7 +174,7 @@ describe('checkTrendCondition', () => {
 
     it('should use confirmation candle (second to last) for trend check', () => {
       const klines: Kline[] = [];
-      for (let i = 0; i < 210; i += 1) {
+      for (let i = 0; i < 260; i += 1) {
         klines.push(createKline(100 + i * 0.5, i));
       }
 

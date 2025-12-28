@@ -3,7 +3,7 @@ import type { Kline } from '@marketmind/types';
 
 export const TREND_FILTER = {
   DEFAULT_PERIOD: 200,
-  MIN_KLINES_REQUIRED: 200,
+  MIN_KLINES_REQUIRED: 250,
 } as const;
 
 export interface TrendFilterResult {
@@ -37,12 +37,12 @@ export const checkTrendCondition = (
 
   if (confirmationEma === null || confirmationEma === undefined) {
     return {
-      isAllowed: true,
+      isAllowed: false,
       ema: null,
       confirmationClose: null,
       isBullish: false,
       isBearish: false,
-      reason: 'EMA calculation returned null',
+      reason: 'EMA calculation returned null - blocking trade for safety',
     };
   }
 
