@@ -2,14 +2,15 @@ import { calculateEMA } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 
 export const TREND_FILTER = {
-  DEFAULT_PERIOD: 200,
+  FAST_PERIOD: 100,
+  SLOW_PERIOD: 200,
   MIN_KLINES_REQUIRED: 250,
 } as const;
 
 export interface TrendFilterResult {
   isAllowed: boolean;
-  ema: number | null;
-  confirmationClose: number | null;
+  ema100: number | null;
+  ema200: number | null;
   isBullish: boolean;
   isBearish: boolean;
   reason: string;
@@ -17,69 +18,57 @@ export interface TrendFilterResult {
 
 export const checkTrendCondition = (
   klines: Kline[],
-  direction: 'LONG' | 'SHORT',
-  period: number = TREND_FILTER.DEFAULT_PERIOD
+  direction: 'LONG' | 'SHORT'
 ): TrendFilterResult => {
   if (klines.length < TREND_FILTER.MIN_KLINES_REQUIRED) {
     return {
-      isAllowed: true,
-      ema: null,
-      confirmationClose: null,
+      isAllowed: false,
+      ema100: null,
+      ema200: null,
       isBullish: false,
       isBearish: false,
-      reason: `Insufficient klines for trend filter (${klines.length} < ${TREND_FILTER.MIN_KLINES_REQUIRED})`,
+      reason: `Insufficient klines for trend filter (${klines.length} < ${TREND_FILTER.MIN_KLINES_REQUIRED}) - blocking for safety`,
     };
   }
 
-  const emaValues = calculateEMA(klines, period);
+  const ema100Values = calculateEMA(klines, TREND_FILTER.FAST_PERIOD);
+  const ema200Values = calculateEMA(klines, TREND_FILTER.SLOW_PERIOD);
   const confirmationIndex = klines.length - 2;
-  const confirmationEma = emaValues[confirmationIndex];
+  const ema100 = ema100Values[confirmationIndex];
+  const ema200 = ema200Values[confirmationIndex];
 
-  if (confirmationEma === null || confirmationEma === undefined) {
+  if (ema100 === null || ema100 === undefined || ema200 === null || ema200 === undefined) {
     return {
       isAllowed: false,
-      ema: null,
-      confirmationClose: null,
+      ema100: ema100 ?? null,
+      ema200: ema200 ?? null,
       isBullish: false,
       isBearish: false,
       reason: 'EMA calculation returned null - blocking trade for safety',
     };
   }
 
-  const confirmationCandle = klines[confirmationIndex];
-  if (!confirmationCandle) {
-    return {
-      isAllowed: true,
-      ema: confirmationEma,
-      confirmationClose: null,
-      isBullish: false,
-      isBearish: false,
-      reason: 'No confirmation candle available',
-    };
-  }
-
-  const confirmationClose = parseFloat(confirmationCandle.close);
-  const isBullish = confirmationClose > confirmationEma;
-  const isBearish = confirmationClose < confirmationEma;
+  const isBullish = ema100 > ema200;
+  const isBearish = ema100 < ema200;
 
   if (direction === 'LONG') {
     if (!isBullish) {
       return {
         isAllowed: false,
-        ema: confirmationEma,
-        confirmationClose,
+        ema100,
+        ema200,
         isBullish,
         isBearish,
-        reason: `LONG blocked: confirmation close ${confirmationClose.toFixed(2)} below EMA${period} ${confirmationEma.toFixed(2)} (bearish trend)`,
+        reason: `LONG blocked: EMA100 (${ema100.toFixed(2)}) below EMA200 (${ema200.toFixed(2)}) - bearish trend`,
       };
     }
     return {
       isAllowed: true,
-      ema: confirmationEma,
-      confirmationClose,
+      ema100,
+      ema200,
       isBullish,
       isBearish,
-      reason: `LONG allowed: confirmation close ${confirmationClose.toFixed(2)} above EMA${period} ${confirmationEma.toFixed(2)} (bullish trend)`,
+      reason: `LONG allowed: EMA100 (${ema100.toFixed(2)}) above EMA200 (${ema200.toFixed(2)}) - bullish trend`,
     };
   }
 
@@ -87,27 +76,27 @@ export const checkTrendCondition = (
     if (!isBearish) {
       return {
         isAllowed: false,
-        ema: confirmationEma,
-        confirmationClose,
+        ema100,
+        ema200,
         isBullish,
         isBearish,
-        reason: `SHORT blocked: confirmation close ${confirmationClose.toFixed(2)} above EMA${period} ${confirmationEma.toFixed(2)} (bullish trend)`,
+        reason: `SHORT blocked: EMA100 (${ema100.toFixed(2)}) above EMA200 (${ema200.toFixed(2)}) - bullish trend`,
       };
     }
     return {
       isAllowed: true,
-      ema: confirmationEma,
-      confirmationClose,
+      ema100,
+      ema200,
       isBullish,
       isBearish,
-      reason: `SHORT allowed: confirmation close ${confirmationClose.toFixed(2)} below EMA${period} ${confirmationEma.toFixed(2)} (bearish trend)`,
+      reason: `SHORT allowed: EMA100 (${ema100.toFixed(2)}) below EMA200 (${ema200.toFixed(2)}) - bearish trend`,
     };
   }
 
   return {
     isAllowed: true,
-    ema: confirmationEma,
-    confirmationClose,
+    ema100,
+    ema200,
     isBullish,
     isBearish,
     reason: 'Unknown direction',

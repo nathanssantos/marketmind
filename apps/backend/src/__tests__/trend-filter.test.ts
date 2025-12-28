@@ -44,7 +44,7 @@ const createKlinesWithTrend = (direction: 'up' | 'down' | 'sideways', count: num
 
 describe('checkTrendCondition', () => {
   describe('LONG direction', () => {
-    it('should allow LONG when price is above EMA200 (bullish trend)', () => {
+    it('should allow LONG when EMA100 is above EMA200 (bullish trend)', () => {
       const klines = createKlinesWithTrend('up', TREND_FILTER.MIN_KLINES_REQUIRED + 10);
       const result = checkTrendCondition(klines, 'LONG');
 
@@ -54,7 +54,7 @@ describe('checkTrendCondition', () => {
       expect(result.reason).toContain('LONG allowed');
     });
 
-    it('should block LONG when price is below EMA200 (bearish trend)', () => {
+    it('should block LONG when EMA100 is below EMA200 (bearish trend)', () => {
       const klines = createKlinesWithTrend('down', TREND_FILTER.MIN_KLINES_REQUIRED + 10);
       const result = checkTrendCondition(klines, 'LONG');
 
@@ -67,7 +67,7 @@ describe('checkTrendCondition', () => {
   });
 
   describe('SHORT direction', () => {
-    it('should allow SHORT when price is below EMA200 (bearish trend)', () => {
+    it('should allow SHORT when EMA100 is below EMA200 (bearish trend)', () => {
       const klines = createKlinesWithTrend('down', TREND_FILTER.MIN_KLINES_REQUIRED + 10);
       const result = checkTrendCondition(klines, 'SHORT');
 
@@ -77,7 +77,7 @@ describe('checkTrendCondition', () => {
       expect(result.reason).toContain('SHORT allowed');
     });
 
-    it('should block SHORT when price is above EMA200 (bullish trend)', () => {
+    it('should block SHORT when EMA100 is above EMA200 (bullish trend)', () => {
       const klines = createKlinesWithTrend('up', TREND_FILTER.MIN_KLINES_REQUIRED + 10);
       const result = checkTrendCondition(klines, 'SHORT');
 
@@ -90,7 +90,7 @@ describe('checkTrendCondition', () => {
   });
 
   describe('edge cases', () => {
-    it('should return isAllowed=true when insufficient klines', () => {
+    it('should block when insufficient klines', () => {
       const klines: Kline[] = [];
       for (let i = 0; i < 50; i += 1) {
         klines.push(createKline(100, i));
@@ -98,8 +98,9 @@ describe('checkTrendCondition', () => {
 
       const result = checkTrendCondition(klines, 'LONG');
 
-      expect(result.isAllowed).toBe(true);
-      expect(result.ema).toBeNull();
+      expect(result.isAllowed).toBe(false);
+      expect(result.ema100).toBeNull();
+      expect(result.ema200).toBeNull();
       expect(result.reason).toContain('Insufficient');
     });
 
@@ -108,8 +109,8 @@ describe('checkTrendCondition', () => {
       const result = checkTrendCondition(klines, 'LONG');
 
       expect(result).toHaveProperty('isAllowed');
-      expect(result).toHaveProperty('ema');
-      expect(result).toHaveProperty('confirmationClose');
+      expect(result).toHaveProperty('ema100');
+      expect(result).toHaveProperty('ema200');
       expect(result).toHaveProperty('isBullish');
       expect(result).toHaveProperty('isBearish');
       expect(result).toHaveProperty('reason');
@@ -119,22 +120,15 @@ describe('checkTrendCondition', () => {
       const klines = createKlinesWithTrend('up', TREND_FILTER.MIN_KLINES_REQUIRED + 5);
       const result = checkTrendCondition(klines, 'LONG');
 
-      expect(typeof result.ema).toBe('number');
-      expect(typeof result.confirmationClose).toBe('number');
-    });
-
-    it('should use custom period when provided', () => {
-      const klines = createKlinesWithTrend('up', 250);
-      const result50 = checkTrendCondition(klines, 'LONG', 50);
-      const result200 = checkTrendCondition(klines, 'LONG', 200);
-
-      expect(result50.ema).not.toBe(result200.ema);
+      expect(typeof result.ema100).toBe('number');
+      expect(typeof result.ema200).toBe('number');
     });
   });
 
   describe('TREND_FILTER constants', () => {
     it('should have correct default values', () => {
-      expect(TREND_FILTER.DEFAULT_PERIOD).toBe(200);
+      expect(TREND_FILTER.FAST_PERIOD).toBe(100);
+      expect(TREND_FILTER.SLOW_PERIOD).toBe(200);
       expect(TREND_FILTER.MIN_KLINES_REQUIRED).toBe(250);
     });
   });
@@ -142,7 +136,7 @@ describe('checkTrendCondition', () => {
   describe('real-world scenarios', () => {
     it('should correctly identify uptrend after sustained price increase', () => {
       const klines: Kline[] = [];
-      for (let i = 0; i < 250; i += 1) {
+      for (let i = 0; i < 260; i += 1) {
         const price = 100 + i * 0.5;
         klines.push(createKline(price, i));
       }
@@ -151,14 +145,14 @@ describe('checkTrendCondition', () => {
 
       expect(result.isAllowed).toBe(true);
       expect(result.isBullish).toBe(true);
-      if (result.ema && result.confirmationClose) {
-        expect(result.confirmationClose).toBeGreaterThan(result.ema);
+      if (result.ema100 && result.ema200) {
+        expect(result.ema100).toBeGreaterThan(result.ema200);
       }
     });
 
     it('should correctly identify downtrend after sustained price decrease', () => {
       const klines: Kline[] = [];
-      for (let i = 0; i < 250; i += 1) {
+      for (let i = 0; i < 260; i += 1) {
         const price = 200 - i * 0.5;
         klines.push(createKline(Math.max(price, 10), i));
       }
@@ -167,23 +161,22 @@ describe('checkTrendCondition', () => {
 
       expect(result.isAllowed).toBe(true);
       expect(result.isBearish).toBe(true);
-      if (result.ema && result.confirmationClose) {
-        expect(result.confirmationClose).toBeLessThan(result.ema);
+      if (result.ema100 && result.ema200) {
+        expect(result.ema100).toBeLessThan(result.ema200);
       }
     });
 
-    it('should use confirmation candle (second to last) for trend check', () => {
+    it('should use confirmation candle index for EMA comparison', () => {
       const klines: Kline[] = [];
       for (let i = 0; i < 260; i += 1) {
         klines.push(createKline(100 + i * 0.5, i));
       }
 
       const result = checkTrendCondition(klines, 'LONG');
-      const confirmationCandle = klines[klines.length - 2];
 
-      if (confirmationCandle && result.confirmationClose) {
-        expect(result.confirmationClose).toBe(parseFloat(confirmationCandle.close));
-      }
+      expect(result.ema100).not.toBeNull();
+      expect(result.ema200).not.toBeNull();
+      expect(result.isAllowed).toBe(true);
     });
   });
 });

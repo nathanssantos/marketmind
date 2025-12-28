@@ -1039,24 +1039,14 @@ export class AutoTradingScheduler {
           closeTime: k.closeTime.getTime(),
         })) as Kline[];
 
-        const confirmationCandle = klinesForTrend[klinesForTrend.length - 2];
-        const currentCandle = klinesForTrend[klinesForTrend.length - 1];
-
-        log('🔍 Trend Filter Debug - Candles', {
-          confirmationClose: confirmationCandle?.close ?? 'null',
-          confirmationTime: confirmationCandle ? new Date(confirmationCandle.openTime).toISOString() : 'null',
-          currentClose: currentCandle?.close ?? 'null',
-          currentTime: currentCandle ? new Date(currentCandle.openTime).toISOString() : 'null',
-        });
-
         const trendResult = checkTrendCondition(klinesForTrend, setup.direction);
 
-        log('📊 Trend Filter Check (EMA200)', {
+        log('📊 Trend Filter Check (EMA100 vs EMA200)', {
           symbol: watcher.symbol,
           interval: watcher.interval,
           direction: setup.direction,
-          ema200: trendResult.ema?.toFixed(2) ?? 'null',
-          confirmationClose: trendResult.confirmationClose?.toFixed(2) ?? 'null',
+          ema100: trendResult.ema100?.toFixed(2) ?? 'null',
+          ema200: trendResult.ema200?.toFixed(2) ?? 'null',
           isBullish: trendResult.isBullish,
           isBearish: trendResult.isBearish,
           isAllowed: trendResult.isAllowed,
@@ -1065,8 +1055,8 @@ export class AutoTradingScheduler {
         if (!trendResult.isAllowed) {
           log('🚫 Trend filter blocked trade', {
             direction: setup.direction,
-            ema200: trendResult.ema?.toFixed(2) ?? 'null',
-            confirmationClose: trendResult.confirmationClose?.toFixed(2) ?? 'null',
+            ema100: trendResult.ema100?.toFixed(2) ?? 'null',
+            ema200: trendResult.ema200?.toFixed(2) ?? 'null',
             reason: trendResult.reason,
           });
           return;
@@ -1074,8 +1064,8 @@ export class AutoTradingScheduler {
 
         log('✅ Trend filter passed', {
           direction: setup.direction,
-          ema200: trendResult.ema?.toFixed(2) ?? 'null',
-          confirmationClose: trendResult.confirmationClose?.toFixed(2) ?? 'null',
+          ema100: trendResult.ema100?.toFixed(2) ?? 'null',
+          ema200: trendResult.ema200?.toFixed(2) ?? 'null',
           condition: trendResult.reason,
         });
       }
