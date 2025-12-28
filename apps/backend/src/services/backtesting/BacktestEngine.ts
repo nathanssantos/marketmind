@@ -545,14 +545,6 @@ export class BacktestEngine {
       positionSize = volatilityAdjusted.positionSize;
       positionValue = volatilityAdjusted.positionValue;
 
-      const marketContextAdjusted = tradeExecutor.applyMarketContextMultiplier(
-        positionSize,
-        entryPrice,
-        marketContextResult.positionSizeMultiplier
-      );
-      positionSize = marketContextAdjusted.positionSize;
-      positionValue = marketContextAdjusted.positionValue;
-
       const currentExposure = openPositions.reduce((sum, p) => sum + p.positionValue, 0);
       if (!filterManager.checkMaxExposure(currentExposure, positionValue, equity)) continue;
 

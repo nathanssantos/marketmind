@@ -611,14 +611,6 @@ export class AutoTradingScheduler {
 
           const adjustedSetup = { ...setup };
 
-          if (contextResult.positionSizeMultiplier < 1.0) {
-            adjustedSetup.positionSizeMultiplier = contextResult.positionSizeMultiplier;
-            log('📉 Position size reduced by market context', {
-              type: setup.type,
-              multiplier: contextResult.positionSizeMultiplier.toFixed(2),
-            });
-          }
-
           if (contextResult.confidenceAdjustment !== 0) {
             adjustedSetup.confidence = Math.max(0, Math.min(100,
               setup.confidence + contextResult.confidenceAdjustment
@@ -1077,24 +1069,11 @@ export class AutoTradingScheduler {
         return;
       }
 
-      let adjustedQuantity = dynamicSize.quantity;
-      let adjustedSizePercent = dynamicSize.sizePercent;
-
-      if (setup.positionSizeMultiplier && setup.positionSizeMultiplier < 1.0) {
-        adjustedQuantity = dynamicSize.quantity * setup.positionSizeMultiplier;
-        adjustedSizePercent = dynamicSize.sizePercent * setup.positionSizeMultiplier;
-        log('🌍 Market context size adjustment applied', {
-          originalQuantity: dynamicSize.quantity.toFixed(8),
-          multiplier: setup.positionSizeMultiplier.toFixed(2),
-          adjustedQuantity: adjustedQuantity.toFixed(8),
-        });
-      }
-
-      const positionValue = adjustedQuantity * setup.entryPrice;
+      const positionValue = dynamicSize.quantity * setup.entryPrice;
 
       log('💰 Dynamic position sizing', {
         walletBalance: walletBalance.toFixed(2),
-        sizePercent: adjustedSizePercent.toFixed(2),
+        sizePercent: dynamicSize.sizePercent.toFixed(2),
         positionValue: positionValue.toFixed(2),
         reason: dynamicSize.reason,
       });
@@ -1148,14 +1127,14 @@ export class AutoTradingScheduler {
 
       const executionId = `exec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-      const quantityFormatted = adjustedQuantity.toFixed(8);
+      const quantityFormatted = dynamicSize.quantity.toFixed(8);
 
       log('📐 Final position size', {
         positionValue: positionValue.toFixed(2),
         entryPrice: setup.entryPrice,
         quantity: quantityFormatted,
         walletBalance: walletBalance.toFixed(2),
-        sizePercent: adjustedSizePercent.toFixed(2),
+        sizePercent: dynamicSize.sizePercent.toFixed(2),
       });
 
       const SLIPPAGE_PERCENT = 0.1;
@@ -1165,7 +1144,7 @@ export class AutoTradingScheduler {
 
       let entryOrderId: number | null = null;
       let actualEntryPrice = expectedEntryWithSlippage;
-      let actualQuantity = adjustedQuantity;
+      let actualQuantity = dynamicSize.quantity;
       let stopLossOrderId: number | null = null;
       let takeProfitOrderId: number | null = null;
       let orderListId: number | null = null;
@@ -1198,7 +1177,7 @@ export class AutoTradingScheduler {
               symbol: watcher.symbol,
               side: setup.direction === 'LONG' ? 'BUY' : 'SELL',
               type: orderType,
-              quantity: adjustedQuantity,
+              quantity: dynamicSize.quantity,
               price: useLimit ? setup.limitEntryPrice : undefined,
               timeInForce: useLimit ? 'GTC' : undefined,
             }
@@ -1206,7 +1185,7 @@ export class AutoTradingScheduler {
 
           entryOrderId = orderResult.orderId;
           actualEntryPrice = parseFloat(orderResult.price) || setup.entryPrice;
-          actualQuantity = parseFloat(orderResult.executedQty) || adjustedQuantity;
+          actualQuantity = parseFloat(orderResult.executedQty) || dynamicSize.quantity;
 
           const orderFilled = parseFloat(orderResult.executedQty) > 0;
 

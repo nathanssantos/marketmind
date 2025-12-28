@@ -290,7 +290,7 @@ export class PyramidingService {
     direction: 'LONG' | 'SHORT',
     walletBalance: number,
     entryPrice: number,
-    mlConfidence?: number,
+    _mlConfidence?: number,
     activeWatchersCount?: number
   ): Promise<{ quantity: number; sizePercent: number; reason: string }> {
     const openExecutions = await db
@@ -328,8 +328,7 @@ export class PyramidingService {
 
     let maxPositionSizePercent: number;
     if (activeWatchersCount && activeWatchersCount > 0) {
-      const perWatcherExposurePercent = 100 / activeWatchersCount;
-      maxPositionSizePercent = Math.min(perWatcherExposurePercent, configMaxPositionSize);
+      maxPositionSizePercent = 100 / activeWatchersCount;
     } else {
       maxPositionSizePercent = configMaxPositionSize;
     }
@@ -339,15 +338,7 @@ export class PyramidingService {
       : (walletBalance * configMaxPositionSize * tradingConfig.maxConcurrentPositions) / 100;
 
     if (openExecutions.length === 0) {
-      let baseSizePercent: number;
-
-      if (mlConfidence) {
-        baseSizePercent = maxPositionSizePercent * mlConfidence;
-        baseSizePercent = Math.max(baseSizePercent, maxPositionSizePercent * 0.8);
-        baseSizePercent = Math.min(baseSizePercent, maxPositionSizePercent);
-      } else {
-        baseSizePercent = maxPositionSizePercent;
-      }
+      const baseSizePercent = maxPositionSizePercent;
 
       const positionValue = (walletBalance * baseSizePercent) / 100;
       const quantity = positionValue / entryPrice;
@@ -355,7 +346,7 @@ export class PyramidingService {
       return {
         quantity: roundQuantity(quantity),
         sizePercent: baseSizePercent,
-        reason: `Initial entry: ${baseSizePercent.toFixed(1)}% position (ML confidence: ${mlConfidence ? `${(mlConfidence * 100).toFixed(0)  }%` : 'N/A'})`,
+        reason: `Initial entry: ${baseSizePercent.toFixed(1)}% position (${activeWatchersCount ? `${activeWatchersCount} watchers` : 'config limit'})`,
       };
     }
 
@@ -392,12 +383,7 @@ export class PyramidingService {
     }
 
     const baseQuantity = parseFloat(openExecutions[0]?.quantity || '0');
-    let pyramidSize = baseQuantity * Math.pow(this.config.scaleFactor, openExecutions.length);
-
-    if (mlConfidence) {
-      pyramidSize *= mlConfidence;
-      pyramidSize = Math.max(pyramidSize, baseQuantity * 0.2);
-    }
+    const pyramidSize = baseQuantity * Math.pow(this.config.scaleFactor, openExecutions.length);
 
     const pyramidValue = pyramidSize * entryPrice;
     const maxPyramidValue = Math.min(pyramidValue, remainingCapacity);
@@ -407,7 +393,7 @@ export class PyramidingService {
     return {
       quantity: roundQuantity(finalQuantity),
       sizePercent,
-      reason: `Pyramid entry #${openExecutions.length + 1}: ${sizePercent.toFixed(1)}% (profit: ${(profitPercent * 100).toFixed(2)}%, ML: ${mlConfidence ? `${(mlConfidence * 100).toFixed(0)  }%` : 'N/A'})`,
+      reason: `Pyramid entry #${openExecutions.length + 1}: ${sizePercent.toFixed(1)}% (profit: ${(profitPercent * 100).toFixed(2)}%)`,
     };
   }
 

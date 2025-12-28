@@ -140,10 +140,10 @@ export class RiskManagerService {
 
       const maxPositionSize = parseFloat(config.maxPositionSize);
 
-      const perWatcherExposurePercent = activeWatchersCount
+      const effectiveMaxPositionPercent = activeWatchersCount
         ? 100 / activeWatchersCount
         : maxPositionSize;
-      const maxPositionValue = (walletBalance * Math.min(perWatcherExposurePercent, maxPositionSize)) / 100;
+      const maxPositionValue = (walletBalance * effectiveMaxPositionPercent) / 100;
 
       if (positionValue > maxPositionValue) {
         return {
