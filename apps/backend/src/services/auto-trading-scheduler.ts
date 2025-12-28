@@ -1,9 +1,8 @@
-import { calculateADX } from '@marketmind/indicators';
+import { checkAdxCondition, ADX_FILTER } from '../utils/adx-filter';
 import { checkStochasticCondition, STOCHASTIC_FILTER } from '../utils/stochastic-filter';
 import { getThresholdForTimeframe } from '@marketmind/ml';
 import type { Interval, Kline, MarketType, TradingSetup } from '@marketmind/types';
 import { and, desc, eq, inArray } from 'drizzle-orm';
-import { ADX_FILTER } from '../constants';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -946,6 +945,7 @@ export class AutoTradingScheduler {
       }
 
       if (config.useAdxFilter) {
+        const { MIN_KLINES_REQUIRED } = ADX_FILTER;
         const adxKlines = await db
           .select()
           .from(klines)
@@ -956,11 +956,11 @@ export class AutoTradingScheduler {
             )
           )
           .orderBy(desc(klines.openTime))
-          .limit(ADX_FILTER.MIN_KLINES_REQUIRED);
+          .limit(MIN_KLINES_REQUIRED);
 
-        if (adxKlines.length < ADX_FILTER.MIN_KLINES_REQUIRED) {
+        if (adxKlines.length < MIN_KLINES_REQUIRED) {
           log('⚠️ Insufficient klines for ADX calculation', {
-            required: ADX_FILTER.MIN_KLINES_REQUIRED,
+            required: MIN_KLINES_REQUIRED,
             available: adxKlines.length,
           });
           return;
@@ -971,72 +971,40 @@ export class AutoTradingScheduler {
           openTime: k.openTime.getTime(),
           closeTime: k.closeTime.getTime(),
         })) as Kline[];
-        const adxResult = calculateADX(klinesForAdx, ADX_FILTER.PERIOD);
-        const currentAdx = adxResult.adx[adxResult.adx.length - 1];
-        const currentPlusDI = adxResult.plusDI[adxResult.plusDI.length - 1];
-        const currentMinusDI = adxResult.minusDI[adxResult.minusDI.length - 1];
 
-        if (currentAdx == null || currentPlusDI == null || currentMinusDI == null) {
-          log('⚠️ ADX calculation returned null values', {
-            symbol: watcher.symbol,
-            interval: watcher.interval,
-            adx: currentAdx,
-            plusDI: currentPlusDI,
-            minusDI: currentMinusDI,
-          });
-          return;
-        }
-
-        const adx = currentAdx;
-        const plusDI = currentPlusDI;
-        const minusDI = currentMinusDI;
-
-        const isBullish = plusDI > minusDI;
-        const isBearish = minusDI > plusDI;
-        const isStrongTrend = adx >= ADX_FILTER.TREND_THRESHOLD;
-
-        const isLongAllowed = setup.direction === 'LONG' && isBullish && isStrongTrend;
-        const isShortAllowed = setup.direction === 'SHORT' && isBearish && isStrongTrend;
+        const adxResult = checkAdxCondition(klinesForAdx, setup.direction);
 
         log('📊 ADX Filter Check', {
           symbol: watcher.symbol,
           interval: watcher.interval,
           direction: setup.direction,
-          adx: adx.toFixed(2),
-          plusDI: plusDI.toFixed(2),
-          minusDI: minusDI.toFixed(2),
+          adx: adxResult.adx?.toFixed(2) ?? 'null',
+          plusDI: adxResult.plusDI?.toFixed(2) ?? 'null',
+          minusDI: adxResult.minusDI?.toFixed(2) ?? 'null',
           trendThreshold: ADX_FILTER.TREND_THRESHOLD,
-          isBullish,
-          isBearish,
-          isStrongTrend,
-          isAllowed: isLongAllowed || isShortAllowed,
+          isBullish: adxResult.isBullish,
+          isBearish: adxResult.isBearish,
+          isStrongTrend: adxResult.isStrongTrend,
+          isAllowed: adxResult.isAllowed,
         });
 
-        if (!isLongAllowed && !isShortAllowed) {
-          const reason = !isStrongTrend
-            ? `ADX (${adx.toFixed(2)}) below threshold (${ADX_FILTER.TREND_THRESHOLD}) - weak trend`
-            : setup.direction === 'LONG'
-              ? `+DI (${plusDI.toFixed(2)}) <= -DI (${minusDI.toFixed(2)}) - bearish bias`
-              : `-DI (${minusDI.toFixed(2)}) <= +DI (${plusDI.toFixed(2)}) - bullish bias`;
-
+        if (!adxResult.isAllowed) {
           log('🚫 ADX filter blocked trade', {
             direction: setup.direction,
-            adx: adx.toFixed(2),
-            plusDI: plusDI.toFixed(2),
-            minusDI: minusDI.toFixed(2),
-            reason,
+            adx: adxResult.adx?.toFixed(2) ?? 'null',
+            plusDI: adxResult.plusDI?.toFixed(2) ?? 'null',
+            minusDI: adxResult.minusDI?.toFixed(2) ?? 'null',
+            reason: adxResult.reason,
           });
           return;
         }
 
         log('✅ ADX filter passed', {
           direction: setup.direction,
-          adx: adx.toFixed(2),
-          plusDI: plusDI.toFixed(2),
-          minusDI: minusDI.toFixed(2),
-          condition: setup.direction === 'LONG'
-            ? `+DI (${plusDI.toFixed(2)}) > -DI (${minusDI.toFixed(2)}) with ADX (${adx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`
-            : `-DI (${minusDI.toFixed(2)}) > +DI (${plusDI.toFixed(2)}) with ADX (${adx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`,
+          adx: adxResult.adx?.toFixed(2) ?? 'null',
+          plusDI: adxResult.plusDI?.toFixed(2) ?? 'null',
+          minusDI: adxResult.minusDI?.toFixed(2) ?? 'null',
+          condition: adxResult.reason,
         });
       }
 

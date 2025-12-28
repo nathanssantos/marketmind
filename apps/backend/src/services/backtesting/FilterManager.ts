@@ -1,6 +1,6 @@
-import { calculateADX, calculateEMA } from '@marketmind/indicators';
+import { calculateEMA } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
-import { ADX_FILTER } from '../../constants';
+import { checkAdxCondition, ADX_FILTER } from '../../utils/adx-filter';
 import { checkStochasticCondition, STOCHASTIC_FILTER } from '../../utils/stochastic-filter';
 import { HistoricalMarketContextService } from '../historical-market-context';
 
@@ -241,44 +241,22 @@ export class FilterManager {
   ): boolean {
     if (!this.config.useAdxFilter) return true;
 
-    if (setupIndex < ADX_FILTER.MIN_KLINES_REQUIRED) return true;
+    const { MIN_KLINES_REQUIRED } = ADX_FILTER;
+    if (setupIndex < MIN_KLINES_REQUIRED) return true;
 
-    const adxKlines = klines.slice(
-      setupIndex - ADX_FILTER.MIN_KLINES_REQUIRED,
-      setupIndex + 1
-    );
-    const adxResult = calculateADX(adxKlines, ADX_FILTER.PERIOD);
-    const currentAdx = adxResult.adx[adxResult.adx.length - 1];
-    const currentPlusDI = adxResult.plusDI[adxResult.plusDI.length - 1];
-    const currentMinusDI = adxResult.minusDI[adxResult.minusDI.length - 1];
+    const adxKlines = klines.slice(setupIndex - MIN_KLINES_REQUIRED, setupIndex + 1);
+    const result = checkAdxCondition(adxKlines, direction);
 
-    if (currentAdx == null || currentPlusDI == null || currentMinusDI == null) return true;
-
-    const isBullish = currentPlusDI > currentMinusDI;
-    const isBearish = currentMinusDI > currentPlusDI;
-    const isStrongTrend = currentAdx >= ADX_FILTER.TREND_THRESHOLD;
-
-    const isLongAllowed = direction === 'LONG' && isBullish && isStrongTrend;
-    const isShortAllowed = direction === 'SHORT' && isBearish && isStrongTrend;
-
-    if (!isLongAllowed && !isShortAllowed) {
+    if (!result.isAllowed) {
       this.stats.skippedAdx++;
       if (tradesCount < 3) {
-        const reason = !isStrongTrend
-          ? `ADX (${currentAdx.toFixed(2)}) below threshold (${ADX_FILTER.TREND_THRESHOLD})`
-          : direction === 'LONG'
-            ? `+DI (${currentPlusDI.toFixed(2)}) <= -DI (${currentMinusDI.toFixed(2)})`
-            : `-DI (${currentMinusDI.toFixed(2)}) <= +DI (${currentPlusDI.toFixed(2)})`;
-        console.log(`[FilterManager] ADX filter blocked ${direction} trade - ${reason}`);
+        console.log(`[FilterManager] ADX filter blocked ${direction} trade - ${result.reason}`);
       }
       return false;
     }
 
     if (tradesCount < 3) {
-      const condition = direction === 'LONG'
-        ? `+DI (${currentPlusDI.toFixed(2)}) > -DI (${currentMinusDI.toFixed(2)}) with ADX (${currentAdx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`
-        : `-DI (${currentMinusDI.toFixed(2)}) > +DI (${currentPlusDI.toFixed(2)}) with ADX (${currentAdx.toFixed(2)}) >= ${ADX_FILTER.TREND_THRESHOLD}`;
-      console.log(`[FilterManager] ADX filter passed ${direction} trade - ${condition}`);
+      console.log(`[FilterManager] ADX filter passed ${direction} trade - ${result.reason}`);
     }
 
     return true;
