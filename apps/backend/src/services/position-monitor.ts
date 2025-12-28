@@ -254,6 +254,23 @@ export class PositionMonitorService {
 
           const wsServiceFill = getWebSocketService();
           if (wsServiceFill) {
+            const side = execution.side as 'LONG' | 'SHORT';
+            const sideLabel = side === 'LONG' ? 'Long' : 'Short';
+            const formatPrice = (price: number) => price >= 1 ? price.toFixed(2) : price.toFixed(6);
+
+            wsServiceFill.emitTradeNotification(execution.walletId, {
+              type: 'LIMIT_FILLED',
+              title: '🎯 Limit Order Filled',
+              body: `${sideLabel} ${execution.symbol} @ ${formatPrice(currentPrice)}`,
+              urgency: 'normal',
+              data: {
+                executionId: execution.id,
+                symbol: execution.symbol,
+                side,
+                entryPrice: currentPrice.toString(),
+              },
+            });
+
             wsServiceFill.emitPositionUpdate(execution.walletId, {
               ...execution,
               status: 'open',
@@ -538,6 +555,51 @@ export class PositionMonitorService {
         isPaperTrading: isPaperWallet(wallet),
         message: `Posição fechada automaticamente: ${reason === 'STOP_LOSS' ? 'Stop Loss atingido' : 'Take Profit atingido'}`,
       }, '🤖 [ALGORITHM] Position closed automatically');
+
+      const wsService = getWebSocketService();
+      if (wsService) {
+        const isProfit = pnl > 0;
+        const side = execution.side as 'LONG' | 'SHORT';
+        const sideLabel = side === 'LONG' ? 'Long' : 'Short';
+
+        let title: string;
+        if (reason === 'TAKE_PROFIT') {
+          title = '🎯 Take Profit';
+        } else if (isProfit) {
+          title = '✅ Stop Loss (Profit)';
+        } else {
+          title = '🛑 Stop Loss';
+        }
+
+        const pnlSign = pnl >= 0 ? '+' : '';
+        const body = `${sideLabel} ${execution.symbol}: ${pnlSign}$${pnl.toFixed(2)} (${pnlSign}${adjustedPnlPercent.toFixed(2)}%)`;
+
+        wsService.emitTradeNotification(execution.walletId, {
+          type: 'POSITION_CLOSED',
+          title,
+          body,
+          urgency: isProfit ? 'normal' : 'critical',
+          data: {
+            executionId: execution.id,
+            symbol: execution.symbol,
+            side,
+            entryPrice: entryPrice.toString(),
+            exitPrice: exitPrice.toString(),
+            pnl: pnl.toString(),
+            pnlPercent: adjustedPnlPercent.toString(),
+            exitReason: reason,
+          },
+        });
+
+        wsService.emitPositionUpdate(execution.walletId, {
+          id: execution.id,
+          status: 'closed',
+          exitPrice: exitPrice.toString(),
+          pnl: pnl.toString(),
+          pnlPercent: adjustedPnlPercent.toString(),
+          exitReason: reason,
+        });
+      }
 
       await strategyPerformanceService.updatePerformance(execution.id);
     } catch (error) {

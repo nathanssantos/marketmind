@@ -30,7 +30,6 @@ import { useBackendKlines, useKlineStream } from './hooks/useBackendKlines';
 import { useCalendar } from './hooks/useCalendar';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
-import { useExecutionNotifications } from './hooks/useExecutionNotifications';
 import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useNews } from './hooks/useNews';
@@ -170,7 +169,6 @@ function AppContent(): ReactElement {
   const [viewport, setViewport] = useState<Viewport | undefined>(undefined);
 
   useOrderNotifications();
-  useExecutionNotifications();
 
   const activeConversationId = useAIStore(state => state.activeConversationId);
   const { detectedPatterns } = useChartContext();

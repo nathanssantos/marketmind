@@ -1,8 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useRef, type ReactNode } from 'react';
 import type { Socket } from 'socket.io-client';
+import { createPlatformAdapter } from '../adapters/factory';
 import { socketService } from '../services/socketService';
 import { trpc } from '../utils/trpc';
 import { usePriceStore } from '../store/priceStore';
+import { toaster } from '../utils/toaster';
 
 interface PositionUpdate {
   id: string;
@@ -23,6 +25,25 @@ interface PriceUpdate {
   symbol: string;
   price: number;
   timestamp: number;
+}
+
+interface TradeNotification {
+  type: 'POSITION_OPENED' | 'POSITION_CLOSED' | 'TRAILING_STOP_UPDATED' | 'LIMIT_FILLED';
+  title: string;
+  body: string;
+  urgency: 'low' | 'normal' | 'critical';
+  data: {
+    executionId: string;
+    symbol: string;
+    side: 'LONG' | 'SHORT';
+    entryPrice?: string;
+    exitPrice?: string;
+    pnl?: string;
+    pnlPercent?: string;
+    exitReason?: string;
+    oldStopLoss?: string;
+    newStopLoss?: string;
+  };
 }
 
 interface RealtimeTradingSyncContextValue {
@@ -136,6 +157,40 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
         if (callback) {
           callback(data.price);
         }
+      });
+
+      socket.on('trade:notification', async (notification: TradeNotification) => {
+        console.log('[RealtimeSync] Trade notification received:', notification.type, notification.title);
+
+        const toastType = notification.type === 'POSITION_CLOSED'
+          ? (parseFloat(notification.data.pnl || '0') >= 0 ? 'success' : 'error')
+          : notification.type === 'TRAILING_STOP_UPDATED'
+            ? 'info'
+            : 'success';
+
+        toaster.create({
+          title: notification.title,
+          description: notification.body,
+          type: toastType,
+          duration: notification.urgency === 'critical' ? undefined : 8000,
+        });
+
+        try {
+          const adapter = await createPlatformAdapter();
+          const isSupported = await adapter.notification.isSupported();
+          if (isSupported) {
+            await adapter.notification.show({
+              title: notification.title,
+              body: notification.body,
+              urgency: notification.urgency,
+            });
+          }
+        } catch (err) {
+          console.error('[RealtimeSync] Native notification error:', err);
+        }
+
+        invalidatePositions();
+        invalidateWallet();
       });
 
       listenersRegisteredRef.current = true;

@@ -210,6 +210,27 @@ export class WebSocketService {
     this.io.to(`wallet:${walletId}`).emit('risk:liquidation-warning', data);
   }
 
+  public emitTradeNotification(walletId: string, notification: {
+    type: 'POSITION_OPENED' | 'POSITION_CLOSED' | 'TRAILING_STOP_UPDATED' | 'LIMIT_FILLED';
+    title: string;
+    body: string;
+    urgency: 'low' | 'normal' | 'critical';
+    data: {
+      executionId: string;
+      symbol: string;
+      side: 'LONG' | 'SHORT';
+      entryPrice?: string;
+      exitPrice?: string;
+      pnl?: string;
+      pnlPercent?: string;
+      exitReason?: string;
+      oldStopLoss?: string;
+      newStopLoss?: string;
+    };
+  }): void {
+    this.io.to(`positions:${walletId}`).emit('trade:notification', notification);
+  }
+
   public getIO(): SocketIOServer {
     return this.io;
   }

@@ -6,6 +6,7 @@ import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
 import { klines, priceCache, setupDetections, tradeExecutions } from '../db/schema';
 import { logger } from './logger';
+import { getWebSocketService } from './websocket';
 import { calculateATRPercent, getVolatilityProfile } from './volatility-profile';
 
 export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
@@ -454,7 +455,7 @@ export class TrailingStopService {
         );
 
         if (update) {
-          await this.applyStopLossUpdate(execution.id, update.newStopLoss);
+          await this.applyStopLossUpdate(execution, update.newStopLoss, update.oldStopLoss);
           updates.push(update);
         }
       }
@@ -551,14 +552,45 @@ export class TrailingStopService {
     };
   }
 
-  private async applyStopLossUpdate(executionId: string, newStopLoss: number): Promise<void> {
+  private async applyStopLossUpdate(
+    execution: TradeExecution,
+    newStopLoss: number,
+    oldStopLoss: number | null
+  ): Promise<void> {
     await db
       .update(tradeExecutions)
       .set({
         stopLoss: newStopLoss.toString(),
         updatedAt: new Date(),
       })
-      .where(eq(tradeExecutions.id, executionId));
+      .where(eq(tradeExecutions.id, execution.id));
+
+    const wsService = getWebSocketService();
+    if (wsService) {
+      const side = execution.side as 'LONG' | 'SHORT';
+      const sideLabel = side === 'LONG' ? 'Long' : 'Short';
+      const formatPrice = (price: number) => price >= 1 ? price.toFixed(2) : price.toFixed(6);
+
+      wsService.emitTradeNotification(execution.walletId, {
+        type: 'TRAILING_STOP_UPDATED',
+        title: '📈 Trailing Stop',
+        body: `${sideLabel} ${execution.symbol}: ${oldStopLoss ? formatPrice(oldStopLoss) : '-'} → ${formatPrice(newStopLoss)}`,
+        urgency: 'low',
+        data: {
+          executionId: execution.id,
+          symbol: execution.symbol,
+          side,
+          oldStopLoss: oldStopLoss?.toString(),
+          newStopLoss: newStopLoss.toString(),
+        },
+      });
+
+      wsService.emitPositionUpdate(execution.walletId, {
+        id: execution.id,
+        status: 'open',
+        stopLoss: newStopLoss.toString(),
+      });
+    }
   }
 }
 
