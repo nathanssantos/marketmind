@@ -109,7 +109,7 @@ describe('checkTrendCondition', () => {
 
       expect(result).toHaveProperty('isAllowed');
       expect(result).toHaveProperty('ema');
-      expect(result).toHaveProperty('currentPrice');
+      expect(result).toHaveProperty('confirmationClose');
       expect(result).toHaveProperty('isBullish');
       expect(result).toHaveProperty('isBearish');
       expect(result).toHaveProperty('reason');
@@ -120,7 +120,7 @@ describe('checkTrendCondition', () => {
       const result = checkTrendCondition(klines, 'LONG');
 
       expect(typeof result.ema).toBe('number');
-      expect(typeof result.currentPrice).toBe('number');
+      expect(typeof result.confirmationClose).toBe('number');
     });
 
     it('should use custom period when provided', () => {
@@ -151,8 +151,8 @@ describe('checkTrendCondition', () => {
 
       expect(result.isAllowed).toBe(true);
       expect(result.isBullish).toBe(true);
-      if (result.ema && result.currentPrice) {
-        expect(result.currentPrice).toBeGreaterThan(result.ema);
+      if (result.ema && result.confirmationClose) {
+        expect(result.confirmationClose).toBeGreaterThan(result.ema);
       }
     });
 
@@ -167,8 +167,22 @@ describe('checkTrendCondition', () => {
 
       expect(result.isAllowed).toBe(true);
       expect(result.isBearish).toBe(true);
-      if (result.ema && result.currentPrice) {
-        expect(result.currentPrice).toBeLessThan(result.ema);
+      if (result.ema && result.confirmationClose) {
+        expect(result.confirmationClose).toBeLessThan(result.ema);
+      }
+    });
+
+    it('should use confirmation candle (second to last) for trend check', () => {
+      const klines: Kline[] = [];
+      for (let i = 0; i < 210; i += 1) {
+        klines.push(createKline(100 + i * 0.5, i));
+      }
+
+      const result = checkTrendCondition(klines, 'LONG');
+      const confirmationCandle = klines[klines.length - 2];
+
+      if (confirmationCandle && result.confirmationClose) {
+        expect(result.confirmationClose).toBe(parseFloat(confirmationCandle.close));
       }
     });
   });

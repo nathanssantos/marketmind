@@ -9,7 +9,7 @@ export const TREND_FILTER = {
 export interface TrendFilterResult {
   isAllowed: boolean;
   ema: number | null;
-  currentPrice: number | null;
+  confirmationClose: number | null;
   isBullish: boolean;
   isBearish: boolean;
   reason: string;
@@ -24,7 +24,7 @@ export const checkTrendCondition = (
     return {
       isAllowed: true,
       ema: null,
-      currentPrice: null,
+      confirmationClose: null,
       isBullish: false,
       isBearish: false,
       reason: `Insufficient klines for trend filter (${klines.length} < ${TREND_FILTER.MIN_KLINES_REQUIRED})`,
@@ -32,53 +32,54 @@ export const checkTrendCondition = (
   }
 
   const emaValues = calculateEMA(klines, period);
-  const lastEma = emaValues[emaValues.length - 1];
+  const confirmationIndex = klines.length - 2;
+  const confirmationEma = emaValues[confirmationIndex];
 
-  if (lastEma === null || lastEma === undefined) {
+  if (confirmationEma === null || confirmationEma === undefined) {
     return {
       isAllowed: true,
       ema: null,
-      currentPrice: null,
+      confirmationClose: null,
       isBullish: false,
       isBearish: false,
       reason: 'EMA calculation returned null',
     };
   }
 
-  const lastKline = klines[klines.length - 1];
-  if (!lastKline) {
+  const confirmationCandle = klines[confirmationIndex];
+  if (!confirmationCandle) {
     return {
       isAllowed: true,
-      ema: lastEma,
-      currentPrice: null,
+      ema: confirmationEma,
+      confirmationClose: null,
       isBullish: false,
       isBearish: false,
-      reason: 'No kline data available',
+      reason: 'No confirmation candle available',
     };
   }
 
-  const currentPrice = parseFloat(lastKline.close);
-  const isBullish = currentPrice > lastEma;
-  const isBearish = currentPrice < lastEma;
+  const confirmationClose = parseFloat(confirmationCandle.close);
+  const isBullish = confirmationClose > confirmationEma;
+  const isBearish = confirmationClose < confirmationEma;
 
   if (direction === 'LONG') {
     if (!isBullish) {
       return {
         isAllowed: false,
-        ema: lastEma,
-        currentPrice,
+        ema: confirmationEma,
+        confirmationClose,
         isBullish,
         isBearish,
-        reason: `LONG blocked: price ${currentPrice.toFixed(2)} below EMA${period} ${lastEma.toFixed(2)} (bearish trend)`,
+        reason: `LONG blocked: confirmation close ${confirmationClose.toFixed(2)} below EMA${period} ${confirmationEma.toFixed(2)} (bearish trend)`,
       };
     }
     return {
       isAllowed: true,
-      ema: lastEma,
-      currentPrice,
+      ema: confirmationEma,
+      confirmationClose,
       isBullish,
       isBearish,
-      reason: `LONG allowed: price ${currentPrice.toFixed(2)} above EMA${period} ${lastEma.toFixed(2)} (bullish trend)`,
+      reason: `LONG allowed: confirmation close ${confirmationClose.toFixed(2)} above EMA${period} ${confirmationEma.toFixed(2)} (bullish trend)`,
     };
   }
 
@@ -86,27 +87,27 @@ export const checkTrendCondition = (
     if (!isBearish) {
       return {
         isAllowed: false,
-        ema: lastEma,
-        currentPrice,
+        ema: confirmationEma,
+        confirmationClose,
         isBullish,
         isBearish,
-        reason: `SHORT blocked: price ${currentPrice.toFixed(2)} above EMA${period} ${lastEma.toFixed(2)} (bullish trend)`,
+        reason: `SHORT blocked: confirmation close ${confirmationClose.toFixed(2)} above EMA${period} ${confirmationEma.toFixed(2)} (bullish trend)`,
       };
     }
     return {
       isAllowed: true,
-      ema: lastEma,
-      currentPrice,
+      ema: confirmationEma,
+      confirmationClose,
       isBullish,
       isBearish,
-      reason: `SHORT allowed: price ${currentPrice.toFixed(2)} below EMA${period} ${lastEma.toFixed(2)} (bearish trend)`,
+      reason: `SHORT allowed: confirmation close ${confirmationClose.toFixed(2)} below EMA${period} ${confirmationEma.toFixed(2)} (bearish trend)`,
     };
   }
 
   return {
     isAllowed: true,
-    ema: lastEma,
-    currentPrice,
+    ema: confirmationEma,
+    confirmationClose,
     isBullish,
     isBearish,
     reason: 'Unknown direction',

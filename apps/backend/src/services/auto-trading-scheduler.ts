@@ -1036,7 +1036,7 @@ export class AutoTradingScheduler {
           interval: watcher.interval,
           direction: setup.direction,
           ema200: trendResult.ema?.toFixed(2) ?? 'null',
-          currentPrice: trendResult.currentPrice?.toFixed(2) ?? 'null',
+          confirmationClose: trendResult.confirmationClose?.toFixed(2) ?? 'null',
           isBullish: trendResult.isBullish,
           isBearish: trendResult.isBearish,
           isAllowed: trendResult.isAllowed,
@@ -1046,7 +1046,7 @@ export class AutoTradingScheduler {
           log('🚫 Trend filter blocked trade', {
             direction: setup.direction,
             ema200: trendResult.ema?.toFixed(2) ?? 'null',
-            currentPrice: trendResult.currentPrice?.toFixed(2) ?? 'null',
+            confirmationClose: trendResult.confirmationClose?.toFixed(2) ?? 'null',
             reason: trendResult.reason,
           });
           return;
@@ -1055,7 +1055,7 @@ export class AutoTradingScheduler {
         log('✅ Trend filter passed', {
           direction: setup.direction,
           ema200: trendResult.ema?.toFixed(2) ?? 'null',
-          currentPrice: trendResult.currentPrice?.toFixed(2) ?? 'null',
+          confirmationClose: trendResult.confirmationClose?.toFixed(2) ?? 'null',
           condition: trendResult.reason,
         });
       }
