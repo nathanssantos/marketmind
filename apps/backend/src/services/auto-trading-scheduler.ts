@@ -1,5 +1,6 @@
 import { checkAdxCondition, ADX_FILTER } from '../utils/adx-filter';
 import { checkStochasticCondition, STOCHASTIC_FILTER } from '../utils/stochastic-filter';
+import { checkTrendCondition, TREND_FILTER } from '../utils/trend-filter';
 import { getThresholdForTimeframe } from '@marketmind/ml';
 import type { Interval, Kline, MarketType, TradingSetup } from '@marketmind/types';
 import { and, desc, eq, inArray } from 'drizzle-orm';
@@ -997,6 +998,65 @@ export class AutoTradingScheduler {
           plusDI: adxResult.plusDI?.toFixed(2) ?? 'null',
           minusDI: adxResult.minusDI?.toFixed(2) ?? 'null',
           condition: adxResult.reason,
+        });
+      }
+
+      if (config.useTrendFilter) {
+        const { MIN_KLINES_REQUIRED } = TREND_FILTER;
+        const trendKlines = await db
+          .select()
+          .from(klines)
+          .where(
+            and(
+              eq(klines.symbol, watcher.symbol),
+              eq(klines.interval, watcher.interval)
+            )
+          )
+          .orderBy(desc(klines.openTime))
+          .limit(MIN_KLINES_REQUIRED);
+
+        if (trendKlines.length < MIN_KLINES_REQUIRED) {
+          log('⚠️ Insufficient klines for Trend (EMA200) calculation', {
+            required: MIN_KLINES_REQUIRED,
+            available: trendKlines.length,
+          });
+          return;
+        }
+
+        const klinesForTrend = trendKlines.reverse().map(k => ({
+          ...k,
+          openTime: k.openTime.getTime(),
+          closeTime: k.closeTime.getTime(),
+        })) as Kline[];
+
+        const trendResult = checkTrendCondition(klinesForTrend, setup.direction);
+
+        log('📊 Trend Filter Check (EMA200)', {
+          symbol: watcher.symbol,
+          interval: watcher.interval,
+          direction: setup.direction,
+          ema200: trendResult.ema?.toFixed(2) ?? 'null',
+          currentPrice: trendResult.currentPrice?.toFixed(2) ?? 'null',
+          isBullish: trendResult.isBullish,
+          isBearish: trendResult.isBearish,
+          isAllowed: trendResult.isAllowed,
+        });
+
+        if (!trendResult.isAllowed) {
+          log('🚫 Trend filter blocked trade', {
+            direction: setup.direction,
+            ema200: trendResult.ema?.toFixed(2) ?? 'null',
+            currentPrice: trendResult.currentPrice?.toFixed(2) ?? 'null',
+            reason: trendResult.reason,
+          });
+          return;
+        }
+
+        log('✅ Trend filter passed', {
+          direction: setup.direction,
+          ema200: trendResult.ema?.toFixed(2) ?? 'null',
+          currentPrice: trendResult.currentPrice?.toFixed(2) ?? 'null',
+          condition: trendResult.reason,
         });
       }
 
