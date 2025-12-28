@@ -87,25 +87,22 @@ export class BinancePriceStreamService {
       }
 
       const message = data as Record<string, unknown>;
-      const eventType = message['e'];
+      const eventType = message['eventType'] ?? message['e'];
 
-      if ((eventType === 'trade' || eventType === 'aggTrade') && typeof message['s'] === 'string') {
-        const symbol = message['s'];
-        const priceStr = message['p'] as string;
+      if (eventType === 'aggTrade' || eventType === 'trade') {
+        const symbol = (message['symbol'] ?? message['s']) as string;
+        if (!symbol) return;
 
-        if (!priceStr || typeof priceStr !== 'string') {
-          logger.warn({ symbol, message }, 'Invalid price in trade message');
-          return;
-        }
+        const priceValue = message['price'] ?? message['p'];
+        const price = typeof priceValue === 'number'
+          ? priceValue
+          : typeof priceValue === 'string'
+            ? parseFloat(priceValue)
+            : NaN;
 
-        const price = parseFloat(priceStr);
+        if (isNaN(price) || price <= 0) return;
 
-        if (isNaN(price) || price <= 0) {
-          logger.warn({ symbol, priceStr, price }, 'Invalid price value parsed');
-          return;
-        }
-
-        const timestamp = (message['T'] as number) || Date.now();
+        const timestamp = (message['tradeTime'] ?? message['T'] ?? Date.now()) as number;
 
         void this.processPriceUpdate({
           symbol,
