@@ -36,13 +36,14 @@ export const useWatermarkRenderer = ({
 
     ctx.save();
 
+    const mainText = timeframe ? `${symbol} ${timeframe}` : symbol;
     const marketLabel = marketType === 'FUTURES' ? 'FUTURES' : '';
-    const text = timeframe
-      ? `${symbol} ${timeframe}${marketLabel ? ` ${marketLabel}` : ''}`
-      : `${symbol}${marketLabel ? ` ${marketLabel}` : ''}`;
+
+    const minDimension = Math.min(chartWidth, chartHeight);
+    const baseFontSize = Math.max(24, Math.min(96, minDimension * 0.12));
+    const secondaryFontSize = baseFontSize * 0.5;
 
     ctx.globalAlpha = 0.05;
-    ctx.font = 'bold 96px sans-serif';
     ctx.fillStyle = colors.text;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -50,7 +51,17 @@ export const useWatermarkRenderer = ({
     const centerX = chartWidth / 2;
     const centerY = chartHeight / 2;
 
-    ctx.fillText(text, centerX, centerY);
+    if (marketLabel) {
+      const lineSpacing = baseFontSize * 0.4;
+      ctx.font = `bold ${baseFontSize}px sans-serif`;
+      ctx.fillText(mainText, centerX, centerY - lineSpacing);
+
+      ctx.font = `bold ${secondaryFontSize}px sans-serif`;
+      ctx.fillText(marketLabel, centerX, centerY + lineSpacing);
+    } else {
+      ctx.font = `bold ${baseFontSize}px sans-serif`;
+      ctx.fillText(mainText, centerX, centerY);
+    }
 
     ctx.restore();
   }, [manager, colors, symbol, timeframe, marketType, enabled]);

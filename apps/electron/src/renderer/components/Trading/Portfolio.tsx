@@ -304,8 +304,8 @@ const PortfolioTable = ({ positions, currency, onNavigateToSymbol }: PortfolioTa
     { key: 'symbol', header: t('trading.orders.symbol'), sticky: true, minW: '100px' },
     { key: 'pnl', header: t('trading.portfolio.pnl'), textAlign: 'right', minW: '130px' },
     { key: 'side', header: t('trading.orders.side'), minW: '80px' },
-    { key: 'type', header: t('trading.orders.type'), minW: '90px' },
     { key: 'setup', header: t('trading.orders.setup'), minW: '100px' },
+    { key: 'type', header: t('trading.orders.type'), minW: '90px' },
     { key: 'opened', header: t('trading.portfolio.opened'), minW: '110px' },
     { key: 'quantity', header: t('trading.portfolio.quantity'), textAlign: 'right', minW: '100px' },
     { key: 'avgPrice', header: t('trading.portfolio.avgPrice'), textAlign: 'right', minW: '110px' },
@@ -347,16 +347,16 @@ const PortfolioTable = ({ positions, currency, onNavigateToSymbol }: PortfolioTa
               </Badge>
             </TradingTableCell>
             <TradingTableCell>
+              {position.setupType ? (
+                <Badge colorPalette="purple" size="sm" px={2}>{position.setupType}</Badge>
+              ) : '-'}
+            </TradingTableCell>
+            <TradingTableCell>
               {position.marketType === 'FUTURES' ? (
                 <Badge colorPalette="orange" size="sm" px={2}>FUTURES</Badge>
               ) : (
                 <Badge colorPalette="gray" size="sm" px={2}>SPOT</Badge>
               )}
-            </TradingTableCell>
-            <TradingTableCell>
-              {position.setupType ? (
-                <Badge colorPalette="purple" size="sm" px={2}>{position.setupType}</Badge>
-              ) : '-'}
             </TradingTableCell>
             <TradingTableCell>
               <Text color="fg.muted">

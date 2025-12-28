@@ -107,7 +107,7 @@ describe('useWatermarkRenderer', () => {
       expect(mockCtx.restore).toHaveBeenCalled();
     });
 
-    it('should render watermark with FUTURES label for FUTURES market type', () => {
+    it('should render watermark with FUTURES label on separate line for FUTURES market type', () => {
       const { result } = renderHook(() =>
         useWatermarkRenderer({
           manager: mockManager,
@@ -121,7 +121,9 @@ describe('useWatermarkRenderer', () => {
 
       result.current.render();
 
-      expect(mockCtx.fillText).toHaveBeenCalledWith('BTCUSDT 1h FUTURES', 364, 287.5);
+      expect(mockCtx.fillText).toHaveBeenCalledTimes(2);
+      expect(mockCtx.fillText).toHaveBeenNthCalledWith(1, 'BTCUSDT 1h', 364, expect.any(Number));
+      expect(mockCtx.fillText).toHaveBeenNthCalledWith(2, 'FUTURES', 364, expect.any(Number));
     });
 
     it('should render watermark without FUTURES label for SPOT market type', () => {
@@ -138,10 +140,11 @@ describe('useWatermarkRenderer', () => {
 
       result.current.render();
 
+      expect(mockCtx.fillText).toHaveBeenCalledTimes(1);
       expect(mockCtx.fillText).toHaveBeenCalledWith('BTCUSDT 1h', 364, 287.5);
     });
 
-    it('should render FUTURES watermark with symbol only (no timeframe)', () => {
+    it('should render FUTURES watermark with symbol only (no timeframe) on separate lines', () => {
       const { result } = renderHook(() =>
         useWatermarkRenderer({
           manager: mockManager,
@@ -154,7 +157,9 @@ describe('useWatermarkRenderer', () => {
 
       result.current.render();
 
-      expect(mockCtx.fillText).toHaveBeenCalledWith('ETHUSDT FUTURES', 364, 287.5);
+      expect(mockCtx.fillText).toHaveBeenCalledTimes(2);
+      expect(mockCtx.fillText).toHaveBeenNthCalledWith(1, 'ETHUSDT', 364, expect.any(Number));
+      expect(mockCtx.fillText).toHaveBeenNthCalledWith(2, 'FUTURES', 364, expect.any(Number));
     });
 
     it('should not render when manager is null', () => {
@@ -201,7 +206,7 @@ describe('useWatermarkRenderer', () => {
       expect(mockCtx.fillText).not.toHaveBeenCalled();
     });
 
-    it('should set correct canvas properties', () => {
+    it('should set correct canvas properties with responsive font size', () => {
       const { result } = renderHook(() =>
         useWatermarkRenderer({
           manager: mockManager,
@@ -215,7 +220,7 @@ describe('useWatermarkRenderer', () => {
       result.current.render();
 
       expect(mockCtx.globalAlpha).toBe(0.05);
-      expect(mockCtx.font).toBe('bold 96px sans-serif');
+      expect(mockCtx.font).toBe('bold 69px sans-serif');
       expect(mockCtx.fillStyle).toBe('#000000');
       expect(mockCtx.textAlign).toBe('center');
       expect(mockCtx.textBaseline).toBe('middle');
@@ -277,6 +282,106 @@ describe('useWatermarkRenderer', () => {
       result.current.render();
 
       expect(mockCtx.fillText).not.toHaveBeenCalled();
+    });
+
+    it('should use responsive font size based on canvas dimensions', () => {
+      const smallManager = {
+        ...mockManager,
+        getDimensions: vi.fn(() => ({
+          width: 400,
+          height: 300,
+          chartWidth: 350,
+          chartHeight: 250,
+          volumeHeight: 0,
+        })),
+      } as unknown as CanvasManager;
+
+      const { result } = renderHook(() =>
+        useWatermarkRenderer({
+          manager: smallManager,
+          colors: mockColors,
+          symbol: 'BTCUSDT',
+          enabled: true,
+        })
+      );
+
+      result.current.render();
+
+      expect(mockCtx.font).toBe('bold 30px sans-serif');
+    });
+
+    it('should clamp font size to minimum 24px for very small canvas', () => {
+      const tinyManager = {
+        ...mockManager,
+        getDimensions: vi.fn(() => ({
+          width: 150,
+          height: 100,
+          chartWidth: 130,
+          chartHeight: 80,
+          volumeHeight: 0,
+        })),
+      } as unknown as CanvasManager;
+
+      const { result } = renderHook(() =>
+        useWatermarkRenderer({
+          manager: tinyManager,
+          colors: mockColors,
+          symbol: 'BTCUSDT',
+          enabled: true,
+        })
+      );
+
+      result.current.render();
+
+      expect(mockCtx.font).toBe('bold 24px sans-serif');
+    });
+
+    it('should clamp font size to maximum 96px for very large canvas', () => {
+      const largeManager = {
+        ...mockManager,
+        getDimensions: vi.fn(() => ({
+          width: 2000,
+          height: 1500,
+          chartWidth: 1900,
+          chartHeight: 1400,
+          volumeHeight: 0,
+        })),
+      } as unknown as CanvasManager;
+
+      const { result } = renderHook(() =>
+        useWatermarkRenderer({
+          manager: largeManager,
+          colors: mockColors,
+          symbol: 'BTCUSDT',
+          enabled: true,
+        })
+      );
+
+      result.current.render();
+
+      expect(mockCtx.font).toBe('bold 96px sans-serif');
+    });
+
+    it('should use smaller font size for FUTURES label on second line', () => {
+      const { result } = renderHook(() =>
+        useWatermarkRenderer({
+          manager: mockManager,
+          colors: mockColors,
+          symbol: 'BTCUSDT',
+          timeframe: '1h',
+          marketType: 'FUTURES',
+          enabled: true,
+        })
+      );
+
+      result.current.render();
+
+      const calls = (mockCtx.fillText as ReturnType<typeof vi.fn>).mock.calls;
+      expect(calls.length).toBe(2);
+
+      const fontSizes = mockCtx.font.split(' ');
+      const lastFontSize = parseInt(fontSizes[1] || '');
+      expect(lastFontSize).toBe(34);
     });
   });
 });

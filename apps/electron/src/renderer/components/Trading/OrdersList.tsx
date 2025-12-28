@@ -680,8 +680,8 @@ const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }
     { key: 'pnl', header: t('trading.orders.pnl'), textAlign: 'right', minW: '130px' },
     { key: 'side', header: t('trading.orders.side') },
     { key: 'status', header: t('trading.orders.status') },
-    { key: 'type', header: t('trading.orders.type') },
     { key: 'setup', header: t('trading.orders.setup') },
+    { key: 'type', header: t('trading.orders.type') },
     { key: 'createdAt', header: t('trading.orders.createdAt') },
     { key: 'filledAt', header: t('trading.orders.filledAt') },
     { key: 'closedAt', header: t('trading.orders.closedAt') },
@@ -737,18 +737,18 @@ const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }
               </Badge>
             </TradingTableCell>
             <TradingTableCell>
-              {order.marketType === 'FUTURES' ? (
-                <Badge colorPalette="orange" size="sm" px={2}>FUTURES</Badge>
-              ) : (
-                <Badge colorPalette="gray" size="sm" px={2}>SPOT</Badge>
-              )}
-            </TradingTableCell>
-            <TradingTableCell>
               {order.setupType ? (
                 <Badge colorPalette="purple" size="sm" px={2}>
                   {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
                 </Badge>
               ) : '-'}
+            </TradingTableCell>
+            <TradingTableCell>
+              {order.marketType === 'FUTURES' ? (
+                <Badge colorPalette="orange" size="sm" px={2}>FUTURES</Badge>
+              ) : (
+                <Badge colorPalette="gray" size="sm" px={2}>SPOT</Badge>
+              )}
             </TradingTableCell>
             <TradingTableCell>{formatDate(order.createdAt)}</TradingTableCell>
             <TradingTableCell>{formatDate(order.updateTime)}</TradingTableCell>
