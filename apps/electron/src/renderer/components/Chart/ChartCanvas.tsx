@@ -55,6 +55,7 @@ import { useLiquidityLevelsWorker } from '@renderer/hooks/useLiquidityLevelsWork
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
 import { useIndicatorStore, useSetupStore } from '@renderer/store';
+import { usePriceStore } from '@renderer/store/priceStore';
 import { trpc } from '@renderer/utils/trpc';
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume, isOrderLong, isOrderPending } from '@shared/utils';
@@ -718,6 +719,13 @@ export const ChartCanvas = ({
   const currentKlines = manager?.getKlines() ?? [];
   const lastKline = currentKlines[currentKlines.length - 1];
   const currentPrice = lastKline ? getKlineClose(lastKline) : 0;
+
+  const updatePrice = usePriceStore((s) => s.updatePrice);
+  useEffect(() => {
+    if (symbol && currentPrice > 0) {
+      updatePrice(symbol, currentPrice, 'chart');
+    }
+  }, [symbol, currentPrice, updatePrice]);
 
   const draggableOrders = useMemo((): Order[] => {
     return filteredBackendExecutions

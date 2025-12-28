@@ -19,6 +19,7 @@ import {
 } from '@shared/utils';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { usePriceStore } from '@renderer/store/priceStore';
 import { BsGrid, BsTable, BsThreeDotsVertical } from 'react-icons/bs';
 import { LuBot, LuX } from 'react-icons/lu';
 
@@ -262,27 +263,29 @@ const OrdersListComponent = () => {
               />
             </ChakraField.Root>
 
-            <ChakraField.Root flex={1}>
-              <ChakraField.Label fontSize="xs">{t('trading.orders.sortBy')}</ChakraField.Label>
-              <Select
-                size="xs"
-                value={sortBy}
-                onChange={(value) => setSortBy(value as OrdersSortOption)}
-                options={[
-                  { value: 'newest', label: t('trading.orders.sortNewest') },
-                  { value: 'oldest', label: t('trading.orders.sortOldest') },
-                  { value: 'symbol-asc', label: t('trading.orders.sortSymbolAsc') },
-                  { value: 'symbol-desc', label: t('trading.orders.sortSymbolDesc') },
-                  { value: 'quantity-desc', label: t('trading.orders.sortQuantityDesc') },
-                  { value: 'quantity-asc', label: t('trading.orders.sortQuantityAsc') },
-                  { value: 'pnl-desc', label: t('trading.orders.sortPnlDesc') },
-                  { value: 'pnl-asc', label: t('trading.orders.sortPnlAsc') },
-                  { value: 'price-desc', label: t('trading.orders.sortPriceDesc') },
-                  { value: 'price-asc', label: t('trading.orders.sortPriceAsc') },
-                ]}
-                usePortal
-              />
-            </ChakraField.Root>
+            {viewMode === 'cards' && (
+              <ChakraField.Root flex={1}>
+                <ChakraField.Label fontSize="xs">{t('trading.orders.sortBy')}</ChakraField.Label>
+                <Select
+                  size="xs"
+                  value={sortBy}
+                  onChange={(value) => setSortBy(value as OrdersSortOption)}
+                  options={[
+                    { value: 'newest', label: t('trading.orders.sortNewest') },
+                    { value: 'oldest', label: t('trading.orders.sortOldest') },
+                    { value: 'symbol-asc', label: t('trading.orders.sortSymbolAsc') },
+                    { value: 'symbol-desc', label: t('trading.orders.sortSymbolDesc') },
+                    { value: 'quantity-desc', label: t('trading.orders.sortQuantityDesc') },
+                    { value: 'quantity-asc', label: t('trading.orders.sortQuantityAsc') },
+                    { value: 'pnl-desc', label: t('trading.orders.sortPnlDesc') },
+                    { value: 'pnl-asc', label: t('trading.orders.sortPnlAsc') },
+                    { value: 'price-desc', label: t('trading.orders.sortPriceDesc') },
+                    { value: 'price-asc', label: t('trading.orders.sortPriceAsc') },
+                  ]}
+                  usePortal
+                />
+              </ChakraField.Root>
+            )}
 
             <Group attached>
               <IconButton
@@ -577,6 +580,59 @@ interface OrdersTableProps {
 
 const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }: OrdersTableProps) => {
   const { t } = useTranslation();
+  const sortKey = useUIStore((s) => s.ordersTableSortKey);
+  const sortDirection = useUIStore((s) => s.ordersTableSortDirection);
+  const setOrdersTableSort = useUIStore((s) => s.setOrdersTableSort);
+  const centralizedPrices = usePriceStore((s) => s.prices);
+
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setOrdersTableSort(key, sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setOrdersTableSort(key, 'desc');
+    }
+  };
+
+  const sortedOrders = useMemo(() => {
+    return [...orders].sort((a, b) => {
+      const dir = sortDirection === 'asc' ? 1 : -1;
+      switch (sortKey) {
+        case 'symbol':
+          return dir * a.symbol.localeCompare(b.symbol);
+        case 'pnl': {
+          const pnlA = a.pnl ? parseFloat(a.pnl) : 0;
+          const pnlB = b.pnl ? parseFloat(b.pnl) : 0;
+          return dir * (pnlA - pnlB);
+        }
+        case 'side':
+          return dir * (isOrderLong(a) ? 1 : -1) - (isOrderLong(b) ? 1 : -1);
+        case 'status':
+          return dir * a.status.localeCompare(b.status);
+        case 'type':
+          return dir * ((a.marketType || '').localeCompare(b.marketType || ''));
+        case 'setup':
+          return dir * ((a.setupType || '').localeCompare(b.setupType || ''));
+        case 'createdAt':
+          return dir * ((a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+        case 'filledAt':
+          return dir * ((a.updateTime || 0) - (b.updateTime || 0));
+        case 'closedAt':
+          return dir * ((a.closedAt?.getTime() || 0) - (b.closedAt?.getTime() || 0));
+        case 'quantity':
+          return dir * (getOrderQuantity(a) - getOrderQuantity(b));
+        case 'entryPrice':
+          return dir * (getOrderPrice(a) - getOrderPrice(b));
+        case 'currentPrice':
+          return dir * ((a.currentPrice || 0) - (b.currentPrice || 0));
+        case 'stopLoss':
+          return dir * ((a.stopLoss || 0) - (b.stopLoss || 0));
+        case 'takeProfit':
+          return dir * ((a.takeProfit || 0) - (b.takeProfit || 0));
+        default:
+          return 0;
+      }
+    });
+  }, [orders, sortKey, sortDirection]);
 
   const getStatusColor = (status: OrderStatus): string => {
     const colors: Record<OrderStatus, string> = {
@@ -634,16 +690,18 @@ const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }
     { key: 'currentPrice', header: t('trading.orders.currentPrice'), textAlign: 'right' },
     { key: 'stopLoss', header: t('trading.orders.stopLoss'), textAlign: 'right' },
     { key: 'takeProfit', header: t('trading.orders.takeProfit'), textAlign: 'right' },
-    { key: 'actions', header: t('trading.orders.actions'), textAlign: 'center' },
+    { key: 'actions', header: t('trading.orders.actions'), textAlign: 'center', sortable: false },
   ];
 
   return (
-    <TradingTable columns={columns} minW="1400px">
-      {orders.map((order) => {
+    <TradingTable columns={columns} minW="1400px" sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort}>
+      {sortedOrders.map((order) => {
         const canCancel = isOrderPending(order) || isOrderActive(order);
         const canClose = isOrderActive(order);
         const pnl = order.pnl ? parseFloat(order.pnl) : undefined;
         const pnlPercent = order.pnlPercent ? parseFloat(order.pnlPercent) : undefined;
+        const centralPrice = centralizedPrices[order.symbol]?.price;
+        const currentPrice = centralPrice ?? order.currentPrice;
 
         return (
           <TradingTableRow key={getOrderId(order)}>
@@ -698,7 +756,7 @@ const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }
             <TradingTableCell textAlign="right">{getOrderQuantity(order).toFixed(8)}</TradingTableCell>
             <TradingTableCell textAlign="right">{formatPrice(getOrderPrice(order))}</TradingTableCell>
             <TradingTableCell textAlign="right">
-              <Text color="blue.500">{formatPrice(order.currentPrice)}</Text>
+              <Text color="blue.500">{formatPrice(currentPrice)}</Text>
             </TradingTableCell>
             <TradingTableCell textAlign="right">
               <Text color="red.500">{formatPrice(order.stopLoss)}</Text>
@@ -720,7 +778,7 @@ const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }
                         {canClose && (
                           <MenuItem
                             value="close"
-                            onClick={() => onClose(getOrderId(order), order.currentPrice || getOrderPrice(order))}
+                            onClick={() => onClose(getOrderId(order), currentPrice || getOrderPrice(order))}
                             px={3}
                             py={2}
                             _hover={{ bg: 'bg.muted' }}

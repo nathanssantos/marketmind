@@ -10,10 +10,12 @@ export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'all';
 export type PortfolioFilterOption = 'all' | 'long' | 'short' | 'profitable' | 'losing';
 export type PortfolioSortOption = 'newest' | 'oldest' | 'pnl-desc' | 'pnl-asc' | 'size-desc' | 'size-asc' | 'symbol-asc' | 'symbol-desc' | 'exposure-desc' | 'exposure-asc';
 export type ViewMode = 'cards' | 'table';
+export type TableSortDirection = 'asc' | 'desc';
 
 const MIGRATION_VERSION_2 = 2;
 const MIGRATION_VERSION_3 = 3;
 const MIGRATION_VERSION_4 = 4;
+const MIGRATION_VERSION_5 = 5;
 
 interface UIState {
   chatPosition: 'left' | 'right';
@@ -56,6 +58,14 @@ interface UIState {
 
   portfolioViewMode: ViewMode;
   setPortfolioViewMode: (mode: ViewMode) => void;
+
+  ordersTableSortKey: string;
+  ordersTableSortDirection: TableSortDirection;
+  setOrdersTableSort: (key: string, direction: TableSortDirection) => void;
+
+  portfolioTableSortKey: string;
+  portfolioTableSortDirection: TableSortDirection;
+  setPortfolioTableSort: (key: string, direction: TableSortDirection) => void;
 }
 
 const DEFAULT_ENABLED_PATTERNS: AIPatternType[] = [
@@ -143,10 +153,18 @@ export const useUIStore = create<UIState>()(
 
       portfolioViewMode: 'cards',
       setPortfolioViewMode: (mode) => set({ portfolioViewMode: mode }),
+
+      ordersTableSortKey: 'createdAt',
+      ordersTableSortDirection: 'desc',
+      setOrdersTableSort: (key, direction) => set({ ordersTableSortKey: key, ordersTableSortDirection: direction }),
+
+      portfolioTableSortKey: 'pnl',
+      portfolioTableSortDirection: 'desc',
+      setPortfolioTableSort: (key, direction) => set({ portfolioTableSortKey: key, portfolioTableSortDirection: direction }),
     }),
     {
       name: 'ui-storage',
-      version: 4,
+      version: 5,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as UIState;
 
@@ -162,6 +180,13 @@ export const useUIStore = create<UIState>()(
           state.ordersFilterStatus = 'pending';
           state.performancePeriod = 'all';
           state.setupStatsPeriod = 'all';
+        }
+
+        if (version < MIGRATION_VERSION_5) {
+          state.ordersTableSortKey = 'createdAt';
+          state.ordersTableSortDirection = 'desc';
+          state.portfolioTableSortKey = 'pnl';
+          state.portfolioTableSortDirection = 'desc';
         }
 
         return state;

@@ -11,9 +11,9 @@ export const getVolatilityProfile = (atrPercent: number): VolatilityProfile => {
       level: 'LOW' as VolatilityLevel,
       atrPercent,
       atrMultiplier: 2.0,
-      breakevenThreshold: 0.005,
-      feesThreshold: 0.0075,
-      minTrailingDistance: 0.002,
+      breakevenThreshold: 0.0075,
+      feesThreshold: 0.01,
+      minTrailingDistance: 0.003,
     };
   }
   if (atrPercent < 2.0) {
@@ -21,9 +21,9 @@ export const getVolatilityProfile = (atrPercent: number): VolatilityProfile => {
       level: 'MEDIUM' as VolatilityLevel,
       atrPercent,
       atrMultiplier: 2.5,
-      breakevenThreshold: 0.01,
-      feesThreshold: 0.015,
-      minTrailingDistance: 0.003,
+      breakevenThreshold: 0.0125,
+      feesThreshold: 0.0175,
+      minTrailingDistance: 0.004,
     };
   }
   if (atrPercent < 3.0) {
@@ -31,9 +31,9 @@ export const getVolatilityProfile = (atrPercent: number): VolatilityProfile => {
       level: 'HIGH' as VolatilityLevel,
       atrPercent,
       atrMultiplier: 3.0,
-      breakevenThreshold: 0.015,
-      feesThreshold: 0.02,
-      minTrailingDistance: 0.004,
+      breakevenThreshold: 0.0175,
+      feesThreshold: 0.0225,
+      minTrailingDistance: 0.005,
     };
   }
   if (atrPercent < 4.0) {
@@ -41,18 +41,18 @@ export const getVolatilityProfile = (atrPercent: number): VolatilityProfile => {
       level: 'VERY_HIGH' as VolatilityLevel,
       atrPercent,
       atrMultiplier: 3.5,
-      breakevenThreshold: 0.02,
-      feesThreshold: 0.025,
-      minTrailingDistance: 0.005,
+      breakevenThreshold: 0.0225,
+      feesThreshold: 0.0275,
+      minTrailingDistance: 0.006,
     };
   }
   return {
     level: 'EXTREME' as VolatilityLevel,
     atrPercent,
     atrMultiplier: Math.min(5.0, 4.0 + (atrPercent - 4) * 0.25),
-    breakevenThreshold: 0.025,
-    feesThreshold: 0.03,
-    minTrailingDistance: 0.006,
+    breakevenThreshold: 0.0275,
+    feesThreshold: 0.0325,
+    minTrailingDistance: 0.007,
   };
 };
 

@@ -8,6 +8,7 @@ import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
 import { usePortfolioFilters } from '@renderer/hooks/usePortfolioFilters';
 import { usePositionUpdates } from '@renderer/hooks/usePositionUpdates';
 import { type PortfolioFilterOption, type PortfolioSortOption, useUIStore } from '@renderer/store/uiStore';
+import { usePriceStore } from '@renderer/store/priceStore';
 import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from './TradingTable';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -52,14 +53,18 @@ const PortfolioComponent = () => {
   const viewMode = useUIStore((s) => s.portfolioViewMode);
   const setViewMode = useUIStore((s) => s.setPortfolioViewMode);
 
+  const centralizedPrices = usePriceStore((s) => s.prices);
+
   const positions: PortfolioPosition[] = useMemo(() => {
     return tradeExecutions
       .filter((e) => e.status === 'open')
       .map((e) => {
         const entryPrice = parseFloat(e.entryPrice || '0');
         const quantity = parseFloat(e.quantity || '0');
+
+        const centralPrice = centralizedPrices[e.symbol]?.price;
         const tickerPrice = tickerPrices[e.symbol];
-        const currentPrice = tickerPrice ? parseFloat(String(tickerPrice)) : entryPrice;
+        const currentPrice = centralPrice ?? (tickerPrice ? parseFloat(String(tickerPrice)) : entryPrice);
 
         let pnl = 0;
         if (e.side === 'LONG') {
@@ -88,7 +93,7 @@ const PortfolioComponent = () => {
           isAutoTrade: true,
         };
       });
-  }, [tradeExecutions, tickerPrices]);
+  }, [tradeExecutions, tickerPrices, centralizedPrices]);
 
   const wallets = backendWallets.map((w) => ({
     id: w.id,
@@ -181,25 +186,27 @@ const PortfolioComponent = () => {
               />
             </ChakraField.Root>
 
-            <ChakraField.Root flex={1}>
-              <ChakraField.Label fontSize="xs">{t('trading.portfolio.sortBy')}</ChakraField.Label>
-              <Select
-                size="xs"
-                value={sortBy}
-                onChange={(value) => setSortBy(value as PortfolioSortOption)}
-                options={[
-                  { value: 'pnl-desc', label: t('trading.portfolio.sortPnlDesc') },
-                  { value: 'pnl-asc', label: t('trading.portfolio.sortPnlAsc') },
-                  { value: 'newest', label: t('trading.portfolio.sortNewest') },
-                  { value: 'oldest', label: t('trading.portfolio.sortOldest') },
-                  { value: 'symbol-asc', label: t('trading.portfolio.sortSymbolAsc') },
-                  { value: 'symbol-desc', label: t('trading.portfolio.sortSymbolDesc') },
-                  { value: 'exposure-desc', label: t('trading.portfolio.sortExposureDesc') },
-                  { value: 'exposure-asc', label: t('trading.portfolio.sortExposureAsc') },
-                ]}
-                usePortal
-              />
-            </ChakraField.Root>
+            {viewMode === 'cards' && (
+              <ChakraField.Root flex={1}>
+                <ChakraField.Label fontSize="xs">{t('trading.portfolio.sortBy')}</ChakraField.Label>
+                <Select
+                  size="xs"
+                  value={sortBy}
+                  onChange={(value) => setSortBy(value as PortfolioSortOption)}
+                  options={[
+                    { value: 'pnl-desc', label: t('trading.portfolio.sortPnlDesc') },
+                    { value: 'pnl-asc', label: t('trading.portfolio.sortPnlAsc') },
+                    { value: 'newest', label: t('trading.portfolio.sortNewest') },
+                    { value: 'oldest', label: t('trading.portfolio.sortOldest') },
+                    { value: 'symbol-asc', label: t('trading.portfolio.sortSymbolAsc') },
+                    { value: 'symbol-desc', label: t('trading.portfolio.sortSymbolDesc') },
+                    { value: 'exposure-desc', label: t('trading.portfolio.sortExposureDesc') },
+                    { value: 'exposure-asc', label: t('trading.portfolio.sortExposureAsc') },
+                  ]}
+                  usePortal
+                />
+              </ChakraField.Root>
+            )}
 
             <Group attached>
               <IconButton
@@ -244,6 +251,49 @@ interface PortfolioTableProps {
 
 const PortfolioTable = ({ positions, currency, onNavigateToSymbol }: PortfolioTableProps) => {
   const { t } = useTranslation();
+  const sortKey = useUIStore((s) => s.portfolioTableSortKey);
+  const sortDirection = useUIStore((s) => s.portfolioTableSortDirection);
+  const setPortfolioTableSort = useUIStore((s) => s.setPortfolioTableSort);
+
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setPortfolioTableSort(key, sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setPortfolioTableSort(key, 'desc');
+    }
+  };
+
+  const sortedPositions = useMemo(() => {
+    return [...positions].sort((a, b) => {
+      const dir = sortDirection === 'asc' ? 1 : -1;
+      switch (sortKey) {
+        case 'symbol':
+          return dir * a.symbol.localeCompare(b.symbol);
+        case 'pnl':
+          return dir * (a.pnl - b.pnl);
+        case 'side':
+          return dir * a.side.localeCompare(b.side);
+        case 'type':
+          return dir * ((a.marketType || '').localeCompare(b.marketType || ''));
+        case 'setup':
+          return dir * ((a.setupType || '').localeCompare(b.setupType || ''));
+        case 'opened':
+          return dir * (a.openedAt.getTime() - b.openedAt.getTime());
+        case 'quantity':
+          return dir * (a.quantity - b.quantity);
+        case 'avgPrice':
+          return dir * (a.avgPrice - b.avgPrice);
+        case 'currentPrice':
+          return dir * (a.currentPrice - b.currentPrice);
+        case 'stopLoss':
+          return dir * ((a.stopLoss || 0) - (b.stopLoss || 0));
+        case 'takeProfit':
+          return dir * ((a.takeProfit || 0) - (b.takeProfit || 0));
+        default:
+          return 0;
+      }
+    });
+  }, [positions, sortKey, sortDirection]);
 
   const formatPrice = (price: number | undefined) => {
     if (price === undefined) return '-';
@@ -265,8 +315,8 @@ const PortfolioTable = ({ positions, currency, onNavigateToSymbol }: PortfolioTa
   ];
 
   return (
-    <TradingTable columns={columns} minW="1100px">
-      {positions.map((position) => {
+    <TradingTable columns={columns} minW="1100px" sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort}>
+      {sortedPositions.map((position) => {
         const isProfitable = position.pnl >= 0;
         const isLong = position.side === 'LONG';
 

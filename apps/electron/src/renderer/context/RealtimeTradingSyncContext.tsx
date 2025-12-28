@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, type ReactNo
 import type { Socket } from 'socket.io-client';
 import { socketService } from '../services/socketService';
 import { trpc } from '../utils/trpc';
+import { usePriceStore } from '../store/priceStore';
 
 interface PositionUpdate {
   id: string;
@@ -126,6 +127,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       });
 
       socket.on('price:update', (data: PriceUpdate) => {
+        usePriceStore.getState().updatePrice(data.symbol, data.price, 'websocket');
         const callback = priceCallbacksRef.current.get(data.symbol);
         if (callback) {
           callback(data.price);
