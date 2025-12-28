@@ -621,6 +621,7 @@ const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }
 
   const columns: TradingTableColumn[] = [
     { key: 'symbol', header: t('trading.orders.symbol'), sticky: true, minW: '100px' },
+    { key: 'pnl', header: t('trading.orders.pnl'), textAlign: 'right', minW: '130px' },
     { key: 'side', header: t('trading.orders.side') },
     { key: 'status', header: t('trading.orders.status') },
     { key: 'type', header: t('trading.orders.type') },
@@ -633,7 +634,6 @@ const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }
     { key: 'currentPrice', header: t('trading.orders.currentPrice'), textAlign: 'right' },
     { key: 'stopLoss', header: t('trading.orders.stopLoss'), textAlign: 'right' },
     { key: 'takeProfit', header: t('trading.orders.takeProfit'), textAlign: 'right' },
-    { key: 'pnl', header: t('trading.orders.pnl'), textAlign: 'right' },
     { key: 'actions', header: t('trading.orders.actions'), textAlign: 'center' },
   ];
 
@@ -659,6 +659,14 @@ const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }
                   {order.symbol}
                 </Text>
               </Flex>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">
+              {pnl !== undefined ? (
+                <Text fontWeight="medium" color={pnl >= 0 ? 'green.500' : 'red.500'}>
+                  {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}
+                  {pnlPercent !== undefined && ` (${pnl >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%)`}
+                </Text>
+              ) : '-'}
             </TradingTableCell>
             <TradingTableCell>
               <Badge colorPalette={isOrderLong(order) ? 'green' : 'red'} size="sm" px={2}>
@@ -697,14 +705,6 @@ const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }
             </TradingTableCell>
             <TradingTableCell textAlign="right">
               <Text color="green.500">{formatPrice(order.takeProfit)}</Text>
-            </TradingTableCell>
-            <TradingTableCell textAlign="right">
-              {pnl !== undefined ? (
-                <Text fontWeight="medium" color={pnl >= 0 ? 'green.500' : 'red.500'}>
-                  {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}
-                  {pnlPercent !== undefined && ` (${pnl >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%)`}
-                </Text>
-              ) : '-'}
             </TradingTableCell>
             <TradingTableCell textAlign="center">
               {(canClose || canCancel) && (
