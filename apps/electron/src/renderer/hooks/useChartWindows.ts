@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { usePlatform } from '../context/PlatformContext';
 
 interface UseChartWindowsResult {
   openChartWindow: (symbol?: string, timeframe?: string) => Promise<void>;
@@ -6,9 +7,11 @@ interface UseChartWindowsResult {
 }
 
 export const useChartWindows = (): UseChartWindowsResult => {
+  const { window: windowAdapter } = usePlatform();
+
   const openChartWindow = useCallback(async (symbol?: string, timeframe?: string) => {
     try {
-      const result = await window.electron.window.openChart(symbol, timeframe);
+      const result = await windowAdapter.openChart(symbol, timeframe);
       if (!result.success) {
         console.error('Failed to open chart window:', result.error);
         throw new Error(result.error || 'Failed to open chart window');
@@ -17,16 +20,16 @@ export const useChartWindows = (): UseChartWindowsResult => {
       console.error('Error opening chart window:', error);
       throw error;
     }
-  }, []);
+  }, [windowAdapter]);
 
   const getChartWindows = useCallback(async () => {
     try {
-      return await window.electron.window.getChartWindows();
+      return await windowAdapter.getChartWindows();
     } catch (error) {
       console.error('Error getting chart windows:', error);
       return [];
     }
-  }, []);
+  }, [windowAdapter]);
 
   return {
     openChartWindow,

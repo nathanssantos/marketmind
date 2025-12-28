@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-
-interface NotificationOptions {
-  title: string;
-  body: string;
-  silent?: boolean;
-  urgency?: 'normal' | 'critical' | 'low';
-}
+import type { NotificationOptions } from '../adapters/types';
+import { usePlatform } from '../context/PlatformContext';
 
 interface UseNotificationReturn {
   showNotification: (options: NotificationOptions) => Promise<void>;
@@ -14,13 +9,14 @@ interface UseNotificationReturn {
 }
 
 export const useNotification = (): UseNotificationReturn => {
+  const { notification } = usePlatform();
   const [isSupported, setIsSupported] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkSupport = async () => {
       try {
-        const supported = await window.electron.notification.isSupported();
+        const supported = await notification.isSupported();
         setIsSupported(supported);
       } catch (err) {
         console.error('Failed to check notification support:', err);
@@ -29,7 +25,7 @@ export const useNotification = (): UseNotificationReturn => {
     };
 
     checkSupport();
-  }, []);
+  }, [notification]);
 
   const showNotification = useCallback(async (options: NotificationOptions) => {
     setError(null);
@@ -42,8 +38,8 @@ export const useNotification = (): UseNotificationReturn => {
     }
 
     try {
-      const result = await window.electron.notification.show(options);
-      
+      const result = await notification.show(options);
+
       if (!result.success) {
         throw new Error(result.error || 'Failed to show notification');
       }
@@ -52,7 +48,7 @@ export const useNotification = (): UseNotificationReturn => {
       setError(errorMsg);
       console.error('Notification error:', err);
     }
-  }, [isSupported]);
+  }, [notification, isSupported]);
 
   return {
     showNotification,

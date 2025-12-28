@@ -1,6 +1,6 @@
 {
   "name": "@marketmind/electron",
-  "version": "0.31.0",
+  "version": "0.34.0",
   "description": "MarketMind Electron Desktop App",
   "main": "dist-electron/main/index.js",
   "author": "Nathan Santos",
@@ -8,8 +8,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build && electron-builder",
+    "dev": "VITE_TARGET=electron vite",
+    "dev:web": "VITE_TARGET=web vite",
+    "build": "tsc && VITE_TARGET=electron vite build && electron-builder",
+    "build:web": "tsc && VITE_TARGET=web vite build",
     "build:mac": "pnpm build && electron-builder --mac",
     "build:win": "pnpm build && electron-builder --win",
     "build:all": "pnpm build && electron-builder --mac --win",
@@ -17,6 +19,7 @@
     "lint:fix": "eslint . --fix",
     "type-check": "tsc --noEmit",
     "preview": "vite preview",
+    "preview:web": "VITE_TARGET=web vite preview",
     "test": "npm run test:unit && npm run test:browser:run",
     "test:ui": "vitest --ui",
     "test:run": "npm run test:unit && npm run test:browser:run",
@@ -25,7 +28,7 @@
     "test:browser:run": "vitest run --config vitest.browser.config.ts",
     "test:coverage": "vitest run --coverage",
     "clear-storage": "node ../../scripts/clear-storage.mjs",
-    "clean": "rm -rf dist dist-electron node_modules"
+    "clean": "rm -rf dist dist-web dist-electron node_modules"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
@@ -91,6 +94,7 @@
     "vite": "^7.2.7",
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6",
+    "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.0.15",
     "vitest-canvas-mock": "^1.1.3"
   }

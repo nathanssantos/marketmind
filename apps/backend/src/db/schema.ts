@@ -557,3 +557,20 @@ export type StrategyPerformance = typeof strategyPerformance.$inferSelect;
 export type NewStrategyPerformance = typeof strategyPerformance.$inferInsert;
 export type TradeCooldown = typeof tradeCooldowns.$inferSelect;
 export type NewTradeCooldown = typeof tradeCooldowns.$inferInsert;
+
+export const apiKeys = pgTable('api_keys', {
+  id: varchar({ length: 255 }).primaryKey(),
+  userId: varchar('user_id', { length: 255 })
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  provider: varchar({ length: 50 }).notNull(),
+  keyEncrypted: text('key_encrypted').notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  userProviderUnique: unique().on(table.userId, table.provider),
+  userIdIdx: index('api_keys_user_id_idx').on(table.userId),
+}));
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type NewApiKey = typeof apiKeys.$inferInsert;

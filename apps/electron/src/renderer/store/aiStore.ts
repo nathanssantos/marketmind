@@ -1,6 +1,7 @@
 import type { Timeframe } from '@/renderer/components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '@/renderer/components/Chart/useMovingAverageRenderer';
 import { AIService } from '@/renderer/services/ai';
+import { createPlatformAdapter } from '@renderer/adapters/factory';
 import type { AIAnalysisResponse, AIMessage, AIProviderType, AITrade, AITradingConfig, AITradingStats, Kline } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '@shared/utils';
 import { create } from 'zustand';
@@ -102,7 +103,8 @@ const loadFromElectron = async (): Promise<{
   tradingStats?: AITradingStats | null;
 }> => {
   try {
-    const result = await window.electron.secureStorage.getAIData();
+    const adapter = await createPlatformAdapter();
+    const result = await adapter.storage.getAIData();
     if (result.success && result.data) {
       return {
         conversations: result.data.conversations,
@@ -116,14 +118,15 @@ const loadFromElectron = async (): Promise<{
       };
     }
   } catch (error) {
-    console.error('Failed to load AI data from Electron:', error);
+    console.error('Failed to load AI data:', error);
   }
   return {};
 };
 
 const saveToElectron = async (state: AIState): Promise<void> => {
   try {
-    await window.electron.secureStorage.setAIData({
+    const adapter = await createPlatformAdapter();
+    await adapter.storage.setAIData({
       conversations: state.conversations,
       activeConversationId: state.activeConversationId,
       settings: state.settings,
@@ -134,7 +137,7 @@ const saveToElectron = async (state: AIState): Promise<void> => {
       tradingStats: state.tradingStats,
     });
   } catch (error) {
-    console.error('Failed to save AI data to Electron:', error);
+    console.error('Failed to save AI data:', error);
   }
 };
 
