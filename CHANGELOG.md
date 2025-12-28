@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.0] - 2025-12-28
+
+### Added
+
+#### Web Compatibility
+- **Platform Adapter Pattern** - Abstract platform-specific functionality for Electron and Web builds
+- **Web Storage Adapter** - tRPC-based API key storage with backend encryption for web platform
+- **Web Update Adapter** - Service Worker-based update detection for PWA
+- **Web Notification Adapter** - Web Notification API integration with permission handling
+- **Web Window Adapter** - URL-based chart window routing (`/chart/:symbol/:timeframe`)
+- **PWA Support** - Full Progressive Web App with offline caching and installability
+- **API Keys Backend** - Secure API key storage via tRPC with AES-256-CBC encryption
+
+#### Build System
+- **Dual Build Targets** - Single codebase builds for both Electron and Web (`pnpm dev:web`, `pnpm build:web`)
+- **Conditional Plugins** - Vite config with conditional Electron/PWA plugin loading
+- **PWA Assets** - Auto-generated service worker, manifest, and icons
+
+### Changed
+- **Hook Refactoring** - All platform-specific hooks now use adapter pattern (`useSecureStorage`, `useAutoUpdate`, `useChartWindows`, `useNotification`, `useAIPatterns`)
+- **AI Store** - Refactored to use platform adapter for cross-platform data persistence
+
+### Database Schema Changes
+- Added `api_keys` table for web-based API key storage with user association
+
+### Stats
+- 2,864 passing tests
+- Electron and Web builds verified
+
+---
+
 ## [0.33.0] - 2025-12-25
 
 ### Added
