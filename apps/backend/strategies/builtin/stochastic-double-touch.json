@@ -157,12 +157,12 @@
       "type": "swingHighLow",
       "buffer": 0.5,
       "indicator": "atr",
-      "lookback": 20
+      "lookback": 40
     },
     "takeProfit": {
       "type": "swingHighLow",
       "opposite": true,
-      "lookback": 20
+      "lookback": 40
     },
     "trailingStop": {
       "enabled": true,

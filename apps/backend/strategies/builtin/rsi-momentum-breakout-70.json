@@ -104,6 +104,14 @@
       "buffer": 0.6,
       "indicator": "atr"
     },
+    "takeProfit": {
+      "type": "pivotBased",
+      "lookback": 40,
+      "fallback": {
+        "type": "riskReward",
+        "multiplier": 2
+      }
+    },
     "maxBarsInTrade": "$holdingBars",
     "conditions": {
       "long": {
