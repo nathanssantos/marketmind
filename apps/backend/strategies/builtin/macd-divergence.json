@@ -176,6 +176,6 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 1.5
+    "minRiskReward": 1.0
   }
 }

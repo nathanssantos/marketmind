@@ -264,7 +264,7 @@ export class TradeExecutor {
     direction: 'LONG' | 'SHORT',
     tradesCount: number
   ): boolean {
-    const minRiskRewardRatio = this.config.minRiskRewardRatio ?? 1.25;
+    const minRiskRewardRatio = this.config.minRiskRewardRatio ?? 1.0;
 
     if (!stopLoss || !takeProfit) return true;
 

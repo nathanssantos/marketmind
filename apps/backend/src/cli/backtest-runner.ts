@@ -46,7 +46,7 @@ program
   .option('--with-trend', 'Enable EMA200 trend filter (only trade with trend)', false)
   .option('--trailing-stop', 'Use trailing stop instead of fixed take profit (let winners run)', false)
   .option('--use-ml-filter', 'Use ML model to filter setups (same as auto trading)', false)
-  .option('--use-adx-filter', 'Use ADX to filter direction (LONG: +DI > -DI, SHORT: -DI > +DI)', true)
+  .option('--use-adx-filter, --no-use-adx-filter', 'Use ADX to filter direction (LONG: +DI > -DI, SHORT: -DI > +DI)', true)
   .option('--optimized', 'Use strategy\'s optimized parameters (position size, trend filter, etc.)', false)
   .option('--use-market-context', 'Use historical market context filter (Fear/Greed, Funding Rate)', false)
   .option('--use-cooldown', 'Simulate cooldown between trades (same as auto trading)', false)
