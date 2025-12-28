@@ -1,7 +1,7 @@
 import type { AIPattern, AIPatternData } from '@marketmind/types';
 import { useCallback, useEffect, useState } from 'react';
+import { usePlatform } from '../context/PlatformContext';
 import { parseAIResponse } from '../services/ai/AIResponseParser';
-
 
 interface UseAIPatternsOptions {
   symbol: string;
@@ -9,6 +9,7 @@ interface UseAIPatternsOptions {
 }
 
 export const useAIPatterns = ({ symbol, conversationId }: UseAIPatternsOptions) => {
+  const { storage } = usePlatform();
   const [patterns, setPatterns] = useState<AIPattern[]>([]);
   const [hasPatterns, setHasPatterns] = useState(false);
   const [currentPatternDataId, setCurrentPatternDataId] = useState<string | null>(null);
@@ -16,7 +17,7 @@ export const useAIPatterns = ({ symbol, conversationId }: UseAIPatternsOptions) 
   const storageKey = conversationId || symbol;
 
   const loadPatterns = useCallback(async () => {
-    const result = await window.electron.secureStorage.getAIPatternsForSymbol(storageKey);
+    const result = await storage.getAIPatternsForSymbol(storageKey);
     if (result.success && result.data) {
       setPatterns(result.data.patterns);
       setHasPatterns(true);
@@ -26,7 +27,7 @@ export const useAIPatterns = ({ symbol, conversationId }: UseAIPatternsOptions) 
       setHasPatterns(false);
       setCurrentPatternDataId(null);
     }
-  }, [storageKey]);
+  }, [storage, storageKey]);
 
   useEffect(() => {
     loadPatterns();
@@ -40,28 +41,28 @@ export const useAIPatterns = ({ symbol, conversationId }: UseAIPatternsOptions) 
         createdAt: currentPatternDataId ? Date.now() : Date.now(),
         patterns: newPatterns,
       };
-      await window.electron.secureStorage.setAIPatternsForSymbol(storageKey, data);
+      await storage.setAIPatternsForSymbol(storageKey, data);
       setPatterns(newPatterns);
       setHasPatterns(true);
       setCurrentPatternDataId(data.id);
     },
-    [storageKey, symbol, currentPatternDataId]
+    [storage, storageKey, symbol, currentPatternDataId]
   );
 
   const deletePatterns = useCallback(async () => {
-    await window.electron.secureStorage.deleteAIPatternsForSymbol(storageKey);
+    await storage.deleteAIPatternsForSymbol(storageKey);
     setPatterns([]);
     setHasPatterns(false);
     setCurrentPatternDataId(null);
-  }, [storageKey]);
+  }, [storage, storageKey]);
 
-  const deletePattern= useCallback(async (patternId: number) => {
-    console.log('[useAIPatterns] deletePatterncalled:', { patternId, currentPatternsLength: patterns.length });
+  const deletePattern = useCallback(async (patternId: number) => {
+    console.log('[useAIPatterns] deletePattern called:', { patternId, currentPatternsLength: patterns.length });
     const updatedPatterns = patterns.filter((pattern) => pattern.id !== patternId);
     console.log('[useAIPatterns] After filter:', { updatedPatternsLength: updatedPatterns.length });
     if (updatedPatterns.length === 0) {
       console.log('[useAIPatterns] No patterns left, deleting all');
-      await window.electron.secureStorage.deleteAIPatternsForSymbol(storageKey);
+      await storage.deleteAIPatternsForSymbol(storageKey);
       setPatterns([]);
       setHasPatterns(false);
       setCurrentPatternDataId(null);
@@ -69,7 +70,7 @@ export const useAIPatterns = ({ symbol, conversationId }: UseAIPatternsOptions) 
       console.log('[useAIPatterns] Calling savePatterns with:', updatedPatterns.length, 'patterns');
       await savePatterns(updatedPatterns);
     }
-  }, [patterns, storageKey, savePatterns]);
+  }, [storage, patterns, storageKey, savePatterns]);
 
   const togglePatternsVisibility = useCallback(() => {
     setPatterns((prevPatterns) =>
@@ -83,18 +84,18 @@ export const useAIPatterns = ({ symbol, conversationId }: UseAIPatternsOptions) 
   const processAIResponse = useCallback(
     async (response: string) => {
       const parsed = parseAIResponse(response);
-      
+
       if (parsed.patterns && parsed.patterns.length > 0) {
         const existingPatterns = hasPatterns ? patterns : [];
-        const maxId = existingPatterns.length > 0 
+        const maxId = existingPatterns.length > 0
           ? Math.max(...existingPatterns.map(s => s.id || 0))
           : 0;
-        
+
         const newPatternsWithIds = parsed.patterns.map((pattern: AIPattern, index: number) => ({
           ...pattern,
           id: maxId + index + 1,
         }));
-        
+
         const allPatterns = [...existingPatterns, ...newPatternsWithIds];
         await savePatterns(allPatterns);
       }

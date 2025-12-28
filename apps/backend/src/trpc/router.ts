@@ -1,5 +1,6 @@
 import { aiTradingRouter } from '../routers/ai-trading';
 import { analyticsRouter } from '../routers/analytics';
+import { apiKeyRouter } from '../routers/api-keys';
 import { authRouter } from '../routers/auth';
 import { autoTradingRouter } from '../routers/auto-trading';
 import { backtestRouter } from '../routers/backtest';
@@ -31,6 +32,7 @@ export const appRouter = router({
   ml: mlRouter,
   marketContext: marketContextRouter,
   tradingProfiles: tradingProfilesRouter,
+  apiKey: apiKeyRouter,
 });
 
 export type AppRouter = typeof appRouter;

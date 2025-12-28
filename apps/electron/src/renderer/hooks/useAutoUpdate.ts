@@ -1,22 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-
-interface UpdateInfo {
-  version: string;
-  releaseNotes?: string;
-  releaseDate?: string;
-}
-
-interface UpdateProgress {
-  percent: number;
-  transferred: number;
-  total: number;
-  bytesPerSecond: number;
-}
-
-interface UpdateError {
-  message: string;
-  stack?: string;
-}
+import type { UpdateInfo, UpdateProgress, UpdateError } from '../adapters/types';
+import { usePlatform } from '../context/PlatformContext';
 
 export type UpdateStatus =
   | 'idle'
@@ -28,6 +12,7 @@ export type UpdateStatus =
   | 'error';
 
 export const useAutoUpdate = () => {
+  const { update } = usePlatform();
   const [status, setStatus] = useState<UpdateStatus>('idle');
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [progress, setProgress] = useState<UpdateProgress | null>(null);
@@ -35,82 +20,92 @@ export const useAutoUpdate = () => {
   const [currentVersion, setCurrentVersion] = useState<string>('');
 
   useEffect(() => {
+    if (!update.isSupported()) {
+      setStatus('not-available');
+      return;
+    }
+
     const loadUpdateInfo = async () => {
-      const info = await window.electron.update.getInfo();
+      const info = await update.getInfo();
       setCurrentVersion(info.currentVersion);
     };
 
     loadUpdateInfo();
 
-    window.electron.update.onChecking(() => {
+    update.onChecking(() => {
       setStatus('checking');
       setError(null);
     });
 
-    window.electron.update.onAvailable((info) => {
+    update.onAvailable((info) => {
       setStatus('available');
       setUpdateInfo(info);
     });
 
-    window.electron.update.onNotAvailable((info) => {
+    update.onNotAvailable((info) => {
       setStatus('not-available');
       setUpdateInfo(info);
     });
 
-    window.electron.update.onDownloadProgress((progressInfo) => {
+    update.onDownloadProgress((progressInfo) => {
       setStatus('downloading');
       setProgress(progressInfo);
     });
 
-    window.electron.update.onDownloaded((info) => {
+    update.onDownloaded((info) => {
       setStatus('downloaded');
       setUpdateInfo(info);
       setProgress(null);
     });
 
-    window.electron.update.onError((errorInfo) => {
+    update.onError((errorInfo) => {
       setStatus('error');
       setError(errorInfo);
     });
-  }, []);
+  }, [update]);
 
   const checkForUpdates = useCallback(async () => {
-    const result = await window.electron.update.checkForUpdates();
+    if (!update.isSupported()) return;
+    const result = await update.checkForUpdates();
     if (!result.success) {
       setError({ message: result.error || 'Failed to check for updates' });
       setStatus('error');
     }
-  }, []);
+  }, [update]);
 
   const downloadUpdate = useCallback(async () => {
-    const result = await window.electron.update.downloadUpdate();
+    if (!update.isSupported()) return;
+    const result = await update.downloadUpdate();
     if (!result.success) {
       setError({ message: result.error || 'Failed to download update' });
       setStatus('error');
     }
-  }, []);
+  }, [update]);
 
   const installUpdate = useCallback(async () => {
-    const result = await window.electron.update.installUpdate();
+    if (!update.isSupported()) return;
+    const result = await update.installUpdate();
     if (!result.success) {
       setError({ message: result.error || 'Failed to install update' });
       setStatus('error');
     }
-  }, []);
+  }, [update]);
 
   const startAutoCheck = useCallback(async (intervalHours: number = 6) => {
-    const result = await window.electron.update.startAutoCheck(intervalHours);
+    if (!update.isSupported()) return;
+    const result = await update.startAutoCheck(intervalHours);
     if (!result.success) {
       console.error('Failed to start auto-check:', result.error);
     }
-  }, []);
+  }, [update]);
 
   const stopAutoCheck = useCallback(async () => {
-    const result = await window.electron.update.stopAutoCheck();
+    if (!update.isSupported()) return;
+    const result = await update.stopAutoCheck();
     if (!result.success) {
       console.error('Failed to stop auto-check:', result.error);
     }
-  }, []);
+  }, [update]);
 
   return {
     status,

@@ -1,10 +1,52 @@
+import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { HashRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Route, Routes } from 'react-router-dom';
+import { createPlatformAdapter } from './adapters/factory';
+import type { PlatformAdapter } from './adapters/types';
 import App from './App';
 import { ColorModeProvider } from './components/ui/color-mode';
+import { PlatformProvider } from './context/PlatformContext';
 import './global.d.ts';
 import './i18n';
 import { ChartWindow } from './pages/ChartWindow';
+
+const RouterComponent = ({ platform, children }: { platform: 'electron' | 'web'; children: React.ReactNode }) => {
+  if (platform === 'web') {
+    return <BrowserRouter>{children}</BrowserRouter>;
+  }
+  return <HashRouter>{children}</HashRouter>;
+};
+
+const Root = () => {
+  const [adapter, setAdapter] = useState<PlatformAdapter | null>(null);
+
+  useEffect(() => {
+    createPlatformAdapter().then(setAdapter);
+  }, []);
+
+  if (!adapter) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#1a1a2e' }}>
+        <div style={{ color: '#fff', fontFamily: 'system-ui' }}>Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <PlatformProvider adapter={adapter}>
+      <ColorModeProvider>
+        <RouterComponent platform={adapter.platform}>
+          <Routes>
+            <Route path="/" element={<App />} />
+            <Route path="/chart" element={<ChartWindow />} />
+            <Route path="/chart/:symbol" element={<ChartWindow />} />
+            <Route path="/chart/:symbol/:timeframe" element={<ChartWindow />} />
+          </Routes>
+        </RouterComponent>
+      </ColorModeProvider>
+    </PlatformProvider>
+  );
+};
 
 const showFatalErrorScreen = (error: Error | string) => {
   const rootElement = document.getElementById('root');
@@ -86,19 +128,7 @@ if (!rootElement) {
 
 try {
   const root = createRoot(rootElement);
-
-  root.render(
-    <ColorModeProvider>
-      <HashRouter>
-        <Routes>
-          <Route path="/" element={<App />} />
-          <Route path="/chart" element={<ChartWindow />} />
-          <Route path="/chart/:symbol" element={<ChartWindow />} />
-          <Route path="/chart/:symbol/:timeframe" element={<ChartWindow />} />
-        </Routes>
-      </HashRouter>
-    </ColorModeProvider>
-  );
+  root.render(<Root />);
 } catch (error) {
   console.error('[Fatal Render Error]', error);
   showFatalErrorScreen(error instanceof Error ? error : new Error(String(error)));

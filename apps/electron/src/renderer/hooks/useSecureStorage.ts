@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-
-type AIProvider = 'openai' | 'anthropic' | 'gemini';
+import type { AIProvider } from '../adapters/types';
+import { usePlatform } from '../context/PlatformContext';
 
 interface UseSecureStorageResult {
   isEncryptionAvailable: boolean;
@@ -15,6 +15,7 @@ interface UseSecureStorageResult {
 }
 
 export const useSecureStorage = (): UseSecureStorageResult => {
+  const { storage } = usePlatform();
   const [isEncryptionAvailable, setIsEncryptionAvailable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +23,7 @@ export const useSecureStorage = (): UseSecureStorageResult => {
   useEffect(() => {
     const checkEncryption = async () => {
       try {
-        const available = await window.electron.secureStorage.isEncryptionAvailable();
+        const available = await storage.isEncryptionAvailable();
         setIsEncryptionAvailable(available);
       } catch (err) {
         console.error('Failed to check encryption availability:', err);
@@ -31,15 +32,15 @@ export const useSecureStorage = (): UseSecureStorageResult => {
     };
 
     checkEncryption();
-  }, []);
+  }, [storage]);
 
   const setApiKey = useCallback(async (provider: AIProvider, key: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
 
     try {
-      const result = await window.electron.secureStorage.setApiKey(provider, key);
-      
+      const result = await storage.setApiKey(provider, key);
+
       if (!result.success) {
         setError(result.error || 'Failed to save API key');
         return false;
@@ -53,15 +54,15 @@ export const useSecureStorage = (): UseSecureStorageResult => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [storage]);
 
   const getApiKey = useCallback(async (provider: AIProvider): Promise<string | null> => {
     setLoading(true);
     setError(null);
 
     try {
-      const result = await window.electron.secureStorage.getApiKey(provider);
-      
+      const result = await storage.getApiKey(provider);
+
       if (!result.success) {
         setError(result.error || 'Failed to retrieve API key');
         return null;
@@ -75,15 +76,15 @@ export const useSecureStorage = (): UseSecureStorageResult => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [storage]);
 
   const deleteApiKey = useCallback(async (provider: AIProvider): Promise<boolean> => {
     setLoading(true);
     setError(null);
 
     try {
-      const result = await window.electron.secureStorage.deleteApiKey(provider);
-      
+      const result = await storage.deleteApiKey(provider);
+
       if (!result.success) {
         setError(result.error || 'Failed to delete API key');
         return false;
@@ -97,33 +98,33 @@ export const useSecureStorage = (): UseSecureStorageResult => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [storage]);
 
   const hasApiKey = useCallback(async (provider: AIProvider): Promise<boolean> => {
     try {
-      return await window.electron.secureStorage.hasApiKey(provider);
+      return await storage.hasApiKey(provider);
     } catch (err) {
       console.error(`Failed to check if ${provider} API key exists:`, err);
       return false;
     }
-  }, []);
+  }, [storage]);
 
   const getAllApiKeys = useCallback(async (): Promise<Record<string, boolean>> => {
     try {
-      return await window.electron.secureStorage.getAllApiKeys();
+      return await storage.getAllApiKeys();
     } catch (err) {
       console.error('Failed to get all API keys:', err);
       return { openai: false, anthropic: false, gemini: false };
     }
-  }, []);
+  }, [storage]);
 
   const clearAllApiKeys = useCallback(async (): Promise<boolean> => {
     setLoading(true);
     setError(null);
 
     try {
-      const result = await window.electron.secureStorage.clearAllApiKeys();
-      
+      const result = await storage.clearAllApiKeys();
+
       if (!result.success) {
         setError(result.error || 'Failed to clear API keys');
         return false;
@@ -137,7 +138,7 @@ export const useSecureStorage = (): UseSecureStorageResult => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [storage]);
 
   return {
     isEncryptionAvailable,
@@ -151,4 +152,3 @@ export const useSecureStorage = (): UseSecureStorageResult => {
     clearAllApiKeys,
   };
 };
-
