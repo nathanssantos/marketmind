@@ -53,7 +53,7 @@ export class BinancePriceStreamService {
         symbolCount: this.subscribedSymbols.size,
         symbols: Array.from(this.subscribedSymbols),
       }, 'Binance WebSocket reconnected - resubscribing');
-      this.resubscribeAll();
+      void this.resubscribeAll();
       setTimeout(() => {
         this.isReconnecting = false;
       }, 2000);
@@ -87,11 +87,25 @@ export class BinancePriceStreamService {
       }
 
       const message = data as Record<string, unknown>;
+      const eventType = message['e'];
 
-      if (message['e'] === 'trade' && typeof message['s'] === 'string') {
+      if ((eventType === 'trade' || eventType === 'aggTrade') && typeof message['s'] === 'string') {
         const symbol = message['s'];
-        const price = parseFloat(message['p'] as string);
-        const timestamp = message['T'] as number;
+        const priceStr = message['p'] as string;
+
+        if (!priceStr || typeof priceStr !== 'string') {
+          logger.warn({ symbol, message }, 'Invalid price in trade message');
+          return;
+        }
+
+        const price = parseFloat(priceStr);
+
+        if (isNaN(price) || price <= 0) {
+          logger.warn({ symbol, priceStr, price }, 'Invalid price value parsed');
+          return;
+        }
+
+        const timestamp = (message['T'] as number) || Date.now();
 
         void this.processPriceUpdate({
           symbol,
@@ -144,25 +158,43 @@ export class BinancePriceStreamService {
         .from(tradeExecutions)
         .where(eq(tradeExecutions.status, 'open'));
 
-      const symbolsToSubscribe = new Set<string>();
+      const spotSymbols = new Set<string>();
+      const futuresSymbols = new Set<string>();
+
       for (const execution of openExecutions) {
-        symbolsToSubscribe.add(execution.symbol.toLowerCase());
+        const symbol = execution.symbol.toLowerCase();
+        if (execution.marketType === 'FUTURES') {
+          futuresSymbols.add(symbol);
+        } else {
+          spotSymbols.add(symbol);
+        }
       }
+
+      const allSymbolsNeeded = new Set([...spotSymbols, ...futuresSymbols]);
 
       const currentSymbols = new Set(this.subscribedSymbols);
       const unsubscribed: string[] = [];
       for (const symbol of currentSymbols) {
-        if (!symbolsToSubscribe.has(symbol)) {
+        if (!allSymbolsNeeded.has(symbol)) {
           this.unsubscribe(symbol);
           unsubscribed.push(symbol);
         }
       }
 
       const newSubscriptions: string[] = [];
-      for (const symbol of symbolsToSubscribe) {
+      for (const symbol of spotSymbols) {
         if (!this.subscribedSymbols.has(symbol)) {
-          this.subscribe(symbol);
-          newSubscriptions.push(symbol);
+          this.subscribe(symbol, 'spot');
+          newSubscriptions.push(`${symbol}:spot`);
+        }
+      }
+
+      for (const symbol of futuresSymbols) {
+        if (!this.subscribedSymbols.has(symbol)) {
+          this.subscribe(symbol, 'usdm');
+          newSubscriptions.push(`${symbol}:futures`);
+        } else {
+          this.subscribe(symbol, 'usdm');
         }
       }
 
@@ -186,13 +218,18 @@ export class BinancePriceStreamService {
     }
   }
 
-  private subscribe(symbol: string): void {
-    if (!this.client || this.subscribedSymbols.has(symbol)) {
+  private subscribe(symbol: string, market: 'spot' | 'usdm' = 'spot'): void {
+    if (!this.client) {
+      return;
+    }
+
+    if (market === 'spot' && this.subscribedSymbols.has(symbol)) {
       return;
     }
 
     try {
-      void this.client.subscribeTrades(symbol, 'spot');
+      void this.client.subscribeTrades(symbol, market);
+      logger.info({ symbol, market }, `📊 Subscribed to ${market.toUpperCase()} trades stream`);
       this.subscribedSymbols.add(symbol);
     } catch (error) {
       logger.error({
@@ -209,7 +246,7 @@ export class BinancePriceStreamService {
     this.subscribedSymbols.delete(symbol);
   }
 
-  private resubscribeAll(): void {
+  private async resubscribeAll(): Promise<void> {
     const symbols = Array.from(this.subscribedSymbols);
     if (symbols.length === 0) {
       logger.debug('No symbols to resubscribe');
@@ -218,14 +255,38 @@ export class BinancePriceStreamService {
 
     this.subscribedSymbols.clear();
 
-    for (const symbol of symbols) {
-      this.subscribe(symbol);
-    }
+    try {
+      const openExecutions = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.status, 'open'));
 
-    logger.info({
-      resubscribedCount: symbols.length,
-      symbols,
-    }, 'Resubscription complete');
+      const futuresSymbols = new Set<string>();
+      for (const execution of openExecutions) {
+        if (execution.marketType === 'FUTURES') {
+          futuresSymbols.add(execution.symbol.toLowerCase());
+        }
+      }
+
+      for (const symbol of symbols) {
+        const market = futuresSymbols.has(symbol) ? 'usdm' : 'spot';
+        this.subscribe(symbol, market);
+      }
+
+      logger.info({
+        resubscribedCount: symbols.length,
+        symbols,
+        futuresCount: futuresSymbols.size,
+      }, 'Resubscription complete');
+    } catch (error) {
+      logger.error({
+        error: error instanceof Error ? error.message : String(error),
+      }, 'Error during resubscription - falling back to spot');
+
+      for (const symbol of symbols) {
+        this.subscribe(symbol);
+      }
+    }
   }
 
   public subscribeSymbol(symbol: string): void {
