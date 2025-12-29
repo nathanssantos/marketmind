@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.2] - 2025-12-29
+
+### Changed
+
+#### Chart Rendering
+- **Oscillator Line Width** - All oscillator lines now use 1px width for consistency (RSI, Stochastic, MACD, PPO, ADX, TSI, Aroon, Klinger, Vortex, etc.)
+- **Zone Lines Consistency** - Unified zone line colors and dash patterns across all oscillators using shared `oscillatorRendering.ts` utility
+- **Zone Fill** - All oscillators now use consistent zone fill between overbought/oversold levels
+- **Navigation Buttons** - Fixed positioning of chart navigation buttons to consider all open oscillator panels via `getTotalPanelHeight()`
+- **Kline Timer** - Fixed timer positioning to account for all open indicator panels
+
+#### Trading
+- **SL/TP Drag Preview** - Fixed order drag handler to update preview price correctly for stop loss and take profit
+- **Trend Filter** - Enhanced trend filter fallback logic to consider strategy-specific requirements
+
+### Removed
+- **Level Labels** - Removed numeric level labels (0, 50, 100, etc.) from oscillator panels for cleaner UI
+
+### Stats
+- 2,864 passing tests + 27 browser tests
+- All type checks passing
+
+---
+
 ## [0.35.0] - 2025-12-28
 
 ### Added
