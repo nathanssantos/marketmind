@@ -299,8 +299,7 @@ export class CanvasManager {
     if (height === 0) return null;
     if (!this.dimensions) return null;
     const panelTop = this.getPanelTop(panelId);
-    const chartHeight = this.dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM - this.getTotalPanelHeight();
-    return { y: chartHeight + panelTop, height };
+    return { y: panelTop, height };
   }
 
   public clear(): void {
