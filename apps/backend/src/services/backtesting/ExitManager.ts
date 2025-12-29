@@ -1,5 +1,5 @@
 import type { ComputedIndicators, EvaluationContext, Kline, MarketType, StrategyDefinition } from '@marketmind/types';
-import { BINANCE_FEES } from '@marketmind/types';
+import { BINANCE_FEES, applyBnbDiscount } from '@marketmind/types';
 import { ConditionEvaluator } from '../setup-detection/dynamic';
 
 export interface ExitConfig {
@@ -8,6 +8,7 @@ export interface ExitConfig {
   breakEvenAfterR?: number;
   slippagePercent?: number;
   marketType?: MarketType;
+  useBnbDiscount?: boolean;
 }
 
 export interface ExitResult {
@@ -24,25 +25,39 @@ export interface TrailingStopState {
 }
 
 const BREAKEVEN_THRESHOLD = 0.01;
-const FEES_COVERED_THRESHOLD = 0.015;
 const TRAILING_DISTANCE_PERCENT = 0.4;
 
-const getRoundTripFeePercent = (marketType: MarketType = 'SPOT'): number => {
+const getRoundTripFeePercent = (
+  marketType: MarketType = 'SPOT',
+  useBnbDiscount: boolean = false
+): number => {
   const takerFee = marketType === 'FUTURES'
     ? BINANCE_FEES.FUTURES.VIP_0.taker
     : BINANCE_FEES.SPOT.VIP_0.taker;
-  return takerFee * 2;
+
+  const roundTripFee = takerFee * 2;
+  return useBnbDiscount ? applyBnbDiscount(roundTripFee) : roundTripFee;
+};
+
+const getFeesCoveredThreshold = (
+  marketType: MarketType = 'SPOT',
+  useBnbDiscount: boolean = false
+): number => {
+  const roundTripFee = getRoundTripFeePercent(marketType, useBnbDiscount);
+  return roundTripFee + 0.005;
 };
 
 export class ExitManager {
   private config: ExitConfig;
   private conditionEvaluator: ConditionEvaluator;
   private feePercent: number;
+  private feesCoveredThreshold: number;
 
   constructor(config: ExitConfig, conditionEvaluator: ConditionEvaluator) {
     this.config = config;
     this.conditionEvaluator = conditionEvaluator;
-    this.feePercent = getRoundTripFeePercent(config.marketType);
+    this.feePercent = getRoundTripFeePercent(config.marketType, config.useBnbDiscount);
+    this.feesCoveredThreshold = getFeesCoveredThreshold(config.marketType, config.useBnbDiscount);
   }
 
   initializeTrailingStopState(entryPrice: number, stopLoss: number | undefined): TrailingStopState {
@@ -86,7 +101,7 @@ export class ExitManager {
         }
       }
 
-      if (profitPercent >= FEES_COVERED_THRESHOLD && newState.breakEvenReached) {
+      if (profitPercent >= this.feesCoveredThreshold && newState.breakEvenReached) {
         const candidates: number[] = [];
 
         const feesCoveredPrice = entryPrice * (1 + this.feePercent);
@@ -118,7 +133,7 @@ export class ExitManager {
         }
       }
 
-      if (profitPercent >= FEES_COVERED_THRESHOLD && newState.breakEvenReached) {
+      if (profitPercent >= this.feesCoveredThreshold && newState.breakEvenReached) {
         const candidates: number[] = [];
 
         const feesCoveredPrice = entryPrice * (1 - this.feePercent);

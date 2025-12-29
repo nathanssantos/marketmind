@@ -22,6 +22,7 @@ export interface BacktestConfig {
   useOptimizedSettings?: boolean; // Use strategy's optimizedParams instead of config values
 
   marketType?: 'SPOT' | 'FUTURES'; // Market type (default: SPOT)
+  useBnbDiscount?: boolean; // Apply 25% BNB discount to fees (default: false)
   leverage?: number; // Futures leverage 1-125 (default: 1)
   marginType?: 'ISOLATED' | 'CROSSED'; // Futures margin type (default: ISOLATED)
   simulateFundingRates?: boolean; // Simulate funding rate payments every 8h
@@ -207,6 +208,8 @@ export interface TrailingStopOptimizationConfig {
   feePercent?: number;
   trailingDistancePercent?: number;
   useVolatilityBasedThresholds?: boolean;
+  marketType?: 'SPOT' | 'FUTURES';
+  useBnbDiscount?: boolean;
 }
 
 export interface TimeframeThreshold {

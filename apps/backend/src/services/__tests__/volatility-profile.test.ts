@@ -33,48 +33,62 @@ describe('volatility-profile', () => {
   });
 
   describe('getVolatilityProfile', () => {
-    it('should return LOW for ATR% < 1%', () => {
+    it('should return LOW for ATR% < 1% with SPOT fees', () => {
       const profile = getVolatilityProfile(0.5);
       expect(profile.level).toBe('LOW');
       expect(profile.atrMultiplier).toBe(2.0);
       expect(profile.breakevenThreshold).toBe(0.01);
-      expect(profile.feesThreshold).toBe(0.015);
+      expect(profile.feesThreshold).toBe(0.007);
       expect(profile.minTrailingDistance).toBe(0.003);
     });
 
-    it('should return MEDIUM for ATR% between 1% and 2%', () => {
+    it('should return MEDIUM for ATR% between 1% and 2% with SPOT fees', () => {
       const profile = getVolatilityProfile(1.5);
       expect(profile.level).toBe('MEDIUM');
       expect(profile.atrMultiplier).toBe(2.5);
       expect(profile.breakevenThreshold).toBe(0.015);
-      expect(profile.feesThreshold).toBe(0.02);
+      expect(profile.feesThreshold).toBe(0.012);
       expect(profile.minTrailingDistance).toBe(0.004);
     });
 
-    it('should return HIGH for ATR% between 2% and 3%', () => {
+    it('should return HIGH for ATR% between 2% and 3% with SPOT fees', () => {
       const profile = getVolatilityProfile(2.5);
       expect(profile.level).toBe('HIGH');
       expect(profile.atrMultiplier).toBe(3.0);
       expect(profile.breakevenThreshold).toBe(0.02);
-      expect(profile.feesThreshold).toBe(0.025);
+      expect(profile.feesThreshold).toBe(0.017);
       expect(profile.minTrailingDistance).toBe(0.005);
     });
 
-    it('should return VERY_HIGH for ATR% between 3% and 4%', () => {
+    it('should return VERY_HIGH for ATR% between 3% and 4% with SPOT fees', () => {
       const profile = getVolatilityProfile(3.5);
       expect(profile.level).toBe('VERY_HIGH');
       expect(profile.atrMultiplier).toBe(3.5);
       expect(profile.breakevenThreshold).toBe(0.025);
-      expect(profile.feesThreshold).toBe(0.03);
+      expect(profile.feesThreshold).toBe(0.022);
       expect(profile.minTrailingDistance).toBe(0.006);
     });
 
-    it('should return EXTREME for ATR% > 4%', () => {
+    it('should return EXTREME for ATR% > 4% with SPOT fees', () => {
       const profile = getVolatilityProfile(5.0);
       expect(profile.level).toBe('EXTREME');
       expect(profile.breakevenThreshold).toBe(0.03);
-      expect(profile.feesThreshold).toBe(0.035);
+      expect(profile.feesThreshold).toBe(0.027);
       expect(profile.minTrailingDistance).toBe(0.007);
+    });
+
+    it('should return lower feesThreshold for FUTURES marketType', () => {
+      const spotProfile = getVolatilityProfile(0.5);
+      const futuresProfile = getVolatilityProfile(0.5, { marketType: 'FUTURES' });
+      expect(futuresProfile.feesThreshold).toBeLessThan(spotProfile.feesThreshold);
+      expect(futuresProfile.feesThreshold).toBeCloseTo(0.0058, 4);
+    });
+
+    it('should apply BNB discount to feesThreshold', () => {
+      const spotProfile = getVolatilityProfile(0.5);
+      const bnbProfile = getVolatilityProfile(0.5, { useBnbDiscount: true });
+      expect(bnbProfile.feesThreshold).toBeLessThan(spotProfile.feesThreshold);
+      expect(bnbProfile.feesThreshold).toBeCloseTo(0.0065, 4);
     });
 
     it('should calculate dynamic multiplier for EXTREME volatility', () => {

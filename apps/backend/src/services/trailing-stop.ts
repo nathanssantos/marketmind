@@ -1,5 +1,6 @@
 import { calculateATR, calculateSwingPoints } from '@marketmind/indicators';
-import type { Interval, Kline as KlineType, TrailingStopOptimizationConfig } from '@marketmind/types';
+import type { Interval, Kline as KlineType, MarketType, TrailingStopOptimizationConfig } from '@marketmind/types';
+import { BINANCE_FEES, applyBnbDiscount } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import { TRAILING_STOP } from '../constants';
 import { db } from '../db';
@@ -9,16 +10,44 @@ import { logger } from './logger';
 import { getWebSocketService } from './websocket';
 import { calculateATRPercent, getVolatilityProfile } from './volatility-profile';
 
+export interface FeeConfig {
+  marketType: MarketType;
+  useBnbDiscount?: boolean;
+}
+
+export const getRoundTripFee = (config: FeeConfig): number => {
+  const fees = config.marketType === 'FUTURES'
+    ? BINANCE_FEES.FUTURES.VIP_0
+    : BINANCE_FEES.SPOT.VIP_0;
+
+  const takerFee = fees.taker;
+  const roundTripFee = takerFee * 2;
+
+  return config.useBnbDiscount
+    ? applyBnbDiscount(roundTripFee)
+    : roundTripFee;
+};
+
+export const getFeesThresholdForMarketType = (
+  marketType: MarketType,
+  useBnbDiscount: boolean = false
+): number => {
+  const roundTripFee = getRoundTripFee({ marketType, useBnbDiscount });
+  return roundTripFee + 0.005;
+};
+
 export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
   breakevenProfitThreshold: TRAILING_STOP.BREAKEVEN_THRESHOLD,
   breakevenWithFeesThreshold: TRAILING_STOP.FEES_COVERAGE_THRESHOLD,
-  minTrailingDistancePercent: TRAILING_STOP.ATR_MULTIPLIER,
+  minTrailingDistancePercent: 0.002,
   swingLookback: 3,
   useATRMultiplier: true,
   atrMultiplier: 2.0,
-  feePercent: TRAILING_STOP.ATR_MULTIPLIER,
+  feePercent: getRoundTripFee({ marketType: 'SPOT' }),
   trailingDistancePercent: TRAILING_STOP.PEAK_PROFIT_FLOOR,
   useVolatilityBasedThresholds: true,
+  marketType: 'SPOT',
+  useBnbDiscount: false,
 };
 
 export interface TrailingStopUpdate {
@@ -65,9 +94,12 @@ export const calculateBreakevenPrice = (
 export const calculateFeesCoveredPrice = (
   entryPrice: number,
   isLong: boolean,
-  feePercent: number = TRAILING_STOP.ATR_MULTIPLIER
+  feePercent?: number,
+  marketType: MarketType = 'SPOT',
+  useBnbDiscount: boolean = false
 ): number => {
-  return entryPrice * (isLong ? 1 + feePercent : 1 - feePercent);
+  const effectiveFee = feePercent ?? getRoundTripFee({ marketType, useBnbDiscount });
+  return entryPrice * (isLong ? 1 + effectiveFee : 1 - effectiveFee);
 };
 
 export const calculateProgressiveFloor = (
@@ -213,8 +245,11 @@ export const computeTrailingStop = (
   const isLong = side === 'LONG';
 
   const profitPercent = calculateProfitPercent(entryPrice, currentPrice, isLong);
-  const feePercent = config.feePercent ?? 0.002;
-  const feesThreshold = config.breakevenWithFeesThreshold ?? 0.0075;
+  const marketType = config.marketType ?? 'SPOT';
+  const useBnbDiscount = config.useBnbDiscount ?? false;
+  const dynamicFee = getRoundTripFee({ marketType, useBnbDiscount });
+  const feePercent = config.feePercent ?? dynamicFee;
+  const feesThreshold = config.breakevenWithFeesThreshold ?? getFeesThresholdForMarketType(marketType, useBnbDiscount);
   const trailingDistancePercent = config.trailingDistancePercent ?? 0.5;
 
   if (profitPercent < config.breakevenProfitThreshold) {
@@ -222,7 +257,7 @@ export const computeTrailingStop = (
   }
 
   const breakevenPrice = calculateBreakevenPrice(entryPrice, isLong);
-  const feesCoveredPrice = calculateFeesCoveredPrice(entryPrice, isLong, feePercent);
+  const feesCoveredPrice = calculateFeesCoveredPrice(entryPrice, isLong, feePercent, marketType, useBnbDiscount);
 
   if (profitPercent < feesThreshold) {
     if (!shouldUpdateStopLoss(breakevenPrice, currentStopLoss, isLong)) {
@@ -432,7 +467,9 @@ export class TrailingStopService {
       let effectiveConfig = this.config;
       if (this.config.useVolatilityBasedThresholds && currentATR && currentATR > 0 && currentPrice > 0) {
         const atrPercent = calculateATRPercent(currentATR, currentPrice);
-        const profile = getVolatilityProfile(atrPercent);
+        const marketType = this.config.marketType ?? 'SPOT';
+        const useBnbDiscount = this.config.useBnbDiscount ?? false;
+        const profile = getVolatilityProfile(atrPercent, { marketType, useBnbDiscount });
 
         effectiveConfig = {
           ...this.config,
@@ -440,6 +477,8 @@ export class TrailingStopService {
           breakevenProfitThreshold: profile.breakevenThreshold,
           breakevenWithFeesThreshold: profile.feesThreshold,
           minTrailingDistancePercent: profile.minTrailingDistance,
+          marketType,
+          useBnbDiscount,
         };
 
       }
