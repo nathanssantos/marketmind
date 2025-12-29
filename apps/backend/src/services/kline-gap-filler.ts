@@ -69,7 +69,7 @@ class KlineGapFiller {
         return;
       }
 
-      logger.info({ pairs: activePairs.length }, 'Checking gaps for active pairs');
+      // logger.info({ pairs: activePairs.length }, 'Checking gaps for active pairs');
 
       for (const pair of activePairs) {
         try {
