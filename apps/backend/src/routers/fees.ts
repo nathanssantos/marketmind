@@ -4,16 +4,11 @@ import { z } from 'zod';
 import { wallets } from '../db/schema';
 import { protectedProcedure, publicProcedure, router } from '../trpc';
 import {
-  FeeService,
-  fetchSpotFees,
-  fetchFuturesFees,
   fetchAllFees,
-  getDefaultFees,
-  getCachedFees,
   clearFeeCache,
   getBacktestFee,
 } from '../services/fee-service';
-import { BINANCE_FEES, getDefaultFee } from '@marketmind/types';
+import { BINANCE_FEES } from '@marketmind/types';
 
 export const feesRouter = router({
   defaults: publicProcedure.query(() => ({

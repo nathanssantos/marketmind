@@ -66,7 +66,9 @@ export class BacktestEngine {
       breakEvenAfterR: breakEvenValues.length > 0 ? Math.min(...breakEvenValues) : undefined,
       onlyWithTrend: false,
       minConfidence: Math.max(...allParams.map(p => p.minConfidence ?? 0)) || undefined,
-      commission: Math.max(...allParams.map(p => p.commission ?? 0.001)),
+      commission: allParams.some(p => p.commission !== undefined)
+        ? Math.max(...allParams.filter(p => p.commission !== undefined).map(p => p.commission!))
+        : undefined,
       stopLossPercent: allParams[0]?.stopLossPercent,
       takeProfitPercent: allParams[0]?.takeProfitPercent,
     };
@@ -121,6 +123,7 @@ export class BacktestEngine {
         riskPerTrade: effectiveConfig.riskPerTrade,
         kellyFraction: effectiveConfig.kellyFraction,
         commission: effectiveConfig.commission,
+        marketType: config.marketType,
         minProfitPercent: effectiveConfig.minProfitPercent,
         minRiskRewardRatio: effectiveConfig.minRiskRewardRatio,
         stopLossPercent: effectiveConfig.stopLossPercent,

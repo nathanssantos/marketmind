@@ -76,7 +76,6 @@ const runSingleBacktest = async (
       useAlgorithmicLevels: true,
       useTrailingStop: true,
       onlyWithTrend: false,
-      commission: 0.001,
       slippagePercent: 0.1,
       minRiskRewardRatio: 1.25,
     });

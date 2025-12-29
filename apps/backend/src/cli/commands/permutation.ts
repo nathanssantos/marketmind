@@ -130,7 +130,6 @@ export async function permutationCommand(options: PermutationTestOptions): Promi
         setupTypes: [config.strategy],
         minConfidence: config.mlThreshold,
         useAlgorithmicLevels: true,
-        commission: 0.001,
       };
 
       const engine = new BacktestEngine();

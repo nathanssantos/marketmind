@@ -95,7 +95,6 @@ export async function generateTrainingDataCommand(options: GenerateTrainingDataO
               initialCapital: 1000,
               setupTypes: [strategy],
               useOptimizedSettings: true,
-              commission: 0.001,
             };
 
             const result = await engine.run(config);

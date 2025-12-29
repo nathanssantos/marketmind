@@ -252,7 +252,6 @@ async function validateSingleConfig(
       setupTypes: [config.strategy],
       minConfidence: config.mlThreshold,
       useAlgorithmicLevels: true,
-      commission: 0.001,
     };
 
     const wfResult = await WalkForwardOptimizer.run(

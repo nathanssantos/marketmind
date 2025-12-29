@@ -24,7 +24,9 @@ export const backtestRouter = router({
         stopLossPercent: z.number().positive().optional(),
         takeProfitPercent: z.number().positive().optional(),
         maxPositionSize: z.number().min(0).max(100).optional().default(10),
-        commission: z.number().min(0).max(1).optional().default(0.001), // 0.1%
+        commission: z.number().min(0).max(1).optional(),
+        marketType: z.enum(['SPOT', 'FUTURES']).optional().default('SPOT'),
+        useBnbDiscount: z.boolean().optional().default(false),
         useStochasticFilter: z.boolean().optional().default(false),
         useAdxFilter: z.boolean().optional().default(true),
       })
@@ -61,6 +63,8 @@ export const backtestRouter = router({
           takeProfitPercent: input.takeProfitPercent,
           maxPositionSize: input.maxPositionSize,
           commission: input.commission,
+          marketType: input.marketType,
+          useBnbDiscount: input.useBnbDiscount,
           useStochasticFilter: input.useStochasticFilter,
           useAdxFilter: input.useAdxFilter,
         };

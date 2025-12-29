@@ -20,7 +20,7 @@ interface FeeCache {
 
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000;
 
-const feeCache = new Map<number, FeeCache>();
+const feeCache = new Map<string, FeeCache>();
 
 export const getDefaultFees = (): CachedFees => ({
   spot: { ...BINANCE_FEES.SPOT.VIP_0 },
@@ -30,7 +30,7 @@ export const getDefaultFees = (): CachedFees => ({
   lastUpdated: new Date(),
 });
 
-export const getCachedFees = (walletId: number): CachedFees | null => {
+export const getCachedFees = (walletId: string): CachedFees | null => {
   const cached = feeCache.get(walletId);
   if (!cached) return null;
   if (Date.now() > cached.expiresAt) {
@@ -40,14 +40,14 @@ export const getCachedFees = (walletId: number): CachedFees | null => {
   return cached.fees;
 };
 
-export const setCachedFees = (walletId: number, fees: CachedFees): void => {
+export const setCachedFees = (walletId: string, fees: CachedFees): void => {
   feeCache.set(walletId, {
     fees,
     expiresAt: Date.now() + CACHE_DURATION_MS,
   });
 };
 
-export const clearFeeCache = (walletId?: number): void => {
+export const clearFeeCache = (walletId?: string): void => {
   if (walletId !== undefined) {
     feeCache.delete(walletId);
   } else {
@@ -72,10 +72,11 @@ export const fetchSpotFees = async (wallet: Wallet): Promise<MarketFees> => {
 
     const feeInfo = await client.getTradeFee({ symbol: 'BTCUSDT' });
 
-    if (feeInfo && feeInfo.length > 0) {
+    const firstFee = feeInfo?.[0];
+    if (firstFee?.makerCommission && firstFee?.takerCommission) {
       return {
-        maker: Number(feeInfo[0].makerCommission),
-        taker: Number(feeInfo[0].takerCommission),
+        maker: Number(firstFee.makerCommission),
+        taker: Number(firstFee.takerCommission),
       };
     }
 
