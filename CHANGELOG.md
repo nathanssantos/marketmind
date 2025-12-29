@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.0] - 2025-12-28
+
+### Added
+
+#### Stop Loss Improvements
+- **Pivot Prioritization** - Stop loss now prioritizes STRONG pivots with volume confirmation over simple swing highs/lows
+- **Fallback Chain** - Smart fallback: STRONG+volume → STRONG → MEDIUM → swing → ATR-based
+- **Increased Minimum SL** - MIN_ENTRY_STOP_SEPARATION_PERCENT increased from 0.5% to 0.75%
+
+#### Fee Centralization
+- **BINANCE_VIP_LEVELS** - Centralized VIP level definitions with commission mapping (0-9)
+- **getVIPLevelFromCommission()** - Helper function to determine VIP level from commission rate
+
+### Changed
+- **TradeExecutor.ts** - Now imports MIN_NOTIONAL_VALUE from centralized BINANCE_FEES
+- **BacktestConfig.tsx** - Uses BINANCE_DEFAULT_FEES.VIP_0_TAKER instead of hardcoded 0.1
+- **TradingFeeService.ts** - Uses centralized getVIPLevelFromCommission()
+- **ExitCalculator.ts** - New findPrioritizedPivotStop() method with analyzePivots integration
+
+### Stats
+- 4,900+ passing tests (backend + frontend + indicators + browser)
+- All type checks passing
+
+---
+
 ## [0.34.0] - 2025-12-28
 
 ### Added
