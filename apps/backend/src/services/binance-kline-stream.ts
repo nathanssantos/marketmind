@@ -348,7 +348,6 @@ export class BinanceFuturesKlineStreamService {
     }
 
     try {
-      const stream = `${symbol.toLowerCase()}@kline_${interval}`;
       void this.client.subscribeKlines(symbol, interval as KlineInterval, 'usdm');
 
       this.subscriptions.set(key, {
@@ -357,7 +356,6 @@ export class BinanceFuturesKlineStreamService {
         clientCount: 1,
       });
 
-      logger.info(`Subscribed to futures kline stream: ${stream}`);
     } catch (error) {
       logger.error({
         symbol,
