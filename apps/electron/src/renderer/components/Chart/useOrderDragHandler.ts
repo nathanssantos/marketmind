@@ -74,13 +74,18 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
         return;
       }
 
-      if (isOrderActive(draggedOrder)) {
+      if (dragType === 'stopLoss' || dragType === 'takeProfit') {
+        setPreviewPrice(currentPrice);
+        return;
+      }
+
+      if (isOrderActive(draggedOrder) && dragType === null) {
         const entryPrice = getOrderPrice(draggedOrder);
         const entryY = config.priceToY(entryPrice);
         const currentY = y;
-        
+
         const isMovingUp = currentY < entryY;
-        
+
         const isCreatingTakeProfit =
           (isOrderLong(draggedOrder) && isMovingUp) ||
           (isOrderShort(draggedOrder) && !isMovingUp);
