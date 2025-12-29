@@ -79,14 +79,7 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
 
   return (
     <Stack gap={4}>
-      <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px">
-        <Text fontSize="sm" fontWeight="bold" textTransform="uppercase" letterSpacing="wide">
-          Risk Metrics
-        </Text>
-      </Flex>
-
       <Grid templateColumns="repeat(auto-fit, 1fr)" gap={4}>
-        {/* Open Positions */}
         <GridItem>
           <Stack gap={2}>
             <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} fontWeight="medium">
@@ -105,7 +98,6 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
           </Stack>
         </GridItem>
 
-        {/* Total Exposure */}
         <GridItem>
           <Stack gap={2}>
             <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} fontWeight="medium">
@@ -117,7 +109,6 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
           </Stack>
         </GridItem>
 
-        {/* Daily PnL */}
         <GridItem>
           <Stack gap={2}>
             <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} fontWeight="medium">
@@ -142,7 +133,6 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
           </Stack>
         </GridItem>
 
-        {/* Position Size per Watcher */}
         {metrics.positions.activeWatchers > 0 && (
           <GridItem>
             <Stack gap={2}>

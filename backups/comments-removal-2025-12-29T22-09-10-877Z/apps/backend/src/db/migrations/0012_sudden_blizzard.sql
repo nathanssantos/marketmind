@@ -1,1 +1,0 @@
-ALTER TABLE "trade_executions" ADD COLUMN "order_list_id" bigint;

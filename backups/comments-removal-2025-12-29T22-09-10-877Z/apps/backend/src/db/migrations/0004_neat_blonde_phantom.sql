@@ -1,1 +1,0 @@
-ALTER TABLE "wallets" ADD COLUMN "wallet_type" varchar(20) DEFAULT 'paper';
