@@ -44,23 +44,32 @@ export const useAroonRenderer = ({
     const indexToX = (index: number): number =>
       (index - viewport.start) * klineWidth + klineWidth / 2;
 
-    ctx.fillStyle = colors.aroon?.zone ?? 'rgba(255, 152, 0, 0.1)';
     const top70Y = valueToY(70);
     const bot30Y = valueToY(30);
-    ctx.fillRect(0, top70Y, effectiveWidth, panelY - top70Y + panelHeight);
-    ctx.fillRect(0, panelY, effectiveWidth, bot30Y - panelY);
+    const midY = valueToY(50);
+
+    ctx.fillStyle = 'rgba(128, 128, 128, 0.08)';
+    ctx.fillRect(0, top70Y, effectiveWidth, bot30Y - top70Y);
 
     ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
     ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
+    ctx.setLineDash([2, 2]);
+
     ctx.beginPath();
     ctx.moveTo(0, top70Y);
     ctx.lineTo(effectiveWidth, top70Y);
+    ctx.stroke();
+
+    ctx.beginPath();
     ctx.moveTo(0, bot30Y);
     ctx.lineTo(effectiveWidth, bot30Y);
-    ctx.moveTo(0, valueToY(50));
-    ctx.lineTo(effectiveWidth, valueToY(50));
     ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0, midY);
+    ctx.lineTo(effectiveWidth, midY);
+    ctx.stroke();
+
     ctx.setLineDash([]);
 
     const drawLine = (values: (number | null)[], color: string, lineWidth: number): void => {

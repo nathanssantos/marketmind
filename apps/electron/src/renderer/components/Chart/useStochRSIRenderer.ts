@@ -55,12 +55,10 @@ export const useStochRSIRenderer = ({
 
     const overboughtY = valueToY(80);
     const oversoldY = valueToY(20);
+    const midY = valueToY(50);
 
-    ctx.fillStyle = 'rgba(244, 67, 54, 0.05)';
-    ctx.fillRect(0, panelTop + padding, chartWidth, overboughtY - panelTop - padding);
-
-    ctx.fillStyle = 'rgba(76, 175, 80, 0.05)';
-    ctx.fillRect(0, oversoldY, chartWidth, panelTop + PANEL_HEIGHT - padding - oversoldY);
+    ctx.fillStyle = 'rgba(128, 128, 128, 0.08)';
+    ctx.fillRect(0, overboughtY, chartWidth, oversoldY - overboughtY);
 
     ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
     ctx.lineWidth = 1;
@@ -74,6 +72,11 @@ export const useStochRSIRenderer = ({
     ctx.beginPath();
     ctx.moveTo(0, oversoldY);
     ctx.lineTo(chartWidth, oversoldY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0, midY);
+    ctx.lineTo(chartWidth, midY);
     ctx.stroke();
 
     ctx.setLineDash([]);
@@ -106,8 +109,8 @@ export const useStochRSIRenderer = ({
       ctx.stroke();
     };
 
-    drawLine(stochRsiData.k, colors.stochRsi?.k ?? '#2196f3', 2);
-    drawLine(stochRsiData.d, colors.stochRsi?.d ?? '#ff9800', 1.5);
+    drawLine(stochRsiData.k, colors.stochRsi?.k ?? '#2196f3', 1);
+    drawLine(stochRsiData.d, colors.stochRsi?.d ?? '#ff9800', 1);
 
     ctx.font = '10px monospace';
     ctx.fillStyle = 'rgba(128, 128, 128, 0.6)';

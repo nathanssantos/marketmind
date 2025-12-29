@@ -46,7 +46,7 @@ export const useADXRenderer = ({
 
     ctx.strokeStyle = colors.adx?.threshold ?? 'rgba(128, 128, 128, 0.3)';
     ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
+    ctx.setLineDash([2, 2]);
     ctx.beginPath();
     const thresholdY = valueToY(25);
     ctx.moveTo(0, thresholdY);

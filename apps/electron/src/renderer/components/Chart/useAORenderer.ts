@@ -82,7 +82,7 @@ export const useAORenderer = ({
 
     ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
     ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
+    ctx.setLineDash([2, 2]);
     ctx.beginPath();
     ctx.moveTo(0, zeroY);
     ctx.lineTo(effectiveWidth, zeroY);

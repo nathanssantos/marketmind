@@ -55,24 +55,27 @@ export const useStochasticRenderer = ({
     ctx.fillStyle = 'rgba(128, 128, 128, 0.02)';
     ctx.fillRect(0, panelTop, chartWidth, panelHeight);
 
+    const overboughtY = valueToY(overboughtLevel);
+    const oversoldY = valueToY(oversoldLevel);
+
+    ctx.fillStyle = 'rgba(128, 128, 128, 0.08)';
+    ctx.fillRect(0, overboughtY, chartWidth, oversoldY - overboughtY);
+
     ctx.strokeStyle = colors.stochastic.zone;
     ctx.lineWidth = 1;
     ctx.setLineDash([2, 2]);
 
-    const overboughtY = valueToY(overboughtLevel);
     ctx.beginPath();
     ctx.moveTo(0, overboughtY);
     ctx.lineTo(chartWidth, overboughtY);
     ctx.stroke();
 
-    const oversoldY = valueToY(oversoldLevel);
     ctx.beginPath();
     ctx.moveTo(0, oversoldY);
     ctx.lineTo(chartWidth, oversoldY);
     ctx.stroke();
 
     const midY = valueToY(50);
-    ctx.strokeStyle = colors.stochastic.zone;
     ctx.beginPath();
     ctx.moveTo(0, midY);
     ctx.lineTo(chartWidth, midY);
@@ -106,8 +109,8 @@ export const useStochasticRenderer = ({
       ctx.stroke();
     };
 
-    drawLine(visibleK, colors.stochastic.k, 2.5);
-    drawLine(visibleD, colors.stochastic.d, 1.5);
+    drawLine(visibleK, colors.stochastic.k, 1);
+    drawLine(visibleD, colors.stochastic.d, 1);
 
     ctx.font = '10px monospace';
     ctx.fillStyle = 'rgba(128, 128, 128, 0.6)';

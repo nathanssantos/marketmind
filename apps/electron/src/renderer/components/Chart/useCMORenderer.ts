@@ -44,25 +44,32 @@ export const useCMORenderer = ({
     const indexToX = (index: number): number =>
       (index - viewport.start) * klineWidth + klineWidth / 2;
 
-    const zoneColor = colors.cmo?.zone ?? 'rgba(33, 150, 243, 0.1)';
-    ctx.fillStyle = zoneColor;
     const overboughtY = valueToY(50);
     const oversoldY = valueToY(-50);
-    ctx.fillRect(0, overboughtY, effectiveWidth, panelY - overboughtY + panelHeight);
-    ctx.fillRect(0, panelY, effectiveWidth, oversoldY - panelY);
+    const zeroY = valueToY(0);
+
+    ctx.fillStyle = 'rgba(128, 128, 128, 0.08)';
+    ctx.fillRect(0, overboughtY, effectiveWidth, oversoldY - overboughtY);
 
     ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
     ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
+    ctx.setLineDash([2, 2]);
+
     ctx.beginPath();
     ctx.moveTo(0, overboughtY);
     ctx.lineTo(effectiveWidth, overboughtY);
+    ctx.stroke();
+
+    ctx.beginPath();
     ctx.moveTo(0, oversoldY);
     ctx.lineTo(effectiveWidth, oversoldY);
-    const zeroY = valueToY(0);
+    ctx.stroke();
+
+    ctx.beginPath();
     ctx.moveTo(0, zeroY);
     ctx.lineTo(effectiveWidth, zeroY);
     ctx.stroke();
+
     ctx.setLineDash([]);
 
     ctx.strokeStyle = colors.cmo?.line ?? '#2196f3';

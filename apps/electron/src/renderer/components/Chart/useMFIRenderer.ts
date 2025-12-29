@@ -44,22 +44,32 @@ export const useMFIRenderer = ({
     const indexToX = (index: number): number =>
       (index - viewport.start) * klineWidth + klineWidth / 2;
 
-    const zoneColor = colors.mfi?.zone ?? 'rgba(156, 39, 176, 0.1)';
-    ctx.fillStyle = zoneColor;
     const overboughtY = valueToY(80);
     const oversoldY = valueToY(20);
-    ctx.fillRect(0, overboughtY, effectiveWidth, panelY - overboughtY + panelHeight);
-    ctx.fillRect(0, panelY, effectiveWidth, oversoldY - panelY);
+    const midY = valueToY(50);
+
+    ctx.fillStyle = 'rgba(128, 128, 128, 0.08)';
+    ctx.fillRect(0, overboughtY, effectiveWidth, oversoldY - overboughtY);
 
     ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
     ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
+    ctx.setLineDash([2, 2]);
+
     ctx.beginPath();
     ctx.moveTo(0, overboughtY);
     ctx.lineTo(effectiveWidth, overboughtY);
+    ctx.stroke();
+
+    ctx.beginPath();
     ctx.moveTo(0, oversoldY);
     ctx.lineTo(effectiveWidth, oversoldY);
     ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0, midY);
+    ctx.lineTo(effectiveWidth, midY);
+    ctx.stroke();
+
     ctx.setLineDash([]);
 
     ctx.strokeStyle = colors.mfi?.line ?? '#9c27b0';
