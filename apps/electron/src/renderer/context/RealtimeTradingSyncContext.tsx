@@ -108,18 +108,22 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     const socket = socketService.connect();
     socketRef.current = socket;
 
+    const subscribeAll = () => {
+      if (currentWalletIdRef.current) {
+        socket.emit('subscribe:positions', currentWalletIdRef.current);
+        socket.emit('subscribe:wallet', currentWalletIdRef.current);
+      }
+      for (const symbol of subscribedSymbolsRef.current) {
+        console.log('[RealtimeSync] Subscribing to price:', symbol);
+        socket.emit('subscribe:prices', symbol);
+      }
+    };
+
     if (!listenersRegisteredRef.current) {
       socket.on('connect', () => {
         console.log('[RealtimeSync] WebSocket connected');
         isConnectedRef.current = true;
-        if (currentWalletIdRef.current) {
-          socket.emit('subscribe:positions', currentWalletIdRef.current);
-          socket.emit('subscribe:wallet', currentWalletIdRef.current);
-        }
-        for (const symbol of subscribedSymbolsRef.current) {
-          console.log('[RealtimeSync] Re-subscribing to price:', symbol);
-          socket.emit('subscribe:prices', symbol);
-        }
+        subscribeAll();
       });
 
       socket.on('disconnect', (reason) => {
@@ -182,13 +186,18 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
 
         try {
           const adapter = await createPlatformAdapter();
+          console.log('[RealtimeSync] Platform adapter created:', adapter.platform);
           const isSupported = await adapter.notification.isSupported();
+          console.log('[RealtimeSync] Notification isSupported:', isSupported);
           if (isSupported) {
-            await adapter.notification.show({
+            const result = await adapter.notification.show({
               title: notification.title,
               body: notification.body,
               urgency: notification.urgency,
             });
+            console.log('[RealtimeSync] Notification show result:', result);
+          } else {
+            console.warn('[RealtimeSync] Native notifications not supported on this system');
           }
         } catch (err) {
           console.error('[RealtimeSync] Native notification error:', err);
@@ -199,9 +208,14 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       });
 
       listenersRegisteredRef.current = true;
+
+      if (socket.connected) {
+        console.log('[RealtimeSync] Socket already connected, subscribing immediately');
+        isConnectedRef.current = true;
+        subscribeAll();
+      }
     } else if (socket.connected) {
-      socket.emit('subscribe:positions', walletId);
-      socket.emit('subscribe:wallet', walletId);
+      subscribeAll();
     }
 
     return () => {

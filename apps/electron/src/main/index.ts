@@ -590,8 +590,11 @@ const setupWindowHandlers = (): void => {
 
 const setupNotificationHandlers = (): void => {
   ipcMain.handle('notification:show', async (_event, options: { title: string; body: string; silent?: boolean; urgency?: 'normal' | 'critical' | 'low' }) => {
+    console.log('[Notification] show called with:', options);
     try {
-      if (!Notification.isSupported()) {
+      const supported = Notification.isSupported();
+      console.log('[Notification] isSupported:', supported);
+      if (!supported) {
         return {
           success: false,
           error: 'Notifications are not supported on this system'
@@ -605,11 +608,24 @@ const setupNotificationHandlers = (): void => {
         urgency: options.urgency ?? 'normal',
       });
 
+      notification.on('show', () => {
+        console.log('[Notification] Notification shown successfully');
+      });
+
+      notification.on('click', () => {
+        console.log('[Notification] Notification clicked');
+      });
+
+      notification.on('close', () => {
+        console.log('[Notification] Notification closed');
+      });
+
       notification.show();
+      console.log('[Notification] notification.show() called');
 
       return { success: true };
     } catch (error) {
-      console.error('Failed to show notification:', error);
+      console.error('[Notification] Failed to show notification:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -618,7 +634,9 @@ const setupNotificationHandlers = (): void => {
   });
 
   ipcMain.handle('notification:isSupported', async () => {
-    return Notification.isSupported();
+    const supported = Notification.isSupported();
+    console.log('[Notification] isSupported check:', supported);
+    return supported;
   });
 };
 

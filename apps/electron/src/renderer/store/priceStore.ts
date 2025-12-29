@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { create } from 'zustand';
 
 interface PriceEntry {
@@ -66,3 +67,51 @@ export const usePriceStore = create<PriceState>((set, get) => ({
     return get().prices[symbol] || null;
   },
 }));
+
+export const usePricesForSymbols = (symbols: string[]): Record<string, number> => {
+  const symbolsKey = useMemo(() => [...symbols].sort().join(','), [symbols]);
+  const [prices, setPrices] = useState<Record<string, number>>({});
+  const lastPricesRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    const getCurrentPrices = () => {
+      const state = usePriceStore.getState();
+      const result: Record<string, number> = {};
+      for (const symbol of symbols) {
+        const entry = state.prices[symbol];
+        if (entry) {
+          result[symbol] = entry.price;
+        }
+      }
+      return result;
+    };
+
+    const initial = getCurrentPrices();
+    lastPricesRef.current = initial;
+    setPrices(initial);
+
+    const unsubscribe = usePriceStore.subscribe((state) => {
+      const newPrices: Record<string, number> = {};
+      let hasChanged = false;
+
+      for (const symbol of symbols) {
+        const entry = state.prices[symbol];
+        const newPrice = entry?.price ?? 0;
+        newPrices[symbol] = newPrice;
+
+        if (lastPricesRef.current[symbol] !== newPrice) {
+          hasChanged = true;
+        }
+      }
+
+      if (hasChanged) {
+        lastPricesRef.current = newPrices;
+        setPrices(newPrices);
+      }
+    });
+
+    return unsubscribe;
+  }, [symbolsKey, symbols]);
+
+  return prices;
+};

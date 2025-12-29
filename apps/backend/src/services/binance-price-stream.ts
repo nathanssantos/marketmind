@@ -1,5 +1,5 @@
 import { WebsocketClient } from 'binance';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions } from '../db/schema';
 import { logger } from './logger';
@@ -153,7 +153,7 @@ export class BinancePriceStreamService {
       const openExecutions = await db
         .select()
         .from(tradeExecutions)
-        .where(eq(tradeExecutions.status, 'open'));
+        .where(inArray(tradeExecutions.status, ['open', 'pending']));
 
       const spotSymbols = new Set<string>();
       const futuresSymbols = new Set<string>();
@@ -256,7 +256,7 @@ export class BinancePriceStreamService {
       const openExecutions = await db
         .select()
         .from(tradeExecutions)
-        .where(eq(tradeExecutions.status, 'open'));
+        .where(inArray(tradeExecutions.status, ['open', 'pending']));
 
       const futuresSymbols = new Set<string>();
       for (const execution of openExecutions) {

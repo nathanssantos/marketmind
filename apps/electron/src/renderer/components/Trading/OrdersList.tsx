@@ -19,7 +19,7 @@ import {
 } from '@shared/utils';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { usePriceStore } from '@renderer/store/priceStore';
+import { usePricesForSymbols } from '@renderer/store/priceStore';
 import { BsGrid, BsTable, BsThreeDotsVertical } from 'react-icons/bs';
 import { LuBot, LuX } from 'react-icons/lu';
 
@@ -583,7 +583,8 @@ const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }
   const sortKey = useUIStore((s) => s.ordersTableSortKey);
   const sortDirection = useUIStore((s) => s.ordersTableSortDirection);
   const setOrdersTableSort = useUIStore((s) => s.setOrdersTableSort);
-  const centralizedPrices = usePriceStore((s) => s.prices);
+  const orderSymbols = useMemo(() => [...new Set(orders.map((o) => o.symbol))], [orders]);
+  const centralizedPrices = usePricesForSymbols(orderSymbols);
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -700,7 +701,7 @@ const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }
         const canClose = isOrderActive(order);
         const pnl = order.pnl ? parseFloat(order.pnl) : undefined;
         const pnlPercent = order.pnlPercent ? parseFloat(order.pnlPercent) : undefined;
-        const centralPrice = centralizedPrices[order.symbol]?.price;
+        const centralPrice = centralizedPrices[order.symbol];
         const currentPrice = centralPrice ?? order.currentPrice;
 
         return (

@@ -8,7 +8,7 @@ import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
 import { usePortfolioFilters } from '@renderer/hooks/usePortfolioFilters';
 import { usePositionUpdates } from '@renderer/hooks/usePositionUpdates';
 import { type PortfolioFilterOption, type PortfolioSortOption, useUIStore } from '@renderer/store/uiStore';
-import { usePriceStore } from '@renderer/store/priceStore';
+import { usePricesForSymbols } from '@renderer/store/priceStore';
 import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from './TradingTable';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -53,7 +53,11 @@ const PortfolioComponent = () => {
   const viewMode = useUIStore((s) => s.portfolioViewMode);
   const setViewMode = useUIStore((s) => s.setPortfolioViewMode);
 
-  const centralizedPrices = usePriceStore((s) => s.prices);
+  const openExecutionSymbols = useMemo(
+    () => [...new Set(tradeExecutions.filter((e) => e.status === 'open').map((e) => e.symbol))],
+    [tradeExecutions]
+  );
+  const centralizedPrices = usePricesForSymbols(openExecutionSymbols);
 
   const positions: PortfolioPosition[] = useMemo(() => {
     return tradeExecutions
@@ -62,7 +66,7 @@ const PortfolioComponent = () => {
         const entryPrice = parseFloat(e.entryPrice || '0');
         const quantity = parseFloat(e.quantity || '0');
 
-        const centralPrice = centralizedPrices[e.symbol]?.price;
+        const centralPrice = centralizedPrices[e.symbol];
         const tickerPrice = tickerPrices[e.symbol];
         const currentPrice = centralPrice ?? (tickerPrice ? parseFloat(String(tickerPrice)) : entryPrice);
 
