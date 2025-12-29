@@ -131,6 +131,7 @@ export class BacktestEngine {
         useTrailingStop: effectiveConfig.useTrailingStop,
         trailingATRMultiplier: effectiveConfig.trailingATRMultiplier,
         slippagePercent: effectiveConfig.slippagePercent,
+        marketType: config.marketType,
       }, conditionEvaluator);
 
       const detectedSetups = this.detectSetups(

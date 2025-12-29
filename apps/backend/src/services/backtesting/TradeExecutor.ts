@@ -1,5 +1,6 @@
 import { calculateATR } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
+import { BINANCE_FEES } from '@marketmind/types';
 import { generateShortId } from '../../utils/id';
 import { PositionSizer } from './PositionSizer';
 
@@ -311,7 +312,7 @@ export class TradeExecutor {
       : entryPrice - exitPrice;
 
     const pnl = priceDiff * positionSize;
-    const commissionRate = this.config.commission ?? 0.001;
+    const commissionRate = this.config.commission ?? BINANCE_FEES.SPOT.VIP_0.taker;
     const entryCommission = positionSize * entryPrice * commissionRate;
     const exitCommission = positionSize * exitPrice * commissionRate;
     const commission = entryCommission + exitCommission;

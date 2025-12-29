@@ -1,4 +1,5 @@
-import type { ComputedIndicators, EvaluationContext, Kline, StrategyDefinition } from '@marketmind/types';
+import type { ComputedIndicators, EvaluationContext, Kline, MarketType, StrategyDefinition } from '@marketmind/types';
+import { BINANCE_FEES } from '@marketmind/types';
 import { ConditionEvaluator } from '../setup-detection/dynamic';
 
 export interface ExitConfig {
@@ -6,6 +7,7 @@ export interface ExitConfig {
   trailingATRMultiplier?: number;
   breakEvenAfterR?: number;
   slippagePercent?: number;
+  marketType?: MarketType;
 }
 
 export interface ExitResult {
@@ -23,16 +25,24 @@ export interface TrailingStopState {
 
 const BREAKEVEN_THRESHOLD = 0.01;
 const FEES_COVERED_THRESHOLD = 0.015;
-const FEE_PERCENT = 0.002;
 const TRAILING_DISTANCE_PERCENT = 0.4;
+
+const getRoundTripFeePercent = (marketType: MarketType = 'SPOT'): number => {
+  const takerFee = marketType === 'FUTURES'
+    ? BINANCE_FEES.FUTURES.VIP_0.taker
+    : BINANCE_FEES.SPOT.VIP_0.taker;
+  return takerFee * 2;
+};
 
 export class ExitManager {
   private config: ExitConfig;
   private conditionEvaluator: ConditionEvaluator;
+  private feePercent: number;
 
   constructor(config: ExitConfig, conditionEvaluator: ConditionEvaluator) {
     this.config = config;
     this.conditionEvaluator = conditionEvaluator;
+    this.feePercent = getRoundTripFeePercent(config.marketType);
   }
 
   initializeTrailingStopState(entryPrice: number, stopLoss: number | undefined): TrailingStopState {
@@ -79,7 +89,7 @@ export class ExitManager {
       if (profitPercent >= FEES_COVERED_THRESHOLD && newState.breakEvenReached) {
         const candidates: number[] = [];
 
-        const feesCoveredPrice = entryPrice * (1 + FEE_PERCENT);
+        const feesCoveredPrice = entryPrice * (1 + this.feePercent);
         candidates.push(feesCoveredPrice);
 
         const peakProfit = (newState.highestHigh - entryPrice) / entryPrice;
@@ -111,7 +121,7 @@ export class ExitManager {
       if (profitPercent >= FEES_COVERED_THRESHOLD && newState.breakEvenReached) {
         const candidates: number[] = [];
 
-        const feesCoveredPrice = entryPrice * (1 - FEE_PERCENT);
+        const feesCoveredPrice = entryPrice * (1 - this.feePercent);
         candidates.push(feesCoveredPrice);
 
         const peakProfit = (entryPrice - newState.lowestLow) / entryPrice;
