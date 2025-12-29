@@ -1,4 +1,5 @@
 import type { BinanceNewOrderResult, BinanceOrderQueryResult, MarketType } from '@marketmind/types';
+import { BINANCE_FEES } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { MainClient, USDMClient } from 'binance';
 import { and, desc, eq } from 'drizzle-orm';
@@ -10,10 +11,6 @@ import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from '
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
-
-const BINANCE_FUTURES_TAKER_FEE = 0.0004;
-
-const BINANCE_TAKER_FEE = 0.001;
 
 export const tradingRouter = router({
   createOrder: protectedProcedure
@@ -721,7 +718,7 @@ export const tradingRouter = router({
         }, '👤 [MANUAL] Manual close position: Paper/disabled mode - simulating exit');
       }
 
-      const feeRate = isFutures ? BINANCE_FUTURES_TAKER_FEE : BINANCE_TAKER_FEE;
+      const feeRate = isFutures ? BINANCE_FEES.FUTURES.VIP_0.taker : BINANCE_FEES.SPOT.VIP_0.taker;
       const entryValue = entryPrice * qty;
       const exitValue = exitPrice * qty;
       const entryFee = entryValue * feeRate;
@@ -1032,7 +1029,7 @@ export const tradingRouter = router({
         }, 'Manual close: Paper/disabled mode - simulating exit');
       }
 
-      const feeRate = isFutures ? BINANCE_FUTURES_TAKER_FEE : BINANCE_TAKER_FEE;
+      const feeRate = isFutures ? BINANCE_FEES.FUTURES.VIP_0.taker : BINANCE_FEES.SPOT.VIP_0.taker;
       const entryValue = entryPrice * qty;
       const exitValue = exitPrice * qty;
       const entryFee = entryValue * feeRate;

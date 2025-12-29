@@ -3,6 +3,7 @@ import { checkStochasticCondition, STOCHASTIC_FILTER } from '../utils/stochastic
 import { checkTrendCondition, TREND_FILTER } from '../utils/trend-filter';
 import { getThresholdForTimeframe } from '@marketmind/ml';
 import type { Interval, Kline, MarketType, TradingSetup } from '@marketmind/types';
+import { BINANCE_FEES } from '@marketmind/types';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
@@ -1208,7 +1209,10 @@ export class AutoTradingScheduler {
       });
 
       const SLIPPAGE_PERCENT = 0.1;
-      const COMMISSION_PERCENT = 0.1;
+      const commissionRate = watcher.marketType === 'FUTURES'
+        ? BINANCE_FEES.FUTURES.VIP_0.taker
+        : BINANCE_FEES.SPOT.VIP_0.taker;
+      const COMMISSION_PERCENT = commissionRate * 100;
       const slippageFactor = setup.direction === 'LONG' ? (1 + SLIPPAGE_PERCENT / 100) : (1 - SLIPPAGE_PERCENT / 100);
       const expectedEntryWithSlippage = setup.entryPrice * slippageFactor;
 

@@ -1,3 +1,4 @@
+import { BINANCE_FEES } from '@marketmind/types';
 import { WebsocketClient } from 'binance';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
@@ -297,8 +298,9 @@ export class BinanceUserStreamService {
 
         const entryValue = entryPrice * quantity;
         const exitValue = exitPrice * quantity;
-        const entryFee = entryValue * 0.001;
-        const exitFee = exitValue * 0.001;
+        const feeRate = BINANCE_FEES.SPOT.VIP_0.taker;
+        const entryFee = entryValue * feeRate;
+        const exitFee = exitValue * feeRate;
         const totalFees = entryFee + exitFee;
         const pnl = grossPnl - totalFees;
 

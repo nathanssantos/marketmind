@@ -29,12 +29,44 @@ export interface TradeViability {
   fees: FeeCalculation;
 }
 
+export type FeeOrderType = 'MAKER' | 'TAKER';
+
+export interface MarketFees {
+  maker: number;
+  taker: number;
+}
+
+export const BINANCE_FEES = {
+  SPOT: {
+    VIP_0: { maker: 0.001, taker: 0.001 } as MarketFees,
+  },
+  FUTURES: {
+    VIP_0: { maker: 0.0002, taker: 0.0004 } as MarketFees,
+  },
+  BNB_DISCOUNT: 0.25,
+  MIN_NOTIONAL_VALUE: 10,
+} as const;
+
 export const BINANCE_DEFAULT_FEES = {
   VIP_0_MAKER: 0.001,
   VIP_0_TAKER: 0.001,
   BNB_DISCOUNT: 0.25,
   MIN_NOTIONAL_VALUE: 10,
 } as const;
+
+export const getDefaultFee = (
+  marketType: 'SPOT' | 'FUTURES',
+  orderType: FeeOrderType = 'TAKER'
+): number => {
+  const fees = marketType === 'FUTURES'
+    ? BINANCE_FEES.FUTURES.VIP_0
+    : BINANCE_FEES.SPOT.VIP_0;
+  return orderType === 'MAKER' ? fees.maker : fees.taker;
+};
+
+export const applyBnbDiscount = (fee: number): number => {
+  return fee * (1 - BINANCE_FEES.BNB_DISCOUNT);
+};
 
 export const TRADING_THRESHOLDS = {
   MIN_PROFIT_AFTER_FEES: 0.005,

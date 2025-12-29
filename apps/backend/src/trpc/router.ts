@@ -4,6 +4,7 @@ import { apiKeyRouter } from '../routers/api-keys';
 import { authRouter } from '../routers/auth';
 import { autoTradingRouter } from '../routers/auto-trading';
 import { backtestRouter } from '../routers/backtest';
+import { feesRouter } from '../routers/fees';
 import { futuresTradingRouter } from '../routers/futures-trading';
 import { healthRouter } from '../routers/health';
 import { klineRouter } from '../routers/kline';
@@ -25,6 +26,7 @@ export const appRouter = router({
   autoTrading: autoTradingRouter,
   aiTrading: aiTradingRouter,
   analytics: analyticsRouter,
+  fees: feesRouter,
   kline: klineRouter,
   setup: setupRouter,
   setupDetection: setupDetectionRouter,

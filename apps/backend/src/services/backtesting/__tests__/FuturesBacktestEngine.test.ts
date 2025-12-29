@@ -3,6 +3,7 @@ import {
   calculateLiquidationPrice,
   calculateLeveragedPnl,
   FUTURES_DEFAULTS,
+  BINANCE_FEES,
 } from '@marketmind/types';
 
 const mockRunFn = vi.fn();
@@ -73,7 +74,7 @@ const createMockTrade = (
   pnlPercent: side === 'LONG'
     ? ((exitPrice - entryPrice) / entryPrice) * 100
     : ((entryPrice - exitPrice) / entryPrice) * 100,
-  commission: entryPrice * quantity * 0.001 * 2,
+  commission: entryPrice * quantity * BINANCE_FEES.FUTURES.VIP_0.taker * 2,
   netPnl: 0,
   exitReason: 'TAKE_PROFIT',
   status: 'CLOSED',

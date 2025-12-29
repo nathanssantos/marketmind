@@ -8,6 +8,7 @@ import type {
   OptimizedBacktestParams,
   StrategyDefinition,
 } from '@marketmind/types';
+import { getDefaultFee } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -319,7 +320,7 @@ export class BacktestEngine {
           breakEvenAfterR: effectiveConfig.breakEvenAfterR ?? mergedParams.breakEvenAfterR,
           onlyWithTrend: effectiveConfig.onlyWithTrend ?? false,
           minConfidence: effectiveConfig.minConfidence ?? mergedParams.minConfidence,
-          commission: effectiveConfig.commission ?? (mergedParams.commission !== undefined ? mergedParams.commission / 100 : 0.001),
+          commission: effectiveConfig.commission ?? (mergedParams.commission !== undefined ? mergedParams.commission / 100 : getDefaultFee(config.marketType ?? 'SPOT')),
           stopLossPercent: effectiveConfig.stopLossPercent,
           takeProfitPercent: effectiveConfig.takeProfitPercent,
           useMlFilter: effectiveConfig.useMlFilter ?? config.useMlFilter ?? false,
@@ -553,7 +554,7 @@ export class BacktestEngine {
         continue;
       }
 
-      if (!tradeExecutor.checkMinProfit(entryPrice, takeProfit, setup.direction, effectiveConfig.minProfitPercent, effectiveConfig.commission ?? 0.001)) {
+      if (!tradeExecutor.checkMinProfit(entryPrice, takeProfit, setup.direction, effectiveConfig.minProfitPercent, effectiveConfig.commission ?? getDefaultFee(config.marketType ?? 'SPOT'))) {
         filterManager.incrementMinProfit();
         continue;
       }

@@ -74,7 +74,6 @@ export const BACKTEST_ENGINE = {
   MIN_NOTIONAL_VALUE: 10,
   MAX_BARS_IN_TRADE: 100,
   COOLDOWN_BARS: 10,
-  DEFAULT_COMMISSION: 0.001,
 } as const;
 
 export const TRAILING_STOP = {
