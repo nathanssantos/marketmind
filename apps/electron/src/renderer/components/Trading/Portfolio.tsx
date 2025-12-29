@@ -155,18 +155,13 @@ const PortfolioComponent = () => {
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.portfolio.totalExposure')}</Text>
                 <Text fontWeight="medium">
-                  {activeWallet.currency} {positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  {' '}
-                  <Text as="span" color="fg.muted" fontSize="2xs">
-                    ({((positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0) / activeWallet.balance) * 100).toFixed(1)}%)
-                  </Text>
+                  {activeWallet.currency} {positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({((positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0) / activeWallet.balance) * 100).toFixed(1)}%)
                 </Text>
               </Flex>
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.portfolio.unrealizedPnL')}</Text>
                 <Text fontWeight="medium" color={totalPnL >= 0 ? 'green.500' : 'red.500'}>
-                  {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  {' '}({totalPnL >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%)
+                  {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({totalPnL >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%)
                 </Text>
               </Flex>
             </Stack>
