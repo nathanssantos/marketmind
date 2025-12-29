@@ -1,0 +1,209 @@
+{
+  "id": "order-block-fvg",
+  "name": "Order Block + FVG",
+  "version": "1.0.0",
+  "description": "Smart money concept combining Order Blocks (high-volume institutional zones) with Fair Value Gaps (imbalance zones). Entry when price returns to order block with FVG confirmation.",
+  "author": "MarketMind",
+  "tags": [
+    "smart-money",
+    "order-block",
+    "fvg",
+    "institutional"
+  ],
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 80,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 90,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 5,
+    "breakEvenAfterR": 3,
+    "onlyWithTrend": true,
+    "minConfidence": 70,
+    "commission": 0.001
+  },
+  "backtestSummary": {
+    "profitFactor": 2.56,
+    "winRate": 50.0,
+    "sharpeRatio": 3.67,
+    "maxDrawdownPercent": 14.3,
+    "totalTrades": 24,
+    "netPnlPercent": 47.98,
+    "testedAt": "2024-12-09",
+    "testedPeriod": "2024-01-01 to 2024-10-01",
+    "testedTimeframe": "4h",
+    "testedSymbol": "BTCUSDT"
+  },
+  "recommendedTimeframes": {
+    "primary": "1h",
+    "secondary": [
+      "4h",
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "notes": "Best on 1h-4h for clear institutional footprints"
+  },
+  "parameters": {
+    "lookbackPeriod": {
+      "default": 50,
+      "min": 20,
+      "max": 100,
+      "step": 10,
+      "description": "Lookback for order blocks"
+    },
+    "orderBlockVolumeMultiplier": {
+      "default": 1.5,
+      "min": 1.2,
+      "max": 2.0,
+      "step": 0.1,
+      "description": "Volume multiplier to identify order blocks"
+    },
+    "fvgMinSize": {
+      "default": 0.1,
+      "min": 0.05,
+      "max": 0.3,
+      "step": 0.05,
+      "description": "Minimum FVG size as % of price"
+    },
+    "targetMultiplier": {
+      "default": 2.0,
+      "min": 1.5,
+      "max": 3.0,
+      "step": 0.5,
+      "description": "Risk:Reward target"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 7,
+      "max": 21,
+      "step": 1,
+      "description": "ATR for stop calculation"
+    }
+  },
+  "indicators": {
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": "$atrPeriod"
+      }
+    },
+    "ema50": {
+      "type": "ema",
+      "params": {
+        "period": 50
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close",
+          "op": ">",
+          "right": "open"
+        },
+        {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        {
+          "left": "low.prev",
+          "op": "<",
+          "right": "low.prev50"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "ema50"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close",
+          "op": "<",
+          "right": "open"
+        },
+        {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        {
+          "left": "high.prev",
+          "op": ">",
+          "right": "high.prev50"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "ema50"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$targetMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 1.5,
+      "trailMultiplier": 5,
+      "breakEvenAfterR": 3
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "High volume order block"
+      },
+      {
+        "condition": {
+          "left": "close",
+          "op": ">",
+          "right": "ema200"
+        },
+        "bonus": 5,
+        "description": "Aligned with trend (LONG)"
+      },
+      {
+        "condition": {
+          "left": "close",
+          "op": "<",
+          "right": "ema200"
+        },
+        "bonus": 5,
+        "description": "Aligned with trend (SHORT)"
+      }
+    ],
+    "max": 95
+  },
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 1.0
+  }
+}

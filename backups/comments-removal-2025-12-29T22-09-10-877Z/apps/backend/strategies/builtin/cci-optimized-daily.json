@@ -1,0 +1,168 @@
+{
+  "id": "cci-optimized-daily",
+  "name": "CCI Optimized Daily",
+  "version": "1.0.0",
+  "description": "Optimized CCI strategy (LONG ONLY) using period 50 (not standard 20). Research: 1108% return over 20 years on S&P 500. WARNING: Best for indices, may underperform on crypto.",
+  "author": "MarketMind",
+  "tags": [
+    "trend-following",
+    "cci",
+    "optimized",
+    "daily",
+    "indices-best"
+  ],
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 60,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": false,
+    "minConfidence": 60,
+    "commission": 0.001
+  },
+  "backtestSummary": {
+    "profitFactor": 0.76,
+    "winRate": 33.33,
+    "totalTrades": 33,
+    "netPnlPercent": -7.21,
+    "testedAt": "2025-12-07",
+    "testedTimeframe": "1d",
+    "testedSymbol": "BTCUSDT"
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "avoid": [
+      "1m",
+      "5m",
+      "15m",
+      "1h"
+    ],
+    "notes": "CCI optimized for daily only - designed for indices, underperforms on crypto"
+  },
+  "parameters": {
+    "cciPeriod": {
+      "default": 50,
+      "min": 30,
+      "max": 80,
+      "step": 10,
+      "description": "CCI period (50 is optimal, not 20!)"
+    },
+    "cciEntry": {
+      "default": -50,
+      "min": -150,
+      "max": 0,
+      "step": 25,
+      "description": "CCI entry threshold (long) - relaxed for crypto"
+    },
+    "cciExit": {
+      "default": 100,
+      "min": 50,
+      "max": 150,
+      "step": 25,
+      "description": "CCI exit threshold"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "ATR period"
+    },
+    "slMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "Stop loss ATR multiplier"
+    },
+    "tpMultiplier": {
+      "default": 3,
+      "min": 2,
+      "max": 5,
+      "step": 0.5,
+      "description": "Take profit ATR multiplier"
+    }
+  },
+  "indicators": {
+    "cci": {
+      "type": "cci",
+      "params": {
+        "period": "$cciPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": "$atrPeriod"
+      }
+    },
+    "ema200": {
+      "type": "ema",
+      "params": {
+        "period": 200
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "cci",
+          "op": "<",
+          "right": "$cciEntry"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "ema200"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$tpMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
+    }
+  },
+  "confidence": {
+    "base": 65,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "cci",
+          "op": "<",
+          "right": -150
+        },
+        "bonus": 10,
+        "description": "Extreme oversold CCI"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirmation"
+      }
+    ],
+    "max": 95
+  },
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 1.0
+  }
+}

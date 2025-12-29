@@ -1,0 +1,185 @@
+{
+  "id": "ultimate-oscillator-crypto",
+  "name": "Ultimate Oscillator Crypto",
+  "version": "1.0.0",
+  "description": "Ultimate Oscillator com 3 timeframes (7,14,28). Reduz falsos sinais combinando m\u00faltiplos per\u00edodos. Entry em diverg\u00eancias ou n\u00edveis extremos.",
+  "author": "MarketMind",
+  "tags": [
+    "momentum",
+    "ultimate-oscillator",
+    "multi-timeframe"
+  ],
+  "source": "Larry Williams - Ultimate Oscillator Creator",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 70,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 80,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": false,
+    "onlyWithTrend": false,
+    "minConfidence": 70,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
+    "notes": "UO works best on daily"
+  },
+  "parameters": {
+    "shortPeriod": {
+      "default": 7,
+      "min": 5,
+      "max": 10,
+      "step": 1,
+      "description": "Per\u00edodo curto"
+    },
+    "mediumPeriod": {
+      "default": 14,
+      "min": 12,
+      "max": 18,
+      "step": 2,
+      "description": "Per\u00edodo m\u00e9dio"
+    },
+    "longPeriod": {
+      "default": 28,
+      "min": 24,
+      "max": 35,
+      "step": 1,
+      "description": "Per\u00edodo longo"
+    },
+    "oversold": {
+      "default": 30,
+      "min": 20,
+      "max": 35,
+      "step": 5,
+      "description": "N\u00edvel oversold"
+    },
+    "overbought": {
+      "default": 70,
+      "min": 65,
+      "max": 80,
+      "step": 5,
+      "description": "N\u00edvel overbought"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
+  },
+  "indicators": {
+    "uo": {
+      "type": "ultimateOscillator",
+      "params": {
+        "shortPeriod": "$shortPeriod",
+        "mediumPeriod": "$mediumPeriod",
+        "longPeriod": "$longPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "uo",
+          "op": "crossover",
+          "right": "$oversold"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "uo",
+          "op": "crossunder",
+          "right": "$overbought"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2
+    },
+    "conditions": {
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "uo",
+            "op": ">",
+            "right": 50
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "uo",
+            "op": "<",
+            "right": 50
+          }
+        ]
+      }
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "uo",
+          "op": "<",
+          "right": 20
+        },
+        "bonus": 10,
+        "description": "Extremely oversold"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 5,
+        "description": "Volume spike"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 1.0
+  }
+}

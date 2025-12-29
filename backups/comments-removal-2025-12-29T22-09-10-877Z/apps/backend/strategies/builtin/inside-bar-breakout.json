@@ -1,0 +1,135 @@
+{
+  "id": "inside-bar-breakout",
+  "name": "Inside Bar Breakout",
+  "version": "1.0.0",
+  "description": "Inside bar pattern breakout. Inside bar indica consolida\u00e7\u00e3o. Entry quando pre\u00e7o quebra high/low da mother bar.",
+  "author": "MarketMind",
+  "tags": [
+    "breakout",
+    "inside-bar",
+    "pattern",
+    "consolidation"
+  ],
+  "source": "Price Action Trading",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 70,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 80,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 2,
+    "breakEvenAfterR": 1,
+    "onlyWithTrend": false,
+    "minConfidence": 70,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "4h",
+    "secondary": [
+      "1h",
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
+    "notes": "Inside bar on 4h or daily"
+  },
+  "parameters": {
+    "atrMultiplier": {
+      "default": 1.5,
+      "min": 1,
+      "max": 2.5,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
+  },
+  "indicators": {
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "high[1]",
+          "op": "<",
+          "right": "high[2]"
+        },
+        {
+          "left": "low[1]",
+          "op": ">",
+          "right": "low[2]"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "high[2]"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "high[1]",
+          "op": "<",
+          "right": "high[2]"
+        },
+        {
+          "left": "low[1]",
+          "op": ">",
+          "right": "low[2]"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "low[2]"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 1.5,
+      "trailMultiplier": 2,
+      "breakEvenAfterR": 1
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume on breakout"
+      }
+    ],
+    "max": 85
+  },
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 1.0
+  }
+}

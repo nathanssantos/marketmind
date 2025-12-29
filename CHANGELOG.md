@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.36.0] - 2025-12-29
+
+### Removed
+
+#### Major Feature Cleanup
+This release focuses the application on its core trading functionality by removing unused features:
+
+- **ML Package** - Removed entire `@marketmind/ml` package (~50 files)
+- **AI Integration** - Removed all AI providers (OpenAI, Anthropic, Gemini), chat sidebar, AI trading agent
+- **Pattern Detection** - Removed frontend pattern detection (triangles, head-and-shoulders, support/resistance)
+- **News & Calendar** - Removed news providers (CryptoPanic, NewsAPI) and calendar features
+- **Market Context** - Removed market context filters and configuration
+
+#### Files Removed
+- `packages/ml/` - Machine learning package
+- `apps/electron/src/renderer/services/ai/` - AI service providers
+- `apps/electron/src/renderer/components/Chat/` - Chat sidebar components
+- `apps/electron/src/renderer/components/News/` - News components
+- `apps/electron/src/renderer/components/Calendar/` - Calendar components
+- `apps/electron/src/renderer/utils/patternDetection/` - Pattern detection utilities
+- `apps/backend/src/routers/ai-trading.ts` - AI trading router
+- `apps/backend/src/routers/ml.ts` - ML router
+- `apps/backend/src/services/ai-trading/` - AI trading services
+- `packages/types/src/ai*.ts` - AI type definitions
+- `packages/types/src/pattern.ts` - Pattern type definitions
+- `packages/types/src/news.ts` - News type definitions
+- `packages/types/src/calendar.ts` - Calendar type definitions
+- `docs/AI_AUTO_TRADING.md`, `docs/ML_*.md`, `docs/NEWS.md` - Related documentation
+
+### Added
+
+- **ENABLED_STRATEGIES** - Centralized strategy list in `@marketmind/types` shared between frontend and backend
+
+### Changed
+
+- **Simplified UI** - Removed chat toggle, news toggle, pattern detection buttons from toolbar
+- **Cleaner Settings** - Removed AI, Pattern Detection, News, Market Context tabs from settings
+- **Updated Translations** - Cleaned all language files (EN, PT, ES, FR) removing unused keys
+- **Reduced Dependencies** - Removed `@anthropic-ai/sdk`, `@google/generative-ai`, `openai` packages
+
+### What's Still Available
+The core trading functionality remains fully operational:
+- **17 Trading Strategies** - All Larry Williams setups (9.1-9.4) + 13 momentum/breakout strategies
+- **Auto-Trading** - Algorithmic trading with real-time setup detection
+- **Backtesting** - Full backtesting engine with optimization
+- **Real-time Charts** - Advanced kline visualization with 25+ indicators
+- **Binance Integration** - Spot and Futures trading support
+
+### Stats
+- 1,903 passing tests + 27 browser tests
+- All type checks passing
+- ~185 files removed, significantly reduced bundle size
+
+---
+
 ## [0.35.2] - 2025-12-29
 
 ### Changed

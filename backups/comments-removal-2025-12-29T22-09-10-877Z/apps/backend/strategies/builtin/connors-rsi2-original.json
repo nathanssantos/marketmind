@@ -1,0 +1,193 @@
+{
+  "id": "connors-rsi2-original",
+  "name": "Connors RSI 2 Original",
+  "version": "1.0.0",
+  "description": "Larry Connors' original RSI 2 mean-reversion strategy (LONG ONLY) from 'Short-Term Trading Strategies That Work' (2008). Rules: RSI(2) < 5 + above 200 SMA = long. Backtested: 75% win rate over 34 years.",
+  "author": "MarketMind",
+  "tags": [
+    "mean-reversion",
+    "connors",
+    "rsi2",
+    "classic",
+    "proven"
+  ],
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 75,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": false,
+    "minConfidence": 70,
+    "commission": 0.001
+  },
+  "backtestSummary": {
+    "profitFactor": 2.78,
+    "winRate": 50.0,
+    "totalTrades": 10,
+    "netPnlPercent": 9.31,
+    "testedAt": "2025-12-07",
+    "testedTimeframe": "1d",
+    "testedSymbol": "BTCUSDT"
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "notes": "RSI(2) mean-reversion works best on daily timeframe per Connors research"
+  },
+  "parameters": {
+    "rsiPeriod": {
+      "default": 2,
+      "min": 2,
+      "max": 3,
+      "step": 1,
+      "description": "RSI period (2 is original)"
+    },
+    "rsiEntry": {
+      "default": 15,
+      "min": 5,
+      "max": 25,
+      "step": 1,
+      "description": "RSI entry threshold (crypto needs higher value than stocks)"
+    },
+    "smaTrend": {
+      "default": 50,
+      "min": 20,
+      "max": 200,
+      "step": 10,
+      "description": "Trend filter SMA period (200 for stocks, 50 for crypto)"
+    },
+    "smaExit": {
+      "default": 5,
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "description": "Exit SMA period"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "ATR for position sizing"
+    },
+    "slMultiplier": {
+      "default": 3,
+      "min": 2,
+      "max": 5,
+      "step": 0.5,
+      "description": "Stop loss ATR (Connors uses none, but we add for safety)"
+    }
+  },
+  "indicators": {
+    "rsi2": {
+      "type": "rsi",
+      "params": {
+        "period": "$rsiPeriod"
+      }
+    },
+    "sma200": {
+      "type": "sma",
+      "params": {
+        "period": "$smaTrend"
+      }
+    },
+    "sma5": {
+      "type": "sma",
+      "params": {
+        "period": "$smaExit"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": "$atrPeriod"
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "rsi2",
+          "op": "<",
+          "right": "$rsiEntry"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "sma200"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "conditions": {
+      "long": {
+        "operator": "AND",
+        "conditions": [
+          {
+            "left": "close",
+            "op": ">",
+            "right": "sma5"
+          }
+        ]
+      }
+    },
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "pivotBased",
+      "lookback": 40,
+      "fallback": {
+        "type": "riskReward",
+        "multiplier": 2
+      }
+    },
+    "maxBarsInTrade": 10,
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
+    }
+  },
+  "confidence": {
+    "base": 75,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "rsi2",
+          "op": "<",
+          "right": 2
+        },
+        "bonus": 10,
+        "description": "Extreme oversold (RSI < 2)"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 5,
+        "description": "Volume confirmation"
+      }
+    ],
+    "max": 95
+  },
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 1.0
+  }
+}

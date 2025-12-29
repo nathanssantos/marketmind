@@ -1,0 +1,175 @@
+{
+  "id": "aroon-trend-crypto",
+  "name": "Aroon Trend Crypto",
+  "version": "1.0.0",
+  "description": "Aroon indicator para identificar in\u00edcio de novas tend\u00eancias. Aroon Up/Down medem tempo desde \u00faltimo high/low. Entry quando Aroon cruza.",
+  "author": "MarketMind",
+  "tags": [
+    "trend-following",
+    "aroon",
+    "trend-strength"
+  ],
+  "source": "Tushar Chande - Aroon Creator",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 70,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 80,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 2.5,
+    "breakEvenAfterR": 1.5,
+    "onlyWithTrend": false,
+    "minConfidence": 70,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "notes": "Aroon works best on daily"
+  },
+  "parameters": {
+    "aroonPeriod": {
+      "default": 25,
+      "min": 14,
+      "max": 30,
+      "step": 5,
+      "description": "Per\u00edodo do Aroon"
+    },
+    "threshold": {
+      "default": 70,
+      "min": 60,
+      "max": 80,
+      "step": 5,
+      "description": "Threshold para strong trend"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "ATR para stop"
+    }
+  },
+  "indicators": {
+    "aroon": {
+      "type": "aroon",
+      "params": {
+        "period": "$aroonPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "aroon.up",
+          "op": "crossover",
+          "right": "aroon.down"
+        },
+        {
+          "left": "aroon.up",
+          "op": ">",
+          "right": "$threshold"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "aroon.down",
+          "op": "crossover",
+          "right": "aroon.up"
+        },
+        {
+          "left": "aroon.down",
+          "op": ">",
+          "right": "$threshold"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2.5
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 2.5,
+      "breakEvenAfterR": 1.5
+    },
+    "conditions": {
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "aroon.down",
+            "op": ">",
+            "right": "aroon.up"
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "aroon.up",
+            "op": ">",
+            "right": "aroon.down"
+          }
+        ]
+      }
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "aroon.up",
+          "op": ">",
+          "right": 90
+        },
+        "bonus": 10,
+        "description": "Very strong uptrend"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 5,
+        "description": "Volume confirms"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 2
+  }
+}

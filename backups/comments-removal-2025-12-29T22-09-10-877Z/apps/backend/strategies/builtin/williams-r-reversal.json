@@ -1,0 +1,177 @@
+{
+  "id": "williams-r-reversal",
+  "name": "Williams %R Reversal",
+  "version": "1.0.0",
+  "description": "Williams %R momentum reversal strategy (LONG ONLY - shorts don't work per research). Uses 2-day lookback for optimal results. Backtested: 81% win rate, Sharpe ~2.0, PF 2.2, CAGR 11.9%.",
+  "author": "MarketMind",
+  "tags": [
+    "mean-reversion",
+    "williams",
+    "momentum",
+    "high-winrate",
+    "proven"
+  ],
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 70,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": false,
+    "minConfidence": 65,
+    "commission": 0.001
+  },
+  "backtestSummary": {
+    "profitFactor": 0.96,
+    "winRate": 37.5,
+    "totalTrades": 16,
+    "netPnlPercent": -0.45,
+    "testedAt": "2025-12-07",
+    "testedTimeframe": "1d",
+    "testedSymbol": "BTCUSDT"
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "notes": "Williams %R reversal works best on daily with 2-period lookback"
+  },
+  "parameters": {
+    "williamsRPeriod": {
+      "default": 2,
+      "min": 2,
+      "max": 14,
+      "step": 2,
+      "description": "Williams %R period (2 is optimal)"
+    },
+    "oversoldLevel": {
+      "default": -80,
+      "min": -95,
+      "max": -70,
+      "step": 5,
+      "description": "Oversold threshold"
+    },
+    "overboughtLevel": {
+      "default": -20,
+      "min": -30,
+      "max": -5,
+      "step": 5,
+      "description": "Overbought threshold"
+    },
+    "emaTrend": {
+      "default": 200,
+      "min": 100,
+      "max": 250,
+      "step": 50,
+      "description": "Trend filter EMA"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "ATR period"
+    },
+    "slMultiplier": {
+      "default": 1.5,
+      "min": 1,
+      "max": 2.5,
+      "step": 0.25,
+      "description": "Stop loss ATR multiplier"
+    },
+    "tpMultiplier": {
+      "default": 2.5,
+      "min": 1.5,
+      "max": 4,
+      "step": 0.5,
+      "description": "Take profit ATR multiplier"
+    }
+  },
+  "indicators": {
+    "williamsR": {
+      "type": "williamsR",
+      "params": {
+        "period": "$williamsRPeriod"
+      }
+    },
+    "emaTrend": {
+      "type": "ema",
+      "params": {
+        "period": "$emaTrend"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": "$atrPeriod"
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "williamsR",
+          "op": "<",
+          "right": "$oversoldLevel"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "emaTrend"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$tpMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "williamsR",
+          "op": "<",
+          "right": -90
+        },
+        "bonus": 10,
+        "description": "Extreme oversold (< -90)"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirmation"
+      }
+    ],
+    "max": 95
+  },
+  "filters": {
+    "minConfidence": 65,
+    "minRiskReward": 1.0
+  }
+}

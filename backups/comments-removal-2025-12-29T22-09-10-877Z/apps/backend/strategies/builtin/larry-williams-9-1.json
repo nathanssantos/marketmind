@@ -1,0 +1,201 @@
+{
+  "id": "larry-williams-9-1",
+  "name": "Larry Williams 9.1 (EMA Turn)",
+  "version": "1.0.0",
+  "description": "Larry Williams Setup 9.1 - EMA9 Turn. Entry when EMA9 turns direction (from falling to rising = LONG, from rising to falling = SHORT) and price closes above/below EMA9 with volume confirmation.",
+  "author": "Larry Williams / MarketMind",
+  "tags": [
+    "larry-williams",
+    "ema",
+    "trend-turn",
+    "momentum"
+  ],
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 100,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": false,
+    "minConfidence": 60,
+    "commission": 0.001,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 70,
+    "trailingATRMultiplier": 3,
+    "breakEvenAfterR": 2
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "notes": "Best on daily charts for swing trades. Higher timeframes reduce noise."
+  },
+  "parameters": {
+    "emaPeriod": {
+      "default": 9,
+      "min": 5,
+      "max": 15,
+      "step": 1,
+      "description": "EMA period (Larry Williams uses 9)"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 7,
+      "max": 21,
+      "step": 1,
+      "description": "ATR period for stop/target calculation"
+    },
+    "atrStopMultiplier": {
+      "default": 1.5,
+      "min": 1,
+      "max": 3,
+      "step": 0.25,
+      "description": "ATR multiplier for stop loss"
+    },
+    "atrTargetMultiplier": {
+      "default": 2.5,
+      "min": 1.5,
+      "max": 4,
+      "step": 0.5,
+      "description": "ATR multiplier for take profit"
+    },
+    "volumeMultiplier": {
+      "default": 1,
+      "min": 0.5,
+      "max": 2,
+      "step": 0.25,
+      "description": "Minimum volume as multiplier of 20-period average"
+    }
+  },
+  "indicators": {
+    "ema9": {
+      "type": "ema",
+      "params": {
+        "period": "$emaPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": "$atrPeriod"
+      }
+    },
+    "ema200": {
+      "type": "ema",
+      "params": {
+        "period": 200
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "ema9.prev",
+          "op": "<=",
+          "right": "ema9.prev2"
+        },
+        {
+          "left": "ema9",
+          "op": ">",
+          "right": "ema9.prev"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "ema9"
+        },
+        {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "ema9.prev",
+          "op": ">=",
+          "right": "ema9.prev2"
+        },
+        {
+          "left": "ema9",
+          "op": "<",
+          "right": "ema9.prev"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "ema9"
+        },
+        {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$atrTargetMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
+    }
+  },
+  "confidence": {
+    "base": 60,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 20,
+        "description": "Volume confirmation"
+      },
+      {
+        "condition": {
+          "left": "close",
+          "op": ">",
+          "right": "ema200"
+        },
+        "bonus": 10,
+        "description": "Aligned with major trend (LONG)"
+      },
+      {
+        "condition": {
+          "left": "close",
+          "op": "<",
+          "right": "ema200"
+        },
+        "bonus": 10,
+        "description": "Aligned with major trend (SHORT)"
+      }
+    ],
+    "max": 100
+  },
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 1.0
+  }
+}

@@ -1,0 +1,201 @@
+{
+  "id": "adx-ema-trend",
+  "name": "ADX Trend Filter + EMA Crossover",
+  "version": "1.0.0",
+  "description": "Enhanced EMA crossover strategy with ADX trend filter. Filters out false signals in ranging markets by requiring ADX > 25 for trend confirmation. 2025 refinement of classic EMA crossover.",
+  "author": "MarketMind",
+  "tags": [
+    "trend-following",
+    "adx",
+    "ema",
+    "crossover",
+    "filter"
+  ],
+  "status": "active",
+  "recommendedTimeframes": {
+    "primary": "4h",
+    "secondary": [
+      "1h",
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
+    "notes": "ADX trend filter works best on 4H for trend confirmation"
+  },
+  "optimizedParams": {
+    "maxPositionSize": 50,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": true,
+    "minConfidence": 65,
+    "commission": 0.001
+  },
+  "parameters": {
+    "fastEma": {
+      "default": 9,
+      "min": 5,
+      "max": 15,
+      "step": 2,
+      "description": "Fast EMA period"
+    },
+    "slowEma": {
+      "default": 21,
+      "min": 15,
+      "max": 30,
+      "step": 3,
+      "description": "Slow EMA period"
+    },
+    "adxPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "ADX period"
+    },
+    "adxThreshold": {
+      "default": 20,
+      "min": 15,
+      "max": 35,
+      "step": 5,
+      "description": "Minimum ADX for trend"
+    },
+    "atrMultiplier": {
+      "default": 1.5,
+      "min": 1,
+      "max": 2.5,
+      "step": 0.25,
+      "description": "ATR multiplier for stop"
+    },
+    "rrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 3,
+      "step": 0.5,
+      "description": "Risk-reward multiplier"
+    }
+  },
+  "indicators": {
+    "emaFast": {
+      "type": "ema",
+      "params": {
+        "period": "$fastEma"
+      }
+    },
+    "emaSlow": {
+      "type": "ema",
+      "params": {
+        "period": "$slowEma"
+      }
+    },
+    "adx": {
+      "type": "adx",
+      "params": {
+        "period": "$adxPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "emaFast",
+          "op": "crossover",
+          "right": "emaSlow"
+        },
+        {
+          "left": "adx.adx",
+          "op": ">",
+          "right": "$adxThreshold"
+        },
+        {
+          "left": "adx.plusDI",
+          "op": ">",
+          "right": "adx.minusDI"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "emaFast",
+          "op": "crossunder",
+          "right": "emaSlow"
+        },
+        {
+          "left": "adx.adx",
+          "op": ">",
+          "right": "$adxThreshold"
+        },
+        {
+          "left": "adx.minusDI",
+          "op": ">",
+          "right": "adx.plusDI"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$rrMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "adx.adx",
+          "op": ">",
+          "right": 30
+        },
+        "bonus": 10,
+        "description": "Strong trend (ADX > 30)"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirmation"
+      },
+      {
+        "condition": {
+          "left": "adx.adx",
+          "op": ">",
+          "right": 40
+        },
+        "bonus": 5,
+        "description": "Very strong trend (ADX > 40)"
+      }
+    ],
+    "max": 95
+  },
+  "filters": {
+    "minConfidence": 65,
+    "minRiskReward": 1.0
+  }
+}

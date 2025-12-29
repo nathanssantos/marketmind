@@ -1,0 +1,151 @@
+{
+  "id": "range-breakout",
+  "name": "Range Breakout",
+  "version": "1.0.0",
+  "description": "Breakout de range consolidado. Identifica consolida\u00e7\u00f5es e entra no breakout. Stop dentro do range, target na extens\u00e3o.",
+  "author": "MarketMind",
+  "tags": [
+    "breakout",
+    "range",
+    "consolidation",
+    "volatility"
+  ],
+  "source": "Range Trading Methods",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 70,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 80,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 2,
+    "breakEvenAfterR": 1,
+    "onlyWithTrend": false,
+    "minConfidence": 70,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "4h",
+    "secondary": [
+      "1h",
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
+    "notes": "Range breakout on 4h"
+  },
+  "parameters": {
+    "rangePeriod": {
+      "default": 20,
+      "min": 10,
+      "max": 30,
+      "step": 5,
+      "description": "Per\u00edodo para identificar range"
+    },
+    "rangeThreshold": {
+      "default": 5,
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "description": "Range max % para consolida\u00e7\u00e3o"
+    },
+    "atrMultiplier": {
+      "default": 1.5,
+      "min": 1,
+      "max": 2.5,
+      "step": 0.5,
+      "description": "ATR stop"
+    }
+  },
+  "indicators": {
+    "range": {
+      "type": "nDayHighLow",
+      "params": {
+        "period": "$rangePeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": {
+            "calc": "((range.high - range.low) / range.low) * 100"
+          },
+          "op": "<",
+          "right": "$rangeThreshold"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "range.high"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": {
+            "calc": "((range.high - range.low) / range.low) * 100"
+          },
+          "op": "<",
+          "right": "$rangeThreshold"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "range.low"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 1.5,
+      "trailMultiplier": 2,
+      "breakEvenAfterR": 1
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": {
+            "calc": "volume.sma20 * 1.5"
+          }
+        },
+        "bonus": 15,
+        "description": "Volume surge on breakout"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 70,
+    "minRiskReward": 1.0
+  }
+}

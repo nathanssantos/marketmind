@@ -1,0 +1,209 @@
+{
+  "id": "triple-ema-confluence",
+  "name": "Triple EMA Confluence",
+  "version": "1.0.0",
+  "description": "High-probability entries when all three EMAs are aligned and price crosses the fast EMA. Strong trend-following strategy for bull markets.",
+  "author": "MarketMind",
+  "tags": [
+    "trend-following",
+    "ema",
+    "confluence",
+    "bull-market",
+    "2025"
+  ],
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 80,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 80,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 4,
+    "breakEvenAfterR": 3,
+    "onlyWithTrend": true,
+    "minConfidence": 65,
+    "commission": 0.001
+  },
+  "backtestSummary": {
+    "profitFactor": 2.05,
+    "winRate": 44.8,
+    "sharpeRatio": 4.01,
+    "maxDrawdownPercent": 12.1,
+    "totalTrades": 29,
+    "netPnlPercent": 40.48,
+    "testedAt": "2024-12-09",
+    "testedPeriod": "2024-01-01 to 2024-10-01",
+    "testedTimeframe": "4h",
+    "testedSymbol": "BTCUSDT"
+  },
+  "recommendedTimeframes": {
+    "primary": "4h",
+    "secondary": [
+      "1h",
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
+    "notes": "Triple EMA confluence works best on 4H for trend alignment detection"
+  },
+  "parameters": {
+    "emaFast": {
+      "default": 9,
+      "min": 5,
+      "max": 12,
+      "step": 1,
+      "description": "Fast EMA period"
+    },
+    "emaMid": {
+      "default": 21,
+      "min": 15,
+      "max": 30,
+      "step": 3,
+      "description": "Mid EMA period"
+    },
+    "emaSlow": {
+      "default": 55,
+      "min": 40,
+      "max": 100,
+      "step": 10,
+      "description": "Slow EMA period"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 10,
+      "max": 20,
+      "step": 2,
+      "description": "ATR period"
+    },
+    "slMultiplier": {
+      "default": 1.5,
+      "min": 1,
+      "max": 2.5,
+      "step": 0.25,
+      "description": "SL ATR multiplier"
+    },
+    "tpMultiplier": {
+      "default": 3,
+      "min": 2,
+      "max": 4,
+      "step": 0.5,
+      "description": "TP ATR multiplier"
+    }
+  },
+  "indicators": {
+    "emaFast": {
+      "type": "ema",
+      "params": {
+        "period": "$emaFast"
+      }
+    },
+    "emaMid": {
+      "type": "ema",
+      "params": {
+        "period": "$emaMid"
+      }
+    },
+    "emaSlow": {
+      "type": "ema",
+      "params": {
+        "period": "$emaSlow"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": "$atrPeriod"
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "emaFast",
+          "op": ">",
+          "right": "emaMid"
+        },
+        {
+          "left": "emaMid",
+          "op": ">",
+          "right": "emaSlow"
+        },
+        {
+          "left": "close",
+          "op": "crossover",
+          "right": "emaFast"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "emaFast",
+          "op": "<",
+          "right": "emaMid"
+        },
+        {
+          "left": "emaMid",
+          "op": "<",
+          "right": "emaSlow"
+        },
+        {
+          "left": "close",
+          "op": "crossunder",
+          "right": "emaFast"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$tpMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
+    }
+  },
+  "confidence": {
+    "base": 70,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume confirmation"
+      },
+      {
+        "condition": {
+          "left": "close",
+          "op": ">",
+          "right": "open"
+        },
+        "bonus": 5,
+        "description": "Bullish candle"
+      }
+    ],
+    "max": 95
+  },
+  "filters": {
+    "minConfidence": 65,
+    "minRiskReward": 2.0
+  }
+}

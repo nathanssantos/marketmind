@@ -1,0 +1,1 @@
+ALTER TABLE "auto_trading_config" ADD COLUMN "use_limit_orders" boolean DEFAULT false NOT NULL;

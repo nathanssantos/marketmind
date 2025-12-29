@@ -1,0 +1,168 @@
+{
+  "id": "ema-crossover",
+  "name": "EMA Crossover",
+  "version": "1.0.0",
+  "description": "Estrat\u00e9gia cl\u00e1ssica de cruzamento de EMAs. Long quando EMA r\u00e1pida cruza acima da EMA lenta. Short no cruzamento inverso.",
+  "author": "MarketMind",
+  "tags": [
+    "trend-following",
+    "ema",
+    "crossover",
+    "momentum"
+  ],
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 90,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 90,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": true,
+    "trailingATRMultiplier": 6,
+    "breakEvenAfterR": 2,
+    "onlyWithTrend": true,
+    "minConfidence": 60,
+    "commission": 0.001
+  },
+  "backtestSummary": {
+    "profitFactor": 2.54,
+    "winRate": 57.69,
+    "sharpeRatio": 3.37,
+    "maxDrawdownPercent": 18.11,
+    "totalTrades": 26,
+    "netPnlPercent": 53.58,
+    "testedAt": "2024-12-09",
+    "testedPeriod": "2024-01-01 to 2024-10-01",
+    "testedTimeframe": "4h",
+    "testedSymbol": "BTCUSDT"
+  },
+  "recommendedTimeframes": {
+    "primary": "4h",
+    "secondary": [
+      "1h",
+      "1d"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
+    "notes": "EMA crossover works best on 4H for trend-following signals"
+  },
+  "parameters": {
+    "fastPeriod": {
+      "default": 9,
+      "min": 5,
+      "max": 21,
+      "step": 1,
+      "description": "Per\u00edodo da EMA r\u00e1pida"
+    },
+    "slowPeriod": {
+      "default": 21,
+      "min": 15,
+      "max": 50,
+      "step": 1,
+      "description": "Per\u00edodo da EMA lenta"
+    },
+    "atrMultiplier": {
+      "default": 1.5,
+      "min": 1,
+      "max": 3,
+      "step": 0.25,
+      "description": "Multiplicador do ATR para stop loss"
+    },
+    "rrMultiplier": {
+      "default": 2,
+      "min": 1.5,
+      "max": 4,
+      "step": 0.5,
+      "description": "Multiplicador de risk-reward para take profit"
+    }
+  },
+  "indicators": {
+    "emaFast": {
+      "type": "ema",
+      "params": {
+        "period": "$fastPeriod"
+      }
+    },
+    "emaSlow": {
+      "type": "ema",
+      "params": {
+        "period": "$slowPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "emaFast",
+          "op": "crossover",
+          "right": "emaSlow"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "emaFast",
+          "op": "crossunder",
+          "right": "emaSlow"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": "$rrMultiplier"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 6,
+      "breakEvenAfterR": 2
+    }
+  },
+  "confidence": {
+    "base": 65,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume acima da m\u00e9dia"
+      },
+      {
+        "condition": {
+          "left": "atr",
+          "op": ">",
+          "right": 0
+        },
+        "bonus": 5,
+        "description": "Volatilidade presente"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 1.0
+  }
+}

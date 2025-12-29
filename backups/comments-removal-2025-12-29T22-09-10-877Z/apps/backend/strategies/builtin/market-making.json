@@ -1,0 +1,142 @@
+{
+  "id": "market-making",
+  "name": "Market Making",
+  "version": "1.0.0",
+  "description": "Market making strategy: capture bid-ask spread in ranging/sideways markets. Entry at EMA (fair value) with ATR-based spread. Best in high-volume, non-trending conditions.",
+  "author": "MarketMind",
+  "tags": [
+    "market-making",
+    "ranging",
+    "mean-reversion",
+    "spread"
+  ],
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 25,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": false,
+    "minConfidence": 60,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "1h",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1d",
+      "1w"
+    ],
+    "notes": "Best in ranging markets on shorter timeframes with high liquidity"
+  },
+  "parameters": {
+    "emaPeriod": {
+      "default": 20,
+      "min": 10,
+      "max": 50,
+      "step": 5,
+      "description": "EMA period for fair value"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 7,
+      "max": 21,
+      "step": 1,
+      "description": "ATR period for spread calculation"
+    },
+    "spreadMultiplier": {
+      "default": 0.5,
+      "min": 0.25,
+      "max": 1.0,
+      "step": 0.25,
+      "description": "ATR multiplier for spread width"
+    },
+    "minSpreadPercent": {
+      "default": 0.2,
+      "min": 0.1,
+      "max": 0.5,
+      "step": 0.1,
+      "description": "Minimum spread as % of price"
+    },
+    "maxSpreadPercent": {
+      "default": 1.0,
+      "min": 0.5,
+      "max": 2.0,
+      "step": 0.25,
+      "description": "Maximum spread as % of price"
+    }
+  },
+  "indicators": {
+    "ema": {
+      "type": "ema",
+      "params": {
+        "period": "$emaPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": "$atrPeriod"
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close",
+          "op": "<",
+          "right": "ema"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close",
+          "op": ">",
+          "right": "ema"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "indicator",
+      "value": "ema"
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
+    }
+  },
+  "confidence": {
+    "base": 60,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Higher volume = more liquidity"
+      }
+    ],
+    "max": 90
+  },
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 1.0
+  }
+}

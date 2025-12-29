@@ -1,0 +1,189 @@
+{
+  "id": "liquidation-cascade",
+  "name": "Liquidation Cascade",
+  "version": "1.0.0",
+  "description": "Entry ap\u00f3s cascatas de liquida\u00e7\u00e3o. Liquida\u00e7\u00f5es massivas criam oportunidades de revers\u00e3o. Entry contra o movimento extremo.",
+  "author": "MarketMind",
+  "tags": [
+    "liquidation",
+    "reversal",
+    "futures",
+    "extreme"
+  ],
+  "source": "Crypto Derivatives Trading",
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 60,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 70,
+    "useAlgorithmicLevels": true,
+    "useTrailingStop": false,
+    "onlyWithTrend": false,
+    "minConfidence": 75,
+    "commission": 0.001
+  },
+  "recommendedTimeframes": {
+    "primary": "1h",
+    "secondary": [
+      "15m",
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m"
+    ],
+    "notes": "Liquidation cascade on 1h"
+  },
+  "parameters": {
+    "liquidationThreshold": {
+      "default": 50,
+      "min": 20,
+      "max": 100,
+      "step": 10,
+      "description": "Liquida\u00e7\u00e3o m\u00ednima (milh\u00f5es USD)"
+    },
+    "priceDropPercent": {
+      "default": 5,
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "description": "Queda m\u00ednima de pre\u00e7o %"
+    },
+    "atrMultiplier": {
+      "default": 2.5,
+      "min": 2,
+      "max": 3.5,
+      "step": 0.5,
+      "description": "ATR stop"
+    }
+  },
+  "indicators": {
+    "liquidations": {
+      "type": "liquidations",
+      "params": {
+        "threshold": "$liquidationThreshold"
+      }
+    },
+    "priceChange": {
+      "type": "roc",
+      "params": {
+        "period": 6
+      }
+    },
+    "rsi": {
+      "type": "rsi",
+      "params": {
+        "period": 7
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "liquidations.longLiquidations",
+          "op": ">",
+          "right": "$liquidationThreshold"
+        },
+        {
+          "left": "priceChange",
+          "op": "<",
+          "right": {
+            "calc": "-1 * $priceDropPercent"
+          }
+        },
+        {
+          "left": "rsi",
+          "op": "<",
+          "right": 25
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "liquidations.shortLiquidations",
+          "op": ">",
+          "right": "$liquidationThreshold"
+        },
+        {
+          "left": "priceChange",
+          "op": ">",
+          "right": "$priceDropPercent"
+        },
+        {
+          "left": "rsi",
+          "op": ">",
+          "right": 75
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 2
+    },
+    "conditions": {
+      "long": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "rsi",
+            "op": ">",
+            "right": 50
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "rsi",
+            "op": "<",
+            "right": 50
+          }
+        ]
+      }
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
+    }
+  },
+  "confidence": {
+    "base": 75,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "liquidations.longLiquidations",
+          "op": ">",
+          "right": 100
+        },
+        "bonus": 15,
+        "description": "Massive liquidation"
+      }
+    ],
+    "max": 95
+  },
+  "filters": {
+    "minConfidence": 75,
+    "minRiskReward": 1.0
+  }
+}

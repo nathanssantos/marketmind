@@ -1,0 +1,355 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import type { Socket } from 'socket.io-client';
+import { createPlatformAdapter } from '../adapters/factory';
+import { socketService } from '../services/socketService';
+import { trpc } from '../utils/trpc';
+import { usePriceStore } from '../store/priceStore';
+import { toaster } from '../utils/toaster';
+
+interface PositionUpdate {
+  id: string;
+  status: string;
+  entryPrice?: string;
+  exitPrice?: string;
+  pnl?: string;
+  pnlPercent?: string;
+}
+
+interface OrderUpdate {
+  orderId: number;
+  status: string;
+  symbol: string;
+}
+
+interface PriceUpdate {
+  symbol: string;
+  price: number;
+  timestamp: number;
+}
+
+interface TradeNotification {
+  type: 'POSITION_OPENED' | 'POSITION_CLOSED' | 'TRAILING_STOP_UPDATED' | 'LIMIT_FILLED';
+  title: string;
+  body: string;
+  urgency: 'low' | 'normal' | 'critical';
+  data: {
+    executionId: string;
+    symbol: string;
+    side: 'LONG' | 'SHORT';
+    entryPrice?: string;
+    exitPrice?: string;
+    pnl?: string;
+    pnlPercent?: string;
+    exitReason?: string;
+    oldStopLoss?: string;
+    newStopLoss?: string;
+  };
+}
+
+interface RealtimeTradingSyncContextValue {
+  subscribeToPrice: (symbol: string, onUpdate: (price: number) => void) => () => void;
+  forceRefresh: () => void;
+  isConnected: boolean;
+}
+
+const RealtimeTradingSyncContext = createContext<RealtimeTradingSyncContextValue | null>(null);
+
+interface RealtimeTradingSyncProviderProps {
+  walletId: string | undefined;
+  children: ReactNode;
+}
+
+export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTradingSyncProviderProps) => {
+  const socketRef = useRef<Socket | null>(null);
+  const isConnectedRef = useRef(false);
+  const listenersRegisteredRef = useRef(false);
+  const utils = trpc.useUtils();
+  const priceCallbacksRef = useRef<Map<string, Set<(price: number) => void>>>(new Map());
+  const subscribedSymbolsRef = useRef<Set<string>>(new Set());
+  const currentWalletIdRef = useRef<string | undefined>(undefined);
+
+  const { data: tradeExecutions } = trpc.trading.getTradeExecutions.useQuery(
+    { walletId: walletId ?? '', limit: 100 },
+    { enabled: !!walletId, staleTime: 5000 }
+  );
+
+  const { data: orders } = trpc.trading.getOrders.useQuery(
+    { walletId: walletId ?? '', limit: 100 },
+    { enabled: !!walletId, staleTime: 5000 }
+  );
+
+  const allRequiredSymbols = useMemo(() => {
+    const symbols = new Set<string>();
+
+    const openExecutions = tradeExecutions?.filter((e) => e.status === 'open' || e.status === 'pending') ?? [];
+    for (const exec of openExecutions) {
+      symbols.add(exec.symbol);
+    }
+
+    const activeOrders = orders?.filter((o) => o.status === 'NEW' || o.status === 'PARTIALLY_FILLED') ?? [];
+    for (const order of activeOrders) {
+      symbols.add(order.symbol);
+    }
+
+    return symbols;
+  }, [tradeExecutions, orders]);
+
+  const invalidatePositions = useCallback(() => {
+    if (!currentWalletIdRef.current) return;
+    utils.trading.getTradeExecutions.invalidate({ walletId: currentWalletIdRef.current });
+    utils.trading.getPositions.invalidate({ walletId: currentWalletIdRef.current });
+    utils.autoTrading.getActiveExecutions.invalidate({ walletId: currentWalletIdRef.current });
+    utils.autoTrading.getExecutionHistory.invalidate({ walletId: currentWalletIdRef.current });
+  }, [utils]);
+
+  const invalidateOrders = useCallback(() => {
+    if (!currentWalletIdRef.current) return;
+    utils.trading.getOrders.invalidate({ walletId: currentWalletIdRef.current });
+  }, [utils]);
+
+  const invalidateWallet = useCallback(() => {
+    if (!currentWalletIdRef.current) return;
+    utils.wallet.list.invalidate();
+    utils.analytics.getPerformance.invalidate({ walletId: currentWalletIdRef.current });
+  }, [utils]);
+
+  const invalidateTradingData = useCallback(() => {
+    if (!currentWalletIdRef.current) return;
+    utils.trading.getTradeExecutions.invalidate({ walletId: currentWalletIdRef.current });
+    utils.trading.getOrders.invalidate({ walletId: currentWalletIdRef.current });
+    utils.trading.getPositions.invalidate({ walletId: currentWalletIdRef.current });
+    utils.autoTrading.getActiveExecutions.invalidate({ walletId: currentWalletIdRef.current });
+    utils.autoTrading.getExecutionHistory.invalidate({ walletId: currentWalletIdRef.current });
+    utils.wallet.list.invalidate();
+    utils.analytics.getPerformance.invalidate({ walletId: currentWalletIdRef.current });
+  }, [utils]);
+
+  useEffect(() => {
+    currentWalletIdRef.current = walletId;
+  }, [walletId]);
+
+  useEffect(() => {
+    if (!socketRef.current?.connected) return;
+
+    const currentSubscribed = subscribedSymbolsRef.current;
+    const newSymbols: string[] = [];
+    const removedSymbols: string[] = [];
+
+    for (const symbol of allRequiredSymbols) {
+      if (!currentSubscribed.has(symbol)) {
+        newSymbols.push(symbol);
+        currentSubscribed.add(symbol);
+        socketRef.current.emit('subscribe:prices', symbol);
+      }
+    }
+
+    for (const symbol of currentSubscribed) {
+      if (!allRequiredSymbols.has(symbol) && !priceCallbacksRef.current.has(symbol)) {
+        removedSymbols.push(symbol);
+        currentSubscribed.delete(symbol);
+        socketRef.current.emit('unsubscribe:prices', symbol);
+      }
+    }
+
+    if (newSymbols.length > 0) {
+      console.log('[RealtimeSync] Auto-subscribed to:', newSymbols);
+    }
+    if (removedSymbols.length > 0) {
+      console.log('[RealtimeSync] Auto-unsubscribed from:', removedSymbols);
+    }
+  }, [allRequiredSymbols]);
+
+  useEffect(() => {
+    if (!walletId) return;
+
+    const socket = socketService.connect();
+    socketRef.current = socket;
+
+    const subscribeAll = () => {
+      if (currentWalletIdRef.current) {
+        socket.emit('subscribe:positions', currentWalletIdRef.current);
+        socket.emit('subscribe:wallet', currentWalletIdRef.current);
+      }
+      for (const symbol of allRequiredSymbols) {
+        subscribedSymbolsRef.current.add(symbol);
+      }
+      for (const symbol of subscribedSymbolsRef.current) {
+        console.log('[RealtimeSync] Subscribing to price:', symbol);
+        socket.emit('subscribe:prices', symbol);
+      }
+    };
+
+    if (!listenersRegisteredRef.current) {
+      socket.on('connect', () => {
+        console.log('[RealtimeSync] WebSocket connected');
+        isConnectedRef.current = true;
+        subscribeAll();
+      });
+
+      socket.on('disconnect', (reason) => {
+        console.log('[RealtimeSync] WebSocket disconnected:', reason);
+        isConnectedRef.current = false;
+      });
+
+      socket.on('connect_error', (err) => {
+        console.error('[RealtimeSync] Connection error:', err.message);
+        isConnectedRef.current = false;
+      });
+
+      socket.on('position:update', (position: PositionUpdate) => {
+        console.log('[RealtimeSync] Position update received:', position.id, position.status);
+        invalidatePositions();
+        invalidateWallet();
+      });
+
+      socket.on('order:update', (_order: OrderUpdate) => {
+        invalidateOrders();
+      });
+
+      socket.on('order:created', (_order: OrderUpdate) => {
+        invalidateOrders();
+        invalidateWallet();
+      });
+
+      socket.on('order:cancelled', (_data: { orderId: string }) => {
+        invalidateOrders();
+        invalidateWallet();
+      });
+
+      socket.on('wallet:update', () => {
+        invalidateWallet();
+      });
+
+      socket.on('price:update', (data: PriceUpdate) => {
+        usePriceStore.getState().updatePrice(data.symbol, data.price, 'websocket');
+        const callbacks = priceCallbacksRef.current.get(data.symbol);
+        if (callbacks) {
+          callbacks.forEach((callback) => callback(data.price));
+        }
+      });
+
+      socket.on('trade:notification', async (notification: TradeNotification) => {
+        console.log('[RealtimeSync] Trade notification received:', notification.type, notification.title);
+
+        const toastType = notification.type === 'POSITION_CLOSED'
+          ? (parseFloat(notification.data.pnl || '0') >= 0 ? 'success' : 'error')
+          : notification.type === 'TRAILING_STOP_UPDATED'
+            ? 'info'
+            : 'success';
+
+        toaster.create({
+          title: notification.title,
+          description: notification.body,
+          type: toastType,
+          duration: notification.urgency === 'critical' ? undefined : 8000,
+        });
+
+        try {
+          const adapter = await createPlatformAdapter();
+          console.log('[RealtimeSync] Platform adapter created:', adapter.platform);
+          const isSupported = await adapter.notification.isSupported();
+          console.log('[RealtimeSync] Notification isSupported:', isSupported);
+          if (isSupported) {
+            const result = await adapter.notification.show({
+              title: notification.title,
+              body: notification.body,
+              urgency: notification.urgency,
+            });
+            console.log('[RealtimeSync] Notification show result:', result);
+          } else {
+            console.warn('[RealtimeSync] Native notifications not supported on this system');
+          }
+        } catch (err) {
+          console.error('[RealtimeSync] Native notification error:', err);
+        }
+
+        invalidatePositions();
+        invalidateWallet();
+      });
+
+      listenersRegisteredRef.current = true;
+
+      if (socket.connected) {
+        console.log('[RealtimeSync] Socket already connected, subscribing immediately');
+        isConnectedRef.current = true;
+        subscribeAll();
+      }
+    } else if (socket.connected) {
+      subscribeAll();
+    }
+
+    return () => {
+      socket.emit('unsubscribe:positions', walletId);
+      socket.emit('unsubscribe:wallet', walletId);
+    };
+  }, [walletId, allRequiredSymbols, invalidatePositions, invalidateOrders, invalidateWallet]);
+
+  useEffect(() => {
+    return () => {
+      if (listenersRegisteredRef.current) {
+        socketService.disconnect();
+        socketRef.current = null;
+        listenersRegisteredRef.current = false;
+        isConnectedRef.current = false;
+      }
+    };
+  }, []);
+
+  const subscribeToPrice = useCallback((symbol: string, onUpdate: (price: number) => void) => {
+    let callbacks = priceCallbacksRef.current.get(symbol);
+    const isFirstSubscription = !callbacks;
+
+    if (!callbacks) {
+      callbacks = new Set();
+      priceCallbacksRef.current.set(symbol, callbacks);
+    }
+    callbacks.add(onUpdate);
+    subscribedSymbolsRef.current.add(symbol);
+
+    if (isFirstSubscription && socketRef.current?.connected) {
+      socketRef.current.emit('subscribe:prices', symbol);
+    }
+
+    return () => {
+      const cbs = priceCallbacksRef.current.get(symbol);
+      if (cbs) {
+        cbs.delete(onUpdate);
+        if (cbs.size === 0) {
+          priceCallbacksRef.current.delete(symbol);
+          subscribedSymbolsRef.current.delete(symbol);
+          if (socketRef.current?.connected) {
+            socketRef.current.emit('unsubscribe:prices', symbol);
+          }
+        }
+      }
+    };
+  }, []);
+
+  const forceRefresh = useCallback(() => {
+    invalidateTradingData();
+  }, [invalidateTradingData]);
+
+  const value: RealtimeTradingSyncContextValue = {
+    subscribeToPrice,
+    forceRefresh,
+    isConnected: isConnectedRef.current,
+  };
+
+  return (
+    <RealtimeTradingSyncContext.Provider value={value}>
+      {children}
+    </RealtimeTradingSyncContext.Provider>
+  );
+};
+
+export const useRealtimeTradingSyncContext = (): RealtimeTradingSyncContextValue => {
+  const context = useContext(RealtimeTradingSyncContext);
+  if (!context) {
+    return {
+      subscribeToPrice: () => () => {},
+      forceRefresh: () => {},
+      isConnected: false,
+    };
+  }
+  return context;
+};

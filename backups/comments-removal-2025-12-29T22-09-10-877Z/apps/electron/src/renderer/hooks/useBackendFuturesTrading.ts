@@ -1,0 +1,180 @@
+import { useCallback, useMemo } from 'react';
+import { trpc } from '../utils/trpc';
+import { usePricesForSymbols } from '../store/priceStore';
+
+const BACKUP_POLLING_INTERVAL = 30000;
+
+export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
+  const utils = trpc.useUtils();
+
+  const { data: positions, isLoading: isLoadingPositions } = trpc.futuresTrading.getPositions.useQuery(
+    { walletId },
+    { enabled: !!walletId, refetchInterval: BACKUP_POLLING_INTERVAL, staleTime: 5000 }
+  );
+
+  const { data: openOrders, isLoading: isLoadingOrders } = trpc.futuresTrading.getOpenOrders.useQuery(
+    { walletId, symbol },
+    { enabled: !!walletId, refetchInterval: BACKUP_POLLING_INTERVAL, staleTime: 5000 }
+  );
+
+  const { data: markPrice, isLoading: isLoadingMarkPrice } = trpc.futuresTrading.getMarkPrice.useQuery(
+    { symbol: symbol ?? 'BTCUSDT' },
+    { enabled: !!symbol, refetchInterval: 10000, staleTime: 5000 }
+  );
+
+  const { data: fundingRate, isLoading: isLoadingFundingRate } = trpc.futuresTrading.getFundingRate.useQuery(
+    { symbol: symbol ?? 'BTCUSDT' },
+    { enabled: !!symbol, refetchInterval: 60000, staleTime: 30000 }
+  );
+
+  const openPositionSymbols = useMemo(() => {
+    if (!positions || !Array.isArray(positions)) return [];
+    const symbols = positions.map((p) => {
+      if ('symbol' in p && typeof p.symbol === 'string') return p.symbol;
+      return null;
+    }).filter((s): s is string => s !== null);
+    return [...new Set(symbols)];
+  }, [positions]);
+
+  const realtimePrices = usePricesForSymbols(openPositionSymbols);
+
+  const setLeverageMutation = trpc.futuresTrading.setLeverage.useMutation({
+    onSuccess: () => {
+      utils.futuresTrading.getPositions.invalidate();
+    },
+  });
+
+  const setMarginTypeMutation = trpc.futuresTrading.setMarginType.useMutation({
+    onSuccess: () => {
+      utils.futuresTrading.getPositions.invalidate();
+    },
+  });
+
+  const createOrderMutation = trpc.futuresTrading.createOrder.useMutation({
+    onSuccess: () => {
+      utils.futuresTrading.getOpenOrders.invalidate();
+      utils.futuresTrading.getPositions.invalidate();
+      utils.analytics.getPerformance.invalidate();
+      utils.wallet.list.invalidate();
+    },
+  });
+
+  const cancelOrderMutation = trpc.futuresTrading.cancelOrder.useMutation({
+    onSuccess: () => {
+      utils.futuresTrading.getOpenOrders.invalidate();
+      utils.analytics.getPerformance.invalidate();
+    },
+  });
+
+  const createPositionMutation = trpc.futuresTrading.createPosition.useMutation({
+    onSuccess: () => {
+      utils.futuresTrading.getPositions.invalidate();
+      utils.analytics.getPerformance.invalidate();
+      utils.wallet.list.invalidate();
+    },
+  });
+
+  const closePositionMutation = trpc.futuresTrading.closePosition.useMutation({
+    onSuccess: () => {
+      utils.futuresTrading.getPositions.invalidate();
+      utils.analytics.getPerformance.invalidate();
+      utils.wallet.list.invalidate();
+    },
+  });
+
+  const setLeverage = useCallback(
+    async (data: { walletId: string; symbol: string; leverage: number }) => {
+      return setLeverageMutation.mutateAsync(data);
+    },
+    [setLeverageMutation]
+  );
+
+  const setMarginType = useCallback(
+    async (data: { walletId: string; symbol: string; marginType: 'ISOLATED' | 'CROSSED' }) => {
+      return setMarginTypeMutation.mutateAsync(data);
+    },
+    [setMarginTypeMutation]
+  );
+
+  const createOrder = useCallback(
+    async (data: {
+      walletId: string;
+      symbol: string;
+      side: 'BUY' | 'SELL';
+      type: 'MARKET' | 'LIMIT' | 'STOP' | 'STOP_MARKET' | 'TAKE_PROFIT' | 'TAKE_PROFIT_MARKET';
+      quantity: string;
+      price?: string;
+      stopPrice?: string;
+      reduceOnly?: boolean;
+      setupId?: string;
+      setupType?: string;
+      leverage?: number;
+      marginType?: 'ISOLATED' | 'CROSSED';
+    }) => {
+      return createOrderMutation.mutateAsync(data);
+    },
+    [createOrderMutation]
+  );
+
+  const cancelOrder = useCallback(
+    async (data: { walletId: string; symbol: string; orderId: number }) => {
+      return cancelOrderMutation.mutateAsync(data);
+    },
+    [cancelOrderMutation]
+  );
+
+  const createPosition = useCallback(
+    async (data: {
+      walletId: string;
+      symbol: string;
+      side: 'LONG' | 'SHORT';
+      entryPrice: string;
+      entryQty: string;
+      stopLoss?: string;
+      takeProfit?: string;
+      setupId?: string;
+      leverage?: number;
+      marginType?: 'ISOLATED' | 'CROSSED';
+    }) => {
+      return createPositionMutation.mutateAsync(data);
+    },
+    [createPositionMutation]
+  );
+
+  const closePosition = useCallback(
+    async (data: { walletId: string; symbol: string; positionId?: string }) => {
+      return closePositionMutation.mutateAsync(data);
+    },
+    [closePositionMutation]
+  );
+
+  return {
+    positions: positions ?? [],
+    openOrders: openOrders ?? [],
+    markPrice,
+    fundingRate,
+    realtimePrices,
+    isLoadingPositions,
+    isLoadingOrders,
+    isLoadingMarkPrice,
+    isLoadingFundingRate,
+    setLeverage,
+    setMarginType,
+    createOrder,
+    cancelOrder,
+    createPosition,
+    closePosition,
+    isSettingLeverage: setLeverageMutation.isPending,
+    isSettingMarginType: setMarginTypeMutation.isPending,
+    isCreatingOrder: createOrderMutation.isPending,
+    isCancelingOrder: cancelOrderMutation.isPending,
+    isCreatingPosition: createPositionMutation.isPending,
+    isClosingPosition: closePositionMutation.isPending,
+    setLeverageError: setLeverageMutation.error,
+    setMarginTypeError: setMarginTypeMutation.error,
+    createOrderError: createOrderMutation.error,
+    cancelOrderError: cancelOrderMutation.error,
+    createPositionError: createPositionMutation.error,
+    closePositionError: closePositionMutation.error,
+  };
+};

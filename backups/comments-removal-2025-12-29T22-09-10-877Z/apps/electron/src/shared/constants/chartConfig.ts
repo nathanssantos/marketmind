@@ -1,0 +1,56 @@
+export const CHART_CONFIG = {
+  DEFAULT_KLINE_WIDTH: 8,
+  MIN_KLINE_WIDTH: 2,
+  MAX_KLINE_WIDTH: 50,
+  KLINE_SPACING: 2,
+  CANVAS_PADDING: 40,
+  CANVAS_PADDING_LEFT: 10,
+  CANVAS_PADDING_RIGHT: 64,
+  CANVAS_PADDING_TOP: 10,
+  CANVAS_PADDING_BOTTOM: 25,
+  CHART_RIGHT_MARGIN: 72,
+  VOLUME_HEIGHT_RATIO: 0.25,
+  STOCHASTIC_PANEL_HEIGHT: 80,
+  RSI_PANEL_HEIGHT: 80,
+  GRID_LINE_WIDTH: 1,
+  KLINE_WICK_WIDTH: 1,
+  CURRENT_PRICE_LINE_WIDTH: 1,
+  CURRENT_PRICE_LINE_STYLE: 'dashed' as const,
+  AXIS_LABEL_FONT: '11px monospace',
+  PATTERN_EXTENSION_DISTANCE: 36,
+  INITIAL_KLINES_VISIBLE: 100,
+  PERCENT_MULTIPLIER: 100,
+} as const;
+
+export const INDICATOR_PANEL_HEIGHTS = {
+  SMALL: 60,
+  STANDARD: 80,
+  LARGE: 100,
+} as const;
+
+export const PANEL_RENDER_ORDER = [
+  'rsi',
+  'stochastic',
+  'macd',
+  'adx',
+  'cci',
+  'williamsR',
+  'stochRsi',
+  'cmo',
+  'mfi',
+  'ultimateOsc',
+  'tsi',
+  'ppo',
+  'roc',
+  'ao',
+  'aroon',
+  'vortex',
+  'elderRay',
+  'obv',
+  'cmf',
+  'klinger',
+] as const;
+
+export type PanelId = (typeof PANEL_RENDER_ORDER)[number];
+
+export const DEFAULT_MA_PERIODS = [20, 50, 200] as const;

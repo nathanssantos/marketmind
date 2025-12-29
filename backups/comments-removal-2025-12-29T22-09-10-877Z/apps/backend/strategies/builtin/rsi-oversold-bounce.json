@@ -1,0 +1,181 @@
+{
+  "id": "rsi-oversold-bounce",
+  "name": "RSI Oversold Bounce",
+  "version": "1.0.0",
+  "description": "Long quando RSI sai da zona de oversold (cruza acima de 30). Ideal para capturar revers\u00f5es ap\u00f3s quedas fortes.",
+  "author": "MarketMind",
+  "tags": [
+    "reversal",
+    "rsi",
+    "oversold",
+    "momentum"
+  ],
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 60,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": false,
+    "minConfidence": 60,
+    "commission": 0.001
+  },
+  "backtestSummary": {
+    "profitFactor": 2.16,
+    "winRate": 53.85,
+    "totalTrades": 13,
+    "netPnlPercent": 1.17,
+    "testedAt": "2025-12-09",
+    "testedTimeframe": "1d",
+    "testedSymbol": "BTCUSDT"
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "notes": "RSI oversold bounce works best on daily for mean-reversion"
+  },
+  "parameters": {
+    "rsiPeriod": {
+      "default": 14,
+      "min": 7,
+      "max": 21,
+      "step": 1,
+      "description": "Per\u00edodo do RSI"
+    },
+    "oversoldLevel": {
+      "default": 30,
+      "min": 20,
+      "max": 35,
+      "step": 5,
+      "description": "N\u00edvel de oversold"
+    },
+    "exitLevel": {
+      "default": 50,
+      "min": 40,
+      "max": 60,
+      "step": 5,
+      "description": "N\u00edvel de sa\u00edda (RSI neutro)"
+    },
+    "atrMultiplier": {
+      "default": 2,
+      "min": 1,
+      "max": 3,
+      "step": 0.5,
+      "description": "Multiplicador do ATR para stop loss"
+    }
+  },
+  "indicators": {
+    "rsi": {
+      "type": "rsi",
+      "params": {
+        "period": "$rsiPeriod"
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": 14
+      }
+    },
+    "ema20": {
+      "type": "ema",
+      "params": {
+        "period": 20
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "rsi.prev",
+          "op": "<",
+          "right": "$oversoldLevel"
+        },
+        {
+          "left": "rsi",
+          "op": ">=",
+          "right": "$oversoldLevel"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "conditions": {
+      "long": {
+        "operator": "AND",
+        "conditions": [
+          {
+            "left": "rsi",
+            "op": ">",
+            "right": "$exitLevel"
+          }
+        ]
+      }
+    },
+    "stopLoss": {
+      "type": "swingHighLow",
+      "buffer": 0.6,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "pivotBased",
+      "lookback": 40,
+      "fallback": {
+        "type": "riskReward",
+        "multiplier": 2
+      }
+    },
+    "maxBarsInTrade": 10,
+    "trailingStop": {
+      "enabled": true,
+      "type": "atr",
+      "initialMultiplier": 2,
+      "trailMultiplier": 1.5,
+      "breakEvenAfterR": 1
+    }
+  },
+  "confidence": {
+    "base": 60,
+    "bonuses": [
+      {
+        "condition": {
+          "left": "rsi",
+          "op": "<",
+          "right": 25
+        },
+        "bonus": 15,
+        "description": "RSI extremamente oversold antes do bounce"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        },
+        "bonus": 10,
+        "description": "Volume acima da m\u00e9dia"
+      },
+      {
+        "condition": {
+          "left": "close",
+          "op": ">",
+          "right": "ema20"
+        },
+        "bonus": 5,
+        "description": "Pre\u00e7o acima da EMA 20"
+      }
+    ],
+    "max": 95
+  },
+  "filters": {
+    "minConfidence": 60,
+    "minRiskReward": 0
+  }
+}
