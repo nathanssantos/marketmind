@@ -2,7 +2,7 @@ import type { Interval } from '@marketmind/types';
 import { and, asc, eq, gte, lte } from 'drizzle-orm';
 import { db } from '../db';
 import { klines } from '../db/schema';
-import { fetchHistoricalKlinesFromAPI, fetchFuturesKlinesFromAPI, getIntervalMilliseconds } from './binance-historical';
+import { fetchFuturesKlinesFromAPI, fetchHistoricalKlinesFromAPI, getIntervalMilliseconds } from './binance-historical';
 import { logger } from './logger';
 
 const GAP_CHECK_INTERVAL = 5 * 60 * 1000;
@@ -30,11 +30,11 @@ class KlineGapFiller {
 
   async start(): Promise<void> {
     if (this.checkInterval) {
-      logger.debug('Gap filler already running');
+      // logger.debug('Gap filler already running');
       return;
     }
 
-    logger.info('Starting KlineGapFiller service');
+    // logger.info('Starting KlineGapFiller service');
 
     await this.checkAndFillGaps();
 
@@ -47,25 +47,25 @@ class KlineGapFiller {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
-      logger.info('KlineGapFiller service stopped');
+      // logger.info('KlineGapFiller service stopped');
     }
   }
 
   async checkAndFillGaps(): Promise<void> {
     if (this.isRunning) {
-      logger.debug('Gap check already in progress, skipping');
+      // logger.debug('Gap check already in progress, skipping');
       return;
     }
 
     this.isRunning = true;
 
     try {
-      logger.debug('Starting gap check cycle');
+      // logger.debug('Starting gap check cycle');
 
       const activePairs = await this.getActivePairs();
 
       if (activePairs.length === 0) {
-        logger.debug('No active watchers found, skipping gap check');
+        // logger.debug('No active watchers found, skipping gap check');
         return;
       }
 
@@ -87,7 +87,7 @@ class KlineGapFiller {
         }
       }
 
-      logger.debug('Gap check cycle complete');
+      // logger.debug('Gap check cycle complete');
     } catch (error) {
       logger.error({ error }, 'Error in gap check cycle');
     } finally {
@@ -272,4 +272,5 @@ export const initializeKlineGapFiller = (): KlineGapFiller => {
   return klineGapFillerInstance;
 };
 
-export type { GapInfo, ActivePair };
+export type { ActivePair, GapInfo };
+

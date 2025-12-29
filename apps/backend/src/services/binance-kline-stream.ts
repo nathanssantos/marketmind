@@ -332,9 +332,9 @@ export class BinanceFuturesKlineStreamService {
 
     if (existing) {
       existing.clientCount++;
-      logger.debug({
-        count: existing.clientCount,
-      }, `Futures kline subscription count increased for ${key}`);
+      // logger.debug({
+      //   count: existing.clientCount,
+      // }, `Futures kline subscription count increased for ${key}`);
       return;
     }
 
@@ -389,9 +389,9 @@ export class BinanceFuturesKlineStreamService {
       }
       this.subscriptions.delete(key);
     } else {
-      logger.debug({
-        count: existing.clientCount,
-      }, `Futures kline subscription count decreased for ${key}`);
+      // logger.debug({
+      //   count: existing.clientCount,
+      // }, `Futures kline subscription count decreased for ${key}`);
     }
   }
 
