@@ -1,13 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { trpc } from '../utils/trpc';
-import { useRealtimeTradingSync } from './useRealtimeTradingSync';
+import { usePricesForSymbols } from '../store/priceStore';
 
 const BACKUP_POLLING_INTERVAL = 30000;
 
 export const useBackendTrading = (walletId: string, symbol?: string) => {
   const utils = trpc.useUtils();
-  const { subscribeToPrice } = useRealtimeTradingSync(walletId);
-  const [realtimePrices, setRealtimePrices] = useState<Record<string, number>>({});
 
   const { data: orders, isLoading: isLoadingOrders } = trpc.trading.getOrders.useQuery(
     { walletId, symbol, limit: 50 },
@@ -27,25 +25,12 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
     return [...new Set(openExecutions.map((e) => e.symbol))];
   }, [tradeExecutions]);
 
+  const realtimePrices = usePricesForSymbols(openPositionSymbols);
+
   const { data: tickerPrices, isLoading: isLoadingPrices } = trpc.trading.getTickerPrices.useQuery(
     { symbols: openPositionSymbols },
     { enabled: openPositionSymbols.length > 0, refetchInterval: BACKUP_POLLING_INTERVAL, staleTime: 5000 }
   );
-
-  useEffect(() => {
-    const unsubscribes: Array<() => void> = [];
-
-    for (const sym of openPositionSymbols) {
-      const unsub = subscribeToPrice(sym, (price) => {
-        setRealtimePrices(prev => ({ ...prev, [sym]: price }));
-      });
-      unsubscribes.push(unsub);
-    }
-
-    return () => {
-      unsubscribes.forEach(unsub => unsub());
-    };
-  }, [openPositionSymbols, subscribeToPrice]);
 
   const mergedTickerPrices = useMemo(() => {
     const base = tickerPrices ?? {};

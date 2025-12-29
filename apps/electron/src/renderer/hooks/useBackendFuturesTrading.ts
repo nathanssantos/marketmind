@@ -1,13 +1,11 @@
-import { useCallback, useMemo, useState, useEffect } from 'react';
+import { useCallback, useMemo } from 'react';
 import { trpc } from '../utils/trpc';
-import { useRealtimeTradingSync } from './useRealtimeTradingSync';
+import { usePricesForSymbols } from '../store/priceStore';
 
 const BACKUP_POLLING_INTERVAL = 30000;
 
 export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   const utils = trpc.useUtils();
-  const { subscribeToPrice } = useRealtimeTradingSync(walletId);
-  const [realtimePrices, setRealtimePrices] = useState<Record<string, number>>({});
 
   const { data: positions, isLoading: isLoadingPositions } = trpc.futuresTrading.getPositions.useQuery(
     { walletId },
@@ -38,20 +36,7 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
     return [...new Set(symbols)];
   }, [positions]);
 
-  useEffect(() => {
-    const unsubscribes: Array<() => void> = [];
-
-    for (const sym of openPositionSymbols) {
-      const unsub = subscribeToPrice(sym, (price) => {
-        setRealtimePrices(prev => ({ ...prev, [sym]: price }));
-      });
-      unsubscribes.push(unsub);
-    }
-
-    return () => {
-      unsubscribes.forEach(unsub => unsub());
-    };
-  }, [openPositionSymbols, subscribeToPrice]);
+  const realtimePrices = usePricesForSymbols(openPositionSymbols);
 
   const setLeverageMutation = trpc.futuresTrading.setLeverage.useMutation({
     onSuccess: () => {

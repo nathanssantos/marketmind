@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import type { Socket } from 'socket.io-client';
 import { createPlatformAdapter } from '../adapters/factory';
 import { socketService } from '../services/socketService';
@@ -64,9 +64,35 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   const isConnectedRef = useRef(false);
   const listenersRegisteredRef = useRef(false);
   const utils = trpc.useUtils();
-  const priceCallbacksRef = useRef<Map<string, (price: number) => void>>(new Map());
+  const priceCallbacksRef = useRef<Map<string, Set<(price: number) => void>>>(new Map());
   const subscribedSymbolsRef = useRef<Set<string>>(new Set());
   const currentWalletIdRef = useRef<string | undefined>(undefined);
+
+  const { data: tradeExecutions } = trpc.trading.getTradeExecutions.useQuery(
+    { walletId: walletId ?? '', limit: 100 },
+    { enabled: !!walletId, staleTime: 5000 }
+  );
+
+  const { data: orders } = trpc.trading.getOrders.useQuery(
+    { walletId: walletId ?? '', limit: 100 },
+    { enabled: !!walletId, staleTime: 5000 }
+  );
+
+  const allRequiredSymbols = useMemo(() => {
+    const symbols = new Set<string>();
+
+    const openExecutions = tradeExecutions?.filter((e) => e.status === 'open' || e.status === 'pending') ?? [];
+    for (const exec of openExecutions) {
+      symbols.add(exec.symbol);
+    }
+
+    const activeOrders = orders?.filter((o) => o.status === 'NEW' || o.status === 'PARTIALLY_FILLED') ?? [];
+    for (const order of activeOrders) {
+      symbols.add(order.symbol);
+    }
+
+    return symbols;
+  }, [tradeExecutions, orders]);
 
   const invalidatePositions = useCallback(() => {
     if (!currentWalletIdRef.current) return;
@@ -103,6 +129,37 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   }, [walletId]);
 
   useEffect(() => {
+    if (!socketRef.current?.connected) return;
+
+    const currentSubscribed = subscribedSymbolsRef.current;
+    const newSymbols: string[] = [];
+    const removedSymbols: string[] = [];
+
+    for (const symbol of allRequiredSymbols) {
+      if (!currentSubscribed.has(symbol)) {
+        newSymbols.push(symbol);
+        currentSubscribed.add(symbol);
+        socketRef.current.emit('subscribe:prices', symbol);
+      }
+    }
+
+    for (const symbol of currentSubscribed) {
+      if (!allRequiredSymbols.has(symbol) && !priceCallbacksRef.current.has(symbol)) {
+        removedSymbols.push(symbol);
+        currentSubscribed.delete(symbol);
+        socketRef.current.emit('unsubscribe:prices', symbol);
+      }
+    }
+
+    if (newSymbols.length > 0) {
+      console.log('[RealtimeSync] Auto-subscribed to:', newSymbols);
+    }
+    if (removedSymbols.length > 0) {
+      console.log('[RealtimeSync] Auto-unsubscribed from:', removedSymbols);
+    }
+  }, [allRequiredSymbols]);
+
+  useEffect(() => {
     if (!walletId) return;
 
     const socket = socketService.connect();
@@ -112,6 +169,9 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       if (currentWalletIdRef.current) {
         socket.emit('subscribe:positions', currentWalletIdRef.current);
         socket.emit('subscribe:wallet', currentWalletIdRef.current);
+      }
+      for (const symbol of allRequiredSymbols) {
+        subscribedSymbolsRef.current.add(symbol);
       }
       for (const symbol of subscribedSymbolsRef.current) {
         console.log('[RealtimeSync] Subscribing to price:', symbol);
@@ -162,9 +222,9 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
 
       socket.on('price:update', (data: PriceUpdate) => {
         usePriceStore.getState().updatePrice(data.symbol, data.price, 'websocket');
-        const callback = priceCallbacksRef.current.get(data.symbol);
-        if (callback) {
-          callback(data.price);
+        const callbacks = priceCallbacksRef.current.get(data.symbol);
+        if (callbacks) {
+          callbacks.forEach((callback) => callback(data.price));
         }
       });
 
@@ -222,7 +282,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       socket.emit('unsubscribe:positions', walletId);
       socket.emit('unsubscribe:wallet', walletId);
     };
-  }, [walletId, invalidatePositions, invalidateOrders, invalidateWallet]);
+  }, [walletId, allRequiredSymbols, invalidatePositions, invalidateOrders, invalidateWallet]);
 
   useEffect(() => {
     return () => {
@@ -236,18 +296,31 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   }, []);
 
   const subscribeToPrice = useCallback((symbol: string, onUpdate: (price: number) => void) => {
-    priceCallbacksRef.current.set(symbol, onUpdate);
+    let callbacks = priceCallbacksRef.current.get(symbol);
+    const isFirstSubscription = !callbacks;
+
+    if (!callbacks) {
+      callbacks = new Set();
+      priceCallbacksRef.current.set(symbol, callbacks);
+    }
+    callbacks.add(onUpdate);
     subscribedSymbolsRef.current.add(symbol);
 
-    if (socketRef.current?.connected) {
+    if (isFirstSubscription && socketRef.current?.connected) {
       socketRef.current.emit('subscribe:prices', symbol);
     }
 
     return () => {
-      priceCallbacksRef.current.delete(symbol);
-      subscribedSymbolsRef.current.delete(symbol);
-      if (socketRef.current?.connected) {
-        socketRef.current.emit('unsubscribe:prices', symbol);
+      const cbs = priceCallbacksRef.current.get(symbol);
+      if (cbs) {
+        cbs.delete(onUpdate);
+        if (cbs.size === 0) {
+          priceCallbacksRef.current.delete(symbol);
+          subscribedSymbolsRef.current.delete(symbol);
+          if (socketRef.current?.connected) {
+            socketRef.current.emit('unsubscribe:prices', symbol);
+          }
+        }
       }
     };
   }, []);
