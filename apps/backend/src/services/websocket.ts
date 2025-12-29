@@ -1,5 +1,6 @@
 import type { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import { binancePriceStreamService } from './binance-price-stream';
 
 export interface SocketData {
   userId?: number;
@@ -69,6 +70,7 @@ export class WebSocketService {
         const room = `prices:${symbol}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
+          binancePriceStreamService.subscribeSymbol(symbol);
         }
       });
 
