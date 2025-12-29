@@ -1,6 +1,6 @@
 import { calculateATR } from '@marketmind/indicators';
 import type { Kline, MarketType } from '@marketmind/types';
-import { getDefaultFee } from '@marketmind/types';
+import { getDefaultFee, BINANCE_FEES } from '@marketmind/types';
 import { generateShortId } from '../../utils/id';
 import { PositionSizer } from './PositionSizer';
 
@@ -51,7 +51,6 @@ export interface PositionSizeResult {
   rationale?: string;
 }
 
-const MIN_NOTIONAL_VALUE = 10;
 const HIGH_VOLATILITY_THRESHOLD = 3.0;
 const VOLATILITY_REDUCTION_FACTOR = 0.7;
 
@@ -224,8 +223,8 @@ export class TradeExecutor {
   }
 
   checkMinNotional(positionValue: number): boolean {
-    if (positionValue < MIN_NOTIONAL_VALUE) {
-      console.warn('[TradeExecutor] Position value', positionValue.toFixed(2), 'below MIN_NOTIONAL (', MIN_NOTIONAL_VALUE, '), skipping trade');
+    if (positionValue < BINANCE_FEES.MIN_NOTIONAL_VALUE) {
+      console.warn('[TradeExecutor] Position value', positionValue.toFixed(2), 'below MIN_NOTIONAL (', BINANCE_FEES.MIN_NOTIONAL_VALUE, '), skipping trade');
       return false;
     }
     return true;

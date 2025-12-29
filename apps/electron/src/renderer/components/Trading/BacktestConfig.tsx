@@ -11,15 +11,16 @@ import { useBacktesting } from '@renderer/hooks/useBacktesting';
 import type { MarketDataService } from '@renderer/services/market/MarketDataService';
 import { useSetupStore } from '@renderer/store/setupStore';
 import type { BacktestConfig as BacktestConfigType } from '@marketmind/types';
+import { BINANCE_DEFAULT_FEES } from '@marketmind/types';
 import { useState } from 'react';
 
 const OPTIMIZED_SETTINGS = {
-  onlyWithTrend: false, // Not used in optimization (default behavior)
-  useAlgorithmicLevels: true, // --use-algorithmic-levels
-  maxPositionSize: 10, // --max-position 10
-  commission: 0.1, // --commission 0.1
-  minConfidence: 0, // No min confidence filter was used
-  minProfitPercent: 0, // No min profit filter was used
+  onlyWithTrend: false,
+  useAlgorithmicLevels: true,
+  maxPositionSize: 10,
+  commission: BINANCE_DEFAULT_FEES.VIP_0_TAKER * 100, // 0.1% for spot
+  minConfidence: 0,
+  minProfitPercent: 0,
 };
 
 interface BacktestConfigProps {

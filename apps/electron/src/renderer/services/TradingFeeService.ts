@@ -1,5 +1,5 @@
 import type { FeeCalculation, TradeViability, TradingFees } from '@marketmind/types';
-import { BINANCE_DEFAULT_FEES, TRADING_THRESHOLDS } from '@marketmind/types';
+import { BINANCE_DEFAULT_FEES, TRADING_THRESHOLDS, getVIPLevelFromCommission } from '@marketmind/types';
 
 const PERCENTAGE_MULTIPLIER = 100;
 const DECIMAL_PLACES = 2;
@@ -199,21 +199,7 @@ export class TradingFeeService {
   }
 
   private calculateVIPLevel(makerCommission: number): number {
-    const vipLevels = [
-      { commission: 100, level: 0 },
-      { commission: 90, level: 1 },
-      { commission: 80, level: 2 },
-      { commission: 60, level: 3 },
-      { commission: 40, level: 4 },
-      { commission: 20, level: 5 },
-      { commission: 12, level: 6 },
-      { commission: 10, level: 7 },
-      { commission: 8, level: 8 },
-      { commission: 4, level: 9 },
-    ];
-
-    const match = vipLevels.find((v) => v.commission === makerCommission);
-    return match?.level ?? 0;
+    return getVIPLevelFromCommission(makerCommission);
   }
 
   shouldFetchNewFees(): boolean {

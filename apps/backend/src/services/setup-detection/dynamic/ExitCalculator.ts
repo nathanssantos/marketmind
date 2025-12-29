@@ -9,7 +9,7 @@ import type {
 } from '@marketmind/types';
 import { isParameterReference } from '@marketmind/types';
 import {
-  findNearestPivotStop,
+  analyzePivots,
   findNearestPivotTarget,
   type EnhancedPivotPoint,
   type PivotDetectionConfig,
@@ -650,52 +650,59 @@ export class ExitCalculator {
 
     const pivotConfig = this.buildPivotConfig(exit);
     const klinesTyped = klines as Kline[];
+    const atrValue = this.indicatorEngine.resolveIndicatorValue(indicators, 'atr', currentIndex) ?? 0;
 
-    const { stop, pivot } = findNearestPivotStop(
+    const { stop, pivot, reason } = this.findPrioritizedPivotStop(
       klinesTyped,
       entryPrice,
       direction,
       pivotConfig
     );
 
-    if (stop === null || !this.isPivotAcceptable(pivot, exit.pivotConfig?.minStrength ?? 'any', exit.pivotConfig?.requireVolumeConfirmation ?? false)) {
-      if (exit.fallback) {
-        logger.debug({ direction, entryPrice }, 'No suitable pivot found for stop - using fallback');
-        return this.calculateStopLoss(exit.fallback, context);
-      }
-
-      const atrValue = this.indicatorEngine.resolveIndicatorValue(indicators, 'atr', currentIndex) ?? 0;
-      const fallbackMultiplier = 2.0;
-      const fallbackDistance = atrValue * fallbackMultiplier;
-      const fallbackStop = direction === 'LONG'
-        ? entryPrice - fallbackDistance
-        : entryPrice + fallbackDistance;
-
+    if (stop === null) {
       logger.debug({
         direction,
         entryPrice: entryPrice.toFixed(4),
-        fallbackStop: fallbackStop.toFixed(4),
-        atrValue: atrValue.toFixed(4),
-      }, 'No suitable pivot for stop - using ATR fallback');
+        reason,
+      }, 'No suitable pivot (STRONG/MEDIUM) found - falling back to swing-based stop');
 
-      return fallbackStop;
+      const swingExit: ExitLevel = {
+        type: 'swingHighLow',
+        indicator: 'atr',
+        buffer: MIN_SWING_BUFFER_ATR,
+      };
+      return this.calculateSwingHighLowStop(swingExit, context);
     }
 
     let stopLoss = stop;
-    const atrValue = this.indicatorEngine.resolveIndicatorValue(indicators, 'atr', currentIndex) ?? 0;
 
     if (exit.buffer !== undefined && atrValue > 0) {
       const bufferValue = this.resolveOperand(exit.buffer, context);
       const bufferAmount = atrValue * bufferValue;
       stopLoss = direction === 'LONG' ? stopLoss - bufferAmount : stopLoss + bufferAmount;
+    } else if (atrValue > 0) {
+      const defaultBuffer = atrValue * MIN_SWING_BUFFER_ATR;
+      stopLoss = direction === 'LONG' ? stopLoss - defaultBuffer : stopLoss + defaultBuffer;
     }
 
     const isValid = direction === 'LONG' ? stopLoss < entryPrice : stopLoss > entryPrice;
-    if (!isValid) {
-      if (exit.fallback) {
-        return this.calculateStopLoss(exit.fallback, context);
-      }
-      throw new Error(`Invalid pivot-based stop: ${direction} SL ${stopLoss.toFixed(4)} must be ${direction === 'LONG' ? 'below' : 'above'} entry ${entryPrice.toFixed(4)}`);
+    const separationPercent = (Math.abs(entryPrice - stopLoss) / entryPrice) * 100;
+
+    if (!isValid || separationPercent < MIN_ENTRY_STOP_SEPARATION_PERCENT) {
+      logger.debug({
+        direction,
+        entryPrice: entryPrice.toFixed(4),
+        pivotStop: stopLoss.toFixed(4),
+        separationPercent: separationPercent.toFixed(3),
+        minRequired: MIN_ENTRY_STOP_SEPARATION_PERCENT,
+      }, 'Pivot stop invalid or too close - falling back to swing-based stop');
+
+      const swingExit: ExitLevel = {
+        type: 'swingHighLow',
+        indicator: 'atr',
+        buffer: MIN_SWING_BUFFER_ATR,
+      };
+      return this.calculateSwingHighLowStop(swingExit, context);
     }
 
     logger.debug({
@@ -707,8 +714,9 @@ export class ExitCalculator {
       pivotPrice: stop.toFixed(4),
       pivotStrength: pivot?.strength ?? 'unknown',
       volumeConfirmed: pivot?.volumeConfirmed ?? false,
+      selectionReason: reason,
       percentFromEntry: `${(((stopLoss - entryPrice) / entryPrice) * 100).toFixed(2)}%`,
-    }, 'Pivot-based stop loss calculated');
+    }, 'Pivot-based stop loss calculated with prioritization');
 
     return stopLoss;
   }
@@ -792,6 +800,58 @@ export class ExitCalculator {
       volumeLookback: config?.volumeLookback ?? 20,
       volumeMultiplier: config?.volumeMultiplier ?? 1.2,
     };
+  }
+
+  private findPrioritizedPivotStop(
+    klines: Kline[],
+    entryPrice: number,
+    direction: 'LONG' | 'SHORT',
+    config?: PivotDetectionConfig
+  ): { stop: number | null; pivot: EnhancedPivotPoint | null; reason: string } {
+    const analysis = analyzePivots(klines, config);
+
+    const relevantPivots = direction === 'LONG'
+      ? analysis.pivots.filter(p => p.type === 'low' && p.price < entryPrice)
+      : analysis.pivots.filter(p => p.type === 'high' && p.price > entryPrice);
+
+    if (relevantPivots.length === 0) {
+      return { stop: null, pivot: null, reason: 'no_pivots_found' };
+    }
+
+    const strongWithVolume = relevantPivots.find(p => p.strength === 'strong' && p.volumeConfirmed);
+    if (strongWithVolume) {
+      logger.debug({
+        direction,
+        pivotPrice: strongWithVolume.price.toFixed(4),
+        strength: strongWithVolume.strength,
+        volumeConfirmed: true,
+      }, 'Found STRONG pivot with volume confirmation');
+      return { stop: strongWithVolume.price, pivot: strongWithVolume, reason: 'strong_with_volume' };
+    }
+
+    const strong = relevantPivots.find(p => p.strength === 'strong');
+    if (strong) {
+      logger.debug({
+        direction,
+        pivotPrice: strong.price.toFixed(4),
+        strength: strong.strength,
+        volumeConfirmed: strong.volumeConfirmed,
+      }, 'Found STRONG pivot');
+      return { stop: strong.price, pivot: strong, reason: 'strong' };
+    }
+
+    const medium = relevantPivots.find(p => p.strength === 'medium');
+    if (medium) {
+      logger.debug({
+        direction,
+        pivotPrice: medium.price.toFixed(4),
+        strength: medium.strength,
+        volumeConfirmed: medium.volumeConfirmed,
+      }, 'Found MEDIUM pivot');
+      return { stop: medium.price, pivot: medium, reason: 'medium' };
+    }
+
+    return { stop: null, pivot: null, reason: 'only_weak_pivots' };
   }
 
   private isPivotAcceptable(
