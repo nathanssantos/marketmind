@@ -1002,7 +1002,10 @@ export class AutoTradingScheduler {
         });
       }
 
-      if (config.useTrendFilter) {
+      const strategyRequiresTrend = strategy?.optimizedParams?.onlyWithTrend ?? false;
+      const shouldApplyTrendFilter = config.useTrendFilter || strategyRequiresTrend;
+
+      if (shouldApplyTrendFilter) {
         const { MIN_KLINES_REQUIRED } = TREND_FILTER;
 
         const trendKlines = await db
@@ -1051,6 +1054,8 @@ export class AutoTradingScheduler {
           isBullish: trendResult.isBullish,
           isBearish: trendResult.isBearish,
           isAllowed: trendResult.isAllowed,
+          filterSource: config.useTrendFilter ? 'global' : 'strategy',
+          strategyId: setup.type,
         });
 
         if (!trendResult.isAllowed) {
