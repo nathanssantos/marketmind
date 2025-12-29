@@ -591,7 +591,10 @@
     "features": "Features",
     "featuresList": {
       "marketData": "Real-time cryptocurrency market data (Binance)",
-      "charts": "Advanced kline charts with moving averages",
+      "charts": "Advanced kline charts with 25+ indicators",
+      "strategies": "17 algorithmic trading strategies",
+      "autoTrading": "Automated trade execution with OCO orders",
+      "backtesting": "Full backtesting engine with optimization",
       "security": "Secure API key storage with OS-level encryption",
       "autoUpdate": "Auto-update system with GitHub releases",
       "shortcuts": "Keyboard shortcuts for productivity",

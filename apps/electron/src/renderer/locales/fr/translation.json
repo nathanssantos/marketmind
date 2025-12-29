@@ -653,12 +653,14 @@
   },
   "about": {
     "version": "Version {{version}}",
-    "description": "Un assistant de trading alimenté par l'IA qui combine une visualisation avancée de graphiques financiers avec l'intelligence artificielle pour fournir des informations sur les cryptomonnaies, les actions et d'autres actifs négociables.",
+    "description": "Un assistant de trading qui combine une visualisation avancée de graphiques financiers avec la détection algorithmique de setups pour fournir des informations sur les cryptomonnaies, les actions et d'autres actifs négociables.",
     "features": "Fonctionnalités",
     "featuresList": {
       "marketData": "Données de marché de cryptomonnaies en temps réel (Binance)",
-      "charts": "Graphiques en chandeliers avancés avec moyennes mobiles",
-      "aiAnalysis": "Analyse IA avec OpenAI GPT-4o, Claude 4.5 et Gemini 2.0",
+      "charts": "Graphiques en chandeliers avancés avec 25+ indicateurs",
+      "strategies": "17 stratégies de trading algorithmique",
+      "autoTrading": "Exécution automatique des trades avec ordres OCO",
+      "backtesting": "Moteur de backtesting complet avec optimisation",
       "security": "Stockage sécurisé des clés API avec chiffrement au niveau du système d'exploitation",
       "autoUpdate": "Système de mise à jour automatique avec les versions GitHub",
       "shortcuts": "Raccourcis clavier pour la productivité",

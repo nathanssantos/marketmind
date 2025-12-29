@@ -8,12 +8,6 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string, options?: Record<string, string>) => {
             if (key === 'about.version') return `Version ${options?.version ?? '0.0.0'}`;
-            if (key === 'about.techStackList.electron') return `Electron ${options?.version ?? ''}`;
-            if (key === 'about.techStackList.react') return `React ${options?.version ?? ''}`;
-            if (key === 'about.techStackList.typescript') return `TypeScript ${options?.version ?? ''}`;
-            if (key === 'about.techStackList.chakra') return `Chakra UI ${options?.version ?? ''}`;
-            if (key === 'about.techStackList.vite') return `Vite ${options?.version ?? ''}`;
-            if (key === 'about.techStackList.zustand') return `Zustand ${options?.version ?? ''}`;
             return key;
         },
     }),
@@ -57,37 +51,20 @@ describe('AboutTab', () => {
         expect(screen.getByText('about.features')).toBeDefined();
         expect(screen.getByText(/about\.featuresList\.marketData/)).toBeDefined();
         expect(screen.getByText(/about\.featuresList\.charts/)).toBeDefined();
-        expect(screen.getByText(/about\.featuresList\.aiAnalysis/)).toBeDefined();
+        expect(screen.getByText(/about\.featuresList\.strategies/)).toBeDefined();
     });
 
     it('renders all feature items', () => {
         renderWithChakra(<AboutTab />);
 
         const features = [
-            'marketData', 'charts', 'aiAnalysis', 'news', 'chat',
+            'marketData', 'charts', 'strategies', 'autoTrading', 'backtesting',
             'security', 'autoUpdate', 'shortcuts', 'themes', 'websocket'
         ];
 
         features.forEach(feature => {
             expect(screen.getByText(new RegExp(`about\.featuresList\.${feature}`))).toBeDefined();
         });
-    });
-
-    it('renders tech stack section', () => {
-        renderWithChakra(<AboutTab />);
-
-        expect(screen.getByText('about.techStack')).toBeDefined();
-    });
-
-    it('displays tech stack with versions', () => {
-        renderWithChakra(<AboutTab />);
-
-        expect(screen.getByText(/Electron 39\.2\.0/)).toBeDefined();
-        expect(screen.getByText(/React 19\.2\.0/)).toBeDefined();
-        expect(screen.getByText(/TypeScript 5\.9\.3/)).toBeDefined();
-        expect(screen.getByText(/Chakra UI 3\.29\.0/)).toBeDefined();
-        expect(screen.getByText(/Vite 7\.2\.2/)).toBeDefined();
-        expect(screen.getByText(/Zustand 5\.0\.8/)).toBeDefined();
     });
 
     it('renders resources section with links', () => {

@@ -664,12 +664,14 @@
   },
   "about": {
     "version": "Versión {{version}}",
-    "description": "Un asistente de trading con IA que combina visualización avanzada de gráficos financieros con inteligencia artificial para proporcionar información sobre criptomonedas, acciones y otros activos negociables.",
+    "description": "Un asistente de trading que combina visualización avanzada de gráficos financieros con detección algorítmica de setups para proporcionar información sobre criptomonedas, acciones y otros activos negociables.",
     "features": "Características",
     "featuresList": {
       "marketData": "Datos de mercado de criptomonedas en tiempo real (Binance)",
-      "charts": "Gráficos de velas avanzados con medias móviles",
-      "aiAnalysis": "Análisis de IA con OpenAI GPT-4o, Claude 4.5 y Gemini 2.0",
+      "charts": "Gráficos de velas avanzados con 25+ indicadores",
+      "strategies": "17 estrategias de trading algorítmico",
+      "autoTrading": "Ejecución automática de trades con órdenes OCO",
+      "backtesting": "Motor de backtesting completo con optimización",
       "security": "Almacenamiento seguro de claves de API con cifrado a nivel del SO",
       "autoUpdate": "Sistema de actualización automática con versiones de GitHub",
       "shortcuts": "Atajos de teclado para productividad",

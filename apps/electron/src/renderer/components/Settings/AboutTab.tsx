@@ -31,30 +31,14 @@ export const AboutTab = () => {
         <Stack gap={2} fontSize="sm" color="fg.muted">
           <Text>• {t('about.featuresList.marketData')}</Text>
           <Text>• {t('about.featuresList.charts')}</Text>
-          <Text>• {t('about.featuresList.aiAnalysis')}</Text>
-          <Text>• {t('about.featuresList.news')}</Text>
-          <Text>• {t('about.featuresList.chat')}</Text>
+          <Text>• {t('about.featuresList.strategies')}</Text>
+          <Text>• {t('about.featuresList.autoTrading')}</Text>
+          <Text>• {t('about.featuresList.backtesting')}</Text>
           <Text>• {t('about.featuresList.security')}</Text>
           <Text>• {t('about.featuresList.autoUpdate')}</Text>
           <Text>• {t('about.featuresList.shortcuts')}</Text>
           <Text>• {t('about.featuresList.themes')}</Text>
           <Text>• {t('about.featuresList.websocket')}</Text>
-        </Stack>
-      </Box>
-
-      <Separator />
-
-      <Box>
-        <Text fontSize="md" fontWeight="medium" mb={3}>
-          {t('about.techStack')}
-        </Text>
-        <Stack gap={2} fontSize="sm" color="fg.muted">
-          <Text>• {t('about.techStackList.electron', { version: '39.2.0' })}</Text>
-          <Text>• {t('about.techStackList.react', { version: '19.2.0' })}</Text>
-          <Text>• {t('about.techStackList.typescript', { version: '5.9.3' })}</Text>
-          <Text>• {t('about.techStackList.chakra', { version: '3.29.0' })}</Text>
-          <Text>• {t('about.techStackList.vite', { version: '7.2.2' })}</Text>
-          <Text>• {t('about.techStackList.zustand', { version: '5.0.8' })}</Text>
         </Stack>
       </Box>
 

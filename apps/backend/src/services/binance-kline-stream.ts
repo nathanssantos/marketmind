@@ -168,7 +168,7 @@ export class BinanceKlineStreamService {
           timestamp: Date.now(),
         };
 
-        this.processKlineUpdate(update);
+       void this.processKlineUpdate(update);
       }
     } catch (error) {
       logger.error({
@@ -425,7 +425,7 @@ export class BinanceFuturesKlineStreamService {
           timestamp: Date.now(),
         };
 
-        this.processKlineUpdate(update);
+       void this.processKlineUpdate(update);
       }
     } catch (error) {
       logger.error({
