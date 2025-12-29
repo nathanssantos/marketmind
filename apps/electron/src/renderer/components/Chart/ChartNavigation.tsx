@@ -6,17 +6,16 @@ import { LuChevronRight, LuChevronsRight } from 'react-icons/lu';
 export interface ChartNavigationProps {
     onResetView: () => void;
     onNextKline: () => void;
-    stochasticPanelHeight?: number;
-    rsiPanelHeight?: number;
+    totalPanelHeight?: number;
 }
 
-export const ChartNavigation = ({ onResetView, onNextKline, stochasticPanelHeight = 0, rsiPanelHeight = 0 }: ChartNavigationProps): ReactElement => {
+export const ChartNavigation = ({ onResetView, onNextKline, totalPanelHeight = 0 }: ChartNavigationProps): ReactElement => {
     const { t } = useTranslation();
 
     return (
         <HStack
             position="absolute"
-            bottom={`${33 + stochasticPanelHeight + rsiPanelHeight}px`}
+            bottom={`${33 + totalPanelHeight}px`}
             right="72px"
             gap={0.5}
             zIndex={10}

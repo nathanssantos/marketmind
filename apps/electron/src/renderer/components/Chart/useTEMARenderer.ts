@@ -38,7 +38,7 @@ export const useTEMARenderer = ({
       (index - viewport.start) * klineWidth + klineWidth / 2;
 
     ctx.strokeStyle = colors.tema?.line ?? '#e91e63';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.beginPath();
 
     let isFirstPoint = true;

@@ -66,6 +66,7 @@ describe('useGridRenderer', () => {
       priceToY: vi.fn((price: number) => 575 - (price - 90) * 19),
       getStochasticPanelHeight: vi.fn(() => 0),
       getRSIPanelHeight: vi.fn(() => 0),
+      getTotalPanelHeight: vi.fn(() => 0),
     } as unknown as CanvasManager;
 
     mockColors = {

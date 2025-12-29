@@ -3,6 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG, INDICATOR_PANEL_HEIGHTS } from '@shared/constants';
 import { useCallback } from 'react';
+import { drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseStochRSIRendererProps {
   manager: CanvasManager | null;
@@ -37,9 +38,7 @@ export const useStochRSIRenderer = ({
     const innerHeight = PANEL_HEIGHT - padding * 2;
 
     ctx.save();
-
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.02)';
-    ctx.fillRect(0, panelTop, chartWidth, PANEL_HEIGHT);
+    drawPanelBackground({ ctx, panelY: panelTop, panelHeight: PANEL_HEIGHT, chartWidth });
 
     const minValue = 0;
     const maxValue = 100;
@@ -57,29 +56,8 @@ export const useStochRSIRenderer = ({
     const oversoldY = valueToY(20);
     const midY = valueToY(50);
 
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.08)';
-    ctx.fillRect(0, overboughtY, chartWidth, oversoldY - overboughtY);
-
-    ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 2]);
-
-    ctx.beginPath();
-    ctx.moveTo(0, overboughtY);
-    ctx.lineTo(chartWidth, overboughtY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0, oversoldY);
-    ctx.lineTo(chartWidth, oversoldY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0, midY);
-    ctx.lineTo(chartWidth, midY);
-    ctx.stroke();
-
-    ctx.setLineDash([]);
+    drawZoneFill({ ctx, chartWidth, panelY: panelTop, panelHeight: PANEL_HEIGHT, topY: overboughtY, bottomY: oversoldY });
+    drawZoneLines({ ctx, chartWidth, levels: [{ y: overboughtY }, { y: oversoldY }, { y: midY }] });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -111,24 +89,6 @@ export const useStochRSIRenderer = ({
 
     drawLine(stochRsiData.k, colors.stochRsi?.k ?? '#2196f3', 1);
     drawLine(stochRsiData.d, colors.stochRsi?.d ?? '#ff9800', 1);
-
-    ctx.font = '10px monospace';
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.6)';
-    ctx.textAlign = 'left';
-
-    const labels = [
-      { value: 80, y: overboughtY },
-      { value: 50, y: valueToY(50) },
-      { value: 20, y: oversoldY },
-    ];
-
-    for (const label of labels) {
-      ctx.fillText(String(label.value), 4, label.y + 3);
-    }
-
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
-    ctx.textAlign = 'right';
-    ctx.fillText('StochRSI', chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN - 4, panelTop + padding + 10);
 
     ctx.restore();
   }, [manager, stochRsiData, enabled, colors]);

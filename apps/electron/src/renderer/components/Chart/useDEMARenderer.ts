@@ -38,7 +38,7 @@ export const useDEMARenderer = ({
       (index - viewport.start) * klineWidth + klineWidth / 2;
 
     ctx.strokeStyle = colors.dema?.line ?? '#ff9800';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.beginPath();
 
     let isFirstPoint = true;

@@ -1,7 +1,9 @@
 import type { UltimateOscillatorResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { CHART_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
+import { drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseUltimateOscRendererProps {
   manager: CanvasManager | null;
@@ -28,10 +30,11 @@ export const useUltimateOscRenderer = ({
 
     const { y: panelY, height: panelHeight } = panelInfo;
     const { chartWidth } = dimensions;
-    const effectiveWidth = chartWidth - 72;
+    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
     const klineWidth = effectiveWidth / (viewport.end - viewport.start);
 
     ctx.save();
+    drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -48,32 +51,11 @@ export const useUltimateOscRenderer = ({
     const oversoldY = valueToY(30);
     const midY = valueToY(50);
 
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.08)';
-    ctx.fillRect(0, overboughtY, effectiveWidth, oversoldY - overboughtY);
-
-    ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 2]);
-
-    ctx.beginPath();
-    ctx.moveTo(0, overboughtY);
-    ctx.lineTo(effectiveWidth, overboughtY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0, oversoldY);
-    ctx.lineTo(effectiveWidth, oversoldY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0, midY);
-    ctx.lineTo(effectiveWidth, midY);
-    ctx.stroke();
-
-    ctx.setLineDash([]);
+    drawZoneFill({ ctx, chartWidth, panelY, panelHeight, topY: overboughtY, bottomY: oversoldY });
+    drawZoneLines({ ctx, chartWidth, levels: [{ y: overboughtY }, { y: oversoldY }, { y: midY }] });
 
     ctx.strokeStyle = colors.ultimateOsc?.line ?? '#673ab7';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.beginPath();
 
     let isFirstPoint = true;

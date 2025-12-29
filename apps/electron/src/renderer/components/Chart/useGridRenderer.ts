@@ -47,9 +47,7 @@ export const useGridRenderer = ({
     const { minPrice, maxPrice } = bounds;
     const klines = manager.getVisibleKlines();
 
-    const stochasticHeight = manager.getStochasticPanelHeight();
-    const rsiHeight = manager.getRSIPanelHeight();
-    const totalHeight = chartHeight + stochasticHeight + rsiHeight;
+    const totalHeight = chartHeight + manager.getTotalPanelHeight();
 
     if (enabled) {
       drawGrid(

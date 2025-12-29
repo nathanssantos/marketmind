@@ -38,7 +38,7 @@ export const useHMARenderer = ({
       (index - viewport.start) * klineWidth + klineWidth / 2;
 
     ctx.strokeStyle = colors.hma?.line ?? '#00bcd4';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.beginPath();
 
     let isFirstPoint = true;

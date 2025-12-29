@@ -1,7 +1,9 @@
 import type { VortexResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { CHART_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
+import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseVortexRendererProps {
   manager: CanvasManager | null;
@@ -28,10 +30,11 @@ export const useVortexRenderer = ({
 
     const { y: panelY, height: panelHeight } = panelInfo;
     const { chartWidth } = dimensions;
-    const effectiveWidth = chartWidth - 72;
+    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
     const klineWidth = effectiveWidth / (viewport.end - viewport.start);
 
     ctx.save();
+    drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -58,14 +61,7 @@ export const useVortexRenderer = ({
       (index - viewport.start) * klineWidth + klineWidth / 2;
 
     const oneY = valueToY(1);
-    ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 2]);
-    ctx.beginPath();
-    ctx.moveTo(0, oneY);
-    ctx.lineTo(effectiveWidth, oneY);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    drawZoneLines({ ctx, chartWidth, levels: [{ y: oneY }] });
 
     const drawLine = (values: (number | null)[], color: string, lineWidth: number): void => {
       ctx.strokeStyle = color;
@@ -92,8 +88,8 @@ export const useVortexRenderer = ({
       ctx.stroke();
     };
 
-    drawLine(vortexData.viPlus, colors.vortex?.viPlusLine ?? '#26a69a', 1.5);
-    drawLine(vortexData.viMinus, colors.vortex?.viMinusLine ?? '#ef5350', 1.5);
+    drawLine(vortexData.viPlus, colors.vortex?.viPlusLine ?? '#26a69a', 1);
+    drawLine(vortexData.viMinus, colors.vortex?.viMinusLine ?? '#ef5350', 1);
 
     ctx.restore();
   }, [manager, vortexData, enabled, colors]);

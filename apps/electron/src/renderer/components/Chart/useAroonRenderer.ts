@@ -1,7 +1,9 @@
 import type { AroonResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { CHART_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
+import { drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseAroonRendererProps {
   manager: CanvasManager | null;
@@ -28,10 +30,11 @@ export const useAroonRenderer = ({
 
     const { y: panelY, height: panelHeight } = panelInfo;
     const { chartWidth } = dimensions;
-    const effectiveWidth = chartWidth - 72;
+    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
     const klineWidth = effectiveWidth / (viewport.end - viewport.start);
 
     ctx.save();
+    drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -48,29 +51,8 @@ export const useAroonRenderer = ({
     const bot30Y = valueToY(30);
     const midY = valueToY(50);
 
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.08)';
-    ctx.fillRect(0, top70Y, effectiveWidth, bot30Y - top70Y);
-
-    ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 2]);
-
-    ctx.beginPath();
-    ctx.moveTo(0, top70Y);
-    ctx.lineTo(effectiveWidth, top70Y);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0, bot30Y);
-    ctx.lineTo(effectiveWidth, bot30Y);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0, midY);
-    ctx.lineTo(effectiveWidth, midY);
-    ctx.stroke();
-
-    ctx.setLineDash([]);
+    drawZoneFill({ ctx, chartWidth, panelY, panelHeight, topY: top70Y, bottomY: bot30Y });
+    drawZoneLines({ ctx, chartWidth, levels: [{ y: top70Y }, { y: bot30Y }, { y: midY }] });
 
     const drawLine = (values: (number | null)[], color: string, lineWidth: number): void => {
       ctx.strokeStyle = color;
@@ -97,8 +79,8 @@ export const useAroonRenderer = ({
       ctx.stroke();
     };
 
-    drawLine(aroonData.aroonUp, colors.aroon?.upLine ?? '#26a69a', 1.5);
-    drawLine(aroonData.aroonDown, colors.aroon?.downLine ?? '#ef5350', 1.5);
+    drawLine(aroonData.aroonUp, colors.aroon?.upLine ?? '#26a69a', 1);
+    drawLine(aroonData.aroonDown, colors.aroon?.downLine ?? '#ef5350', 1);
 
     ctx.restore();
   }, [manager, aroonData, enabled, colors]);

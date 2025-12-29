@@ -1,7 +1,9 @@
 import type { ElderRayResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { CHART_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
+import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseElderRayRendererProps {
   manager: CanvasManager | null;
@@ -28,10 +30,11 @@ export const useElderRayRenderer = ({
 
     const { y: panelY, height: panelHeight } = panelInfo;
     const { chartWidth } = dimensions;
-    const effectiveWidth = chartWidth - 72;
+    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
     const klineWidth = effectiveWidth / (viewport.end - viewport.start);
 
     ctx.save();
+    drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -81,14 +84,7 @@ export const useElderRayRenderer = ({
       }
     }
 
-    ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 2]);
-    ctx.beginPath();
-    ctx.moveTo(0, zeroY);
-    ctx.lineTo(effectiveWidth, zeroY);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    drawZoneLines({ ctx, chartWidth, levels: [{ y: zeroY }] });
 
     ctx.restore();
   }, [manager, elderRayData, enabled, colors]);

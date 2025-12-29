@@ -38,7 +38,7 @@ export const useWMARenderer = ({
       (index - viewport.start) * klineWidth + klineWidth / 2;
 
     ctx.strokeStyle = colors.wma?.line ?? '#9c27b0';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.beginPath();
 
     let isFirstPoint = true;

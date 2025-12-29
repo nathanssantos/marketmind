@@ -1,7 +1,9 @@
 import type { CCIResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { CHART_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
+import { drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseCCIRendererProps {
   manager: CanvasManager | null;
@@ -28,10 +30,11 @@ export const useCCIRenderer = ({
 
     const { y: panelY, height: panelHeight } = panelInfo;
     const { chartWidth } = dimensions;
-    const effectiveWidth = chartWidth - 72;
+    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
     const klineWidth = effectiveWidth / (viewport.end - viewport.start);
 
     ctx.save();
+    drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -58,32 +61,11 @@ export const useCCIRenderer = ({
     const overboughtY = valueToY(100);
     const zeroY = valueToY(0);
 
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.08)';
-    ctx.fillRect(0, overboughtY, effectiveWidth, oversoldY - overboughtY);
-
-    ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 2]);
-
-    ctx.beginPath();
-    ctx.moveTo(0, overboughtY);
-    ctx.lineTo(effectiveWidth, overboughtY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0, oversoldY);
-    ctx.lineTo(effectiveWidth, oversoldY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0, zeroY);
-    ctx.lineTo(effectiveWidth, zeroY);
-    ctx.stroke();
-
-    ctx.setLineDash([]);
+    drawZoneFill({ ctx, chartWidth, panelY, panelHeight, topY: overboughtY, bottomY: oversoldY });
+    drawZoneLines({ ctx, chartWidth, levels: [{ y: overboughtY }, { y: oversoldY }, { y: zeroY }] });
 
     ctx.strokeStyle = colors.cci?.line ?? '#ff9800';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.beginPath();
 
     let isFirstPoint = true;

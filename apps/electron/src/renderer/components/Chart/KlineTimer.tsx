@@ -7,8 +7,7 @@ import { useEffect, useState } from 'react';
 export interface KlineTimerProps {
     timeframe: string;
     lastKlineTime?: number | undefined;
-    stochasticPanelHeight?: number;
-    rsiPanelHeight?: number;
+    totalPanelHeight?: number;
 }
 
 const TIMEFRAME_MINUTES: Record<string, number> = {
@@ -43,7 +42,7 @@ const formatTime = (seconds: number): string => {
     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
-export const KlineTimer = ({ timeframe, lastKlineTime, stochasticPanelHeight = 0, rsiPanelHeight = 0 }: KlineTimerProps): ReactElement | null => {
+export const KlineTimer = ({ timeframe, lastKlineTime, totalPanelHeight = 0 }: KlineTimerProps): ReactElement | null => {
     const colors = useChartColors();
     const [timeRemaining, setTimeRemaining] = useState<number>(0);
 
@@ -90,7 +89,7 @@ export const KlineTimer = ({ timeframe, lastKlineTime, stochasticPanelHeight = 0
     return (
         <Box
             position="absolute"
-            bottom={`${8 + stochasticPanelHeight + rsiPanelHeight}px`}
+            bottom={`${8 + totalPanelHeight}px`}
             right={0}
             width={`${CHART_CONFIG.CANVAS_PADDING_RIGHT}px`}
             textAlign="center"

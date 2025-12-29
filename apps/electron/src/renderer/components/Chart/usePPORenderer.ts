@@ -1,7 +1,9 @@
 import type { PPOResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { CHART_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
+import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UsePPORendererProps {
   manager: CanvasManager | null;
@@ -28,10 +30,11 @@ export const usePPORenderer = ({
 
     const { y: panelY, height: panelHeight } = panelInfo;
     const { chartWidth } = dimensions;
-    const effectiveWidth = chartWidth - 72;
+    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
     const klineWidth = effectiveWidth / (viewport.end - viewport.start);
 
     ctx.save();
+    drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -102,17 +105,10 @@ export const usePPORenderer = ({
       ctx.stroke();
     };
 
-    drawLine(ppoData.ppo, colors.ppo?.ppoLine ?? '#2962ff', 1.5);
-    drawLine(ppoData.signal, colors.ppo?.signalLine ?? '#ff6d00', 1.5);
+    drawLine(ppoData.ppo, colors.ppo?.ppoLine ?? '#2962ff', 1);
+    drawLine(ppoData.signal, colors.ppo?.signalLine ?? '#ff6d00', 1);
 
-    ctx.strokeStyle = colors.ppo?.zeroLine ?? 'rgba(128, 128, 128, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 2]);
-    ctx.beginPath();
-    ctx.moveTo(0, zeroY);
-    ctx.lineTo(effectiveWidth, zeroY);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    drawZoneLines({ ctx, chartWidth, levels: [{ y: zeroY }] });
 
     ctx.restore();
   }, [manager, ppoData, enabled, colors]);

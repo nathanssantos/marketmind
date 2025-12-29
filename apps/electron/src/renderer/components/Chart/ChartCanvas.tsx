@@ -1936,14 +1936,12 @@ export const ChartCanvas = ({
         <ChartNavigation
           onResetView={handleResetView}
           onNextKline={handleNextKline}
-          stochasticPanelHeight={showStochastic ? CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT : 0}
-          rsiPanelHeight={showRSI ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0}
+          totalPanelHeight={manager?.getTotalPanelHeight() ?? 0}
         />
         <KlineTimer
           timeframe={timeframe}
           lastKlineTime={klines[klines.length - 1]?.openTime}
-          stochasticPanelHeight={showStochastic ? CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT : 0}
-          rsiPanelHeight={showRSI ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0}
+          totalPanelHeight={manager?.getTotalPanelHeight() ?? 0}
         />
         <ChartTooltip
           kline={tooltipData.kline}

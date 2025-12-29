@@ -3,6 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
+import { drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseStochasticRendererProps {
   manager: CanvasManager | null;
@@ -52,36 +53,14 @@ export const useStochasticRenderer = ({
       return panelTop + padding + innerHeight - ((value / 100) * innerHeight);
     };
 
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.02)';
-    ctx.fillRect(0, panelTop, chartWidth, panelHeight);
+    drawPanelBackground({ ctx, panelY: panelTop, panelHeight, chartWidth });
 
     const overboughtY = valueToY(overboughtLevel);
     const oversoldY = valueToY(oversoldLevel);
-
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.08)';
-    ctx.fillRect(0, overboughtY, chartWidth, oversoldY - overboughtY);
-
-    ctx.strokeStyle = colors.stochastic.zone;
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 2]);
-
-    ctx.beginPath();
-    ctx.moveTo(0, overboughtY);
-    ctx.lineTo(chartWidth, overboughtY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0, oversoldY);
-    ctx.lineTo(chartWidth, oversoldY);
-    ctx.stroke();
-
     const midY = valueToY(50);
-    ctx.beginPath();
-    ctx.moveTo(0, midY);
-    ctx.lineTo(chartWidth, midY);
-    ctx.stroke();
 
-    ctx.setLineDash([]);
+    drawZoneFill({ ctx, chartWidth, panelY: panelTop, panelHeight, topY: overboughtY, bottomY: oversoldY });
+    drawZoneLines({ ctx, chartWidth, levels: [{ y: overboughtY }, { y: oversoldY }, { y: midY }] });
 
     const drawLine = (values: (number | null)[], color: string, lineWidth: number): void => {
       ctx.strokeStyle = color;
@@ -111,13 +90,6 @@ export const useStochasticRenderer = ({
 
     drawLine(visibleK, colors.stochastic.k, 1);
     drawLine(visibleD, colors.stochastic.d, 1);
-
-    ctx.font = '10px monospace';
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.6)';
-    ctx.textAlign = 'left';
-    ctx.fillText('0', 4, panelTop + panelHeight - 4);
-    ctx.fillText('50', 4, midY + 3);
-    ctx.fillText('100', 4, panelTop + padding + 10);
 
     ctx.restore();
   }, [manager, stochasticData, enabled, overboughtLevel, oversoldLevel, colors]);
