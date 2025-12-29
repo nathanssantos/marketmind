@@ -332,6 +332,7 @@ export class BinanceUserStreamService {
             closedAt: new Date(),
             pnl: pnl.toString(),
             pnlPercent: pnlPercent.toString(),
+            fees: totalFees.toString(),
           })
           .where(eq(tradeExecutions.id, execution.id));
 

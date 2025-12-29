@@ -537,6 +537,7 @@ export class PositionMonitorService {
           exitOrderId,
           pnl: pnl.toString(),
           pnlPercent: adjustedPnlPercent.toString(),
+          fees: totalFees.toString(),
           exitSource: 'ALGORITHM',
           exitReason: reason,
           status: 'closed',

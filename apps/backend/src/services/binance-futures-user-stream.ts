@@ -417,6 +417,7 @@ export class BinanceFuturesUserStreamService {
             closedAt: new Date(),
             pnl: pnl.toString(),
             pnlPercent: pnlPercent.toString(),
+            fees: totalFees.toString(),
             exitSource: 'ALGORITHM',
             exitReason: isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT',
             updatedAt: new Date(),

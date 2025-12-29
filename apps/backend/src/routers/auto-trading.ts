@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { BINANCE_FEES } from '@marketmind/types';
 import {
   autoTradingConfig,
   tradeExecutions,
@@ -580,12 +581,22 @@ export const autoTradingRouter = router({
       const exitPrice = parseFloat(input.exitPrice);
       const qty = parseFloat(execution.quantity);
 
-      let pnl = 0;
+      let grossPnl = 0;
       if (execution.side === 'LONG') {
-        pnl = (exitPrice - entryPrice) * qty;
+        grossPnl = (exitPrice - entryPrice) * qty;
       } else {
-        pnl = (entryPrice - exitPrice) * qty;
+        grossPnl = (entryPrice - exitPrice) * qty;
       }
+
+      const entryValue = entryPrice * qty;
+      const exitValue = exitPrice * qty;
+      const feeRate = execution.marketType === 'FUTURES'
+        ? BINANCE_FEES.FUTURES.VIP_0.taker
+        : BINANCE_FEES.SPOT.VIP_0.taker;
+      const entryFee = entryValue * feeRate;
+      const exitFee = exitValue * feeRate;
+      const totalFees = entryFee + exitFee;
+      const netPnl = grossPnl - totalFees;
 
       const pnlPercent = ((exitPrice - entryPrice) / entryPrice) * 100;
       const adjustedPnlPercent = execution.side === 'LONG' ? pnlPercent : -pnlPercent;
@@ -595,15 +606,16 @@ export const autoTradingRouter = router({
         .set({
           exitPrice: input.exitPrice,
           exitOrderId: input.exitOrderId,
-          pnl: pnl.toString(),
+          pnl: netPnl.toString(),
           pnlPercent: adjustedPnlPercent.toString(),
+          fees: totalFees.toString(),
           status: 'closed',
           closedAt: new Date(),
           updatedAt: new Date(),
         })
         .where(eq(tradeExecutions.id, input.executionId));
 
-      const isWin = pnl > 0;
+      const isWin = netPnl > 0;
       log(`${isWin ? '💚 WIN' : '❤️ LOSS'} Execution closed`, {
         executionId: input.executionId,
         setupType: execution.setupType,
@@ -611,12 +623,14 @@ export const autoTradingRouter = router({
         side: execution.side,
         entryPrice: entryPrice.toFixed(2),
         exitPrice: exitPrice.toFixed(2),
-        pnl: pnl.toFixed(2),
+        grossPnl: grossPnl.toFixed(2),
+        fees: totalFees.toFixed(4),
+        netPnl: netPnl.toFixed(2),
         pnlPercent: `${adjustedPnlPercent >= 0 ? '+' : ''}${adjustedPnlPercent.toFixed(2)}%`,
       });
 
       return {
-        pnl: pnl.toString(),
+        pnl: netPnl.toString(),
         pnlPercent: adjustedPnlPercent.toFixed(2),
       };
     }),
