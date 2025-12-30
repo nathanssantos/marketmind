@@ -1,7 +1,7 @@
 import { checkAdxCondition, ADX_FILTER } from '../utils/adx-filter';
 import { checkStochasticCondition, STOCHASTIC_FILTER } from '../utils/stochastic-filter';
 import { checkTrendCondition, TREND_FILTER } from '../utils/trend-filter';
-import type { Interval, Kline, MarketType, TradingSetup } from '@marketmind/types';
+import type { Interval, Kline, MarketType, StrategyDefinition, TradingSetup } from '@marketmind/types';
 import { BINANCE_FEES } from '@marketmind/types';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import fs from 'fs';
@@ -511,7 +511,7 @@ export class AutoTradingScheduler {
   private async executeSetup(
     watcher: ActiveWatcher,
     setup: TradingSetup,
-    strategies: { id: string; optimizedParams?: { maxPositionSize?: number; maxConcurrentPositions?: number; maxTotalExposure?: number; trailingATRMultiplier?: number; breakEvenAfterR?: number; onlyWithTrend?: boolean } }[]
+    strategies: StrategyDefinition[]
   ): Promise<void> {
     log('🚀 Attempting to execute setup', {
       type: setup.type,
@@ -842,7 +842,17 @@ export class AutoTradingScheduler {
         });
       }
 
-      const shouldApplyTrendFilter = config.useTrendFilter;
+      const setupStrategy = strategies.find(s => s.id === setup.type);
+      const globalTrendFilterEnabled = config.useTrendFilter === true;
+      const strategyTrendFilterEnabled = setupStrategy?.filters?.trendFilter?.enabled === true;
+      const shouldApplyTrendFilter = globalTrendFilterEnabled || strategyTrendFilterEnabled;
+
+      log('🔍 Trend Filter Config', {
+        globalEnabled: globalTrendFilterEnabled,
+        strategyEnabled: strategyTrendFilterEnabled,
+        shouldApply: shouldApplyTrendFilter,
+        strategyId: setup.type,
+      });
 
       if (shouldApplyTrendFilter) {
         const { MIN_KLINES_REQUIRED } = TREND_FILTER;

@@ -451,7 +451,9 @@ export class BacktestEngine {
       const { entryPrice, actualEntryKlineIndex } = entryResult;
 
       const setupStrategy = strategyMap.get(setup.type);
-      const useTrendFilter = effectiveConfig.onlyWithTrend === true;
+      const globalTrendFilterEnabled = effectiveConfig.onlyWithTrend === true;
+      const strategyTrendFilterEnabled = setupStrategy?.filters?.trendFilter?.enabled === true;
+      const useTrendFilter = globalTrendFilterEnabled || strategyTrendFilterEnabled;
 
       if (!filterManager.checkTrendFilter(setupIndex, entryPrice, setup.direction, useTrendFilter, trades.length)) continue;
 
