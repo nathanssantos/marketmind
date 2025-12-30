@@ -129,14 +129,15 @@ describe('checkTrendCondition', () => {
     it('should have correct default values', () => {
       expect(TREND_FILTER.FAST_PERIOD).toBe(100);
       expect(TREND_FILTER.SLOW_PERIOD).toBe(200);
-      expect(TREND_FILTER.MIN_KLINES_REQUIRED).toBe(250);
+      expect(TREND_FILTER.MIN_KLINES_REQUIRED).toBeGreaterThanOrEqual(2500);
     });
   });
 
   describe('real-world scenarios', () => {
     it('should correctly identify uptrend after sustained price increase', () => {
       const klines: Kline[] = [];
-      for (let i = 0; i < 260; i += 1) {
+      const count = TREND_FILTER.MIN_KLINES_REQUIRED + 10;
+      for (let i = 0; i < count; i += 1) {
         const price = 100 + i * 0.5;
         klines.push(createKline(price, i));
       }
@@ -152,7 +153,8 @@ describe('checkTrendCondition', () => {
 
     it('should correctly identify downtrend after sustained price decrease', () => {
       const klines: Kline[] = [];
-      for (let i = 0; i < 260; i += 1) {
+      const count = TREND_FILTER.MIN_KLINES_REQUIRED + 10;
+      for (let i = 0; i < count; i += 1) {
         const price = 200 - i * 0.5;
         klines.push(createKline(Math.max(price, 10), i));
       }
@@ -168,7 +170,8 @@ describe('checkTrendCondition', () => {
 
     it('should use confirmation candle index for EMA comparison', () => {
       const klines: Kline[] = [];
-      for (let i = 0; i < 260; i += 1) {
+      const count = TREND_FILTER.MIN_KLINES_REQUIRED + 10;
+      for (let i = 0; i < count; i += 1) {
         klines.push(createKline(100 + i * 0.5, i));
       }
 

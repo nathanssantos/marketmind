@@ -1,6 +1,7 @@
 import type { KlineData } from '@marketmind/types';
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { REQUIRED_KLINES } from '../constants/defaults';
 import type { MarketDataService } from '../services/market/MarketDataService';
 import { useMarketData } from './useMarketData';
 
@@ -38,7 +39,7 @@ describe('useMarketData', () => {
     expect(mockService.fetchKlines).toHaveBeenCalledWith({
       symbol: 'BTCUSDT',
       interval: '1h',
-      limit: 500,
+      limit: REQUIRED_KLINES,
     });
   });
 
@@ -102,7 +103,7 @@ describe('useMarketData', () => {
     expect(mockService.fetchKlines).toHaveBeenCalledWith({
       symbol: 'BTCUSDT',
       interval: '1h',
-      limit: 500,
+      limit: REQUIRED_KLINES,
     });
 
     rerender({ symbol: 'ETHUSDT' });
@@ -111,7 +112,7 @@ describe('useMarketData', () => {
       expect(mockService.fetchKlines).toHaveBeenCalledWith({
         symbol: 'ETHUSDT',
         interval: '1h',
-        limit: 500,
+        limit: REQUIRED_KLINES,
       });
     });
   });
@@ -132,7 +133,7 @@ describe('useMarketData', () => {
       expect(mockService.fetchKlines).toHaveBeenCalledWith({
         symbol: 'BTCUSDT',
         interval: '1d',
-        limit: 500,
+        limit: REQUIRED_KLINES,
       });
     });
   });

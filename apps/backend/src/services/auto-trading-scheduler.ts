@@ -358,7 +358,7 @@ export class AutoTradingScheduler {
         watcher.enabledStrategies.includes(s.id)
       );
 
-      const requiredKlines = calculateRequiredKlines(filteredStrategies);
+      const requiredKlines = calculateRequiredKlines();
       const minRequired = Math.max(50, Math.ceil(requiredKlines * 0.5));
 
       const klinesData = await db.query.klines.findMany({
@@ -842,8 +842,7 @@ export class AutoTradingScheduler {
         });
       }
 
-      const strategyRequiresTrend = strategy?.optimizedParams?.onlyWithTrend ?? false;
-      const shouldApplyTrendFilter = config.useTrendFilter || strategyRequiresTrend;
+      const shouldApplyTrendFilter = config.useTrendFilter;
 
       if (shouldApplyTrendFilter) {
         const { MIN_KLINES_REQUIRED } = TREND_FILTER;
@@ -894,7 +893,6 @@ export class AutoTradingScheduler {
           isBullish: trendResult.isBullish,
           isBearish: trendResult.isBearish,
           isAllowed: trendResult.isAllowed,
-          filterSource: config.useTrendFilter ? 'global' : 'strategy',
           strategyId: setup.type,
         });
 

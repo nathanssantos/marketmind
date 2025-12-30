@@ -17,6 +17,7 @@ import { TrpcProvider } from '../components/TrpcProvider';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ChartProvider } from '../context/ChartContext';
+import { REQUIRED_KLINES } from '../constants/defaults';
 import { useBackendKlines, useKlineStream } from '../hooks/useBackendKlines';
 import { useDebounce } from '../hooks/useDebounce';
 import { useLocalStorage } from '../hooks/useLocalStorage';
@@ -116,7 +117,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
     symbol,
     interval: timeframe as any,
     marketType,
-    limit: 500,
+    limit: REQUIRED_KLINES,
   });
 
   const marketData = useMemo(() => {

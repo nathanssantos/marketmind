@@ -1,5 +1,6 @@
 import type { KlineData, TimeInterval } from '@marketmind/types';
 import { useCallback, useEffect, useState } from 'react';
+import { REQUIRED_KLINES } from '../constants/defaults';
 import type { MarketDataService } from '../services/market/MarketDataService';
 
 interface UseMarketDataOptions {
@@ -20,7 +21,7 @@ export const useMarketData = (
   service: MarketDataService,
   options: UseMarketDataOptions
 ): UseMarketDataReturn => {
-  const { symbol, interval, limit = 500, enabled = true } = options;
+  const { symbol, interval, limit = REQUIRED_KLINES, enabled = true } = options;
   const [data, setData] = useState<KlineData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);

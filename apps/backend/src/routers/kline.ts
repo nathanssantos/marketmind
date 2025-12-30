@@ -1,6 +1,7 @@
 import type { Interval, MarketType } from '@marketmind/types';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
+import { REQUIRED_KLINES } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
 import { backfillHistoricalKlines, calculateStartTime, fetchFuturesKlinesFromAPI, fetchHistoricalKlinesFromAPI } from '../services/binance-historical';
@@ -96,7 +97,7 @@ export const klineRouter = router({
         marketType: marketTypeSchema,
         startTime: z.date().optional(),
         endTime: z.date().optional(),
-        limit: z.number().min(1).max(1000).default(500),
+        limit: z.number().min(1).max(REQUIRED_KLINES).default(REQUIRED_KLINES),
       })
     )
     .query(async ({ input }) => {
@@ -335,7 +336,7 @@ export const klineRouter = router({
         symbol: z.string(),
         interval: intervalSchema,
         marketType: marketTypeSchema,
-        periodsBack: z.number().min(1).max(10000).default(500),
+        periodsBack: z.number().min(1).default(REQUIRED_KLINES),
       })
     )
     .mutation(async ({ input }) => {

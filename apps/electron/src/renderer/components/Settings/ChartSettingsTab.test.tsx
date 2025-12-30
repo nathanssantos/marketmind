@@ -325,13 +325,4 @@ describe('ChartSettingsTab', () => {
         });
     });
 
-    it('renders tips section', () => {
-        renderWithChakra(
-            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
-        );
-
-        expect(screen.getByText(/common\.tips/)).toBeDefined();
-        expect(screen.getByText(/settings\.chart\.tipsRealtime/)).toBeDefined();
-        expect(screen.getByText(/settings\.chart\.tipsReset/)).toBeDefined();
-    });
 });

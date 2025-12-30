@@ -451,11 +451,7 @@ export class BacktestEngine {
       const { entryPrice, actualEntryKlineIndex } = entryResult;
 
       const setupStrategy = strategyMap.get(setup.type);
-      const strategyOnlyWithTrend = setupStrategy?.optimizedParams?.onlyWithTrend ?? false;
-      const configExplicitlyDisablesTrend = config.onlyWithTrend === false;
-      const useTrendFilter = configExplicitlyDisablesTrend
-        ? false
-        : (effectiveConfig.onlyWithTrend || strategyOnlyWithTrend || effectiveConfig.trendFilterPeriod !== undefined);
+      const useTrendFilter = effectiveConfig.onlyWithTrend === true;
 
       if (!filterManager.checkTrendFilter(setupIndex, entryPrice, setup.direction, useTrendFilter, trades.length)) continue;
 

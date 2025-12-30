@@ -1,3 +1,5 @@
+export const REQUIRED_KLINES = 40_000;
+
 export const FLOAT_COMPARISON = {
   EPSILON: 0.0000001,
 } as const;

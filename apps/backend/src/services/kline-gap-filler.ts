@@ -1,12 +1,12 @@
 import type { Interval } from '@marketmind/types';
 import { and, asc, eq, gte, lte } from 'drizzle-orm';
+import { REQUIRED_KLINES } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
 import { fetchFuturesKlinesFromAPI, fetchHistoricalKlinesFromAPI, getIntervalMilliseconds } from './binance-historical';
 import { logger } from './logger';
 
 const GAP_CHECK_INTERVAL = 5 * 60 * 1000;
-const MAX_GAP_LOOKBACK_HOURS = 48;
 const MIN_GAP_SIZE_TO_FILL = 1;
 
 interface GapInfo {
@@ -118,7 +118,8 @@ class KlineGapFiller {
 
   private async detectGaps(pair: ActivePair): Promise<GapInfo[]> {
     const now = Date.now();
-    const lookbackMs = MAX_GAP_LOOKBACK_HOURS * 60 * 60 * 1000;
+    const intervalMs = getIntervalMilliseconds(pair.interval);
+    const lookbackMs = REQUIRED_KLINES * intervalMs;
     const startTime = new Date(now - lookbackMs);
     const endTime = new Date(now);
 
@@ -138,13 +139,27 @@ class KlineGapFiller {
           ...pair,
           gapStart: startTime,
           gapEnd: endTime,
-          missingCandles: Math.floor(lookbackMs / getIntervalMilliseconds(pair.interval)),
+          missingCandles: REQUIRED_KLINES,
         },
       ];
     }
 
     const gaps: GapInfo[] = [];
-    const intervalMs = getIntervalMilliseconds(pair.interval);
+
+    if (dbKlines.length < REQUIRED_KLINES) {
+      const firstKline = dbKlines[0];
+      if (firstKline && firstKline.openTime.getTime() > startTime.getTime()) {
+        const missingAtStart = Math.floor((firstKline.openTime.getTime() - startTime.getTime()) / intervalMs);
+        if (missingAtStart >= MIN_GAP_SIZE_TO_FILL) {
+          gaps.push({
+            ...pair,
+            gapStart: startTime,
+            gapEnd: new Date(firstKline.openTime.getTime() - intervalMs),
+            missingCandles: missingAtStart,
+          });
+        }
+      }
+    }
 
     for (let i = 1; i < dbKlines.length; i++) {
       const prevKline = dbKlines[i - 1];

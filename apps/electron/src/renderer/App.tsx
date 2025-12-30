@@ -14,6 +14,7 @@ import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { MainLayout } from './components/Layout/MainLayout';
 import { TrpcProvider } from './components/TrpcProvider';
+import { REQUIRED_KLINES } from './constants/defaults';
 
 const BacktestDialog = lazy(() => import('./components/Trading/BacktestDialog').then(m => ({ default: m.BacktestDialog })));
 import { ErrorMessage } from './components/ui/ErrorMessage';
@@ -228,7 +229,7 @@ function AppContent(): ReactElement {
   const backendKlinesQuery = useKlineList({
     symbol,
     interval: timeframe as any,
-    limit: 500,
+    limit: REQUIRED_KLINES,
     marketType,
   });
 

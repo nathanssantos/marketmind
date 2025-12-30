@@ -89,11 +89,12 @@ describe('KlineGapFiller Utilities', () => {
       expect(gapEnd.getTime()).toBe(currTime - intervalMs);
     });
 
-    it('should handle lookback period calculation', () => {
-      const MAX_GAP_LOOKBACK_HOURS = 48;
-      const lookbackMs = MAX_GAP_LOOKBACK_HOURS * 60 * 60 * 1000;
+    it('should handle lookback period calculation based on REQUIRED_KLINES', () => {
+      const REQUIRED_KLINES = 2500;
+      const intervalMs = 3600000;
+      const lookbackMs = REQUIRED_KLINES * intervalMs;
 
-      expect(lookbackMs).toBe(172800000);
+      expect(lookbackMs).toBe(REQUIRED_KLINES * intervalMs);
     });
   });
 });

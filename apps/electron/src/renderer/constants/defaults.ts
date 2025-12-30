@@ -2,6 +2,8 @@ import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { AdvancedControlsConfig } from '../components/Chart/AdvancedControls';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
 
+export const REQUIRED_KLINES = 40_000;
+
 export const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
   {
     period: 9,
