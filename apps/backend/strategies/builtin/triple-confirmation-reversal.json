@@ -197,6 +197,12 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1.0
+    "minRiskReward": 1.0,
+    "trendFilter": {
+      "enabled": false,
+      "indicator": "ema",
+      "period": 200,
+      "allowCounterTrend": true
+    }
   }
 }
