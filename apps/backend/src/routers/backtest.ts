@@ -5,7 +5,34 @@ import { BacktestEngine } from '../services/backtesting/BacktestEngine';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
 
-const backtestResults = new Map<string, any>();
+const MAX_CACHE_SIZE = 100;
+const backtestResults = new Map<string, { createdAt: number; data: unknown }>();
+
+const evictOldestIfNeeded = () => {
+  if (backtestResults.size >= MAX_CACHE_SIZE) {
+    let oldestKey: string | null = null;
+    let oldestTime = Infinity;
+
+    for (const [key, value] of backtestResults.entries()) {
+      if (value.createdAt < oldestTime) {
+        oldestTime = value.createdAt;
+        oldestKey = key;
+      }
+    }
+
+    if (oldestKey) backtestResults.delete(oldestKey);
+  }
+};
+
+const setCacheEntry = (id: string, data: unknown) => {
+  evictOldestIfNeeded();
+  backtestResults.set(id, { createdAt: Date.now(), data });
+};
+
+const getCacheEntry = (id: string): unknown | undefined => {
+  const entry = backtestResults.get(id);
+  return entry?.data;
+};
 
 export const backtestRouter = router({
   run: protectedProcedure
@@ -36,7 +63,7 @@ export const backtestRouter = router({
       const startTime = Date.now();
 
       try {
-        backtestResults.set(backtestId, {
+        setCacheEntry(backtestId, {
           id: backtestId,
           status: 'RUNNING',
           config: input,
@@ -72,7 +99,7 @@ export const backtestRouter = router({
         const engine = new BacktestEngine();
         const result = await engine.run(config);
 
-        backtestResults.set(backtestId, {
+        setCacheEntry(backtestId, {
           ...result,
           id: backtestId,
           status: 'COMPLETED',
@@ -92,11 +119,11 @@ export const backtestRouter = router({
           profitFactor: result.metrics.profitFactor.toFixed(2),
         });
 
-        return backtestResults.get(backtestId);
+        return getCacheEntry(backtestId);
       } catch (error) {
         console.error('[Backtest] Error:', error);
 
-        backtestResults.set(backtestId, {
+        setCacheEntry(backtestId, {
           id: backtestId,
           status: 'FAILED',
           config: input,
@@ -117,7 +144,7 @@ export const backtestRouter = router({
   getResult: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      const result = backtestResults.get(input.id);
+      const result = getCacheEntry(input.id);
 
       if (!result) {
         throw new TRPCError({
@@ -131,25 +158,30 @@ export const backtestRouter = router({
 
   list: protectedProcedure.query(async () => {
     const results = Array.from(backtestResults.values())
-      .map((result) => ({
-        id: result.id,
-        symbol: result.config.symbol,
-        interval: result.config.interval,
-        startDate: result.config.startDate,
-        endDate: result.config.endDate,
-        initialCapital: result.config.initialCapital,
-        finalEquity: result.metrics?.totalPnl
-          ? result.config.initialCapital + result.metrics.totalPnl
-          : result.config.initialCapital,
-        totalPnl: result.metrics?.totalPnl ?? 0,
-        totalPnlPercent: result.metrics?.totalPnlPercent ?? 0,
-        winRate: result.metrics?.winRate ?? 0,
-        totalTrades: result.metrics?.totalTrades ?? 0,
-        maxDrawdown: result.metrics?.maxDrawdown ?? 0,
-        sharpeRatio: result.metrics?.sharpeRatio,
-        createdAt: result.startTime,
-        status: result.status,
-      }))
+      .map((entry) => {
+        const result = entry.data as Record<string, unknown>;
+        const config = result.config as Record<string, unknown>;
+        const metrics = result.metrics as Record<string, number> | undefined;
+        return {
+          id: result.id,
+          symbol: config.symbol,
+          interval: config.interval,
+          startDate: config.startDate,
+          endDate: config.endDate,
+          initialCapital: config.initialCapital as number,
+          finalEquity: metrics?.totalPnl
+            ? (config.initialCapital as number) + metrics.totalPnl
+            : config.initialCapital,
+          totalPnl: metrics?.totalPnl ?? 0,
+          totalPnlPercent: metrics?.totalPnlPercent ?? 0,
+          winRate: metrics?.winRate ?? 0,
+          totalTrades: metrics?.totalTrades ?? 0,
+          maxDrawdown: metrics?.maxDrawdown ?? 0,
+          sharpeRatio: metrics?.sharpeRatio,
+          createdAt: result.startTime as string,
+          status: result.status,
+        };
+      })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return results;

@@ -1,5 +1,12 @@
 export const REQUIRED_KLINES = 40_000;
 
+export const TRADING_CONFIG = {
+  MIN_RISK_REWARD_RATIO: 1.25,
+  SESSION_DURATION_MS: 30 * 24 * 60 * 60 * 1000,
+} as const;
+
+export const STABLECOINS = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD'] as const;
+
 export const FLOAT_COMPARISON = {
   EPSILON: 0.0000001,
 } as const;

@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { MainClient, USDMClient } from 'binance';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { TRADING_CONFIG } from '../constants';
 import { orders, positions, tradeExecutions, wallets } from '../db/schema';
 import { env } from '../env';
 import { autoTradingService } from '../services/auto-trading';
@@ -490,8 +491,6 @@ export const tradingRouter = router({
     .mutation(async ({ input, ctx }) => {
       await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
-      const MIN_RISK_REWARD_RATIO = 1.25;
-
       if (input.stopLoss && input.takeProfit) {
         const entryPrice = parseFloat(input.entryPrice);
         const stopLoss = parseFloat(input.stopLoss);
@@ -517,10 +516,10 @@ export const tradingRouter = router({
 
         const riskRewardRatio = reward / risk;
 
-        if (riskRewardRatio < MIN_RISK_REWARD_RATIO) {
+        if (riskRewardRatio < TRADING_CONFIG.MIN_RISK_REWARD_RATIO) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${MIN_RISK_REWARD_RATIO}:1)`,
+            message: `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${TRADING_CONFIG.MIN_RISK_REWARD_RATIO}:1)`,
           });
         }
 

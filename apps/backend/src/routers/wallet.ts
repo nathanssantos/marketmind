@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { STABLECOINS } from '../constants';
 import { wallets, type Wallet } from '../db/schema';
 import { createBinanceClient, isPaperWallet } from '../services/binance-client';
 import { encryptApiKey } from '../services/encryption';
@@ -387,7 +388,6 @@ export const walletRouter = router({
           return free > 0 || locked > 0;
         }) || [];
 
-        const stablecoins = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD'];
         let totalValueUSDT = 0;
 
         const assetsWithValue = await Promise.all(
@@ -398,7 +398,7 @@ export const walletRouter = router({
 
             let valueUSDT = 0;
 
-            if (stablecoins.includes(balance.asset)) {
+            if (STABLECOINS.includes(balance.asset as typeof STABLECOINS[number])) {
               valueUSDT = total;
             } else {
               try {
