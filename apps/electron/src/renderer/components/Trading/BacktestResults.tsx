@@ -1,9 +1,10 @@
 import { Box, Flex, Grid, Stack, Text, Tabs } from '@chakra-ui/react';
 import { Button } from '@renderer/components/ui/button';
 import { useBacktesting } from '@renderer/hooks/useBacktesting';
-import type { Kline } from '@marketmind/types';
+import type { Interval, Kline, MarketType } from '@marketmind/types';
 import type { BacktestResult } from '@marketmind/types';
 import { useEffect, useState } from 'react';
+import { trpc } from '@renderer/utils/trpc';
 import { BacktestChart } from './BacktestChart';
 import { EquityCurveChart } from './EquityCurveChart';
 import { TradeListTable } from '../Backtest/TradeListTable';
@@ -11,14 +12,14 @@ import { TradeListTable } from '../Backtest/TradeListTable';
 interface BacktestResultsProps {
   backtestId: string;
   onClose?: () => void;
-  marketService?: any;
 }
 
-export const BacktestResults = ({ backtestId, onClose, marketService }: BacktestResultsProps) => {
+export const BacktestResults = ({ backtestId, onClose }: BacktestResultsProps) => {
   const { getBacktestResult } = useBacktesting();
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [klines, setKlines] = useState<Kline[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const utils = trpc.useUtils();
 
   useEffect(() => {
     const loadResult = async () => {
@@ -26,16 +27,30 @@ export const BacktestResults = ({ backtestId, onClose, marketService }: Backtest
       const data = await getBacktestResult(backtestId);
       setResult(data);
 
-      if (data && marketService) {
+      if (data) {
         try {
-          const response = await marketService.fetchKlines({
+          const response = await utils.kline.list.fetch({
             symbol: data.config.symbol,
-            interval: data.config.interval,
-            startTime: new Date(data.config.startDate).getTime(),
-            endTime: new Date(data.config.endDate).getTime(),
+            interval: data.config.interval as Interval,
+            marketType: (data.config.marketType as MarketType) || 'SPOT',
+            startTime: new Date(data.config.startDate),
+            endTime: new Date(data.config.endDate),
             limit: 1000,
           });
-          setKlines(response.klines || []);
+          const mappedKlines: Kline[] = response.map(k => ({
+            openTime: new Date(k.openTime).getTime(),
+            closeTime: new Date(k.closeTime).getTime(),
+            open: k.open,
+            high: k.high,
+            low: k.low,
+            close: k.close,
+            volume: k.volume,
+            quoteVolume: k.quoteVolume || '0',
+            trades: k.trades || 0,
+            takerBuyBaseVolume: k.takerBuyBaseVolume || '0',
+            takerBuyQuoteVolume: k.takerBuyQuoteVolume || '0',
+          }));
+          setKlines(mappedKlines);
         } catch (error) {
           console.error('Failed to load klines for backtest chart:', error);
         }
@@ -45,7 +60,7 @@ export const BacktestResults = ({ backtestId, onClose, marketService }: Backtest
     };
 
     loadResult();
-  }, [backtestId, getBacktestResult, marketService]);
+  }, [backtestId, getBacktestResult, utils]);
 
   if (isLoading) {
     return (

@@ -52,6 +52,12 @@ export const useBackendKlines = () => {
       { enabled: !!symbol && !!interval }
     );
 
+  const useSearchSymbols = (query: string, marketType: MarketType = 'SPOT') =>
+    trpc.kline.searchSymbols.useQuery(
+      { query, marketType },
+      { enabled: query.length >= 2 }
+    );
+
   const subscribeStream = trpc.kline.subscribeStream.useMutation();
   const unsubscribeStream = trpc.kline.unsubscribeStream.useMutation();
 
@@ -64,6 +70,7 @@ export const useBackendKlines = () => {
     useKlineList,
     useLatestKline,
     useKlineCount,
+    useSearchSymbols,
   };
 };
 

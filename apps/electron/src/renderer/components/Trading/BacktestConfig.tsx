@@ -8,7 +8,6 @@ import { Checkbox } from '@renderer/components/ui/checkbox';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { useChartContext } from '@renderer/context/ChartContext';
 import { useBacktesting } from '@renderer/hooks/useBacktesting';
-import type { MarketDataService } from '@renderer/services/market/MarketDataService';
 import { useSetupStore } from '@renderer/store/setupStore';
 import type { BacktestConfig as BacktestConfigType } from '@marketmind/types';
 import { BINANCE_DEFAULT_FEES } from '@marketmind/types';
@@ -25,10 +24,9 @@ const OPTIMIZED_SETTINGS = {
 
 interface BacktestConfigProps {
   onBacktestComplete?: (resultId: string) => void;
-  marketService?: MarketDataService; // Optional - only used for SymbolSelector
 }
 
-export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestConfigProps) => {
+export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
   const { chartData } = useChartContext();
   const { runBacktest, isRunningBacktest, runBacktestError } = useBacktesting();
   const { config: setupConfig } = useSetupStore();
@@ -146,7 +144,7 @@ export const BacktestConfig = ({ onBacktestComplete, marketService }: BacktestCo
           Market & Setup Selection
         </Text>
         <HStack gap={2} flexWrap="wrap">
-          <SymbolSelector marketService={marketService} value={symbol} onChange={setSymbol} />
+          <SymbolSelector value={symbol} onChange={setSymbol} />
           <TimeframeSelector selectedTimeframe={interval} onTimeframeChange={setInterval} />
           <SetupTogglePopover />
         </HStack>

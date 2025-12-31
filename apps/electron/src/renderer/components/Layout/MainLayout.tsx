@@ -10,7 +10,6 @@ import { SettingsDialog } from '../Settings/SettingsDialog';
 import { TradingSidebar } from '../Trading/TradingSidebar';
 import { ChartToolsToolbar } from './ChartToolsToolbar';
 import { Toolbar } from './Toolbar';
-import type { MarketDataService } from '../../services/market/MarketDataService';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -19,7 +18,6 @@ interface MainLayoutProps {
   onAdvancedConfigChange: (config: AdvancedControlsConfig) => void;
   isTradingOpen: boolean;
   onToggleTrading: () => void;
-  marketService?: MarketDataService;
   symbol: string;
   marketType?: 'SPOT' | 'FUTURES';
   onMarketTypeChange?: (marketType: 'SPOT' | 'FUTURES') => void;
@@ -68,7 +66,6 @@ export const MainLayout = ({
   onAdvancedConfigChange,
   isTradingOpen,
   onToggleTrading,
-  marketService,
   symbol,
   marketType,
   onMarketTypeChange,
@@ -154,7 +151,6 @@ export const MainLayout = ({
     <GlobalActionsProvider actions={globalActions}>
       <Box width="100vw" height="100vh" overflow="hidden">
         <Toolbar
-          marketService={marketService}
           symbol={symbol}
           marketType={marketType}
           onMarketTypeChange={onMarketTypeChange}

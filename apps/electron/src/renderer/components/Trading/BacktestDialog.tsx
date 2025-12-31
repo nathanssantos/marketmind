@@ -1,15 +1,13 @@
 import { CloseButton } from '@chakra-ui/react';
 import { Dialog } from '@renderer/components/ui/dialog';
-import type { MarketDataService } from '@renderer/services/market/MarketDataService';
 import { BacktestingPanel } from './BacktestingPanel';
 
 interface BacktestDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  marketService?: MarketDataService;
 }
 
-export const BacktestDialog = ({ isOpen, onClose, marketService }: BacktestDialogProps) => {
+export const BacktestDialog = ({ isOpen, onClose }: BacktestDialogProps) => {
   return (
     <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="xl">
       <Dialog.Backdrop />
@@ -27,7 +25,7 @@ export const BacktestDialog = ({ isOpen, onClose, marketService }: BacktestDialo
           </Dialog.Header>
 
           <Dialog.Body overflowY="auto" p={0}>
-            <BacktestingPanel marketService={marketService} />
+            <BacktestingPanel />
           </Dialog.Body>
         </Dialog.Content>
       </Dialog.Positioner>

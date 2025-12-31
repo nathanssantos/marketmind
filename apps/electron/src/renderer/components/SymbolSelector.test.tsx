@@ -2,19 +2,25 @@ import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { MarketDataService } from '../services/market/MarketDataService';
 import { SymbolSelector } from './SymbolSelector';
 
-const mockSearchFn = vi.fn();
-
-vi.mock('../hooks/useSymbolSearch', () => ({
-  useSymbolSearch: vi.fn(() => ({
-    symbols: [
-      { symbol: 'BTCUSDT', displayName: 'Bitcoin / USDT', baseAsset: 'BTC', quoteAsset: 'USDT' },
-      { symbol: 'ETHUSDT', displayName: 'Ethereum / USDT', baseAsset: 'ETH', quoteAsset: 'USDT' },
-    ],
-    loading: false,
-    search: mockSearchFn,
+vi.mock('../hooks/useBackendKlines', () => ({
+  useBackendKlines: vi.fn(() => ({
+    useSearchSymbols: vi.fn(() => ({
+      data: [
+        { symbol: 'BTCUSDT', displayName: 'Bitcoin / USDT', baseAsset: 'BTC', quoteAsset: 'USDT' },
+        { symbol: 'ETHUSDT', displayName: 'Ethereum / USDT', baseAsset: 'ETH', quoteAsset: 'USDT' },
+      ],
+      isLoading: false,
+    })),
+    subscribe: { mutate: vi.fn() },
+    unsubscribe: { mutate: vi.fn() },
+    subscribeStream: { mutate: vi.fn(), isPending: false },
+    unsubscribeStream: { mutate: vi.fn() },
+    backfill: { mutate: vi.fn() },
+    useKlineList: vi.fn(),
+    useLatestKline: vi.fn(),
+    useKlineCount: vi.fn(),
   })),
 }));
 
@@ -29,15 +35,12 @@ vi.mock('@/renderer/components/ui/Tooltip', () => ({
 }));
 
 describe('SymbolSelector', () => {
-  let mockMarketService: MarketDataService;
   let mockOnChange: (symbol: string) => void;
   let user: ReturnType<typeof userEvent.setup>;
 
   beforeEach(() => {
-    mockMarketService = {} as MarketDataService;
     mockOnChange = vi.fn();
     user = userEvent.setup();
-    mockSearchFn.mockClear();
   });
 
   const renderWithChakra = (component: React.ReactElement) => {
@@ -51,7 +54,6 @@ describe('SymbolSelector', () => {
   it('should render symbol selector button', () => {
     renderWithChakra(
       <SymbolSelector
-        marketService={mockMarketService}
         value="BTCUSDT"
         onChange={mockOnChange}
       />
@@ -63,7 +65,6 @@ describe('SymbolSelector', () => {
   it('should display current symbol', () => {
     renderWithChakra(
       <SymbolSelector
-        marketService={mockMarketService}
         value="ETHUSDT"
         onChange={mockOnChange}
       />
@@ -75,7 +76,6 @@ describe('SymbolSelector', () => {
   it('should display symbol without USDT suffix when not in popular list', () => {
     renderWithChakra(
       <SymbolSelector
-        marketService={mockMarketService}
         value="XYZUSDT"
         onChange={mockOnChange}
       />
@@ -87,7 +87,6 @@ describe('SymbolSelector', () => {
   it('should render IconButton with coins icon', () => {
     renderWithChakra(
       <SymbolSelector
-        marketService={mockMarketService}
         value="BTCUSDT"
         onChange={mockOnChange}
       />
@@ -99,7 +98,6 @@ describe('SymbolSelector', () => {
   it('should open popover when button is clicked', async () => {
     renderWithChakra(
       <SymbolSelector
-        marketService={mockMarketService}
         value="BTCUSDT"
         onChange={mockOnChange}
       />
@@ -116,7 +114,6 @@ describe('SymbolSelector', () => {
   it('should show popular symbols initially', async () => {
     renderWithChakra(
       <SymbolSelector
-        marketService={mockMarketService}
         value="BTCUSDT"
         onChange={mockOnChange}
       />
@@ -130,29 +127,9 @@ describe('SymbolSelector', () => {
     });
   });
 
-  it('should call search when typing in search box', async () => {
-    renderWithChakra(
-      <SymbolSelector
-        marketService={mockMarketService}
-        value="BTCUSDT"
-        onChange={mockOnChange}
-      />
-    );
-
-    await user.click(screen.getByRole('button', { name: 'symbolSelector.label' }));
-
-    const searchInput = await screen.findByPlaceholderText('symbolSelector.searchPlaceholder');
-    await user.type(searchInput, 'BTC');
-
-    expect(mockSearchFn).toHaveBeenCalledWith('B');
-    expect(mockSearchFn).toHaveBeenCalledWith('BT');
-    expect(mockSearchFn).toHaveBeenCalledWith('BTC');
-  });
-
   it('should call onChange when selecting a symbol', async () => {
     renderWithChakra(
       <SymbolSelector
-        marketService={mockMarketService}
         value="BTCUSDT"
         onChange={mockOnChange}
       />
@@ -172,7 +149,6 @@ describe('SymbolSelector', () => {
   it('should close popover after selecting a symbol', async () => {
     renderWithChakra(
       <SymbolSelector
-        marketService={mockMarketService}
         value="BTCUSDT"
         onChange={mockOnChange}
       />

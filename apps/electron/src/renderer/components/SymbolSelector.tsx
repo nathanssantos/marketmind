@@ -3,16 +3,11 @@ import type { MarketType } from '@marketmind/types';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuCoins } from 'react-icons/lu';
-import { useSymbolSearch } from '../hooks/useSymbolSearch';
-import type { MarketDataService } from '../services/market/MarketDataService';
-import { MarketDataService as MarketDataServiceClass } from '../services/market/MarketDataService';
-import { BinanceProvider } from '../services/market/providers/BinanceProvider';
-import { BinanceFuturesProvider } from '../services/market/providers/BinanceFuturesProvider';
+import { useBackendKlines } from '../hooks/useBackendKlines';
 import { Popover } from './ui/popover';
 import { TooltipWrapper } from './ui/Tooltip';
 
 interface SymbolSelectorProps {
-  marketService?: MarketDataService;
   value: string;
   onChange: (symbol: string, marketType?: MarketType) => void;
   marketType?: MarketType;
@@ -42,18 +37,7 @@ const POPULAR_FUTURES_SYMBOLS = [
   { symbol: 'AVAXUSDT', displayName: 'Avalanche / USDT FUTURES', baseAsset: 'AVAX', quoteAsset: 'USDT' },
 ];
 
-const createDefaultMarketService = (marketType: MarketType = 'SPOT'): MarketDataService => {
-  const provider = marketType === 'FUTURES' ? new BinanceFuturesProvider() : new BinanceProvider();
-  return new MarketDataServiceClass({
-    primaryProvider: provider,
-    fallbackProviders: [],
-    enableCache: true,
-    cacheDuration: 60 * 1000,
-  });
-};
-
 export function SymbolSelector({
-  marketService: providedMarketService,
   value,
   onChange,
   marketType: externalMarketType,
@@ -69,29 +53,20 @@ export function SymbolSelector({
   const isFutures = marketType === 'FUTURES';
   const popularSymbols = isFutures ? POPULAR_FUTURES_SYMBOLS : POPULAR_SPOT_SYMBOLS;
 
-  const marketService = useMemo(
-    () => providedMarketService || createDefaultMarketService(marketType),
-    [providedMarketService, marketType]
-  );
-
-  const { symbols, loading, search } = useSymbolSearch(marketService, {
-    minQueryLength: 2,
-    debounceMs: 300,
-  });
+  const { useSearchSymbols } = useBackendKlines();
+  const searchResult = useSearchSymbols(searchQuery, marketType);
 
   const displaySymbols = useMemo(() => {
-    if (searchQuery.length >= 2) {
+    if (searchQuery.length >= 2 && searchResult.data) {
       return isFutures
-        ? symbols.map(s => ({ ...s, displayName: `${s.displayName} FUTURES` }))
-        : symbols;
+        ? searchResult.data.map(s => ({ ...s, displayName: `${s.displayName} FUTURES` }))
+        : searchResult.data;
     }
     return popularSymbols;
-  }, [searchQuery, symbols, popularSymbols, isFutures]);
+  }, [searchQuery, searchResult.data, popularSymbols, isFutures]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    search(query);
+    setSearchQuery(e.target.value);
   };
 
   const handleMarketTypeToggle = (newType: MarketType) => {
@@ -180,13 +155,13 @@ export function SymbolSelector({
         </Box>
 
         <Box overflowY="auto" flex={1}>
-          {loading && (
+          {searchResult.isLoading && (
             <Flex align="center" justify="center" py={4}>
               <Spinner size="sm" />
             </Flex>
           )}
 
-          {!loading && displaySymbols.length === 0 && (
+          {!searchResult.isLoading && displaySymbols.length === 0 && (
             <Box p={4} textAlign="center">
               <Text color="fg.muted" fontSize="xs">
                 {searchQuery.length >= 2 ? t('symbolSelector.noSymbolsFound') : t('common.typeToSearch')}
@@ -194,7 +169,7 @@ export function SymbolSelector({
             </Box>
           )}
 
-          {!loading && displaySymbols.length > 0 && (
+          {!searchResult.isLoading && displaySymbols.length > 0 && (
             <VStack gap={0} align="stretch">
               {displaySymbols.slice(0, 20).map((symbol) => (
                 <Box

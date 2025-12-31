@@ -14,7 +14,6 @@ import {
   LuSettings
 } from 'react-icons/lu';
 import { useChartWindows } from '../../hooks/useChartWindows';
-import type { MarketDataService } from '../../services/market/MarketDataService';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { SymbolSelector } from '../SymbolSelector';
@@ -24,7 +23,6 @@ import { TooltipWrapper } from '../ui/Tooltip';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 
 export interface ToolbarProps {
-  marketService?: MarketDataService;
   symbol: string;
   marketType?: 'SPOT' | 'FUTURES';
   onMarketTypeChange?: (marketType: 'SPOT' | 'FUTURES') => void;
@@ -62,7 +60,6 @@ export interface ToolbarProps {
 }
 
 export const Toolbar = memo(({
-  marketService,
   symbol,
   marketType,
   onMarketTypeChange,
@@ -161,7 +158,6 @@ export const Toolbar = memo(({
 
         <Box flexShrink={0}>
           <SymbolSelector
-            marketService={marketService}
             value={symbol}
             marketType={marketType}
             onMarketTypeChange={onMarketTypeChange}

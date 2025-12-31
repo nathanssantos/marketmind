@@ -8,8 +8,29 @@ import { logger, serializeError } from './logger';
 
 const FUTURES_BASE_URL = 'https://fapi.binance.com';
 const RATE_LIMIT_DELAY = 100;
+const FETCH_TIMEOUT = 15000;
+const MAX_RETRIES = 3;
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+const fetchWithRetry = async (url: string, retries = MAX_RETRIES): Promise<Response> => {
+  for (let i = 0; i < retries; i++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      return response;
+    } catch (error) {
+      clearTimeout(timeout);
+      if (i === retries - 1) throw error;
+      const delay = 1000 * Math.pow(2, i);
+      logger.warn({ url, attempt: i + 1, retries, delay }, 'Fetch failed, retrying...');
+      await sleep(delay);
+    }
+  }
+  throw new Error('Max retries exceeded');
+};
 
 interface BinanceFundingRateResponse {
   symbol: string;
@@ -54,7 +75,7 @@ export class BinanceFuturesDataService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(
+      const response = await fetchWithRetry(
         `${FUTURES_BASE_URL}/fapi/v1/fundingRate?symbol=${symbol}&limit=100`
       );
 
@@ -85,7 +106,7 @@ export class BinanceFuturesDataService {
     markPrice: number;
   } | null> {
     try {
-      const premiumResponse = await fetch(`${FUTURES_BASE_URL}/fapi/v1/premiumIndex?symbol=${symbol}`);
+      const premiumResponse = await fetchWithRetry(`${FUTURES_BASE_URL}/fapi/v1/premiumIndex?symbol=${symbol}`);
 
       if (!premiumResponse.ok) return null;
 
@@ -108,7 +129,7 @@ export class BinanceFuturesDataService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(
+      const response = await fetchWithRetry(
         `${FUTURES_BASE_URL}/futures/data/openInterestHist?symbol=${symbol}&period=5m&limit=100`
       );
 
@@ -137,7 +158,7 @@ export class BinanceFuturesDataService {
     timestamp: number;
   } | null> {
     try {
-      const response = await fetch(
+      const response = await fetchWithRetry(
         `${FUTURES_BASE_URL}/fapi/v1/openInterest?symbol=${symbol}`
       );
 
@@ -165,7 +186,7 @@ export class BinanceFuturesDataService {
       if (startTime) url += `&startTime=${startTime}`;
       if (endTime) url += `&endTime=${endTime}`;
 
-      const response = await fetch(url);
+      const response = await fetchWithRetry(url);
 
       if (!response.ok) {
         logger.warn({ symbol, status: response.status }, 'Failed to fetch liquidations');
@@ -217,7 +238,7 @@ export class BinanceFuturesDataService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(
+      const response = await fetchWithRetry(
         `${FUTURES_BASE_URL}/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=${period}&limit=100`
       );
 
@@ -254,7 +275,7 @@ export class BinanceFuturesDataService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(
+      const response = await fetchWithRetry(
         `${FUTURES_BASE_URL}/futures/data/topLongShortAccountRatio?symbol=${symbol}&period=${period}&limit=100`
       );
 
@@ -291,7 +312,7 @@ export class BinanceFuturesDataService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(
+      const response = await fetchWithRetry(
         `${FUTURES_BASE_URL}/futures/data/takerlongshortRatio?symbol=${symbol}&period=${period}&limit=100`
       );
 
@@ -366,7 +387,7 @@ export class BinanceFuturesDataService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(`${FUTURES_BASE_URL}/fapi/v1/exchangeInfo`);
+      const response = await fetchWithRetry(`${FUTURES_BASE_URL}/fapi/v1/exchangeInfo`);
 
       if (!response.ok) {
         logger.warn({ status: response.status }, 'Failed to fetch futures exchange info');
@@ -439,7 +460,7 @@ export class BinanceFuturesDataService {
       if (startTime) url += `&startTime=${startTime}`;
       if (endTime) url += `&endTime=${endTime}`;
 
-      const response = await fetch(url);
+      const response = await fetchWithRetry(url);
 
       if (!response.ok) {
         logger.warn({ symbol, status: response.status }, 'Failed to fetch historical funding rates');
@@ -486,7 +507,7 @@ export class BinanceFuturesDataService {
       if (startTime) url += `&startTime=${startTime}`;
       if (endTime) url += `&endTime=${endTime}`;
 
-      const response = await fetch(url);
+      const response = await fetchWithRetry(url);
 
       if (!response.ok) {
         logger.warn({ symbol, interval, status: response.status }, 'Failed to fetch futures klines');
@@ -525,7 +546,7 @@ export class BinanceFuturesDataService {
     time: number;
   } | null> {
     try {
-      const response = await fetch(`${FUTURES_BASE_URL}/fapi/v1/premiumIndex?symbol=${symbol}`);
+      const response = await fetchWithRetry(`${FUTURES_BASE_URL}/fapi/v1/premiumIndex?symbol=${symbol}`);
 
       if (!response.ok) return null;
 
@@ -567,7 +588,7 @@ export class BinanceFuturesDataService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(`${FUTURES_BASE_URL}/fapi/v1/premiumIndex`);
+      const response = await fetchWithRetry(`${FUTURES_BASE_URL}/fapi/v1/premiumIndex`);
 
       if (!response.ok) {
         logger.warn({ status: response.status }, 'Failed to fetch all mark prices');

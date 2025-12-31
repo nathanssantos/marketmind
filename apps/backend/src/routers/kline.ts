@@ -17,6 +17,10 @@ const intervalSchema = z.enum([
 
 const marketTypeSchema = z.enum(['SPOT', 'FUTURES']).default('SPOT');
 
+const symbolsCache = new Map<string, any[]>();
+const symbolsCacheTime = new Map<string, number>();
+const SYMBOLS_CACHE_DURATION = 5 * 60 * 1000;
+
 const subscribeToStream = (symbol: string, interval: string, marketType: MarketType): void => {
   if (marketType === 'FUTURES') {
     binanceFuturesKlineStreamService.subscribe(symbol, interval);
@@ -272,5 +276,57 @@ export const klineRouter = router({
         nextExpectedOpen,
         serverTime: now,
       };
+    }),
+
+  searchSymbols: protectedProcedure
+    .input(
+      z.object({
+        query: z.string().min(1).max(20),
+        marketType: marketTypeSchema,
+      })
+    )
+    .query(async ({ input }) => {
+      const marketType = input.marketType as MarketType;
+      const cacheKey = `symbols_${marketType}`;
+
+      let symbols = symbolsCache.get(cacheKey);
+      const cacheTime = symbolsCacheTime.get(cacheKey) ?? 0;
+      const now = Date.now();
+
+      if (!symbols || now - cacheTime > SYMBOLS_CACHE_DURATION) {
+        const baseUrl = marketType === 'FUTURES'
+          ? 'https://fapi.binance.com/fapi/v1/exchangeInfo'
+          : 'https://api.binance.com/api/v3/exchangeInfo';
+
+        const response = await fetch(baseUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch exchange info: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const fetchedSymbols = data.symbols
+          .filter((s: any) => s.status === 'TRADING' || s.contractStatus === 'TRADING')
+          .map((s: any) => ({
+            symbol: s.symbol,
+            baseAsset: s.baseAsset,
+            quoteAsset: s.quoteAsset,
+            displayName: `${s.baseAsset}/${s.quoteAsset}`,
+          }));
+
+        symbolsCache.set(cacheKey, fetchedSymbols);
+        symbolsCacheTime.set(cacheKey, now);
+        symbols = fetchedSymbols;
+        logger.info({ marketType, count: fetchedSymbols.length }, 'Cached exchange symbols');
+      }
+
+      const query = input.query.toUpperCase();
+      const symbolList = symbols ?? [];
+      const filtered = symbolList.filter((s: any) =>
+        s.symbol.includes(query) ||
+        s.baseAsset.includes(query) ||
+        s.quoteAsset.includes(query)
+      );
+
+      return filtered.slice(0, 50);
     }),
 });
