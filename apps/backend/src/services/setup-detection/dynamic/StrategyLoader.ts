@@ -9,6 +9,7 @@ import type {
   StrategyValidationError,
   StrategyStatus,
 } from '@marketmind/types';
+import { logger } from '../../logger';
 
 export interface StrategyLoadOptions {
   includeStatuses?: StrategyStatus[];
@@ -57,7 +58,7 @@ export class StrategyLoader {
             definitions.push(definition);
           }
         } catch (error) {
-          console.error(`Failed to load strategy from ${filePath}:`, error);
+          logger.error({ filePath, error: error instanceof Error ? error.message : String(error) }, 'Failed to load strategy');
         }
       }
     }
@@ -232,7 +233,7 @@ export class StrategyLoader {
             const strategies = await this.loadAll();
             callback(strategies);
           } catch (error) {
-            console.error('Error reloading strategies:', error);
+            logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Error reloading strategies');
           }
         }
       );

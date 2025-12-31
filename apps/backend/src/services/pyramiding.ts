@@ -367,7 +367,12 @@ export class PyramidingService {
 
     try {
       currentPrice = await positionMonitorService.getCurrentPrice(symbol, marketType);
-    } catch {
+    } catch (error) {
+      logger.warn({
+        symbol,
+        marketType,
+        error: error instanceof Error ? error.message : String(error),
+      }, 'Failed to get current price for pyramiding, using entry price');
       currentPrice = entryPrice;
     }
 

@@ -1,4 +1,5 @@
 import type { Kline, StrategyDefinition, TradingSetup } from '@marketmind/types';
+import { logger } from '../logger';
 import { StrategyInterpreter, StrategyLoader } from './dynamic';
 
 export interface SetupDetectionConfig {
@@ -28,8 +29,7 @@ export class SetupDetectionService {
 
   private debugLog(...args: unknown[]): void {
     if (!DEBUG_ENABLED) return;
-    const timestamp = new Date().toLocaleTimeString();
-    console.log(`[SetupDetection ${timestamp}]`, ...args);
+    logger.debug({ args }, '[SetupDetection]');
   }
 
   constructor(config?: Partial<SetupDetectionConfig>) {

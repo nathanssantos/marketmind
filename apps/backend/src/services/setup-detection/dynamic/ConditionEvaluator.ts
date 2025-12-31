@@ -13,6 +13,7 @@ import {
   isParameterReference,
 } from '@marketmind/types';
 
+import { logger } from '../../logger';
 import type { IndicatorEngine } from './IndicatorEngine';
 
 const MATH_EXPRESSION_REGEX = /^(.+?)\s*([*+\-/])\s*(\d+\.?\d*)$/;
@@ -341,7 +342,7 @@ export class ConditionEvaluator {
       return evaluateTokens(tokens);
       
     } catch (error) {
-      console.error('Error evaluating calc expression:', expression, error);
+      logger.error({ expression, error: error instanceof Error ? error.message : String(error) }, 'Error evaluating calc expression');
       return null;
     }
   }

@@ -52,8 +52,9 @@ const log = (message: string, data?: Record<string, unknown>): void => {
 
   try {
     ensureLogDir();
-    fs.appendFileSync(LOG_FILE, `${logLine  }\n`);
-  } catch {
+    fs.appendFileSync(LOG_FILE, `${logLine}\n`);
+  } catch (error) {
+    console.error('[Auto-Trading] Failed to write to log file:', error instanceof Error ? error.message : String(error));
   }
 };
 
@@ -68,6 +69,7 @@ interface ActiveWatcher {
   profileName?: string;
   intervalId: ReturnType<typeof setInterval>;
   lastProcessedTime: number;
+  lastProcessedCandleOpenTime?: number;
 }
 
 const INTERVAL_TO_MS: Record<string, number> = {
@@ -447,13 +449,30 @@ export class AutoTradingScheduler {
       const isCandleClosed = now >= safeCloseTime;
 
       if (!isCandleClosed) {
+        const remainingMs = safeCloseTime - now;
         log('⏳ Waiting for candle to close (with safety buffer)', {
           symbol: watcher.symbol,
           interval: watcher.interval,
           candleOpenTime: new Date(lastCandle.openTime).toISOString(),
           candleCloseTime: new Date(candleCloseTime).toISOString(),
           safeCloseTime: new Date(safeCloseTime).toISOString(),
-          remainingMs: safeCloseTime - now,
+          remainingMs,
+        });
+
+        if (remainingMs > 0 && remainingMs < 10000) {
+          setTimeout(() => {
+            log('🔄 Retrying after candle close buffer', { watcherId, symbol: watcher.symbol });
+            void this.processWatcher(watcherId);
+          }, remainingMs + 100);
+        }
+
+        return;
+      }
+
+      if (watcher.lastProcessedCandleOpenTime === lastCandle.openTime) {
+        log('⏭️ Candle already processed, skipping', {
+          symbol: watcher.symbol,
+          candleOpenTime: new Date(lastCandle.openTime).toISOString(),
         });
         return;
       }
@@ -498,6 +517,8 @@ export class AutoTradingScheduler {
           });
         }
       }
+
+      watcher.lastProcessedCandleOpenTime = lastCandle.openTime;
 
       if (detectedSetups.length === 0) {
         log('📭 No setups found');

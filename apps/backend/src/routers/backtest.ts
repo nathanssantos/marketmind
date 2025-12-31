@@ -2,6 +2,7 @@ import type { Interval, BacktestConfig, BacktestResult } from '@marketmind/types
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { BacktestEngine } from '../services/backtesting/BacktestEngine';
+import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
 
@@ -72,8 +73,13 @@ export const backtestRouter = router({
           startTime: new Date().toISOString(),
         });
 
-        console.log('[Backtest] Starting backtest', backtestId, 'for', input.symbol, input.interval);
-        console.log('[Backtest] Date range:', input.startDate, 'to', input.endDate);
+        logger.info({
+          backtestId,
+          symbol: input.symbol,
+          interval: input.interval,
+          startDate: input.startDate,
+          endDate: input.endDate,
+        }, 'Starting backtest');
 
         const config: BacktestConfig = {
           symbol: input.symbol,
@@ -111,19 +117,25 @@ export const backtestRouter = router({
           duration: Date.now() - startTime,
         });
 
-        console.log('[Backtest] Completed successfully');
-        console.log('[Backtest] Results:', {
+        logger.info({
+          backtestId,
           trades: result.trades.length,
-          winRate: `${result.metrics.winRate.toFixed(2)}%`,
-          totalPnl: `${result.metrics.totalPnl.toFixed(2)} USDT (${result.metrics.totalPnlPercent.toFixed(2)}%)`,
-          finalEquity: `${(input.initialCapital + result.metrics.totalPnl).toFixed(2)} USDT`,
-          maxDrawdown: `${result.metrics.maxDrawdown.toFixed(2)} USDT (${result.metrics.maxDrawdownPercent.toFixed(2)}%)`,
-          profitFactor: result.metrics.profitFactor.toFixed(2),
-        });
+          winRate: result.metrics.winRate,
+          totalPnl: result.metrics.totalPnl,
+          totalPnlPercent: result.metrics.totalPnlPercent,
+          finalEquity: input.initialCapital + result.metrics.totalPnl,
+          maxDrawdown: result.metrics.maxDrawdown,
+          maxDrawdownPercent: result.metrics.maxDrawdownPercent,
+          profitFactor: result.metrics.profitFactor,
+        }, 'Backtest completed successfully');
 
         return getCacheEntry(backtestId);
       } catch (error) {
-        console.error('[Backtest] Error:', error);
+        logger.error({
+          backtestId,
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        }, 'Backtest failed');
 
         setCacheEntry(backtestId, {
           id: backtestId,

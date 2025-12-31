@@ -9,17 +9,17 @@ import {
 } from '../db/schema';
 import { riskManagerService } from '../services/risk-manager';
 import { autoTradingScheduler } from '../services/auto-trading-scheduler';
+import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
 import { transformAutoTradingConfig, parseEnabledSetupTypes, stringifyEnabledSetupTypes } from '../utils/profile-transformers';
 import { walletQueries } from '../services/database/walletQueries';
 
 const log = (message: string, data?: Record<string, unknown>): void => {
-  const timestamp = new Date().toISOString();
   if (data) {
-    console.log(`[Auto-Trading] [${timestamp}] ${message}`, JSON.stringify(data, null, 2));
+    logger.info(data, `[Auto-Trading] ${message}`);
   } else {
-    console.log(`[Auto-Trading] [${timestamp}] ${message}`);
+    logger.info(`[Auto-Trading] ${message}`);
   }
 };
 
