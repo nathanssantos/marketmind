@@ -7,8 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.38.0] - 2025-12-30
+
+### Changed
+- **Frontend API Migration Complete** 🔒
+  - All external API calls now route through the backend
+  - No more direct Binance/CoinGecko calls from frontend
+  - Frontend communicates exclusively via tRPC and Socket.IO
+  - Improved security: credentials never exposed in frontend code
+  - Centralized rate limiting and retry logic in backend
+
 ### Added
-- **Scalable Connection Management** 🔌 🆕
+- **Network Resilience for Binance API** 🌐
+  - `fetchWithRetry` function with exponential backoff (1s, 2s, 4s delays)
+  - 15-second timeout with AbortController for all Binance API calls
+  - 3 retry attempts before failing
+  - Applied to all endpoints in `binance-futures-data.ts`
+  - Fixes funding rate timeout errors
+
+- **Scalable Connection Management** 🔌
   - Pool PostgreSQL escalável: max 50 conexões, min 0 (cria sob demanda)
   - Conexões idle fecham automaticamente após 10s
   - Logging em tempo real de conexões (acquire/remove)
@@ -76,6 +95,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - FullChart component (171 lines) for production trading
   - Performance benchmarks showing 638% improvement with multi-layer rendering
   - Complete chart infrastructure for advanced backtesting
+
+### Removed
+- **Dead Code Cleanup** 🧹
+  - Removed `TradingFeeService.ts` (was never used)
+  - Removed `IndexedDBCache.ts` (replaced by PostgreSQL)
+  - Removed `services/market/` directory (providers, MarketDataService)
+  - Removed obsolete hooks: `useMarketData`, `useSymbolSearch`, `useRealtimeKline`
+  - Removed `marketService` prop from Toolbar, MainLayout, BacktestDialog
+  - All related test files also removed
+
+### Fixed
+- **Funding Rate Timeout Error**
+  - ConnectTimeoutError for `/fapi/v1/premiumIndex` endpoint
+  - Now retries with exponential backoff instead of failing immediately
+
+---
 
 ## [0.32.0] - 2025-01-01
 
