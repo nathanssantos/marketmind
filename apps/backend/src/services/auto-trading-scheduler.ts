@@ -22,7 +22,7 @@ import {
 import { env } from '../env';
 import { autoTradingService } from './auto-trading';
 import { ocoOrderService } from './oco-orders';
-import { backfillHistoricalKlines, calculateStartTime } from './binance-historical';
+import { smartBackfillKlines } from './binance-historical';
 import { cooldownService } from './cooldown';
 import { positionMonitorService } from './position-monitor';
 import { pyramidingService } from './pyramiding';
@@ -372,20 +372,25 @@ export class AutoTradingScheduler {
       });
 
       if (klinesData.length < minRequired) {
-        log('📥 Insufficient klines data, fetching historical...', { count: klinesData.length, required: minRequired, target: requiredKlines });
+        log('📥 Insufficient klines data, using smart backfill...', { count: klinesData.length, required: minRequired, target: requiredKlines });
         try {
-          const startTime = calculateStartTime(watcher.interval as Interval, requiredKlines);
-          const inserted = await backfillHistoricalKlines(
+          const result = await smartBackfillKlines(
             watcher.symbol,
             watcher.interval as Interval,
-            startTime,
-            new Date(),
+            requiredKlines,
             watcher.marketType
           );
-          log('✅ Historical klines fetched', { symbol: watcher.symbol, interval: watcher.interval, inserted });
+          log('✅ Smart backfill complete', {
+            symbol: watcher.symbol,
+            interval: watcher.interval,
+            downloaded: result.downloaded,
+            totalInDb: result.totalInDb,
+            gaps: result.gaps,
+            alreadyComplete: result.alreadyComplete,
+          });
 
-          if (inserted < minRequired) {
-            log('⚠️ Still insufficient klines after backfill', { inserted });
+          if (result.totalInDb < minRequired) {
+            log('⚠️ Still insufficient klines after backfill', { totalInDb: result.totalInDb });
             return;
           }
 
