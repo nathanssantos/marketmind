@@ -185,5 +185,21 @@
       "period": 200,
       "allowCounterTrend": true
     }
+  },
+  "education": {
+    "origin": "Larry Connors - 'Short-Term Trading Strategies That Work' (2008)",
+    "createdYear": 2008,
+    "candlePattern": {
+      "lookback": 1,
+      "candles": [
+        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.percentB.candleTrigger" }
+      ],
+      "indicatorsToShow": ["percentB", "sma200", "atr"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.percentB.summary",
+      "entryKey": "strategies.percentB.entry",
+      "exitKey": "strategies.percentB.exit"
+    }
   }
 }

@@ -1,9 +1,16 @@
-import type { TradingSetup } from '@marketmind/types';
+import type {
+  StrategyEducation,
+  StrategyPerformanceStats,
+  StrategyVisualizationData,
+  TradingSetup,
+  TriggerCandleSnapshot,
+  TriggerIndicatorValues,
+} from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
-import { klines } from '../db/schema';
+import { klines, strategyPerformance, tradeExecutions } from '../db/schema';
 import { StrategyInterpreter, StrategyLoader } from '../services/setup-detection/dynamic';
 import { protectedProcedure, publicProcedure, router } from '../trpc';
 import { mapDbKlinesToApi } from '../utils/kline-mapper';
@@ -199,7 +206,7 @@ export const setupDetectionRouter = router({
     .input(z.object({ strategyJson: z.string() }))
     .mutation(async ({ input }) => {
       const loader = new StrategyLoader([]);
-      
+
       try {
         const strategy = loader.loadFromString(input.strategyJson);
         const validation = loader.validateStrategy(strategy);
@@ -224,5 +231,95 @@ export const setupDetectionRouter = router({
           strategy: null,
         };
       }
+    }),
+
+  getStrategyEducation: publicProcedure
+    .input(z.object({ strategyId: z.string() }))
+    .query(async ({ input }): Promise<{ education: StrategyEducation | null; strategyName: string }> => {
+      const loader = new StrategyLoader([STRATEGIES_DIR]);
+      const strategies = await loader.loadAll({ includeUnprofitable: true });
+      const strategy = strategies.find((s) => s.id === input.strategyId);
+
+      if (!strategy) {
+        return { education: null, strategyName: input.strategyId };
+      }
+
+      return {
+        education: strategy.education ?? null,
+        strategyName: strategy.name,
+      };
+    }),
+
+  getTradeVisualizationData: protectedProcedure
+    .input(z.object({
+      executionId: z.string(),
+      symbol: z.string().optional(),
+      interval: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }): Promise<StrategyVisualizationData | null> => {
+      const execution = await ctx.db.query.tradeExecutions.findFirst({
+        where: and(
+          eq(tradeExecutions.id, input.executionId),
+          eq(tradeExecutions.userId, ctx.user.id),
+        ),
+      });
+
+      if (!execution) return null;
+
+      const loader = new StrategyLoader([STRATEGIES_DIR]);
+      const strategies = await loader.loadAll({ includeUnprofitable: true });
+      const strategy = strategies.find((s) => s.id === execution.setupType);
+
+      let patternCandles: TriggerCandleSnapshot[] = [];
+      let indicatorValues: TriggerIndicatorValues = {};
+
+      if (execution.triggerCandleData) {
+        try {
+          patternCandles = JSON.parse(execution.triggerCandleData) as TriggerCandleSnapshot[];
+        } catch {
+          patternCandles = [];
+        }
+      }
+
+      if (execution.triggerIndicatorValues) {
+        try {
+          indicatorValues = JSON.parse(execution.triggerIndicatorValues) as TriggerIndicatorValues;
+        } catch {
+          indicatorValues = {};
+        }
+      }
+
+      let performance: StrategyPerformanceStats | null = null;
+      if (execution.setupType && (input.symbol || execution.symbol)) {
+        const perfRecord = await ctx.db.query.strategyPerformance.findFirst({
+          where: and(
+            eq(strategyPerformance.strategyId, execution.setupType),
+            eq(strategyPerformance.symbol, input.symbol ?? execution.symbol),
+          ),
+        });
+
+        if (perfRecord) {
+          performance = {
+            totalTrades: perfRecord.totalTrades,
+            winRate: parseFloat(perfRecord.winRate),
+            avgWinPercent: parseFloat(perfRecord.avgWin),
+            avgLossPercent: parseFloat(perfRecord.avgLoss),
+            avgRiskReward: parseFloat(perfRecord.avgRr),
+            maxDrawdown: parseFloat(perfRecord.maxDrawdown),
+            lastTradeAt: perfRecord.lastTradeAt?.toISOString(),
+          };
+        }
+      }
+
+      return {
+        strategyId: execution.setupType ?? 'unknown',
+        strategyName: strategy?.name ?? execution.setupType ?? 'Unknown Strategy',
+        triggerKlineIndex: execution.triggerKlineIndex ?? 0,
+        triggerOpenTime: execution.triggerKlineOpenTime ?? execution.openedAt.getTime(),
+        patternCandles,
+        indicatorValues,
+        education: strategy?.education ?? null,
+        performance,
+      };
     }),
 });

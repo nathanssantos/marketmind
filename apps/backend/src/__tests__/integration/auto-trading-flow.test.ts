@@ -1,10 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { eq, and, desc } from 'drizzle-orm';
 import { getTestDatabase, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
-import { createTestUser, createTestWallet, createTestSession, createTestTradingProfile } from '../helpers/test-fixtures';
+import { createTestUser, createTestWallet, createTestTradingProfile } from '../helpers/test-fixtures';
 import * as schema from '../../db/schema';
 import { generateEntityId } from '../../utils/id';
-import type { Kline as KlineType } from '@marketmind/types';
 
 vi.mock('../../services/binance-kline-stream', () => ({
   binanceKlineStreamService: {

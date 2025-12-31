@@ -11,15 +11,7 @@ import {
   createFuturesConfigUpdateEvent,
 } from '../helpers/binance-mock';
 
-interface MockWebSocketClient {
-  on: ReturnType<typeof vi.fn>;
-  subscribeUsdFuturesUserDataStream: ReturnType<typeof vi.fn>;
-  closeAll: ReturnType<typeof vi.fn>;
-  handlers: Record<string, ((data: unknown) => void)[]>;
-  emit: (event: string, data: unknown) => void;
-}
-
-const { MockWebsocketClient, getMockWsClient, setMockWsClient } = vi.hoisted(() => {
+const { MockWebsocketClient, getMockWsClient, setMockWsClient: _setMockWsClient } = vi.hoisted(() => {
   let mockWsClient: MockWebSocketClient | undefined;
 
   interface MockWebSocketClient {

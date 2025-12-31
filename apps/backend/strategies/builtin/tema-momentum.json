@@ -166,5 +166,22 @@
       "period": 200,
       "allowCounterTrend": false
     }
+  },
+  "education": {
+    "origin": "Patrick Mulloy - Triple Exponential Moving Average (1994)",
+    "createdYear": 1994,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        { "offset": -1, "role": "reference", "descriptionKey": "strategies.tema.candleMinus1" },
+        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.tema.candleTrigger" }
+      ],
+      "indicatorsToShow": ["tema", "atr"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.tema.summary",
+      "entryKey": "strategies.tema.entry",
+      "exitKey": "strategies.tema.exit"
+    }
   }
 }

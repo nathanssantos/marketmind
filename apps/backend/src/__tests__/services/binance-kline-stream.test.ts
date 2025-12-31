@@ -105,7 +105,7 @@ describe('BinanceKlineStreamService', () => {
 
       const subs = service.getActiveSubscriptions();
       expect(subs).toHaveLength(1);
-      expect(subs[0].clients).toBe(2);
+      expect(subs[0]!.clients).toBe(2);
     });
 
     it('should not subscribe if client not initialized', () => {
@@ -133,7 +133,7 @@ describe('BinanceKlineStreamService', () => {
 
       const subs = service.getActiveSubscriptions();
       expect(subs).toHaveLength(1);
-      expect(subs[0].clients).toBe(1);
+      expect(subs[0]!.clients).toBe(1);
     });
 
     it('should remove subscription when count reaches zero', () => {
@@ -265,7 +265,7 @@ describe('BinanceFuturesKlineStreamService', () => {
 
       const subs = service.getActiveSubscriptions();
       expect(subs).toHaveLength(1);
-      expect(subs[0].clients).toBe(2);
+      expect(subs[0]!.clients).toBe(2);
     });
   });
 
@@ -278,7 +278,7 @@ describe('BinanceFuturesKlineStreamService', () => {
 
       const subs = service.getActiveSubscriptions();
       expect(subs).toHaveLength(1);
-      expect(subs[0].clients).toBe(1);
+      expect(subs[0]!.clients).toBe(1);
     });
 
     it('should remove subscription when count reaches zero', () => {

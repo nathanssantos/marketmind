@@ -1,6 +1,17 @@
 import { vi } from 'vitest';
 
-export const createBinanceFuturesMock = () => ({
+export interface BinanceFuturesMock {
+  newOrder: ReturnType<typeof vi.fn>;
+  cancelOrder: ReturnType<typeof vi.fn>;
+  getAllOpenOrders: ReturnType<typeof vi.fn>;
+  getPositions: ReturnType<typeof vi.fn>;
+  getBalance: ReturnType<typeof vi.fn>;
+  setLeverage: ReturnType<typeof vi.fn>;
+  setMarginType: ReturnType<typeof vi.fn>;
+  getAccountInformation: ReturnType<typeof vi.fn>;
+}
+
+export const createBinanceFuturesMock = (): BinanceFuturesMock => ({
   newOrder: vi.fn().mockResolvedValue({ orderId: 123456789, status: 'NEW' }),
   cancelOrder: vi.fn().mockResolvedValue({ orderId: 123456789, status: 'CANCELED' }),
   getAllOpenOrders: vi.fn().mockResolvedValue([]),
@@ -15,7 +26,14 @@ export const createBinanceFuturesMock = () => ({
   }),
 });
 
-export const createBinanceSpotMock = () => ({
+export interface BinanceSpotMock {
+  newOrder: ReturnType<typeof vi.fn>;
+  cancelOrder: ReturnType<typeof vi.fn>;
+  getAllOpenOrders: ReturnType<typeof vi.fn>;
+  getAccountInfo: ReturnType<typeof vi.fn>;
+}
+
+export const createBinanceSpotMock = (): BinanceSpotMock => ({
   newOrder: vi.fn().mockResolvedValue({ orderId: 123456789, status: 'NEW' }),
   cancelOrder: vi.fn().mockResolvedValue({ orderId: 123456789, status: 'CANCELED' }),
   getAllOpenOrders: vi.fn().mockResolvedValue([]),

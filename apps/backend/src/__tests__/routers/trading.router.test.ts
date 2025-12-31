@@ -81,7 +81,7 @@ describe('Trading Router', () => {
     });
 
     it('should not allow creating order for another user wallet', async () => {
-      const { user: user1, session: session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
+      const { user: user1, session: _session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
       const { user: user2, session: session2 } = await createAuthenticatedUser({ email: 'user2@test.com' });
 
       const wallet = await createTestWallet({ userId: user1.id, walletType: 'paper' });
@@ -521,8 +521,8 @@ describe('Trading Router', () => {
         walletId: wallet.id,
       });
 
-      expect(parseFloat(result.totalWalletBalance)).toBe(10000);
-      expect(parseFloat(result.availableBalance)).toBe(10000);
+      expect(parseFloat(result.totalWalletBalance as string)).toBe(10000);
+      expect(parseFloat(result.availableBalance as string)).toBe(10000);
       expect(result.positions).toEqual([]);
     });
   });

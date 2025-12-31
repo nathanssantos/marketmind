@@ -5,35 +5,6 @@ import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpe
 import * as schema from '../../db/schema';
 import type { Interval } from '@marketmind/types';
 
-const mockStrategies = [
-  {
-    id: 'test-strategy-1',
-    name: 'Test Strategy 1',
-    version: '1.0.0',
-    description: 'A test strategy',
-    author: 'Test Author',
-    tags: ['test', 'strategy'],
-    status: 'active',
-    recommendedTimeframes: ['1h', '4h'],
-    optimizedParams: {},
-    conditions: { entry: { long: [], short: [] }, exit: { long: [], short: [] } },
-    risk: { stopLoss: { method: 'fixed', value: 2 }, takeProfit: { method: 'fixed', value: 4 } },
-  },
-  {
-    id: 'test-strategy-2',
-    name: 'Test Strategy 2',
-    version: '1.0.0',
-    description: 'Another test strategy',
-    author: 'Test Author',
-    tags: ['test'],
-    status: 'experimental',
-    recommendedTimeframes: ['15m'],
-    optimizedParams: {},
-    conditions: { entry: { long: [], short: [] }, exit: { long: [], short: [] } },
-    risk: { stopLoss: { method: 'fixed', value: 1.5 }, takeProfit: { method: 'fixed', value: 3 } },
-  },
-];
-
 vi.mock('../../services/setup-detection/dynamic', () => {
   const mockStrategiesInternal = [
     {
@@ -66,7 +37,7 @@ vi.mock('../../services/setup-detection/dynamic', () => {
 
   return {
     StrategyLoader: class {
-      loadAll({ includeUnprofitable = false, includeStatuses, excludeStatuses }: any = {}) {
+      loadAll({ includeUnprofitable: _includeUnprofitable = false, includeStatuses, excludeStatuses }: any = {}) {
         let filtered = [...mockStrategiesInternal];
 
         if (includeStatuses) {
@@ -211,7 +182,7 @@ describe('Setup Detection Router', () => {
       const result = await caller.setupDetection.listStrategies();
 
       expect(result[0]).toHaveProperty('recommendedTimeframes');
-      expect(result[0].recommendedTimeframes).toBeInstanceOf(Array);
+      expect(result[0]!.recommendedTimeframes).toBeInstanceOf(Array);
     });
   });
 
@@ -471,7 +442,7 @@ describe('Setup Detection Router', () => {
 
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors[0].path).toBe('json');
+      expect(result.errors[0]!.path).toBe('json');
     });
   });
 

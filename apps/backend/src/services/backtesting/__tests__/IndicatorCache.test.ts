@@ -63,8 +63,6 @@ import {
 
 const createMockKlines = (count: number): Kline[] => {
   return Array(count).fill(null).map((_, i) => ({
-    symbol: 'BTCUSDT',
-    interval: '1h',
     openTime: Date.now() + i * 3600000,
     closeTime: Date.now() + (i + 1) * 3600000,
     open: String(50000 + i * 100),
@@ -72,10 +70,10 @@ const createMockKlines = (count: number): Kline[] => {
     low: String(49500 + i * 100),
     close: String(50100 + i * 100),
     volume: '1000',
-    quoteAssetVolume: '50000000',
-    numberOfTrades: 1000,
-    takerBuyBaseAssetVolume: '500',
-    takerBuyQuoteAssetVolume: '25000000',
+    quoteVolume: '50000000',
+    trades: 1000,
+    takerBuyBaseVolume: '500',
+    takerBuyQuoteVolume: '25000000',
   }));
 };
 
@@ -90,11 +88,10 @@ const createMockStrategy = (indicators: Record<string, IndicatorDefinition>): St
     emaPeriod: { default: 9 },
   },
   indicators,
-  conditions: { entry: [], confirmation: [] },
-  entry: { type: 'market' },
+  entry: {},
   exit: {
-    stopLoss: { type: 'percent', percent: 2 },
-    takeProfit: { type: 'percent', percent: 4 },
+    stopLoss: { type: 'percent', value: 2 },
+    takeProfit: { type: 'percent', value: 4 },
   },
 });
 
@@ -114,11 +111,11 @@ describe('IndicatorCache', () => {
 
       const priceData = cache.getPriceData();
       expect(priceData).not.toBeNull();
-      expect(priceData?.open).toHaveLength(5);
-      expect(priceData?.high).toHaveLength(5);
-      expect(priceData?.low).toHaveLength(5);
-      expect(priceData?.close).toHaveLength(5);
-      expect(priceData?.volume).toHaveLength(5);
+      expect(priceData!.open).toHaveLength(5);
+      expect(priceData!.high).toHaveLength(5);
+      expect(priceData!.low).toHaveLength(5);
+      expect(priceData!.close).toHaveLength(5);
+      expect(priceData!.volume).toHaveLength(5);
     });
 
     it('should clear previous cache on re-initialization', () => {
@@ -203,9 +200,9 @@ describe('IndicatorCache', () => {
         description: 'Test',
         author: 'test',
         parameters: {},
-        conditions: { entry: [], confirmation: [] },
-        entry: { type: 'market' },
-        exit: { stopLoss: { type: 'percent', percent: 2 } },
+        indicators: {},
+        entry: {},
+        exit: { stopLoss: { type: 'percent', value: 2 } },
       };
 
       cache.initialize(klines);
@@ -228,7 +225,7 @@ describe('IndicatorCache', () => {
       const result = cache.get('sma', { period: 20 });
 
       expect(result).not.toBeNull();
-      expect(result?.type).toBe('sma');
+      expect(result!.type).toBe('sma');
     });
 
     it('should return null for non-cached indicator', () => {
@@ -269,7 +266,7 @@ describe('IndicatorCache', () => {
       const result = cache.getForDefinition(definition, {});
 
       expect(result).not.toBeNull();
-      expect(result?.type).toBe('sma');
+      expect(result!.type).toBe('sma');
     });
 
     it('should resolve parameter references', () => {
@@ -314,8 +311,8 @@ describe('IndicatorCache', () => {
       cache.precomputeForStrategies([strategy], {});
 
       const result = cache.get('sma', { period: 20 });
-      expect(result?.type).toBe('sma');
-      expect(result?.values).toEqual([50000, 50100, 50200]);
+      expect(result!.type).toBe('sma');
+      expect(result!.values).toEqual([50000, 50100, 50200]);
     });
 
     it('should compute EMA indicator', () => {
@@ -328,7 +325,7 @@ describe('IndicatorCache', () => {
       cache.precomputeForStrategies([strategy], {});
 
       const result = cache.get('ema', { period: 9 });
-      expect(result?.type).toBe('ema');
+      expect(result!.type).toBe('ema');
     });
 
     it('should compute RSI indicator', () => {
@@ -354,9 +351,9 @@ describe('IndicatorCache', () => {
 
       expect(calculateBollingerBandsArray).toHaveBeenCalled();
       const result = cache.get('bollingerBands', { period: 20, stdDev: 2 });
-      expect(result?.values).toHaveProperty('upper');
-      expect(result?.values).toHaveProperty('middle');
-      expect(result?.values).toHaveProperty('lower');
+      expect(result!.values).toHaveProperty('upper');
+      expect(result!.values).toHaveProperty('middle');
+      expect(result!.values).toHaveProperty('lower');
     });
 
     it('should compute ATR indicator', () => {
@@ -382,9 +379,9 @@ describe('IndicatorCache', () => {
 
       expect(calculateMACD).toHaveBeenCalled();
       const result = cache.get('macd', { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 });
-      expect(result?.values).toHaveProperty('macd');
-      expect(result?.values).toHaveProperty('signal');
-      expect(result?.values).toHaveProperty('histogram');
+      expect(result!.values).toHaveProperty('macd');
+      expect(result!.values).toHaveProperty('signal');
+      expect(result!.values).toHaveProperty('histogram');
     });
 
     it('should return null for uninitialized cache', () => {
@@ -457,8 +454,8 @@ describe('IndicatorCache', () => {
       const priceData = cache.getPriceData();
 
       expect(priceData).not.toBeNull();
-      expect(priceData?.open[0]).toBe(50000);
-      expect(priceData?.close[0]).toBe(50100);
+      expect(priceData!.open[0]).toBe(50000);
+      expect(priceData!.close[0]).toBe(50100);
     });
   });
 });

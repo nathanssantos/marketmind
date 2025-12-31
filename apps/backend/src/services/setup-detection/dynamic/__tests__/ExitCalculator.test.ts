@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ExitContext, ExitLevel, StrategyDefinition, Kline } from '@marketmind/types';
+import type { ExitContext, ExitLevel, Kline, StrategyDefinition } from '@marketmind/types';
 
 vi.mock('../../../logger', () => ({
   logger: {
@@ -12,7 +12,7 @@ vi.mock('../../../logger', () => ({
 
 vi.mock('../../../volatility-profile', () => ({
   calculateATRPercent: vi.fn().mockReturnValue(2.0),
-  getVolatilityAdjustedMultiplier: vi.fn((base) => base),
+  getVolatilityAdjustedMultiplier: vi.fn((_base) => _base),
   getVolatilityProfile: vi.fn().mockReturnValue({
     level: 'normal',
     breakevenThreshold: 0.005,
@@ -321,8 +321,10 @@ describe('ExitCalculator', () => {
         name: 'Test Strategy',
         version: '1.0',
         description: 'Test',
+        parameters: {},
+        indicators: {},
         confidence: { base: 65 },
-        entry: { required: [] },
+        entry: {},
         exit: { stopLoss: { type: 'atr' }, takeProfit: { type: 'atr' } },
       };
       const context = createMockContext();
@@ -339,6 +341,8 @@ describe('ExitCalculator', () => {
         name: 'Test Strategy',
         version: '1.0',
         description: 'Test',
+        parameters: {},
+        indicators: {},
         confidence: {
           base: 60,
           bonuses: [
@@ -349,7 +353,7 @@ describe('ExitCalculator', () => {
             },
           ],
         },
-        entry: { required: [] },
+        entry: {},
         exit: { stopLoss: { type: 'atr' }, takeProfit: { type: 'atr' } },
       };
       const context = createMockContext();
@@ -366,6 +370,8 @@ describe('ExitCalculator', () => {
         name: 'Test Strategy',
         version: '1.0',
         description: 'Test',
+        parameters: {},
+        indicators: {},
         confidence: {
           base: 80,
           max: 90,
@@ -373,7 +379,7 @@ describe('ExitCalculator', () => {
             { condition: { left: 'volume', op: '>', right: 100 }, bonus: 20 },
           ],
         },
-        entry: { required: [] },
+        entry: {},
         exit: { stopLoss: { type: 'atr' }, takeProfit: { type: 'atr' } },
       };
       const context = createMockContext();
@@ -389,7 +395,9 @@ describe('ExitCalculator', () => {
         name: 'Test Strategy',
         version: '1.0',
         description: 'Test',
-        entry: { required: [] },
+        parameters: {},
+        indicators: {},
+        entry: {},
         exit: { stopLoss: { type: 'atr' }, takeProfit: { type: 'atr' } },
       };
       const context = createMockContext();
@@ -471,7 +479,9 @@ describe('ExitCalculator', () => {
             { condition: { left: 'volume', op: '>', right: 100 }, bonus: 10 },
           ],
         },
-        entry: { required: [] },
+        parameters: {},
+        indicators: {},
+        entry: {},
         exit: { stopLoss: { type: 'atr' }, takeProfit: { type: 'atr' } },
       };
       const context = createMockContext();
@@ -494,7 +504,9 @@ describe('ExitCalculator', () => {
             { condition: { left: 'rsi', op: '<', right: 70 }, bonus: 10 },
           ],
         },
-        entry: { required: [] },
+        parameters: {},
+        indicators: {},
+        entry: {},
         exit: { stopLoss: { type: 'atr' }, takeProfit: { type: 'atr' } },
       };
       const context = createMockContext();
@@ -517,7 +529,9 @@ describe('ExitCalculator', () => {
             { condition: { left: 'volume', op: '>=', right: 100 }, bonus: 10 },
           ],
         },
-        entry: { required: [] },
+        parameters: {},
+        indicators: {},
+        entry: {},
         exit: { stopLoss: { type: 'atr' }, takeProfit: { type: 'atr' } },
       };
       const context = createMockContext();
@@ -540,7 +554,9 @@ describe('ExitCalculator', () => {
             { condition: { left: 'rsi', op: '<=', right: 70 }, bonus: 10 },
           ],
         },
-        entry: { required: [] },
+        parameters: {},
+        indicators: {},
+        entry: {},
         exit: { stopLoss: { type: 'atr' }, takeProfit: { type: 'atr' } },
       };
       const context = createMockContext();
@@ -563,7 +579,9 @@ describe('ExitCalculator', () => {
             { condition: { left: 'price', op: '==', right: 50.000000000001 }, bonus: 10 },
           ],
         },
-        entry: { required: [] },
+        parameters: {},
+        indicators: {},
+        entry: {},
         exit: { stopLoss: { type: 'atr' }, takeProfit: { type: 'atr' } },
       };
       const context = createMockContext();
@@ -586,7 +604,9 @@ describe('ExitCalculator', () => {
             { condition: { left: 'rsi', op: '!=', right: 50 }, bonus: 10 },
           ],
         },
-        entry: { required: [] },
+        parameters: {},
+        indicators: {},
+        entry: {},
         exit: { stopLoss: { type: 'atr' }, takeProfit: { type: 'atr' } },
       };
       const context = createMockContext();

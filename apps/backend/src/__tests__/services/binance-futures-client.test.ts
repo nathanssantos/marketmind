@@ -68,13 +68,16 @@ describe('BinanceFuturesClient Service', () => {
   });
 
   const createMockWallet = (overrides: Partial<Wallet> = {}): Wallet => ({
-    id: 1,
-    userId: 1,
+    id: '1',
+    userId: '1',
     name: 'Test Wallet',
-    exchange: 'binance',
     apiKeyEncrypted: 'encrypted-key',
     apiSecretEncrypted: 'encrypted-secret',
     walletType: 'live',
+    initialBalance: null,
+    currentBalance: null,
+    currency: null,
+    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -220,7 +223,7 @@ describe('BinanceFuturesClient Service', () => {
       const result = await getPositions(client);
 
       expect(result).toHaveLength(1);
-      expect(result[0].symbol).toBe('BTCUSDT');
+      expect(result[0]!.symbol).toBe('BTCUSDT');
     });
 
     it('should throw on error', async () => {
@@ -440,7 +443,7 @@ describe('BinanceFuturesClient Service', () => {
       const result = await getOpenOrders(client, 'BTCUSDT');
 
       expect(result).toHaveLength(1);
-      expect(result[0].orderId).toBe(127);
+      expect(result[0]!.orderId).toBe(127);
     });
 
     it('should get all open orders when no symbol', async () => {
@@ -469,7 +472,7 @@ describe('BinanceFuturesClient Service', () => {
       const result = await getSymbolLeverageBrackets(client, 'BTCUSDT');
 
       expect(result).toHaveLength(2);
-      expect(result[0].initialLeverage).toBe(125);
+      expect(result[0]!.initialLeverage).toBe(125);
     });
 
     it('should return empty array for unknown symbol', async () => {

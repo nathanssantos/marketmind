@@ -180,5 +180,22 @@
       "period": 200,
       "allowCounterTrend": true
     }
+  },
+  "education": {
+    "origin": "John Bollinger - Bollinger on Bollinger Bands (2001)",
+    "createdYear": 2001,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        { "offset": -1, "role": "reference", "descriptionKey": "strategies.bbBreakout.candleMinus1" },
+        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.bbBreakout.candleTrigger" }
+      ],
+      "indicatorsToShow": ["bb", "atr", "volume"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.bbBreakout.summary",
+      "entryKey": "strategies.bbBreakout.entry",
+      "exitKey": "strategies.bbBreakout.exit"
+    }
   }
 }

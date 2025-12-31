@@ -174,5 +174,22 @@
       "period": 200,
       "allowCounterTrend": false
     }
+  },
+  "education": {
+    "origin": "Percentage Price Oscillator - Technical Analysis variant of MACD",
+    "createdYear": 1990,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        { "offset": -1, "role": "reference", "descriptionKey": "strategies.ppo.candleMinus1" },
+        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.ppo.candleTrigger" }
+      ],
+      "indicatorsToShow": ["ppo", "atr"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.ppo.summary",
+      "entryKey": "strategies.ppo.entry",
+      "exitKey": "strategies.ppo.exit"
+    }
   }
 }

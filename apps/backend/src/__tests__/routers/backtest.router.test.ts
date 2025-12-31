@@ -1,5 +1,5 @@
 import { beforeAll, afterAll, beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import { setupTestDatabase, teardownTestDatabase, getTestDatabase, cleanupTables } from '../helpers/test-db';
+import { setupTestDatabase, teardownTestDatabase, cleanupTables } from '../helpers/test-db';
 import { createAuthenticatedUser } from '../helpers/test-fixtures';
 import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpers/test-caller';
 
@@ -57,11 +57,8 @@ vi.mock('../../services/logger', () => ({
 }));
 
 describe('Backtest Router', () => {
-  let db: ReturnType<typeof getTestDatabase>;
-
   beforeAll(async () => {
     await setupTestDatabase();
-    db = getTestDatabase();
   });
 
   afterAll(async () => {
@@ -302,7 +299,7 @@ describe('Backtest Router', () => {
 
       const times = results.map(r => new Date(r.createdAt).getTime());
       for (let i = 1; i < times.length; i++) {
-        expect(times[i - 1]).toBeGreaterThanOrEqual(times[i]);
+        expect(times[i - 1]).toBeGreaterThanOrEqual(times[i]!);
       }
     });
   });

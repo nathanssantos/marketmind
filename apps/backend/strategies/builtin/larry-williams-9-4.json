@@ -210,5 +210,24 @@
       "period": 200,
       "allowCounterTrend": false
     }
+  },
+  "education": {
+    "origin": "Larry Williams - 'Long-Term Secrets to Short-Term Trading' (1999)",
+    "createdYear": 1999,
+    "candlePattern": {
+      "lookback": 4,
+      "candles": [
+        { "offset": -3, "role": "reference", "descriptionKey": "strategies.lw94.candleMinus3" },
+        { "offset": -2, "role": "confirmation", "descriptionKey": "strategies.lw94.candleMinus2" },
+        { "offset": -1, "role": "confirmation", "descriptionKey": "strategies.lw94.candleMinus1" },
+        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.lw94.candleTrigger" }
+      ],
+      "indicatorsToShow": ["ema9", "atr", "ema200", "volume"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.lw94.summary",
+      "entryKey": "strategies.lw94.entry",
+      "exitKey": "strategies.lw94.exit"
+    }
   }
 }

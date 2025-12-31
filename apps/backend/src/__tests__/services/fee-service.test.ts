@@ -44,12 +44,15 @@ import {
 describe('FeeService', () => {
   const createMockWallet = (overrides: Partial<Wallet> = {}): Wallet => ({
     id: 'wallet-123',
-    userId: 1,
+    userId: 'user-1',
     name: 'Test Wallet',
-    exchange: 'binance',
     apiKeyEncrypted: 'encrypted-key',
     apiSecretEncrypted: 'encrypted-secret',
-    walletType: 'real',
+    walletType: 'live',
+    initialBalance: null,
+    currentBalance: null,
+    currency: 'USDT',
+    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,

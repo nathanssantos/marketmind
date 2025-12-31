@@ -277,6 +277,25 @@ export interface StrategyDefinition {
 
   confidence?: ConfidenceConfig;
   filters?: StrategyFilters;
+
+  education?: {
+    origin: string;
+    createdYear?: number;
+    candlePattern: {
+      lookback: number;
+      candles: Array<{
+        offset: number;
+        role: 'reference' | 'confirmation' | 'trigger' | 'context';
+        descriptionKey: string;
+      }>;
+      indicatorsToShow: string[];
+    };
+    howItWorks: {
+      summaryKey: string;
+      entryKey: string;
+      exitKey: string;
+    };
+  };
 }
 
 

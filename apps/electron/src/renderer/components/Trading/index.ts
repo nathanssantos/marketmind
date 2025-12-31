@@ -20,3 +20,4 @@ export { TradingProfilesManager } from './TradingProfilesManager';
 export { ProfileEditorDialog } from './ProfileEditorDialog';
 export { WatcherManager } from './WatcherManager';
 export { AddWatcherDialog } from './AddWatcherDialog';
+export { StrategyInfoPopover } from './StrategyInfoPopover';

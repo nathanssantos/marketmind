@@ -918,5 +918,104 @@
       "noProfiles": "No hay perfiles disponibles. Cree un perfil primero para usar configuraciones personalizadas.",
       "info": "El watcher escaneará por setups basándose en la configuración del perfil seleccionado y ejecutará trades automáticamente cuando se cumplan las condiciones."
     }
+  },
+  "strategyInfo": {
+    "noCandleData": "Datos de velas no disponibles",
+    "indicators": "Indicadores en la Entrada",
+    "trades": "Operaciones",
+    "winRate": "Tasa de Acierto",
+    "avgRR": "R:R Promedio",
+    "noData": "Datos de estrategia no disponibles",
+    "howItWorks": "Cómo Funciona",
+    "entry": "Entrada",
+    "exit": "Salida",
+    "candlePattern": "Patrón de Velas"
+  },
+  "strategies": {
+    "lw91": {
+      "summary": "Detecta reversiones de tendencia EMA9 con confirmación de volumen",
+      "entry": "Entrar cuando EMA9 cambia de dirección y el precio confirma la reversión",
+      "exit": "Stop en swing high/low reciente, objetivo basado en múltiplo de ATR"
+    },
+    "lw92": {
+      "summary": "Pullback de una vela durante tendencia EMA9 establecida",
+      "entry": "Entrar en ruptura de vela de pullback después de una vela cerrar contra la tendencia",
+      "exit": "Stop en low/high del pullback, objetivo basado en continuación de tendencia"
+    },
+    "lw93": {
+      "summary": "Dos velas consecutivas en pullback durante tendencia EMA9",
+      "entry": "Entrar en ruptura después de 2 velas cerrar contra la dirección de la tendencia",
+      "exit": "Stop en el punto más bajo/alto del pullback, objetivo de tendencia"
+    },
+    "lw94": {
+      "summary": "Fallo temporal de 1 vela en EMA9 seguido de reanudación de tendencia",
+      "entry": "Entrar cuando EMA9 reanuda dirección original después de fallo de una vela",
+      "exit": "Stop en low/high de vela de fallo, objetivo basado en momentum"
+    },
+    "keltner": {
+      "summary": "Ruptura de precio a través de bandas del Canal Keltner",
+      "entry": "Entrar en cierre fuera del Canal Keltner con confirmación de volumen",
+      "exit": "Stop en banda central, objetivo en nivel de banda extendida"
+    },
+    "bbBreakout": {
+      "summary": "Squeeze de Bandas de Bollinger seguido de ruptura de expansión",
+      "entry": "Entrar cuando precio rompe bandas después de squeeze de baja volatilidad",
+      "exit": "Stop en banda opuesta, objetivo basado en expansión de banda"
+    },
+    "williamsR": {
+      "summary": "Divergencia de momentum Williams %R y señales de sobrecompra/sobreventa",
+      "entry": "Entrar en reversión de Williams %R desde niveles extremos con confirmación de precio",
+      "exit": "Stop en swing reciente, objetivo en nivel extremo opuesto"
+    },
+    "tema": {
+      "summary": "Cruce de momentum Triple EMA y aceleración de tendencia",
+      "entry": "Entrar cuando TEMA cruza precio con momentum acelerando",
+      "exit": "Stop en nivel TEMA, objetivo basado en proyección de momentum"
+    },
+    "elderRay": {
+      "summary": "Divergencia Elder Ray Bull/Bear Power con filtro de tendencia EMA",
+      "entry": "Entrar cuando barras de fuerza divergen del precio con confirmación EMA",
+      "exit": "Stop en nivel EMA, objetivo basado en proyección de barra de fuerza"
+    },
+    "ppo": {
+      "summary": "Cambios de momentum del histograma PPO y cruces de línea cero",
+      "entry": "Entrar en reversión del histograma PPO con confirmación de línea de señal",
+      "exit": "Stop en swing reciente, objetivo en proyección extrema de PPO"
+    },
+    "parabolicSar": {
+      "summary": "Seguimiento de tendencia Parabolic SAR con factor de aceleración",
+      "entry": "Entrar cuando SAR invierte posición con confirmación de precio",
+      "exit": "Stop móvil usando niveles SAR, objetivo en proyección SAR"
+    },
+    "supertrend": {
+      "summary": "Seguimiento de tendencia Supertrend con bandas basadas en ATR",
+      "entry": "Entrar cuando Supertrend cambia de dirección con confirmación de volumen",
+      "exit": "Stop móvil en nivel Supertrend, objetivo basado en extensión ATR"
+    },
+    "percentB": {
+      "summary": "Reversión a la media Percent B en extremos de Bandas de Bollinger",
+      "entry": "Entrar cuando %B alcanza extremo y revierte hacia banda central",
+      "exit": "Stop en extremo de banda, objetivo en banda central"
+    },
+    "tripleConf": {
+      "summary": "Confirmación multi-indicador para reversiones de alta probabilidad",
+      "entry": "Entrar cuando 3+ indicadores se alinean para reversión en nivel clave",
+      "exit": "Stop en nivel de swing, objetivo basado en movimiento medido"
+    },
+    "momentumRotation": {
+      "summary": "Rotación de sector/activo basada en fuerza de momentum relativo",
+      "entry": "Entrar en activo con momentum más fuerte cuando señal de rotación dispara",
+      "exit": "Salir cuando momentum relativo se debilita o rota"
+    },
+    "momentumBreakout": {
+      "summary": "Ruptura de momentum moderna optimizada para condiciones de mercado 2025",
+      "entry": "Entrar en ruptura de momentum con confirmación multi-timeframe",
+      "exit": "Stop móvil basado en decaimiento de momentum, objetivo en proyección"
+    },
+    "stochDoubleTouch": {
+      "summary": "Doble toque de niveles extremos del Estocástico con divergencia",
+      "entry": "Entrar en segundo toque de sobrecompra/sobreventa con divergencia",
+      "exit": "Stop en nivel extremo, objetivo en extremo opuesto"
+    }
   }
 }

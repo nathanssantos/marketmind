@@ -211,5 +211,21 @@
       "period": 200,
       "allowCounterTrend": false
     }
+  },
+  "education": {
+    "origin": "MarketMind - EMA crossover with RSI confirmation (2024)",
+    "createdYear": 2024,
+    "candlePattern": {
+      "lookback": 1,
+      "candles": [
+        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.momentumBreakout.candleTrigger" }
+      ],
+      "indicatorsToShow": ["emaFast", "emaSlow", "emaTrend", "rsi", "atr"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.momentumBreakout.summary",
+      "entryKey": "strategies.momentumBreakout.entry",
+      "exitKey": "strategies.momentumBreakout.exit"
+    }
   }
 }

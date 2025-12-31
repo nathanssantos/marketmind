@@ -1,4 +1,10 @@
-import type { Kline, SetupDirection, TradingSetup } from '@marketmind/types';
+import type {
+  Kline,
+  SetupDirection,
+  TradingSetup,
+  TriggerCandleSnapshot,
+  TriggerIndicatorValues,
+} from '@marketmind/types';
 
 export interface SetupDetectorConfig {
   enabled: boolean;
@@ -9,6 +15,9 @@ export interface SetupDetectorConfig {
 export interface SetupDetectorResult {
   setup: TradingSetup | null;
   confidence: number;
+  triggerKlineIndex?: number;
+  triggerCandleData?: TriggerCandleSnapshot[];
+  triggerIndicatorValues?: TriggerIndicatorValues;
 }
 
 export abstract class BaseSetupDetector {

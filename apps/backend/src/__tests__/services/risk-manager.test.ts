@@ -95,7 +95,7 @@ describe('Risk Manager - Pure Utility Functions', () => {
       const result = validateOrderSizePure(10000, 2000, 15);
 
       expect(result.isValid).toBe(false);
-      expect(result.reason).toContain('exceeds maximum');
+      expect(result.reason!).toContain('exceeds maximum');
       expect(result.maxAllowed).toBe(1500);
     });
 
@@ -154,8 +154,8 @@ describe('RiskManagerService', () => {
         enabledSetupTypes: '[]',
         positionSizing: 'percentage',
         leverage: 1,
-        marginType: 'ISOLATED',
-        positionMode: 'ONE_WAY',
+        marginType: 'ISOLATED' as const,
+        positionMode: 'ONE_WAY' as const,
         useLimitOrders: false,
         useStochasticFilter: true,
         useAdxFilter: true,
@@ -176,7 +176,7 @@ describe('RiskManagerService', () => {
       );
 
       expect(result.isValid).toBe(false);
-      expect(result.reason).toBe('Wallet not found');
+      expect(result.reason!).toBe('Wallet not found');
     });
 
     it('should reject when max concurrent positions reached', async () => {
@@ -231,8 +231,8 @@ describe('RiskManagerService', () => {
         enabledSetupTypes: '[]',
         positionSizing: 'percentage',
         leverage: 1,
-        marginType: 'ISOLATED',
-        positionMode: 'ONE_WAY',
+        marginType: 'ISOLATED' as const,
+        positionMode: 'ONE_WAY' as const,
         useLimitOrders: false,
         useStochasticFilter: true,
         useAdxFilter: true,
@@ -253,7 +253,7 @@ describe('RiskManagerService', () => {
       );
 
       expect(result.isValid).toBe(false);
-      expect(result.reason).toContain('Maximum concurrent positions reached');
+      expect(result.reason!).toContain('Maximum concurrent positions reached');
     });
 
     it('should reject when position size exceeds maximum', async () => {
@@ -271,8 +271,8 @@ describe('RiskManagerService', () => {
         enabledSetupTypes: '[]',
         positionSizing: 'percentage',
         leverage: 1,
-        marginType: 'ISOLATED',
-        positionMode: 'ONE_WAY',
+        marginType: 'ISOLATED' as const,
+        positionMode: 'ONE_WAY' as const,
         useLimitOrders: false,
         useStochasticFilter: true,
         useAdxFilter: true,
@@ -293,7 +293,7 @@ describe('RiskManagerService', () => {
       );
 
       expect(result.isValid).toBe(false);
-      expect(result.reason).toContain('Position size exceeds maximum');
+      expect(result.reason!).toContain('Position size exceeds maximum');
     });
 
     it('should allow valid position', async () => {
@@ -311,8 +311,8 @@ describe('RiskManagerService', () => {
         enabledSetupTypes: '[]',
         positionSizing: 'percentage',
         leverage: 1,
-        marginType: 'ISOLATED',
-        positionMode: 'ONE_WAY',
+        marginType: 'ISOLATED' as const,
+        positionMode: 'ONE_WAY' as const,
         useLimitOrders: false,
         useStochasticFilter: true,
         useAdxFilter: true,
@@ -376,8 +376,8 @@ describe('RiskManagerService', () => {
         enabledSetupTypes: '[]',
         positionSizing: 'percentage',
         leverage: 1,
-        marginType: 'ISOLATED',
-        positionMode: 'ONE_WAY',
+        marginType: 'ISOLATED' as const,
+        positionMode: 'ONE_WAY' as const,
         useLimitOrders: false,
         useStochasticFilter: true,
         useAdxFilter: true,
@@ -399,7 +399,7 @@ describe('RiskManagerService', () => {
       );
 
       expect(result.isValid).toBe(false);
-      expect(result.reason).toContain('Maximum concurrent positions reached (2)');
+      expect(result.reason!).toContain('Maximum concurrent positions reached (2)');
     });
   });
 
@@ -573,7 +573,7 @@ describe('RiskManagerService', () => {
       const result = await riskManagerService.validateDrawdownForNewPosition(wallet.id, 15);
 
       expect(result.isValid).toBe(false);
-      expect(result.reason).toContain('Maximum drawdown limit exceeded');
+      expect(result.reason!).toContain('Maximum drawdown limit exceeded');
     });
   });
 
@@ -588,7 +588,7 @@ describe('RiskManagerService', () => {
       const result = await riskManagerService.validateOrderSize(10000, 2000, 15);
 
       expect(result.isValid).toBe(false);
-      expect(result.reason).toContain('exceeds maximum');
+      expect(result.reason!).toContain('exceeds maximum');
     });
   });
 });

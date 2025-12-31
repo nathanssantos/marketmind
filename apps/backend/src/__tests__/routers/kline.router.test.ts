@@ -249,8 +249,8 @@ describe('Kline Router', () => {
       });
 
       expect(result.length).toBe(3);
-      expect(new Date(result[0].openTime).getTime()).toBeLessThan(new Date(result[1].openTime).getTime());
-      expect(new Date(result[1].openTime).getTime()).toBeLessThan(new Date(result[2].openTime).getTime());
+      expect(new Date(result[0]!.openTime).getTime()).toBeLessThan(new Date(result[1]!.openTime).getTime());
+      expect(new Date(result[1]!.openTime).getTime()).toBeLessThan(new Date(result[2]!.openTime).getTime());
     });
   });
 
@@ -358,13 +358,13 @@ describe('Kline Router', () => {
       const { user, session } = await createAuthenticatedUser();
       const caller = createAuthenticatedCaller(user, session);
 
-      vi.mocked(binanceKlineStreamService.getActiveSubscriptions).mockReturnValue(['BTCUSDT@1h', 'ETHUSDT@1h']);
-      vi.mocked(binanceFuturesKlineStreamService.getActiveSubscriptions).mockReturnValue(['BTCUSDT@15m']);
+      vi.mocked(binanceKlineStreamService.getActiveSubscriptions).mockReturnValue([{ symbol: 'BTCUSDT', interval: '1h', clients: 1 }, { symbol: 'ETHUSDT', interval: '1h', clients: 1 }]);
+      vi.mocked(binanceFuturesKlineStreamService.getActiveSubscriptions).mockReturnValue([{ symbol: 'BTCUSDT', interval: '15m', clients: 1 }]);
 
       const result = await caller.kline.getActiveStreams();
 
-      expect(result.streams).toEqual(['BTCUSDT@1h', 'ETHUSDT@1h']);
-      expect(result.futuresStreams).toEqual(['BTCUSDT@15m']);
+      expect(result.streams).toEqual([{ symbol: 'BTCUSDT', interval: '1h', clients: 1 }, { symbol: 'ETHUSDT', interval: '1h', clients: 1 }]);
+      expect(result.futuresStreams).toEqual([{ symbol: 'BTCUSDT', interval: '15m', clients: 1 }]);
     });
   });
 
@@ -474,8 +474,8 @@ describe('Kline Router', () => {
       });
 
       if (result.klines.length >= 2) {
-        expect(new Date(result.klines[0].openTime).getTime()).toBeLessThan(
-          new Date(result.klines[1].openTime).getTime()
+        expect(new Date(result.klines[0]!.openTime).getTime()).toBeLessThan(
+          new Date(result.klines[1]!.openTime).getTime()
         );
       }
     });

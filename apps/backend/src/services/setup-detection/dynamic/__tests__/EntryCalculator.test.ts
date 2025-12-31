@@ -57,8 +57,8 @@ describe('EntryCalculator', () => {
     klines: createMockKlines(50),
     currentIndex: 49,
     indicators: {
-      ema: { values: [50000] },
-      atr: { values: [500] },
+      ema: { type: 'ema', values: [50000] },
+      atr: { type: 'ema', values: [500] },
     },
     params: {
       atrMultiplier: 2,

@@ -205,5 +205,22 @@
       "period": 200,
       "allowCounterTrend": true
     }
+  },
+  "education": {
+    "origin": "MarketMind - Stochastic oscillator reversal pattern",
+    "createdYear": 2025,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        { "offset": -1, "role": "reference", "descriptionKey": "strategies.stochDoubleTouch.candleMinus1" },
+        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.stochDoubleTouch.candleTrigger" }
+      ],
+      "indicatorsToShow": ["stoch", "atr", "volumeSMA"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.stochDoubleTouch.summary",
+      "entryKey": "strategies.stochDoubleTouch.entry",
+      "exitKey": "strategies.stochDoubleTouch.exit"
+    }
   }
 }

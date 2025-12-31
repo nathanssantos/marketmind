@@ -1,3 +1,5 @@
+import type { TriggerCandleSnapshot, TriggerIndicatorValues } from './strategyVisualization';
+
 export type BuiltinSetupType = '123-reversal' | 'bear-trap' | 'mean-reversion' | 'stochastic-double-touch';
 
 export type SetupType = BuiltinSetupType | string;
@@ -50,6 +52,9 @@ export interface TradingSetup {
   entryOrderType?: 'MARKET' | 'LIMIT';
   limitEntryPrice?: number;
   expirationBars?: number;
+  triggerKlineIndex?: number;
+  triggerCandleData?: TriggerCandleSnapshot[];
+  triggerIndicatorValues?: TriggerIndicatorValues;
 }
 
 export interface PivotPoint {

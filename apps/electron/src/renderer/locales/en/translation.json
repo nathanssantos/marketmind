@@ -845,5 +845,104 @@
       "noProfiles": "No profiles available. Create a profile first to use custom configurations.",
       "info": "The watcher will scan for setups based on the selected profile's configuration and execute trades automatically when conditions are met."
     }
+  },
+  "strategyInfo": {
+    "noCandleData": "No candle data available",
+    "indicators": "Indicators at Entry",
+    "trades": "Trades",
+    "winRate": "Win Rate",
+    "avgRR": "Avg R:R",
+    "noData": "No strategy data available",
+    "howItWorks": "How It Works",
+    "entry": "Entry",
+    "exit": "Exit",
+    "candlePattern": "Candle Pattern"
+  },
+  "strategies": {
+    "lw91": {
+      "summary": "Detects EMA9 trend reversals with volume confirmation",
+      "entry": "Enter when EMA9 changes direction and price confirms the reversal",
+      "exit": "Stop at recent swing high/low, target based on ATR multiple"
+    },
+    "lw92": {
+      "summary": "Single-candle pullback during established EMA9 trend",
+      "entry": "Enter on breakout of pullback candle after one kline closes against trend",
+      "exit": "Stop at pullback low/high, target based on trend continuation"
+    },
+    "lw93": {
+      "summary": "Two consecutive candles pulling back during EMA9 trend",
+      "entry": "Enter on breakout after 2 klines close against the trend direction",
+      "exit": "Stop at the lowest/highest point of pullback, trend target"
+    },
+    "lw94": {
+      "summary": "Temporary 1-kline EMA9 failure followed by trend resumption",
+      "entry": "Enter when EMA9 resumes original direction after single-kline failure",
+      "exit": "Stop at failure candle low/high, target based on momentum"
+    },
+    "keltner": {
+      "summary": "Price breakout through Keltner Channel bands",
+      "entry": "Enter on close outside Keltner Channel with volume confirmation",
+      "exit": "Stop at middle band, target at extended band level"
+    },
+    "bbBreakout": {
+      "summary": "Bollinger Band squeeze followed by expansion breakout",
+      "entry": "Enter when price breaks out of bands after low volatility squeeze",
+      "exit": "Stop at opposite band, target based on band expansion"
+    },
+    "williamsR": {
+      "summary": "Williams %R momentum divergence and oversold/overbought signals",
+      "entry": "Enter on Williams %R reversal from extreme levels with price confirmation",
+      "exit": "Stop at recent swing, target at opposite extreme level"
+    },
+    "tema": {
+      "summary": "Triple EMA momentum crossover and trend acceleration",
+      "entry": "Enter when TEMA crosses price with accelerating momentum",
+      "exit": "Stop at TEMA level, target based on momentum projection"
+    },
+    "elderRay": {
+      "summary": "Elder Ray Bull/Bear Power divergence with EMA trend filter",
+      "entry": "Enter when power bars diverge from price with EMA confirmation",
+      "exit": "Stop at EMA level, target based on power bar projection"
+    },
+    "ppo": {
+      "summary": "PPO histogram momentum shifts and zero-line crossovers",
+      "entry": "Enter on PPO histogram reversal with signal line confirmation",
+      "exit": "Stop at recent swing, target at PPO extreme projection"
+    },
+    "parabolicSar": {
+      "summary": "Parabolic SAR trend following with acceleration factor",
+      "entry": "Enter when SAR flips position with price confirmation",
+      "exit": "Trail stop using SAR levels, target at SAR projection"
+    },
+    "supertrend": {
+      "summary": "Supertrend indicator trend following with ATR-based bands",
+      "entry": "Enter when Supertrend changes direction with volume confirmation",
+      "exit": "Trail stop at Supertrend level, target based on ATR extension"
+    },
+    "percentB": {
+      "summary": "Percent B mean reversion at Bollinger Band extremes",
+      "entry": "Enter when %B reaches extreme and reverses toward middle band",
+      "exit": "Stop at band extreme, target at middle band"
+    },
+    "tripleConf": {
+      "summary": "Multi-indicator confirmation for high-probability reversals",
+      "entry": "Enter when 3+ indicators align for reversal at key level",
+      "exit": "Stop at swing level, target based on measured move"
+    },
+    "momentumRotation": {
+      "summary": "Sector/asset rotation based on relative momentum strength",
+      "entry": "Enter strongest momentum asset when rotation signal triggers",
+      "exit": "Exit when relative momentum weakens or rotates away"
+    },
+    "momentumBreakout": {
+      "summary": "Modern momentum breakout optimized for 2025 market conditions",
+      "entry": "Enter on momentum breakout with multi-timeframe confirmation",
+      "exit": "Trail stop based on momentum decay, target at projection"
+    },
+    "stochDoubleTouch": {
+      "summary": "Double touch of Stochastic extreme levels with divergence",
+      "entry": "Enter on second touch of overbought/oversold with divergence",
+      "exit": "Stop at extreme level, target at opposite extreme"
+    }
   }
 }

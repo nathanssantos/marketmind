@@ -42,9 +42,9 @@ describe('BinanceFuturesDataService', () => {
       const result = await service.getFundingRate('BTCUSDT');
 
       expect(result).toHaveLength(2);
-      expect(result[0].rate).toBe(0.01);
-      expect(result[0].markPrice).toBe(50000);
-      expect(result[0].timestamp).toBe(1700000000000);
+      expect(result[0]!.rate).toBe(0.01);
+      expect((result[0] as unknown as { markPrice: number }).markPrice).toBe(50000);
+      expect(result[0]!.timestamp).toBe(1700000000000);
     });
 
     it('should return cached data on second call', async () => {
@@ -140,8 +140,8 @@ describe('BinanceFuturesDataService', () => {
       const result = await service.getOpenInterest('BTCUSDT');
 
       expect(result).toHaveLength(2);
-      expect(result[0].value).toBe(10000);
-      expect(result[0].timestamp).toBe(1700000000000);
+      expect(result[0]!.value).toBe(10000);
+      expect(result[0]!.timestamp).toBe(1700000000000);
     });
 
     it('should return empty array on failed request', async () => {
@@ -201,9 +201,9 @@ describe('BinanceFuturesDataService', () => {
       const result = await service.getLiquidations('BTCUSDT');
 
       expect(result).toHaveLength(1);
-      expect(result[0].longLiquidations).toBe(50000);
-      expect(result[0].shortLiquidations).toBe(25000);
-      expect(result[0].totalLiquidations).toBe(75000);
+      expect(result[0]!.longLiquidations).toBe(50000);
+      expect(result[0]!.shortLiquidations).toBe(25000);
+      expect(result[0]!.totalLiquidations).toBe(75000);
     });
 
     it('should support time range filters', async () => {
@@ -249,9 +249,9 @@ describe('BinanceFuturesDataService', () => {
       const result = await service.getLongShortRatio('BTCUSDT');
 
       expect(result).toHaveLength(1);
-      expect(result[0].longAccount).toBe(0.55);
-      expect(result[0].shortAccount).toBe(0.45);
-      expect(result[0].longShortRatio).toBe(1.22);
+      expect(result[0]!.longAccount).toBe(0.55);
+      expect(result[0]!.shortAccount).toBe(0.45);
+      expect(result[0]!.longShortRatio).toBe(1.22);
     });
 
     it('should support different periods', async () => {
@@ -293,8 +293,8 @@ describe('BinanceFuturesDataService', () => {
       const result = await service.getTopTraderLongShortRatio('BTCUSDT');
 
       expect(result).toHaveLength(1);
-      expect(result[0].longAccount).toBe(0.60);
-      expect(result[0].longShortRatio).toBe(1.5);
+      expect(result[0]!.longAccount).toBe(0.60);
+      expect(result[0]!.longShortRatio).toBe(1.5);
     });
 
     it('should return empty array on failed request', async () => {
@@ -322,9 +322,9 @@ describe('BinanceFuturesDataService', () => {
       const result = await service.getTakerBuySellVolume('BTCUSDT');
 
       expect(result).toHaveLength(1);
-      expect(result[0].buySellRatio).toBe(1.1);
-      expect(result[0].buyVol).toBe(1100);
-      expect(result[0].sellVol).toBe(1000);
+      expect(result[0]!.buySellRatio).toBe(1.1);
+      expect(result[0]!.buyVol).toBe(1100);
+      expect(result[0]!.sellVol).toBe(1000);
     });
 
     it('should return empty array on failed request', async () => {
@@ -418,9 +418,9 @@ describe('BinanceFuturesDataService', () => {
       const result = await service.getExchangeInfo();
 
       expect(result).toHaveLength(1);
-      expect(result[0].symbol).toBe('BTCUSDT');
-      expect(result[0].contractType).toBe('PERPETUAL');
-      expect(result[0].maxLeverage).toBe(125);
+      expect(result[0]!.symbol).toBe('BTCUSDT');
+      expect(result[0]!.contractType).toBe('PERPETUAL');
+      expect(result[0]!.maxLeverage).toBe(125);
     });
 
     it('should return empty array on failed request', async () => {
@@ -448,7 +448,7 @@ describe('BinanceFuturesDataService', () => {
       const result = await service.getHistoricalFundingRates('BTCUSDT');
 
       expect(result).toHaveLength(1);
-      expect(result[0].rate).toBe(0.01);
+      expect(result[0]!.rate).toBe(0.01);
     });
 
     it('should support time range filters', async () => {
@@ -494,13 +494,13 @@ describe('BinanceFuturesDataService', () => {
       const result = await service.getFuturesKlines('BTCUSDT', '1h');
 
       expect(result).toHaveLength(1);
-      expect(result[0].openTime).toBe(1700000000000);
-      expect(result[0].open).toBe(50000);
-      expect(result[0].high).toBe(50500);
-      expect(result[0].low).toBe(49500);
-      expect(result[0].close).toBe(50200);
-      expect(result[0].volume).toBe(1000);
-      expect(result[0].trades).toBe(5000);
+      expect(result[0]!.openTime).toBe(1700000000000);
+      expect(result[0]!.open).toBe(50000);
+      expect(result[0]!.high).toBe(50500);
+      expect(result[0]!.low).toBe(49500);
+      expect(result[0]!.close).toBe(50200);
+      expect(result[0]!.volume).toBe(1000);
+      expect(result[0]!.trades).toBe(5000);
     });
 
     it('should return empty array on failed request', async () => {
@@ -568,8 +568,8 @@ describe('BinanceFuturesDataService', () => {
       const result = await service.getAllMarkPrices();
 
       expect(result).toHaveLength(2);
-      expect(result[0].symbol).toBe('BTCUSDT');
-      expect(result[1].symbol).toBe('ETHUSDT');
+      expect(result[0]!.symbol).toBe('BTCUSDT');
+      expect(result[1]!.symbol).toBe('ETHUSDT');
     });
 
     it('should return empty array on failed request', async () => {

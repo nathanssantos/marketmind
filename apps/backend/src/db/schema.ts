@@ -264,6 +264,10 @@ export const tradeExecutions = pgTable('trade_executions', {
   accumulatedFunding: numeric('accumulated_funding', { precision: 20, scale: 8 }).default('0'),
   positionSide: varchar('position_side', { length: 10 }).$type<'LONG' | 'SHORT' | 'BOTH'>().default('BOTH'),
   marginTopUpCount: integer('margin_top_up_count').default(0),
+  triggerKlineIndex: integer('trigger_kline_index'),
+  triggerKlineOpenTime: bigint('trigger_kline_open_time', { mode: 'number' }),
+  triggerCandleData: text('trigger_candle_data'),
+  triggerIndicatorValues: text('trigger_indicator_values'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({

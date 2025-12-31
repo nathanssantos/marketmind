@@ -219,5 +219,22 @@
       "period": 200,
       "allowCounterTrend": true
     }
+  },
+  "education": {
+    "origin": "Larry Williams - Williams %R oscillator (1973)",
+    "createdYear": 1973,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        { "offset": -1, "role": "reference", "descriptionKey": "strategies.williamsR.candleMinus1" },
+        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.williamsR.candleTrigger" }
+      ],
+      "indicatorsToShow": ["williamsR", "atr", "ema20"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.williamsR.summary",
+      "entryKey": "strategies.williamsR.entry",
+      "exitKey": "strategies.williamsR.exit"
+    }
   }
 }

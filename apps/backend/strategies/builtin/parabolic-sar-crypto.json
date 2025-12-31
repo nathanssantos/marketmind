@@ -181,5 +181,22 @@
       "period": 200,
       "allowCounterTrend": false
     }
+  },
+  "education": {
+    "origin": "J. Welles Wilder - 'New Concepts in Technical Trading Systems' (1978)",
+    "createdYear": 1978,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        { "offset": -1, "role": "reference", "descriptionKey": "strategies.parabolicSar.candleMinus1" },
+        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.parabolicSar.candleTrigger" }
+      ],
+      "indicatorsToShow": ["sar", "atr"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.parabolicSar.summary",
+      "entryKey": "strategies.parabolicSar.entry",
+      "exitKey": "strategies.parabolicSar.exit"
+    }
   }
 }

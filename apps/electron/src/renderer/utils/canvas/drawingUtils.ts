@@ -164,3 +164,49 @@ export const drawGrid = (
   ctx.stroke();
   ctx.restore();
 };
+
+export const drawCandleLabel = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  label: string,
+  bgColor: string,
+  textColor: string = '#ffffff',
+  fontSize: number = 11,
+): void => {
+  ctx.save();
+
+  const font = `bold ${fontSize}px sans-serif`;
+  ctx.font = font;
+  const textMetrics = ctx.measureText(label);
+  const textWidth = textMetrics.width;
+  const padding = 4;
+  const pillWidth = textWidth + padding * 2;
+  const pillHeight = fontSize + padding * 2;
+  const borderRadius = pillHeight / 2;
+
+  const pillX = x - pillWidth / 2;
+  const pillY = y - pillHeight - 4;
+
+  ctx.beginPath();
+  ctx.moveTo(pillX + borderRadius, pillY);
+  ctx.lineTo(pillX + pillWidth - borderRadius, pillY);
+  ctx.quadraticCurveTo(pillX + pillWidth, pillY, pillX + pillWidth, pillY + borderRadius);
+  ctx.lineTo(pillX + pillWidth, pillY + pillHeight - borderRadius);
+  ctx.quadraticCurveTo(pillX + pillWidth, pillY + pillHeight, pillX + pillWidth - borderRadius, pillY + pillHeight);
+  ctx.lineTo(pillX + borderRadius, pillY + pillHeight);
+  ctx.quadraticCurveTo(pillX, pillY + pillHeight, pillX, pillY + pillHeight - borderRadius);
+  ctx.lineTo(pillX, pillY + borderRadius);
+  ctx.quadraticCurveTo(pillX, pillY, pillX + borderRadius, pillY);
+  ctx.closePath();
+
+  ctx.fillStyle = bgColor;
+  ctx.fill();
+
+  ctx.fillStyle = textColor;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, x, pillY + pillHeight / 2);
+
+  ctx.restore();
+};

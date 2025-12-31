@@ -1,14 +1,18 @@
-
 import type {
-    ComputedIndicators,
-    EvaluationContext,
-    ExitContext, Kline, SetupDirection, StrategyDefinition
+  ComputedIndicators,
+  EvaluationContext,
+  ExitContext,
+  Kline,
+  SetupDirection,
+  StrategyDefinition,
+  TriggerCandleSnapshot,
+  TriggerIndicatorValues,
 } from '@marketmind/types';
 
 import {
-    BaseSetupDetector,
-    type SetupDetectorConfig,
-    type SetupDetectorResult,
+  BaseSetupDetector,
+  type SetupDetectorConfig,
+  type SetupDetectorResult,
 } from '../BaseSetupDetector';
 
 import { EXIT_CALCULATOR } from '../../../constants';
@@ -194,7 +198,86 @@ export class StrategyInterpreter extends BaseSetupDetector {
       resolvedParams: this.resolvedParams,
     }, '✅ Setup detected');
 
-    return { setup, confidence };
+    const triggerCandleData = this.extractTriggerCandles(klines, currentIndex);
+    const triggerIndicatorValues = this.extractIndicatorValues(indicators, currentIndex);
+
+    return {
+      setup,
+      confidence,
+      triggerKlineIndex: currentIndex,
+      triggerCandleData,
+      triggerIndicatorValues,
+    };
+  }
+
+  private extractTriggerCandles(
+    klines: Kline[],
+    currentIndex: number
+  ): TriggerCandleSnapshot[] {
+    const lookback = this.strategy.education?.candlePattern?.lookback ?? 3;
+    const snapshots: TriggerCandleSnapshot[] = [];
+
+    for (let offset = -(lookback - 1); offset <= 0; offset++) {
+      const idx = currentIndex + offset;
+      if (idx < 0 || idx >= klines.length) continue;
+
+      const kline = klines[idx];
+      if (!kline) continue;
+
+      snapshots.push({
+        offset,
+        openTime: kline.openTime,
+        open: typeof kline.open === 'string' ? parseFloat(kline.open) : kline.open,
+        high: typeof kline.high === 'string' ? parseFloat(kline.high) : kline.high,
+        low: typeof kline.low === 'string' ? parseFloat(kline.low) : kline.low,
+        close: typeof kline.close === 'string' ? parseFloat(kline.close) : kline.close,
+        volume: typeof kline.volume === 'string' ? parseFloat(kline.volume) : kline.volume,
+      });
+    }
+
+    return snapshots;
+  }
+
+  private extractIndicatorValues(
+    indicators: ComputedIndicators,
+    currentIndex: number
+  ): TriggerIndicatorValues {
+    const values: TriggerIndicatorValues = {};
+
+    for (const [id, indicator] of Object.entries(indicators)) {
+      if (id.startsWith('_')) continue;
+
+      if (Array.isArray(indicator.values)) {
+        const current = indicator.values[currentIndex];
+        const prev = currentIndex > 0 ? indicator.values[currentIndex - 1] : null;
+        const prev2 = currentIndex > 1 ? indicator.values[currentIndex - 2] : null;
+
+        if (current !== null && current !== undefined) {
+          values[id] = current;
+        }
+        if (prev !== null && prev !== undefined) {
+          values[`${id}Prev`] = prev;
+        }
+        if (prev2 !== null && prev2 !== undefined) {
+          values[`${id}Prev2`] = prev2;
+        }
+      } else {
+        const subValues = indicator.values as Record<string, (number | null)[]>;
+        for (const [subKey, arr] of Object.entries(subValues)) {
+          const current = arr[currentIndex];
+          const prev = currentIndex > 0 ? arr[currentIndex - 1] : null;
+
+          if (current !== null && current !== undefined) {
+            values[`${id}.${subKey}`] = current;
+          }
+          if (prev !== null && prev !== undefined) {
+            values[`${id}.${subKey}Prev`] = prev;
+          }
+        }
+      }
+    }
+
+    return values;
   }
 
   private checkEntryConditions(context: EvaluationContext): {

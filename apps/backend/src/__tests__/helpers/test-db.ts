@@ -226,6 +226,10 @@ CREATE TABLE IF NOT EXISTS trade_executions (
   accumulated_funding NUMERIC(20, 8) DEFAULT '0',
   position_side VARCHAR(10) DEFAULT 'BOTH',
   margin_top_up_count INTEGER DEFAULT 0,
+  trigger_kline_index INTEGER,
+  trigger_kline_open_time BIGINT,
+  trigger_candle_data TEXT,
+  trigger_indicator_values TEXT,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );

@@ -95,7 +95,7 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
     };
 
     try {
-      const result = await runBacktest(config);
+      const result = await runBacktest(config) as { id: string } | null;
 
       if (result && onBacktestComplete) {
         onBacktestComplete(result.id);

@@ -1,8 +1,10 @@
+import type { HighlightedCandle } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { drawKline } from '@renderer/utils/canvas/drawingUtils';
+import { drawCandleLabel, drawKline } from '@renderer/utils/canvas/drawingUtils';
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineTrades, getKlineVolume } from '@shared/utils';
+import type { MutableRefObject } from 'react';
 import { useCallback } from 'react';
 
 export interface UseKlineRendererProps {
@@ -12,11 +14,19 @@ export interface UseKlineRendererProps {
   rightMargin?: number;
   klineWickWidth?: number;
   hoveredKlineIndex?: number;
+  highlightedCandlesRef?: MutableRefObject<HighlightedCandle[]>;
 }
 
 export interface UseKlineRendererReturn {
   render: () => void;
 }
+
+const HIGHLIGHT_LABEL_COLORS = {
+  trigger: '#9333ea',
+  confirmation: '#3b82f6',
+  reference: '#6b7280',
+  context: '#94a3b8',
+};
 
 export const useKlineRenderer = ({
   manager,
@@ -25,6 +35,7 @@ export const useKlineRenderer = ({
   rightMargin,
   klineWickWidth,
   hoveredKlineIndex,
+  highlightedCandlesRef,
 }: UseKlineRendererProps): UseKlineRendererReturn => {
   const render = useCallback((): void => {
     if (!manager || !enabled) return;
@@ -56,6 +67,11 @@ export const useKlineRenderer = ({
     ctx.rect(0, 0, effectiveWidth, chartHeight);
     ctx.clip();
 
+    const highlightedCandles = highlightedCandlesRef?.current ?? [];
+    const highlightedIndicesMap = new Map(
+      highlightedCandles.map((c) => [c.index, c])
+    );
+
     visibleKlines.forEach((kline, index) => {
       const actualIndex = Math.floor(viewport.start) + index;
       const x = manager.indexToX(actualIndex);
@@ -69,7 +85,8 @@ export const useKlineRenderer = ({
       const highY = manager.priceToY(getKlineHigh(kline));
       const lowY = manager.priceToY(getKlineLow(kline));
 
-      const isHovered = hoveredKlineIndex === actualIndex;
+      const highlightedCandle = highlightedIndicesMap.get(actualIndex);
+      const isHovered = hoveredKlineIndex === actualIndex || !!highlightedCandle;
 
       drawKline(
         ctx,
@@ -84,6 +101,13 @@ export const useKlineRenderer = ({
         colors.bearish,
         isHovered,
       );
+
+      if (highlightedCandle && klineWidth >= 4) {
+        const labelColor = HIGHLIGHT_LABEL_COLORS[highlightedCandle.role] ?? HIGHLIGHT_LABEL_COLORS.context;
+        const labelText = highlightedCandle.offset.toString();
+        const labelX = klineX + klineWidth / 2;
+        drawCandleLabel(ctx, labelX, highY, labelText, labelColor);
+      }
 
       if (klineWidth >= 4 && avgTrades > 0) {
         const trades = getKlineTrades(kline);

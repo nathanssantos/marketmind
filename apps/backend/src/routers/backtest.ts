@@ -1,12 +1,14 @@
-import type { Interval, BacktestConfig } from '@marketmind/types';
+import type { Interval, BacktestConfig, BacktestResult } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { BacktestEngine } from '../services/backtesting/BacktestEngine';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
 
+type CachedBacktestResult = Partial<BacktestResult> & { id: string; status: BacktestResult['status'] };
+
 const MAX_CACHE_SIZE = 100;
-const backtestResults = new Map<string, { createdAt: number; data: unknown }>();
+const backtestResults = new Map<string, { createdAt: number; data: CachedBacktestResult }>();
 
 const evictOldestIfNeeded = () => {
   if (backtestResults.size >= MAX_CACHE_SIZE) {
@@ -24,12 +26,12 @@ const evictOldestIfNeeded = () => {
   }
 };
 
-const setCacheEntry = (id: string, data: unknown) => {
+const setCacheEntry = (id: string, data: CachedBacktestResult) => {
   evictOldestIfNeeded();
   backtestResults.set(id, { createdAt: Date.now(), data });
 };
 
-const getCacheEntry = (id: string): unknown | undefined => {
+const getCacheEntry = (id: string): CachedBacktestResult | undefined => {
   const entry = backtestResults.get(id);
   return entry?.data;
 };
@@ -159,26 +161,26 @@ export const backtestRouter = router({
   list: protectedProcedure.query(async () => {
     const results = Array.from(backtestResults.values())
       .map((entry) => {
-        const result = entry.data as Record<string, unknown>;
-        const config = result.config as Record<string, unknown>;
-        const metrics = result.metrics as Record<string, number> | undefined;
+        const result = entry.data;
+        const config = result.config;
+        const metrics = result.metrics;
         return {
           id: result.id,
-          symbol: config.symbol,
-          interval: config.interval,
-          startDate: config.startDate,
-          endDate: config.endDate,
-          initialCapital: config.initialCapital as number,
+          symbol: config?.symbol ?? '',
+          interval: config?.interval ?? '',
+          startDate: config?.startDate ?? '',
+          endDate: config?.endDate ?? '',
+          initialCapital: config?.initialCapital ?? 0,
           finalEquity: metrics?.totalPnl
-            ? (config.initialCapital as number) + metrics.totalPnl
-            : config.initialCapital,
+            ? (config?.initialCapital ?? 0) + metrics.totalPnl
+            : (config?.initialCapital ?? 0),
           totalPnl: metrics?.totalPnl ?? 0,
           totalPnlPercent: metrics?.totalPnlPercent ?? 0,
           winRate: metrics?.winRate ?? 0,
           totalTrades: metrics?.totalTrades ?? 0,
           maxDrawdown: metrics?.maxDrawdown ?? 0,
           sharpeRatio: metrics?.sharpeRatio,
-          createdAt: result.startTime as string,
+          createdAt: result.startTime ?? '',
           status: result.status,
         };
       })

@@ -172,5 +172,22 @@
       "period": 200,
       "allowCounterTrend": false
     }
+  },
+  "education": {
+    "origin": "Olivier Seban - Supertrend indicator for trend following",
+    "createdYear": 2009,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        { "offset": -1, "role": "reference", "descriptionKey": "strategies.supertrend.candleMinus1" },
+        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.supertrend.candleTrigger" }
+      ],
+      "indicatorsToShow": ["supertrend", "ema20", "atr"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.supertrend.summary",
+      "entryKey": "strategies.supertrend.entry",
+      "exitKey": "strategies.supertrend.exit"
+    }
   }
 }

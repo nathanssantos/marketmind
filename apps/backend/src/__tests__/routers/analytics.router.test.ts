@@ -160,11 +160,11 @@ describe('Analytics Router', () => {
     });
 
     it('should not return trades from other users', async () => {
-      const { user: user1, session: session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
+      const { user: user1, session: _session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
       const { user: user2, session: session2 } = await createAuthenticatedUser({ email: 'user2@test.com' });
 
       const wallet1 = await createTestWallet({ userId: user1.id, walletType: 'paper' });
-      const wallet2 = await createTestWallet({ userId: user2.id, walletType: 'paper' });
+      await createTestWallet({ userId: user2.id, walletType: 'paper' });
 
       await createTestTradeExecution({
         userId: user1.id,

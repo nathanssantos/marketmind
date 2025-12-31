@@ -204,5 +204,21 @@
       "period": 200,
       "allowCounterTrend": true
     }
+  },
+  "education": {
+    "origin": "MarketMind - Triple indicator confirmation system",
+    "createdYear": 2024,
+    "candlePattern": {
+      "lookback": 1,
+      "candles": [
+        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.tripleConf.candleTrigger" }
+      ],
+      "indicatorsToShow": ["rsi", "mfi", "bb", "atr"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.tripleConf.summary",
+      "entryKey": "strategies.tripleConf.entry",
+      "exitKey": "strategies.tripleConf.exit"
+    }
   }
 }

@@ -39,7 +39,7 @@ export const useBacktesting = () => {
     async (id: string): Promise<BacktestResult | null> => {
       try {
         const result = await utils.client.backtest.getResult.query({ id });
-        return result;
+        return result as BacktestResult | null;
       } catch (error) {
         console.error('Error fetching backtest result:', error);
         return null;

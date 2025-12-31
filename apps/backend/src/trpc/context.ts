@@ -4,6 +4,10 @@ import { db } from '../db/client';
 import { validateSession } from '../services/auth';
 import type { WebSocketService } from '../services/websocket';
 
+interface RequestWithCookies {
+  cookies?: Record<string, string>;
+}
+
 let websocketService: WebSocketService | null = null;
 
 export const setWebSocketService = (ws: WebSocketService) => {
@@ -11,7 +15,7 @@ export const setWebSocketService = (ws: WebSocketService) => {
 };
 
 export const createContext = async ({ req, res }: CreateFastifyContextOptions) => {
-  const sessionId = req.cookies?.['session'];
+  const sessionId = (req as RequestWithCookies).cookies?.['session'];
 
   if (!sessionId) {
     return {

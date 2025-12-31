@@ -480,7 +480,6 @@ describe('PyramidingService', () => {
 
   describe('adjustStopLossForPyramid', () => {
     it('should return null for single execution', async () => {
-      const db = getTestDatabase();
       const executions = [
         {
           id: 'exec-1',

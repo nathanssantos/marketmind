@@ -22,8 +22,6 @@ import { checkStochasticCondition } from '../../../utils/stochastic-filter';
 
 const createMockKlines = (count: number): Kline[] => {
   return Array(count).fill(null).map((_, i) => ({
-    symbol: 'BTCUSDT',
-    interval: '1h',
     openTime: Date.now() + i * 3600000,
     closeTime: Date.now() + (i + 1) * 3600000,
     open: String(50000 + i * 100),
@@ -31,10 +29,10 @@ const createMockKlines = (count: number): Kline[] => {
     low: String(49500 + i * 100),
     close: String(50100 + i * 100),
     volume: '1000',
-    quoteAssetVolume: '50000000',
-    numberOfTrades: 1000,
-    takerBuyBaseAssetVolume: '500',
-    takerBuyQuoteAssetVolume: '25000000',
+    quoteVolume: '50000000',
+    trades: 1000,
+    takerBuyBaseVolume: '500',
+    takerBuyQuoteVolume: '25000000',
   }));
 };
 
@@ -44,8 +42,8 @@ describe('FilterManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(calculateEMA).mockReturnValue([50000, 50100, 50200, 50300, 50400]);
-    vi.mocked(checkAdxCondition).mockReturnValue({ isAllowed: true, reason: 'ADX passed' });
-    vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: true, reason: 'Stochastic passed' });
+    vi.mocked(checkAdxCondition).mockReturnValue({ isAllowed: true, adx: 25, plusDI: 30, minusDI: 15, isBullish: true, isBearish: false, isStrongTrend: true, reason: 'ADX passed' });
+    vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: true, currentK: 50, hadOversold: true, hadOverbought: false, oversoldMoreRecent: true, overboughtMoreRecent: false, reason: 'Stochastic passed' });
     manager = new FilterManager({});
   });
 
@@ -266,7 +264,7 @@ describe('FilterManager', () => {
     });
 
     it('should block when stochastic condition fails', () => {
-      vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: false, reason: 'Failed' });
+      vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: false, currentK: 50, hadOversold: false, hadOverbought: true, oversoldMoreRecent: false, overboughtMoreRecent: true, reason: 'Failed' });
       const customManager = new FilterManager({ useStochasticFilter: true });
       const klines = createMockKlines(50);
 
@@ -305,7 +303,7 @@ describe('FilterManager', () => {
     });
 
     it('should block when ADX condition fails', () => {
-      vi.mocked(checkAdxCondition).mockReturnValue({ isAllowed: false, reason: 'ADX too low' });
+      vi.mocked(checkAdxCondition).mockReturnValue({ isAllowed: false, adx: 15, plusDI: 20, minusDI: 25, isBullish: false, isBearish: true, isStrongTrend: false, reason: 'ADX too low' });
       const customManager = new FilterManager({ useAdxFilter: true });
       const klines = createMockKlines(50);
 

@@ -8,6 +8,7 @@ import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
 import { type OrdersFilterOption, type OrdersSortOption, useUIStore } from '@renderer/store/uiStore';
+import { StrategyInfoPopover } from './StrategyInfoPopover';
 import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from './TradingTable';
 import {
   getOrderId,
@@ -438,7 +439,18 @@ const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateToSymbol
                 FUTURES
               </Badge>
             )}
-            {order.setupType && (
+            {order.setupType && order.isAutoTrade && order.id && order.symbol && (
+              <StrategyInfoPopover
+                setupType={order.setupType}
+                executionId={order.id}
+                symbol={order.symbol}
+              >
+                <Badge colorPalette="purple" size="sm" px={2} cursor="pointer">
+                  {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
+                </Badge>
+              </StrategyInfoPopover>
+            )}
+            {order.setupType && !order.isAutoTrade && (
               <Badge colorPalette="purple" size="sm" px={2}>
                 {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
               </Badge>
@@ -752,7 +764,17 @@ const OrdersTable = memo(({ orders, currency, onCancel, onClose, onNavigateToSym
               </Badge>
             </TradingTableCell>
             <TradingTableCell>
-              {order.setupType ? (
+              {order.setupType && order.isAutoTrade && order.id && order.symbol ? (
+                <StrategyInfoPopover
+                  setupType={order.setupType}
+                  executionId={order.id}
+                  symbol={order.symbol}
+                >
+                  <Badge colorPalette="purple" size="sm" px={2} cursor="pointer">
+                    {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
+                  </Badge>
+                </StrategyInfoPopover>
+              ) : order.setupType ? (
                 <Badge colorPalette="purple" size="sm" px={2}>
                   {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
                 </Badge>

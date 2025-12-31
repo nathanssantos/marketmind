@@ -9,6 +9,7 @@ import { usePortfolioFilters } from '@renderer/hooks/usePortfolioFilters';
 import { usePositionUpdates } from '@renderer/hooks/usePositionUpdates';
 import { type PortfolioFilterOption, type PortfolioSortOption, useUIStore } from '@renderer/store/uiStore';
 import { usePricesForSymbols } from '@renderer/store/priceStore';
+import { StrategyInfoPopover } from './StrategyInfoPopover';
 import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from './TradingTable';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -359,7 +360,17 @@ const PortfolioTable = memo(({ positions, currency, onNavigateToSymbol }: Portfo
             </TradingTableCell>
             <TradingTableCell>
               {position.setupType ? (
-                <Badge colorPalette="purple" size="sm" px={2}>{position.setupType}</Badge>
+                position.isAutoTrade ? (
+                  <StrategyInfoPopover
+                    setupType={position.setupType}
+                    executionId={position.id}
+                    symbol={position.symbol}
+                  >
+                    <Badge colorPalette="purple" size="sm" px={2}>{position.setupType}</Badge>
+                  </StrategyInfoPopover>
+                ) : (
+                  <Badge colorPalette="purple" size="sm" px={2}>{position.setupType}</Badge>
+                )
               ) : '-'}
             </TradingTableCell>
             <TradingTableCell>
@@ -455,9 +466,21 @@ const PositionCard = memo(({ position, currency, onNavigateToSymbol }: PositionC
             </Badge>
           )}
           {position.setupType && (
-            <Badge colorPalette="purple" size="sm" px={2}>
-              {position.setupType}
-            </Badge>
+            position.isAutoTrade ? (
+              <StrategyInfoPopover
+                setupType={position.setupType}
+                executionId={position.id}
+                symbol={position.symbol}
+              >
+                <Badge colorPalette="purple" size="sm" px={2}>
+                  {position.setupType}
+                </Badge>
+              </StrategyInfoPopover>
+            ) : (
+              <Badge colorPalette="purple" size="sm" px={2}>
+                {position.setupType}
+              </Badge>
+            )
           )}
         </Flex>
       </Stack>

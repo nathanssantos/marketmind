@@ -9,7 +9,7 @@ vi.mock('../../setup-detection/dynamic', () => ({
   },
 }));
 
-import { ExitManager, type ExitConfig, type TrailingStopState } from '../ExitManager';
+import { ExitManager, type TrailingStopState } from '../ExitManager';
 import { ConditionEvaluator } from '../../setup-detection/dynamic';
 
 const createMockKline = (options: {
@@ -19,8 +19,6 @@ const createMockKline = (options: {
   low: string;
   close: string;
 }): Kline => ({
-  symbol: 'BTCUSDT',
-  interval: '1h',
   openTime: options.openTime,
   closeTime: options.openTime + 3600000,
   open: options.open,
@@ -28,10 +26,10 @@ const createMockKline = (options: {
   low: options.low,
   close: options.close,
   volume: '1000',
-  quoteAssetVolume: '50000000',
-  numberOfTrades: 1000,
-  takerBuyBaseAssetVolume: '500',
-  takerBuyQuoteAssetVolume: '25000000',
+  quoteVolume: '50000000',
+  trades: 1000,
+  takerBuyBaseVolume: '500',
+  takerBuyQuoteVolume: '25000000',
 });
 
 const createMockSetup = (direction: 'LONG' | 'SHORT', entryPrice: number, atr?: number) => ({
@@ -410,7 +408,7 @@ describe('ExitManager', () => {
       );
 
       expect(result).not.toBeNull();
-      expect(result?.exitReason).toBe('STOP_LOSS');
+      expect(result!.exitReason).toBe('STOP_LOSS');
     });
 
     it('should exit on take profit hit', () => {
@@ -427,7 +425,7 @@ describe('ExitManager', () => {
       );
 
       expect(result).not.toBeNull();
-      expect(result?.exitReason).toBe('TAKE_PROFIT');
+      expect(result!.exitReason).toBe('TAKE_PROFIT');
     });
 
     it('should exit on exit condition met', () => {
@@ -446,13 +444,12 @@ describe('ExitManager', () => {
         description: 'Test',
         author: 'test',
         parameters: {},
-        indicators: [],
-        conditions: { entry: [], confirmation: [] },
-        entry: { type: 'market' },
+        indicators: {},
+        entry: {},
         exit: {
-          stopLoss: { type: 'percent', percent: 2 },
-          takeProfit: { type: 'percent', percent: 4 },
-          conditions: { long: { type: 'comparison', operator: '>' } },
+          stopLoss: { type: 'percent', value: 2 },
+          takeProfit: { type: 'percent', value: 4 },
+          conditions: { long: { operator: 'OR', conditions: [] } },
         },
       };
 
@@ -461,7 +458,7 @@ describe('ExitManager', () => {
       );
 
       expect(result).not.toBeNull();
-      expect(result?.exitReason).toBe('EXIT_CONDITION');
+      expect(result!.exitReason).toBe('EXIT_CONDITION');
     });
 
     it('should exit on max bars reached', () => {
@@ -480,12 +477,11 @@ describe('ExitManager', () => {
         description: 'Test',
         author: 'test',
         parameters: {},
-        indicators: [],
-        conditions: { entry: [], confirmation: [] },
-        entry: { type: 'market' },
+        indicators: {},
+        entry: {},
         exit: {
-          stopLoss: { type: 'percent', percent: 2 },
-          takeProfit: { type: 'percent', percent: 4 },
+          stopLoss: { type: 'percent', value: 2 },
+          takeProfit: { type: 'percent', value: 4 },
           maxBarsInTrade: 2,
         },
       };
@@ -495,7 +491,7 @@ describe('ExitManager', () => {
       );
 
       expect(result).not.toBeNull();
-      expect(result?.exitReason).toBe('MAX_BARS');
+      expect(result!.exitReason).toBe('MAX_BARS');
     });
 
     it('should exit at end of period when no other exit', () => {
@@ -512,8 +508,8 @@ describe('ExitManager', () => {
       );
 
       expect(result).not.toBeNull();
-      expect(result?.exitReason).toBe('END_OF_PERIOD');
-      expect(result?.exitPrice).toBe(50300);
+      expect(result!.exitReason).toBe('END_OF_PERIOD');
+      expect(result!.exitPrice).toBe(50300);
     });
 
     it('should use trailing stop when enabled', () => {

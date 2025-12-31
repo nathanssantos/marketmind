@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { setupTestDatabase, teardownTestDatabase, getTestDatabase, cleanupTables } from '../helpers/test-db';
 import { createTestWallet, createAuthenticatedUser } from '../helpers/test-fixtures';
 import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpers/test-caller';
@@ -342,7 +342,7 @@ describe('Futures Trading Router', () => {
 
       expect(positions.length).toBe(1);
       expect(positions[0]!.symbol).toBe('BTCUSDT');
-      expect(positions[0]!.marketType).toBe('FUTURES');
+      expect((positions[0] as { marketType: string }).marketType).toBe('FUTURES');
     });
   });
 
@@ -384,7 +384,7 @@ describe('Futures Trading Router', () => {
 
       expect(position).toBeDefined();
       expect(position!.symbol).toBe('BTCUSDT');
-      expect(position!.side).toBe('LONG');
+      expect((position as { side: string }).side).toBe('LONG');
     });
   });
 
@@ -677,8 +677,8 @@ describe('Futures Trading Router', () => {
       const fundingRate = await caller.futuresTrading.getFundingRate({ symbol: 'BTCUSDT' });
 
       expect(fundingRate).toBeDefined();
-      expect(fundingRate!.symbol).toBe('BTCUSDT');
-      expect(fundingRate!.fundingRate).toBe('0.0001');
+      expect((fundingRate as unknown as { symbol: string }).symbol).toBe('BTCUSDT');
+      expect((fundingRate as unknown as { fundingRate: string }).fundingRate).toBe('0.0001');
     });
   });
 

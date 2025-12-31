@@ -245,7 +245,7 @@ describe('Setup Router', () => {
     });
 
     it('should not return detections from other users', async () => {
-      const { user: user1, session: session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
+      const { user: user1, session: _session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
       const { user: user2, session: session2 } = await createAuthenticatedUser({ email: 'user2@test.com' });
 
       await createTestSetupDetection({
@@ -352,7 +352,7 @@ describe('Setup Router', () => {
     });
 
     it('should not include detections from other users', async () => {
-      const { user: user1, session: session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
+      const { user: user1, session: _session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
       const { user: user2, session: session2 } = await createAuthenticatedUser({ email: 'user2@test.com' });
 
       await createTestSetupDetection({

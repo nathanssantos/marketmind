@@ -479,7 +479,13 @@ export class AutoTradingScheduler {
         const result = interpreter.detect(mappedKlines, currentIndex);
 
         if (result.setup && result.confidence >= 50) {
-          detectedSetups.push(result.setup);
+          const setupWithTriggerData = {
+            ...result.setup,
+            triggerKlineIndex: result.triggerKlineIndex,
+            triggerCandleData: result.triggerCandleData,
+            triggerIndicatorValues: result.triggerIndicatorValues,
+          };
+          detectedSetups.push(setupWithTriggerData);
           log('📍 Setup detected', {
             type: result.setup.type,
             direction: result.setup.direction,
@@ -1255,6 +1261,7 @@ export class AutoTradingScheduler {
               const expiresAt = new Date(Date.now() + (expirationBars * intervalMs));
 
               try {
+                const triggerCandle = setup.triggerCandleData?.find(c => c.offset === 0);
                 await db.insert(tradeExecutions).values({
                   id: executionId,
                   userId: watcher.userId,
@@ -1273,6 +1280,10 @@ export class AutoTradingScheduler {
                   limitEntryPrice: setup.limitEntryPrice.toString(),
                   expiresAt,
                   marketType: watcher.marketType,
+                  triggerKlineIndex: setup.triggerKlineIndex,
+                  triggerKlineOpenTime: triggerCandle?.openTime,
+                  triggerCandleData: setup.triggerCandleData ? JSON.stringify(setup.triggerCandleData) : null,
+                  triggerIndicatorValues: setup.triggerIndicatorValues ? JSON.stringify(setup.triggerIndicatorValues) : null,
                 });
 
                 log('✅ PENDING order created - waiting for price to reach limit', {
@@ -1422,6 +1433,7 @@ export class AutoTradingScheduler {
       });
 
       try {
+        const triggerCandle = setup.triggerCandleData?.find(c => c.offset === 0);
         await db.insert(tradeExecutions).values({
           id: executionId,
           userId: watcher.userId,
@@ -1442,6 +1454,10 @@ export class AutoTradingScheduler {
           status: 'open',
           entryOrderType: useLimit ? 'LIMIT' : 'MARKET',
           marketType: watcher.marketType,
+          triggerKlineIndex: setup.triggerKlineIndex,
+          triggerKlineOpenTime: triggerCandle?.openTime,
+          triggerCandleData: setup.triggerCandleData ? JSON.stringify(setup.triggerCandleData) : null,
+          triggerIndicatorValues: setup.triggerIndicatorValues ? JSON.stringify(setup.triggerIndicatorValues) : null,
         });
 
         log('✅ Trade execution inserted into database', { executionId });

@@ -30,8 +30,6 @@ const createMockKline = (options: {
   low: string;
   close: string;
 }): Kline => ({
-  symbol: 'BTCUSDT',
-  interval: '1h',
   openTime: options.openTime,
   closeTime: options.openTime + 3600000,
   open: options.open,
@@ -39,10 +37,10 @@ const createMockKline = (options: {
   low: options.low,
   close: options.close,
   volume: '1000',
-  quoteAssetVolume: '50000000',
-  numberOfTrades: 1000,
-  takerBuyBaseAssetVolume: '500',
-  takerBuyQuoteAssetVolume: '25000000',
+  quoteVolume: '50000000',
+  trades: 1000,
+  takerBuyBaseVolume: '500',
+  takerBuyQuoteVolume: '25000000',
 });
 
 const createMockSetup = (direction: 'LONG' | 'SHORT', options?: {
@@ -132,9 +130,9 @@ describe('TradeExecutor', () => {
       const result = executor.calculateRollingStats(trades);
 
       expect(result).not.toBeNull();
-      expect(result?.winRate).toBe(0.6);
-      expect(result?.avgWinPercent).toBe(8);
-      expect(result?.avgLossPercent).toBe(4);
+      expect(result!.winRate).toBe(0.6);
+      expect(result!.avgWinPercent).toBe(8);
+      expect(result!.avgLossPercent).toBe(4);
     });
 
     it('should respect lookback parameter', () => {
@@ -149,7 +147,7 @@ describe('TradeExecutor', () => {
       const result = executor.calculateRollingStats(trades, 3);
 
       expect(result).not.toBeNull();
-      expect(result?.winRate).toBeCloseTo(0.667, 2);
+      expect(result!.winRate).toBeCloseTo(0.667, 2);
     });
   });
 

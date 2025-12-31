@@ -57,6 +57,7 @@ import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
 import { useIndicatorStore, useSetupStore } from '@renderer/store';
 import { useShallow } from 'zustand/shallow';
 import { usePriceStore } from '@renderer/store/priceStore';
+import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
 import { trpc } from '@renderer/utils/trpc';
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume, isOrderLong, isOrderPending } from '@shared/utils';
@@ -189,6 +190,14 @@ export const ChartCanvas = ({
   const getQuantityForSymbol = (sym: string) => quantityBySymbol[sym] ?? 1;
 
   const detectedSetups = useSetupStore((state) => state.detectedSetups);
+
+  const highlightedCandlesRef = useRef(useStrategyVisualizationStore.getState().highlightedCandles);
+  useEffect(() => {
+    const unsubscribe = useStrategyVisualizationStore.subscribe((state) => {
+      highlightedCandlesRef.current = state.highlightedCandles;
+    });
+    return () => unsubscribe();
+  }, []);
 
   const { watcherStatus } = useBackendAutoTrading(backendWalletId ?? '');
   const isAutoTradingActive = watcherStatus?.active ?? false;
@@ -420,6 +429,7 @@ export const ChartCanvas = ({
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
     ...(advancedConfig?.klineWickWidth !== undefined && { klineWickWidth: advancedConfig.klineWickWidth }),
     ...(tooltipData.klineIndex !== undefined && { hoveredKlineIndex: tooltipData.klineIndex }),
+    highlightedCandlesRef,
   });
 
   const { render: renderLineChart } = useLineChartRenderer({

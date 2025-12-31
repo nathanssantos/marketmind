@@ -164,5 +164,22 @@
       "period": 200,
       "allowCounterTrend": false
     }
+  },
+  "education": {
+    "origin": "Dr. Alexander Elder - 'Trading for a Living' (1993)",
+    "createdYear": 1993,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        { "offset": -1, "role": "reference", "descriptionKey": "strategies.elderRay.candleMinus1" },
+        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.elderRay.candleTrigger" }
+      ],
+      "indicatorsToShow": ["elderRay", "ema", "atr"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.elderRay.summary",
+      "entryKey": "strategies.elderRay.entry",
+      "exitKey": "strategies.elderRay.exit"
+    }
   }
 }

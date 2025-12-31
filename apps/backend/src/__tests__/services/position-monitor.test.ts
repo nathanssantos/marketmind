@@ -92,7 +92,7 @@ describe('PositionMonitorService', () => {
     stopLoss?: string | null;
     takeProfit?: string | null;
     status?: string;
-    marketType?: string;
+    marketType?: 'SPOT' | 'FUTURES';
     limitEntryPrice?: string | null;
     expiresAt?: Date | null;
   }) => {
@@ -155,10 +155,10 @@ describe('PositionMonitorService', () => {
         takeProfit: '52000',
       });
 
-      const result = await service.checkPosition(execution);
+      const result = await service.checkPosition(execution!);
 
       expect(result.action).toBe('NONE');
-      expect(result.executionId).toBe(execution.id);
+      expect(result.executionId).toBe(execution!.id);
     });
 
     it('should return NONE when no SL/TP is set', async () => {
@@ -174,7 +174,7 @@ describe('PositionMonitorService', () => {
         takeProfit: null,
       });
 
-      const result = await service.checkPosition(execution);
+      const result = await service.checkPosition(execution!);
 
       expect(result.action).toBe('NONE');
     });
@@ -196,8 +196,8 @@ describe('PositionMonitorService', () => {
       await service.checkPendingOrders();
 
       const executions = await db.select().from(schema.tradeExecutions);
-      expect(executions[0].status).toBe('cancelled');
-      expect(executions[0].exitReason).toBe('LIMIT_EXPIRED');
+      expect(executions[0]!.status).toBe('cancelled');
+      expect(executions[0]!.exitReason).toBe('LIMIT_EXPIRED');
     });
 
     it('should cancel orders without limit price', async () => {
@@ -215,8 +215,8 @@ describe('PositionMonitorService', () => {
       await service.checkPendingOrders();
 
       const executions = await db.select().from(schema.tradeExecutions);
-      expect(executions[0].status).toBe('cancelled');
-      expect(executions[0].exitReason).toBe('INVALID_ORDER');
+      expect(executions[0]!.status).toBe('cancelled');
+      expect(executions[0]!.exitReason).toBe('INVALID_ORDER');
     });
   });
 
@@ -253,17 +253,17 @@ describe('PositionMonitorService', () => {
         stopLoss: '49000',
       });
 
-      await service.executeExit(execution, 49000, 'STOP_LOSS');
+      await service.executeExit(execution!, 49000, 'STOP_LOSS');
 
       const [updatedExecution] = await db
         .select()
         .from(schema.tradeExecutions)
-        .where(eq(schema.tradeExecutions.id, execution.id));
+        .where(eq(schema.tradeExecutions.id, execution!.id));
 
-      expect(updatedExecution.status).toBe('closed');
-      expect(updatedExecution.exitReason).toBe('STOP_LOSS');
-      expect(updatedExecution.exitSource).toBe('ALGORITHM');
-      expect(parseFloat(updatedExecution.pnl!)).toBeLessThan(0);
+      expect(updatedExecution!.status).toBe('closed');
+      expect(updatedExecution!.exitReason).toBe('STOP_LOSS');
+      expect(updatedExecution!.exitSource).toBe('ALGORITHM');
+      expect(parseFloat(updatedExecution!.pnl!)).toBeLessThan(0);
     });
 
     it('should close position and update wallet balance on take profit', async () => {
@@ -279,16 +279,16 @@ describe('PositionMonitorService', () => {
         takeProfit: '52000',
       });
 
-      await service.executeExit(execution, 52000, 'TAKE_PROFIT');
+      await service.executeExit(execution!, 52000, 'TAKE_PROFIT');
 
       const [updatedExecution] = await db
         .select()
         .from(schema.tradeExecutions)
-        .where(eq(schema.tradeExecutions.id, execution.id));
+        .where(eq(schema.tradeExecutions.id, execution!.id));
 
-      expect(updatedExecution.status).toBe('closed');
-      expect(updatedExecution.exitReason).toBe('TAKE_PROFIT');
-      expect(parseFloat(updatedExecution.pnl!)).toBeGreaterThan(0);
+      expect(updatedExecution!.status).toBe('closed');
+      expect(updatedExecution!.exitReason).toBe('TAKE_PROFIT');
+      expect(parseFloat(updatedExecution!.pnl!)).toBeGreaterThan(0);
     });
 
     it('should calculate PnL correctly for LONG position', async () => {
@@ -303,15 +303,15 @@ describe('PositionMonitorService', () => {
         quantity: '0.1',
       });
 
-      await service.executeExit(execution, 51000, 'TAKE_PROFIT');
+      await service.executeExit(execution!, 51000, 'TAKE_PROFIT');
 
       const [updatedExecution] = await db
         .select()
         .from(schema.tradeExecutions)
-        .where(eq(schema.tradeExecutions.id, execution.id));
+        .where(eq(schema.tradeExecutions.id, execution!.id));
 
       const grossPnl = (51000 - 50000) * 0.1;
-      expect(parseFloat(updatedExecution.pnl!)).toBeLessThan(grossPnl);
+      expect(parseFloat(updatedExecution!.pnl!)).toBeLessThan(grossPnl);
     });
 
     it('should calculate PnL correctly for SHORT position', async () => {
@@ -328,14 +328,14 @@ describe('PositionMonitorService', () => {
         takeProfit: '48000',
       });
 
-      await service.executeExit(execution, 48000, 'TAKE_PROFIT');
+      await service.executeExit(execution!, 48000, 'TAKE_PROFIT');
 
       const [updatedExecution] = await db
         .select()
         .from(schema.tradeExecutions)
-        .where(eq(schema.tradeExecutions.id, execution.id));
+        .where(eq(schema.tradeExecutions.id, execution!.id));
 
-      expect(parseFloat(updatedExecution.pnl!)).toBeGreaterThan(0);
+      expect(parseFloat(updatedExecution!.pnl!)).toBeGreaterThan(0);
     });
 
     it('should not exit zero quantity position', async () => {
@@ -348,14 +348,14 @@ describe('PositionMonitorService', () => {
         quantity: '0',
       });
 
-      await service.executeExit(execution, 49000, 'STOP_LOSS');
+      await service.executeExit(execution!, 49000, 'STOP_LOSS');
 
       const [updatedExecution] = await db
         .select()
         .from(schema.tradeExecutions)
-        .where(eq(schema.tradeExecutions.id, execution.id));
+        .where(eq(schema.tradeExecutions.id, execution!.id));
 
-      expect(updatedExecution.status).toBe('open');
+      expect(updatedExecution!.status).toBe('open');
     });
 
     it('should skip if position already closed', async () => {
@@ -368,14 +368,14 @@ describe('PositionMonitorService', () => {
         status: 'closed',
       });
 
-      await service.executeExit(execution, 49000, 'STOP_LOSS');
+      await service.executeExit(execution!, 49000, 'STOP_LOSS');
 
       const [updatedExecution] = await db
         .select()
         .from(schema.tradeExecutions)
-        .where(eq(schema.tradeExecutions.id, execution.id));
+        .where(eq(schema.tradeExecutions.id, execution!.id));
 
-      expect(updatedExecution.status).toBe('closed');
+      expect(updatedExecution!.status).toBe('closed');
     });
 
     it('should prevent duplicate exits', async () => {
@@ -388,8 +388,8 @@ describe('PositionMonitorService', () => {
       });
 
       const exitPromises = [
-        service.executeExit(execution, 49000, 'STOP_LOSS'),
-        service.executeExit(execution, 49000, 'STOP_LOSS'),
+        service.executeExit(execution!, 49000, 'STOP_LOSS'),
+        service.executeExit(execution!, 49000, 'STOP_LOSS'),
       ];
 
       await Promise.all(exitPromises);
@@ -397,7 +397,7 @@ describe('PositionMonitorService', () => {
       const executions = await db
         .select()
         .from(schema.tradeExecutions)
-        .where(eq(schema.tradeExecutions.id, execution.id));
+        .where(eq(schema.tradeExecutions.id, execution!.id));
 
       expect(executions.length).toBe(1);
     });
@@ -417,7 +417,7 @@ describe('PositionMonitorService', () => {
         takeProfit: '52000',
       });
 
-      const result = await service.checkPosition(execution);
+      const result = await service.checkPosition(execution!);
 
       expect(result.action).toBe('STOP_LOSS');
     });
@@ -437,7 +437,7 @@ describe('PositionMonitorService', () => {
         takeProfit: '48000',
       });
 
-      const result = await service.checkPosition(execution);
+      const result = await service.checkPosition(execution!);
 
       expect(result.action).toBe('STOP_LOSS');
     });
@@ -448,14 +448,14 @@ describe('PositionMonitorService', () => {
       const { user } = await createAuthenticatedUser();
       const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
 
-      const exec1 = await createTestExecution({
+      await createTestExecution({
         userId: user.id,
         walletId: wallet.id,
         side: 'LONG',
         stopLoss: '48000',
       });
 
-      const exec2 = await createTestExecution({
+      await createTestExecution({
         userId: user.id,
         walletId: wallet.id,
         side: 'LONG',
@@ -497,14 +497,14 @@ describe('PositionMonitorService', () => {
         quantity: '0.1',
       });
 
-      await service.executeExit(execution, 55000, 'TAKE_PROFIT');
+      await service.executeExit(execution!, 55000, 'TAKE_PROFIT');
 
       const [updatedWallet] = await db
         .select()
         .from(schema.wallets)
         .where(eq(schema.wallets.id, wallet.id));
 
-      expect(parseFloat(updatedWallet.currentBalance!)).toBeGreaterThan(10000);
+      expect(parseFloat(updatedWallet!.currentBalance!)).toBeGreaterThan(10000);
     });
 
     it('should decrease balance on losing trade', async () => {
@@ -519,14 +519,14 @@ describe('PositionMonitorService', () => {
         quantity: '0.1',
       });
 
-      await service.executeExit(execution, 45000, 'STOP_LOSS');
+      await service.executeExit(execution!, 45000, 'STOP_LOSS');
 
       const [updatedWallet] = await db
         .select()
         .from(schema.wallets)
         .where(eq(schema.wallets.id, wallet.id));
 
-      expect(parseFloat(updatedWallet.currentBalance!)).toBeLessThan(10000);
+      expect(parseFloat(updatedWallet!.currentBalance!)).toBeLessThan(10000);
     });
   });
 });

@@ -7,10 +7,21 @@ import { users } from '../db/schema';
 import { createSession, createUser, invalidateSession, validateSession } from '../services/auth';
 import { publicProcedure, router } from '../trpc';
 
+interface CookieReply {
+  setCookie(name: string, value: string, options: {
+    httpOnly: boolean;
+    secure: boolean;
+    sameSite: string;
+    expires: Date;
+    path: string;
+  }): void;
+  clearCookie(name: string, options: { path: string }): void;
+}
+
 const setSessionCookie = (res: FastifyReply, sessionId: string, expiresAt: Date): void => {
-  res.setCookie('session', sessionId, {
+  (res as unknown as CookieReply).setCookie('session', sessionId, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env['NODE_ENV'] === 'production',
     sameSite: 'lax',
     expires: expiresAt,
     path: '/',
@@ -18,7 +29,7 @@ const setSessionCookie = (res: FastifyReply, sessionId: string, expiresAt: Date)
 };
 
 const clearSessionCookie = (res: FastifyReply): void => {
-  res.clearCookie('session', { path: '/' });
+  (res as unknown as CookieReply).clearCookie('session', { path: '/' });
 };
 
 export const authRouter = router({

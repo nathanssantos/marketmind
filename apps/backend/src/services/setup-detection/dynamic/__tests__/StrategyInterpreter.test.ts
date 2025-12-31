@@ -12,7 +12,7 @@ vi.mock('../../../logger', () => ({
 
 vi.mock('../../../volatility-profile', () => ({
   calculateATRPercent: vi.fn().mockReturnValue(2.0),
-  getVolatilityAdjustedMultiplier: vi.fn((base) => base),
+  getVolatilityAdjustedMultiplier: vi.fn((_base) => _base),
   getVolatilityProfile: vi.fn().mockReturnValue({
     level: 'normal',
     breakevenThreshold: 0.005,
@@ -32,7 +32,7 @@ const mockMethods = {
         },
       },
     }),
-    resolveIndicatorValue: vi.fn().mockImplementation((indicators, ref) => {
+    resolveIndicatorValue: vi.fn().mockImplementation((_indicators, ref) => {
       if (ref === 'volume.current') return 1000000;
       if (ref === 'volume.sma20') return 800000;
       if (ref === 'ema') return 50000;
@@ -125,13 +125,14 @@ describe('StrategyInterpreter', () => {
       atr: { type: 'atr', params: { period: 14 } },
     },
     entry: {
-      required: [],
-      long: [
-        { left: 'close', op: '>', right: 'ema' },
-      ],
-      short: [
-        { left: 'close', op: '<', right: 'ema' },
-      ],
+      long: {
+        operator: 'AND',
+        conditions: [{ left: 'close', op: '>', right: 'ema' }],
+      },
+      short: {
+        operator: 'AND',
+        conditions: [{ left: 'close', op: '<', right: 'ema' }],
+      },
     },
     exit: {
       stopLoss: { type: 'atr', multiplier: 2 },
@@ -449,10 +450,10 @@ describe('StrategyInterpreter', () => {
       interpreter = new StrategyInterpreter(config);
       const ranges = interpreter.getParameterRanges();
 
-      expect(ranges.period.min).toBe(5);
-      expect(ranges.period.max).toBe(20);
-      expect(ranges.period.step).toBe(1);
-      expect(ranges.period.default).toBe(10);
+      expect(ranges.period!.min).toBe(5);
+      expect(ranges.period!.max).toBe(20);
+      expect(ranges.period!.step).toBe(1);
+      expect(ranges.period!.default).toBe(10);
     });
   });
 

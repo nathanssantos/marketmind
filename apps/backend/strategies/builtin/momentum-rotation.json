@@ -160,5 +160,21 @@
       "period": 200,
       "allowCounterTrend": false
     }
+  },
+  "education": {
+    "origin": "Gary Antonacci - 'Dual Momentum Investing' (2014)",
+    "createdYear": 2014,
+    "candlePattern": {
+      "lookback": 1,
+      "candles": [
+        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.momentumRotation.candleTrigger" }
+      ],
+      "indicatorsToShow": ["roc", "ema50", "atr"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.momentumRotation.summary",
+      "entryKey": "strategies.momentumRotation.entry",
+      "exitKey": "strategies.momentumRotation.exit"
+    }
   }
 }

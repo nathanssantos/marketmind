@@ -23,8 +23,6 @@ const createMockKlines = (count: number): Kline[] => {
   const klines: Kline[] = [];
   for (let i = 0; i < count; i++) {
     klines.push({
-      symbol: 'BTCUSDT',
-      interval: '1h',
       openTime: Date.now() - (count - i) * 3600000,
       closeTime: Date.now() - (count - i - 1) * 3600000,
       open: '50000',
@@ -32,10 +30,10 @@ const createMockKlines = (count: number): Kline[] => {
       low: '49500',
       close: '50100',
       volume: '1000',
-      quoteAssetVolume: '50100000',
-      numberOfTrades: 1000,
-      takerBuyBaseAssetVolume: '500',
-      takerBuyQuoteAssetVolume: '25050000',
+      quoteVolume: '50100000',
+      trades: 1000,
+      takerBuyBaseVolume: '500',
+      takerBuyQuoteVolume: '25050000',
     });
   }
   return klines;
@@ -48,30 +46,30 @@ const createMockStrategy = (id: string, name: string): StrategyDefinition => ({
   description: 'Test strategy',
   author: 'test',
   parameters: {},
-  indicators: [],
-  conditions: {
-    entry: [],
-    confirmation: [],
-  },
-  entry: { type: 'market' },
+  indicators: {},
+  entry: {},
   exit: {
-    stopLoss: { type: 'percent', percent: 2 },
-    takeProfit: { type: 'percent', percent: 4 },
+    stopLoss: { type: 'percent', value: 2 },
+    takeProfit: { type: 'percent', value: 4 },
   },
 });
 
 const createMockSetup = (type: string, direction: 'LONG' | 'SHORT', confidence: number): TradingSetup => ({
+  id: `setup-${Date.now()}`,
   type,
   direction,
   confidence,
   entryPrice: 50000,
   stopLoss: 49000,
   takeProfit: 52000,
-  timestamp: Date.now(),
+  openTime: Date.now(),
   klineIndex: 49,
-  riskReward: 2,
-  symbol: 'BTCUSDT',
-  interval: '1h',
+  riskRewardRatio: 2,
+  volumeConfirmation: true,
+  indicatorConfluence: 0.8,
+  setupData: {},
+  visible: true,
+  source: 'algorithm',
 });
 
 describe('SetupDetectionService', () => {
@@ -261,7 +259,7 @@ describe('SetupDetectionService', () => {
       const setups = service.detectSetups(klines);
 
       expect(setups).toHaveLength(1);
-      expect(setups[0].type).toBe('detector');
+      expect(setups[0]!.type).toBe('detector');
     });
 
     it('should sort setups by confidence descending', () => {
@@ -280,8 +278,8 @@ describe('SetupDetectionService', () => {
       const setups = service.detectSetups(klines);
 
       expect(setups).toHaveLength(2);
-      expect(setups[0].confidence).toBe(90);
-      expect(setups[1].confidence).toBe(60);
+      expect(setups[0]!.confidence).toBe(90);
+      expect(setups[1]!.confidence).toBe(60);
     });
 
     it('should respect cooldown period', () => {
@@ -319,7 +317,7 @@ describe('SetupDetectionService', () => {
       mockDetect.mockReturnValue({ setup: mockSetup, confidence: 70 });
 
       const klines = createMockKlines(100);
-      const setups = service.detectSetupsInRange(klines, 50, 55);
+      service.detectSetupsInRange(klines, 50, 55);
 
       expect(mockDetect).toHaveBeenCalledTimes(6);
     });
@@ -336,9 +334,9 @@ describe('SetupDetectionService', () => {
       const klines = createMockKlines(100);
       const setups = service.detectSetupsInRange(klines, 50, 52);
 
-      expect(setups[0].confidence).toBe(80);
-      expect(setups[1].confidence).toBe(65);
-      expect(setups[2].confidence).toBe(50);
+      expect(setups[0]!.confidence).toBe(80);
+      expect(setups[1]!.confidence).toBe(65);
+      expect(setups[2]!.confidence).toBe(50);
     });
 
     it('should return empty array when no setups found', () => {

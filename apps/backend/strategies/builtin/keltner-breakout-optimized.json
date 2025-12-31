@@ -203,5 +203,22 @@
       "period": 200,
       "allowCounterTrend": false
     }
+  },
+  "education": {
+    "origin": "Chester Keltner - volatility channel breakout concept (1960s)",
+    "createdYear": 1960,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        { "offset": -1, "role": "reference", "descriptionKey": "strategies.keltner.candleMinus1" },
+        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.keltner.candleTrigger" }
+      ],
+      "indicatorsToShow": ["keltner", "atr", "rsi"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.keltner.summary",
+      "entryKey": "strategies.keltner.entry",
+      "exitKey": "strategies.keltner.exit"
+    }
   }
 }

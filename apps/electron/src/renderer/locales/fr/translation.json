@@ -907,5 +907,104 @@
       "noProfiles": "Pas de profils disponibles. Créez d'abord un profil pour utiliser des configurations personnalisées.",
       "info": "Le watcher analysera les setups en fonction de la configuration du profil sélectionné et exécutera automatiquement les trades lorsque les conditions sont remplies."
     }
+  },
+  "strategyInfo": {
+    "noCandleData": "Données de chandelle non disponibles",
+    "indicators": "Indicateurs à l'Entrée",
+    "trades": "Transactions",
+    "winRate": "Taux de Réussite",
+    "avgRR": "R:R Moyen",
+    "noData": "Données de stratégie non disponibles",
+    "howItWorks": "Comment ça Marche",
+    "entry": "Entrée",
+    "exit": "Sortie",
+    "candlePattern": "Motif de Chandelle"
+  },
+  "strategies": {
+    "lw91": {
+      "summary": "Détecte les inversions de tendance EMA9 avec confirmation de volume",
+      "entry": "Entrer lorsque EMA9 change de direction et le prix confirme l'inversion",
+      "exit": "Stop au swing high/low récent, cible basée sur multiple d'ATR"
+    },
+    "lw92": {
+      "summary": "Pullback d'une chandelle pendant une tendance EMA9 établie",
+      "entry": "Entrer sur cassure de chandelle de pullback après une chandelle ferme contre la tendance",
+      "exit": "Stop au low/high du pullback, cible basée sur continuation de tendance"
+    },
+    "lw93": {
+      "summary": "Deux chandelles consécutives en pullback pendant tendance EMA9",
+      "entry": "Entrer sur cassure après 2 chandelles ferment contre la direction de tendance",
+      "exit": "Stop au point le plus bas/haut du pullback, cible de tendance"
+    },
+    "lw94": {
+      "summary": "Échec temporaire d'une chandelle sur EMA9 suivi de reprise de tendance",
+      "entry": "Entrer quand EMA9 reprend la direction originale après échec d'une chandelle",
+      "exit": "Stop au low/high de chandelle d'échec, cible basée sur momentum"
+    },
+    "keltner": {
+      "summary": "Cassure de prix à travers les bandes du Canal Keltner",
+      "entry": "Entrer sur clôture hors du Canal Keltner avec confirmation de volume",
+      "exit": "Stop à la bande centrale, cible au niveau de bande étendue"
+    },
+    "bbBreakout": {
+      "summary": "Squeeze des Bandes de Bollinger suivi de cassure d'expansion",
+      "entry": "Entrer quand le prix casse les bandes après squeeze de faible volatilité",
+      "exit": "Stop à la bande opposée, cible basée sur expansion de bande"
+    },
+    "williamsR": {
+      "summary": "Divergence de momentum Williams %R et signaux de surachat/survente",
+      "entry": "Entrer sur inversion de Williams %R depuis niveaux extrêmes avec confirmation de prix",
+      "exit": "Stop au swing récent, cible au niveau extrême opposé"
+    },
+    "tema": {
+      "summary": "Croisement de momentum Triple EMA et accélération de tendance",
+      "entry": "Entrer quand TEMA croise le prix avec momentum en accélération",
+      "exit": "Stop au niveau TEMA, cible basée sur projection de momentum"
+    },
+    "elderRay": {
+      "summary": "Divergence Elder Ray Bull/Bear Power avec filtre de tendance EMA",
+      "entry": "Entrer quand les barres de force divergent du prix avec confirmation EMA",
+      "exit": "Stop au niveau EMA, cible basée sur projection de barre de force"
+    },
+    "ppo": {
+      "summary": "Changements de momentum d'histogramme PPO et croisements de ligne zéro",
+      "entry": "Entrer sur inversion d'histogramme PPO avec confirmation de ligne de signal",
+      "exit": "Stop au swing récent, cible à projection extrême de PPO"
+    },
+    "parabolicSar": {
+      "summary": "Suivi de tendance Parabolic SAR avec facteur d'accélération",
+      "entry": "Entrer quand SAR inverse sa position avec confirmation de prix",
+      "exit": "Stop suiveur utilisant niveaux SAR, cible à projection SAR"
+    },
+    "supertrend": {
+      "summary": "Suivi de tendance Supertrend avec bandes basées sur ATR",
+      "entry": "Entrer quand Supertrend change de direction avec confirmation de volume",
+      "exit": "Stop suiveur au niveau Supertrend, cible basée sur extension ATR"
+    },
+    "percentB": {
+      "summary": "Retour à la moyenne Percent B aux extrêmes des Bandes de Bollinger",
+      "entry": "Entrer quand %B atteint extrême et inverse vers la bande centrale",
+      "exit": "Stop à l'extrême de bande, cible à la bande centrale"
+    },
+    "tripleConf": {
+      "summary": "Confirmation multi-indicateur pour inversions à haute probabilité",
+      "entry": "Entrer quand 3+ indicateurs s'alignent pour inversion à niveau clé",
+      "exit": "Stop au niveau de swing, cible basée sur mouvement mesuré"
+    },
+    "momentumRotation": {
+      "summary": "Rotation de secteur/actif basée sur force de momentum relative",
+      "entry": "Entrer sur actif avec momentum le plus fort quand signal de rotation déclenche",
+      "exit": "Sortir quand momentum relatif faiblit ou change"
+    },
+    "momentumBreakout": {
+      "summary": "Cassure de momentum moderne optimisée pour conditions de marché 2025",
+      "entry": "Entrer sur cassure de momentum avec confirmation multi-timeframe",
+      "exit": "Stop suiveur basé sur déclin de momentum, cible à projection"
+    },
+    "stochDoubleTouch": {
+      "summary": "Double contact des niveaux extrêmes du Stochastique avec divergence",
+      "entry": "Entrer au second contact de surachat/survente avec divergence",
+      "exit": "Stop au niveau extrême, cible à l'extrême opposé"
+    }
   }
 }

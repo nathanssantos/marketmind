@@ -155,6 +155,13 @@
       "when": 1766960850970,
       "tag": "0021_rapid_wolfsbane",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1767205514940,
+      "tag": "0022_needy_valkyrie",
+      "breakpoints": true
     }
   ]
 }
