@@ -5,6 +5,7 @@ import { db } from '../db';
 import { activeWatchers, tradingProfiles } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
+import { transformTradingProfile, stringifyEnabledSetupTypes } from '../utils/profile-transformers';
 
 const createProfileSchema = z.object({
   name: z.string().min(1).max(100),
@@ -33,11 +34,7 @@ export const tradingProfilesRouter = router({
       .where(eq(tradingProfiles.userId, ctx.user.id))
       .orderBy(tradingProfiles.createdAt);
 
-    return profiles.map((p) => ({
-      ...p,
-      enabledSetupTypes: JSON.parse(p.enabledSetupTypes) as string[],
-      maxPositionSize: p.maxPositionSize ? parseFloat(p.maxPositionSize) : null,
-    }));
+    return profiles.map(transformTradingProfile);
   }),
 
   get: protectedProcedure
@@ -53,11 +50,7 @@ export const tradingProfilesRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
       }
 
-      return {
-        ...profile,
-        enabledSetupTypes: JSON.parse(profile.enabledSetupTypes) as string[],
-        maxPositionSize: profile.maxPositionSize ? parseFloat(profile.maxPositionSize) : null,
-      };
+      return transformTradingProfile(profile);
     }),
 
   create: protectedProcedure.input(createProfileSchema).mutation(async ({ ctx, input }) => {
@@ -75,7 +68,7 @@ export const tradingProfilesRouter = router({
       userId: ctx.user.id,
       name: input.name,
       description: input.description ?? null,
-      enabledSetupTypes: JSON.stringify(input.enabledSetupTypes),
+      enabledSetupTypes: stringifyEnabledSetupTypes(input.enabledSetupTypes),
       maxPositionSize: input.maxPositionSize?.toString() ?? null,
       maxConcurrentPositions: input.maxConcurrentPositions ?? null,
       isDefault: input.isDefault ?? false,
@@ -83,11 +76,7 @@ export const tradingProfilesRouter = router({
 
     const [profile] = await db.select().from(tradingProfiles).where(eq(tradingProfiles.id, id)).limit(1);
 
-    return {
-      ...profile!,
-      enabledSetupTypes: JSON.parse(profile!.enabledSetupTypes) as string[],
-      maxPositionSize: profile!.maxPositionSize ? parseFloat(profile!.maxPositionSize) : null,
-    };
+    return transformTradingProfile(profile!);
   }),
 
   update: protectedProcedure.input(updateProfileSchema).mutation(async ({ ctx, input }) => {
@@ -112,7 +101,7 @@ export const tradingProfilesRouter = router({
 
     if (input.name !== undefined) updateData['name'] = input.name;
     if (input.description !== undefined) updateData['description'] = input.description;
-    if (input.enabledSetupTypes !== undefined) updateData['enabledSetupTypes'] = JSON.stringify(input.enabledSetupTypes);
+    if (input.enabledSetupTypes !== undefined) updateData['enabledSetupTypes'] = stringifyEnabledSetupTypes(input.enabledSetupTypes);
     if (input.maxPositionSize !== undefined) updateData['maxPositionSize'] = input.maxPositionSize?.toString() ?? null;
     if (input.maxConcurrentPositions !== undefined) updateData['maxConcurrentPositions'] = input.maxConcurrentPositions;
     if (input.isDefault !== undefined) updateData['isDefault'] = input.isDefault;
@@ -121,11 +110,7 @@ export const tradingProfilesRouter = router({
 
     const [profile] = await db.select().from(tradingProfiles).where(eq(tradingProfiles.id, input.id)).limit(1);
 
-    return {
-      ...profile!,
-      enabledSetupTypes: JSON.parse(profile!.enabledSetupTypes) as string[],
-      maxPositionSize: profile!.maxPositionSize ? parseFloat(profile!.maxPositionSize) : null,
-    };
+    return transformTradingProfile(profile!);
   }),
 
   delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
@@ -172,11 +157,7 @@ export const tradingProfilesRouter = router({
 
       const [profile] = await db.select().from(tradingProfiles).where(eq(tradingProfiles.id, id)).limit(1);
 
-      return {
-        ...profile!,
-        enabledSetupTypes: JSON.parse(profile!.enabledSetupTypes) as string[],
-        maxPositionSize: profile!.maxPositionSize ? parseFloat(profile!.maxPositionSize) : null,
-      };
+      return transformTradingProfile(profile!);
     }),
 
   assignToWatcher: protectedProcedure

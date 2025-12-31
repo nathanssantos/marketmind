@@ -5,17 +5,47 @@ import * as schema from './schema';
 
 const { Pool } = pg;
 
-const pool = new Pool({
-  connectionString: env.DATABASE_URL,
-  max: 10,
-  min: 2,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
-  allowExitOnIdle: true,
+export type DatabaseType = ReturnType<typeof drizzle<typeof schema>>;
+
+let pool: pg.Pool | null = null;
+let dbInstance: DatabaseType | null = null;
+
+const getPool = (): pg.Pool => {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: env.DATABASE_URL,
+      max: 10,
+      min: 2,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+      allowExitOnIdle: true,
+    });
+
+    pool.on('error', (err) => {
+      console.error('[DB Pool] Unexpected error on idle client', err);
+    });
+  }
+  return pool;
+};
+
+const createDb = (): DatabaseType => {
+  if (!dbInstance) {
+    dbInstance = drizzle(getPool(), { schema });
+  }
+  return dbInstance;
+};
+
+export const db: DatabaseType = new Proxy({} as DatabaseType, {
+  get(_, prop) {
+    const instance = dbInstance ?? createDb();
+    return (instance as unknown as Record<string | symbol, unknown>)[prop];
+  },
 });
 
-pool.on('error', (err) => {
-  console.error('[DB Pool] Unexpected error on idle client', err);
-});
+export const setTestDatabase = (testDb: DatabaseType): void => {
+  dbInstance = testDb;
+};
 
-export const db = drizzle(pool, { schema });
+export const resetDatabase = (): void => {
+  dbInstance = null;
+};

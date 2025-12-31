@@ -1,13 +1,11 @@
-import { TRPCError } from '@trpc/server';
-import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { wallets } from '../db/schema';
 import { protectedProcedure, publicProcedure, router } from '../trpc';
 import {
   fetchAllFees,
   clearFeeCache,
   getBacktestFee,
 } from '../services/fee-service';
+import { walletQueries } from '../services/database/walletQueries';
 import { BINANCE_FEES } from '@marketmind/types';
 
 export const feesRouter = router({
@@ -30,18 +28,7 @@ export const feesRouter = router({
   forWallet: protectedProcedure
     .input(z.object({ walletId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       const fees = await fetchAllFees(wallet);
 
@@ -67,18 +54,7 @@ export const feesRouter = router({
   refreshForWallet: protectedProcedure
     .input(z.object({ walletId: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       clearFeeCache(wallet.id);
 

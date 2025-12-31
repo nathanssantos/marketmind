@@ -1,4 +1,4 @@
-import type { Kline, TradingSetup } from '@marketmind/types';
+import type { TradingSetup } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { klines } from '../db/schema';
 import { StrategyInterpreter, StrategyLoader } from '../services/setup-detection/dynamic';
 import { protectedProcedure, publicProcedure, router } from '../trpc';
+import { mapDbKlinesToApi } from '../utils/kline-mapper';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -90,21 +91,7 @@ export const setupDetectionRouter = router({
 
       klinesData.reverse();
 
-      const mappedKlines: Kline[] = klinesData.map((k) => ({
-        symbol: k.symbol,
-        interval: k.interval,
-        openTime: k.openTime.getTime(),
-        closeTime: k.closeTime.getTime(),
-        open: k.open,
-        high: k.high,
-        low: k.low,
-        close: k.close,
-        volume: k.volume,
-        quoteVolume: k.quoteVolume ?? '0',
-        trades: k.trades ?? 0,
-        takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
-        takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
-      }));
+      const mappedKlines = mapDbKlinesToApi(klinesData);
 
       const loader = new StrategyLoader([STRATEGIES_DIR]);
       const strategies = await loader.loadAll({ includeUnprofitable: false });
@@ -169,21 +156,7 @@ export const setupDetectionRouter = router({
 
       klinesData.reverse();
 
-      const mappedKlines: Kline[] = klinesData.map((k) => ({
-        symbol: k.symbol,
-        interval: k.interval,
-        openTime: k.openTime.getTime(),
-        closeTime: k.closeTime.getTime(),
-        open: k.open,
-        high: k.high,
-        low: k.low,
-        close: k.close,
-        volume: k.volume,
-        quoteVolume: k.quoteVolume ?? '0',
-        trades: k.trades ?? 0,
-        takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
-        takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
-      }));
+      const mappedKlines = mapDbKlinesToApi(klinesData);
 
       const loader = new StrategyLoader([STRATEGIES_DIR]);
       const strategies = await loader.loadAll({ includeUnprofitable: false });

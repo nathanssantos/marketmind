@@ -1,5 +1,5 @@
 import type { Interval } from '@marketmind/types';
-import { and, asc, desc, eq, gte, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, gte } from 'drizzle-orm';
 import { db } from '../db';
 import { klines } from '../db/schema';
 import { logger } from './logger';

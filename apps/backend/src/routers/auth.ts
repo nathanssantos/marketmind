@@ -2,9 +2,24 @@ import { verify } from '@node-rs/argon2';
 import { TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import type { FastifyReply } from 'fastify';
 import { users } from '../db/schema';
 import { createSession, createUser, invalidateSession, validateSession } from '../services/auth';
 import { publicProcedure, router } from '../trpc';
+
+const setSessionCookie = (res: FastifyReply, sessionId: string, expiresAt: Date): void => {
+  res.setCookie('session', sessionId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    expires: expiresAt,
+    path: '/',
+  });
+};
+
+const clearSessionCookie = (res: FastifyReply): void => {
+  res.clearCookie('session', { path: '/' });
+};
 
 export const authRouter = router({
   register: publicProcedure
@@ -31,13 +46,7 @@ export const authRouter = router({
       const userId = await createUser(input.email, input.password);
       const { sessionId, expiresAt } = await createSession(userId);
 
-      (ctx.res as any).setCookie('session', sessionId, {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-        expires: expiresAt,
-        path: '/',
-      });
+      setSessionCookie(ctx.res as FastifyReply, sessionId, expiresAt);
 
       return {
         userId,
@@ -78,13 +87,7 @@ export const authRouter = router({
 
       const { sessionId, expiresAt } = await createSession(user.id);
 
-      (ctx.res as any).setCookie('session', sessionId, {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-        expires: expiresAt,
-        path: '/',
-      });
+      setSessionCookie(ctx.res as FastifyReply, sessionId, expiresAt);
 
       return {
         userId: user.id,
@@ -103,7 +106,7 @@ export const authRouter = router({
 
     await invalidateSession(ctx.sessionId);
 
-    (ctx.res as any).clearCookie('session', { path: '/' });
+    clearSessionCookie(ctx.res as FastifyReply);
 
     return { success: true };
   }),

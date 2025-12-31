@@ -5,13 +5,14 @@ import { BINANCE_FEES } from '@marketmind/types';
 import {
   autoTradingConfig,
   tradeExecutions,
-  wallets,
   setupDetections,
 } from '../db/schema';
 import { riskManagerService } from '../services/risk-manager';
 import { autoTradingScheduler } from '../services/auto-trading-scheduler';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
+import { transformAutoTradingConfig, parseEnabledSetupTypes, stringifyEnabledSetupTypes } from '../utils/profile-transformers';
+import { walletQueries } from '../services/database/walletQueries';
 
 const log = (message: string, data?: Record<string, unknown>): void => {
   const timestamp = new Date().toISOString();
@@ -30,18 +31,7 @@ export const autoTradingRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       let [config] = await ctx.db
         .select()
@@ -86,10 +76,7 @@ export const autoTradingRouter = router({
         throw new Error('Config not found');
       }
 
-      return {
-        ...config,
-        enabledSetupTypes: JSON.parse(config.enabledSetupTypes) as string[],
-      };
+      return transformAutoTradingConfig(config);
     }),
 
   updateConfig: protectedProcedure
@@ -142,7 +129,7 @@ export const autoTradingRouter = router({
       if (input.dailyLossLimit !== undefined)
         {updateData.dailyLossLimit = input.dailyLossLimit;}
       if (input.enabledSetupTypes !== undefined)
-        {updateData.enabledSetupTypes = JSON.stringify(input.enabledSetupTypes);}
+        {updateData.enabledSetupTypes = stringifyEnabledSetupTypes(input.enabledSetupTypes);}
       if (input.positionSizing !== undefined)
         {updateData.positionSizing = input.positionSizing;}
       if (input.useLimitOrders !== undefined)
@@ -236,7 +223,7 @@ export const autoTradingRouter = router({
         });
       }
 
-      const enabledSetupTypes = JSON.parse(config.enabledSetupTypes) as string[];
+      const enabledSetupTypes = parseEnabledSetupTypes(config.enabledSetupTypes);
       if (!enabledSetupTypes.includes(setup.setupType)) {
         log('⚠️ Setup type not enabled', { setupType: setup.setupType, enabledTypes: enabledSetupTypes });
         throw new TRPCError({
@@ -273,19 +260,7 @@ export const autoTradingRouter = router({
         });
       }
 
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(eq(wallets.id, input.walletId))
-        .limit(1);
-
-      if (!wallet) {
-        log('❌ Wallet not found', { walletId: input.walletId });
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       const walletBalance = parseFloat(wallet.currentBalance || '0');
       const maxPositionSizePercent = parseFloat(config.maxPositionSize);
@@ -651,19 +626,7 @@ export const autoTradingRouter = router({
     .mutation(async ({ input, ctx }) => {
       log('🚀 startWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId, marketType: input.marketType });
 
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        log('❌ Wallet not found', { walletId: input.walletId });
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       await ctx.db
         .update(autoTradingConfig)
@@ -701,18 +664,7 @@ export const autoTradingRouter = router({
     .mutation(async ({ input, ctx }) => {
       log('🛑 stopWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval });
 
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       await autoTradingScheduler.stopWatcher(input.walletId, input.symbol, input.interval);
 
@@ -726,18 +678,7 @@ export const autoTradingRouter = router({
     .mutation(async ({ input, ctx }) => {
       log('🛑 stopAllWatchers called', { walletId: input.walletId });
 
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       await ctx.db
         .update(autoTradingConfig)
@@ -759,18 +700,7 @@ export const autoTradingRouter = router({
   getWatcherStatus: protectedProcedure
     .input(z.object({ walletId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       const memoryStatus = autoTradingScheduler.getWatcherStatus(input.walletId);
       const dbStatus = await autoTradingScheduler.getWatcherStatusFromDb(input.walletId);

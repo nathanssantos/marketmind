@@ -8,6 +8,7 @@ import {
     createDefaultSetupDetectionConfig,
 } from '../services/setup-detection/SetupDetectionService';
 import { protectedProcedure, router } from '../trpc';
+import { mapDbKlinesToApi } from '../utils/kline-mapper';
 
 const setupTypeSchema = z.enum([
   'setup91',
@@ -129,21 +130,7 @@ export const setupRouter = router({
 
       klinesData.reverse();
 
-      const mappedKlines = klinesData.map((k) => ({
-        symbol: k.symbol,
-        interval: k.interval,
-        openTime: k.openTime.getTime(),
-        closeTime: k.closeTime.getTime(),
-        open: k.open,
-        high: k.high,
-        low: k.low,
-        close: k.close,
-        volume: k.volume,
-        quoteVolume: k.quoteVolume ?? '0',
-        trades: k.trades ?? 0,
-        takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
-        takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
-      }));
+      const mappedKlines = mapDbKlinesToApi(klinesData);
 
       const service = new SetupDetectionService();
       const setups = service.detectSetups(mappedKlines);
@@ -229,21 +216,7 @@ export const setupRouter = router({
 
       klinesData.reverse();
 
-      const mappedKlines = klinesData.map((k) => ({
-        symbol: k.symbol,
-        interval: k.interval,
-        openTime: k.openTime.getTime(),
-        closeTime: k.closeTime.getTime(),
-        open: k.open,
-        high: k.high,
-        low: k.low,
-        close: k.close,
-        volume: k.volume,
-        quoteVolume: k.quoteVolume ?? '0',
-        trades: k.trades ?? 0,
-        takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
-        takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
-      }));
+      const mappedKlines = mapDbKlinesToApi(klinesData);
 
       const service = new SetupDetectionService();
       const setups = service.detectSetupsInRange(

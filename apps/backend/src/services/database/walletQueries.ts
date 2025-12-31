@@ -42,6 +42,11 @@ export const walletQueries = {
     return wallet!;
   },
 
+  async getById(walletId: string): Promise<WalletRecord> {
+    const wallet = await this.findById(walletId, { throwIfNotFound: true });
+    return wallet!;
+  },
+
   async findById(
     walletId: string,
     options: WalletQueryOptions = { throwIfNotFound: false }

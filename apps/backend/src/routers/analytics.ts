@@ -1,8 +1,8 @@
-import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { tradeExecutions, wallets } from '../db/schema';
+import { tradeExecutions } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
+import { walletQueries } from '../services/database/walletQueries';
 
 export const analyticsRouter = router({
   getTradeHistory: protectedProcedure
@@ -132,11 +132,7 @@ export const analyticsRouter = router({
       const profitFactor =
         avgLoss !== 0 ? Math.abs(avgWin * winningTrades.length) / Math.abs(avgLoss * losingTrades.length) : 0;
 
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(eq(wallets.id, input.walletId))
-        .limit(1);
+      const wallet = await walletQueries.findByIdAndUser(input.walletId, ctx.user.id, { throwIfNotFound: false });
 
       const initialBalance = wallet ? parseFloat(wallet.initialBalance || '0') : 0;
       const currentBalance = wallet ? parseFloat(wallet.currentBalance || '0') : 0;
@@ -293,20 +289,7 @@ export const analyticsRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const [wallet] = await ctx.db
-        .select()
-        .from(wallets)
-        .where(
-          and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id))
-        )
-        .limit(1);
-
-      if (!wallet) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       const trades = await ctx.db
         .select()

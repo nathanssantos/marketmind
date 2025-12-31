@@ -11,7 +11,7 @@ export const setWebSocketService = (ws: WebSocketService) => {
 };
 
 export const createContext = async ({ req, res }: CreateFastifyContextOptions) => {
-  const sessionId = req.headers.cookie?.split(';').find(c => c.trim().startsWith('session='))?.split('=')[1];
+  const sessionId = req.cookies?.['session'];
 
   if (!sessionId) {
     return {

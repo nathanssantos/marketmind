@@ -1,0 +1,361 @@
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { sql } from 'drizzle-orm';
+import pg from 'pg';
+import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import * as schema from '../../db/schema';
+import { setTestDatabase, resetDatabase, type DatabaseType } from '../../db/client';
+
+const { Pool } = pg;
+
+let container: StartedPostgreSqlContainer | null = null;
+let pool: pg.Pool | null = null;
+
+export type TestDatabase = ReturnType<typeof drizzle<typeof schema>>;
+
+let testDb: TestDatabase | null = null;
+
+const createTablesSQL = `
+CREATE TABLE IF NOT EXISTS users (
+  id VARCHAR(255) PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS wallets (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  wallet_type VARCHAR(20) DEFAULT 'paper',
+  api_key_encrypted TEXT NOT NULL,
+  api_secret_encrypted TEXT NOT NULL,
+  initial_balance NUMERIC(20, 8),
+  current_balance NUMERIC(20, 8),
+  currency VARCHAR(10) DEFAULT 'USDT',
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS trading_profiles (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  enabled_setup_types TEXT NOT NULL,
+  max_position_size NUMERIC(10, 2),
+  max_concurrent_positions INTEGER,
+  is_default BOOLEAN DEFAULT false NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS api_keys (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider VARCHAR(50) NOT NULL,
+  key_encrypted TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  UNIQUE(user_id, provider)
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+  order_id BIGINT PRIMARY KEY,
+  symbol VARCHAR(20) NOT NULL,
+  side VARCHAR(10) NOT NULL,
+  type VARCHAR(30) NOT NULL,
+  price VARCHAR(50),
+  orig_qty VARCHAR(50),
+  executed_qty VARCHAR(50),
+  status VARCHAR(30) NOT NULL,
+  time_in_force VARCHAR(10),
+  time BIGINT,
+  update_time BIGINT,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id),
+  wallet_id VARCHAR(255) NOT NULL REFERENCES wallets(id),
+  setup_id VARCHAR(255),
+  setup_type VARCHAR(100),
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  market_type VARCHAR(10) DEFAULT 'SPOT',
+  reduce_only BOOLEAN DEFAULT false
+);
+
+CREATE TABLE IF NOT EXISTS positions (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id),
+  wallet_id VARCHAR(255) NOT NULL REFERENCES wallets(id),
+  symbol VARCHAR(20) NOT NULL,
+  side VARCHAR(10) NOT NULL,
+  entry_price NUMERIC(20, 8) NOT NULL,
+  entry_qty NUMERIC(20, 8) NOT NULL,
+  current_price NUMERIC(20, 8),
+  stop_loss NUMERIC(20, 8),
+  take_profit NUMERIC(20, 8),
+  pnl NUMERIC(20, 8),
+  pnl_percent NUMERIC(10, 2),
+  status VARCHAR(20) DEFAULT 'open',
+  closed_at TIMESTAMP,
+  setup_id VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  market_type VARCHAR(10) DEFAULT 'SPOT',
+  leverage INTEGER DEFAULT 1,
+  margin_type VARCHAR(10),
+  liquidation_price NUMERIC(20, 8),
+  accumulated_funding NUMERIC(20, 8) DEFAULT '0'
+);
+
+CREATE TABLE IF NOT EXISTS active_watchers (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  wallet_id VARCHAR(255) NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
+  profile_id VARCHAR(255) REFERENCES trading_profiles(id) ON DELETE SET NULL,
+  symbol VARCHAR(20) NOT NULL,
+  interval VARCHAR(5) NOT NULL,
+  market_type VARCHAR(10) DEFAULT 'SPOT' NOT NULL,
+  started_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS auto_trading_config (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  wallet_id VARCHAR(255) NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
+  is_enabled BOOLEAN DEFAULT false NOT NULL,
+  max_concurrent_positions INTEGER DEFAULT 5 NOT NULL,
+  max_position_size NUMERIC(10, 2) DEFAULT '15' NOT NULL,
+  daily_loss_limit NUMERIC(10, 2) DEFAULT '5' NOT NULL,
+  enabled_setup_types TEXT NOT NULL,
+  position_sizing VARCHAR(20) DEFAULT 'percentage',
+  leverage INTEGER DEFAULT 1,
+  margin_type VARCHAR(10) DEFAULT 'ISOLATED',
+  position_mode VARCHAR(10) DEFAULT 'ONE_WAY',
+  use_limit_orders BOOLEAN DEFAULT false NOT NULL,
+  use_stochastic_filter BOOLEAN DEFAULT true NOT NULL,
+  use_adx_filter BOOLEAN DEFAULT true NOT NULL,
+  use_trend_filter BOOLEAN DEFAULT true NOT NULL,
+  max_drawdown_percent NUMERIC(5, 2) DEFAULT '15',
+  margin_top_up_enabled BOOLEAN DEFAULT false,
+  margin_top_up_threshold NUMERIC(5, 2) DEFAULT '30',
+  margin_top_up_percent NUMERIC(5, 2) DEFAULT '10',
+  margin_top_up_max_count INTEGER DEFAULT 3,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS trading_setups (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id),
+  type VARCHAR(100) NOT NULL,
+  symbol VARCHAR(20) NOT NULL,
+  interval VARCHAR(5) NOT NULL,
+  direction VARCHAR(10) NOT NULL,
+  entry_price NUMERIC(20, 8) NOT NULL,
+  stop_loss NUMERIC(20, 8) NOT NULL,
+  take_profit NUMERIC(20, 8) NOT NULL,
+  confidence INTEGER NOT NULL,
+  detected_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  order_id BIGINT REFERENCES orders(order_id),
+  status VARCHAR(20) DEFAULT 'pending',
+  pnl NUMERIC(20, 8),
+  pnl_percent NUMERIC(10, 2),
+  closed_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS setup_detections (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  symbol VARCHAR(20) NOT NULL,
+  interval VARCHAR(5) NOT NULL,
+  setup_type VARCHAR(100) NOT NULL,
+  direction VARCHAR(10) NOT NULL,
+  entry_price NUMERIC(20, 8) NOT NULL,
+  stop_loss NUMERIC(20, 8),
+  take_profit NUMERIC(20, 8),
+  confidence INTEGER NOT NULL,
+  risk_reward NUMERIC(10, 2),
+  metadata TEXT,
+  detected_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  viewed BOOLEAN DEFAULT false,
+  notified BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS trade_executions (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  wallet_id VARCHAR(255) NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
+  setup_id VARCHAR(255),
+  setup_type VARCHAR(100),
+  symbol VARCHAR(20) NOT NULL,
+  side VARCHAR(10) NOT NULL,
+  entry_order_id BIGINT REFERENCES orders(order_id),
+  stop_loss_order_id BIGINT,
+  take_profit_order_id BIGINT,
+  order_list_id BIGINT,
+  exit_order_id BIGINT REFERENCES orders(order_id),
+  entry_price NUMERIC(20, 8) NOT NULL,
+  exit_price NUMERIC(20, 8),
+  quantity NUMERIC(20, 8) NOT NULL,
+  stop_loss NUMERIC(20, 8),
+  take_profit NUMERIC(20, 8),
+  pnl NUMERIC(20, 8),
+  pnl_percent NUMERIC(10, 2),
+  fees NUMERIC(20, 8) DEFAULT '0',
+  exit_source VARCHAR(50),
+  exit_reason VARCHAR(50),
+  opened_at TIMESTAMP NOT NULL,
+  closed_at TIMESTAMP,
+  status VARCHAR(20) DEFAULT 'open',
+  entry_order_type VARCHAR(10) DEFAULT 'MARKET',
+  limit_entry_price NUMERIC(20, 8),
+  expires_at TIMESTAMP,
+  market_type VARCHAR(10) DEFAULT 'SPOT',
+  leverage INTEGER DEFAULT 1,
+  liquidation_price NUMERIC(20, 8),
+  accumulated_funding NUMERIC(20, 8) DEFAULT '0',
+  position_side VARCHAR(10) DEFAULT 'BOTH',
+  margin_top_up_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS strategy_performance (
+  id SERIAL PRIMARY KEY,
+  strategy_id VARCHAR(100) NOT NULL,
+  symbol VARCHAR(20) NOT NULL,
+  interval VARCHAR(10) NOT NULL,
+  total_trades INTEGER DEFAULT 0 NOT NULL,
+  winning_trades INTEGER DEFAULT 0 NOT NULL,
+  losing_trades INTEGER DEFAULT 0 NOT NULL,
+  breakeven_trades INTEGER DEFAULT 0 NOT NULL,
+  win_rate NUMERIC(5, 2) DEFAULT '0' NOT NULL,
+  total_pnl NUMERIC(20, 8) DEFAULT '0' NOT NULL,
+  total_pnl_percent NUMERIC(10, 4) DEFAULT '0' NOT NULL,
+  avg_win NUMERIC(10, 4) DEFAULT '0' NOT NULL,
+  avg_loss NUMERIC(10, 4) DEFAULT '0' NOT NULL,
+  avg_rr NUMERIC(10, 4) DEFAULT '0' NOT NULL,
+  max_drawdown NUMERIC(10, 4) DEFAULT '0' NOT NULL,
+  max_consecutive_losses INTEGER DEFAULT 0 NOT NULL,
+  current_consecutive_losses INTEGER DEFAULT 0 NOT NULL,
+  avg_slippage_percent NUMERIC(10, 4) DEFAULT '0' NOT NULL,
+  avg_execution_time_ms INTEGER DEFAULT 0 NOT NULL,
+  last_trade_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  UNIQUE(strategy_id, symbol, interval)
+);
+
+CREATE TABLE IF NOT EXISTS trade_cooldowns (
+  id SERIAL PRIMARY KEY,
+  strategy_id VARCHAR(100) NOT NULL,
+  symbol VARCHAR(20) NOT NULL,
+  interval VARCHAR(10) NOT NULL,
+  last_execution_id VARCHAR(50) NOT NULL,
+  last_execution_at TIMESTAMP NOT NULL,
+  cooldown_until TIMESTAMP NOT NULL,
+  cooldown_minutes INTEGER NOT NULL,
+  wallet_id VARCHAR(50) NOT NULL,
+  reason VARCHAR(100),
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  UNIQUE(strategy_id, symbol, interval, wallet_id)
+);
+
+CREATE TABLE IF NOT EXISTS klines (
+  symbol VARCHAR(20) NOT NULL,
+  interval VARCHAR(5) NOT NULL,
+  market_type VARCHAR(10) DEFAULT 'SPOT' NOT NULL,
+  open_time TIMESTAMP NOT NULL,
+  close_time TIMESTAMP NOT NULL,
+  open NUMERIC(20, 8) NOT NULL,
+  high NUMERIC(20, 8) NOT NULL,
+  low NUMERIC(20, 8) NOT NULL,
+  close NUMERIC(20, 8) NOT NULL,
+  volume NUMERIC(20, 8) NOT NULL,
+  quote_volume NUMERIC(20, 8),
+  trades INTEGER,
+  taker_buy_base_volume NUMERIC(20, 8),
+  taker_buy_quote_volume NUMERIC(20, 8),
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  PRIMARY KEY (symbol, interval, market_type, open_time)
+);
+
+CREATE TABLE IF NOT EXISTS price_cache (
+  symbol VARCHAR(20) PRIMARY KEY,
+  price NUMERIC(20, 8) NOT NULL,
+  timestamp TIMESTAMP NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+`;
+
+export const setupTestDatabase = async (): Promise<TestDatabase> => {
+  if (testDb) return testDb;
+
+  container = await new PostgreSqlContainer('timescale/timescaledb:latest-pg17')
+    .withDatabase('marketmind_test')
+    .withUsername('test')
+    .withPassword('test')
+    .start();
+
+  pool = new Pool({
+    connectionString: container.getConnectionUri(),
+    max: 5,
+  });
+
+  testDb = drizzle(pool, { schema });
+
+  setTestDatabase(testDb as unknown as DatabaseType);
+
+  await testDb.execute(sql.raw(createTablesSQL));
+
+  return testDb;
+};
+
+export const teardownTestDatabase = async (): Promise<void> => {
+  resetDatabase();
+
+  if (pool) {
+    await pool.end();
+    pool = null;
+  }
+  if (container) {
+    await container.stop();
+    container = null;
+  }
+  testDb = null;
+};
+
+export const getTestDatabase = (): TestDatabase => {
+  if (!testDb) {
+    throw new Error('Test database not initialized. Call setupTestDatabase() first.');
+  }
+  return testDb;
+};
+
+export const cleanupTables = async (): Promise<void> => {
+  const db = getTestDatabase();
+  await db.delete(schema.tradeCooldowns);
+  await db.delete(schema.strategyPerformance);
+  await db.delete(schema.tradeExecutions);
+  await db.delete(schema.setupDetections);
+  await db.delete(schema.tradingSetups);
+  await db.delete(schema.positions);
+  await db.delete(schema.orders);
+  await db.delete(schema.autoTradingConfig);
+  await db.delete(schema.activeWatchers);
+  await db.delete(schema.apiKeys);
+  await db.delete(schema.tradingProfiles);
+  await db.delete(schema.sessions);
+  await db.delete(schema.wallets);
+  await db.delete(schema.users);
+};
