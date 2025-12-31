@@ -363,6 +363,8 @@ export const useChartStore = create<ChartState>((set) => ({
 
 ## 🧪 Testing Approach
 
+### Unit Tests (Frontend)
+
 ```typescript
 // ✅ Test utilities and calculations
 describe('calculateSMA', () => {
@@ -372,14 +374,109 @@ describe('calculateSMA', () => {
       { close: 110, /* ... */ },
       { close: 120, /* ... */ },
     ];
-    
+
     const result = calculateSMA(klines, 3);
     expect(result).toBe(110);
   });
-  
+
   it('should return 0 for empty array', () => {
     const result = calculateSMA([], 20);
     expect(result).toBe(0);
+  });
+});
+```
+
+### Integration Tests (Backend)
+
+Backend integration tests use **testcontainers** with PostgreSQL + TimescaleDB for real database testing.
+
+**Test Helpers Structure:**
+```
+apps/backend/src/__tests__/
+├── helpers/
+│   ├── test-db.ts           # PostgreSQL + TimescaleDB container management
+│   ├── test-context.ts      # tRPC context factory for tests
+│   ├── test-fixtures.ts     # Data factories (users, wallets, profiles)
+│   └── test-caller.ts       # tRPC caller for router tests
+└── routers/
+    ├── auth.router.test.ts
+    ├── wallet.router.test.ts
+    ├── trading-profiles.router.test.ts
+    └── ...
+```
+
+**Test Database Setup:**
+```typescript
+// ✅ apps/backend/src/__tests__/helpers/test-db.ts
+import { PostgreSqlContainer } from '@testcontainers/postgresql';
+
+let container: StartedPostgreSqlContainer;
+
+export const setupTestDatabase = async () => {
+  container = await new PostgreSqlContainer('timescale/timescaledb:latest-pg17')
+    .withDatabase('marketmind_test')
+    .start();
+  // Run migrations and return db instance
+};
+
+export const teardownTestDatabase = async () => {
+  await container?.stop();
+};
+```
+
+**Test Fixtures Pattern:**
+```typescript
+// ✅ apps/backend/src/__tests__/helpers/test-fixtures.ts
+export const createAuthenticatedUser = async (options = {}) => {
+  const { user, password } = await createTestUser(options);
+  const session = await createTestSession({ userId: user.id });
+  return { user, password, session };
+};
+
+export const createTestWallet = async (options: CreateWalletOptions) => {
+  // Creates wallet in test database with defaults
+};
+```
+
+**Router Test Example:**
+```typescript
+// ✅ apps/backend/src/__tests__/routers/wallet.router.test.ts
+describe('Wallet Router', () => {
+  beforeAll(async () => {
+    await setupTestDatabase();
+  });
+
+  afterAll(async () => {
+    await teardownTestDatabase();
+  });
+
+  beforeEach(async () => {
+    await cleanupTables();
+  });
+
+  it('should return only wallets belonging to the user', async () => {
+    const { user, session } = await createAuthenticatedUser();
+    const caller = createAuthenticatedCaller(user, session);
+
+    await caller.wallet.createPaper({ name: 'Test Wallet' });
+    const result = await caller.wallet.list();
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.name).toBe('Test Wallet');
+  });
+
+  it('should throw NOT_FOUND when wallet belongs to another user', async () => {
+    const { user: user1, session: session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
+    const { user: user2, session: session2 } = await createAuthenticatedUser({ email: 'user2@test.com' });
+
+    const caller1 = createAuthenticatedCaller(user1, session1);
+    const caller2 = createAuthenticatedCaller(user2, session2);
+
+    const wallet = await caller1.wallet.createPaper({ name: 'User1 Wallet' });
+
+    await expect(caller2.wallet.getById({ id: wallet.id })).rejects.toThrow(
+      expect.objectContaining({ code: 'NOT_FOUND' })
+    );
   });
 });
 ```
@@ -413,25 +510,34 @@ describe('calculateSMA', () => {
 Track progress in `IMPLEMENTATION_PLAN.md`. Update this section when starting new chats:
 
 **Current Phase:** Backend Integration (Phase 5)
-**Overall Progress:** 65% (Backend infrastructure complete, component migration in progress)
+**Overall Progress:** 75% (Backend infrastructure complete, integration tests complete, component migration in progress)
 **Current Tasks:** Migrating components from localStorage to backend API
-**Recent Updates:** Complete backend with tRPC, PostgreSQL, TimescaleDB, authentication
+**Recent Updates:** Integration tests with testcontainers, backend utilities refactored
 **Blockers:** None
 
-### Backend Integration Status (v0.33.0+)
+### Backend Integration Status (v0.38.0+)
 - **✅ Backend Infrastructure**: Fastify 5.6.2 + tRPC 11.7.2 operational
 - **✅ Database**: PostgreSQL 17 + TimescaleDB 2.23.1 with 9 tables
 - **✅ Authentication**: Argon2 password hashing + session management
-- **✅ API Routers**: health, auth, wallet, trading endpoints implemented
+- **✅ API Routers**: health, auth, wallet, trading, auto-trading, analytics, fees endpoints
 - **✅ Frontend Hooks**: useBackendWallets, useBackendOrders created
 - **✅ Futures Auto-Trading**: User stream, liquidation monitoring, margin manager, max drawdown
 - **✅ Risk Management**: Real-time alerts, margin top-up, position sizing
+- **✅ Integration Tests**: testcontainers with PostgreSQL + TimescaleDB
+- **✅ Backend Utilities**: walletQueries, profile-transformers, kline-mapper
+- **✅ Security Fixes**: Cookie secure in production, type safety improvements
 - **🟡 Component Migration**: In progress (TradingSidebar, WalletManager pending)
+
+### Backend Testing Status
+- **885 tests passing** (49 test files)
+- **Integration tests**: auth, wallet, trading-profiles routers
+- **Test infrastructure**: testcontainers, test-db, test-fixtures, test-caller
+- **Code patterns**: Consistent use of walletQueries across all routers
 
 ### Frontend Status (Production Ready)
 - **8 Trading Setups**: Complete Larry Williams suite (9.1, 9.2, 9.3, 9.4) + 4 pattern-based setups
 - **Setup 9.2 (EMA9 Pullback)**: Single kline pullback with 14 tests
-- **Setup 9.3 (EMA9 Double Pullback)**: Conservative 2-close confirmation with 14 tests  
+- **Setup 9.3 (EMA9 Double Pullback)**: Conservative 2-close confirmation with 14 tests
 - **Setup 9.4 (EMA9 Continuation)**: Temporary EMA9 failure pattern with 16 tests
 - **44 New Tests**: All 3 new detectors with 100% pass rate
 - **Translations**: Complete EN/PT/ES/FR support for all setups
@@ -808,6 +914,83 @@ export const authRouter = router({
     ctx.res.clearCookie('session');
   }),
 });
+```
+
+### Backend Utilities
+
+The backend uses reusable utility modules to avoid code duplication and ensure consistency.
+
+**walletQueries - Database Query Utility:**
+```typescript
+// ✅ apps/backend/src/services/database/walletQueries.ts
+export const walletQueries = {
+  // Returns wallet or throws NOT_FOUND
+  async getByIdAndUser(walletId: string, userId: string): Promise<WalletRecord> {
+    const wallet = await this.findByIdAndUser(walletId, userId, { throwIfNotFound: true });
+    return wallet!;
+  },
+
+  // Returns wallet by ID only (no user check) - use for internal operations
+  async getById(walletId: string): Promise<WalletRecord> {
+    const wallet = await this.findById(walletId, { throwIfNotFound: true });
+    return wallet!;
+  },
+
+  // Returns wallet or null - use when you need to handle not found yourself
+  async findByIdAndUser(walletId: string, userId: string, options = {}): Promise<WalletRecord | null>,
+
+  // List helpers
+  async listByUser(userId: string): Promise<WalletRecord[]>,
+  async listActiveByUser(userId: string): Promise<WalletRecord[]>,
+};
+
+// Usage in routers:
+import { walletQueries } from '../services/database/walletQueries';
+
+// Instead of manual query + throw:
+const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+```
+
+**profile-transformers - JSON/Type Transformations:**
+```typescript
+// ✅ apps/backend/src/utils/profile-transformers.ts
+export const parseEnabledSetupTypes = (json: string): string[] => JSON.parse(json);
+export const stringifyEnabledSetupTypes = (types: string[]): string => JSON.stringify(types);
+
+export const transformTradingProfile = (profile: RawProfile) => ({
+  ...profile,
+  enabledSetupTypes: parseEnabledSetupTypes(profile.enabledSetupTypes),
+  maxPositionSize: profile.maxPositionSize ? parseFloat(profile.maxPositionSize) : null,
+});
+
+export const transformAutoTradingConfig = (config: RawConfig) => ({
+  ...config,
+  enabledSetupTypes: parseEnabledSetupTypes(config.enabledSetupTypes),
+  // ... other transformations
+});
+```
+
+**kline-mapper - Database to API Transformation:**
+```typescript
+// ✅ apps/backend/src/utils/kline-mapper.ts
+import type { Kline } from '@marketmind/types';
+
+export const mapDbKlinesToApi = (dbKlines: DbKline[]): Kline[] =>
+  dbKlines.map((k) => ({
+    symbol: k.symbol,
+    interval: k.interval,
+    openTime: k.openTime.getTime(),
+    closeTime: k.closeTime.getTime(),
+    open: parseFloat(k.open),
+    high: parseFloat(k.high),
+    low: parseFloat(k.low),
+    close: parseFloat(k.close),
+    volume: parseFloat(k.volume),
+    quoteVolume: parseFloat(k.quoteVolume),
+    trades: k.trades,
+    takerBuyBaseVolume: parseFloat(k.takerBuyBaseVolume),
+    takerBuyQuoteVolume: parseFloat(k.takerBuyQuoteVolume),
+  }));
 ```
 
 ### Development Commands
