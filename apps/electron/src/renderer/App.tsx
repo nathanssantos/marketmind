@@ -1,5 +1,5 @@
 import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
-import type { Kline, MarketType, Viewport } from '@marketmind/types';
+import type { Kline, MarketType } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
@@ -158,7 +158,6 @@ function AppContent(): ReactElement {
   const { t } = useTranslation();
   const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
   const [marketType, setMarketType] = useLocalStorage<MarketType>('marketmind:marketType', 'SPOT');
-  const [viewport, setViewport] = useState<Viewport | undefined>(undefined);
 
   useOrderNotifications();
 
@@ -218,12 +217,6 @@ function AppContent(): ReactElement {
   const toggleBacktest = useCallback(() => {
     setIsBacktestOpen((prev) => !prev);
   }, []);
-
-  const viewportRef = useRef<Viewport | undefined>(undefined);
-
-  useEffect(() => {
-    viewportRef.current = viewport;
-  }, [viewport]);
 
   const { useKlineList } = useBackendKlines();
   const backendKlinesQuery = useKlineList({
@@ -558,7 +551,6 @@ function AppContent(): ReactElement {
             chartType={chartType}
             movingAverages={movingAverages}
             advancedConfig={debouncedAdvancedConfig}
-            onViewportChange={setViewport}
             timeframe={timeframe}
           />
         )}

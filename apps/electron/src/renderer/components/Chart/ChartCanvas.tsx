@@ -744,10 +744,10 @@ export const ChartCanvas = ({
 
   const updatePrice = usePriceStore((s) => s.updatePrice);
   useEffect(() => {
-    if (symbol && currentPrice > 0) {
+    if (symbol && currentPrice > 0 && !isPanning) {
       updatePrice(symbol, currentPrice, 'chart');
     }
-  }, [symbol, currentPrice, updatePrice]);
+  }, [symbol, currentPrice, updatePrice, isPanning]);
 
   const draggableOrders = useMemo((): Order[] => {
     return filteredBackendExecutions
