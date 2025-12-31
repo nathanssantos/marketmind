@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.38.1] - 2025-12-31
+
+### Fixed
+
+#### Chart-Sidebar Performance Independence
+Complete decoupling of chart and sidebar rendering for zero-lag panning:
+
+- **Viewport State Removal** - Removed unused viewport state from App.tsx that was causing full component tree re-renders during pan
+- **PriceStore Pan Skip** - Skip priceStore updates during pan to prevent sidebar subscription triggers
+- **Viewport Throttle Increase** - Changed viewport state update throttle from 16ms to 50ms
+- **Hover Detection Skip** - Skip expensive hover detection calculations during pan operations
+- **OrderTicket Memoization** - Wrapped OrderTicket component in React.memo with useMemo for price extraction
+- **Sidebar Price Throttle** - Increased usePricesForSymbols throttle from 500ms to 1000ms
+- **useChartData Dependencies** - Fixed useEffect dependency array to properly track params changes
+
+### Changed
+
+- Chart pan no longer triggers any sidebar re-renders
+- Zero performance difference between sidebar open/closed during pan
+
+### Stats
+- 1,778 passing tests (1,751 + 27 browser)
+- All type checks passing
+
+---
+
 ## [0.37.0] - 2025-12-30
 
 ### Changed
