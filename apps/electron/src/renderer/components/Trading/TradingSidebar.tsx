@@ -1,8 +1,9 @@
 import { Box, Stack, Tabs, Text } from '@chakra-ui/react';
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBackendWallet } from '../../hooks/useBackendWallet';
 import { type TradingSidebarTab, useUIStore } from '../../store/uiStore';
+import { useShallow } from 'zustand/react/shallow';
 import { SidebarContainer } from '../ui/Sidebar';
 import { OrdersList } from './OrdersList';
 import { OrderTicket } from './OrderTicket';
@@ -21,12 +22,14 @@ const TradingSidebarComponent = ({ width }: TradingSidebarProps) => {
   const { wallets: backendWallets } = useBackendWallet();
   const activeWalletId = backendWallets[0]?.id;
 
-  const tradingSidebarTab = useUIStore((s) => s.tradingSidebarTab);
-  const setTradingSidebarTab = useUIStore((s) => s.setTradingSidebarTab);
+  const { tradingSidebarTab, setTradingSidebarTab } = useUIStore(useShallow((s) => ({
+    tradingSidebarTab: s.tradingSidebarTab,
+    setTradingSidebarTab: s.setTradingSidebarTab,
+  })));
 
-  const handleTabChange = (details: { value: string }) => {
+  const handleTabChange = useCallback((details: { value: string }) => {
     setTradingSidebarTab(details.value as TradingSidebarTab);
-  };
+  }, [setTradingSidebarTab]);
 
   return (
     <SidebarContainer width={width}>

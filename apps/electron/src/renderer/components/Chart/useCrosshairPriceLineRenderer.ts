@@ -1,6 +1,7 @@
 import type { CanvasManager } from '@/renderer/utils/canvas/CanvasManager';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { CHART_CONFIG } from '@shared/constants';
+import type { RefObject } from 'react';
 import { useCallback } from 'react';
 
 const CROSSHAIR_DASH_PATTERN = [1, 3] as const;
@@ -11,8 +12,7 @@ interface UseCrosshairPriceLineRendererProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
   enabled?: boolean;
-  mouseX: number | null;
-  mouseY: number | null;
+  mousePositionRef: RefObject<{ x: number; y: number } | null>;
   lineWidth?: number;
   lineStyle?: 'solid' | 'dashed' | 'dotted';
   rightMargin?: number;
@@ -26,19 +26,21 @@ export const useCrosshairPriceLineRenderer = ({
   manager,
   colors,
   enabled = true,
-  mouseX,
-  mouseY,
+  mousePositionRef,
   lineWidth = 1,
   lineStyle = 'solid',
   rightMargin = 72,
 }: UseCrosshairPriceLineRendererProps): UseCrosshairPriceLineRendererReturn => {
   const render = useCallback((): void => {
-    if (!enabled || !manager || mouseY === null || mouseX === null) return;
+    const mousePos = mousePositionRef.current;
+    if (!enabled || !manager || !mousePos) return;
+
+    const { x: mouseX, y: mouseY } = mousePos;
 
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
     const bounds = manager.getBounds();
-    
+
     if (!ctx || !dimensions || !bounds) return;
 
     const { width, height, chartWidth, chartHeight } = dimensions;
@@ -55,11 +57,11 @@ export const useCrosshairPriceLineRenderer = ({
     ctx.beginPath();
     ctx.rect(0, 0, chartWidth, chartHeight);
     ctx.clip();
-    
+
     ctx.strokeStyle = colors.crosshair;
     ctx.lineWidth = lineWidth;
     ctx.globalAlpha = 0.6;
-    
+
     if (lineStyle === 'dashed') {
       ctx.setLineDash(DASHED_LINE_PATTERN);
     } else if (lineStyle === 'dotted') {
@@ -69,7 +71,7 @@ export const useCrosshairPriceLineRenderer = ({
     }
 
     const lineEndX = chartWidth;
-    
+
     ctx.beginPath();
     ctx.moveTo(0, mouseY);
     ctx.lineTo(lineEndX, mouseY);
@@ -97,15 +99,15 @@ export const useCrosshairPriceLineRenderer = ({
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    
+
     const tagStartX = width - CHART_CONFIG.CHART_RIGHT_MARGIN;
-    
+
     ctx.fillStyle = colors.crosshair;
     const labelPadding = 8;
     const labelHeight = 18;
     const arrowWidth = 6;
     const tagWidth = CHART_CONFIG.CHART_RIGHT_MARGIN;
-    
+
     const endX = tagStartX + tagWidth;
     ctx.beginPath();
     ctx.moveTo(tagStartX - arrowWidth, mouseY);
@@ -115,12 +117,12 @@ export const useCrosshairPriceLineRenderer = ({
     ctx.lineTo(tagStartX, mouseY + labelHeight / 2);
     ctx.closePath();
     ctx.fill();
-    
+
     ctx.fillStyle = colors.background;
     ctx.fillText(priceText, tagStartX + labelPadding, mouseY);
 
     ctx.restore();
-  }, [enabled, manager, colors, lineWidth, lineStyle, rightMargin, mouseX, mouseY]);
+  }, [enabled, manager, colors, lineWidth, lineStyle, rightMargin, mousePositionRef]);
 
   return { render };
 };

@@ -171,11 +171,12 @@ describe('useMovingAverageRenderer', () => {
     });
 
     it('should highlight hovered MA', () => {
+      const hoveredMAIndexRef = { current: 0 as number | undefined };
       const { result } = renderHook(() =>
         useMovingAverageRenderer({
           manager: mockManager,
           movingAverages,
-          hoveredMAIndex: 0,
+          hoveredMAIndexRef,
         })
       );
 

@@ -4,11 +4,12 @@ import type { ChartThemeColors } from '../../hooks/useChartColors.tsx';
 import type { CanvasManager } from '../../utils/canvas/CanvasManager';
 import { useCrosshairPriceLineRenderer } from './useCrosshairPriceLineRenderer';
 
+const createMousePositionRef = (pos: { x: number; y: number } | null) => ({ current: pos });
+
 describe('useCrosshairPriceLineRenderer', () => {
   let mockManager: CanvasManager;
   let mockCtx: CanvasRenderingContext2D;
   let mockColors: ChartThemeColors;
-  let mockCanvas: HTMLCanvasElement;
 
   beforeEach(() => {
     mockCtx = {
@@ -79,8 +80,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: false,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
       })
     );
 
@@ -95,8 +95,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: null,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
       })
     );
 
@@ -105,30 +104,13 @@ describe('useCrosshairPriceLineRenderer', () => {
     expect(mockCtx.stroke).not.toHaveBeenCalled();
   });
 
-  it('should not render when mouseX is null', () => {
+  it('should not render when mousePosition is null', () => {
     const { result } = renderHook(() =>
       useCrosshairPriceLineRenderer({
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: null,
-        mouseY: 200,
-      })
-    );
-
-    result.current.render();
-
-    expect(mockCtx.stroke).not.toHaveBeenCalled();
-  });
-
-  it('should not render when mouseY is null', () => {
-    const { result } = renderHook(() =>
-      useCrosshairPriceLineRenderer({
-        manager: mockManager,
-        colors: mockColors,
-        enabled: true,
-        mouseX: 100,
-        mouseY: null,
+        mousePositionRef: createMousePositionRef(null),
       })
     );
 
@@ -143,8 +125,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 750,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 750, y: 200 }),
       })
     );
 
@@ -159,8 +140,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
       })
     );
 
@@ -178,8 +158,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY,
+        mousePositionRef: createMousePositionRef({ x: 100, y: mouseY }),
       })
     );
 
@@ -197,8 +176,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: mouseX, y: 200 }),
       })
     );
 
@@ -214,8 +192,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
       })
     );
 
@@ -231,8 +208,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
       })
     );
 
@@ -248,8 +224,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
         lineStyle: 'dashed',
       })
     );
@@ -265,8 +240,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
         lineStyle: 'dotted',
       })
     );
@@ -282,8 +256,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
         lineStyle: 'solid',
       })
     );
@@ -299,8 +272,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
         lineWidth: 3,
       })
     );
@@ -318,8 +290,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
       })
     );
 
@@ -334,8 +305,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
       })
     );
 
@@ -351,8 +321,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
       })
     );
 
@@ -371,8 +340,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
       })
     );
 
@@ -394,8 +362,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: customColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
       })
     );
 
@@ -410,8 +377,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
       })
     );
 
@@ -428,8 +394,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         manager: mockManager,
         colors: mockColors,
         enabled: true,
-        mouseX: 100,
-        mouseY: 200,
+        mousePositionRef: createMousePositionRef({ x: 100, y: 200 }),
       })
     );
 

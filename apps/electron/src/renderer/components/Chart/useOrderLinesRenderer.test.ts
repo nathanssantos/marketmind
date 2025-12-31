@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CanvasManager } from '../../utils/canvas/CanvasManager';
 import { useOrderLinesRenderer } from './useOrderLinesRenderer';
 
+const createHoveredOrderIdRef = (id: string | null) => ({ current: id });
+
 describe('useOrderLinesRenderer', () => {
   let mockManager: CanvasManager;
   let mockCtx: CanvasRenderingContext2D;
@@ -33,19 +35,19 @@ describe('useOrderLinesRenderer', () => {
 
   describe('renderOrderLines', () => {
     it('should not render when manager is null', () => {
-      const { result } = renderHook(() => useOrderLinesRenderer(null, true));
+      const { result } = renderHook(() => useOrderLinesRenderer(null, true, createHoveredOrderIdRef(null)));
       result.current.renderOrderLines();
       expect(mockCtx.save).not.toHaveBeenCalled();
     });
 
     it('should not render when no orders and trading disabled', () => {
-      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, false));
+      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, false, createHoveredOrderIdRef(null)));
       result.current.renderOrderLines();
       expect(mockCtx.save).not.toHaveBeenCalled();
     });
 
     it('should render when trading enabled with no orders', () => {
-      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true));
+      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true, createHoveredOrderIdRef(null)));
       result.current.renderOrderLines();
     });
 
@@ -61,14 +63,14 @@ describe('useOrderLinesRenderer', () => {
         status: 'open',
         setupType: 'test-setup',
       }];
-      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true, null, mockExecutions));
+      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true, createHoveredOrderIdRef(null), mockExecutions));
       result.current.renderOrderLines();
     });
   });
 
   describe('hook return value', () => {
     it('should return render function and helper methods', () => {
-      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true));
+      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true, createHoveredOrderIdRef(null)));
       expect(result.current.renderOrderLines).toBeTypeOf('function');
       expect(result.current.getClickedOrderId).toBeTypeOf('function');
       expect(result.current.getOrderAtPosition).toBeTypeOf('function');
@@ -79,7 +81,7 @@ describe('useOrderLinesRenderer', () => {
 
   describe('getClickedOrderId', () => {
     it('should return null when no close button clicked', () => {
-      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true));
+      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true, createHoveredOrderIdRef(null)));
       const clickedId = result.current.getClickedOrderId(0, 0);
       expect(clickedId).toBeNull();
     });
@@ -87,7 +89,7 @@ describe('useOrderLinesRenderer', () => {
 
   describe('getOrderAtPosition', () => {
     it('should return null when no order at position', () => {
-      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true));
+      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true, createHoveredOrderIdRef(null)));
       const order = result.current.getOrderAtPosition(0, 0);
       expect(order).toBeNull();
     });
@@ -95,7 +97,7 @@ describe('useOrderLinesRenderer', () => {
 
   describe('getHoveredOrder', () => {
     it('should return null when no order hovered', () => {
-      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true));
+      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true, createHoveredOrderIdRef(null)));
       const order = result.current.getHoveredOrder(0, 0);
       expect(order).toBeNull();
     });
@@ -103,7 +105,7 @@ describe('useOrderLinesRenderer', () => {
 
   describe('getSLTPAtPosition', () => {
     it('should return null when no SLTP at position', () => {
-      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true));
+      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true, createHoveredOrderIdRef(null)));
       const sltp = result.current.getSLTPAtPosition(0, 0);
       expect(sltp).toBeNull();
     });

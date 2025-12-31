@@ -14,6 +14,7 @@ import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsGrid, BsTable } from 'react-icons/bs';
 import { LuBot } from 'react-icons/lu';
+import { useShallow } from 'zustand/react/shallow';
 import { FuturesPositionsPanel } from './FuturesPositionsPanel';
 
 interface PortfolioPosition {
@@ -46,12 +47,21 @@ const PortfolioComponent = () => {
   usePositionUpdates(activeWalletId || '');
   const { tradeExecutions, tickerPrices } = useBackendTrading(activeWalletId || '', undefined);
 
-  const filterOption = useUIStore((s) => s.portfolioFilterOption);
-  const setFilterOption = useUIStore((s) => s.setPortfolioFilterOption);
-  const sortBy = useUIStore((s) => s.portfolioSortBy);
-  const setSortBy = useUIStore((s) => s.setPortfolioSortBy);
-  const viewMode = useUIStore((s) => s.portfolioViewMode);
-  const setViewMode = useUIStore((s) => s.setPortfolioViewMode);
+  const {
+    filterOption,
+    setFilterOption,
+    sortBy,
+    setSortBy,
+    viewMode,
+    setViewMode,
+  } = useUIStore(useShallow((s) => ({
+    filterOption: s.portfolioFilterOption,
+    setFilterOption: s.setPortfolioFilterOption,
+    sortBy: s.portfolioSortBy,
+    setSortBy: s.setPortfolioSortBy,
+    viewMode: s.portfolioViewMode,
+    setViewMode: s.setPortfolioViewMode,
+  })));
 
   const openExecutionSymbols = useMemo(
     () => [...new Set(tradeExecutions.filter((e) => e.status === 'open').map((e) => e.symbol))],
@@ -248,11 +258,13 @@ interface PortfolioTableProps {
   onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }
 
-const PortfolioTable = ({ positions, currency, onNavigateToSymbol }: PortfolioTableProps) => {
+const PortfolioTable = memo(({ positions, currency, onNavigateToSymbol }: PortfolioTableProps) => {
   const { t } = useTranslation();
-  const sortKey = useUIStore((s) => s.portfolioTableSortKey);
-  const sortDirection = useUIStore((s) => s.portfolioTableSortDirection);
-  const setPortfolioTableSort = useUIStore((s) => s.setPortfolioTableSort);
+  const { sortKey, sortDirection, setPortfolioTableSort } = useUIStore(useShallow((s) => ({
+    sortKey: s.portfolioTableSortKey,
+    sortDirection: s.portfolioTableSortDirection,
+    setPortfolioTableSort: s.setPortfolioTableSort,
+  })));
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -383,7 +395,9 @@ const PortfolioTable = ({ positions, currency, onNavigateToSymbol }: PortfolioTa
       })}
     </TradingTable>
   );
-};
+});
+
+PortfolioTable.displayName = 'PortfolioTable';
 
 interface PositionCardProps {
   position: PortfolioPosition;
@@ -391,7 +405,7 @@ interface PositionCardProps {
   onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }
 
-const PositionCard = ({ position, currency, onNavigateToSymbol }: PositionCardProps) => {
+const PositionCard = memo(({ position, currency, onNavigateToSymbol }: PositionCardProps) => {
   const { t } = useTranslation();
   const isProfitable = position.pnl >= 0;
   const isLong = position.side === 'LONG';
@@ -483,6 +497,8 @@ const PositionCard = ({ position, currency, onNavigateToSymbol }: PositionCardPr
       </Stack>
     </Box>
   );
-};
+});
+
+PositionCard.displayName = 'PositionCard';
 
 export const Portfolio = memo(PortfolioComponent);

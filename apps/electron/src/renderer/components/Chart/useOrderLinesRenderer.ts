@@ -10,6 +10,7 @@ import {
     isOrderLong,
     isOrderPending,
 } from '@shared/utils';
+import type { RefObject } from 'react';
 import { useMemo, useRef } from 'react';
 
 const CANVAS_GEOMETRY = {
@@ -304,7 +305,7 @@ export interface PendingSetup {
 export const useOrderLinesRenderer = (
   manager: CanvasManager | null,
   hasTradingEnabled: boolean,
-  hoveredOrderId: string | null = null,
+  hoveredOrderIdRef: RefObject<string | null>,
   backendExecutions: BackendExecution[] = [],
   pendingSetups: TradingSetup[] = []
 ) => {
@@ -373,10 +374,11 @@ export const useOrderLinesRenderer = (
     const pendingOrders = activeOrders.filter((order) => isOrderPending(order));
     const activeOrdersList = activeOrders.filter((order) => isOrderActive(order));
 
-    const pendingOrdersToRender = hoveredOrderId 
+    const hoveredOrderId = hoveredOrderIdRef.current;
+    const pendingOrdersToRender = hoveredOrderId
       ? pendingOrders.filter(o => getOrderId(o) !== hoveredOrderId)
       : pendingOrders;
-    const hoveredPendingOrder = hoveredOrderId 
+    const hoveredPendingOrder = hoveredOrderId
       ? pendingOrders.find(o => getOrderId(o) === hoveredOrderId)
       : null;
 

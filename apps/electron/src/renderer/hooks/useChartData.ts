@@ -35,5 +35,5 @@ export const useChartData = (params: UseChartDataParams) => {
       prevParamsRef.current = currentParams;
       setChartData(params);
     }
-  }, [setChartData]);
+  }, [params, setChartData]);
 };

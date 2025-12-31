@@ -4,7 +4,7 @@ import type { Kline, Viewport } from '@marketmind/types';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const VIEWPORT_UPDATE_THROTTLE_MS = 16;
+const VIEWPORT_UPDATE_THROTTLE_MS = 50;
 const SIGNIFICANT_CHANGE_THRESHOLD = 0.1;
 const TARGET_KLINE_WIDTH = 10;
 const KLINE_TOTAL_WIDTH = TARGET_KLINE_WIDTH + CHART_CONFIG.KLINE_SPACING;
@@ -25,6 +25,7 @@ export interface UseChartCanvasReturn {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   manager: CanvasManager | null;
   viewport: Viewport;
+  isPanning: boolean;
   handleMouseDown: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   handleMouseMove: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   handleMouseUp: () => void;
@@ -302,21 +303,32 @@ export const useChartCanvas = ({
   );
 
   const handleMouseUp = useCallback((): void => {
+    if (managerRef.current) {
+      const newViewport = managerRef.current.getViewport();
+      updateViewport(newViewport);
+      wasAtEndRef.current = Math.abs(newViewport.end - klinesLengthRef.current) < 1;
+    }
     setIsPanning(false);
     setIsPanningOnScale(false);
     lastMousePosRef.current = null;
-  }, []);
+  }, [updateViewport]);
 
   const handleMouseLeave = useCallback((): void => {
+    if (managerRef.current) {
+      const newViewport = managerRef.current.getViewport();
+      updateViewport(newViewport);
+      wasAtEndRef.current = Math.abs(newViewport.end - klinesLengthRef.current) < 1;
+    }
     setIsPanning(false);
     setIsPanningOnScale(false);
     lastMousePosRef.current = null;
-  }, []);
+  }, [updateViewport]);
 
   return {
     canvasRef,
     manager,
     viewport,
+    isPanning,
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,

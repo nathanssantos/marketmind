@@ -15,7 +15,7 @@ import { Box, Portal } from '@chakra-ui/react';
 import { calculateMovingAverage, type StochasticResult } from '@marketmind/indicators';
 import type { Kline, MarketType, Order, Viewport } from '@marketmind/types';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
-import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
+import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMutations';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
@@ -116,7 +116,6 @@ import { useFibonacciRenderer } from './useFibonacciRenderer';
 import { useFVGRenderer } from './useFVGRenderer';
 import { useLiquidityLevelsRenderer } from './useLiquidityLevelsRenderer';
 
-const MOUSE_POSITION_THROTTLE_MS = 16;
 const RIGHT_MOUSE_BUTTON = 2;
 
 export interface ChartCanvasProps {
@@ -182,7 +181,7 @@ export const ChartCanvas = ({
     createOrder: addBackendOrder,
     closeExecution,
     updateExecutionSLTP,
-  } = useBackendTrading(backendWalletId || '', symbol);
+  } = useBackendTradingMutations();
 
   const hasTradingEnabled = !!backendWalletId;
 
@@ -292,16 +291,18 @@ export const ChartCanvas = ({
     y: 0,
     visible: false,
   });
-  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
-  const [orderPreview, setOrderPreview] = useState<{ price: number; type: 'long' | 'short' } | null>(null);
-  const [hoveredMAIndex, setHoveredMAIndex] = useState<number | undefined>(undefined);
-  const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null);
+  const mousePositionRef = useRef<{ x: number; y: number } | null>(null);
+  const orderPreviewRef = useRef<{ price: number; type: 'long' | 'short' } | null>(null);
+  const hoveredMAIndexRef = useRef<number | undefined>(undefined);
+  const hoveredOrderIdRef = useRef<string | null>(null);
   const lastHoveredOrderRef = useRef<string | null>(null);
   const lastTooltipOrderRef = useRef<string | null>(null);
-  const lastMousePositionUpdateRef = useRef<number>(0);
-  const [_isInteracting, setIsInteracting] = useState(false);
   const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cursorRef = useRef<'crosshair' | 'ns-resize' | 'grab' | 'grabbing' | 'pointer'>('crosshair');
+  const mouseMoveRafRef = useRef<number | null>(null);
+  const pendingMouseEventRef = useRef<{ x: number; y: number; rect: DOMRect } | null>(null);
+  const tooltipEnabledRef = useRef(true);
+  const tooltipDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const [measurementArea, setMeasurementArea] = useState<{
     startX: number;
@@ -355,6 +356,7 @@ export const ChartCanvas = ({
   const {
     canvasRef,
     manager,
+    isPanning,
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
@@ -364,6 +366,21 @@ export const ChartCanvas = ({
     ...(initialViewport !== undefined && { initialViewport }),
     ...(onViewportChange !== undefined && { onViewportChange }),
   });
+
+  useEffect(() => {
+    if (isPanning) {
+      tooltipEnabledRef.current = false;
+      if (tooltipDebounceRef.current) clearTimeout(tooltipDebounceRef.current);
+      setTooltipData({ kline: null, x: 0, y: 0, visible: false });
+    } else {
+      tooltipDebounceRef.current = setTimeout(() => {
+        tooltipEnabledRef.current = true;
+      }, 150);
+    }
+    return () => {
+      if (tooltipDebounceRef.current) clearTimeout(tooltipDebounceRef.current);
+    };
+  }, [isPanning]);
 
   const updateCursor = useCallback((newCursor: typeof cursorRef.current) => {
     if (cursorRef.current !== newCursor) {
@@ -437,7 +454,7 @@ export const ChartCanvas = ({
     manager,
     movingAverages,
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
-    hoveredMAIndex,
+    hoveredMAIndexRef,
     maValuesCache,
   });
 
@@ -702,14 +719,13 @@ export const ChartCanvas = ({
     manager,
     colors,
     enabled: showCrosshair,
-    mouseX: mousePosition?.x ?? null,
-    mouseY: mousePosition?.y ?? null,
+    mousePositionRef,
     lineWidth: 1,
     lineStyle: 'solid',
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
   });
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderId, filteredBackendExecutions, detectedSetups.filter(s => s.visible));
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, filteredBackendExecutions, detectedSetups.filter(s => s.visible));
 
   const { render: renderWatermark } = useWatermarkRenderer({
     manager,
@@ -723,6 +739,8 @@ export const ChartCanvas = ({
   const currentKlines = manager?.getKlines() ?? [];
   const lastKline = currentKlines[currentKlines.length - 1];
   const currentPrice = lastKline ? getKlineClose(lastKline) : 0;
+  const currentPriceRef = useRef(currentPrice);
+  currentPriceRef.current = currentPrice;
 
   const updatePrice = usePriceStore((s) => s.updatePrice);
   useEffect(() => {
@@ -790,8 +808,189 @@ export const ChartCanvas = ({
     yToPrice: (y) => manager?.yToPrice(y) ?? 0,
     enabled: hasTradingEnabled && draggableOrders.length > 0,
     getOrderAtPosition: (x, y) => getOrderAtPosition(x, y),
-    currentPrice,
   });
+
+  const processMouseMoveTooltip = useCallback((mouseX: number, mouseY: number, rect: DOMRect): void => {
+    if (!manager || !tooltipEnabledRef.current) return;
+
+    const viewport = manager.getViewport();
+    const dimensions = manager.getDimensions();
+    const bounds = manager.getBounds();
+
+    if (!dimensions || !bounds) return;
+
+    const priceScaleLeft = dimensions.width - (advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
+    const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
+    const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
+
+    const isOnPriceScale = mouseX >= priceScaleLeft && mouseY < timeScaleTop;
+    const isOnTimeScale = mouseY >= timeScaleTop;
+    const isInChartArea = mouseX < chartAreaRight && mouseY < timeScaleTop;
+
+    const hoveredTagIndex = getHoveredMATag(mouseX, mouseY);
+
+    if (isOnPriceScale && hoveredTagIndex === undefined) {
+      hoveredMAIndexRef.current = undefined;
+      setTooltipData({ kline: null, x: 0, y: 0, visible: false });
+      return;
+    }
+
+    if (isOnTimeScale) {
+      hoveredMAIndexRef.current = undefined;
+      setTooltipData({ kline: null, x: 0, y: 0, visible: false });
+      return;
+    }
+
+    const hoveredOrderForTooltip = getHoveredOrder(mouseX, mouseY);
+    const hoveredOrderIdForTooltip = hoveredOrderForTooltip?.id || null;
+
+    if (hoveredOrderForTooltip && klines.length > 0) {
+      if (hoveredOrderIdForTooltip !== lastTooltipOrderRef.current) {
+        lastTooltipOrderRef.current = hoveredOrderIdForTooltip;
+        const lastKline = klines[klines.length - 1];
+        const currentPriceVal = lastKline ? getKlineClose(lastKline) : undefined;
+        setTooltipData({
+          kline: null, x: mouseX, y: mouseY, visible: true,
+          containerWidth: rect?.width, containerHeight: rect?.height,
+          order: hoveredOrderForTooltip,
+          ...(currentPriceVal && { currentPrice: currentPriceVal }),
+        });
+      }
+      return;
+    }
+
+    if (!hoveredOrderForTooltip && lastTooltipOrderRef.current) {
+      lastTooltipOrderRef.current = null;
+      setTooltipData({ kline: null, x: 0, y: 0, visible: false });
+      return;
+    }
+
+    const distanceToLine = (px: number, py: number, x1: number, y1: number, x2: number, y2: number): number => {
+      const A = px - x1;
+      const B = py - y1;
+      const C = x2 - x1;
+      const D = y2 - y1;
+      const dot = A * C + B * D;
+      const lenSq = C * C + D * D;
+      const param = lenSq !== 0 ? dot / lenSq : -1;
+      let xx: number, yy: number;
+      if (param < 0) { xx = x1; yy = y1; }
+      else if (param > 1) { xx = x2; yy = y2; }
+      else { xx = x1 + param * C; yy = y1 + param * D; }
+      const dx = px - xx;
+      const dy = py - yy;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    let closestMAIndex: number | undefined = undefined;
+    let closestMADistance = Infinity;
+    let closestMAValue: number | undefined = undefined;
+    const HOVER_THRESHOLD = 8;
+
+    if (hoveredTagIndex !== undefined) {
+      closestMAIndex = hoveredTagIndex;
+    } else if (movingAverages.length > 0) {
+      const effectiveWidth = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
+      const visibleRange = viewport.end - viewport.start;
+      const widthPerKline = effectiveWidth / visibleRange;
+      const { klineWidth } = viewport;
+      const klineCenterOffset = (widthPerKline - klineWidth) / 2 + klineWidth / 2;
+
+      for (let maIdx = 0; maIdx < movingAverages.length; maIdx++) {
+        const ma = movingAverages[maIdx];
+        if (!ma || ma.visible === false) continue;
+        const cacheKey = `${ma.type}-${ma.period}`;
+        const maValues = maValuesCache.get(cacheKey);
+        if (!maValues) continue;
+
+        const startIdx = Math.max(0, Math.floor(viewport.start));
+        const endIdx = Math.min(klines.length, Math.ceil(viewport.end));
+
+        for (let i = startIdx; i < endIdx - 1; i++) {
+          const value1 = maValues[i];
+          const value2 = maValues[i + 1];
+          if (value1 === null || value1 === undefined || value2 === null || value2 === undefined) continue;
+
+          const x1 = manager.indexToX(i) + klineCenterOffset;
+          const y1 = manager.priceToY(value1);
+          const x2 = manager.indexToX(i + 1) + klineCenterOffset;
+          const y2 = manager.priceToY(value2);
+          const distance = distanceToLine(mouseX, mouseY, x1, y1, x2, y2);
+
+          if (distance < HOVER_THRESHOLD && distance < closestMADistance) {
+            closestMADistance = distance;
+            closestMAIndex = maIdx;
+            closestMAValue = (value1 + value2) / 2;
+          }
+        }
+        if (closestMADistance < HOVER_THRESHOLD * 0.5) break;
+      }
+    }
+
+    hoveredMAIndexRef.current = closestMAIndex;
+
+    if (closestMAIndex !== undefined) {
+      const ma = movingAverages[closestMAIndex];
+      if (ma) {
+        setTooltipData({
+          kline: null, x: mouseX, y: mouseY, visible: true,
+          containerWidth: rect.width, containerHeight: rect.height,
+          movingAverage: { period: ma.period, type: ma.type, color: ma.color, ...(closestMAValue !== undefined && { value: closestMAValue }) },
+        });
+        return;
+      }
+    }
+
+    if (!isInChartArea) {
+      setTooltipData({ kline: null, x: 0, y: 0, visible: false });
+      return;
+    }
+
+    const effectiveChartWidth = chartAreaRight;
+    const hoveredIndex = Math.floor(viewport.start + (mouseX / effectiveChartWidth) * (viewport.end - viewport.start));
+
+    if (hoveredIndex >= 0 && hoveredIndex < klines.length) {
+      const kline = klines[hoveredIndex];
+      if (kline) {
+        const x = manager.indexToX(hoveredIndex);
+        const klineWidth = viewport.klineWidth;
+        const visibleRange = viewport.end - viewport.start;
+        const widthPerKline = chartAreaRight / visibleRange;
+        const klineX = x + (widthPerKline - klineWidth) / 2;
+
+        const openY = manager.priceToY(getKlineOpen(kline));
+        const closeY = manager.priceToY(getKlineClose(kline));
+        const highY = manager.priceToY(getKlineHigh(kline));
+        const lowY = manager.priceToY(getKlineLow(kline));
+
+        const bodyLeft = klineX;
+        const bodyRight = klineX + klineWidth;
+        const bodyTop = Math.min(openY, closeY);
+        const bodyBottom = Math.max(openY, closeY);
+
+        const volumeHeightRatio = advancedConfig?.volumeHeightRatio ?? CHART_CONFIG.VOLUME_HEIGHT_RATIO;
+        const volumeOverlayHeight = dimensions.chartHeight * volumeHeightRatio;
+        const volumeBaseY = dimensions.chartHeight;
+        const volumeRatio = getKlineVolume(kline) / bounds.maxVolume;
+        const barHeight = volumeRatio * volumeOverlayHeight;
+        const volumeTop = volumeBaseY - barHeight;
+
+        const isOnKlineBody = mouseX >= bodyLeft && mouseX <= bodyRight && mouseY >= bodyTop && mouseY <= bodyBottom;
+        const isOnKlineWick = mouseX >= bodyLeft && mouseX <= bodyRight && mouseY >= highY && mouseY <= lowY;
+        const isOnVolumeBar = showVolume && mouseX >= bodyLeft && mouseX <= bodyRight && mouseY >= volumeTop && mouseY <= volumeBaseY;
+
+        if (isOnKlineBody || isOnKlineWick || isOnVolumeBar) {
+          setTooltipData({
+            kline, x: mouseX, y: mouseY, visible: true,
+            containerWidth: rect.width, containerHeight: rect.height, klineIndex: hoveredIndex,
+          });
+          return;
+        }
+      }
+    }
+
+    setTooltipData({ kline: null, x: 0, y: 0, visible: false });
+  }, [manager, klines, movingAverages, maValuesCache, advancedConfig, showVolume, getHoveredMATag, getHoveredOrder]);
 
   const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>): void => {
     if (!canvasRef.current) return;
@@ -831,30 +1030,21 @@ export const ChartCanvas = ({
       const percentChange = (priceChange / startPrice) * 100;
 
       setTooltipData({
-        kline: null,
-        x: mouseX,
-        y: mouseY,
-        visible: true,
-        containerWidth: rect.width,
-        containerHeight: rect.height,
-        measurement: {
-          klineCount,
-          priceChange,
-          percentChange,
-          startPrice,
-          endPrice,
-        },
+        kline: null, x: mouseX, y: mouseY, visible: true,
+        containerWidth: rect.width, containerHeight: rect.height,
+        measurement: { klineCount, priceChange, percentChange, startPrice, endPrice },
       });
 
-      const now = Date.now();
-      if (now - lastMousePositionUpdateRef.current > MOUSE_POSITION_THROTTLE_MS) {
-        setMousePosition({ x: mouseX, y: mouseY });
-        lastMousePositionUpdateRef.current = now;
-      }
+      mousePositionRef.current = { x: mouseX, y: mouseY };
       return;
     }
 
     handleMouseMove(event);
+
+    if (isPanning) {
+      mousePositionRef.current = { x: mouseX, y: mouseY };
+      return;
+    }
 
     if (!manager) return;
 
@@ -865,7 +1055,7 @@ export const ChartCanvas = ({
     const newHoveredId = hoveredOrder?.id || null;
     if (newHoveredId !== lastHoveredOrderRef.current) {
       lastHoveredOrderRef.current = newHoveredId;
-      setHoveredOrderId(newHoveredId);
+      hoveredOrderIdRef.current = newHoveredId;
       manager.markDirty('overlays');
     }
 
@@ -881,295 +1071,55 @@ export const ChartCanvas = ({
       updateCursor('crosshair');
     }
 
-    const now = Date.now();
-    if (now - lastMousePositionUpdateRef.current > MOUSE_POSITION_THROTTLE_MS) {
-      setMousePosition({ x: mouseX, y: mouseY });
-      lastMousePositionUpdateRef.current = now;
-    }
+    mousePositionRef.current = { x: mouseX, y: mouseY };
     manager.markDirty('overlays');
 
-    const viewport = manager.getViewport();
     const dimensions = manager.getDimensions();
-    const bounds = manager.getBounds();
-
-    if (!dimensions || !bounds) return;
+    if (!dimensions) return;
 
     const priceScaleLeft = dimensions.width - (advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
     const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
     const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
-
-    if (hasTradingEnabled && !isAutoTradingActive && (shiftPressed || altPressed) && mouseY < timeScaleTop) {
-      const price = manager.yToPrice(mouseY);
-      setOrderPreview({
-        price,
-        type: shiftPressed ? 'long' : 'short',
-      });
-      manager.markDirty('overlays');
-    } else {
-      setOrderPreview(null);
-      manager.markDirty('overlays');
-    }
-
-    const isOnPriceScale = mouseX >= priceScaleLeft && mouseY < timeScaleTop;
-
-    const isOnTimeScale = mouseY >= timeScaleTop;
-
     const lastKlineX = manager.indexToX(klines.length - 1);
     const patternExtensionArea = lastKlineX + CHART_CONFIG.PATTERN_EXTENSION_DISTANCE;
     const isInChartArea = mouseX < chartAreaRight && mouseY < timeScaleTop;
     const isInExtendedPatternArea = mouseX >= chartAreaRight && mouseX <= patternExtensionArea && mouseY < timeScaleTop;
+    const isOnPriceScale = mouseX >= priceScaleLeft && mouseY < timeScaleTop;
+    const isOnTimeScale = mouseY >= timeScaleTop;
 
     const hoveredTagIndex = getHoveredMATag(mouseX, mouseY);
 
-    if (hoveredTagIndex !== undefined) {
-      updateCursor('pointer');
-    } else if (isOnPriceScale) {
-      updateCursor('ns-resize');
-    } else if (isOnTimeScale) {
-      updateCursor('crosshair');
-    } else if (isInChartArea || isInExtendedPatternArea) {
-      updateCursor('crosshair');
+    if (hoveredTagIndex !== undefined) updateCursor('pointer');
+    else if (isOnPriceScale) updateCursor('ns-resize');
+    else if (isOnTimeScale) updateCursor('crosshair');
+    else if (isInChartArea || isInExtendedPatternArea) updateCursor('crosshair');
+
+    if (hasTradingEnabled && !isAutoTradingActive && (shiftPressed || altPressed) && mouseY < timeScaleTop) {
+      const price = manager.yToPrice(mouseY);
+      orderPreviewRef.current = { price, type: shiftPressed ? 'long' : 'short' };
+      manager.markDirty('overlays');
+    } else if (orderPreviewRef.current !== null) {
+      orderPreviewRef.current = null;
+      manager.markDirty('overlays');
     }
 
-    if (isOnPriceScale && hoveredTagIndex === undefined) {
-      setHoveredMAIndex(undefined);
-      setTooltipData({
-        kline: null,
-        x: 0,
-        y: 0,
-        visible: false,
-      });
-      return;
-    }
-
-    if (isOnTimeScale) {
-      setHoveredMAIndex(undefined);
-      setTooltipData({
-        kline: null,
-        x: 0,
-        y: 0,
-        visible: false,
-      });
-      return;
-    }
-
-    const hoveredOrderForTooltip = getHoveredOrder(mouseX, mouseY);
-    const hoveredOrderIdForTooltip = hoveredOrderForTooltip?.id || null;
-
-    if (hoveredOrderForTooltip && klines.length > 0) {
-      if (hoveredOrderIdForTooltip !== lastTooltipOrderRef.current) {
-        lastTooltipOrderRef.current = hoveredOrderIdForTooltip;
-        const lastKline = klines[klines.length - 1];
-        const currentPrice = lastKline ? getKlineClose(lastKline) : undefined;
-        const rect = canvasRef.current?.getBoundingClientRect();
-        setTooltipData({
-          kline: null,
-          x: mouseX,
-          y: mouseY,
-          visible: true,
-          containerWidth: rect?.width,
-          containerHeight: rect?.height,
-          order: hoveredOrderForTooltip,
-          ...(currentPrice && { currentPrice }),
-        });
-      }
-      return;
-    }
-
-    if (!hoveredOrderForTooltip && lastTooltipOrderRef.current) {
-      lastTooltipOrderRef.current = null;
-      setTooltipData({
-        kline: null,
-        x: 0,
-        y: 0,
-        visible: false,
-      });
-      return;
-    }
-
-    const distanceToLine = (px: number, py: number, x1: number, y1: number, x2: number, y2: number): number => {
-      const A = px - x1;
-      const B = py - y1;
-      const C = x2 - x1;
-      const D = y2 - y1;
-      const dot = A * C + B * D;
-      const lenSq = C * C + D * D;
-      const param = lenSq !== 0 ? dot / lenSq : -1;
-
-      let xx: number;
-      let yy: number;
-
-      if (param < 0) {
-        xx = x1;
-        yy = y1;
-      } else if (param > 1) {
-        xx = x2;
-        yy = y2;
-      } else {
-        xx = x1 + param * C;
-        yy = y1 + param * D;
-      }
-
-      const dx = px - xx;
-      const dy = py - yy;
-      return Math.sqrt(dx * dx + dy * dy);
-    };
-
-    let closestMAIndex: number | undefined = undefined;
-    let closestMADistance = Infinity;
-    let closestMAValue: number | undefined = undefined;
-    const HOVER_THRESHOLD = 8;
-
-    if (hoveredTagIndex !== undefined) {
-      closestMAIndex = hoveredTagIndex;
-    } else {
-      const effectiveWidth = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
-      const visibleRange = viewport.end - viewport.start;
-      const widthPerKline = effectiveWidth / visibleRange;
-      const { klineWidth } = viewport;
-      const klineCenterOffset = (widthPerKline - klineWidth) / 2 + klineWidth / 2;
-
-      movingAverages.forEach((ma, index) => {
-        if (ma.visible === false) return;
-
-        const cacheKey = `${ma.type}-${ma.period}`;
-        const maValues = maValuesCache.get(cacheKey);
-        if (!maValues) return;
-
-        const startIndex = Math.max(0, Math.floor(viewport.start));
-        const endIndex = Math.min(klines.length, Math.ceil(viewport.end));
-
-        for (let i = startIndex; i < endIndex - 1; i++) {
-          const value1 = maValues[i];
-          const value2 = maValues[i + 1];
-
-          if (value1 === null || value1 === undefined || value2 === null || value2 === undefined) continue;
-
-          const x1 = manager.indexToX(i) + klineCenterOffset;
-          const y1 = manager.priceToY(value1);
-          const x2 = manager.indexToX(i + 1) + klineCenterOffset;
-          const y2 = manager.priceToY(value2);
-
-          const distance = distanceToLine(mouseX, mouseY, x1, y1, x2, y2);
-
-          if (distance < HOVER_THRESHOLD && distance < closestMADistance) {
-            closestMADistance = distance;
-            closestMAIndex = index;
-            closestMAValue = (value1 + value2) / 2;
-          }
+    pendingMouseEventRef.current = { x: mouseX, y: mouseY, rect };
+    if (mouseMoveRafRef.current === null) {
+      mouseMoveRafRef.current = requestAnimationFrame(() => {
+        mouseMoveRafRef.current = null;
+        const pending = pendingMouseEventRef.current;
+        if (pending) {
+          processMouseMoveTooltip(pending.x, pending.y, pending.rect);
         }
       });
     }
-
-    setHoveredMAIndex(closestMAIndex);
-    manager.markDirty('overlays');
-
-    if (closestMAIndex !== undefined) {
-      const ma = movingAverages[closestMAIndex];
-      if (ma) {
-        setTooltipData({
-          kline: null,
-          x: mouseX,
-          y: mouseY,
-          visible: true,
-          containerWidth: rect.width,
-          containerHeight: rect.height,
-          movingAverage: {
-            period: ma.period,
-            type: ma.type,
-            color: ma.color,
-            ...(closestMAValue !== undefined && { value: closestMAValue }),
-          },
-        });
-        manager.markDirty('overlays');
-        return;
-      }
-    }
-
-    if (!isInChartArea) {
-      setTooltipData({
-        kline: null,
-        x: 0,
-        y: 0,
-        visible: false,
-      });
-      return;
-    }
-
-    const effectiveChartWidth = chartAreaRight;
-    const hoveredIndex = Math.floor(viewport.start + (mouseX / effectiveChartWidth) * (viewport.end - viewport.start));
-
-    if (hoveredIndex >= 0 && hoveredIndex < klines.length) {
-      const kline = klines[hoveredIndex];
-      if (kline) {
-        const x = manager.indexToX(hoveredIndex);
-        const klineWidth = viewport.klineWidth;
-
-        const visibleRange = viewport.end - viewport.start;
-        const widthPerKline = chartAreaRight / visibleRange;
-        const klineX = x + (widthPerKline - klineWidth) / 2;
-
-        const openY = manager.priceToY(getKlineOpen(kline));
-        const closeY = manager.priceToY(getKlineClose(kline));
-        const highY = manager.priceToY(getKlineHigh(kline));
-        const lowY = manager.priceToY(getKlineLow(kline));
-
-        const bodyLeft = klineX;
-        const bodyRight = klineX + klineWidth;
-        const bodyTop = Math.min(openY, closeY);
-        const bodyBottom = Math.max(openY, closeY);
-
-        const volumeHeightRatio = advancedConfig?.volumeHeightRatio ?? CHART_CONFIG.VOLUME_HEIGHT_RATIO;
-        const volumeOverlayHeight = dimensions.chartHeight * volumeHeightRatio;
-        const volumeBaseY = dimensions.chartHeight;
-        const volumeRatio = getKlineVolume(kline) / bounds.maxVolume;
-        const barHeight = volumeRatio * volumeOverlayHeight;
-        const volumeTop = volumeBaseY - barHeight;
-
-        const isOnKlineBody = mouseX >= bodyLeft &&
-          mouseX <= bodyRight &&
-          mouseY >= bodyTop &&
-          mouseY <= bodyBottom;
-
-        const isOnKlineWick = mouseX >= bodyLeft &&
-          mouseX <= bodyRight &&
-          mouseY >= highY &&
-          mouseY <= lowY;
-
-        const isOnVolumeBar = showVolume &&
-          mouseX >= bodyLeft &&
-          mouseX <= bodyRight &&
-          mouseY >= volumeTop &&
-          mouseY <= volumeBaseY;
-
-        if (isOnKlineBody || isOnKlineWick || isOnVolumeBar) {
-          setTooltipData({
-            kline,
-            x: mouseX,
-            y: mouseY,
-            visible: true,
-            containerWidth: rect.width,
-            containerHeight: rect.height,
-            klineIndex: hoveredIndex,
-          });
-          return;
-        }
-      }
-    }
-
-    setTooltipData({
-      kline: null,
-      x: 0,
-      y: 0,
-      visible: false,
-    });
   };
 
   const handleCanvasMouseLeave = (): void => {
     handleMouseLeave();
-    setMousePosition(null);
-    setOrderPreview(null);
-    setHoveredOrderId(null);
+    mousePositionRef.current = null;
+    orderPreviewRef.current = null;
+    hoveredOrderIdRef.current = null;
     lastHoveredOrderRef.current = null;
     lastTooltipOrderRef.current = null;
     setIsMeasuring(false);
@@ -1186,7 +1136,6 @@ export const ChartCanvas = ({
   };
 
   const startInteraction = (): void => {
-    setIsInteracting(true);
     if (interactionTimeoutRef.current) {
       clearTimeout(interactionTimeoutRef.current);
       interactionTimeoutRef.current = null;
@@ -1198,7 +1147,6 @@ export const ChartCanvas = ({
       clearTimeout(interactionTimeoutRef.current);
     }
     interactionTimeoutRef.current = setTimeout(() => {
-      setIsInteracting(false);
       interactionTimeoutRef.current = null;
     }, 300);
   };
@@ -1383,30 +1331,34 @@ export const ChartCanvas = ({
 
   useEffect(() => {
     if (!shiftPressed && !altPressed) {
-      setOrderPreview(null);
+      orderPreviewRef.current = null;
+      if (manager) manager.markDirty('overlays');
       return;
     }
 
     if (isAutoTradingActive) {
-      setOrderPreview(null);
+      orderPreviewRef.current = null;
+      if (manager) manager.markDirty('overlays');
       return;
     }
 
-    if (mousePosition && manager && hasTradingEnabled) {
+    const mousePos = mousePositionRef.current;
+    if (mousePos && manager && hasTradingEnabled) {
       const dimensions = manager.getDimensions();
       if (!dimensions) return;
 
       const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
 
-      if (mousePosition.y < timeScaleTop) {
-        const price = manager.yToPrice(mousePosition.y);
-        setOrderPreview({
+      if (mousePos.y < timeScaleTop) {
+        const price = manager.yToPrice(mousePos.y);
+        orderPreviewRef.current = {
           price,
           type: shiftPressed ? 'long' : 'short',
-        });
+        };
+        manager.markDirty('overlays');
       }
     }
-  }, [shiftPressed, altPressed, mousePosition, manager, hasTradingEnabled, isAutoTradingActive]);
+  }, [shiftPressed, altPressed, manager, hasTradingEnabled, isAutoTradingActive]);
 
   useEffect(() => {
     if (!manager) return;
@@ -1475,13 +1427,14 @@ export const ChartCanvas = ({
 
         if (dragType === 'entry' && isOrderPending(draggedOrder)) {
           const isLong = isOrderLong(draggedOrder);
+          const currentPriceValue = currentPriceRef.current;
           const willExecuteImmediately =
-            (isLong && previewPrice <= currentPrice) ||
-            (!isLong && previewPrice >= currentPrice);
+            (isLong && previewPrice <= currentPriceValue) ||
+            (!isLong && previewPrice >= currentPriceValue);
 
           if (willExecuteImmediately) {
             color = 'rgba(59, 130, 246, 0.9)';
-            label = `${isLong ? 'L' : 'S'} ${currentPrice.toFixed(2)} [MARKET]`;
+            label = `${isLong ? 'L' : 'S'} ${currentPriceValue.toFixed(2)} [MARKET]`;
             isDashed = false;
           } else {
             color = 'rgba(100, 116, 139, 0.7)';
@@ -1538,13 +1491,14 @@ export const ChartCanvas = ({
       renderCurrentPriceLine_Label();
       renderCrosshairPriceLine();
 
-      if (orderPreview && manager && !isAutoTradingActive) {
+      const orderPreviewValue = orderPreviewRef.current;
+      if (orderPreviewValue && manager && !isAutoTradingActive) {
         const ctx = manager.getContext();
         const dimensions = manager.getDimensions();
         if (!ctx || !dimensions) return;
 
-        const y = manager.priceToY(orderPreview.price);
-        const isLong = orderPreview.type === 'long';
+        const y = manager.priceToY(orderPreviewValue.price);
+        const isLong = orderPreviewValue.type === 'long';
 
         const willBeActive = false;
 
@@ -1569,7 +1523,7 @@ export const ChartCanvas = ({
 
         const statusLabel = willBeActive ? t('trading.active') : t('trading.pending');
         const directionSymbol = isLong ? '↑' : '↓';
-        const label = `${directionSymbol} @ ${orderPreview.price.toFixed(2)} [${statusLabel}]`;
+        const label = `${directionSymbol} @ ${orderPreviewValue.price.toFixed(2)} [${statusLabel}]`;
         const labelPadding = 8;
         const textMetrics = ctx.measureText(label);
         const textWidth = textMetrics.width;
@@ -1698,17 +1652,15 @@ export const ChartCanvas = ({
     renderCrosshairPriceLine,
     renderOrderLines,
     chartType,
-    mousePosition,
     measurementArea,
     isMeasuring,
-    orderPreview,
     showMeasurementArea,
     showMeasurementRuler,
     colors,
     filteredBackendExecutions,
-    hoveredOrderId,
     orderDragHandler,
-    currentPrice,
+    isAutoTradingActive,
+    t,
   ]);
 
   return (

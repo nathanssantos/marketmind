@@ -17,11 +17,12 @@ import {
   isOrderLong,
   isOrderPending,
 } from '@shared/utils';
-import { memo, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePricesForSymbols } from '@renderer/store/priceStore';
 import { BsGrid, BsTable, BsThreeDotsVertical } from 'react-icons/bs';
 import { LuBot, LuX } from 'react-icons/lu';
+import { useShallow } from 'zustand/react/shallow';
 
 const OrdersListComponent = () => {
   const { t } = useTranslation();
@@ -127,7 +128,7 @@ const OrdersListComponent = () => {
     permissions: ['SPOT'],
   }));
 
-  const cancelOrder = async (id: string) => {
+  const cancelOrder = useCallback(async (id: string) => {
     const order = orders.find(o => o.id === id);
     if (order && activeWalletId) {
       if (order.isAutoTrade) {
@@ -140,21 +141,30 @@ const OrdersListComponent = () => {
         });
       }
     }
-  };
+  }, [orders, activeWalletId, cancelExecution, cancelBackendOrder]);
 
-  const closeOrder = async (id: string, price: number) => {
+  const closeOrder = useCallback(async (id: string, price: number) => {
     const order = orders.find(o => o.id === id);
     if (order?.isAutoTrade) {
       await closeExecution(id, price.toString());
     }
-  };
+  }, [orders, closeExecution]);
 
-  const filterStatus = useUIStore((s) => s.ordersFilterStatus);
-  const setFilterStatus = useUIStore((s) => s.setOrdersFilterStatus);
-  const sortBy = useUIStore((s) => s.ordersSortBy);
-  const setSortBy = useUIStore((s) => s.setOrdersSortBy);
-  const viewMode = useUIStore((s) => s.ordersViewMode);
-  const setViewMode = useUIStore((s) => s.setOrdersViewMode);
+  const {
+    filterStatus,
+    setFilterStatus,
+    sortBy,
+    setSortBy,
+    viewMode,
+    setViewMode,
+  } = useUIStore(useShallow((s) => ({
+    filterStatus: s.ordersFilterStatus,
+    setFilterStatus: s.setOrdersFilterStatus,
+    sortBy: s.ordersSortBy,
+    setSortBy: s.setOrdersSortBy,
+    viewMode: s.ordersViewMode,
+    setViewMode: s.setOrdersViewMode,
+  })));
 
   const activeWallet = wallets.find((w) => w.id === activeWalletId);
   const walletOrders = activeWallet
@@ -317,8 +327,8 @@ const OrdersListComponent = () => {
             <OrdersTable
               orders={filteredOrders}
               currency={activeWallet.currency}
-              onCancel={(id) => cancelOrder(id)}
-              onClose={(id, price) => closeOrder(id, price)}
+              onCancel={cancelOrder}
+              onClose={closeOrder}
               onNavigateToSymbol={globalActions?.navigateToSymbol}
             />
           ) : (
@@ -328,8 +338,8 @@ const OrdersListComponent = () => {
                   key={getOrderId(order)}
                   order={order}
                   currency={activeWallet.currency}
-                  onCancel={() => cancelOrder(getOrderId(order))}
-                  onClose={(price) => closeOrder(getOrderId(order), price)}
+                  onCancel={cancelOrder}
+                  onClose={closeOrder}
                   onNavigateToSymbol={globalActions?.navigateToSymbol}
                 />
               ))}
@@ -344,12 +354,12 @@ const OrdersListComponent = () => {
 interface OrderCardProps {
   order: import('@marketmind/types').Order;
   currency: import('@marketmind/types').WalletCurrency;
-  onCancel: () => void;
-  onClose: (price: number) => void;
+  onCancel: (id: string) => void;
+  onClose: (id: string, price: number) => void;
   onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }
 
-const OrderCard = ({ order, currency, onCancel, onClose, onNavigateToSymbol }: OrderCardProps) => {
+const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateToSymbol }: OrderCardProps) => {
   const { t } = useTranslation();
 
   const getStatusColor = (status: OrderStatus): string => {
@@ -455,7 +465,7 @@ const OrderCard = ({ order, currency, onCancel, onClose, onNavigateToSymbol }: O
                   {canClose && (
                     <MenuItem
                       value="close"
-                      onClick={() => onClose(order.currentPrice || getOrderPrice(order))}
+                      onClick={() => onClose(getOrderId(order), order.currentPrice || getOrderPrice(order))}
                       px={4}
                       py={2.5}
                       _hover={{ bg: 'bg.muted' }}
@@ -469,7 +479,7 @@ const OrderCard = ({ order, currency, onCancel, onClose, onNavigateToSymbol }: O
                   {canCancel && (
                     <MenuItem
                       value="cancel"
-                      onClick={onCancel}
+                      onClick={() => onCancel(getOrderId(order))}
                       color="red.500"
                       px={4}
                       py={2.5}
@@ -568,7 +578,9 @@ const OrderCard = ({ order, currency, onCancel, onClose, onNavigateToSymbol }: O
       </Stack>
     </Box>
   );
-};
+});
+
+OrderCard.displayName = 'OrderCard';
 
 interface OrdersTableProps {
   orders: Order[];
@@ -578,11 +590,13 @@ interface OrdersTableProps {
   onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }
 
-const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }: OrdersTableProps) => {
+const OrdersTable = memo(({ orders, currency, onCancel, onClose, onNavigateToSymbol }: OrdersTableProps) => {
   const { t } = useTranslation();
-  const sortKey = useUIStore((s) => s.ordersTableSortKey);
-  const sortDirection = useUIStore((s) => s.ordersTableSortDirection);
-  const setOrdersTableSort = useUIStore((s) => s.setOrdersTableSort);
+  const { sortKey, sortDirection, setOrdersTableSort } = useUIStore(useShallow((s) => ({
+    sortKey: s.ordersTableSortKey,
+    sortDirection: s.ordersTableSortDirection,
+    setOrdersTableSort: s.setOrdersTableSort,
+  })));
   const orderSymbols = useMemo(() => [...new Set(orders.map((o) => o.symbol))], [orders]);
   const centralizedPrices = usePricesForSymbols(orderSymbols);
 
@@ -812,6 +826,8 @@ const OrdersTable = ({ orders, currency, onCancel, onClose, onNavigateToSymbol }
       })}
     </TradingTable>
   );
-};
+});
+
+OrdersTable.displayName = 'OrdersTable';
 
 export const OrdersList = memo(OrdersListComponent);

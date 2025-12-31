@@ -9,7 +9,6 @@ interface OrderDragConfig {
   yToPrice: (y: number) => number;
   enabled: boolean;
   getOrderAtPosition: (x: number, y: number) => Order | null;
-  currentPrice: number;
 }
 
 export type DragType = 'entry' | 'stopLoss' | 'takeProfit';

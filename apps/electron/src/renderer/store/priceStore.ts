@@ -68,6 +68,8 @@ export const usePriceStore = create<PriceState>((set, get) => ({
   },
 }));
 
+const SIDEBAR_PRICE_UPDATE_THROTTLE_MS = 1000;
+
 export const usePricesForSymbols = (symbols: string[]): Record<string, number> => {
   const joinedSymbols = symbols.join(',');
   const symbolsKey = useMemo(
@@ -90,6 +92,8 @@ export const usePricesForSymbols = (symbols: string[]): Record<string, number> =
     }
 
     const currentSymbols = symbolsKey.split(',');
+    let throttleTimeout: NodeJS.Timeout | null = null;
+    let pendingUpdate = false;
 
     const getCurrentPrices = () => {
       const state = usePriceStore.getState();
@@ -107,10 +111,11 @@ export const usePricesForSymbols = (symbols: string[]): Record<string, number> =
     lastPricesRef.current = initial;
     setPrices(initial);
 
-    const unsubscribe = usePriceStore.subscribe((state) => {
+    const processUpdate = () => {
       const syms = symbolsRef.current;
       if (syms.length === 0) return;
 
+      const state = usePriceStore.getState();
       const newPrices: Record<string, number> = {};
       let hasChanged = false;
 
@@ -128,9 +133,20 @@ export const usePricesForSymbols = (symbols: string[]): Record<string, number> =
         lastPricesRef.current = newPrices;
         setPrices(newPrices);
       }
+      pendingUpdate = false;
+    };
+
+    const unsubscribe = usePriceStore.subscribe(() => {
+      if (pendingUpdate) return;
+      pendingUpdate = true;
+      if (throttleTimeout) clearTimeout(throttleTimeout);
+      throttleTimeout = setTimeout(processUpdate, SIDEBAR_PRICE_UPDATE_THROTTLE_MS);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      if (throttleTimeout) clearTimeout(throttleTimeout);
+    };
   }, [symbolsKey]);
 
   return prices;

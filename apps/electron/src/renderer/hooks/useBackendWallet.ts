@@ -1,10 +1,14 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { trpc } from '../utils/trpc';
+
+const EMPTY_WALLETS: never[] = [];
 
 export const useBackendWallet = () => {
   const utils = trpc.useUtils();
 
-  const { data: wallets, isLoading } = trpc.wallet.list.useQuery();
+  const { data: wallets, isLoading } = trpc.wallet.list.useQuery(undefined, {
+    staleTime: 30000,
+  });
 
   const createMutation = trpc.wallet.create.useMutation({
     onSuccess: () => {
@@ -71,8 +75,10 @@ export const useBackendWallet = () => {
     [syncBalanceMutation]
   );
   
+  const stableWallets = useMemo(() => wallets ?? EMPTY_WALLETS, [wallets]);
+
   return {
-    wallets: wallets ?? [],
+    wallets: stableWallets,
     isLoading,
     createWallet,
     createPaperWallet,

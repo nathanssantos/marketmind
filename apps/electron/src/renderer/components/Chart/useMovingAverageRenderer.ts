@@ -2,6 +2,7 @@ import { calculateMovingAverage } from '@marketmind/indicators';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
+import type { RefObject } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
 
 export interface MovingAverageConfig {
@@ -16,7 +17,7 @@ export interface UseMovingAverageRendererProps {
   manager: CanvasManager | null;
   movingAverages?: MovingAverageConfig[];
   rightMargin?: number;
-  hoveredMAIndex?: number | undefined;
+  hoveredMAIndexRef?: RefObject<number | undefined>;
   maValuesCache?: Map<string, (number | null)[]>;
 }
 
@@ -37,7 +38,7 @@ export const useMovingAverageRenderer = ({
   manager,
   movingAverages = [],
   rightMargin,
-  hoveredMAIndex,
+  hoveredMAIndexRef,
   maValuesCache,
 }: UseMovingAverageRendererProps): UseMovingAverageRendererReturn => {
   const tagHitboxesRef = useRef<MATagHitbox[]>([]);
@@ -90,7 +91,7 @@ export const useMovingAverageRenderer = ({
       if (ma.visible === false) return;
 
       const values = getMAValues(ma);
-      const isHovered = hoveredMAIndex === index;
+      const isHovered = hoveredMAIndexRef?.current === index;
 
       ctx.strokeStyle = ma.color;
       ctx.lineWidth = isHovered ? (ma.lineWidth || 1.5) + 1 : (ma.lineWidth || 1.5);
@@ -173,7 +174,7 @@ export const useMovingAverageRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, movingAverages, rightMargin, hoveredMAIndex, maValuesCache]);
+  }, [manager, movingAverages, rightMargin, maValuesCache]);
 
   const getHoveredMATag = useCallback((x: number, y: number): number | undefined => {
     if (!tagHitboxesRef.current) return undefined;

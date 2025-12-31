@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { trpc } from '../utils/trpc';
 import { useWebSocket } from './useWebSocket';
 
@@ -8,40 +8,28 @@ export const useOrderUpdates = (walletId: string, enabled = true) => {
     autoConnect: enabled,
   });
 
+  const handleOrderEvent = useCallback(() => {
+    utils.autoTrading.getActiveExecutions.invalidate();
+    utils.trading.getOrders.invalidate();
+    utils.trading.getPositions.invalidate();
+  }, [utils]);
+
   useEffect(() => {
     if (!enabled || !isConnected || !walletId) return;
 
     subscribe.orders(walletId);
 
-    const handleOrderCreated = (_order: unknown) => {
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.trading.getOrders.invalidate();
-      utils.trading.getPositions.invalidate();
-    };
-
-    const handleOrderUpdate = (_order: unknown) => {
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.trading.getOrders.invalidate();
-      utils.trading.getPositions.invalidate();
-    };
-
-    const handleOrderCancelled = (_order: unknown) => {
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.trading.getOrders.invalidate();
-      utils.trading.getPositions.invalidate();
-    };
-
-    on('order:created', handleOrderCreated);
-    on('order:update', handleOrderUpdate);
-    on('order:cancelled', handleOrderCancelled);
+    on('order:created', handleOrderEvent);
+    on('order:update', handleOrderEvent);
+    on('order:cancelled', handleOrderEvent);
 
     return () => {
-      off('order:created', handleOrderCreated);
-      off('order:update', handleOrderUpdate);
-      off('order:cancelled', handleOrderCancelled);
+      off('order:created', handleOrderEvent);
+      off('order:update', handleOrderEvent);
+      off('order:cancelled', handleOrderEvent);
       unsubscribe.orders(walletId);
     };
-  }, [enabled, isConnected, walletId, utils]);
+  }, [enabled, isConnected, walletId, subscribe, unsubscribe, on, off, handleOrderEvent]);
 
   return {
     isConnected,

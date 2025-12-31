@@ -36,12 +36,12 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
 
   const { data: activeExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
     { walletId, limit: 100 },
-    { enabled: !!walletId, refetchInterval: 10000 }
+    { enabled: !!walletId, refetchInterval: 60000, staleTime: 30000 }
   );
 
   const { data: watcherStatus } = trpc.autoTrading.getWatcherStatus.useQuery(
     { walletId },
-    { enabled: !!walletId, refetchInterval: 10000 }
+    { enabled: !!walletId, refetchInterval: 60000, staleTime: 30000 }
   );
 
   useEffect(() => {

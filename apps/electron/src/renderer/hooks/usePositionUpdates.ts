@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { trpc } from '../utils/trpc';
 import { useWebSocket } from './useWebSocket';
 
@@ -8,15 +8,15 @@ export const usePositionUpdates = (walletId: string, enabled = true) => {
     autoConnect: enabled,
   });
 
+  const handlePositionUpdate = useCallback(() => {
+    utils.autoTrading.getActiveExecutions.invalidate();
+    utils.trading.getPositions.invalidate();
+  }, [utils]);
+
   useEffect(() => {
     if (!enabled || !isConnected || !walletId) return;
 
     subscribe.positions(walletId);
-
-    const handlePositionUpdate = (_position: unknown) => {
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.trading.getPositions.invalidate();
-    };
 
     on('position:update', handlePositionUpdate);
 
@@ -24,7 +24,7 @@ export const usePositionUpdates = (walletId: string, enabled = true) => {
       off('position:update', handlePositionUpdate);
       unsubscribe.positions(walletId);
     };
-  }, [enabled, isConnected, walletId, utils]);
+  }, [enabled, isConnected, walletId, subscribe, unsubscribe, on, off, handlePositionUpdate]);
 
   return {
     isConnected,

@@ -9,19 +9,23 @@ import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
 import { getKlineClose } from '@shared/utils';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 type OrderDirection = 'long' | 'short';
 type MarketType = 'SPOT' | 'FUTURES';
 
-export const OrderTicket = () => {
+const OrderTicketComponent = () => {
   const { t } = useTranslation();
   const { chartData } = useChartContext();
 
-  const lastKline = chartData?.klines[chartData.klines.length - 1];
-  const currentPrice = lastKline ? getKlineClose(lastKline) : undefined;
-  const symbol = chartData?.symbol || 'UNKNOWN';
+  const { currentPrice, symbol } = useMemo(() => {
+    const lastKline = chartData?.klines[chartData.klines.length - 1];
+    return {
+      currentPrice: lastKline ? getKlineClose(lastKline) : undefined,
+      symbol: chartData?.symbol || 'UNKNOWN',
+    };
+  }, [chartData?.klines.length, chartData?.symbol]);
 
   const { wallets: backendWallets } = useBackendWallet();
   const activeWalletId = backendWallets[0]?.id;
@@ -349,3 +353,5 @@ export const OrderTicket = () => {
     </Stack>
   );
 };
+
+export const OrderTicket = memo(OrderTicketComponent);
