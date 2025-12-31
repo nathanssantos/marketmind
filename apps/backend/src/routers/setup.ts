@@ -109,14 +109,15 @@ export const setupRouter = router({
       z.object({
         symbol: z.string(),
         interval: z.string(),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
         config: setupDetectionConfigSchema.optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { symbol, interval } = input;
+      const { symbol, interval, marketType } = input;
 
       const klinesData = await ctx.db.query.klines.findMany({
-        where: and(eq(klines.symbol, symbol), eq(klines.interval, interval)),
+        where: and(eq(klines.symbol, symbol), eq(klines.interval, interval), eq(klines.marketType, marketType)),
         orderBy: [desc(klines.openTime)],
         limit: 500,
       });
@@ -190,16 +191,18 @@ export const setupRouter = router({
         interval: z.string(),
         startTime: z.date(),
         endTime: z.date(),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
         config: setupDetectionConfigSchema.optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { symbol, interval, startTime, endTime } = input;
+      const { symbol, interval, startTime, endTime, marketType } = input;
 
       const klinesData = await ctx.db.query.klines.findMany({
         where: and(
           eq(klines.symbol, symbol),
           eq(klines.interval, interval),
+          eq(klines.marketType, marketType),
           gte(klines.openTime, startTime),
           lte(klines.openTime, endTime),
         ),

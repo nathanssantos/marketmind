@@ -24,6 +24,7 @@ const strategyStatusSchema = z.enum(['active', 'experimental', 'deprecated', 'un
 const detectSetupsInputSchema = z.object({
   symbol: z.string(),
   interval: z.string(),
+  marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
   enabledStrategies: z.array(z.string()).optional(),
   minConfidence: z.number().min(0).max(100).optional(),
   minRiskReward: z.number().min(0).optional(),
@@ -80,10 +81,10 @@ export const setupDetectionRouter = router({
   detectSetups: protectedProcedure
     .input(detectSetupsInputSchema)
     .query(async ({ ctx, input }) => {
-      const { symbol, interval, enabledStrategies, minConfidence = 50, minRiskReward = 1.0 } = input;
+      const { symbol, interval, marketType, enabledStrategies, minConfidence = 50, minRiskReward = 1.0 } = input;
 
       const klinesData = await ctx.db.query.klines.findMany({
-        where: and(eq(klines.symbol, symbol), eq(klines.interval, interval)),
+        where: and(eq(klines.symbol, symbol), eq(klines.interval, interval), eq(klines.marketType, marketType)),
         orderBy: [desc(klines.openTime)],
         limit: 500,
       });
@@ -141,17 +142,19 @@ export const setupDetectionRouter = router({
         interval: z.string(),
         startTime: z.number(),
         endTime: z.number(),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
         enabledStrategies: z.array(z.string()).optional(),
         minConfidence: z.number().min(0).max(100).optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { symbol, interval, startTime, endTime, enabledStrategies, minConfidence = 50 } = input;
+      const { symbol, interval, startTime, endTime, marketType, enabledStrategies, minConfidence = 50 } = input;
 
       const klinesData = await ctx.db.query.klines.findMany({
         where: and(
           eq(klines.symbol, symbol),
           eq(klines.interval, interval),
+          eq(klines.marketType, marketType),
         ),
         orderBy: [desc(klines.openTime)],
         limit: 2000,

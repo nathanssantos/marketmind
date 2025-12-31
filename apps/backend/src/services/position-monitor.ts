@@ -4,7 +4,7 @@ import { db } from '../db';
 import type { TradeExecution, Wallet } from '../db/schema';
 import { priceCache, tradeExecutions, wallets } from '../db/schema';
 import { env } from '../env';
-import { createBinanceClient, createBinanceClientForPrices, isPaperWallet } from './binance-client';
+import { createBinanceClient, createBinanceClientForPrices, createBinanceFuturesClientForPrices, isPaperWallet } from './binance-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
 import { strategyPerformanceService } from './strategy-performance';
@@ -209,7 +209,8 @@ export class PositionMonitorService {
           continue;
         }
 
-        const currentPrice = await this.getCurrentPrice(execution.symbol);
+        const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
+        const currentPrice = await this.getCurrentPrice(execution.symbol, marketType);
         const limitPrice = parseFloat(execution.limitEntryPrice);
         const isLong = execution.side === 'LONG';
 
@@ -312,7 +313,8 @@ export class PositionMonitorService {
       return;
     }
 
-    const currentPrice = await this.getCurrentPrice(firstExecution.symbol);
+    const marketType = firstExecution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
+    const currentPrice = await this.getCurrentPrice(firstExecution.symbol, marketType);
     const isLong = firstExecution.side === 'LONG';
 
     const consolidatedSL = this.calculateConsolidatedStopLoss(executions, isLong);
@@ -384,7 +386,8 @@ export class PositionMonitorService {
   }
 
   async checkPosition(execution: TradeExecution): Promise<PositionCheckResult> {
-    const currentPrice = await this.getCurrentPrice(execution.symbol);
+    const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
+    const currentPrice = await this.getCurrentPrice(execution.symbol, marketType);
 
     const result: PositionCheckResult = {
       executionId: execution.id,
@@ -646,12 +649,14 @@ export class PositionMonitorService {
     return order.orderId;
   }
 
-  async getCurrentPrice(symbol: string): Promise<number> {
+  async getCurrentPrice(symbol: string, marketType: 'SPOT' | 'FUTURES' = 'SPOT'): Promise<number> {
     try {
+      const cacheKey = marketType === 'FUTURES' ? `${symbol}_FUTURES` : symbol;
+
       const [cached] = await db
         .select()
         .from(priceCache)
-        .where(eq(priceCache.symbol, symbol))
+        .where(eq(priceCache.symbol, cacheKey))
         .limit(1);
 
       const cacheAge = cached
@@ -662,15 +667,27 @@ export class PositionMonitorService {
         return parseFloat(cached.price);
       }
 
-      const client = createBinanceClientForPrices();
-      const ticker = await client.get24hrChangeStatistics({ symbol });
+      let price: number;
 
-      const price = parseFloat(ticker.lastPrice);
+      if (marketType === 'FUTURES') {
+        const markPriceData = await getBinanceFuturesDataService().getMarkPrice(symbol);
+        if (markPriceData) {
+          price = markPriceData.markPrice;
+        } else {
+          const client = createBinanceFuturesClientForPrices();
+          const ticker = await client.get24hrChangeStatistics({ symbol });
+          price = parseFloat(String(ticker.lastPrice));
+        }
+      } else {
+        const client = createBinanceClientForPrices();
+        const ticker = await client.get24hrChangeStatistics({ symbol });
+        price = parseFloat(String(ticker.lastPrice));
+      }
 
       await db
         .insert(priceCache)
         .values({
-          symbol,
+          symbol: cacheKey,
           price: price.toString(),
           timestamp: new Date(),
         })
@@ -687,6 +704,7 @@ export class PositionMonitorService {
     } catch (error) {
       logger.error({
         symbol,
+        marketType,
         error: error instanceof Error ? error.message : String(error),
       }, 'Failed to get current price');
       throw error;

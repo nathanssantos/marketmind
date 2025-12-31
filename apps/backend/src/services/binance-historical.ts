@@ -17,14 +17,20 @@ export const backfillHistoricalKlines = async (
   endTime: Date = new Date(),
   marketType: 'SPOT' | 'FUTURES' = 'SPOT'
 ): Promise<number> => {
+  const BINANCE_SPOT_START = new Date('2017-08-17').getTime();
+  const BINANCE_FUTURES_START = new Date('2019-09-08').getTime();
+  const minStartTime = marketType === 'FUTURES' ? BINANCE_FUTURES_START : BINANCE_SPOT_START;
+
+  const effectiveStartTime = new Date(Math.max(startTime.getTime(), minStartTime));
+
   logger.info(
-    { symbol, interval, marketType, startTime: startTime.toISOString(), endTime: endTime.toISOString() },
+    { symbol, interval, marketType, startTime: effectiveStartTime.toISOString(), endTime: endTime.toISOString() },
     'Starting historical klines backfill'
   );
 
   const intervalMs = getIntervalMilliseconds(interval);
   let totalInserted = 0;
-  let currentStartTime = startTime.getTime();
+  let currentStartTime = effectiveStartTime.getTime();
   const finalEndTime = endTime.getTime();
 
   const baseUrl = marketType === 'FUTURES'
@@ -246,7 +252,13 @@ export const smartBackfillKlines = async (
 ): Promise<SmartBackfillResult> => {
   const intervalMs = getIntervalMilliseconds(interval);
   const now = Date.now();
-  const targetStartTime = now - intervalMs * targetCount;
+
+  const BINANCE_SPOT_START = new Date('2017-08-17').getTime();
+  const BINANCE_FUTURES_START = new Date('2019-09-08').getTime();
+  const minStartTime = marketType === 'FUTURES' ? BINANCE_FUTURES_START : BINANCE_SPOT_START;
+
+  const calculatedStartTime = now - intervalMs * targetCount;
+  const targetStartTime = Math.max(calculatedStartTime, minStartTime);
 
   logger.info(
     { symbol, interval, marketType, targetCount, targetStartTime: new Date(targetStartTime).toISOString() },

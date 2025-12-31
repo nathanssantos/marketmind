@@ -363,9 +363,10 @@ export class PyramidingService {
 
     const avgEntryPrice = calculateWeightedAvgPrice(openExecutions);
     let currentPrice: number;
+    const marketType = openExecutions[0]?.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
 
     try {
-      currentPrice = await positionMonitorService.getCurrentPrice(symbol);
+      currentPrice = await positionMonitorService.getCurrentPrice(symbol, marketType);
     } catch {
       currentPrice = entryPrice;
     }

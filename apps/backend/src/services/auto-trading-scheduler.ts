@@ -734,7 +734,8 @@ export class AutoTradingScheduler {
           .where(
             and(
               eq(klines.symbol, watcher.symbol),
-              eq(klines.interval, watcher.interval)
+              eq(klines.interval, watcher.interval),
+              eq(klines.marketType, watcher.marketType)
             )
           )
           .orderBy(desc(klines.openTime))
@@ -797,7 +798,8 @@ export class AutoTradingScheduler {
           .where(
             and(
               eq(klines.symbol, watcher.symbol),
-              eq(klines.interval, watcher.interval)
+              eq(klines.interval, watcher.interval),
+              eq(klines.marketType, watcher.marketType)
             )
           )
           .orderBy(desc(klines.openTime))
@@ -874,7 +876,8 @@ export class AutoTradingScheduler {
           .where(
             and(
               eq(klines.symbol, watcher.symbol),
-              eq(klines.interval, watcher.interval)
+              eq(klines.interval, watcher.interval),
+              eq(klines.marketType, watcher.marketType)
             )
           )
           .orderBy(desc(klines.openTime))
@@ -1238,7 +1241,7 @@ export class AutoTradingScheduler {
         }
       } else {
         try {
-          const currentMarketPrice = await positionMonitorService.getCurrentPrice(watcher.symbol);
+          const currentMarketPrice = await positionMonitorService.getCurrentPrice(watcher.symbol, watcher.marketType);
 
           if (useLimit && setup.limitEntryPrice) {
             const wouldLimitFill = setup.direction === 'LONG'

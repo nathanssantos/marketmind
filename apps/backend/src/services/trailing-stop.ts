@@ -317,10 +317,12 @@ export class TrailingStopService {
     return { ...this.config };
   }
 
-  private async getCurrentPrice(symbol: string): Promise<number> {
+  private async getCurrentPrice(symbol: string, marketType: 'SPOT' | 'FUTURES' = 'SPOT'): Promise<number> {
     try {
+      const cacheKey = marketType === 'FUTURES' ? `${symbol}_FUTURES` : symbol;
+
       const cached = await db.query.priceCache.findFirst({
-        where: eq(priceCache.symbol, symbol),
+        where: eq(priceCache.symbol, cacheKey),
       });
 
       if (cached) {
@@ -330,27 +332,35 @@ export class TrailingStopService {
         }
       }
 
-      const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
-      const data = await response.json() as { price: string };
-      const price = parseFloat(data.price);
+      let price: number;
+
+      if (marketType === 'FUTURES') {
+        const response = await fetch(`https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${symbol}`);
+        const data = await response.json() as { markPrice: string };
+        price = parseFloat(data.markPrice);
+      } else {
+        const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
+        const data = await response.json() as { price: string };
+        price = parseFloat(data.price);
+      }
 
       await db.insert(priceCache)
         .values({
-          symbol,
-          price: data.price,
+          symbol: cacheKey,
+          price: price.toString(),
           timestamp: new Date(),
         })
         .onConflictDoUpdate({
           target: priceCache.symbol,
           set: {
-            price: data.price,
+            price: price.toString(),
             timestamp: new Date(),
           },
         });
 
       return price;
     } catch (error) {
-      logger.error({ symbol, error: error instanceof Error ? error.message : String(error) }, 'Failed to fetch current price');
+      logger.error({ symbol, marketType, error: error instanceof Error ? error.message : String(error) }, 'Failed to fetch current price');
       throw error;
     }
   }
@@ -426,10 +436,12 @@ export class TrailingStopService {
     }
 
     for (const [interval, groupExecutions] of executionsByInterval) {
+      const execMarketType = groupExecutions[0]?.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
       const klinesData = await db.query.klines.findMany({
         where: and(
           eq(klines.symbol, symbol),
-          eq(klines.interval, interval)
+          eq(klines.interval, interval),
+          eq(klines.marketType, execMarketType)
         ),
         orderBy: [desc(klines.openTime)],
         limit: 100,
@@ -458,7 +470,7 @@ export class TrailingStopService {
         takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
       }));
 
-      const currentPrice = await this.getCurrentPrice(symbol);
+      const currentPrice = await this.getCurrentPrice(symbol, execMarketType);
       const { swingPoints } = calculateSwingPoints(mappedKlines, this.config.swingLookback);
 
       const atrValues = this.config.useATRMultiplier ? calculateATR(mappedKlines, 14) : [];

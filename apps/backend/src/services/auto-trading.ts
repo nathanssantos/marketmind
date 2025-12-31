@@ -69,7 +69,8 @@ export class AutoTradingService {
     stopLoss: number,
     setupType?: string,
     symbol?: string,
-    interval?: string
+    interval?: string,
+    marketType: MarketType = 'SPOT'
   ): Promise<PositionSizeCalculation> {
     const maxPositionSizePercent = parseFloat(config.maxPositionSize);
     const maxPositionValue = (walletBalance * maxPositionSizePercent) / 100;
@@ -108,7 +109,8 @@ export class AutoTradingService {
     const volatilityFactor = await this.calculateVolatilityAdjustment(
       symbol,
       interval,
-      entryPrice
+      entryPrice,
+      marketType
     );
     
     const adjustedQuantity = quantity * volatilityFactor;
@@ -125,7 +127,8 @@ export class AutoTradingService {
   private async calculateVolatilityAdjustment(
     symbol?: string,
     interval?: string,
-    currentPrice?: number
+    currentPrice?: number,
+    marketType: MarketType = 'SPOT'
   ): Promise<number> {
     if (!symbol || !interval || !currentPrice) return 1.0;
 
@@ -133,7 +136,7 @@ export class AutoTradingService {
       const recentKlines = await db
         .select()
         .from(klines)
-        .where(and(eq(klines.symbol, symbol), eq(klines.interval, interval)))
+        .where(and(eq(klines.symbol, symbol), eq(klines.interval, interval), eq(klines.marketType, marketType)))
         .orderBy(sql`${klines.openTime} DESC`)
         .limit(50);
 

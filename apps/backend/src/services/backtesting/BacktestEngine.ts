@@ -13,7 +13,7 @@ import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { BACKTEST_ENGINE } from '../../constants';
 import { generateEntityId } from '../../utils/id';
-import { fetchHistoricalKlinesFromAPI } from '../binance-historical';
+import { fetchHistoricalKlinesFromAPI, fetchFuturesKlinesFromAPI } from '../binance-historical';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
 import { ConditionEvaluator, IndicatorEngine, StrategyLoader } from '../setup-detection/dynamic';
 import { ExitManager } from './ExitManager';
@@ -198,7 +198,8 @@ export class BacktestEngine {
       return klines;
     }
 
-    console.log('[Backtest] Fetching historical klines from Binance API...');
+    const isFutures = config.marketType === 'FUTURES';
+    console.log(`[Backtest] Fetching historical klines from Binance ${isFutures ? 'FUTURES' : 'SPOT'} API...`);
 
     const intervalMs = this.getIntervalMs(config.interval);
     const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
@@ -206,7 +207,8 @@ export class BacktestEngine {
 
     console.log('[Backtest] Including warmup period for EMA200:', warmupStartDate.toISOString(), 'to', config.startDate);
 
-    const historicalKlines = await fetchHistoricalKlinesFromAPI(
+    const fetchFn = isFutures ? fetchFuturesKlinesFromAPI : fetchHistoricalKlinesFromAPI;
+    const historicalKlines = await fetchFn(
       config.symbol,
       config.interval as Interval,
       warmupStartDate,

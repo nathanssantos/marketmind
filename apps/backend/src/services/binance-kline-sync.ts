@@ -184,7 +184,7 @@ class BinanceKlineSync {
 
   async getLatestKline(symbol: string, interval: Interval): Promise<Date | null> {
     const latest = await db.query.klines.findFirst({
-      where: and(eq(klines.symbol, symbol), eq(klines.interval, interval)),
+      where: and(eq(klines.symbol, symbol), eq(klines.interval, interval), eq(klines.marketType, 'SPOT')),
       orderBy: [desc(klines.openTime)],
     });
 
