@@ -94,6 +94,7 @@ class BinanceKlineSync {
       const klineData = {
         symbol,
         interval,
+        marketType: 'SPOT' as const,
         openTime: new Date(kline.t),
         open: kline.o,
         high: kline.h,
@@ -111,6 +112,7 @@ class BinanceKlineSync {
         where: and(
           eq(klines.symbol, symbol),
           eq(klines.interval, interval),
+          eq(klines.marketType, 'SPOT'),
           eq(klines.openTime, klineData.openTime)
         ),
       });
@@ -123,6 +125,7 @@ class BinanceKlineSync {
             and(
               eq(klines.symbol, symbol),
               eq(klines.interval, interval),
+              eq(klines.marketType, 'SPOT'),
               eq(klines.openTime, klineData.openTime)
             )
           );

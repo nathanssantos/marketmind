@@ -127,6 +127,7 @@ class KlineGapFiller {
       where: and(
         eq(klines.symbol, pair.symbol),
         eq(klines.interval, pair.interval),
+        eq(klines.marketType, pair.marketType),
         gte(klines.openTime, startTime),
         lte(klines.openTime, endTime)
       ),
