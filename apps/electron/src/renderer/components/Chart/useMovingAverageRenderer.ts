@@ -2,7 +2,7 @@ import { calculateMovingAverage } from '@marketmind/indicators';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 export interface MovingAverageConfig {
   period: number;
@@ -17,6 +17,7 @@ export interface UseMovingAverageRendererProps {
   movingAverages?: MovingAverageConfig[];
   rightMargin?: number;
   hoveredMAIndex?: number | undefined;
+  maValuesCache?: Map<string, (number | null)[]>;
 }
 
 export interface MATagHitbox {
@@ -37,8 +38,14 @@ export const useMovingAverageRenderer = ({
   movingAverages = [],
   rightMargin,
   hoveredMAIndex,
+  maValuesCache,
 }: UseMovingAverageRendererProps): UseMovingAverageRendererReturn => {
   const tagHitboxesRef = useRef<MATagHitbox[]>([]);
+  const localCacheRef = useRef<Map<string, (number | null)[]>>(new Map());
+
+  useEffect(() => {
+    localCacheRef.current.clear();
+  }, [maValuesCache]);
 
   const render = useCallback((): void => {
     if (!manager || movingAverages.length === 0) return;
@@ -57,13 +64,22 @@ export const useMovingAverageRenderer = ({
     const startIndex = Math.max(0, Math.floor(viewport.start));
     const endIndex = Math.min(klines.length, Math.ceil(viewport.end));
     const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
-    
+
     const visibleRange = viewport.end - viewport.start;
     const widthPerKline = effectiveWidth / visibleRange;
     const { klineWidth } = viewport;
     const klineCenterOffset = (widthPerKline - klineWidth) / 2 + klineWidth / 2;
 
     const priceTags: Array<{ priceText: string; y: number; fillColor: string; index: number }> = [];
+
+    const getMAValues = (ma: MovingAverageConfig): (number | null)[] => {
+      const cacheKey = `${ma.type}-${ma.period}`;
+      if (maValuesCache?.has(cacheKey)) return maValuesCache.get(cacheKey)!;
+      if (localCacheRef.current.has(cacheKey)) return localCacheRef.current.get(cacheKey)!;
+      const values = calculateMovingAverage(klines, ma.period, ma.type);
+      localCacheRef.current.set(cacheKey, values);
+      return values;
+    };
 
     ctx.save();
     ctx.beginPath();
@@ -73,7 +89,7 @@ export const useMovingAverageRenderer = ({
     movingAverages.forEach((ma, index) => {
       if (ma.visible === false) return;
 
-      const values = calculateMovingAverage(klines, ma.period, ma.type);
+      const values = getMAValues(ma);
       const isHovered = hoveredMAIndex === index;
 
       ctx.strokeStyle = ma.color;
@@ -122,7 +138,7 @@ export const useMovingAverageRenderer = ({
     movingAverages.forEach((ma, index) => {
       if (ma.visible === false) return;
 
-      const values = calculateMovingAverage(klines, ma.period, ma.type);
+      const values = getMAValues(ma);
       const lastVisibleIndex = endIndex - 1;
       const lastVisibleValue = values[lastVisibleIndex];
       
@@ -157,9 +173,10 @@ export const useMovingAverageRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, movingAverages, rightMargin, hoveredMAIndex]);
+  }, [manager, movingAverages, rightMargin, hoveredMAIndex, maValuesCache]);
 
   const getHoveredMATag = useCallback((x: number, y: number): number | undefined => {
+    if (!tagHitboxesRef.current) return undefined;
     for (const hitbox of tagHitboxesRef.current) {
       if (
         x >= hitbox.x &&

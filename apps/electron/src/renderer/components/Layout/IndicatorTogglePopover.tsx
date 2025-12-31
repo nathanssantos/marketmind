@@ -1,6 +1,7 @@
 import { Box, Flex, IconButton, Stack, Text } from '@chakra-ui/react';
 import { useIndicatorStore, type IndicatorId } from '@renderer/store';
-import { memo, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { useShallow } from 'zustand/shallow';
 import { useTranslation } from 'react-i18next';
 import { LuGauge } from 'react-icons/lu';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
@@ -54,10 +55,14 @@ export const IndicatorTogglePopover = memo(
     }: IndicatorTogglePopoverProps) => {
         const { t } = useTranslation();
         const [isOpen, setIsOpen] = useState(false);
-        const { activeIndicators, toggleIndicator } = useIndicatorStore();
+        const { activeIndicators, toggleIndicator } = useIndicatorStore(
+            useShallow((s) => ({ activeIndicators: s.activeIndicators, toggleIndicator: s.toggleIndicator }))
+        );
 
-        const isIndicatorActive = (id: IndicatorId): boolean =>
-            activeIndicators.includes(id);
+        const isIndicatorActive = useCallback(
+            (id: IndicatorId): boolean => activeIndicators.includes(id),
+            [activeIndicators]
+        );
 
         const categories: IndicatorCategory[] = useMemo(
             () => [
@@ -334,7 +339,7 @@ export const IndicatorTogglePopover = memo(
                 showATR,
                 showVWAP,
                 movingAverages,
-                activeIndicators,
+                isIndicatorActive,
                 onShowVolumeChange,
                 onShowStochasticChange,
                 onShowRSIChange,

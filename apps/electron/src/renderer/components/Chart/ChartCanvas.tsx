@@ -55,6 +55,7 @@ import { useLiquidityLevelsWorker } from '@renderer/hooks/useLiquidityLevelsWork
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
 import { useIndicatorStore, useSetupStore } from '@renderer/store';
+import { useShallow } from 'zustand/shallow';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { trpc } from '@renderer/utils/trpc';
 import { CHART_CONFIG } from '@shared/constants';
@@ -300,7 +301,8 @@ export const ChartCanvas = ({
   const lastMousePositionUpdateRef = useRef<number>(0);
   const [_isInteracting, setIsInteracting] = useState(false);
   const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [cursor, setCursor] = useState<'crosshair' | 'ns-resize' | 'grab' | 'grabbing' | 'pointer'>('crosshair');
+  const cursorRef = useRef<'crosshair' | 'ns-resize' | 'grab' | 'grabbing' | 'pointer'>('crosshair');
+
   const [measurementArea, setMeasurementArea] = useState<{
     startX: number;
     startY: number;
@@ -315,8 +317,8 @@ export const ChartCanvas = ({
   const { calculateStochastic } = useStochasticWorker();
   const rsiWorkerData = useRSIWorker(klines, 2, showRSI);
 
-  const { activeIndicators } = useIndicatorStore();
-  const isIndicatorActive = (id: string): boolean => activeIndicators.includes(id as never);
+  const activeIndicators = useIndicatorStore(useShallow((s) => s.activeIndicators));
+  const isIndicatorActive = useCallback((id: string): boolean => activeIndicators.includes(id as never), [activeIndicators]);
 
   const parabolicSarData = useParabolicSARWorker(klines, isIndicatorActive('parabolicSar'));
   const keltnerData = useKeltnerWorker(klines, isIndicatorActive('keltner'));
@@ -363,6 +365,13 @@ export const ChartCanvas = ({
     ...(onViewportChange !== undefined && { onViewportChange }),
   });
 
+  const updateCursor = useCallback((newCursor: typeof cursorRef.current) => {
+    if (cursorRef.current !== newCursor) {
+      cursorRef.current = newCursor;
+      if (canvasRef.current) canvasRef.current.style.cursor = newCursor;
+    }
+  }, [canvasRef]);
+
   const handleConfirmCloseOrder = useCallback(async (): Promise<void> => {
     if (!orderToClose || !manager) return;
 
@@ -403,6 +412,16 @@ export const ChartCanvas = ({
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
   });
 
+  const maValuesCache = useMemo(() => {
+    const cache = new Map<string, (number | null)[]>();
+    for (const ma of movingAverages) {
+      if (ma.visible === false) continue;
+      const key = `${ma.type}-${ma.period}`;
+      cache.set(key, calculateMovingAverage(klines, ma.period, ma.type));
+    }
+    return cache;
+  }, [klines, movingAverages]);
+
   const { render: renderVolume } = useVolumeRenderer({
     manager,
     colors,
@@ -419,6 +438,7 @@ export const ChartCanvas = ({
     movingAverages,
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
     hoveredMAIndex,
+    maValuesCache,
   });
 
   const { render: renderStochastic } = useStochasticRenderer({
@@ -850,15 +870,15 @@ export const ChartCanvas = ({
     }
 
     if (orderDragHandler.isDragging) {
-      setCursor('ns-resize');
+      updateCursor('ns-resize');
     } else if (hoveredOrderButton) {
-      setCursor('pointer');
+      updateCursor('pointer');
     } else if (hoveredSLTP) {
-      setCursor('ns-resize');
+      updateCursor('ns-resize');
     } else if (hoveredOrder) {
-      setCursor('ns-resize');
-    } else if (cursor !== 'crosshair') {
-      setCursor('crosshair');
+      updateCursor('ns-resize');
+    } else if (cursorRef.current !== 'crosshair') {
+      updateCursor('crosshair');
     }
 
     const now = Date.now();
@@ -902,13 +922,13 @@ export const ChartCanvas = ({
     const hoveredTagIndex = getHoveredMATag(mouseX, mouseY);
 
     if (hoveredTagIndex !== undefined) {
-      setCursor('pointer');
+      updateCursor('pointer');
     } else if (isOnPriceScale) {
-      setCursor('ns-resize');
+      updateCursor('ns-resize');
     } else if (isOnTimeScale) {
-      setCursor('crosshair');
+      updateCursor('crosshair');
     } else if (isInChartArea || isInExtendedPatternArea) {
-      setCursor('crosshair');
+      updateCursor('crosshair');
     }
 
     if (isOnPriceScale && hoveredTagIndex === undefined) {
@@ -1012,7 +1032,10 @@ export const ChartCanvas = ({
       movingAverages.forEach((ma, index) => {
         if (ma.visible === false) return;
 
-        const maValues = calculateMovingAverage(klines, ma.period, ma.type);
+        const cacheKey = `${ma.type}-${ma.period}`;
+        const maValues = maValuesCache.get(cacheKey);
+        if (!maValues) return;
+
         const startIndex = Math.max(0, Math.floor(viewport.start));
         const endIndex = Math.min(klines.length, Math.ceil(viewport.end));
 
@@ -1347,110 +1370,15 @@ export const ChartCanvas = ({
 
   useEffect(() => {
     if (!manager) return;
-    const height = isIndicatorActive('obv') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('obv', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('cmf') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('cmf', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('stochRsi') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('stochRsi', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('macd') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('macd', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('adx') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('adx', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('williamsR') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('williamsR', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('cci') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('cci', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('klinger') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('klinger', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('elderRay') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('elderRay', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('aroon') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('aroon', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('vortex') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('vortex', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('mfi') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('mfi', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('roc') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('roc', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('ao') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('ao', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('tsi') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('tsi', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('ppo') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('ppo', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('cmo') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('cmo', height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = isIndicatorActive('ultimateOsc') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setPanelHeight('ultimateOsc', height);
+    const panelIndicators = [
+      'obv', 'cmf', 'stochRsi', 'macd', 'adx', 'williamsR', 'cci',
+      'klinger', 'elderRay', 'aroon', 'vortex', 'mfi', 'roc', 'ao',
+      'tsi', 'ppo', 'cmo', 'ultimateOsc'
+    ] as const;
+    for (const indicator of panelIndicators) {
+      const height = isIndicatorActive(indicator) ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+      manager.setPanelHeight(indicator, height);
+    }
   }, [manager, activeIndicators]);
 
   useEffect(() => {
@@ -1883,7 +1811,7 @@ export const ChartCanvas = ({
           style={{
             width: '100%',
             height: '100%',
-            cursor,
+            cursor: 'crosshair',
             display: 'block',
           }}
         />

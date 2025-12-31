@@ -20,7 +20,7 @@ import {
   isOrderLong,
   isOrderPending
 } from '@shared/utils';
-import type { ReactElement } from 'react';
+import { memo, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export interface ChartTooltipProps {
@@ -48,7 +48,7 @@ export interface ChartTooltipProps {
   setup?: TradingSetup | null | undefined;
 }
 
-export const ChartTooltip = ({
+export const ChartTooltip = memo(({
   kline,
   x,
   y,
@@ -591,4 +591,6 @@ export const ChartTooltip = ({
       </Stack>
     </Box>
   );
-};
+});
+
+ChartTooltip.displayName = 'ChartTooltip';

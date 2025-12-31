@@ -41,6 +41,33 @@ export const useChartInteraction = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const lastMouseX = useRef<number>(0);
+  const isDraggingRef = useRef(false);
+
+  const viewportRef = useRef(viewport);
+  const onZoomRef = useRef(onZoom);
+  const onPanRef = useRef(onPan);
+  const onClickRef = useRef(onClick);
+  const enabledRef = useRef(enabled);
+
+  useEffect(() => {
+    viewportRef.current = viewport;
+  }, [viewport]);
+
+  useEffect(() => {
+    onZoomRef.current = onZoom;
+  }, [onZoom]);
+
+  useEffect(() => {
+    onPanRef.current = onPan;
+  }, [onPan]);
+
+  useEffect(() => {
+    onClickRef.current = onClick;
+  }, [onClick]);
+
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
 
   const calculateMousePosition = useCallback(
     (clientX: number, clientY: number): MousePosition | null => {
@@ -54,82 +81,74 @@ export const useChartInteraction = ({
       const canvasX = x * window.devicePixelRatio;
       const canvasY = y * window.devicePixelRatio;
 
-      const viewportWidth = viewport.end - viewport.start;
-      const klineIndex = Math.floor(viewport.start + (canvasX / canvas.width) * viewportWidth);
+      const vp = viewportRef.current;
+      const viewportWidth = vp.end - vp.start;
+      const klineIndex = Math.floor(vp.start + (canvasX / canvas.width) * viewportWidth);
 
-      const priceRange = viewport.maxPrice - viewport.minPrice;
-      const price = viewport.maxPrice - (canvasY / canvas.height) * priceRange;
+      const priceRange = vp.maxPrice - vp.minPrice;
+      const price = vp.maxPrice - (canvasY / canvas.height) * priceRange;
 
       return { x, y, canvasX, canvasY, klineIndex, price };
     },
-    [canvasRef, viewport]
+    [canvasRef]
   );
 
-  const handleMouseMove = useCallback(
-    (event: MouseEvent) => {
-      if (!enabled) return;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!enabledRef.current) return;
 
       const position = calculateMousePosition(event.clientX, event.clientY);
       setMousePosition(position);
 
-      if (isDragging && onPan) {
+      if (isDraggingRef.current && onPanRef.current) {
         const deltaX = event.clientX - lastMouseX.current;
-        onPan(deltaX);
+        onPanRef.current(deltaX);
         lastMouseX.current = event.clientX;
       }
-    },
-    [enabled, calculateMousePosition, isDragging, onPan]
-  );
+    };
 
-  const handleMouseDown = useCallback(
-    (event: MouseEvent) => {
-      if (!enabled) return;
+    const handleMouseDown = (event: MouseEvent) => {
+      if (!enabledRef.current) return;
+      isDraggingRef.current = true;
       setIsDragging(true);
       lastMouseX.current = event.clientX;
-    },
-    [enabled]
-  );
+    };
 
-  const handleMouseUp = useCallback(
-    (event: MouseEvent) => {
-      if (!enabled) return;
+    const handleMouseUp = (event: MouseEvent) => {
+      if (!enabledRef.current) return;
 
-      if (isDragging && Math.abs(event.clientX - lastMouseX.current) < 5 && onClick) {
+      if (isDraggingRef.current && Math.abs(event.clientX - lastMouseX.current) < 5 && onClickRef.current) {
         const position = calculateMousePosition(event.clientX, event.clientY);
-        if (position) onClick(position);
+        if (position) onClickRef.current(position);
       }
 
+      isDraggingRef.current = false;
       setIsDragging(false);
-    },
-    [enabled, isDragging, calculateMousePosition, onClick]
-  );
+    };
 
-  const handleWheel = useCallback(
-    (event: WheelEvent) => {
-      if (!enabled || !onZoom) return;
+    const handleWheel = (event: WheelEvent) => {
+      if (!enabledRef.current || !onZoomRef.current) return;
 
       event.preventDefault();
       const delta = event.deltaY > 0 ? -1 : 1;
-      onZoom(delta, event.clientX);
-    },
-    [enabled, onZoom]
-  );
+      onZoomRef.current(delta, event.clientX);
+    };
 
-  const handleMouseEnter = useCallback(() => {
-    if (enabled) setIsHovering(true);
-  }, [enabled]);
+    const handleMouseEnter = () => {
+      if (enabledRef.current) setIsHovering(true);
+    };
 
-  const handleMouseLeave = useCallback(() => {
-    if (enabled) {
-      setIsHovering(false);
-      setMousePosition(null);
-      setIsDragging(false);
-    }
-  }, [enabled]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !enabled) return;
+    const handleMouseLeave = () => {
+      if (enabledRef.current) {
+        setIsHovering(false);
+        setMousePosition(null);
+        isDraggingRef.current = false;
+        setIsDragging(false);
+      }
+    };
 
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mousedown', handleMouseDown);
@@ -146,16 +165,7 @@ export const useChartInteraction = ({
       canvas.removeEventListener('mouseenter', handleMouseEnter);
       canvas.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [
-    canvasRef,
-    enabled,
-    handleMouseMove,
-    handleMouseDown,
-    handleMouseUp,
-    handleWheel,
-    handleMouseEnter,
-    handleMouseLeave,
-  ]);
+  }, [canvasRef, calculateMousePosition]);
 
   return { mousePosition, isDragging, isHovering };
 };
