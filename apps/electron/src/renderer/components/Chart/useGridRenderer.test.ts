@@ -13,7 +13,7 @@ vi.mock('../../utils/canvas/drawingUtils', () => ({
 }));
 
 vi.mock('../../utils/formatters', () => ({
-  formatPrice: vi.fn((price: number) => price.toFixed(2)),
+  formatPriceDisplay: vi.fn((price: number) => price.toFixed(2)),
   formatTimestamp: vi.fn((openTime: number) => new Date(openTime).toLocaleTimeString()),
 }));
 
@@ -273,7 +273,7 @@ describe('useGridRenderer', () => {
       result.current.render();
 
       expect(drawingUtils.drawText).toHaveBeenCalled();
-      expect(formatters.formatPrice).toHaveBeenCalled();
+      expect(formatters.formatPriceDisplay).toHaveBeenCalled();
     });
 
     it('should draw time labels on the bottom axis', () => {

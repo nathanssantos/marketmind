@@ -5,6 +5,7 @@ import {
     getKlineClose,
     getKlineHigh,
 } from '@marketmind/types';
+import { DETECTOR_CONFIG } from '../../constants';
 import type { SetupDetectorResult } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';
 
@@ -15,20 +16,17 @@ const MIN_LOW_PIVOTS = 2;
 const MIN_TRAP_DISTANCE_PERCENT = 0.001;
 const MAX_TRAP_DISTANCE_PERCENT = 0.02;
 const MIN_REVERSAL_STRENGTH = 0.5;
-const VOLUME_LOOKBACK = 20;
 const STOP_LOSS_BUFFER = 0.995;
 const DEFAULT_RR_MULTIPLIER = 2.5;
 const RESISTANCE_LOOKBACK = 50;
 const CLUSTER_THRESHOLD_PERCENT = 0.005;
 const MIN_CONFIDENCE_THRESHOLD = 70;
-const BASE_CONFIDENCE = 60;
 const REVERSAL_CONFIDENCE_WEIGHT = 15;
 const VOLUME_CONFIDENCE_BONUS = 10;
 const EMA_CONFIRMATION_BONUS = 10;
 const OPTIMAL_BREAKOUT_MIN = 0.001;
 const OPTIMAL_BREAKOUT_MAX = 0.01;
 const BREAKOUT_BONUS = 5;
-const MAX_CONFIDENCE = 100;
 const BREAKOUT_DISTANCE_TO_PERCENT = 100;
 
 export class BearTrapDetector extends BaseSetupDetector {
@@ -149,7 +147,7 @@ export class BearTrapDetector extends BaseSetupDetector {
     klines: Kline[],
     currentIndex: number,
   ): SetupDetectorResult | null {
-    const volumeConfirmation = isVolumeConfirmed(klines, currentIndex, VOLUME_LOOKBACK, this.bearTrapConfig.volumeMultiplier);
+    const volumeConfirmation = isVolumeConfirmed(klines, currentIndex, DETECTOR_CONFIG.VOLUME_LOOKBACK, this.bearTrapConfig.volumeMultiplier);
 
     const ema = calculateEMA(klines, this.bearTrapConfig.emaPeriod);
     const emaCurrent = ema[currentIndex];
@@ -251,7 +249,7 @@ export class BearTrapDetector extends BaseSetupDetector {
     aboveEMA: boolean,
     breakoutDistance: number,
   ): number {
-    const baseConfidence = BASE_CONFIDENCE;
+    const baseConfidence = DETECTOR_CONFIG.BASE_CONFIDENCE;
     const reversalBonus = reversalStrength * REVERSAL_CONFIDENCE_WEIGHT;
     const volumeBonus = volumeConfirmation ? VOLUME_CONFIDENCE_BONUS : 0;
     const emaBonus = aboveEMA ? EMA_CONFIRMATION_BONUS : 0;
@@ -264,6 +262,6 @@ export class BearTrapDetector extends BaseSetupDetector {
     const totalConfidence =
       baseConfidence + reversalBonus + volumeBonus + emaBonus + breakoutBonus;
 
-    return Math.min(MAX_CONFIDENCE, Math.max(BASE_CONFIDENCE, totalConfidence));
+    return Math.min(DETECTOR_CONFIG.MAX_CONFIDENCE, Math.max(DETECTOR_CONFIG.BASE_CONFIDENCE, totalConfidence));
   }
 }

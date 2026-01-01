@@ -1,4 +1,4 @@
-import { formatDateTimeTooltip, formatPrice } from '@/renderer/utils/formatters';
+import { formatDateTimeTooltip, formatPriceDisplay } from '@/renderer/utils/formatters';
 import { Badge, Box, HStack, Stack, Text } from '@chakra-ui/react';
 import type { Kline, Order, TradingSetup } from '@marketmind/types';
 import {
@@ -140,7 +140,7 @@ export const ChartTooltip = memo(({
               color={isPositive ? 'green.500' : 'red.500'}
             >
               {isPositive ? '+' : ''}
-              {formatPrice(measurement.priceChange)}
+              {formatPriceDisplay(measurement.priceChange)}
             </Text>
           </HStack>
           <HStack justify="space-between">
@@ -370,7 +370,7 @@ export const ChartTooltip = memo(({
           {movingAverage.value !== undefined && (
             <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
               <Text color="fg.muted">Value:</Text>
-              <Text fontWeight="medium">{formatPrice(movingAverage.value)}</Text>
+              <Text fontWeight="medium">{formatPriceDisplay(movingAverage.value)}</Text>
             </HStack>
           )}
         </Stack>
@@ -464,20 +464,20 @@ export const ChartTooltip = memo(({
 
           <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
             <Text color="fg.muted">{t('common.entry')}:</Text>
-            <Text fontWeight="medium">{formatPrice(setup.entryPrice)}</Text>
+            <Text fontWeight="medium">{formatPriceDisplay(setup.entryPrice)}</Text>
           </HStack>
 
           {setup.stopLoss && (
             <HStack justify="space-between">
               <Text color="fg.muted">{t('common.stopLoss')}:</Text>
-              <Text fontWeight="medium" color="red.500">{formatPrice(setup.stopLoss)}</Text>
+              <Text fontWeight="medium" color="red.500">{formatPriceDisplay(setup.stopLoss)}</Text>
             </HStack>
           )}
 
           {setup.takeProfit && (
             <HStack justify="space-between">
               <Text color="fg.muted">{t('common.takeProfit')}:</Text>
-              <Text fontWeight="medium" color="green.500">{formatPrice(setup.takeProfit)}</Text>
+              <Text fontWeight="medium" color="green.500">{formatPriceDisplay(setup.takeProfit)}</Text>
             </HStack>
           )}
         </Stack>
@@ -512,23 +512,23 @@ export const ChartTooltip = memo(({
           <Stack gap={0.5}>
             <HStack justify="space-between">
               <Text color="fg.muted">Open:</Text>
-              <Text fontWeight="medium">{formatPrice(getKlineOpen(kline))}</Text>
+              <Text fontWeight="medium">{formatPriceDisplay(getKlineOpen(kline))}</Text>
             </HStack>
             <HStack justify="space-between">
               <Text color="fg.muted">High:</Text>
               <Text fontWeight="medium" color="green.500">
-                {formatPrice(getKlineHigh(kline))}
+                {formatPriceDisplay(getKlineHigh(kline))}
               </Text>
             </HStack>
             <HStack justify="space-between">
               <Text color="fg.muted">Low:</Text>
               <Text fontWeight="medium" color="red.500">
-                {formatPrice(getKlineLow(kline))}
+                {formatPriceDisplay(getKlineLow(kline))}
               </Text>
             </HStack>
             <HStack justify="space-between">
               <Text color="fg.muted">Close:</Text>
-              <Text fontWeight="medium">{formatPrice(getKlineClose(kline))}</Text>
+              <Text fontWeight="medium">{formatPriceDisplay(getKlineClose(kline))}</Text>
             </HStack>
           </Stack>
         )}
@@ -542,7 +542,7 @@ export const ChartTooltip = memo(({
                 color={isBullish ? 'green.500' : 'red.500'}
               >
                 {isBullish ? '+' : ''}
-                {formatPrice(change)} ({changePercent}%)
+                {formatPriceDisplay(change)} ({changePercent}%)
               </Text>
             </HStack>
 

@@ -35,6 +35,7 @@
     "@emotion/react": "^11.14.0",
     "@marketmind/indicators": "workspace:*",
     "@marketmind/types": "workspace:*",
+    "@marketmind/utils": "workspace:*",
     "@tanstack/react-query": "^5.90.12",
     "@trpc/client": "^11.7.2",
     "@trpc/react-query": "^11.7.2",

@@ -4,15 +4,12 @@ import {
   createDefaultStochasticDoubleTouchConfig,
   getKlineClose,
 } from '@marketmind/types';
+import { DETECTOR_CONFIG } from '../../constants';
 import type { SetupDetectorResult } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';
 
 export type { StochasticDoubleTouchConfig };
 export { createDefaultStochasticDoubleTouchConfig };
-
-const VOLUME_LOOKBACK = 20;
-const BASE_CONFIDENCE = 70;
-const MAX_CONFIDENCE = 95;
 
 export class StochasticDoubleTouchDetector extends BaseSetupDetector {
   private stochConfig: StochasticDoubleTouchConfig;
@@ -56,7 +53,7 @@ export class StochasticDoubleTouchDetector extends BaseSetupDetector {
       return { setup: null, confidence: 0 };
     }
 
-    const volumeConfirmed = isVolumeConfirmed(klines, currentIndex, VOLUME_LOOKBACK, this.stochConfig.volumeMultiplier);
+    const volumeConfirmed = isVolumeConfirmed(klines, currentIndex, DETECTOR_CONFIG.VOLUME_LOOKBACK, this.stochConfig.volumeMultiplier);
 
     if (!volumeConfirmed) {
       return { setup: null, confidence: 0 };
@@ -258,13 +255,13 @@ export class StochasticDoubleTouchDetector extends BaseSetupDetector {
   ): number {
     const riskReward = this.calculateRR(entryPrice, stopLoss, takeProfit);
 
-    let confidence = BASE_CONFIDENCE;
+    let confidence = DETECTOR_CONFIG.BASE_CONFIDENCE;
 
     if (riskReward >= 3.0) confidence += 15;
     else if (riskReward >= 2.5) confidence += 10;
     else if (riskReward >= 2.0) confidence += 5;
 
-    return Math.min(confidence, MAX_CONFIDENCE);
+    return Math.min(confidence, DETECTOR_CONFIG.MAX_CONFIDENCE);
   }
 
   private calculateATR(klines: Kline[], currentIndex: number, period: number): number {

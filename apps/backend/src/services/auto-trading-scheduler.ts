@@ -3,6 +3,7 @@ import { checkStochasticCondition, STOCHASTIC_FILTER } from '../utils/stochastic
 import { checkTrendCondition, TREND_FILTER } from '../utils/trend-filter';
 import type { Interval, Kline, MarketType, StrategyDefinition, TradingSetup } from '@marketmind/types';
 import { BINANCE_FEES } from '@marketmind/types';
+import { TRADING_CONFIG } from '../constants';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
@@ -551,8 +552,6 @@ export class AutoTradingScheduler {
       entryPrice: setup.entryPrice,
     });
 
-    const MIN_RISK_REWARD_RATIO = 1.25;
-
     if (setup.stopLoss && setup.takeProfit) {
       const entryPrice = setup.entryPrice;
       const stopLoss = setup.stopLoss;
@@ -581,7 +580,7 @@ export class AutoTradingScheduler {
 
       const riskRewardRatio = reward / risk;
 
-      if (riskRewardRatio < MIN_RISK_REWARD_RATIO) {
+      if (riskRewardRatio < TRADING_CONFIG.MIN_RISK_REWARD_RATIO) {
         log('❌ Setup rejected - insufficient risk/reward ratio', {
           type: setup.type,
           direction: setup.direction,
@@ -591,7 +590,7 @@ export class AutoTradingScheduler {
           risk: risk.toFixed(2),
           reward: reward.toFixed(2),
           riskRewardRatio: riskRewardRatio.toFixed(2),
-          minRequired: MIN_RISK_REWARD_RATIO,
+          minRequired: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
         });
         return;
       }
@@ -1413,9 +1412,8 @@ export class AutoTradingScheduler {
         }
 
         const finalRiskRewardRatio = reward / risk;
-        const MIN_RISK_REWARD_RATIO = 1.25;
 
-        if (finalRiskRewardRatio < MIN_RISK_REWARD_RATIO) {
+        if (finalRiskRewardRatio < TRADING_CONFIG.MIN_RISK_REWARD_RATIO) {
           log('❌ Setup rejected after price adjustment - insufficient final R:R ratio', {
             type: setup.type,
             direction: setup.direction,
@@ -1427,7 +1425,7 @@ export class AutoTradingScheduler {
             reward: reward.toFixed(2),
             originalRR: setup.riskRewardRatio.toFixed(2),
             finalRR: finalRiskRewardRatio.toFixed(2),
-            minRequired: MIN_RISK_REWARD_RATIO,
+            minRequired: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
             priceDeviation: `${((actualEntryPrice - setup.entryPrice) / setup.entryPrice * 100).toFixed(2)}%`,
             orderType,
           });

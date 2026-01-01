@@ -4,15 +4,12 @@ import {
     createDefaultMeanReversionConfig,
     getKlineClose,
 } from '@marketmind/types';
+import { DETECTOR_CONFIG } from '../../constants';
 import type { SetupDetectorResult } from './BaseSetupDetector';
 import { BaseSetupDetector } from './BaseSetupDetector';
 
 export type { MeanReversionConfig };
 export { createDefaultMeanReversionConfig };
-
-const VOLUME_LOOKBACK = 20;
-const BASE_CONFIDENCE = 60;
-const MAX_CONFIDENCE = 95;
 
 export class MeanReversionDetector extends BaseSetupDetector {
   private meanRevConfig: MeanReversionConfig;
@@ -54,7 +51,7 @@ export class MeanReversionDetector extends BaseSetupDetector {
       return { setup: null, confidence: 0 };
     }
 
-    const volumeConfirmed = isVolumeConfirmed(klines, currentIndex, VOLUME_LOOKBACK, this.meanRevConfig.volumeMultiplier);
+    const volumeConfirmed = isVolumeConfirmed(klines, currentIndex, DETECTOR_CONFIG.VOLUME_LOOKBACK, this.meanRevConfig.volumeMultiplier);
 
     if (!volumeConfirmed) {
       return { setup: null, confidence: 0 };
@@ -180,13 +177,13 @@ export class MeanReversionDetector extends BaseSetupDetector {
     rsi: number,
     direction: 'LONG' | 'SHORT'
   ): number {
-    let confidence = BASE_CONFIDENCE;
+    let confidence = DETECTOR_CONFIG.BASE_CONFIDENCE;
 
     const percentB = this.calculatePercentB(close, bb);
     const deviation = direction === 'LONG' ? -percentB : percentB - 1;
 
-    if (Math.abs(deviation) > 0.1) confidence += 15; // >10% outside band
-    if (Math.abs(deviation) > 0.15) confidence += 10; // >15% outside band
+    if (Math.abs(deviation) > 0.1) confidence += 15;
+    if (Math.abs(deviation) > 0.15) confidence += 10;
 
     if (direction === 'LONG') {
       if (rsi < 25) confidence += 10;
@@ -196,6 +193,6 @@ export class MeanReversionDetector extends BaseSetupDetector {
       if (rsi > 80) confidence += 5;
     }
 
-    return Math.min(confidence, MAX_CONFIDENCE);
+    return Math.min(confidence, DETECTOR_CONFIG.MAX_CONFIDENCE);
   }
 }

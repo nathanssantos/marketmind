@@ -3,6 +3,14 @@ export const REQUIRED_KLINES = 40_000;
 export const TRADING_CONFIG = {
   MIN_RISK_REWARD_RATIO: 1.25,
   SESSION_DURATION_MS: 30 * 24 * 60 * 60 * 1000,
+  DEFAULT_SLIPPAGE_PERCENT: 0.1,
+  DEFAULT_COMMISSION_PERCENT: 0.1,
+} as const;
+
+export const DETECTOR_CONFIG = {
+  VOLUME_LOOKBACK: 20,
+  BASE_CONFIDENCE: 60,
+  MAX_CONFIDENCE: 100,
 } as const;
 
 export const STABLECOINS = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD'] as const;
@@ -156,3 +164,5 @@ export type VolatilityConstants = typeof VOLATILITY;
 export type PivotDetectionConstants = typeof PIVOT_DETECTION;
 export type ContextAggregatorConstants = typeof CONTEXT_AGGREGATOR;
 export type RiskManagerConstants = typeof RISK_MANAGER;
+export type DetectorConfigConstants = typeof DETECTOR_CONFIG;
+export type TradingConfigConstants = typeof TRADING_CONFIG;

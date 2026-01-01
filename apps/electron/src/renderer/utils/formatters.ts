@@ -1,7 +1,7 @@
 import { getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
 import type { ChartContextData } from '../context/ChartContext';
 
-export const formatPrice = (price: number): string => {
+export const formatPriceDisplay = (price: number): string => {
   if (price >= 1000000) {
     return `${(price / 1000000).toFixed(2)}M`;
   }
@@ -74,7 +74,7 @@ export const formatDateTimeTooltip = (timestamp: number | Date): string => {
   return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 };
 
-export const formatVolume = (volume: number): string => {
+export const formatVolumeDisplay = (volume: number): string => {
   if (volume >= 1000000000) {
     return `${(volume / 1000000000).toFixed(2)}B`;
   }
@@ -126,15 +126,15 @@ export const formatChartDataContext = (chartData: ChartContextData): string => {
   contextText += `- Chart Type: ${chartData.chartType}\n\n`;
   
   contextText += `## Price Statistics (Last 100 Klines)\n`;
-  contextText += `- Current Price: $${formatPrice(currentPrice)}\n`;
-  contextText += `- Price Change: ${priceChange > 0 ? '+' : ''}${formatPrice(priceChange)} (${priceChangePercent > 0 ? '+' : ''}${priceChangePercent.toFixed(2)}%)\n`;
-  contextText += `- High: $${formatPrice(highPrice)}\n`;
-  contextText += `- Low: $${formatPrice(lowPrice)}\n`;
-  contextText += `- Price Range: $${formatPrice(highPrice - lowPrice)}\n\n`;
-  
+  contextText += `- Current Price: $${formatPriceDisplay(currentPrice)}\n`;
+  contextText += `- Price Change: ${priceChange > 0 ? '+' : ''}${formatPriceDisplay(priceChange)} (${priceChangePercent > 0 ? '+' : ''}${priceChangePercent.toFixed(2)}%)\n`;
+  contextText += `- High: $${formatPriceDisplay(highPrice)}\n`;
+  contextText += `- Low: $${formatPriceDisplay(lowPrice)}\n`;
+  contextText += `- Price Range: $${formatPriceDisplay(highPrice - lowPrice)}\n\n`;
+
   contextText += `## Volume Analysis\n`;
-  contextText += `- Average Volume: ${formatVolume(avgVolume)}\n`;
-  contextText += `- Current Volume: ${formatVolume(currentVolume)}\n\n`;
+  contextText += `- Average Volume: ${formatVolumeDisplay(avgVolume)}\n`;
+  contextText += `- Current Volume: ${formatVolumeDisplay(currentVolume)}\n\n`;
   
   contextText += `## Price Action\n`;
   contextText += `- Bullish Klines: ${bullishKlines} (${((bullishKlines / recentKlines.length) * 100).toFixed(1)}%)\n`;

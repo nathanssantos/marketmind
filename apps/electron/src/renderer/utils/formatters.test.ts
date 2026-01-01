@@ -1,36 +1,36 @@
 import { describe, expect, it } from 'vitest';
 import type { ChartContextData } from '../context/ChartContext';
-import { formatChartDataContext, formatDateTimeTooltip, formatNumber, formatPrice, formatTimestamp, formatVolume } from './formatters';
+import { formatChartDataContext, formatDateTimeTooltip, formatNumber, formatPriceDisplay, formatTimestamp, formatVolumeDisplay } from './formatters';
 
 describe('formatters', () => {
-  describe('formatPrice', () => {
+  describe('formatPriceDisplay', () => {
     it('should format millions correctly', () => {
-      expect(formatPrice(1500000)).toBe('1.50M');
-      expect(formatPrice(50000000)).toBe('50.00M');
+      expect(formatPriceDisplay(1500000)).toBe('1.50M');
+      expect(formatPriceDisplay(50000000)).toBe('50.00M');
     });
 
     it('should format thousands correctly', () => {
-      expect(formatPrice(1500)).toBe('1.50K');
-      expect(formatPrice(50000)).toBe('50.00K');
+      expect(formatPriceDisplay(1500)).toBe('1.50K');
+      expect(formatPriceDisplay(50000)).toBe('50.00K');
     });
 
     it('should format prices >= 1 with 2 decimals', () => {
-      expect(formatPrice(100)).toBe('100.00');
-      expect(formatPrice(45.678)).toBe('45.68');
+      expect(formatPriceDisplay(100)).toBe('100.00');
+      expect(formatPriceDisplay(45.678)).toBe('45.68');
     });
 
     it('should format prices >= 0.01 with 4 decimals', () => {
-      expect(formatPrice(0.5)).toBe('0.5000');
-      expect(formatPrice(0.0123)).toBe('0.0123');
+      expect(formatPriceDisplay(0.5)).toBe('0.5000');
+      expect(formatPriceDisplay(0.0123)).toBe('0.0123');
     });
 
     it('should format small prices with 8 decimals', () => {
-      expect(formatPrice(0.00000123)).toBe('0.00000123');
-      expect(formatPrice(0.000005)).toBe('0.00000500');
+      expect(formatPriceDisplay(0.00000123)).toBe('0.00000123');
+      expect(formatPriceDisplay(0.000005)).toBe('0.00000500');
     });
 
     it('should handle zero', () => {
-      expect(formatPrice(0)).toBe('0.00000000');
+      expect(formatPriceDisplay(0)).toBe('0.00000000');
     });
   });
 
@@ -110,29 +110,29 @@ describe('formatters', () => {
     });
   });
 
-  describe('formatVolume', () => {
+  describe('formatVolumeDisplay', () => {
     it('should format billions correctly', () => {
-      expect(formatVolume(1500000000)).toBe('1.50B');
-      expect(formatVolume(50000000000)).toBe('50.00B');
+      expect(formatVolumeDisplay(1500000000)).toBe('1.50B');
+      expect(formatVolumeDisplay(50000000000)).toBe('50.00B');
     });
 
     it('should format millions correctly', () => {
-      expect(formatVolume(1500000)).toBe('1.50M');
-      expect(formatVolume(50000000)).toBe('50.00M');
+      expect(formatVolumeDisplay(1500000)).toBe('1.50M');
+      expect(formatVolumeDisplay(50000000)).toBe('50.00M');
     });
 
     it('should format thousands correctly', () => {
-      expect(formatVolume(1500)).toBe('1.50K');
-      expect(formatVolume(50000)).toBe('50.00K');
+      expect(formatVolumeDisplay(1500)).toBe('1.50K');
+      expect(formatVolumeDisplay(50000)).toBe('50.00K');
     });
 
     it('should format small volumes without decimals', () => {
-      expect(formatVolume(100)).toBe('100');
-      expect(formatVolume(999)).toBe('999');
+      expect(formatVolumeDisplay(100)).toBe('100');
+      expect(formatVolumeDisplay(999)).toBe('999');
     });
 
     it('should handle zero', () => {
-      expect(formatVolume(0)).toBe('0');
+      expect(formatVolumeDisplay(0)).toBe('0');
     });
   });
 

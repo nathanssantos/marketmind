@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
+import { BACKEND_URL } from '@shared/constants/api';
 import { socketService } from '../services/socketService';
 
 interface UseWebSocketOptions {
@@ -49,7 +50,7 @@ interface WebSocketEvents {
 
 export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   const {
-    url: _url = 'http://localhost:3001',
+    url: _url = BACKEND_URL,
     autoConnect = true,
     auth: _auth,
   } = options;

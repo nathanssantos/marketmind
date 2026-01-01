@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { BINANCE_FEES } from '@marketmind/types';
+import { TRADING_CONFIG } from '../constants';
 import {
   autoTradingConfig,
   tradeExecutions,
@@ -297,8 +298,6 @@ export const autoTradingRouter = router({
 
       log('✅ Risk validation passed');
 
-      const MIN_RISK_REWARD_RATIO = 1.25;
-
       if (setup.stopLoss && setup.takeProfit) {
         const entryPrice = parseFloat(setup.entryPrice);
         const stopLoss = parseFloat(setup.stopLoss);
@@ -330,7 +329,7 @@ export const autoTradingRouter = router({
 
         const riskRewardRatio = reward / risk;
 
-        if (riskRewardRatio < MIN_RISK_REWARD_RATIO) {
+        if (riskRewardRatio < TRADING_CONFIG.MIN_RISK_REWARD_RATIO) {
           log('❌ Setup rejected - insufficient risk/reward ratio', {
             setupType: setup.setupType,
             direction: setup.direction,
@@ -338,11 +337,11 @@ export const autoTradingRouter = router({
             stopLoss,
             takeProfit,
             riskRewardRatio: riskRewardRatio.toFixed(2),
-            minRequired: MIN_RISK_REWARD_RATIO,
+            minRequired: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
           });
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${MIN_RISK_REWARD_RATIO}:1)`,
+            message: `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${TRADING_CONFIG.MIN_RISK_REWARD_RATIO}:1)`,
           });
         }
 

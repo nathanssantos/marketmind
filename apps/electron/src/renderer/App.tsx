@@ -14,7 +14,7 @@ import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { MainLayout } from './components/Layout/MainLayout';
 import { TrpcProvider } from './components/TrpcProvider';
-import { REQUIRED_KLINES } from './constants/defaults';
+import { DEFAULT_MOVING_AVERAGES, REQUIRED_KLINES } from './constants/defaults';
 
 const BacktestDialog = lazy(() => import('./components/Trading/BacktestDialog').then(m => ({ default: m.BacktestDialog })));
 import { ErrorMessage } from './components/ui/ErrorMessage';
@@ -43,51 +43,6 @@ function RealtimeSyncWrapper({ children }: { children: React.ReactNode }) {
     </RealtimeTradingSyncProvider>
   );
 }
-
-const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
-  {
-    period: 9,
-    type: 'EMA',
-    color: '#ff9800',
-    lineWidth: 2,
-    visible: true,
-  },
-  {
-    period: 21,
-    type: 'EMA',
-    color: '#2196f3',
-    lineWidth: 2,
-    visible: true,
-  },
-  {
-    period: 50,
-    type: 'EMA',
-    color: '#4caf50',
-    lineWidth: 2,
-    visible: false,
-  },
-  {
-    period: 70,
-    type: 'EMA',
-    color: '#00bcd4',
-    lineWidth: 2,
-    visible: false,
-  },
-  {
-    period: 100,
-    type: 'EMA',
-    color: '#9c27b0',
-    lineWidth: 2,
-    visible: false,
-  },
-  {
-    period: 200,
-    type: 'EMA',
-    color: '#f44336',
-    lineWidth: 2,
-    visible: false,
-  },
-];
 
 function App(): ReactElement {
   return (

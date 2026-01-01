@@ -1,9 +1,8 @@
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpBatchLink } from '@trpc/client';
 import { useState } from 'react';
+import { BACKEND_TRPC_URL } from '@shared/constants/api';
 import { trpc } from '../utils/trpc';
-
-const BACKEND_URL = 'http://localhost:3001';
 
 export const TrpcProvider = ({ children }: { children: React.ReactNode }) => {
     const [queryClient] = useState(() => new QueryClient({
@@ -42,7 +41,7 @@ export const TrpcProvider = ({ children }: { children: React.ReactNode }) => {
         trpc.createClient({
             links: [
                 httpBatchLink({
-                    url: `${BACKEND_URL}/trpc`,
+                    url: BACKEND_TRPC_URL,
                     fetch(url, options) {
                         return fetch(url, {
                             ...options,

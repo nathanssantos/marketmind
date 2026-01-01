@@ -20,6 +20,7 @@ import { getBinanceFuturesDataService } from '../services/binance-futures-data';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 import { calculateLiquidationPrice, BINANCE_FEES } from '@marketmind/types';
+import { TRADING_CONFIG } from '../constants';
 import { generateEntityId } from '../utils/id';
 
 const FUTURES_TAKER_FEE = BINANCE_FEES.FUTURES.VIP_0.taker;
@@ -334,8 +335,6 @@ export const futuresTradingRouter = router({
     .mutation(async ({ input, ctx }) => {
       await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
-      const MIN_RISK_REWARD_RATIO = 1.25;
-
       if (input.stopLoss && input.takeProfit) {
         const entryPrice = parseFloat(input.entryPrice);
         const stopLoss = parseFloat(input.stopLoss);
@@ -361,10 +360,10 @@ export const futuresTradingRouter = router({
 
         const riskRewardRatio = reward / risk;
 
-        if (riskRewardRatio < MIN_RISK_REWARD_RATIO) {
+        if (riskRewardRatio < TRADING_CONFIG.MIN_RISK_REWARD_RATIO) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${MIN_RISK_REWARD_RATIO}:1)`,
+            message: `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${TRADING_CONFIG.MIN_RISK_REWARD_RATIO}:1)`,
           });
         }
 
