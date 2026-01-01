@@ -88,16 +88,22 @@ const customConfig = defineConfig({
             _dark: 'rgba(200, 200, 200, 0.8)',
           },
         },
+        'chart.currentPrice.line': {
+          value: {
+            base: '#374151',
+            _dark: '#ffffff',
+          },
+        },
         'chart.currentPrice.label.bg': {
           value: {
-            base: '#16a34a',
-            _dark: '#26a69a',
+            base: '#374151',
+            _dark: '#ffffff',
           },
         },
         'chart.currentPrice.label.text': {
           value: {
             base: '#ffffff',
-            _dark: '#ffffff',
+            _dark: '#000000',
           },
         },
         'chart.line.default': {
@@ -440,6 +446,7 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
     axisLabel: resolveValue(tokens['chart.axis.label']),
     axisLine: resolveValue(tokens['chart.axis.line']),
     crosshair: resolveValue(tokens['chart.crosshair']),
+    currentPriceLine: resolveValue(tokens['chart.currentPrice.line']),
     currentPriceLabel: {
       bg: resolveValue(tokens['chart.currentPrice.label.bg']),
       text: resolveValue(tokens['chart.currentPrice.label.text']),

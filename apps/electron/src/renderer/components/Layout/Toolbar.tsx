@@ -11,6 +11,7 @@ import {
   LuGrid3X3,
   LuHistory,
   LuPlus,
+  LuRectangleHorizontal,
   LuSettings
 } from 'react-icons/lu';
 import { useChartWindows } from '../../hooks/useChartWindows';
@@ -32,6 +33,7 @@ export interface ToolbarProps {
   showGrid: boolean;
   showCurrentPriceLine: boolean;
   showCrosshair: boolean;
+  showProfitLossAreas: boolean;
   showStochastic: boolean;
   showRSI: boolean;
   showBollingerBands: boolean;
@@ -49,6 +51,7 @@ export interface ToolbarProps {
   onShowGridChange: (show: boolean) => void;
   onShowCurrentPriceLineChange: (show: boolean) => void;
   onShowCrosshairChange: (show: boolean) => void;
+  onShowProfitLossAreasChange: (show: boolean) => void;
   onShowStochasticChange: (show: boolean) => void;
   onShowRSIChange: (show: boolean) => void;
   onShowBollingerBandsChange: (show: boolean) => void;
@@ -69,6 +72,7 @@ export const Toolbar = memo(({
   showGrid,
   showCurrentPriceLine,
   showCrosshair,
+  showProfitLossAreas,
   showStochastic,
   showRSI,
   showBollingerBands,
@@ -86,6 +90,7 @@ export const Toolbar = memo(({
   onShowGridChange,
   onShowCurrentPriceLineChange,
   onShowCrosshairChange,
+  onShowProfitLossAreasChange,
   onShowStochasticChange,
   onShowRSIChange,
   onShowBollingerBandsChange,
@@ -267,6 +272,17 @@ export const Toolbar = memo(({
                 variant={showCrosshair ? 'solid' : 'ghost'}
               >
                 <LuCrosshair />
+              </IconButton>
+            </TooltipWrapper>
+            <TooltipWrapper label={t('chart.controls.profitLossAreas')} showArrow>
+              <IconButton
+                size="2xs"
+                aria-label={t('chart.controls.profitLossAreas')}
+                onClick={() => onShowProfitLossAreasChange(!showProfitLossAreas)}
+                colorPalette={showProfitLossAreas ? 'blue' : 'gray'}
+                variant={showProfitLossAreas ? 'solid' : 'ghost'}
+              >
+                <LuRectangleHorizontal />
               </IconButton>
             </TooltipWrapper>
           </HStack>

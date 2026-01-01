@@ -46,11 +46,8 @@ export const useCurrentPriceLineRenderer = ({
 
     if (y < 0 || y > chartHeight) return;
 
-    const isBullish = Number(lastKline.close) >= Number(lastKline.open);
-    const lineColor = isBullish ? colors.bullish : colors.bearish;
-
     ctx.save();
-    ctx.strokeStyle = lineColor;
+    ctx.strokeStyle = colors.currentPriceLine;
     ctx.lineWidth = lineWidth;
     ctx.globalAlpha = 0.8;
     
@@ -89,9 +86,6 @@ export const useCurrentPriceLineRenderer = ({
 
     if (y < 0 || y > chartHeight) return;
 
-    const isBullish = Number(lastKline.close) >= Number(lastKline.open);
-    const labelColor = isBullish ? colors.bullish : colors.bearish;
-
     ctx.save();
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
@@ -100,7 +94,7 @@ export const useCurrentPriceLineRenderer = ({
     const priceText = currentPrice.toFixed(2);
     const lineEndX = width - rightMargin;
 
-    drawPriceTag(ctx, priceText, y, lineEndX, labelColor);
+    drawPriceTag(ctx, priceText, y, lineEndX, colors.currentPriceLabel.bg, 72, colors.currentPriceLabel.text);
 
     ctx.restore();
   }, [manager, colors, rightMargin, manager?.getKlines()]);

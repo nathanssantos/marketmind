@@ -8,6 +8,7 @@ export interface ChartThemeColors extends ChartColors {
   axisLabel: string;
   axisLine: string;
   crosshair: string;
+  currentPriceLine: string;
   currentPriceLabel: {
     bg: string;
     text: string;

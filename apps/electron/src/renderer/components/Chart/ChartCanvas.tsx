@@ -136,6 +136,7 @@ export interface ChartCanvasProps {
   showVWAP?: boolean;
   showCurrentPriceLine?: boolean;
   showCrosshair?: boolean;
+  showProfitLossAreas?: boolean;
   showMeasurementRuler?: boolean;
   showMeasurementArea?: boolean;
   movingAverages?: MovingAverageConfig[];
@@ -163,6 +164,7 @@ export const ChartCanvas = ({
   showVWAP = false,
   showCurrentPriceLine = true,
   showCrosshair = true,
+  showProfitLossAreas = true,
   showMeasurementRuler = false,
   showMeasurementArea = false,
   movingAverages = [],
@@ -735,7 +737,7 @@ export const ChartCanvas = ({
     ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
   });
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, filteredBackendExecutions, detectedSetups.filter(s => s.visible));
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, filteredBackendExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas);
 
   const { render: renderWatermark } = useWatermarkRenderer({
     manager,

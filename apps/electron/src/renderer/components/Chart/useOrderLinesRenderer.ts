@@ -40,6 +40,35 @@ const SVG_BOT_ICON = {
   EYE_BOTTOM_Y: 15,
 } as const;
 
+const AREA_COLORS = {
+  PROFIT: 'rgba(34, 197, 94, 0.08)',
+  LOSS: 'rgba(239, 68, 68, 0.08)',
+  SL_PROFIT_LINE: 'rgba(34, 197, 94, 0.6)',
+  SL_LOSS_LINE: 'rgba(239, 68, 68, 0.6)',
+  TP_LINE: 'rgba(34, 197, 94, 0.6)',
+} as const;
+
+const isSLInProfitZone = (isLong: boolean, entryPrice: number, slPrice: number): boolean =>
+  isLong ? slPrice > entryPrice : slPrice < entryPrice;
+
+const drawProfitLossArea = (
+  ctx: CanvasRenderingContext2D,
+  y1: number,
+  y2: number,
+  chartWidth: number,
+  isProfit: boolean
+): void => {
+  const minY = Math.min(y1, y2);
+  const maxY = Math.max(y1, y2);
+  const height = maxY - minY;
+  if (height <= 0) return;
+
+  ctx.save();
+  ctx.fillStyle = isProfit ? AREA_COLORS.PROFIT : AREA_COLORS.LOSS;
+  ctx.fillRect(0, minY, chartWidth, height);
+  ctx.restore();
+};
+
 export interface BackendExecution {
   id: string;
   symbol: string;
@@ -307,7 +336,8 @@ export const useOrderLinesRenderer = (
   hasTradingEnabled: boolean,
   hoveredOrderIdRef: RefObject<string | null>,
   backendExecutions: BackendExecution[] = [],
-  pendingSetups: TradingSetup[] = []
+  pendingSetups: TradingSetup[] = [],
+  showProfitLossAreas: boolean = true
 ) => {
   const activeOrders = useMemo((): Order[] => {
     return backendExecutions
@@ -491,8 +521,23 @@ export const useOrderLinesRenderer = (
       const pendingAlpha = 0.35;
       const entryPrice = getOrderPrice(order);
 
+      if (showProfitLossAreas && (order.stopLoss || order.takeProfit)) {
+        if (order.stopLoss) {
+          const stopY = manager.priceToY(order.stopLoss);
+          const slIsProfit = isSLInProfitZone(isLong, entryPrice, order.stopLoss);
+          drawProfitLossArea(ctx, y, stopY, chartWidth, slIsProfit);
+        }
+        if (order.takeProfit) {
+          const tpY = manager.priceToY(order.takeProfit);
+          drawProfitLossArea(ctx, y, tpY, chartWidth, true);
+        }
+      }
+
       if (order.stopLoss) {
         const stopY = manager.priceToY(order.stopLoss);
+        const slIsProfit = isSLInProfitZone(isLong, entryPrice, order.stopLoss);
+        const slLineColor = slIsProfit ? AREA_COLORS.SL_PROFIT_LINE : AREA_COLORS.SL_LOSS_LINE;
+        const slTagColor = slIsProfit ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)';
 
         sltpHitboxesRef.current.push({
           orderId: getOrderId(order),
@@ -506,7 +551,7 @@ export const useOrderLinesRenderer = (
         ctx.globalAlpha = pendingAlpha;
         ctx.setLineDash([3, 3]);
         ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+        ctx.strokeStyle = slLineColor;
 
         ctx.beginPath();
         ctx.moveTo(0, stopY);
@@ -524,10 +569,10 @@ export const useOrderLinesRenderer = (
         const slSign = slResultPercent >= 0 ? '+' : '';
         const slInfoText = `SL (${slSign}${slResultPercent.toFixed(2)}%) [PENDING]`;
 
-        priceTags.push({ priceText: order.stopLoss.toFixed(2), y: stopY, fillColor: 'rgba(239, 68, 68, 0.9)' });
+        priceTags.push({ priceText: order.stopLoss.toFixed(2), y: stopY, fillColor: slTagColor });
 
         const slCloseButtonRef = { x: 0, y: 0, size: 14 };
-        drawInfoTag(ctx, slInfoText, stopY, 'rgba(239, 68, 68, 0.9)', true, slCloseButtonRef);
+        drawInfoTag(ctx, slInfoText, stopY, slTagColor, true, slCloseButtonRef);
 
         sltpCloseButtonsRef.current.push({
           orderIds: [getOrderId(order)],
@@ -556,7 +601,7 @@ export const useOrderLinesRenderer = (
         ctx.globalAlpha = pendingAlpha;
         ctx.setLineDash([3, 3]);
         ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
+        ctx.strokeStyle = AREA_COLORS.TP_LINE;
 
         ctx.beginPath();
         ctx.moveTo(0, tpY);
@@ -884,15 +929,40 @@ export const useOrderLinesRenderer = (
     allPositions.forEach((position) => {
       const isPendingPosition = position.orders.some(o => (o as Order & { isPendingLimitOrder?: boolean }).isPendingLimitOrder);
       const pendingAlpha = isPendingPosition ? 0.35 : 1;
+      const isLongPosition = position.netQuantity > 0;
+      const entryY = manager.priceToY(position.avgPrice);
 
-      const anyOrderHasStopLoss = position.orders.some(o => o.stopLoss);
-      if (anyOrderHasStopLoss) {
-        const stopLossOrders = position.orders.filter(o => o.stopLoss);
-        const isLongPosition = position.netQuantity > 0;
-        const consolidatedStopLoss = isLongPosition
-          ? Math.max(...stopLossOrders.map(o => o.stopLoss || 0))
-          : Math.min(...stopLossOrders.map(o => o.stopLoss || Infinity));
+      const stopLossOrders = position.orders.filter(o => o.stopLoss);
+      const takeProfitOrders = position.orders.filter(o => o.takeProfit);
+      const consolidatedStopLoss = stopLossOrders.length > 0
+        ? (isLongPosition
+            ? Math.max(...stopLossOrders.map(o => o.stopLoss || 0))
+            : Math.min(...stopLossOrders.map(o => o.stopLoss || Infinity)))
+        : null;
+      const consolidatedTakeProfit = takeProfitOrders.length > 0
+        ? (isLongPosition
+            ? Math.min(...takeProfitOrders.map(o => o.takeProfit || Infinity))
+            : Math.max(...takeProfitOrders.map(o => o.takeProfit || 0)))
+        : null;
+
+      if (showProfitLossAreas && (consolidatedStopLoss || consolidatedTakeProfit)) {
+        if (consolidatedStopLoss) {
+          const stopY = manager.priceToY(consolidatedStopLoss);
+          const slIsProfit = isSLInProfitZone(isLongPosition, position.avgPrice, consolidatedStopLoss);
+          drawProfitLossArea(ctx, entryY, stopY, chartWidth, slIsProfit);
+        }
+        if (consolidatedTakeProfit) {
+          const tpY = manager.priceToY(consolidatedTakeProfit);
+          drawProfitLossArea(ctx, entryY, tpY, chartWidth, true);
+        }
+      }
+
+      const anyOrderHasStopLoss = stopLossOrders.length > 0;
+      if (anyOrderHasStopLoss && consolidatedStopLoss) {
         const stopY = manager.priceToY(consolidatedStopLoss);
+        const slIsProfit = isSLInProfitZone(isLongPosition, position.avgPrice, consolidatedStopLoss);
+        const slLineColor = slIsProfit ? AREA_COLORS.SL_PROFIT_LINE : AREA_COLORS.SL_LOSS_LINE;
+        const slTagColor = slIsProfit ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)';
 
         const firstOrderId = position.orderIds[0] || '';
 
@@ -922,7 +992,7 @@ export const useOrderLinesRenderer = (
         ctx.globalAlpha = pendingAlpha;
         ctx.setLineDash([3, 3]);
         ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+        ctx.strokeStyle = slLineColor;
 
         ctx.beginPath();
         ctx.moveTo(0, stopY);
@@ -934,7 +1004,6 @@ export const useOrderLinesRenderer = (
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
 
-        const fillColor = 'rgba(239, 68, 68, 0.9)';
         const priceText = consolidatedStopLoss.toFixed(2);
         const slResultPercent = isLongPosition
           ? ((consolidatedStopLoss - position.avgPrice) / position.avgPrice) * 100
@@ -943,11 +1012,11 @@ export const useOrderLinesRenderer = (
         const pendingLabel = isPendingPosition ? ' [PENDING]' : '';
         const infoText = `SL (${slSign}${slResultPercent.toFixed(2)}%)${pendingLabel}`;
 
-        priceTags.push({ priceText, y: stopY, fillColor });
+        priceTags.push({ priceText, y: stopY, fillColor: slTagColor });
 
         const tagStartX = chartWidth;
         ctx.setLineDash([3, 3]);
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+        ctx.strokeStyle = slLineColor;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, stopY);
@@ -956,7 +1025,7 @@ export const useOrderLinesRenderer = (
         ctx.setLineDash([]);
 
         const closeButtonRef = { x: 0, y: 0, size: 14 };
-        drawInfoTag(ctx, infoText, stopY, fillColor, true, closeButtonRef);
+        drawInfoTag(ctx, infoText, stopY, slTagColor, true, closeButtonRef);
 
         sltpCloseButtonsRef.current.push({
           orderIds: position.orderIds,
@@ -966,17 +1035,12 @@ export const useOrderLinesRenderer = (
           height: closeButtonRef.size,
           type: 'stopLoss',
         });
-        
+
         ctx.restore();
       }
 
-      const anyOrderHasTakeProfit = position.orders.some(o => o.takeProfit);
-      if (anyOrderHasTakeProfit) {
-        const takeProfitOrders = position.orders.filter(o => o.takeProfit);
-        const isLongPosition = position.netQuantity > 0;
-        const consolidatedTakeProfit = isLongPosition
-          ? Math.min(...takeProfitOrders.map(o => o.takeProfit || Infinity))
-          : Math.max(...takeProfitOrders.map(o => o.takeProfit || 0));
+      const anyOrderHasTakeProfit = takeProfitOrders.length > 0;
+      if (anyOrderHasTakeProfit && consolidatedTakeProfit) {
         const tpY = manager.priceToY(consolidatedTakeProfit);
 
         const firstOrderId = position.orderIds[0] || '';
@@ -1007,7 +1071,7 @@ export const useOrderLinesRenderer = (
         ctx.globalAlpha = pendingAlpha;
         ctx.setLineDash([3, 3]);
         ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
+        ctx.strokeStyle = AREA_COLORS.TP_LINE;
 
         ctx.beginPath();
         ctx.moveTo(0, tpY);
@@ -1069,6 +1133,18 @@ export const useOrderLinesRenderer = (
       const isLimitOrder = setup.entryOrderType === 'LIMIT';
       const pendingAlpha = 0.5;
 
+      if (showProfitLossAreas && (setup.stopLoss || setup.takeProfit)) {
+        if (setup.stopLoss) {
+          const slY = manager.priceToY(setup.stopLoss);
+          const slIsProfit = isSLInProfitZone(isLong, effectiveEntryPrice, setup.stopLoss);
+          drawProfitLossArea(ctx, entryY, slY, chartWidth, slIsProfit);
+        }
+        if (setup.takeProfit) {
+          const tpY = manager.priceToY(setup.takeProfit);
+          drawProfitLossArea(ctx, entryY, tpY, chartWidth, true);
+        }
+      }
+
       ctx.save();
       ctx.globalAlpha = pendingAlpha;
       ctx.font = '11px monospace';
@@ -1101,9 +1177,13 @@ export const useOrderLinesRenderer = (
 
       if (setup.stopLoss) {
         const slY = manager.priceToY(setup.stopLoss);
+        const slIsProfit = isSLInProfitZone(isLong, effectiveEntryPrice, setup.stopLoss);
+        const slLineColor = slIsProfit ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+        const slTagColor = slIsProfit ? 'rgba(34, 197, 94, 0.6)' : 'rgba(239, 68, 68, 0.6)';
+
         ctx.globalAlpha = pendingAlpha * 0.7;
 
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+        ctx.strokeStyle = slLineColor;
         ctx.setLineDash([3, 3]);
         ctx.beginPath();
         ctx.moveTo(0, slY);
@@ -1117,8 +1197,8 @@ export const useOrderLinesRenderer = (
           : ((effectiveEntryPrice - setup.stopLoss) / effectiveEntryPrice) * 100;
         const slInfoText = `SL (${slPercent.toFixed(2)}%)`;
 
-        priceTags.push({ priceText: slPriceText, y: slY, fillColor: 'rgba(239, 68, 68, 0.6)' });
-        drawInfoTag(ctx, slInfoText, slY, 'rgba(239, 68, 68, 0.6)', false, null, false);
+        priceTags.push({ priceText: slPriceText, y: slY, fillColor: slTagColor });
+        drawInfoTag(ctx, slInfoText, slY, slTagColor, false, null, false);
       }
 
       if (setup.takeProfit) {

@@ -120,6 +120,7 @@ function AppContent(): ReactElement {
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
   const [showCurrentPriceLine, setShowCurrentPriceLine] = useLocalStorage('marketmind:showCurrentPriceLine', true);
   const [showCrosshair, setShowCrosshair] = useLocalStorage('marketmind:showCrosshair', true);
+  const [showProfitLossAreas, setShowProfitLossAreas] = useLocalStorage('marketmind:showProfitLossAreas', true);
   const [showMeasurementRuler, setShowMeasurementRuler] = useLocalStorage('marketmind:showMeasurementRuler', false);
   const [showMeasurementArea, setShowMeasurementArea] = useLocalStorage('marketmind:showMeasurementArea', false);
   const [showStochastic, setShowStochastic] = useLocalStorage('marketmind:showStochastic', true);
@@ -414,6 +415,7 @@ function AppContent(): ReactElement {
         showGrid={showGrid}
         showCurrentPriceLine={showCurrentPriceLine}
         showCrosshair={showCrosshair}
+        showProfitLossAreas={showProfitLossAreas}
         showMeasurementRuler={showMeasurementRuler}
         showMeasurementArea={showMeasurementArea}
         showStochastic={showStochastic}
@@ -430,6 +432,7 @@ function AppContent(): ReactElement {
         onShowGridChange={setShowGrid}
         onShowCurrentPriceLineChange={setShowCurrentPriceLine}
         onShowCrosshairChange={setShowCrosshair}
+        onShowProfitLossAreasChange={setShowProfitLossAreas}
         onShowMeasurementRulerChange={setShowMeasurementRuler}
         onShowMeasurementAreaChange={setShowMeasurementArea}
         onShowStochasticChange={setShowStochastic}
@@ -477,6 +480,7 @@ function AppContent(): ReactElement {
             showGrid={showGrid}
             showCurrentPriceLine={showCurrentPriceLine}
             showCrosshair={showCrosshair}
+            showProfitLossAreas={showProfitLossAreas}
             showMeasurementRuler={showMeasurementRuler}
             showMeasurementArea={showMeasurementArea}
             showStochastic={showStochastic}

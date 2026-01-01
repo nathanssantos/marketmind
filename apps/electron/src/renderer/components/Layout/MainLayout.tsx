@@ -27,6 +27,7 @@ interface MainLayoutProps {
   showGrid: boolean;
   showCurrentPriceLine: boolean;
   showCrosshair: boolean;
+  showProfitLossAreas: boolean;
   showMeasurementRuler: boolean;
   showMeasurementArea: boolean;
   showStochastic: boolean;
@@ -43,6 +44,7 @@ interface MainLayoutProps {
   onShowGridChange: (show: boolean) => void;
   onShowCurrentPriceLineChange: (show: boolean) => void;
   onShowCrosshairChange: (show: boolean) => void;
+  onShowProfitLossAreasChange: (show: boolean) => void;
   onShowMeasurementRulerChange: (show: boolean) => void;
   onShowMeasurementAreaChange: (show: boolean) => void;
   onShowStochasticChange: (show: boolean) => void;
@@ -75,6 +77,7 @@ export const MainLayout = ({
   showGrid,
   showCurrentPriceLine,
   showCrosshair,
+  showProfitLossAreas,
   showMeasurementRuler,
   showMeasurementArea,
   showStochastic,
@@ -91,6 +94,7 @@ export const MainLayout = ({
   onShowGridChange,
   onShowCurrentPriceLineChange,
   onShowCrosshairChange,
+  onShowProfitLossAreasChange,
   onShowMeasurementRulerChange,
   onShowMeasurementAreaChange,
   onShowStochasticChange,
@@ -160,6 +164,7 @@ export const MainLayout = ({
           showGrid={showGrid}
           showCurrentPriceLine={showCurrentPriceLine}
           showCrosshair={showCrosshair}
+          showProfitLossAreas={showProfitLossAreas}
           showStochastic={showStochastic}
           showRSI={showRSI}
           showBollingerBands={showBollingerBands}
@@ -175,6 +180,7 @@ export const MainLayout = ({
           onShowGridChange={onShowGridChange}
           onShowCurrentPriceLineChange={onShowCurrentPriceLineChange}
           onShowCrosshairChange={onShowCrosshairChange}
+          onShowProfitLossAreasChange={onShowProfitLossAreasChange}
           onShowStochasticChange={onShowStochasticChange}
           onShowRSIChange={onShowRSIChange}
           onShowBollingerBandsChange={onShowBollingerBandsChange}

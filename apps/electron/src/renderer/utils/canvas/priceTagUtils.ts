@@ -4,16 +4,17 @@ export const drawPriceTag = (
   y: number,
   x: number,
   fillColor: string,
-  fixedWidth: number = 72
+  fixedWidth: number = 72,
+  textColor: string = '#ffffff'
 ): { width: number; height: number } => {
   const labelPadding = 8;
   const labelHeight = 18;
   const arrowWidth = 6;
   const tagWidth = fixedWidth;
-  
+
   ctx.save();
   ctx.fillStyle = fillColor;
-  
+
   const endX = x + tagWidth;
   ctx.beginPath();
   ctx.moveTo(x - arrowWidth, y);
@@ -23,10 +24,10 @@ export const drawPriceTag = (
   ctx.lineTo(x, y + labelHeight / 2);
   ctx.closePath();
   ctx.fill();
-  
-  ctx.fillStyle = '#ffffff';
+
+  ctx.fillStyle = textColor;
   ctx.fillText(priceText, x + labelPadding, y);
-  
+
   ctx.restore();
   return { width: tagWidth + arrowWidth, height: labelHeight };
 };

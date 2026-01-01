@@ -57,6 +57,7 @@ describe('useCurrentPriceLineRenderer', () => {
       crosshair: 'rgba(128, 128, 128, 0.8)',
       axisLabel: '#888888',
       axisLine: '#333333',
+      currentPriceLine: '#22c55e',
       currentPriceLabel: { bg: '#22c55e', text: '#ffffff' },
       lineDefault: '#666666',
       ma: ['#3b82f6', '#f59e0b', '#8b5cf6'],
@@ -346,10 +347,10 @@ describe('useCurrentPriceLineRenderer', () => {
       expect(mockCtx.globalAlpha).toBe(0.8);
     });
 
-    it('should use bullish color for current price line', () => {
+    it('should use currentPriceLine color for current price line', () => {
       const customColors = {
         ...mockColors,
-        bullish: '#00FF00',
+        currentPriceLine: '#00FF00',
       };
 
       const { result } = renderHook(() =>
