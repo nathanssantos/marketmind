@@ -1030,7 +1030,7 @@ export class AutoTradingScheduler {
         effectiveMaxConcurrent: activeWatchersForWallet || walletMaxConcurrent,
       });
 
-      const riskValidation = await riskManagerService.validateNewPosition(
+      const riskValidation = await riskManagerService.validateNewPositionLocked(
         watcher.walletId,
         effectiveConfig,
         positionValue,

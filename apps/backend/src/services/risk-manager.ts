@@ -4,6 +4,7 @@ import { db } from '../db';
 import type { AutoTradingConfig } from '../db/schema';
 import { tradeExecutions, wallets } from '../db/schema';
 import { logger } from './logger';
+import { walletLockService } from './wallet-lock';
 import { getWebSocketService } from './websocket';
 
 export interface PositionLike {
@@ -101,6 +102,20 @@ export interface DailyPnLInfo {
 }
 
 export class RiskManagerService {
+  async validateNewPositionLocked(
+    walletId: string,
+    config: AutoTradingConfig,
+    positionValue: number,
+    activeWatchersCount?: number
+  ): Promise<RiskValidationResult> {
+    const release = await walletLockService.acquire(walletId);
+    try {
+      return await this.validateNewPosition(walletId, config, positionValue, activeWatchersCount);
+    } finally {
+      release();
+    }
+  }
+
   async validateNewPosition(
     walletId: string,
     config: AutoTradingConfig,
@@ -122,6 +137,7 @@ export class RiskManagerService {
       }
 
       const walletBalance = parseFloat(wallet.currentBalance || '0');
+      const leverage = config.leverage ?? 1;
 
       const openPositions = await this.getOpenPositions(walletId);
 
@@ -159,19 +175,21 @@ export class RiskManagerService {
 
       const currentExposure = this.calculateTotalExposure(openPositions);
       const totalExposure = currentExposure + positionValue;
+
+      const baseMaxExposure = RISK_MANAGER.MAX_EXPOSURE_PERCENT / 100;
+      const leveragedMaxExposure = leverage > 1 ? leverage : baseMaxExposure;
+      const absoluteMaxExposure = walletBalance * leveragedMaxExposure;
+
       const configuredMaxExposure = activeWatchersCount
-        ? walletBalance
-        : (walletBalance * maxPositionSize * config.maxConcurrentPositions) / 100;
-      const absoluteMaxExposure = walletBalance * (RISK_MANAGER.MAX_EXPOSURE_PERCENT / 100);
+        ? absoluteMaxExposure
+        : Math.min((walletBalance * maxPositionSize * config.maxConcurrentPositions) / 100, absoluteMaxExposure);
       const maxTotalExposure = Math.min(configuredMaxExposure, absoluteMaxExposure);
 
       if (totalExposure > maxTotalExposure) {
-        const isAbsoluteLimit = totalExposure > absoluteMaxExposure;
+        const leverageInfo = leverage > 1 ? ` with ${leverage}x leverage` : '';
         return {
           isValid: false,
-          reason: isAbsoluteLimit
-            ? `Total exposure would exceed wallet balance (${absoluteMaxExposure.toFixed(2)} ${wallet.currency})`
-            : `Total exposure would exceed maximum (${maxTotalExposure.toFixed(2)} ${wallet.currency})`,
+          reason: `Total exposure would exceed maximum (${maxTotalExposure.toFixed(2)} ${wallet.currency}${leverageInfo})`,
           details: {
             currentExposure: totalExposure,
             maxExposure: maxTotalExposure,

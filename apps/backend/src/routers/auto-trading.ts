@@ -284,7 +284,7 @@ export const autoTradingRouter = router({
         positionValue: positionValue.toFixed(2),
       });
 
-      const riskValidation = await riskManagerService.validateNewPosition(
+      const riskValidation = await riskManagerService.validateNewPositionLocked(
         input.walletId,
         config,
         positionValue,

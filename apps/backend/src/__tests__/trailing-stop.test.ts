@@ -732,7 +732,25 @@ describe('TrailingStopService', () => {
         expect(['swing_trail', 'fees_covered', 'progressive_trail']).toContain(result!.reason);
       });
 
-      it('should stay at fees_covered if profit below 75% of TP', () => {
+      it('should stay at fees_covered if profit between 50% and 75% of TP', () => {
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 106,
+          currentStopLoss: 98,
+          side: 'LONG',
+          swingPoints: [],
+          highestPrice: 106,
+          takeProfit: 110,
+        };
+
+        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+
+        expect(result).not.toBeNull();
+        expect(result!.newStopLoss).toBeCloseTo(100.2, 1);
+        expect(result!.reason).toBe('fees_covered');
+      });
+
+      it('should return null if profit below 50% of TP', () => {
         const input: TrailingStopInput = {
           entryPrice: 100,
           currentPrice: 101.2,
@@ -745,9 +763,7 @@ describe('TrailingStopService', () => {
 
         const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
 
-        expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeCloseTo(100.2, 1);
-        expect(result!.reason).toBe('fees_covered');
+        expect(result).toBeNull();
       });
     });
 

@@ -31,7 +31,8 @@ export interface TrailingStopCoreResult {
   reason: TrailingStopReason;
 }
 
-const TIER1_PROFIT_THRESHOLD = 0.01;
+const FALLBACK_MIN_PROFIT_THRESHOLD = 0.01;
+const TP_THRESHOLD_FOR_BREAKEVEN = 0.50;
 const TP_THRESHOLD_FOR_ADVANCED = 0.75;
 const DEFAULT_TRAILING_DISTANCE_PERCENT = TRAILING_STOP.PEAK_PROFIT_FLOOR;
 
@@ -188,19 +189,23 @@ export const computeTrailingStopCore = (
 
   const profitPercent = calculateProfitPercent(entryPrice, currentPrice, isLong);
 
-  if (profitPercent < TIER1_PROFIT_THRESHOLD) {
-    return null;
-  }
-
-  const feesCoveredPrice = calculateStopAtProfitPercent(entryPrice, feePercent, isLong);
-
   const tpProfitPercent = takeProfit
     ? calculateTPProfitPercent(entryPrice, takeProfit, isLong)
     : null;
 
+  const breakevenThreshold = tpProfitPercent
+    ? tpProfitPercent * TP_THRESHOLD_FOR_BREAKEVEN
+    : FALLBACK_MIN_PROFIT_THRESHOLD;
+
   const advancedThreshold = tpProfitPercent
     ? tpProfitPercent * TP_THRESHOLD_FOR_ADVANCED
     : null;
+
+  if (profitPercent < breakevenThreshold) {
+    return null;
+  }
+
+  const feesCoveredPrice = calculateStopAtProfitPercent(entryPrice, feePercent, isLong);
 
   const shouldUseAdvancedLogic = advancedThreshold !== null && profitPercent >= advancedThreshold;
 
