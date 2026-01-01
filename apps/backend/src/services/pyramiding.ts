@@ -325,10 +325,11 @@ export class PyramidingService {
     }
 
     const configMaxPositionSize = parseFloat(tradingConfig.maxPositionSize);
+    const exposureMultiplier = parseFloat(tradingConfig.exposureMultiplier);
 
     let maxPositionSizePercent: number;
     if (activeWatchersCount && activeWatchersCount > 0) {
-      maxPositionSizePercent = 100 / activeWatchersCount;
+      maxPositionSizePercent = Math.min((100 * exposureMultiplier) / activeWatchersCount, 100);
     } else {
       maxPositionSizePercent = configMaxPositionSize;
     }

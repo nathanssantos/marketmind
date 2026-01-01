@@ -147,6 +147,7 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   margin_top_up_threshold NUMERIC(5, 2) DEFAULT '30',
   margin_top_up_percent NUMERIC(5, 2) DEFAULT '10',
   margin_top_up_max_count INTEGER DEFAULT 3,
+  exposure_multiplier NUMERIC(3, 1) DEFAULT '2' NOT NULL,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );

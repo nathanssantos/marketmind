@@ -94,6 +94,7 @@ export const autoTradingRouter = router({
         useStochasticFilter: z.boolean().optional(),
         useAdxFilter: z.boolean().optional(),
         useTrendFilter: z.boolean().optional(),
+        exposureMultiplier: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -141,6 +142,8 @@ export const autoTradingRouter = router({
         {updateData.useAdxFilter = input.useAdxFilter;}
       if (input.useTrendFilter !== undefined)
         {updateData.useTrendFilter = input.useTrendFilter;}
+      if (input.exposureMultiplier !== undefined)
+        {updateData.exposureMultiplier = input.exposureMultiplier;}
 
       await ctx.db
         .update(autoTradingConfig)

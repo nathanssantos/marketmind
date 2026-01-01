@@ -1018,9 +1018,15 @@ export class AutoTradingScheduler {
         maxConcurrentPositions: activeWatchersForWallet || walletMaxConcurrent,
       };
 
+      const exposureMultiplier = parseFloat(config.exposureMultiplier);
+      const exposurePerWatcher = activeWatchersForWallet > 0
+        ? Math.min((100 * exposureMultiplier) / activeWatchersForWallet, 100)
+        : parseFloat(config.maxPositionSize);
+
       log('📊 Dynamic exposure calculation', {
         activeWatchers: activeWatchersForWallet,
-        exposurePerWatcher: activeWatchersForWallet > 0 ? `${(100 / activeWatchersForWallet).toFixed(1)}%` : 'N/A',
+        exposureMultiplier: `${exposureMultiplier}x`,
+        exposurePerWatcher: `${exposurePerWatcher.toFixed(1)}%`,
         effectiveMaxConcurrent: activeWatchersForWallet || walletMaxConcurrent,
       });
 
