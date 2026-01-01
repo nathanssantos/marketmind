@@ -5,6 +5,7 @@ import type {
   TriggerCandleSnapshot,
   TriggerIndicatorValues,
 } from '@marketmind/types';
+import { EXIT_CALCULATOR } from '../../constants';
 
 export interface SetupDetectorConfig {
   enabled: boolean;
@@ -50,7 +51,12 @@ export abstract class BaseSetupDetector {
       throw new Error('Invalid current kline index');
     }
 
-    const riskRewardRatio = this.calculateRR(entryPrice, stopLoss, takeProfit);
+    const adjustedStopLoss = this.enforceMinimumStopDistance(
+      entryPrice,
+      stopLoss,
+      direction
+    );
+    const riskRewardRatio = this.calculateRR(entryPrice, adjustedStopLoss, takeProfit);
 
     return {
       id: `${type}-${currentIndex}-${Date.now()}`,
@@ -58,7 +64,7 @@ export abstract class BaseSetupDetector {
       direction,
       openTime: current.openTime,
       entryPrice,
-      stopLoss: stopLoss ?? undefined,
+      stopLoss: adjustedStopLoss ?? undefined,
       takeProfit: takeProfit ?? undefined,
       riskRewardRatio,
       confidence,
@@ -94,6 +100,24 @@ export abstract class BaseSetupDetector {
       confidence >= this.config.minConfidence &&
       riskReward >= this.config.minRiskReward
     );
+  }
+
+  protected enforceMinimumStopDistance(
+    entryPrice: number,
+    stopLoss: number | null,
+    direction: SetupDirection
+  ): number | null {
+    if (stopLoss === null) return null;
+
+    const minStopPercent = EXIT_CALCULATOR.MIN_STOP_DISTANCE_PERCENT / 100;
+    const minDistance = entryPrice * minStopPercent;
+    const currentDistance = Math.abs(entryPrice - stopLoss);
+
+    if (currentDistance >= minDistance) return stopLoss;
+
+    return direction === 'LONG'
+      ? entryPrice - minDistance
+      : entryPrice + minDistance;
   }
 
   updateConfig(config: SetupDetectorConfig): void {
