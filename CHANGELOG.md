@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.39.0] - 2025-12-31
+
+### Changed
+
+#### Code Consolidation - Major Refactoring
+Complete codebase audit and consolidation across 4 phases (16 sub-phases):
+
+**Backend Constants (`apps/backend/src/constants/index.ts`):**
+- `TIME_MS` - Time constants (SECOND, MINUTE, HOUR, DAY, WEEK, MONTH)
+- `INTERVAL_MS` - Trading interval mappings (1m, 5m, 15m, 1h, 4h, 1d, etc.)
+- `UNIT_MS` - Unit abbreviations (m, h, d, w)
+- `WEBSOCKET_CONFIG` - WebSocket settings (RECONNECT_DELAY_MS, PING_INTERVAL_MS, FETCH_TIMEOUT_MS)
+- `QUERY_LIMITS` - Query pagination limits (DEFAULT_SMALL, DEFAULT_MEDIUM, MAX_*)
+- `TRADE_STATUS` - Trade statuses (OPEN, PENDING, CLOSED, CANCELLED)
+- `ACTIVE_TRADE_STATUSES` - Array of active statuses for filtering
+- `ORDER_TYPE` - Order types (MARKET, LIMIT, STOP_LOSS, TAKE_PROFIT, etc.)
+- `MARKET_TYPE` - Market types (SPOT, FUTURES)
+- `ORDER_SIDE` - Order sides (BUY, SELL)
+- `POSITION_SIDE` - Position sides (LONG, SHORT)
+- `EXIT_REASON` - Exit reasons (STOP_LOSS, TAKE_PROFIT, NONE)
+
+**Frontend Constants (`apps/electron/src/shared/constants/`):**
+- `QUERY_CONFIG` - React Query settings (STALE_TIME, REFETCH_INTERVAL, BACKUP_POLLING_INTERVAL)
+- `MIN_UPDATE_INTERVAL_MS` - Minimum chart update interval
+- `INTERVAL_MS_MAP` - Timeframe to milliseconds mapping
+
+**Barrel Exports:**
+- `apps/backend/src/db/index.ts` - Re-exports Drizzle operators (and, eq, desc, etc.)
+- `apps/electron/src/renderer/hooks/index.ts` - Exports 60+ hooks including all worker hooks
+
+**Utilities:**
+- `apps/backend/src/utils/formatters.ts` - formatPrice, formatPercent, formatQuantity
+
+### Removed
+- Inline time calculations replaced with TIME_MS constants (15+ files)
+- Inline query config replaced with QUERY_CONFIG (9 hooks)
+- Inline WebSocket config replaced with WEBSOCKET_CONFIG (5 services)
+- Inline formatPrice functions replaced with utils/formatters (2 services)
+- Inline interval maps replaced with INTERVAL_MS_MAP (App.tsx)
+
+### Stats
+- Type-check passing (backend + electron)
+- All tests passing
+- 16 consolidation phases completed
+
+---
+
 ## [0.38.1] - 2025-12-31
 
 ### Fixed
