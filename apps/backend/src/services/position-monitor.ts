@@ -4,6 +4,7 @@ import { db } from '../db';
 import type { TradeExecution, Wallet } from '../db/schema';
 import { priceCache, tradeExecutions, wallets } from '../db/schema';
 import { env } from '../env';
+import { formatPrice } from '../utils/formatters';
 import { createBinanceClient, createBinanceClientForPrices, createBinanceFuturesClientForPrices, isPaperWallet } from './binance-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
@@ -258,7 +259,6 @@ export class PositionMonitorService {
           if (wsServiceFill) {
             const side = execution.side;
             const sideLabel = side === 'LONG' ? 'Long' : 'Short';
-            const formatPrice = (price: number) => price >= 1 ? price.toFixed(2) : price.toFixed(6);
 
             wsServiceFill.emitTradeNotification(execution.walletId, {
               type: 'LIMIT_FILLED',

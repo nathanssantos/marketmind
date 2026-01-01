@@ -14,7 +14,7 @@ import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { MainLayout } from './components/Layout/MainLayout';
 import { TrpcProvider } from './components/TrpcProvider';
-import { DEFAULT_MOVING_AVERAGES, REQUIRED_KLINES } from './constants/defaults';
+import { DEFAULT_MOVING_AVERAGES, INTERVAL_MS_MAP, MIN_UPDATE_INTERVAL_MS, REQUIRED_KLINES } from './constants/defaults';
 
 const BacktestDialog = lazy(() => import('./components/Trading/BacktestDialog').then(m => ({ default: m.BacktestDialog })));
 import { ErrorMessage } from './components/ui/ErrorMessage';
@@ -224,28 +224,9 @@ function AppContent(): ReactElement {
   const rafIdRef = useRef<number | null>(null);
   const lastRefetchRef = useRef<number>(0);
   const lastUpdateRef = useRef<number>(0);
-  const MIN_UPDATE_INTERVAL = 100;
 
   const getIntervalMs = useCallback((tf: string): number => {
-    const intervals: Record<string, number> = {
-      '1s': 1000,
-      '1m': 60 * 1000,
-      '3m': 3 * 60 * 1000,
-      '5m': 5 * 60 * 1000,
-      '15m': 15 * 60 * 1000,
-      '30m': 30 * 60 * 1000,
-      '1h': 60 * 60 * 1000,
-      '2h': 2 * 60 * 60 * 1000,
-      '4h': 4 * 60 * 60 * 1000,
-      '6h': 6 * 60 * 60 * 1000,
-      '8h': 8 * 60 * 60 * 1000,
-      '12h': 12 * 60 * 60 * 1000,
-      '1d': 24 * 60 * 60 * 1000,
-      '3d': 3 * 24 * 60 * 60 * 1000,
-      '1w': 7 * 24 * 60 * 60 * 1000,
-      '1M': 30 * 24 * 60 * 60 * 1000,
-    };
-    return intervals[tf] || 60 * 1000;
+    return INTERVAL_MS_MAP[tf] || 60_000;
   }, []);
 
   useEffect(() => {
@@ -263,7 +244,7 @@ function AppContent(): ReactElement {
     const now = Date.now();
     const timeSinceLastUpdate = now - lastUpdateRef.current;
 
-    if (!isFinal && timeSinceLastUpdate < MIN_UPDATE_INTERVAL) {
+    if (!isFinal && timeSinceLastUpdate < MIN_UPDATE_INTERVAL_MS) {
       pendingUpdateRef.current = { kline, isFinal };
       return;
     }

@@ -6,6 +6,7 @@ import { TRAILING_STOP } from '../constants';
 import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
 import { klines, priceCache, setupDetections, tradeExecutions } from '../db/schema';
+import { formatPrice } from '../utils/formatters';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
 import { calculateATRPercent, getVolatilityProfile } from './volatility-profile';
@@ -620,7 +621,6 @@ export class TrailingStopService {
     if (wsService) {
       const side = execution.side;
       const sideLabel = side === 'LONG' ? 'Long' : 'Short';
-      const formatPrice = (price: number) => price >= 1 ? price.toFixed(2) : price.toFixed(6);
 
       wsService.emitTradeNotification(execution.walletId, {
         type: 'TRAILING_STOP_UPDATED',

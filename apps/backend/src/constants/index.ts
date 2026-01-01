@@ -193,6 +193,58 @@ export const RISK_MANAGER = {
   PERCENT_DIVISOR: 100,
 } as const;
 
+export const QUERY_LIMITS = {
+  DEFAULT_SMALL: 50,
+  DEFAULT_MEDIUM: 100,
+  DEFAULT_LARGE: 500,
+  MAX_SMALL: 100,
+  MAX_MEDIUM: 500,
+  MAX_LARGE: 1000,
+  MAX_HUGE: 2000,
+} as const;
+
+export const TRADE_STATUS = {
+  OPEN: 'open',
+  PENDING: 'pending',
+  CLOSED: 'closed',
+  CANCELLED: 'cancelled',
+} as const;
+
+export const ACTIVE_TRADE_STATUSES = [TRADE_STATUS.OPEN, TRADE_STATUS.PENDING] as const;
+
+export const ORDER_TYPE = {
+  MARKET: 'MARKET',
+  LIMIT: 'LIMIT',
+  STOP_LOSS: 'STOP_LOSS',
+  STOP_LOSS_LIMIT: 'STOP_LOSS_LIMIT',
+  STOP_MARKET: 'STOP_MARKET',
+  TAKE_PROFIT: 'TAKE_PROFIT',
+  TAKE_PROFIT_MARKET: 'TAKE_PROFIT_MARKET',
+  TAKE_PROFIT_LIMIT: 'TAKE_PROFIT_LIMIT',
+  LIMIT_MAKER: 'LIMIT_MAKER',
+} as const;
+
+export const MARKET_TYPE = {
+  SPOT: 'SPOT',
+  FUTURES: 'FUTURES',
+} as const;
+
+export const ORDER_SIDE = {
+  BUY: 'BUY',
+  SELL: 'SELL',
+} as const;
+
+export const POSITION_SIDE = {
+  LONG: 'LONG',
+  SHORT: 'SHORT',
+} as const;
+
+export const EXIT_REASON = {
+  STOP_LOSS: 'STOP_LOSS',
+  TAKE_PROFIT: 'TAKE_PROFIT',
+  NONE: 'NONE',
+} as const;
+
 export { ADX_FILTER } from '../utils/adx-filter';
 
 export type FloatComparisonConstants = typeof FLOAT_COMPARISON;
@@ -204,6 +256,14 @@ export type VolatilityConstants = typeof VOLATILITY;
 export type PivotDetectionConstants = typeof PIVOT_DETECTION;
 export type ContextAggregatorConstants = typeof CONTEXT_AGGREGATOR;
 export type RiskManagerConstants = typeof RISK_MANAGER;
+export type QueryLimitsConstants = typeof QUERY_LIMITS;
+export type TradeStatusConstants = typeof TRADE_STATUS;
+export type TradeStatus = (typeof TRADE_STATUS)[keyof typeof TRADE_STATUS];
+export type OrderType = (typeof ORDER_TYPE)[keyof typeof ORDER_TYPE];
+export type MarketType = (typeof MARKET_TYPE)[keyof typeof MARKET_TYPE];
+export type OrderSide = (typeof ORDER_SIDE)[keyof typeof ORDER_SIDE];
+export type PositionSide = (typeof POSITION_SIDE)[keyof typeof POSITION_SIDE];
+export type ExitReason = (typeof EXIT_REASON)[keyof typeof EXIT_REASON];
 export type DetectorConfigConstants = typeof DETECTOR_CONFIG;
 export type TradingConfigConstants = typeof TRADING_CONFIG;
 export type WebsocketConfigConstants = typeof WEBSOCKET_CONFIG;
