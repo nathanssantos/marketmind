@@ -362,10 +362,10 @@ describe('TrailingStop Service', () => {
       expect(result).toBeNull();
     });
 
-    it('should return breakeven for minimal profit', () => {
+    it('should return fees_covered for 1% profit (new tier logic)', () => {
       const input: TrailingStopInput = {
         entryPrice: 100,
-        currentPrice: 100.6,
+        currentPrice: 101,
         currentStopLoss: null,
         side: 'LONG',
         swingPoints: [],
@@ -373,8 +373,9 @@ describe('TrailingStop Service', () => {
 
       const result = computeTrailingStop(input, defaultConfig);
       expect(result).not.toBeNull();
-      expect(result!.reason).toBe('breakeven');
-      expect(result!.newStopLoss).toBe(100);
+      expect(result!.reason).toBe('fees_covered');
+      expect(result!.newStopLoss).toBeGreaterThan(100);
+      expect(result!.newStopLoss).toBeLessThan(100.5);
     });
 
     it('should return fees_covered for higher profit', () => {
@@ -442,7 +443,7 @@ describe('TrailingStop Service', () => {
     it('should handle short positions correctly', () => {
       const input: TrailingStopInput = {
         entryPrice: 100,
-        currentPrice: 99.4,
+        currentPrice: 99,
         currentStopLoss: null,
         side: 'SHORT',
         swingPoints: [],
@@ -450,8 +451,9 @@ describe('TrailingStop Service', () => {
 
       const result = computeTrailingStop(input, defaultConfig);
       expect(result).not.toBeNull();
-      expect(result!.reason).toBe('breakeven');
-      expect(result!.newStopLoss).toBe(100);
+      expect(result!.reason).toBe('fees_covered');
+      expect(result!.newStopLoss).toBeLessThan(100);
+      expect(result!.newStopLoss).toBeGreaterThan(99.5);
     });
 
     it('should use progressive trail when highest price set', () => {

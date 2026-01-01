@@ -1,6 +1,9 @@
 import type { ComputedIndicators, EvaluationContext, Kline, MarketType, StrategyDefinition } from '@marketmind/types';
-import { BINANCE_FEES, applyBnbDiscount } from '@marketmind/types';
 import type { ConditionEvaluator } from '../setup-detection/dynamic';
+import {
+  computeTrailingStopCore,
+  type TrailingStopCoreConfig,
+} from '../trailing-stop-core';
 
 export interface ExitConfig {
   useTrailingStop?: boolean;
@@ -21,51 +24,32 @@ export interface TrailingStopState {
   trailingStop: number | undefined;
   highestHigh: number;
   lowestLow: number;
-  breakEvenReached: boolean;
+  feesCoveredReached: boolean;
+  takeProfit?: number;
 }
-
-const BREAKEVEN_THRESHOLD = 0.01;
-const TRAILING_DISTANCE_PERCENT = 0.4;
-
-const getRoundTripFeePercent = (
-  marketType: MarketType = 'SPOT',
-  useBnbDiscount: boolean = false
-): number => {
-  const takerFee = marketType === 'FUTURES'
-    ? BINANCE_FEES.FUTURES.VIP_0.taker
-    : BINANCE_FEES.SPOT.VIP_0.taker;
-
-  const roundTripFee = takerFee * 2;
-  return useBnbDiscount ? applyBnbDiscount(roundTripFee) : roundTripFee;
-};
-
-const getFeesCoveredThreshold = (
-  marketType: MarketType = 'SPOT',
-  useBnbDiscount: boolean = false
-): number => {
-  const roundTripFee = getRoundTripFeePercent(marketType, useBnbDiscount);
-  return roundTripFee + 0.005;
-};
 
 export class ExitManager {
   private config: ExitConfig;
   private conditionEvaluator: ConditionEvaluator;
-  private feePercent: number;
-  private feesCoveredThreshold: number;
+  private coreConfig: TrailingStopCoreConfig;
 
   constructor(config: ExitConfig, conditionEvaluator: ConditionEvaluator) {
     this.config = config;
     this.conditionEvaluator = conditionEvaluator;
-    this.feePercent = getRoundTripFeePercent(config.marketType, config.useBnbDiscount);
-    this.feesCoveredThreshold = getFeesCoveredThreshold(config.marketType, config.useBnbDiscount);
+    this.coreConfig = {
+      marketType: config.marketType ?? 'SPOT',
+      useBnbDiscount: config.useBnbDiscount ?? false,
+      atrMultiplier: config.trailingATRMultiplier ?? 2.0,
+    };
   }
 
-  initializeTrailingStopState(entryPrice: number, stopLoss: number | undefined): TrailingStopState {
+  initializeTrailingStopState(entryPrice: number, stopLoss: number | undefined, takeProfit?: number): TrailingStopState {
     return {
       trailingStop: stopLoss,
       highestHigh: entryPrice,
       lowestLow: entryPrice,
-      breakEvenReached: false,
+      feesCoveredReached: false,
+      takeProfit,
     };
   }
 
@@ -87,71 +71,34 @@ export class ExitManager {
     }
 
     const newState = { ...state };
+    const isLong = direction === 'LONG';
 
-    if (direction === 'LONG') {
+    if (isLong) {
       if (high > newState.highestHigh) newState.highestHigh = high;
-
-      const profitPercent = (close - entryPrice) / entryPrice;
-
-      if (profitPercent >= BREAKEVEN_THRESHOLD && !newState.breakEvenReached) {
-        const breakevenPrice = entryPrice;
-        if (breakevenPrice > newState.trailingStop!) {
-          newState.trailingStop = breakevenPrice;
-          newState.breakEvenReached = true;
-        }
-      }
-
-      if (profitPercent >= this.feesCoveredThreshold && newState.breakEvenReached) {
-        const candidates: number[] = [];
-
-        const feesCoveredPrice = entryPrice * (1 + this.feePercent);
-        candidates.push(feesCoveredPrice);
-
-        const peakProfit = (newState.highestHigh - entryPrice) / entryPrice;
-        const floorProfit = peakProfit * (1 - TRAILING_DISTANCE_PERCENT);
-        const progressiveFloor = entryPrice * (1 + floorProfit);
-        if (progressiveFloor > entryPrice) candidates.push(progressiveFloor);
-
-        const atrTrail = newState.highestHigh - (atrAtEntry * trailMultiplier);
-        if (atrTrail > entryPrice) candidates.push(atrTrail);
-
-        const bestCandidate = Math.max(...candidates);
-        if (bestCandidate > newState.trailingStop!) {
-          newState.trailingStop = bestCandidate;
-        }
-      }
     } else {
       if (low < newState.lowestLow) newState.lowestLow = low;
+    }
 
-      const profitPercent = (entryPrice - close) / entryPrice;
-
-      if (profitPercent >= BREAKEVEN_THRESHOLD && !newState.breakEvenReached) {
-        const breakevenPrice = entryPrice;
-        if (breakevenPrice < newState.trailingStop!) {
-          newState.trailingStop = breakevenPrice;
-          newState.breakEvenReached = true;
-        }
+    const result = computeTrailingStopCore(
+      {
+        entryPrice,
+        currentPrice: close,
+        currentStopLoss: newState.trailingStop ?? null,
+        side: direction,
+        takeProfit: newState.takeProfit,
+        atr: atrAtEntry,
+        highestPrice: isLong ? newState.highestHigh : undefined,
+        lowestPrice: isLong ? undefined : newState.lowestLow,
+      },
+      {
+        ...this.coreConfig,
+        atrMultiplier: trailMultiplier,
       }
+    );
 
-      if (profitPercent >= this.feesCoveredThreshold && newState.breakEvenReached) {
-        const candidates: number[] = [];
-
-        const feesCoveredPrice = entryPrice * (1 - this.feePercent);
-        candidates.push(feesCoveredPrice);
-
-        const peakProfit = (entryPrice - newState.lowestLow) / entryPrice;
-        const floorProfit = peakProfit * (1 - TRAILING_DISTANCE_PERCENT);
-        const progressiveFloor = entryPrice * (1 - floorProfit);
-        if (progressiveFloor < entryPrice) candidates.push(progressiveFloor);
-
-        const atrTrail = newState.lowestLow + (atrAtEntry * trailMultiplier);
-        if (atrTrail < entryPrice) candidates.push(atrTrail);
-
-        const bestCandidate = Math.min(...candidates);
-        if (bestCandidate < newState.trailingStop!) {
-          newState.trailingStop = bestCandidate;
-        }
-      }
+    if (result) {
+      newState.trailingStop = result.newStopLoss;
+      newState.feesCoveredReached = true;
     }
 
     return newState;
@@ -264,7 +211,7 @@ export class ExitManager {
     const trailMultiplier = this.config.trailingATRMultiplier ?? trailingStopConfig?.trailMultiplier ?? 2;
     const atrAtEntry = setup.atr ?? (stopLoss ? Math.abs(entryPrice - stopLoss) / 1.5 : entryPrice * 0.02);
 
-    let trailingState = this.initializeTrailingStopState(entryPrice, stopLoss);
+    let trailingState = this.initializeTrailingStopState(entryPrice, stopLoss, takeProfit);
     let barsInTrade = 0;
 
     const actualEntryKline = klines[actualEntryKlineIndex];

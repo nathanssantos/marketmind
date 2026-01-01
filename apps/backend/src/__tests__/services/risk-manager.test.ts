@@ -165,6 +165,7 @@ describe('RiskManagerService', () => {
         marginTopUpThreshold: '30',
         marginTopUpPercent: '10',
         marginTopUpMaxCount: 3,
+        exposureMultiplier: '2',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -242,6 +243,7 @@ describe('RiskManagerService', () => {
         marginTopUpThreshold: '30',
         marginTopUpPercent: '10',
         marginTopUpMaxCount: 3,
+        exposureMultiplier: '2',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -282,6 +284,7 @@ describe('RiskManagerService', () => {
         marginTopUpThreshold: '30',
         marginTopUpPercent: '10',
         marginTopUpMaxCount: 3,
+        exposureMultiplier: '2',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -322,6 +325,7 @@ describe('RiskManagerService', () => {
         marginTopUpThreshold: '30',
         marginTopUpPercent: '10',
         marginTopUpMaxCount: 3,
+        exposureMultiplier: '2',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -387,6 +391,7 @@ describe('RiskManagerService', () => {
         marginTopUpThreshold: '30',
         marginTopUpPercent: '10',
         marginTopUpMaxCount: 3,
+        exposureMultiplier: '2',
         createdAt: new Date(),
         updatedAt: new Date(),
       };

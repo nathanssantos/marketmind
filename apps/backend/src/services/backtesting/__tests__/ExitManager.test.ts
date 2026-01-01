@@ -81,7 +81,7 @@ describe('ExitManager', () => {
       expect(state.trailingStop).toBe(49000);
       expect(state.highestHigh).toBe(50000);
       expect(state.lowestLow).toBe(50000);
-      expect(state.breakEvenReached).toBe(false);
+      expect(state.feesCoveredReached).toBe(false);
     });
 
     it('should handle undefined stop loss', () => {
@@ -101,7 +101,7 @@ describe('ExitManager', () => {
         trailingStop: 49000,
         highestHigh: 50000,
         lowestLow: 50000,
-        breakEvenReached: false,
+        feesCoveredReached: false,
       };
 
       const result = manager.updateTrailingStop(
@@ -117,7 +117,7 @@ describe('ExitManager', () => {
         trailingStop: undefined,
         highestHigh: 50000,
         lowestLow: 50000,
-        breakEvenReached: false,
+        feesCoveredReached: false,
       };
 
       const result = manager.updateTrailingStop(
@@ -133,7 +133,7 @@ describe('ExitManager', () => {
         trailingStop: 49000,
         highestHigh: 50000,
         lowestLow: 50000,
-        breakEvenReached: false,
+        feesCoveredReached: false,
       };
 
       const result = manager.updateTrailingStop(
@@ -149,7 +149,7 @@ describe('ExitManager', () => {
         trailingStop: 49000,
         highestHigh: 50000,
         lowestLow: 50000,
-        breakEvenReached: false,
+        feesCoveredReached: false,
       };
 
       const result = manager.updateTrailingStop(
@@ -165,7 +165,7 @@ describe('ExitManager', () => {
         trailingStop: 51000,
         highestHigh: 50000,
         lowestLow: 50000,
-        breakEvenReached: false,
+        feesCoveredReached: false,
       };
 
       const result = manager.updateTrailingStop(
@@ -181,14 +181,14 @@ describe('ExitManager', () => {
         trailingStop: 49000,
         highestHigh: 50000,
         lowestLow: 50000,
-        breakEvenReached: false,
+        feesCoveredReached: false,
       };
 
       const result = manager.updateTrailingStop(
         initialState, 'LONG', 50000, 51000, 50000, 50600, 500, 2, 5, true, 49000
       );
 
-      expect(result.breakEvenReached).toBe(true);
+      expect(result.feesCoveredReached).toBe(true);
       expect(result.trailingStop).toBeGreaterThanOrEqual(50000);
     });
 
@@ -198,14 +198,14 @@ describe('ExitManager', () => {
         trailingStop: 51000,
         highestHigh: 50000,
         lowestLow: 50000,
-        breakEvenReached: false,
+        feesCoveredReached: false,
       };
 
       const result = manager.updateTrailingStop(
         initialState, 'SHORT', 50000, 50000, 49000, 49400, 500, 2, 5, true, 51000
       );
 
-      expect(result.breakEvenReached).toBe(true);
+      expect(result.feesCoveredReached).toBe(true);
       expect(result.trailingStop).toBeLessThanOrEqual(50000);
     });
   });

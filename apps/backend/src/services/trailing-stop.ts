@@ -1,6 +1,5 @@
 import { calculateATR, calculateSwingPoints } from '@marketmind/indicators';
 import type { Interval, Kline as KlineType, MarketType, TrailingStopOptimizationConfig } from '@marketmind/types';
-import { BINANCE_FEES, applyBnbDiscount } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import { TRAILING_STOP } from '../constants';
 import { db } from '../db';
@@ -8,6 +7,12 @@ import type { TradeExecution } from '../db/schema';
 import { klines, priceCache, setupDetections, tradeExecutions } from '../db/schema';
 import { formatPrice } from '../utils/formatters';
 import { logger } from './logger';
+import {
+  calculateProfitPercent,
+  computeTrailingStopCore,
+  getRoundTripFeePercent,
+  type TrailingStopReason,
+} from './trailing-stop-core';
 import { getWebSocketService } from './websocket';
 import { calculateATRPercent, getVolatilityProfile } from './volatility-profile';
 
@@ -17,16 +22,7 @@ export interface FeeConfig {
 }
 
 export const getRoundTripFee = (config: FeeConfig): number => {
-  const fees = config.marketType === 'FUTURES'
-    ? BINANCE_FEES.FUTURES.VIP_0
-    : BINANCE_FEES.SPOT.VIP_0;
-
-  const takerFee = fees.taker;
-  const roundTripFee = takerFee * 2;
-
-  return config.useBnbDiscount
-    ? applyBnbDiscount(roundTripFee)
-    : roundTripFee;
+  return getRoundTripFeePercent(config.marketType, config.useBnbDiscount);
 };
 
 export const getFeesThresholdForMarketType = (
@@ -55,7 +51,7 @@ export interface TrailingStopUpdate {
   executionId: string;
   oldStopLoss: number | null;
   newStopLoss: number;
-  reason: 'breakeven' | 'fees_covered' | 'swing_trail' | 'atr_trail' | 'progressive_trail';
+  reason: TrailingStopReason;
 }
 
 export interface TrailingStopInput {
@@ -63,6 +59,7 @@ export interface TrailingStopInput {
   currentPrice: number;
   currentStopLoss: number | null;
   side: 'LONG' | 'SHORT';
+  takeProfit?: number | null;
   swingPoints: Array<{ price: number; type: 'high' | 'low' }>;
   atr?: number;
   highestPrice?: number;
@@ -71,18 +68,10 @@ export interface TrailingStopInput {
 
 export interface TrailingStopResult {
   newStopLoss: number;
-  reason: 'breakeven' | 'fees_covered' | 'swing_trail' | 'atr_trail' | 'progressive_trail';
+  reason: TrailingStopReason;
 }
 
-export const calculateProfitPercent = (
-  entryPrice: number,
-  currentPrice: number,
-  isLong: boolean
-): number => {
-  return isLong
-    ? (currentPrice - entryPrice) / entryPrice
-    : (entryPrice - currentPrice) / entryPrice;
-};
+export { calculateProfitPercent, shouldUpdateStopLoss, calculateATRTrailingStop, calculateProgressiveFloor, findBestSwingStop } from './trailing-stop-core';
 
 export const calculateBreakevenPrice = (
   entryPrice: number,
@@ -103,91 +92,6 @@ export const calculateFeesCoveredPrice = (
   return entryPrice * (isLong ? 1 + effectiveFee : 1 - effectiveFee);
 };
 
-export const calculateProgressiveFloor = (
-  entryPrice: number,
-  highestPrice: number | undefined,
-  lowestPrice: number | undefined,
-  isLong: boolean,
-  trailingDistancePercent: number = TRAILING_STOP.PEAK_PROFIT_FLOOR
-): number | null => {
-  if (isLong) {
-    if (highestPrice === undefined || highestPrice <= entryPrice) return null;
-    const peakProfit = (highestPrice - entryPrice) / entryPrice;
-    const floorProfit = peakProfit * (1 - trailingDistancePercent);
-    return entryPrice * (1 + floorProfit);
-  } else {
-    if (lowestPrice === undefined || lowestPrice >= entryPrice) return null;
-    const peakProfit = (entryPrice - lowestPrice) / entryPrice;
-    const floorProfit = peakProfit * (1 - trailingDistancePercent);
-    return entryPrice * (1 - floorProfit);
-  }
-};
-
-export const findBestSwingStop = (
-  swingPoints: Array<{ price: number; type: 'high' | 'low' }>,
-  currentPrice: number,
-  entryPrice: number,
-  isLong: boolean,
-  minDistancePercent: number
-): number | null => {
-  const relevantSwings = swingPoints.filter(sp =>
-    isLong ? sp.type === 'low' : sp.type === 'high'
-  );
-
-  const recentSwings = relevantSwings.slice(-5);
-
-  if (isLong) {
-    const validSwingLows = recentSwings
-      .filter(sp => sp.price < currentPrice && sp.price > entryPrice)
-      .sort((a, b) => b.price - a.price);
-
-    logger.debug({
-      side: 'LONG',
-      recentSwingsCount: recentSwings.length,
-      recentSwings: recentSwings.map(s => s.price),
-      validSwingLowsCount: validSwingLows.length,
-      validSwingLows: validSwingLows.map(s => s.price),
-      criteria: `price < ${currentPrice} AND price > ${entryPrice}`,
-    }, 'Finding best swing stop for LONG');
-
-    if (validSwingLows.length > 0) {
-      const swingLow = validSwingLows[0]!.price;
-      const buffer = swingLow * minDistancePercent;
-      return swingLow - buffer;
-    }
-  } else {
-    const validSwingHighs = recentSwings
-      .filter(sp => sp.price > currentPrice && sp.price < entryPrice)
-      .sort((a, b) => a.price - b.price);
-
-    logger.debug({
-      side: 'SHORT',
-      recentSwingsCount: recentSwings.length,
-      recentSwings: recentSwings.map(s => s.price),
-      validSwingHighsCount: validSwingHighs.length,
-      validSwingHighs: validSwingHighs.map(s => s.price),
-      criteria: `price > ${currentPrice} AND price < ${entryPrice}`,
-    }, 'Finding best swing stop for SHORT');
-
-    if (validSwingHighs.length > 0) {
-      const swingHigh = validSwingHighs[0]!.price;
-      const buffer = swingHigh * minDistancePercent;
-      return swingHigh + buffer;
-    }
-  }
-
-  return null;
-};
-
-export const shouldUpdateStopLoss = (
-  newStopLoss: number,
-  currentStopLoss: number | null,
-  isLong: boolean
-): boolean => {
-  if (currentStopLoss === null) return true;
-  return isLong ? newStopLoss > currentStopLoss : newStopLoss < currentStopLoss;
-};
-
 export const calculateNewStopLoss = (
   breakevenPrice: number,
   swingStop: number | null,
@@ -199,108 +103,50 @@ export const calculateNewStopLoss = (
     : Math.min(breakevenPrice, swingStop);
 };
 
-export const calculateATRTrailingStop = (
-  highestOrLowestPrice: number,
-  atr: number,
-  isLong: boolean,
-  atrMultiplier: number
-): number => {
-  const atrDistance = atr * atrMultiplier;
-  return isLong
-    ? highestOrLowestPrice - atrDistance
-    : highestOrLowestPrice + atrDistance;
-};
-
-const calculateATRStop = (
-  input: TrailingStopInput,
-  config: TrailingStopOptimizationConfig,
-  isLong: boolean
-): number | null => {
-  const { atr, highestPrice, lowestPrice, currentStopLoss } = input;
-  if (!config.useATRMultiplier || !atr || atr <= 0) return null;
-
-  const extremePrice = isLong ? highestPrice : lowestPrice;
-  if (extremePrice === undefined) return null;
-
-  const candidateAtrStop = calculateATRTrailingStop(extremePrice, atr, isLong, config.atrMultiplier);
-  if (!shouldUpdateStopLoss(candidateAtrStop, currentStopLoss, isLong)) return null;
-
-  logger.debug({ extremePrice, atr, atrMultiplier: config.atrMultiplier, atrStop: candidateAtrStop }, 'ATR trailing stop calculated');
-  return candidateAtrStop;
-};
-
-const selectBestCandidate = (
-  candidates: Array<{ price: number; reason: TrailingStopResult['reason'] }>,
-  isLong: boolean
-): { price: number; reason: TrailingStopResult['reason'] } => {
-  return isLong
-    ? candidates.reduce((best, c) => c.price > best.price ? c : best)
-    : candidates.reduce((best, c) => c.price < best.price ? c : best);
-};
-
 export const computeTrailingStop = (
   input: TrailingStopInput,
   config: TrailingStopOptimizationConfig
 ): TrailingStopResult | null => {
-  const { entryPrice, currentPrice, currentStopLoss, side, swingPoints, highestPrice, lowestPrice } = input;
+  const { entryPrice, currentPrice, currentStopLoss, side, takeProfit, swingPoints, highestPrice, lowestPrice, atr } = input;
   const isLong = side === 'LONG';
-
-  const profitPercent = calculateProfitPercent(entryPrice, currentPrice, isLong);
   const marketType = config.marketType ?? 'SPOT';
   const useBnbDiscount = config.useBnbDiscount ?? false;
-  const dynamicFee = getRoundTripFee({ marketType, useBnbDiscount });
-  const feePercent = config.feePercent ?? dynamicFee;
-  const feesThreshold = config.breakevenWithFeesThreshold ?? getFeesThresholdForMarketType(marketType, useBnbDiscount);
-  const trailingDistancePercent = config.trailingDistancePercent ?? 0.5;
 
-  if (profitPercent < config.breakevenProfitThreshold) {
-    return null;
-  }
-
-  const breakevenPrice = calculateBreakevenPrice(entryPrice, isLong);
-  const feesCoveredPrice = calculateFeesCoveredPrice(entryPrice, isLong, feePercent, marketType, useBnbDiscount);
-
-  if (profitPercent < feesThreshold) {
-    if (!shouldUpdateStopLoss(breakevenPrice, currentStopLoss, isLong)) {
-      return null;
-    }
-    logger.debug({
+  const result = computeTrailingStopCore(
+    {
       entryPrice,
       currentPrice,
-      profitPercent: (profitPercent * 100).toFixed(2),
-      breakevenPrice,
-      tier: 1,
-    }, 'Tier 1: Moving stop to breakeven');
-    return { newStopLoss: breakevenPrice, reason: 'breakeven' };
-  }
+      currentStopLoss,
+      side,
+      takeProfit,
+      swingPoints,
+      atr,
+      highestPrice: isLong ? highestPrice : undefined,
+      lowestPrice: isLong ? undefined : lowestPrice,
+    },
+    {
+      feePercent: config.feePercent,
+      marketType,
+      useBnbDiscount,
+      minTrailingDistancePercent: config.minTrailingDistancePercent,
+      atrMultiplier: config.atrMultiplier,
+      trailingDistancePercent: config.trailingDistancePercent,
+    }
+  );
 
-  const swingStop = findBestSwingStop(swingPoints, currentPrice, entryPrice, isLong, config.minTrailingDistancePercent);
-  const atrStop = calculateATRStop(input, config, isLong);
-  const progressiveFloor = calculateProgressiveFloor(entryPrice, highestPrice, lowestPrice, isLong, trailingDistancePercent);
+  if (!result) return null;
 
+  const profitPercent = calculateProfitPercent(entryPrice, currentPrice, isLong);
   logger.debug({
     entryPrice,
     currentPrice,
-    profitPercent: (profitPercent * 100).toFixed(2),
-    feesCoveredPrice,
-    swingStop,
-    atrStop,
-    progressiveFloor,
-    tier: 'progressive',
-  }, 'Trailing stop calculation details');
+    profitPercent: `${(profitPercent * 100).toFixed(2)}%`,
+    takeProfit,
+    newStopLoss: result.newStopLoss,
+    reason: result.reason,
+  }, 'Trailing stop computed');
 
-  const candidates: Array<{ price: number; reason: TrailingStopResult['reason'] }> = [
-    { price: feesCoveredPrice, reason: 'fees_covered' },
-  ];
-  if (swingStop !== null) candidates.push({ price: swingStop, reason: 'swing_trail' });
-  if (atrStop !== null) candidates.push({ price: atrStop, reason: 'atr_trail' });
-  if (progressiveFloor !== null) candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
-
-  const bestCandidate = selectBestCandidate(candidates, isLong);
-
-  if (!shouldUpdateStopLoss(bestCandidate.price, currentStopLoss, isLong)) return null;
-
-  return { newStopLoss: bestCandidate.price, reason: bestCandidate.reason };
+  return result;
 };
 
 export class TrailingStopService {
@@ -567,11 +413,14 @@ export class TrailingStopService {
       lowestPrice = currentPrice;
     }
 
+    const takeProfit = execution.takeProfit ? parseFloat(execution.takeProfit) : null;
+
     const input: TrailingStopInput = {
       entryPrice,
       currentPrice,
       currentStopLoss,
       side: execution.side,
+      takeProfit,
       swingPoints: swingPointsAfterEntry.map(sp => ({ price: sp.price, type: sp.type })),
       atr,
       highestPrice: isLong ? highestPrice : undefined,

@@ -175,6 +175,7 @@ describe('Auto-Trading Flow Integration Tests', () => {
         marginTopUpThreshold: '30',
         marginTopUpPercent: '10',
         marginTopUpMaxCount: 3,
+        exposureMultiplier: '2',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -220,6 +221,7 @@ describe('Auto-Trading Flow Integration Tests', () => {
         marginTopUpThreshold: '30',
         marginTopUpPercent: '10',
         marginTopUpMaxCount: 3,
+        exposureMultiplier: '2',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
