@@ -1,5 +1,6 @@
 import { calculateATR, calculateSwingPoints } from '@marketmind/indicators';
 import type { Interval, Kline as KlineType, MarketType, TrailingStopOptimizationConfig } from '@marketmind/types';
+import { getRoundTripFee } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import { TRAILING_STOP } from '../constants';
 import { db } from '../db';
@@ -10,20 +11,12 @@ import { logger } from './logger';
 import {
   calculateProfitPercent,
   computeTrailingStopCore,
-  getRoundTripFeePercent,
   type TrailingStopReason,
 } from './trailing-stop-core';
 import { getWebSocketService } from './websocket';
 import { calculateATRPercent, getVolatilityProfile } from './volatility-profile';
 
-export interface FeeConfig {
-  marketType: MarketType;
-  useBnbDiscount?: boolean;
-}
-
-export const getRoundTripFee = (config: FeeConfig): number => {
-  return getRoundTripFeePercent(config.marketType, config.useBnbDiscount);
-};
+export { getRoundTripFee } from '@marketmind/types';
 
 export const getFeesThresholdForMarketType = (
   marketType: MarketType,

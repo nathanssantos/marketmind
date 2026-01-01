@@ -1,5 +1,5 @@
 import type { MarketType } from '@marketmind/types';
-import { BINANCE_FEES, applyBnbDiscount } from '@marketmind/types';
+import { getRoundTripFee } from '@marketmind/types';
 import { TRAILING_STOP } from '../constants';
 
 export interface TrailingStopCoreConfig {
@@ -9,6 +9,7 @@ export interface TrailingStopCoreConfig {
   minTrailingDistancePercent?: number;
   atrMultiplier?: number;
   trailingDistancePercent?: number;
+  vipLevel?: number;
 }
 
 export interface TrailingStopCoreInput {
@@ -36,14 +37,10 @@ const DEFAULT_TRAILING_DISTANCE_PERCENT = TRAILING_STOP.PEAK_PROFIT_FLOOR;
 
 export const getRoundTripFeePercent = (
   marketType: MarketType = 'SPOT',
-  useBnbDiscount: boolean = false
+  useBnbDiscount: boolean = false,
+  vipLevel: number = 0
 ): number => {
-  const fees = marketType === 'FUTURES'
-    ? BINANCE_FEES.FUTURES.VIP_0
-    : BINANCE_FEES.SPOT.VIP_0;
-
-  const roundTripFee = fees.taker * 2;
-  return useBnbDiscount ? applyBnbDiscount(roundTripFee) : roundTripFee;
+  return getRoundTripFee({ marketType, useBnbDiscount, vipLevel });
 };
 
 export const calculateProfitPercent = (
@@ -183,7 +180,8 @@ export const computeTrailingStopCore = (
   const isLong = side === 'LONG';
   const marketType = config.marketType ?? 'SPOT';
   const useBnbDiscount = config.useBnbDiscount ?? false;
-  const feePercent = config.feePercent ?? getRoundTripFeePercent(marketType, useBnbDiscount);
+  const vipLevel = config.vipLevel ?? 0;
+  const feePercent = config.feePercent ?? getRoundTripFeePercent(marketType, useBnbDiscount, vipLevel);
   const minTrailingDistancePercent = config.minTrailingDistancePercent ?? 0.002;
   const atrMultiplier = config.atrMultiplier ?? 2.0;
   const trailingDistancePercent = config.trailingDistancePercent ?? DEFAULT_TRAILING_DISTANCE_PERCENT;

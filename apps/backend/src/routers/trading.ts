@@ -1,5 +1,5 @@
 import type { BinanceNewOrderResult, BinanceOrderQueryResult, MarketType } from '@marketmind/types';
-import { BINANCE_FEES } from '@marketmind/types';
+import { calculateTotalFees } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { MainClient, USDMClient } from 'binance';
 import { and, desc, eq } from 'drizzle-orm';
@@ -663,12 +663,10 @@ export const tradingRouter = router({
         }, '👤 [MANUAL] Manual close position: Paper/disabled mode - simulating exit');
       }
 
-      const feeRate = isFutures ? BINANCE_FEES.FUTURES.VIP_0.taker : BINANCE_FEES.SPOT.VIP_0.taker;
       const entryValue = entryPrice * qty;
       const exitValue = exitPrice * qty;
-      const entryFee = entryValue * feeRate;
-      const exitFee = exitValue * feeRate;
-      const totalFees = entryFee + exitFee;
+      const marketType = isFutures ? 'FUTURES' : 'SPOT';
+      const { totalFees } = calculateTotalFees(entryValue, exitValue, { marketType });
 
       let grossPnl = 0;
       if (position.side === 'LONG') {
@@ -963,12 +961,10 @@ export const tradingRouter = router({
         }, 'Manual close: Paper/disabled mode - simulating exit');
       }
 
-      const feeRate = isFutures ? BINANCE_FEES.FUTURES.VIP_0.taker : BINANCE_FEES.SPOT.VIP_0.taker;
       const entryValue = entryPrice * qty;
       const exitValue = exitPrice * qty;
-      const entryFee = entryValue * feeRate;
-      const exitFee = exitValue * feeRate;
-      const totalFees = entryFee + exitFee;
+      const marketType = isFutures ? 'FUTURES' : 'SPOT';
+      const { totalFees } = calculateTotalFees(entryValue, exitValue, { marketType });
 
       let grossPnl = 0;
       if (execution.side === 'LONG') {

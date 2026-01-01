@@ -1,6 +1,6 @@
 import { calculateATR } from '@marketmind/indicators';
 import type { MarketType } from '@marketmind/types';
-import { BINANCE_FEES } from '@marketmind/types';
+import { getRoundTripFee } from '@marketmind/types';
 import { and, eq, sql } from 'drizzle-orm';
 import { VOLATILITY } from '../constants';
 import { db } from '../db';
@@ -413,15 +413,11 @@ export class AutoTradingService {
     takeProfit: number,
     marketType: MarketType = 'SPOT'
   ): { isViable: boolean; minRR: number; actualRR: number } {
-    const feeRate = marketType === 'FUTURES'
-      ? BINANCE_FEES.FUTURES.VIP_0.taker
-      : BINANCE_FEES.SPOT.VIP_0.taker;
+    const totalFees = getRoundTripFee({ marketType });
     const risk = Math.abs(entryPrice - stopLoss);
     const reward = Math.abs(takeProfit - entryPrice);
 
     const actualRR = reward / risk;
-
-    const totalFees = feeRate * 2;
     const minRR = totalFees / (1 - totalFees);
 
     const isViable = actualRR > minRR * 1.5;

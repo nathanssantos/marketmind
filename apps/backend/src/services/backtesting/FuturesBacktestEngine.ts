@@ -4,7 +4,8 @@ import {
   calculateLeveragedPnl,
   calculateFundingPayment,
   FUTURES_DEFAULTS,
-  BINANCE_FEES,
+  getDefaultFee,
+  getRoundTripFee,
 } from '@marketmind/types';
 import { BacktestEngine } from './BacktestEngine';
 import { BinanceFuturesDataService } from '../binance-futures-data';
@@ -140,7 +141,7 @@ export class FuturesBacktestEngine {
 
     const futuresConfig: BacktestConfig = {
       ...config,
-      commission: config.commission ?? BINANCE_FEES.FUTURES.VIP_0.taker,
+      commission: config.commission ?? getDefaultFee('FUTURES', 'TAKER'),
     };
 
     console.log(`[FuturesBacktest] Running futures backtest with ${leverage}x leverage, ${marginType} margin`);
@@ -244,7 +245,7 @@ export class FuturesBacktestEngine {
       );
 
       const grossPnl = (leveragedPnlPercent / 100) * marginRequired;
-      const commission = trade.commission ?? (positionValue * BINANCE_FEES.FUTURES.VIP_0.taker * 2);
+      const commission = trade.commission ?? (positionValue * getRoundTripFee({ marketType: 'FUTURES' }));
       const netPnl = isLiquidated
         ? -(marginRequired - liquidationFee) // Loss of entire margin on liquidation
         : grossPnl + fundingPayments - commission;

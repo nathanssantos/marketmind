@@ -1,4 +1,4 @@
-import { BINANCE_FEES } from '@marketmind/types';
+import { calculateTotalFees } from '@marketmind/types';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import type { TradeExecution, Wallet } from '../db/schema';
@@ -480,12 +480,8 @@ export class PositionMonitorService {
 
       const entryValue = entryPrice * quantity;
       const exitValue = exitPrice * quantity;
-      const feeRate = execution.marketType === 'FUTURES'
-        ? BINANCE_FEES.FUTURES.VIP_0.taker
-        : BINANCE_FEES.SPOT.VIP_0.taker;
-      const entryFee = entryValue * feeRate;
-      const exitFee = exitValue * feeRate;
-      const totalFees = entryFee + exitFee;
+      const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
+      const { totalFees } = calculateTotalFees(entryValue, exitValue, { marketType });
       const pnl = grossPnl - totalFees;
 
       const pnlPercent = ((exitPrice - entryPrice) / entryPrice) * 100;

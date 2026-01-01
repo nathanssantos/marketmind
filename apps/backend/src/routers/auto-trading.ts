@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { BINANCE_FEES } from '@marketmind/types';
+import { calculateTotalFees } from '@marketmind/types';
 import { TRADING_CONFIG } from '../constants';
 import {
   autoTradingConfig,
@@ -570,12 +570,8 @@ export const autoTradingRouter = router({
 
       const entryValue = entryPrice * qty;
       const exitValue = exitPrice * qty;
-      const feeRate = execution.marketType === 'FUTURES'
-        ? BINANCE_FEES.FUTURES.VIP_0.taker
-        : BINANCE_FEES.SPOT.VIP_0.taker;
-      const entryFee = entryValue * feeRate;
-      const exitFee = exitValue * feeRate;
-      const totalFees = entryFee + exitFee;
+      const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
+      const { totalFees } = calculateTotalFees(entryValue, exitValue, { marketType });
       const netPnl = grossPnl - totalFees;
 
       const pnlPercent = ((exitPrice - entryPrice) / entryPrice) * 100;

@@ -1,4 +1,4 @@
-import { BINANCE_FEES } from '@marketmind/types';
+import { calculateTotalFees } from '@marketmind/types';
 import { WebsocketClient } from 'binance';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
@@ -299,10 +299,7 @@ export class BinanceUserStreamService {
 
         const entryValue = entryPrice * quantity;
         const exitValue = exitPrice * quantity;
-        const feeRate = BINANCE_FEES.SPOT.VIP_0.taker;
-        const entryFee = entryValue * feeRate;
-        const exitFee = exitValue * feeRate;
-        const totalFees = entryFee + exitFee;
+        const { totalFees } = calculateTotalFees(entryValue, exitValue, { marketType: 'SPOT' });
         const pnl = grossPnl - totalFees;
 
         const pnlPercent = (pnl / (entryPrice * quantity)) * 100;

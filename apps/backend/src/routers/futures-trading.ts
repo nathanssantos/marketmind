@@ -19,11 +19,11 @@ import {
 import { getBinanceFuturesDataService } from '../services/binance-futures-data';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
-import { calculateLiquidationPrice, BINANCE_FEES } from '@marketmind/types';
+import { calculateLiquidationPrice, getDefaultFee } from '@marketmind/types';
 import { TRADING_CONFIG } from '../constants';
 import { generateEntityId } from '../utils/id';
 
-const FUTURES_TAKER_FEE = BINANCE_FEES.FUTURES.VIP_0.taker;
+const FUTURES_TAKER_FEE = getDefaultFee('FUTURES', 'TAKER');
 
 export const futuresTradingRouter = router({
   setLeverage: protectedProcedure

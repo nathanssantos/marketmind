@@ -1,3 +1,11 @@
+import type { MarketType } from './futures';
+
+export interface FeeParams {
+  marketType: MarketType;
+  useBnbDiscount?: boolean;
+  vipLevel?: number;
+}
+
 export interface TradingFees {
   makerFeeRate: number;
   takerFeeRate: number;
@@ -97,3 +105,37 @@ export const getTradingThresholds = (fees?: TradingFees) => ({
   MIN_RISK_REWARD_AFTER_FEES: fees?.minRiskRewardAfterFees ?? TRADING_THRESHOLDS.MIN_RISK_REWARD_AFTER_FEES,
   MIN_POSITION_VALUE: fees?.minPositionValue ?? TRADING_THRESHOLDS.MIN_POSITION_VALUE,
 });
+
+export const getFeeRateForVipLevel = (
+  marketType: MarketType,
+  vipLevel: number = 0,
+  orderType: FeeOrderType = 'TAKER'
+): number => {
+  if (marketType === 'FUTURES') {
+    return orderType === 'MAKER'
+      ? BINANCE_FEES.FUTURES.VIP_0.maker
+      : BINANCE_FEES.FUTURES.VIP_0.taker;
+  }
+  const vip = BINANCE_VIP_LEVELS[vipLevel] ?? BINANCE_VIP_LEVELS[0];
+  return orderType === 'MAKER' ? vip.maker : vip.taker;
+};
+
+export const getRoundTripFee = (params: FeeParams): number => {
+  const { marketType, useBnbDiscount = false, vipLevel = 0 } = params;
+  const feeRate = getFeeRateForVipLevel(marketType, vipLevel, 'TAKER');
+  const roundTripFee = feeRate * 2;
+  return useBnbDiscount ? applyBnbDiscount(roundTripFee) : roundTripFee;
+};
+
+export const calculateTotalFees = (
+  entryValue: number,
+  exitValue: number,
+  params: FeeParams
+): { entryFee: number; exitFee: number; totalFees: number } => {
+  const { marketType, useBnbDiscount = false, vipLevel = 0 } = params;
+  const feeRate = getFeeRateForVipLevel(marketType, vipLevel, 'TAKER');
+  const effectiveRate = useBnbDiscount ? applyBnbDiscount(feeRate) : feeRate;
+  const entryFee = entryValue * effectiveRate;
+  const exitFee = exitValue * effectiveRate;
+  return { entryFee, exitFee, totalFees: entryFee + exitFee };
+};
