@@ -144,12 +144,18 @@ export const findBestSwingStop = (
   return null;
 };
 
+const MIN_STOP_CHANGE_ABSOLUTE = 0.005;
+
 export const shouldUpdateStopLoss = (
   newStopLoss: number,
   currentStopLoss: number | null,
   isLong: boolean
 ): boolean => {
   if (currentStopLoss === null) return true;
+
+  const priceDiff = Math.abs(newStopLoss - currentStopLoss);
+  if (priceDiff < MIN_STOP_CHANGE_ABSOLUTE) return false;
+
   return isLong ? newStopLoss > currentStopLoss : newStopLoss < currentStopLoss;
 };
 
