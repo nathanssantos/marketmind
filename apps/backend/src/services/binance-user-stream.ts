@@ -6,6 +6,7 @@ import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { createBinanceClient, isPaperWallet } from './binance-client';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
+import { TIME_MS } from '../constants';
 
 interface OrderUpdateEvent {
   e: 'executionReport';
@@ -45,7 +46,7 @@ interface OrderUpdateEvent {
 export class BinanceUserStreamService {
   private connections: Map<string, { client: WebsocketClient; listenKey: string }> = new Map();
   private listenKeyRefreshIntervals: Map<string, ReturnType<typeof setInterval>> = new Map();
-  private readonly LISTEN_KEY_REFRESH_INTERVAL = 30 * 60 * 1000;
+  private readonly LISTEN_KEY_REFRESH_INTERVAL = 30 * TIME_MS.MINUTE;
 
   async start(): Promise<void> {
     logger.info('Starting Binance User Stream service');

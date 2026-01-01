@@ -3,7 +3,7 @@ import { checkStochasticCondition, STOCHASTIC_FILTER } from '../utils/stochastic
 import { checkTrendCondition, TREND_FILTER } from '../utils/trend-filter';
 import type { Interval, Kline, MarketType, StrategyDefinition, TradingSetup } from '@marketmind/types';
 import { BINANCE_FEES } from '@marketmind/types';
-import { TRADING_CONFIG } from '../constants';
+import { INTERVAL_MS, TIME_MS, TRADING_CONFIG, UNIT_MS } from '../constants';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
@@ -73,33 +73,15 @@ interface ActiveWatcher {
   lastProcessedCandleOpenTime?: number;
 }
 
-const INTERVAL_TO_MS: Record<string, number> = {
-  '1m': 60 * 1000,
-  '3m': 3 * 60 * 1000,
-  '5m': 5 * 60 * 1000,
-  '15m': 15 * 60 * 1000,
-  '30m': 30 * 60 * 1000,
-  '1h': 60 * 60 * 1000,
-  '2h': 2 * 60 * 60 * 1000,
-  '4h': 4 * 60 * 60 * 1000,
-  '6h': 6 * 60 * 60 * 1000,
-  '8h': 8 * 60 * 60 * 1000,
-  '12h': 12 * 60 * 60 * 1000,
-  '1d': 24 * 60 * 60 * 1000,
-  '3d': 3 * 24 * 60 * 60 * 1000,
-  '1w': 7 * 24 * 60 * 60 * 1000,
-  '1M': 30 * 24 * 60 * 60 * 1000,
-};
-
 const CANDLE_CLOSE_SAFETY_BUFFER_MS = 2000;
 
 const getPollingIntervalForTimeframe = (interval: string): number => {
-  const intervalMs = INTERVAL_TO_MS[interval];
+  const intervalMs = INTERVAL_MS[interval];
   if (!intervalMs) {
     log(`⚠️ Unknown interval ${interval}, defaulting to 1 minute polling`);
-    return 60 * 1000;
+    return TIME_MS.MINUTE;
   }
-  return Math.max(intervalMs, 60 * 1000);
+  return Math.max(intervalMs, TIME_MS.MINUTE);
 };
 
 export class AutoTradingScheduler {
@@ -112,16 +94,10 @@ export class AutoTradingScheduler {
   }
 
   private getIntervalMs(interval: string): number {
-    const units: Record<string, number> = {
-      'm': 60 * 1000,
-      'h': 60 * 60 * 1000,
-      'd': 24 * 60 * 60 * 1000,
-      'w': 7 * 24 * 60 * 60 * 1000,
-    };
     const match = interval.match(/^(\d+)([mhdw])$/);
-    if (!match?.[1] || !match[2]) return 4 * 60 * 60 * 1000;
-    const unitMs = units[match[2]];
-    if (!unitMs) return 4 * 60 * 60 * 1000;
+    if (!match?.[1] || !match[2]) return 4 * TIME_MS.HOUR;
+    const unitMs = UNIT_MS[match[2]];
+    if (!unitMs) return 4 * TIME_MS.HOUR;
     return parseInt(match[1]) * unitMs;
   }
 

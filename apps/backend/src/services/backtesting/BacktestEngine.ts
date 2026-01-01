@@ -11,7 +11,7 @@ import { getDefaultFee } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { BACKTEST_ENGINE } from '../../constants';
+import { BACKTEST_ENGINE, TIME_MS, UNIT_MS } from '../../constants';
 import { generateEntityId } from '../../utils/id';
 import { fetchHistoricalKlinesFromAPI, fetchFuturesKlinesFromAPI } from '../binance-historical';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
@@ -26,16 +26,10 @@ const __dirname = dirname(__filename);
 
 export class BacktestEngine {
   private getIntervalMs(interval: string): number {
-    const units: Record<string, number> = {
-      'm': 60 * 1000,
-      'h': 60 * 60 * 1000,
-      'd': 24 * 60 * 60 * 1000,
-      'w': 7 * 24 * 60 * 60 * 1000,
-    };
     const match = interval.match(/^(\d+)([mhdw])$/);
-    if (!match?.[1] || !match[2]) return 4 * 60 * 60 * 1000;
-    const unitMs = units[match[2]];
-    if (!unitMs) return 4 * 60 * 60 * 1000;
+    if (!match?.[1] || !match[2]) return 4 * TIME_MS.HOUR;
+    const unitMs = UNIT_MS[match[2]];
+    if (!unitMs) return 4 * TIME_MS.HOUR;
     return parseInt(match[1]) * unitMs;
   }
 

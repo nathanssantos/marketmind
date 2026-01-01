@@ -1,4 +1,5 @@
 import { logger } from './logger';
+import { TIME_MS } from '../constants';
 
 export interface BTCDominanceData {
   timestamp: number;
@@ -21,7 +22,7 @@ export class BTCDominanceDataService {
   private cache: { data: BTCDominanceData | null; timestamp: number } = { data: null, timestamp: 0 };
   private cacheTTL: number = 120000;
   private history: Array<{ dominance: number; timestamp: number }> = [];
-  private readonly HISTORY_TTL_MS = 24 * 60 * 60 * 1000;
+  private readonly HISTORY_TTL_MS = TIME_MS.DAY;
   private cmcApiKey: string | null = null;
   private previousDominance: number | null = null;
 
@@ -65,7 +66,7 @@ export class BTCDominanceDataService {
     this.history = this.history.filter(h => now - h.timestamp < this.HISTORY_TTL_MS);
 
     let change24h: number | null = null;
-    const day24hAgo = now - (24 * 60 * 60 * 1000);
+    const day24hAgo = now - TIME_MS.DAY;
     const oldestEntry = this.history.find(h => h.timestamp >= day24hAgo - 600000);
 
     if (oldestEntry) {

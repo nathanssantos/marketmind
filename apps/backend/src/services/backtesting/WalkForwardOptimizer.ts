@@ -1,5 +1,5 @@
-
 import type { Kline, BacktestConfig, BacktestResult } from '@marketmind/types';
+import { TIME_MS } from '../../constants';
 import { BacktestEngine } from './BacktestEngine';
 
 export interface WalkForwardConfig {
@@ -67,10 +67,9 @@ export class WalkForwardOptimizer {
   ): WalkForwardWindow[] {
     const { trainingWindowMonths, testingWindowMonths, stepMonths, minWindowCount } = config;
 
-    const monthMs = 30 * 24 * 60 * 60 * 1000;
-    const trainingWindowMs = trainingWindowMonths * monthMs;
-    const testingWindowMs = testingWindowMonths * monthMs;
-    const stepMs = stepMonths * monthMs;
+    const trainingWindowMs = trainingWindowMonths * TIME_MS.MONTH;
+    const testingWindowMs = testingWindowMonths * TIME_MS.MONTH;
+    const stepMs = stepMonths * TIME_MS.MONTH;
 
     if (klines.length === 0) return [];
 

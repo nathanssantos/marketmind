@@ -1,7 +1,7 @@
 import type { Interval, MarketType } from '@marketmind/types';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
-import { REQUIRED_KLINES } from '../constants';
+import { REQUIRED_KLINES, TIME_MS } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
 import { smartBackfillKlines, getIntervalMilliseconds } from '../services/binance-historical';
@@ -19,7 +19,7 @@ const marketTypeSchema = z.enum(['SPOT', 'FUTURES']).default('SPOT');
 
 const symbolsCache = new Map<string, any[]>();
 const symbolsCacheTime = new Map<string, number>();
-const SYMBOLS_CACHE_DURATION = 5 * 60 * 1000;
+const SYMBOLS_CACHE_DURATION = 5 * TIME_MS.MINUTE;
 
 const subscribeToStream = (symbol: string, interval: string, marketType: MarketType): void => {
   if (marketType === 'FUTURES') {

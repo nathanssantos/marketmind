@@ -5,9 +5,10 @@ import { getBinanceFuturesDataService } from './binance-futures-data';
 import { isPaperWallet } from './binance-futures-client';
 import { calculateFundingPayment } from '@marketmind/types';
 import { logger } from './logger';
+import { TIME_MS } from '../constants';
 
-const FUNDING_INTERVAL_MS = 8 * 60 * 60 * 1000;
-const CHECK_INTERVAL_MS = 60 * 1000;
+const FUNDING_INTERVAL_MS = 8 * TIME_MS.HOUR;
+const CHECK_INTERVAL_MS = TIME_MS.MINUTE;
 
 interface FundingRateCache {
   rate: number;

@@ -2,6 +2,7 @@ import type { Interval, MarketType } from '@marketmind/types';
 import type { KlineInterval } from 'binance';
 import { WebsocketClient } from 'binance';
 import { and, eq } from 'drizzle-orm';
+import { WEBSOCKET_CONFIG } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
 import { logger } from './logger';
@@ -35,7 +36,6 @@ interface KlineStreamSubscription {
 export class BinanceKlineStreamService {
   private client: WebsocketClient | null = null;
   private subscriptions: Map<string, KlineStreamSubscription> = new Map();
-  private readonly RECONNECT_DELAY_MS = 5000;
 
   start(): void {
     if (this.client) {
@@ -46,7 +46,7 @@ export class BinanceKlineStreamService {
 
     this.client = new WebsocketClient({
       beautify: true,
-      reconnectTimeout: this.RECONNECT_DELAY_MS,
+      reconnectTimeout: WEBSOCKET_CONFIG.RECONNECT_DELAY_MS,
     });
 
     this.client.on('message', (data) => {
@@ -288,7 +288,6 @@ export const binanceKlineStreamService = new BinanceKlineStreamService();
 export class BinanceFuturesKlineStreamService {
   private client: WebsocketClient | null = null;
   private subscriptions: Map<string, KlineStreamSubscription> = new Map();
-  private readonly RECONNECT_DELAY_MS = 5000;
 
   start(): void {
     if (this.client) {
@@ -299,7 +298,7 @@ export class BinanceFuturesKlineStreamService {
 
     this.client = new WebsocketClient({
       beautify: true,
-      reconnectTimeout: this.RECONNECT_DELAY_MS,
+      reconnectTimeout: WEBSOCKET_CONFIG.RECONNECT_DELAY_MS,
     });
 
     this.client.on('message', (data) => {

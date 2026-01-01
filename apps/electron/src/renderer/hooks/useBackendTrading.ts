@@ -1,23 +1,22 @@
 import { useCallback, useMemo } from 'react';
+import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 import { usePricesForSymbols } from '../store/priceStore';
-
-const BACKUP_POLLING_INTERVAL = 30000;
 
 export const useBackendTrading = (walletId: string, symbol?: string) => {
   const utils = trpc.useUtils();
 
   const { data: orders, isLoading: isLoadingOrders } = trpc.trading.getOrders.useQuery(
     { walletId, symbol, limit: 50 },
-    { enabled: !!walletId, refetchInterval: BACKUP_POLLING_INTERVAL, staleTime: 5000 }
+    { enabled: !!walletId, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
   const { data: positions, isLoading: isLoadingPositions } = trpc.trading.getPositions.useQuery(
     { walletId, limit: 50 },
-    { enabled: !!walletId, refetchInterval: BACKUP_POLLING_INTERVAL, staleTime: 5000 }
+    { enabled: !!walletId, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
   const { data: tradeExecutions, isLoading: isLoadingExecutions } = trpc.trading.getTradeExecutions.useQuery(
     { walletId, symbol, limit: 50 },
-    { enabled: !!walletId, refetchInterval: BACKUP_POLLING_INTERVAL, staleTime: 5000 }
+    { enabled: !!walletId, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
 
   const openPositionSymbols = useMemo(() => {
@@ -29,7 +28,7 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
 
   const { data: tickerPrices, isLoading: isLoadingPrices } = trpc.trading.getTickerPrices.useQuery(
     { symbols: openPositionSymbols },
-    { enabled: openPositionSymbols.length > 0, refetchInterval: BACKUP_POLLING_INTERVAL, staleTime: 5000 }
+    { enabled: openPositionSymbols.length > 0, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
 
   const mergedTickerPrices = useMemo(() => {

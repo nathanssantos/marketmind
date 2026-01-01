@@ -1,5 +1,6 @@
 import type { Interval } from '@marketmind/types';
 import { useEffect } from 'react';
+import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 import { useWebSocket } from './useWebSocket';
 
@@ -39,7 +40,7 @@ export const useBackendSetups = () => {
   const useDetectCurrent = (params: DetectCurrentParams) =>
     trpc.setup.detectCurrent.useQuery(params, {
       enabled: !!params.symbol && !!params.interval,
-      refetchInterval: 60000,
+      refetchInterval: QUERY_CONFIG.REFETCH_INTERVAL.SLOW,
     });
 
   const useDetectRange = (
@@ -52,25 +53,25 @@ export const useBackendSetups = () => {
       { symbol, interval, startTime, endTime },
       {
         enabled: !!symbol && !!interval && !!startTime && !!endTime,
-        staleTime: 300000,
+        staleTime: QUERY_CONFIG.STALE_TIME.LONG,
       }
     );
 
   const useHistory = (params: GetHistoryParams) =>
     trpc.setup.getHistory.useQuery(params, {
       enabled: true,
-      staleTime: 30000,
+      staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM,
     });
 
   const useStats = (params: GetStatsParams) =>
     trpc.setup.getStats.useQuery(params, {
       enabled: true,
-      staleTime: 60000,
+      staleTime: QUERY_CONFIG.STALE_TIME.SLOW,
     });
 
   const useConfig = () =>
     trpc.setup.getConfig.useQuery(undefined, {
-      staleTime: Infinity,
+      staleTime: QUERY_CONFIG.STALE_TIME.PERMANENT,
     });
 
   const updateConfig = trpc.setup.updateConfig.useMutation({

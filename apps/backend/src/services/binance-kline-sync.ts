@@ -1,6 +1,7 @@
 import type { Interval } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import WebSocket from 'ws';
+import { WEBSOCKET_CONFIG } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
 import { logger } from './logger';
@@ -29,8 +30,6 @@ interface BinanceKlineMessage {
 }
 
 const BINANCE_WS_BASE = 'wss://stream.binance.com:9443/ws';
-const RECONNECT_DELAY = 5000;
-const PING_INTERVAL = 30000;
 
 class BinanceKlineSync {
   private connections = new Map<string, WebSocket>();
@@ -142,7 +141,7 @@ class BinanceKlineSync {
       if (ws.readyState === WebSocket.OPEN) {
         ws.ping();
       }
-    }, PING_INTERVAL);
+    }, WEBSOCKET_CONFIG.PING_INTERVAL_MS);
 
     this.pingIntervals.set(key, interval);
   }
@@ -164,7 +163,7 @@ class BinanceKlineSync {
       logger.info({ key }, 'Reconnecting to Binance WebSocket');
       this.connect(symbol, interval);
       this.reconnectTimeouts.delete(key);
-    }, RECONNECT_DELAY);
+    }, WEBSOCKET_CONFIG.RECONNECT_DELAY_MS);
 
     this.reconnectTimeouts.set(key, timeout);
   }

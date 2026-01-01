@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 
 export const useBackendAuth = () => {
@@ -7,7 +8,7 @@ export const useBackendAuth = () => {
   const logoutMutation = trpc.auth.logout.useMutation();
   const { data: currentUser, isLoading, refetch } = trpc.auth.me.useQuery(undefined, {
     retry: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: QUERY_CONFIG.STALE_TIME.LONG,
   });
 
   const login = useCallback(

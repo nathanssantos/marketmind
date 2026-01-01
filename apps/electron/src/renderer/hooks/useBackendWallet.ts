@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 
 const EMPTY_WALLETS: never[] = [];
@@ -7,7 +8,7 @@ export const useBackendWallet = () => {
   const utils = trpc.useUtils();
 
   const { data: wallets, isLoading } = trpc.wallet.list.useQuery(undefined, {
-    staleTime: 30000,
+    staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM,
   });
 
   const createMutation = trpc.wallet.create.useMutation({

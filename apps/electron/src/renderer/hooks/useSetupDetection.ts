@@ -1,5 +1,6 @@
 import type { Interval, Kline, TradingSetup } from '@marketmind/types';
 import { useQuery } from '@tanstack/react-query';
+import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../services/trpc';
 import { useBackendSetups } from './useBackendSetups';
 
@@ -16,7 +17,7 @@ export const useStrategyList = (options: UseStrategyListOptions = {}) => {
       const strategies = await trpc.setupDetection.listStrategies.query(options);
       return strategies;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: QUERY_CONFIG.STALE_TIME.LONG,
   });
 };
 

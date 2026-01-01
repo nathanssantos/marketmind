@@ -1,10 +1,50 @@
 export const REQUIRED_KLINES = 40_000;
 
+export const TIME_MS = {
+  SECOND: 1000,
+  MINUTE: 60 * 1000,
+  HOUR: 60 * 60 * 1000,
+  DAY: 24 * 60 * 60 * 1000,
+  WEEK: 7 * 24 * 60 * 60 * 1000,
+  MONTH: 30 * 24 * 60 * 60 * 1000,
+} as const;
+
+export const INTERVAL_MS: Record<string, number> = {
+  '1m': TIME_MS.MINUTE,
+  '3m': 3 * TIME_MS.MINUTE,
+  '5m': 5 * TIME_MS.MINUTE,
+  '15m': 15 * TIME_MS.MINUTE,
+  '30m': 30 * TIME_MS.MINUTE,
+  '1h': TIME_MS.HOUR,
+  '2h': 2 * TIME_MS.HOUR,
+  '4h': 4 * TIME_MS.HOUR,
+  '6h': 6 * TIME_MS.HOUR,
+  '8h': 8 * TIME_MS.HOUR,
+  '12h': 12 * TIME_MS.HOUR,
+  '1d': TIME_MS.DAY,
+  '3d': 3 * TIME_MS.DAY,
+  '1w': TIME_MS.WEEK,
+  '1M': TIME_MS.MONTH,
+} as const;
+
+export const UNIT_MS: Record<string, number> = {
+  m: TIME_MS.MINUTE,
+  h: TIME_MS.HOUR,
+  d: TIME_MS.DAY,
+  w: TIME_MS.WEEK,
+} as const;
+
 export const TRADING_CONFIG = {
   MIN_RISK_REWARD_RATIO: 1.25,
-  SESSION_DURATION_MS: 30 * 24 * 60 * 60 * 1000,
+  SESSION_DURATION_MS: 30 * TIME_MS.DAY,
   DEFAULT_SLIPPAGE_PERCENT: 0.1,
   DEFAULT_COMMISSION_PERCENT: 0.1,
+} as const;
+
+export const WEBSOCKET_CONFIG = {
+  RECONNECT_DELAY_MS: 5 * TIME_MS.SECOND,
+  PING_INTERVAL_MS: 30 * TIME_MS.SECOND,
+  FETCH_TIMEOUT_MS: 15 * TIME_MS.SECOND,
 } as const;
 
 export const DETECTOR_CONFIG = {
@@ -86,7 +126,7 @@ export const BACKTEST_ENGINE = {
     DAY: 86400,
     WEEK: 604800,
   },
-  DEFAULT_INTERVAL_MS: 4 * 60 * 60 * 1000,
+  DEFAULT_INTERVAL_MS: 4 * TIME_MS.HOUR,
   EMA200_WARMUP_BARS: 250,
   MIN_NOTIONAL_VALUE: 10,
   MAX_BARS_IN_TRADE: 100,
@@ -166,3 +206,7 @@ export type ContextAggregatorConstants = typeof CONTEXT_AGGREGATOR;
 export type RiskManagerConstants = typeof RISK_MANAGER;
 export type DetectorConfigConstants = typeof DETECTOR_CONFIG;
 export type TradingConfigConstants = typeof TRADING_CONFIG;
+export type WebsocketConfigConstants = typeof WEBSOCKET_CONFIG;
+export type TimeMsConstants = typeof TIME_MS;
+export type IntervalMsConstants = typeof INTERVAL_MS;
+export type UnitMsConstants = typeof UNIT_MS;

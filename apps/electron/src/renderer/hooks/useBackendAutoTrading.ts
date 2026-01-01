@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 
 export const useBackendAutoTrading = (walletId: string) => {
@@ -69,7 +70,7 @@ export const useBackendAutoTrading = (walletId: string) => {
   const { data: watcherStatus, isLoading: isLoadingWatcherStatus } =
     trpc.autoTrading.getWatcherStatus.useQuery(
       { walletId },
-      { enabled: !!walletId, refetchInterval: 5000 }
+      { enabled: !!walletId, refetchInterval: QUERY_CONFIG.REFETCH_INTERVAL.REALTIME }
     );
 
   const updateConfig = useCallback(

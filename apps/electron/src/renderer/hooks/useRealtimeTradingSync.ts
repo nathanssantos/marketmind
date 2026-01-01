@@ -1,6 +1,5 @@
+import { QUERY_CONFIG } from '@shared/constants';
 import { useRealtimeTradingSyncContext } from '../context/RealtimeTradingSyncContext';
-
-const BACKUP_POLLING_INTERVAL = 30000;
 
 export const useRealtimeTradingSync = (_walletId: string | undefined) => {
   const { subscribeToPrice, forceRefresh, isConnected } = useRealtimeTradingSyncContext();
@@ -9,6 +8,6 @@ export const useRealtimeTradingSync = (_walletId: string | undefined) => {
     isConnected,
     subscribeToPrice,
     forceRefresh,
-    backupPollingInterval: BACKUP_POLLING_INTERVAL,
+    backupPollingInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL,
   };
 };

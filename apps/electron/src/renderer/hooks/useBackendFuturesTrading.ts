@@ -1,30 +1,29 @@
 import { useCallback, useMemo } from 'react';
+import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 import { usePricesForSymbols } from '../store/priceStore';
-
-const BACKUP_POLLING_INTERVAL = 30000;
 
 export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   const utils = trpc.useUtils();
 
   const { data: positions, isLoading: isLoadingPositions } = trpc.futuresTrading.getPositions.useQuery(
     { walletId },
-    { enabled: !!walletId, refetchInterval: BACKUP_POLLING_INTERVAL, staleTime: 5000 }
+    { enabled: !!walletId, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
 
   const { data: openOrders, isLoading: isLoadingOrders } = trpc.futuresTrading.getOpenOrders.useQuery(
     { walletId, symbol },
-    { enabled: !!walletId, refetchInterval: BACKUP_POLLING_INTERVAL, staleTime: 5000 }
+    { enabled: !!walletId, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
 
   const { data: markPrice, isLoading: isLoadingMarkPrice } = trpc.futuresTrading.getMarkPrice.useQuery(
     { symbol: symbol ?? 'BTCUSDT' },
-    { enabled: !!symbol, refetchInterval: 10000, staleTime: 5000 }
+    { enabled: !!symbol, refetchInterval: QUERY_CONFIG.REFETCH_INTERVAL.FAST, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
 
   const { data: fundingRate, isLoading: isLoadingFundingRate } = trpc.futuresTrading.getFundingRate.useQuery(
     { symbol: symbol ?? 'BTCUSDT' },
-    { enabled: !!symbol, refetchInterval: 60000, staleTime: 30000 }
+    { enabled: !!symbol, refetchInterval: QUERY_CONFIG.REFETCH_INTERVAL.SLOW, staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM }
   );
 
   const openPositionSymbols = useMemo(() => {

@@ -1,12 +1,12 @@
 import type { Interval } from '@marketmind/types';
 import { and, asc, eq, gte, lte } from 'drizzle-orm';
-import { REQUIRED_KLINES } from '../constants';
+import { REQUIRED_KLINES, TIME_MS } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
 import { fetchFuturesKlinesFromAPI, fetchHistoricalKlinesFromAPI, getIntervalMilliseconds } from './binance-historical';
 import { logger } from './logger';
 
-const GAP_CHECK_INTERVAL = 5 * 60 * 1000;
+const GAP_CHECK_INTERVAL = 5 * TIME_MS.MINUTE;
 const MIN_GAP_SIZE_TO_FILL = 1;
 
 interface GapInfo {

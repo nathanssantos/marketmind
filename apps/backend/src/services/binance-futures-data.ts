@@ -4,11 +4,11 @@ import type {
   LiquidationData,
 } from '@marketmind/indicators';
 import type { FuturesSymbolInfo, FuturesContractType } from '@marketmind/types';
+import { WEBSOCKET_CONFIG } from '../constants';
 import { logger, serializeError } from './logger';
 
 const FUTURES_BASE_URL = 'https://fapi.binance.com';
 const RATE_LIMIT_DELAY = 100;
-const FETCH_TIMEOUT = 15000;
 const MAX_RETRIES = 3;
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
@@ -16,7 +16,7 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
 const fetchWithRetry = async (url: string, retries = MAX_RETRIES): Promise<Response> => {
   for (let i = 0; i < retries; i++) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+    const timeout = setTimeout(() => controller.abort(), WEBSOCKET_CONFIG.FETCH_TIMEOUT_MS);
     try {
       const response = await fetch(url, { signal: controller.signal });
       clearTimeout(timeout);

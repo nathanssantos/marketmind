@@ -9,18 +9,9 @@ import type {
   FuturesOrder,
 } from '@marketmind/types';
 import { logger, serializeError } from './logger';
+import { isPaperWallet, getWalletType, type WalletType } from './binance-client';
 
-export type WalletType = 'live' | 'testnet' | 'paper';
-
-export function isPaperWallet(wallet: Wallet): boolean {
-  return wallet.walletType === 'paper' || wallet.apiKeyEncrypted === 'paper-trading';
-}
-
-export function getWalletType(wallet: Wallet): WalletType {
-  if (wallet.walletType) return wallet.walletType;
-  if (wallet.apiKeyEncrypted === 'paper-trading') return 'paper';
-  return 'live';
-}
+export { isPaperWallet, getWalletType, type WalletType };
 
 export function createBinanceFuturesClient(wallet: Wallet): USDMClient {
   const walletType = getWalletType(wallet);

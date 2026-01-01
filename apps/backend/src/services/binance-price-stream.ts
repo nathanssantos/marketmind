@@ -1,5 +1,6 @@
 import { WebsocketClient } from 'binance';
 import { eq, inArray } from 'drizzle-orm';
+import { WEBSOCKET_CONFIG } from '../constants';
 import { db } from '../db';
 import { tradeExecutions } from '../db/schema';
 import { logger } from './logger';
@@ -17,7 +18,6 @@ export class BinancePriceStreamService {
   private subscribedSymbols: Set<string> = new Set();
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private isReconnecting = false;
-  private readonly RECONNECT_DELAY_MS = 5000;
 
   start(): void {
     if (this.client) {
@@ -29,7 +29,7 @@ export class BinancePriceStreamService {
 
     this.client = new WebsocketClient({
       beautify: true,
-      reconnectTimeout: this.RECONNECT_DELAY_MS,
+      reconnectTimeout: WEBSOCKET_CONFIG.RECONNECT_DELAY_MS,
     });
 
     this.client.on('message', (data) => {

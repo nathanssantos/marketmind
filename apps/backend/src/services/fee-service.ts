@@ -4,6 +4,7 @@ import { logger, serializeError } from './logger';
 import type { Wallet } from '../db/schema';
 import type { MarketType, FeeOrderType, MarketFees } from '@marketmind/types';
 import { BINANCE_FEES, getDefaultFee, applyBnbDiscount } from '@marketmind/types';
+import { TIME_MS } from '../constants';
 
 export interface CachedFees {
   spot: MarketFees;
@@ -18,7 +19,7 @@ interface FeeCache {
   expiresAt: number;
 }
 
-const CACHE_DURATION_MS = 24 * 60 * 60 * 1000;
+const CACHE_DURATION_MS = TIME_MS.DAY;
 
 const feeCache = new Map<string, FeeCache>();
 
