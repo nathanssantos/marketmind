@@ -1,6 +1,6 @@
 import type { Interval } from '@marketmind/types';
 import { BINANCE_NATIVE_INTERVALS, INTERVAL_MS } from '@marketmind/types';
-import { and, asc, desc, eq, gte, lt } from 'drizzle-orm';
+import { and, asc, eq, gte, lt } from 'drizzle-orm';
 import { db } from '../db';
 import { klines } from '../db/schema';
 import { logger } from './logger';
@@ -265,39 +265,6 @@ export const smartBackfillKlines = async (
     'Smart backfill: current vs target'
   );
 
-  if (currentCount >= targetCount * 0.95) {
-    const newestKline = await db
-      .select({ openTime: klines.openTime })
-      .from(klines)
-      .where(
-        and(
-          eq(klines.symbol, symbol),
-          eq(klines.interval, interval),
-          eq(klines.marketType, marketType)
-        )
-      )
-      .orderBy(desc(klines.openTime))
-      .limit(1);
-
-    const newestTime = newestKline[0]?.openTime?.getTime() ?? 0;
-    const timeSinceNewest = now - newestTime;
-
-    if (timeSinceNewest <= intervalMs * 2) {
-      // logger.info({ symbol, interval, marketType }, 'Smart backfill: data is complete and up-to-date');
-      return { totalInDb: currentCount, downloaded: 0, gaps: 0, alreadyComplete: true };
-    }
-
-    const recentDownloaded = await backfillHistoricalKlines(
-      symbol,
-      interval,
-      new Date(newestTime),
-      new Date(),
-      marketType
-    );
-
-    return { totalInDb: currentCount + recentDownloaded, downloaded: recentDownloaded, gaps: 0, alreadyComplete: false };
-  }
-
   const gaps: Array<{ start: number; end: number }> = [];
   let totalDownloaded = 0;
 
@@ -332,25 +299,22 @@ export const smartBackfillKlines = async (
     );
   }
 
-  if (existingKlines.length > 1) {
-    for (let i = 1; i < existingKlines.length; i++) {
-      const prevTime = existingKlines[i - 1]?.openTime?.getTime() ?? 0;
-      const currTime = existingKlines[i]?.openTime?.getTime() ?? 0;
-      const expectedDiff = intervalMs;
-      const actualDiff = currTime - prevTime;
+  for (let i = 1; i < existingKlines.length; i++) {
+    const prevTime = existingKlines[i - 1]?.openTime?.getTime() ?? 0;
+    const currTime = existingKlines[i]?.openTime?.getTime() ?? 0;
+    const expectedDiff = intervalMs;
+    const actualDiff = currTime - prevTime;
 
-      if (actualDiff > expectedDiff * GAP_TOLERANCE_MULTIPLIER) {
-        gaps.push({ start: prevTime + intervalMs, end: currTime - intervalMs });
-        logger.info(
-          { symbol, interval, marketType, gapStart: new Date(prevTime).toISOString(), gapEnd: new Date(currTime).toISOString(), missingCandles: Math.floor(actualDiff / intervalMs) - 1 },
-          'Smart backfill: detected internal gap'
-        );
-      }
+    if (actualDiff > expectedDiff * GAP_TOLERANCE_MULTIPLIER) {
+      gaps.push({ start: prevTime + intervalMs, end: currTime - intervalMs });
+      logger.info(
+        { symbol, interval, marketType, gapStart: new Date(prevTime).toISOString(), gapEnd: new Date(currTime).toISOString(), missingCandles: Math.floor(actualDiff / intervalMs) - 1 },
+        'Smart backfill: detected internal gap'
+      );
     }
   }
 
   if (gaps.length === 0) {
-    logger.info({ symbol, interval, marketType }, 'Smart backfill: no gaps detected');
     return { totalInDb: currentCount, downloaded: 0, gaps: 0, alreadyComplete: true };
   }
 
