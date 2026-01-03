@@ -383,6 +383,7 @@ export const autoTradingRouter = router({
         openedAt: new Date(),
         status: 'open',
         marketType: input.marketType,
+        triggerKlineOpenTime: setup.detectedAt.getTime(),
       });
 
       log('✅ Trade execution created', {

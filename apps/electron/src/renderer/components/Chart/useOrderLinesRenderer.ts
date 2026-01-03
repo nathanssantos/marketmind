@@ -52,21 +52,42 @@ const AREA_COLORS = {
 const isSLInProfitZone = (isLong: boolean, entryPrice: number, slPrice: number): boolean =>
   isLong ? slPrice > entryPrice : slPrice < entryPrice;
 
+const findKlineIndexByTime = (
+  klines: Array<{ openTime: number }>,
+  targetTime: number
+): number => {
+  if (klines.length === 0) return 0;
+
+  for (let i = 0; i < klines.length; i++) {
+    const kline = klines[i];
+    if (kline && kline.openTime >= targetTime) {
+      return Math.max(0, i - 1);
+    }
+  }
+
+  return klines.length - 1;
+};
+
 const drawProfitLossArea = (
   ctx: CanvasRenderingContext2D,
   y1: number,
   y2: number,
   chartWidth: number,
-  isProfit: boolean
+  isProfit: boolean,
+  startX: number = 0
 ): void => {
   const minY = Math.min(y1, y2);
   const maxY = Math.max(y1, y2);
   const height = maxY - minY;
   if (height <= 0) return;
 
+  const effectiveStartX = Math.max(0, startX);
+  const width = chartWidth - effectiveStartX;
+  if (width <= 0) return;
+
   ctx.save();
   ctx.fillStyle = isProfit ? AREA_COLORS.PROFIT : AREA_COLORS.LOSS;
-  ctx.fillRect(0, minY, chartWidth, height);
+  ctx.fillRect(effectiveStartX, minY, width, height);
   ctx.restore();
 };
 
@@ -81,6 +102,8 @@ export interface BackendExecution {
   status: string | null;
   setupType: string | null;
   marketType?: 'SPOT' | 'FUTURES' | null;
+  openedAt?: string | Date | null;
+  triggerKlineOpenTime?: number | null;
 }
 
 interface OrderCloseButton {
@@ -343,34 +366,41 @@ export const useOrderLinesRenderer = (
   const activeOrders = useMemo((): Order[] => {
     return backendExecutions
       .filter(exec => exec.status === 'open' || exec.status === 'pending')
-      .map(exec => ({
-        id: exec.id,
-        symbol: exec.symbol,
-        orderId: 0,
-        orderListId: -1,
-        clientOrderId: exec.id,
-        price: exec.entryPrice,
-        origQty: exec.quantity,
-        executedQty: exec.status === 'pending' ? '0' : exec.quantity,
-        cummulativeQuoteQty: '0',
-        status: exec.status === 'pending' ? 'NEW' as const : 'FILLED' as const,
-        timeInForce: 'GTC' as const,
-        type: exec.status === 'pending' ? 'LIMIT' as const : 'MARKET' as const,
-        side: exec.side === 'LONG' ? 'BUY' : 'SELL',
-        time: Date.now(),
-        updateTime: Date.now(),
-        isWorking: true,
-        origQuoteOrderQty: '0',
-        entryPrice: parseFloat(exec.entryPrice),
-        quantity: parseFloat(exec.quantity),
-        orderDirection: exec.side === 'LONG' ? 'long' : 'short',
-        stopLoss: exec.stopLoss ? parseFloat(exec.stopLoss) : undefined,
-        takeProfit: exec.takeProfit ? parseFloat(exec.takeProfit) : undefined,
-        isAutoTrade: true,
-        walletId: '',
-        setupType: exec.setupType ?? undefined,
-        isPendingLimitOrder: exec.status === 'pending',
-      } as Order));
+      .map(exec => {
+        const openedTime = exec.openedAt
+          ? (typeof exec.openedAt === 'string' ? new Date(exec.openedAt).getTime() : exec.openedAt.getTime())
+          : null;
+        const validOpenedTime = openedTime && openedTime > 1000000000000 ? openedTime : null;
+        const openedAtTime = validOpenedTime || Date.now();
+        return {
+          id: exec.id,
+          symbol: exec.symbol,
+          orderId: 0,
+          orderListId: -1,
+          clientOrderId: exec.id,
+          price: exec.entryPrice,
+          origQty: exec.quantity,
+          executedQty: exec.status === 'pending' ? '0' : exec.quantity,
+          cummulativeQuoteQty: '0',
+          status: exec.status === 'pending' ? 'NEW' as const : 'FILLED' as const,
+          timeInForce: 'GTC' as const,
+          type: exec.status === 'pending' ? 'LIMIT' as const : 'MARKET' as const,
+          side: exec.side === 'LONG' ? 'BUY' : 'SELL',
+          time: openedAtTime,
+          updateTime: Date.now(),
+          isWorking: true,
+          origQuoteOrderQty: '0',
+          entryPrice: parseFloat(exec.entryPrice),
+          quantity: parseFloat(exec.quantity),
+          orderDirection: exec.side === 'LONG' ? 'long' : 'short',
+          stopLoss: exec.stopLoss ? parseFloat(exec.stopLoss) : undefined,
+          takeProfit: exec.takeProfit ? parseFloat(exec.takeProfit) : undefined,
+          isAutoTrade: true,
+          walletId: '',
+          setupType: exec.setupType ?? undefined,
+          isPendingLimitOrder: exec.status === 'pending',
+        } as Order;
+      });
   }, [backendExecutions]);
   
   const closeButtonsRef = useRef<OrderCloseButton[]>([]);
@@ -523,14 +553,17 @@ export const useOrderLinesRenderer = (
       const entryPrice = getOrderPrice(order);
 
       if (showProfitLossAreas && (order.stopLoss || order.takeProfit)) {
+        const entryKlineIndex = findKlineIndexByTime(klines, order.time);
+        const entryX = manager.indexToX(entryKlineIndex);
+
         if (order.stopLoss) {
           const stopY = manager.priceToY(order.stopLoss);
           const slIsProfit = isSLInProfitZone(isLong, entryPrice, order.stopLoss);
-          drawProfitLossArea(ctx, y, stopY, chartWidth, slIsProfit);
+          drawProfitLossArea(ctx, y, stopY, chartWidth, slIsProfit, entryX);
         }
         if (order.takeProfit) {
           const tpY = manager.priceToY(order.takeProfit);
-          drawProfitLossArea(ctx, y, tpY, chartWidth, true);
+          drawProfitLossArea(ctx, y, tpY, chartWidth, true, entryX);
         }
       }
 
@@ -947,14 +980,18 @@ export const useOrderLinesRenderer = (
         : null;
 
       if (showProfitLossAreas && (consolidatedStopLoss || consolidatedTakeProfit)) {
+        const earliestOrderTime = Math.min(...position.orders.map(o => o.time));
+        const entryKlineIndex = findKlineIndexByTime(klines, earliestOrderTime);
+        const entryX = manager.indexToX(entryKlineIndex);
+
         if (consolidatedStopLoss) {
           const stopY = manager.priceToY(consolidatedStopLoss);
           const slIsProfit = isSLInProfitZone(isLongPosition, position.avgPrice, consolidatedStopLoss);
-          drawProfitLossArea(ctx, entryY, stopY, chartWidth, slIsProfit);
+          drawProfitLossArea(ctx, entryY, stopY, chartWidth, slIsProfit, entryX);
         }
         if (consolidatedTakeProfit) {
           const tpY = manager.priceToY(consolidatedTakeProfit);
-          drawProfitLossArea(ctx, entryY, tpY, chartWidth, true);
+          drawProfitLossArea(ctx, entryY, tpY, chartWidth, true, entryX);
         }
       }
 
@@ -1135,14 +1172,16 @@ export const useOrderLinesRenderer = (
       const pendingAlpha = 0.5;
 
       if (showProfitLossAreas && (setup.stopLoss || setup.takeProfit)) {
+        const entryX = manager.indexToX(setup.klineIndex);
+
         if (setup.stopLoss) {
           const slY = manager.priceToY(setup.stopLoss);
           const slIsProfit = isSLInProfitZone(isLong, effectiveEntryPrice, setup.stopLoss);
-          drawProfitLossArea(ctx, entryY, slY, chartWidth, slIsProfit);
+          drawProfitLossArea(ctx, entryY, slY, chartWidth, slIsProfit, entryX);
         }
         if (setup.takeProfit) {
           const tpY = manager.priceToY(setup.takeProfit);
-          drawProfitLossArea(ctx, entryY, tpY, chartWidth, true);
+          drawProfitLossArea(ctx, entryY, tpY, chartWidth, true, entryX);
         }
       }
 

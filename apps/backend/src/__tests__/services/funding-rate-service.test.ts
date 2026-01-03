@@ -41,12 +41,16 @@ vi.mock('../../services/binance-futures-client', () => ({
   isPaperWallet: vi.fn((wallet: { walletType: string }) => wallet.walletType === 'paper'),
 }));
 
-vi.mock('@marketmind/types', () => ({
-  calculateFundingPayment: vi.fn((positionValue: number, fundingRatePercent: number, side: string) => {
-    const payment = positionValue * (fundingRatePercent / 100);
-    return side === 'LONG' ? -payment : payment;
-  }),
-}));
+vi.mock('@marketmind/types', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@marketmind/types')>();
+  return {
+    ...actual,
+    calculateFundingPayment: vi.fn((positionValue: number, fundingRatePercent: number, side: string) => {
+      const payment = positionValue * (fundingRatePercent / 100);
+      return side === 'LONG' ? -payment : payment;
+    }),
+  };
+});
 
 const { fundingRateService } = await import('../../services/funding-rate-service');
 

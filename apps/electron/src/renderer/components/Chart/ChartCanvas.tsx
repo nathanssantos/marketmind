@@ -228,6 +228,8 @@ export const ChartCanvas = ({
         status: exec.status,
         setupType: exec.setupType,
         marketType: exec.marketType,
+        openedAt: exec.openedAt,
+        triggerKlineOpenTime: exec.triggerKlineOpenTime,
       }));
   }, [backendExecutions, symbol, marketType]);
   const hoveredSetup = null as ReturnType<typeof useSetupStore.getState>['detectedSetups'][0] | null;
