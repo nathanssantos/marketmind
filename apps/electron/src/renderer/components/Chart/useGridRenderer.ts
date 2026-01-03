@@ -1,7 +1,7 @@
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawGrid, drawLine, drawText } from '@renderer/utils/canvas/drawingUtils';
-import { formatPriceDisplay, formatTimestamp } from '@renderer/utils/formatters';
+import { formatChartPrice, formatTimestamp } from '@renderer/utils/formatters';
 import { CHART_CONFIG } from '@shared/constants';
 
 import { useCallback } from 'react';
@@ -81,7 +81,7 @@ export const useGridRenderer = ({
       if (y >= 0 && y <= chartHeight) {
         drawText(
           ctx,
-          formatPriceDisplay(price),
+          formatChartPrice(price),
           chartRightBoundary + 10,
           y + 1,
           labelColor,

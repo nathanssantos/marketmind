@@ -1,5 +1,6 @@
 import type { CanvasManager } from '@/renderer/utils/canvas/CanvasManager';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
+import { formatChartPrice } from '@renderer/utils/formatters';
 import { CHART_CONFIG } from '@shared/constants';
 import type { RefObject } from 'react';
 import { useCallback } from 'react';
@@ -94,7 +95,7 @@ export const useCrosshairPriceLineRenderer = ({
 
     if (mouseY < 0 || mouseY > chartHeight) return;
 
-    const priceText = price.toFixed(2);
+    const priceText = formatChartPrice(price);
     ctx.save();
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';

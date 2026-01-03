@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ChartContextData } from '../context/ChartContext';
-import { formatChartDataContext, formatDateTimeTooltip, formatNumber, formatPriceDisplay, formatTimestamp, formatVolumeDisplay } from './formatters';
+import { formatChartDataContext, formatChartPrice, formatDateTimeTooltip, formatNumber, formatPriceDisplay, formatTimestamp, formatVolumeDisplay, getChartPriceDecimals } from './formatters';
 
 describe('formatters', () => {
   describe('formatPriceDisplay', () => {
@@ -31,6 +31,58 @@ describe('formatters', () => {
 
     it('should handle zero', () => {
       expect(formatPriceDisplay(0)).toBe('0.00000000');
+    });
+  });
+
+  describe('getChartPriceDecimals', () => {
+    it('should return 2 decimals for prices >= 100', () => {
+      expect(getChartPriceDecimals(100)).toBe(2);
+      expect(getChartPriceDecimals(1000)).toBe(2);
+      expect(getChartPriceDecimals(42000)).toBe(2);
+    });
+
+    it('should return 3 decimals for prices >= 1 and < 100', () => {
+      expect(getChartPriceDecimals(1)).toBe(3);
+      expect(getChartPriceDecimals(50)).toBe(3);
+      expect(getChartPriceDecimals(99.99)).toBe(3);
+    });
+
+    it('should return 4 decimals for prices >= 0.1 and < 1', () => {
+      expect(getChartPriceDecimals(0.1)).toBe(4);
+      expect(getChartPriceDecimals(0.5)).toBe(4);
+      expect(getChartPriceDecimals(0.38)).toBe(4);
+    });
+
+    it('should return 5 decimals for prices >= 0.01 and < 0.1', () => {
+      expect(getChartPriceDecimals(0.01)).toBe(5);
+      expect(getChartPriceDecimals(0.05)).toBe(5);
+    });
+
+    it('should return 6 decimals for prices < 0.01', () => {
+      expect(getChartPriceDecimals(0.001)).toBe(6);
+      expect(getChartPriceDecimals(0.00001)).toBe(6);
+    });
+  });
+
+  describe('formatChartPrice', () => {
+    it('should format high prices with 2 decimals', () => {
+      expect(formatChartPrice(42000.123)).toBe('42000.12');
+      expect(formatChartPrice(100.12)).toBe('100.12');
+    });
+
+    it('should format medium prices with 3 decimals', () => {
+      expect(formatChartPrice(50.1234)).toBe('50.123');
+      expect(formatChartPrice(1.5678)).toBe('1.568');
+    });
+
+    it('should format low prices with 4 decimals', () => {
+      expect(formatChartPrice(0.3794)).toBe('0.3794');
+      expect(formatChartPrice(0.5)).toBe('0.5000');
+    });
+
+    it('should format very low prices with more decimals', () => {
+      expect(formatChartPrice(0.05123)).toBe('0.05123');
+      expect(formatChartPrice(0.001234)).toBe('0.001234');
     });
   });
 

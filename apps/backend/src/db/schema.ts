@@ -218,7 +218,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   marginTopUpThreshold: numeric('margin_top_up_threshold', { precision: 5, scale: 2 }).default('30'),
   marginTopUpPercent: numeric('margin_top_up_percent', { precision: 5, scale: 2 }).default('10'),
   marginTopUpMaxCount: integer('margin_top_up_max_count').default(3),
-  exposureMultiplier: numeric('exposure_multiplier', { precision: 3, scale: 1 }).default('2').notNull(),
+  exposureMultiplier: numeric('exposure_multiplier', { precision: 4, scale: 2 }).default('1.25').notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({

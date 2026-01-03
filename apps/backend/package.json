@@ -39,7 +39,8 @@
     "backtest:export": "tsx src/cli/backtest-runner.ts export",
     "validate:all": "tsx validate-strategies.mts",
     "optimize:all": "node batch-optimize.mjs",
-    "test:all": "tsx validate-strategies.mts && node batch-optimize.mjs"
+    "test:all": "tsx validate-strategies.mts && node batch-optimize.mjs",
+    "reset-wallet": "tsx src/scripts/reset-wallet.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",

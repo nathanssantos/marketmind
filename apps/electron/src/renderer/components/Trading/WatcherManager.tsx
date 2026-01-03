@@ -31,8 +31,8 @@ export const WatcherManager = () => {
   const activeWatchers = watcherStatus?.activeWatchers ?? [];
   const persistedWatchers = watcherStatus?.persistedWatchers ?? 0;
 
-  const handleStopWatcher = async (symbol: string, interval: string) => {
-    await stopWatcher(symbol, interval);
+  const handleStopWatcher = async (symbol: string, interval: string, marketType?: 'SPOT' | 'FUTURES') => {
+    await stopWatcher(symbol, interval, marketType);
   };
 
   const handleStopAll = async () => {
@@ -125,7 +125,7 @@ export const WatcherManager = () => {
                 profileId={watcher.profileId}
                 marketType={watcher.marketType}
                 isActive={true}
-                onStop={() => handleStopWatcher(watcher.symbol, watcher.interval)}
+                onStop={() => handleStopWatcher(watcher.symbol, watcher.interval, watcher.marketType)}
                 isStopping={isStoppingWatcher}
               />
             );

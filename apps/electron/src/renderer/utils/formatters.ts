@@ -1,6 +1,19 @@
 import { getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
 import type { ChartContextData } from '../context/ChartContext';
 
+export const getChartPriceDecimals = (price: number): number => {
+  const absPrice = Math.abs(price);
+  if (absPrice >= 100) return 2;
+  if (absPrice >= 1) return 3;
+  if (absPrice >= 0.1) return 4;
+  if (absPrice >= 0.01) return 5;
+  return 6;
+};
+
+export const formatChartPrice = (price: number): string => {
+  return price.toFixed(getChartPriceDecimals(price));
+};
+
 export const formatPriceDisplay = (price: number): string => {
   if (price >= 1000000) {
     return `${(price / 1000000).toFixed(2)}M`;

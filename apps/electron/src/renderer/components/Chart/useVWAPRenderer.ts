@@ -1,6 +1,7 @@
 import { calculateMonthlyVWAP } from '@marketmind/indicators';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import { formatChartPrice } from '@renderer/utils/formatters';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { useCallback } from 'react';
 
@@ -90,7 +91,7 @@ export const useVWAPRenderer = ({
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
 
-        const priceText = lastVisibleValue.toFixed(2);
+        const priceText = formatChartPrice(lastVisibleValue);
         const tagStartX = width - CHART_CONFIG.CHART_RIGHT_MARGIN;
 
         drawPriceTag(ctx, priceText, y, tagStartX, VWAP_COLOR, CHART_CONFIG.CHART_RIGHT_MARGIN);

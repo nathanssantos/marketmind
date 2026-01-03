@@ -1,6 +1,7 @@
 import type { CanvasManager } from '@/renderer/utils/canvas/CanvasManager';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import { formatChartPrice } from '@renderer/utils/formatters';
 import { getKlineClose } from '@shared/utils';
 import { useCallback } from 'react';
 
@@ -91,7 +92,7 @@ export const useCurrentPriceLineRenderer = ({
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
 
-    const priceText = currentPrice.toFixed(2);
+    const priceText = formatChartPrice(currentPrice);
     const lineEndX = width - rightMargin;
 
     drawPriceTag(ctx, priceText, y, lineEndX, colors.currentPriceLabel.bg, 72, colors.currentPriceLabel.text);

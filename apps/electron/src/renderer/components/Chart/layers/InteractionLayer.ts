@@ -1,4 +1,5 @@
 import type { Kline, Viewport } from '@marketmind/types';
+import { formatChartPrice } from '@renderer/utils/formatters';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen } from '@shared/utils';
 
 export interface CrosshairConfig {
@@ -50,7 +51,7 @@ export const createCrosshairRenderer = (
 
     if (showPriceLabel) {
       const price = priceMax - (y / height) * (priceMax - priceMin);
-      const priceText = price.toFixed(2);
+      const priceText = formatChartPrice(price);
 
       ctx.font = `${fontSize}px monospace`;
       const textMetrics = ctx.measureText(priceText);
@@ -136,10 +137,10 @@ export const createTooltipRenderer = (
     const close = getKlineClose(kline);
 
     const lines = [
-      `O: ${open.toFixed(2)}`,
-      `H: ${high.toFixed(2)}`,
-      `L: ${low.toFixed(2)}`,
-      `C: ${close.toFixed(2)}`,
+      `O: ${formatChartPrice(open)}`,
+      `H: ${formatChartPrice(high)}`,
+      `L: ${formatChartPrice(low)}`,
+      `C: ${formatChartPrice(close)}`,
     ];
 
     ctx.save();

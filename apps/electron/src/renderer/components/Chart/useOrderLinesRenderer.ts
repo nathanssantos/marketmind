@@ -1,5 +1,6 @@
 import type { Order, TradingSetup } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { formatChartPrice } from '@renderer/utils/formatters';
 import { CHART_CONFIG } from '@shared/constants';
 import {
     getKlineClose,
@@ -491,7 +492,7 @@ export const useOrderLinesRenderer = (
       const lineColor = isLong ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)';
       const fillColor = isLong ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)';
 
-      const priceText = getOrderPrice(order).toFixed(2);
+      const priceText = formatChartPrice(getOrderPrice(order));
       priceTags.push({ priceText, y, fillColor });
 
       const tagStartX = chartWidth;
@@ -569,7 +570,7 @@ export const useOrderLinesRenderer = (
         const slSign = slResultPercent >= 0 ? '+' : '';
         const slInfoText = `SL (${slSign}${slResultPercent.toFixed(2)}%) [PENDING]`;
 
-        priceTags.push({ priceText: order.stopLoss.toFixed(2), y: stopY, fillColor: slTagColor });
+        priceTags.push({ priceText: formatChartPrice(order.stopLoss), y: stopY, fillColor: slTagColor });
 
         const slCloseButtonRef = { x: 0, y: 0, size: 14 };
         drawInfoTag(ctx, slInfoText, stopY, slTagColor, true, slCloseButtonRef);
@@ -618,7 +619,7 @@ export const useOrderLinesRenderer = (
           : ((entryPrice - order.takeProfit) / entryPrice) * 100;
         const tpInfoText = `TP (+${tpProfitPercent.toFixed(2)}%) [PENDING]`;
 
-        priceTags.push({ priceText: order.takeProfit.toFixed(2), y: tpY, fillColor: 'rgba(34, 197, 94, 0.9)' });
+        priceTags.push({ priceText: formatChartPrice(order.takeProfit), y: tpY, fillColor: 'rgba(34, 197, 94, 0.9)' });
 
         const tpCloseButtonRef = { x: 0, y: 0, size: 14 };
         drawInfoTag(ctx, tpInfoText, tpY, 'rgba(34, 197, 94, 0.9)', true, tpCloseButtonRef);
@@ -692,7 +693,7 @@ export const useOrderLinesRenderer = (
       const lineColor = isLong ? 'rgba(59, 130, 246, 0.8)' : 'rgba(251, 146, 60, 0.8)';
       const fillColor = isLong ? 'rgba(59, 130, 246, 0.9)' : 'rgba(251, 146, 60, 0.9)';
       
-      const priceText = position.avgPrice.toFixed(2);
+      const priceText = formatChartPrice(position.avgPrice);
       priceTags.push({ priceText, y, fillColor });
       
       const tagStartX = chartWidth;
@@ -751,7 +752,7 @@ export const useOrderLinesRenderer = (
         const lineColor = isLong ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)';
         const fillColor = isLong ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)';
 
-        const priceText = getOrderPrice(order).toFixed(2);
+        const priceText = formatChartPrice(getOrderPrice(order));
         const tagStartX = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
         drawPriceTag(ctx, priceText, y, tagStartX, fillColor, 'left', tagStartX);
 
@@ -880,7 +881,7 @@ export const useOrderLinesRenderer = (
         const lineColor = isLong ? 'rgba(59, 130, 246, 0.8)' : 'rgba(251, 146, 60, 0.8)';
         const fillColor = isLong ? 'rgba(59, 130, 246, 0.9)' : 'rgba(251, 146, 60, 0.9)';
 
-        const priceText = hPos.avgPrice.toFixed(2);
+        const priceText = formatChartPrice(hPos.avgPrice);
         const tagStartX = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
         drawPriceTag(ctx, priceText, y, tagStartX, fillColor, 'left', tagStartX);
 
@@ -1004,7 +1005,7 @@ export const useOrderLinesRenderer = (
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
 
-        const priceText = consolidatedStopLoss.toFixed(2);
+        const priceText = formatChartPrice(consolidatedStopLoss);
         const slResultPercent = isLongPosition
           ? ((consolidatedStopLoss - position.avgPrice) / position.avgPrice) * 100
           : ((position.avgPrice - consolidatedStopLoss) / position.avgPrice) * 100;
@@ -1084,7 +1085,7 @@ export const useOrderLinesRenderer = (
         ctx.textBaseline = 'middle';
 
         const fillColor = 'rgba(34, 197, 94, 0.9)';
-        const priceText = consolidatedTakeProfit.toFixed(2);
+        const priceText = formatChartPrice(consolidatedTakeProfit);
         const tpProfitPercent = isLongPosition
           ? ((consolidatedTakeProfit - position.avgPrice) / position.avgPrice) * 100
           : ((position.avgPrice - consolidatedTakeProfit) / position.avgPrice) * 100;
@@ -1154,7 +1155,7 @@ export const useOrderLinesRenderer = (
       const lineColor = isLong ? 'rgba(34, 197, 94, 0.6)' : 'rgba(239, 68, 68, 0.6)';
       const fillColor = isLong ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)';
 
-      const priceText = effectiveEntryPrice.toFixed(2);
+      const priceText = formatChartPrice(effectiveEntryPrice);
       priceTags.push({ priceText, y: entryY, fillColor });
 
       ctx.strokeStyle = lineColor;
@@ -1191,7 +1192,7 @@ export const useOrderLinesRenderer = (
         ctx.stroke();
         ctx.setLineDash([]);
 
-        const slPriceText = setup.stopLoss.toFixed(2);
+        const slPriceText = formatChartPrice(setup.stopLoss);
         const slPercent = isLong
           ? ((setup.stopLoss - effectiveEntryPrice) / effectiveEntryPrice) * 100
           : ((effectiveEntryPrice - setup.stopLoss) / effectiveEntryPrice) * 100;
@@ -1213,7 +1214,7 @@ export const useOrderLinesRenderer = (
         ctx.stroke();
         ctx.setLineDash([]);
 
-        const tpPriceText = setup.takeProfit.toFixed(2);
+        const tpPriceText = formatChartPrice(setup.takeProfit);
         const tpPercent = isLong
           ? ((setup.takeProfit - effectiveEntryPrice) / effectiveEntryPrice) * 100
           : ((effectiveEntryPrice - setup.takeProfit) / effectiveEntryPrice) * 100;

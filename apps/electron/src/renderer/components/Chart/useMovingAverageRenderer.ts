@@ -1,6 +1,7 @@
 import { calculateMovingAverage } from '@marketmind/indicators';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import { formatChartPrice } from '@renderer/utils/formatters';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { RefObject } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
@@ -146,7 +147,7 @@ export const useMovingAverageRenderer = ({
       if (lastVisibleValue === null || lastVisibleValue === undefined) return;
 
       const y = manager.priceToY(lastVisibleValue);
-      const priceText = lastVisibleValue.toFixed(2);
+      const priceText = formatChartPrice(lastVisibleValue);
       
       const fillColor = ma.color.replace(/[\d.]+\)$/, '0.9)');
       

@@ -657,16 +657,17 @@ export const autoTradingRouter = router({
         walletId: z.string(),
         symbol: z.string(),
         interval: z.string(),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      log('🛑 stopWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval });
+      log('🛑 stopWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, marketType: input.marketType });
 
       await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
-      await autoTradingScheduler.stopWatcher(input.walletId, input.symbol, input.interval);
+      await autoTradingScheduler.stopWatcher(input.walletId, input.symbol, input.interval, input.marketType);
 
-      log('✅ Watcher stopped', { walletId: input.walletId, symbol: input.symbol, interval: input.interval });
+      log('✅ Watcher stopped', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, marketType: input.marketType });
 
       return { success: true };
     }),
