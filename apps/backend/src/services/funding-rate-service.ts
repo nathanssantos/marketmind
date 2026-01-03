@@ -1,11 +1,11 @@
+import { calculateFundingPayment } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
+import { TIME_MS } from '../constants';
 import { db } from '../db';
 import { positions, wallets } from '../db/schema';
-import { getBinanceFuturesDataService } from './binance-futures-data';
 import { isPaperWallet } from './binance-futures-client';
-import { calculateFundingPayment } from '@marketmind/types';
+import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
-import { TIME_MS } from '../constants';
 
 const FUNDING_INTERVAL_MS = 8 * TIME_MS.HOUR;
 const CHECK_INTERVAL_MS = TIME_MS.MINUTE;
@@ -29,7 +29,7 @@ class FundingRateService {
       void this.processFundingRates();
     }, CHECK_INTERVAL_MS);
 
-    logger.info('[FundingRateService] Started - checking every minute for funding rate application');
+    // logger.info('[FundingRateService] Started - checking every minute for funding rate application');
   }
 
   stop(): void {

@@ -1,5 +1,5 @@
 import type { Interval } from '@marketmind/types';
-import { INTERVAL_MS, BINANCE_NATIVE_INTERVALS } from '@marketmind/types';
+import { BINANCE_NATIVE_INTERVALS, INTERVAL_MS } from '@marketmind/types';
 import { and, asc, desc, eq, gte, lt } from 'drizzle-orm';
 import { db } from '../db';
 import { klines } from '../db/schema';
@@ -283,7 +283,7 @@ export const smartBackfillKlines = async (
     const timeSinceNewest = now - newestTime;
 
     if (timeSinceNewest <= intervalMs * 2) {
-      logger.info({ symbol, interval, marketType }, 'Smart backfill: data is complete and up-to-date');
+      // logger.info({ symbol, interval, marketType }, 'Smart backfill: data is complete and up-to-date');
       return { totalInDb: currentCount, downloaded: 0, gaps: 0, alreadyComplete: true };
     }
 
@@ -486,4 +486,4 @@ export const aggregateYearlyKlines = async (
 };
 
 export const isNativeBinanceInterval = (interval: Interval): boolean =>
-  BINANCE_NATIVE_INTERVALS.includes(interval as typeof BINANCE_NATIVE_INTERVALS[number]);
+  BINANCE_NATIVE_INTERVALS.includes(interval);

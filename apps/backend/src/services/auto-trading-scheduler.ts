@@ -75,6 +75,9 @@ interface ActiveWatcher {
 
 const CANDLE_CLOSE_SAFETY_BUFFER_MS = 2000;
 
+const yieldToEventLoop = (): Promise<void> =>
+  new Promise((resolve) => setImmediate(resolve));
+
 const getPollingIntervalForTimeframe = (interval: string): number => {
   const intervalMs = INTERVAL_MS[interval as Interval];
   if (!intervalMs) {
@@ -87,10 +90,34 @@ const getPollingIntervalForTimeframe = (interval: string): number => {
 export class AutoTradingScheduler {
   private activeWatchers: Map<string, ActiveWatcher> = new Map();
   private strategyLoader: StrategyLoader;
+  private processingQueue: string[] = [];
+  private isProcessingQueue = false;
 
   constructor() {
     this.strategyLoader = new StrategyLoader([STRATEGIES_DIR]);
     log('🚀 AutoTradingScheduler initialized');
+  }
+
+  private queueWatcherProcessing(watcherId: string): void {
+    if (!this.processingQueue.includes(watcherId)) {
+      this.processingQueue.push(watcherId);
+      void this.processWatcherQueue();
+    }
+  }
+
+  private async processWatcherQueue(): Promise<void> {
+    if (this.isProcessingQueue) return;
+    this.isProcessingQueue = true;
+
+    while (this.processingQueue.length > 0) {
+      const watcherId = this.processingQueue.shift();
+      if (watcherId) {
+        await this.processWatcher(watcherId);
+        await yieldToEventLoop();
+      }
+    }
+
+    this.isProcessingQueue = false;
   }
 
   private getIntervalMs(interval: string): number {
@@ -225,10 +252,10 @@ export class AutoTradingScheduler {
         syncedAt: new Date().toISOString(),
       });
 
-      void this.processWatcher(watcherId);
+      this.queueWatcherProcessing(watcherId);
 
       const intervalId = setInterval(() => {
-        void this.processWatcher(watcherId);
+        this.queueWatcherProcessing(watcherId);
       }, pollIntervalMs);
 
       const watcher = this.activeWatchers.get(watcherId);
@@ -439,7 +466,7 @@ export class AutoTradingScheduler {
         if (remainingMs > 0 && remainingMs < 10000) {
           setTimeout(() => {
             log('🔄 Retrying after candle close buffer', { watcherId, symbol: watcher.symbol });
-            void this.processWatcher(watcherId);
+            this.queueWatcherProcessing(watcherId);
           }, remainingMs + 100);
         }
 
@@ -465,6 +492,8 @@ export class AutoTradingScheduler {
       const currentIndex = mappedKlines.length - 1;
 
       for (const strategy of filteredStrategies) {
+        await yieldToEventLoop();
+
         const interpreter = new StrategyInterpreter({
           enabled: true,
           minConfidence: 50,

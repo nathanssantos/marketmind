@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { REQUIRED_KLINES, TIME_MS } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
-import { smartBackfillKlines, getIntervalMilliseconds, aggregateYearlyKlines } from '../services/binance-historical';
+import { aggregateYearlyKlines, getIntervalMilliseconds, smartBackfillKlines } from '../services/binance-historical';
 import { binanceFuturesKlineStreamService, binanceKlineStreamService } from '../services/binance-kline-stream';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
@@ -85,22 +85,22 @@ export const klineRouter = router({
         return yearlyKlines;
       }
 
-      const backfillResult = await smartBackfillKlines(
-        input.symbol,
-        input.interval as Interval,
-        input.limit,
-        marketType
-      );
+      // const backfillResult = await smartBackfillKlines(
+      //   input.symbol,
+      //   input.interval as Interval,
+      //   input.limit,
+      //   marketType
+      // );
 
-      logger.info({
-        symbol: input.symbol,
-        interval: input.interval,
-        marketType,
-        downloaded: backfillResult.downloaded,
-        totalInDb: backfillResult.totalInDb,
-        gaps: backfillResult.gaps,
-        alreadyComplete: backfillResult.alreadyComplete,
-      }, 'Smart backfill completed for list query');
+      // logger.info({
+      //   symbol: input.symbol,
+      //   interval: input.interval,
+      //   marketType,
+      //   downloaded: backfillResult.downloaded,
+      //   totalInDb: backfillResult.totalInDb,
+      //   gaps: backfillResult.gaps,
+      //   alreadyComplete: backfillResult.alreadyComplete,
+      // }, 'Smart backfill completed for list query');
 
       const conditions = [
         eq(klines.symbol, input.symbol),
