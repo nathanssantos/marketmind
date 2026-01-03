@@ -37,20 +37,37 @@ export const useMACDRenderer = ({
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
-    const visibleEndIndex = Math.ceil(viewport.end);
+    const visibleEndIndex = Math.min(Math.ceil(viewport.end), macdData.macd.length);
 
-    const visibleMACD = macdData.macd.slice(visibleStartIndex, visibleEndIndex).filter((v): v is number => !isNaN(v));
-    const visibleSignal = macdData.signal.slice(visibleStartIndex, visibleEndIndex).filter((v): v is number => !isNaN(v));
-    const visibleHistogram = macdData.histogram.slice(visibleStartIndex, visibleEndIndex).filter((v): v is number => !isNaN(v));
+    let minValue = Infinity;
+    let maxValue = -Infinity;
+    let hasValidValue = false;
 
-    if (visibleMACD.length === 0) {
+    for (let i = visibleStartIndex; i < visibleEndIndex; i++) {
+      const macdVal = macdData.macd[i];
+      const signalVal = macdData.signal[i];
+      const histVal = macdData.histogram[i];
+
+      if (macdVal !== undefined && !isNaN(macdVal)) {
+        hasValidValue = true;
+        if (macdVal < minValue) minValue = macdVal;
+        if (macdVal > maxValue) maxValue = macdVal;
+      }
+      if (signalVal !== undefined && !isNaN(signalVal)) {
+        if (signalVal < minValue) minValue = signalVal;
+        if (signalVal > maxValue) maxValue = signalVal;
+      }
+      if (histVal !== undefined && !isNaN(histVal)) {
+        if (histVal < minValue) minValue = histVal;
+        if (histVal > maxValue) maxValue = histVal;
+      }
+    }
+
+    if (!hasValidValue) {
       ctx.restore();
       return;
     }
 
-    const allValues = [...visibleMACD, ...visibleSignal, ...visibleHistogram];
-    const minValue = Math.min(...allValues);
-    const maxValue = Math.max(...allValues);
     const range = maxValue - minValue || 1;
     const padding = range * 0.1;
 

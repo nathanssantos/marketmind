@@ -37,19 +37,32 @@ export const useKlingerRenderer = ({
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
-    const visibleEndIndex = Math.ceil(viewport.end);
+    const visibleEndIndex = Math.min(Math.ceil(viewport.end), klingerData.kvo.length);
 
-    const visibleKVO = klingerData.kvo.slice(visibleStartIndex, visibleEndIndex).filter((v): v is number => v !== null);
-    const visibleSignal = klingerData.signal.slice(visibleStartIndex, visibleEndIndex).filter((v): v is number => v !== null);
+    let minValue = Infinity;
+    let maxValue = -Infinity;
+    let hasValidValue = false;
 
-    if (visibleKVO.length === 0) {
+    for (let i = visibleStartIndex; i < visibleEndIndex; i++) {
+      const kvoVal = klingerData.kvo[i];
+      const signalVal = klingerData.signal[i];
+
+      if (kvoVal !== null && kvoVal !== undefined) {
+        hasValidValue = true;
+        if (kvoVal < minValue) minValue = kvoVal;
+        if (kvoVal > maxValue) maxValue = kvoVal;
+      }
+      if (signalVal !== null && signalVal !== undefined) {
+        if (signalVal < minValue) minValue = signalVal;
+        if (signalVal > maxValue) maxValue = signalVal;
+      }
+    }
+
+    if (!hasValidValue) {
       ctx.restore();
       return;
     }
 
-    const allValues = [...visibleKVO, ...visibleSignal];
-    const minValue = Math.min(...allValues);
-    const maxValue = Math.max(...allValues);
     const range = maxValue - minValue || 1;
     const padding = range * 0.1;
 

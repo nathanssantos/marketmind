@@ -51,10 +51,29 @@ export const useChartViewport = ({
     const start = Math.max(0, klines.length - visibleCount - pan);
     const end = Math.min(klines.length, start + visibleCount);
 
-    const visibleKlines = klines.slice(Math.floor(start), Math.ceil(end));
-    const prices = visibleKlines.flatMap((k) => [Number(k.open), Number(k.high), Number(k.low), Number(k.close)]);
-    const priceMin = Math.min(...prices);
-    const priceMax = Math.max(...prices);
+    const visibleStart = Math.floor(start);
+    const visibleEnd = Math.ceil(end);
+
+    let priceMin = Infinity;
+    let priceMax = -Infinity;
+
+    for (let i = visibleStart; i < visibleEnd && i < klines.length; i++) {
+      const k = klines[i];
+      if (!k) continue;
+      const open = Number(k.open);
+      const high = Number(k.high);
+      const low = Number(k.low);
+      const close = Number(k.close);
+      if (high > priceMax) priceMax = high;
+      if (low < priceMin) priceMin = low;
+      if (open > priceMax) priceMax = open;
+      if (open < priceMin) priceMin = open;
+      if (close > priceMax) priceMax = close;
+      if (close < priceMin) priceMin = close;
+    }
+
+    if (priceMin === Infinity) priceMin = 0;
+    if (priceMax === -Infinity) priceMax = 100;
     const priceRange = priceMax - priceMin;
 
     const klineWidth = Math.max(1, Math.min(20, width / visibleCount * 0.8));

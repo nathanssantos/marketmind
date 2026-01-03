@@ -37,20 +37,37 @@ export const usePPORenderer = ({
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
-    const visibleEndIndex = Math.ceil(viewport.end);
+    const visibleEndIndex = Math.min(Math.ceil(viewport.end), ppoData.ppo.length);
 
-    const visiblePPO = ppoData.ppo.slice(visibleStartIndex, visibleEndIndex).filter((v): v is number => v !== null);
-    const visibleSignal = ppoData.signal.slice(visibleStartIndex, visibleEndIndex).filter((v): v is number => v !== null);
-    const visibleHistogram = ppoData.histogram.slice(visibleStartIndex, visibleEndIndex).filter((v): v is number => v !== null);
+    let minValue = Infinity;
+    let maxValue = -Infinity;
+    let hasValidValue = false;
 
-    if (visiblePPO.length === 0) {
+    for (let i = visibleStartIndex; i < visibleEndIndex; i++) {
+      const ppoVal = ppoData.ppo[i];
+      const signalVal = ppoData.signal[i];
+      const histVal = ppoData.histogram[i];
+
+      if (ppoVal !== null && ppoVal !== undefined) {
+        hasValidValue = true;
+        if (ppoVal < minValue) minValue = ppoVal;
+        if (ppoVal > maxValue) maxValue = ppoVal;
+      }
+      if (signalVal !== null && signalVal !== undefined) {
+        if (signalVal < minValue) minValue = signalVal;
+        if (signalVal > maxValue) maxValue = signalVal;
+      }
+      if (histVal !== null && histVal !== undefined) {
+        if (histVal < minValue) minValue = histVal;
+        if (histVal > maxValue) maxValue = histVal;
+      }
+    }
+
+    if (!hasValidValue) {
       ctx.restore();
       return;
     }
 
-    const allValues = [...visiblePPO, ...visibleSignal, ...visibleHistogram];
-    const minValue = Math.min(...allValues);
-    const maxValue = Math.max(...allValues);
     const range = maxValue - minValue || 1;
     const padding = range * 0.1;
 

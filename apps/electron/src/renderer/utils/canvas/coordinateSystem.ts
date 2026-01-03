@@ -20,9 +20,8 @@ export interface Dimensions {
 export const calculateBounds = (klines: Kline[], viewport: Viewport): Bounds => {
   const visibleStart = Math.floor(viewport.start);
   const visibleEnd = Math.min(Math.ceil(viewport.end), klines.length);
-  const visibleKlines = klines.slice(visibleStart, visibleEnd);
 
-  if (visibleKlines.length === 0) {
+  if (visibleStart >= visibleEnd) {
     return {
       minPrice: 0,
       maxPrice: 0,
@@ -31,15 +30,31 @@ export const calculateBounds = (klines: Kline[], viewport: Viewport): Bounds => 
     };
   }
 
-  const prices = visibleKlines.flatMap((c) => [getKlineHigh(c), getKlineLow(c)]);
-  const volumes = visibleKlines.map((c) => getKlineVolume(c));
+  let minPrice = Infinity;
+  let maxPrice = -Infinity;
+  let minVolume = Infinity;
+  let maxVolume = -Infinity;
 
-  return {
-    minPrice: Math.min(...prices),
-    maxPrice: Math.max(...prices),
-    minVolume: Math.min(...volumes),
-    maxVolume: Math.max(...volumes),
-  };
+  for (let i = visibleStart; i < visibleEnd; i++) {
+    const kline = klines[i];
+    if (!kline) continue;
+
+    const high = getKlineHigh(kline);
+    const low = getKlineLow(kline);
+    const volume = getKlineVolume(kline);
+
+    if (high > maxPrice) maxPrice = high;
+    if (low < minPrice) minPrice = low;
+    if (volume > maxVolume) maxVolume = volume;
+    if (volume < minVolume) minVolume = volume;
+  }
+
+  if (minPrice === Infinity) minPrice = 0;
+  if (maxPrice === -Infinity) maxPrice = 0;
+  if (minVolume === Infinity) minVolume = 0;
+  if (maxVolume === -Infinity) maxVolume = 0;
+
+  return { minPrice, maxPrice, minVolume, maxVolume };
 };
 
 export const priceToY = (

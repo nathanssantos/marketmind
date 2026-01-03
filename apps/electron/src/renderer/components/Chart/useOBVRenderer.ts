@@ -42,16 +42,28 @@ export const useOBVRenderer = ({
     ctx.fillRect(0, panelTop, chartWidth, PANEL_HEIGHT);
 
     const visibleStartIndex = Math.floor(viewport.start);
-    const visibleEndIndex = Math.ceil(viewport.end);
+    const visibleEndIndex = Math.min(Math.ceil(viewport.end), obvData.values.length);
 
-    const visibleValues = obvData.values.slice(visibleStartIndex, visibleEndIndex);
-    if (visibleValues.length === 0) {
+    if (visibleStartIndex >= visibleEndIndex) {
       ctx.restore();
       return;
     }
 
-    const minValue = Math.min(...visibleValues);
-    const maxValue = Math.max(...visibleValues);
+    let minValue = Infinity;
+    let maxValue = -Infinity;
+
+    for (let i = visibleStartIndex; i < visibleEndIndex; i++) {
+      const val = obvData.values[i];
+      if (val === undefined) continue;
+      if (val < minValue) minValue = val;
+      if (val > maxValue) maxValue = val;
+    }
+
+    if (minValue === Infinity) {
+      ctx.restore();
+      return;
+    }
+
     const range = maxValue - minValue || 1;
 
     const valueToY = (value: number): number => {
