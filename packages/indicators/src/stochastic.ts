@@ -18,28 +18,40 @@ export const calculateStochastic = (
     return { k: [], d: [] };
   }
 
-  const k: (number | null)[] = [];
+  const len = klines.length;
+  const k: (number | null)[] = new Array(len);
 
-  for (let i = 0; i < klines.length; i++) {
-    if (i < kPeriod - 1) {
-      k.push(null);
-      continue;
+  for (let i = 0; i < kPeriod - 1 && i < len; i++) {
+    k[i] = null;
+  }
+
+  for (let i = kPeriod - 1; i < len; i++) {
+    let highestHigh = -Infinity;
+    let lowestLow = Infinity;
+    const startIdx = i - kPeriod + 1;
+
+    for (let j = startIdx; j <= i; j++) {
+      const kline = klines[j];
+      if (!kline) continue;
+      const high = getKlineHigh(kline);
+      const low = getKlineLow(kline);
+      if (high > highestHigh) highestHigh = high;
+      if (low < lowestLow) lowestLow = low;
     }
 
-    const slice = klines.slice(i - kPeriod + 1, i + 1);
-    const highestHigh = Math.max(...slice.map(c => getKlineHigh(c)));
-    const lowestLow = Math.min(...slice.map(c => getKlineLow(c)));
     const currentKline = klines[i];
-    if (!currentKline) continue;
+    if (!currentKline) {
+      k[i] = null;
+      continue;
+    }
     const currentClose = getKlineClose(currentKline);
 
     if (highestHigh === lowestLow) {
-      k.push(50);
+      k[i] = 50;
       continue;
     }
 
-    const stochK = ((currentClose - lowestLow) / (highestHigh - lowestLow)) * 100;
-    k.push(stochK);
+    k[i] = ((currentClose - lowestLow) / (highestHigh - lowestLow)) * 100;
   }
 
   const d = calculateSMA(k, dPeriod);
@@ -48,15 +60,16 @@ export const calculateStochastic = (
 };
 
 const calculateSMA = (values: (number | null)[], period: number): (number | null)[] => {
-  if (period <= 0 || values.length === 0) {
+  const len = values.length;
+  if (period <= 0 || len === 0) {
     return [];
   }
 
-  const result: (number | null)[] = [];
+  const result: (number | null)[] = new Array(len);
   const multiplier = 2 / (period + 1);
-  
+
   let firstValidIndex = -1;
-  for (let i = 0; i < values.length; i++) {
+  for (let i = 0; i < len; i++) {
     if (values[i] !== null) {
       firstValidIndex = i;
       break;
@@ -64,19 +77,19 @@ const calculateSMA = (values: (number | null)[], period: number): (number | null
   }
 
   if (firstValidIndex === -1) {
-    return new Array(values.length).fill(null);
+    for (let i = 0; i < len; i++) result[i] = null;
+    return result;
   }
 
-  for (let i = 0; i < values.length; i++) {
-    if (i < firstValidIndex) {
-      result.push(null);
-      continue;
-    }
+  for (let i = 0; i < firstValidIndex; i++) {
+    result[i] = null;
+  }
 
+  for (let i = firstValidIndex; i < len; i++) {
     const validValuesCount = i - firstValidIndex + 1;
-    
+
     if (validValuesCount < period) {
-      result.push(null);
+      result[i] = null;
       continue;
     }
 
@@ -90,7 +103,7 @@ const calculateSMA = (values: (number | null)[], period: number): (number | null
           count++;
         }
       }
-      result.push(count > 0 ? sum / count : null);
+      result[i] = count > 0 ? sum / count : null;
       continue;
     }
 
@@ -98,12 +111,11 @@ const calculateSMA = (values: (number | null)[], period: number): (number | null
     const currentValue = values[i];
 
     if (previousEMA === null || previousEMA === undefined || currentValue === null || currentValue === undefined) {
-      result.push(null);
+      result[i] = null;
       continue;
     }
 
-    const ema = (currentValue - previousEMA) * multiplier + previousEMA;
-    result.push(ema);
+    result[i] = (currentValue - previousEMA) * multiplier + previousEMA;
   }
 
   return result;

@@ -25,33 +25,33 @@ export const calculateDonchian = (
     };
   }
 
-  const upper: (number | null)[] = [];
-  const middle: (number | null)[] = [];
-  const lower: (number | null)[] = [];
+  const upper: (number | null)[] = new Array(length);
+  const middle: (number | null)[] = new Array(length);
+  const lower: (number | null)[] = new Array(length);
 
-  for (let i = 0; i < length; i++) {
-    if (i < period - 1) {
-      upper.push(null);
-      middle.push(null);
-      lower.push(null);
-      continue;
-    }
+  for (let i = 0; i < period - 1; i++) {
+    upper[i] = null;
+    middle[i] = null;
+    lower[i] = null;
+  }
 
-    const slice = klines.slice(i - period + 1, i + 1);
-
+  for (let i = period - 1; i < length; i++) {
     let highestHigh = -Infinity;
     let lowestLow = Infinity;
+    const startIdx = i - period + 1;
 
-    for (const kline of slice) {
+    for (let j = startIdx; j <= i; j++) {
+      const kline = klines[j];
+      if (!kline) continue;
       const high = getKlineHigh(kline);
       const low = getKlineLow(kline);
       if (high > highestHigh) highestHigh = high;
       if (low < lowestLow) lowestLow = low;
     }
 
-    upper.push(highestHigh);
-    lower.push(lowestLow);
-    middle.push((highestHigh + lowestLow) / 2);
+    upper[i] = highestHigh;
+    lower[i] = lowestLow;
+    middle[i] = (highestHigh + lowestLow) / 2;
   }
 
   return { upper, middle, lower };

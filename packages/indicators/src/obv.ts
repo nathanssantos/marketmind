@@ -43,18 +43,23 @@ export const calculateOBV = (
     values.push(obv);
   }
 
-  const sma: (number | null)[] = [];
+  if (!smaPeriod || smaPeriod <= 0) {
+    return { values, sma: [] };
+  }
 
-  if (smaPeriod && smaPeriod > 0) {
-    for (let i = 0; i < values.length; i++) {
-      if (i < smaPeriod - 1) {
-        sma.push(null);
-      } else {
-        const slice = values.slice(i - smaPeriod + 1, i + 1);
-        const sum = slice.reduce((acc, val) => acc + val, 0);
-        sma.push(sum / smaPeriod);
-      }
+  const sma: (number | null)[] = new Array(values.length);
+
+  for (let i = 0; i < smaPeriod - 1; i++) {
+    sma[i] = null;
+  }
+
+  for (let i = smaPeriod - 1; i < values.length; i++) {
+    let sum = 0;
+    const startIdx = i - smaPeriod + 1;
+    for (let j = startIdx; j <= i; j++) {
+      sum += values[j]!;
     }
+    sma[i] = sum / smaPeriod;
   }
 
   return { values, sma };

@@ -19,42 +19,84 @@ export const calculateStochRSI = (
 
   const rsiResult = calculateRSI(klines, rsiPeriod);
   const rsiValues = rsiResult.values;
+  const len = rsiValues.length;
 
-  const kValues: (number | null)[] = new Array(rsiValues.length).fill(null);
-  const dValues: (number | null)[] = new Array(rsiValues.length).fill(null);
+  const kValues: (number | null)[] = new Array(len);
+  const dValues: (number | null)[] = new Array(len);
 
-  for (let i = stochPeriod - 1; i < rsiValues.length; i++) {
-    const rsiSlice = rsiValues.slice(i - stochPeriod + 1, i + 1);
-    const validRsi = rsiSlice.filter((v): v is number => v !== null);
+  for (let i = 0; i < stochPeriod - 1 && i < len; i++) {
+    kValues[i] = null;
+    dValues[i] = null;
+  }
 
-    if (validRsi.length === stochPeriod) {
-      const minRsi = Math.min(...validRsi);
-      const maxRsi = Math.max(...validRsi);
+  for (let i = stochPeriod - 1; i < len; i++) {
+    let minRsi = Infinity;
+    let maxRsi = -Infinity;
+    let validCount = 0;
+    const startIdx = i - stochPeriod + 1;
+
+    for (let j = startIdx; j <= i; j++) {
+      const val = rsiValues[j];
+      if (val !== null && val !== undefined) {
+        if (val < minRsi) minRsi = val;
+        if (val > maxRsi) maxRsi = val;
+        validCount++;
+      }
+    }
+
+    if (validCount === stochPeriod) {
       const currentRsi = rsiValues[i];
-
       if (currentRsi !== null && currentRsi !== undefined && maxRsi !== minRsi) {
         kValues[i] = ((currentRsi - minRsi) / (maxRsi - minRsi)) * 100;
       } else if (currentRsi !== null && currentRsi !== undefined) {
         kValues[i] = 50;
+      } else {
+        kValues[i] = null;
+      }
+    } else {
+      kValues[i] = null;
+    }
+  }
+
+  for (let i = kSmooth - 1; i < len; i++) {
+    let sum = 0;
+    let validCount = 0;
+    const startIdx = i - kSmooth + 1;
+
+    for (let j = startIdx; j <= i; j++) {
+      const val = kValues[j];
+      if (val !== null && val !== undefined) {
+        sum += val;
+        validCount++;
       }
     }
-  }
 
-  for (let i = kSmooth - 1; i < kValues.length; i++) {
-    const kSlice = kValues.slice(i - kSmooth + 1, i + 1);
-    const validK = kSlice.filter((v): v is number => v !== null);
-
-    if (validK.length === kSmooth) {
-      kValues[i] = validK.reduce((sum, v) => sum + v, 0) / validK.length;
+    if (validCount === kSmooth) {
+      kValues[i] = sum / validCount;
     }
   }
 
-  for (let i = dSmooth - 1; i < kValues.length; i++) {
-    const kSlice = kValues.slice(i - dSmooth + 1, i + 1);
-    const validK = kSlice.filter((v): v is number => v !== null);
+  for (let i = 0; i < dSmooth - 1 && i < len; i++) {
+    dValues[i] = null;
+  }
 
-    if (validK.length === dSmooth) {
-      dValues[i] = validK.reduce((sum, v) => sum + v, 0) / validK.length;
+  for (let i = dSmooth - 1; i < len; i++) {
+    let sum = 0;
+    let validCount = 0;
+    const startIdx = i - dSmooth + 1;
+
+    for (let j = startIdx; j <= i; j++) {
+      const val = kValues[j];
+      if (val !== null && val !== undefined) {
+        sum += val;
+        validCount++;
+      }
+    }
+
+    if (validCount === dSmooth) {
+      dValues[i] = sum / validCount;
+    } else {
+      dValues[i] = null;
     }
   }
 

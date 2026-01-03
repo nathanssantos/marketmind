@@ -11,27 +11,31 @@ export const calculateBollingerBands = (
     period: number = 20,
     stdDev: number = 2
 ): BollingerBands | null => {
-    if (klines.length < period) {
+    const length = klines.length;
+    if (length < period) {
         return null;
     }
 
-    const recentKlines = klines.slice(-period);
-    const closes = recentKlines.map((k) => parseFloat(k.close));
+    const startIdx = length - period;
+    let sum = 0;
 
-    const sum = closes.reduce((acc, val) => acc + val, 0);
+    for (let i = startIdx; i < length; i++) {
+        sum += parseFloat(klines[i]!.close);
+    }
     const middle = sum / period;
 
-    const squaredDifferences = closes.map((close) => Math.pow(close - middle, 2));
-    const variance = squaredDifferences.reduce((acc, val) => acc + val, 0) / period;
+    let squaredDiffSum = 0;
+    for (let i = startIdx; i < length; i++) {
+        const close = parseFloat(klines[i]!.close);
+        squaredDiffSum += Math.pow(close - middle, 2);
+    }
+    const variance = squaredDiffSum / period;
     const standardDeviation = Math.sqrt(variance);
 
-    const upper = middle + stdDev * standardDeviation;
-    const lower = middle - stdDev * standardDeviation;
-
     return {
-        upper,
+        upper: middle + stdDev * standardDeviation,
         middle,
-        lower,
+        lower: middle - stdDev * standardDeviation,
     };
 };
 
@@ -40,16 +44,35 @@ export const calculateBollingerBandsArray = (
     period: number = 20,
     stdDev: number = 2
 ): (BollingerBands | null)[] => {
-    const result: (BollingerBands | null)[] = [];
+    const length = klines.length;
+    const result: (BollingerBands | null)[] = new Array(length);
 
-    for (let i = 0; i < klines.length; i++) {
-        if (i < period - 1) {
-            result.push(null);
-        } else {
-            const slice = klines.slice(0, i + 1);
-            const bb = calculateBollingerBands(slice, period, stdDev);
-            result.push(bb);
+    for (let i = 0; i < period - 1; i++) {
+        result[i] = null;
+    }
+
+    for (let i = period - 1; i < length; i++) {
+        let sum = 0;
+        const startIdx = i - period + 1;
+
+        for (let j = startIdx; j <= i; j++) {
+            sum += parseFloat(klines[j]!.close);
         }
+        const middle = sum / period;
+
+        let squaredDiffSum = 0;
+        for (let j = startIdx; j <= i; j++) {
+            const close = parseFloat(klines[j]!.close);
+            squaredDiffSum += Math.pow(close - middle, 2);
+        }
+        const variance = squaredDiffSum / period;
+        const standardDeviation = Math.sqrt(variance);
+
+        result[i] = {
+            upper: middle + stdDev * standardDeviation,
+            middle,
+            lower: middle - stdDev * standardDeviation,
+        };
     }
 
     return result;

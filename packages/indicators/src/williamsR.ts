@@ -18,26 +18,26 @@ export const calculateWilliamsR = (
     return Array(length).fill(null);
   }
 
-  const result: WilliamsRResult = [];
+  const result: WilliamsRResult = new Array(length);
 
-  for (let i = 0; i < length; i++) {
-    if (i < period - 1) {
-      result.push(null);
-      continue;
-    }
+  for (let i = 0; i < period - 1; i++) {
+    result[i] = null;
+  }
 
+  for (let i = period - 1; i < length; i++) {
     const current = klines[i];
     if (!current) {
-      result.push(null);
+      result[i] = null;
       continue;
     }
-
-    const slice = klines.slice(i - period + 1, i + 1);
 
     let highestHigh = -Infinity;
     let lowestLow = Infinity;
+    const startIdx = i - period + 1;
 
-    for (const kline of slice) {
+    for (let j = startIdx; j <= i; j++) {
+      const kline = klines[j];
+      if (!kline) continue;
       const high = getKlineHigh(kline);
       const low = getKlineLow(kline);
       if (high > highestHigh) highestHigh = high;
@@ -48,10 +48,9 @@ export const calculateWilliamsR = (
     const range = highestHigh - lowestLow;
 
     if (range === 0) {
-      result.push(0);
+      result[i] = 0;
     } else {
-      const williamsR = ((highestHigh - close) / range) * -100;
-      result.push(williamsR);
+      result[i] = ((highestHigh - close) / range) * -100;
     }
   }
 

@@ -23,30 +23,41 @@ export const calculateCCI = (
     return Array(length).fill(null);
   }
 
-  const typicalPrices: number[] = klines.map(getTypicalPrice);
-  const result: CCIResult = [];
-
+  const typicalPrices: number[] = new Array(length);
   for (let i = 0; i < length; i++) {
-    if (i < period - 1) {
-      result.push(null);
-      continue;
+    typicalPrices[i] = getTypicalPrice(klines[i]!);
+  }
+
+  const result: CCIResult = new Array(length);
+
+  for (let i = 0; i < period - 1; i++) {
+    result[i] = null;
+  }
+
+  for (let i = period - 1; i < length; i++) {
+    let sum = 0;
+    const startIdx = i - period + 1;
+
+    for (let j = startIdx; j <= i; j++) {
+      sum += typicalPrices[j]!;
     }
+    const sma = sum / period;
 
-    const slice = typicalPrices.slice(i - period + 1, i + 1);
-    const sma = slice.reduce((acc, val) => acc + val, 0) / period;
-
-    const meanDeviation = slice.reduce((acc, val) => acc + Math.abs(val - sma), 0) / period;
+    let meanDeviationSum = 0;
+    for (let j = startIdx; j <= i; j++) {
+      meanDeviationSum += Math.abs(typicalPrices[j]! - sma);
+    }
+    const meanDeviation = meanDeviationSum / period;
 
     if (meanDeviation === 0) {
-      result.push(0);
+      result[i] = 0;
     } else {
       const tp = typicalPrices[i];
       if (tp === undefined) {
-        result.push(null);
+        result[i] = null;
         continue;
       }
-      const cci = (tp - sma) / (CCI_CONSTANT * meanDeviation);
-      result.push(cci);
+      result[i] = (tp - sma) / (CCI_CONSTANT * meanDeviation);
     }
   }
 
