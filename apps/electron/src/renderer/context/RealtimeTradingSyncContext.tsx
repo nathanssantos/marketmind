@@ -62,7 +62,6 @@ interface RealtimeTradingSyncProviderProps {
 export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTradingSyncProviderProps) => {
   const socketRef = useRef<Socket | null>(null);
   const isConnectedRef = useRef(false);
-  const listenersRegisteredRef = useRef(false);
   const utils = trpc.useUtils();
   const priceCallbacksRef = useRef<Map<string, Set<(price: number) => void>>>(new Map());
   const subscribedSymbolsRef = useRef<Set<string>>(new Set());
@@ -179,106 +178,122 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       }
     };
 
-    if (!listenersRegisteredRef.current) {
-      socket.on('connect', () => {
-        console.log('[RealtimeSync] WebSocket connected');
-        isConnectedRef.current = true;
-        subscribeAll();
-      });
+    const handleConnect = () => {
+      console.log('[RealtimeSync] WebSocket connected');
+      isConnectedRef.current = true;
+      subscribeAll();
+    };
 
-      socket.on('disconnect', (reason) => {
-        console.log('[RealtimeSync] WebSocket disconnected:', reason);
-        isConnectedRef.current = false;
-      });
+    const handleDisconnect = (reason: string) => {
+      console.log('[RealtimeSync] WebSocket disconnected:', reason);
+      isConnectedRef.current = false;
+    };
 
-      socket.on('connect_error', (err) => {
-        console.error('[RealtimeSync] Connection error:', err.message);
-        isConnectedRef.current = false;
-      });
+    const handleConnectError = (err: Error) => {
+      console.error('[RealtimeSync] Connection error:', err.message);
+      isConnectedRef.current = false;
+    };
 
-      socket.on('position:update', (position: PositionUpdate) => {
-        console.log('[RealtimeSync] Position update received:', position.id, position.status);
-        invalidatePositions();
-        invalidateWallet();
-      });
+    const handlePositionUpdate = (position: PositionUpdate) => {
+      console.log('[RealtimeSync] Position update received:', position.id, position.status);
+      invalidatePositions();
+      invalidateWallet();
+    };
 
-      socket.on('order:update', (_order: OrderUpdate) => {
-        invalidateOrders();
-      });
+    const handleOrderUpdate = (_order: OrderUpdate) => {
+      invalidateOrders();
+    };
 
-      socket.on('order:created', (_order: OrderUpdate) => {
-        invalidateOrders();
-        invalidateWallet();
-      });
+    const handleOrderCreated = (_order: OrderUpdate) => {
+      invalidateOrders();
+      invalidateWallet();
+    };
 
-      socket.on('order:cancelled', (_data: { orderId: string }) => {
-        invalidateOrders();
-        invalidateWallet();
-      });
+    const handleOrderCancelled = (_data: { orderId: string }) => {
+      invalidateOrders();
+      invalidateWallet();
+    };
 
-      socket.on('wallet:update', () => {
-        invalidateWallet();
-      });
+    const handleWalletUpdate = () => {
+      invalidateWallet();
+    };
 
-      socket.on('price:update', (data: PriceUpdate) => {
-        usePriceStore.getState().updatePrice(data.symbol, data.price, 'websocket');
-        const callbacks = priceCallbacksRef.current.get(data.symbol);
-        if (callbacks) {
-          callbacks.forEach((callback) => callback(data.price));
-        }
-      });
-
-      socket.on('trade:notification', async (notification: TradeNotification) => {
-        console.log('[RealtimeSync] Trade notification received:', notification.type, notification.title);
-
-        const toastType = notification.type === 'POSITION_CLOSED'
-          ? (parseFloat(notification.data.pnl || '0') >= 0 ? 'success' : 'error')
-          : notification.type === 'TRAILING_STOP_UPDATED'
-            ? 'info'
-            : 'success';
-
-        toaster.create({
-          title: notification.title,
-          description: notification.body,
-          type: toastType,
-          duration: notification.urgency === 'critical' ? undefined : 8000,
-        });
-
-        try {
-          const adapter = await createPlatformAdapter();
-          console.log('[RealtimeSync] Platform adapter created:', adapter.platform);
-          const isSupported = await adapter.notification.isSupported();
-          console.log('[RealtimeSync] Notification isSupported:', isSupported);
-          if (isSupported) {
-            const result = await adapter.notification.show({
-              title: notification.title,
-              body: notification.body,
-              urgency: notification.urgency,
-            });
-            console.log('[RealtimeSync] Notification show result:', result);
-          } else {
-            console.warn('[RealtimeSync] Native notifications not supported on this system');
-          }
-        } catch (err) {
-          console.error('[RealtimeSync] Native notification error:', err);
-        }
-
-        invalidatePositions();
-        invalidateWallet();
-      });
-
-      listenersRegisteredRef.current = true;
-
-      if (socket.connected) {
-        console.log('[RealtimeSync] Socket already connected, subscribing immediately');
-        isConnectedRef.current = true;
-        subscribeAll();
+    const handlePriceUpdate = (data: PriceUpdate) => {
+      usePriceStore.getState().updatePrice(data.symbol, data.price, 'websocket');
+      const callbacks = priceCallbacksRef.current.get(data.symbol);
+      if (callbacks) {
+        callbacks.forEach((callback) => callback(data.price));
       }
-    } else if (socket.connected) {
+    };
+
+    const handleTradeNotification = async (notification: TradeNotification) => {
+      console.log('[RealtimeSync] Trade notification received:', notification.type, notification.title);
+
+      const toastType = notification.type === 'POSITION_CLOSED'
+        ? (parseFloat(notification.data.pnl || '0') >= 0 ? 'success' : 'error')
+        : notification.type === 'TRAILING_STOP_UPDATED'
+          ? 'info'
+          : 'success';
+
+      toaster.create({
+        title: notification.title,
+        description: notification.body,
+        type: toastType,
+        duration: notification.urgency === 'critical' ? undefined : 8000,
+      });
+
+      try {
+        const adapter = await createPlatformAdapter();
+        console.log('[RealtimeSync] Platform adapter created:', adapter.platform);
+        const isSupported = await adapter.notification.isSupported();
+        console.log('[RealtimeSync] Notification isSupported:', isSupported);
+        if (isSupported) {
+          const result = await adapter.notification.show({
+            title: notification.title,
+            body: notification.body,
+            urgency: notification.urgency,
+          });
+          console.log('[RealtimeSync] Notification show result:', result);
+        } else {
+          console.warn('[RealtimeSync] Native notifications not supported on this system');
+        }
+      } catch (err) {
+        console.error('[RealtimeSync] Native notification error:', err);
+      }
+
+      invalidatePositions();
+      invalidateWallet();
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('connect_error', handleConnectError);
+    socket.on('position:update', handlePositionUpdate);
+    socket.on('order:update', handleOrderUpdate);
+    socket.on('order:created', handleOrderCreated);
+    socket.on('order:cancelled', handleOrderCancelled);
+    socket.on('wallet:update', handleWalletUpdate);
+    socket.on('price:update', handlePriceUpdate);
+    socket.on('trade:notification', handleTradeNotification);
+
+    if (socket.connected) {
+      console.log('[RealtimeSync] Socket already connected, subscribing immediately');
+      isConnectedRef.current = true;
       subscribeAll();
     }
 
     return () => {
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('connect_error', handleConnectError);
+      socket.off('position:update', handlePositionUpdate);
+      socket.off('order:update', handleOrderUpdate);
+      socket.off('order:created', handleOrderCreated);
+      socket.off('order:cancelled', handleOrderCancelled);
+      socket.off('wallet:update', handleWalletUpdate);
+      socket.off('price:update', handlePriceUpdate);
+      socket.off('trade:notification', handleTradeNotification);
+
       socket.emit('unsubscribe:positions', walletId);
       socket.emit('unsubscribe:wallet', walletId);
     };
@@ -286,12 +301,9 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
 
   useEffect(() => {
     return () => {
-      if (listenersRegisteredRef.current) {
-        socketService.disconnect();
-        socketRef.current = null;
-        listenersRegisteredRef.current = false;
-        isConnectedRef.current = false;
-      }
+      socketService.disconnect();
+      socketRef.current = null;
+      isConnectedRef.current = false;
     };
   }, []);
 

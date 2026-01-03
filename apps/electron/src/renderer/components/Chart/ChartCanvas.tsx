@@ -1288,6 +1288,10 @@ export const ChartCanvas = ({
         clearTimeout(interactionTimeoutRef.current);
         interactionTimeoutRef.current = null;
       }
+      if (mouseMoveRafRef.current !== null) {
+        cancelAnimationFrame(mouseMoveRafRef.current);
+        mouseMoveRafRef.current = null;
+      }
     };
   }, []);
 

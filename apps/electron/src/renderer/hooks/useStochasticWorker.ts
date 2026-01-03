@@ -16,6 +16,10 @@ export interface UseStochasticWorkerReturn {
 
 export const useStochasticWorker = (): UseStochasticWorkerReturn => {
   const workerRef = useRef<Worker | null>(null);
+  const currentHandlersRef = useRef<{ message: ((e: MessageEvent) => void) | null; error: ((e: ErrorEvent) => void) | null }>({
+    message: null,
+    error: null,
+  });
 
   useEffect(() => {
     if (!workerPool.has(WORKER_KEY)) {
@@ -28,6 +32,17 @@ export const useStochasticWorker = (): UseStochasticWorkerReturn => {
     }
 
     workerRef.current = workerPool.get(WORKER_KEY);
+
+    return () => {
+      if (workerRef.current) {
+        if (currentHandlersRef.current.message) {
+          workerRef.current.removeEventListener('message', currentHandlersRef.current.message);
+        }
+        if (currentHandlersRef.current.error) {
+          workerRef.current.removeEventListener('error', currentHandlersRef.current.error);
+        }
+      }
+    };
   }, []);
 
   const calculateStochastic = useCallback((
@@ -41,20 +56,32 @@ export const useStochasticWorker = (): UseStochasticWorkerReturn => {
         return;
       }
 
+      if (currentHandlersRef.current.message) {
+        workerRef.current.removeEventListener('message', currentHandlersRef.current.message);
+      }
+      if (currentHandlersRef.current.error) {
+        workerRef.current.removeEventListener('error', currentHandlersRef.current.error);
+      }
+
       const handleMessage = (event: MessageEvent): void => {
         const { type, k, d } = event.data;
-        
+
         if (type === 'stochasticResult') {
           workerRef.current?.removeEventListener('message', handleMessage);
+          workerRef.current?.removeEventListener('error', handleError);
+          currentHandlersRef.current = { message: null, error: null };
           resolve({ k, d });
         }
       };
 
       const handleError = (error: ErrorEvent): void => {
+        workerRef.current?.removeEventListener('message', handleMessage);
         workerRef.current?.removeEventListener('error', handleError);
+        currentHandlersRef.current = { message: null, error: null };
         reject(error);
       };
 
+      currentHandlersRef.current = { message: handleMessage, error: handleError };
       workerRef.current.addEventListener('message', handleMessage);
       workerRef.current.addEventListener('error', handleError);
 
