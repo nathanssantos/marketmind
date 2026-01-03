@@ -71,6 +71,10 @@ export const formatTimestamp = (timestamp: number, interval?: string, previousTi
     return `${month}/${year}`;
   }
 
+  if (interval === '1y') {
+    return `${year}`;
+  }
+
   return `${day}/${month}/${year}`;
 };
 

@@ -1,5 +1,5 @@
 import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
-import type { Kline, MarketType } from '@marketmind/types';
+import type { Kline, MarketType, TimeInterval } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
@@ -227,7 +227,7 @@ function AppContent(): ReactElement {
   const lastUpdateRef = useRef<number>(0);
 
   const getIntervalMs = useCallback((tf: string): number => {
-    return INTERVAL_MS_MAP[tf] || 60_000;
+    return INTERVAL_MS_MAP[tf as TimeInterval] || 60_000;
   }, []);
 
   useEffect(() => {

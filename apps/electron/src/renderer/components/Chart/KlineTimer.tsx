@@ -1,3 +1,5 @@
+import type { TimeInterval } from '@marketmind/types';
+import { INTERVAL_MINUTES } from '@marketmind/types';
 import { Box } from '@chakra-ui/react';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { CHART_CONFIG } from '@shared/constants';
@@ -9,24 +11,6 @@ export interface KlineTimerProps {
     lastKlineTime?: number | undefined;
     totalPanelHeight?: number;
 }
-
-const TIMEFRAME_MINUTES: Record<string, number> = {
-    '1m': 1,
-    '3m': 3,
-    '5m': 5,
-    '15m': 15,
-    '30m': 30,
-    '1h': 60,
-    '2h': 120,
-    '4h': 240,
-    '6h': 360,
-    '8h': 480,
-    '12h': 720,
-    '1d': 1440,
-    '3d': 4320,
-    '1w': 10080,
-    '1M': 43200,
-};
 
 const formatTime = (seconds: number): string => {
     if (seconds < 0) return '00:00';
@@ -47,7 +31,7 @@ export const KlineTimer = ({ timeframe, lastKlineTime, totalPanelHeight = 0 }: K
     const [timeRemaining, setTimeRemaining] = useState<number>(0);
 
     useEffect(() => {
-        const intervalMinutes = TIMEFRAME_MINUTES[timeframe];
+        const intervalMinutes = INTERVAL_MINUTES[timeframe as TimeInterval];
         if (!intervalMinutes || !lastKlineTime) {
             setTimeRemaining(0);
             return;
@@ -77,11 +61,11 @@ export const KlineTimer = ({ timeframe, lastKlineTime, totalPanelHeight = 0 }: K
         return () => clearInterval(interval);
     }, [timeframe, lastKlineTime]);
 
-    if (!TIMEFRAME_MINUTES[timeframe] || !lastKlineTime) {
+    if (!INTERVAL_MINUTES[timeframe as TimeInterval] || !lastKlineTime) {
         return null;
     }
 
-    const intervalMinutes = TIMEFRAME_MINUTES[timeframe] ?? 60;
+    const intervalMinutes = INTERVAL_MINUTES[timeframe as TimeInterval] ?? 60;
     const isShortTimeframe = intervalMinutes <= 60;
     const hours = Math.floor(timeRemaining / 3600);
     const fontSize = isShortTimeframe ? '15px' : hours >= 10 ? '9px' : '11px';

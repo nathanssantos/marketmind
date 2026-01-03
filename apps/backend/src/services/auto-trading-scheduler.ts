@@ -76,7 +76,7 @@ interface ActiveWatcher {
 const CANDLE_CLOSE_SAFETY_BUFFER_MS = 2000;
 
 const getPollingIntervalForTimeframe = (interval: string): number => {
-  const intervalMs = INTERVAL_MS[interval];
+  const intervalMs = INTERVAL_MS[interval as Interval];
   if (!intervalMs) {
     log(`⚠️ Unknown interval ${interval}, defaulting to 1 minute polling`);
     return TIME_MS.MINUTE;

@@ -1,5 +1,6 @@
 import type { Interval } from '@marketmind/types';
-import { and, asc, desc, eq, gte } from 'drizzle-orm';
+import { INTERVAL_MS, BINANCE_NATIVE_INTERVALS } from '@marketmind/types';
+import { and, asc, desc, eq, gte, lt } from 'drizzle-orm';
 import { db } from '../db';
 import { klines } from '../db/schema';
 import { logger } from './logger';
@@ -88,28 +89,7 @@ export const backfillHistoricalKlines = async (
   return totalInserted;
 };
 
-export const getIntervalMilliseconds = (interval: Interval): number => {
-  const map: Record<Interval, number> = {
-    '1s': 1000,
-    '1m': 60000,
-    '3m': 180000,
-    '5m': 300000,
-    '15m': 900000,
-    '30m': 1800000,
-    '1h': 3600000,
-    '2h': 7200000,
-    '4h': 14400000,
-    '6h': 21600000,
-    '8h': 28800000,
-    '12h': 43200000,
-    '1d': 86400000,
-    '3d': 259200000,
-    '1w': 604800000,
-    '1M': 2592000000,
-  };
-
-  return map[interval] || 60000;
-};
+export const getIntervalMilliseconds = (interval: Interval): number => INTERVAL_MS[interval] || 60000;
 
 export const calculateStartTime = (interval: Interval, periodsBack: number): Date => {
   const now = Date.now();
@@ -406,3 +386,104 @@ export const smartBackfillKlines = async (
 
   return { totalInDb: finalCount.length, downloaded: totalDownloaded, gaps: gaps.length, alreadyComplete: false };
 };
+
+export interface AggregatedKline {
+  symbol: string;
+  interval: '1y';
+  marketType: 'SPOT' | 'FUTURES';
+  openTime: Date;
+  closeTime: Date;
+  open: string;
+  high: string;
+  low: string;
+  close: string;
+  volume: string;
+  quoteVolume: string;
+  trades: number;
+  takerBuyBaseVolume: string;
+  takerBuyQuoteVolume: string;
+}
+
+export const aggregateYearlyKline = async (
+  symbol: string,
+  year: number,
+  marketType: 'SPOT' | 'FUTURES' = 'SPOT'
+): Promise<AggregatedKline | null> => {
+  const startTime = new Date(year, 0, 1);
+  const endTime = new Date(year + 1, 0, 1);
+
+  const monthlyKlines = await db
+    .select()
+    .from(klines)
+    .where(
+      and(
+        eq(klines.symbol, symbol),
+        eq(klines.interval, '1M'),
+        eq(klines.marketType, marketType),
+        gte(klines.openTime, startTime),
+        lt(klines.openTime, endTime)
+      )
+    )
+    .orderBy(asc(klines.openTime));
+
+  if (monthlyKlines.length === 0) {
+    logger.warn({ symbol, year, marketType }, 'No monthly klines found for yearly aggregation');
+    return null;
+  }
+
+  const firstKline = monthlyKlines[0];
+  const lastKline = monthlyKlines[monthlyKlines.length - 1];
+
+  if (!firstKline || !lastKline) return null;
+
+  const high = Math.max(...monthlyKlines.map((k) => parseFloat(k.high)));
+  const low = Math.min(...monthlyKlines.map((k) => parseFloat(k.low)));
+  const volume = monthlyKlines.reduce((sum, k) => sum + parseFloat(k.volume), 0);
+  const quoteVolume = monthlyKlines.reduce((sum, k) => sum + parseFloat(k.quoteVolume ?? '0'), 0);
+  const trades = monthlyKlines.reduce((sum, k) => sum + (k.trades ?? 0), 0);
+  const takerBuyBaseVolume = monthlyKlines.reduce((sum, k) => sum + parseFloat(k.takerBuyBaseVolume ?? '0'), 0);
+  const takerBuyQuoteVolume = monthlyKlines.reduce((sum, k) => sum + parseFloat(k.takerBuyQuoteVolume ?? '0'), 0);
+
+  return {
+    symbol,
+    interval: '1y',
+    marketType,
+    openTime: firstKline.openTime,
+    closeTime: lastKline.closeTime,
+    open: firstKline.open,
+    high: high.toString(),
+    low: low.toString(),
+    close: lastKline.close,
+    volume: volume.toString(),
+    quoteVolume: quoteVolume.toString(),
+    trades,
+    takerBuyBaseVolume: takerBuyBaseVolume.toString(),
+    takerBuyQuoteVolume: takerBuyQuoteVolume.toString(),
+  };
+};
+
+export const aggregateYearlyKlines = async (
+  symbol: string,
+  marketType: 'SPOT' | 'FUTURES' = 'SPOT',
+  limit: number = 10
+): Promise<AggregatedKline[]> => {
+  const currentYear = new Date().getFullYear();
+  const startYear = marketType === 'FUTURES' ? 2019 : 2017;
+
+  const years: number[] = [];
+  for (let year = currentYear; year >= startYear && years.length < limit; year--) {
+    years.push(year);
+  }
+
+  const aggregatedKlines: AggregatedKline[] = [];
+
+  for (const year of years) {
+    const kline = await aggregateYearlyKline(symbol, year, marketType);
+    if (kline) aggregatedKlines.push(kline);
+  }
+
+  return aggregatedKlines.reverse();
+};
+
+export const isNativeBinanceInterval = (interval: Interval): boolean =>
+  BINANCE_NATIVE_INTERVALS.includes(interval as typeof BINANCE_NATIVE_INTERVALS[number]);

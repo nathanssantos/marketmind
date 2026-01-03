@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { REQUIRED_KLINES, TIME_MS } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
-import { smartBackfillKlines, getIntervalMilliseconds } from '../services/binance-historical';
+import { smartBackfillKlines, getIntervalMilliseconds, aggregateYearlyKlines } from '../services/binance-historical';
 import { binanceFuturesKlineStreamService, binanceKlineStreamService } from '../services/binance-kline-stream';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
@@ -12,7 +12,7 @@ import { protectedProcedure, router } from '../trpc';
 const intervalSchema = z.enum([
   '1s', '1m', '3m', '5m', '15m', '30m',
   '1h', '2h', '4h', '6h', '8h', '12h',
-  '1d', '3d', '1w', '1M',
+  '1d', '3d', '1w', '1M', '1y',
 ]);
 
 const marketTypeSchema = z.enum(['SPOT', 'FUTURES']).default('SPOT');
@@ -77,6 +77,13 @@ export const klineRouter = router({
     )
     .query(async ({ input }) => {
       const marketType = input.marketType as MarketType;
+
+      if (input.interval === '1y') {
+        await smartBackfillKlines(input.symbol, '1M', input.limit * 12, marketType);
+        const yearlyKlines = await aggregateYearlyKlines(input.symbol, marketType, input.limit);
+        logger.info({ symbol: input.symbol, interval: '1y', marketType, count: yearlyKlines.length }, 'Yearly klines aggregated from monthly data');
+        return yearlyKlines;
+      }
 
       const backfillResult = await smartBackfillKlines(
         input.symbol,

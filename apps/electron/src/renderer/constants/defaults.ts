@@ -1,6 +1,10 @@
+import { INTERVAL_MS } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { AdvancedControlsConfig } from '../components/Chart/AdvancedControls';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
+
+export { INTERVAL_MS };
+export const INTERVAL_MS_MAP = INTERVAL_MS;
 
 export const REQUIRED_KLINES = 40_000;
 
@@ -70,21 +74,3 @@ export const DEFAULT_AUTO_UPDATE_SETTINGS = {
 } as const;
 
 export const MIN_UPDATE_INTERVAL_MS = 100;
-
-export const INTERVAL_MS_MAP: Record<string, number> = {
-  '1m': 60_000,
-  '3m': 180_000,
-  '5m': 300_000,
-  '15m': 900_000,
-  '30m': 1_800_000,
-  '1h': 3_600_000,
-  '2h': 7_200_000,
-  '4h': 14_400_000,
-  '6h': 21_600_000,
-  '8h': 28_800_000,
-  '12h': 43_200_000,
-  '1d': 86_400_000,
-  '3d': 259_200_000,
-  '1w': 604_800_000,
-  '1M': 2_592_000_000,
-} as const;

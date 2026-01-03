@@ -22,6 +22,7 @@ const TIMEFRAME_TO_VOLUME_MA_PERIOD: Record<string, number> = {
   '3d': 14,
   '1w': 10,
   '1M': 10,
+  '1y': 5,
 };
 
 export interface VolumeAnalysis {

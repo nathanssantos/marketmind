@@ -1,31 +1,8 @@
+import { TIME_MS, INTERVAL_MS } from '@marketmind/types';
+
+export { TIME_MS, INTERVAL_MS };
+
 export const REQUIRED_KLINES = 40_000;
-
-export const TIME_MS = {
-  SECOND: 1000,
-  MINUTE: 60 * 1000,
-  HOUR: 60 * 60 * 1000,
-  DAY: 24 * 60 * 60 * 1000,
-  WEEK: 7 * 24 * 60 * 60 * 1000,
-  MONTH: 30 * 24 * 60 * 60 * 1000,
-} as const;
-
-export const INTERVAL_MS: Record<string, number> = {
-  '1m': TIME_MS.MINUTE,
-  '3m': 3 * TIME_MS.MINUTE,
-  '5m': 5 * TIME_MS.MINUTE,
-  '15m': 15 * TIME_MS.MINUTE,
-  '30m': 30 * TIME_MS.MINUTE,
-  '1h': TIME_MS.HOUR,
-  '2h': 2 * TIME_MS.HOUR,
-  '4h': 4 * TIME_MS.HOUR,
-  '6h': 6 * TIME_MS.HOUR,
-  '8h': 8 * TIME_MS.HOUR,
-  '12h': 12 * TIME_MS.HOUR,
-  '1d': TIME_MS.DAY,
-  '3d': 3 * TIME_MS.DAY,
-  '1w': TIME_MS.WEEK,
-  '1M': TIME_MS.MONTH,
-} as const;
 
 export const UNIT_MS: Record<string, number> = {
   m: TIME_MS.MINUTE,

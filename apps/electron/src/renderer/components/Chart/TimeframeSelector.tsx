@@ -1,3 +1,5 @@
+import type { TimeInterval } from '@marketmind/types';
+import { UI_INTERVALS } from '@marketmind/types';
 import { Box, Flex, IconButton, Text, VStack } from '@chakra-ui/react';
 import type { ReactElement } from 'react';
 import { useState } from 'react';
@@ -6,14 +8,12 @@ import { LuClock } from 'react-icons/lu';
 import { Popover } from '../ui/popover';
 import { TooltipWrapper } from '../ui/Tooltip';
 
-export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1w' | '1M';
+export type Timeframe = TimeInterval;
 
 export interface TimeframeSelectorProps {
-  selectedTimeframe: Timeframe;
-  onTimeframeChange: (timeframe: Timeframe) => void;
+  selectedTimeframe: TimeInterval;
+  onTimeframeChange: (timeframe: TimeInterval) => void;
 }
-
-const TIMEFRAMES: Timeframe[] = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w', '1M'];
 
 export const TimeframeSelector = ({
   selectedTimeframe,
@@ -22,7 +22,7 @@ export const TimeframeSelector = ({
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleSelect = (timeframe: Timeframe) => {
+  const handleSelect = (timeframe: TimeInterval) => {
     onTimeframeChange(timeframe);
     setIsOpen(false);
   };
@@ -55,7 +55,7 @@ export const TimeframeSelector = ({
       <Flex direction="column" maxH="300px">
         <Box overflowY="auto" flex={1}>
           <VStack gap={0} align="stretch">
-            {TIMEFRAMES.map((timeframe) => (
+            {UI_INTERVALS.map((timeframe) => (
               <Box
                 key={timeframe}
                 px={3}
