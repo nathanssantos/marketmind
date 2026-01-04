@@ -28,8 +28,6 @@ class FundingRateService {
     this.checkInterval = setInterval(() => {
       void this.processFundingRates();
     }, CHECK_INTERVAL_MS);
-
-    // logger.info('[FundingRateService] Started - checking every minute for funding rate application');
   }
 
   stop(): void {

@@ -30,11 +30,8 @@ class KlineGapFiller {
 
   async start(): Promise<void> {
     if (this.checkInterval) {
-      // logger.debug('Gap filler already running');
       return;
     }
-
-    // logger.info('Starting KlineGapFiller service');
 
     await this.checkAndFillGaps();
 
@@ -47,29 +44,22 @@ class KlineGapFiller {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
-      // logger.info('KlineGapFiller service stopped');
     }
   }
 
   async checkAndFillGaps(): Promise<void> {
     if (this.isRunning) {
-      // logger.debug('Gap check already in progress, skipping');
       return;
     }
 
     this.isRunning = true;
 
     try {
-      // logger.debug('Starting gap check cycle');
-
       const activePairs = await this.getActivePairs();
 
       if (activePairs.length === 0) {
-        // logger.debug('No active watchers found, skipping gap check');
         return;
       }
-
-      // logger.info({ pairs: activePairs.length }, 'Checking gaps for active pairs');
 
       for (const pair of activePairs) {
         try {
@@ -86,8 +76,6 @@ class KlineGapFiller {
           logger.error({ pair, error }, 'Error checking gaps for pair');
         }
       }
-
-      // logger.debug('Gap check cycle complete');
     } catch (error) {
       logger.error({ error }, 'Error in gap check cycle');
     } finally {

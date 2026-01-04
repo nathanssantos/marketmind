@@ -226,7 +226,6 @@ export class BinancePriceStreamService {
 
     try {
       void this.client.subscribeTrades(symbol, market);
-      // logger.info({ symbol, market }, `📊 Subscribed to ${market.toUpperCase()} trades stream`);
       this.subscribedSymbols.add(symbol);
     } catch (error) {
       logger.error({

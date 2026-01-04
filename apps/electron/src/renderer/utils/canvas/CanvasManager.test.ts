@@ -242,17 +242,6 @@ describe('CanvasManager', () => {
       expect(newWidth).toBeLessThanOrEqual(CHART_CONFIG.MAX_KLINE_WIDTH);
     });
 
-    it.skip('should trigger render callback on zoom', async () => {
-      const callback = vi.fn();
-      manager.setRenderCallback(callback);
-      callback.mockClear();
-      
-      manager.zoom(1);
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      expect(callback).toHaveBeenCalled();
-    });
   });
 
   describe('pan', () => {
@@ -284,17 +273,6 @@ describe('CanvasManager', () => {
       expect(manager.getViewport().start).toBeGreaterThanOrEqual(0);
     });
 
-    it.skip('should trigger render callback on pan', async () => {
-      const callback = vi.fn();
-      manager.setRenderCallback(callback);
-      callback.mockClear();
-      
-      manager.pan(50);
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      expect(callback).toHaveBeenCalled();
-    });
   });
 
   describe('vertical pan and zoom', () => {
@@ -323,29 +301,6 @@ describe('CanvasManager', () => {
       expect(manager.getBounds()).not.toBeNull();
     });
 
-    it.skip('should trigger render on vertical pan', async () => {
-      const callback = vi.fn();
-      manager.setRenderCallback(callback);
-      callback.mockClear();
-      
-      manager.panVertical(50);
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      expect(callback).toHaveBeenCalled();
-    });
-
-    it.skip('should trigger render on vertical zoom', async () => {
-      const callback = vi.fn();
-      manager.setRenderCallback(callback);
-      callback.mockClear();
-      
-      manager.zoomVertical(10);
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      expect(callback).toHaveBeenCalled();
-    });
   });
 
   describe('kline at position', () => {
@@ -366,19 +321,6 @@ describe('CanvasManager', () => {
     });
   });
 
-  describe('right margin', () => {
-    it.skip('should set right margin', async () => {
-      const callback = vi.fn();
-      manager.setRenderCallback(callback);
-      callback.mockClear();
-      
-      manager.setRightMargin(100);
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      expect(callback).toHaveBeenCalled();
-    });
-  });
 
   describe('clear and resize', () => {
     it('should clear canvas', () => {
@@ -387,30 +329,9 @@ describe('CanvasManager', () => {
       expect(true).toBe(true);
     });
 
-    it.skip('should resize canvas', async () => {
-      const callback = vi.fn();
-      manager.setRenderCallback(callback);
-      callback.mockClear();
-      
-      manager.resize();
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      expect(callback).toHaveBeenCalled();
-    });
   });
 
   describe('render callback', () => {
-    it.skip('should set and trigger render callback', async () => {
-      const callback = vi.fn();
-      
-      manager.setRenderCallback(callback);
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      expect(callback).toHaveBeenCalled();
-    });
-
     it('should clear render callback', () => {
       const callback = vi.fn();
       manager.setRenderCallback(callback);
@@ -459,49 +380,6 @@ describe('CanvasManager', () => {
       expect(manager['isAnimating']).toBe(false);
       
       spy.mockRestore();
-    });
-  });
-
-  describe('resetVerticalZoom', () => {
-    beforeEach(() => {
-      manager.setKlines(mockKlines);
-    });
-
-    it.skip('should reset price offset and scale', async () => {
-      const callback = vi.fn();
-      manager.setRenderCallback(callback);
-      callback.mockClear();
-      
-      manager['priceOffset'] = 100;
-      manager['priceScale'] = 2;
-      
-      manager.resetVerticalZoom();
-      
-      expect(manager['priceOffset']).toBe(0);
-      expect(manager['priceScale']).toBe(1);
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      expect(callback).toHaveBeenCalled();
-    });
-  });
-
-  describe('resetToInitialView', () => {
-    it.skip('should reset to initial kline count', async () => {
-      manager.setKlines(mockKlines);
-      const callback = vi.fn();
-      manager.setRenderCallback(callback);
-      callback.mockClear();
-      
-      manager.pan(50);
-      manager.resetToInitialView();
-      
-      const viewport = manager.getViewport();
-      expect(viewport.end).toBe(mockKlines.length);
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      expect(callback).toHaveBeenCalled();
     });
   });
 

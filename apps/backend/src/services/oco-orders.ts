@@ -45,12 +45,6 @@ export class OCOOrderService {
     const hasTestnetKey = !!process.env['BINANCE_TESTNET_API_KEY'];
 
     this.enabled = testnetEnabled && hasTestnetKey;
-
-    // if (this.enabled) {
-    //   logger.info('OCO orders ENABLED - using Binance Testnet');
-    // } else {
-    //   logger.info('OCO orders DISABLED - enable with BINANCE_TESTNET_ENABLED=true and BINANCE_TESTNET_API_KEY');
-    // }
   }
 
   isEnabled(): boolean {
