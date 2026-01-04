@@ -226,61 +226,23 @@ export class BacktestEngine {
   }
 
   private async initializeStrategies(config: BacktestConfig, _historicalKlines: any[]) {
-    const setupsToEnable = config.setupTypes?.length ? config.setupTypes : [
-      'pattern123', 'bearTrap', 'meanReversion'
-    ];
-
-    const legacyStrategies = ['pattern123', 'bearTrap', 'meanReversion'];
-    const requestedLegacy = setupsToEnable.filter(s => legacyStrategies.includes(s));
-    const requestedDynamic = setupsToEnable.filter(s => !legacyStrategies.includes(s));
-
-    const { createDefault123Config } = await import('../setup-detection/Pattern123Detector');
-    const { createDefaultBearTrapConfig } = await import('../setup-detection/BearTrapDetector');
-    const { createDefaultMeanReversionConfig } = await import('../setup-detection/MeanReversionDetector');
-
+    const setupsToEnable = config.setupTypes?.length ? config.setupTypes : [];
     const strategyOverrides = config.strategyParams || {};
 
-    const applyOverrides = (strategyKey: string, defaultConfig: any) => {
-      const isEnabledStrategy = setupsToEnable.includes(strategyKey);
-      const shouldApplyOverrides = isEnabledStrategy && Object.keys(strategyOverrides).length > 0;
-      return shouldApplyOverrides ? { ...defaultConfig, ...strategyOverrides } : defaultConfig;
-    };
+    console.log('[Backtest] Dynamic setups:', setupsToEnable);
 
-    const buildSetupConfig = (key: string, createDefault: () => any) => {
-      const defaults = createDefault();
-      const overrides = applyOverrides(key, defaults);
-      return {
-        ...overrides,
-        enabled: requestedLegacy.includes(key),
-        minConfidence: config.minConfidence && config.minConfidence > 0
-          ? Math.max(config.minConfidence, defaults.minConfidence)
-          : defaults.minConfidence,
-        minRiskReward: 0,
-      };
-    };
-
-    const setupConfig: any = {
-      pattern123: buildSetupConfig('pattern123', createDefault123Config),
-      bearTrap: buildSetupConfig('bearTrap', createDefaultBearTrapConfig),
-      meanReversion: buildSetupConfig('meanReversion', createDefaultMeanReversionConfig),
-      enableLegacyDetectors: requestedLegacy.length > 0,
-    };
-
-    console.log('[Backtest] Legacy setups:', requestedLegacy);
-    console.log('[Backtest] Dynamic setups:', requestedDynamic);
-
-    const setupDetectionService = new SetupDetectionService(setupConfig);
+    const setupDetectionService = new SetupDetectionService({});
 
     const loadedStrategies: StrategyDefinition[] = [];
     const strategyMap = new Map<string, StrategyDefinition>();
 
-    if (requestedDynamic.length > 0) {
+    if (setupsToEnable.length > 0) {
       const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
       const loader = new StrategyLoader([strategiesDir]);
       const allStrategies = await loader.loadAll({ includeUnprofitable: true });
 
       for (const strategyDef of allStrategies) {
-        if (requestedDynamic.includes(strategyDef.id)) {
+        if (setupsToEnable.includes(strategyDef.id)) {
           setupDetectionService.loadStrategy(strategyDef, strategyOverrides);
           loadedStrategies.push(strategyDef);
           strategyMap.set(strategyDef.id, strategyDef);

@@ -7,7 +7,6 @@ export * from './intervals';
 export * from './kline';
 export * from './klineUtils';
 export * from './market';
-export * from './setupConfig';
 export * from './strategies';
 export * from './strategyDefinition';
 export * from './strategyVisualization';
