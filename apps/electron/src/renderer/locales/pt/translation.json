@@ -675,6 +675,7 @@
     "enabledSetups": "Setups Habilitados",
     "enabledSetupsDescription": "Selecione quais setups de trading os watchers irão monitorar",
     "toggleAll": "Alternar Todos os Setups",
+    "noStrategiesAvailable": "Nenhuma estratégia de trading disponível",
     "tips": {
       "confidence": "Filtros de confiança mais altos mostram apenas os setups mais fortes",
       "algorithmic": "Detecção algorítmica é mais rápida e consistente que IA",

@@ -59,6 +59,8 @@ export const setupDetectionRouter = router({
         author: strategy.author,
         tags: strategy.tags,
         status: strategy.status ?? 'active',
+        enabled: strategy.enabled ?? false,
+        group: strategy.group,
         recommendedTimeframes: strategy.recommendedTimeframes,
         optimizedParams: strategy.optimizedParams,
       }));
