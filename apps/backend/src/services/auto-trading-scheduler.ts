@@ -1675,8 +1675,28 @@ export class AutoTradingScheduler {
 
     log(`📋 Found ${persistedWatchers.length} persisted watcher(s)`);
 
+    const requiredKlines = calculateRequiredKlines();
+
     for (const pw of persistedWatchers) {
       try {
+        const marketType = (pw.marketType as MarketType) ?? 'SPOT';
+
+        log('📥 Running proactive backfill for watcher', { symbol: pw.symbol, interval: pw.interval, marketType });
+        const backfillResult = await smartBackfillKlines(
+          pw.symbol,
+          pw.interval as Interval,
+          requiredKlines,
+          marketType
+        );
+        log('✅ Proactive backfill complete', {
+          symbol: pw.symbol,
+          interval: pw.interval,
+          downloaded: backfillResult.downloaded,
+          totalInDb: backfillResult.totalInDb,
+          gaps: backfillResult.gaps,
+          alreadyComplete: backfillResult.alreadyComplete,
+        });
+
         await this.startWatcher(
           pw.walletId,
           pw.userId,
@@ -1684,7 +1704,7 @@ export class AutoTradingScheduler {
           pw.interval,
           pw.profileId ?? undefined,
           true,
-          (pw.marketType as MarketType) ?? 'SPOT'
+          marketType
         );
         log('✅ Restored watcher', { watcherId: pw.id, symbol: pw.symbol, interval: pw.interval, profileId: pw.profileId, marketType: pw.marketType });
       } catch (error) {
