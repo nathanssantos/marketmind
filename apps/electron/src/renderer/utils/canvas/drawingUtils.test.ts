@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     clearCanvas,
+    drawCandleLabel,
     drawGrid,
     drawKline,
     drawLine,
@@ -260,10 +261,90 @@ describe('drawingUtils', () => {
 
     it('should calculate correct spacing for vertical lines', () => {
       drawGrid(ctx, 800, 600, 0, 10, '#cccccc');
-      
+
       const verticalSpacing = 800 / 11;
       expect(ctx.moveTo).toHaveBeenCalledWith(verticalSpacing, 0);
       expect(ctx.lineTo).toHaveBeenCalledWith(verticalSpacing, 600);
+    });
+  });
+
+  describe('drawCandleLabel', () => {
+    let labelCtx: CanvasRenderingContext2D;
+
+    beforeEach(() => {
+      labelCtx = {
+        save: vi.fn(),
+        restore: vi.fn(),
+        beginPath: vi.fn(),
+        moveTo: vi.fn(),
+        lineTo: vi.fn(),
+        quadraticCurveTo: vi.fn(),
+        closePath: vi.fn(),
+        fill: vi.fn(),
+        fillText: vi.fn(),
+        measureText: vi.fn(() => ({ width: 40 })),
+        fillStyle: '',
+        font: '',
+        textAlign: 'left' as CanvasTextAlign,
+        textBaseline: 'top' as CanvasTextBaseline,
+      } as unknown as CanvasRenderingContext2D;
+    });
+
+    it('should draw label with default text color', () => {
+      drawCandleLabel(labelCtx, 100, 50, 'LONG', '#00ff00');
+
+      expect(labelCtx.save).toHaveBeenCalled();
+      expect(labelCtx.beginPath).toHaveBeenCalled();
+      expect(labelCtx.fill).toHaveBeenCalled();
+      expect(labelCtx.fillText).toHaveBeenCalled();
+      expect(labelCtx.restore).toHaveBeenCalled();
+    });
+
+    it('should draw label with custom text color', () => {
+      drawCandleLabel(labelCtx, 100, 50, 'SHORT', '#ff0000', '#000000');
+
+      expect(labelCtx.fillStyle).toBe('#000000');
+      expect(labelCtx.textAlign).toBe('center');
+      expect(labelCtx.textBaseline).toBe('middle');
+    });
+
+    it('should draw label with custom font size', () => {
+      drawCandleLabel(labelCtx, 100, 50, 'TP', '#0000ff', '#ffffff', 14);
+
+      expect(labelCtx.font).toBe('bold 14px sans-serif');
+    });
+
+    it('should measure text to calculate pill width', () => {
+      drawCandleLabel(labelCtx, 200, 100, 'ENTRY', '#ffff00');
+
+      expect(labelCtx.measureText).toHaveBeenCalledWith('ENTRY');
+    });
+
+    it('should draw rounded rectangle path', () => {
+      drawCandleLabel(labelCtx, 150, 75, 'SL', '#ff5500');
+
+      expect(labelCtx.moveTo).toHaveBeenCalled();
+      expect(labelCtx.lineTo).toHaveBeenCalled();
+      expect(labelCtx.quadraticCurveTo).toHaveBeenCalled();
+      expect(labelCtx.closePath).toHaveBeenCalled();
+    });
+
+    it('should position label above the y coordinate', () => {
+      const fillTextCalls: unknown[][] = [];
+      labelCtx.fillText = vi.fn((...args) => fillTextCalls.push(args));
+
+      drawCandleLabel(labelCtx, 100, 50, 'LONG', '#00ff00');
+
+      expect(fillTextCalls.length).toBe(1);
+      const [, x, y] = fillTextCalls[0] as [string, number, number];
+      expect(x).toBe(100);
+      expect(y).toBeLessThan(50);
+    });
+
+    it('should use font for measuring text', () => {
+      drawCandleLabel(labelCtx, 100, 50, 'TEST', '#00ff00', '#ffffff', 16);
+
+      expect(labelCtx.font).toContain('16px');
     });
   });
 });

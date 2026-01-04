@@ -157,6 +157,13 @@ describe('uiStore', () => {
       expect(typeof state.setOrdersFilterStatus).toBe('function');
       expect(typeof state.setPerformancePeriod).toBe('function');
       expect(typeof state.setSetupStatsPeriod).toBe('function');
+      expect(typeof state.setPortfolioFilterOption).toBe('function');
+      expect(typeof state.setPortfolioSortBy).toBe('function');
+      expect(typeof state.setOrdersViewMode).toBe('function');
+      expect(typeof state.setPortfolioViewMode).toBe('function');
+      expect(typeof state.setOrdersTableSort).toBe('function');
+      expect(typeof state.setPortfolioTableSort).toBe('function');
+      expect(typeof state.setOrdersSortBy).toBe('function');
     });
 
     it('should expose all state properties', () => {
@@ -165,6 +172,189 @@ describe('uiStore', () => {
       expect(state.ordersFilterStatus).toBeDefined();
       expect(state.performancePeriod).toBeDefined();
       expect(state.setupStatsPeriod).toBeDefined();
+      expect(state.portfolioFilterOption).toBeDefined();
+      expect(state.portfolioSortBy).toBeDefined();
+      expect(state.ordersViewMode).toBeDefined();
+      expect(state.portfolioViewMode).toBeDefined();
+      expect(state.ordersTableSortKey).toBeDefined();
+      expect(state.ordersTableSortDirection).toBeDefined();
+      expect(state.portfolioTableSortKey).toBeDefined();
+      expect(state.portfolioTableSortDirection).toBeDefined();
+      expect(state.ordersSortBy).toBeDefined();
+    });
+  });
+
+  describe('portfolioFilterOption', () => {
+    it('should initialize with all filter', () => {
+      const state = useUIStore.getState();
+      expect(state.portfolioFilterOption).toBe('all');
+    });
+
+    it('should update to long filter', () => {
+      const { setPortfolioFilterOption } = useUIStore.getState();
+      setPortfolioFilterOption('long');
+      expect(useUIStore.getState().portfolioFilterOption).toBe('long');
+    });
+
+    it('should update to short filter', () => {
+      const { setPortfolioFilterOption } = useUIStore.getState();
+      setPortfolioFilterOption('short');
+      expect(useUIStore.getState().portfolioFilterOption).toBe('short');
+    });
+
+    it('should update to profitable filter', () => {
+      const { setPortfolioFilterOption } = useUIStore.getState();
+      setPortfolioFilterOption('profitable');
+      expect(useUIStore.getState().portfolioFilterOption).toBe('profitable');
+    });
+
+    it('should update to losing filter', () => {
+      const { setPortfolioFilterOption } = useUIStore.getState();
+      setPortfolioFilterOption('losing');
+      expect(useUIStore.getState().portfolioFilterOption).toBe('losing');
+    });
+  });
+
+  describe('portfolioSortBy', () => {
+    it('should initialize with newest', () => {
+      const state = useUIStore.getState();
+      expect(state.portfolioSortBy).toBe('newest');
+    });
+
+    it('should update to pnl-desc', () => {
+      const { setPortfolioSortBy } = useUIStore.getState();
+      setPortfolioSortBy('pnl-desc');
+      expect(useUIStore.getState().portfolioSortBy).toBe('pnl-desc');
+    });
+
+    it('should update to size-desc', () => {
+      const { setPortfolioSortBy } = useUIStore.getState();
+      setPortfolioSortBy('size-desc');
+      expect(useUIStore.getState().portfolioSortBy).toBe('size-desc');
+    });
+
+    it('should update to symbol-asc', () => {
+      const { setPortfolioSortBy } = useUIStore.getState();
+      setPortfolioSortBy('symbol-asc');
+      expect(useUIStore.getState().portfolioSortBy).toBe('symbol-asc');
+    });
+  });
+
+  describe('ordersViewMode', () => {
+    it('should initialize with cards', () => {
+      const state = useUIStore.getState();
+      expect(state.ordersViewMode).toBe('cards');
+    });
+
+    it('should update to table', () => {
+      const { setOrdersViewMode } = useUIStore.getState();
+      setOrdersViewMode('table');
+      expect(useUIStore.getState().ordersViewMode).toBe('table');
+    });
+
+    it('should update back to cards', () => {
+      const { setOrdersViewMode } = useUIStore.getState();
+      setOrdersViewMode('table');
+      setOrdersViewMode('cards');
+      expect(useUIStore.getState().ordersViewMode).toBe('cards');
+    });
+  });
+
+  describe('portfolioViewMode', () => {
+    it('should initialize with cards', () => {
+      const state = useUIStore.getState();
+      expect(state.portfolioViewMode).toBe('cards');
+    });
+
+    it('should update to table', () => {
+      const { setPortfolioViewMode } = useUIStore.getState();
+      setPortfolioViewMode('table');
+      expect(useUIStore.getState().portfolioViewMode).toBe('table');
+    });
+  });
+
+  describe('ordersTableSort', () => {
+    it('should initialize with default sort', () => {
+      const state = useUIStore.getState();
+      expect(state.ordersTableSortKey).toBe('createdAt');
+      expect(state.ordersTableSortDirection).toBe('desc');
+    });
+
+    it('should update sort key and direction', () => {
+      const { setOrdersTableSort } = useUIStore.getState();
+      setOrdersTableSort('price', 'asc');
+      const state = useUIStore.getState();
+      expect(state.ordersTableSortKey).toBe('price');
+      expect(state.ordersTableSortDirection).toBe('asc');
+    });
+
+    it('should update to quantity sort', () => {
+      const { setOrdersTableSort } = useUIStore.getState();
+      setOrdersTableSort('quantity', 'desc');
+      const state = useUIStore.getState();
+      expect(state.ordersTableSortKey).toBe('quantity');
+      expect(state.ordersTableSortDirection).toBe('desc');
+    });
+  });
+
+  describe('portfolioTableSort', () => {
+    it('should initialize with default sort', () => {
+      const state = useUIStore.getState();
+      expect(state.portfolioTableSortKey).toBe('pnl');
+      expect(state.portfolioTableSortDirection).toBe('desc');
+    });
+
+    it('should update sort key and direction', () => {
+      const { setPortfolioTableSort } = useUIStore.getState();
+      setPortfolioTableSort('symbol', 'asc');
+      const state = useUIStore.getState();
+      expect(state.portfolioTableSortKey).toBe('symbol');
+      expect(state.portfolioTableSortDirection).toBe('asc');
+    });
+
+    it('should update to exposure sort', () => {
+      const { setPortfolioTableSort } = useUIStore.getState();
+      setPortfolioTableSort('exposure', 'desc');
+      const state = useUIStore.getState();
+      expect(state.portfolioTableSortKey).toBe('exposure');
+      expect(state.portfolioTableSortDirection).toBe('desc');
+    });
+  });
+
+  describe('ordersSortBy', () => {
+    it('should initialize with newest', () => {
+      const state = useUIStore.getState();
+      expect(state.ordersSortBy).toBe('newest');
+    });
+
+    it('should update to oldest', () => {
+      const { setOrdersSortBy } = useUIStore.getState();
+      setOrdersSortBy('oldest');
+      expect(useUIStore.getState().ordersSortBy).toBe('oldest');
+    });
+
+    it('should update to symbol-asc', () => {
+      const { setOrdersSortBy } = useUIStore.getState();
+      setOrdersSortBy('symbol-asc');
+      expect(useUIStore.getState().ordersSortBy).toBe('symbol-asc');
+    });
+
+    it('should update to quantity-desc', () => {
+      const { setOrdersSortBy } = useUIStore.getState();
+      setOrdersSortBy('quantity-desc');
+      expect(useUIStore.getState().ordersSortBy).toBe('quantity-desc');
+    });
+
+    it('should update to pnl-desc', () => {
+      const { setOrdersSortBy } = useUIStore.getState();
+      setOrdersSortBy('pnl-desc');
+      expect(useUIStore.getState().ordersSortBy).toBe('pnl-desc');
+    });
+
+    it('should update to price-desc', () => {
+      const { setOrdersSortBy } = useUIStore.getState();
+      setOrdersSortBy('price-desc');
+      expect(useUIStore.getState().ordersSortBy).toBe('price-desc');
     });
   });
 });

@@ -260,4 +260,100 @@ describe('setupStore', () => {
       expect(performance.executedSetups).toBe(3);
     });
   });
+
+  describe('auto trading', () => {
+    it('should toggle auto trading on', () => {
+      const store = useSetupStore.getState();
+      useSetupStore.setState({ isAutoTradingActive: false });
+
+      store.toggleAutoTrading();
+
+      const { isAutoTradingActive } = useSetupStore.getState();
+      expect(isAutoTradingActive).toBe(true);
+    });
+
+    it('should toggle auto trading off', () => {
+      const store = useSetupStore.getState();
+      useSetupStore.setState({ isAutoTradingActive: true });
+
+      store.toggleAutoTrading();
+
+      const { isAutoTradingActive } = useSetupStore.getState();
+      expect(isAutoTradingActive).toBe(false);
+    });
+  });
+
+  describe('setup state management', () => {
+    it('should update setup', () => {
+      const setup = createMockSetup({ confidence: 75 });
+      const store = useSetupStore.getState();
+      store.addDetectedSetup(setup);
+
+      store.updateSetup(setup.id, { confidence: 85 });
+
+      const updated = store.getDetectedSetup(setup.id);
+      expect(updated?.confidence).toBe(85);
+    });
+
+    it('should not update non-existent setup', () => {
+      const store = useSetupStore.getState();
+      store.updateSetup('non-existent', { confidence: 85 });
+
+      const { detectedSetups } = useSetupStore.getState();
+      expect(detectedSetups).toHaveLength(0);
+    });
+
+    it('should cancel setup without reason', () => {
+      const setup = createMockSetup();
+      const store = useSetupStore.getState();
+      store.addDetectedSetup(setup);
+
+      store.cancelSetup(setup.id);
+
+      const cancelled = store.getDetectedSetup(setup.id);
+      expect(cancelled?.isCancelled).toBe(true);
+      expect(cancelled?.cancelledAt).toBeDefined();
+      expect(cancelled?.cancellationReason).toBeUndefined();
+    });
+
+    it('should cancel setup with reason', () => {
+      const setup = createMockSetup();
+      const store = useSetupStore.getState();
+      store.addDetectedSetup(setup);
+
+      store.cancelSetup(setup.id, 'Price moved too fast');
+
+      const cancelled = store.getDetectedSetup(setup.id);
+      expect(cancelled?.isCancelled).toBe(true);
+      expect(cancelled?.cancellationReason).toBe('Price moved too fast');
+    });
+
+    it('should trigger setup', () => {
+      const setup = createMockSetup();
+      const store = useSetupStore.getState();
+      store.addDetectedSetup(setup);
+
+      store.triggerSetup(setup.id);
+
+      const triggered = store.getDetectedSetup(setup.id);
+      expect(triggered?.isTriggered).toBe(true);
+      expect(triggered?.triggeredAt).toBeDefined();
+    });
+
+    it('should not cancel non-existent setup', () => {
+      const store = useSetupStore.getState();
+      store.cancelSetup('non-existent', 'reason');
+
+      const { detectedSetups } = useSetupStore.getState();
+      expect(detectedSetups).toHaveLength(0);
+    });
+
+    it('should not trigger non-existent setup', () => {
+      const store = useSetupStore.getState();
+      store.triggerSetup('non-existent');
+
+      const { detectedSetups } = useSetupStore.getState();
+      expect(detectedSetups).toHaveLength(0);
+    });
+  });
 });

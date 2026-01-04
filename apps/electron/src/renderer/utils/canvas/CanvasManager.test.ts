@@ -392,7 +392,7 @@ describe('CanvasManager', () => {
     it('should pan forward by one kline', () => {
       const initialStart = manager.getViewport().start;
       manager.panToNextKline();
-      
+
       const newStart = manager.getViewport().start;
       expect(newStart).toBe(initialStart + 1);
     });
@@ -400,7 +400,7 @@ describe('CanvasManager', () => {
     it('should not pan beyond kline length', () => {
       manager.setViewport({ ...viewport, start: mockKlines.length - 50, end: mockKlines.length });
       manager.panToNextKline();
-      
+
       const currentViewport = manager.getViewport();
       expect(currentViewport.end).toBe(mockKlines.length);
     });
@@ -408,10 +408,280 @@ describe('CanvasManager', () => {
     it('should do nothing with empty klines', () => {
       manager.setKlines([]);
       const initialViewport = manager.getViewport();
-      
+
       manager.panToNextKline();
-      
+
       expect(manager.getViewport()).toEqual(initialViewport);
+    });
+  });
+
+  describe('panel management', () => {
+    beforeEach(() => {
+      manager.setKlines(mockKlines);
+    });
+
+    it('should set panel height', () => {
+      manager.setPanelHeight('rsi', 100);
+
+      expect(manager.getPanelHeight('rsi')).toBe(100);
+    });
+
+    it('should remove panel when height is set to 0', () => {
+      manager.setPanelHeight('rsi', 100);
+      manager.setPanelHeight('rsi', 0);
+
+      expect(manager.getPanelHeight('rsi')).toBe(0);
+    });
+
+    it('should return 0 for non-existent panel', () => {
+      expect(manager.getPanelHeight('nonexistent')).toBe(0);
+    });
+
+    it('should calculate total panel height', () => {
+      manager.setPanelHeight('rsi', 100);
+      manager.setPanelHeight('stochastic', 80);
+
+      expect(manager.getTotalPanelHeight()).toBe(180);
+    });
+
+    it('should get panel top position', () => {
+      manager.setPanelHeight('rsi', 100);
+      const panelTop = manager.getPanelTop('rsi');
+
+      expect(typeof panelTop).toBe('number');
+    });
+
+    it('should return 0 for panel top when no dimensions', () => {
+      const emptyManager = new CanvasManager(canvas, viewport);
+      emptyManager['dimensions'] = null;
+
+      expect(emptyManager.getPanelTop('rsi')).toBe(0);
+    });
+
+    it('should get active panels sorted by order', () => {
+      manager.setPanelHeight('stochastic', 80);
+      manager.setPanelHeight('rsi', 100);
+      const panels = manager.getActivePanels();
+
+      expect(panels.length).toBe(2);
+      expect(panels[0]!.order).toBeLessThanOrEqual(panels[1]!.order);
+    });
+
+    it('should get panel info', () => {
+      manager.setPanelHeight('rsi', 100);
+      const info = manager.getPanelInfo('rsi');
+
+      expect(info).not.toBeNull();
+      expect(info?.height).toBe(100);
+      expect(typeof info?.y).toBe('number');
+    });
+
+    it('should return null for panel info when panel does not exist', () => {
+      const info = manager.getPanelInfo('nonexistent');
+
+      expect(info).toBeNull();
+    });
+
+    it('should return null for panel info when no dimensions', () => {
+      manager.setPanelHeight('rsi', 100);
+      manager['dimensions'] = null;
+
+      const info = manager.getPanelInfo('rsi');
+
+      expect(info).toBeNull();
+    });
+
+    it('should use convenience methods for RSI panel', () => {
+      manager.setRSIPanelHeight(120);
+
+      expect(manager.getRSIPanelHeight()).toBe(120);
+    });
+
+    it('should use convenience methods for stochastic panel', () => {
+      manager.setStochasticPanelHeight(90);
+
+      expect(manager.getStochasticPanelHeight()).toBe(90);
+    });
+  });
+
+  describe('right margin', () => {
+    it('should set right margin', () => {
+      manager.setRightMargin(50);
+
+      expect(manager.isDirty()).toBe(true);
+    });
+  });
+
+  describe('indexToCenterX', () => {
+    beforeEach(() => {
+      manager.setKlines(mockKlines);
+    });
+
+    it('should convert index to center x coordinate', () => {
+      const x = manager.indexToCenterX(50);
+
+      expect(typeof x).toBe('number');
+    });
+
+    it('should return 0 when no dimensions', () => {
+      manager['dimensions'] = null;
+
+      expect(manager.indexToCenterX(50)).toBe(0);
+    });
+  });
+
+  describe('timeToIndex', () => {
+    beforeEach(() => {
+      manager.setKlines(mockKlines);
+    });
+
+    it('should find index for timestamp', () => {
+      const timestamp = mockKlines[50]!.openTime;
+      const index = manager.timeToIndex(timestamp as number);
+
+      expect(index).toBe(50);
+    });
+
+    it('should return -1 for empty klines', () => {
+      manager.setKlines([]);
+
+      expect(manager.timeToIndex(Date.now())).toBe(-1);
+    });
+
+    it('should return last index for future timestamp', () => {
+      const futureTimestamp = Date.now() + 1000000000;
+      const index = manager.timeToIndex(futureTimestamp);
+
+      expect(index).toBe(mockKlines.length - 1);
+    });
+  });
+
+  describe('resize', () => {
+    it('should resize and reinitialize', () => {
+      manager.setKlines(mockKlines);
+      manager.resize();
+
+      expect(manager.isDirty()).toBe(true);
+      expect(manager.getDimensions()).not.toBeNull();
+    });
+  });
+
+  describe('resetToInitialView', () => {
+    beforeEach(() => {
+      manager.setKlines(mockKlines);
+    });
+
+    it('should reset viewport to initial view', () => {
+      manager.zoom(5);
+      manager.panVertical(100);
+      manager.resetToInitialView();
+
+      const vp = manager.getViewport();
+      expect(vp.end).toBe(mockKlines.length);
+    });
+
+    it('should reset vertical zoom', () => {
+      manager.zoomVertical(50);
+      manager.resetToInitialView();
+
+      expect(manager.getBounds()).not.toBeNull();
+    });
+  });
+
+  describe('resetVerticalZoom', () => {
+    beforeEach(() => {
+      manager.setKlines(mockKlines);
+    });
+
+    it('should reset vertical zoom and pan', () => {
+      manager.zoomVertical(50);
+      manager.panVertical(100);
+      manager.resetVerticalZoom();
+
+      expect(manager.isDirty()).toBe(true);
+    });
+  });
+
+  describe('dirty flags', () => {
+    it('should mark specific flags as dirty', () => {
+      manager.clearDirtyFlags();
+      manager.markDirty('klines');
+
+      const flags = manager.getDirtyFlags();
+      expect(flags.klines).toBe(true);
+      expect(flags.viewport).toBe(false);
+    });
+
+    it('should clear dirty flags', () => {
+      manager.markDirty('all');
+      manager.clearDirtyFlags();
+
+      const flags = manager.getDirtyFlags();
+      expect(flags.all).toBe(false);
+      expect(flags.klines).toBe(false);
+    });
+
+    it('should check if dirty', () => {
+      manager.clearDirtyFlags();
+      expect(manager.isDirty()).toBe(false);
+
+      manager.markDirty('overlays');
+      expect(manager.isDirty()).toBe(true);
+    });
+  });
+
+  describe('kline change detection', () => {
+    beforeEach(() => {
+      manager.setKlines(mockKlines);
+      manager.clearDirtyFlags();
+    });
+
+    it('should detect when klines length changes', () => {
+      manager.setKlines(mockKlines.slice(0, 100));
+
+      expect(manager.getDirtyFlags().klines).toBe(true);
+    });
+
+    it('should detect when last kline changes', () => {
+      const modifiedKlines = [...mockKlines];
+      modifiedKlines[modifiedKlines.length - 1] = {
+        ...modifiedKlines[modifiedKlines.length - 1]!,
+        close: '999',
+      };
+      manager.setKlines(modifiedKlines);
+
+      expect(manager.getDirtyFlags().klines).toBe(true);
+    });
+
+    it('should not mark dirty when klines are the same', () => {
+      manager.setKlines(mockKlines);
+
+      expect(manager.getDirtyFlags().klines).toBe(false);
+    });
+  });
+
+  describe('viewport change detection', () => {
+    beforeEach(() => {
+      manager.setKlines(mockKlines);
+      manager.clearDirtyFlags();
+    });
+
+    it('should detect when viewport start changes', () => {
+      manager.setViewport({ ...viewport, start: 10 });
+
+      expect(manager.getDirtyFlags().viewport).toBe(true);
+    });
+
+    it('should detect when viewport end changes', () => {
+      manager.setViewport({ ...viewport, end: 150 });
+
+      expect(manager.getDirtyFlags().viewport).toBe(true);
+    });
+
+    it('should not mark dirty when viewport is the same', () => {
+      manager.setViewport(viewport);
+
+      expect(manager.getDirtyFlags().viewport).toBe(false);
     });
   });
 });

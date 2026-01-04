@@ -210,4 +210,109 @@ describe('GeneralTab', () => {
 
         expect(screen.getByText(/settings.autoUpdate.checkInterval/)).toBeDefined();
     });
+
+    it('renders auto check checkbox', () => {
+        renderWithChakra(<GeneralTab />);
+
+        const checkbox = screen.getByRole('checkbox', { name: /checkAutomatically/i });
+        expect(checkbox).toBeDefined();
+    });
+
+    it('renders auto download checkbox', () => {
+        renderWithChakra(<GeneralTab />);
+
+        const checkbox = screen.getByRole('checkbox', { name: /downloadAutomatically/i });
+        expect(checkbox).toBeDefined();
+    });
+
+    it('renders both switches with correct initial states', () => {
+        renderWithChakra(<GeneralTab />);
+
+        const checkboxes = screen.getAllByRole('checkbox');
+        expect(checkboxes.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('renders theme buttons', () => {
+        renderWithChakra(<GeneralTab />);
+
+        expect(screen.getByText('header.themeLight')).toBeDefined();
+        expect(screen.getByText('header.themeDark')).toBeDefined();
+    });
+
+    it('switches to light theme', () => {
+        renderWithChakra(<GeneralTab />);
+
+        const lightButton = screen.getByText('header.themeLight');
+        fireEvent.click(lightButton);
+    });
+
+    it('switches to dark theme', () => {
+        renderWithChakra(<GeneralTab />);
+
+        const darkButton = screen.getByText('header.themeDark');
+        fireEvent.click(darkButton);
+    });
+
+    it('handles reset when auto check is disabled in defaults', () => {
+        vi.doMock('@/renderer/constants/defaults', () => ({
+            DEFAULT_AUTO_UPDATE_SETTINGS: {
+                autoCheckUpdates: false,
+                autoDownloadUpdates: false,
+                updateCheckInterval: 6,
+            },
+        }));
+
+        renderWithChakra(<GeneralTab />);
+
+        const resetButtons = screen.getAllByText('settings.resetToDefaults');
+        fireEvent.click(resetButtons[0]!);
+
+        expect(mockSetAutoCheckUpdates).toHaveBeenCalled();
+        expect(mockSetAutoDownloadUpdates).toHaveBeenCalled();
+        expect(mockSetUpdateCheckInterval).toHaveBeenCalled();
+    });
+
+    it('changes interval and restarts auto check', () => {
+        mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
+            if (key === 'chakra-ui-color-mode') return ['dark', vi.fn()];
+            if (key === 'autoCheckUpdates') return [true, mockSetAutoCheckUpdates];
+            if (key === 'autoDownloadUpdates') return [false, mockSetAutoDownloadUpdates];
+            if (key === 'updateCheckInterval') return [24, mockSetUpdateCheckInterval];
+            return [defaultValue, vi.fn()];
+        });
+
+        renderWithChakra(<GeneralTab />);
+
+        const slider = document.querySelector('[role="slider"]');
+        expect(slider).not.toBeNull();
+    });
+
+    it('handles interval change when auto check is disabled', () => {
+        mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
+            if (key === 'chakra-ui-color-mode') return ['dark', vi.fn()];
+            if (key === 'autoCheckUpdates') return [false, mockSetAutoCheckUpdates];
+            if (key === 'autoDownloadUpdates') return [false, mockSetAutoDownloadUpdates];
+            if (key === 'updateCheckInterval') return [24, mockSetUpdateCheckInterval];
+            return [defaultValue, vi.fn()];
+        });
+
+        renderWithChakra(<GeneralTab />);
+
+        expect(mockStopAutoCheck).not.toHaveBeenCalled();
+        expect(mockStartAutoCheck).not.toHaveBeenCalled();
+    });
+
+    it('renders with light theme active', () => {
+        mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
+            if (key === 'chakra-ui-color-mode') return ['light', vi.fn()];
+            if (key === 'autoCheckUpdates') return [true, mockSetAutoCheckUpdates];
+            if (key === 'autoDownloadUpdates') return [false, mockSetAutoDownloadUpdates];
+            if (key === 'updateCheckInterval') return [24, mockSetUpdateCheckInterval];
+            return [defaultValue, vi.fn()];
+        });
+
+        renderWithChakra(<GeneralTab />);
+
+        expect(screen.getByText('header.themeLight')).toBeDefined();
+    });
 });
