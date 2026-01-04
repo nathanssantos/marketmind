@@ -55,7 +55,9 @@ export type IndicatorType =
   | 'openInterest'
   | 'liquidations'
   | 'btcDominance'
-  | 'relativeStrength';
+  | 'relativeStrength'
+  | 'highest'
+  | 'lowest';
 
 export type PriceSource = 'open' | 'high' | 'low' | 'close' | 'volume';
 

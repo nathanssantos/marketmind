@@ -351,6 +351,8 @@ export class StrategyLoader {
       'liquidations',
       'btcDominance',
       'relativeStrength',
+      'highest',
+      'lowest',
     ];
 
     for (const [id, indicator] of Object.entries(indicators)) {
