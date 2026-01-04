@@ -11,6 +11,8 @@
   ],
   "source": "J. Welles Wilder - New Concepts",
   "status": "active",
+  "enabled": true,
+  "group": "trend",
   "optimizedParams": {
     "maxPositionSize": 80,
     "maxConcurrentPositions": 2,

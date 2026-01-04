@@ -12,6 +12,8 @@
     "proven"
   ],
   "status": "active",
+  "enabled": true,
+  "group": "reversal",
   "optimizedParams": {
     "maxPositionSize": 60,
     "useAlgorithmicLevels": true,

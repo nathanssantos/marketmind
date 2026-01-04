@@ -1,7 +1,7 @@
 import { Box, Flex, SimpleGrid, Stack, Text } from '@chakra-ui/react';
+import type { StrategyDefinition } from '@marketmind/types';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ENABLED_STRATEGIES } from '@marketmind/types';
 import { useBackendWallet } from '../../hooks/useBackendWallet';
 import { useStrategyList } from '../../hooks/useSetupDetection';
 import { trpc } from '../../utils/trpc';
@@ -29,12 +29,12 @@ export const SetupToggleSection = memo(() => {
   });
 
   const setupList = useMemo(() => {
-    const allStrategies = (strategies ?? []).map((strategy: { id: string; name: string }) => ({
-      value: strategy.id,
-      title: strategy.name,
-    }));
-
-    return allStrategies.filter((s: { value: string }) => ENABLED_STRATEGIES.includes(s.value as typeof ENABLED_STRATEGIES[number]));
+    return (strategies ?? [])
+      .filter((strategy: StrategyDefinition) => strategy.enabled)
+      .map((strategy: StrategyDefinition) => ({
+        value: strategy.id,
+        title: strategy.name,
+      }));
   }, [strategies]);
 
   const enabledStrategies = useMemo(() => config?.enabledSetupTypes ?? [], [config?.enabledSetupTypes]);

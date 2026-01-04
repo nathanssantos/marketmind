@@ -266,6 +266,8 @@ export interface StrategyDefinition {
   tags?: string[];
 
   status?: StrategyStatus;
+  enabled?: boolean;
+  group?: string;
   backtestSummary?: StrategyBacktestSummary;
   recommendedTimeframes?: RecommendedTimeframes;
 

@@ -1,34 +1,58 @@
-import type { CreateTradingProfileInput, TradingProfile, UpdateTradingProfileInput } from '@marketmind/types';
+import type { CreateTradingProfileInput, StrategyDefinition, TradingProfile, UpdateTradingProfileInput } from '@marketmind/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useStrategyList } from './useSetupDetection';
 
-export const AVAILABLE_SETUPS = [
-  { id: 'larry-williams-9-1', group: 'larry-williams' },
-  { id: 'larry-williams-9-2', group: 'larry-williams' },
-  { id: 'larry-williams-9-3', group: 'larry-williams' },
-  { id: 'larry-williams-9-4', group: 'larry-williams' },
-  { id: 'qullamaggie-breakout', group: 'qullamaggie' },
-  { id: 'qullamaggie-htf', group: 'qullamaggie' },
-  { id: 'qullamaggie-ep', group: 'qullamaggie' },
-  { id: 'keltner-breakout-optimized', group: 'breakout' },
-  { id: 'bollinger-breakout-crypto', group: 'breakout' },
-  { id: 'williams-momentum', group: 'momentum' },
-  { id: 'tema-momentum', group: 'momentum' },
-  { id: 'elder-ray-crypto', group: 'momentum' },
-  { id: 'ppo-momentum', group: 'momentum' },
-  { id: 'parabolic-sar-crypto', group: 'trend' },
-  { id: 'supertrend-follow', group: 'trend' },
-] as const;
+export interface AvailableSetup {
+  id: string;
+  group: string;
+}
 
-export const SETUP_GROUPS = [
-  { id: 'larry-williams', name: 'Larry Williams 9' },
-  { id: 'qullamaggie', name: 'Qullamaggie' },
-  { id: 'breakout', name: 'Breakout' },
-  { id: 'momentum', name: 'Momentum' },
-  { id: 'trend', name: 'Trend Following' },
-] as const;
+export interface SetupGroup {
+  id: string;
+  name: string;
+}
 
-export type SetupId = (typeof AVAILABLE_SETUPS)[number]['id'];
-export type GroupId = (typeof SETUP_GROUPS)[number]['id'];
+const GROUP_NAMES: Record<string, string> = {
+  'larry-williams': 'Larry Williams 9',
+  'qullamaggie': 'Qullamaggie',
+  'breakout': 'Breakout',
+  'momentum': 'Momentum',
+  'trend': 'Trend Following',
+  'reversal': 'Reversal',
+  'pattern': 'Pattern',
+  'other': 'Other',
+};
+
+const formatGroupName = (groupId: string): string => {
+  return GROUP_NAMES[groupId] ?? groupId.charAt(0).toUpperCase() + groupId.slice(1).replace(/-/g, ' ');
+};
+
+export const useAvailableSetups = () => {
+  const { data: strategies, isLoading } = useStrategyList({ excludeStatuses: ['deprecated'] });
+
+  const setups = useMemo<AvailableSetup[]>(() => {
+    return (strategies ?? [])
+      .filter((s: StrategyDefinition) => s.enabled)
+      .map((s: StrategyDefinition) => ({ id: s.id, group: s.group ?? 'other' }));
+  }, [strategies]);
+
+  const groups = useMemo<SetupGroup[]>(() => {
+    const uniqueGroups = [...new Set(setups.map((s) => s.group))];
+    const groupOrder = ['larry-williams', 'qullamaggie', 'breakout', 'momentum', 'trend', 'reversal', 'pattern', 'other'];
+    return uniqueGroups
+      .sort((a, b) => {
+        const aIndex = groupOrder.indexOf(a);
+        const bIndex = groupOrder.indexOf(b);
+        if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
+        if (aIndex === -1) return 1;
+        if (bIndex === -1) return -1;
+        return aIndex - bIndex;
+      })
+      .map((g) => ({ id: g, name: formatGroupName(g) }));
+  }, [setups]);
+
+  return { setups, groups, isLoading };
+};
 
 export interface ProfileEditorState {
   name: string;
@@ -72,8 +96,8 @@ export const toggleSetup = (currentSetups: string[], setupId: string): string[] 
     : [...currentSetups, setupId];
 };
 
-export const toggleGroup = (currentSetups: string[], groupId: string): string[] => {
-  const groupSetups: string[] = AVAILABLE_SETUPS.filter((s) => s.group === groupId).map((s) => s.id);
+export const toggleGroup = (currentSetups: string[], groupId: string, availableSetups: AvailableSetup[]): string[] => {
+  const groupSetups: string[] = availableSetups.filter((s) => s.group === groupId).map((s) => s.id);
   const allEnabled = groupSetups.every((id) => currentSetups.includes(id));
 
   if (allEnabled) {
@@ -82,8 +106,8 @@ export const toggleGroup = (currentSetups: string[], groupId: string): string[] 
   return [...new Set([...currentSetups, ...groupSetups])];
 };
 
-export const getGroupStats = (enabledSetups: string[], groupId: string) => {
-  const groupSetups = AVAILABLE_SETUPS.filter((s) => s.group === groupId);
+export const getGroupStats = (enabledSetups: string[], groupId: string, availableSetups: AvailableSetup[]) => {
+  const groupSetups = availableSetups.filter((s) => s.group === groupId);
   const enabledCount = groupSetups.filter((s) => enabledSetups.includes(s.id)).length;
   return {
     total: groupSetups.length,
@@ -117,6 +141,7 @@ export const buildUpdateInput = (state: ProfileEditorState): UpdateTradingProfil
 
 export const useProfileEditor = (profile: TradingProfile | null, isOpen: boolean) => {
   const [state, setState] = useState<ProfileEditorState>(() => getInitialState(profile));
+  const { setups, groups, isLoading: isLoadingSetups } = useAvailableSetups();
 
   useEffect(() => {
     setState(getInitialState(profile));
@@ -149,16 +174,16 @@ export const useProfileEditor = (profile: TradingProfile | null, isOpen: boolean
   }, []);
 
   const handleToggleGroup = useCallback((groupId: string) => {
-    setState((s) => ({ ...s, enabledSetupTypes: toggleGroup(s.enabledSetupTypes, groupId) }));
-  }, []);
+    setState((s) => ({ ...s, enabledSetupTypes: toggleGroup(s.enabledSetupTypes, groupId, setups) }));
+  }, [setups]);
 
   const groupsWithStats = useMemo(
-    () => SETUP_GROUPS.map((group) => ({
+    () => groups.map((group) => ({
       ...group,
-      setups: AVAILABLE_SETUPS.filter((s) => s.group === group.id),
-      stats: getGroupStats(state.enabledSetupTypes, group.id),
+      setups: setups.filter((s) => s.group === group.id),
+      stats: getGroupStats(state.enabledSetupTypes, group.id, setups),
     })),
-    [state.enabledSetupTypes]
+    [state.enabledSetupTypes, groups, setups]
   );
 
   return {
@@ -174,5 +199,7 @@ export const useProfileEditor = (profile: TradingProfile | null, isOpen: boolean
     handleToggleGroup,
     groupsWithStats,
     isEditing: profile !== null,
+    isLoadingSetups,
+    totalSetups: setups.length,
   };
 };

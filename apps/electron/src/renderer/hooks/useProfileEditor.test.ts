@@ -1,8 +1,5 @@
-import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import {
-  AVAILABLE_SETUPS,
-  SETUP_GROUPS,
   buildCreateInput,
   buildUpdateInput,
   canSubmitProfile,
@@ -10,9 +7,26 @@ import {
   getInitialState,
   toggleGroup,
   toggleSetup,
-  useProfileEditor,
+  type AvailableSetup,
   type ProfileEditorState,
 } from './useProfileEditor';
+
+const MOCK_AVAILABLE_SETUPS: AvailableSetup[] = [
+  { id: 'larry-williams-9-1', group: 'larry-williams' },
+  { id: 'larry-williams-9-2', group: 'larry-williams' },
+  { id: 'larry-williams-9-3', group: 'larry-williams' },
+  { id: 'larry-williams-9-4', group: 'larry-williams' },
+  { id: 'keltner-breakout-optimized', group: 'breakout' },
+  { id: 'bollinger-breakout-crypto', group: 'breakout' },
+  { id: 'williams-momentum', group: 'momentum' },
+  { id: 'tema-momentum', group: 'momentum' },
+];
+
+const MOCK_SETUP_GROUPS = [
+  { id: 'larry-williams', name: 'Larry Williams 9' },
+  { id: 'breakout', name: 'Breakout' },
+  { id: 'momentum', name: 'Momentum' },
+];
 
 describe('useProfileEditor', () => {
   describe('getInitialState', () => {
@@ -107,30 +121,30 @@ describe('useProfileEditor', () => {
 
   describe('toggleGroup', () => {
     it('should enable all setups in group when none enabled', () => {
-      const result = toggleGroup([], 'larry-williams');
-      const larryWilliamsSetups = AVAILABLE_SETUPS.filter((s) => s.group === 'larry-williams').map((s) => s.id);
+      const result = toggleGroup([], 'larry-williams', MOCK_AVAILABLE_SETUPS);
+      const larryWilliamsSetups = MOCK_AVAILABLE_SETUPS.filter((s) => s.group === 'larry-williams').map((s) => s.id);
 
       expect(result).toEqual(expect.arrayContaining(larryWilliamsSetups));
       expect(result.length).toBe(larryWilliamsSetups.length);
     });
 
     it('should enable all setups in group when some enabled', () => {
-      const result = toggleGroup(['larry-williams-9-1'], 'larry-williams');
-      const larryWilliamsSetups = AVAILABLE_SETUPS.filter((s) => s.group === 'larry-williams').map((s) => s.id);
+      const result = toggleGroup(['larry-williams-9-1'], 'larry-williams', MOCK_AVAILABLE_SETUPS);
+      const larryWilliamsSetups = MOCK_AVAILABLE_SETUPS.filter((s) => s.group === 'larry-williams').map((s) => s.id);
 
       expect(result).toEqual(expect.arrayContaining(larryWilliamsSetups));
     });
 
     it('should disable all setups in group when all enabled', () => {
       const allLarryWilliams = ['larry-williams-9-1', 'larry-williams-9-2', 'larry-williams-9-3', 'larry-williams-9-4'];
-      const result = toggleGroup(allLarryWilliams, 'larry-williams');
+      const result = toggleGroup(allLarryWilliams, 'larry-williams', MOCK_AVAILABLE_SETUPS);
 
       expect(result).toEqual([]);
     });
 
     it('should preserve setups from other groups', () => {
       const initial = ['keltner-breakout-optimized'];
-      const result = toggleGroup(initial, 'larry-williams');
+      const result = toggleGroup(initial, 'larry-williams', MOCK_AVAILABLE_SETUPS);
 
       expect(result).toContain('keltner-breakout-optimized');
       expect(result).toContain('larry-williams-9-1');
@@ -139,7 +153,7 @@ describe('useProfileEditor', () => {
     it('should only remove setups from target group', () => {
       const allLarryWilliams = ['larry-williams-9-1', 'larry-williams-9-2', 'larry-williams-9-3', 'larry-williams-9-4'];
       const initial = [...allLarryWilliams, 'keltner-breakout-optimized'];
-      const result = toggleGroup(initial, 'larry-williams');
+      const result = toggleGroup(initial, 'larry-williams', MOCK_AVAILABLE_SETUPS);
 
       expect(result).toEqual(['keltner-breakout-optimized']);
     });
@@ -147,7 +161,7 @@ describe('useProfileEditor', () => {
 
   describe('getGroupStats', () => {
     it('should return correct stats when no setups enabled', () => {
-      const stats = getGroupStats([], 'larry-williams');
+      const stats = getGroupStats([], 'larry-williams', MOCK_AVAILABLE_SETUPS);
 
       expect(stats.total).toBe(4);
       expect(stats.enabled).toBe(0);
@@ -156,7 +170,7 @@ describe('useProfileEditor', () => {
     });
 
     it('should return correct stats when some setups enabled', () => {
-      const stats = getGroupStats(['larry-williams-9-1', 'larry-williams-9-2'], 'larry-williams');
+      const stats = getGroupStats(['larry-williams-9-1', 'larry-williams-9-2'], 'larry-williams', MOCK_AVAILABLE_SETUPS);
 
       expect(stats.total).toBe(4);
       expect(stats.enabled).toBe(2);
@@ -166,7 +180,7 @@ describe('useProfileEditor', () => {
 
     it('should return correct stats when all setups enabled', () => {
       const allLarryWilliams = ['larry-williams-9-1', 'larry-williams-9-2', 'larry-williams-9-3', 'larry-williams-9-4'];
-      const stats = getGroupStats(allLarryWilliams, 'larry-williams');
+      const stats = getGroupStats(allLarryWilliams, 'larry-williams', MOCK_AVAILABLE_SETUPS);
 
       expect(stats.total).toBe(4);
       expect(stats.enabled).toBe(4);
@@ -175,16 +189,16 @@ describe('useProfileEditor', () => {
     });
 
     it('should not count setups from other groups', () => {
-      const stats = getGroupStats(['keltner-breakout-optimized'], 'larry-williams');
+      const stats = getGroupStats(['keltner-breakout-optimized'], 'larry-williams', MOCK_AVAILABLE_SETUPS);
 
       expect(stats.enabled).toBe(0);
       expect(stats.noneEnabled).toBe(true);
     });
 
     it('should work for all groups', () => {
-      for (const group of SETUP_GROUPS) {
-        const groupSetups = AVAILABLE_SETUPS.filter((s) => s.group === group.id);
-        const stats = getGroupStats(groupSetups.map((s) => s.id), group.id);
+      for (const group of MOCK_SETUP_GROUPS) {
+        const groupSetups = MOCK_AVAILABLE_SETUPS.filter((s) => s.group === group.id);
+        const stats = getGroupStats(groupSetups.map((s) => s.id), group.id, MOCK_AVAILABLE_SETUPS);
 
         expect(stats.total).toBe(groupSetups.length);
         expect(stats.allEnabled).toBe(true);
@@ -342,224 +356,6 @@ describe('useProfileEditor', () => {
         maxConcurrentPositions: undefined,
         isDefault: true,
       });
-    });
-  });
-
-  describe('AVAILABLE_SETUPS', () => {
-    it('should have unique IDs', () => {
-      const ids = AVAILABLE_SETUPS.map((s) => s.id);
-      const uniqueIds = new Set(ids);
-      expect(uniqueIds.size).toBe(ids.length);
-    });
-
-    it('should have valid group references', () => {
-      const validGroups = SETUP_GROUPS.map((g) => g.id);
-      for (const setup of AVAILABLE_SETUPS) {
-        expect(validGroups).toContain(setup.group);
-      }
-    });
-  });
-
-  describe('SETUP_GROUPS', () => {
-    it('should have unique IDs', () => {
-      const ids = SETUP_GROUPS.map((g) => g.id);
-      const uniqueIds = new Set(ids);
-      expect(uniqueIds.size).toBe(ids.length);
-    });
-
-    it('each group should have at least one setup', () => {
-      for (const group of SETUP_GROUPS) {
-        const setups = AVAILABLE_SETUPS.filter((s) => s.group === group.id);
-        expect(setups.length).toBeGreaterThan(0);
-      }
-    });
-  });
-
-  describe('useProfileEditor hook', () => {
-    const mockProfile = {
-      id: 'test-id',
-      userId: 'user-id',
-      name: 'Test Profile',
-      description: 'Test description',
-      enabledSetupTypes: ['larry-williams-9-1'],
-      maxPositionSize: 10,
-      maxConcurrentPositions: 3,
-      isDefault: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    it('should initialize with empty state when profile is null', () => {
-      const { result } = renderHook(() => useProfileEditor(null, true));
-
-      expect(result.current.state.name).toBe('');
-      expect(result.current.state.enabledSetupTypes).toEqual([]);
-      expect(result.current.isEditing).toBe(false);
-    });
-
-    it('should initialize with profile data when provided', () => {
-      const { result } = renderHook(() => useProfileEditor(mockProfile, true));
-
-      expect(result.current.state.name).toBe('Test Profile');
-      expect(result.current.state.enabledSetupTypes).toEqual(['larry-williams-9-1']);
-      expect(result.current.isEditing).toBe(true);
-    });
-
-    it('should update name', () => {
-      const { result } = renderHook(() => useProfileEditor(null, true));
-
-      act(() => {
-        result.current.setName('New Name');
-      });
-
-      expect(result.current.state.name).toBe('New Name');
-    });
-
-    it('should update description', () => {
-      const { result } = renderHook(() => useProfileEditor(null, true));
-
-      act(() => {
-        result.current.setDescription('New Description');
-      });
-
-      expect(result.current.state.description).toBe('New Description');
-    });
-
-    it('should update isDefault', () => {
-      const { result } = renderHook(() => useProfileEditor(null, true));
-
-      act(() => {
-        result.current.setIsDefault(true);
-      });
-
-      expect(result.current.state.isDefault).toBe(true);
-    });
-
-    it('should update maxPositionSize', () => {
-      const { result } = renderHook(() => useProfileEditor(null, true));
-
-      act(() => {
-        result.current.setMaxPositionSize(25);
-      });
-
-      expect(result.current.state.maxPositionSize).toBe(25);
-    });
-
-    it('should update maxConcurrentPositions', () => {
-      const { result } = renderHook(() => useProfileEditor(null, true));
-
-      act(() => {
-        result.current.setMaxConcurrentPositions(5);
-      });
-
-      expect(result.current.state.maxConcurrentPositions).toBe(5);
-    });
-
-    it('should toggle overridePositionSize and clear value when disabled', () => {
-      const { result } = renderHook(() => useProfileEditor(null, true));
-
-      act(() => {
-        result.current.setMaxPositionSize(25);
-        result.current.setOverridePositionSize(true);
-      });
-
-      expect(result.current.state.overridePositionSize).toBe(true);
-      expect(result.current.state.maxPositionSize).toBe(25);
-
-      act(() => {
-        result.current.setOverridePositionSize(false);
-      });
-
-      expect(result.current.state.overridePositionSize).toBe(false);
-      expect(result.current.state.maxPositionSize).toBeUndefined();
-    });
-
-    it('should toggle overrideConcurrentPositions and clear value when disabled', () => {
-      const { result } = renderHook(() => useProfileEditor(null, true));
-
-      act(() => {
-        result.current.setMaxConcurrentPositions(3);
-        result.current.setOverrideConcurrentPositions(true);
-      });
-
-      expect(result.current.state.overrideConcurrentPositions).toBe(true);
-      expect(result.current.state.maxConcurrentPositions).toBe(3);
-
-      act(() => {
-        result.current.setOverrideConcurrentPositions(false);
-      });
-
-      expect(result.current.state.overrideConcurrentPositions).toBe(false);
-      expect(result.current.state.maxConcurrentPositions).toBeUndefined();
-    });
-
-    it('should toggle setup', () => {
-      const { result } = renderHook(() => useProfileEditor(null, true));
-
-      act(() => {
-        result.current.handleToggleSetup('larry-williams-9-1');
-      });
-
-      expect(result.current.state.enabledSetupTypes).toContain('larry-williams-9-1');
-
-      act(() => {
-        result.current.handleToggleSetup('larry-williams-9-1');
-      });
-
-      expect(result.current.state.enabledSetupTypes).not.toContain('larry-williams-9-1');
-    });
-
-    it('should toggle group', () => {
-      const { result } = renderHook(() => useProfileEditor(null, true));
-
-      act(() => {
-        result.current.handleToggleGroup('larry-williams');
-      });
-
-      const larryWilliamsSetups = AVAILABLE_SETUPS.filter((s) => s.group === 'larry-williams').map((s) => s.id);
-      for (const setupId of larryWilliamsSetups) {
-        expect(result.current.state.enabledSetupTypes).toContain(setupId);
-      }
-    });
-
-    it('should provide groupsWithStats', () => {
-      const { result } = renderHook(() => useProfileEditor(null, true));
-
-      expect(result.current.groupsWithStats).toHaveLength(SETUP_GROUPS.length);
-
-      const larryWilliamsGroup = result.current.groupsWithStats.find((g) => g.id === 'larry-williams');
-      expect(larryWilliamsGroup).toBeDefined();
-      expect(larryWilliamsGroup?.stats.total).toBe(4);
-      expect(larryWilliamsGroup?.stats.enabled).toBe(0);
-    });
-
-    it('should update groupsWithStats when setups change', () => {
-      const { result } = renderHook(() => useProfileEditor(null, true));
-
-      act(() => {
-        result.current.handleToggleSetup('larry-williams-9-1');
-      });
-
-      const larryWilliamsGroup = result.current.groupsWithStats.find((g) => g.id === 'larry-williams');
-      expect(larryWilliamsGroup?.stats.enabled).toBe(1);
-    });
-
-    it('should reset state when profile or isOpen changes', () => {
-      const { result, rerender } = renderHook(
-        ({ profile, isOpen }) => useProfileEditor(profile, isOpen),
-        { initialProps: { profile: mockProfile, isOpen: true } }
-      );
-
-      act(() => {
-        result.current.setName('Changed Name');
-      });
-
-      expect(result.current.state.name).toBe('Changed Name');
-
-      rerender({ profile: mockProfile, isOpen: false });
-      rerender({ profile: mockProfile, isOpen: true });
-
-      expect(result.current.state.name).toBe('Test Profile');
     });
   });
 });

@@ -11,6 +11,8 @@
     "double-confirmation"
   ],
   "status": "active",
+  "enabled": true,
+  "group": "larry-williams",
   "optimizedParams": {
     "maxPositionSize": 50,
     "useAlgorithmicLevels": true,

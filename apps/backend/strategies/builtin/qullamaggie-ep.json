@@ -12,6 +12,8 @@
     "catalyst"
   ],
   "status": "active",
+  "enabled": true,
+  "group": "qullamaggie",
   "optimizedParams": {
     "maxPositionSize": 100,
     "useAlgorithmicLevels": true,

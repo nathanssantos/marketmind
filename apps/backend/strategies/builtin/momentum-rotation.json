@@ -12,6 +12,8 @@
   ],
   "source": "Dual Momentum Strategy",
   "status": "active",
+  "enabled": true,
+  "group": "pattern",
   "optimizedParams": {
     "maxPositionSize": 80,
     "maxConcurrentPositions": 3,

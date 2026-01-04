@@ -12,6 +12,8 @@
   ],
   "source": "Technical Analysis Library",
   "status": "active",
+  "enabled": true,
+  "group": "momentum",
   "optimizedParams": {
     "maxPositionSize": 100,
     "maxConcurrentPositions": 2,

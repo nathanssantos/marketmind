@@ -12,6 +12,8 @@
     "proven"
   ],
   "status": "active",
+  "enabled": true,
+  "group": "breakout",
   "optimizedParams": {
     "maxPositionSize": 80,
     "useAlgorithmicLevels": true,

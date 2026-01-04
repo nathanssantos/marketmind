@@ -11,6 +11,8 @@
   ],
   "source": "Dr. Alexander Elder - Trading for a Living",
   "status": "active",
+  "enabled": true,
+  "group": "momentum",
   "optimizedParams": {
     "maxPositionSize": 100,
     "maxConcurrentPositions": 2,

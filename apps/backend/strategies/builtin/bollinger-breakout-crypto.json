@@ -12,6 +12,8 @@
   ],
   "source": "CoinBureau - Backtest Guide",
   "status": "active",
+  "enabled": true,
+  "group": "breakout",
   "optimizedParams": {
     "maxPositionSize": 60,
     "maxConcurrentPositions": 2,

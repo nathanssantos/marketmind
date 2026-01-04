@@ -11,6 +11,7 @@ import {
   HStack,
   Input,
   Separator,
+  Spinner,
   Stack,
   Text,
   Textarea,
@@ -21,31 +22,10 @@ import { Checkbox } from '@renderer/components/ui/checkbox';
 import { Field } from '@renderer/components/ui/field';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { Switch } from '@renderer/components/ui/switch';
+import { useAvailableSetups } from '@renderer/hooks/useProfileEditor';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-const AVAILABLE_SETUPS = [
-  { id: 'larry-williams-9-1', group: 'larry-williams' },
-  { id: 'larry-williams-9-2', group: 'larry-williams' },
-  { id: 'larry-williams-9-3', group: 'larry-williams' },
-  { id: 'larry-williams-9-4', group: 'larry-williams' },
-  { id: 'keltner-breakout-optimized', group: 'breakout' },
-  { id: 'bollinger-breakout-crypto', group: 'breakout' },
-  { id: 'williams-momentum', group: 'momentum' },
-  { id: 'tema-momentum', group: 'momentum' },
-  { id: 'elder-ray-crypto', group: 'momentum' },
-  { id: 'ppo-momentum', group: 'momentum' },
-  { id: 'parabolic-sar-crypto', group: 'trend' },
-  { id: 'supertrend-follow', group: 'trend' },
-];
-
-const SETUP_GROUPS = [
-  { id: 'larry-williams', name: 'Larry Williams 9' },
-  { id: 'breakout', name: 'Breakout' },
-  { id: 'momentum', name: 'Momentum' },
-  { id: 'trend', name: 'Trend Following' },
-];
 
 interface ProfileEditorDialogProps {
   isOpen: boolean;
@@ -56,6 +36,7 @@ interface ProfileEditorDialogProps {
 export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorDialogProps) => {
   const { t } = useTranslation();
   const { createProfile, updateProfile, isCreatingProfile, isUpdatingProfile } = useTradingProfiles();
+  const { setups: availableSetups, groups: setupGroups, isLoading: isLoadingSetups } = useAvailableSetups();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -97,7 +78,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
   };
 
   const handleToggleGroup = (groupId: string) => {
-    const groupSetups = AVAILABLE_SETUPS.filter((s) => s.group === groupId).map((s) => s.id);
+    const groupSetups = availableSetups.filter((s) => s.group === groupId).map((s) => s.id);
     const allEnabled = groupSetups.every((id) => enabledSetupTypes.includes(id));
 
     if (allEnabled) {
@@ -176,13 +157,18 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                   {t('tradingProfiles.fields.enabledSetups')}
                 </Text>
                 <Text fontSize="sm" color="fg.muted">
-                  {enabledSetupTypes.length} / {AVAILABLE_SETUPS.length}
+                  {enabledSetupTypes.length} / {availableSetups.length}
                 </Text>
               </Flex>
 
+              {isLoadingSetups ? (
+                <Flex justify="center" py={8}>
+                  <Spinner size="md" />
+                </Flex>
+              ) : (
               <Stack gap={4}>
-                {SETUP_GROUPS.map((group) => {
-                  const groupSetups = AVAILABLE_SETUPS.filter((s) => s.group === group.id);
+                {setupGroups.map((group) => {
+                  const groupSetups = availableSetups.filter((s) => s.group === group.id);
                   const enabledInGroup = groupSetups.filter((s) => enabledSetupTypes.includes(s.id)).length;
                   const allEnabled = enabledInGroup === groupSetups.length;
 
@@ -225,6 +211,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                   );
                 })}
               </Stack>
+              )}
             </Box>
 
             <Separator />

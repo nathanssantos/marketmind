@@ -11,6 +11,8 @@
     "quick-trades"
   ],
   "status": "active",
+  "enabled": true,
+  "group": "momentum",
   "optimizedParams": {
     "maxPositionSize": 60,
     "useAlgorithmicLevels": true,

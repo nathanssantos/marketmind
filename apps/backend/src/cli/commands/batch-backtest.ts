@@ -1,4 +1,3 @@
-import { ENABLED_STRATEGIES } from '@marketmind/types';
 import chalk from 'chalk';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
@@ -245,9 +244,14 @@ export const batchBacktestCommand = async (options: BatchOptions): Promise<void>
   const capital = parseFloat(options.capital);
   const parallelWorkers = parseInt(options.parallel, 10);
 
+  const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
+  const strategyLoader = new StrategyLoader([strategiesDir]);
+  const allStrategies = await strategyLoader.loadAll({ includeUnprofitable: true });
+  const enabledStrategyIds = allStrategies.filter((s) => s.enabled).map((s) => s.id);
+
   const strategies = options.strategies
     ? options.strategies.split(',').map((s) => s.trim())
-    : ENABLED_STRATEGIES;
+    : enabledStrategyIds;
 
   const symbols = options.symbols
     ? options.symbols.split(',').map((s) => s.trim())
@@ -268,10 +272,6 @@ export const batchBacktestCommand = async (options: BatchOptions): Promise<void>
   console.log(`  Intervals: ${intervals.join(', ')}`);
   console.log(`  Total combinations: ${chalk.bold(totalCombinations.toString())}`);
   console.log('');
-
-  const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
-  const loader = new StrategyLoader([strategiesDir]);
-  const allStrategies = await loader.loadAll({ includeUnprofitable: true });
   const availableStrategies = new Set(allStrategies.map((s) => s.id));
 
   const missingStrategies = strategies.filter((s) => !availableStrategies.has(s));

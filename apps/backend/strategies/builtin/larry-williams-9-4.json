@@ -11,6 +11,8 @@
     "failure-pattern"
   ],
   "status": "active",
+  "enabled": true,
+  "group": "larry-williams",
   "optimizedParams": {
     "maxPositionSize": 40,
     "useAlgorithmicLevels": true,
