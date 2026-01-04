@@ -1,0 +1,339 @@
+{
+  "id": "qullamaggie-htf",
+  "name": "Qullamaggie High Tight Flag",
+  "version": "1.0.0",
+  "description": "Kristjan Kullamägi's High Tight Flag (HTF) setup. Detects stocks that have moved 50%+ and are consolidating with shallow pullback (max 25%). 'If you could only trade one setup, it should be the HTF' - Qullamaggie.",
+  "author": "Kristjan Kullamägi / MarketMind",
+  "tags": [
+    "qullamaggie",
+    "htf",
+    "high-tight-flag",
+    "continuation",
+    "momentum"
+  ],
+  "status": "active",
+  "optimizedParams": {
+    "maxPositionSize": 100,
+    "useAlgorithmicLevels": true,
+    "onlyWithTrend": true,
+    "minConfidence": 70,
+    "commission": 0.001,
+    "maxConcurrentPositions": 2,
+    "maxTotalExposure": 50,
+    "trailingATRMultiplier": 2,
+    "breakEvenAfterR": 1
+  },
+  "recommendedTimeframes": {
+    "primary": "1d",
+    "secondary": [
+      "4h"
+    ],
+    "avoid": [
+      "1m",
+      "5m",
+      "15m",
+      "30m"
+    ],
+    "notes": "Best on daily charts. HTF patterns form over 4-8 weeks typically."
+  },
+  "parameters": {
+    "flagpoleLookback": {
+      "default": 30,
+      "min": 20,
+      "max": 50,
+      "step": 5,
+      "description": "Bars to look back for flagpole (initial move)"
+    },
+    "minFlagpoleGain": {
+      "default": 50,
+      "min": 30,
+      "max": 100,
+      "step": 10,
+      "description": "Minimum % gain for flagpole (50% for crypto, 100% for stocks)"
+    },
+    "maxPullbackPercent": {
+      "default": 25,
+      "min": 15,
+      "max": 30,
+      "step": 5,
+      "description": "Maximum pullback % from peak (Qullamaggie uses 25%)"
+    },
+    "flagLookback": {
+      "default": 15,
+      "min": 10,
+      "max": 25,
+      "step": 1,
+      "description": "Bars to look for flag consolidation"
+    },
+    "atrPeriod": {
+      "default": 14,
+      "min": 7,
+      "max": 21,
+      "step": 1,
+      "description": "ATR period for volatility"
+    },
+    "ema10Period": {
+      "default": 10,
+      "min": 8,
+      "max": 12,
+      "step": 1,
+      "description": "Fast EMA for trend confirmation"
+    },
+    "ema20Period": {
+      "default": 20,
+      "min": 18,
+      "max": 22,
+      "step": 1,
+      "description": "Slow EMA for trend confirmation"
+    },
+    "volumeDecreaseThreshold": {
+      "default": 0.7,
+      "min": 0.5,
+      "max": 0.9,
+      "step": 0.1,
+      "description": "Volume in flag should be below this % of flagpole volume"
+    }
+  },
+  "indicators": {
+    "ema10": {
+      "type": "ema",
+      "params": {
+        "period": "$ema10Period"
+      }
+    },
+    "ema20": {
+      "type": "ema",
+      "params": {
+        "period": "$ema20Period"
+      }
+    },
+    "ema200": {
+      "type": "ema",
+      "params": {
+        "period": 200
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "params": {
+        "period": "$atrPeriod"
+      }
+    },
+    "highestHigh30": {
+      "type": "highest",
+      "params": {
+        "period": "$flagpoleLookback",
+        "source": "high"
+      }
+    },
+    "lowestLow30": {
+      "type": "lowest",
+      "params": {
+        "period": "$flagpoleLookback",
+        "source": "low"
+      }
+    },
+    "highestHigh15": {
+      "type": "highest",
+      "params": {
+        "period": "$flagLookback",
+        "source": "high"
+      }
+    },
+    "lowestLow15": {
+      "type": "lowest",
+      "params": {
+        "period": "$flagLookback",
+        "source": "low"
+      }
+    }
+  },
+  "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": {
+            "calc": "(highestHigh30 - lowestLow30) / lowestLow30 * 100"
+          },
+          "op": ">=",
+          "right": "$minFlagpoleGain"
+        },
+        {
+          "left": {
+            "calc": "(highestHigh15 - close) / highestHigh15 * 100"
+          },
+          "op": "<=",
+          "right": "$maxPullbackPercent"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "highestHigh15.prev"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "ema10"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "ema20"
+        },
+        {
+          "left": "ema10",
+          "op": ">",
+          "right": "ema20"
+        },
+        {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": {
+            "calc": "(highestHigh30 - lowestLow30) / highestHigh30 * 100"
+          },
+          "op": ">=",
+          "right": "$minFlagpoleGain"
+        },
+        {
+          "left": {
+            "calc": "(close - lowestLow15) / lowestLow15 * 100"
+          },
+          "op": "<=",
+          "right": "$maxPullbackPercent"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "lowestLow15.prev"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "ema10"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "ema20"
+        },
+        {
+          "left": "ema10",
+          "op": "<",
+          "right": "ema20"
+        },
+        {
+          "left": "volume",
+          "op": ">",
+          "right": "volume.sma20"
+        }
+      ]
+    }
+  },
+  "exit": {
+    "stopLoss": {
+      "type": "swingHighLow",
+      "lookback": 15,
+      "buffer": 0.3,
+      "indicator": "atr"
+    },
+    "takeProfit": {
+      "type": "riskReward",
+      "multiplier": 3
+    },
+    "trailingStop": {
+      "enabled": true,
+      "type": "indicator",
+      "indicator": "ema10",
+      "initialMultiplier": 1.5,
+      "trailMultiplier": 1,
+      "breakEvenAfterR": 1
+    }
+  },
+  "confidence": {
+    "base": 60,
+    "bonuses": [
+      {
+        "condition": {
+          "left": {
+            "calc": "(highestHigh15 - close) / highestHigh15 * 100"
+          },
+          "op": "<=",
+          "right": 15
+        },
+        "bonus": 15,
+        "description": "Very tight flag (pullback <= 15%)"
+      },
+      {
+        "condition": {
+          "left": {
+            "calc": "(highestHigh30 - lowestLow30) / lowestLow30 * 100"
+          },
+          "op": ">=",
+          "right": 80
+        },
+        "bonus": 10,
+        "description": "Strong flagpole (80%+ gain)"
+      },
+      {
+        "condition": {
+          "left": "close",
+          "op": ">",
+          "right": "ema200"
+        },
+        "bonus": 10,
+        "description": "Above EMA200 (macro trend aligned)"
+      },
+      {
+        "condition": {
+          "left": "volume",
+          "op": ">",
+          "right": {
+            "calc": "volume.sma20 * 1.5"
+          }
+        },
+        "bonus": 5,
+        "description": "Strong breakout volume"
+      }
+    ],
+    "max": 100
+  },
+  "filters": {
+    "minConfidence": 65,
+    "minRiskReward": 2,
+    "trendFilter": {
+      "enabled": true,
+      "indicator": "ema",
+      "period": 200,
+      "allowCounterTrend": false
+    }
+  },
+  "education": {
+    "origin": "Kristjan Kullamägi (Qullamaggie) - 'If you could only trade one setup, it should be the HTF'",
+    "createdYear": 2015,
+    "candlePattern": {
+      "lookback": 5,
+      "candles": [
+        { "offset": -4, "role": "flagpole_end", "descriptionKey": "strategies.qullamHtf.candleMinus4" },
+        { "offset": -3, "role": "consolidation", "descriptionKey": "strategies.qullamHtf.candleMinus3" },
+        { "offset": -2, "role": "consolidation", "descriptionKey": "strategies.qullamHtf.candleMinus2" },
+        { "offset": -1, "role": "consolidation", "descriptionKey": "strategies.qullamHtf.candleMinus1" },
+        { "offset": 0, "role": "breakout", "descriptionKey": "strategies.qullamHtf.candleTrigger" }
+      ],
+      "indicatorsToShow": ["ema10", "ema20", "volume"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.qullamHtf.summary",
+      "entryKey": "strategies.qullamHtf.entry",
+      "exitKey": "strategies.qullamHtf.exit"
+    }
+  }
+}

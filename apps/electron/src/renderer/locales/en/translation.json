@@ -593,7 +593,7 @@
     "featuresList": {
       "marketData": "Real-time cryptocurrency market data (Binance)",
       "charts": "Advanced kline charts with 25+ indicators",
-      "strategies": "17 algorithmic trading strategies",
+      "strategies": "20 algorithmic trading strategies",
       "autoTrading": "Automated trade execution with OCO orders",
       "backtesting": "Full backtesting engine with optimization",
       "security": "Secure API key storage with OS-level encryption",
@@ -817,6 +817,9 @@
       "larry-williams-9-2": "Larry Williams 9.2",
       "larry-williams-9-3": "Larry Williams 9.3",
       "larry-williams-9-4": "Larry Williams 9.4",
+      "qullamaggie-breakout": "Qullamaggie Breakout",
+      "qullamaggie-htf": "Qullamaggie HTF",
+      "qullamaggie-ep": "Qullamaggie EP",
       "keltner-breakout-optimized": "Keltner Breakout",
       "bollinger-breakout-crypto": "Bollinger Breakout",
       "williams-momentum": "Williams Momentum",
@@ -944,6 +947,32 @@
       "summary": "Double touch of Stochastic extreme levels with divergence",
       "entry": "Enter on second touch of overbought/oversold with divergence",
       "exit": "Stop at extreme level, target at opposite extreme"
+    },
+    "qullamBreakout": {
+      "summary": "Kristjan Kullamägi's continuation breakout while price surfs EMA10/20",
+      "entry": "Enter on range expansion breakout with price above rising EMA10/20 and volume confirmation",
+      "exit": "Trail stop with EMA10, target 3x risk or trailing with EMA20",
+      "candleMinus2": "Consolidation candle surfing EMA10/20",
+      "candleMinus1": "Tight consolidation continues near highs",
+      "candleTrigger": "Breakout candle closes above consolidation with volume"
+    },
+    "qullamHtf": {
+      "summary": "High Tight Flag: 50%+ move followed by shallow pullback (max 25%)",
+      "entry": "Enter when price breaks above the tight flag with volume after prior big move",
+      "exit": "Stop below the flag, target based on flagpole extension",
+      "candleMinus4": "End of flagpole (recent peak)",
+      "candleMinus3": "Start of tight consolidation",
+      "candleMinus2": "Shallow pullback (less than 25%)",
+      "candleMinus1": "Flag tightening near highs",
+      "candleTrigger": "Breakout above flag with increased volume"
+    },
+    "qullamEp": {
+      "summary": "Episodic Pivot: 5%+ gap with extreme volume on catalyst",
+      "entry": "Enter when price holds above gap and breaks opening range highs with 2x+ volume",
+      "exit": "Stop at gap day low, trail with EMA10/20",
+      "candleMinus2": "Pre-catalyst price action",
+      "candleMinus1": "Close before gap (reference price)",
+      "candleTrigger": "Gap day with extreme volume and strong close"
     }
   }
 }

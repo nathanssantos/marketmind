@@ -17,6 +17,20 @@ export const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
     visible: true,
   },
   {
+    period: 10,
+    type: 'EMA',
+    color: '#ffeb3b',
+    lineWidth: 2,
+    visible: false,
+  },
+  {
+    period: 20,
+    type: 'EMA',
+    color: '#009688',
+    lineWidth: 2,
+    visible: false,
+  },
+  {
     period: 21,
     type: 'EMA',
     color: '#2196f3',

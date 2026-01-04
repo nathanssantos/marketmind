@@ -659,7 +659,7 @@
     "featuresList": {
       "marketData": "Données de marché de cryptomonnaies en temps réel (Binance)",
       "charts": "Graphiques en chandeliers avancés avec 25+ indicateurs",
-      "strategies": "17 stratégies de trading algorithmique",
+      "strategies": "20 stratégies de trading algorithmique",
       "autoTrading": "Exécution automatique des trades avec ordres OCO",
       "backtesting": "Moteur de backtesting complet avec optimisation",
       "security": "Stockage sécurisé des clés API avec chiffrement au niveau du système d'exploitation",
@@ -879,6 +879,9 @@
       "larry-williams-9-2": "Larry Williams 9.2",
       "larry-williams-9-3": "Larry Williams 9.3",
       "larry-williams-9-4": "Larry Williams 9.4",
+      "qullamaggie-breakout": "Qullamaggie Breakout",
+      "qullamaggie-htf": "Qullamaggie HTF",
+      "qullamaggie-ep": "Qullamaggie EP",
       "keltner-breakout-optimized": "Keltner Breakout",
       "bollinger-breakout-crypto": "Bollinger Breakout",
       "williams-momentum": "Williams Momentum",
@@ -1006,6 +1009,32 @@
       "summary": "Double contact des niveaux extrêmes du Stochastique avec divergence",
       "entry": "Entrer au second contact de surachat/survente avec divergence",
       "exit": "Stop au niveau extrême, cible à l'extrême opposé"
+    },
+    "qullamBreakout": {
+      "summary": "Cassure de continuation de Kristjan Kullamägi avec prix surfant EMA10/20",
+      "entry": "Entrer sur cassure de range avec prix au-dessus d'EMA10/20 ascendante et confirmation de volume",
+      "exit": "Stop suiveur avec EMA10, cible 3x risque ou trailing avec EMA20",
+      "candleMinus2": "Chandelle de consolidation surfant EMA10/20",
+      "candleMinus1": "Consolidation serrée continue près des sommets",
+      "candleTrigger": "Chandelle de cassure ferme au-dessus de la consolidation avec volume"
+    },
+    "qullamHtf": {
+      "summary": "High Tight Flag: mouvement de 50%+ suivi d'un pullback peu profond (max 25%)",
+      "entry": "Entrer quand le prix casse au-dessus du drapeau serré avec volume après grand mouvement précédent",
+      "exit": "Stop sous le drapeau, cible basée sur extension du mât",
+      "candleMinus4": "Fin du mât (pic récent)",
+      "candleMinus3": "Début de consolidation serrée",
+      "candleMinus2": "Pullback peu profond (moins de 25%)",
+      "candleMinus1": "Drapeau se resserrant près des sommets",
+      "candleTrigger": "Cassure au-dessus du drapeau avec volume accru"
+    },
+    "qullamEp": {
+      "summary": "Episodic Pivot: gap de 5%+ avec volume extrême sur catalyseur",
+      "entry": "Entrer quand le prix maintient au-dessus du gap et casse les sommets de la plage initiale avec volume 2x+",
+      "exit": "Stop au plus bas du jour du gap, trailing avec EMA10/20",
+      "candleMinus2": "Action de prix pré-catalyseur",
+      "candleMinus1": "Clôture avant le gap (prix de référence)",
+      "candleTrigger": "Jour du gap avec volume extrême et clôture forte"
     }
   }
 }

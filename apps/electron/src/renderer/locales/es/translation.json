@@ -670,7 +670,7 @@
     "featuresList": {
       "marketData": "Datos de mercado de criptomonedas en tiempo real (Binance)",
       "charts": "Gráficos de velas avanzados con 25+ indicadores",
-      "strategies": "17 estrategias de trading algorítmico",
+      "strategies": "20 estrategias de trading algorítmico",
       "autoTrading": "Ejecución automática de trades con órdenes OCO",
       "backtesting": "Motor de backtesting completo con optimización",
       "security": "Almacenamiento seguro de claves de API con cifrado a nivel del SO",
@@ -890,6 +890,9 @@
       "larry-williams-9-2": "Larry Williams 9.2",
       "larry-williams-9-3": "Larry Williams 9.3",
       "larry-williams-9-4": "Larry Williams 9.4",
+      "qullamaggie-breakout": "Qullamaggie Breakout",
+      "qullamaggie-htf": "Qullamaggie HTF",
+      "qullamaggie-ep": "Qullamaggie EP",
       "keltner-breakout-optimized": "Keltner Breakout",
       "bollinger-breakout-crypto": "Bollinger Breakout",
       "williams-momentum": "Williams Momentum",
@@ -1017,6 +1020,32 @@
       "summary": "Doble toque de niveles extremos del Estocástico con divergencia",
       "entry": "Entrar en segundo toque de sobrecompra/sobreventa con divergencia",
       "exit": "Stop en nivel extremo, objetivo en extremo opuesto"
+    },
+    "qullamBreakout": {
+      "summary": "Ruptura de continuación de Kristjan Kullamägi con precio surfeando EMA10/20",
+      "entry": "Entrar en ruptura de rango con precio encima de EMA10/20 ascendente y confirmación de volumen",
+      "exit": "Stop móvil con EMA10, objetivo 3x riesgo o trailing con EMA20",
+      "candleMinus2": "Vela de consolidación surfeando EMA10/20",
+      "candleMinus1": "Consolidación ajustada continúa cerca de máximos",
+      "candleTrigger": "Vela de ruptura cierra encima de consolidación con volumen"
+    },
+    "qullamHtf": {
+      "summary": "High Tight Flag: movimiento de 50%+ seguido de pullback poco profundo (máx 25%)",
+      "entry": "Entrar cuando precio rompe encima de la bandera ajustada con volumen después de gran movimiento previo",
+      "exit": "Stop debajo de la bandera, objetivo basado en extensión del mástil",
+      "candleMinus4": "Fin del mástil (pico reciente)",
+      "candleMinus3": "Inicio de consolidación ajustada",
+      "candleMinus2": "Pullback poco profundo (menos del 25%)",
+      "candleMinus1": "Bandera ajustándose cerca de máximos",
+      "candleTrigger": "Ruptura encima de bandera con volumen aumentado"
+    },
+    "qullamEp": {
+      "summary": "Episodic Pivot: gap de 5%+ con volumen extremo en catalizador",
+      "entry": "Entrar cuando precio mantiene encima del gap y rompe máximos del rango inicial con volumen 2x+",
+      "exit": "Stop en mínimo del día del gap, trailing con EMA10/20",
+      "candleMinus2": "Acción de precio pre-catalizador",
+      "candleMinus1": "Cierre antes del gap (precio de referencia)",
+      "candleTrigger": "Día del gap con volumen extremo y cierre fuerte"
     }
   }
 }

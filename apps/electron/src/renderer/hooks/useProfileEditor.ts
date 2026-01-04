@@ -6,6 +6,9 @@ export const AVAILABLE_SETUPS = [
   { id: 'larry-williams-9-2', group: 'larry-williams' },
   { id: 'larry-williams-9-3', group: 'larry-williams' },
   { id: 'larry-williams-9-4', group: 'larry-williams' },
+  { id: 'qullamaggie-breakout', group: 'qullamaggie' },
+  { id: 'qullamaggie-htf', group: 'qullamaggie' },
+  { id: 'qullamaggie-ep', group: 'qullamaggie' },
   { id: 'keltner-breakout-optimized', group: 'breakout' },
   { id: 'bollinger-breakout-crypto', group: 'breakout' },
   { id: 'williams-momentum', group: 'momentum' },
@@ -18,6 +21,7 @@ export const AVAILABLE_SETUPS = [
 
 export const SETUP_GROUPS = [
   { id: 'larry-williams', name: 'Larry Williams 9' },
+  { id: 'qullamaggie', name: 'Qullamaggie' },
   { id: 'breakout', name: 'Breakout' },
   { id: 'momentum', name: 'Momentum' },
   { id: 'trend', name: 'Trend Following' },
