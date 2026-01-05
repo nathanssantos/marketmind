@@ -129,7 +129,7 @@ describe('checkTrendCondition', () => {
     it('should have correct default values', () => {
       expect(TREND_FILTER.FAST_PERIOD).toBe(100);
       expect(TREND_FILTER.SLOW_PERIOD).toBe(200);
-      expect(TREND_FILTER.MIN_KLINES_REQUIRED).toBeGreaterThanOrEqual(2500);
+      expect(TREND_FILTER.MIN_KLINES_REQUIRED).toBeGreaterThanOrEqual(TREND_FILTER.SLOW_PERIOD * 3);
     });
   });
 

@@ -18,11 +18,10 @@ import {
 import { EXIT_CALCULATOR } from '../../../constants';
 import { logger } from '../../logger';
 import { ConditionEvaluator } from './ConditionEvaluator';
-import { EntryCalculator } from './EntryCalculator';
 import { ExitCalculator } from './ExitCalculator';
 import { IndicatorEngine } from './IndicatorEngine';
 
-const { MIN_ENTRY_STOP_SEPARATION_PERCENT, DEFAULT_ENTRY_BUFFER_ATR } = EXIT_CALCULATOR;
+const { MIN_ENTRY_STOP_SEPARATION_PERCENT } = EXIT_CALCULATOR;
 
 export interface StrategyInterpreterConfig extends SetupDetectorConfig {
   strategy: StrategyDefinition;
@@ -35,7 +34,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
   private indicatorEngine: IndicatorEngine;
   private conditionEvaluator: ConditionEvaluator;
   private exitCalculator: ExitCalculator;
-  private entryCalculator: EntryCalculator;
 
   constructor(config: StrategyInterpreterConfig) {
     super({
@@ -49,7 +47,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
     this.indicatorEngine = new IndicatorEngine();
     this.conditionEvaluator = new ConditionEvaluator(this.indicatorEngine);
     this.exitCalculator = new ExitCalculator(this.indicatorEngine);
-    this.entryCalculator = new EntryCalculator(this.indicatorEngine);
   }
 
   detect(klines: Kline[], currentIndex: number): SetupDetectorResult {
@@ -87,15 +84,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
       params: this.resolvedParams,
     };
 
-    const entryPriceConfig = this.strategy.entry.entryPrice ?? {
-      type: 'swingHighLow' as const,
-      lookback: 2,
-      expirationBars: 3,
-      buffer: DEFAULT_ENTRY_BUFFER_ATR,
-      indicator: 'atr',
-    };
-    const entryCalcResult = this.entryCalculator.calculateEntryPrice(entryPriceConfig, baseExitContext);
-    const entryPrice = entryCalcResult.orderType === 'LIMIT' ? entryCalcResult.price : closePrice;
+    const entryPrice = closePrice;
 
     const exitContext: ExitContext = {
       ...baseExitContext,

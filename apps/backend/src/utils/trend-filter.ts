@@ -1,11 +1,12 @@
 import { calculateEMA } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
-import { REQUIRED_KLINES } from '../constants/index';
+
+const EMA_STABILIZATION_FACTOR = 3;
 
 export const TREND_FILTER = {
   FAST_PERIOD: 100,
   SLOW_PERIOD: 200,
-  MIN_KLINES_REQUIRED: REQUIRED_KLINES,
+  MIN_KLINES_REQUIRED: 200 * EMA_STABILIZATION_FACTOR,
 } as const;
 
 export interface TrendFilterResult {
