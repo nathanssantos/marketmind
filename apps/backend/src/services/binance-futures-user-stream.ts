@@ -91,6 +91,7 @@ interface FuturesAccountConfigUpdate {
 export class BinanceFuturesUserStreamService {
   private connections: Map<string, { wsClient: WebsocketClient; apiClient: USDMClient }> = new Map();
   private isRunning = false;
+  private walletSubscriptionInterval: ReturnType<typeof setInterval> | null = null;
 
   async start(): Promise<void> {
     if (this.isRunning) return;
@@ -99,13 +100,19 @@ export class BinanceFuturesUserStreamService {
     logger.info('[FuturesUserStream] Starting Binance Futures User Stream service');
     await this.subscribeAllActiveWallets();
 
-    setInterval(() => {
+    this.walletSubscriptionInterval = setInterval(() => {
       void this.subscribeAllActiveWallets();
     }, 60000);
   }
 
   stop(): void {
     this.isRunning = false;
+
+    if (this.walletSubscriptionInterval) {
+      clearInterval(this.walletSubscriptionInterval);
+      this.walletSubscriptionInterval = null;
+    }
+
     for (const [walletId, connection] of this.connections) {
       connection.wsClient.closeAll(true);
       this.connections.delete(walletId);

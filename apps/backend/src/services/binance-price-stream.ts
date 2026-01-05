@@ -18,6 +18,7 @@ export class BinancePriceStreamService {
   private subscribedSymbols: Set<string> = new Set();
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private isReconnecting = false;
+  private subscriptionInterval: ReturnType<typeof setInterval> | null = null;
 
   start(): void {
     if (this.client) {
@@ -61,12 +62,17 @@ export class BinancePriceStreamService {
 
     void this.subscribeToActivePositions();
 
-    setInterval(() => {
+    this.subscriptionInterval = setInterval(() => {
       void this.subscribeToActivePositions();
     }, 60000);
   }
 
   stop(): void {
+    if (this.subscriptionInterval) {
+      clearInterval(this.subscriptionInterval);
+      this.subscriptionInterval = null;
+    }
+
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;

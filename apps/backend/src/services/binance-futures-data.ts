@@ -370,6 +370,11 @@ export class BinanceFuturesDataService {
   }
 
   private setCache(key: string, data: unknown): void {
+    const MAX_CACHE_SIZE = 200;
+    if (this.cache.size >= MAX_CACHE_SIZE) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) this.cache.delete(firstKey);
+    }
     this.cache.set(key, { data, timestamp: Date.now() });
   }
 

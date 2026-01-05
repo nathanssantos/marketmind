@@ -41,7 +41,13 @@ export const getCachedFees = (walletId: string): CachedFees | null => {
   return cached.fees;
 };
 
+const MAX_FEE_CACHE_SIZE = 100;
+
 export const setCachedFees = (walletId: string, fees: CachedFees): void => {
+  if (feeCache.size >= MAX_FEE_CACHE_SIZE) {
+    const firstKey = feeCache.keys().next().value;
+    if (firstKey) feeCache.delete(firstKey);
+  }
   feeCache.set(walletId, {
     fees,
     expiresAt: Date.now() + CACHE_DURATION_MS,

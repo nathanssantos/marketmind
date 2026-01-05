@@ -86,6 +86,9 @@ const toNumber = (value: string | number | undefined, defaultValue: number): num
   return typeof value === 'string' ? parseFloat(value) : value;
 };
 
+const MAX_CACHE_SIZE = 100;
+const MAX_CRYPTO_CACHE_SIZE = 50;
+
 export class IndicatorEngine {
   private cache: Map<string, ComputedIndicators> = new Map();
   private cryptoDataCache: Map<string, { data: CryptoData; timestamp: number }> = new Map();
@@ -128,6 +131,10 @@ export class IndicatorEngine {
       },
     };
 
+    if (this.cache.size >= MAX_CACHE_SIZE) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) this.cache.delete(firstKey);
+    }
     this.cache.set(cacheKey, result);
     return result;
   }
@@ -188,6 +195,10 @@ export class IndicatorEngine {
       data.btcDominance = btcDomData?.btcDominance ?? null;
     }
 
+    if (this.cryptoDataCache.size >= MAX_CRYPTO_CACHE_SIZE) {
+      const firstKey = this.cryptoDataCache.keys().next().value;
+      if (firstKey) this.cryptoDataCache.delete(firstKey);
+    }
     this.cryptoDataCache.set(cacheKey, { data, timestamp: Date.now() });
 
     return data;
