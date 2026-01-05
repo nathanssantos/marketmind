@@ -92,7 +92,7 @@ class KlineGapFiller {
           const gaps = await this.detectGaps(pair);
 
           if (gaps.length > 0) {
-            logger.info({ symbol: pair.symbol, interval: pair.interval, gaps: gaps.length }, 'Found gaps');
+            logger.debug({ symbol: pair.symbol, interval: pair.interval, gaps: gaps.length }, 'Found gaps');
 
             for (const gap of gaps) {
               await this.fillGap(gap);
@@ -101,7 +101,7 @@ class KlineGapFiller {
 
           const fixedCorrupted = await this.detectAndFixCorruptedKlines(pair);
           if (fixedCorrupted > 0) {
-            logger.info({ symbol: pair.symbol, interval: pair.interval, fixed: fixedCorrupted }, 'Fixed corrupted klines');
+            logger.debug({ symbol: pair.symbol, interval: pair.interval, fixed: fixedCorrupted }, 'Fixed corrupted klines');
           }
         } catch (error) {
           logger.error({ pair, error }, 'Error checking gaps for pair');
@@ -223,7 +223,7 @@ class KlineGapFiller {
   }
 
   private async fillGap(gap: GapInfo): Promise<void> {
-    logger.info(
+    logger.debug(
       {
         symbol: gap.symbol,
         interval: gap.interval,
@@ -273,7 +273,7 @@ class KlineGapFiller {
         }
       }
 
-      logger.info({ symbol: gap.symbol, interval: gap.interval, inserted }, 'Gap filled');
+      logger.debug({ symbol: gap.symbol, interval: gap.interval, inserted }, 'Gap filled');
     } catch (error) {
       logger.error({ gap, error }, 'Error filling gap');
     }
@@ -478,7 +478,7 @@ class KlineGapFiller {
               )
             );
 
-          logger.info(
+          logger.debug(
             { symbol: pair.symbol, interval: pair.interval, openTime: kline.openTime },
             'Fixed corrupted kline'
           );
@@ -504,7 +504,7 @@ class KlineGapFiller {
     const corruptedFixed = await this.detectAndFixCorruptedKlines(pair);
 
     if (gapsFilled > 0 || corruptedFixed > 0) {
-      logger.info({ symbol, interval, marketType, gapsFilled, corruptedFixed }, 'Force check completed');
+      logger.debug({ symbol, interval, marketType, gapsFilled, corruptedFixed }, 'Force check completed');
     }
 
     return { gapsFilled, corruptedFixed };

@@ -49,7 +49,7 @@ export class BinanceUserStreamService {
   private readonly LISTEN_KEY_REFRESH_INTERVAL = 30 * TIME_MS.MINUTE;
 
   async start(): Promise<void> {
-    logger.info('Starting Binance User Stream service');
+    logger.debug('Starting Binance User Stream service');
     await this.subscribeAllActiveWallets();
 
     setInterval(() => {

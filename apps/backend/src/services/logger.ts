@@ -1,7 +1,7 @@
 import pino from 'pino';
 
 const isDevelopment = process.env['NODE_ENV'] === 'development';
-const logLevel = process.env['LOG_LEVEL'] ?? (isDevelopment ? 'debug' : 'info');
+const logLevel = process.env['LOG_LEVEL'] ?? 'info';
 
 export const serializeError = (error: unknown): string => {
   if (error instanceof Error) {

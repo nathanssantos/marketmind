@@ -24,7 +24,7 @@ export const backfillHistoricalKlines = async (
 
   const effectiveStartTime = new Date(Math.max(startTime.getTime(), minStartTime));
 
-  logger.info(
+  logger.debug(
     { symbol, interval, marketType, startTime: effectiveStartTime.toISOString(), endTime: endTime.toISOString() },
     'Starting historical klines backfill'
   );
@@ -85,7 +85,7 @@ export const backfillHistoricalKlines = async (
     }
   }
 
-  logger.info({ symbol, interval, marketType, totalInserted }, 'Historical klines backfill complete');
+  logger.debug({ symbol, interval, marketType, totalInserted }, 'Historical klines backfill complete');
   return totalInserted;
 };
 
@@ -103,7 +103,7 @@ export const fetchHistoricalKlinesFromAPI = async (
   startTime: Date,
   endTime: Date = new Date()
 ): Promise<any[]> => {
-  logger.info(
+  logger.debug(
     { symbol, interval, startTime: startTime.toISOString(), endTime: endTime.toISOString() },
     'Fetching historical klines from Binance API'
   );
@@ -153,7 +153,7 @@ export const fetchHistoricalKlinesFromAPI = async (
     }
   }
 
-  logger.info({ symbol, interval, totalFetched: allKlines.length }, 'Historical klines fetch complete');
+  logger.debug({ symbol, interval, totalFetched: allKlines.length }, 'Historical klines fetch complete');
   return allKlines;
 };
 
@@ -163,7 +163,7 @@ export const fetchFuturesKlinesFromAPI = async (
   startTime: Date,
   endTime: Date = new Date()
 ): Promise<any[]> => {
-  logger.info(
+  logger.debug(
     { symbol, interval, startTime: startTime.toISOString(), endTime: endTime.toISOString() },
     'Fetching futures klines from Binance Futures API'
   );
@@ -213,7 +213,7 @@ export const fetchFuturesKlinesFromAPI = async (
     }
   }
 
-  logger.info({ symbol, interval, totalFetched: allKlines.length }, 'Futures klines fetch complete');
+  logger.debug({ symbol, interval, totalFetched: allKlines.length }, 'Futures klines fetch complete');
   return allKlines;
 };
 
@@ -240,7 +240,7 @@ export const smartBackfillKlines = async (
   const calculatedStartTime = now - intervalMs * targetCount;
   const targetStartTime = Math.max(calculatedStartTime, minStartTime);
 
-  logger.info(
+  logger.debug(
     { symbol, interval, marketType, targetCount, targetStartTime: new Date(targetStartTime).toISOString() },
     'Smart backfill: analyzing existing data'
   );
@@ -260,7 +260,7 @@ export const smartBackfillKlines = async (
 
   const currentCount = existingKlines.length;
 
-  logger.info(
+  logger.debug(
     { symbol, interval, marketType, currentCount, targetCount },
     'Smart backfill: current vs target'
   );
@@ -269,7 +269,7 @@ export const smartBackfillKlines = async (
   let totalDownloaded = 0;
 
   if (existingKlines.length === 0) {
-    logger.info({ symbol, interval, marketType }, 'Smart backfill: no existing data, downloading full range');
+    logger.debug({ symbol, interval, marketType }, 'Smart backfill: no existing data, downloading full range');
     const downloaded = await backfillHistoricalKlines(
       symbol,
       interval,
@@ -285,7 +285,7 @@ export const smartBackfillKlines = async (
 
   if (oldestExisting > targetStartTime + intervalMs * GAP_TOLERANCE_MULTIPLIER) {
     gaps.push({ start: targetStartTime, end: oldestExisting - intervalMs });
-    logger.info(
+    logger.debug(
       { symbol, interval, marketType, gapStart: new Date(targetStartTime).toISOString(), gapEnd: new Date(oldestExisting).toISOString() },
       'Smart backfill: detected gap at start (need older data)'
     );
@@ -293,7 +293,7 @@ export const smartBackfillKlines = async (
 
   if (newestExisting < now - intervalMs * GAP_TOLERANCE_MULTIPLIER) {
     gaps.push({ start: newestExisting + intervalMs, end: now });
-    logger.info(
+    logger.debug(
       { symbol, interval, marketType, gapStart: new Date(newestExisting).toISOString(), gapEnd: new Date(now).toISOString() },
       'Smart backfill: detected gap at end (need recent data)'
     );
@@ -307,7 +307,7 @@ export const smartBackfillKlines = async (
 
     if (actualDiff > expectedDiff * GAP_TOLERANCE_MULTIPLIER) {
       gaps.push({ start: prevTime + intervalMs, end: currTime - intervalMs });
-      logger.info(
+      logger.debug(
         { symbol, interval, marketType, gapStart: new Date(prevTime).toISOString(), gapEnd: new Date(currTime).toISOString(), missingCandles: Math.floor(actualDiff / intervalMs) - 1 },
         'Smart backfill: detected internal gap'
       );
@@ -318,7 +318,7 @@ export const smartBackfillKlines = async (
     return { totalInDb: currentCount, downloaded: 0, gaps: 0, alreadyComplete: true };
   }
 
-  logger.info({ symbol, interval, marketType, gapsCount: gaps.length }, 'Smart backfill: filling gaps');
+  logger.debug({ symbol, interval, marketType, gapsCount: gaps.length }, 'Smart backfill: filling gaps');
 
   for (const gap of gaps) {
     const downloaded = await backfillHistoricalKlines(
@@ -343,7 +343,7 @@ export const smartBackfillKlines = async (
       )
     );
 
-  logger.info(
+  logger.debug(
     { symbol, interval, marketType, finalCount: finalCount.length, downloaded: totalDownloaded, gaps: gaps.length },
     'Smart backfill: complete'
   );

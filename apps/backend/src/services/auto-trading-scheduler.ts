@@ -1681,21 +1681,12 @@ export class AutoTradingScheduler {
       try {
         const marketType = (pw.marketType as MarketType) ?? 'SPOT';
 
-        log('📥 Running proactive backfill for watcher', { symbol: pw.symbol, interval: pw.interval, marketType });
-        const backfillResult = await smartBackfillKlines(
+        await smartBackfillKlines(
           pw.symbol,
           pw.interval as Interval,
           requiredKlines,
           marketType
         );
-        log('✅ Proactive backfill complete', {
-          symbol: pw.symbol,
-          interval: pw.interval,
-          downloaded: backfillResult.downloaded,
-          totalInDb: backfillResult.totalInDb,
-          gaps: backfillResult.gaps,
-          alreadyComplete: backfillResult.alreadyComplete,
-        });
 
         await this.startWatcher(
           pw.walletId,

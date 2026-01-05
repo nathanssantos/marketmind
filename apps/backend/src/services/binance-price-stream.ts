@@ -26,7 +26,7 @@ export class BinancePriceStreamService {
       return;
     }
 
-    logger.info('Starting Binance price stream service');
+    logger.debug('Starting Binance price stream service');
 
     this.client = new WebsocketClient({
       beautify: true,
@@ -202,14 +202,14 @@ export class BinancePriceStreamService {
       }
 
       if (newSubscriptions.length > 0) {
-        logger.info({
+        logger.debug({
           newSymbols: newSubscriptions,
           totalSubscribed: this.subscribedSymbols.size,
         }, `Subscribed to ${newSubscriptions.length} new symbol(s)`);
       }
 
       if (unsubscribed.length > 0) {
-        logger.info({
+        logger.debug({
           removedSymbols: unsubscribed,
           totalSubscribed: this.subscribedSymbols.size,
         }, `Unsubscribed from ${unsubscribed.length} symbol(s) - no open positions`);

@@ -100,7 +100,7 @@ export const klineRouter = router({
       if (input.interval === '1y') {
         await smartBackfillKlines(input.symbol, '1M', input.limit * 12, marketType);
         const yearlyKlines = await aggregateYearlyKlines(input.symbol, marketType, input.limit);
-        logger.info({ symbol: input.symbol, interval: '1y', marketType, count: yearlyKlines.length }, 'Yearly klines aggregated from monthly data');
+        logger.debug({ symbol: input.symbol, interval: '1y', marketType, count: yearlyKlines.length }, 'Yearly klines aggregated from monthly data');
         return yearlyKlines;
       }
 

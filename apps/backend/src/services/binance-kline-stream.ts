@@ -190,7 +190,7 @@ export class BinanceKlineStreamService {
     if (existing.clientCount <= 0) {
       if (this.client) {
         try {
-          logger.info(`Unsubscribed from kline stream: ${key}`);
+          logger.debug(`Unsubscribed from kline stream: ${key}`);
         } catch (error) {
           logger.error({
             symbol,
@@ -479,7 +479,7 @@ export class BinanceFuturesKlineStreamService {
     if (existing.clientCount <= 0) {
       if (this.client) {
         try {
-          logger.info(`Unsubscribed from futures kline stream: ${key}`);
+          logger.debug(`Unsubscribed from futures kline stream: ${key}`);
         } catch (error) {
           logger.error({
             symbol,

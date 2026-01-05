@@ -50,7 +50,7 @@ export class PositionMonitorService {
       return;
     }
 
-    logger.info('Starting position monitor service');
+    logger.debug('Starting position monitor service');
 
     const scheduleNext = () => {
       this.monitoringTimeout = setTimeout(async () => {
