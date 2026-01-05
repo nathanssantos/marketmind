@@ -10,6 +10,8 @@ type InfoCallback = (info: UpdateInfo) => void;
 type ProgressCallback = (progress: UpdateProgress) => void;
 type ErrorCallback = (error: UpdateError) => void;
 
+const MAX_CALLBACKS = 10;
+
 const callbacks: {
   checking: UpdateCallback[];
   available: InfoCallback[];
@@ -24,6 +26,13 @@ const callbacks: {
   downloadProgress: [],
   downloaded: [],
   error: [],
+};
+
+const addCallback = <T>(list: T[], callback: T): void => {
+  if (list.length >= MAX_CALLBACKS) {
+    list.shift();
+  }
+  list.push(callback);
 };
 
 const notifyCallbacks = <T>(list: ((arg: T) => void)[], arg: T) => {
@@ -91,11 +100,11 @@ export const createWebUpdateAdapter = (): UpdateAdapter => ({
   stopAutoCheck: async () => ({ success: true }),
 
   onChecking: (callback: UpdateCallback) => {
-    callbacks.checking.push(callback);
+    addCallback(callbacks.checking, callback);
   },
 
   onAvailable: (callback: InfoCallback) => {
-    callbacks.available.push(callback);
+    addCallback(callbacks.available, callback);
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then(registration => {
@@ -119,18 +128,18 @@ export const createWebUpdateAdapter = (): UpdateAdapter => ({
   },
 
   onNotAvailable: (callback: InfoCallback) => {
-    callbacks.notAvailable.push(callback);
+    addCallback(callbacks.notAvailable, callback);
   },
 
   onDownloadProgress: (callback: ProgressCallback) => {
-    callbacks.downloadProgress.push(callback);
+    addCallback(callbacks.downloadProgress, callback);
   },
 
   onDownloaded: (callback: InfoCallback) => {
-    callbacks.downloaded.push(callback);
+    addCallback(callbacks.downloaded, callback);
   },
 
   onError: (callback: ErrorCallback) => {
-    callbacks.error.push(callback);
+    addCallback(callbacks.error, callback);
   },
 });

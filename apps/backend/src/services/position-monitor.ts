@@ -862,6 +862,24 @@ export class PositionMonitorService {
 
   private lastLiquidationAlerts: Map<string, { level: LiquidationRiskLevel; timestamp: number }> = new Map();
   private readonly LIQUIDATION_ALERT_COOLDOWN_MS = 60000;
+  private readonly MAX_LIQUIDATION_ALERTS = 200;
+
+  private cleanupOldLiquidationAlerts(): void {
+    const now = Date.now();
+    for (const [key, value] of this.lastLiquidationAlerts) {
+      if (now - value.timestamp > this.LIQUIDATION_ALERT_COOLDOWN_MS * 2) {
+        this.lastLiquidationAlerts.delete(key);
+      }
+    }
+    if (this.lastLiquidationAlerts.size > this.MAX_LIQUIDATION_ALERTS) {
+      const entries = Array.from(this.lastLiquidationAlerts.entries());
+      entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+      const toRemove = entries.slice(0, entries.length - this.MAX_LIQUIDATION_ALERTS);
+      for (const [key] of toRemove) {
+        this.lastLiquidationAlerts.delete(key);
+      }
+    }
+  }
 
   async checkLiquidationRisk(futuresExecutions: TradeExecution[]): Promise<LiquidationRiskCheck[]> {
     const results: LiquidationRiskCheck[] = [];
@@ -930,6 +948,7 @@ export class PositionMonitorService {
       return;
     }
 
+    this.cleanupOldLiquidationAlerts();
     this.lastLiquidationAlerts.set(alertKey, { level: risk.riskLevel, timestamp: now });
 
     const wsService = getWebSocketService();

@@ -6,6 +6,7 @@ import { db } from '../db';
 import { klines } from '../db/schema';
 import { aggregateYearlyKlines, getIntervalMilliseconds, smartBackfillKlines } from '../services/binance-historical';
 import { binanceFuturesKlineStreamService, binanceKlineStreamService } from '../services/binance-kline-stream';
+import { getKlineGapFiller } from '../services/kline-gap-filler';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 
@@ -20,6 +21,24 @@ const marketTypeSchema = z.enum(['SPOT', 'FUTURES']).default('SPOT');
 const symbolsCache = new Map<string, any[]>();
 const symbolsCacheTime = new Map<string, number>();
 const SYMBOLS_CACHE_DURATION = 5 * TIME_MS.MINUTE;
+
+const corruptionCheckCache = new Map<string, number>();
+const CORRUPTION_CHECK_COOLDOWN = 2 * TIME_MS.MINUTE;
+
+const triggerCorruptionCheck = (symbol: string, interval: string, marketType: MarketType): void => {
+  const key = `${symbol}@${interval}@${marketType}`;
+  const lastCheck = corruptionCheckCache.get(key) ?? 0;
+  const now = Date.now();
+
+  if (now - lastCheck < CORRUPTION_CHECK_COOLDOWN) return;
+
+  corruptionCheckCache.set(key, now);
+
+  const gapFiller = getKlineGapFiller();
+  gapFiller.forceCheckSymbol(symbol, interval as Interval, marketType).catch((error) => {
+    logger.error({ symbol, interval, marketType, error }, 'Error in corruption check');
+  });
+};
 
 const subscribeToStream = (symbol: string, interval: string, marketType: MarketType): void => {
   if (marketType === 'FUTURES') {
@@ -115,6 +134,8 @@ export const klineRouter = router({
       result.sort((a, b) => new Date(a.openTime).getTime() - new Date(b.openTime).getTime());
 
       subscribeToStream(input.symbol, input.interval as Interval, marketType);
+
+      triggerCorruptionCheck(input.symbol, input.interval, marketType);
 
       return result;
     }),

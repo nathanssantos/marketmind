@@ -20,6 +20,7 @@ const DEFAULT_SETUP_COOLDOWN = 10;
 const MIN_KLINES_FOR_DETECTION = 50;
 const DEFAULT_MIN_CONFIDENCE = 50;
 const DEFAULT_MIN_RISK_REWARD = 1.0;
+const MAX_DETECTION_INDEX_ENTRIES = 500;
 
 export class SetupDetectionService {
   private config: SetupDetectionConfig;
@@ -110,6 +111,10 @@ export class SetupDetectionService {
   }
 
   private markSetupDetected(setupType: string, currentIndex: number): void {
+    if (this.lastDetectionIndex.size >= MAX_DETECTION_INDEX_ENTRIES) {
+      const firstKey = this.lastDetectionIndex.keys().next().value;
+      if (firstKey) this.lastDetectionIndex.delete(firstKey);
+    }
     this.lastDetectionIndex.set(setupType, currentIndex);
   }
 

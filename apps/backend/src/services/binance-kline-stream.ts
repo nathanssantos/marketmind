@@ -8,6 +8,75 @@ import { klines } from '../db/schema';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
 
+const MIN_VOLUME_FOR_VALIDITY = 0.01;
+const MIN_RANGE_RATIO = 0.05;
+
+const isKlineDataSuspicious = (
+  newData: { volume: string; high: string; low: string },
+  existingData?: { volume: string; high: string; low: string }
+): boolean => {
+  const newVolume = parseFloat(newData.volume);
+  const newRange = parseFloat(newData.high) - parseFloat(newData.low);
+
+  if (newVolume < MIN_VOLUME_FOR_VALIDITY) return true;
+
+  if (existingData) {
+    const existingVolume = parseFloat(existingData.volume);
+    const existingRange = parseFloat(existingData.high) - parseFloat(existingData.low);
+
+    if (existingVolume > 0 && newVolume / existingVolume < MIN_RANGE_RATIO) return true;
+    if (existingRange > 0 && newRange / existingRange < MIN_RANGE_RATIO) return true;
+  }
+
+  return false;
+};
+
+const fetchKlineFromREST = async (
+  symbol: string,
+  interval: string,
+  openTime: number,
+  marketType: MarketType
+): Promise<{
+  open: string;
+  high: string;
+  low: string;
+  close: string;
+  volume: string;
+  closeTime: number;
+  quoteVolume: string;
+  trades: number;
+  takerBuyBaseVolume: string;
+  takerBuyQuoteVolume: string;
+} | null> => {
+  try {
+    const baseUrl = marketType === 'FUTURES'
+      ? 'https://fapi.binance.com/fapi/v1/klines'
+      : 'https://api.binance.com/api/v3/klines';
+
+    const response = await fetch(`${baseUrl}?symbol=${symbol}&interval=${interval}&startTime=${openTime}&limit=1`);
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (!data.length) return null;
+
+    const k = data[0];
+    return {
+      open: k[1],
+      high: k[2],
+      low: k[3],
+      close: k[4],
+      volume: k[5],
+      closeTime: k[6],
+      quoteVolume: k[7],
+      trades: k[8],
+      takerBuyBaseVolume: k[9],
+      takerBuyQuoteVolume: k[10],
+    };
+  } catch {
+    return null;
+  }
+};
+
 export interface KlineUpdate {
   symbol: string;
   interval: string;
@@ -218,11 +287,7 @@ export class BinanceKlineStreamService {
         ),
       });
 
-      const klineData = {
-        symbol: update.symbol,
-        interval,
-        marketType: update.marketType,
-        openTime,
+      let finalData = {
         open: update.open,
         high: update.high,
         low: update.low,
@@ -233,6 +298,46 @@ export class BinanceKlineStreamService {
         trades: update.trades,
         takerBuyBaseVolume: update.takerBuyBaseVolume,
         takerBuyQuoteVolume: update.takerBuyQuoteVolume,
+      };
+
+      if (isKlineDataSuspicious(update, existing ?? undefined)) {
+        logger.warn({
+          symbol: update.symbol,
+          interval: update.interval,
+          openTime: openTime.toISOString(),
+          wsVolume: update.volume,
+          wsRange: parseFloat(update.high) - parseFloat(update.low),
+          existingVolume: existing?.volume,
+        }, 'Suspicious kline data from WebSocket, fetching from REST API');
+
+        const restData = await fetchKlineFromREST(update.symbol, update.interval, update.openTime, update.marketType);
+        if (restData) {
+          finalData = {
+            open: restData.open,
+            high: restData.high,
+            low: restData.low,
+            close: restData.close,
+            volume: restData.volume,
+            closeTime: new Date(restData.closeTime),
+            quoteVolume: restData.quoteVolume,
+            trades: restData.trades,
+            takerBuyBaseVolume: restData.takerBuyBaseVolume,
+            takerBuyQuoteVolume: restData.takerBuyQuoteVolume,
+          };
+          logger.info({
+            symbol: update.symbol,
+            interval: update.interval,
+            restVolume: restData.volume,
+          }, 'Used REST API data instead of suspicious WebSocket data');
+        }
+      }
+
+      const klineData = {
+        symbol: update.symbol,
+        interval,
+        marketType: update.marketType,
+        openTime,
+        ...finalData,
       };
 
       if (existing) {
@@ -467,11 +572,7 @@ export class BinanceFuturesKlineStreamService {
         ),
       });
 
-      const klineData = {
-        symbol: update.symbol,
-        interval,
-        marketType: 'FUTURES' as const,
-        openTime,
+      let finalData = {
         open: update.open,
         high: update.high,
         low: update.low,
@@ -482,6 +583,46 @@ export class BinanceFuturesKlineStreamService {
         trades: update.trades,
         takerBuyBaseVolume: update.takerBuyBaseVolume,
         takerBuyQuoteVolume: update.takerBuyQuoteVolume,
+      };
+
+      if (isKlineDataSuspicious(update, existing ?? undefined)) {
+        logger.warn({
+          symbol: update.symbol,
+          interval: update.interval,
+          openTime: openTime.toISOString(),
+          wsVolume: update.volume,
+          wsRange: parseFloat(update.high) - parseFloat(update.low),
+          existingVolume: existing?.volume,
+        }, 'Suspicious futures kline data from WebSocket, fetching from REST API');
+
+        const restData = await fetchKlineFromREST(update.symbol, update.interval, update.openTime, 'FUTURES');
+        if (restData) {
+          finalData = {
+            open: restData.open,
+            high: restData.high,
+            low: restData.low,
+            close: restData.close,
+            volume: restData.volume,
+            closeTime: new Date(restData.closeTime),
+            quoteVolume: restData.quoteVolume,
+            trades: restData.trades,
+            takerBuyBaseVolume: restData.takerBuyBaseVolume,
+            takerBuyQuoteVolume: restData.takerBuyQuoteVolume,
+          };
+          logger.info({
+            symbol: update.symbol,
+            interval: update.interval,
+            restVolume: restData.volume,
+          }, 'Used REST API data instead of suspicious futures WebSocket data');
+        }
+      }
+
+      const klineData = {
+        symbol: update.symbol,
+        interval,
+        marketType: 'FUTURES' as const,
+        openTime,
+        ...finalData,
       };
 
       if (existing) {
