@@ -13,6 +13,7 @@ export type TableSortDirection = 'asc' | 'desc';
 const MIGRATION_VERSION_3 = 3;
 const MIGRATION_VERSION_4 = 4;
 const MIGRATION_VERSION_5 = 5;
+const MIGRATION_VERSION_6 = 6;
 
 interface UIState {
   tradingSidebarTab: TradingSidebarTab;
@@ -49,6 +50,10 @@ interface UIState {
   portfolioTableSortKey: string;
   portfolioTableSortDirection: TableSortDirection;
   setPortfolioTableSort: (key: string, direction: TableSortDirection) => void;
+
+  watchersTableSortKey: string;
+  watchersTableSortDirection: TableSortDirection;
+  setWatchersTableSort: (key: string, direction: TableSortDirection) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -88,10 +93,14 @@ export const useUIStore = create<UIState>()(
       portfolioTableSortKey: 'pnl',
       portfolioTableSortDirection: 'desc',
       setPortfolioTableSort: (key, direction) => set({ portfolioTableSortKey: key, portfolioTableSortDirection: direction }),
+
+      watchersTableSortKey: 'symbol',
+      watchersTableSortDirection: 'asc',
+      setWatchersTableSort: (key, direction) => set({ watchersTableSortKey: key, watchersTableSortDirection: direction }),
     }),
     {
       name: 'ui-storage',
-      version: 5,
+      version: 6,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as UIState;
 
@@ -110,6 +119,11 @@ export const useUIStore = create<UIState>()(
           state.ordersTableSortDirection = 'desc';
           state.portfolioTableSortKey = 'pnl';
           state.portfolioTableSortDirection = 'desc';
+        }
+
+        if (version < MIGRATION_VERSION_6) {
+          state.watchersTableSortKey = 'symbol';
+          state.watchersTableSortDirection = 'asc';
         }
 
         return state;

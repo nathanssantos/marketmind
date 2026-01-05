@@ -2,6 +2,7 @@ import { Badge, Box, Flex, Group, IconButton, Stack, Text } from '@chakra-ui/rea
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { Select } from '@renderer/components/ui/select';
+import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
@@ -47,6 +48,7 @@ const PortfolioComponent = () => {
   useOrderUpdates(activeWalletId ?? '');
   usePositionUpdates(activeWalletId || '');
   const { tradeExecutions, tickerPrices } = useBackendTrading(activeWalletId || '', undefined);
+  const { watcherStatus, isLoadingWatcherStatus } = useBackendAutoTrading(activeWalletId || '');
 
   const {
     filterOption,
@@ -125,9 +127,19 @@ const PortfolioComponent = () => {
 
   const { totalPnL, totalPnLPercent, profitableCount, losingCount } = stats;
 
+  const activeWatchers = watcherStatus?.activeWatchers ?? [];
+
   return (
     <Stack gap={3} p={4}>
       <FuturesPositionsPanel />
+
+      {activeWatchers.length > 0 && (
+        <WatchersSection
+          watchers={activeWatchers}
+          isLoading={isLoadingWatcherStatus}
+          onNavigateToSymbol={globalActions?.navigateToSymbol}
+        />
+      )}
 
       <Flex justify="space-between" align="center" mb={1}>
         <Text fontSize="sm" fontWeight="bold">
@@ -252,6 +264,129 @@ const PortfolioComponent = () => {
     </Stack>
   );
 };
+
+interface ActiveWatcher {
+  watcherId: string;
+  symbol: string;
+  interval: string;
+  marketType: 'SPOT' | 'FUTURES';
+  profileId?: string;
+  profileName?: string;
+}
+
+interface WatchersSectionProps {
+  watchers: ActiveWatcher[];
+  isLoading: boolean;
+  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+}
+
+const WatchersSection = memo(({ watchers, isLoading, onNavigateToSymbol }: WatchersSectionProps) => {
+  const { t } = useTranslation();
+
+  if (isLoading) return null;
+
+  return (
+    <>
+      <Flex justify="space-between" align="center" mb={1}>
+        <Flex align="center" gap={2}>
+          <Text fontSize="sm" fontWeight="bold">
+            {t('tradingProfiles.watchers.title')}
+          </Text>
+          <Badge colorPalette="blue" size="sm" px={2}>{watchers.length}</Badge>
+        </Flex>
+      </Flex>
+
+      <WatchersTable watchers={watchers} onNavigateToSymbol={onNavigateToSymbol} />
+    </>
+  );
+});
+
+WatchersSection.displayName = 'WatchersSection';
+
+interface WatchersTableProps {
+  watchers: ActiveWatcher[];
+  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+}
+
+const WatchersTable = memo(({ watchers, onNavigateToSymbol }: WatchersTableProps) => {
+  const { t } = useTranslation();
+  const { sortKey, sortDirection, setWatchersTableSort } = useUIStore(useShallow((s) => ({
+    sortKey: s.watchersTableSortKey,
+    sortDirection: s.watchersTableSortDirection,
+    setWatchersTableSort: s.setWatchersTableSort,
+  })));
+
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setWatchersTableSort(key, sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setWatchersTableSort(key, 'asc');
+    }
+  };
+
+  const sortedWatchers = useMemo(() => {
+    return [...watchers].sort((a, b) => {
+      const dir = sortDirection === 'asc' ? 1 : -1;
+      switch (sortKey) {
+        case 'symbol':
+          return dir * a.symbol.localeCompare(b.symbol);
+        case 'interval':
+          return dir * a.interval.localeCompare(b.interval);
+        case 'type':
+          return dir * a.marketType.localeCompare(b.marketType);
+        case 'profile':
+          return dir * (a.profileName || '').localeCompare(b.profileName || '');
+        default:
+          return 0;
+      }
+    });
+  }, [watchers, sortKey, sortDirection]);
+
+  const columns: TradingTableColumn[] = [
+    { key: 'symbol', header: t('trading.orders.symbol'), sticky: true, minW: '100px' },
+    { key: 'interval', header: t('tradingProfiles.watchers.interval'), minW: '80px' },
+    { key: 'type', header: t('trading.orders.type'), minW: '90px' },
+    { key: 'profile', header: t('tradingProfiles.watchers.profile'), minW: '150px' },
+  ];
+
+  return (
+    <TradingTable columns={columns} minW="450px" sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort}>
+      {sortedWatchers.map((watcher) => (
+        <TradingTableRow key={watcher.watcherId}>
+          <TradingTableCell sticky>
+            <Text
+              fontWeight="medium"
+              cursor={onNavigateToSymbol ? 'pointer' : 'default'}
+              _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
+              onClick={() => onNavigateToSymbol?.(watcher.symbol, watcher.marketType)}
+            >
+              {watcher.symbol}
+            </Text>
+          </TradingTableCell>
+          <TradingTableCell>
+            <Badge colorPalette="blue" size="sm" px={2}>
+              {watcher.interval}
+            </Badge>
+          </TradingTableCell>
+          <TradingTableCell>
+            {watcher.marketType === 'FUTURES' ? (
+              <Badge colorPalette="orange" size="sm" px={2}>FUTURES</Badge>
+            ) : (
+              <Badge colorPalette="gray" size="sm" px={2}>SPOT</Badge>
+            )}
+          </TradingTableCell>
+          <TradingTableCell>
+            <Text fontSize="xs" color="fg.muted">
+              {watcher.profileName || t('tradingProfiles.watchers.usingDefault')}
+            </Text>
+          </TradingTableCell>
+        </TradingTableRow>
+      ))}
+    </TradingTable>
+  );
+});
+
+WatchersTable.displayName = 'WatchersTable';
 
 interface PortfolioTableProps {
   positions: PortfolioPosition[];
