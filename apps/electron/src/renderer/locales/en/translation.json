@@ -20,8 +20,8 @@
     "collapse": "Collapse",
     "expand": "Expand",
     "direction": "Direction",
-    "long": "Long",
-    "short": "Short",
+    "long": "Buy",
+    "short": "Sell",
     "entry": "Entry",
     "stopLoss": "Stop Loss",
     "takeProfit": "Take Profit",
@@ -389,8 +389,8 @@
       "activeWallet": "Active Wallet",
       "symbol": "Symbol",
       "orderType": "Order Type",
-      "long": "Long (Buy)",
-      "short": "Short (Sell)",
+      "long": "Buy",
+      "short": "Sell",
       "quantity": "Quantity",
       "entryPrice": "Entry Price",
       "useCurrent": "Use Current",
@@ -398,8 +398,8 @@
       "takeProfit": "Take Profit",
       "optional": "Optional",
       "totalCost": "Total Cost",
-      "buy": "Buy Long",
-      "sell": "Sell Short"
+      "buy": "Buy",
+      "sell": "Sell"
     },
     "portfolio": {
       "title": "Portfolio",
@@ -421,8 +421,8 @@
       "setups": "Setups",
       "filterBy": "Filter by",
       "filterAll": "All Positions",
-      "filterLong": "Long Only",
-      "filterShort": "Short Only",
+      "filterLong": "Buy Only",
+      "filterShort": "Sell Only",
       "filterProfitable": "Profitable Only",
       "filterLosing": "Losing Only",
       "sortBy": "Sort by",
@@ -541,8 +541,8 @@
       }
     },
     "order": {
-      "long": "LONG",
-      "short": "SHORT"
+      "long": "BUY",
+      "short": "SELL"
     },
     "closeOrder": "Close Order",
     "closeOrderConfirm": "Close {{type}} order at entry {{entry}}? Current price: {{current}}",
