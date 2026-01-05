@@ -5,6 +5,8 @@ import type { SetupDetectionConfig } from './setupConfig';
 import { createDefaultSetupDetectionConfig, mergeSetupConfigs } from './setupConfig';
 
 const PERCENTAGE_MULTIPLIER = 100;
+const MAX_SETUP_HISTORY = 5000;
+const MAX_DETECTED_SETUPS = 100;
 
 export interface SetupPerformanceStats {
   totalSetups: number;
@@ -204,9 +206,13 @@ export const useSetupStore = create<SetupStoreState>()(
         }),
 
       addDetectedSetup: (setup) =>
-        set((state) => ({
-          detectedSetups: [...state.detectedSetups, setup],
-        })),
+        set((state) => {
+          const newSetups = [...state.detectedSetups, setup];
+          if (newSetups.length > MAX_DETECTED_SETUPS) {
+            return { detectedSetups: newSetups.slice(-MAX_DETECTED_SETUPS) };
+          }
+          return { detectedSetups: newSetups };
+        }),
 
       removeDetectedSetup: (id) =>
         set((state) => ({
@@ -274,9 +280,13 @@ export const useSetupStore = create<SetupStoreState>()(
           confidence: setup.confidence,
         };
 
-        set((state) => ({
-          setupHistory: [...state.setupHistory, execution],
-        }));
+        set((state) => {
+          const newHistory = [...state.setupHistory, execution];
+          if (newHistory.length > MAX_SETUP_HISTORY) {
+            return { setupHistory: newHistory.slice(-MAX_SETUP_HISTORY) };
+          }
+          return { setupHistory: newHistory };
+        });
       },
 
       updateExecution: (setupId, updates) =>

@@ -12,9 +12,12 @@ interface PriceState {
   updatePrice: (symbol: string, price: number, source: PriceEntry['source']) => void;
   getPrice: (symbol: string) => number | null;
   getPriceEntry: (symbol: string) => PriceEntry | null;
+  cleanupStaleSymbols: () => void;
 }
 
 const PRICE_STALENESS_MS = 30000;
+const MAX_PRICE_SYMBOLS = 500;
+const STALE_CLEANUP_THRESHOLD_MS = 5 * 60 * 1000;
 
 export const usePriceStore = create<PriceState>((set, get) => ({
   prices: {},
@@ -49,12 +52,18 @@ export const usePriceStore = create<PriceState>((set, get) => ({
         }));
       }
     } else {
-      set((state) => ({
-        prices: {
-          ...state.prices,
-          [symbol]: { price, timestamp: now, source },
-        },
-      }));
+      set((state) => {
+        const symbolCount = Object.keys(state.prices).length;
+        if (symbolCount >= MAX_PRICE_SYMBOLS) {
+          get().cleanupStaleSymbols();
+        }
+        return {
+          prices: {
+            ...state.prices,
+            [symbol]: { price, timestamp: now, source },
+          },
+        };
+      });
     }
   },
 
@@ -65,6 +74,26 @@ export const usePriceStore = create<PriceState>((set, get) => ({
 
   getPriceEntry: (symbol) => {
     return get().prices[symbol] || null;
+  },
+
+  cleanupStaleSymbols: () => {
+    const now = Date.now();
+    const currentPrices = get().prices;
+    const entries = Object.entries(currentPrices);
+
+    if (entries.length <= MAX_PRICE_SYMBOLS) {
+      const filtered = entries.filter(
+        ([, entry]) => now - entry.timestamp < STALE_CLEANUP_THRESHOLD_MS
+      );
+      if (filtered.length < entries.length) {
+        set({ prices: Object.fromEntries(filtered) });
+      }
+      return;
+    }
+
+    const sorted = entries.sort((a, b) => b[1].timestamp - a[1].timestamp);
+    const kept = sorted.slice(0, MAX_PRICE_SYMBOLS);
+    set({ prices: Object.fromEntries(kept) });
   },
 }));
 
