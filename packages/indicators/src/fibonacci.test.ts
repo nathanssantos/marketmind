@@ -173,7 +173,10 @@ describe('calculateFibonacciProjection', () => {
   it('should include all extension levels', () => {
     const klines: Kline[] = [];
     for (let i = 0; i < 60; i++) {
-      const basePrice = 100 + i;
+      let basePrice: number;
+      if (i < 30) basePrice = 100 + i * 2;
+      else if (i < 45) basePrice = 160 - (i - 30) * 3;
+      else basePrice = 115 + (i - 45) * 2;
       klines.push(createMockKline(basePrice + 2, basePrice - 2, i));
     }
 
@@ -189,7 +192,10 @@ describe('calculateFibonacciProjection', () => {
   it('should include swing point indices and timestamps', () => {
     const klines: Kline[] = [];
     for (let i = 0; i < 60; i++) {
-      const basePrice = 100 + i;
+      let basePrice: number;
+      if (i < 30) basePrice = 100 + i * 2;
+      else if (i < 45) basePrice = 160 - (i - 30) * 3;
+      else basePrice = 115 + (i - 45) * 2;
       klines.push(createMockKline(basePrice + 2, basePrice - 2, i));
     }
 
@@ -229,7 +235,10 @@ describe('calculateFibonacciProjection', () => {
   it('should include range in result', () => {
     const klines: Kline[] = [];
     for (let i = 0; i < 60; i++) {
-      const basePrice = 100 + i;
+      let basePrice: number;
+      if (i < 30) basePrice = 100 + i * 2;
+      else if (i < 45) basePrice = 160 - (i - 30) * 3;
+      else basePrice = 115 + (i - 45) * 2;
       klines.push(createMockKline(basePrice + 2, basePrice - 2, i));
     }
 
@@ -243,20 +252,26 @@ describe('calculateFibonacciProjection', () => {
   it('should detect direction based on swing point positions', () => {
     const klines: Kline[] = [];
     for (let i = 0; i < 60; i++) {
-      const basePrice = 100 + i;
+      let basePrice: number;
+      if (i < 30) basePrice = 100 + i * 2;
+      else if (i < 45) basePrice = 160 - (i - 30) * 3;
+      else basePrice = 115 + (i - 45) * 2;
       klines.push(createMockKline(basePrice + 2, basePrice - 2, i));
     }
 
     const result = calculateFibonacciProjection(klines, 59, 50, 'LONG');
 
     expect(result).not.toBeNull();
-    expect(result!.direction).toBe('up');
+    expect(result!.direction).toBe('down');
   });
 
   it('should include correct labels for all levels', () => {
     const klines: Kline[] = [];
     for (let i = 0; i < 60; i++) {
-      const basePrice = 100 + i;
+      let basePrice: number;
+      if (i < 30) basePrice = 100 + i * 2;
+      else if (i < 45) basePrice = 160 - (i - 30) * 3;
+      else basePrice = 115 + (i - 45) * 2;
       klines.push(createMockKline(basePrice + 2, basePrice - 2, i));
     }
 
@@ -266,7 +281,9 @@ describe('calculateFibonacciProjection', () => {
     const level1618 = result!.levels.find((l) => l.level === 1.618);
     expect(level1618?.label).toBe('161.8%');
 
-    const level2618 = result!.levels.find((l) => l.level === 2.618);
-    expect(level2618?.label).toBe('261.8%');
+    const level200 = result!.levels.find((l) => l.level === 2);
+    expect(level200?.label).toBe('200.0%');
+
+    expect(result!.levels).toHaveLength(3);
   });
 });

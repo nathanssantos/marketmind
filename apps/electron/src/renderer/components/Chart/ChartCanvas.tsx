@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/renderer/components/ui/dialog';
 import { Box, Portal } from '@chakra-ui/react';
-import { calculateMovingAverage, type StochasticResult } from '@marketmind/indicators';
+import { calculateFibonacciProjection, calculateMovingAverage, type StochasticResult } from '@marketmind/indicators';
 import type { Kline, MarketType, Order, Viewport } from '@marketmind/types';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMutations';
@@ -233,6 +233,7 @@ export const ChartCanvas = ({
         marketType: exec.marketType,
         openedAt: exec.openedAt,
         triggerKlineOpenTime: exec.triggerKlineOpenTime,
+        fibonacciProjection: exec.fibonacciProjection ? JSON.parse(exec.fibonacciProjection) : null,
       }));
   }, [backendExecutions, symbol, marketType]);
   const hoveredSetup = null as ReturnType<typeof useSetupStore.getState>['detectedSetups'][0] | null;
@@ -724,9 +725,40 @@ export const ChartCanvas = ({
   });
 
   const fibonacciProjectionData = useMemo(() => {
+    const activePosition = filteredBackendExecutions.find(
+      exec => (exec.status === 'open' || exec.status === 'pending')
+    );
+
+    if (activePosition && manager) {
+      const klines = manager.getKlines();
+      if (klines.length > 0) {
+        const triggerTime = activePosition.triggerKlineOpenTime;
+        let entryIndex = klines.length - 1;
+
+        if (triggerTime) {
+          const triggerTimestamp = new Date(triggerTime).getTime();
+          const foundIndex = klines.findIndex(k => k.openTime === triggerTimestamp);
+          if (foundIndex !== -1) entryIndex = foundIndex;
+        }
+
+        const direction = activePosition.side as 'LONG' | 'SHORT';
+        const projection = calculateFibonacciProjection(klines, entryIndex, 50, direction);
+
+        if (projection) {
+          return {
+            swingLow: projection.swingLow,
+            swingHigh: projection.swingHigh,
+            levels: projection.levels,
+            primaryLevel: 2,
+            range: projection.range,
+          };
+        }
+      }
+    }
+
     const visibleSetup = detectedSetups.find(s => s.visible && s.fibonacciProjection);
     return visibleSetup?.fibonacciProjection ?? null;
-  }, [detectedSetups]);
+  }, [filteredBackendExecutions, detectedSetups, manager]);
 
   const { render: renderFibonacciProjection } = useFibonacciProjectionRenderer({
     manager,

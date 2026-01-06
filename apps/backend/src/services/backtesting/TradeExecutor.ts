@@ -150,13 +150,11 @@ export class TradeExecutor {
 
     if (primaryLevelData) return primaryLevelData.price;
 
-    const extensionLevels = fib.levels.filter((l: { level: number }) => l.level > 1.0);
-    if (extensionLevels.length > 0) {
-      const sorted = extensionLevels.sort((a: { level: number }, b: { level: number }) => a.level - b.level);
-      return sorted[0]?.price ?? null;
-    }
+    const level200 = fib.levels.find(
+      (l: { level: number; price: number }) => Math.abs(l.level - 2) < 0.001
+    );
 
-    return null;
+    return level200?.price ?? null;
   }
 
   calculatePositionSize(

@@ -99,7 +99,7 @@ export const calculateFibonacciExtension = (
   });
 };
 
-export const FIBONACCI_EXTENSION_LEVELS = [1.272, 1.618, 2, 2.618, 3.618, 4.236] as const;
+export const FIBONACCI_EXTENSION_LEVELS = [1.272, 1.618, 2] as const;
 
 export interface SwingPointWithIndex {
   price: number;
@@ -115,17 +115,14 @@ export interface FibonacciProjectionResult {
   range: number;
 }
 
-const findSwingLow = (
+const findMostRecentSwingLow = (
   klines: Kline[],
   startIndex: number,
   endIndex: number,
 ): { price: number; localIndex: number; timestamp: number } | null => {
   if (endIndex - startIndex < 3) return null;
 
-  let lowestPrice = Infinity;
-  let lowestIndex = -1;
-
-  for (let i = startIndex + 1; i < endIndex - 1; i++) {
+  for (let i = endIndex - 2; i > startIndex; i--) {
     const kline = klines[i];
     if (!kline) continue;
 
@@ -137,26 +134,28 @@ const findSwingLow = (
     const prevLow = getKlineLow(prevKline);
     const nextLow = getKlineLow(nextKline);
 
-    if (low <= prevLow && low <= nextLow && low < lowestPrice) {
+    if (low <= prevLow && low <= nextLow) {
+      return {
+        price: low,
+        localIndex: i,
+        timestamp: Number(kline.openTime),
+      };
+    }
+  }
+
+  let lowestPrice = Infinity;
+  let lowestIndex = -1;
+  for (let i = endIndex - 1; i >= startIndex; i--) {
+    const kline = klines[i];
+    if (!kline) continue;
+    const low = getKlineLow(kline);
+    if (low < lowestPrice) {
       lowestPrice = low;
       lowestIndex = i;
     }
   }
 
-  if (lowestIndex === -1) {
-    for (let i = startIndex; i <= endIndex; i++) {
-      const kline = klines[i];
-      if (!kline) continue;
-      const low = getKlineLow(kline);
-      if (low < lowestPrice) {
-        lowestPrice = low;
-        lowestIndex = i;
-      }
-    }
-  }
-
   if (lowestIndex === -1) return null;
-
   const kline = klines[lowestIndex];
   return {
     price: lowestPrice,
@@ -165,17 +164,14 @@ const findSwingLow = (
   };
 };
 
-const findSwingHigh = (
+const findMostRecentSwingHigh = (
   klines: Kline[],
   startIndex: number,
   endIndex: number,
 ): { price: number; localIndex: number; timestamp: number } | null => {
   if (endIndex - startIndex < 3) return null;
 
-  let highestPrice = -Infinity;
-  let highestIndex = -1;
-
-  for (let i = startIndex + 1; i < endIndex - 1; i++) {
+  for (let i = endIndex - 2; i > startIndex; i--) {
     const kline = klines[i];
     if (!kline) continue;
 
@@ -187,30 +183,90 @@ const findSwingHigh = (
     const prevHigh = getKlineHigh(prevKline);
     const nextHigh = getKlineHigh(nextKline);
 
-    if (high >= prevHigh && high >= nextHigh && high > highestPrice) {
+    if (high >= prevHigh && high >= nextHigh) {
+      return {
+        price: high,
+        localIndex: i,
+        timestamp: Number(kline.openTime),
+      };
+    }
+  }
+
+  let highestPrice = -Infinity;
+  let highestIndex = -1;
+  for (let i = endIndex - 1; i >= startIndex; i--) {
+    const kline = klines[i];
+    if (!kline) continue;
+    const high = getKlineHigh(kline);
+    if (high > highestPrice) {
       highestPrice = high;
       highestIndex = i;
     }
   }
 
-  if (highestIndex === -1) {
-    for (let i = startIndex; i <= endIndex; i++) {
-      const kline = klines[i];
-      if (!kline) continue;
-      const high = getKlineHigh(kline);
-      if (high > highestPrice) {
-        highestPrice = high;
-        highestIndex = i;
-      }
-    }
-  }
-
   if (highestIndex === -1) return null;
-
   const kline = klines[highestIndex];
   return {
     price: highestPrice,
     localIndex: highestIndex,
+    timestamp: kline ? Number(kline.openTime) : 0,
+  };
+};
+
+const findSwingHighAfter = (
+  klines: Kline[],
+  afterIndex: number,
+  endIndex: number,
+): { price: number; localIndex: number; timestamp: number } | null => {
+  if (endIndex - afterIndex < 1) return null;
+
+  let highestPrice = -Infinity;
+  let highestIndex = -1;
+
+  for (let i = afterIndex + 1; i <= endIndex; i++) {
+    const kline = klines[i];
+    if (!kline) continue;
+    const high = getKlineHigh(kline);
+    if (high > highestPrice) {
+      highestPrice = high;
+      highestIndex = i;
+    }
+  }
+
+  if (highestIndex === -1) return null;
+  const kline = klines[highestIndex];
+  return {
+    price: highestPrice,
+    localIndex: highestIndex,
+    timestamp: kline ? Number(kline.openTime) : 0,
+  };
+};
+
+const findSwingLowAfter = (
+  klines: Kline[],
+  afterIndex: number,
+  endIndex: number,
+): { price: number; localIndex: number; timestamp: number } | null => {
+  if (endIndex - afterIndex < 1) return null;
+
+  let lowestPrice = Infinity;
+  let lowestIndex = -1;
+
+  for (let i = afterIndex + 1; i <= endIndex; i++) {
+    const kline = klines[i];
+    if (!kline) continue;
+    const low = getKlineLow(kline);
+    if (low < lowestPrice) {
+      lowestPrice = low;
+      lowestIndex = i;
+    }
+  }
+
+  if (lowestIndex === -1) return null;
+  const kline = klines[lowestIndex];
+  return {
+    price: lowestPrice,
+    localIndex: lowestIndex,
     timestamp: kline ? Number(kline.openTime) : 0,
   };
 };
@@ -226,10 +282,22 @@ export const calculateFibonacciProjection = (
 
   if (endIndex - startIndex < 10) return null;
 
-  const swingLowResult = findSwingLow(klines, startIndex, endIndex);
-  const swingHighResult = findSwingHigh(klines, startIndex, endIndex);
+  let swingLowResult: { price: number; localIndex: number; timestamp: number } | null = null;
+  let swingHighResult: { price: number; localIndex: number; timestamp: number } | null = null;
 
-  if (!swingLowResult || !swingHighResult) return null;
+  if (direction === 'LONG') {
+    swingHighResult = findMostRecentSwingHigh(klines, startIndex, endIndex);
+    if (!swingHighResult) return null;
+
+    swingLowResult = findSwingLowAfter(klines, swingHighResult.localIndex, endIndex);
+    if (!swingLowResult) return null;
+  } else {
+    swingLowResult = findMostRecentSwingLow(klines, startIndex, endIndex);
+    if (!swingLowResult) return null;
+
+    swingHighResult = findSwingHighAfter(klines, swingLowResult.localIndex, endIndex);
+    if (!swingHighResult) return null;
+  }
 
   const swingLow: SwingPointWithIndex = {
     price: swingLowResult.price,

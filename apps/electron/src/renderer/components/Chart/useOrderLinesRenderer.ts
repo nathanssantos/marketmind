@@ -104,6 +104,7 @@ export interface BackendExecution {
   marketType?: 'SPOT' | 'FUTURES' | null;
   openedAt?: string | Date | null;
   triggerKlineOpenTime?: number | null;
+  fibonacciProjection?: import('@marketmind/types').FibonacciProjectionData | null;
 }
 
 interface OrderCloseButton {

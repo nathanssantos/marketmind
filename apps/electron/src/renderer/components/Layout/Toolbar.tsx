@@ -13,7 +13,7 @@ import {
   LuPlus,
   LuRectangleHorizontal,
   LuSettings,
-  LuTrendingUp
+  LuTriangleRight
 } from 'react-icons/lu';
 import { useChartWindows } from '../../hooks/useChartWindows';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
@@ -298,7 +298,7 @@ export const Toolbar = memo(({
                 colorPalette={showFibonacciProjection ? 'blue' : 'gray'}
                 variant={showFibonacciProjection ? 'solid' : 'ghost'}
               >
-                <LuTrendingUp />
+                <LuTriangleRight />
               </IconButton>
             </TooltipWrapper>
           </HStack>

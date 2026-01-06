@@ -24,7 +24,7 @@ import { ExitCalculator } from './ExitCalculator';
 import { IndicatorEngine } from './IndicatorEngine';
 
 const FIBONACCI_LOOKBACK = 50;
-const FIBONACCI_PRIMARY_LEVEL = 2.618;
+const FIBONACCI_PRIMARY_LEVEL = 2;
 
 const { MIN_ENTRY_STOP_SEPARATION_PERCENT } = EXIT_CALCULATOR;
 
@@ -216,8 +216,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
     const projection = calculateFibonacciProjection(klines, currentIndex, FIBONACCI_LOOKBACK, direction);
     if (!projection) return undefined;
 
-    const primaryLevelData = projection.levels.find(l => Math.abs(l.level - FIBONACCI_PRIMARY_LEVEL) < 0.001);
-
     return {
       swingLow: {
         price: projection.swingLow.price,
@@ -235,7 +233,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
         label: l.label,
       })),
       range: projection.range,
-      primaryLevel: primaryLevelData?.price ?? projection.levels[1]?.price ?? projection.swingHigh.price,
+      primaryLevel: FIBONACCI_PRIMARY_LEVEL,
     };
   }
 
