@@ -306,6 +306,17 @@ export class PyramidingService {
         )
       );
 
+    const allOpenPositions = await db
+      .select()
+      .from(tradeExecutions)
+      .where(
+        and(
+          eq(tradeExecutions.userId, userId),
+          eq(tradeExecutions.walletId, walletId),
+          eq(tradeExecutions.status, 'open')
+        )
+      );
+
     const [tradingConfig] = await db
       .select()
       .from(autoTradingConfig)
@@ -338,8 +349,30 @@ export class PyramidingService {
       ? walletBalance
       : (walletBalance * configMaxPositionSize * tradingConfig.maxConcurrentPositions) / 100;
 
+    const totalWalletExposure = calculateTotalExposure(allOpenPositions);
+    const remainingBalance = Math.max(0, walletBalance - totalWalletExposure);
+    const remainingBalancePercent = (remainingBalance / walletBalance) * 100;
+
     if (openExecutions.length === 0) {
-      const baseSizePercent = maxPositionSizePercent;
+      let baseSizePercent = maxPositionSizePercent;
+
+      if (baseSizePercent > remainingBalancePercent && remainingBalancePercent > 0) {
+        baseSizePercent = remainingBalancePercent;
+        logger.info({
+          originalPercent: maxPositionSizePercent.toFixed(1),
+          adjustedPercent: baseSizePercent.toFixed(1),
+          remainingBalance: remainingBalance.toFixed(2),
+          totalExposure: totalWalletExposure.toFixed(2),
+        }, 'Adjusted position size to use remaining balance');
+      }
+
+      if (baseSizePercent <= 0) {
+        return {
+          quantity: 0,
+          sizePercent: 0,
+          reason: 'No remaining balance available (100% exposure reached)',
+        };
+      }
 
       const positionValue = (walletBalance * baseSizePercent) / 100;
       const quantity = positionValue / entryPrice;
