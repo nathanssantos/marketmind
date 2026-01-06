@@ -12,12 +12,14 @@ import { type PortfolioFilterOption, type PortfolioSortOption, useUIStore } from
 import { usePricesForSymbols } from '@renderer/store/priceStore';
 import { StrategyInfoPopover } from './StrategyInfoPopover';
 import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from './TradingTable';
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsGrid, BsTable } from 'react-icons/bs';
 import { LuBot } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { FuturesPositionsPanel } from './FuturesPositionsPanel';
+import { TradingProfilesModal } from './TradingProfilesModal';
+import { TooltipWrapper } from '../ui/Tooltip';
 
 interface PortfolioPosition {
   symbol: string;
@@ -282,6 +284,7 @@ interface WatchersSectionProps {
 
 const WatchersSection = memo(({ watchers, isLoading, onNavigateToSymbol }: WatchersSectionProps) => {
   const { t } = useTranslation();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (isLoading) return null;
 
@@ -292,11 +295,24 @@ const WatchersSection = memo(({ watchers, isLoading, onNavigateToSymbol }: Watch
           <Text fontSize="sm" fontWeight="bold">
             {t('tradingProfiles.watchers.title')}
           </Text>
-          <Badge colorPalette="blue" size="sm" px={2}>{watchers.length}</Badge>
+          <Badge colorPalette="blue" size="xs" px={1}>{watchers.length}</Badge>
         </Flex>
+        <TooltipWrapper label={t('tradingProfiles.modalTitle')} showArrow placement="top">
+          <IconButton
+            size="2xs"
+            aria-label={t('tradingProfiles.modalTitle')}
+            onClick={() => setIsModalOpen(true)}
+            colorPalette="blue"
+            variant="solid"
+          >
+            <LuBot />
+          </IconButton>
+        </TooltipWrapper>
       </Flex>
 
       <WatchersTable watchers={watchers} onNavigateToSymbol={onNavigateToSymbol} />
+
+      <TradingProfilesModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </>
   );
 });
@@ -364,15 +380,15 @@ const WatchersTable = memo(({ watchers, onNavigateToSymbol }: WatchersTableProps
             </Text>
           </TradingTableCell>
           <TradingTableCell>
-            <Badge colorPalette="blue" size="sm" px={2}>
+            <Badge colorPalette="blue" size="xs" px={1}>
               {watcher.interval}
             </Badge>
           </TradingTableCell>
           <TradingTableCell>
             {watcher.marketType === 'FUTURES' ? (
-              <Badge colorPalette="orange" size="sm" px={2}>FUTURES</Badge>
+              <Badge colorPalette="orange" size="xs" px={1}>FUTURES</Badge>
             ) : (
-              <Badge colorPalette="gray" size="sm" px={2}>SPOT</Badge>
+              <Badge colorPalette="gray" size="xs" px={1}>SPOT</Badge>
             )}
           </TradingTableCell>
           <TradingTableCell>
@@ -489,7 +505,7 @@ const PortfolioTable = memo(({ positions, currency, onNavigateToSymbol }: Portfo
               </Text>
             </TradingTableCell>
             <TradingTableCell>
-              <Badge colorPalette={isLong ? 'green' : 'red'} size="sm" px={2}>
+              <Badge colorPalette={isLong ? 'green' : 'red'} size="xs" px={1}>
                 {t(`trading.ticket.${isLong ? 'long' : 'short'}`)}
               </Badge>
             </TradingTableCell>
@@ -501,18 +517,18 @@ const PortfolioTable = memo(({ positions, currency, onNavigateToSymbol }: Portfo
                     executionId={position.id}
                     symbol={position.symbol}
                   >
-                    <Badge colorPalette="purple" size="sm" px={2}>{position.setupType}</Badge>
+                    <Badge colorPalette="purple" size="xs" px={1}>{position.setupType}</Badge>
                   </StrategyInfoPopover>
                 ) : (
-                  <Badge colorPalette="purple" size="sm" px={2}>{position.setupType}</Badge>
+                  <Badge colorPalette="purple" size="xs" px={1}>{position.setupType}</Badge>
                 )
               ) : '-'}
             </TradingTableCell>
             <TradingTableCell>
               {position.marketType === 'FUTURES' ? (
-                <Badge colorPalette="orange" size="sm" px={2}>FUTURES</Badge>
+                <Badge colorPalette="orange" size="xs" px={1}>FUTURES</Badge>
               ) : (
-                <Badge colorPalette="gray" size="sm" px={2}>SPOT</Badge>
+                <Badge colorPalette="gray" size="xs" px={1}>SPOT</Badge>
               )}
             </TradingTableCell>
             <TradingTableCell>
@@ -592,11 +608,11 @@ const PositionCard = memo(({ position, currency, onNavigateToSymbol }: PositionC
           </Text>
         </Flex>
         <Flex gap={2} align="center" flexWrap="wrap">
-          <Badge colorPalette={isLong ? 'green' : 'red'} size="sm" px={2}>
+          <Badge colorPalette={isLong ? 'green' : 'red'} size="xs" px={1}>
             {t(`trading.ticket.${isLong ? 'long' : 'short'}`)}
           </Badge>
           {position.marketType === 'FUTURES' && (
-            <Badge colorPalette="orange" size="sm" px={2}>
+            <Badge colorPalette="orange" size="xs" px={1}>
               FUTURES
             </Badge>
           )}
@@ -607,12 +623,12 @@ const PositionCard = memo(({ position, currency, onNavigateToSymbol }: PositionC
                 executionId={position.id}
                 symbol={position.symbol}
               >
-                <Badge colorPalette="purple" size="sm" px={2}>
+                <Badge colorPalette="purple" size="xs" px={1}>
                   {position.setupType}
                 </Badge>
               </StrategyInfoPopover>
             ) : (
-              <Badge colorPalette="purple" size="sm" px={2}>
+              <Badge colorPalette="purple" size="xs" px={1}>
                 {position.setupType}
               </Badge>
             )

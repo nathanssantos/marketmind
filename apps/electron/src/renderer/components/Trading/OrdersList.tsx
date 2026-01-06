@@ -428,14 +428,14 @@ const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateToSymbol
             </Text>
           </Flex>
           <Flex gap={2} align="center" flexWrap="wrap">
-            <Badge colorPalette={getTypeColor(isOrderLong(order))} size="sm" px={2}>
+            <Badge colorPalette={getTypeColor(isOrderLong(order))} size="xs" px={1}>
               {t(`trading.ticket.${isOrderLong(order) ? 'long' : 'short'}`)}
             </Badge>
-            <Badge colorPalette={getStatusColor(order.status)} size="sm" px={2}>
+            <Badge colorPalette={getStatusColor(order.status)} size="xs" px={1}>
               {t(`trading.orders.${getStatusTranslationKey(order.status)}`)}
             </Badge>
             {order.marketType === 'FUTURES' && (
-              <Badge colorPalette="orange" size="sm" px={2}>
+              <Badge colorPalette="orange" size="xs" px={1}>
                 FUTURES
               </Badge>
             )}
@@ -445,13 +445,13 @@ const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateToSymbol
                 executionId={order.id}
                 symbol={order.symbol}
               >
-                <Badge colorPalette="purple" size="sm" px={2} cursor="pointer">
+                <Badge colorPalette="purple" size="xs" px={1} cursor="pointer">
                   {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
                 </Badge>
               </StrategyInfoPopover>
             )}
             {order.setupType && !order.isAutoTrade && (
-              <Badge colorPalette="purple" size="sm" px={2}>
+              <Badge colorPalette="purple" size="xs" px={1}>
                 {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
               </Badge>
             )}
@@ -754,12 +754,12 @@ const OrdersTable = memo(({ orders, currency, onCancel, onClose, onNavigateToSym
               ) : '-'}
             </TradingTableCell>
             <TradingTableCell>
-              <Badge colorPalette={isOrderLong(order) ? 'green' : 'red'} size="sm" px={2}>
+              <Badge colorPalette={isOrderLong(order) ? 'green' : 'red'} size="xs" px={1}>
                 {t(`trading.ticket.${isOrderLong(order) ? 'long' : 'short'}`)}
               </Badge>
             </TradingTableCell>
             <TradingTableCell>
-              <Badge colorPalette={getStatusColor(order.status)} size="sm" px={2}>
+              <Badge colorPalette={getStatusColor(order.status)} size="xs" px={1}>
                 {t(`trading.orders.${getStatusTranslationKey(order.status)}`)}
               </Badge>
             </TradingTableCell>
@@ -770,21 +770,21 @@ const OrdersTable = memo(({ orders, currency, onCancel, onClose, onNavigateToSym
                   executionId={order.id}
                   symbol={order.symbol}
                 >
-                  <Badge colorPalette="purple" size="sm" px={2} cursor="pointer">
+                  <Badge colorPalette="purple" size="xs" px={1} cursor="pointer">
                     {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
                   </Badge>
                 </StrategyInfoPopover>
               ) : order.setupType ? (
-                <Badge colorPalette="purple" size="sm" px={2}>
+                <Badge colorPalette="purple" size="xs" px={1}>
                   {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
                 </Badge>
               ) : '-'}
             </TradingTableCell>
             <TradingTableCell>
               {order.marketType === 'FUTURES' ? (
-                <Badge colorPalette="orange" size="sm" px={2}>FUTURES</Badge>
+                <Badge colorPalette="orange" size="xs" px={1}>FUTURES</Badge>
               ) : (
-                <Badge colorPalette="gray" size="sm" px={2}>SPOT</Badge>
+                <Badge colorPalette="gray" size="xs" px={1}>SPOT</Badge>
               )}
             </TradingTableCell>
             <TradingTableCell>{formatDate(order.createdAt)}</TradingTableCell>

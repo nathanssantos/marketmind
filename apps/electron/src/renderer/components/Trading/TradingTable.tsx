@@ -49,10 +49,10 @@ export const TradingTable = ({ columns, children, minW = '1200px', sortKey, sort
                   {...(col.sticky ? STICKY_STYLES : {})}
                   minW={col.minW}
                   textAlign={col.textAlign}
-                  px={3}
-                  py={2}
+                  px={1.5}
+                  py={1}
                   whiteSpace="nowrap"
-                  fontSize="xs"
+                  fontSize="2xs"
                   fontWeight="semibold"
                   textTransform="uppercase"
                   letterSpacing="wider"
@@ -122,10 +122,10 @@ export const TradingTableCell = ({ children, sticky, textAlign }: TradingTableCe
     <Table.Cell
       {...(sticky ? STICKY_STYLES : {})}
       textAlign={textAlign}
-      px={3}
-      py={2}
+      px={1.5}
+      py={1}
       whiteSpace="nowrap"
-      fontSize="xs"
+      fontSize="2xs"
     >
       {children}
     </Table.Cell>

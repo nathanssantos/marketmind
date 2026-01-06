@@ -293,13 +293,13 @@ export const Toolbar = memo(({
 
               <HStack gap={1} flexWrap="nowrap">
                 <TooltipWrapper
-                  label={t('tradingProfiles.title')}
+                  label={t('tradingProfiles.modalTitle')}
                   showArrow
                   placement="top"
                 >
                   <IconButton
                     size="2xs"
-                    aria-label={t('tradingProfiles.title')}
+                    aria-label={t('tradingProfiles.modalTitle')}
                     onClick={handleOpenTradingProfilesModal}
                     colorPalette="blue"
                     variant="solid"
