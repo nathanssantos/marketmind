@@ -550,10 +550,45 @@ export class AutoTradingScheduler {
       entryPrice: setup.entryPrice,
     });
 
-    if (setup.stopLoss && setup.takeProfit) {
+    const [config] = await db
+      .select()
+      .from(autoTradingConfig)
+      .where(eq(autoTradingConfig.walletId, watcher.walletId))
+      .limit(1);
+
+    const tpCalculationMode = config?.tpCalculationMode ?? 'default';
+
+    let effectiveTakeProfit = setup.takeProfit;
+
+    if (tpCalculationMode === 'fibonacci' && setup.fibonacciProjection) {
+      const fibTarget = this.getFibonacciTargetPrice(setup);
+      if (fibTarget !== null) {
+        const isValidTarget = setup.direction === 'LONG'
+          ? fibTarget > setup.entryPrice
+          : fibTarget < setup.entryPrice;
+
+        if (isValidTarget) {
+          log('📐 Using Fibonacci projection for take profit', {
+            originalTP: setup.takeProfit?.toFixed(6),
+            fibonacciTP: fibTarget.toFixed(6),
+            primaryLevel: setup.fibonacciProjection.primaryLevel,
+            direction: setup.direction,
+          });
+          effectiveTakeProfit = fibTarget;
+        } else {
+          log('⚠️ Fibonacci target invalid for direction, using default TP', {
+            fibTarget: fibTarget.toFixed(6),
+            entryPrice: setup.entryPrice.toFixed(6),
+            direction: setup.direction,
+          });
+        }
+      }
+    }
+
+    if (setup.stopLoss && effectiveTakeProfit) {
       const entryPrice = setup.entryPrice;
       const stopLoss = setup.stopLoss;
-      const takeProfit = setup.takeProfit;
+      const takeProfit = effectiveTakeProfit;
 
       let risk: number;
       let reward: number;
@@ -1167,14 +1202,14 @@ export class AutoTradingScheduler {
             });
           }
 
-          if (orderFilled && setup.stopLoss && setup.takeProfit) {
+          if (orderFilled && setup.stopLoss && effectiveTakeProfit) {
             try {
               const ocoResult = await ocoOrderService.createExitOCO(
                 wallet as Wallet,
                 watcher.symbol,
                 actualQuantity,
                 setup.stopLoss,
-                setup.takeProfit,
+                effectiveTakeProfit,
                 setup.direction
               );
 
@@ -1187,7 +1222,7 @@ export class AutoTradingScheduler {
                   stopLossOrderId,
                   takeProfitOrderId,
                   stopLoss: setup.stopLoss,
-                  takeProfit: setup.takeProfit,
+                  takeProfit: effectiveTakeProfit,
                 });
               } else {
                 log('⚠️ OCO placement returned null, falling back to separate orders');
@@ -1202,7 +1237,7 @@ export class AutoTradingScheduler {
                   wallet as Wallet,
                   watcher.symbol,
                   actualQuantity,
-                  setup.takeProfit,
+                  effectiveTakeProfit,
                   setup.direction
                 );
               }
@@ -1229,7 +1264,7 @@ export class AutoTradingScheduler {
                   wallet as Wallet,
                   watcher.symbol,
                   actualQuantity,
-                  setup.takeProfit,
+                  effectiveTakeProfit,
                   setup.direction
                 );
                 log('🎯 Take profit order placed (fallback)', { takeProfitOrderId });
@@ -1298,7 +1333,7 @@ export class AutoTradingScheduler {
                   entryPrice: setup.limitEntryPrice.toString(),
                   quantity: actualQuantity.toFixed(8),
                   stopLoss: setup.stopLoss?.toString(),
-                  takeProfit: setup.takeProfit?.toString(),
+                  takeProfit: effectiveTakeProfit?.toString(),
                   openedAt: new Date(),
                   status: 'pending',
                   entryOrderType: 'LIMIT',
@@ -1330,7 +1365,7 @@ export class AutoTradingScheduler {
                     limitEntryPrice: setup.limitEntryPrice.toString(),
                     quantity: actualQuantity.toFixed(8),
                     stopLoss: setup.stopLoss?.toString(),
-                    takeProfit: setup.takeProfit?.toString(),
+                    takeProfit: effectiveTakeProfit?.toString(),
                     setupType: setup.type,
                     expiresAt: expiresAt.toISOString(),
                   });
@@ -1391,16 +1426,16 @@ export class AutoTradingScheduler {
         }
       }
 
-      if (setup.stopLoss && setup.takeProfit) {
+      if (setup.stopLoss && effectiveTakeProfit) {
         let risk: number;
         let reward: number;
 
         if (setup.direction === 'LONG') {
           risk = actualEntryPrice - setup.stopLoss;
-          reward = setup.takeProfit - actualEntryPrice;
+          reward = effectiveTakeProfit - actualEntryPrice;
         } else {
           risk = setup.stopLoss - actualEntryPrice;
-          reward = actualEntryPrice - setup.takeProfit;
+          reward = actualEntryPrice - effectiveTakeProfit;
         }
 
         if (risk <= 0) {
@@ -1422,7 +1457,7 @@ export class AutoTradingScheduler {
             setupEntryPrice: setup.entryPrice,
             actualEntryPrice,
             stopLoss: setup.stopLoss,
-            takeProfit: setup.takeProfit,
+            takeProfit: effectiveTakeProfit,
             risk: risk.toFixed(2),
             reward: reward.toFixed(2),
             originalRR: setup.riskRewardRatio.toFixed(2),
@@ -1440,7 +1475,7 @@ export class AutoTradingScheduler {
           setupEntryPrice: setup.entryPrice.toFixed(6),
           actualEntryPrice: actualEntryPrice.toFixed(6),
           stopLoss: setup.stopLoss.toFixed(6),
-          takeProfit: setup.takeProfit.toFixed(6),
+          takeProfit: effectiveTakeProfit.toFixed(6),
           risk: risk.toFixed(6),
           reward: reward.toFixed(6),
           originalRR: setup.riskRewardRatio.toFixed(2),
@@ -1473,7 +1508,7 @@ export class AutoTradingScheduler {
           orderListId,
           quantity: actualQuantity.toFixed(8),
           stopLoss: setup.stopLoss?.toString(),
-          takeProfit: setup.takeProfit?.toString(),
+          takeProfit: effectiveTakeProfit?.toString(),
           openedAt: new Date(),
           status: 'open',
           entryOrderType: useLimit ? 'LIMIT' : 'MARKET',
@@ -1496,7 +1531,7 @@ export class AutoTradingScheduler {
             entryPrice: actualEntryPrice.toString(),
             quantity: actualQuantity.toFixed(8),
             stopLoss: setup.stopLoss?.toString(),
-            takeProfit: setup.takeProfit?.toString(),
+            takeProfit: effectiveTakeProfit?.toString(),
             setupType: setup.type,
           });
         }
@@ -1548,11 +1583,12 @@ export class AutoTradingScheduler {
         quantity: actualQuantity.toFixed(8),
         positionValue: (actualQuantity * actualEntryPrice).toFixed(2),
         stopLoss: setup.stopLoss,
-        takeProfit: setup.takeProfit,
+        takeProfit: effectiveTakeProfit,
         confidence: setup.confidence,
         isLiveExecution,
         entryOrderId,
         cooldownMinutes: 15,
+        tpMode: tpCalculationMode,
       });
 
       await positionMonitorService.invalidatePriceCache(watcher.symbol);
@@ -1703,6 +1739,27 @@ export class AutoTradingScheduler {
         });
       }
     }
+  }
+
+  private getFibonacciTargetPrice(setup: TradingSetup): number | null {
+    const fib = setup.fibonacciProjection;
+    if (!fib || !fib.levels || fib.levels.length === 0) return null;
+
+    const primaryLevelData = fib.levels.find(
+      (l) => Math.abs(l.level - fib.primaryLevel) < 0.001
+    );
+
+    if (primaryLevelData) {
+      return primaryLevelData.price;
+    }
+
+    const extensionLevels = fib.levels.filter((l) => l.level > 1.0);
+    if (extensionLevels.length > 0) {
+      const sorted = extensionLevels.sort((a, b) => a.level - b.level);
+      return sorted[0]?.price ?? null;
+    }
+
+    return null;
   }
 }
 

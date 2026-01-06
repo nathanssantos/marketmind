@@ -1,9 +1,11 @@
-import { Box, Flex, IconButton, Portal, Stack, Text } from '@chakra-ui/react';
+import { Radio, RadioGroup } from '@/renderer/components/ui/radio';
+import { Box, Flex, HStack, IconButton, Portal, Separator, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import { Button } from '@renderer/components/ui/button';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
+import { trpc } from '@renderer/utils/trpc';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
@@ -26,7 +28,26 @@ export const WatcherManager = () => {
 
   const { profiles, getProfileById } = useTradingProfiles();
 
+  const { data: config, refetch } = trpc.autoTrading.getConfig.useQuery(
+    { walletId },
+    { enabled: !!walletId }
+  );
+
+  const updateConfig = trpc.autoTrading.updateConfig.useMutation({
+    onSuccess: () => refetch(),
+  });
+
   const [showAddDialog, setShowAddDialog] = useState(false);
+
+  const tpCalculationMode = config?.tpCalculationMode ?? 'default';
+
+  const handleTpModeChange = (details: { value: string }): void => {
+    if (!walletId) return;
+    updateConfig.mutate({
+      walletId,
+      tpCalculationMode: details.value as 'default' | 'fibonacci',
+    });
+  };
 
   const activeWatchers = watcherStatus?.activeWatchers ?? [];
   const persistedWatchers = watcherStatus?.persistedWatchers ?? 0;
@@ -51,6 +72,46 @@ export const WatcherManager = () => {
 
   return (
     <Stack gap={4}>
+      <Box>
+        <Text fontSize="lg" fontWeight="bold">
+          {t('settings.algorithmicAutoTrading.tpMode.title')}
+        </Text>
+        <Text fontSize="sm" color="fg.muted" mb={3}>
+          {t('settings.algorithmicAutoTrading.tpMode.description')}
+        </Text>
+
+        <RadioGroup
+          value={tpCalculationMode}
+          onValueChange={handleTpModeChange}
+          disabled={updateConfig.isPending}
+        >
+          <HStack gap={6}>
+            <Radio value="default">
+              <Box>
+                <Text fontSize="sm" fontWeight="medium">
+                  {t('settings.algorithmicAutoTrading.tpMode.default')}
+                </Text>
+                <Text fontSize="xs" color="fg.muted">
+                  {t('settings.algorithmicAutoTrading.tpMode.defaultDescription')}
+                </Text>
+              </Box>
+            </Radio>
+            <Radio value="fibonacci">
+              <Box>
+                <Text fontSize="sm" fontWeight="medium">
+                  {t('settings.algorithmicAutoTrading.tpMode.fibonacci')}
+                </Text>
+                <Text fontSize="xs" color="fg.muted">
+                  {t('settings.algorithmicAutoTrading.tpMode.fibonacciDescription')}
+                </Text>
+              </Box>
+            </Radio>
+          </HStack>
+        </RadioGroup>
+      </Box>
+
+      <Separator />
+
       <Flex justify="space-between" align="center">
         <Box>
           <Text fontSize="lg" fontWeight="bold">

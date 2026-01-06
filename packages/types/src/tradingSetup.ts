@@ -24,6 +24,14 @@ export type SetupCancellationReason =
   | 'retest-failed'
   | 'manual';
 
+export interface FibonacciProjectionData {
+  swingLow: { price: number; index: number; timestamp: number };
+  swingHigh: { price: number; index: number; timestamp: number };
+  levels: Array<{ level: number; price: number; label: string }>;
+  range: number;
+  primaryLevel: number;
+}
+
 export interface TradingSetup {
   id: string;
   type: SetupType;
@@ -55,6 +63,7 @@ export interface TradingSetup {
   triggerKlineIndex?: number;
   triggerCandleData?: TriggerCandleSnapshot[];
   triggerIndicatorValues?: TriggerIndicatorValues;
+  fibonacciProjection?: FibonacciProjectionData;
 }
 
 export interface PivotPoint {

@@ -114,6 +114,7 @@ import { useWMARenderer } from './useWMARenderer';
 import { useHMARenderer } from './useHMARenderer';
 import { usePivotPointsRenderer } from './usePivotPointsRenderer';
 import { useFibonacciRenderer } from './useFibonacciRenderer';
+import { useFibonacciProjectionRenderer } from './useFibonacciProjectionRenderer';
 import { useFVGRenderer } from './useFVGRenderer';
 import { useLiquidityLevelsRenderer } from './useLiquidityLevelsRenderer';
 
@@ -137,6 +138,7 @@ export interface ChartCanvasProps {
   showCurrentPriceLine?: boolean;
   showCrosshair?: boolean;
   showProfitLossAreas?: boolean;
+  showFibonacciProjection?: boolean;
   showMeasurementRuler?: boolean;
   showMeasurementArea?: boolean;
   movingAverages?: MovingAverageConfig[];
@@ -165,6 +167,7 @@ export const ChartCanvas = ({
   showCurrentPriceLine = true,
   showCrosshair = true,
   showProfitLossAreas = true,
+  showFibonacciProjection = false,
   showMeasurementRuler = false,
   showMeasurementArea = false,
   movingAverages = [],
@@ -718,6 +721,18 @@ export const ChartCanvas = ({
     liquidityData: liquidityLevelsData,
     colors,
     enabled: isIndicatorActive('liquidityLevels'),
+  });
+
+  const fibonacciProjectionData = useMemo(() => {
+    const visibleSetup = detectedSetups.find(s => s.visible && s.fibonacciProjection);
+    return visibleSetup?.fibonacciProjection ?? null;
+  }, [detectedSetups]);
+
+  const { render: renderFibonacciProjection } = useFibonacciProjectionRenderer({
+    manager,
+    projectionData: fibonacciProjectionData,
+    colors,
+    enabled: showFibonacciProjection,
   });
 
   const { renderLine: renderCurrentPriceLine_Line, renderLabel: renderCurrentPriceLine_Label } = useCurrentPriceLineRenderer({
@@ -1408,6 +1423,7 @@ export const ChartCanvas = ({
       renderHMA();
       renderPivotPoints();
       renderFibonacci();
+      renderFibonacciProjection();
       renderFVG();
       renderLiquidityLevels();
       renderOBV();

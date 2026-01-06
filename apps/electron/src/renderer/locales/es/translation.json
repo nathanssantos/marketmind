@@ -196,6 +196,14 @@
         "active": "Auto-trading está activo - las órdenes se crearán automáticamente",
         "inactive": "Auto-trading está inactivo - los setups solo se detectarán y mostrarán",
         "info": "Esta función funciona con el sistema de detección de setups. Asegúrese de activar al menos un tipo de setup en la pestaña Detección de Setups antes de activar el auto-trading."
+      },
+      "tpMode": {
+        "title": "Cálculo de Take Profit",
+        "description": "Seleccione cómo se calculan los objetivos de take profit para los setups de trading.",
+        "default": "Por Defecto",
+        "defaultDescription": "Usa cálculos basados en ATR y swing",
+        "fibonacci": "Proyección Fibonacci",
+        "fibonacciDescription": "Usa niveles de extensión Fibonacci (161.8%, 261.8%, etc.)"
       }
     }
   },
@@ -237,6 +245,7 @@
       "currentPrice": "Precio Actual",
       "crosshair": "Cruz",
       "profitLossAreas": "Áreas de Ganancia/Pérdida",
+      "fibonacciProjection": "Proyección de Fibonacci",
       "measurementRuler": "Regla de Medición",
       "measurementArea": "Área de Medición",
       "autoPatterns": "Detección Automática de Patrones",

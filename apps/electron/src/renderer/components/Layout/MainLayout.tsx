@@ -28,6 +28,7 @@ interface MainLayoutProps {
   showCurrentPriceLine: boolean;
   showCrosshair: boolean;
   showProfitLossAreas: boolean;
+  showFibonacciProjection: boolean;
   showMeasurementRuler: boolean;
   showMeasurementArea: boolean;
   showStochastic: boolean;
@@ -45,6 +46,7 @@ interface MainLayoutProps {
   onShowCurrentPriceLineChange: (show: boolean) => void;
   onShowCrosshairChange: (show: boolean) => void;
   onShowProfitLossAreasChange: (show: boolean) => void;
+  onShowFibonacciProjectionChange: (show: boolean) => void;
   onShowMeasurementRulerChange: (show: boolean) => void;
   onShowMeasurementAreaChange: (show: boolean) => void;
   onShowStochasticChange: (show: boolean) => void;
@@ -78,6 +80,7 @@ export const MainLayout = ({
   showCurrentPriceLine,
   showCrosshair,
   showProfitLossAreas,
+  showFibonacciProjection,
   showMeasurementRuler,
   showMeasurementArea,
   showStochastic,
@@ -95,6 +98,7 @@ export const MainLayout = ({
   onShowCurrentPriceLineChange,
   onShowCrosshairChange,
   onShowProfitLossAreasChange,
+  onShowFibonacciProjectionChange,
   onShowMeasurementRulerChange,
   onShowMeasurementAreaChange,
   onShowStochasticChange,
@@ -165,6 +169,7 @@ export const MainLayout = ({
           showCurrentPriceLine={showCurrentPriceLine}
           showCrosshair={showCrosshair}
           showProfitLossAreas={showProfitLossAreas}
+          showFibonacciProjection={showFibonacciProjection}
           showStochastic={showStochastic}
           showRSI={showRSI}
           showBollingerBands={showBollingerBands}
@@ -181,6 +186,7 @@ export const MainLayout = ({
           onShowCurrentPriceLineChange={onShowCurrentPriceLineChange}
           onShowCrosshairChange={onShowCrosshairChange}
           onShowProfitLossAreasChange={onShowProfitLossAreasChange}
+          onShowFibonacciProjectionChange={onShowFibonacciProjectionChange}
           onShowStochasticChange={onShowStochasticChange}
           onShowRSIChange={onShowRSIChange}
           onShowBollingerBandsChange={onShowBollingerBandsChange}

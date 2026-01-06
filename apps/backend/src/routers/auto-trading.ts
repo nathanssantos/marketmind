@@ -96,6 +96,7 @@ export const autoTradingRouter = router({
         useAdxFilter: z.boolean().optional(),
         useTrendFilter: z.boolean().optional(),
         exposureMultiplier: z.string().optional(),
+        tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -145,6 +146,8 @@ export const autoTradingRouter = router({
         {updateData.useTrendFilter = input.useTrendFilter;}
       if (input.exposureMultiplier !== undefined)
         {updateData.exposureMultiplier = input.exposureMultiplier;}
+      if (input.tpCalculationMode !== undefined)
+        {updateData.tpCalculationMode = input.tpCalculationMode;}
 
       await ctx.db
         .update(autoTradingConfig)

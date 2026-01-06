@@ -1,7 +1,9 @@
+import { calculateFibonacciProjection } from '@marketmind/indicators';
 import type {
   ComputedIndicators,
   EvaluationContext,
   ExitContext,
+  FibonacciProjectionData,
   Kline,
   SetupDirection,
   StrategyDefinition,
@@ -20,6 +22,9 @@ import { logger } from '../../logger';
 import { ConditionEvaluator } from './ConditionEvaluator';
 import { ExitCalculator } from './ExitCalculator';
 import { IndicatorEngine } from './IndicatorEngine';
+
+const FIBONACCI_LOOKBACK = 50;
+const FIBONACCI_PRIMARY_LEVEL = 2.618;
 
 const { MIN_ENTRY_STOP_SEPARATION_PERCENT } = EXIT_CALCULATOR;
 
@@ -165,9 +170,12 @@ export class StrategyInterpreter extends BaseSetupDetector {
       }
     );
 
+    const fibonacciProjection = this.calculateFibonacciProjectionData(klines, currentIndex, direction);
+
     const setup = {
       ...baseSetup,
       entryOrderType: 'MARKET' as const,
+      fibonacciProjection,
     };
 
     const currentKline = klines[currentIndex];
@@ -184,6 +192,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
       confidence,
       volumeConfirmation,
       indicatorConfluence: indicatorConfluence.toFixed(2),
+      hasFibonacciProjection: !!fibonacciProjection,
       resolvedParams: this.resolvedParams,
     }, '✅ Setup detected');
 
@@ -196,6 +205,37 @@ export class StrategyInterpreter extends BaseSetupDetector {
       triggerKlineIndex: currentIndex,
       triggerCandleData,
       triggerIndicatorValues,
+    };
+  }
+
+  private calculateFibonacciProjectionData(
+    klines: Kline[],
+    currentIndex: number,
+    direction: SetupDirection
+  ): FibonacciProjectionData | undefined {
+    const projection = calculateFibonacciProjection(klines, currentIndex, FIBONACCI_LOOKBACK, direction);
+    if (!projection) return undefined;
+
+    const primaryLevelData = projection.levels.find(l => Math.abs(l.level - FIBONACCI_PRIMARY_LEVEL) < 0.001);
+
+    return {
+      swingLow: {
+        price: projection.swingLow.price,
+        index: projection.swingLow.index,
+        timestamp: projection.swingLow.timestamp,
+      },
+      swingHigh: {
+        price: projection.swingHigh.price,
+        index: projection.swingHigh.index,
+        timestamp: projection.swingHigh.timestamp,
+      },
+      levels: projection.levels.map(l => ({
+        level: l.level,
+        price: l.price,
+        label: l.label,
+      })),
+      range: projection.range,
+      primaryLevel: primaryLevelData?.price ?? projection.levels[1]?.price ?? projection.swingHigh.price,
     };
   }
 
@@ -251,7 +291,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
           values[`${id}Prev2`] = prev2;
         }
       } else {
-        const subValues = indicator.values as Record<string, (number | null)[]>;
+        const subValues = indicator.values;
         for (const [subKey, arr] of Object.entries(subValues)) {
           const current = arr[currentIndex];
           const prev = currentIndex > 0 ? arr[currentIndex - 1] : null;

@@ -165,7 +165,8 @@ describe('RiskManagerService', () => {
         marginTopUpThreshold: '30',
         marginTopUpPercent: '10',
         marginTopUpMaxCount: 3,
-        exposureMultiplier: '1.25',
+        exposureMultiplier: '1.50',
+        tpCalculationMode: 'default' as const,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -243,7 +244,8 @@ describe('RiskManagerService', () => {
         marginTopUpThreshold: '30',
         marginTopUpPercent: '10',
         marginTopUpMaxCount: 3,
-        exposureMultiplier: '1.25',
+        exposureMultiplier: '1.50',
+        tpCalculationMode: 'default' as const,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -284,7 +286,8 @@ describe('RiskManagerService', () => {
         marginTopUpThreshold: '30',
         marginTopUpPercent: '10',
         marginTopUpMaxCount: 3,
-        exposureMultiplier: '1.25',
+        exposureMultiplier: '1.50',
+        tpCalculationMode: 'default' as const,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -325,7 +328,8 @@ describe('RiskManagerService', () => {
         marginTopUpThreshold: '30',
         marginTopUpPercent: '10',
         marginTopUpMaxCount: 3,
-        exposureMultiplier: '1.25',
+        exposureMultiplier: '1.50',
+        tpCalculationMode: 'default' as const,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -391,7 +395,8 @@ describe('RiskManagerService', () => {
         marginTopUpThreshold: '30',
         marginTopUpPercent: '10',
         marginTopUpMaxCount: 3,
-        exposureMultiplier: '1.25',
+        exposureMultiplier: '1.50',
+        tpCalculationMode: 'default' as const,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

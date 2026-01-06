@@ -12,7 +12,8 @@ import {
   LuHistory,
   LuPlus,
   LuRectangleHorizontal,
-  LuSettings
+  LuSettings,
+  LuTrendingUp
 } from 'react-icons/lu';
 import { useChartWindows } from '../../hooks/useChartWindows';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
@@ -34,6 +35,7 @@ export interface ToolbarProps {
   showCurrentPriceLine: boolean;
   showCrosshair: boolean;
   showProfitLossAreas: boolean;
+  showFibonacciProjection: boolean;
   showStochastic: boolean;
   showRSI: boolean;
   showBollingerBands: boolean;
@@ -52,6 +54,7 @@ export interface ToolbarProps {
   onShowCurrentPriceLineChange: (show: boolean) => void;
   onShowCrosshairChange: (show: boolean) => void;
   onShowProfitLossAreasChange: (show: boolean) => void;
+  onShowFibonacciProjectionChange: (show: boolean) => void;
   onShowStochasticChange: (show: boolean) => void;
   onShowRSIChange: (show: boolean) => void;
   onShowBollingerBandsChange: (show: boolean) => void;
@@ -73,6 +76,7 @@ export const Toolbar = memo(({
   showCurrentPriceLine,
   showCrosshair,
   showProfitLossAreas,
+  showFibonacciProjection,
   showStochastic,
   showRSI,
   showBollingerBands,
@@ -91,6 +95,7 @@ export const Toolbar = memo(({
   onShowCurrentPriceLineChange,
   onShowCrosshairChange,
   onShowProfitLossAreasChange,
+  onShowFibonacciProjectionChange,
   onShowStochasticChange,
   onShowRSIChange,
   onShowBollingerBandsChange,
@@ -283,6 +288,17 @@ export const Toolbar = memo(({
                 variant={showProfitLossAreas ? 'solid' : 'ghost'}
               >
                 <LuRectangleHorizontal />
+              </IconButton>
+            </TooltipWrapper>
+            <TooltipWrapper label={t('chart.controls.fibonacciProjection')} showArrow>
+              <IconButton
+                size="2xs"
+                aria-label={t('chart.controls.fibonacciProjection')}
+                onClick={() => onShowFibonacciProjectionChange(!showFibonacciProjection)}
+                colorPalette={showFibonacciProjection ? 'blue' : 'gray'}
+                variant={showFibonacciProjection ? 'solid' : 'ghost'}
+              >
+                <LuTrendingUp />
               </IconButton>
             </TooltipWrapper>
           </HStack>
