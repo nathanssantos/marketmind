@@ -15,6 +15,7 @@ export interface TradeExecutorConfig {
   minRiskRewardRatio?: number;
   stopLossPercent?: number;
   takeProfitPercent?: number;
+  tpCalculationMode?: 'default' | 'fibonacci';
 }
 
 export interface TradeStats {
@@ -104,7 +105,7 @@ export class TradeExecutor {
           : entryPrice * (1 + this.config.stopLossPercent / 100)
         : undefined;
 
-    const takeProfit = setup.takeProfit
+    let takeProfit = setup.takeProfit
       ? setup.takeProfit
       : this.config.takeProfitPercent
         ? setup.direction === 'LONG'
@@ -112,15 +113,50 @@ export class TradeExecutor {
           : entryPrice * (1 - this.config.takeProfitPercent / 100)
         : undefined;
 
+    let tpSource = setup.takeProfit ? 'setup-ATR' : 'config-fixed';
+
+    if (this.config.tpCalculationMode === 'fibonacci' && setup.fibonacciProjection) {
+      const fibTarget = this.getFibonacciTargetPrice(setup);
+      if (fibTarget !== null) {
+        const isValidTarget = setup.direction === 'LONG'
+          ? fibTarget > entryPrice
+          : fibTarget < entryPrice;
+
+        if (isValidTarget) {
+          takeProfit = fibTarget;
+          tpSource = 'fibonacci';
+        }
+      }
+    }
+
     if (tradesCount === 0) {
       const slSource = setup.stopLoss ? '✓ setup-ATR' : '⚠ config-fixed';
-      const tpSource = setup.takeProfit ? '✓ setup-ATR' : '⚠ config-fixed';
+      const tpSourceFormatted = tpSource === 'fibonacci' ? '📐 fibonacci' : (setup.takeProfit ? '✓ setup-ATR' : '⚠ config-fixed');
       const slPercent = stopLoss ? (Math.abs((stopLoss - entryPrice) / entryPrice) * 100).toFixed(2) : 'N/A';
       const tpPercent = takeProfit ? (Math.abs((takeProfit - entryPrice) / entryPrice) * 100).toFixed(2) : 'N/A';
-      console.log(`[TradeExecutor] First Trade SL/TP: ${slSource} ${slPercent}% | ${tpSource} ${tpPercent}%`);
+      console.log(`[TradeExecutor] First Trade SL/TP: ${slSource} ${slPercent}% | ${tpSourceFormatted} ${tpPercent}%`);
     }
 
     return { stopLoss, takeProfit };
+  }
+
+  private getFibonacciTargetPrice(setup: any): number | null {
+    const fib = setup.fibonacciProjection;
+    if (!fib || !fib.levels || fib.levels.length === 0) return null;
+
+    const primaryLevelData = fib.levels.find(
+      (l: { level: number; price: number }) => Math.abs(l.level - fib.primaryLevel) < 0.001
+    );
+
+    if (primaryLevelData) return primaryLevelData.price;
+
+    const extensionLevels = fib.levels.filter((l: { level: number }) => l.level > 1.0);
+    if (extensionLevels.length > 0) {
+      const sorted = extensionLevels.sort((a: { level: number }, b: { level: number }) => a.level - b.level);
+      return sorted[0]?.price ?? null;
+    }
+
+    return null;
   }
 
   calculatePositionSize(

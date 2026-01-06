@@ -116,6 +116,7 @@ export class BacktestEngine {
         minRiskRewardRatio: effectiveConfig.minRiskRewardRatio,
         stopLossPercent: effectiveConfig.stopLossPercent,
         takeProfitPercent: effectiveConfig.takeProfitPercent,
+        tpCalculationMode: effectiveConfig.tpCalculationMode,
       });
 
       const exitManager = new ExitManager({

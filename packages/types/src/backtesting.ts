@@ -73,6 +73,8 @@ export interface BacktestConfig {
 
   onlyLong?: boolean; // Only allow LONG positions (buy only, no shorts)
   trendFilterPeriod?: number; // EMA period for trend filter (default: 200)
+
+  tpCalculationMode?: 'default' | 'fibonacci'; // TP calculation mode (default: 'default')
 }
 
 export interface BacktestTrade {
