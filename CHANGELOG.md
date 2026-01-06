@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.40.0] - 2025-01-05
+
+### Added
+- **Active Watchers Section** in Portfolio tab displaying current watchers with sortable table
+- **Auto Trading button** in watchers header to quickly open Trading Profiles modal
+- **Kline prefetch helper** (`kline-prefetch.ts`) with deduplication and consistent error handling
+- **Watchers table sort state** in UI store with migration v6
+
+### Changed
+- **Compact table design** - Reduced padding (px: 3→1.5, py: 2→1) and font sizes (xs→2xs)
+- **Smaller badges** - Changed from `size="sm" px={2}` to `size="xs" px={1}` across all tables
+- **Unified kline prefetch** - Refactored `kline.ts`, `auto-trading.ts`, and `auto-trading-scheduler.ts` to use centralized helper
+- **Button tooltip** - Changed "Trading Profiles" to "Auto Trading" for clarity
+
+### Fixed
+- Kline backfill triggered on watcher creation (fetches REQUIRED_KLINES)
+
 ## [0.39.0] - 2025-12-31
 
 ### Changed
