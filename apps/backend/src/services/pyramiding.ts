@@ -351,22 +351,21 @@ export class PyramidingService {
 
     const totalWalletExposure = calculateTotalExposure(allOpenPositions);
     const remainingBalance = Math.max(0, walletBalance - totalWalletExposure);
-    const remainingBalancePercent = (remainingBalance / walletBalance) * 100;
 
     if (openExecutions.length === 0) {
-      let baseSizePercent = maxPositionSizePercent;
+      let positionValue = (walletBalance * maxPositionSizePercent) / 100;
 
-      if (baseSizePercent > remainingBalancePercent && remainingBalancePercent > 0) {
-        baseSizePercent = remainingBalancePercent;
+      if (positionValue > remainingBalance && remainingBalance > 0) {
         logger.info({
-          originalPercent: maxPositionSizePercent.toFixed(1),
-          adjustedPercent: baseSizePercent.toFixed(1),
+          originalValue: positionValue.toFixed(2),
+          adjustedValue: remainingBalance.toFixed(2),
           remainingBalance: remainingBalance.toFixed(2),
           totalExposure: totalWalletExposure.toFixed(2),
-        }, 'Adjusted position size to use remaining balance');
+        }, 'Adjusted position value to use remaining balance');
+        positionValue = remainingBalance;
       }
 
-      if (baseSizePercent <= 0) {
+      if (positionValue <= 0) {
         return {
           quantity: 0,
           sizePercent: 0,
@@ -374,13 +373,28 @@ export class PyramidingService {
         };
       }
 
-      const positionValue = (walletBalance * baseSizePercent) / 100;
       const quantity = positionValue / entryPrice;
+      const roundedQuantity = roundQuantity(quantity);
+      const actualPositionValue = roundedQuantity * entryPrice;
+
+      if (actualPositionValue > remainingBalance) {
+        const adjustedQuantity = Math.floor((remainingBalance / entryPrice) * 100000) / 100000;
+        const adjustedValue = adjustedQuantity * entryPrice;
+        const sizePercent = (adjustedValue / walletBalance) * 100;
+
+        return {
+          quantity: adjustedQuantity,
+          sizePercent,
+          reason: `Initial entry: ${sizePercent.toFixed(1)}% position (adjusted to fit remaining balance)`,
+        };
+      }
+
+      const sizePercent = (actualPositionValue / walletBalance) * 100;
 
       return {
-        quantity: roundQuantity(quantity),
-        sizePercent: baseSizePercent,
-        reason: `Initial entry: ${baseSizePercent.toFixed(1)}% position (${activeWatchersCount ? `${activeWatchersCount} watchers` : 'config limit'})`,
+        quantity: roundedQuantity,
+        sizePercent,
+        reason: `Initial entry: ${sizePercent.toFixed(1)}% position (${activeWatchersCount ? `${activeWatchersCount} watchers` : 'config limit'})`,
       };
     }
 
