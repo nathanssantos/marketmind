@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { REQUIRED_KLINES, TIME_MS } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
-import { aggregateYearlyKlines, getIntervalMilliseconds, smartBackfillKlines } from '../services/binance-historical';
+import { aggregateYearlyKlines, getIntervalMilliseconds } from '../services/binance-historical';
+import { prefetchKlines } from '../services/kline-prefetch';
 import { binanceFuturesKlineStreamService, binanceKlineStreamService } from '../services/binance-kline-stream';
 import { getKlineGapFiller } from '../services/kline-gap-filler';
 import { logger } from '../services/logger';
@@ -98,18 +99,18 @@ export const klineRouter = router({
       const marketType = input.marketType as MarketType;
 
       if (input.interval === '1y') {
-        await smartBackfillKlines(input.symbol, '1M', input.limit * 12, marketType);
+        await prefetchKlines({ symbol: input.symbol, interval: '1M', targetCount: input.limit * 12, marketType });
         const yearlyKlines = await aggregateYearlyKlines(input.symbol, marketType, input.limit);
         logger.debug({ symbol: input.symbol, interval: '1y', marketType, count: yearlyKlines.length }, 'Yearly klines aggregated from monthly data');
         return yearlyKlines;
       }
 
-      await smartBackfillKlines(
-        input.symbol,
-        input.interval as Interval,
-        input.limit,
-        marketType
-      );
+      await prefetchKlines({
+        symbol: input.symbol,
+        interval: input.interval,
+        targetCount: input.limit,
+        marketType,
+      });
 
       const conditions = [
         eq(klines.symbol, input.symbol),
@@ -152,15 +153,15 @@ export const klineRouter = router({
     .mutation(async ({ input }) => {
       const marketType = input.marketType as MarketType;
 
-      const result = await smartBackfillKlines(
-        input.symbol,
-        input.interval as Interval,
-        input.periodsBack,
-        marketType
-      );
+      const result = await prefetchKlines({
+        symbol: input.symbol,
+        interval: input.interval,
+        targetCount: input.periodsBack,
+        marketType,
+      });
 
       return {
-        success: true,
+        success: result.success,
         downloaded: result.downloaded,
         totalInDb: result.totalInDb,
         gaps: result.gaps,

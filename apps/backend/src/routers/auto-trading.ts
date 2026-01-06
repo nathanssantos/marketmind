@@ -10,6 +10,7 @@ import {
 } from '../db/schema';
 import { riskManagerService } from '../services/risk-manager';
 import { autoTradingScheduler } from '../services/auto-trading-scheduler';
+import { prefetchKlinesAsync } from '../services/kline-prefetch';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
@@ -646,6 +647,12 @@ export const autoTradingRouter = router({
         false,
         input.marketType
       );
+
+      prefetchKlinesAsync({
+        symbol: input.symbol,
+        interval: input.interval,
+        marketType: input.marketType,
+      });
 
       log('✅ Watcher started', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId, marketType: input.marketType });
 

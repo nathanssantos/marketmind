@@ -23,7 +23,7 @@ import {
 import { env } from '../env';
 import { autoTradingService } from './auto-trading';
 import { ocoOrderService } from './oco-orders';
-import { smartBackfillKlines } from './binance-historical';
+import { prefetchKlines, hasSufficientKlines } from './kline-prefetch';
 import { cooldownService } from './cooldown';
 import { positionMonitorService } from './position-monitor';
 import { pyramidingService } from './pyramiding';
@@ -379,48 +379,41 @@ export class AutoTradingScheduler {
 
       if (klinesData.length < minRequired) {
         log('📥 Insufficient klines data, using smart backfill...', { count: klinesData.length, required: minRequired, target: requiredKlines });
-        try {
-          const result = await smartBackfillKlines(
-            watcher.symbol,
-            watcher.interval as Interval,
-            requiredKlines,
-            watcher.marketType
-          );
-          log('✅ Smart backfill complete', {
-            symbol: watcher.symbol,
-            interval: watcher.interval,
-            downloaded: result.downloaded,
-            totalInDb: result.totalInDb,
-            gaps: result.gaps,
-            alreadyComplete: result.alreadyComplete,
-          });
 
-          if (result.totalInDb < minRequired) {
-            log('⚠️ Still insufficient klines after backfill', { totalInDb: result.totalInDb });
-            return;
-          }
+        const result = await prefetchKlines({
+          symbol: watcher.symbol,
+          interval: watcher.interval,
+          marketType: watcher.marketType,
+          targetCount: requiredKlines,
+        });
 
-          const refreshedKlines = await db.query.klines.findMany({
-            where: and(
-              eq(klines.symbol, watcher.symbol),
-              eq(klines.interval, watcher.interval),
-              eq(klines.marketType, watcher.marketType)
-            ),
-            orderBy: [desc(klines.openTime)],
-            limit: requiredKlines,
-          });
-
-          if (refreshedKlines.length < minRequired) {
-            log('⚠️ Still insufficient klines after refresh', { count: refreshedKlines.length });
-            return;
-          }
-
-          klinesData.length = 0;
-          klinesData.push(...refreshedKlines);
-        } catch (error) {
-          log('❌ Failed to fetch historical klines', { error: error instanceof Error ? error.message : String(error) });
+        if (!result.success) {
+          log('❌ Failed to fetch historical klines', { error: result.error });
           return;
         }
+
+        if (!hasSufficientKlines(result.totalInDb, minRequired)) {
+          log('⚠️ Still insufficient klines after backfill', { totalInDb: result.totalInDb, minRequired });
+          return;
+        }
+
+        const refreshedKlines = await db.query.klines.findMany({
+          where: and(
+            eq(klines.symbol, watcher.symbol),
+            eq(klines.interval, watcher.interval),
+            eq(klines.marketType, watcher.marketType)
+          ),
+          orderBy: [desc(klines.openTime)],
+          limit: requiredKlines,
+        });
+
+        if (refreshedKlines.length < minRequired) {
+          log('⚠️ Still insufficient klines after refresh', { count: refreshedKlines.length });
+          return;
+        }
+
+        klinesData.length = 0;
+        klinesData.push(...refreshedKlines);
       }
 
       klinesData.reverse();
@@ -1678,16 +1671,21 @@ export class AutoTradingScheduler {
     const requiredKlines = calculateRequiredKlines();
 
     for (const pw of persistedWatchers) {
+      const marketType = (pw.marketType as MarketType) ?? 'SPOT';
+
+      const result = await prefetchKlines({
+        symbol: pw.symbol,
+        interval: pw.interval,
+        marketType,
+        targetCount: requiredKlines,
+      });
+
+      if (!result.success) {
+        log('❌ Failed to prefetch klines for watcher', { watcherId: pw.id, symbol: pw.symbol, error: result.error });
+        continue;
+      }
+
       try {
-        const marketType = (pw.marketType as MarketType) ?? 'SPOT';
-
-        await smartBackfillKlines(
-          pw.symbol,
-          pw.interval as Interval,
-          requiredKlines,
-          marketType
-        );
-
         await this.startWatcher(
           pw.walletId,
           pw.userId,
