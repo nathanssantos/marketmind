@@ -169,6 +169,13 @@
       "when": 1767285261940,
       "tag": "0023_sparkling_maximus",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1767715573649,
+      "tag": "0024_elite_bloodstrike",
+      "breakpoints": true
     }
   ]
 }

@@ -1344,6 +1344,7 @@ export class AutoTradingScheduler {
                   triggerKlineOpenTime: triggerCandle?.openTime,
                   triggerCandleData: setup.triggerCandleData ? JSON.stringify(setup.triggerCandleData) : null,
                   triggerIndicatorValues: setup.triggerIndicatorValues ? JSON.stringify(setup.triggerIndicatorValues) : null,
+                  fibonacciProjection: setup.fibonacciProjection ? JSON.stringify(setup.fibonacciProjection) : null,
                 });
 
                 log('✅ PENDING order created - waiting for price to reach limit', {
@@ -1368,6 +1369,7 @@ export class AutoTradingScheduler {
                     takeProfit: effectiveTakeProfit?.toString(),
                     setupType: setup.type,
                     expiresAt: expiresAt.toISOString(),
+                    fibonacciProjection: setup.fibonacciProjection,
                   });
                 }
 
@@ -1517,6 +1519,7 @@ export class AutoTradingScheduler {
           triggerKlineOpenTime: triggerCandle?.openTime,
           triggerCandleData: setup.triggerCandleData ? JSON.stringify(setup.triggerCandleData) : null,
           triggerIndicatorValues: setup.triggerIndicatorValues ? JSON.stringify(setup.triggerIndicatorValues) : null,
+          fibonacciProjection: setup.fibonacciProjection ? JSON.stringify(setup.fibonacciProjection) : null,
         });
 
         log('✅ Trade execution inserted into database', { executionId });
@@ -1533,6 +1536,7 @@ export class AutoTradingScheduler {
             stopLoss: setup.stopLoss?.toString(),
             takeProfit: effectiveTakeProfit?.toString(),
             setupType: setup.type,
+            fibonacciProjection: setup.fibonacciProjection,
           });
         }
       } catch (dbError) {

@@ -40,6 +40,7 @@ const createMockExecution = (overrides: Partial<TradeExecution> = {}): TradeExec
   triggerKlineOpenTime: null,
   triggerCandleData: null,
   triggerIndicatorValues: null,
+  fibonacciProjection: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,

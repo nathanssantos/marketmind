@@ -270,6 +270,7 @@ export const tradeExecutions = pgTable('trade_executions', {
   triggerKlineOpenTime: bigint('trigger_kline_open_time', { mode: 'number' }),
   triggerCandleData: text('trigger_candle_data'),
   triggerIndicatorValues: text('trigger_indicator_values'),
+  fibonacciProjection: text('fibonacci_projection'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({

@@ -1,0 +1,1 @@
+ALTER TABLE "trade_executions" ADD COLUMN "fibonacci_projection" text;
