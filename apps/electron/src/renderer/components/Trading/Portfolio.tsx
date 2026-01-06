@@ -135,14 +135,6 @@ const PortfolioComponent = () => {
     <Stack gap={3} p={4}>
       <FuturesPositionsPanel />
 
-      {activeWatchers.length > 0 && (
-        <WatchersSection
-          watchers={activeWatchers}
-          isLoading={isLoadingWatcherStatus}
-          onNavigateToSymbol={globalActions?.navigateToSymbol}
-        />
-      )}
-
       <Flex justify="space-between" align="center" mb={1}>
         <Text fontSize="sm" fontWeight="bold">
           {t('trading.portfolio.title')}
@@ -262,6 +254,14 @@ const PortfolioComponent = () => {
             <PortfolioTable positions={filteredPositions} currency={activeWallet.currency} onNavigateToSymbol={globalActions?.navigateToSymbol} />
           )}
         </>
+      )}
+
+      {activeWatchers.length > 0 && (
+        <WatchersSection
+          watchers={activeWatchers}
+          isLoading={isLoadingWatcherStatus}
+          onNavigateToSymbol={globalActions?.navigateToSymbol}
+        />
       )}
     </Stack>
   );

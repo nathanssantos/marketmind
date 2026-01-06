@@ -96,13 +96,13 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
         <Text fontSize="lg" fontWeight="bold">
           {t('trading.analytics.performance.title')}
         </Text>
-        <ButtonGroup size="sm" variant="outline" flexWrap="wrap">
+        <ButtonGroup size="xs" variant="outline" flexWrap="wrap">
           {periods.map((p) => (
             <Button
               key={p.value}
               onClick={() => setPeriod(p.value)}
               variant={period === p.value ? 'solid' : 'outline'}
-              px={3}
+              px={2}
             >
               {t(p.labelKey)}
             </Button>

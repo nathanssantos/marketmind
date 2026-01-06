@@ -1,7 +1,8 @@
-import { Box, Button, ButtonGroup, Flex, Spinner, Stack, Table, Text } from '@chakra-ui/react';
+import { Button, ButtonGroup, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useBackendAnalytics } from '../../hooks/useBackendAnalytics';
 import { type AnalyticsPeriod, useUIStore } from '../../store/uiStore';
+import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from './TradingTable';
 
 interface SetupStatsTableProps {
   walletId: string;
@@ -48,19 +49,28 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
     { value: 'all', labelKey: 'trading.analytics.periods.all' },
   ];
 
+  const columns: TradingTableColumn[] = [
+    { key: 'setupType', header: t('trading.analytics.setupStats.setupType'), sortable: false },
+    { key: 'totalTrades', header: t('trading.analytics.setupStats.totalTrades'), textAlign: 'right', sortable: false },
+    { key: 'winRate', header: t('trading.analytics.setupStats.winRate'), textAlign: 'right', sortable: false },
+    { key: 'winLoss', header: t('trading.analytics.setupStats.winLoss'), textAlign: 'right', sortable: false },
+    { key: 'totalPnL', header: t('trading.analytics.setupStats.totalPnL'), textAlign: 'right', sortable: false },
+    { key: 'avgPnL', header: t('trading.analytics.setupStats.avgPnL'), textAlign: 'right', sortable: false },
+  ];
+
   return (
     <Stack gap={4}>
       <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px" flexWrap="wrap" gap={2}>
         <Text fontSize="lg" fontWeight="bold">
           {t('trading.analytics.setupStats.title')}
         </Text>
-        <ButtonGroup size="sm" variant="outline" flexWrap="wrap">
+        <ButtonGroup size="xs" variant="outline" flexWrap="wrap">
           {periods.map((p) => (
             <Button
               key={p.value}
               onClick={() => setPeriod(p.value)}
               variant={period === p.value ? 'solid' : 'outline'}
-              px={3}
+              px={2}
             >
               {t(p.labelKey)}
             </Button>
@@ -68,54 +78,38 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
         </ButtonGroup>
       </Flex>
 
-      <Box overflowX="auto">
-        <Table.Root variant="outline" size="sm">
-          <Table.Header>
-            <Table.Row>
-              <Table.ColumnHeader>{t('trading.analytics.setupStats.setupType')}</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="right">{t('trading.analytics.setupStats.totalTrades')}</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="right">{t('trading.analytics.setupStats.winRate')}</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="right">{t('trading.analytics.setupStats.winLoss')}</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="right">{t('trading.analytics.setupStats.totalPnL')}</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="right">{t('trading.analytics.setupStats.avgPnL')}</Table.ColumnHeader>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {setupStats.map((stat) => (
-              <Table.Row
-                key={stat.setupType}
-                _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
-                transition="background 0.2s"
-              >
-                <Table.Cell fontWeight="medium">{stat.setupType}</Table.Cell>
-                <Table.Cell textAlign="right">{stat.totalTrades}</Table.Cell>
-                <Table.Cell textAlign="right">
-                  <Text fontWeight="bold" color={getWinRateColor(stat.winRate)}>
-                    {stat.winRate.toFixed(1)}%
-                  </Text>
-                </Table.Cell>
-                <Table.Cell textAlign="right">
-                  <Flex justify="flex-end" align="center" gap={1}>
-                    <Text color="green.500">{stat.winningTrades}</Text>
-                    <Text color="gray.400">/</Text>
-                    <Text color="red.500">{stat.losingTrades}</Text>
-                  </Flex>
-                </Table.Cell>
-                <Table.Cell textAlign="right">
-                  <Text fontWeight="bold" color={getPnLColor(stat.totalPnL)}>
-                    {stat.totalPnL >= 0 ? '+' : ''}${stat.totalPnL.toFixed(2)}
-                  </Text>
-                </Table.Cell>
-                <Table.Cell textAlign="right">
-                  <Text color={getPnLColor(stat.avgPnL)}>
-                    {stat.avgPnL >= 0 ? '+' : ''}${stat.avgPnL.toFixed(2)}
-                  </Text>
-                </Table.Cell>
-              </Table.Row>
-            ))}
-          </Table.Body>
-        </Table.Root>
-      </Box>
+      <TradingTable columns={columns} minW="600px">
+        {setupStats.map((stat) => (
+          <TradingTableRow key={stat.setupType}>
+            <TradingTableCell>
+              <Text fontWeight="medium">{stat.setupType}</Text>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">{stat.totalTrades}</TradingTableCell>
+            <TradingTableCell textAlign="right">
+              <Text fontWeight="bold" color={getWinRateColor(stat.winRate)}>
+                {stat.winRate.toFixed(1)}%
+              </Text>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">
+              <Flex justify="flex-end" align="center" gap={1}>
+                <Text color="green.500">{stat.winningTrades}</Text>
+                <Text color="gray.400">/</Text>
+                <Text color="red.500">{stat.losingTrades}</Text>
+              </Flex>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">
+              <Text fontWeight="bold" color={getPnLColor(stat.totalPnL)}>
+                {stat.totalPnL >= 0 ? '+' : ''}${stat.totalPnL.toFixed(2)}
+              </Text>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">
+              <Text color={getPnLColor(stat.avgPnL)}>
+                {stat.avgPnL >= 0 ? '+' : ''}${stat.avgPnL.toFixed(2)}
+              </Text>
+            </TradingTableCell>
+          </TradingTableRow>
+        ))}
+      </TradingTable>
 
       <Flex justify="center" pt={2} borderTopWidth="1px">
         <Text fontSize="sm" color="gray.600" _dark={{ color: 'gray.400' }}>
