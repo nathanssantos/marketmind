@@ -60,15 +60,6 @@ export const useFibonacciProjectionRenderer = ({
       const color = EXTENSION_COLORS[levelKey] ?? 'rgba(128, 128, 128, 0.5)';
       const isPrimary = level.level === 2;
 
-      ctx.strokeStyle = color;
-      ctx.lineWidth = isPrimary ? 2 : 1;
-      ctx.setLineDash(isPrimary ? [] : [4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(Math.max(swingHighX, 0), y);
-      ctx.lineTo(effectiveWidth, y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
       ctx.fillStyle = color;
       ctx.font = isPrimary ? 'bold 11px monospace' : '10px monospace';
       ctx.textAlign = 'right';
@@ -76,6 +67,18 @@ export const useFibonacciProjectionRenderer = ({
 
       const priceText = level.price.toFixed(2);
       const labelText = `${level.label} (${priceText})`;
+      const textWidth = ctx.measureText(labelText).width;
+      const lineStartX = effectiveWidth - textWidth - 12;
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = isPrimary ? 2 : 1;
+      ctx.setLineDash(isPrimary ? [] : [4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(lineStartX, y);
+      ctx.lineTo(effectiveWidth, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
       ctx.fillText(labelText, effectiveWidth - 4, y - 10);
     }
 
