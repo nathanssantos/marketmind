@@ -11,8 +11,8 @@ import {
 } from '../services/risk-manager';
 
 const createPosition = (overrides: Partial<PositionLike> = {}): PositionLike => ({
-  entryPrice: '100',
-  quantity: '1',
+  entryPrice: 100,
+  quantity: 1,
   ...overrides,
 });
 
@@ -23,21 +23,21 @@ describe('Risk Manager Pure Functions', () => {
     });
 
     it('should calculate exposure for single position', () => {
-      const positions = [createPosition({ entryPrice: '50000', quantity: '0.1' })];
+      const positions = [createPosition({ entryPrice: 50000, quantity: 0.1 })];
       expect(calculatePositionExposure(positions)).toBe(5000);
     });
 
     it('should calculate exposure for multiple positions', () => {
       const positions = [
-        createPosition({ entryPrice: '50000', quantity: '0.1' }),
-        createPosition({ entryPrice: '51000', quantity: '0.2' }),
+        createPosition({ entryPrice: 50000, quantity: 0.1 }),
+        createPosition({ entryPrice: 51000, quantity: 0.2 }),
       ];
       expect(calculatePositionExposure(positions)).toBe(5000 + 10200);
     });
 
     it('should handle decimal values', () => {
       const positions = [
-        createPosition({ entryPrice: '42315.75', quantity: '0.00123' }),
+        createPosition({ entryPrice: 42315.75, quantity: 0.00123 }),
       ];
       expect(calculatePositionExposure(positions)).toBeCloseTo(52.05, 2);
     });

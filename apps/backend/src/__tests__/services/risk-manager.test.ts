@@ -19,8 +19,8 @@ describe('Risk Manager - Pure Utility Functions', () => {
   describe('calculatePositionExposure', () => {
     it('should calculate total exposure for positions', () => {
       const positions: PositionLike[] = [
-        { entryPrice: '100', quantity: '10' },
-        { entryPrice: '50', quantity: '20' },
+        { entryPrice: 100, quantity: 10 },
+        { entryPrice: 50, quantity: 20 },
       ];
 
       expect(calculatePositionExposure(positions)).toBe(2000);

@@ -19,7 +19,7 @@ describe('Risk Manager Utilities', () => {
 
     it('should calculate exposure for single position', () => {
       const positions: PositionLike[] = [
-        { entryPrice: '100', quantity: '10' }
+        { entryPrice: 100, quantity: 10 }
       ];
       const result = calculatePositionExposure(positions);
       expect(result).toBe(1000);
@@ -27,9 +27,9 @@ describe('Risk Manager Utilities', () => {
 
     it('should calculate exposure for multiple positions', () => {
       const positions: PositionLike[] = [
-        { entryPrice: '100', quantity: '10' },
-        { entryPrice: '50', quantity: '20' },
-        { entryPrice: '200', quantity: '5' }
+        { entryPrice: 100, quantity: 10 },
+        { entryPrice: 50, quantity: 20 },
+        { entryPrice: 200, quantity: 5 }
       ];
       const result = calculatePositionExposure(positions);
       expect(result).toBe(3000);
@@ -37,7 +37,7 @@ describe('Risk Manager Utilities', () => {
 
     it('should handle decimal values', () => {
       const positions: PositionLike[] = [
-        { entryPrice: '50000.50', quantity: '0.001' }
+        { entryPrice: 50000.50, quantity: 0.001 }
       ];
       const result = calculatePositionExposure(positions);
       expect(result).toBeCloseTo(50.0005, 4);
@@ -45,7 +45,7 @@ describe('Risk Manager Utilities', () => {
 
     it('should handle very large numbers', () => {
       const positions: PositionLike[] = [
-        { entryPrice: '100000', quantity: '1000' }
+        { entryPrice: 100000, quantity: 1000 }
       ];
       const result = calculatePositionExposure(positions);
       expect(result).toBe(100000000);
@@ -53,7 +53,7 @@ describe('Risk Manager Utilities', () => {
 
     it('should handle zero quantity', () => {
       const positions: PositionLike[] = [
-        { entryPrice: '100', quantity: '0' }
+        { entryPrice: 100, quantity: 0 }
       ];
       const result = calculatePositionExposure(positions);
       expect(result).toBe(0);
@@ -61,7 +61,7 @@ describe('Risk Manager Utilities', () => {
 
     it('should handle zero price', () => {
       const positions: PositionLike[] = [
-        { entryPrice: '0', quantity: '10' }
+        { entryPrice: 0, quantity: 10 }
       ];
       const result = calculatePositionExposure(positions);
       expect(result).toBe(0);
@@ -280,7 +280,7 @@ describe('Risk Manager Utilities', () => {
   describe('edge cases', () => {
     it('should handle NaN input gracefully in exposure calculation', () => {
       const positions: PositionLike[] = [
-        { entryPrice: 'invalid', quantity: '10' }
+        { entryPrice: NaN, quantity: 10 }
       ];
       const result = calculatePositionExposure(positions);
       expect(result).toBeNaN();

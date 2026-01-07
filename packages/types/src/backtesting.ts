@@ -75,6 +75,7 @@ export interface BacktestConfig {
   trendFilterPeriod?: number; // EMA period for trend filter (default: 200)
 
   tpCalculationMode?: 'default' | 'fibonacci'; // TP calculation mode (default: 'default')
+  fibonacciTpLevel?: number; // Fibonacci level to use for TP (default: uses primaryLevel from projection, e.g., 0.618, 1.0, 1.618)
 }
 
 export interface BacktestTrade {
@@ -280,4 +281,53 @@ export interface WalkForwardResult {
   outOfSampleMetrics: BacktestMetrics;
   degradationPercent: number;
   isRobust: boolean;
+}
+
+export interface WatcherConfig {
+  symbol: string;
+  interval: string;
+  setupTypes?: string[];
+  marketType?: 'SPOT' | 'FUTURES';
+  profileId?: string;
+}
+
+export interface MultiWatcherBacktestConfig extends Omit<BacktestConfig, 'symbol' | 'interval'> {
+  watchers: WatcherConfig[];
+  exposureMultiplier?: number;
+  useSharedExposure?: boolean;
+  trailingStopSimulationInterval?: import('./kline').Interval;
+}
+
+export interface WatcherStats {
+  symbol: string;
+  interval: string;
+  totalSetups: number;
+  tradesExecuted: number;
+  tradesSkipped: number;
+  skippedReasons: Record<string, number>;
+  pnl: number;
+  winRate: number;
+  winningTrades: number;
+  losingTrades: number;
+}
+
+export interface TimelineEvent {
+  timestamp: number;
+  type: 'setup' | 'entry' | 'exit' | 'conflict';
+  watcherSymbol: string;
+  watcherInterval: string;
+  details: Record<string, unknown>;
+}
+
+export interface ConflictStats {
+  totalConflicts: number;
+  resolvedBy: Record<string, number>;
+  conflictsPerWatcher: Record<string, number>;
+}
+
+export interface MultiWatcherBacktestResult extends Omit<BacktestResult, 'config'> {
+  config: MultiWatcherBacktestConfig;
+  watcherStats: WatcherStats[];
+  timeline: TimelineEvent[];
+  conflictStats: ConflictStats;
 }

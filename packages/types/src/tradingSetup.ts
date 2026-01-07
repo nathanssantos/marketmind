@@ -64,6 +64,7 @@ export interface TradingSetup {
   triggerCandleData?: TriggerCandleSnapshot[];
   triggerIndicatorValues?: TriggerIndicatorValues;
   fibonacciProjection?: FibonacciProjectionData;
+  atr?: number;
 }
 
 export interface PivotPoint {

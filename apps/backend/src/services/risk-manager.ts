@@ -1,3 +1,11 @@
+import {
+  calculateDynamicExposure,
+  calculatePositionExposure,
+  calculateDrawdownPercent,
+  type ExposureInfo,
+  type RiskValidationResult,
+  type DailyPnLInfo,
+} from '@marketmind/risk';
 import { and, eq, gte } from 'drizzle-orm';
 import { RISK_MANAGER } from '../constants';
 import { db } from '../db';
@@ -7,99 +15,29 @@ import { logger } from './logger';
 import { walletLockService } from './wallet-lock';
 import { getWebSocketService } from './websocket';
 
-export interface PositionLike {
+export type { ExposureInfo, RiskValidationResult, DailyPnLInfo, PositionLike } from '@marketmind/risk';
+
+export {
+  calculatePositionExposure,
+  calculateMaxPositionValue,
+  calculateMaxTotalExposure,
+  calculateMaxDailyLoss,
+  calculateDrawdownPercent,
+  validateOrderSizePure,
+  calculateExposureUtilization,
+  calculateDynamicExposure,
+} from '@marketmind/risk';
+
+interface DbPositionLike {
   entryPrice: string;
   quantity: string;
 }
 
-export const calculatePositionExposure = (positions: PositionLike[]): number => {
-  return positions.reduce((total, position) => {
-    const entryPrice = parseFloat(position.entryPrice);
-    const quantity = parseFloat(position.quantity);
-    return total + entryPrice * quantity;
-  }, 0);
-};
-
-export const calculateMaxPositionValue = (
-  walletBalance: number,
-  maxPositionSizePercent: number
-): number => {
-  return (walletBalance * maxPositionSizePercent) / 100;
-};
-
-export const calculateMaxTotalExposure = (
-  walletBalance: number,
-  maxPositionSizePercent: number,
-  maxConcurrentPositions: number
-): number => {
-  return (walletBalance * maxPositionSizePercent * maxConcurrentPositions) / 100;
-};
-
-export const calculateMaxDailyLoss = (
-  walletBalance: number,
-  dailyLossLimitPercent: number
-): number => {
-  return (walletBalance * dailyLossLimitPercent) / 100;
-};
-
-export const calculateDrawdownPercent = (
-  initialBalance: number,
-  currentBalance: number
-): number => {
-  if (initialBalance <= 0) return 0;
-  return ((initialBalance - currentBalance) / initialBalance) * 100;
-};
-
-export const validateOrderSizePure = (
-  walletBalance: number,
-  orderValue: number,
-  maxPositionSizePercent: number
-): { isValid: boolean; reason?: string; maxAllowed: number } => {
-  const maxAllowed = (walletBalance * maxPositionSizePercent) / 100;
-
-  if (orderValue > maxAllowed) {
-    return {
-      isValid: false,
-      reason: `Order size ${orderValue.toFixed(2)} exceeds maximum ${maxAllowed.toFixed(2)}`,
-      maxAllowed,
-    };
-  }
-
-  return { isValid: true, maxAllowed };
-};
-
-export const calculateExposureUtilization = (
-  totalValue: number,
-  maxAllowed: number
-): number => {
-  return maxAllowed > 0 ? (totalValue / maxAllowed) * 100 : 0;
-};
-
-export interface RiskValidationResult {
-  isValid: boolean;
-  reason?: string;
-  details?: {
-    currentExposure?: number;
-    maxExposure?: number;
-    dailyPnL?: number;
-    dailyLimit?: number;
-    openPositions?: number;
-    maxPositions?: number;
-  };
-}
-
-export interface ExposureInfo {
-  totalValue: number;
-  maxAllowed: number;
-  utilizationPercent: number;
-  openPositionsCount: number;
-}
-
-export interface DailyPnLInfo {
-  pnl: number;
-  limit: number;
-  percentUsed: number;
-}
+const mapDbPositionsToNumeric = (positions: DbPositionLike[]) =>
+  positions.map((p) => ({
+    entryPrice: parseFloat(p.entryPrice),
+    quantity: parseFloat(p.quantity),
+  }));
 
 export class RiskManagerService {
   async validateNewPositionLocked(
@@ -157,10 +95,15 @@ export class RiskManagerService {
       const maxPositionSize = parseFloat(config.maxPositionSize);
       const exposureMultiplier = parseFloat(config.exposureMultiplier);
 
-      const effectiveMaxPositionPercent = activeWatchersCount
-        ? Math.min((100 * exposureMultiplier) / activeWatchersCount, 100)
-        : maxPositionSize;
-      const maxPositionValue = (walletBalance * effectiveMaxPositionPercent) / 100;
+      const { maxPositionValue, maxTotalExposure: dynamicMaxExposure } = calculateDynamicExposure(
+        walletBalance,
+        activeWatchersCount ?? 0,
+        {
+          exposureMultiplier,
+          maxPositionSizePercent: maxPositionSize,
+          maxConcurrentPositions: config.maxConcurrentPositions,
+        }
+      );
 
       if (positionValue > maxPositionValue) {
         return {
@@ -173,17 +116,14 @@ export class RiskManagerService {
         };
       }
 
-      const currentExposure = this.calculateTotalExposure(openPositions);
+      const currentExposure = calculatePositionExposure(mapDbPositionsToNumeric(openPositions));
       const totalExposure = currentExposure + positionValue;
 
       const baseMaxExposure = RISK_MANAGER.MAX_EXPOSURE_PERCENT / 100;
       const leveragedMaxExposure = leverage > 1 ? leverage : baseMaxExposure;
       const absoluteMaxExposure = walletBalance * leveragedMaxExposure;
 
-      const configuredMaxExposure = activeWatchersCount
-        ? absoluteMaxExposure
-        : Math.min((walletBalance * maxPositionSize * config.maxConcurrentPositions) / 100, absoluteMaxExposure);
-      const maxTotalExposure = Math.min(configuredMaxExposure, absoluteMaxExposure);
+      const maxTotalExposure = Math.min(dynamicMaxExposure, absoluteMaxExposure);
 
       if (totalExposure > maxTotalExposure) {
         const leverageInfo = leverage > 1 ? ` with ${leverage}x leverage` : '';
@@ -249,7 +189,7 @@ export class RiskManagerService {
       }
 
       const openPositions = await this.getOpenPositions(walletId);
-      const totalValue = this.calculateTotalExposure(openPositions);
+      const totalValue = calculatePositionExposure(mapDbPositionsToNumeric(openPositions));
       const walletBalance = parseFloat(wallet.currentBalance || '0');
 
       const maxAllowed = walletBalance * (RISK_MANAGER.MAX_EXPOSURE_PERCENT / 100);
@@ -321,14 +261,6 @@ export class RiskManagerService {
       );
   }
 
-  private calculateTotalExposure(positions: typeof tradeExecutions.$inferSelect[]): number {
-    return positions.reduce((total, position) => {
-      const entryPrice = parseFloat(position.entryPrice);
-      const quantity = parseFloat(position.quantity);
-      return total + entryPrice * quantity;
-    }, 0);
-  }
-
   private async calculateDailyPnL(walletId: string): Promise<number> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -373,8 +305,7 @@ export class RiskManagerService {
       const initialBalance = parseFloat(wallet.initialBalance || '0');
       const currentBalance = parseFloat(wallet.currentBalance || '0');
 
-      const drawdown =
-        initialBalance > 0 ? ((initialBalance - currentBalance) / initialBalance) * 100 : 0;
+      const drawdown = calculateDrawdownPercent(initialBalance, currentBalance);
 
       return {
         currentDrawdown: drawdown,
