@@ -90,6 +90,9 @@ async function runMultiWatcherBacktest() {
     ? (tsIntervalArg.split('=')[1] as Interval)
     : useTrailingStop ? '5m' as Interval : undefined;
 
+  const tpModeArg = process.argv.find(arg => arg.startsWith('--tp-mode='));
+  const tpMode = tpModeArg ? (tpModeArg.split('=')[1] as 'default' | 'fibonacci') : config.tpCalculationMode ?? 'default';
+
   console.log(`📅 Backtest Period: ${startDate} to ${endDate}`);
   console.log(`💰 Initial Capital: $${formatCurrency(initialCapital)}`);
   if (fibonacciTpLevel) {
@@ -122,7 +125,7 @@ async function runMultiWatcherBacktest() {
     useSharedExposure: true,
     marketType: watchers[0]?.marketType ?? 'FUTURES',
     leverage: config.leverage ?? 1,
-    tpCalculationMode: config.tpCalculationMode ?? 'default',
+    tpCalculationMode: tpMode,
     fibonacciTpLevel,
     useTrailingStop,
     trailingStopSimulationInterval,

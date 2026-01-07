@@ -18,6 +18,9 @@ import { getDefaultFee, getRoundTripFee } from '@marketmind/types';
 import { calculatePositionSize } from '@marketmind/risk';
 import { calculateATR } from '@marketmind/indicators';
 import { computeTrailingStopCore, type TrailingStopCoreConfig } from '../trailing-stop-core';
+import { checkStochasticCondition, STOCHASTIC_FILTER } from '../../utils/stochastic-filter';
+import { checkAdxCondition, ADX_FILTER } from '../../utils/adx-filter';
+import { checkTrendCondition, TREND_FILTER } from '../../utils/trend-filter';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { and, eq, gte, lte, desc } from 'drizzle-orm';
@@ -330,6 +333,55 @@ export class MultiWatcherBacktestEngine {
     return events;
   }
 
+  private applyIndicatorFilters(
+    klines: Kline[],
+    direction: 'LONG' | 'SHORT',
+    strategy: StrategyDefinition | undefined,
+    stats: WatcherStats
+  ): { passed: boolean } {
+    const globalStochasticEnabled = this.config.useStochasticFilter === true;
+    if (globalStochasticEnabled) {
+      const requiredKlines = STOCHASTIC_FILTER.PERIOD + STOCHASTIC_FILTER.LOOKBACK_BUFFER + 1;
+      if (klines.length >= requiredKlines) {
+        const stochResult = checkStochasticCondition(klines, direction);
+        if (!stochResult.isAllowed) {
+          stats.tradesSkipped++;
+          stats.skippedReasons['stochastic'] = (stats.skippedReasons['stochastic'] ?? 0) + 1;
+          return { passed: false };
+        }
+      }
+    }
+
+    const globalAdxEnabled = this.config.useAdxFilter === true;
+    if (globalAdxEnabled) {
+      if (klines.length >= ADX_FILTER.MIN_KLINES_REQUIRED) {
+        const adxResult = checkAdxCondition(klines, direction);
+        if (!adxResult.isAllowed) {
+          stats.tradesSkipped++;
+          stats.skippedReasons['adx'] = (stats.skippedReasons['adx'] ?? 0) + 1;
+          return { passed: false };
+        }
+      }
+    }
+
+    const globalTrendEnabled = this.config.onlyWithTrend === true;
+    const strategyTrendEnabled = strategy?.filters?.trendFilter?.enabled === true;
+    const shouldApplyTrend = globalTrendEnabled || strategyTrendEnabled;
+
+    if (shouldApplyTrend) {
+      if (klines.length >= TREND_FILTER.MIN_KLINES_REQUIRED) {
+        const trendResult = checkTrendCondition(klines, direction);
+        if (!trendResult.isAllowed) {
+          stats.tradesSkipped++;
+          stats.skippedReasons['trend'] = (stats.skippedReasons['trend'] ?? 0) + 1;
+          return { passed: false };
+        }
+      }
+    }
+
+    return { passed: true };
+  }
+
   private async processSetupEvent(event: SetupEvent): Promise<void> {
     const watcherId = `${event.watcherSymbol}-${event.watcherInterval}`;
     const watcher = this.watchers.get(watcherId);
@@ -352,6 +404,17 @@ export class MultiWatcherBacktestEngine {
 
     this.checkAndClosePositions(event.timestamp, watcher.klines, event.klineIndex);
 
+    const klinesUpToSetup = watcher.klines.slice(0, event.klineIndex + 1);
+    const setupStrategy = watcher.strategies.find((s) => s.id === event.setup.type);
+
+    const filterResult = this.applyIndicatorFilters(
+      klinesUpToSetup,
+      event.setup.direction,
+      setupStrategy,
+      watcher.stats
+    );
+    if (!filterResult.passed) return;
+
     const { exposurePerWatcher } = this.portfolio.calculateExposureForNewPosition();
     const { quantity, positionValue } = calculatePositionSize(
       this.portfolio.getEquity(),
@@ -359,7 +422,7 @@ export class MultiWatcherBacktestEngine {
       exposurePerWatcher
     );
 
-    const filterResult = this.portfolio.runAllFilters(
+    const portfolioFilterResult = this.portfolio.runAllFilters(
       event.setup,
       event.watcherSymbol,
       event.watcherInterval,
@@ -367,11 +430,11 @@ export class MultiWatcherBacktestEngine {
       positionValue
     );
 
-    if (!filterResult.passed) {
+    if (!portfolioFilterResult.passed) {
       watcher.stats.tradesSkipped++;
 
-      const reasonKey = filterResult.reason?.split(']')[0]?.replace('[', '') ?? 'unknown';
-      watcher.stats.skippedReasons[reasonKey] = (watcher.stats.skippedReasons[reasonKey] || 0) + 1;
+      const reasonKey = portfolioFilterResult.reason?.split(']')[0]?.replace('[', '') ?? 'unknown';
+      watcher.stats.skippedReasons[reasonKey] = (watcher.stats.skippedReasons[reasonKey] ?? 0) + 1;
 
       return;
     }
@@ -453,6 +516,13 @@ export class MultiWatcherBacktestEngine {
           const low = parseFloat(String(kline.low));
           const close = parseFloat(String(kline.close));
 
+          const exitResult = this.checkExit(position, kline);
+
+          if (exitResult) {
+            this.closePositionWithResult(position, exitResult, kline.closeTime);
+            break;
+          }
+
           if (useTrailingStop && position.barsInTrade > 0) {
             const trailingResult = this.computeTrailingStop(position, close, high, low);
             this.portfolio.updatePositionPriceExtremes(
@@ -463,13 +533,6 @@ export class MultiWatcherBacktestEngine {
             );
           } else {
             this.portfolio.updatePositionPriceExtremes(position.id, high, low);
-          }
-
-          const exitResult = this.checkExit(position, kline);
-
-          if (exitResult) {
-            this.closePositionWithResult(position, exitResult, kline.closeTime);
-            break;
           }
         }
       }
@@ -511,6 +574,11 @@ export class MultiWatcherBacktestEngine {
       const low = parseFloat(String(mainKline.low));
       const close = parseFloat(String(mainKline.close));
 
+      const exitResult = this.checkExit(position, mainKline);
+      if (exitResult) {
+        return { ...exitResult, exitTime: mainKline.closeTime };
+      }
+
       if (position.barsInTrade > 0) {
         const trailingResult = this.computeTrailingStop(position, close, high, low);
         this.portfolio.updatePositionPriceExtremes(
@@ -521,10 +589,6 @@ export class MultiWatcherBacktestEngine {
         );
       }
 
-      const exitResult = this.checkExit(position, mainKline);
-      if (exitResult) {
-        return { ...exitResult, exitTime: mainKline.closeTime };
-      }
       return null;
     }
 
@@ -533,6 +597,11 @@ export class MultiWatcherBacktestEngine {
       const low = parseFloat(String(simKline.low));
       const close = parseFloat(String(simKline.close));
 
+      const exitResult = this.checkExit(position, simKline);
+      if (exitResult) {
+        return { ...exitResult, exitTime: simKline.closeTime };
+      }
+
       if (position.barsInTrade > 0) {
         const trailingResult = this.computeTrailingStop(position, close, high, low);
         this.portfolio.updatePositionPriceExtremes(
@@ -541,11 +610,6 @@ export class MultiWatcherBacktestEngine {
           low,
           trailingResult?.newStopLoss
         );
-      }
-
-      const exitResult = this.checkExit(position, simKline);
-      if (exitResult) {
-        return { ...exitResult, exitTime: simKline.closeTime };
       }
     }
 
