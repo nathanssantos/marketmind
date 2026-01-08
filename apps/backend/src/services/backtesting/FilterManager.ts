@@ -1,7 +1,13 @@
 import { calculateEMA } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 import { checkAdxCondition, ADX_FILTER } from '../../utils/adx-filter';
+import { checkBtcCorrelation, type BtcCorrelationResult } from '../../utils/btc-correlation-filter';
+import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
+import { checkFundingRate, type FundingFilterResult } from '../../utils/funding-filter';
+import { checkMarketRegime, type MarketRegimeResult } from '../../utils/market-regime-filter';
+import { checkMtfCondition, getHigherTimeframe, MTF_FILTER, type MtfFilterResult } from '../../utils/mtf-filter';
 import { checkStochasticCondition, STOCHASTIC_FILTER } from '../../utils/stochastic-filter';
+import { checkVolumeCondition, type VolumeFilterResult } from '../../utils/volume-filter';
 
 export interface FilterConfig {
   onlyLong?: boolean;
@@ -14,6 +20,13 @@ export interface FilterConfig {
   dailyLossLimit?: number;
   maxConcurrentPositions?: number;
   maxTotalExposure?: number;
+  useMtfFilter?: boolean;
+  useBtcCorrelationFilter?: boolean;
+  useMarketRegimeFilter?: boolean;
+  useVolumeFilter?: boolean;
+  useFundingFilter?: boolean;
+  useConfluenceScoring?: boolean;
+  confluenceMinScore?: number;
 }
 
 export interface FilterStats {
@@ -30,6 +43,12 @@ export interface FilterStats {
   skippedLimitExpired: number;
   skippedStochastic: number;
   skippedAdx: number;
+  skippedMtf: number;
+  skippedBtcCorrelation: number;
+  skippedMarketRegime: number;
+  skippedVolume: number;
+  skippedFunding: number;
+  skippedConfluence: number;
 }
 
 export interface FilterContext {
@@ -66,6 +85,12 @@ export class FilterManager {
     skippedLimitExpired: 0,
     skippedStochastic: 0,
     skippedAdx: 0,
+    skippedMtf: 0,
+    skippedBtcCorrelation: 0,
+    skippedMarketRegime: 0,
+    skippedVolume: 0,
+    skippedFunding: 0,
+    skippedConfluence: 0,
   };
 
   constructor(config: FilterConfig) {
@@ -160,17 +185,18 @@ export class FilterManager {
   ): boolean {
     if (!this.config.useStochasticFilter) return true;
 
-    const { PERIOD, LOOKBACK_BUFFER } = STOCHASTIC_FILTER;
-    if (setupIndex < PERIOD + 1) return true;
+    const { K_PERIOD, K_SMOOTHING, D_PERIOD } = STOCHASTIC_FILTER;
+    const minRequired = K_PERIOD + K_SMOOTHING + D_PERIOD;
+    if (setupIndex < minRequired) return true;
 
-    const stochasticKlines = klines.slice(setupIndex - PERIOD - LOOKBACK_BUFFER, setupIndex + 1);
+    const stochasticKlines = klines.slice(0, setupIndex + 1);
     const result = checkStochasticCondition(stochasticKlines, direction);
 
     if (!result.isAllowed) {
       this.stats.skippedStochastic++;
       if (tradesCount < 3) {
         const currK = result.currentK?.toFixed(2) ?? 'null';
-        console.log(`[FilterManager] Stochastic filter blocked ${direction} trade - currK=${currK}, hadOversold=${result.hadOversold}, hadOverbought=${result.hadOverbought}, oversoldMoreRecent=${result.oversoldMoreRecent}`);
+        console.log(`[FilterManager] Stochastic filter blocked ${direction} trade - currK=${currK}, isOversold=${result.isOversold}, isOverbought=${result.isOverbought}`);
       }
       return false;
     }
@@ -275,6 +301,165 @@ export class FilterManager {
 
   incrementLimitExpired(): void {
     this.stats.skippedLimitExpired++;
+  }
+
+  checkMtfFilter(
+    htfKlines: Kline[],
+    direction: 'LONG' | 'SHORT',
+    htfInterval: string | null,
+    tradesCount: number
+  ): { passed: boolean; result: MtfFilterResult | null } {
+    if (!this.config.useMtfFilter || !htfInterval) {
+      return { passed: true, result: null };
+    }
+
+    if (htfKlines.length < MTF_FILTER.MIN_KLINES_FOR_EMA200) {
+      return { passed: true, result: null };
+    }
+
+    const result = checkMtfCondition(htfKlines, direction, htfInterval);
+
+    if (!result.isAllowed) {
+      this.stats.skippedMtf++;
+      if (tradesCount < 3) {
+        console.log(`[FilterManager] MTF filter blocked ${direction} trade - ${result.reason}`);
+      }
+      return { passed: false, result };
+    }
+
+    return { passed: true, result };
+  }
+
+  checkBtcCorrelationFilter(
+    btcKlines: Kline[],
+    direction: 'LONG' | 'SHORT',
+    symbol: string,
+    tradesCount: number
+  ): { passed: boolean; result: BtcCorrelationResult | null } {
+    if (!this.config.useBtcCorrelationFilter) {
+      return { passed: true, result: null };
+    }
+
+    if (btcKlines.length < 26) {
+      return { passed: true, result: null };
+    }
+
+    const result = checkBtcCorrelation(btcKlines, direction, symbol);
+
+    if (!result.isAllowed) {
+      this.stats.skippedBtcCorrelation++;
+      if (tradesCount < 3) {
+        console.log(`[FilterManager] BTC Correlation filter blocked ${direction} trade - ${result.reason}`);
+      }
+      return { passed: false, result };
+    }
+
+    return { passed: true, result };
+  }
+
+  checkMarketRegimeFilter(
+    klines: Kline[],
+    setupIndex: number,
+    setupType: string,
+    tradesCount: number
+  ): { passed: boolean; result: MarketRegimeResult | null } {
+    if (!this.config.useMarketRegimeFilter) {
+      return { passed: true, result: null };
+    }
+
+    if (setupIndex < 30) {
+      return { passed: true, result: null };
+    }
+
+    const regimeKlines = klines.slice(Math.max(0, setupIndex - 50), setupIndex + 1);
+    const result = checkMarketRegime(regimeKlines, setupType);
+
+    if (!result.isAllowed) {
+      this.stats.skippedMarketRegime++;
+      if (tradesCount < 3) {
+        console.log(`[FilterManager] Market Regime filter blocked trade - ${result.reason}`);
+      }
+      return { passed: false, result };
+    }
+
+    return { passed: true, result };
+  }
+
+  checkVolumeFilter(
+    klines: Kline[],
+    setupIndex: number,
+    direction: 'LONG' | 'SHORT',
+    setupType: string,
+    tradesCount: number
+  ): { passed: boolean; result: VolumeFilterResult | null } {
+    if (!this.config.useVolumeFilter) {
+      return { passed: true, result: null };
+    }
+
+    if (setupIndex < 21) {
+      return { passed: true, result: null };
+    }
+
+    const volumeKlines = klines.slice(Math.max(0, setupIndex - 30), setupIndex + 1);
+    const result = checkVolumeCondition(volumeKlines, direction, setupType);
+
+    if (!result.isAllowed) {
+      this.stats.skippedVolume++;
+      if (tradesCount < 3) {
+        console.log(`[FilterManager] Volume filter blocked ${direction} trade - ${result.reason}`);
+      }
+      return { passed: false, result };
+    }
+
+    return { passed: true, result };
+  }
+
+  checkFundingFilter(
+    fundingRate: number | null,
+    direction: 'LONG' | 'SHORT',
+    tradesCount: number
+  ): { passed: boolean; result: FundingFilterResult | null } {
+    if (!this.config.useFundingFilter) {
+      return { passed: true, result: null };
+    }
+
+    const result = checkFundingRate(fundingRate, direction);
+
+    if (!result.isAllowed) {
+      this.stats.skippedFunding++;
+      if (tradesCount < 3) {
+        console.log(`[FilterManager] Funding Rate filter blocked ${direction} trade - ${result.reason}`);
+      }
+      return { passed: false, result };
+    }
+
+    return { passed: true, result };
+  }
+
+  checkConfluenceScoring(
+    filterResults: FilterResults,
+    tradesCount: number
+  ): boolean {
+    if (!this.config.useConfluenceScoring) {
+      return true;
+    }
+
+    const minScore = this.config.confluenceMinScore ?? 60;
+    const result = calculateConfluenceScore(filterResults, minScore);
+
+    if (!result.isAllowed) {
+      this.stats.skippedConfluence++;
+      if (tradesCount < 3) {
+        console.log(`[FilterManager] Confluence Scoring blocked trade - score ${result.totalScore}/${result.maxPossibleScore} (${result.scorePercent}%), min required ${minScore}`);
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  getHigherTimeframe(interval: string): string | null {
+    return getHigherTimeframe(interval);
   }
 
   getSkipStats(): FilterStats {

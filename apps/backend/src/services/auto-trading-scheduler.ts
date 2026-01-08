@@ -1,6 +1,12 @@
 import { checkAdxCondition, ADX_FILTER } from '../utils/adx-filter';
+import { checkBtcCorrelation } from '../utils/btc-correlation-filter';
+import { calculateConfluenceScore, type FilterResults } from '../utils/confluence-scoring';
+import { checkFundingRate } from '../utils/funding-filter';
+import { checkMarketRegime } from '../utils/market-regime-filter';
+import { checkMtfCondition, getHigherTimeframe, MTF_FILTER } from '../utils/mtf-filter';
 import { checkStochasticCondition, STOCHASTIC_FILTER } from '../utils/stochastic-filter';
 import { checkTrendCondition } from '../utils/trend-filter';
+import { checkVolumeCondition } from '../utils/volume-filter';
 import type { Interval, Kline, MarketType, StrategyDefinition, TradingSetup } from '@marketmind/types';
 import { getDefaultFee } from '@marketmind/types';
 import { INTERVAL_MS, TIME_MS, TRADING_CONFIG, UNIT_MS } from '../constants';
@@ -87,15 +93,109 @@ const getPollingIntervalForTimeframe = (interval: string): number => {
   return Math.max(intervalMs, TIME_MS.MINUTE);
 };
 
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const CACHE_TTL_MS = 60 * 1000;
+
 export class AutoTradingScheduler {
   private activeWatchers: Map<string, ActiveWatcher> = new Map();
   private strategyLoader: StrategyLoader;
   private processingQueue: string[] = [];
   private isProcessingQueue = false;
 
+  private btcKlinesCache: Map<string, CacheEntry<Kline[]>> = new Map();
+  private htfKlinesCache: Map<string, CacheEntry<Kline[]>> = new Map();
+
   constructor() {
     this.strategyLoader = new StrategyLoader([STRATEGIES_DIR]);
     log('🚀 AutoTradingScheduler initialized');
+  }
+
+  private isCacheValid<T>(cache: CacheEntry<T> | undefined): cache is CacheEntry<T> {
+    if (!cache) return false;
+    return Date.now() - cache.timestamp < CACHE_TTL_MS;
+  }
+
+  private async getBtcKlines(interval: string): Promise<Kline[]> {
+    const cacheKey = `BTCUSDT-${interval}`;
+    const cached = this.btcKlinesCache.get(cacheKey);
+
+    if (this.isCacheValid(cached)) {
+      return cached.data;
+    }
+
+    const btcKlines = await db.query.klines.findMany({
+      where: and(
+        eq(klines.symbol, 'BTCUSDT'),
+        eq(klines.interval, interval)
+      ),
+      orderBy: [desc(klines.openTime)],
+      limit: 100,
+    });
+
+    const mappedKlines: Kline[] = btcKlines.reverse().map((k) => ({
+      symbol: k.symbol,
+      interval: k.interval as Interval,
+      openTime: k.openTime.getTime(),
+      closeTime: k.closeTime.getTime(),
+      open: k.open,
+      high: k.high,
+      low: k.low,
+      close: k.close,
+      volume: k.volume,
+      quoteVolume: k.quoteVolume ?? '0',
+      trades: k.trades ?? 0,
+      takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
+      takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
+    }));
+
+    this.btcKlinesCache.set(cacheKey, { data: mappedKlines, timestamp: Date.now() });
+    return mappedKlines;
+  }
+
+  private async getHtfKlines(symbol: string, htfInterval: string): Promise<Kline[]> {
+    const cacheKey = `${symbol}-${htfInterval}`;
+    const cached = this.htfKlinesCache.get(cacheKey);
+
+    if (this.isCacheValid(cached)) {
+      return cached.data;
+    }
+
+    const htfKlines = await db.query.klines.findMany({
+      where: and(
+        eq(klines.symbol, symbol),
+        eq(klines.interval, htfInterval)
+      ),
+      orderBy: [desc(klines.openTime)],
+      limit: 300,
+    });
+
+    const mappedKlines: Kline[] = htfKlines.reverse().map((k) => ({
+      symbol: k.symbol,
+      interval: k.interval as Interval,
+      openTime: k.openTime.getTime(),
+      closeTime: k.closeTime.getTime(),
+      open: k.open,
+      high: k.high,
+      low: k.low,
+      close: k.close,
+      volume: k.volume,
+      quoteVolume: k.quoteVolume ?? '0',
+      trades: k.trades ?? 0,
+      takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
+      takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
+    }));
+
+    this.htfKlinesCache.set(cacheKey, { data: mappedKlines, timestamp: Date.now() });
+    return mappedKlines;
+  }
+
+  private clearCaches(): void {
+    this.btcKlinesCache.clear();
+    this.htfKlinesCache.clear();
   }
 
   private queueWatcherProcessing(watcherId: string): void {
@@ -345,6 +445,11 @@ export class AutoTradingScheduler {
       .where(eq(activeWatchersTable.walletId, walletId));
 
     log('🔴 All watchers stopped for wallet', { walletId, count: watchersToStop.length });
+
+    if (this.activeWatchers.size === 0) {
+      this.clearCaches();
+      log('🧹 Caches cleared - no active watchers');
+    }
   }
 
   // eslint-disable-next-line complexity
@@ -779,8 +884,294 @@ export class AutoTradingScheduler {
         setupType: setup.type,
       });
 
+      const filterResults: FilterResults = {};
+
+      if (config.useBtcCorrelationFilter) {
+        const isAltcoin = !watcher.symbol.startsWith('BTC') && watcher.symbol !== 'BTCUSDT';
+
+        if (isAltcoin) {
+          const mappedBtcKlines = await this.getBtcKlines(watcher.interval);
+
+          if (mappedBtcKlines.length >= 26) {
+            const btcResult = checkBtcCorrelation(mappedBtcKlines, setup.direction, watcher.symbol);
+            filterResults.btcCorrelation = btcResult;
+
+            log('📊 BTC Correlation Filter Check', {
+              symbol: watcher.symbol,
+              direction: setup.direction,
+              btcTrend: btcResult.btcTrend,
+              btcPrice: btcResult.btcPrice?.toFixed(2) ?? 'null',
+              btcEma21: btcResult.btcEma21?.toFixed(2) ?? 'null',
+              isAllowed: btcResult.isAllowed,
+              reason: btcResult.reason,
+            });
+
+            if (!btcResult.isAllowed) {
+              log('🚫 BTC Correlation filter blocked trade (hard block)', {
+                direction: setup.direction,
+                btcTrend: btcResult.btcTrend,
+                reason: btcResult.reason,
+              });
+              return;
+            }
+          } else {
+            log('⚠️ Insufficient BTCUSDT klines for BTC Correlation filter - soft pass', {
+              available: mappedBtcKlines.length,
+              required: 26,
+            });
+          }
+        }
+      }
+
+      if (config.useFundingFilter && watcher.marketType === 'FUTURES') {
+        const { getBinanceFuturesDataService } = await import('./binance-futures-data');
+        try {
+          const fundingInfo = await getBinanceFuturesDataService().getMarkPrice(watcher.symbol);
+          const fundingResult = checkFundingRate(
+            fundingInfo?.lastFundingRate ? fundingInfo.lastFundingRate / 100 : null,
+            setup.direction,
+            fundingInfo?.nextFundingTime ? new Date(fundingInfo.nextFundingTime) : undefined
+          );
+          filterResults.fundingRate = fundingResult;
+
+          log('📊 Funding Rate Filter Check', {
+            symbol: watcher.symbol,
+            direction: setup.direction,
+            fundingRate: fundingResult.currentRate?.toFixed(6) ?? 'null',
+            fundingLevel: fundingResult.fundingLevel,
+            signal: fundingResult.signal,
+            isAllowed: fundingResult.isAllowed,
+            reason: fundingResult.reason,
+          });
+
+          if (!fundingResult.isAllowed) {
+            log('🚫 Funding Rate filter blocked trade', {
+              direction: setup.direction,
+              fundingRate: fundingResult.currentRate?.toFixed(6) ?? 'null',
+              fundingLevel: fundingResult.fundingLevel,
+              reason: fundingResult.reason,
+            });
+            return;
+          }
+        } catch (fundingError) {
+          log('⚠️ Failed to fetch funding rate - soft pass', {
+            error: fundingError instanceof Error ? fundingError.message : String(fundingError),
+          });
+        }
+      }
+
+      if (config.useMtfFilter) {
+        const htfInterval = getHigherTimeframe(watcher.interval);
+
+        if (htfInterval) {
+          const mappedHtfKlines = await this.getHtfKlines(watcher.symbol, htfInterval);
+
+          if (mappedHtfKlines.length >= MTF_FILTER.MIN_KLINES_FOR_EMA200) {
+            const mtfResult = checkMtfCondition(mappedHtfKlines, setup.direction, htfInterval);
+            filterResults.mtf = mtfResult;
+
+            log('📊 MTF Filter Check', {
+              symbol: watcher.symbol,
+              tradingInterval: watcher.interval,
+              htfInterval,
+              direction: setup.direction,
+              htfTrend: mtfResult.htfTrend,
+              ema50: mtfResult.ema50?.toFixed(2) ?? 'null',
+              ema200: mtfResult.ema200?.toFixed(2) ?? 'null',
+              price: mtfResult.price?.toFixed(2) ?? 'null',
+              goldenCross: mtfResult.goldenCross,
+              deathCross: mtfResult.deathCross,
+              isAllowed: mtfResult.isAllowed,
+              reason: mtfResult.reason,
+            });
+
+            if (!mtfResult.isAllowed) {
+              log('🚫 MTF filter blocked trade', {
+                direction: setup.direction,
+                htfTrend: mtfResult.htfTrend,
+                htfInterval,
+                reason: mtfResult.reason,
+              });
+              return;
+            }
+          } else {
+            log('⚠️ Insufficient HTF klines for MTF filter - soft pass', {
+              htfInterval,
+              available: mappedHtfKlines.length,
+              required: MTF_FILTER.MIN_KLINES_FOR_EMA200,
+            });
+          }
+        } else {
+          log('ℹ️ No higher timeframe available for MTF filter - soft pass', {
+            tradingInterval: watcher.interval,
+          });
+        }
+      }
+
+      if (config.useMarketRegimeFilter) {
+        const regimeKlines = await db.query.klines.findMany({
+          where: and(
+            eq(klines.symbol, watcher.symbol),
+            eq(klines.interval, watcher.interval),
+            eq(klines.marketType, watcher.marketType)
+          ),
+          orderBy: [desc(klines.openTime)],
+          limit: 50,
+        });
+
+        if (regimeKlines.length >= 30) {
+          const mappedRegimeKlines: Kline[] = regimeKlines.reverse().map((k) => ({
+            symbol: k.symbol,
+            interval: k.interval,
+            openTime: k.openTime.getTime(),
+            closeTime: k.closeTime.getTime(),
+            open: k.open,
+            high: k.high,
+            low: k.low,
+            close: k.close,
+            volume: k.volume,
+            quoteVolume: k.quoteVolume ?? '0',
+            trades: k.trades ?? 0,
+            takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
+            takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
+          }));
+
+          const regimeResult = checkMarketRegime(mappedRegimeKlines, setup.type);
+          filterResults.marketRegime = regimeResult;
+          filterResults.adxValue = regimeResult.adx ?? undefined;
+
+          log('📊 Market Regime Filter Check', {
+            symbol: watcher.symbol,
+            interval: watcher.interval,
+            setupType: setup.type,
+            regime: regimeResult.regime,
+            adx: regimeResult.adx?.toFixed(2) ?? 'null',
+            volatilityLevel: regimeResult.volatilityLevel,
+            recommendedStrategy: regimeResult.recommendedStrategy,
+            isAllowed: regimeResult.isAllowed,
+            reason: regimeResult.reason,
+          });
+
+          if (!regimeResult.isAllowed) {
+            log('🚫 Market Regime filter blocked trade', {
+              direction: setup.direction,
+              setupType: setup.type,
+              regime: regimeResult.regime,
+              recommendedStrategy: regimeResult.recommendedStrategy,
+              reason: regimeResult.reason,
+            });
+            return;
+          }
+        } else {
+          log('⚠️ Insufficient klines for Market Regime filter - soft pass', {
+            available: regimeKlines.length,
+            required: 30,
+          });
+        }
+      }
+
+      if (config.useVolumeFilter) {
+        const volumeKlines = await db.query.klines.findMany({
+          where: and(
+            eq(klines.symbol, watcher.symbol),
+            eq(klines.interval, watcher.interval),
+            eq(klines.marketType, watcher.marketType)
+          ),
+          orderBy: [desc(klines.openTime)],
+          limit: 30,
+        });
+
+        if (volumeKlines.length >= 21) {
+          const mappedVolumeKlines: Kline[] = volumeKlines.reverse().map((k) => ({
+            symbol: k.symbol,
+            interval: k.interval,
+            openTime: k.openTime.getTime(),
+            closeTime: k.closeTime.getTime(),
+            open: k.open,
+            high: k.high,
+            low: k.low,
+            close: k.close,
+            volume: k.volume,
+            quoteVolume: k.quoteVolume ?? '0',
+            trades: k.trades ?? 0,
+            takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
+            takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
+          }));
+
+          const volumeResult = checkVolumeCondition(mappedVolumeKlines, setup.direction, setup.type);
+          filterResults.volume = volumeResult;
+
+          log('📊 Volume Filter Check', {
+            symbol: watcher.symbol,
+            interval: watcher.interval,
+            direction: setup.direction,
+            currentVolume: volumeResult.currentVolume?.toFixed(2) ?? 'null',
+            averageVolume: volumeResult.averageVolume?.toFixed(2) ?? 'null',
+            volumeRatio: volumeResult.volumeRatio?.toFixed(2) ?? 'null',
+            isVolumeSpike: volumeResult.isVolumeSpike,
+            obvTrend: volumeResult.obvTrend,
+            isAllowed: volumeResult.isAllowed,
+            reason: volumeResult.reason,
+          });
+
+          if (!volumeResult.isAllowed) {
+            log('🚫 Volume filter blocked trade', {
+              direction: setup.direction,
+              setupType: setup.type,
+              volumeRatio: volumeResult.volumeRatio?.toFixed(2) ?? 'null',
+              reason: volumeResult.reason,
+            });
+            return;
+          }
+        } else {
+          log('⚠️ Insufficient klines for Volume filter - soft pass', {
+            available: volumeKlines.length,
+            required: 21,
+          });
+        }
+      }
+
+      if (config.useConfluenceScoring) {
+        const confluenceResult = calculateConfluenceScore(filterResults, config.confluenceMinScore);
+
+        log('📊 Confluence Scoring Result', {
+          symbol: watcher.symbol,
+          direction: setup.direction,
+          totalScore: confluenceResult.totalScore,
+          maxScore: confluenceResult.maxPossibleScore,
+          scorePercent: `${confluenceResult.scorePercent.toFixed(1)}%`,
+          alignmentBonus: confluenceResult.alignmentBonus,
+          recommendation: confluenceResult.recommendation,
+          isAllowed: confluenceResult.isAllowed,
+          minRequired: config.confluenceMinScore,
+          contributions: confluenceResult.contributions.map((c) => ({
+            filter: c.filterName,
+            score: c.score,
+            max: c.maxScore,
+            passed: c.passed,
+          })),
+        });
+
+        if (!confluenceResult.isAllowed) {
+          log('🚫 Confluence Scoring blocked trade', {
+            direction: setup.direction,
+            scorePercent: `${confluenceResult.scorePercent.toFixed(1)}%`,
+            minRequired: config.confluenceMinScore,
+            recommendation: confluenceResult.recommendation,
+            reason: confluenceResult.reason,
+          });
+          return;
+        }
+
+        log('✅ Confluence Scoring passed', {
+          scorePercent: `${confluenceResult.scorePercent.toFixed(1)}%`,
+          recommendation: confluenceResult.recommendation,
+        });
+      }
+
       if (config.useStochasticFilter) {
-        const { PERIOD, LOOKBACK_BUFFER } = STOCHASTIC_FILTER;
+        const { K_PERIOD, K_SMOOTHING, D_PERIOD } = STOCHASTIC_FILTER;
+        const minRequired = K_PERIOD + K_SMOOTHING + D_PERIOD;
         const stochasticKlines = await db
           .select()
           .from(klines)
@@ -791,56 +1182,53 @@ export class AutoTradingScheduler {
               eq(klines.marketType, watcher.marketType)
             )
           )
-          .orderBy(desc(klines.openTime))
-          .limit(PERIOD + LOOKBACK_BUFFER);
+          .orderBy(desc(klines.openTime));
 
-        if (stochasticKlines.length < PERIOD + 1) {
-          log('⚠️ Insufficient klines for Stochastic calculation', {
-            required: PERIOD + 1,
+        if (stochasticKlines.length < minRequired) {
+          log('⚠️ Insufficient klines for Slow Stochastic calculation - soft pass', {
+            required: minRequired,
             available: stochasticKlines.length,
           });
-          return;
-        }
+        } else {
+          const klinesForStochastic = stochasticKlines.reverse().map(k => ({
+            ...k,
+            openTime: k.openTime.getTime(),
+            closeTime: k.closeTime.getTime(),
+          })) as Kline[];
 
-        const klinesForStochastic = stochasticKlines.reverse().map(k => ({
-          ...k,
-          openTime: k.openTime.getTime(),
-          closeTime: k.closeTime.getTime(),
-        })) as Kline[];
+          const stochResult = checkStochasticCondition(klinesForStochastic, setup.direction);
 
-        const stochResult = checkStochasticCondition(klinesForStochastic, setup.direction);
-
-        log('📊 Stochastic Filter Check', {
-          symbol: watcher.symbol,
-          interval: watcher.interval,
-          direction: setup.direction,
-          currentK: stochResult.currentK?.toFixed(2) ?? 'null',
-          hadOversold: stochResult.hadOversold,
-          hadOverbought: stochResult.hadOverbought,
-          oversoldMoreRecent: stochResult.oversoldMoreRecent,
-          overboughtMoreRecent: stochResult.overboughtMoreRecent,
-          isAllowed: stochResult.isAllowed,
-          reason: stochResult.reason,
-        });
-
-        if (!stochResult.isAllowed) {
-          log('🚫 Stochastic filter blocked trade', {
+          log('📊 Slow Stochastic Filter Check', {
+            symbol: watcher.symbol,
+            interval: watcher.interval,
             direction: setup.direction,
             currentK: stochResult.currentK?.toFixed(2) ?? 'null',
-            hadOversold: stochResult.hadOversold,
-            hadOverbought: stochResult.hadOverbought,
+            currentD: stochResult.currentD?.toFixed(2) ?? 'null',
+            isOversold: stochResult.isOversold,
+            isOverbought: stochResult.isOverbought,
+            isAllowed: stochResult.isAllowed,
             reason: stochResult.reason,
           });
-          return;
-        }
 
-        log('✅ Stochastic filter passed', {
-          direction: setup.direction,
-          currentK: stochResult.currentK?.toFixed(2) ?? 'null',
-          hadOversold: stochResult.hadOversold,
-          hadOverbought: stochResult.hadOverbought,
-          condition: stochResult.reason,
-        });
+          if (!stochResult.isAllowed) {
+            log('🚫 Slow Stochastic filter blocked trade', {
+              direction: setup.direction,
+              currentK: stochResult.currentK?.toFixed(2) ?? 'null',
+              isOversold: stochResult.isOversold,
+              isOverbought: stochResult.isOverbought,
+              reason: stochResult.reason,
+            });
+            return;
+          }
+
+          log('✅ Slow Stochastic filter passed', {
+            direction: setup.direction,
+            currentK: stochResult.currentK?.toFixed(2) ?? 'null',
+            isOversold: stochResult.isOversold,
+            isOverbought: stochResult.isOverbought,
+            condition: stochResult.reason,
+          });
+        }
       }
 
       if (config.useAdxFilter) {

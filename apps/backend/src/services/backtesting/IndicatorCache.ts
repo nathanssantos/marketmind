@@ -181,8 +181,9 @@ export class IndicatorCache {
 
       case 'stochastic': {
         const kPeriod = params['kPeriod'] ?? 14;
+        const kSmoothing = params['kSmoothing'] ?? 3;
         const dPeriod = params['dPeriod'] ?? 3;
-        const result = calculateStochastic(this.klines, kPeriod, dPeriod);
+        const result = calculateStochastic(this.klines, kPeriod, kSmoothing, dPeriod);
         return {
           type,
           values: {

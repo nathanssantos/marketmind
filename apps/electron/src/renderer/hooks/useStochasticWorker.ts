@@ -9,6 +9,7 @@ export interface UseStochasticWorkerReturn {
   calculateStochastic: (
     klines: Kline[],
     kPeriod: number,
+    kSmoothing: number,
     dPeriod: number
   ) => Promise<StochasticResult>;
   terminate: () => void;
@@ -48,6 +49,7 @@ export const useStochasticWorker = (): UseStochasticWorkerReturn => {
   const calculateStochastic = useCallback((
     klines: Kline[],
     kPeriod: number,
+    kSmoothing: number,
     dPeriod: number
   ): Promise<StochasticResult> => {
     return new Promise((resolve, reject) => {
@@ -89,6 +91,7 @@ export const useStochasticWorker = (): UseStochasticWorkerReturn => {
         type: 'calculateStochastic',
         klines,
         kPeriod,
+        kSmoothing,
         dPeriod,
       });
     });

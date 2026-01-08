@@ -1350,7 +1350,7 @@ export const ChartCanvas = ({
 
     const calculate = async (): Promise<void> => {
       try {
-        const result = await calculateStochastic(klines, 14, 3);
+        const result = await calculateStochastic(klines, 14, 3, 3);
         setStochasticData(result);
       } catch (error) {
         console.error('Failed to calculate stochastic:', error);

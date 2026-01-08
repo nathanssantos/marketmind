@@ -409,6 +409,7 @@ export class IndicatorEngine {
       const stochResult = calculateStochastic(
         klines,
         toNumber(resolvedParams['kPeriod'], 14),
+        toNumber(resolvedParams['kSmoothing'], 3),
         toNumber(resolvedParams['dPeriod'], 3)
       );
       return {

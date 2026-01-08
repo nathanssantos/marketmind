@@ -43,7 +43,7 @@ describe('FilterManager', () => {
     vi.clearAllMocks();
     vi.mocked(calculateEMA).mockReturnValue([50000, 50100, 50200, 50300, 50400]);
     vi.mocked(checkAdxCondition).mockReturnValue({ isAllowed: true, adx: 25, plusDI: 30, minusDI: 15, isBullish: true, isBearish: false, isStrongTrend: true, reason: 'ADX passed' });
-    vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: true, currentK: 50, hadOversold: true, hadOverbought: false, oversoldMoreRecent: true, overboughtMoreRecent: false, reason: 'Stochastic passed' });
+    vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: true, currentK: 50, currentD: 48, isOversold: false, isOverbought: false, reason: 'Stochastic passed' });
     manager = new FilterManager({});
   });
 
@@ -264,7 +264,7 @@ describe('FilterManager', () => {
     });
 
     it('should block when stochastic condition fails', () => {
-      vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: false, currentK: 50, hadOversold: false, hadOverbought: true, oversoldMoreRecent: false, overboughtMoreRecent: true, reason: 'Failed' });
+      vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: false, currentK: 85, currentD: 82, isOversold: false, isOverbought: true, reason: 'LONG blocked: K is overbought' });
       const customManager = new FilterManager({ useStochasticFilter: true });
       const klines = createMockKlines(50);
 

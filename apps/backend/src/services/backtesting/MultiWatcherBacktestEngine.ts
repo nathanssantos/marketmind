@@ -21,6 +21,11 @@ import { computeTrailingStopCore, type TrailingStopCoreConfig } from '../trailin
 import { checkStochasticCondition, STOCHASTIC_FILTER } from '../../utils/stochastic-filter';
 import { checkAdxCondition, ADX_FILTER } from '../../utils/adx-filter';
 import { checkTrendCondition } from '../../utils/trend-filter';
+import { checkBtcCorrelation } from '../../utils/btc-correlation-filter';
+import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
+import { checkMarketRegime } from '../../utils/market-regime-filter';
+import { checkMtfCondition, getHigherTimeframe, MTF_FILTER } from '../../utils/mtf-filter';
+import { checkVolumeCondition } from '../../utils/volume-filter';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { and, eq, gte, lte, desc } from 'drizzle-orm';
@@ -64,6 +69,8 @@ export class MultiWatcherBacktestEngine {
     conflictsPerWatcher: {},
   };
   private trailingStopConfig: TrailingStopCoreConfig;
+  private btcKlinesCache: Map<string, Kline[]> = new Map();
+  private htfKlinesCache: Map<string, Kline[]> = new Map();
 
   constructor(private config: MultiWatcherBacktestConfig) {
     const marketType = config.marketType ?? 'SPOT';
@@ -98,6 +105,13 @@ export class MultiWatcherBacktestEngine {
       useAdxFilter: this.config.useAdxFilter ?? false,
       useTrendFilter: this.config.onlyWithTrend ?? false,
       minRiskRewardRatio: this.config.minRiskRewardRatio ?? 1.25,
+      useMtfFilter: this.config.useMtfFilter ?? true,
+      useBtcCorrelationFilter: this.config.useBtcCorrelationFilter ?? true,
+      useMarketRegimeFilter: this.config.useMarketRegimeFilter ?? true,
+      useVolumeFilter: this.config.useVolumeFilter ?? false,
+      useFundingFilter: this.config.useFundingFilter ?? false,
+      useConfluenceScoring: this.config.useConfluenceScoring ?? true,
+      confluenceMinScore: this.config.confluenceMinScore ?? 60,
     };
 
     this.portfolio = new SharedPortfolioManager(portfolioConfig, this.config.watchers.length);
@@ -182,6 +196,42 @@ export class MultiWatcherBacktestEngine {
       console.log(`[MultiWatcherBacktest] Trailing stop simulation enabled with ${simulationInterval} interval`);
     }
 
+    const intervalsNeeded = new Set(this.config.watchers.map((w) => w.interval));
+    const marketType = this.config.marketType ?? 'FUTURES';
+
+    if (this.config.useBtcCorrelationFilter) {
+      console.log('[MultiWatcherBacktest] Fetching BTCUSDT klines for BTC Correlation filter...');
+      for (const interval of intervalsNeeded) {
+        const btcKlines = await this.fetchKlinesFromDbWithBackfill(
+          'BTCUSDT',
+          interval as Interval,
+          marketType,
+          new Date(this.config.startDate),
+          new Date(this.config.endDate)
+        );
+        this.btcKlinesCache.set(interval, btcKlines);
+        console.log(`[MultiWatcherBacktest] Cached ${btcKlines.length} BTCUSDT klines for ${interval}`);
+      }
+    }
+
+    if (this.config.useMtfFilter) {
+      console.log('[MultiWatcherBacktest] Fetching HTF klines for MTF filter...');
+      for (const interval of intervalsNeeded) {
+        const htfInterval = getHigherTimeframe(interval);
+        if (htfInterval && !this.htfKlinesCache.has(`${interval}-htf`)) {
+          const htfKlines = await this.fetchKlinesFromDbWithBackfill(
+            'BTCUSDT',
+            htfInterval as Interval,
+            marketType,
+            new Date(this.config.startDate),
+            new Date(this.config.endDate)
+          );
+          this.htfKlinesCache.set(`${interval}-htf`, htfKlines);
+          console.log(`[MultiWatcherBacktest] Cached ${htfKlines.length} HTF klines (${htfInterval}) for ${interval}`);
+        }
+      }
+    }
+
     for (const watcherConfig of this.config.watchers) {
       const watcherId = `${watcherConfig.symbol}-${watcherConfig.interval}`;
       console.log(`[MultiWatcherBacktest] Initializing watcher: ${watcherId}`);
@@ -193,6 +243,21 @@ export class MultiWatcherBacktestEngine {
       if (needSimulationKlines) {
         simulationKlines = await this.fetchSimulationKlines(watcherConfig, simulationInterval);
         console.log(`[MultiWatcherBacktest] Fetched ${simulationKlines.length} simulation klines (${simulationInterval}) for ${watcherId}`);
+      }
+
+      if (this.config.useMtfFilter) {
+        const htfInterval = getHigherTimeframe(watcherConfig.interval);
+        if (htfInterval && !this.htfKlinesCache.has(`${watcherId}-htf`)) {
+          const htfKlines = await this.fetchKlinesFromDbWithBackfill(
+            watcherConfig.symbol,
+            htfInterval as Interval,
+            watcherConfig.marketType ?? 'FUTURES',
+            new Date(this.config.startDate),
+            new Date(this.config.endDate)
+          );
+          this.htfKlinesCache.set(`${watcherId}-htf`, htfKlines);
+          console.log(`[MultiWatcherBacktest] Cached ${htfKlines.length} HTF klines (${htfInterval}) for ${watcherId}`);
+        }
       }
 
       const setupTypes = watcherConfig.setupTypes ?? this.config.setupTypes ?? [];
@@ -337,11 +402,64 @@ export class MultiWatcherBacktestEngine {
     klines: Kline[],
     direction: 'LONG' | 'SHORT',
     strategy: StrategyDefinition | undefined,
-    stats: WatcherStats
+    stats: WatcherStats,
+    context?: {
+      symbol: string;
+      interval: string;
+      setupType: string;
+      btcKlines?: Kline[];
+      htfKlines?: Kline[];
+      htfInterval?: string | null;
+    }
   ): { passed: boolean } {
+    const filterResults: FilterResults = {};
+
+    if (this.config.useBtcCorrelationFilter && context?.btcKlines && context.btcKlines.length >= 26) {
+      const btcResult = checkBtcCorrelation(context.btcKlines, direction, context.symbol);
+      filterResults.btcCorrelation = btcResult;
+      if (!btcResult.isAllowed) {
+        stats.tradesSkipped++;
+        stats.skippedReasons['btcCorrelation'] = (stats.skippedReasons['btcCorrelation'] ?? 0) + 1;
+        return { passed: false };
+      }
+    }
+
+    if (this.config.useMtfFilter && context?.htfKlines && context.htfInterval && context.htfKlines.length >= MTF_FILTER.MIN_KLINES_FOR_EMA200) {
+      const mtfResult = checkMtfCondition(context.htfKlines, direction, context.htfInterval);
+      filterResults.mtf = mtfResult;
+      if (!mtfResult.isAllowed) {
+        stats.tradesSkipped++;
+        stats.skippedReasons['mtf'] = (stats.skippedReasons['mtf'] ?? 0) + 1;
+        return { passed: false };
+      }
+    }
+
+    if (this.config.useMarketRegimeFilter && klines.length >= 30 && context?.setupType) {
+      const regimeKlines = klines.slice(-50);
+      const regimeResult = checkMarketRegime(regimeKlines, context.setupType);
+      filterResults.marketRegime = regimeResult;
+      filterResults.adxValue = regimeResult.adx ?? undefined;
+      if (!regimeResult.isAllowed) {
+        stats.tradesSkipped++;
+        stats.skippedReasons['marketRegime'] = (stats.skippedReasons['marketRegime'] ?? 0) + 1;
+        return { passed: false };
+      }
+    }
+
+    if (this.config.useVolumeFilter && klines.length >= 21 && context?.setupType) {
+      const volumeKlines = klines.slice(-30);
+      const volumeResult = checkVolumeCondition(volumeKlines, direction, context.setupType);
+      filterResults.volume = volumeResult;
+      if (!volumeResult.isAllowed) {
+        stats.tradesSkipped++;
+        stats.skippedReasons['volume'] = (stats.skippedReasons['volume'] ?? 0) + 1;
+        return { passed: false };
+      }
+    }
+
     const globalStochasticEnabled = this.config.useStochasticFilter === true;
     if (globalStochasticEnabled) {
-      const requiredKlines = STOCHASTIC_FILTER.PERIOD + STOCHASTIC_FILTER.LOOKBACK_BUFFER + 1;
+      const requiredKlines = STOCHASTIC_FILTER.K_PERIOD + STOCHASTIC_FILTER.K_SMOOTHING + STOCHASTIC_FILTER.D_PERIOD;
       if (klines.length >= requiredKlines) {
         const stochResult = checkStochasticCondition(klines, direction);
         if (!stochResult.isAllowed) {
@@ -371,11 +489,22 @@ export class MultiWatcherBacktestEngine {
     if (shouldApplyTrend) {
       if (klines.length >= 2) {
         const trendResult = checkTrendCondition(klines, direction);
+        filterResults.trendAllowed = trendResult.isAllowed;
         if (!trendResult.isAllowed) {
           stats.tradesSkipped++;
           stats.skippedReasons['trend'] = (stats.skippedReasons['trend'] ?? 0) + 1;
           return { passed: false };
         }
+      }
+    }
+
+    if (this.config.useConfluenceScoring) {
+      const minScore = this.config.confluenceMinScore ?? 60;
+      const confluenceResult = calculateConfluenceScore(filterResults, minScore);
+      if (!confluenceResult.isAllowed) {
+        stats.tradesSkipped++;
+        stats.skippedReasons['confluence'] = (stats.skippedReasons['confluence'] ?? 0) + 1;
+        return { passed: false };
       }
     }
 
@@ -407,11 +536,24 @@ export class MultiWatcherBacktestEngine {
     const klinesUpToSetup = watcher.klines.slice(0, event.klineIndex + 1);
     const setupStrategy = watcher.strategies.find((s) => s.id === event.setup.type);
 
+    const btcKlines = this.btcKlinesCache.get(event.watcherInterval);
+    const htfKlinesKey = `${watcherId}-htf`;
+    const htfKlines = this.htfKlinesCache.get(htfKlinesKey);
+    const htfInterval = getHigherTimeframe(event.watcherInterval);
+
     const filterResult = this.applyIndicatorFilters(
       klinesUpToSetup,
       event.setup.direction,
       setupStrategy,
-      watcher.stats
+      watcher.stats,
+      {
+        symbol: event.watcherSymbol,
+        interval: event.watcherInterval,
+        setupType: event.setup.type,
+        btcKlines: btcKlines?.slice(0, event.klineIndex + 1),
+        htfKlines,
+        htfInterval,
+      }
     );
     if (!filterResult.passed) return;
 

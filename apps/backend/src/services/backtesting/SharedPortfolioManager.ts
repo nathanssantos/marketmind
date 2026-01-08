@@ -18,6 +18,13 @@ export interface PortfolioConfig {
   useAdxFilter: boolean;
   useTrendFilter: boolean;
   minRiskRewardRatio: number;
+  useMtfFilter?: boolean;
+  useBtcCorrelationFilter?: boolean;
+  useMarketRegimeFilter?: boolean;
+  useVolumeFilter?: boolean;
+  useFundingFilter?: boolean;
+  useConfluenceScoring?: boolean;
+  confluenceMinScore?: number;
 }
 
 export interface SharedPosition {

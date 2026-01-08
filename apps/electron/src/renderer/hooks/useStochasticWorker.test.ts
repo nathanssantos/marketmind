@@ -60,7 +60,7 @@ describe('useStochasticWorker', () => {
   it('should return a promise when calculateStochastic is called', () => {
     const { result } = renderHook(() => useStochasticWorker());
     const mockKlines = [createMockKline()];
-    const promise = result.current.calculateStochastic(mockKlines, 14, 3);
+    const promise = result.current.calculateStochastic(mockKlines, 14, 3, 3);
     expect(promise).toBeInstanceOf(Promise);
   });
 
@@ -68,27 +68,27 @@ describe('useStochasticWorker', () => {
     const { result, unmount } = renderHook(() => useStochasticWorker());
     const mockKlines = [createMockKline()];
 
-    const promise = result.current.calculateStochastic(mockKlines, 14, 3);
+    const promise = result.current.calculateStochastic(mockKlines, 14, 3, 3);
     expect(promise).toBeInstanceOf(Promise);
 
     unmount();
   });
 
-  it('should accept different k and d period parameters', () => {
+  it('should accept different k period, k smoothing, and d period parameters', () => {
     const { result } = renderHook(() => useStochasticWorker());
     const mockKlines = [createMockKline()];
 
-    expect(() => result.current.calculateStochastic(mockKlines, 5, 3)).not.toThrow();
-    expect(() => result.current.calculateStochastic(mockKlines, 14, 5)).not.toThrow();
-    expect(() => result.current.calculateStochastic(mockKlines, 21, 7)).not.toThrow();
+    expect(() => result.current.calculateStochastic(mockKlines, 5, 3, 3)).not.toThrow();
+    expect(() => result.current.calculateStochastic(mockKlines, 14, 3, 5)).not.toThrow();
+    expect(() => result.current.calculateStochastic(mockKlines, 21, 5, 7)).not.toThrow();
   });
 
   it('should handle multiple consecutive calls', () => {
     const { result } = renderHook(() => useStochasticWorker());
     const mockKlines = [createMockKline()];
 
-    const promise1 = result.current.calculateStochastic(mockKlines, 14, 3);
-    const promise2 = result.current.calculateStochastic(mockKlines, 14, 3);
+    const promise1 = result.current.calculateStochastic(mockKlines, 14, 3, 3);
+    const promise2 = result.current.calculateStochastic(mockKlines, 14, 3, 3);
 
     expect(promise1).toBeInstanceOf(Promise);
     expect(promise2).toBeInstanceOf(Promise);
@@ -97,7 +97,7 @@ describe('useStochasticWorker', () => {
 
   it('should handle empty klines array', () => {
     const { result } = renderHook(() => useStochasticWorker());
-    const promise = result.current.calculateStochastic([], 14, 3);
+    const promise = result.current.calculateStochastic([], 14, 3, 3);
     expect(promise).toBeInstanceOf(Promise);
   });
 
@@ -111,7 +111,7 @@ describe('useStochasticWorker', () => {
       createMockKline({ openTime: 5000, close: 112 }),
     ];
 
-    const promise = result.current.calculateStochastic(mockKlines, 14, 3);
+    const promise = result.current.calculateStochastic(mockKlines, 14, 3, 3);
     expect(promise).toBeInstanceOf(Promise);
   });
 
@@ -147,7 +147,16 @@ describe('useStochasticWorker', () => {
     const mockKlines = [createMockKline()];
 
     [5, 10, 14, 21, 28].forEach((kPeriod) => {
-      expect(() => result.current.calculateStochastic(mockKlines, kPeriod, 3)).not.toThrow();
+      expect(() => result.current.calculateStochastic(mockKlines, kPeriod, 3, 3)).not.toThrow();
+    });
+  });
+
+  it('should accept valid kSmoothing values', () => {
+    const { result } = renderHook(() => useStochasticWorker());
+    const mockKlines = [createMockKline()];
+
+    [1, 3, 5, 7].forEach((kSmoothing) => {
+      expect(() => result.current.calculateStochastic(mockKlines, 14, kSmoothing, 3)).not.toThrow();
     });
   });
 
@@ -156,7 +165,7 @@ describe('useStochasticWorker', () => {
     const mockKlines = [createMockKline()];
 
     [3, 5, 7, 9, 14].forEach((dPeriod) => {
-      expect(() => result.current.calculateStochastic(mockKlines, 14, dPeriod)).not.toThrow();
+      expect(() => result.current.calculateStochastic(mockKlines, 14, 3, dPeriod)).not.toThrow();
     });
   });
 });

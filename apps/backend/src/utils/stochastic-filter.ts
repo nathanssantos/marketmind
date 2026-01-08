@@ -4,98 +4,80 @@ import type { Kline } from '@marketmind/types';
 export interface StochasticFilterResult {
   isAllowed: boolean;
   currentK: number | null;
-  hadOversold: boolean;
-  hadOverbought: boolean;
-  oversoldMoreRecent: boolean;
-  overboughtMoreRecent: boolean;
+  currentD: number | null;
+  isOversold: boolean;
+  isOverbought: boolean;
   reason: string;
 }
 
 export const STOCHASTIC_FILTER = {
-  PERIOD: 14,
-  SMOOTHING: 3,
+  K_PERIOD: 14,
+  K_SMOOTHING: 3,
+  D_PERIOD: 3,
   OVERSOLD_THRESHOLD: 20,
   OVERBOUGHT_THRESHOLD: 80,
-  LOOKBACK_BUFFER: 10,
 } as const;
 
 export const checkStochasticCondition = (
   klines: Kline[],
   direction: 'LONG' | 'SHORT'
 ): StochasticFilterResult => {
-  const { PERIOD, SMOOTHING, OVERSOLD_THRESHOLD, OVERBOUGHT_THRESHOLD } = STOCHASTIC_FILTER;
+  const { K_PERIOD, K_SMOOTHING, D_PERIOD, OVERSOLD_THRESHOLD, OVERBOUGHT_THRESHOLD } =
+    STOCHASTIC_FILTER;
 
-  if (klines.length < PERIOD + 1) {
+  const minRequired = K_PERIOD + K_SMOOTHING + D_PERIOD;
+
+  if (klines.length < minRequired) {
     return {
       isAllowed: true,
       currentK: null,
-      hadOversold: false,
-      hadOverbought: false,
-      oversoldMoreRecent: false,
-      overboughtMoreRecent: false,
-      reason: 'Insufficient klines for calculation',
+      currentD: null,
+      isOversold: false,
+      isOverbought: false,
+      reason: `Insufficient klines for Slow Stochastic calculation (${klines.length} < ${minRequired}) - soft pass`,
     };
   }
 
-  const stochResult = calculateStochastic(klines, PERIOD, SMOOTHING);
-  const currentK = stochResult.k[stochResult.k.length - 1];
+  const stochResult = calculateStochastic(klines, K_PERIOD, K_SMOOTHING, D_PERIOD);
+  const lastIndex = stochResult.k.length - 1;
+  const currentK = stochResult.k[lastIndex];
+  const currentD = stochResult.d[lastIndex];
 
   if (currentK === null || currentK === undefined) {
     return {
       isAllowed: true,
       currentK: null,
-      hadOversold: false,
-      hadOverbought: false,
-      oversoldMoreRecent: false,
-      overboughtMoreRecent: false,
-      reason: 'Stochastic calculation returned null',
+      currentD: null,
+      isOversold: false,
+      isOverbought: false,
+      reason: 'Slow Stochastic calculation returned null - soft pass',
     };
   }
 
-  let lastOversoldIndex = -1;
-  let lastOverboughtIndex = -1;
+  const isOversold = currentK < OVERSOLD_THRESHOLD;
+  const isOverbought = currentK > OVERBOUGHT_THRESHOLD;
 
-  for (let i = 0; i < stochResult.k.length; i += 1) {
-    const k = stochResult.k[i];
-    if (k === null || k === undefined) continue;
-
-    if (k < OVERSOLD_THRESHOLD) lastOversoldIndex = i;
-    if (k > OVERBOUGHT_THRESHOLD) lastOverboughtIndex = i;
-  }
-
-  const hadOversold = lastOversoldIndex >= 0;
-  const hadOverbought = lastOverboughtIndex >= 0;
-  const oversoldMoreRecent = lastOversoldIndex > lastOverboughtIndex;
-  const overboughtMoreRecent = lastOverboughtIndex > lastOversoldIndex;
-
-  const isLongAllowed = direction === 'LONG' && hadOversold && (!hadOverbought || oversoldMoreRecent);
-  const isShortAllowed = direction === 'SHORT' && hadOverbought && (!hadOversold || overboughtMoreRecent);
+  const isLongAllowed = direction === 'LONG' && !isOverbought;
+  const isShortAllowed = direction === 'SHORT' && !isOversold;
   const isAllowed = isLongAllowed || isShortAllowed;
 
   let reason: string;
-  if (isAllowed) {
-    reason = direction === 'LONG'
-      ? `K was in oversold and hasn't crossed to overbought yet (current K: ${currentK.toFixed(2)})`
-      : `K was in overbought and hasn't crossed to oversold yet (current K: ${currentK.toFixed(2)})`;
+  if (direction === 'LONG') {
+    reason = isAllowed
+      ? `LONG allowed: Slow Stoch K (${currentK.toFixed(2)}) is not overbought (≤ ${OVERBOUGHT_THRESHOLD})`
+      : `LONG blocked: Slow Stoch K (${currentK.toFixed(2)}) is overbought (> ${OVERBOUGHT_THRESHOLD})`;
   } else {
-    if (direction === 'LONG') {
-      reason = hadOversold
-        ? `K crossed to overbought after being oversold`
-        : `K never reached oversold zone (< ${OVERSOLD_THRESHOLD})`;
-    } else {
-      reason = hadOverbought
-        ? `K crossed to oversold after being overbought`
-        : `K never reached overbought zone (> ${OVERBOUGHT_THRESHOLD})`;
-    }
+    reason = isAllowed
+      ? `SHORT allowed: Slow Stoch K (${currentK.toFixed(2)}) is not oversold (≥ ${OVERSOLD_THRESHOLD})`
+      : `SHORT blocked: Slow Stoch K (${currentK.toFixed(2)}) is oversold (< ${OVERSOLD_THRESHOLD})`;
   }
 
   return {
     isAllowed,
     currentK,
-    hadOversold,
-    hadOverbought,
-    oversoldMoreRecent,
-    overboughtMoreRecent,
+    currentD: currentD ?? null,
+    isOversold,
+    isOverbought,
     reason,
   };
 };

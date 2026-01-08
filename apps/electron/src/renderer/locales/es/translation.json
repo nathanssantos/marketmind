@@ -236,7 +236,7 @@
       "newWindow": "Abrir Gráfico en Nueva Ventana",
       "display": "Visualización",
       "volume": "Volumen",
-      "stochastic": "Estocástico",
+      "stochastic": "Estocástico Lento",
       "rsi": "RSI (2)",
       "bollingerBands": "Bandas de Bollinger",
       "atr": "ATR Trailing Stop",
@@ -271,7 +271,7 @@
       "names": {
         "volume": "Volumen",
         "rsi": "RSI",
-        "stochastic": "Estocástico",
+        "stochastic": "Estocástico Lento",
         "macd": "MACD",
         "adx": "ADX",
         "williamsR": "Williams %R",

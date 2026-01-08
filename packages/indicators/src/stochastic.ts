@@ -9,20 +9,51 @@ export interface StochasticResult {
   d: (number | null)[];
 }
 
+const calculatePureSMA = (values: (number | null)[], period: number): (number | null)[] => {
+  const len = values.length;
+  if (period <= 0 || len === 0) {
+    return [];
+  }
+
+  const result: (number | null)[] = new Array(len);
+
+  for (let i = 0; i < len; i++) {
+    if (i < period - 1) {
+      result[i] = null;
+      continue;
+    }
+
+    let sum = 0;
+    let count = 0;
+    for (let j = i - period + 1; j <= i; j++) {
+      const val = values[j];
+      if (val !== null && val !== undefined) {
+        sum += val;
+        count++;
+      }
+    }
+
+    result[i] = count === period ? sum / period : null;
+  }
+
+  return result;
+};
+
 export const calculateStochastic = (
   klines: Kline[],
   kPeriod: number = 14,
+  kSmoothing: number = 3,
   dPeriod: number = 3
 ): StochasticResult => {
-  if (klines.length === 0 || kPeriod <= 0 || dPeriod <= 0) {
+  if (klines.length === 0 || kPeriod <= 0 || kSmoothing <= 0 || dPeriod <= 0) {
     return { k: [], d: [] };
   }
 
   const len = klines.length;
-  const k: (number | null)[] = new Array(len);
+  const fastK: (number | null)[] = new Array(len);
 
   for (let i = 0; i < kPeriod - 1 && i < len; i++) {
-    k[i] = null;
+    fastK[i] = null;
   }
 
   for (let i = kPeriod - 1; i < len; i++) {
@@ -41,88 +72,28 @@ export const calculateStochastic = (
 
     const currentKline = klines[i];
     if (!currentKline) {
-      k[i] = null;
+      fastK[i] = null;
       continue;
     }
     const currentClose = getKlineClose(currentKline);
 
     if (highestHigh === lowestLow) {
-      k[i] = 50;
+      fastK[i] = 50;
       continue;
     }
 
-    k[i] = ((currentClose - lowestLow) / (highestHigh - lowestLow)) * 100;
+    fastK[i] = ((currentClose - lowestLow) / (highestHigh - lowestLow)) * 100;
   }
 
-  const d = calculateSMA(k, dPeriod);
+  const slowK = calculatePureSMA(fastK, kSmoothing);
+  const slowD = calculatePureSMA(slowK, dPeriod);
 
-  return { k, d };
-};
-
-const calculateSMA = (values: (number | null)[], period: number): (number | null)[] => {
-  const len = values.length;
-  if (period <= 0 || len === 0) {
-    return [];
-  }
-
-  const result: (number | null)[] = new Array(len);
-  const multiplier = 2 / (period + 1);
-
-  let firstValidIndex = -1;
-  for (let i = 0; i < len; i++) {
-    if (values[i] !== null) {
-      firstValidIndex = i;
-      break;
-    }
-  }
-
-  if (firstValidIndex === -1) {
-    for (let i = 0; i < len; i++) result[i] = null;
-    return result;
-  }
-
-  for (let i = 0; i < firstValidIndex; i++) {
-    result[i] = null;
-  }
-
-  for (let i = firstValidIndex; i < len; i++) {
-    const validValuesCount = i - firstValidIndex + 1;
-
-    if (validValuesCount < period) {
-      result[i] = null;
-      continue;
-    }
-
-    if (validValuesCount === period) {
-      let sum = 0;
-      let count = 0;
-      for (let j = 0; j < period; j++) {
-        const val = values[firstValidIndex + j];
-        if (val !== null && val !== undefined) {
-          sum += val;
-          count++;
-        }
-      }
-      result[i] = count > 0 ? sum / count : null;
-      continue;
-    }
-
-    const previousEMA = result[i - 1];
-    const currentValue = values[i];
-
-    if (previousEMA === null || previousEMA === undefined || currentValue === null || currentValue === undefined) {
-      result[i] = null;
-      continue;
-    }
-
-    result[i] = (currentValue - previousEMA) * multiplier + previousEMA;
-  }
-
-  return result;
+  return { k: slowK, d: slowD };
 };
 
 export interface StochasticConfig {
   kPeriod: number;
+  kSmoothing: number;
   dPeriod: number;
   enabled: boolean;
   kColor: string;
@@ -133,7 +104,8 @@ export interface StochasticConfig {
 
 export const DEFAULT_STOCHASTIC_CONFIG: StochasticConfig = {
   kPeriod: 14,
-  dPeriod: 9,
+  kSmoothing: 3,
+  dPeriod: 3,
   enabled: false,
   kColor: '#2196f3',
   dColor: '#ff5722',

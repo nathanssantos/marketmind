@@ -225,7 +225,7 @@
       "newWindow": "Ouvrir le Graphique dans une Nouvelle Fenêtre",
       "display": "Affichage",
       "volume": "Volume",
-      "stochastic": "Stochastique",
+      "stochastic": "Stochastique Lent",
       "rsi": "RSI (2)",
       "bollingerBands": "Bandes de Bollinger",
       "atr": "ATR Trailing Stop",
@@ -260,7 +260,7 @@
       "names": {
         "volume": "Volume",
         "rsi": "RSI",
-        "stochastic": "Stochastique",
+        "stochastic": "Stochastique Lent",
         "macd": "MACD",
         "adx": "ADX",
         "williamsR": "Williams %R",

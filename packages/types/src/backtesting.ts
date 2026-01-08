@@ -16,9 +16,17 @@ export interface BacktestConfig {
   maxPositionSize?: number; // Max % of capital per trade
   commission?: number; // Trading fee % (default 0.1% spot, 0.04% futures)
   slippagePercent?: number; // Slippage % for market orders - SL (default 0.05%)
-  useStochasticFilter?: boolean; // LONG: K was oversold and hasn't crossed to overbought; SHORT: K was overbought and hasn't crossed to oversold
+  useStochasticFilter?: boolean; // Slow Stochastic: LONG only when oversold (K < 20), SHORT only when overbought (K > 80)
   useAdxFilter?: boolean; // Only allow LONG when +DI > -DI, SHORT when -DI > +DI (ADX >= 20)
   useOptimizedSettings?: boolean; // Use strategy's optimizedParams instead of config values
+
+  useMtfFilter?: boolean; // Use Multi-Timeframe filter (HTF EMA50/EMA200)
+  useBtcCorrelationFilter?: boolean; // Block altcoin trades against BTC trend
+  useMarketRegimeFilter?: boolean; // Block trades in wrong market regime
+  useVolumeFilter?: boolean; // Require volume confirmation
+  useFundingFilter?: boolean; // Block trades with extreme funding rates
+  useConfluenceScoring?: boolean; // Use confluence scoring system
+  confluenceMinScore?: number; // Minimum confluence score to allow trade (default: 60)
 
   marketType?: 'SPOT' | 'FUTURES'; // Market type (default: SPOT)
   useBnbDiscount?: boolean; // Apply 25% BNB discount to fees (default: false)

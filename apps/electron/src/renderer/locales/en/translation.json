@@ -180,7 +180,7 @@
       "newWindow": "Open Chart in New Window",
       "display": "Display",
       "volume": "Volume",
-      "stochastic": "Stochastic",
+      "stochastic": "Slow Stochastic",
       "rsi": "RSI (2)",
       "bollingerBands": "Bollinger Bands",
       "atr": "ATR Trailing Stop",
