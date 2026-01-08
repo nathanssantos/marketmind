@@ -53,10 +53,17 @@ interface BinanceKlineResponse {
 class KlineGapFiller {
   private checkInterval: NodeJS.Timeout | null = null;
   private isRunning = false;
+  private initialCheckDone = false;
 
   async start(): Promise<void> {
     if (this.checkInterval) {
       return;
+    }
+
+    if (!this.initialCheckDone) {
+      logger.info('Starting initial gap check for all stored pairs...');
+      await this.checkAllStoredPairs();
+      this.initialCheckDone = true;
     }
 
     await this.checkAndFillGaps();
@@ -64,6 +71,46 @@ class KlineGapFiller {
     this.checkInterval = setInterval(async () => {
       await this.checkAndFillGaps();
     }, GAP_CHECK_INTERVAL);
+  }
+
+  private async checkAllStoredPairs(): Promise<void> {
+    try {
+      const distinctPairs = await db
+        .selectDistinct({
+          symbol: klines.symbol,
+          interval: klines.interval,
+          marketType: klines.marketType,
+        })
+        .from(klines);
+
+      logger.info({ pairsCount: distinctPairs.length }, 'Found stored pairs to check');
+
+      for (const pair of distinctPairs) {
+        try {
+          const activePair: ActivePair = {
+            symbol: pair.symbol,
+            interval: pair.interval as Interval,
+            marketType: pair.marketType,
+          };
+
+          const gaps = await this.detectGaps(activePair);
+
+          if (gaps.length > 0) {
+            logger.info({ symbol: pair.symbol, interval: pair.interval, marketType: pair.marketType, gaps: gaps.length }, 'Found gaps in stored pair');
+
+            for (const gap of gaps) {
+              await this.fillGap(gap);
+            }
+          }
+        } catch (error) {
+          logger.error({ pair, error }, 'Error checking gaps for stored pair');
+        }
+      }
+
+      logger.info('Initial gap check complete');
+    } catch (error) {
+      logger.error({ error }, 'Error in initial gap check');
+    }
   }
 
   stop(): void {
@@ -139,7 +186,13 @@ class KlineGapFiller {
     const now = Date.now();
     const intervalMs = getIntervalMilliseconds(pair.interval);
     const lookbackMs = REQUIRED_KLINES * intervalMs;
-    const startTime = new Date(now - lookbackMs);
+
+    const BINANCE_SPOT_START = new Date('2017-08-17').getTime();
+    const BINANCE_FUTURES_START = new Date('2019-09-08').getTime();
+    const minStartTime = pair.marketType === 'FUTURES' ? BINANCE_FUTURES_START : BINANCE_SPOT_START;
+
+    const calculatedStartTime = now - lookbackMs;
+    const startTime = new Date(Math.max(calculatedStartTime, minStartTime));
     const endTime = new Date(now);
 
     const dbKlines = await db.query.klines.findMany({
@@ -223,10 +276,11 @@ class KlineGapFiller {
   }
 
   private async fillGap(gap: GapInfo): Promise<void> {
-    logger.debug(
+    logger.info(
       {
         symbol: gap.symbol,
         interval: gap.interval,
+        marketType: gap.marketType,
         gapStart: gap.gapStart.toISOString(),
         gapEnd: gap.gapEnd.toISOString(),
         missingCandles: gap.missingCandles,
@@ -273,7 +327,7 @@ class KlineGapFiller {
         }
       }
 
-      logger.debug({ symbol: gap.symbol, interval: gap.interval, inserted }, 'Gap filled');
+      logger.info({ symbol: gap.symbol, interval: gap.interval, marketType: gap.marketType, inserted }, 'Gap filled successfully');
     } catch (error) {
       logger.error({ gap, error }, 'Error filling gap');
     }
