@@ -20,7 +20,7 @@ import { calculateATR } from '@marketmind/indicators';
 import { computeTrailingStopCore, type TrailingStopCoreConfig } from '../trailing-stop-core';
 import { checkStochasticCondition, STOCHASTIC_FILTER } from '../../utils/stochastic-filter';
 import { checkAdxCondition, ADX_FILTER } from '../../utils/adx-filter';
-import { checkTrendCondition, TREND_FILTER } from '../../utils/trend-filter';
+import { checkTrendCondition } from '../../utils/trend-filter';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { and, eq, gte, lte, desc } from 'drizzle-orm';
@@ -369,7 +369,7 @@ export class MultiWatcherBacktestEngine {
     const shouldApplyTrend = globalTrendEnabled || strategyTrendEnabled;
 
     if (shouldApplyTrend) {
-      if (klines.length >= TREND_FILTER.MIN_KLINES_REQUIRED) {
+      if (klines.length >= 2) {
         const trendResult = checkTrendCondition(klines, direction);
         if (!trendResult.isAllowed) {
           stats.tradesSkipped++;

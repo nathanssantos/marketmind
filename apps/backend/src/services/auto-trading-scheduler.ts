@@ -1,6 +1,6 @@
 import { checkAdxCondition, ADX_FILTER } from '../utils/adx-filter';
 import { checkStochasticCondition, STOCHASTIC_FILTER } from '../utils/stochastic-filter';
-import { checkTrendCondition, TREND_FILTER } from '../utils/trend-filter';
+import { checkTrendCondition } from '../utils/trend-filter';
 import type { Interval, Kline, MarketType, StrategyDefinition, TradingSetup } from '@marketmind/types';
 import { getDefaultFee } from '@marketmind/types';
 import { INTERVAL_MS, TIME_MS, TRADING_CONFIG, UNIT_MS } from '../constants';
@@ -921,8 +921,6 @@ export class AutoTradingScheduler {
       });
 
       if (shouldApplyTrendFilter) {
-        const { MIN_KLINES_REQUIRED } = TREND_FILTER;
-
         const trendKlines = await db
           .select()
           .from(klines)
@@ -933,21 +931,19 @@ export class AutoTradingScheduler {
               eq(klines.marketType, watcher.marketType)
             )
           )
-          .orderBy(desc(klines.openTime))
-          .limit(MIN_KLINES_REQUIRED);
+          .orderBy(desc(klines.openTime));
 
         log('🔍 Trend Filter Debug - Klines fetched', {
           symbol: watcher.symbol,
           interval: watcher.interval,
-          requested: MIN_KLINES_REQUIRED,
           received: trendKlines.length,
           newestClose: trendKlines[0]?.close ?? 'null',
           newestTime: trendKlines[0]?.openTime?.toISOString() ?? 'null',
         });
 
-        if (trendKlines.length < MIN_KLINES_REQUIRED) {
-          log('⚠️ Insufficient klines for Trend (EMA200) calculation', {
-            required: MIN_KLINES_REQUIRED,
+        if (trendKlines.length < 2) {
+          log('⚠️ Insufficient klines for Trend (EMA21) calculation', {
+            required: 2,
             available: trendKlines.length,
           });
           return;
@@ -961,12 +957,12 @@ export class AutoTradingScheduler {
 
         const trendResult = checkTrendCondition(klinesForTrend, setup.direction);
 
-        log('📊 Trend Filter Check (EMA100 vs EMA200)', {
+        log('📊 Trend Filter Check (Price vs EMA21)', {
           symbol: watcher.symbol,
           interval: watcher.interval,
           direction: setup.direction,
-          ema100: trendResult.ema100?.toFixed(2) ?? 'null',
-          ema200: trendResult.ema200?.toFixed(2) ?? 'null',
+          price: trendResult.price?.toFixed(2) ?? 'null',
+          ema21: trendResult.ema21?.toFixed(2) ?? 'null',
           isBullish: trendResult.isBullish,
           isBearish: trendResult.isBearish,
           isAllowed: trendResult.isAllowed,
@@ -976,8 +972,8 @@ export class AutoTradingScheduler {
         if (!trendResult.isAllowed) {
           log('🚫 Trend filter blocked trade', {
             direction: setup.direction,
-            ema100: trendResult.ema100?.toFixed(2) ?? 'null',
-            ema200: trendResult.ema200?.toFixed(2) ?? 'null',
+            price: trendResult.price?.toFixed(2) ?? 'null',
+            ema21: trendResult.ema21?.toFixed(2) ?? 'null',
             reason: trendResult.reason,
           });
           return;
@@ -985,8 +981,8 @@ export class AutoTradingScheduler {
 
         log('✅ Trend filter passed', {
           direction: setup.direction,
-          ema100: trendResult.ema100?.toFixed(2) ?? 'null',
-          ema200: trendResult.ema200?.toFixed(2) ?? 'null',
+          price: trendResult.price?.toFixed(2) ?? 'null',
+          ema21: trendResult.ema21?.toFixed(2) ?? 'null',
           condition: trendResult.reason,
         });
       }

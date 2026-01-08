@@ -16,36 +16,30 @@ const createKline = (close: number, index: number): Kline => ({
   takerBuyQuoteVolume: '5000',
 });
 
-const createKlinesWithTrend = (direction: 'up' | 'down' | 'sideways', count: number): Kline[] => {
+const SAMPLE_KLINE_COUNT = 50;
+
+const createKlinesWithPriceAboveEMA = (count: number): Kline[] => {
   const klines: Kline[] = [];
-  let price = 100;
-
   for (let i = 0; i < count; i += 1) {
-    let change: number;
-    switch (direction) {
-      case 'up':
-        change = 0.5;
-        break;
-      case 'down':
-        change = -0.5;
-        break;
-      case 'sideways':
-      default:
-        change = (Math.random() - 0.5) * 0.1;
-        break;
-    }
-
-    price += change;
+    const price = 100 + i * 0.5;
     klines.push(createKline(price, i));
   }
+  return klines;
+};
 
+const createKlinesWithPriceBelowEMA = (count: number): Kline[] => {
+  const klines: Kline[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const price = 200 - i * 0.5;
+    klines.push(createKline(Math.max(price, 10), i));
+  }
   return klines;
 };
 
 describe('checkTrendCondition', () => {
   describe('LONG direction', () => {
-    it('should allow LONG when EMA100 is above EMA200 (bullish trend)', () => {
-      const klines = createKlinesWithTrend('up', TREND_FILTER.MIN_KLINES_REQUIRED + 10);
+    it('should allow LONG when price is above EMA21 (bullish trend)', () => {
+      const klines = createKlinesWithPriceAboveEMA(SAMPLE_KLINE_COUNT);
       const result = checkTrendCondition(klines, 'LONG');
 
       expect(result.isBullish).toBe(true);
@@ -54,8 +48,8 @@ describe('checkTrendCondition', () => {
       expect(result.reason).toContain('LONG allowed');
     });
 
-    it('should block LONG when EMA100 is below EMA200 (bearish trend)', () => {
-      const klines = createKlinesWithTrend('down', TREND_FILTER.MIN_KLINES_REQUIRED + 10);
+    it('should block LONG when price is below EMA21 (bearish trend)', () => {
+      const klines = createKlinesWithPriceBelowEMA(SAMPLE_KLINE_COUNT);
       const result = checkTrendCondition(klines, 'LONG');
 
       expect(result.isBullish).toBe(false);
@@ -67,8 +61,8 @@ describe('checkTrendCondition', () => {
   });
 
   describe('SHORT direction', () => {
-    it('should allow SHORT when EMA100 is below EMA200 (bearish trend)', () => {
-      const klines = createKlinesWithTrend('down', TREND_FILTER.MIN_KLINES_REQUIRED + 10);
+    it('should allow SHORT when price is below EMA21 (bearish trend)', () => {
+      const klines = createKlinesWithPriceBelowEMA(SAMPLE_KLINE_COUNT);
       const result = checkTrendCondition(klines, 'SHORT');
 
       expect(result.isBullish).toBe(false);
@@ -77,8 +71,8 @@ describe('checkTrendCondition', () => {
       expect(result.reason).toContain('SHORT allowed');
     });
 
-    it('should block SHORT when EMA100 is above EMA200 (bullish trend)', () => {
-      const klines = createKlinesWithTrend('up', TREND_FILTER.MIN_KLINES_REQUIRED + 10);
+    it('should block SHORT when price is above EMA21 (bullish trend)', () => {
+      const klines = createKlinesWithPriceAboveEMA(SAMPLE_KLINE_COUNT);
       const result = checkTrendCondition(klines, 'SHORT');
 
       expect(result.isBullish).toBe(true);
@@ -90,53 +84,47 @@ describe('checkTrendCondition', () => {
   });
 
   describe('edge cases', () => {
-    it('should block when insufficient klines', () => {
-      const klines: Kline[] = [];
-      for (let i = 0; i < 50; i += 1) {
-        klines.push(createKline(100, i));
-      }
-
+    it('should block when only 1 kline', () => {
+      const klines = [createKline(100, 0)];
       const result = checkTrendCondition(klines, 'LONG');
 
       expect(result.isAllowed).toBe(false);
-      expect(result.ema100).toBeNull();
-      expect(result.ema200).toBeNull();
+      expect(result.ema21).toBeNull();
+      expect(result.price).toBeNull();
       expect(result.reason).toContain('Insufficient');
     });
 
     it('should return all required fields in result', () => {
-      const klines = createKlinesWithTrend('up', TREND_FILTER.MIN_KLINES_REQUIRED + 5);
+      const klines = createKlinesWithPriceAboveEMA(SAMPLE_KLINE_COUNT);
       const result = checkTrendCondition(klines, 'LONG');
 
       expect(result).toHaveProperty('isAllowed');
-      expect(result).toHaveProperty('ema100');
-      expect(result).toHaveProperty('ema200');
+      expect(result).toHaveProperty('ema21');
+      expect(result).toHaveProperty('price');
       expect(result).toHaveProperty('isBullish');
       expect(result).toHaveProperty('isBearish');
       expect(result).toHaveProperty('reason');
     });
 
     it('should return numeric values when calculation succeeds', () => {
-      const klines = createKlinesWithTrend('up', TREND_FILTER.MIN_KLINES_REQUIRED + 5);
+      const klines = createKlinesWithPriceAboveEMA(SAMPLE_KLINE_COUNT);
       const result = checkTrendCondition(klines, 'LONG');
 
-      expect(typeof result.ema100).toBe('number');
-      expect(typeof result.ema200).toBe('number');
+      expect(typeof result.ema21).toBe('number');
+      expect(typeof result.price).toBe('number');
     });
   });
 
   describe('TREND_FILTER constants', () => {
     it('should have correct default values', () => {
-      expect(TREND_FILTER.FAST_PERIOD).toBe(100);
-      expect(TREND_FILTER.SLOW_PERIOD).toBe(200);
-      expect(TREND_FILTER.MIN_KLINES_REQUIRED).toBeGreaterThanOrEqual(TREND_FILTER.SLOW_PERIOD * 3);
+      expect(TREND_FILTER.EMA_PERIOD).toBe(21);
     });
   });
 
   describe('real-world scenarios', () => {
-    it('should correctly identify uptrend after sustained price increase', () => {
+    it('should correctly identify uptrend when price is above EMA21', () => {
       const klines: Kline[] = [];
-      const count = TREND_FILTER.MIN_KLINES_REQUIRED + 10;
+      const count = SAMPLE_KLINE_COUNT;
       for (let i = 0; i < count; i += 1) {
         const price = 100 + i * 0.5;
         klines.push(createKline(price, i));
@@ -146,14 +134,14 @@ describe('checkTrendCondition', () => {
 
       expect(result.isAllowed).toBe(true);
       expect(result.isBullish).toBe(true);
-      if (result.ema100 && result.ema200) {
-        expect(result.ema100).toBeGreaterThan(result.ema200);
+      if (result.ema21 && result.price) {
+        expect(result.price).toBeGreaterThan(result.ema21);
       }
     });
 
-    it('should correctly identify downtrend after sustained price decrease', () => {
+    it('should correctly identify downtrend when price is below EMA21', () => {
       const klines: Kline[] = [];
-      const count = TREND_FILTER.MIN_KLINES_REQUIRED + 10;
+      const count = SAMPLE_KLINE_COUNT;
       for (let i = 0; i < count; i += 1) {
         const price = 200 - i * 0.5;
         klines.push(createKline(Math.max(price, 10), i));
@@ -163,23 +151,41 @@ describe('checkTrendCondition', () => {
 
       expect(result.isAllowed).toBe(true);
       expect(result.isBearish).toBe(true);
-      if (result.ema100 && result.ema200) {
-        expect(result.ema100).toBeLessThan(result.ema200);
+      if (result.ema21 && result.price) {
+        expect(result.price).toBeLessThan(result.ema21);
       }
     });
 
-    it('should use confirmation candle index for EMA comparison', () => {
+    it('should use confirmation candle for price comparison', () => {
       const klines: Kline[] = [];
-      const count = TREND_FILTER.MIN_KLINES_REQUIRED + 10;
+      const count = SAMPLE_KLINE_COUNT;
       for (let i = 0; i < count; i += 1) {
         klines.push(createKline(100 + i * 0.5, i));
       }
 
       const result = checkTrendCondition(klines, 'LONG');
+      const confirmationIndex = klines.length - 2;
+      const expectedPrice = parseFloat(String(klines[confirmationIndex]?.close));
 
-      expect(result.ema100).not.toBeNull();
-      expect(result.ema200).not.toBeNull();
+      expect(result.price).toBe(expectedPrice);
+      expect(result.ema21).not.toBeNull();
       expect(result.isAllowed).toBe(true);
+    });
+
+    it('should work with large kline datasets (40k+)', () => {
+      const klines: Kline[] = [];
+      const count = 1000;
+      for (let i = 0; i < count; i += 1) {
+        const price = 100 + i * 0.1;
+        klines.push(createKline(price, i));
+      }
+
+      const result = checkTrendCondition(klines, 'LONG');
+
+      expect(result.isAllowed).toBe(true);
+      expect(result.isBullish).toBe(true);
+      expect(result.ema21).not.toBeNull();
+      expect(result.price).not.toBeNull();
     });
   });
 });
