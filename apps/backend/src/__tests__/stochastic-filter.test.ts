@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import type { Kline } from '@marketmind/types';
+import { describe, expect, it } from 'vitest';
 import {
   checkStochasticCondition,
   STOCHASTIC_FILTER,
 } from '../utils/stochastic-filter';
-import type { Kline } from '@marketmind/types';
 
 const createKline = (open: number, high: number, low: number, close: number, index: number): Kline => ({
   openTime: Date.now() + index * 60000,
