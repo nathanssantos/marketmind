@@ -23,7 +23,7 @@ import { ConditionEvaluator } from './ConditionEvaluator';
 import { ExitCalculator } from './ExitCalculator';
 import { IndicatorEngine } from './IndicatorEngine';
 
-const FIBONACCI_LOOKBACK = 50;
+const FIBONACCI_LOOKBACK = 100;
 const DEFAULT_FIBONACCI_LEVEL = 2;
 
 const { MIN_ENTRY_STOP_SEPARATION_PERCENT } = EXIT_CALCULATOR;

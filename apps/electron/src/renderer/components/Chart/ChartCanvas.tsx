@@ -742,7 +742,7 @@ export const ChartCanvas = ({
         }
 
         const direction = activePosition.side as 'LONG' | 'SHORT';
-        const projection = calculateFibonacciProjection(klines, entryIndex, 50, direction);
+        const projection = calculateFibonacciProjection(klines, entryIndex, 100, direction);
 
         if (projection) {
           return {
