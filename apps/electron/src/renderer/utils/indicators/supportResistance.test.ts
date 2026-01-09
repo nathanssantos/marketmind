@@ -208,10 +208,10 @@ describe('findBreakouts', () => {
 });
 
 describe('findRecentSwingLow', () => {
-  it('should return null for insufficient data', () => {
+  it('should return fallback value for single kline', () => {
     const klines = [createKline(100)];
     const result = findRecentSwingLow(klines, 0, 20);
-    expect(result).toBeNull();
+    expect(result).toBe(100);
   });
 
   it('should find most recent swing low', () => {
@@ -236,10 +236,10 @@ describe('findRecentSwingLow', () => {
 });
 
 describe('findRecentSwingHigh', () => {
-  it('should return null for insufficient data', () => {
+  it('should return fallback value for single kline', () => {
     const klines = [createKline(100)];
     const result = findRecentSwingHigh(klines, 0, 20);
-    expect(result).toBeNull();
+    expect(result).toBe(100);
   });
 
   it('should find most recent swing high', () => {
@@ -264,25 +264,24 @@ describe('findRecentSwingHigh', () => {
 });
 
 describe('findLowestSwingLow', () => {
-  it('should return null for insufficient data', () => {
-    const klines = [createKline(100)];
-    const result = findLowestSwingLow(klines, 0, 20);
+  it('should return null for empty klines', () => {
+    const result = findLowestSwingLow([], 0, 20);
     expect(result).toBeNull();
   });
 
   it('should find lowest swing low in range', () => {
     const klines = [
-      createKline(100, 102, 95),
-      createKline(105, 107, 100),
-      createKline(110, 112, 105),
-      createKline(108, 110, 103),
-      createKline(106, 108, 98),
-      createKline(104, 106, 100),
-      createKline(105, 107, 102),
-      createKline(107, 109, 104),
-      createKline(109, 111, 106),
-      createKline(111, 113, 108),
-      createKline(113, 115, 110),
+      createKline(120, 122, 118),
+      createKline(118, 120, 116),
+      createKline(116, 118, 90),
+      createKline(118, 120, 116),
+      createKline(120, 122, 118),
+      createKline(122, 124, 120),
+      createKline(120, 122, 118),
+      createKline(118, 120, 100),
+      createKline(120, 122, 118),
+      createKline(122, 124, 120),
+      createKline(124, 126, 122),
     ];
 
     const result = findLowestSwingLow(klines, 10, 10, 2);
@@ -292,25 +291,24 @@ describe('findLowestSwingLow', () => {
 });
 
 describe('findHighestSwingHigh', () => {
-  it('should return null for insufficient data', () => {
-    const klines = [createKline(100)];
-    const result = findHighestSwingHigh(klines, 0, 20);
+  it('should return null for empty klines', () => {
+    const result = findHighestSwingHigh([], 0, 20);
     expect(result).toBeNull();
   });
 
   it('should find highest swing high in range', () => {
     const klines = [
-      createKline(100, 105, 98),
-      createKline(98, 103, 96),
-      createKline(96, 101, 94),
-      createKline(98, 115, 96),
-      createKline(100, 110, 98),
-      createKline(102, 108, 100),
-      createKline(100, 105, 98),
-      createKline(98, 103, 96),
-      createKline(96, 101, 94),
-      createKline(94, 99, 92),
-      createKline(92, 97, 90),
+      createKline(90, 92, 88),
+      createKline(92, 94, 90),
+      createKline(94, 120, 92),
+      createKline(92, 94, 90),
+      createKline(90, 92, 88),
+      createKline(88, 90, 86),
+      createKline(90, 92, 88),
+      createKline(92, 105, 90),
+      createKline(90, 92, 88),
+      createKline(88, 90, 86),
+      createKline(86, 88, 84),
     ];
 
     const result = findHighestSwingHigh(klines, 10, 10, 2);

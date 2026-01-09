@@ -1,4 +1,11 @@
 import type { Kline } from '@marketmind/types';
+import {
+    findHighestSwingHigh,
+    findLowestSwingLow,
+    findSwingHighAfter,
+    findSwingLowAfter,
+    SWING_POINT_DEFAULTS,
+} from './swingPoints';
 
 const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
 const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
@@ -115,162 +122,6 @@ export interface FibonacciProjectionResult {
   range: number;
 }
 
-const findMostRecentSwingLow = (
-  klines: Kline[],
-  startIndex: number,
-  endIndex: number,
-): { price: number; localIndex: number; timestamp: number } | null => {
-  if (endIndex - startIndex < 3) return null;
-
-  for (let i = endIndex - 2; i > startIndex; i--) {
-    const kline = klines[i];
-    if (!kline) continue;
-
-    const prevKline = klines[i - 1];
-    const nextKline = klines[i + 1];
-    if (!prevKline || !nextKline) continue;
-
-    const low = getKlineLow(kline);
-    const prevLow = getKlineLow(prevKline);
-    const nextLow = getKlineLow(nextKline);
-
-    if (low <= prevLow && low <= nextLow) {
-      return {
-        price: low,
-        localIndex: i,
-        timestamp: Number(kline.openTime),
-      };
-    }
-  }
-
-  let lowestPrice = Infinity;
-  let lowestIndex = -1;
-  for (let i = endIndex - 1; i >= startIndex; i--) {
-    const kline = klines[i];
-    if (!kline) continue;
-    const low = getKlineLow(kline);
-    if (low < lowestPrice) {
-      lowestPrice = low;
-      lowestIndex = i;
-    }
-  }
-
-  if (lowestIndex === -1) return null;
-  const kline = klines[lowestIndex];
-  return {
-    price: lowestPrice,
-    localIndex: lowestIndex,
-    timestamp: kline ? Number(kline.openTime) : 0,
-  };
-};
-
-const findMostRecentSwingHigh = (
-  klines: Kline[],
-  startIndex: number,
-  endIndex: number,
-): { price: number; localIndex: number; timestamp: number } | null => {
-  if (endIndex - startIndex < 3) return null;
-
-  for (let i = endIndex - 2; i > startIndex; i--) {
-    const kline = klines[i];
-    if (!kline) continue;
-
-    const prevKline = klines[i - 1];
-    const nextKline = klines[i + 1];
-    if (!prevKline || !nextKline) continue;
-
-    const high = getKlineHigh(kline);
-    const prevHigh = getKlineHigh(prevKline);
-    const nextHigh = getKlineHigh(nextKline);
-
-    if (high >= prevHigh && high >= nextHigh) {
-      return {
-        price: high,
-        localIndex: i,
-        timestamp: Number(kline.openTime),
-      };
-    }
-  }
-
-  let highestPrice = -Infinity;
-  let highestIndex = -1;
-  for (let i = endIndex - 1; i >= startIndex; i--) {
-    const kline = klines[i];
-    if (!kline) continue;
-    const high = getKlineHigh(kline);
-    if (high > highestPrice) {
-      highestPrice = high;
-      highestIndex = i;
-    }
-  }
-
-  if (highestIndex === -1) return null;
-  const kline = klines[highestIndex];
-  return {
-    price: highestPrice,
-    localIndex: highestIndex,
-    timestamp: kline ? Number(kline.openTime) : 0,
-  };
-};
-
-const findSwingHighAfter = (
-  klines: Kline[],
-  afterIndex: number,
-  endIndex: number,
-): { price: number; localIndex: number; timestamp: number } | null => {
-  if (endIndex - afterIndex < 1) return null;
-
-  let highestPrice = -Infinity;
-  let highestIndex = -1;
-
-  for (let i = afterIndex + 1; i <= endIndex; i++) {
-    const kline = klines[i];
-    if (!kline) continue;
-    const high = getKlineHigh(kline);
-    if (high > highestPrice) {
-      highestPrice = high;
-      highestIndex = i;
-    }
-  }
-
-  if (highestIndex === -1) return null;
-  const kline = klines[highestIndex];
-  return {
-    price: highestPrice,
-    localIndex: highestIndex,
-    timestamp: kline ? Number(kline.openTime) : 0,
-  };
-};
-
-const findSwingLowAfter = (
-  klines: Kline[],
-  afterIndex: number,
-  endIndex: number,
-): { price: number; localIndex: number; timestamp: number } | null => {
-  if (endIndex - afterIndex < 1) return null;
-
-  let lowestPrice = Infinity;
-  let lowestIndex = -1;
-
-  for (let i = afterIndex + 1; i <= endIndex; i++) {
-    const kline = klines[i];
-    if (!kline) continue;
-    const low = getKlineLow(kline);
-    if (low < lowestPrice) {
-      lowestPrice = low;
-      lowestIndex = i;
-    }
-  }
-
-  if (lowestIndex === -1) return null;
-  const kline = klines[lowestIndex];
-  return {
-    price: lowestPrice,
-    localIndex: lowestIndex,
-    timestamp: kline ? Number(kline.openTime) : 0,
-  };
-};
-
 export const calculateFibonacciProjection = (
   klines: Kline[],
   currentIndex: number,
@@ -282,32 +133,38 @@ export const calculateFibonacciProjection = (
 
   if (endIndex - startIndex < 10) return null;
 
-  let swingLowResult: { price: number; localIndex: number; timestamp: number } | null = null;
-  let swingHighResult: { price: number; localIndex: number; timestamp: number } | null = null;
+  const fractalBars = SWING_POINT_DEFAULTS.FRACTAL_BARS_LEFT;
+
+  let swingLowResult: { price: number; index: number; timestamp: number } | null = null;
+  let swingHighResult: { price: number; index: number; timestamp: number } | null = null;
 
   if (direction === 'LONG') {
-    swingHighResult = findMostRecentSwingHigh(klines, startIndex, endIndex);
-    if (!swingHighResult) return null;
+    const highResult = findHighestSwingHigh(klines, endIndex, lookback, fractalBars);
+    if (!highResult) return null;
+    swingHighResult = { price: highResult.price, index: highResult.index, timestamp: highResult.timestamp };
 
-    swingLowResult = findSwingLowAfter(klines, swingHighResult.localIndex, endIndex);
-    if (!swingLowResult) return null;
+    const lowResult = findSwingLowAfter(klines, swingHighResult.index, endIndex, fractalBars);
+    if (!lowResult) return null;
+    swingLowResult = { price: lowResult.price, index: lowResult.index, timestamp: lowResult.timestamp };
   } else {
-    swingLowResult = findMostRecentSwingLow(klines, startIndex, endIndex);
-    if (!swingLowResult) return null;
+    const lowResult = findLowestSwingLow(klines, endIndex, lookback, fractalBars);
+    if (!lowResult) return null;
+    swingLowResult = { price: lowResult.price, index: lowResult.index, timestamp: lowResult.timestamp };
 
-    swingHighResult = findSwingHighAfter(klines, swingLowResult.localIndex, endIndex);
-    if (!swingHighResult) return null;
+    const highResult = findSwingHighAfter(klines, swingLowResult.index, endIndex, fractalBars);
+    if (!highResult) return null;
+    swingHighResult = { price: highResult.price, index: highResult.index, timestamp: highResult.timestamp };
   }
 
   const swingLow: SwingPointWithIndex = {
     price: swingLowResult.price,
-    index: swingLowResult.localIndex,
+    index: swingLowResult.index,
     timestamp: swingLowResult.timestamp,
   };
 
   const swingHigh: SwingPointWithIndex = {
     price: swingHighResult.price,
-    index: swingHighResult.localIndex,
+    index: swingHighResult.index,
     timestamp: swingHighResult.timestamp,
   };
 

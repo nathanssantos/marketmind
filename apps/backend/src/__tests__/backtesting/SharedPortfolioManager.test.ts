@@ -13,6 +13,7 @@ const createPortfolioConfig = (overrides: Partial<PortfolioConfig> = {}): Portfo
   dailyLossLimitPercent: 5,
   cooldownMinutes: 15,
   useStochasticFilter: false,
+  useMomentumTimingFilter: false,
   useAdxFilter: false,
   useTrendFilter: false,
   minRiskRewardRatio: 1.25,

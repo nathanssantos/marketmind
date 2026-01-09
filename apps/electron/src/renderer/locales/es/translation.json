@@ -203,7 +203,54 @@
         "default": "Por Defecto",
         "defaultDescription": "Usa cálculos basados en ATR y swing",
         "fibonacci": "Proyección Fibonacci",
-        "fibonacciDescription": "Usa niveles de extensión Fibonacci (161.8%, 261.8%, etc.)"
+        "fibonacciDescription": "Usa niveles de extensión Fibonacci (127.2%, 161.8%, 200%)"
+      },
+      "filters": {
+        "title": "Filtros de Trade",
+        "description": "Active o desactive filtros para mejorar la calidad de los trades.",
+        "directionFilters": "Filtros de Dirección",
+        "timingFilters": "Filtros de Timing de Entrada",
+        "marketFilters": "Filtros de Condición de Mercado",
+        "mtf": {
+          "title": "Multi-Timeframe (MTF)",
+          "description": "Solo opera en la dirección de la tendencia del timeframe superior (EMA50/EMA200 Golden/Death Cross)."
+        },
+        "btcCorrelation": {
+          "title": "Correlación BTC",
+          "description": "Bloquea trades de altcoins contra tendencia de BTC. LONGs bloqueados cuando BTC bearish, SHORTs cuando bullish."
+        },
+        "marketRegime": {
+          "title": "Régimen de Mercado",
+          "description": "Usa ADX para identificar mercado en tendencia vs lateral. Bloquea setups trend-following en consolidación."
+        },
+        "trend": {
+          "title": "Filtro de Tendencia EMA",
+          "description": "Solo opera cuando el precio está por encima/debajo de EMA21 para la dirección correspondiente."
+        },
+        "momentumTiming": {
+          "title": "Timing de Momentum (RSI+MFI)",
+          "description": "LONG cuando RSI>40 y subiendo con MFI>30. SHORT cuando RSI<60 y bajando con MFI<70."
+        },
+        "stochastic": {
+          "title": "Estocástico Lento",
+          "description": "LONG solo cuando sobrevendido (K<20). SHORT solo cuando sobrecomprado (K>80)."
+        },
+        "adx": {
+          "title": "Dirección ADX",
+          "description": "LONG cuando +DI > -DI, SHORT cuando -DI > +DI (requiere ADX >= 20)."
+        },
+        "volume": {
+          "title": "Confirmación de Volumen",
+          "description": "Requiere volumen por encima del promedio para confirmar rupturas y movimientos significativos."
+        },
+        "funding": {
+          "title": "Tasa de Funding (Futuros)",
+          "description": "Bloquea trades con tasas de funding extremas. Positivo alto bloquea LONGs, negativo alto bloquea SHORTs."
+        },
+        "confluence": {
+          "title": "Score de Confluencia",
+          "description": "Calcula un score de confluencia de todos los filtros. Solo opera cuando el score supera el mínimo."
+        }
       }
     }
   },

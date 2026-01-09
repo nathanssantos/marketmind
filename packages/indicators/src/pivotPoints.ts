@@ -381,44 +381,6 @@ export const findPivotPoints = (
   return [...highs, ...lows].sort((a, b) => a.index - b.index);
 };
 
-export const findLowestSwingLow = (
-  klines: Kline[],
-  currentIndex: number,
-  lookback: number = 20,
-  pivotStrength: number = 3,
-): number | null => {
-  if (currentIndex < lookback) return null;
-
-  const startIndex = Math.max(0, currentIndex - lookback);
-  const recentKlines = klines.slice(startIndex, currentIndex + 1);
-  const pivots = findPivotPoints(recentKlines, pivotStrength);
-
-  const lows = pivots
-    .filter((p) => p.type === 'low')
-    .sort((a, b) => a.price - b.price);
-
-  return lows.length > 0 ? lows[0]!.price : null;
-};
-
-export const findHighestSwingHigh = (
-  klines: Kline[],
-  currentIndex: number,
-  lookback: number = 20,
-  pivotStrength: number = 3,
-): number | null => {
-  if (currentIndex < lookback) return null;
-
-  const startIndex = Math.max(0, currentIndex - lookback);
-  const recentKlines = klines.slice(startIndex, currentIndex + 1);
-  const pivots = findPivotPoints(recentKlines, pivotStrength);
-
-  const highs = pivots
-    .filter((p) => p.type === 'high')
-    .sort((a, b) => b.price - a.price);
-
-  return highs.length > 0 ? highs[0]!.price : null;
-};
-
 export const findNearestPivotTarget = (
   klines: Kline[],
   entryPrice: number,

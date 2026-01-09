@@ -19,6 +19,7 @@ import { calculatePositionSize } from '@marketmind/risk';
 import { calculateATR } from '@marketmind/indicators';
 import { computeTrailingStopCore, type TrailingStopCoreConfig } from '../trailing-stop-core';
 import { checkStochasticCondition, STOCHASTIC_FILTER } from '../../utils/stochastic-filter';
+import { checkMomentumTiming, MOMENTUM_TIMING_FILTER } from '../../utils/momentum-timing-filter';
 import { checkAdxCondition, ADX_FILTER } from '../../utils/adx-filter';
 import { checkTrendCondition } from '../../utils/trend-filter';
 import { checkBtcCorrelation } from '../../utils/btc-correlation-filter';
@@ -102,6 +103,7 @@ export class MultiWatcherBacktestEngine {
       dailyLossLimitPercent: this.config.dailyLossLimit ?? 5,
       cooldownMinutes: this.config.cooldownMinutes ?? 15,
       useStochasticFilter: this.config.useStochasticFilter ?? false,
+      useMomentumTimingFilter: this.config.useMomentumTimingFilter ?? true,
       useAdxFilter: this.config.useAdxFilter ?? false,
       useTrendFilter: this.config.onlyWithTrend ?? false,
       minRiskRewardRatio: this.config.minRiskRewardRatio ?? 1.25,
@@ -465,6 +467,19 @@ export class MultiWatcherBacktestEngine {
         if (!stochResult.isAllowed) {
           stats.tradesSkipped++;
           stats.skippedReasons['stochastic'] = (stats.skippedReasons['stochastic'] ?? 0) + 1;
+          return { passed: false };
+        }
+      }
+    }
+
+    const globalMomentumTimingEnabled = this.config.useMomentumTimingFilter === true;
+    if (globalMomentumTimingEnabled) {
+      const requiredKlines = MOMENTUM_TIMING_FILTER.MIN_KLINES_REQUIRED;
+      if (klines.length >= requiredKlines) {
+        const momentumResult = checkMomentumTiming(klines, direction);
+        if (!momentumResult.isAllowed) {
+          stats.tradesSkipped++;
+          stats.skippedReasons['momentumTiming'] = (stats.skippedReasons['momentumTiming'] ?? 0) + 1;
           return { passed: false };
         }
       }

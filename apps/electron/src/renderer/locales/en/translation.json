@@ -166,7 +166,54 @@
         "default": "Default",
         "defaultDescription": "Uses ATR and swing-based calculations",
         "fibonacci": "Fibonacci Projection",
-        "fibonacciDescription": "Uses Fibonacci extension levels (161.8%, 261.8%, etc.)"
+        "fibonacciDescription": "Uses Fibonacci extension levels (127.2%, 161.8%, 200%)"
+      },
+      "filters": {
+        "title": "Trade Filters",
+        "description": "Enable or disable filters to improve trade quality.",
+        "directionFilters": "Direction Filters",
+        "timingFilters": "Entry Timing Filters",
+        "marketFilters": "Market Condition Filters",
+        "mtf": {
+          "title": "Multi-Timeframe (MTF)",
+          "description": "Only trade in the direction of the higher timeframe trend (EMA50/EMA200 Golden/Death Cross)."
+        },
+        "btcCorrelation": {
+          "title": "BTC Correlation",
+          "description": "Block altcoin trades against BTC trend. LONGs blocked when BTC is bearish, SHORTs blocked when bullish."
+        },
+        "marketRegime": {
+          "title": "Market Regime",
+          "description": "Use ADX to identify trending vs ranging markets. Block trend-following setups in ranging conditions."
+        },
+        "trend": {
+          "title": "EMA Trend Filter",
+          "description": "Only trade when price is above/below EMA21 for the corresponding direction."
+        },
+        "momentumTiming": {
+          "title": "Momentum Timing (RSI+MFI)",
+          "description": "LONG when RSI>40 and rising with MFI>30. SHORT when RSI<60 and falling with MFI<70."
+        },
+        "stochastic": {
+          "title": "Slow Stochastic",
+          "description": "LONG only when oversold (K<20). SHORT only when overbought (K>80)."
+        },
+        "adx": {
+          "title": "ADX Direction",
+          "description": "LONG when +DI > -DI, SHORT when -DI > +DI (requires ADX >= 20)."
+        },
+        "volume": {
+          "title": "Volume Confirmation",
+          "description": "Require volume above average to confirm breakouts and significant moves."
+        },
+        "funding": {
+          "title": "Funding Rate (Futures)",
+          "description": "Block trades with extreme funding rates. High positive blocks LONGs, high negative blocks SHORTs."
+        },
+        "confluence": {
+          "title": "Confluence Scoring",
+          "description": "Calculate a confluence score from all filters. Only trade when score exceeds minimum threshold."
+        }
       }
     }
   },

@@ -28,6 +28,7 @@ import { useBackendKlines, useKlineStream } from './hooks/useBackendKlines';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
 import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
+import { useSetupStore } from './store/setupStore';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useOrderNotifications } from './hooks/useOrderNotifications';
 import { system } from './theme';
@@ -387,10 +388,13 @@ function AppContent(): ReactElement {
 
   const debouncedAdvancedConfig = useDebounce(advancedConfig, 300);
 
+  const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
+
   const handleSymbolChange = useCallback((newSymbol: string, newMarketType?: MarketType): void => {
+    clearDetectedSetups();
     setSymbol(newSymbol);
     if (newMarketType) setMarketType(newMarketType);
-  }, [setSymbol, setMarketType]);
+  }, [setSymbol, setMarketType, clearDetectedSetups]);
 
   useChartData({
     klines: displayKlines,

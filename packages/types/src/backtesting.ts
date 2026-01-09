@@ -17,6 +17,7 @@ export interface BacktestConfig {
   commission?: number; // Trading fee % (default 0.1% spot, 0.04% futures)
   slippagePercent?: number; // Slippage % for market orders - SL (default 0.05%)
   useStochasticFilter?: boolean; // Slow Stochastic: LONG only when oversold (K < 20), SHORT only when overbought (K > 80)
+  useMomentumTimingFilter?: boolean; // RSI + MFI: LONG when RSI > 40 and rising with MFI > 30, SHORT when RSI < 60 and falling with MFI < 70
   useAdxFilter?: boolean; // Only allow LONG when +DI > -DI, SHORT when -DI > +DI (ADX >= 20)
   useOptimizedSettings?: boolean; // Use strategy's optimizedParams instead of config values
 

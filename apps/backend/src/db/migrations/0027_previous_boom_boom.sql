@@ -1,0 +1,2 @@
+ALTER TABLE "auto_trading_config" ALTER COLUMN "use_stochastic_filter" SET DEFAULT false;--> statement-breakpoint
+ALTER TABLE "auto_trading_config" ADD COLUMN "use_momentum_timing_filter" boolean DEFAULT true NOT NULL;

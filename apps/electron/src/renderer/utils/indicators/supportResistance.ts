@@ -1,3 +1,9 @@
+import {
+    findHighestSwingHigh as findHighestSwingHighFromIndicators,
+    findLowestSwingLow as findLowestSwingLowFromIndicators,
+    findMostRecentSwingHigh as findSwingHighFromIndicators,
+    findMostRecentSwingLow as findSwingLowFromIndicators,
+} from '@marketmind/indicators';
 import type { Kline, PivotPoint } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 
@@ -205,17 +211,10 @@ export const findRecentSwingLow = (
   lookback: number = 20,
   pivotStrength: number = 3,
 ): number | null => {
-  if (currentIndex < lookback) return null;
+  if (klines.length === 0 || currentIndex < 0) return null;
 
-  const startIndex = Math.max(0, currentIndex - lookback);
-  const recentKlines = klines.slice(startIndex, currentIndex + 1);
-  const pivots = findPivotPoints(recentKlines, pivotStrength);
-
-  const lows = pivots
-    .filter((p) => p.type === 'low')
-    .sort((a, b) => b.index - a.index);
-
-  return lows.length > 0 ? lows[0]!.price : null;
+  const result = findSwingLowFromIndicators(klines, currentIndex, lookback, pivotStrength);
+  return result ? result.price : null;
 };
 
 export const findRecentSwingHigh = (
@@ -224,17 +223,10 @@ export const findRecentSwingHigh = (
   lookback: number = 20,
   pivotStrength: number = 3,
 ): number | null => {
-  if (currentIndex < lookback) return null;
+  if (klines.length === 0 || currentIndex < 0) return null;
 
-  const startIndex = Math.max(0, currentIndex - lookback);
-  const recentKlines = klines.slice(startIndex, currentIndex + 1);
-  const pivots = findPivotPoints(recentKlines, pivotStrength);
-
-  const highs = pivots
-    .filter((p) => p.type === 'high')
-    .sort((a, b) => b.index - a.index);
-
-  return highs.length > 0 ? highs[0]!.price : null;
+  const result = findSwingHighFromIndicators(klines, currentIndex, lookback, pivotStrength);
+  return result ? result.price : null;
 };
 
 export const findLowestSwingLow = (
@@ -243,17 +235,10 @@ export const findLowestSwingLow = (
   lookback: number = 20,
   pivotStrength: number = 3,
 ): number | null => {
-  if (currentIndex < lookback) return null;
+  if (klines.length === 0 || currentIndex < 0) return null;
 
-  const startIndex = Math.max(0, currentIndex - lookback);
-  const recentKlines = klines.slice(startIndex, currentIndex + 1);
-  const pivots = findPivotPoints(recentKlines, pivotStrength);
-
-  const lows = pivots
-    .filter((p) => p.type === 'low')
-    .sort((a, b) => a.price - b.price);
-
-  return lows.length > 0 ? lows[0]!.price : null;
+  const result = findLowestSwingLowFromIndicators(klines, currentIndex, lookback, pivotStrength);
+  return result ? result.price : null;
 };
 
 export const findHighestSwingHigh = (
@@ -262,15 +247,8 @@ export const findHighestSwingHigh = (
   lookback: number = 20,
   pivotStrength: number = 3,
 ): number | null => {
-  if (currentIndex < lookback) return null;
+  if (klines.length === 0 || currentIndex < 0) return null;
 
-  const startIndex = Math.max(0, currentIndex - lookback);
-  const recentKlines = klines.slice(startIndex, currentIndex + 1);
-  const pivots = findPivotPoints(recentKlines, pivotStrength);
-
-  const highs = pivots
-    .filter((p) => p.type === 'high')
-    .sort((a, b) => b.price - a.price);
-
-  return highs.length > 0 ? highs[0]!.price : null;
+  const result = findHighestSwingHighFromIndicators(klines, currentIndex, lookback, pivotStrength);
+  return result ? result.price : null;
 };

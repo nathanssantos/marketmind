@@ -42,14 +42,23 @@ export const useFibonacciProjectionRenderer = ({
 
     ctx.save();
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.strokeStyle = 'rgba(180, 180, 180, 0.7)';
     ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
+    ctx.setLineDash([2, 4]);
     ctx.beginPath();
     ctx.moveTo(swingLowX, swingLowY);
     ctx.lineTo(swingHighX, swingHighY);
     ctx.stroke();
     ctx.setLineDash([]);
+
+    const circleRadius = 4;
+    ctx.fillStyle = 'rgba(180, 180, 180, 0.9)';
+    ctx.beginPath();
+    ctx.arc(swingLowX, swingLowY, circleRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(swingHighX, swingHighY, circleRadius, 0, Math.PI * 2);
+    ctx.fill();
 
     for (const level of levels) {
       const y = manager.priceToY(level.price);

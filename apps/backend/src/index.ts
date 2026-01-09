@@ -110,8 +110,9 @@ const start = async (): Promise<void> => {
     const { binancePriceStreamService } = await import('./services/binance-price-stream');
     binancePriceStreamService.start();
 
-    const { binanceKlineStreamService } = await import('./services/binance-kline-stream');
+    const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('./services/binance-kline-stream');
     binanceKlineStreamService.start();
+    binanceFuturesKlineStreamService.start();
 
     const { binanceUserStreamService } = await import('./services/binance-user-stream');
     await binanceUserStreamService.start();
@@ -134,7 +135,7 @@ const start = async (): Promise<void> => {
     fastify.log.info(`📊 Binance kline sync initialized`);
     fastify.log.info(`📈 Position monitor service started`);
     fastify.log.info(`💹 Binance price stream service started`);
-    fastify.log.info(`📉 Binance kline stream service started`);
+    fastify.log.info(`📉 Binance kline stream service started (SPOT + FUTURES)`);
     fastify.log.info(`👤 Binance user stream service started`);
     fastify.log.info(`🔄 Kline gap filler service started`);
   } catch (err) {

@@ -192,7 +192,54 @@
         "default": "Par Défaut",
         "defaultDescription": "Utilise les calculs basés sur ATR et swing",
         "fibonacci": "Projection Fibonacci",
-        "fibonacciDescription": "Utilise les niveaux d'extension Fibonacci (161.8%, 261.8%, etc.)"
+        "fibonacciDescription": "Utilise les niveaux d'extension Fibonacci (127.2%, 161.8%, 200%)"
+      },
+      "filters": {
+        "title": "Filtres de Trade",
+        "description": "Activez ou désactivez les filtres pour améliorer la qualité des trades.",
+        "directionFilters": "Filtres de Direction",
+        "timingFilters": "Filtres de Timing d'Entrée",
+        "marketFilters": "Filtres de Condition de Marché",
+        "mtf": {
+          "title": "Multi-Timeframe (MTF)",
+          "description": "N'opère que dans la direction de la tendance du timeframe supérieur (EMA50/EMA200 Golden/Death Cross)."
+        },
+        "btcCorrelation": {
+          "title": "Corrélation BTC",
+          "description": "Bloque les trades d'altcoins contre la tendance BTC. LONGs bloqués quand BTC baissier, SHORTs quand haussier."
+        },
+        "marketRegime": {
+          "title": "Régime de Marché",
+          "description": "Utilise ADX pour identifier un marché en tendance vs latéral. Bloque les setups trend-following en consolidation."
+        },
+        "trend": {
+          "title": "Filtre de Tendance EMA",
+          "description": "N'opère que lorsque le prix est au-dessus/en-dessous de EMA21 pour la direction correspondante."
+        },
+        "momentumTiming": {
+          "title": "Timing de Momentum (RSI+MFI)",
+          "description": "LONG quand RSI>40 et monte avec MFI>30. SHORT quand RSI<60 et descend avec MFI<70."
+        },
+        "stochastic": {
+          "title": "Stochastique Lent",
+          "description": "LONG uniquement en survente (K<20). SHORT uniquement en surachat (K>80)."
+        },
+        "adx": {
+          "title": "Direction ADX",
+          "description": "LONG quand +DI > -DI, SHORT quand -DI > +DI (nécessite ADX >= 20)."
+        },
+        "volume": {
+          "title": "Confirmation de Volume",
+          "description": "Nécessite un volume supérieur à la moyenne pour confirmer les cassures et mouvements significatifs."
+        },
+        "funding": {
+          "title": "Taux de Funding (Futures)",
+          "description": "Bloque les trades avec taux de funding extrêmes. Positif élevé bloque LONGs, négatif élevé bloque SHORTs."
+        },
+        "confluence": {
+          "title": "Score de Confluence",
+          "description": "Calcule un score de confluence de tous les filtres. N'opère que si le score dépasse le minimum."
+        }
       }
     }
   },

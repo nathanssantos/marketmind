@@ -1,7 +1,8 @@
-import { Box, Flex, SimpleGrid, Stack, Text } from '@chakra-ui/react';
+import { Box, Collapsible, Flex, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import type { StrategyDefinition } from '@marketmind/types';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { useBackendWallet } from '../../hooks/useBackendWallet';
 import { useStrategyList } from '../../hooks/useSetupDetection';
 import { trpc } from '../../utils/trpc';
@@ -68,6 +69,8 @@ export const SetupToggleSection = memo(() => {
     });
   }, [walletId, setupList, enabledStrategies, updateConfigMutation]);
 
+  const [setupsExpanded, setSetupsExpanded] = useState(false);
+
   const isLoading = isLoadingConfig || isLoadingStrategies;
   const allEnabled =
     setupList.length > 0 && setupList.every((s: { value: string }) => enabledStrategies.includes(s.value));
@@ -84,64 +87,94 @@ export const SetupToggleSection = memo(() => {
   }
 
   return (
-    <Stack gap={4}>
-      <Flex justify="space-between" align="center">
+    <Box>
+      <Flex
+        justify="space-between"
+        align="center"
+        cursor="pointer"
+        onClick={() => setSetupsExpanded(!setupsExpanded)}
+        _hover={{ bg: 'bg.muted' }}
+        p={2}
+        mx={-2}
+        borderRadius="md"
+      >
         <Box>
-          <Text fontSize="lg" fontWeight="bold">
-            {t('setupConfig.enabledSetups')}
-          </Text>
+          <Flex align="center" gap={2}>
+            <Text fontSize="lg" fontWeight="bold">
+              {t('setupConfig.enabledSetups')}
+            </Text>
+            <Box
+              px={2}
+              py={0.5}
+              bg={enabledCount === setupList.length ? 'green.100' : 'blue.100'}
+              color={enabledCount === setupList.length ? 'green.800' : 'blue.800'}
+              borderRadius="full"
+              fontSize="xs"
+              fontWeight="medium"
+              _dark={{
+                bg: enabledCount === setupList.length ? 'green.900' : 'blue.900',
+                color: enabledCount === setupList.length ? 'green.200' : 'blue.200',
+              }}
+            >
+              {enabledCount}/{setupList.length}
+            </Box>
+          </Flex>
           <Text fontSize="sm" color="fg.muted">
             {t('setupConfig.enabledSetupsDescription', 'Select which trading setups the watchers will monitor')}
           </Text>
         </Box>
-        <Text fontSize="sm" color="fg.muted" fontWeight="medium">
-          {enabledCount}/{setupList.length}
-        </Text>
+        {setupsExpanded ? <LuChevronUp size={20} /> : <LuChevronDown size={20} />}
       </Flex>
 
-      <Box>
-        <Checkbox checked={allEnabled} onCheckedChange={toggleAll} disabled={updateConfigMutation.isPending}>
-          <Text fontWeight="semibold" fontSize="sm">
-            {t('setupConfig.toggleAll')}
-          </Text>
-        </Checkbox>
-      </Box>
-
-      {isLoading ? (
-        <Box p={4} textAlign="center">
-          <Text fontSize="sm" color="fg.muted">
-            {t('common.loading')}
-          </Text>
-        </Box>
-      ) : setupList.length === 0 ? (
-        <Box p={4} textAlign="center">
-          <Text fontSize="sm" color="fg.muted">
-            {t('setupConfig.noStrategiesAvailable')}
-          </Text>
-        </Box>
-      ) : (
-        <SimpleGrid columns={{ base: 1, md: 2 }} gap={2}>
-          {setupList.map((setup: { value: string; title: string }) => (
-            <Box
-              key={setup.value}
-              p={2}
-              bg="bg.muted"
-              borderRadius="md"
-              borderLeft="3px solid"
-              borderColor={enabledStrategies.includes(setup.value) ? 'green.500' : 'gray.400'}
-            >
-              <Checkbox
-                checked={enabledStrategies.includes(setup.value)}
-                onCheckedChange={() => toggleSetup(setup.value)}
-                disabled={updateConfigMutation.isPending}
-              >
-                <Text fontSize="sm">{setup.title}</Text>
+      <Collapsible.Root open={setupsExpanded}>
+        <Collapsible.Content>
+          <Stack gap={4} mt={4}>
+            <Box>
+              <Checkbox checked={allEnabled} onCheckedChange={toggleAll} disabled={updateConfigMutation.isPending}>
+                <Text fontWeight="semibold" fontSize="sm">
+                  {t('setupConfig.toggleAll')}
+                </Text>
               </Checkbox>
             </Box>
-          ))}
-        </SimpleGrid>
-      )}
-    </Stack>
+
+            {isLoading ? (
+              <Box p={4} textAlign="center">
+                <Text fontSize="sm" color="fg.muted">
+                  {t('common.loading')}
+                </Text>
+              </Box>
+            ) : setupList.length === 0 ? (
+              <Box p={4} textAlign="center">
+                <Text fontSize="sm" color="fg.muted">
+                  {t('setupConfig.noStrategiesAvailable')}
+                </Text>
+              </Box>
+            ) : (
+              <SimpleGrid columns={{ base: 1, md: 2 }} gap={2}>
+                {setupList.map((setup: { value: string; title: string }) => (
+                  <Box
+                    key={setup.value}
+                    p={2}
+                    bg="bg.muted"
+                    borderRadius="md"
+                    borderLeft="3px solid"
+                    borderColor={enabledStrategies.includes(setup.value) ? 'green.500' : 'gray.400'}
+                  >
+                    <Checkbox
+                      checked={enabledStrategies.includes(setup.value)}
+                      onCheckedChange={() => toggleSetup(setup.value)}
+                      disabled={updateConfigMutation.isPending}
+                    >
+                      <Text fontSize="sm">{setup.title}</Text>
+                    </Checkbox>
+                  </Box>
+                ))}
+              </SimpleGrid>
+            )}
+          </Stack>
+        </Collapsible.Content>
+      </Collapsible.Root>
+    </Box>
   );
 });
 

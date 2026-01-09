@@ -1,21 +1,11 @@
-import { checkAdxCondition, ADX_FILTER } from '../utils/adx-filter';
-import { checkBtcCorrelation } from '../utils/btc-correlation-filter';
-import { calculateConfluenceScore, type FilterResults } from '../utils/confluence-scoring';
-import { checkFundingRate } from '../utils/funding-filter';
-import { checkMarketRegime } from '../utils/market-regime-filter';
-import { checkMtfCondition, getHigherTimeframe, MTF_FILTER } from '../utils/mtf-filter';
-import { checkStochasticCondition, STOCHASTIC_FILTER } from '../utils/stochastic-filter';
-import { checkTrendCondition } from '../utils/trend-filter';
-import { checkVolumeCondition } from '../utils/volume-filter';
 import type { Interval, Kline, MarketType, StrategyDefinition, TradingSetup } from '@marketmind/types';
 import { getDefaultFee } from '@marketmind/types';
-import { INTERVAL_MS, TIME_MS, TRADING_CONFIG, UNIT_MS } from '../constants';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { INTERVAL_MS, TIME_MS, TRADING_CONFIG, UNIT_MS } from '../constants';
 import { db } from '../db';
-import { calculateRequiredKlines } from '../utils/kline-calculator';
 import {
   activeWatchers as activeWatchersTable,
   autoTradingConfig,
@@ -27,10 +17,21 @@ import {
   type Wallet,
 } from '../db/schema';
 import { env } from '../env';
+import { ADX_FILTER, checkAdxCondition } from '../utils/adx-filter';
+import { checkBtcCorrelation } from '../utils/btc-correlation-filter';
+import { calculateConfluenceScore, type FilterResults } from '../utils/confluence-scoring';
+import { checkFundingRate } from '../utils/funding-filter';
+import { calculateRequiredKlines } from '../utils/kline-calculator';
+import { checkMarketRegime } from '../utils/market-regime-filter';
+import { checkMomentumTiming, MOMENTUM_TIMING_FILTER } from '../utils/momentum-timing-filter';
+import { checkMtfCondition, getHigherTimeframe, MTF_FILTER } from '../utils/mtf-filter';
+import { checkStochasticCondition, STOCHASTIC_FILTER } from '../utils/stochastic-filter';
+import { checkTrendCondition } from '../utils/trend-filter';
+import { checkVolumeCondition } from '../utils/volume-filter';
 import { autoTradingService } from './auto-trading';
-import { ocoOrderService } from './oco-orders';
-import { prefetchKlines, hasSufficientKlines } from './kline-prefetch';
 import { cooldownService } from './cooldown';
+import { hasSufficientKlines, prefetchKlines } from './kline-prefetch';
+import { ocoOrderService } from './oco-orders';
 import { positionMonitorService } from './position-monitor';
 import { pyramidingService } from './pyramiding';
 import { riskManagerService } from './risk-manager';
@@ -1231,6 +1232,66 @@ export class AutoTradingScheduler {
         }
       }
 
+      if (config.useMomentumTimingFilter) {
+        const { MIN_KLINES_REQUIRED } = MOMENTUM_TIMING_FILTER;
+        const momentumKlines = await db
+          .select()
+          .from(klines)
+          .where(
+            and(
+              eq(klines.symbol, watcher.symbol),
+              eq(klines.interval, watcher.interval),
+              eq(klines.marketType, watcher.marketType)
+            )
+          )
+          .orderBy(desc(klines.openTime))
+          .limit(MIN_KLINES_REQUIRED + 10);
+
+        if (momentumKlines.length < MIN_KLINES_REQUIRED) {
+          log('⚠️ Insufficient klines for Momentum Timing calculation - soft pass', {
+            required: MIN_KLINES_REQUIRED,
+            available: momentumKlines.length,
+          });
+        } else {
+          const klinesForMomentum = momentumKlines.reverse().map(k => ({
+            ...k,
+            openTime: k.openTime.getTime(),
+            closeTime: k.closeTime.getTime(),
+          })) as Kline[];
+
+          const momentumResult = checkMomentumTiming(klinesForMomentum, setup.direction);
+
+          log('📊 Momentum Timing Filter Check', {
+            symbol: watcher.symbol,
+            interval: watcher.interval,
+            direction: setup.direction,
+            rsiValue: momentumResult.rsiValue?.toFixed(2) ?? 'null',
+            rsiMomentum: momentumResult.rsiMomentum,
+            mfiValue: momentumResult.mfiValue?.toFixed(2) ?? 'null',
+            mfiConfirmation: momentumResult.mfiConfirmation,
+            isAllowed: momentumResult.isAllowed,
+            reason: momentumResult.reason,
+          });
+
+          if (!momentumResult.isAllowed) {
+            log('🚫 Momentum Timing filter blocked trade', {
+              direction: setup.direction,
+              rsiValue: momentumResult.rsiValue?.toFixed(2) ?? 'null',
+              rsiMomentum: momentumResult.rsiMomentum,
+              reason: momentumResult.reason,
+            });
+            return;
+          }
+
+          log('✅ Momentum Timing filter passed', {
+            direction: setup.direction,
+            rsiValue: momentumResult.rsiValue?.toFixed(2) ?? 'null',
+            rsiMomentum: momentumResult.rsiMomentum,
+            mfiConfirmation: momentumResult.mfiConfirmation,
+          });
+        }
+      }
+
       if (config.useAdxFilter) {
         const { MIN_KLINES_REQUIRED } = ADX_FILTER;
         const adxKlines = await db
@@ -1300,11 +1361,19 @@ export class AutoTradingScheduler {
       const globalTrendFilterEnabled = config.useTrendFilter === true;
       const strategyTrendFilterEnabled = setupStrategy?.filters?.trendFilter?.enabled === true;
       const shouldApplyTrendFilter = globalTrendFilterEnabled || strategyTrendFilterEnabled;
+      const trendFilterSource = globalTrendFilterEnabled && strategyTrendFilterEnabled
+        ? 'global+strategy'
+        : globalTrendFilterEnabled
+          ? 'global'
+          : strategyTrendFilterEnabled
+            ? 'strategy'
+            : 'none';
 
       log('🔍 Trend Filter Config', {
         globalEnabled: globalTrendFilterEnabled,
         strategyEnabled: strategyTrendFilterEnabled,
         shouldApply: shouldApplyTrendFilter,
+        source: trendFilterSource,
         strategyId: setup.type,
       });
 
@@ -1354,15 +1423,17 @@ export class AutoTradingScheduler {
           isBullish: trendResult.isBullish,
           isBearish: trendResult.isBearish,
           isAllowed: trendResult.isAllowed,
+          source: trendFilterSource,
           strategyId: setup.type,
         });
 
         if (!trendResult.isAllowed) {
-          log('🚫 Trend filter blocked trade', {
+          log(`🚫 Trend filter blocked trade (source: ${trendFilterSource})`, {
             direction: setup.direction,
             price: trendResult.price?.toFixed(2) ?? 'null',
             ema21: trendResult.ema21?.toFixed(2) ?? 'null',
             reason: trendResult.reason,
+            filterSource: trendFilterSource,
           });
           return;
         }
@@ -1372,6 +1443,7 @@ export class AutoTradingScheduler {
           price: trendResult.price?.toFixed(2) ?? 'null',
           ema21: trendResult.ema21?.toFixed(2) ?? 'null',
           condition: trendResult.reason,
+          source: trendFilterSource,
         });
       }
 

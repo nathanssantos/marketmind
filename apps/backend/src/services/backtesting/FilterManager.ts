@@ -5,6 +5,7 @@ import { checkBtcCorrelation, type BtcCorrelationResult } from '../../utils/btc-
 import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
 import { checkFundingRate, type FundingFilterResult } from '../../utils/funding-filter';
 import { checkMarketRegime, type MarketRegimeResult } from '../../utils/market-regime-filter';
+import { checkMomentumTiming, MOMENTUM_TIMING_FILTER } from '../../utils/momentum-timing-filter';
 import { checkMtfCondition, getHigherTimeframe, MTF_FILTER, type MtfFilterResult } from '../../utils/mtf-filter';
 import { checkStochasticCondition, STOCHASTIC_FILTER } from '../../utils/stochastic-filter';
 import { checkVolumeCondition, type VolumeFilterResult } from '../../utils/volume-filter';
@@ -14,6 +15,7 @@ export interface FilterConfig {
   onlyWithTrend?: boolean;
   trendFilterPeriod?: number;
   useStochasticFilter?: boolean;
+  useMomentumTimingFilter?: boolean;
   useAdxFilter?: boolean;
   useCooldown?: boolean;
   cooldownMinutes?: number;
@@ -42,6 +44,7 @@ export interface FilterStats {
   skippedRiskReward: number;
   skippedLimitExpired: number;
   skippedStochastic: number;
+  skippedMomentumTiming: number;
   skippedAdx: number;
   skippedMtf: number;
   skippedBtcCorrelation: number;
@@ -84,6 +87,7 @@ export class FilterManager {
     skippedRiskReward: 0,
     skippedLimitExpired: 0,
     skippedStochastic: 0,
+    skippedMomentumTiming: 0,
     skippedAdx: 0,
     skippedMtf: 0,
     skippedBtcCorrelation: 0,
@@ -203,6 +207,36 @@ export class FilterManager {
 
     if (tradesCount < 3) {
       console.log(`[FilterManager] Stochastic filter passed ${direction} trade - ${result.reason}`);
+    }
+
+    return true;
+  }
+
+  checkMomentumTimingFilter(
+    klines: Kline[],
+    setupIndex: number,
+    direction: 'LONG' | 'SHORT',
+    tradesCount: number
+  ): boolean {
+    if (!this.config.useMomentumTimingFilter) return true;
+
+    const { MIN_KLINES_REQUIRED } = MOMENTUM_TIMING_FILTER;
+    if (setupIndex < MIN_KLINES_REQUIRED) return true;
+
+    const momentumKlines = klines.slice(0, setupIndex + 1);
+    const result = checkMomentumTiming(momentumKlines, direction);
+
+    if (!result.isAllowed) {
+      this.stats.skippedMomentumTiming++;
+      if (tradesCount < 3) {
+        const rsi = result.rsiValue?.toFixed(2) ?? 'null';
+        console.log(`[FilterManager] Momentum Timing filter blocked ${direction} trade - RSI=${rsi}, momentum=${result.rsiMomentum}`);
+      }
+      return false;
+    }
+
+    if (tradesCount < 3) {
+      console.log(`[FilterManager] Momentum Timing filter passed ${direction} trade - ${result.reason}`);
     }
 
     return true;

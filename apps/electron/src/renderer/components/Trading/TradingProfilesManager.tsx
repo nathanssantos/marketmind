@@ -1,4 +1,4 @@
-import { Box, Flex, Grid, IconButton, Portal, Stack, Text } from '@chakra-ui/react';
+import { Box, Collapsible, Flex, Grid, IconButton, Portal, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { TradingProfile } from '@marketmind/types';
 import { Button } from '@renderer/components/ui/button';
@@ -6,7 +6,7 @@ import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { LuCopy, LuPencil, LuPlus, LuStar, LuTrash2 } from 'react-icons/lu';
+import { LuChevronDown, LuChevronUp, LuCopy, LuPencil, LuPlus, LuStar, LuTrash2 } from 'react-icons/lu';
 import { ProfileEditorDialog } from './ProfileEditorDialog';
 
 export const TradingProfilesManager = () => {
@@ -21,6 +21,7 @@ export const TradingProfilesManager = () => {
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingProfile, setEditingProfile] = useState<TradingProfile | null>(null);
+  const [profilesExpanded, setProfilesExpanded] = useState(false);
 
   const handleDuplicate = async (profile: TradingProfile) => {
     const newName = `${profile.name} (${t('common.copy')})`;
@@ -28,67 +29,102 @@ export const TradingProfilesManager = () => {
   };
 
   return (
-    <Stack gap={4}>
-      <Flex justify="space-between" align="center">
+    <Box>
+      <Flex
+        justify="space-between"
+        align="center"
+        cursor="pointer"
+        onClick={() => setProfilesExpanded(!profilesExpanded)}
+        _hover={{ bg: 'bg.muted' }}
+        p={2}
+        mx={-2}
+        borderRadius="md"
+      >
         <Box>
-          <Text fontSize="lg" fontWeight="bold">
-            {t('tradingProfiles.title')}
-          </Text>
+          <Flex align="center" gap={2}>
+            <Text fontSize="lg" fontWeight="bold">
+              {t('tradingProfiles.title')}
+            </Text>
+            {profiles.length > 0 && (
+              <Box
+                px={2}
+                py={0.5}
+                bg="blue.100"
+                color="blue.800"
+                borderRadius="full"
+                fontSize="xs"
+                fontWeight="medium"
+                _dark={{ bg: 'blue.900', color: 'blue.200' }}
+              >
+                {profiles.length}
+              </Box>
+            )}
+          </Flex>
           <Text fontSize="sm" color="fg.muted">
             {t('tradingProfiles.description')}
           </Text>
         </Box>
-        <Button
-          size="sm"
-          colorPalette="blue"
-          onClick={() => setShowCreateDialog(true)}
-        >
-          <LuPlus />
-          {t('tradingProfiles.create')}
-        </Button>
+        {profilesExpanded ? <LuChevronUp size={20} /> : <LuChevronDown size={20} />}
       </Flex>
 
-      {isLoadingProfiles ? (
-        <Box p={4} textAlign="center">
-          <Text fontSize="sm" color="fg.muted">
-            {t('common.loading')}
-          </Text>
-        </Box>
-      ) : profiles.length === 0 ? (
-        <Box
-          p={6}
-          textAlign="center"
-          borderWidth="1px"
-          borderStyle="dashed"
-          borderRadius="lg"
-          borderColor="border"
-        >
-          <Text fontSize="sm" color="fg.muted" mb={2}>
-            {t('tradingProfiles.empty')}
-          </Text>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowCreateDialog(true)}
-          >
-            <LuPlus />
-            {t('tradingProfiles.createFirst')}
-          </Button>
-        </Box>
-      ) : (
-        <Grid templateColumns="repeat(auto-fill, minmax(300px, 1fr))" gap={4}>
-          {profiles.map((profile) => (
-            <ProfileCard
-              key={profile.id}
-              profile={profile}
-              onEdit={() => setEditingProfile(profile)}
-              onDelete={() => deleteProfile(profile.id)}
-              onDuplicate={() => handleDuplicate(profile)}
-              isDeleting={isDeletingProfile}
-            />
-          ))}
-        </Grid>
-      )}
+      <Collapsible.Root open={profilesExpanded}>
+        <Collapsible.Content>
+          <Stack gap={4} mt={4}>
+            <Flex justify="flex-end">
+              <Button
+                size="sm"
+                colorPalette="blue"
+                onClick={() => setShowCreateDialog(true)}
+              >
+                <LuPlus />
+                {t('tradingProfiles.create')}
+              </Button>
+            </Flex>
+
+            {isLoadingProfiles ? (
+              <Box p={4} textAlign="center">
+                <Text fontSize="sm" color="fg.muted">
+                  {t('common.loading')}
+                </Text>
+              </Box>
+            ) : profiles.length === 0 ? (
+              <Box
+                p={6}
+                textAlign="center"
+                borderWidth="1px"
+                borderStyle="dashed"
+                borderRadius="lg"
+                borderColor="border"
+              >
+                <Text fontSize="sm" color="fg.muted" mb={2}>
+                  {t('tradingProfiles.empty')}
+                </Text>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowCreateDialog(true)}
+                >
+                  <LuPlus />
+                  {t('tradingProfiles.createFirst')}
+                </Button>
+              </Box>
+            ) : (
+              <Grid templateColumns="repeat(auto-fill, minmax(300px, 1fr))" gap={4}>
+                {profiles.map((profile) => (
+                  <ProfileCard
+                    key={profile.id}
+                    profile={profile}
+                    onEdit={() => setEditingProfile(profile)}
+                    onDelete={() => deleteProfile(profile.id)}
+                    onDuplicate={() => handleDuplicate(profile)}
+                    isDeleting={isDeletingProfile}
+                  />
+                ))}
+              </Grid>
+            )}
+          </Stack>
+        </Collapsible.Content>
+      </Collapsible.Root>
 
       <ProfileEditorDialog
         isOpen={showCreateDialog}
@@ -101,7 +137,7 @@ export const TradingProfilesManager = () => {
         onClose={() => setEditingProfile(null)}
         profile={editingProfile}
       />
-    </Stack>
+    </Box>
   );
 };
 

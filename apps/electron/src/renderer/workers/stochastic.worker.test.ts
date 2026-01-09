@@ -17,8 +17,8 @@ describe('stochastic.worker', () => {
   it('should calculate Stochastic', async () => {
     await import('./stochastic.worker');
     const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { type: 'calculateStochastic', klines: mockKlines, kPeriod: 14, dPeriod: 3 } } as MessageEvent);
-    expect(calculateStochastic).toHaveBeenCalledWith(mockKlines, 14, 3);
+    handler({ data: { type: 'calculateStochastic', klines: mockKlines, kPeriod: 14, kSmoothing: 3, dPeriod: 3 } } as MessageEvent);
+    expect(calculateStochastic).toHaveBeenCalledWith(mockKlines, 14, 3, 3);
     expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'stochasticResult' }));
   });
 
@@ -26,7 +26,7 @@ describe('stochastic.worker', () => {
     vi.resetModules();
     await import('./stochastic.worker');
     const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { type: 'wrongType', klines: mockKlines, kPeriod: 14, dPeriod: 3 } } as MessageEvent);
+    handler({ data: { type: 'wrongType', klines: mockKlines, kPeriod: 14, kSmoothing: 3, dPeriod: 3 } } as MessageEvent);
     expect(calculateStochastic).not.toHaveBeenCalled();
   });
 });

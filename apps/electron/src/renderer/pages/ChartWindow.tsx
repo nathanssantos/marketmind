@@ -22,6 +22,7 @@ import { useBackendKlines, useKlineStream } from '../hooks/useBackendKlines';
 import { useDebounce } from '../hooks/useDebounce';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { system } from '../theme';
+import { useSetupStore } from '../store/setupStore';
 import { toaster } from '../utils/toaster';
 
 const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
@@ -324,10 +325,13 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
     }
   }, [symbol, timeframe, navigate]);
 
+  const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
+
   const handleSymbolChange = useCallback((newSymbol: string, newMarketType?: MarketType): void => {
+    clearDetectedSetups();
     setSymbol(newSymbol);
     if (newMarketType) setMarketType(newMarketType);
-  }, [setSymbol, setMarketType]);
+  }, [setSymbol, setMarketType, clearDetectedSetups]);
 
   return (
     <Box
