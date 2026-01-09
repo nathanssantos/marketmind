@@ -20,17 +20,21 @@ vi.mock('../../../volatility-profile', () => ({
   }),
 }));
 
-vi.mock('@marketmind/indicators', () => ({
-  analyzePivots: vi.fn().mockReturnValue({
-    pivots: [],
-    support: [],
-    resistance: [],
-  }),
-  findNearestPivotTarget: vi.fn().mockReturnValue({
-    target: null,
-    pivot: null,
-  }),
-}));
+vi.mock('@marketmind/indicators', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@marketmind/indicators')>();
+  return {
+    ...actual,
+    analyzePivots: vi.fn().mockReturnValue({
+      pivots: [],
+      support: [],
+      resistance: [],
+    }),
+    findNearestPivotTarget: vi.fn().mockReturnValue({
+      target: null,
+      pivot: null,
+    }),
+  };
+});
 
 import { ExitCalculator } from '../ExitCalculator';
 import type { IndicatorEngine } from '../IndicatorEngine';

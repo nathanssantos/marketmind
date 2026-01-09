@@ -11,6 +11,8 @@ import { isParameterReference } from '@marketmind/types';
 import {
   analyzePivots,
   findNearestPivotTarget,
+  findSignificantSwingHigh,
+  findSignificantSwingLow,
   type EnhancedPivotPoint,
   type PivotDetectionConfig,
   type PivotStrength,
@@ -602,20 +604,13 @@ export class ExitCalculator {
   }
 
   private findSwingLow(klines: Kline[], currentIndex: number, skipRecent: number = 0): number {
-    const maxLookback = Math.min(50, currentIndex);
+    const lookback = Math.min(100, currentIndex);
     const searchEndIndex = currentIndex - skipRecent;
 
-    for (let i = searchEndIndex - 1; i >= Math.max(1, currentIndex - maxLookback); i--) {
-      const kline = klines[i];
-      if (!kline) continue;
+    const swingPoint = findSignificantSwingLow(klines, searchEndIndex, lookback);
 
-      const low = parseFloat(String((kline as { low: string }).low));
-      const prevLow = parseFloat(String((klines[i - 1] as { low: string }).low));
-      const nextLow = parseFloat(String((klines[i + 1] as { low: string }).low));
-
-      if (low <= prevLow && low <= nextLow) {
-        return low;
-      }
+    if (swingPoint && swingPoint.price) {
+      return swingPoint.price;
     }
 
     const fallbackStart = Math.max(0, currentIndex - 20);
@@ -629,20 +624,13 @@ export class ExitCalculator {
   }
 
   private findSwingHigh(klines: Kline[], currentIndex: number, skipRecent: number = 0): number {
-    const maxLookback = Math.min(50, currentIndex);
+    const lookback = Math.min(100, currentIndex);
     const searchEndIndex = currentIndex - skipRecent;
 
-    for (let i = searchEndIndex - 1; i >= Math.max(1, currentIndex - maxLookback); i--) {
-      const kline = klines[i];
-      if (!kline) continue;
+    const swingPoint = findSignificantSwingHigh(klines, searchEndIndex, lookback);
 
-      const high = parseFloat(String((kline as { high: string }).high));
-      const prevHigh = parseFloat(String((klines[i - 1] as { high: string }).high));
-      const nextHigh = parseFloat(String((klines[i + 1] as { high: string }).high));
-
-      if (high >= prevHigh && high >= nextHigh) {
-        return high;
-      }
+    if (swingPoint && swingPoint.price) {
+      return swingPoint.price;
     }
 
     const fallbackStart = Math.max(0, currentIndex - 20);
