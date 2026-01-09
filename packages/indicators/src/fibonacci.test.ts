@@ -6,6 +6,7 @@ import {
   calculateFibonacciProjection,
   calculateFibonacciRetracement,
   FIBONACCI_EXTENSION_LEVELS,
+  selectDynamicFibonacciLevel,
 } from './fibonacci';
 
 const createMockKline = (high: number, low: number, index: number): Kline => ({
@@ -285,5 +286,117 @@ describe('calculateFibonacciProjection', () => {
     expect(level200?.label).toBe('200.0%');
 
     expect(result!.levels).toHaveLength(3);
+  });
+});
+
+describe('selectDynamicFibonacciLevel', () => {
+  describe('ADX-based selection', () => {
+    it('should return 1.272 for ranging market (ADX < 20)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 15, atrPercent: 1.5 });
+      expect(result.level).toBe(1.272);
+      expect(result.reason).toBe('ranging_market');
+    });
+
+    it('should return 1.272 for ADX at boundary (ADX = 19)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 19, atrPercent: 2.0 });
+      expect(result.level).toBe(1.272);
+      expect(result.reason).toBe('ranging_market');
+    });
+
+    it('should return 1.618 for weak trend (ADX 20-25)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 22, atrPercent: 1.5 });
+      expect(result.level).toBe(1.618);
+      expect(result.reason).toBe('weak_trend');
+    });
+
+    it('should return 1.618 for ADX at weak trend boundary (ADX = 24)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 24, atrPercent: 1.5 });
+      expect(result.level).toBe(1.618);
+      expect(result.reason).toBe('weak_trend');
+    });
+
+    it('should return 1.618 for strong trend without confirmation (ADX 25-30)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 27, atrPercent: 1.5 });
+      expect(result.level).toBe(1.618);
+      expect(result.reason).toBe('strong_trend');
+    });
+  });
+
+  describe('Strong trend with confirmation (ADX > 30)', () => {
+    it('should return 2 with volume confirmation (ADX > 30, volume > 1.5)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 35, atrPercent: 1.5, volumeRatio: 2.0 });
+      expect(result.level).toBe(2);
+      expect(result.reason).toBe('strong_trend_confirmed');
+    });
+
+    it('should return 2 with high volatility (ADX > 30, ATR% > 2.5)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 35, atrPercent: 3.0 });
+      expect(result.level).toBe(2);
+      expect(result.reason).toBe('strong_trend_confirmed');
+    });
+
+    it('should return 2 with both confirmations', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 40, atrPercent: 3.5, volumeRatio: 2.5 });
+      expect(result.level).toBe(2);
+      expect(result.reason).toBe('strong_trend_confirmed');
+    });
+
+    it('should return 1.618 without any confirmation (ADX > 30 but low vol and ATR)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 35, atrPercent: 1.5, volumeRatio: 1.0 });
+      expect(result.level).toBe(1.618);
+      expect(result.reason).toBe('strong_trend');
+    });
+
+    it('should return 1.618 without volume ratio provided', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 35, atrPercent: 1.5 });
+      expect(result.level).toBe(1.618);
+      expect(result.reason).toBe('strong_trend');
+    });
+  });
+
+  describe('Edge cases', () => {
+    it('should handle ADX exactly at 20 (boundary)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 20, atrPercent: 1.5 });
+      expect(result.level).toBe(1.618);
+      expect(result.reason).toBe('weak_trend');
+    });
+
+    it('should handle ADX exactly at 25 (boundary)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 25, atrPercent: 1.5 });
+      expect(result.level).toBe(1.618);
+      expect(result.reason).toBe('strong_trend');
+    });
+
+    it('should handle ADX exactly at 30 (boundary)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 30, atrPercent: 1.5 });
+      expect(result.level).toBe(1.618);
+      expect(result.reason).toBe('strong_trend');
+    });
+
+    it('should handle ADX just above 30 with confirmation', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 31, atrPercent: 3.0 });
+      expect(result.level).toBe(2);
+      expect(result.reason).toBe('strong_trend_confirmed');
+    });
+
+    it('should handle volume ratio exactly at threshold (1.5)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 35, atrPercent: 1.5, volumeRatio: 1.5 });
+      expect(result.level).toBe(1.618);
+    });
+
+    it('should handle volume ratio just above threshold (1.51)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 35, atrPercent: 1.5, volumeRatio: 1.51 });
+      expect(result.level).toBe(2);
+    });
+
+    it('should handle ATR% exactly at threshold (2.5)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 35, atrPercent: 2.5 });
+      expect(result.level).toBe(1.618);
+    });
+
+    it('should handle ATR% just above threshold (2.51)', () => {
+      const result = selectDynamicFibonacciLevel({ adx: 35, atrPercent: 2.51 });
+      expect(result.level).toBe(2);
+    });
   });
 });

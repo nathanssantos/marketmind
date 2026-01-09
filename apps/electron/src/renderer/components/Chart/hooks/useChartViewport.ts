@@ -1,5 +1,6 @@
 import type { Kline, Viewport } from '@marketmind/types';
 import { useCallback, useMemo, useState } from 'react';
+import { CHART_CONFIG } from '../../../../shared/constants/chartConfig';
 
 export interface UseChartViewportProps {
   klines: Kline[];
@@ -28,7 +29,7 @@ export const useChartViewport = ({
   height,
   initialZoom = 1,
   initialPan = 0,
-  padding = 0.05,
+  padding = CHART_CONFIG.PRICE_RANGE_PADDING,
 }: UseChartViewportProps): UseChartViewportResult => {
   const [zoom, setZoom] = useState(initialZoom);
   const [pan, setPan] = useState(initialPan);

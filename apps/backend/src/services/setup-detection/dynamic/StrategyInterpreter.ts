@@ -1,4 +1,4 @@
-import { calculateFibonacciProjection } from '@marketmind/indicators';
+import { calculateFibonacciProjection, selectDynamicFibonacciLevel } from '@marketmind/indicators';
 import type {
   ComputedIndicators,
   EvaluationContext,
@@ -24,7 +24,7 @@ import { ExitCalculator } from './ExitCalculator';
 import { IndicatorEngine } from './IndicatorEngine';
 
 const FIBONACCI_LOOKBACK = 50;
-const FIBONACCI_PRIMARY_LEVEL = 2;
+const DEFAULT_FIBONACCI_LEVEL = 2;
 
 const { MIN_ENTRY_STOP_SEPARATION_PERCENT } = EXIT_CALCULATOR;
 
@@ -81,7 +81,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
     const closePrice = parseFloat(klines[currentIndex]?.close ?? '0');
     const entryPrice = closePrice;
 
-    const fibonacciProjection = this.calculateFibonacciProjectionData(klines, currentIndex, direction);
+    const fibonacciProjection = this.calculateFibonacciProjectionData(klines, currentIndex, direction, indicators);
 
     const exitContext: ExitContext = {
       direction,
@@ -211,10 +211,13 @@ export class StrategyInterpreter extends BaseSetupDetector {
   private calculateFibonacciProjectionData(
     klines: Kline[],
     currentIndex: number,
-    direction: SetupDirection
+    direction: SetupDirection,
+    indicators: ComputedIndicators
   ): FibonacciProjectionData | undefined {
     const projection = calculateFibonacciProjection(klines, currentIndex, FIBONACCI_LOOKBACK, direction);
     if (!projection) return undefined;
+
+    const primaryLevel = this.selectPrimaryFibonacciLevel(klines, currentIndex, indicators);
 
     return {
       swingLow: {
@@ -233,8 +236,50 @@ export class StrategyInterpreter extends BaseSetupDetector {
         label: l.label,
       })),
       range: projection.range,
-      primaryLevel: FIBONACCI_PRIMARY_LEVEL,
+      primaryLevel,
     };
+  }
+
+  private selectPrimaryFibonacciLevel(
+    klines: Kline[],
+    currentIndex: number,
+    indicators: ComputedIndicators
+  ): number {
+    const adxValue = this.indicatorEngine.resolveIndicatorValue(indicators, 'adx', currentIndex);
+    const atrValue = this.indicatorEngine.resolveIndicatorValue(indicators, 'atr', currentIndex);
+
+    if (adxValue === null || atrValue === null) {
+      logger.debug({ adxValue, atrValue }, 'Missing ADX or ATR for dynamic Fibonacci level selection, using default');
+      return DEFAULT_FIBONACCI_LEVEL;
+    }
+
+    const currentKline = klines[currentIndex];
+    const closePrice = currentKline ? parseFloat(currentKline.close) : 0;
+    const atrPercent = closePrice > 0 ? (atrValue / closePrice) * 100 : 0;
+
+    let volumeRatio: number | undefined;
+    const currentVolume = currentKline ? parseFloat(currentKline.volume) : 0;
+    if (currentVolume > 0 && currentIndex >= 20) {
+      let avgVolume = 0;
+      for (let i = currentIndex - 20; i < currentIndex; i++) {
+        const k = klines[i];
+        if (k) avgVolume += parseFloat(k.volume);
+      }
+      avgVolume /= 20;
+      volumeRatio = avgVolume > 0 ? currentVolume / avgVolume : undefined;
+    }
+
+    const result = selectDynamicFibonacciLevel({ adx: adxValue, atrPercent, volumeRatio });
+
+    logger.debug({
+      adx: adxValue.toFixed(2),
+      atrPercent: atrPercent.toFixed(2),
+      volumeRatio: volumeRatio?.toFixed(2) ?? 'N/A',
+      selectedLevel: result.level,
+      reason: result.reason,
+    }, 'Dynamic Fibonacci level selected');
+
+    return result.level;
   }
 
   private extractTriggerCandles(

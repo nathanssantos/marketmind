@@ -226,8 +226,8 @@ describe('Coordinate System Functions - Real Browser Tests', () => {
         const bounds = calculateBounds(mockKlines, mockViewport);
 
         expect(bounds).toBeDefined();
-        expect(bounds.minPrice).toBe(39000);
-        expect(bounds.maxPrice).toBe(43000);
+        expect(bounds.minPrice).toBe(37000);
+        expect(bounds.maxPrice).toBe(45000);
         expect(bounds.maxVolume).toBe(1200);
     });
 

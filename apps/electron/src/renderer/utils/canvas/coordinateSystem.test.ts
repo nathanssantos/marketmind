@@ -37,20 +37,20 @@ describe('coordinateSystem', () => {
   };
 
   describe('calculateBounds', () => {
-    it('should calculate bounds correctly for all visible klines', () => {
+    it('should calculate bounds correctly for all visible klines with padding', () => {
       const bounds = calculateBounds(mockKlines, createViewport(0, 5));
 
-      expect(bounds.minPrice).toBe(95);
-      expect(bounds.maxPrice).toBe(130);
+      expect(bounds.minPrice).toBe(77.5);
+      expect(bounds.maxPrice).toBe(147.5);
       expect(bounds.minVolume).toBe(1000);
       expect(bounds.maxVolume).toBe(2000);
     });
 
-    it('should handle partial viewport', () => {
+    it('should handle partial viewport with padding', () => {
       const bounds = calculateBounds(mockKlines, createViewport(1, 3));
 
-      expect(bounds.minPrice).toBe(100);
-      expect(bounds.maxPrice).toBe(120);
+      expect(bounds.minPrice).toBe(90);
+      expect(bounds.maxPrice).toBe(130);
     });
 
     it('should return zeros for empty visible klines', () => {

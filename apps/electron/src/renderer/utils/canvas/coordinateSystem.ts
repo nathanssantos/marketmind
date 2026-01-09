@@ -54,7 +54,15 @@ export const calculateBounds = (klines: Kline[], viewport: Viewport): Bounds => 
   if (minVolume === Infinity) minVolume = 0;
   if (maxVolume === -Infinity) maxVolume = 0;
 
-  return { minPrice, maxPrice, minVolume, maxVolume };
+  const priceRange = maxPrice - minPrice;
+  const padding = CHART_CONFIG.PRICE_RANGE_PADDING;
+
+  return {
+    minPrice: minPrice - priceRange * padding,
+    maxPrice: maxPrice + priceRange * padding,
+    minVolume,
+    maxVolume,
+  };
 };
 
 export const priceToY = (

@@ -1,0 +1,1 @@
+ALTER TABLE "auto_trading_config" ADD COLUMN "fibonacci_target_level" varchar(10) DEFAULT 'auto' NOT NULL;

@@ -97,6 +97,7 @@ export const autoTradingRouter = router({
         useTrendFilter: z.boolean().optional(),
         exposureMultiplier: z.string().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
+        fibonacciTargetLevel: z.enum(['auto', '1.272', '1.618', '2']).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -148,6 +149,8 @@ export const autoTradingRouter = router({
         {updateData.exposureMultiplier = input.exposureMultiplier;}
       if (input.tpCalculationMode !== undefined)
         {updateData.tpCalculationMode = input.tpCalculationMode;}
+      if (input.fibonacciTargetLevel !== undefined)
+        {updateData.fibonacciTargetLevel = input.fibonacciTargetLevel;}
 
       await ctx.db
         .update(autoTradingConfig)

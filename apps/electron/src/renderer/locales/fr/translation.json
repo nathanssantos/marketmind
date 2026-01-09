@@ -192,7 +192,18 @@
         "default": "Par Défaut",
         "defaultDescription": "Utilise les calculs basés sur ATR et swing",
         "fibonacci": "Projection Fibonacci",
-        "fibonacciDescription": "Utilise les niveaux d'extension Fibonacci (127.2%, 161.8%, 200%)"
+        "fibonacciDescription": "Utilise les niveaux d'extension Fibonacci (127.2%, 161.8%, 200%)",
+        "fibonacciLevel": {
+          "title": "Niveau de l'Objectif Fibonacci",
+          "auto": "Automatique (basé sur ADX)",
+          "autoDescription": "Sélectionne dynamiquement le niveau basé sur la force de la tendance (ADX), volatilité (ATR) et volume",
+          "conservative": "127.2% (Conservateur)",
+          "conservativeDescription": "Idéal pour les marchés latéraux ou tendances faibles (ADX < 20)",
+          "moderate": "161.8% (Modéré)",
+          "moderateDescription": "Le nombre d'or - idéal pour des conditions de tendance normales",
+          "aggressive": "200% (Agressif)",
+          "aggressiveDescription": "Idéal pour les tendances fortes avec confirmation de volume (ADX > 30)"
+        }
       },
       "filters": {
         "title": "Filtres de Trade",

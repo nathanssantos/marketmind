@@ -166,7 +166,18 @@
         "default": "Default",
         "defaultDescription": "Uses ATR and swing-based calculations",
         "fibonacci": "Fibonacci Projection",
-        "fibonacciDescription": "Uses Fibonacci extension levels (127.2%, 161.8%, 200%)"
+        "fibonacciDescription": "Uses Fibonacci extension levels (127.2%, 161.8%, 200%)",
+        "fibonacciLevel": {
+          "title": "Fibonacci Target Level",
+          "auto": "Automatic (ADX-based)",
+          "autoDescription": "Dynamically selects level based on trend strength (ADX), volatility (ATR) and volume",
+          "conservative": "127.2% (Conservative)",
+          "conservativeDescription": "Best for ranging markets or weak trends (ADX < 20)",
+          "moderate": "161.8% (Moderate)",
+          "moderateDescription": "The golden ratio - ideal for normal trend conditions",
+          "aggressive": "200% (Aggressive)",
+          "aggressiveDescription": "Best for strong trends with volume confirmation (ADX > 30)"
+        }
       },
       "filters": {
         "title": "Trade Filters",

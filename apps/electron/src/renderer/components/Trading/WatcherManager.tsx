@@ -45,12 +45,21 @@ export const WatcherManager = () => {
   const [watchersExpanded, setWatchersExpanded] = useState(true);
 
   const tpCalculationMode = config?.tpCalculationMode ?? 'default';
+  const fibonacciTargetLevel = config?.fibonacciTargetLevel ?? 'auto';
 
   const handleTpModeChange = (details: { value: string }): void => {
     if (!walletId) return;
     updateConfig.mutate({
       walletId,
       tpCalculationMode: details.value as 'default' | 'fibonacci',
+    });
+  };
+
+  const handleFibonacciLevelChange = (details: { value: string }): void => {
+    if (!walletId) return;
+    updateConfig.mutate({
+      walletId,
+      fibonacciTargetLevel: details.value as 'auto' | '1.272' | '1.618' | '2',
     });
   };
 
@@ -260,6 +269,54 @@ export const WatcherManager = () => {
                 </Radio>
               </HStack>
             </RadioGroup>
+
+            {tpCalculationMode === 'fibonacci' && (
+              <Box mt={4} pl={4} borderLeftWidth="2px" borderLeftColor="blue.500">
+                <Text fontSize="sm" fontWeight="medium" mb={2}>
+                  {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.title')}
+                </Text>
+                <RadioGroup
+                  value={fibonacciTargetLevel}
+                  onValueChange={handleFibonacciLevelChange}
+                  disabled={updateConfig.isPending}
+                >
+                  <Stack gap={2}>
+                    <Radio value="auto">
+                      <Box>
+                        <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.auto')}</Text>
+                        <Text fontSize="xs" color="fg.muted">
+                          {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.autoDescription')}
+                        </Text>
+                      </Box>
+                    </Radio>
+                    <Radio value="1.272">
+                      <Box>
+                        <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.conservative')}</Text>
+                        <Text fontSize="xs" color="fg.muted">
+                          {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.conservativeDescription')}
+                        </Text>
+                      </Box>
+                    </Radio>
+                    <Radio value="1.618">
+                      <Box>
+                        <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.moderate')}</Text>
+                        <Text fontSize="xs" color="fg.muted">
+                          {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.moderateDescription')}
+                        </Text>
+                      </Box>
+                    </Radio>
+                    <Radio value="2">
+                      <Box>
+                        <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.aggressive')}</Text>
+                        <Text fontSize="xs" color="fg.muted">
+                          {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.aggressiveDescription')}
+                        </Text>
+                      </Box>
+                    </Radio>
+                  </Stack>
+                </RadioGroup>
+              </Box>
+            )}
           </Collapsible.Content>
         </Collapsible.Root>
       </Box>

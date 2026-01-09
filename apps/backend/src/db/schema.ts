@@ -228,6 +228,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   marginTopUpMaxCount: integer('margin_top_up_max_count').default(3),
   exposureMultiplier: numeric('exposure_multiplier', { precision: 4, scale: 2 }).default('1.50').notNull(),
   tpCalculationMode: varchar('tp_calculation_mode', { length: 20 }).$type<'default' | 'fibonacci'>().default('default').notNull(),
+  fibonacciTargetLevel: varchar('fibonacci_target_level', { length: 10 }).$type<'auto' | '1.272' | '1.618' | '2'>().default('auto').notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
