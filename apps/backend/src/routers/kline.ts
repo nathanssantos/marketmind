@@ -250,6 +250,33 @@ export const klineRouter = router({
       return { count: result.length };
     }),
 
+  auditAndRepair: protectedProcedure
+    .input(
+      z.object({
+        symbol: z.string(),
+        interval: intervalSchema,
+        marketType: marketTypeSchema,
+        limit: z.number().min(1).max(500).default(100),
+        autoFix: z.boolean().default(false),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const gapFiller = getKlineGapFiller();
+      const marketType = input.marketType as MarketType;
+
+      const result = await gapFiller.forceCheckSymbol(
+        input.symbol,
+        input.interval as Interval,
+        marketType
+      );
+
+      return {
+        success: true,
+        gapsFilled: result.gapsFilled,
+        corruptedFixed: result.corruptedFixed,
+      };
+    }),
+
   sync: protectedProcedure
     .input(
       z.object({

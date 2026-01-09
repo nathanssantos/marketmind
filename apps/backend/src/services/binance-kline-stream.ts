@@ -11,6 +11,38 @@ import { getWebSocketService } from './websocket';
 const MIN_VOLUME_FOR_VALIDITY = 0.01;
 const MIN_RANGE_RATIO = 0.05;
 
+class ReconnectionGuard {
+  private lastReconnectionTime: number = 0;
+  private isInGracePeriod = false;
+  private readonly GRACE_PERIOD_MS = 60 * 1000;
+
+  onReconnect(marketType: MarketType): void {
+    this.lastReconnectionTime = Date.now();
+    this.isInGracePeriod = true;
+
+    logger.warn({ marketType }, 'WebSocket reconnected - entering grace period (60s)');
+
+    setTimeout(() => {
+      this.isInGracePeriod = false;
+      logger.info({ marketType }, 'Grace period ended - resuming normal kline persistence');
+
+      void this.triggerPostReconnectionCheck();
+    }, this.GRACE_PERIOD_MS);
+  }
+
+  shouldPersistKline(): boolean {
+    return !this.isInGracePeriod;
+  }
+
+  private async triggerPostReconnectionCheck(): Promise<void> {
+    const { getKlineGapFiller } = await import('./kline-gap-filler');
+    const gapFiller = getKlineGapFiller();
+    await gapFiller.checkAfterReconnection();
+  }
+}
+
+const reconnectionGuard = new ReconnectionGuard();
+
 const isKlineDataSuspicious = (
   newData: { volume: string; high: string; low: string },
   existingData?: { volume: string; high: string; low: string }
@@ -275,6 +307,15 @@ export class BinanceKlineStreamService {
         return;
       }
 
+      if (!reconnectionGuard.shouldPersistKline()) {
+        logger.debug({
+          symbol: update.symbol,
+          interval: update.interval,
+          openTime: new Date(update.openTime).toISOString(),
+        }, 'Skipping persistence during grace period');
+        return;
+      }
+
       const openTime = new Date(update.openTime);
       const interval = update.interval as Interval;
 
@@ -365,6 +406,8 @@ export class BinanceKlineStreamService {
   }
 
   private resubscribeAll(): void {
+    logger.warn('SPOT WebSocket reconnected - resubscribing all streams');
+    reconnectionGuard.onReconnect('SPOT');
 
     const subs = Array.from(this.subscriptions.values());
     this.subscriptions.clear();
@@ -560,6 +603,15 @@ export class BinanceFuturesKlineStreamService {
         return;
       }
 
+      if (!reconnectionGuard.shouldPersistKline()) {
+        logger.debug({
+          symbol: update.symbol,
+          interval: update.interval,
+          openTime: new Date(update.openTime).toISOString(),
+        }, 'Skipping FUTURES persistence during grace period');
+        return;
+      }
+
       const openTime = new Date(update.openTime);
       const interval = update.interval as Interval;
 
@@ -650,6 +702,8 @@ export class BinanceFuturesKlineStreamService {
   }
 
   private resubscribeAll(): void {
+    logger.warn('FUTURES WebSocket reconnected - resubscribing all streams');
+    reconnectionGuard.onReconnect('FUTURES');
 
     const subs = Array.from(this.subscriptions.values());
     this.subscriptions.clear();

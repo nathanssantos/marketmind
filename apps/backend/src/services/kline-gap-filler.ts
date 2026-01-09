@@ -466,6 +466,50 @@ class KlineGapFiller {
     }
   }
 
+  private async validateAgainstAPI(
+    kline: typeof klines.$inferSelect,
+    symbol: string,
+    interval: Interval,
+    marketType: 'SPOT' | 'FUTURES'
+  ): Promise<boolean> {
+    const apiKline = await this.fetchBinanceKline(
+      symbol,
+      interval,
+      kline.openTime.getTime(),
+      marketType
+    );
+
+    if (!apiKline) return true;
+
+    const tolerance = 0.001;
+    const fields = [
+      { name: 'open', db: parseFloat(kline.open), api: parseFloat(apiKline.open) },
+      { name: 'high', db: parseFloat(kline.high), api: parseFloat(apiKline.high) },
+      { name: 'low', db: parseFloat(kline.low), api: parseFloat(apiKline.low) },
+      { name: 'close', db: parseFloat(kline.close), api: parseFloat(apiKline.close) },
+    ];
+
+    for (const field of fields) {
+      const diff = Math.abs(field.db - field.api);
+      const relativeDiff = diff / field.api;
+
+      if (relativeDiff > tolerance) {
+        logger.error({
+          symbol,
+          interval,
+          openTime: kline.openTime,
+          field: field.name,
+          db: field.db,
+          api: field.api,
+          diff: relativeDiff * 100,
+        }, `OHLC mismatch detected: ${field.name}`);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   private async detectAndFixCorruptedKlines(pair: ActivePair): Promise<number> {
     const intervalMs = getIntervalMilliseconds(pair.interval);
     const lookbackMs = CORRUPTION_CHECK_KLINES * intervalMs;
@@ -562,6 +606,85 @@ class KlineGapFiller {
     }
 
     return { gapsFilled, corruptedFixed };
+  }
+
+  async checkAfterReconnection(): Promise<{ checked: number; fixed: number }> {
+    logger.info('Running post-reconnection validation');
+
+    const activePairs = await this.getActivePairs();
+    let totalChecked = 0;
+    let totalFixed = 0;
+
+    for (const pair of activePairs) {
+      const intervalMs = getIntervalMilliseconds(pair.interval);
+      const lookbackMs = 50 * intervalMs;
+      const startTime = new Date(Date.now() - lookbackMs);
+
+      const recentKlines = await db.query.klines.findMany({
+        where: and(
+          eq(klines.symbol, pair.symbol),
+          eq(klines.interval, pair.interval),
+          eq(klines.marketType, pair.marketType),
+          gte(klines.openTime, startTime)
+        ),
+        orderBy: [asc(klines.openTime)],
+      });
+
+      totalChecked += recentKlines.length;
+
+      for (const kline of recentKlines) {
+        const isValid = await this.validateAgainstAPI(
+          kline,
+          pair.symbol,
+          pair.interval,
+          pair.marketType
+        );
+
+        if (!isValid) {
+          const apiKline = await this.fetchBinanceKline(
+            pair.symbol,
+            pair.interval,
+            kline.openTime.getTime(),
+            pair.marketType
+          );
+
+          if (apiKline) {
+            await db
+              .update(klines)
+              .set({
+                open: apiKline.open,
+                high: apiKline.high,
+                low: apiKline.low,
+                close: apiKline.close,
+                volume: apiKline.volume,
+                quoteVolume: apiKline.quoteVolume,
+                trades: apiKline.trades,
+                takerBuyBaseVolume: apiKline.takerBuyBaseVolume,
+                takerBuyQuoteVolume: apiKline.takerBuyQuoteVolume,
+                closeTime: new Date(apiKline.closeTime),
+              })
+              .where(
+                and(
+                  eq(klines.symbol, pair.symbol),
+                  eq(klines.interval, pair.interval),
+                  eq(klines.marketType, pair.marketType),
+                  eq(klines.openTime, kline.openTime)
+                )
+              );
+
+            totalFixed++;
+            logger.info({
+              symbol: pair.symbol,
+              interval: pair.interval,
+              openTime: kline.openTime,
+            }, 'Fixed corrupted kline after reconnection');
+          }
+        }
+      }
+    }
+
+    logger.info({ totalChecked, totalFixed }, 'Post-reconnection check complete');
+    return { checked: totalChecked, fixed: totalFixed };
   }
 }
 
