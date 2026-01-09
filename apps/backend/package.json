@@ -41,7 +41,8 @@
     "optimize:all": "node batch-optimize.mjs",
     "test:all": "tsx validate-strategies.mts && node batch-optimize.mjs",
     "reset-wallet": "tsx src/scripts/reset-wallet.ts",
-    "audit-klines": "tsx src/scripts/audit-klines.ts"
+    "audit-klines": "tsx src/scripts/audit-klines.ts",
+    "clear-klines": "tsx src/scripts/clear-klines.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
