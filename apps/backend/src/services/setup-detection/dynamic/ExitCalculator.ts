@@ -269,15 +269,28 @@ export class ExitCalculator {
   }
 
   private calculateSwingHighLowStop(exit: ExitLevel, context: ExitContext): number {
-    const { direction, entryPrice, klines, currentIndex, indicators } = context;
+    const { direction, entryPrice, klines, currentIndex, indicators, fibonacciSwing } = context;
 
     if (klines.length === 0 || currentIndex < 2) {
       throw new Error('Insufficient klines for swing high/low calculation');
     }
 
-    const rawSwingPrice = direction === 'SHORT'
-      ? this.findSwingHigh(klines as Kline[], currentIndex, SWING_SKIP_RECENT)
-      : this.findSwingLow(klines as Kline[], currentIndex, SWING_SKIP_RECENT);
+    let rawSwingPrice: number;
+    let usedFibonacciSwing = false;
+
+    if (fibonacciSwing) {
+      rawSwingPrice = direction === 'SHORT' ? fibonacciSwing.swingHigh.price : fibonacciSwing.swingLow.price;
+      usedFibonacciSwing = true;
+      logger.debug({
+        direction,
+        swingPrice: rawSwingPrice.toFixed(4),
+        swingType: direction === 'SHORT' ? 'swingHigh' : 'swingLow',
+      }, 'Using Fibonacci swing for stop loss calculation');
+    } else {
+      rawSwingPrice = direction === 'SHORT'
+        ? this.findSwingHigh(klines as Kline[], currentIndex, SWING_SKIP_RECENT)
+        : this.findSwingLow(klines as Kline[], currentIndex, SWING_SKIP_RECENT);
+    }
 
     let stopLoss = rawSwingPrice;
 
@@ -388,11 +401,12 @@ export class ExitCalculator {
       entryPrice: entryPrice.toFixed(4),
       rawSwingPrice: rawSwingPrice.toFixed(4),
       stopLoss: stopLoss.toFixed(4),
-      maxCandlesConsidered: maxLookback,
-      skipRecent: SWING_SKIP_RECENT,
+      maxCandlesConsidered: usedFibonacciSwing ? 'fibonacci' : maxLookback,
+      skipRecent: usedFibonacciSwing ? 0 : SWING_SKIP_RECENT,
       percentFromEntry: `${finalSeparation.toFixed(2)}%`,
       bufferApplied: bufferApplied ? 'custom' : 'default',
       usedFallback,
+      usedFibonacciSwing,
     }, 'Swing high/low stop loss calculated');
 
     return stopLoss;

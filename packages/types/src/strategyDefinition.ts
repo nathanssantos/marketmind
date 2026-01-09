@@ -322,6 +322,11 @@ export interface EvaluationContext {
   params: Record<string, number>;
 }
 
+export interface FibonacciSwingData {
+  swingLow: { price: number; index: number };
+  swingHigh: { price: number; index: number };
+}
+
 export interface ExitContext {
   direction: 'LONG' | 'SHORT';
   entryPrice: number;
@@ -329,6 +334,7 @@ export interface ExitContext {
   currentIndex: number;
   indicators: ComputedIndicators;
   params: Record<string, number>;
+  fibonacciSwing?: FibonacciSwingData;
 }
 
 

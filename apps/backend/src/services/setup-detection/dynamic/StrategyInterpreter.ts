@@ -79,21 +79,23 @@ export class StrategyInterpreter extends BaseSetupDetector {
     }
 
     const closePrice = parseFloat(klines[currentIndex]?.close ?? '0');
+    const entryPrice = closePrice;
 
-    const baseExitContext: ExitContext = {
+    const fibonacciProjection = this.calculateFibonacciProjectionData(klines, currentIndex, direction);
+
+    const exitContext: ExitContext = {
       direction,
-      entryPrice: closePrice,
+      entryPrice,
       klines,
       currentIndex,
       indicators,
       params: this.resolvedParams,
-    };
-
-    const entryPrice = closePrice;
-
-    const exitContext: ExitContext = {
-      ...baseExitContext,
-      entryPrice,
+      fibonacciSwing: fibonacciProjection
+        ? {
+            swingLow: { price: fibonacciProjection.swingLow.price, index: fibonacciProjection.swingLow.index },
+            swingHigh: { price: fibonacciProjection.swingHigh.price, index: fibonacciProjection.swingHigh.index },
+          }
+        : undefined,
     };
 
     const stopLoss = this.strategy.exit.stopLoss
@@ -169,8 +171,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
         resolvedParams: this.resolvedParams,
       }
     );
-
-    const fibonacciProjection = this.calculateFibonacciProjectionData(klines, currentIndex, direction);
 
     const setup = {
       ...baseSetup,
