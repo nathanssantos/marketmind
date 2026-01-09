@@ -109,7 +109,7 @@ export const calculateFibonacciExtension = (
   });
 };
 
-export const FIBONACCI_EXTENSION_LEVELS = [1.272, 1.618, 2] as const;
+export const FIBONACCI_EXTENSION_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.272, 1.618, 2] as const;
 
 export interface SwingPointWithIndex {
   price: number;
@@ -199,11 +199,18 @@ export const calculateFibonacciProjection = (
   if (range <= 0) return null;
 
   const levels: FibonacciLevel[] = FIBONACCI_EXTENSION_LEVELS.map((level) => {
-    const extensionAmount = range * (level - 1);
-    const price =
-      direction === 'LONG'
+    let price: number;
+
+    if (level <= 1) {
+      price = direction === 'LONG'
+        ? swingLow.price + range * level
+        : swingHigh.price - range * level;
+    } else {
+      const extensionAmount = range * (level - 1);
+      price = direction === 'LONG'
         ? swingHigh.price + extensionAmount
         : swingLow.price - extensionAmount;
+    }
 
     return {
       level,

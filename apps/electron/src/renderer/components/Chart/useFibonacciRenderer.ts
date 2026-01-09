@@ -30,15 +30,16 @@ export const useFibonacciRenderer = ({
     ctx.save();
 
     const fibColors = [
-      colors.fibonacci?.level0 ?? 'rgba(128, 128, 128, 0.5)',
-      colors.fibonacci?.level236 ?? 'rgba(255, 193, 7, 0.5)',
-      colors.fibonacci?.level382 ?? 'rgba(255, 152, 0, 0.5)',
-      colors.fibonacci?.level50 ?? 'rgba(156, 39, 176, 0.5)',
-      colors.fibonacci?.level618 ?? 'rgba(76, 175, 80, 0.5)',
-      colors.fibonacci?.level786 ?? 'rgba(33, 150, 243, 0.5)',
-      colors.fibonacci?.level100 ?? 'rgba(128, 128, 128, 0.5)',
+      'rgba(128, 128, 128, 0.5)',
+      'rgba(128, 128, 128, 0.5)',
+      'rgba(128, 128, 128, 0.5)',
+      'rgba(128, 128, 128, 0.5)',
+      'rgba(128, 128, 128, 0.5)',
+      'rgba(128, 128, 128, 0.5)',
+      'rgba(128, 128, 128, 0.5)',
       colors.fibonacci?.level127 ?? 'rgba(244, 67, 54, 0.3)',
       colors.fibonacci?.level161 ?? 'rgba(244, 67, 54, 0.3)',
+      colors.fibonacci?.level200 ?? 'rgba(244, 67, 54, 0.3)',
     ];
 
     for (let i = 0; i < fibonacciData.levels.length; i++) {

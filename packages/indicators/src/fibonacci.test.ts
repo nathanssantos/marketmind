@@ -144,7 +144,8 @@ describe('calculateFibonacciProjection', () => {
     expect(result).not.toBeNull();
     expect(result!.swingLow.price).toBeLessThan(result!.swingHigh.price);
     expect(result!.levels.find((l) => l.level === 1.618)).toBeDefined();
-    expect(result!.levels[0]!.price).toBeGreaterThan(result!.swingHigh.price);
+    expect(result!.levels.find((l) => l.level === 0)!.price).toBe(result!.swingLow.price);
+    expect(result!.levels.find((l) => l.level === 1)!.price).toBe(result!.swingHigh.price);
   });
 
   it('should calculate extension levels for SHORT direction', () => {
@@ -157,7 +158,8 @@ describe('calculateFibonacciProjection', () => {
     const result = calculateFibonacciProjection(klines, 59, 50, 'SHORT');
 
     expect(result).not.toBeNull();
-    expect(result!.levels[0]!.price).toBeLessThan(result!.swingLow.price);
+    expect(result!.levels.find((l) => l.level === 0)!.price).toBe(result!.swingHigh.price);
+    expect(result!.levels.find((l) => l.level === 1)!.price).toBe(result!.swingLow.price);
   });
 
   it('should return null for insufficient klines', () => {
@@ -285,7 +287,7 @@ describe('calculateFibonacciProjection', () => {
     const level200 = result!.levels.find((l) => l.level === 2);
     expect(level200?.label).toBe('200.0%');
 
-    expect(result!.levels).toHaveLength(3);
+    expect(result!.levels).toHaveLength(10);
   });
 });
 
