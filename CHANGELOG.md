@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.43.1] - 2025-01-09
+
+### Changed
+- **Unified swing point detection** across entire codebase
+  - `ExitCalculator.ts` now uses `findSignificantSwingHigh/Low` instead of legacy implementations
+  - Increased lookback from 50 to 100 bars in stop loss/take profit calculations
+  - Consistent ZigZag ATR-based detection in all swing point operations
+
+### Improved
+- **Code consistency** - Single source of truth for swing point detection algorithm
+- **Maintainability** - Eliminated duplicate swing point detection code
+- **Test coverage** - Updated test mocks to use `importOriginal` pattern
+
+---
+
 ## [0.43.0] - 2025-01-09
 
 ### Added
