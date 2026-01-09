@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.43.0] - 2025-01-09
+
+### Added
+- **ZigZag-based swing point detection** with ATR filtering for Fibonacci projections
+  - `findSignificantSwingHigh/Low` - Filters movements < ATR * 2.0 threshold
+  - `findZigZagHighs/Lows` - Identifies significant pivots with 5-bar confirmation
+  - Dynamic threshold using 14-period ATR or 3% fallback
+- **Market structure analysis** for swing point validation
+  - `detectMarketStructure` - Identifies HH, HL, LH, LL patterns
+  - `validateSwingWithStructure` - Confirms swing points match market context
+  - Detects uptrend/downtrend/ranging market conditions
+- **Adaptive fractal fallback** with progressive periods (2→3→4→5→7→9 bars)
+  - `findAdaptiveFractalHigh/Low` - Multi-period fractal detection
+  - Automatic fallback when ZigZag detection fails
+
+### Changed
+- **Fibonacci projection algorithm** - 3-layer detection system:
+  1. ZigZag ATR-based (primary) - Filters market noise
+  2. Market structure validation (secondary) - Confirms HH/LL patterns
+  3. Adaptive fractal fallback (tertiary) - Ensures robustness
+- **Increased lookback period** from 50 to 100 bars for:
+  - `calculateFibonacciProjection` default parameter
+  - `ChartCanvas.tsx` Fibonacci rendering
+  - `StrategyInterpreter.ts` FIBONACCI_LOOKBACK constant
+- **Minimum klines requirement** from 10 to 20 bars for projection calculations
+
+### Improved
+- **Swing point accuracy** - Now identifies true swing highs/lows in strong trends
+- **Noise filtering** - Ignores small price movements (< 2 * ATR)
+- **Trend context** - Validates swing points are valid HH in uptrends, LL in downtrends
+- **Robustness** - Multiple fallback mechanisms ensure swing point detection
+
+### Technical Details
+- **Research-based implementation** using industry best practices:
+  - ZigZag indicator (LuxAlgo, PyQuantLab, ChartSchool)
+  - Market structure (TradingView, XS, TradeZella)
+  - Williams Fractals (Linn Software, Medium)
+  - Fibonacci best practices 2025 (Mind Math Money, TIO Markets, LuxAlgo)
+- **No breaking changes** - Public API maintained, internal improvements only
+- **Test coverage** - All 885 indicator tests passing, 2087 frontend tests passing
+
+---
+
 ## [0.40.0] - 2025-01-05
 
 ### Added

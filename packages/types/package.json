@@ -1,6 +1,6 @@
 {
   "name": "@marketmind/types",
-  "version": "0.40.0",
+  "version": "0.43.0",
   "description": "Shared TypeScript types for MarketMind",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
