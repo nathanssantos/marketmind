@@ -19,6 +19,7 @@ const EXCLUDED_SYMBOLS = new Set([
 ]);
 
 const TOP_MARKET_CAP_SYMBOLS = [
+  // Top 1-10
   'BTCUSDT',
   'ETHUSDT',
   'BNBUSDT',
@@ -29,6 +30,7 @@ const TOP_MARKET_CAP_SYMBOLS = [
   'AVAXUSDT',
   'TRXUSDT',
   'LINKUSDT',
+  // Top 11-20
   'DOTUSDT',
   'LTCUSDT',
   'MATICUSDT',
@@ -39,6 +41,45 @@ const TOP_MARKET_CAP_SYMBOLS = [
   'NEARUSDT',
   'AAVEUSDT',
   'APTUSDT',
+  // Top 21-30
+  'ICPUSDT',
+  'ETCUSDT',
+  'FILUSDT',
+  'STXUSDT',
+  'IMXUSDT',
+  'INJUSDT',
+  'RNDRUSDT',
+  'VETUSDT',
+  'OPUSDT',
+  'ARBUSDT',
+  // Top 31-40
+  'MKRUSDT',
+  'GRTUSDT',
+  'THETAUSDT',
+  'FTMUSDT',
+  'ALGOUSDT',
+  'RUNEUSDT',
+  'LDOUSDT',
+  'TIAUSDT',
+  'SEIUSDT',
+  'SUIUSDT',
+  // Top 41-50
+  'PENDLEUSDT',
+  'JUPUSDT',
+  'WLDUSDT',
+  'ONDOUSDT',
+  'ENAUSDT',
+  'PYTHUSDT',
+  'STRKUSDT',
+  'JASMYUSDT',
+  'BONKUSDT',
+  'WIFUSDT',
+  // Extra buffer
+  'FLOKIUSDT',
+  'PEPEUSDT',
+  'FETUSDT',
+  'AGIXUSDT',
+  'OCEANUSDT',
 ] as const;
 
 const validateSymbolsExist = async (

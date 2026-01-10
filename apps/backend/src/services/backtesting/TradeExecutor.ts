@@ -1,6 +1,6 @@
 import { calculateATR } from '@marketmind/indicators';
 import type { Kline, MarketType } from '@marketmind/types';
-import { getDefaultFee, BINANCE_FEES } from '@marketmind/types';
+import { getDefaultFee, TRADING_DEFAULTS } from '@marketmind/types';
 import { generateShortId } from '../../utils/id';
 import { PositionSizer } from './PositionSizer';
 
@@ -244,8 +244,8 @@ export class TradeExecutor {
   }
 
   checkMinNotional(positionValue: number): boolean {
-    if (positionValue < BINANCE_FEES.MIN_NOTIONAL_VALUE) {
-      console.warn('[TradeExecutor] Position value', positionValue.toFixed(2), 'below MIN_NOTIONAL (', BINANCE_FEES.MIN_NOTIONAL_VALUE, '), skipping trade');
+    if (positionValue < TRADING_DEFAULTS.MIN_TRADE_VALUE_USD) {
+      console.warn('[TradeExecutor] Position value', positionValue.toFixed(2), 'below MIN_TRADE_VALUE_USD (', TRADING_DEFAULTS.MIN_TRADE_VALUE_USD, '), skipping trade');
       return false;
     }
     return true;

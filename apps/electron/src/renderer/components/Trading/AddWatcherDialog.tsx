@@ -44,7 +44,7 @@ export const AddWatcherDialog = ({
   const [useDefault, setUseDefault] = useState(true);
   const [marketType, setMarketType] = useState<MarketType>('SPOT');
 
-  const { topSymbols, isLoadingTopSymbols } = useTopSymbols(marketType, 12);
+  const { topSymbols, isLoadingTopSymbols } = useTopSymbols(marketType, 50);
 
   const handleSymbolChange = (newSymbol: string, newMarketType?: MarketType) => {
     setSymbol(newSymbol);

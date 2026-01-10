@@ -1,6 +1,6 @@
 import { calculateATR } from '@marketmind/indicators';
 import type { MarketType } from '@marketmind/types';
-import { getRoundTripFee } from '@marketmind/types';
+import { getRoundTripFee, TRADING_DEFAULTS } from '@marketmind/types';
 import { and, eq, sql } from 'drizzle-orm';
 import { VOLATILITY } from '../constants';
 import { db } from '../db';
@@ -294,6 +294,13 @@ export class AutoTradingService {
     dailyPnL: number,
     positionSize: PositionSizeCalculation
   ): RiskValidationResult {
+    if (positionSize.notionalValue < TRADING_DEFAULTS.MIN_TRADE_VALUE_USD) {
+      return {
+        isValid: false,
+        reason: `Position value ${positionSize.notionalValue.toFixed(2)} below minimum ${TRADING_DEFAULTS.MIN_TRADE_VALUE_USD} USD`,
+      };
+    }
+
     const maxPositionSizePercent = parseFloat(config.maxPositionSize);
     const maxPositionValue = (walletBalance * maxPositionSizePercent) / 100;
 

@@ -973,7 +973,7 @@
       "singleMode": "Individual",
       "bulkMode": "Em Massa",
       "marketType": "Tipo de Mercado",
-      "topSymbols": "Top 12 Símbolos por Market Cap",
+      "topSymbols": "Top 50 Símbolos por Market Cap",
       "selectAll": "Selecionar Todos",
       "deselectAll": "Desmarcar Todos",
       "selectedCount": "{{count}} símbolos selecionados",

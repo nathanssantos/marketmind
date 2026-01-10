@@ -317,7 +317,7 @@ describe('TradeExecutor', () => {
     it('should return false for insufficient position value', () => {
       const executor = new TradeExecutor({});
 
-      const result = executor.checkMinNotional(1);
+      const result = executor.checkMinNotional(0.5);
 
       expect(result).toBe(false);
     });
