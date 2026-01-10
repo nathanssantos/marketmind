@@ -301,13 +301,19 @@ export const Toolbar = memo(({
                 <LuTriangleRight style={{ transform: 'scaleX(-1)' }} />
               </IconButton>
             </TooltipWrapper>
-          </HStack>
-
-          {movingAverages.length > 0 && showSidebarButtons && (
-            <>
-              <Box w="1px" h="32px" bg="border" flexShrink={0} />
-
-              <HStack gap={1} flexWrap="nowrap">
+            {movingAverages.length > 0 && showSidebarButtons && (
+              <>
+                <TooltipWrapper label="Backtest Strategy" showArrow placement="top">
+                  <IconButton
+                    size="2xs"
+                    aria-label="Backtest Strategy"
+                    onClick={onToggleBacktest}
+                    colorPalette="blue"
+                    variant="solid"
+                  >
+                    <LuHistory />
+                  </IconButton>
+                </TooltipWrapper>
                 <TooltipWrapper
                   label={t('tradingProfiles.modalTitle')}
                   showArrow
@@ -323,20 +329,9 @@ export const Toolbar = memo(({
                     <LuBot />
                   </IconButton>
                 </TooltipWrapper>
-                <TooltipWrapper label="Backtest Strategy" showArrow placement="top">
-                  <IconButton
-                    size="2xs"
-                    aria-label="Backtest Strategy"
-                    onClick={onToggleBacktest}
-                    colorPalette="blue"
-                    variant="solid"
-                  >
-                    <LuHistory />
-                  </IconButton>
-                </TooltipWrapper>
-              </HStack>
-            </>
-          )}
+              </>
+            )}
+          </HStack>
 
           {showSidebarButtons && (
             <>

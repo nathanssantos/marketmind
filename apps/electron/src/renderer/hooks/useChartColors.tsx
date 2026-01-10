@@ -167,6 +167,7 @@ export interface ChartThemeColors extends ChartColors {
     level100: string;
     level127: string;
     level161: string;
+    level200: string;
   };
   fvg?: {
     bullish: string;

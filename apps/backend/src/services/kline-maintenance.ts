@@ -110,14 +110,14 @@ class KlineMaintenance {
     const setClause: Record<string, unknown> = { updatedAt: now };
 
     if (updates.checkType === 'gap') {
-      setClause.lastGapCheck = now;
+      setClause['lastGapCheck'] = now;
       if (updates.gapsFound !== undefined) {
-        setClause.gapsFound = updates.gapsFound;
+        setClause['gapsFound'] = updates.gapsFound;
       }
     } else {
-      setClause.lastCorruptionCheck = now;
+      setClause['lastCorruptionCheck'] = now;
       if (updates.corruptedFixed !== undefined) {
-        setClause.corruptedFixed = updates.corruptedFixed;
+        setClause['corruptedFixed'] = updates.corruptedFixed;
       }
     }
 

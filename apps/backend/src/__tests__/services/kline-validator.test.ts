@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { KlineValidator, type ValidationResult, type CorruptedKline } from '../../services/kline-validator';
+import { KlineValidator } from '../../services/kline-validator';
 
 describe('KlineValidator', () => {
   describe('isKlineDataSuspicious', () => {
