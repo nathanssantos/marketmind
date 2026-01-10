@@ -18,23 +18,31 @@ interface SymbolSelectorProps {
 const POPULAR_SPOT_SYMBOLS = [
   { symbol: 'BTCUSDT', displayName: 'Bitcoin / USDT', baseAsset: 'BTC', quoteAsset: 'USDT' },
   { symbol: 'ETHUSDT', displayName: 'Ethereum / USDT', baseAsset: 'ETH', quoteAsset: 'USDT' },
+  { symbol: 'XRPUSDT', displayName: 'XRP / USDT', baseAsset: 'XRP', quoteAsset: 'USDT' },
   { symbol: 'BNBUSDT', displayName: 'BNB / USDT', baseAsset: 'BNB', quoteAsset: 'USDT' },
   { symbol: 'SOLUSDT', displayName: 'Solana / USDT', baseAsset: 'SOL', quoteAsset: 'USDT' },
-  { symbol: 'ADAUSDT', displayName: 'Cardano / USDT', baseAsset: 'ADA', quoteAsset: 'USDT' },
-  { symbol: 'XRPUSDT', displayName: 'XRP / USDT', baseAsset: 'XRP', quoteAsset: 'USDT' },
   { symbol: 'DOGEUSDT', displayName: 'Dogecoin / USDT', baseAsset: 'DOGE', quoteAsset: 'USDT' },
+  { symbol: 'ADAUSDT', displayName: 'Cardano / USDT', baseAsset: 'ADA', quoteAsset: 'USDT' },
+  { symbol: 'LINKUSDT', displayName: 'Chainlink / USDT', baseAsset: 'LINK', quoteAsset: 'USDT' },
+  { symbol: 'AVAXUSDT', displayName: 'Avalanche / USDT', baseAsset: 'AVAX', quoteAsset: 'USDT' },
   { symbol: 'DOTUSDT', displayName: 'Polkadot / USDT', baseAsset: 'DOT', quoteAsset: 'USDT' },
+  { symbol: 'NEARUSDT', displayName: 'NEAR Protocol / USDT', baseAsset: 'NEAR', quoteAsset: 'USDT' },
+  { symbol: 'PENDLEUSDT', displayName: 'Pendle / USDT', baseAsset: 'PENDLE', quoteAsset: 'USDT' },
 ];
 
 const POPULAR_FUTURES_SYMBOLS = [
-  { symbol: 'BTCUSDT', displayName: 'Bitcoin / USDT FUTURES', baseAsset: 'BTC', quoteAsset: 'USDT' },
-  { symbol: 'ETHUSDT', displayName: 'Ethereum / USDT FUTURES', baseAsset: 'ETH', quoteAsset: 'USDT' },
-  { symbol: 'BNBUSDT', displayName: 'BNB / USDT FUTURES', baseAsset: 'BNB', quoteAsset: 'USDT' },
-  { symbol: 'SOLUSDT', displayName: 'Solana / USDT FUTURES', baseAsset: 'SOL', quoteAsset: 'USDT' },
-  { symbol: 'XRPUSDT', displayName: 'XRP / USDT FUTURES', baseAsset: 'XRP', quoteAsset: 'USDT' },
-  { symbol: 'DOGEUSDT', displayName: 'Dogecoin / USDT FUTURES', baseAsset: 'DOGE', quoteAsset: 'USDT' },
-  { symbol: 'ADAUSDT', displayName: 'Cardano / USDT FUTURES', baseAsset: 'ADA', quoteAsset: 'USDT' },
-  { symbol: 'AVAXUSDT', displayName: 'Avalanche / USDT FUTURES', baseAsset: 'AVAX', quoteAsset: 'USDT' },
+  { symbol: 'BTCUSDT', displayName: 'Bitcoin / USDT', baseAsset: 'BTC', quoteAsset: 'USDT' },
+  { symbol: 'ETHUSDT', displayName: 'Ethereum / USDT', baseAsset: 'ETH', quoteAsset: 'USDT' },
+  { symbol: 'XRPUSDT', displayName: 'XRP / USDT', baseAsset: 'XRP', quoteAsset: 'USDT' },
+  { symbol: 'BNBUSDT', displayName: 'BNB / USDT', baseAsset: 'BNB', quoteAsset: 'USDT' },
+  { symbol: 'SOLUSDT', displayName: 'Solana / USDT', baseAsset: 'SOL', quoteAsset: 'USDT' },
+  { symbol: 'DOGEUSDT', displayName: 'Dogecoin / USDT', baseAsset: 'DOGE', quoteAsset: 'USDT' },
+  { symbol: 'ADAUSDT', displayName: 'Cardano / USDT', baseAsset: 'ADA', quoteAsset: 'USDT' },
+  { symbol: 'LINKUSDT', displayName: 'Chainlink / USDT', baseAsset: 'LINK', quoteAsset: 'USDT' },
+  { symbol: 'AVAXUSDT', displayName: 'Avalanche / USDT', baseAsset: 'AVAX', quoteAsset: 'USDT' },
+  { symbol: 'DOTUSDT', displayName: 'Polkadot / USDT', baseAsset: 'DOT', quoteAsset: 'USDT' },
+  { symbol: 'NEARUSDT', displayName: 'NEAR Protocol / USDT', baseAsset: 'NEAR', quoteAsset: 'USDT' },
+  { symbol: 'PENDLEUSDT', displayName: 'Pendle / USDT', baseAsset: 'PENDLE', quoteAsset: 'USDT' },
 ];
 
 export function SymbolSelector({
