@@ -76,6 +76,9 @@
       "spanish": "Español",
       "french": "Français"
     },
+    "theme": {
+      "description": "Select the interface theme"
+    },
     "dataManagement": {
       "title": "Data Management",
       "tipTitle": "Data Management",

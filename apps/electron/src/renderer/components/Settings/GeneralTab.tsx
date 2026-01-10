@@ -5,7 +5,7 @@ import { DEFAULT_AUTO_UPDATE_SETTINGS } from '@/renderer/constants/defaults';
 import { useAutoUpdate } from '@/renderer/hooks/useAutoUpdate';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
-import { Box, HStack, Separator, Stack, Text } from '@chakra-ui/react';
+import { Box, Grid, HStack, Separator, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuMoon, LuRefreshCw, LuSun } from 'react-icons/lu';
 import { useColorMode } from '../ui/color-mode';
@@ -62,35 +62,38 @@ export const GeneralTab = () => {
 
   return (
     <Stack gap={6}>
-      <LanguageSelector />
+      <Grid templateColumns="1fr 1fr" gap={6}>
+        <LanguageSelector />
 
-      <Separator />
-
-      <Box>
-        <Text fontSize="md" fontWeight="medium" mb={3}>
-          {t('header.theme')}
-        </Text>
-        <HStack gap={2}>
-          <Button
-            flex={1}
-            variant={colorMode === 'light' ? 'solid' : 'outline'}
-            colorPalette={colorMode === 'light' ? 'blue' : 'gray'}
-            onClick={() => setColorMode('light')}
-          >
-            <LuSun />
-            {t('header.themeLight')}
-          </Button>
-          <Button
-            flex={1}
-            variant={colorMode === 'dark' ? 'solid' : 'outline'}
-            colorPalette={colorMode === 'dark' ? 'blue' : 'gray'}
-            onClick={() => setColorMode('dark')}
-          >
-            <LuMoon />
-            {t('header.themeDark')}
-          </Button>
-        </HStack>
-      </Box>
+        <Box>
+          <Text fontSize="md" fontWeight="medium" mb={3}>
+            {t('header.theme')}
+          </Text>
+          <Text fontSize="sm" color="fg.muted" mb={2}>
+            {t('settings.theme.description')}
+          </Text>
+          <HStack gap={2}>
+            <Button
+              flex={1}
+              variant={colorMode === 'light' ? 'solid' : 'outline'}
+              colorPalette={colorMode === 'light' ? 'blue' : 'gray'}
+              onClick={() => setColorMode('light')}
+            >
+              <LuSun />
+              {t('header.themeLight')}
+            </Button>
+            <Button
+              flex={1}
+              variant={colorMode === 'dark' ? 'solid' : 'outline'}
+              colorPalette={colorMode === 'dark' ? 'blue' : 'gray'}
+              onClick={() => setColorMode('dark')}
+            >
+              <LuMoon />
+              {t('header.themeDark')}
+            </Button>
+          </HStack>
+        </Box>
+      </Grid>
 
       <Separator />
 
@@ -138,22 +141,26 @@ export const GeneralTab = () => {
             </Text>
           </Box>
 
-          <Button 
-            variant="outline" 
-            onClick={handleCheckNow}
-            disabled={status === 'checking'}
-          >
-            <LuRefreshCw />
-            {t('settings.autoUpdate.checkNow')}
-          </Button>
+          <HStack gap={2}>
+            <Button
+              flex={1}
+              variant="outline"
+              onClick={handleCheckNow}
+              disabled={status === 'checking'}
+            >
+              <LuRefreshCw />
+              {t('settings.autoUpdate.checkNow')}
+            </Button>
 
-          <Button
-            variant="outline"
-            onClick={handleResetAutoUpdate}
-          >
-            <LuRefreshCw />
-            {t('settings.resetToDefaults')}
-          </Button>
+            <Button
+              flex={1}
+              variant="outline"
+              onClick={handleResetAutoUpdate}
+            >
+              <LuRefreshCw />
+              {t('settings.resetToDefaults')}
+            </Button>
+          </HStack>
         </Stack>
       </Box>
     </Stack>

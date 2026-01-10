@@ -102,6 +102,9 @@
       "spanish": "Español",
       "french": "Français"
     },
+    "theme": {
+      "description": "Selecione o tema da interface"
+    },
     "dataManagement": {
       "title": "Gerenciamento de Dados",
       "tipTitle": "💡 Gerenciamento de Dados",

@@ -102,6 +102,9 @@
       "spanish": "Español",
       "french": "Français"
     },
+    "theme": {
+      "description": "Seleccione el tema de la interfaz"
+    },
     "dataManagement": {
       "title": "Gestión de Datos",
       "tipTitle": "💡 Gestión de Datos",
