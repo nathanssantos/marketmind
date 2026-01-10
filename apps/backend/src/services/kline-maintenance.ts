@@ -1,18 +1,20 @@
 import type { Interval } from '@marketmind/types';
 import { and, asc, eq, gte, lte } from 'drizzle-orm';
-import { REQUIRED_KLINES, TIME_MS } from '../constants';
+import {
+  REQUIRED_KLINES,
+  TIME_MS,
+  COOLDOWN_GAP_CHECK,
+  COOLDOWN_CORRUPTION_CHECK,
+  CORRUPTION_CHECK_KLINES,
+} from '../constants';
 import { db } from '../db';
-import { klines } from '../db/schema';
+import { klines, pairMaintenanceLog } from '../db/schema';
 import { fetchFuturesKlinesFromAPI, fetchHistoricalKlinesFromAPI, getIntervalMilliseconds } from './binance-historical';
+import { KlineValidator } from './kline-validator';
 import { logger } from './logger';
 
 const GAP_CHECK_INTERVAL = 5 * TIME_MS.MINUTE;
 const MIN_GAP_SIZE_TO_FILL = 1;
-const CORRUPTION_CHECK_KLINES = 200;
-const SPIKE_THRESHOLD_PERCENT = 0.15;
-const MIN_VOLUME_THRESHOLD = 0.0001;
-const VOLUME_ANOMALY_RATIO = 0.01;
-const RANGE_ANOMALY_RATIO = 0.05;
 const BINANCE_FUTURES_API = 'https://fapi.binance.com/fapi/v1/klines';
 const BINANCE_SPOT_API = 'https://api.binance.com/api/v3/klines';
 
@@ -31,11 +33,6 @@ interface ActivePair {
   marketType: 'SPOT' | 'FUTURES';
 }
 
-interface CorruptedKline {
-  openTime: Date;
-  reason: string;
-}
-
 interface BinanceKlineResponse {
   openTime: number;
   open: string;
@@ -50,27 +47,96 @@ interface BinanceKlineResponse {
   takerBuyQuoteVolume: string;
 }
 
-class KlineGapFiller {
+class KlineMaintenance {
   private checkInterval: NodeJS.Timeout | null = null;
   private isRunning = false;
-  private initialCheckDone = false;
 
   async start(): Promise<void> {
     if (this.checkInterval) {
       return;
     }
 
-    if (!this.initialCheckDone) {
-      logger.info('Starting initial gap check for all stored pairs...');
-      await this.checkAllStoredPairs();
-      this.initialCheckDone = true;
-    }
-
+    logger.info('Starting kline maintenance service...');
+    await this.checkAllStoredPairs();
     await this.checkAndFillGaps();
 
     this.checkInterval = setInterval(async () => {
       await this.checkAndFillGaps();
     }, GAP_CHECK_INTERVAL);
+  }
+
+  stop(): void {
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval);
+      this.checkInterval = null;
+    }
+  }
+
+  private async shouldCheckGaps(pair: ActivePair): Promise<boolean> {
+    const log = await db.query.pairMaintenanceLog.findFirst({
+      where: and(
+        eq(pairMaintenanceLog.symbol, pair.symbol),
+        eq(pairMaintenanceLog.interval, pair.interval),
+        eq(pairMaintenanceLog.marketType, pair.marketType)
+      ),
+    });
+
+    if (!log?.lastGapCheck) return true;
+
+    const elapsed = Date.now() - log.lastGapCheck.getTime();
+    return elapsed >= COOLDOWN_GAP_CHECK;
+  }
+
+  private async shouldCheckCorruption(pair: ActivePair): Promise<boolean> {
+    const log = await db.query.pairMaintenanceLog.findFirst({
+      where: and(
+        eq(pairMaintenanceLog.symbol, pair.symbol),
+        eq(pairMaintenanceLog.interval, pair.interval),
+        eq(pairMaintenanceLog.marketType, pair.marketType)
+      ),
+    });
+
+    if (!log?.lastCorruptionCheck) return true;
+
+    const elapsed = Date.now() - log.lastCorruptionCheck.getTime();
+    return elapsed >= COOLDOWN_CORRUPTION_CHECK;
+  }
+
+  private async updateMaintenanceLog(
+    pair: ActivePair,
+    updates: { gapsFound?: number; corruptedFixed?: number; checkType: 'gap' | 'corruption' }
+  ): Promise<void> {
+    const now = new Date();
+    const setClause: Record<string, unknown> = { updatedAt: now };
+
+    if (updates.checkType === 'gap') {
+      setClause.lastGapCheck = now;
+      if (updates.gapsFound !== undefined) {
+        setClause.gapsFound = updates.gapsFound;
+      }
+    } else {
+      setClause.lastCorruptionCheck = now;
+      if (updates.corruptedFixed !== undefined) {
+        setClause.corruptedFixed = updates.corruptedFixed;
+      }
+    }
+
+    await db
+      .insert(pairMaintenanceLog)
+      .values({
+        symbol: pair.symbol,
+        interval: pair.interval,
+        marketType: pair.marketType,
+        lastGapCheck: updates.checkType === 'gap' ? now : undefined,
+        lastCorruptionCheck: updates.checkType === 'corruption' ? now : undefined,
+        gapsFound: updates.gapsFound ?? 0,
+        corruptedFixed: updates.corruptedFixed ?? 0,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [pairMaintenanceLog.symbol, pairMaintenanceLog.interval, pairMaintenanceLog.marketType],
+        set: setClause,
+      });
   }
 
   private async checkAllStoredPairs(): Promise<void> {
@@ -93,6 +159,11 @@ class KlineGapFiller {
             marketType: pair.marketType,
           };
 
+          if (!(await this.shouldCheckGaps(activePair))) {
+            logger.debug({ symbol: pair.symbol, interval: pair.interval, marketType: pair.marketType }, 'Skipping gap check (cooldown)');
+            continue;
+          }
+
           const gaps = await this.detectGaps(activePair);
 
           if (gaps.length > 0) {
@@ -102,6 +173,8 @@ class KlineGapFiller {
               await this.fillGap(gap);
             }
           }
+
+          await this.updateMaintenanceLog(activePair, { gapsFound: gaps.length, checkType: 'gap' });
         } catch (error) {
           logger.error({ pair, error }, 'Error checking gaps for stored pair');
         }
@@ -110,13 +183,6 @@ class KlineGapFiller {
       logger.info('Initial gap check complete');
     } catch (error) {
       logger.error({ error }, 'Error in initial gap check');
-    }
-  }
-
-  stop(): void {
-    if (this.checkInterval) {
-      clearInterval(this.checkInterval);
-      this.checkInterval = null;
     }
   }
 
@@ -136,19 +202,28 @@ class KlineGapFiller {
 
       for (const pair of activePairs) {
         try {
-          const gaps = await this.detectGaps(pair);
+          if (await this.shouldCheckGaps(pair)) {
+            const gaps = await this.detectGaps(pair);
 
-          if (gaps.length > 0) {
-            logger.debug({ symbol: pair.symbol, interval: pair.interval, gaps: gaps.length }, 'Found gaps');
+            if (gaps.length > 0) {
+              logger.debug({ symbol: pair.symbol, interval: pair.interval, gaps: gaps.length }, 'Found gaps');
 
-            for (const gap of gaps) {
-              await this.fillGap(gap);
+              for (const gap of gaps) {
+                await this.fillGap(gap);
+              }
             }
+
+            await this.updateMaintenanceLog(pair, { gapsFound: gaps.length, checkType: 'gap' });
           }
 
-          const fixedCorrupted = await this.detectAndFixCorruptedKlines(pair);
-          if (fixedCorrupted > 0) {
-            logger.debug({ symbol: pair.symbol, interval: pair.interval, fixed: fixedCorrupted }, 'Fixed corrupted klines');
+          if (await this.shouldCheckCorruption(pair)) {
+            const fixedCorrupted = await this.detectAndFixCorruptedKlines(pair);
+
+            if (fixedCorrupted > 0) {
+              logger.debug({ symbol: pair.symbol, interval: pair.interval, fixed: fixedCorrupted }, 'Fixed corrupted klines');
+            }
+
+            await this.updateMaintenanceLog(pair, { corruptedFixed: fixedCorrupted, checkType: 'corruption' });
           }
         } catch (error) {
           logger.error({ pair, error }, 'Error checking gaps for pair');
@@ -333,104 +408,6 @@ class KlineGapFiller {
     }
   }
 
-  private isKlineCorrupted(kline: typeof klines.$inferSelect): CorruptedKline | null {
-    const open = parseFloat(kline.open);
-    const high = parseFloat(kline.high);
-    const low = parseFloat(kline.low);
-    const close = parseFloat(kline.close);
-    const volume = parseFloat(kline.volume);
-
-    if (isNaN(open) || isNaN(high) || isNaN(low) || isNaN(close) || isNaN(volume)) {
-      return { openTime: kline.openTime, reason: 'NaN values' };
-    }
-
-    if (open <= 0 || high <= 0 || low <= 0 || close <= 0) {
-      return { openTime: kline.openTime, reason: 'Zero or negative prices' };
-    }
-
-    if (volume < MIN_VOLUME_THRESHOLD) {
-      return { openTime: kline.openTime, reason: `Zero or negligible volume: ${volume}` };
-    }
-
-    if (low > high) {
-      return { openTime: kline.openTime, reason: 'Low > High' };
-    }
-
-    if (open > high || open < low) {
-      return { openTime: kline.openTime, reason: 'Open outside High/Low range' };
-    }
-
-    if (close > high || close < low) {
-      return { openTime: kline.openTime, reason: 'Close outside High/Low range' };
-    }
-
-    if (open === high && high === low && low === close) {
-      return { openTime: kline.openTime, reason: 'Flat candle (O=H=L=C) - likely corrupted' };
-    }
-
-    return null;
-  }
-
-  private isKlineSpikeCorrupted(
-    kline: typeof klines.$inferSelect,
-    prevKline: typeof klines.$inferSelect | null,
-    nextKline: typeof klines.$inferSelect | null
-  ): CorruptedKline | null {
-    if (!prevKline && !nextKline) return null;
-
-    const close = parseFloat(kline.close);
-    const high = parseFloat(kline.high);
-    const low = parseFloat(kline.low);
-    const volume = parseFloat(kline.volume);
-    const range = high - low;
-
-    const neighborPrices: number[] = [];
-    const neighborVolumes: number[] = [];
-    const neighborRanges: number[] = [];
-
-    if (prevKline) {
-      neighborPrices.push(parseFloat(prevKline.close), parseFloat(prevKline.high), parseFloat(prevKline.low));
-      neighborVolumes.push(parseFloat(prevKline.volume));
-      neighborRanges.push(parseFloat(prevKline.high) - parseFloat(prevKline.low));
-    }
-    if (nextKline) {
-      neighborPrices.push(parseFloat(nextKline.close), parseFloat(nextKline.high), parseFloat(nextKline.low));
-      neighborVolumes.push(parseFloat(nextKline.volume));
-      neighborRanges.push(parseFloat(nextKline.high) - parseFloat(nextKline.low));
-    }
-
-    const avgNeighborVolume = neighborVolumes.reduce((a, b) => a + b, 0) / neighborVolumes.length;
-    if (avgNeighborVolume > 0 && volume / avgNeighborVolume < VOLUME_ANOMALY_RATIO) {
-      return { openTime: kline.openTime, reason: `Anomalous low volume: ${volume.toFixed(2)} vs avg ${avgNeighborVolume.toFixed(2)} (${((volume / avgNeighborVolume) * 100).toFixed(2)}%)` };
-    }
-
-    const avgNeighborRange = neighborRanges.reduce((a, b) => a + b, 0) / neighborRanges.length;
-    if (avgNeighborRange > 0 && range / avgNeighborRange < RANGE_ANOMALY_RATIO) {
-      return { openTime: kline.openTime, reason: `Anomalous small range: ${range.toFixed(2)} vs avg ${avgNeighborRange.toFixed(2)} (${((range / avgNeighborRange) * 100).toFixed(2)}%)` };
-    }
-
-    const avgNeighborPrice = neighborPrices.reduce((a, b) => a + b, 0) / neighborPrices.length;
-    const maxNeighborHigh = Math.max(...neighborPrices);
-    const minNeighborLow = Math.min(...neighborPrices);
-
-    const closeDeviation = Math.abs(close - avgNeighborPrice) / avgNeighborPrice;
-    if (closeDeviation > SPIKE_THRESHOLD_PERCENT) {
-      return { openTime: kline.openTime, reason: `Close price spike: ${(closeDeviation * 100).toFixed(1)}% deviation` };
-    }
-
-    const highDeviation = (high - maxNeighborHigh) / maxNeighborHigh;
-    if (highDeviation > SPIKE_THRESHOLD_PERCENT) {
-      return { openTime: kline.openTime, reason: `High price spike: ${(highDeviation * 100).toFixed(1)}% above neighbors` };
-    }
-
-    const lowDeviation = (minNeighborLow - low) / minNeighborLow;
-    if (lowDeviation > SPIKE_THRESHOLD_PERCENT) {
-      return { openTime: kline.openTime, reason: `Low price spike: ${(lowDeviation * 100).toFixed(1)}% below neighbors` };
-    }
-
-    return null;
-  }
-
   private async fetchBinanceKline(
     symbol: string,
     interval: string,
@@ -466,50 +443,6 @@ class KlineGapFiller {
     }
   }
 
-  private async validateAgainstAPI(
-    kline: typeof klines.$inferSelect,
-    symbol: string,
-    interval: Interval,
-    marketType: 'SPOT' | 'FUTURES'
-  ): Promise<boolean> {
-    const apiKline = await this.fetchBinanceKline(
-      symbol,
-      interval,
-      kline.openTime.getTime(),
-      marketType
-    );
-
-    if (!apiKline) return true;
-
-    const tolerance = 0.001;
-    const fields = [
-      { name: 'open', db: parseFloat(kline.open), api: parseFloat(apiKline.open) },
-      { name: 'high', db: parseFloat(kline.high), api: parseFloat(apiKline.high) },
-      { name: 'low', db: parseFloat(kline.low), api: parseFloat(apiKline.low) },
-      { name: 'close', db: parseFloat(kline.close), api: parseFloat(apiKline.close) },
-    ];
-
-    for (const field of fields) {
-      const diff = Math.abs(field.db - field.api);
-      const relativeDiff = diff / field.api;
-
-      if (relativeDiff > tolerance) {
-        logger.error({
-          symbol,
-          interval,
-          openTime: kline.openTime,
-          field: field.name,
-          db: field.db,
-          api: field.api,
-          diff: relativeDiff * 100,
-        }, `OHLC mismatch detected: ${field.name}`);
-        return false;
-      }
-    }
-
-    return true;
-  }
-
   private async detectAndFixCorruptedKlines(pair: ActivePair): Promise<number> {
     const intervalMs = getIntervalMilliseconds(pair.interval);
     const lookbackMs = CORRUPTION_CHECK_KLINES * intervalMs;
@@ -534,9 +467,9 @@ class KlineGapFiller {
       const prevKline = i > 0 ? recentKlines[i - 1] ?? null : null;
       const nextKline = i < recentKlines.length - 1 ? recentKlines[i + 1] ?? null : null;
 
-      let corruption = this.isKlineCorrupted(kline);
+      let corruption = KlineValidator.isKlineCorrupted(kline);
       if (!corruption) {
-        corruption = this.isKlineSpikeCorrupted(kline, prevKline, nextKline);
+        corruption = KlineValidator.isKlineSpikeCorrupted(kline, prevKline, nextKline);
       }
 
       if (corruption) {
@@ -605,6 +538,9 @@ class KlineGapFiller {
       logger.debug({ symbol, interval, marketType, gapsFilled, corruptedFixed }, 'Force check completed');
     }
 
+    await this.updateMaintenanceLog(pair, { gapsFound: gaps.length, checkType: 'gap' });
+    await this.updateMaintenanceLog(pair, { corruptedFixed, checkType: 'corruption' });
+
     return { gapsFilled, corruptedFixed };
   }
 
@@ -633,7 +569,7 @@ class KlineGapFiller {
       totalChecked += recentKlines.length;
 
       for (const kline of recentKlines) {
-        const isValid = await this.validateAgainstAPI(
+        const isValid = await KlineValidator.validateAgainstAPI(
           kline,
           pair.symbol,
           pair.interval,
@@ -688,19 +624,22 @@ class KlineGapFiller {
   }
 }
 
-let klineGapFillerInstance: KlineGapFiller | null = null;
+let klineMaintenanceInstance: KlineMaintenance | null = null;
 
-export const getKlineGapFiller = (): KlineGapFiller => {
-  if (!klineGapFillerInstance) {
-    klineGapFillerInstance = new KlineGapFiller();
+export const getKlineMaintenance = (): KlineMaintenance => {
+  if (!klineMaintenanceInstance) {
+    klineMaintenanceInstance = new KlineMaintenance();
   }
-  return klineGapFillerInstance;
+  return klineMaintenanceInstance;
 };
 
-export const initializeKlineGapFiller = (): KlineGapFiller => {
-  klineGapFillerInstance = new KlineGapFiller();
-  return klineGapFillerInstance;
+export const initializeKlineMaintenance = (): KlineMaintenance => {
+  klineMaintenanceInstance = new KlineMaintenance();
+  return klineMaintenanceInstance;
 };
 
+export const getKlineGapFiller = getKlineMaintenance;
+export const initializeKlineGapFiller = initializeKlineMaintenance;
+
+export { KlineMaintenance };
 export type { ActivePair, GapInfo };
-

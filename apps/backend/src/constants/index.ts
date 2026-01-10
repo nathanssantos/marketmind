@@ -222,6 +222,11 @@ export const EXIT_REASON = {
   NONE: 'NONE',
 } as const;
 
+export const ABSOLUTE_MINIMUM_KLINES = 5000;
+export const COOLDOWN_GAP_CHECK = 15 * TIME_MS.MINUTE;
+export const COOLDOWN_CORRUPTION_CHECK = 30 * TIME_MS.MINUTE;
+export const CORRUPTION_CHECK_KLINES = 200;
+
 export { ADX_FILTER } from '../utils/adx-filter';
 
 export type FloatComparisonConstants = typeof FLOAT_COMPARISON;

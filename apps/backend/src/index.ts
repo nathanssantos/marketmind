@@ -5,8 +5,7 @@ import rateLimit from '@fastify/rate-limit';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import Fastify from 'fastify';
 import { env } from './env';
-import { initializeBinanceKlineSync } from './services/binance-kline-sync';
-import { initializeKlineGapFiller } from './services/kline-gap-filler';
+import { initializeKlineMaintenance } from './services/kline-maintenance';
 import { initializeWebSocket } from './services/websocket';
 import { createContext, setWebSocketService } from './trpc/context';
 import { appRouter } from './trpc/router';
@@ -102,7 +101,6 @@ const start = async (): Promise<void> => {
 
     const websocketService = initializeWebSocket(fastify.server);
     setWebSocketService(websocketService);
-    initializeBinanceKlineSync();
 
     const { positionMonitorService } = await import('./services/position-monitor');
     positionMonitorService.start();
@@ -126,13 +124,12 @@ const start = async (): Promise<void> => {
     const { fundingRateService } = await import('./services/funding-rate-service');
     fundingRateService.start();
 
-    const klineGapFiller = initializeKlineGapFiller();
-    await klineGapFiller.start();
+    const klineMaintenance = initializeKlineMaintenance();
+    await klineMaintenance.start();
 
     fastify.log.info(`🚀 Backend server running on http://localhost:${port}`);
     fastify.log.info(`📡 tRPC endpoint: http://localhost:${port}/trpc`);
     fastify.log.info(`🔌 WebSocket server initialized`);
-    fastify.log.info(`📊 Binance kline sync initialized`);
     fastify.log.info(`📈 Position monitor service started`);
     fastify.log.info(`💹 Binance price stream service started`);
     fastify.log.info(`📉 Binance kline stream service started (SPOT + FUTURES)`);

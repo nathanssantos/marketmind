@@ -140,14 +140,24 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   position_mode VARCHAR(10) DEFAULT 'ONE_WAY',
   use_limit_orders BOOLEAN DEFAULT false NOT NULL,
   use_stochastic_filter BOOLEAN DEFAULT true NOT NULL,
+  use_momentum_timing_filter BOOLEAN DEFAULT true NOT NULL,
   use_adx_filter BOOLEAN DEFAULT true NOT NULL,
   use_trend_filter BOOLEAN DEFAULT true NOT NULL,
+  use_mtf_filter BOOLEAN DEFAULT true NOT NULL,
+  use_btc_correlation_filter BOOLEAN DEFAULT true NOT NULL,
+  use_market_regime_filter BOOLEAN DEFAULT true NOT NULL,
+  use_volume_filter BOOLEAN DEFAULT false NOT NULL,
+  use_funding_filter BOOLEAN DEFAULT true NOT NULL,
+  use_confluence_scoring BOOLEAN DEFAULT true NOT NULL,
+  confluence_min_score INTEGER DEFAULT 60 NOT NULL,
   max_drawdown_percent NUMERIC(5, 2) DEFAULT '15',
   margin_top_up_enabled BOOLEAN DEFAULT false,
   margin_top_up_threshold NUMERIC(5, 2) DEFAULT '30',
   margin_top_up_percent NUMERIC(5, 2) DEFAULT '10',
   margin_top_up_max_count INTEGER DEFAULT 3,
   exposure_multiplier NUMERIC(3, 1) DEFAULT '2' NOT NULL,
+  tp_calculation_mode VARCHAR(20) DEFAULT 'default' NOT NULL,
+  fibonacci_target_level VARCHAR(10) DEFAULT 'auto' NOT NULL,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
@@ -231,6 +241,7 @@ CREATE TABLE IF NOT EXISTS trade_executions (
   trigger_kline_open_time BIGINT,
   trigger_candle_data TEXT,
   trigger_indicator_values TEXT,
+  fibonacci_projection TEXT,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );

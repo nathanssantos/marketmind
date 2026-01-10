@@ -498,9 +498,33 @@ export class AutoTradingScheduler {
           return;
         }
 
+        const ABSOLUTE_MINIMUM_KLINES = 5000;
+        const hasReachedApiLimit = result.alreadyComplete || result.gaps === 0;
+
         if (!hasSufficientKlines(result.totalInDb, minRequired)) {
-          log('⚠️ Still insufficient klines after backfill', { totalInDb: result.totalInDb, minRequired });
-          return;
+          if (hasReachedApiLimit && result.totalInDb >= ABSOLUTE_MINIMUM_KLINES) {
+            log('⚠️ Proceeding with available klines (API limit reached)', {
+              available: result.totalInDb,
+              required: minRequired,
+              absoluteMinimum: ABSOLUTE_MINIMUM_KLINES,
+              alreadyComplete: result.alreadyComplete,
+              gaps: result.gaps,
+            });
+          } else if (!hasReachedApiLimit) {
+            log('⚠️ Insufficient klines, more data may be available', {
+              totalInDb: result.totalInDb,
+              minRequired,
+              gaps: result.gaps,
+            });
+            return;
+          } else {
+            log('❌ Critical: insufficient klines even after exhausting API', {
+              available: result.totalInDb,
+              absoluteMinimum: ABSOLUTE_MINIMUM_KLINES,
+              required: minRequired,
+            });
+            return;
+          }
         }
 
         const refreshedKlines = await db.query.klines.findMany({
@@ -514,8 +538,19 @@ export class AutoTradingScheduler {
         });
 
         if (refreshedKlines.length < minRequired) {
-          log('⚠️ Still insufficient klines after refresh', { count: refreshedKlines.length });
-          return;
+          if (hasReachedApiLimit && refreshedKlines.length >= ABSOLUTE_MINIMUM_KLINES) {
+            log('⚠️ Proceeding with refreshed klines (API limit)', {
+              available: refreshedKlines.length,
+              required: minRequired,
+            });
+          } else {
+            log('⚠️ Insufficient klines after refresh', {
+              count: refreshedKlines.length,
+              required: minRequired,
+              hasReachedApiLimit,
+            });
+            return;
+          }
         }
 
         klinesData.length = 0;

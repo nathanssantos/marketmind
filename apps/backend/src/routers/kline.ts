@@ -7,7 +7,7 @@ import { klines } from '../db/schema';
 import { aggregateYearlyKlines, getIntervalMilliseconds } from '../services/binance-historical';
 import { prefetchKlines } from '../services/kline-prefetch';
 import { binanceFuturesKlineStreamService, binanceKlineStreamService } from '../services/binance-kline-stream';
-import { getKlineGapFiller } from '../services/kline-gap-filler';
+import { getKlineMaintenance } from '../services/kline-maintenance';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 
@@ -35,7 +35,7 @@ const triggerCorruptionCheck = (symbol: string, interval: string, marketType: Ma
 
   corruptionCheckCache.set(key, now);
 
-  const gapFiller = getKlineGapFiller();
+  const gapFiller = getKlineMaintenance();
   gapFiller.forceCheckSymbol(symbol, interval as Interval, marketType).catch((error) => {
     logger.error({ symbol, interval, marketType, error }, 'Error in corruption check');
   });
@@ -261,7 +261,7 @@ export const klineRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const gapFiller = getKlineGapFiller();
+      const gapFiller = getKlineMaintenance();
       const marketType = input.marketType as MarketType;
 
       const result = await gapFiller.forceCheckSymbol(

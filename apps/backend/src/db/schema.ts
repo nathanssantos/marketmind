@@ -427,3 +427,23 @@ export const apiKeys = pgTable('api_keys', {
 
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type NewApiKey = typeof apiKeys.$inferInsert;
+
+export const pairMaintenanceLog = pgTable('pair_maintenance_log', {
+  id: serial().primaryKey(),
+  symbol: text().notNull(),
+  interval: text().notNull(),
+  marketType: text('market_type').notNull(),
+  lastGapCheck: timestamp('last_gap_check', { mode: 'date' }),
+  lastCorruptionCheck: timestamp('last_corruption_check', { mode: 'date' }),
+  gapsFound: integer('gaps_found').default(0),
+  corruptedFixed: integer('corrupted_fixed').default(0),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  uniquePair: unique().on(table.symbol, table.interval, table.marketType),
+  lookupIdx: index('idx_pair_maintenance_lookup').on(table.symbol, table.interval, table.marketType),
+  gapCheckIdx: index('idx_last_gap_check').on(table.lastGapCheck),
+  corruptionCheckIdx: index('idx_last_corruption_check').on(table.lastCorruptionCheck),
+}));
+
+export type PairMaintenanceLog = typeof pairMaintenanceLog.$inferSelect;
+export type NewPairMaintenanceLog = typeof pairMaintenanceLog.$inferInsert;

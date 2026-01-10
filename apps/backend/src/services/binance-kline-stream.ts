@@ -7,17 +7,13 @@ import { db } from '../db';
 import { klines } from '../db/schema';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
-
-const MIN_VOLUME_FOR_VALIDITY = 0.01;
-const MIN_RANGE_RATIO = 0.05;
+import { KlineValidator } from './kline-validator';
 
 class ReconnectionGuard {
-  private lastReconnectionTime: number = 0;
   private isInGracePeriod = false;
   private readonly GRACE_PERIOD_MS = 60 * 1000;
 
   onReconnect(marketType: MarketType): void {
-    this.lastReconnectionTime = Date.now();
     this.isInGracePeriod = true;
 
     logger.warn({ marketType }, 'WebSocket reconnected - entering grace period (60s)');
@@ -35,33 +31,13 @@ class ReconnectionGuard {
   }
 
   private async triggerPostReconnectionCheck(): Promise<void> {
-    const { getKlineGapFiller } = await import('./kline-gap-filler');
-    const gapFiller = getKlineGapFiller();
-    await gapFiller.checkAfterReconnection();
+    const { getKlineMaintenance } = await import('./kline-maintenance');
+    const maintenance = getKlineMaintenance();
+    await maintenance.checkAfterReconnection();
   }
 }
 
 const reconnectionGuard = new ReconnectionGuard();
-
-const isKlineDataSuspicious = (
-  newData: { volume: string; high: string; low: string },
-  existingData?: { volume: string; high: string; low: string }
-): boolean => {
-  const newVolume = parseFloat(newData.volume);
-  const newRange = parseFloat(newData.high) - parseFloat(newData.low);
-
-  if (newVolume < MIN_VOLUME_FOR_VALIDITY) return true;
-
-  if (existingData) {
-    const existingVolume = parseFloat(existingData.volume);
-    const existingRange = parseFloat(existingData.high) - parseFloat(existingData.low);
-
-    if (existingVolume > 0 && newVolume / existingVolume < MIN_RANGE_RATIO) return true;
-    if (existingRange > 0 && newRange / existingRange < MIN_RANGE_RATIO) return true;
-  }
-
-  return false;
-};
 
 const fetchKlineFromREST = async (
   symbol: string,
@@ -341,7 +317,8 @@ export class BinanceKlineStreamService {
         takerBuyQuoteVolume: update.takerBuyQuoteVolume,
       };
 
-      if (isKlineDataSuspicious(update, existing ?? undefined)) {
+      const suspiciousCheck = KlineValidator.isKlineDataSuspicious(update, existing ?? undefined);
+      if (!suspiciousCheck.isValid && suspiciousCheck.shouldFetchFromAPI) {
         logger.warn({
           symbol: update.symbol,
           interval: update.interval,
@@ -349,6 +326,7 @@ export class BinanceKlineStreamService {
           wsVolume: update.volume,
           wsRange: parseFloat(update.high) - parseFloat(update.low),
           existingVolume: existing?.volume,
+          reason: suspiciousCheck.reason,
         }, 'Suspicious kline data from WebSocket, fetching from REST API');
 
         const restData = await fetchKlineFromREST(update.symbol, update.interval, update.openTime, update.marketType);
@@ -637,7 +615,8 @@ export class BinanceFuturesKlineStreamService {
         takerBuyQuoteVolume: update.takerBuyQuoteVolume,
       };
 
-      if (isKlineDataSuspicious(update, existing ?? undefined)) {
+      const suspiciousCheck = KlineValidator.isKlineDataSuspicious(update, existing ?? undefined);
+      if (!suspiciousCheck.isValid && suspiciousCheck.shouldFetchFromAPI) {
         logger.warn({
           symbol: update.symbol,
           interval: update.interval,
@@ -645,6 +624,7 @@ export class BinanceFuturesKlineStreamService {
           wsVolume: update.volume,
           wsRange: parseFloat(update.high) - parseFloat(update.low),
           existingVolume: existing?.volume,
+          reason: suspiciousCheck.reason,
         }, 'Suspicious futures kline data from WebSocket, fetching from REST API');
 
         const restData = await fetchKlineFromREST(update.symbol, update.interval, update.openTime, 'FUTURES');
@@ -652,7 +632,7 @@ export class BinanceFuturesKlineStreamService {
           finalData = {
             open: restData.open,
             high: restData.high,
-            low: restData.low,
+            low: restData.high,
             close: restData.close,
             volume: restData.volume,
             closeTime: new Date(restData.closeTime),

@@ -185,6 +185,7 @@ describe('Auto-Trading Flow Integration Tests', () => {
         marginTopUpMaxCount: 3,
         exposureMultiplier: '1.50',
         tpCalculationMode: 'default' as const,
+        fibonacciTargetLevel: 'auto' as const,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -240,6 +241,7 @@ describe('Auto-Trading Flow Integration Tests', () => {
         marginTopUpMaxCount: 3,
         exposureMultiplier: '1.50',
         tpCalculationMode: 'default' as const,
+        fibonacciTargetLevel: 'auto' as const,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
