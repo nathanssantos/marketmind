@@ -4,7 +4,7 @@ import { and, desc, eq, inArray } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { INTERVAL_MS, TIME_MS, TRADING_CONFIG, UNIT_MS } from '../constants';
+import { ABSOLUTE_MINIMUM_KLINES, INTERVAL_MS, TIME_MS, TRADING_CONFIG, UNIT_MS } from '../constants';
 import { db } from '../db';
 import {
   activeWatchers as activeWatchersTable,
@@ -471,7 +471,7 @@ export class AutoTradingScheduler {
       );
 
       const requiredKlines = calculateRequiredKlines();
-      const minRequired = Math.max(50, Math.ceil(requiredKlines * 0.5));
+      const minRequired = ABSOLUTE_MINIMUM_KLINES;
 
       const klinesData = await db.query.klines.findMany({
         where: and(
@@ -498,7 +498,6 @@ export class AutoTradingScheduler {
           return;
         }
 
-        const ABSOLUTE_MINIMUM_KLINES = 5000;
         const hasReachedApiLimit = result.alreadyComplete || result.gaps === 0;
 
         if (!hasSufficientKlines(result.totalInDb, minRequired)) {

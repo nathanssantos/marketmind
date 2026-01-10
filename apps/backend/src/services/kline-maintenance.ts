@@ -264,7 +264,18 @@ class KlineMaintenance {
 
     const BINANCE_SPOT_START = new Date('2017-08-17').getTime();
     const BINANCE_FUTURES_START = new Date('2019-09-08').getTime();
-    const minStartTime = pair.marketType === 'FUTURES' ? BINANCE_FUTURES_START : BINANCE_SPOT_START;
+    const defaultMinStartTime = pair.marketType === 'FUTURES' ? BINANCE_FUTURES_START : BINANCE_SPOT_START;
+
+    const maintenanceLog = await db.query.pairMaintenanceLog.findFirst({
+      where: and(
+        eq(pairMaintenanceLog.symbol, pair.symbol),
+        eq(pairMaintenanceLog.interval, pair.interval),
+        eq(pairMaintenanceLog.marketType, pair.marketType)
+      ),
+    });
+
+    const knownEarliestDate = maintenanceLog?.earliestKlineDate?.getTime();
+    const minStartTime = knownEarliestDate ?? defaultMinStartTime;
 
     const calculatedStartTime = now - lookbackMs;
     const startTime = new Date(Math.max(calculatedStartTime, minStartTime));
@@ -282,6 +293,9 @@ class KlineMaintenance {
     });
 
     if (dbKlines.length === 0) {
+      if (knownEarliestDate) {
+        return [];
+      }
       return [
         {
           ...pair,
@@ -293,10 +307,10 @@ class KlineMaintenance {
     }
 
     const gaps: GapInfo[] = [];
+    const firstKline = dbKlines[0];
 
-    if (dbKlines.length < REQUIRED_KLINES) {
-      const firstKline = dbKlines[0];
-      if (firstKline && firstKline.openTime.getTime() > startTime.getTime()) {
+    if (!knownEarliestDate && dbKlines.length < REQUIRED_KLINES && firstKline) {
+      if (firstKline.openTime.getTime() > startTime.getTime()) {
         const missingAtStart = Math.floor((firstKline.openTime.getTime() - startTime.getTime()) / intervalMs);
         if (missingAtStart >= MIN_GAP_SIZE_TO_FILL) {
           gaps.push({
@@ -369,7 +383,37 @@ class KlineMaintenance {
       const fetchedKlines = await fetchFn(gap.symbol, gap.interval, gap.gapStart, gap.gapEnd);
 
       if (fetchedKlines.length === 0) {
-        logger.warn({ gap }, 'No klines fetched for gap');
+        const firstExistingKline = await db.query.klines.findFirst({
+          where: and(
+            eq(klines.symbol, gap.symbol),
+            eq(klines.interval, gap.interval),
+            eq(klines.marketType, gap.marketType)
+          ),
+          orderBy: [asc(klines.openTime)],
+        });
+
+        if (firstExistingKline) {
+          logger.info(
+            { symbol: gap.symbol, interval: gap.interval, marketType: gap.marketType, earliestDate: firstExistingKline.openTime.toISOString() },
+            'No older data available, storing earliest kline date'
+          );
+
+          await db
+            .insert(pairMaintenanceLog)
+            .values({
+              symbol: gap.symbol,
+              interval: gap.interval,
+              marketType: gap.marketType,
+              earliestKlineDate: firstExistingKline.openTime,
+              updatedAt: new Date(),
+            })
+            .onConflictDoUpdate({
+              target: [pairMaintenanceLog.symbol, pairMaintenanceLog.interval, pairMaintenanceLog.marketType],
+              set: { earliestKlineDate: firstExistingKline.openTime, updatedAt: new Date() },
+            });
+        } else {
+          logger.warn({ gap }, 'No klines fetched for gap');
+        }
         return;
       }
 

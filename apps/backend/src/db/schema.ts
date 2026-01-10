@@ -437,6 +437,7 @@ export const pairMaintenanceLog = pgTable('pair_maintenance_log', {
   lastCorruptionCheck: timestamp('last_corruption_check', { mode: 'date' }),
   gapsFound: integer('gaps_found').default(0),
   corruptedFixed: integer('corrupted_fixed').default(0),
+  earliestKlineDate: timestamp('earliest_kline_date', { mode: 'date' }),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
   uniquePair: unique().on(table.symbol, table.interval, table.marketType),

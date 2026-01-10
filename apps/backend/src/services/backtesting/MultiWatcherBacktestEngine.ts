@@ -30,7 +30,7 @@ import { checkVolumeCondition } from '../../utils/volume-filter';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { and, eq, gte, lte, desc } from 'drizzle-orm';
-import { BACKTEST_ENGINE, TIME_MS, UNIT_MS } from '../../constants';
+import { ABSOLUTE_MINIMUM_KLINES, BACKTEST_ENGINE, TIME_MS, UNIT_MS } from '../../constants';
 import { db } from '../../db';
 import { klines as klinesTable } from '../../db/schema';
 import { generateEntityId } from '../../utils/id';
@@ -318,7 +318,7 @@ export class MultiWatcherBacktestEngine {
   ): Promise<Kline[]> {
     const intervalMs = this.getIntervalMs(interval);
     const expectedKlines = Math.ceil((endTime.getTime() - startTime.getTime()) / intervalMs);
-    const minRequired = Math.max(50, Math.ceil(expectedKlines * 0.5));
+    const minRequired = ABSOLUTE_MINIMUM_KLINES;
 
     let dbKlines = await db.query.klines.findMany({
       where: and(

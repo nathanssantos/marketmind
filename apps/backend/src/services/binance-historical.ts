@@ -1,6 +1,7 @@
 import type { Interval } from '@marketmind/types';
 import { BINANCE_NATIVE_INTERVALS, INTERVAL_MS } from '@marketmind/types';
 import { and, asc, eq, gte, lt } from 'drizzle-orm';
+import { ABSOLUTE_MINIMUM_KLINES } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
 import { logger } from './logger';
@@ -265,7 +266,7 @@ export const smartBackfillKlines = async (
     'Smart backfill: current vs target'
   );
 
-  const gaps: Array<{ start: number; end: number }> = [];
+  const gaps: Array<{ start: number; end: number; type: 'start' | 'end' | 'internal' }> = [];
   let totalDownloaded = 0;
 
   if (existingKlines.length === 0) {
@@ -277,14 +278,15 @@ export const smartBackfillKlines = async (
       new Date(),
       marketType
     );
-    return { totalInDb: downloaded, downloaded, gaps: 1, alreadyComplete: false };
+    const isComplete = downloaded === 0;
+    return { totalInDb: downloaded, downloaded, gaps: isComplete ? 0 : 1, alreadyComplete: isComplete };
   }
 
   const oldestExisting = existingKlines[0]?.openTime?.getTime() ?? now;
   const newestExisting = existingKlines[existingKlines.length - 1]?.openTime?.getTime() ?? now;
 
   if (oldestExisting > targetStartTime + intervalMs * GAP_TOLERANCE_MULTIPLIER) {
-    gaps.push({ start: targetStartTime, end: oldestExisting - intervalMs });
+    gaps.push({ start: targetStartTime, end: oldestExisting - intervalMs, type: 'start' });
     logger.debug(
       { symbol, interval, marketType, gapStart: new Date(targetStartTime).toISOString(), gapEnd: new Date(oldestExisting).toISOString() },
       'Smart backfill: detected gap at start (need older data)'
@@ -292,7 +294,7 @@ export const smartBackfillKlines = async (
   }
 
   if (newestExisting < now - intervalMs * GAP_TOLERANCE_MULTIPLIER) {
-    gaps.push({ start: newestExisting + intervalMs, end: now });
+    gaps.push({ start: newestExisting + intervalMs, end: now, type: 'end' });
     logger.debug(
       { symbol, interval, marketType, gapStart: new Date(newestExisting).toISOString(), gapEnd: new Date(now).toISOString() },
       'Smart backfill: detected gap at end (need recent data)'
@@ -306,7 +308,7 @@ export const smartBackfillKlines = async (
     const actualDiff = currTime - prevTime;
 
     if (actualDiff > expectedDiff * GAP_TOLERANCE_MULTIPLIER) {
-      gaps.push({ start: prevTime + intervalMs, end: currTime - intervalMs });
+      gaps.push({ start: prevTime + intervalMs, end: currTime - intervalMs, type: 'internal' });
       logger.debug(
         { symbol, interval, marketType, gapStart: new Date(prevTime).toISOString(), gapEnd: new Date(currTime).toISOString(), missingCandles: Math.floor(actualDiff / intervalMs) - 1 },
         'Smart backfill: detected internal gap'
@@ -320,7 +322,12 @@ export const smartBackfillKlines = async (
 
   logger.debug({ symbol, interval, marketType, gapsCount: gaps.length }, 'Smart backfill: filling gaps');
 
-  for (const gap of gaps) {
+  const gapsFilled: Set<number> = new Set();
+
+  for (let i = 0; i < gaps.length; i++) {
+    const gap = gaps[i];
+    if (!gap) continue;
+
     const downloaded = await backfillHistoricalKlines(
       symbol,
       interval,
@@ -329,6 +336,17 @@ export const smartBackfillKlines = async (
       marketType
     );
     totalDownloaded += downloaded;
+
+    if (downloaded > 0 || gap.type === 'start') {
+      gapsFilled.add(i);
+    }
+
+    if (gap.type === 'start' && downloaded === 0) {
+      logger.debug(
+        { symbol, interval, marketType, gapStart: new Date(gap.start).toISOString() },
+        'Smart backfill: no older data available (reached listing date)'
+      );
+    }
   }
 
   const finalCount = await db
@@ -343,12 +361,17 @@ export const smartBackfillKlines = async (
       )
     );
 
+  const hasSufficientData = finalCount.length >= ABSOLUTE_MINIMUM_KLINES;
+  const criticalGaps = gaps.filter((g, i) => !gapsFilled.has(i) && g.type !== 'start');
+  const isOperationallyComplete = hasSufficientData || criticalGaps.length === 0;
+  const reportedGaps = isOperationallyComplete ? 0 : criticalGaps.length;
+
   logger.debug(
-    { symbol, interval, marketType, finalCount: finalCount.length, downloaded: totalDownloaded, gaps: gaps.length },
+    { symbol, interval, marketType, finalCount: finalCount.length, downloaded: totalDownloaded, gaps: reportedGaps, hasSufficientData, isOperationallyComplete },
     'Smart backfill: complete'
   );
 
-  return { totalInDb: finalCount.length, downloaded: totalDownloaded, gaps: gaps.length, alreadyComplete: false };
+  return { totalInDb: finalCount.length, downloaded: totalDownloaded, gaps: reportedGaps, alreadyComplete: isOperationallyComplete };
 };
 
 export interface AggregatedKline {
