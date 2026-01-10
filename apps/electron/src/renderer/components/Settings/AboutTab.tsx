@@ -6,6 +6,7 @@ import { LuExternalLink } from 'react-icons/lu';
 
 export const AboutTab = () => {
   const { t } = useTranslation();
+  const currentYear = new Date().getFullYear();
 
   return (
     <Stack gap={6}>
@@ -20,26 +21,6 @@ export const AboutTab = () => {
           {t('about.version', { version: APP_VERSION })}
         </Text>
         <Text fontSize="sm" color="fg.muted">{t('about.description')}</Text>
-      </Box>
-
-      <Separator />
-
-      <Box>
-        <Text fontSize="md" fontWeight="medium" mb={3}>
-          {t('about.features')}
-        </Text>
-        <Stack gap={2} fontSize="sm" color="fg.muted">
-          <Text>• {t('about.featuresList.marketData')}</Text>
-          <Text>• {t('about.featuresList.charts')}</Text>
-          <Text>• {t('about.featuresList.strategies')}</Text>
-          <Text>• {t('about.featuresList.autoTrading')}</Text>
-          <Text>• {t('about.featuresList.backtesting')}</Text>
-          <Text>• {t('about.featuresList.security')}</Text>
-          <Text>• {t('about.featuresList.autoUpdate')}</Text>
-          <Text>• {t('about.featuresList.shortcuts')}</Text>
-          <Text>• {t('about.featuresList.themes')}</Text>
-          <Text>• {t('about.featuresList.websocket')}</Text>
-        </Stack>
       </Box>
 
       <Separator />
@@ -66,7 +47,7 @@ export const AboutTab = () => {
 
       <Box bg="bg.muted" p={4} borderRadius="md">
         <Text fontSize="sm" color="fg.muted">
-          {t('about.copyright')}
+          {t('about.copyright', { year: currentYear })}
         </Text>
       </Box>
     </Stack>

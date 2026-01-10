@@ -764,7 +764,7 @@
       "documentation": "Documentación",
       "changelog": "Registro de Cambios"
     },
-    "copyright": "© 2025 MarketMind. Hecho con ❤️ para traders e inversores."
+    "copyright": "© {{year}} MarketMind. Hecho con ❤️ para traders e inversores."
   },
   "setupConfig": {
     "configureSetups": "Configurar Setups de Trading",

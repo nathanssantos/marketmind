@@ -687,7 +687,7 @@
       "documentation": "Documentation",
       "changelog": "Changelog"
     },
-    "copyright": "2025 MarketMind. Built with love for traders and investors."
+    "copyright": "© {{year}} MarketMind. Built with love for traders and investors."
   },
   "setupConfig": {
     "configureSetups": "Configure Trading Setups",

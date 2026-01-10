@@ -4,7 +4,7 @@ import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Select } from '@/renderer/components/ui/select';
 import { DEFAULT_ADVANCED_CONFIG } from '@/renderer/constants/defaults';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
-import { Box, Separator, Stack, Text } from '@chakra-ui/react';
+import { Box, Grid, Separator, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw } from 'react-icons/lu';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
@@ -43,24 +43,10 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
   return (
     <Stack gap={6}>
       <Box>
-        <Button
-          variant="outline"
-          onClick={handleReset}
-          width="full"
-          colorPalette="red"
-        >
-          <LuRefreshCw />
-          {t('settings.resetToDefaults')}
-        </Button>
-      </Box>
-
-      <Separator />
-
-      <Box>
-        <Text fontSize="sm" fontWeight="bold" mb={4}>
-          {t('settings.chart.chartDimensions')}
+        <Text fontSize="md" fontWeight="medium" mb={3}>
+          {t('settings.chart.chartDimensions')} & {t('settings.chart.klineSettings')}
         </Text>
-        <Stack gap={4}>
+        <Grid templateColumns="repeat(4, 1fr)" gap={4}>
           <Field label={t('settings.chart.rightMargin')} helperText={t('settings.chart.rightMarginHelper')}>
             <NumberInput
               value={config.rightMargin}
@@ -79,14 +65,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
               step={0.05}
             />
           </Field>
-        </Stack>
-      </Box>
 
-      <Box>
-        <Text fontSize="sm" fontWeight="bold" mb={4}>
-          {t('settings.chart.klineSettings')}
-        </Text>
-        <Stack gap={4}>
           <Field label={t('settings.chart.klineSpacing')} helperText={t('settings.chart.klineSpacingHelper')}>
             <NumberInput
               value={config.klineSpacing}
@@ -104,28 +83,23 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
               max={10}
             />
           </Field>
-        </Stack>
+        </Grid>
       </Box>
 
       <Box>
-        <Text fontSize="sm" fontWeight="bold" mb={4}>
-          {t('settings.chart.gridSettings')}
+        <Text fontSize="md" fontWeight="medium" mb={3}>
+          {t('settings.chart.gridSettings')} & {t('settings.chart.currentPriceLine')}
         </Text>
-        <Field label={t('settings.chart.gridLineWidth')} helperText={t('settings.chart.gridLineWidthHelper')}>
-          <NumberInput
-            value={config.gridLineWidth}
-            onChange={(e) => handleChange('gridLineWidth', e.target.value)}
-            min={1}
-            max={5}
-          />
-        </Field>
-      </Box>
+        <Grid templateColumns="repeat(4, 1fr)" gap={4}>
+          <Field label={t('settings.chart.gridLineWidth')} helperText={t('settings.chart.gridLineWidthHelper')}>
+            <NumberInput
+              value={config.gridLineWidth}
+              onChange={(e) => handleChange('gridLineWidth', e.target.value)}
+              min={1}
+              max={5}
+            />
+          </Field>
 
-      <Box>
-        <Text fontSize="sm" fontWeight="bold" mb={4}>
-          {t('settings.chart.currentPriceLine')}
-        </Text>
-        <Stack gap={4}>
           <Field label={t('settings.chart.lineWidth')} helperText={t('settings.chart.lineWidthHelper')}>
             <NumberInput
               value={config.currentPriceLineWidth}
@@ -147,14 +121,14 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
               usePortal={false}
             />
           </Field>
-        </Stack>
+        </Grid>
       </Box>
 
       <Box>
-        <Text fontSize="sm" fontWeight="bold" mb={4}>
+        <Text fontSize="md" fontWeight="medium" mb={3}>
           {t('settings.chart.chartPadding')}
         </Text>
-        <Stack gap={4}>
+        <Grid templateColumns="repeat(4, 1fr)" gap={4}>
           <Field label={t('settings.chart.topPadding')}>
             <NumberInput
               value={config.paddingTop}
@@ -190,8 +164,16 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
               max={100}
             />
           </Field>
-        </Stack>
+        </Grid>
       </Box>
+
+      <Button
+        variant="outline"
+        onClick={handleReset}
+      >
+        <LuRefreshCw />
+        {t('settings.resetToDefaults')}
+      </Button>
     </Stack>
   );
 };
