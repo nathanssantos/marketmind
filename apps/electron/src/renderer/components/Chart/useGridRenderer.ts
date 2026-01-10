@@ -82,7 +82,7 @@ export const useGridRenderer = ({
         drawText(
           ctx,
           formatChartPrice(price),
-          chartRightBoundary + 10,
+          chartRightBoundary + 8,
           y + 1,
           labelColor,
           CHART_CONFIG.AXIS_LABEL_FONT,
