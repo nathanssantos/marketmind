@@ -1,5 +1,5 @@
 import type { Interval, Kline, MarketType, StrategyDefinition, TradingSetup } from '@marketmind/types';
-import { getDefaultFee } from '@marketmind/types';
+import { getDefaultFee, TRADING_DEFAULTS } from '@marketmind/types';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
@@ -463,6 +463,34 @@ export class AutoTradingScheduler {
       symbol: watcher.symbol,
       interval: watcher.interval,
     });
+
+    const [walletData] = await db
+      .select({ currentBalance: wallets.currentBalance })
+      .from(wallets)
+      .where(eq(wallets.id, watcher.walletId))
+      .limit(1);
+
+    const [configData] = await db
+      .select({ leverage: autoTradingConfig.leverage })
+      .from(autoTradingConfig)
+      .where(eq(autoTradingConfig.walletId, watcher.walletId))
+      .limit(1);
+
+    const walletBalance = parseFloat(walletData?.currentBalance ?? '0');
+    const leverage = configData?.leverage ?? 1;
+    const availableCapital = walletBalance * leverage;
+
+    if (availableCapital <= TRADING_DEFAULTS.MIN_TRADE_VALUE_USD) {
+      log('💤 Skipping setup scan - insufficient capital', {
+        walletId: watcher.walletId,
+        symbol: watcher.symbol,
+        walletBalance: walletBalance.toFixed(2),
+        leverage,
+        availableCapital: availableCapital.toFixed(2),
+        minRequired: TRADING_DEFAULTS.MIN_TRADE_VALUE_USD,
+      });
+      return;
+    }
 
     try {
       const strategies = await this.strategyLoader.loadAll({ includeUnprofitable: false });

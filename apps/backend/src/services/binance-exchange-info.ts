@@ -1,10 +1,5 @@
 import type { MarketType } from '@marketmind/types';
 
-interface Ticker24hr {
-  symbol: string;
-  quoteVolume: string;
-}
-
 const BINANCE_SPOT_API = 'https://api.binance.com';
 const BINANCE_FUTURES_API = 'https://fapi.binance.com';
 
