@@ -6,8 +6,9 @@ import { AboutTab } from './AboutTab';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string, options?: Record<string, string>) => {
+        t: (key: string, options?: Record<string, string | number>) => {
             if (key === 'about.version') return `Version ${options?.version ?? '0.0.0'}`;
+            if (key === 'about.copyright') return `© ${options?.year ?? 2024} MarketMind`;
             return key;
         },
     }),
@@ -45,32 +46,14 @@ describe('AboutTab', () => {
         expect(screen.getByText('about.description')).toBeDefined();
     });
 
-    it('renders features section', () => {
+    it('renders resources section', () => {
         renderWithChakra(<AboutTab />);
 
-        expect(screen.getByText('about.features')).toBeDefined();
-        expect(screen.getByText(/about\.featuresList\.marketData/)).toBeDefined();
-        expect(screen.getByText(/about\.featuresList\.charts/)).toBeDefined();
-        expect(screen.getByText(/about\.featuresList\.strategies/)).toBeDefined();
-    });
-
-    it('renders all feature items', () => {
-        renderWithChakra(<AboutTab />);
-
-        const features = [
-            'marketData', 'charts', 'strategies', 'autoTrading', 'backtesting',
-            'security', 'autoUpdate', 'shortcuts', 'themes', 'websocket'
-        ];
-
-        features.forEach(feature => {
-            expect(screen.getByText(new RegExp(`about\.featuresList\.${feature}`))).toBeDefined();
-        });
+        expect(screen.getByText('about.resources')).toBeDefined();
     });
 
     it('renders resources section with links', () => {
         renderWithChakra(<AboutTab />);
-
-        expect(screen.getByText('about.resources')).toBeDefined();
 
         const links = screen.getAllByRole('link');
         expect(links.length).toBeGreaterThanOrEqual(3);
@@ -103,7 +86,8 @@ describe('AboutTab', () => {
     it('renders copyright section', () => {
         renderWithChakra(<AboutTab />);
 
-        expect(screen.getByText('about.copyright')).toBeDefined();
+        const currentYear = new Date().getFullYear();
+        expect(screen.getByText(`© ${currentYear} MarketMind`)).toBeDefined();
     });
 
     it('logo has correct size', () => {

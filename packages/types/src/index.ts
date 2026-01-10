@@ -3,6 +3,7 @@ export * from './binance';
 export * from './chart';
 export * from './fees';
 export * from './futures';
+export * from './indicator-constants';
 export * from './intervals';
 export * from './kline';
 export * from './klineUtils';

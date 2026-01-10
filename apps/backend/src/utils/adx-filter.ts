@@ -1,5 +1,6 @@
 import { calculateADX } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
+import { INDICATOR_PERIODS, FILTER_THRESHOLDS } from '@marketmind/types';
 
 export interface AdxFilterResult {
   isAllowed: boolean;
@@ -13,9 +14,9 @@ export interface AdxFilterResult {
 }
 
 export const ADX_FILTER = {
-  PERIOD: 14,
-  TREND_THRESHOLD: 20,
-  MIN_KLINES_REQUIRED: 35,
+  PERIOD: INDICATOR_PERIODS.ADX_DEFAULT,
+  TREND_THRESHOLD: FILTER_THRESHOLDS.ADX_TREND,
+  MIN_KLINES_REQUIRED: INDICATOR_PERIODS.ADX_DEFAULT * 2 + 7,
 } as const;
 
 export const checkAdxCondition = (

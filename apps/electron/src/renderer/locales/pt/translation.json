@@ -969,7 +969,15 @@
       "useWalletDefault": "Usar configuração padrão da carteira",
       "selectProfile": "Selecione um perfil...",
       "noProfiles": "Nenhum perfil disponível. Crie um perfil primeiro para usar configurações personalizadas.",
-      "info": "O watcher escaneará por setups com base na configuração do perfil selecionado e executará trades automaticamente quando as condições forem atendidas."
+      "info": "O watcher escaneará por setups com base na configuração do perfil selecionado e executará trades automaticamente quando as condições forem atendidas.",
+      "singleMode": "Individual",
+      "bulkMode": "Em Massa",
+      "marketType": "Tipo de Mercado",
+      "topSymbols": "Top 12 Símbolos por Volume",
+      "selectAll": "Selecionar Todos",
+      "deselectAll": "Desmarcar Todos",
+      "selectedCount": "{{count}} símbolos selecionados",
+      "startBulk": "Iniciar {{count}} Watchers"
     }
   },
   "strategyInfo": {

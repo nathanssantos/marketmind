@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { TRADING_DEFAULTS } from '@marketmind/types';
 import {
   createDefaultSetupDetectionConfig,
   getRegisteredSetupKeys,
@@ -19,7 +20,7 @@ describe('setupConfig', () => {
       const config = createDefaultSetupDetectionConfig();
       expect(config.enabledStrategies).toEqual([]);
       expect(config.minConfidence).toBe(50);
-      expect(config.minRiskReward).toBe(1.0);
+      expect(config.minRiskReward).toBe(TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO);
     });
 
     it('should create new object each time', () => {
@@ -42,7 +43,7 @@ describe('setupConfig', () => {
       const persisted = { minConfidence: 75 };
       const result = mergeSetupConfigs(defaults, persisted);
       expect(result.minConfidence).toBe(75);
-      expect(result.minRiskReward).toBe(1.0);
+      expect(result.minRiskReward).toBe(TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO);
       expect(result.enabledStrategies).toEqual([]);
     });
 

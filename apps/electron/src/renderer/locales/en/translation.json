@@ -918,7 +918,15 @@
       "useWalletDefault": "Use wallet default configuration",
       "selectProfile": "Select a profile...",
       "noProfiles": "No profiles available. Create a profile first to use custom configurations.",
-      "info": "The watcher will scan for setups based on the selected profile's configuration and execute trades automatically when conditions are met."
+      "info": "The watcher will scan for setups based on the selected profile's configuration and execute trades automatically when conditions are met.",
+      "singleMode": "Single",
+      "bulkMode": "Bulk",
+      "marketType": "Market Type",
+      "topSymbols": "Top 12 Symbols by Volume",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All",
+      "selectedCount": "{{count}} symbols selected",
+      "startBulk": "Start {{count}} Watchers"
     }
   },
   "strategyInfo": {

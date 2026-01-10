@@ -54,7 +54,7 @@ describe('ChartSettingsTab', () => {
             <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
         );
 
-        expect(screen.getByText('settings.chart.chartDimensions')).toBeDefined();
+        expect(screen.getByText(/settings\.chart\.chartDimensions/)).toBeDefined();
     });
 
     it('renders right margin field', () => {
@@ -108,7 +108,7 @@ describe('ChartSettingsTab', () => {
             <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
         );
 
-        expect(screen.getByText('settings.chart.klineSettings')).toBeDefined();
+        expect(screen.getByText(/settings\.chart\.klineSettings/)).toBeDefined();
     });
 
     it('renders grid settings section', () => {
@@ -116,7 +116,7 @@ describe('ChartSettingsTab', () => {
             <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
         );
 
-        expect(screen.getByText('settings.chart.gridSettings')).toBeDefined();
+        expect(screen.getByText(/settings\.chart\.gridSettings/)).toBeDefined();
     });
 
     it('renders current price line section', () => {
@@ -124,7 +124,7 @@ describe('ChartSettingsTab', () => {
             <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
         );
 
-        expect(screen.getByText('settings.chart.currentPriceLine')).toBeDefined();
+        expect(screen.getByText(/settings\.chart\.currentPriceLine/)).toBeDefined();
     });
 
     it('renders padding settings section', () => {
