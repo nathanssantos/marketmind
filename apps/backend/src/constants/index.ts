@@ -12,7 +12,7 @@ export const UNIT_MS: Record<string, number> = {
 } as const;
 
 export const TRADING_CONFIG = {
-  MIN_RISK_REWARD_RATIO: 1.25,
+  MIN_RISK_REWARD_RATIO: 1.2,
   SESSION_DURATION_MS: 30 * TIME_MS.DAY,
   DEFAULT_SLIPPAGE_PERCENT: 0.1,
   DEFAULT_COMMISSION_PERCENT: 0.1,
@@ -117,6 +117,14 @@ export const TRAILING_STOP = {
   ATR_MULTIPLIER: 0.002,
   DEFAULT_ACTIVATION_PERCENT: 1.5,
   DEFAULT_TRAIL_PERCENT: 0.75,
+  TP_THRESHOLD_FOR_BREAKEVEN: 0.50,
+  TP_THRESHOLD_FOR_ADVANCED: 0.70,
+  MIN_STOP_CHANGE_ABSOLUTE: 0.005,
+} as const;
+
+export const BACKTEST_DEFAULTS = {
+  EXPOSURE_MULTIPLIER: 1.5,
+  MIN_RISK_REWARD_RATIO: 1.2,
 } as const;
 
 export const VOLATILITY = {
@@ -234,6 +242,7 @@ export type PositionSizingConstants = typeof POSITION_SIZING;
 export type ExitCalculatorConstants = typeof EXIT_CALCULATOR;
 export type BacktestEngineConstants = typeof BACKTEST_ENGINE;
 export type TrailingStopConstants = typeof TRAILING_STOP;
+export type BacktestDefaultsConstants = typeof BACKTEST_DEFAULTS;
 export type VolatilityConstants = typeof VOLATILITY;
 export type PivotDetectionConstants = typeof PIVOT_DETECTION;
 export type ContextAggregatorConstants = typeof CONTEXT_AGGREGATOR;

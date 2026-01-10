@@ -16,7 +16,7 @@ const createPortfolioConfig = (overrides: Partial<PortfolioConfig> = {}): Portfo
   useMomentumTimingFilter: false,
   useAdxFilter: false,
   useTrendFilter: false,
-  minRiskRewardRatio: 1.25,
+  minRiskRewardRatio: 1.2,
   ...overrides,
 });
 

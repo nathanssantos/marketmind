@@ -14,9 +14,10 @@ import type {
   WatcherConfig,
   WatcherStats,
 } from '@marketmind/types';
-import { getDefaultFee, getRoundTripFee } from '@marketmind/types';
+import { calculateTotalFees, getRoundTripFee } from '@marketmind/types';
 import { calculatePositionSize } from '@marketmind/risk';
 import { calculateATR } from '@marketmind/indicators';
+import { BACKTEST_DEFAULTS } from '../../constants';
 import { computeTrailingStopCore, type TrailingStopCoreConfig } from '../trailing-stop-core';
 import { checkStochasticCondition, STOCHASTIC_FILTER } from '../../utils/stochastic-filter';
 import { checkMomentumTiming, MOMENTUM_TIMING_FILTER } from '../../utils/momentum-timing-filter';
@@ -97,22 +98,22 @@ export class MultiWatcherBacktestEngine {
 
     const portfolioConfig: PortfolioConfig = {
       initialCapital: this.config.initialCapital,
-      exposureMultiplier: this.config.exposureMultiplier ?? 1.5,
+      exposureMultiplier: this.config.exposureMultiplier ?? BACKTEST_DEFAULTS.EXPOSURE_MULTIPLIER,
       maxPositionSizePercent: this.config.maxPositionSize ?? 10,
       maxConcurrentPositions: this.config.watchers.length,
       dailyLossLimitPercent: this.config.dailyLossLimit ?? 5,
       cooldownMinutes: this.config.cooldownMinutes ?? 15,
       useStochasticFilter: this.config.useStochasticFilter ?? false,
-      useMomentumTimingFilter: this.config.useMomentumTimingFilter ?? true,
+      useMomentumTimingFilter: this.config.useMomentumTimingFilter ?? false,
       useAdxFilter: this.config.useAdxFilter ?? false,
       useTrendFilter: this.config.onlyWithTrend ?? false,
-      minRiskRewardRatio: this.config.minRiskRewardRatio ?? 1.25,
-      useMtfFilter: this.config.useMtfFilter ?? true,
-      useBtcCorrelationFilter: this.config.useBtcCorrelationFilter ?? true,
-      useMarketRegimeFilter: this.config.useMarketRegimeFilter ?? true,
+      minRiskRewardRatio: this.config.minRiskRewardRatio ?? BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO,
+      useMtfFilter: this.config.useMtfFilter ?? false,
+      useBtcCorrelationFilter: this.config.useBtcCorrelationFilter ?? false,
+      useMarketRegimeFilter: this.config.useMarketRegimeFilter ?? false,
       useVolumeFilter: this.config.useVolumeFilter ?? false,
       useFundingFilter: this.config.useFundingFilter ?? false,
-      useConfluenceScoring: this.config.useConfluenceScoring ?? true,
+      useConfluenceScoring: this.config.useConfluenceScoring ?? false,
       confluenceMinScore: this.config.confluenceMinScore ?? 60,
     };
 
@@ -778,10 +779,12 @@ export class MultiWatcherBacktestEngine {
     exitResult: { exitPrice: number; reason: string; exitTime?: number },
     fallbackExitTime: number
   ): void {
-    const commission =
-      position.positionValue *
-      getDefaultFee(this.config.marketType ?? 'SPOT', 'TAKER') *
-      2;
+    const exitValue = exitResult.exitPrice * position.quantity;
+    const { totalFees: commission } = calculateTotalFees(
+      position.positionValue,
+      exitValue,
+      { marketType: this.config.marketType ?? 'SPOT', useBnbDiscount: this.config.useBnbDiscount }
+    );
 
     const exitTime = exitResult.exitTime ?? fallbackExitTime;
 
@@ -894,10 +897,12 @@ export class MultiWatcherBacktestEngine {
       if (!lastKline) continue;
 
       const exitPrice = parseFloat(String(lastKline.close));
-      const commission =
-        position.positionValue *
-        getDefaultFee(this.config.marketType ?? 'SPOT', 'TAKER') *
-        2;
+      const exitValue = exitPrice * position.quantity;
+      const { totalFees: commission } = calculateTotalFees(
+        position.positionValue,
+        exitValue,
+        { marketType: this.config.marketType ?? 'SPOT', useBnbDiscount: this.config.useBnbDiscount }
+      );
 
       const tradeResult = this.portfolio.closePosition(
         position.id,

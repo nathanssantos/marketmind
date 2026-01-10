@@ -67,6 +67,12 @@ export const useBackendAutoTrading = (walletId: string) => {
     },
   });
 
+  const startWatchersBulkMutation = trpc.autoTrading.startWatchersBulk.useMutation({
+    onSuccess: () => {
+      utils.autoTrading.getWatcherStatus.invalidate();
+    },
+  });
+
   const { data: watcherStatus, isLoading: isLoadingWatcherStatus } =
     trpc.autoTrading.getWatcherStatus.useQuery(
       { walletId },
@@ -141,6 +147,13 @@ export const useBackendAutoTrading = (walletId: string) => {
     [walletId, stopAllWatchersMutation]
   );
 
+  const startWatchersBulk = useCallback(
+    async (symbols: string[], interval: string, profileId?: string, marketType?: 'SPOT' | 'FUTURES') => {
+      return startWatchersBulkMutation.mutateAsync({ walletId, symbols, interval, profileId, marketType });
+    },
+    [walletId, startWatchersBulkMutation]
+  );
+
   return {
     config,
     activeExecutions: activeExecutions ?? [],
@@ -164,13 +177,30 @@ export const useBackendAutoTrading = (walletId: string) => {
     startWatcher,
     stopWatcher,
     stopAllWatchers,
+    startWatchersBulk,
     watcherStatus,
     isLoadingWatcherStatus,
     isStartingWatcher: startWatcherMutation.isPending,
     isStoppingWatcher: stopWatcherMutation.isPending,
     isStoppingAllWatchers: stopAllWatchersMutation.isPending,
+    isStartingWatchersBulk: startWatchersBulkMutation.isPending,
     startWatcherError: startWatcherMutation.error,
     stopWatcherError: stopWatcherMutation.error,
     stopAllWatchersError: stopAllWatchersMutation.error,
+    startWatchersBulkError: startWatchersBulkMutation.error,
+  };
+};
+
+export const useTopSymbols = (marketType: 'SPOT' | 'FUTURES' = 'SPOT', limit: number = 12) => {
+  const { data: topSymbols, isLoading: isLoadingTopSymbols, error: topSymbolsError } =
+    trpc.autoTrading.getTopSymbols.useQuery(
+      { marketType, limit },
+      { staleTime: 5 * 60 * 1000 }
+    );
+
+  return {
+    topSymbols: topSymbols ?? [],
+    isLoadingTopSymbols,
+    topSymbolsError,
   };
 };

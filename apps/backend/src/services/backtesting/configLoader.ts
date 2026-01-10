@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import type { MultiWatcherBacktestConfig, WatcherConfig } from '@marketmind/types';
+import { BACKTEST_DEFAULTS } from '../../constants';
 import { db } from '../../db';
 import { autoTradingConfig, activeWatchers, tradingProfiles } from '../../db/schema';
 
@@ -115,14 +116,14 @@ export const buildMultiWatcherConfigFromWatchers = (
     endDate: options.endDate,
     initialCapital: options.initialCapital,
 
-    exposureMultiplier: options.exposureMultiplier ?? 1.5,
+    exposureMultiplier: options.exposureMultiplier ?? BACKTEST_DEFAULTS.EXPOSURE_MULTIPLIER,
     maxPositionSize: options.maxPositionSize ?? 15,
     dailyLossLimit: options.dailyLossLimit ?? 5,
 
-    useStochasticFilter: options.useStochasticFilter ?? true,
-    useAdxFilter: options.useAdxFilter ?? true,
-    onlyWithTrend: options.onlyWithTrend ?? true,
-    minRiskRewardRatio: options.minRiskRewardRatio ?? 1.25,
+    useStochasticFilter: options.useStochasticFilter ?? false,
+    useAdxFilter: options.useAdxFilter ?? false,
+    onlyWithTrend: options.onlyWithTrend ?? false,
+    minRiskRewardRatio: options.minRiskRewardRatio ?? BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO,
     useCooldown: true,
     cooldownMinutes: options.cooldownMinutes ?? 15,
 

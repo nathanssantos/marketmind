@@ -2086,41 +2086,6 @@ export class AutoTradingScheduler {
       });
 
       await positionMonitorService.invalidatePriceCache(watcher.symbol);
-
-      const allOpenExecutions = await db
-        .select()
-        .from(tradeExecutions)
-        .where(
-          and(
-            eq(tradeExecutions.walletId, watcher.walletId),
-            eq(tradeExecutions.symbol, watcher.symbol),
-            eq(tradeExecutions.side, setup.direction),
-            eq(tradeExecutions.status, 'open')
-          )
-        );
-
-      if (allOpenExecutions.length > 1) {
-        const newStopLoss = await pyramidingService.adjustStopLossForPyramid(
-          allOpenExecutions,
-          setup.direction
-        );
-
-        if (newStopLoss !== null) {
-          for (const exec of allOpenExecutions) {
-            await db
-              .update(tradeExecutions)
-              .set({ stopLoss: newStopLoss.toString() })
-              .where(eq(tradeExecutions.id, exec.id));
-          }
-
-          log('🛡️ Stop loss adjusted for pyramid position', {
-            symbol: watcher.symbol,
-            direction: setup.direction,
-            entries: allOpenExecutions.length,
-            newStopLoss: newStopLoss.toFixed(2),
-          });
-        }
-      }
     } catch (error) {
       log('❌ Error executing setup', {
         type: setup.type,

@@ -81,38 +81,6 @@ export const calculatePyramidSize = (
   return scaledSize;
 };
 
-export const calculateBreakevenStopLoss = (
-  avgEntryPrice: number,
-  direction: 'LONG' | 'SHORT',
-  bufferPercent: number = 0.002
-): number => {
-  const breakevenBuffer = direction === 'LONG' ? 1 + bufferPercent : 1 - bufferPercent;
-  return avgEntryPrice * breakevenBuffer;
-};
-
-export const shouldUpdatePyramidStopLoss = (
-  newStopLoss: number,
-  currentConsolidatedSL: number,
-  direction: 'LONG' | 'SHORT'
-): boolean => {
-  return direction === 'LONG'
-    ? newStopLoss > currentConsolidatedSL
-    : newStopLoss < currentConsolidatedSL;
-};
-
-export const getConsolidatedStopLoss = (
-  executions: ExecutionLike[],
-  direction: 'LONG' | 'SHORT'
-): number | null => {
-  const currentStops = executions
-    .filter(e => e.stopLoss)
-    .map(e => parseFloat(e.stopLoss!));
-
-  if (currentStops.length === 0) return null;
-
-  return direction === 'LONG' ? Math.max(...currentStops) : Math.min(...currentStops);
-};
-
 export interface PyramidEvaluation {
   canPyramid: boolean;
   reason: string;
@@ -449,46 +417,6 @@ export class PyramidingService {
       sizePercent,
       reason: `Pyramid entry #${openExecutions.length + 1}: ${sizePercent.toFixed(1)}% (profit: ${(profitPercent * 100).toFixed(2)}%)`,
     };
-  }
-
-  async adjustStopLossForPyramid(
-    executions: TradeExecution[],
-    direction: 'LONG' | 'SHORT'
-  ): Promise<number | null> {
-    if (executions.length < 2) return null;
-
-    const avgEntryPrice = calculateWeightedAvgPrice(executions);
-
-    const breakevenBuffer = direction === 'LONG' ? 1.002 : 0.998;
-    const newStopLoss = avgEntryPrice * breakevenBuffer;
-
-    const currentStops = executions
-      .filter(e => e.stopLoss)
-      .map(e => parseFloat(e.stopLoss!));
-
-    if (currentStops.length === 0) return newStopLoss;
-
-    const currentConsolidatedSL = direction === 'LONG'
-      ? Math.max(...currentStops)
-      : Math.min(...currentStops);
-
-    const shouldUpdate = direction === 'LONG'
-      ? newStopLoss > currentConsolidatedSL
-      : newStopLoss < currentConsolidatedSL;
-
-    if (shouldUpdate) {
-      logger.info({
-        direction,
-        avgEntryPrice,
-        oldStopLoss: currentConsolidatedSL,
-        newStopLoss,
-        entries: executions.length,
-      }, 'Adjusting stop loss for pyramid position');
-
-      return newStopLoss;
-    }
-
-    return null;
   }
 
   getExposureSummary(

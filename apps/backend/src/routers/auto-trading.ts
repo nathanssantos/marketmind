@@ -12,6 +12,7 @@ import { riskManagerService } from '../services/risk-manager';
 import { autoTradingScheduler } from '../services/auto-trading-scheduler';
 import { prefetchKlinesAsync } from '../services/kline-prefetch';
 import { logger } from '../services/logger';
+import { getTopSymbolsByVolume } from '../services/binance-exchange-info';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
 import { transformAutoTradingConfig, parseEnabledSetupTypes, stringifyEnabledSetupTypes } from '../utils/profile-transformers';
@@ -728,6 +729,94 @@ export const autoTradingRouter = router({
           ? activeWatchers
           : dbStatus.watcherDetails.map(w => ({ watcherId: `${input.walletId}-${w.symbol}-${w.interval}`, ...w })),
         persistedWatchers: dbStatus.watchers,
+      };
+    }),
+
+  getTopSymbols: protectedProcedure
+    .input(
+      z.object({
+        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        limit: z.number().min(1).max(50).default(12),
+      })
+    )
+    .query(async ({ input }) => {
+      log('📊 getTopSymbols called', { marketType: input.marketType, limit: input.limit });
+      const symbols = await getTopSymbolsByVolume(input.marketType, input.limit);
+      log('✅ Top symbols fetched', { count: symbols.length });
+      return symbols;
+    }),
+
+  startWatchersBulk: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        symbols: z.array(z.string()).min(1).max(20),
+        interval: z.string(),
+        profileId: z.string().optional(),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      log('🚀 startWatchersBulk called', {
+        walletId: input.walletId,
+        symbols: input.symbols,
+        interval: input.interval,
+        profileId: input.profileId,
+        marketType: input.marketType,
+      });
+
+      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      await ctx.db
+        .update(autoTradingConfig)
+        .set({ isEnabled: true, updatedAt: new Date() })
+        .where(
+          and(
+            eq(autoTradingConfig.walletId, input.walletId),
+            eq(autoTradingConfig.userId, ctx.user.id)
+          )
+        );
+
+      const results: Array<{ symbol: string; success: boolean; error?: string }> = [];
+
+      for (const symbol of input.symbols) {
+        try {
+          await autoTradingScheduler.startWatcher(
+            input.walletId,
+            ctx.user.id,
+            symbol,
+            input.interval,
+            input.profileId,
+            false,
+            input.marketType
+          );
+
+          prefetchKlinesAsync({
+            symbol,
+            interval: input.interval,
+            marketType: input.marketType,
+          });
+
+          results.push({ symbol, success: true });
+          log('✅ Watcher started', { symbol });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          results.push({ symbol, success: false, error: errorMessage });
+          log('❌ Failed to start watcher', { symbol, error: errorMessage });
+        }
+      }
+
+      const successCount = results.filter(r => r.success).length;
+      log('✅ Bulk watcher creation complete', {
+        total: input.symbols.length,
+        success: successCount,
+        failed: input.symbols.length - successCount,
+      });
+
+      return {
+        results,
+        successCount,
+        failedCount: input.symbols.length - successCount,
       };
     }),
 });

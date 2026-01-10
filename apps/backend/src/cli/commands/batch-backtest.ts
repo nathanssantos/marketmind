@@ -62,7 +62,7 @@ const runSingleBacktest = async (
       useTrailingStop: true,
       onlyWithTrend: false,
       slippagePercent: 0.1,
-      minRiskRewardRatio: 1.25,
+      minRiskRewardRatio: 1.2,
     });
 
     if (result.trades.length === 0) {

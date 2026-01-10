@@ -54,10 +54,10 @@ describe('configLoader', () => {
       expect(config.exposureMultiplier).toBe(1.5);
       expect(config.maxPositionSize).toBe(15);
       expect(config.dailyLossLimit).toBe(5);
-      expect(config.useStochasticFilter).toBe(true);
-      expect(config.useAdxFilter).toBe(true);
-      expect(config.onlyWithTrend).toBe(true);
-      expect(config.minRiskRewardRatio).toBe(1.25);
+      expect(config.useStochasticFilter).toBe(false);
+      expect(config.useAdxFilter).toBe(false);
+      expect(config.onlyWithTrend).toBe(false);
+      expect(config.minRiskRewardRatio).toBe(1.2);
       expect(config.cooldownMinutes).toBe(15);
       expect(config.useSharedExposure).toBe(true);
       expect(config.marketType).toBe('SPOT');

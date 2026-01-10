@@ -173,7 +173,7 @@ describe('usePortfolioFilters', () => {
   });
 
   describe('calculateStats', () => {
-    it('should calculate stats for multiple positions', () => {
+    it('should calculate stats for multiple positions with weighted P&L percent', () => {
       const positions = [
         createPosition({ id: '1', pnl: 1000, pnlPercent: 2, avgPrice: 50000, quantity: 1 }),
         createPosition({ id: '2', pnl: -500, pnlPercent: -1, avgPrice: 3000, quantity: 10 }),
@@ -183,10 +183,10 @@ describe('usePortfolioFilters', () => {
       const stats = calculateStats(positions);
 
       expect(stats.totalPnL).toBe(800);
-      expect(stats.totalPnLPercent).toBeCloseTo(0.833, 2);
+      expect(stats.totalExposure).toBe(80500);
+      expect(stats.totalPnLPercent).toBeCloseTo(800 / 80500 * 100, 2);
       expect(stats.profitableCount).toBe(2);
       expect(stats.losingCount).toBe(1);
-      expect(stats.totalExposure).toBe(80500);
     });
 
     it('should handle empty positions', () => {

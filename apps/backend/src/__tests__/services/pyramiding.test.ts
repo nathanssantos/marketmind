@@ -7,9 +7,6 @@ import {
   roundQuantity,
   calculatePyramidProfitPercent,
   calculatePyramidSize,
-  calculateBreakevenStopLoss,
-  shouldUpdatePyramidStopLoss,
-  getConsolidatedStopLoss,
   DEFAULT_PYRAMIDING_CONFIG,
   type ExecutionLike,
 } from '../../services/pyramiding';
@@ -144,77 +141,6 @@ describe('Pyramiding - Pure Utility Functions', () => {
     });
   });
 
-  describe('calculateBreakevenStopLoss', () => {
-    it('should calculate breakeven stop for LONG position', () => {
-      const stop = calculateBreakevenStopLoss(100, 'LONG', 0.002);
-      expect(stop).toBe(100.2);
-    });
-
-    it('should calculate breakeven stop for SHORT position', () => {
-      const stop = calculateBreakevenStopLoss(100, 'SHORT', 0.002);
-      expect(stop).toBe(99.8);
-    });
-
-    it('should use default buffer of 0.002', () => {
-      const stop = calculateBreakevenStopLoss(100, 'LONG');
-      expect(stop).toBe(100.2);
-    });
-  });
-
-  describe('shouldUpdatePyramidStopLoss', () => {
-    it('should return true when new stop is better for LONG', () => {
-      expect(shouldUpdatePyramidStopLoss(102, 100, 'LONG')).toBe(true);
-    });
-
-    it('should return false when new stop is worse for LONG', () => {
-      expect(shouldUpdatePyramidStopLoss(98, 100, 'LONG')).toBe(false);
-    });
-
-    it('should return true when new stop is better for SHORT', () => {
-      expect(shouldUpdatePyramidStopLoss(98, 100, 'SHORT')).toBe(true);
-    });
-
-    it('should return false when new stop is worse for SHORT', () => {
-      expect(shouldUpdatePyramidStopLoss(102, 100, 'SHORT')).toBe(false);
-    });
-  });
-
-  describe('getConsolidatedStopLoss', () => {
-    it('should return highest stop for LONG positions', () => {
-      const executions: ExecutionLike[] = [
-        { entryPrice: '100', quantity: '10', stopLoss: '95', openedAt: new Date() },
-        { entryPrice: '105', quantity: '10', stopLoss: '98', openedAt: new Date() },
-      ];
-
-      expect(getConsolidatedStopLoss(executions, 'LONG')).toBe(98);
-    });
-
-    it('should return lowest stop for SHORT positions', () => {
-      const executions: ExecutionLike[] = [
-        { entryPrice: '100', quantity: '10', stopLoss: '105', openedAt: new Date() },
-        { entryPrice: '95', quantity: '10', stopLoss: '102', openedAt: new Date() },
-      ];
-
-      expect(getConsolidatedStopLoss(executions, 'SHORT')).toBe(102);
-    });
-
-    it('should return null when no stops are set', () => {
-      const executions: ExecutionLike[] = [
-        { entryPrice: '100', quantity: '10', openedAt: new Date() },
-      ];
-
-      expect(getConsolidatedStopLoss(executions, 'LONG')).toBeNull();
-    });
-
-    it('should ignore executions without stop loss', () => {
-      const executions: ExecutionLike[] = [
-        { entryPrice: '100', quantity: '10', openedAt: new Date() },
-        { entryPrice: '105', quantity: '10', stopLoss: '98', openedAt: new Date() },
-      ];
-
-      expect(getConsolidatedStopLoss(executions, 'LONG')).toBe(98);
-    });
-  });
 });
 
 describe('PyramidingService', () => {
@@ -475,68 +401,6 @@ describe('PyramidingService', () => {
       expect(result.reason).toContain('eligible for pyramid entry');
       expect(result.suggestedSize).toBeGreaterThan(0);
       expect(result.profitPercent).toBeCloseTo(0.04, 2);
-    });
-  });
-
-  describe('adjustStopLossForPyramid', () => {
-    it('should return null for single execution', async () => {
-      const executions = [
-        {
-          id: 'exec-1',
-          userId: 'user-1',
-          walletId: 'wallet-1',
-          symbol: 'BTCUSDT',
-          side: 'LONG' as const,
-          entryPrice: '50000',
-          quantity: '0.1',
-          status: 'open' as const,
-          stopLoss: '49000',
-          openedAt: new Date(),
-        },
-      ];
-
-      const result = await pyramidingService.adjustStopLossForPyramid(
-        executions as Parameters<typeof pyramidingService.adjustStopLossForPyramid>[0],
-        'LONG'
-      );
-
-      expect(result).toBeNull();
-    });
-
-    it('should calculate breakeven stop for LONG with multiple entries', async () => {
-      const executions = [
-        {
-          id: 'exec-1',
-          userId: 'user-1',
-          walletId: 'wallet-1',
-          symbol: 'BTCUSDT',
-          side: 'LONG' as const,
-          entryPrice: '50000',
-          quantity: '0.1',
-          status: 'open' as const,
-          stopLoss: '49000',
-          openedAt: new Date(),
-        },
-        {
-          id: 'exec-2',
-          userId: 'user-1',
-          walletId: 'wallet-1',
-          symbol: 'BTCUSDT',
-          side: 'LONG' as const,
-          entryPrice: '52000',
-          quantity: '0.08',
-          status: 'open' as const,
-          stopLoss: '50000',
-          openedAt: new Date(),
-        },
-      ];
-
-      const result = await pyramidingService.adjustStopLossForPyramid(
-        executions as Parameters<typeof pyramidingService.adjustStopLossForPyramid>[0],
-        'LONG'
-      );
-
-      expect(result).toBeGreaterThan(50000);
     });
   });
 

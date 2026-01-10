@@ -6,9 +6,6 @@ import {
   roundQuantity,
   calculatePyramidProfitPercent,
   calculatePyramidSize,
-  calculateBreakevenStopLoss,
-  shouldUpdatePyramidStopLoss,
-  getConsolidatedStopLoss,
   DEFAULT_PYRAMIDING_CONFIG,
   type ExecutionLike,
 } from '../services/pyramiding';
@@ -171,81 +168,6 @@ describe('Pyramiding Pure Functions', () => {
     it('should apply custom ML confidence boost', () => {
       const result = calculatePyramidSize(1, 1, 0.8, 0.9, 1.5);
       expect(result).toBe(0.8 * 1.5);
-    });
-  });
-
-  describe('calculateBreakevenStopLoss', () => {
-    it('should add buffer above entry for LONG', () => {
-      expect(calculateBreakevenStopLoss(100, 'LONG')).toBe(100.2);
-    });
-
-    it('should subtract buffer below entry for SHORT', () => {
-      expect(calculateBreakevenStopLoss(100, 'SHORT')).toBe(99.8);
-    });
-
-    it('should use custom buffer', () => {
-      expect(calculateBreakevenStopLoss(100, 'LONG', 0.01)).toBe(101);
-      expect(calculateBreakevenStopLoss(100, 'SHORT', 0.01)).toBe(99);
-    });
-  });
-
-  describe('shouldUpdatePyramidStopLoss', () => {
-    it('should return true for LONG when new stop is higher', () => {
-      expect(shouldUpdatePyramidStopLoss(105, 100, 'LONG')).toBe(true);
-    });
-
-    it('should return false for LONG when new stop is lower', () => {
-      expect(shouldUpdatePyramidStopLoss(95, 100, 'LONG')).toBe(false);
-    });
-
-    it('should return true for SHORT when new stop is lower', () => {
-      expect(shouldUpdatePyramidStopLoss(95, 100, 'SHORT')).toBe(true);
-    });
-
-    it('should return false for SHORT when new stop is higher', () => {
-      expect(shouldUpdatePyramidStopLoss(105, 100, 'SHORT')).toBe(false);
-    });
-
-    it('should return false when stops are equal', () => {
-      expect(shouldUpdatePyramidStopLoss(100, 100, 'LONG')).toBe(false);
-      expect(shouldUpdatePyramidStopLoss(100, 100, 'SHORT')).toBe(false);
-    });
-  });
-
-  describe('getConsolidatedStopLoss', () => {
-    it('should return null for empty stop losses', () => {
-      const executions = [
-        createExecution({ stopLoss: null }),
-        createExecution({ stopLoss: undefined }),
-      ];
-      expect(getConsolidatedStopLoss(executions, 'LONG')).toBeNull();
-    });
-
-    it('should return max stop loss for LONG', () => {
-      const executions = [
-        createExecution({ stopLoss: '95' }),
-        createExecution({ stopLoss: '97' }),
-        createExecution({ stopLoss: '96' }),
-      ];
-      expect(getConsolidatedStopLoss(executions, 'LONG')).toBe(97);
-    });
-
-    it('should return min stop loss for SHORT', () => {
-      const executions = [
-        createExecution({ stopLoss: '105' }),
-        createExecution({ stopLoss: '103' }),
-        createExecution({ stopLoss: '104' }),
-      ];
-      expect(getConsolidatedStopLoss(executions, 'SHORT')).toBe(103);
-    });
-
-    it('should ignore null stop losses', () => {
-      const executions = [
-        createExecution({ stopLoss: '95' }),
-        createExecution({ stopLoss: null }),
-        createExecution({ stopLoss: '97' }),
-      ];
-      expect(getConsolidatedStopLoss(executions, 'LONG')).toBe(97);
     });
   });
 

@@ -63,11 +63,10 @@ export const sortPositions = (
 
 export const calculateStats = (positions: PortfolioPosition[]) => {
   const totalPnL = positions.reduce((sum, pos) => sum + pos.pnl, 0);
-  const totalPnLPercent =
-    positions.reduce((sum, pos) => sum + pos.pnlPercent, 0) / (positions.length || 1);
+  const totalExposure = positions.reduce((sum, pos) => sum + pos.avgPrice * pos.quantity, 0);
+  const totalPnLPercent = totalExposure > 0 ? (totalPnL / totalExposure) * 100 : 0;
   const profitableCount = positions.filter((p) => p.pnl > 0).length;
   const losingCount = positions.filter((p) => p.pnl < 0).length;
-  const totalExposure = positions.reduce((sum, pos) => sum + pos.avgPrice * pos.quantity, 0);
 
   return {
     totalPnL,

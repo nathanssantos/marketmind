@@ -117,7 +117,7 @@ async function runMultiWatcherBacktest() {
     useStochasticFilter: config.useStochasticFilter,
     useAdxFilter: config.useAdxFilter,
     onlyWithTrend: config.useTrendFilter,
-    minRiskRewardRatio: 1.25,
+    minRiskRewardRatio: 1.2,
     useCooldown: true,
     cooldownMinutes: 15,
 
