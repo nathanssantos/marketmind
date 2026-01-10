@@ -922,7 +922,7 @@
       "singleMode": "Single",
       "bulkMode": "Bulk",
       "marketType": "Market Type",
-      "topSymbols": "Top 12 Symbols by Volume",
+      "topSymbols": "Top 12 Symbols by Market Cap",
       "selectAll": "Select All",
       "deselectAll": "Deselect All",
       "selectedCount": "{{count}} symbols selected",

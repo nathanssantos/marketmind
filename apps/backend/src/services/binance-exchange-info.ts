@@ -18,30 +18,52 @@ const EXCLUDED_SYMBOLS = new Set([
   'EURUSDT',
 ]);
 
+const TOP_MARKET_CAP_SYMBOLS = [
+  'BTCUSDT',
+  'ETHUSDT',
+  'BNBUSDT',
+  'SOLUSDT',
+  'XRPUSDT',
+  'DOGEUSDT',
+  'ADAUSDT',
+  'AVAXUSDT',
+  'TRXUSDT',
+  'LINKUSDT',
+  'DOTUSDT',
+  'LTCUSDT',
+  'MATICUSDT',
+  'SHIBUSDT',
+  'ATOMUSDT',
+  'UNIUSDT',
+  'XLMUSDT',
+  'NEARUSDT',
+  'AAVEUSDT',
+  'APTUSDT',
+] as const;
+
+const validateSymbolsExist = async (
+  symbols: string[],
+  marketType: MarketType
+): Promise<string[]> => {
+  const available = await getAvailableSymbols(marketType);
+  const availableSet = new Set(available);
+  return symbols.filter((s) => availableSet.has(s));
+};
+
+export const getTopSymbolsByMarketCap = async (
+  marketType: MarketType = 'SPOT',
+  limit: number = 12
+): Promise<string[]> => {
+  const candidates = [...TOP_MARKET_CAP_SYMBOLS].slice(0, Math.min(limit + 5, TOP_MARKET_CAP_SYMBOLS.length));
+  const validSymbols = await validateSymbolsExist(candidates, marketType);
+  return validSymbols.slice(0, limit);
+};
+
 export const getTopSymbolsByVolume = async (
   marketType: MarketType = 'SPOT',
   limit: number = 12
 ): Promise<string[]> => {
-  const baseUrl = marketType === 'FUTURES' ? BINANCE_FUTURES_API : BINANCE_SPOT_API;
-  const endpoint = marketType === 'FUTURES' ? '/fapi/v1/ticker/24hr' : '/api/v3/ticker/24hr';
-
-  const response = await fetch(`${baseUrl}${endpoint}`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ticker data: ${response.statusText}`);
-  }
-
-  const tickers: Ticker24hr[] = await response.json();
-
-  const usdtPairs = tickers
-    .filter((t) => t.symbol.endsWith('USDT') && !EXCLUDED_SYMBOLS.has(t.symbol))
-    .map((t) => ({
-      symbol: t.symbol,
-      quoteVolume: parseFloat(t.quoteVolume),
-    }))
-    .sort((a, b) => b.quoteVolume - a.quoteVolume);
-
-  return usdtPairs.slice(0, limit).map((t) => t.symbol);
+  return getTopSymbolsByMarketCap(marketType, limit);
 };
 
 export const getAvailableSymbols = async (marketType: MarketType = 'SPOT'): Promise<string[]> => {

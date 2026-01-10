@@ -984,7 +984,7 @@
       "singleMode": "Individuel",
       "bulkMode": "En masse",
       "marketType": "Type de Marché",
-      "topSymbols": "Top 12 Symboles par Volume",
+      "topSymbols": "Top 12 Symboles par Market Cap",
       "selectAll": "Tout Sélectionner",
       "deselectAll": "Tout Désélectionner",
       "selectedCount": "{{count}} symboles sélectionnés",

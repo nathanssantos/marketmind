@@ -504,7 +504,12 @@ class KlineMaintenance {
       orderBy: [asc(klines.openTime)],
     });
 
-    let fixed = 0;
+    interface CorruptedKlineInfo {
+      kline: typeof recentKlines[0];
+      reason: string;
+    }
+
+    const corruptedKlines: CorruptedKlineInfo[] = [];
 
     for (let i = 0; i < recentKlines.length; i++) {
       const kline = recentKlines[i];
@@ -519,49 +524,71 @@ class KlineMaintenance {
       }
 
       if (corruption) {
-        logger.warn(
-          { symbol: pair.symbol, interval: pair.interval, openTime: kline.openTime, reason: corruption.reason },
-          'Corrupted kline detected'
-        );
-
-        const binanceKline = await this.fetchBinanceKline(
-          pair.symbol,
-          pair.interval,
-          kline.openTime.getTime(),
-          pair.marketType
-        );
-
-        if (binanceKline) {
-          await db
-            .update(klines)
-            .set({
-              open: binanceKline.open,
-              high: binanceKline.high,
-              low: binanceKline.low,
-              close: binanceKline.close,
-              volume: binanceKline.volume,
-              quoteVolume: binanceKline.quoteVolume,
-              trades: binanceKline.trades,
-              takerBuyBaseVolume: binanceKline.takerBuyBaseVolume,
-              takerBuyQuoteVolume: binanceKline.takerBuyQuoteVolume,
-              closeTime: new Date(binanceKline.closeTime),
-            })
-            .where(
-              and(
-                eq(klines.symbol, pair.symbol),
-                eq(klines.interval, pair.interval),
-                eq(klines.marketType, pair.marketType),
-                eq(klines.openTime, kline.openTime)
-              )
-            );
-
-          logger.debug(
-            { symbol: pair.symbol, interval: pair.interval, openTime: kline.openTime },
-            'Fixed corrupted kline'
-          );
-          fixed++;
-        }
+        corruptedKlines.push({ kline, reason: corruption.reason });
       }
+    }
+
+    if (corruptedKlines.length === 0) return 0;
+
+    const reasonCounts = corruptedKlines.reduce((acc, { reason }) => {
+      acc[reason] = (acc[reason] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    logger.warn(
+      {
+        symbol: pair.symbol,
+        interval: pair.interval,
+        marketType: pair.marketType,
+        totalCorrupted: corruptedKlines.length,
+        reasons: reasonCounts,
+      },
+      'Corrupted klines detected (batch)'
+    );
+
+    let fixed = 0;
+
+    for (const { kline } of corruptedKlines) {
+      const binanceKline = await this.fetchBinanceKline(
+        pair.symbol,
+        pair.interval,
+        kline.openTime.getTime(),
+        pair.marketType
+      );
+
+      if (binanceKline) {
+        await db
+          .update(klines)
+          .set({
+            open: binanceKline.open,
+            high: binanceKline.high,
+            low: binanceKline.low,
+            close: binanceKline.close,
+            volume: binanceKline.volume,
+            quoteVolume: binanceKline.quoteVolume,
+            trades: binanceKline.trades,
+            takerBuyBaseVolume: binanceKline.takerBuyBaseVolume,
+            takerBuyQuoteVolume: binanceKline.takerBuyQuoteVolume,
+            closeTime: new Date(binanceKline.closeTime),
+          })
+          .where(
+            and(
+              eq(klines.symbol, pair.symbol),
+              eq(klines.interval, pair.interval),
+              eq(klines.marketType, pair.marketType),
+              eq(klines.openTime, kline.openTime)
+            )
+          );
+
+        fixed++;
+      }
+    }
+
+    if (fixed > 0) {
+      logger.info(
+        { symbol: pair.symbol, interval: pair.interval, marketType: pair.marketType, fixed, total: corruptedKlines.length },
+        'Fixed corrupted klines (batch)'
+      );
     }
 
     return fixed;
