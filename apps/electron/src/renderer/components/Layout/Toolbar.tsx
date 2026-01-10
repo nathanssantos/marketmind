@@ -298,7 +298,7 @@ export const Toolbar = memo(({
                 colorPalette={showFibonacciProjection ? 'blue' : 'gray'}
                 variant={showFibonacciProjection ? 'solid' : 'ghost'}
               >
-                <LuTriangleRight />
+                <LuTriangleRight style={{ transform: 'scaleX(-1)' }} />
               </IconButton>
             </TooltipWrapper>
           </HStack>
