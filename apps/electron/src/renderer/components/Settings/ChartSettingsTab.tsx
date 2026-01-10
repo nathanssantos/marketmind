@@ -4,7 +4,7 @@ import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Select } from '@/renderer/components/ui/select';
 import { DEFAULT_ADVANCED_CONFIG } from '@/renderer/constants/defaults';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
-import { Box, Grid, Separator, Stack, Text } from '@chakra-ui/react';
+import { Box, Grid, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw } from 'react-icons/lu';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';

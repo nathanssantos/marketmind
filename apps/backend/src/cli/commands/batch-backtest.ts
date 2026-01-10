@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { TRADING_DEFAULTS } from '@marketmind/types';
 import { BacktestEngine } from '../../services/backtesting/BacktestEngine';
 import { StrategyLoader } from '../../services/setup-detection/dynamic';
 
@@ -62,7 +63,7 @@ const runSingleBacktest = async (
       useTrailingStop: true,
       onlyWithTrend: false,
       slippagePercent: 0.1,
-      minRiskRewardRatio: 1.2,
+      minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
     });
 
     if (result.trades.length === 0) {

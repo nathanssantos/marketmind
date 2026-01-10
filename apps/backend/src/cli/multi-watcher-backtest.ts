@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { eq } from 'drizzle-orm';
+import { TRADING_DEFAULTS } from '@marketmind/types';
 import { db } from '../db';
 import { activeWatchers, autoTradingConfig, tradingProfiles } from '../db/schema';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
@@ -117,7 +118,7 @@ async function runMultiWatcherBacktest() {
     useStochasticFilter: config.useStochasticFilter,
     useAdxFilter: config.useAdxFilter,
     onlyWithTrend: config.useTrendFilter,
-    minRiskRewardRatio: 1.2,
+    minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
     useCooldown: true,
     cooldownMinutes: 15,
 

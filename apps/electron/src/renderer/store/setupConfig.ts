@@ -1,3 +1,5 @@
+import { TRADING_DEFAULTS } from '@marketmind/types';
+
 export const SETUP_CONFIG_VERSION = 4;
 
 export interface BaseSetupConfig {
@@ -13,7 +15,7 @@ export interface SetupDetectionConfig {
 export const createDefaultSetupDetectionConfig = (): SetupDetectionConfig => ({
   enabledStrategies: [],
   minConfidence: 50,
-  minRiskReward: 1.0,
+  minRiskReward: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
 });
 
 export const mergeSetupConfigs = (

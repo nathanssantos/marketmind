@@ -1,3 +1,5 @@
+import { BINANCE_FEES } from './fees';
+
 export type MarketType = 'SPOT' | 'FUTURES';
 
 export type MarginType = 'ISOLATED' | 'CROSSED';
@@ -150,8 +152,8 @@ export interface FuturesBacktestTrade {
 export const FUTURES_DEFAULTS = {
   LEVERAGE: 1,
   MARGIN_TYPE: 'ISOLATED' as MarginType,
-  TAKER_FEE: 0.0004,
-  MAKER_FEE: 0.0002,
+  TAKER_FEE: BINANCE_FEES.FUTURES.VIP_0.taker,
+  MAKER_FEE: BINANCE_FEES.FUTURES.VIP_0.maker,
   LIQUIDATION_FEE: 0.015,
   MAINTENANCE_MARGIN_RATE: 0.004,
 } as const;

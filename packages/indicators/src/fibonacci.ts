@@ -13,7 +13,7 @@ import {
 const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
 const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
 
-export const FIBONACCI_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.272, 1.618] as const;
+export const FIBONACCI_LEVELS = [0, 0.5, 1, 1.272, 1.618] as const;
 
 export interface FibonacciLevel {
   level: number;
@@ -109,7 +109,7 @@ export const calculateFibonacciExtension = (
   });
 };
 
-export const FIBONACCI_EXTENSION_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.272, 1.618, 2] as const;
+export const FIBONACCI_EXTENSION_LEVELS = [0, 0.5, 1, 1.272, 1.618, 2] as const;
 
 export interface SwingPointWithIndex {
   price: number;

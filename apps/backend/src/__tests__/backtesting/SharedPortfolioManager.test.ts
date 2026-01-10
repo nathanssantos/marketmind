@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
+import { TRADING_DEFAULTS } from '@marketmind/types';
 import {
   SharedPortfolioManager,
   type PortfolioConfig,
@@ -6,17 +7,17 @@ import {
 import type { TradingSetup } from '@marketmind/types';
 
 const createPortfolioConfig = (overrides: Partial<PortfolioConfig> = {}): PortfolioConfig => ({
-  initialCapital: 10000,
-  exposureMultiplier: 1.5,
+  initialCapital: TRADING_DEFAULTS.INITIAL_CAPITAL,
+  exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
   maxPositionSizePercent: 15,
   maxConcurrentPositions: 5,
-  dailyLossLimitPercent: 5,
-  cooldownMinutes: 15,
+  dailyLossLimitPercent: TRADING_DEFAULTS.DAILY_LOSS_LIMIT_PERCENT,
+  cooldownMinutes: TRADING_DEFAULTS.COOLDOWN_MINUTES,
   useStochasticFilter: false,
   useMomentumTimingFilter: false,
   useAdxFilter: false,
   useTrendFilter: false,
-  minRiskRewardRatio: 1.2,
+  minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
   ...overrides,
 });
 

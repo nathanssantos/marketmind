@@ -15,11 +15,7 @@ describe('useFibonacciRenderer', () => {
     axisLabel: '#848E9C',
     fibonacci: {
       level0: 'rgba(128, 128, 128, 0.5)',
-      level236: 'rgba(255, 193, 7, 0.5)',
-      level382: 'rgba(255, 152, 0, 0.5)',
       level50: 'rgba(156, 39, 176, 0.5)',
-      level618: 'rgba(76, 175, 80, 0.5)',
-      level786: 'rgba(33, 150, 243, 0.5)',
       level100: 'rgba(128, 128, 128, 0.5)',
       level127: 'rgba(244, 67, 54, 0.3)',
       level161: 'rgba(244, 67, 54, 0.3)',
@@ -29,11 +25,7 @@ describe('useFibonacciRenderer', () => {
   const mockFibonacciData = {
     levels: [
       { level: 0, price: 100, label: '0%' },
-      { level: 0.236, price: 102.36, label: '23.6%' },
-      { level: 0.382, price: 103.82, label: '38.2%' },
       { level: 0.5, price: 105, label: '50%' },
-      { level: 0.618, price: 106.18, label: '61.8%' },
-      { level: 0.786, price: 107.86, label: '78.6%' },
       { level: 1, price: 110, label: '100%' },
     ],
     high: 110,

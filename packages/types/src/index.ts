@@ -10,6 +10,7 @@ export * from './market';
 export * from './strategyDefinition';
 export * from './strategyVisualization';
 export * from './trading';
+export * from './trading-config';
 export * from './tradingProfile';
 export * from './tradingSetup';
 
