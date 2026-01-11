@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.44.0] - 2025-01-10
+
+### Added
+- **Cryptocurrency icons** next to all asset/symbol names throughout the app
+  - New `CryptoIcon` component with multiple CDN fallbacks (spothq, atomiclabs, coincap)
+  - Auto base asset extraction from trading pairs (e.g., BTCUSDT → BTC)
+  - Fallback letter avatar when icon not found
+  - Clickable icons when symbol name is also clickable
+- **Auto-trade column** in Orders and Portfolio tables
+  - Robot icon with tooltip in dedicated column (last column position)
+  - AUTO badge in card/mobile views for orders and positions
+
+### Changed
+- **SymbolSelector badge** - Shortened "FUTURES" to "FUT" for compact display
+- **Chart interaction model** - Orders, positions, SL/TP now only interactive via tag area
+  - Hover, drag, and click only work on the colored tag (with X button)
+  - Lines across the chart no longer trigger interactions
+  - Improved precision when multiple order lines are close together
+- **Auto-trade indicator** moved from symbol cell to dedicated column in tables
+
+### Improved
+- **Visual consistency** - Crypto icons in SymbolSelector, OrdersList, Portfolio, FuturesPositionsPanel, WatcherManager, BacktestResults, FuturesPositionInfo, AddWatcherDialog
+- **Hitbox precision** - Order/SL/TP hitboxes now use exact tag dimensions instead of Y-tolerance
+
+---
+
 ## [0.43.1] - 2025-01-09
 
 ### Changed
