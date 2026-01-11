@@ -135,6 +135,9 @@
     "chart": {
       "tipsRealtime": "Les modifications sont appliquées immédiatement avec un debounce de 300ms",
       "tipsReset": "Cliquez sur 'Réinitialiser aux Valeurs par Défaut' pour restaurer les paramètres par défaut du graphique",
+      "chartType": "Type de graphique",
+      "defaultChartType": "Type de graphique par défaut",
+      "defaultChartTypeHelper": "Le style de visualisation par défaut du graphique",
       "chartDimensions": "Dimensions du graphique",
       "rightMargin": "Marge droite",
       "rightMarginHelper": "Espace réservé sur le côté droit du graphique",

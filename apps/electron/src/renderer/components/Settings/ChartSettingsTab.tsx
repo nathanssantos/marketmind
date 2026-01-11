@@ -4,6 +4,7 @@ import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Select } from '@/renderer/components/ui/select';
 import { DEFAULT_ADVANCED_CONFIG } from '@/renderer/constants/defaults';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
+import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
 import { Box, Grid, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw } from 'react-icons/lu';
@@ -16,6 +17,7 @@ interface ChartSettingsTabProps {
 
 export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabProps) => {
   const { t } = useTranslation();
+  const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
 
   const debouncedConfigChange = useDebounceCallback(onConfigChange, 300);
 
@@ -42,6 +44,25 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
 
   return (
     <Stack gap={6}>
+      <Box>
+        <Text fontSize="md" fontWeight="medium" mb={3}>
+          {t('settings.chart.chartType')}
+        </Text>
+        <Grid templateColumns="repeat(4, 1fr)" gap={4}>
+          <Field label={t('settings.chart.defaultChartType')} helperText={t('settings.chart.defaultChartTypeHelper')}>
+            <Select
+              value={chartType}
+              onChange={(value) => setChartType(value as 'kline' | 'line')}
+              options={[
+                { value: 'kline', label: t('chart.controls.klineChart') },
+                { value: 'line', label: t('chart.controls.lineChart') },
+              ]}
+              usePortal={false}
+            />
+          </Field>
+        </Grid>
+      </Box>
+
       <Box>
         <Text fontSize="md" fontWeight="medium" mb={3}>
           {t('settings.chart.chartDimensions')} & {t('settings.chart.klineSettings')}

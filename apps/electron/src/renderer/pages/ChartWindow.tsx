@@ -351,32 +351,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
           onSymbolChange={handleSymbolChange}
           timeframe={timeframe}
           onTimeframeChange={setTimeframe}
-          showVolume={showVolume}
-          onShowVolumeChange={setShowVolume}
-          showGrid={showGrid}
-          onShowGridChange={setShowGrid}
-          showCurrentPriceLine={showCurrentPriceLine}
-          onShowCurrentPriceLineChange={setShowCurrentPriceLine}
-          showCrosshair={showCrosshair}
-          onShowCrosshairChange={setShowCrosshair}
-          showProfitLossAreas={showProfitLossAreas}
-          onShowProfitLossAreasChange={setShowProfitLossAreas}
-          showFibonacciProjection={showFibonacciProjection}
-          onShowFibonacciProjectionChange={setShowFibonacciProjection}
-          showStochastic={showStochastic}
-          onShowStochasticChange={setShowStochastic}
-          showRSI={showRSI}
-          onShowRSIChange={setShowRSI}
-          showBollingerBands={showBollingerBands}
-          onShowBollingerBandsChange={setShowBollingerBands}
-          showATR={showATR}
-          onShowATRChange={setShowATR}
-          showVWAP={showVWAP}
-          onShowVWAPChange={setShowVWAP}
-          chartType={chartType}
-          onChartTypeChange={setChartType}
           movingAverages={movingAverages}
-          onMovingAveragesChange={setMovingAverages}
           showNewWindowButton={false}
           showSidebarButtons={false}
           isTradingOpen={false}
@@ -388,12 +363,38 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
 
       <Box flex="1" position="relative" overflow="hidden">
         <ChartToolsToolbar
+          chartType={chartType}
+          showGrid={showGrid}
+          showCurrentPriceLine={showCurrentPriceLine}
+          showCrosshair={showCrosshair}
+          showProfitLossAreas={showProfitLossAreas}
+          showFibonacciProjection={showFibonacciProjection}
           showMeasurementRuler={showMeasurementRuler}
           showMeasurementArea={showMeasurementArea}
           showTooltip={showTooltip}
+          showVolume={showVolume}
+          showStochastic={showStochastic}
+          showRSI={showRSI}
+          showBollingerBands={showBollingerBands}
+          showATR={showATR}
+          showVWAP={showVWAP}
+          movingAverages={movingAverages}
+          onChartTypeChange={setChartType}
+          onShowGridChange={setShowGrid}
+          onShowCurrentPriceLineChange={setShowCurrentPriceLine}
+          onShowCrosshairChange={setShowCrosshair}
+          onShowProfitLossAreasChange={setShowProfitLossAreas}
+          onShowFibonacciProjectionChange={setShowFibonacciProjection}
           onShowMeasurementRulerChange={setShowMeasurementRuler}
           onShowMeasurementAreaChange={setShowMeasurementArea}
           onShowTooltipChange={setShowTooltip}
+          onShowVolumeChange={setShowVolume}
+          onShowStochasticChange={setShowStochastic}
+          onShowRSIChange={setShowRSI}
+          onShowBollingerBandsChange={setShowBollingerBands}
+          onShowATRChange={setShowATR}
+          onShowVWAPChange={setShowVWAP}
+          onMovingAveragesChange={setMovingAverages}
         />
         {loading && (
           <LoadingSpinner message={t('app.loadingMarketData')} />

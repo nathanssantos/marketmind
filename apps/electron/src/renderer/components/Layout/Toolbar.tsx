@@ -4,16 +4,10 @@ import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuBot,
-  LuChartCandlestick,
-  LuChartLine,
-  LuCrosshair,
   LuDollarSign,
-  LuGrid3X3,
   LuHistory,
   LuPlus,
-  LuRectangleHorizontal,
   LuSettings,
-  LuTriangleRight
 } from 'react-icons/lu';
 import { useChartWindows } from '../../hooks/useChartWindows';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
@@ -22,25 +16,12 @@ import { SymbolSelector } from '../SymbolSelector';
 import { TradingProfilesModal } from '../Trading/TradingProfilesModal';
 import { Logo } from '../ui/logo';
 import { TooltipWrapper } from '../ui/Tooltip';
-import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 
 export interface ToolbarProps {
   symbol: string;
   marketType?: 'SPOT' | 'FUTURES';
   onMarketTypeChange?: (marketType: 'SPOT' | 'FUTURES') => void;
   timeframe: Timeframe;
-  chartType: 'kline' | 'line';
-  showVolume: boolean;
-  showGrid: boolean;
-  showCurrentPriceLine: boolean;
-  showCrosshair: boolean;
-  showProfitLossAreas: boolean;
-  showFibonacciProjection: boolean;
-  showStochastic: boolean;
-  showRSI: boolean;
-  showBollingerBands: boolean;
-  showATR: boolean;
-  showVWAP: boolean;
   movingAverages: MovingAverageConfig[];
   isTradingOpen: boolean;
   isBacktestOpen: boolean;
@@ -48,19 +29,6 @@ export interface ToolbarProps {
   showSidebarButtons?: boolean;
   onSymbolChange: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
-  onChartTypeChange: (type: 'kline' | 'line') => void;
-  onShowVolumeChange: (show: boolean) => void;
-  onShowGridChange: (show: boolean) => void;
-  onShowCurrentPriceLineChange: (show: boolean) => void;
-  onShowCrosshairChange: (show: boolean) => void;
-  onShowProfitLossAreasChange: (show: boolean) => void;
-  onShowFibonacciProjectionChange: (show: boolean) => void;
-  onShowStochasticChange: (show: boolean) => void;
-  onShowRSIChange: (show: boolean) => void;
-  onShowBollingerBandsChange: (show: boolean) => void;
-  onShowATRChange: (show: boolean) => void;
-  onShowVWAPChange: (show: boolean) => void;
-  onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onToggleTrading: () => void;
   onToggleBacktest: () => void;
 }
@@ -70,18 +38,6 @@ export const Toolbar = memo(({
   marketType,
   onMarketTypeChange,
   timeframe,
-  chartType,
-  showVolume,
-  showGrid,
-  showCurrentPriceLine,
-  showCrosshair,
-  showProfitLossAreas,
-  showFibonacciProjection,
-  showStochastic,
-  showRSI,
-  showBollingerBands,
-  showATR,
-  showVWAP,
   movingAverages,
   isTradingOpen,
   isBacktestOpen: _isBacktestOpen,
@@ -89,19 +45,6 @@ export const Toolbar = memo(({
   showSidebarButtons = true,
   onSymbolChange,
   onTimeframeChange,
-  onChartTypeChange,
-  onShowVolumeChange,
-  onShowGridChange,
-  onShowCurrentPriceLineChange,
-  onShowCrosshairChange,
-  onShowProfitLossAreasChange,
-  onShowFibonacciProjectionChange,
-  onShowStochasticChange,
-  onShowRSIChange,
-  onShowBollingerBandsChange,
-  onShowATRChange,
-  onShowVWAPChange,
-  onMovingAveragesChange,
   onToggleTrading,
   onToggleBacktest,
 }: ToolbarProps) => {
@@ -117,15 +60,6 @@ export const Toolbar = memo(({
 
   const handleOpenTradingProfilesModal = (): void => {
     setIsTradingProfilesModalOpen(true);
-  };
-
-  const toggleMA = (index: number): void => {
-    const updated = movingAverages.map((ma, i) =>
-      i === index
-        ? { ...ma, visible: ma.visible === false ? true : false }
-        : ma
-    );
-    onMovingAveragesChange(updated);
   };
 
   return (
@@ -202,136 +136,36 @@ export const Toolbar = memo(({
         <Box w="1px" h="32px" bg="border" flexShrink={0} />
 
         <Flex gap={3} align="center" flexShrink={0}>
-          <HStack gap={1}>
-            <TooltipWrapper label={t('chart.controls.klineChart')} showArrow>
-              <IconButton
-                size="2xs"
-                aria-label={t('chart.controls.klineChart')}
-                onClick={() => onChartTypeChange('kline')}
-                colorPalette={chartType === 'kline' ? 'blue' : 'gray'}
-                variant={chartType === 'kline' ? 'solid' : 'ghost'}
-              >
-                <LuChartCandlestick />
-              </IconButton>
-            </TooltipWrapper>
-            <TooltipWrapper label={t('chart.controls.lineChart')} showArrow>
-              <IconButton
-                size="2xs"
-                aria-label={t('chart.controls.lineChart')}
-                onClick={() => onChartTypeChange('line')}
-                colorPalette={chartType === 'line' ? 'blue' : 'gray'}
-                variant={chartType === 'line' ? 'solid' : 'ghost'}
-              >
-                <LuChartLine />
-              </IconButton>
-            </TooltipWrapper>
-          </HStack>
-
-          <Box w="1px" h="32px" bg="border" flexShrink={0} />
-
-          <HStack gap={1}>
-            <IndicatorTogglePopover
-              showVolume={showVolume}
-              showStochastic={showStochastic}
-              showRSI={showRSI}
-              showBollingerBands={showBollingerBands}
-              showATR={showATR}
-              showVWAP={showVWAP}
-              movingAverages={movingAverages}
-              onShowVolumeChange={onShowVolumeChange}
-              onShowStochasticChange={onShowStochasticChange}
-              onShowRSIChange={onShowRSIChange}
-              onShowBollingerBandsChange={onShowBollingerBandsChange}
-              onShowATRChange={onShowATRChange}
-              onShowVWAPChange={onShowVWAPChange}
-              onMovingAverageToggle={toggleMA}
-            />
-            <TooltipWrapper label={t('chart.controls.grid')} showArrow>
-              <IconButton
-                size="2xs"
-                aria-label={t('chart.controls.grid')}
-                onClick={() => onShowGridChange(!showGrid)}
-                colorPalette={showGrid ? 'blue' : 'gray'}
-                variant={showGrid ? 'solid' : 'ghost'}
-              >
-                <LuGrid3X3 />
-              </IconButton>
-            </TooltipWrapper>
-            <TooltipWrapper label={t('chart.controls.currentPrice')} showArrow>
-              <IconButton
-                size="2xs"
-                aria-label={t('chart.controls.currentPrice')}
-                onClick={() => onShowCurrentPriceLineChange(!showCurrentPriceLine)}
-                colorPalette={showCurrentPriceLine ? 'blue' : 'gray'}
-                variant={showCurrentPriceLine ? 'solid' : 'ghost'}
-              >
-                <LuDollarSign />
-              </IconButton>
-            </TooltipWrapper>
-            <TooltipWrapper label={t('chart.controls.crosshair')} showArrow>
-              <IconButton
-                size="2xs"
-                aria-label={t('chart.controls.crosshair')}
-                onClick={() => onShowCrosshairChange(!showCrosshair)}
-                colorPalette={showCrosshair ? 'blue' : 'gray'}
-                variant={showCrosshair ? 'solid' : 'ghost'}
-              >
-                <LuCrosshair />
-              </IconButton>
-            </TooltipWrapper>
-            <TooltipWrapper label={t('chart.controls.profitLossAreas')} showArrow>
-              <IconButton
-                size="2xs"
-                aria-label={t('chart.controls.profitLossAreas')}
-                onClick={() => onShowProfitLossAreasChange(!showProfitLossAreas)}
-                colorPalette={showProfitLossAreas ? 'blue' : 'gray'}
-                variant={showProfitLossAreas ? 'solid' : 'ghost'}
-              >
-                <LuRectangleHorizontal />
-              </IconButton>
-            </TooltipWrapper>
-            <TooltipWrapper label={t('chart.controls.fibonacciProjection')} showArrow>
-              <IconButton
-                size="2xs"
-                aria-label={t('chart.controls.fibonacciProjection')}
-                onClick={() => onShowFibonacciProjectionChange(!showFibonacciProjection)}
-                colorPalette={showFibonacciProjection ? 'blue' : 'gray'}
-                variant={showFibonacciProjection ? 'solid' : 'ghost'}
-              >
-                <LuTriangleRight style={{ transform: 'scaleX(-1)' }} />
-              </IconButton>
-            </TooltipWrapper>
-            {movingAverages.length > 0 && showSidebarButtons && (
-              <>
-                <TooltipWrapper label="Backtest Strategy" showArrow placement="top">
-                  <IconButton
-                    size="2xs"
-                    aria-label="Backtest Strategy"
-                    onClick={onToggleBacktest}
-                    colorPalette="blue"
-                    variant="solid"
-                  >
-                    <LuHistory />
-                  </IconButton>
-                </TooltipWrapper>
-                <TooltipWrapper
-                  label={t('tradingProfiles.modalTitle')}
-                  showArrow
-                  placement="top"
+          {movingAverages.length > 0 && showSidebarButtons && (
+            <HStack gap={1}>
+              <TooltipWrapper label="Backtest Strategy" showArrow placement="top">
+                <IconButton
+                  size="2xs"
+                  aria-label="Backtest Strategy"
+                  onClick={onToggleBacktest}
+                  colorPalette="blue"
+                  variant="solid"
                 >
-                  <IconButton
-                    size="2xs"
-                    aria-label={t('tradingProfiles.modalTitle')}
-                    onClick={handleOpenTradingProfilesModal}
-                    colorPalette="blue"
-                    variant="solid"
-                  >
-                    <LuBot />
-                  </IconButton>
-                </TooltipWrapper>
-              </>
-            )}
-          </HStack>
+                  <LuHistory />
+                </IconButton>
+              </TooltipWrapper>
+              <TooltipWrapper
+                label={t('tradingProfiles.modalTitle')}
+                showArrow
+                placement="top"
+              >
+                <IconButton
+                  size="2xs"
+                  aria-label={t('tradingProfiles.modalTitle')}
+                  onClick={handleOpenTradingProfilesModal}
+                  colorPalette="blue"
+                  variant="solid"
+                >
+                  <LuBot />
+                </IconButton>
+              </TooltipWrapper>
+            </HStack>
+          )}
 
           {showSidebarButtons && (
             <>
