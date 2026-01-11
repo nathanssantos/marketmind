@@ -59,11 +59,43 @@ class KlineMaintenance {
 
     logger.info('Starting kline maintenance service...');
     await this.checkAllStoredPairs();
+    await this.checkCorruptionOnStartup();
     await this.checkAndFillGaps();
 
     this.checkInterval = setInterval(async () => {
       await this.checkAndFillGaps();
     }, GAP_CHECK_INTERVAL);
+  }
+
+  private async checkCorruptionOnStartup(): Promise<void> {
+    try {
+      const activePairs = await this.getActivePairs();
+
+      if (activePairs.length === 0) {
+        logger.info('No active pairs for corruption check on startup');
+        return;
+      }
+
+      logger.info({ pairsCount: activePairs.length }, 'Running corruption check on startup');
+
+      for (const pair of activePairs) {
+        try {
+          const fixedCorrupted = await this.detectAndFixCorruptedKlines(pair);
+
+          if (fixedCorrupted > 0) {
+            logger.info({ symbol: pair.symbol, interval: pair.interval, fixed: fixedCorrupted }, 'Fixed corrupted klines on startup');
+          }
+
+          await this.updateMaintenanceLog(pair, { corruptedFixed: fixedCorrupted, checkType: 'corruption' });
+        } catch (error) {
+          logger.error({ pair, error }, 'Error checking corruption for pair on startup');
+        }
+      }
+
+      logger.info('Startup corruption check complete');
+    } catch (error) {
+      logger.error({ error }, 'Error in startup corruption check');
+    }
   }
 
   stop(): void {
@@ -519,6 +551,9 @@ class KlineMaintenance {
       const nextKline = i < recentKlines.length - 1 ? recentKlines[i + 1] ?? null : null;
 
       let corruption = KlineValidator.isKlineCorrupted(kline);
+      if (!corruption) {
+        corruption = KlineValidator.isKlineStaleCorrupted(kline, prevKline, nextKline);
+      }
       if (!corruption) {
         corruption = KlineValidator.isKlineSpikeCorrupted(kline, prevKline, nextKline);
       }

@@ -116,6 +116,46 @@ export class KlineValidator {
     return null;
   }
 
+  static isKlineStaleCorrupted(
+    kline: DbKline,
+    prevKline: DbKline | null,
+    nextKline: DbKline | null
+  ): CorruptedKline | null {
+    const open = parseFloat(kline.open);
+    const high = parseFloat(kline.high);
+    const low = parseFloat(kline.low);
+    const close = parseFloat(kline.close);
+
+    const highEqualsOpen = Math.abs(high - open) < 0.00001;
+    const lowEqualsOpen = Math.abs(low - open) < 0.00001;
+
+    if (highEqualsOpen && !lowEqualsOpen) {
+      const hasNeighborWithHigherHigh =
+        (prevKline && parseFloat(prevKline.high) > high) ||
+        (nextKline && parseFloat(nextKline.high) > high);
+
+      if (hasNeighborWithHigherHigh) {
+        return { openTime: kline.openTime, reason: 'Stale candle: High equals Open (likely incomplete data)' };
+      }
+    }
+
+    if (lowEqualsOpen && !highEqualsOpen) {
+      const hasNeighborWithLowerLow =
+        (prevKline && parseFloat(prevKline.low) < low) ||
+        (nextKline && parseFloat(nextKline.low) < low);
+
+      if (hasNeighborWithLowerLow) {
+        return { openTime: kline.openTime, reason: 'Stale candle: Low equals Open (likely incomplete data)' };
+      }
+    }
+
+    if (highEqualsOpen && lowEqualsOpen && high === low && high === close) {
+      return { openTime: kline.openTime, reason: 'Stale candle: All OHLC values equal (incomplete data)' };
+    }
+
+    return null;
+  }
+
   static isKlineSpikeCorrupted(
     kline: DbKline,
     prevKline: DbKline | null,
