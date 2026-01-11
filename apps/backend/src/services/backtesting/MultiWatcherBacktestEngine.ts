@@ -19,15 +19,22 @@ import { calculatePositionSize } from '@marketmind/risk';
 import { calculateATR } from '@marketmind/indicators';
 import { BACKTEST_DEFAULTS } from '../../constants';
 import { computeTrailingStopCore, type TrailingStopCoreConfig } from '../trailing-stop-core';
-import { checkStochasticCondition, STOCHASTIC_FILTER } from '../../utils/stochastic-filter';
-import { checkMomentumTiming, MOMENTUM_TIMING_FILTER } from '../../utils/momentum-timing-filter';
-import { checkAdxCondition, ADX_FILTER } from '../../utils/adx-filter';
-import { checkTrendCondition } from '../../utils/trend-filter';
-import { checkBtcCorrelation } from '../../utils/btc-correlation-filter';
+import {
+  ADX_FILTER,
+  checkAdxCondition,
+  checkBtcCorrelation,
+  checkMarketRegime,
+  checkMomentumTiming,
+  checkMtfCondition,
+  checkStochasticCondition,
+  checkTrendCondition,
+  checkVolumeCondition,
+  getHigherTimeframe,
+  MOMENTUM_TIMING_FILTER,
+  MTF_FILTER,
+  STOCHASTIC_FILTER,
+} from '../../utils/filters';
 import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
-import { checkMarketRegime } from '../../utils/market-regime-filter';
-import { checkMtfCondition, getHigherTimeframe, MTF_FILTER } from '../../utils/mtf-filter';
-import { checkVolumeCondition } from '../../utils/volume-filter';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { and, eq, gte, lte, desc } from 'drizzle-orm';

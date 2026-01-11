@@ -75,7 +75,7 @@ export const COOLDOWN_GAP_CHECK = KLINE_CONFIG.COOLDOWN_GAP_CHECK_MS;
 export const COOLDOWN_CORRUPTION_CHECK = KLINE_CONFIG.COOLDOWN_CORRUPTION_CHECK_MS;
 export const CORRUPTION_CHECK_KLINES = KLINE_CONFIG.CORRUPTION_CHECK_COUNT;
 
-export { ADX_FILTER } from '../utils/adx-filter';
+export { ADX_FILTER } from '../utils/filters';
 
 export type FloatComparisonConstants = typeof FLOAT_COMPARISON;
 export type PositionSizingConstants = typeof POSITION_SIZING;

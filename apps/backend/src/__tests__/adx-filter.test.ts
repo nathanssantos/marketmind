@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  checkAdxCondition,
-  ADX_FILTER,
-} from '../utils/adx-filter';
+import { checkAdxCondition, ADX_FILTER } from '../utils/filters';
 import type { Kline } from '@marketmind/types';
 
 const createKline = (high: number, low: number, close: number, index: number): Kline => ({

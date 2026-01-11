@@ -5,20 +5,20 @@ vi.mock('@marketmind/indicators', () => ({
   calculateEMA: vi.fn(() => [50000, 50100, 50200, 50300, 50400]),
 }));
 
-vi.mock('../../../utils/adx-filter', () => ({
-  ADX_FILTER: { MIN_KLINES_REQUIRED: 30 },
-  checkAdxCondition: vi.fn(() => ({ isAllowed: true, reason: 'ADX passed' })),
-}));
-
-vi.mock('../../../utils/stochastic-filter', () => ({
-  STOCHASTIC_FILTER: { PERIOD: 14, LOOKBACK_BUFFER: 3 },
-  checkStochasticCondition: vi.fn(() => ({ isAllowed: true, reason: 'Stochastic passed' })),
-}));
+vi.mock('../../../utils/filters', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../../../utils/filters')>();
+  return {
+    ...original,
+    ADX_FILTER: { MIN_KLINES_REQUIRED: 30 },
+    checkAdxCondition: vi.fn(() => ({ isAllowed: true, reason: 'ADX passed' })),
+    STOCHASTIC_FILTER: { PERIOD: 14, LOOKBACK_BUFFER: 3 },
+    checkStochasticCondition: vi.fn(() => ({ isAllowed: true, reason: 'Stochastic passed' })),
+  };
+});
 
 import { FilterManager, type FilterConfig } from '../FilterManager';
 import { calculateEMA } from '@marketmind/indicators';
-import { checkAdxCondition } from '../../../utils/adx-filter';
-import { checkStochasticCondition } from '../../../utils/stochastic-filter';
+import { checkAdxCondition, checkStochasticCondition } from '../../../utils/filters';
 
 const createMockKlines = (count: number): Kline[] => {
   return Array(count).fill(null).map((_, i) => ({

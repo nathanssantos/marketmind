@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkMarketRegime, getSetupStrategyType, MARKET_REGIME_FILTER } from '../utils/market-regime-filter';
+import { checkMarketRegime, getSetupStrategyType, MARKET_REGIME_FILTER } from '../utils/filters';
 import type { Kline } from '@marketmind/types';
 
 const createKline = (close: number, high: number, low: number, index: number): Kline => ({

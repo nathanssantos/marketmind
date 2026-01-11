@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkVolumeCondition, getSetupVolumeType, VOLUME_FILTER } from '../utils/volume-filter';
+import { checkVolumeCondition, getSetupVolumeType, VOLUME_FILTER } from '../utils/filters';
 import type { Kline } from '@marketmind/types';
 
 const createKline = (close: number, volume: number, index: number): Kline => ({

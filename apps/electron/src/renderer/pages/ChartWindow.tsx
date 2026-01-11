@@ -89,6 +89,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   const [showFibonacciProjection, setShowFibonacciProjection] = useLocalStorage('marketmind:showFibonacciProjection', false);
   const [showMeasurementRuler, setShowMeasurementRuler] = useLocalStorage('marketmind:showMeasurementRuler', false);
   const [showMeasurementArea, setShowMeasurementArea] = useLocalStorage('marketmind:showMeasurementArea', false);
+  const [showTooltip, setShowTooltip] = useLocalStorage('marketmind:showTooltip', true);
   const [showStochastic, setShowStochastic] = useLocalStorage('marketmind:showStochastic', false);
   const [showRSI, setShowRSI] = useLocalStorage('marketmind:showRSI', false);
   const [showBollingerBands, setShowBollingerBands] = useLocalStorage('marketmind:showBollingerBands', false);
@@ -389,8 +390,10 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
         <ChartToolsToolbar
           showMeasurementRuler={showMeasurementRuler}
           showMeasurementArea={showMeasurementArea}
+          showTooltip={showTooltip}
           onShowMeasurementRulerChange={setShowMeasurementRuler}
           onShowMeasurementAreaChange={setShowMeasurementArea}
+          onShowTooltipChange={setShowTooltip}
         />
         {loading && (
           <LoadingSpinner message={t('app.loadingMarketData')} />
@@ -419,6 +422,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
             showFibonacciProjection={showFibonacciProjection}
             showMeasurementRuler={showMeasurementRuler}
             showMeasurementArea={showMeasurementArea}
+            showTooltip={showTooltip}
             showStochastic={showStochastic}
             showRSI={showRSI}
             showBollingerBands={showBollingerBands}

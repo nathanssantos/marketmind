@@ -1,9 +1,6 @@
 import type { Kline } from '@marketmind/types';
 import { describe, expect, it } from 'vitest';
-import {
-  checkMomentumTiming,
-  MOMENTUM_TIMING_FILTER,
-} from '../utils/momentum-timing-filter';
+import { checkMomentumTiming, MOMENTUM_TIMING_FILTER } from '../utils/filters';
 
 const createKline = (
   open: number,

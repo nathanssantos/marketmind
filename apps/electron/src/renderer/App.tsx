@@ -128,6 +128,7 @@ function AppContent(): ReactElement {
   );
   const [showMeasurementRuler, setShowMeasurementRuler] = useLocalStorage('marketmind:showMeasurementRuler', false);
   const [showMeasurementArea, setShowMeasurementArea] = useLocalStorage('marketmind:showMeasurementArea', false);
+  const [showTooltip, setShowTooltip] = useLocalStorage('marketmind:showTooltip', true);
   const [showStochastic, setShowStochastic] = useLocalStorage('marketmind:showStochastic', true);
   const [showRSI, setShowRSI] = useLocalStorage('marketmind:showRSI', false);
   const [showBollingerBands, setShowBollingerBands] = useLocalStorage('marketmind:showBollingerBands', false);
@@ -427,6 +428,7 @@ function AppContent(): ReactElement {
         showFibonacciProjection={showFibonacciProjection}
         showMeasurementRuler={showMeasurementRuler}
         showMeasurementArea={showMeasurementArea}
+        showTooltip={showTooltip}
         showStochastic={showStochastic}
         showRSI={showRSI}
         showBollingerBands={showBollingerBands}
@@ -445,6 +447,7 @@ function AppContent(): ReactElement {
         onShowFibonacciProjectionChange={setShowFibonacciProjection}
         onShowMeasurementRulerChange={setShowMeasurementRuler}
         onShowMeasurementAreaChange={setShowMeasurementArea}
+        onShowTooltipChange={setShowTooltip}
         onShowStochasticChange={setShowStochastic}
         onShowRSIChange={setShowRSI}
         onShowBollingerBandsChange={setShowBollingerBands}
@@ -494,6 +497,7 @@ function AppContent(): ReactElement {
             showFibonacciProjection={showFibonacciProjection}
             showMeasurementRuler={showMeasurementRuler}
             showMeasurementArea={showMeasurementArea}
+            showTooltip={showTooltip}
             showStochastic={showStochastic}
             showRSI={showRSI}
             showBollingerBands={showBollingerBands}

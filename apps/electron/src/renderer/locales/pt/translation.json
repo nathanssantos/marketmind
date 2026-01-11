@@ -279,6 +279,7 @@
       "fibonacciProjection": "Projeção de Fibonacci",
       "measurementRuler": "Régua de Medição",
       "measurementArea": "Área de Medição",
+      "tooltip": "Dica",
       "autoPatterns": "Detecção Automática de Padrões",
       "detectPatterns": "Detectar Padrões Agora",
       "setupDetection": "Detecção Algorítmica de Setups",

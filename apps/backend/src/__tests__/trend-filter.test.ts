@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkTrendCondition, TREND_FILTER } from '../utils/trend-filter';
+import { checkTrendCondition, TREND_FILTER } from '../utils/filters';
 import type { Kline } from '@marketmind/types';
 
 const createKline = (close: number, index: number): Kline => ({

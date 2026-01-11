@@ -298,6 +298,7 @@
       "fibonacciProjection": "Projection de Fibonacci",
       "measurementRuler": "Règle de Mesure",
       "measurementArea": "Zone de Mesure",
+      "tooltip": "Info-bulle",
       "autoPatterns": "Détection Automatique de Motifs",
       "detectPatterns": "Détecter les Motifs Maintenant",
       "setupDetection": "Détection Algorithmique de Setups",

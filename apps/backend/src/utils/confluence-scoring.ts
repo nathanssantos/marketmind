@@ -1,8 +1,10 @@
-import type { MtfFilterResult } from './mtf-filter';
-import type { BtcCorrelationResult } from './btc-correlation-filter';
-import type { MarketRegimeResult } from './market-regime-filter';
-import type { VolumeFilterResult } from './volume-filter';
-import type { FundingFilterResult } from './funding-filter';
+import type {
+  BtcCorrelationResult,
+  FundingFilterResult,
+  MarketRegimeResult,
+  MtfFilterResult,
+  VolumeFilterResult,
+} from './filters';
 
 export const CONFLUENCE_WEIGHTS = {
   mtfFilter: 25,
@@ -85,17 +87,21 @@ export const calculateConfluenceScore = (
 
   if (results.btcCorrelation !== undefined && results.btcCorrelation !== null) {
     const passed = results.btcCorrelation.isAllowed;
-    const score = passed ? CONFLUENCE_WEIGHTS.btcCorrelation : 0;
-    totalScore += score;
+    const btcScore = results.btcCorrelation.correlationScore;
+    const scoreRatio = btcScore / 100;
+    const proportionalScore = passed
+      ? Math.round(CONFLUENCE_WEIGHTS.btcCorrelation * scoreRatio)
+      : 0;
+    totalScore += proportionalScore;
     maxPossibleScore += CONFLUENCE_WEIGHTS.btcCorrelation;
     if (passed) passedCount++;
     totalFilters++;
     contributions.push({
       filterName: 'BTC Correlation',
       passed,
-      score,
+      score: proportionalScore,
       maxScore: CONFLUENCE_WEIGHTS.btcCorrelation,
-      reason: results.btcCorrelation.reason,
+      reason: `${results.btcCorrelation.reason} (score: ${btcScore})`,
     });
   }
 

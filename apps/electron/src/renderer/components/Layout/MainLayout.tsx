@@ -31,6 +31,7 @@ interface MainLayoutProps {
   showFibonacciProjection: boolean;
   showMeasurementRuler: boolean;
   showMeasurementArea: boolean;
+  showTooltip: boolean;
   showStochastic: boolean;
   showRSI: boolean;
   showBollingerBands: boolean;
@@ -49,6 +50,7 @@ interface MainLayoutProps {
   onShowFibonacciProjectionChange: (show: boolean) => void;
   onShowMeasurementRulerChange: (show: boolean) => void;
   onShowMeasurementAreaChange: (show: boolean) => void;
+  onShowTooltipChange: (show: boolean) => void;
   onShowStochasticChange: (show: boolean) => void;
   onShowRSIChange: (show: boolean) => void;
   onShowBollingerBandsChange: (show: boolean) => void;
@@ -83,6 +85,7 @@ export const MainLayout = ({
   showFibonacciProjection,
   showMeasurementRuler,
   showMeasurementArea,
+  showTooltip,
   showStochastic,
   showRSI,
   showBollingerBands,
@@ -101,6 +104,7 @@ export const MainLayout = ({
   onShowFibonacciProjectionChange,
   onShowMeasurementRulerChange,
   onShowMeasurementAreaChange,
+  onShowTooltipChange,
   onShowStochasticChange,
   onShowRSIChange,
   onShowBollingerBandsChange,
@@ -215,8 +219,10 @@ export const MainLayout = ({
             <ChartToolsToolbar
               showMeasurementRuler={showMeasurementRuler}
               showMeasurementArea={showMeasurementArea}
+              showTooltip={showTooltip}
               onShowMeasurementRulerChange={onShowMeasurementRulerChange}
               onShowMeasurementAreaChange={onShowMeasurementAreaChange}
+              onShowTooltipChange={onShowTooltipChange}
             />
             {children}
           </Box>

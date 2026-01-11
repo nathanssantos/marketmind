@@ -17,17 +17,24 @@ import {
   type Wallet,
 } from '../db/schema';
 import { env } from '../env';
-import { ADX_FILTER, checkAdxCondition } from '../utils/adx-filter';
-import { checkBtcCorrelation } from '../utils/btc-correlation-filter';
+import {
+  ADX_FILTER,
+  checkAdxCondition,
+  checkBtcCorrelation,
+  checkFundingRate,
+  checkMarketRegime,
+  checkMomentumTiming,
+  checkMtfCondition,
+  checkStochasticCondition,
+  checkTrendCondition,
+  checkVolumeCondition,
+  getHigherTimeframe,
+  MOMENTUM_TIMING_FILTER,
+  MTF_FILTER,
+  STOCHASTIC_FILTER,
+} from '../utils/filters';
 import { calculateConfluenceScore, type FilterResults } from '../utils/confluence-scoring';
-import { checkFundingRate } from '../utils/funding-filter';
 import { calculateRequiredKlines } from '../utils/kline-calculator';
-import { checkMarketRegime } from '../utils/market-regime-filter';
-import { checkMomentumTiming, MOMENTUM_TIMING_FILTER } from '../utils/momentum-timing-filter';
-import { checkMtfCondition, getHigherTimeframe, MTF_FILTER } from '../utils/mtf-filter';
-import { checkStochasticCondition, STOCHASTIC_FILTER } from '../utils/stochastic-filter';
-import { checkTrendCondition } from '../utils/trend-filter';
-import { checkVolumeCondition } from '../utils/volume-filter';
 import { autoTradingService } from './auto-trading';
 import { cooldownService } from './cooldown';
 import { hasSufficientKlines, prefetchKlines } from './kline-prefetch';

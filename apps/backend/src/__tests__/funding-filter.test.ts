@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkFundingRate, FUNDING_FILTER } from '../utils/funding-filter';
+import { checkFundingRate, FUNDING_FILTER } from '../utils/filters';
 
 describe('Funding Rate Filter', () => {
   describe('checkFundingRate', () => {

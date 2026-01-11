@@ -1,14 +1,26 @@
 import { calculateEMA } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
-import { checkAdxCondition, ADX_FILTER } from '../../utils/adx-filter';
-import { checkBtcCorrelation, type BtcCorrelationResult } from '../../utils/btc-correlation-filter';
+import {
+  ADX_FILTER,
+  checkAdxCondition,
+  checkBtcCorrelation,
+  checkFundingRate,
+  checkMarketRegime,
+  checkMomentumTiming,
+  checkMtfCondition,
+  checkStochasticCondition,
+  checkVolumeCondition,
+  getHigherTimeframe,
+  MOMENTUM_TIMING_FILTER,
+  MTF_FILTER,
+  STOCHASTIC_FILTER,
+  type BtcCorrelationResult,
+  type FundingFilterResult,
+  type MarketRegimeResult,
+  type MtfFilterResult,
+  type VolumeFilterResult,
+} from '../../utils/filters';
 import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
-import { checkFundingRate, type FundingFilterResult } from '../../utils/funding-filter';
-import { checkMarketRegime, type MarketRegimeResult } from '../../utils/market-regime-filter';
-import { checkMomentumTiming, MOMENTUM_TIMING_FILTER } from '../../utils/momentum-timing-filter';
-import { checkMtfCondition, getHigherTimeframe, MTF_FILTER, type MtfFilterResult } from '../../utils/mtf-filter';
-import { checkStochasticCondition, STOCHASTIC_FILTER } from '../../utils/stochastic-filter';
-import { checkVolumeCondition, type VolumeFilterResult } from '../../utils/volume-filter';
 
 export interface FilterConfig {
   onlyLong?: boolean;

@@ -141,6 +141,7 @@ export interface ChartCanvasProps {
   showFibonacciProjection?: boolean;
   showMeasurementRuler?: boolean;
   showMeasurementArea?: boolean;
+  showTooltip?: boolean;
   movingAverages?: MovingAverageConfig[];
   chartType?: 'kline' | 'line';
   advancedConfig?: AdvancedControlsConfig;
@@ -170,6 +171,7 @@ export const ChartCanvas = ({
   showFibonacciProjection = false,
   showMeasurementRuler = false,
   showMeasurementArea = false,
+  showTooltip = true,
   movingAverages = [],
   chartType = 'kline',
   advancedConfig,
@@ -1843,19 +1845,21 @@ export const ChartCanvas = ({
           lastKlineTime={klines[klines.length - 1]?.openTime}
           totalPanelHeight={manager?.getTotalPanelHeight() ?? 0}
         />
-        <ChartTooltip
-          kline={tooltipData.kline}
-          x={tooltipData.x}
-          y={tooltipData.y}
-          visible={tooltipData.visible}
-          containerWidth={tooltipData.containerWidth ?? window.innerWidth}
-          containerHeight={tooltipData.containerHeight ?? window.innerHeight}
-          {...(tooltipData.movingAverage && { movingAverage: tooltipData.movingAverage })}
-          {...(tooltipData.measurement && { measurement: tooltipData.measurement })}
-          {...(tooltipData.order && { order: tooltipData.order })}
-          {...(tooltipData.currentPrice && { currentPrice: tooltipData.currentPrice })}
-          {...(tooltipData.setup && { setup: tooltipData.setup })}
-        />
+        {showTooltip && (
+          <ChartTooltip
+            kline={tooltipData.kline}
+            x={tooltipData.x}
+            y={tooltipData.y}
+            visible={tooltipData.visible}
+            containerWidth={tooltipData.containerWidth ?? window.innerWidth}
+            containerHeight={tooltipData.containerHeight ?? window.innerHeight}
+            {...(tooltipData.movingAverage && { movingAverage: tooltipData.movingAverage })}
+            {...(tooltipData.measurement && { measurement: tooltipData.measurement })}
+            {...(tooltipData.order && { order: tooltipData.order })}
+            {...(tooltipData.currentPrice && { currentPrice: tooltipData.currentPrice })}
+            {...(tooltipData.setup && { setup: tooltipData.setup })}
+          />
+        )}
       </Box>
     </>
   );

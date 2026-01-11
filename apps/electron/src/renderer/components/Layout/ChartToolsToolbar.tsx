@@ -1,21 +1,25 @@
 import { Box, HStack, IconButton } from '@chakra-ui/react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuRuler, LuScan } from 'react-icons/lu';
+import { LuMessageSquare, LuRuler, LuScan } from 'react-icons/lu';
 import { TooltipWrapper } from '../ui/Tooltip';
 
 export interface ChartToolsToolbarProps {
   showMeasurementRuler: boolean;
   showMeasurementArea: boolean;
+  showTooltip: boolean;
   onShowMeasurementRulerChange: (show: boolean) => void;
   onShowMeasurementAreaChange: (show: boolean) => void;
+  onShowTooltipChange: (show: boolean) => void;
 }
 
 export const ChartToolsToolbar = memo(({
   showMeasurementRuler,
   showMeasurementArea,
+  showTooltip,
   onShowMeasurementRulerChange,
   onShowMeasurementAreaChange,
+  onShowTooltipChange,
 }: ChartToolsToolbarProps) => {
   const { t } = useTranslation();
 
@@ -53,6 +57,17 @@ export const ChartToolsToolbar = memo(({
             variant={showMeasurementArea ? 'solid' : 'ghost'}
           >
             <LuScan />
+          </IconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label={t('chart.controls.tooltip')} showArrow placement="right">
+          <IconButton
+            size="2xs"
+            aria-label={t('chart.controls.tooltip')}
+            onClick={() => onShowTooltipChange(!showTooltip)}
+            colorPalette={showTooltip ? 'blue' : 'gray'}
+            variant={showTooltip ? 'solid' : 'ghost'}
+          >
+            <LuMessageSquare />
           </IconButton>
         </TooltipWrapper>
       </HStack>

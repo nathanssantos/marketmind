@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkMtfCondition, getHigherTimeframe, MTF_FILTER } from '../utils/mtf-filter';
+import { checkMtfCondition, getHigherTimeframe, MTF_FILTER } from '../utils/filters';
 import type { Kline } from '@marketmind/types';
 
 const createKline = (close: number, index: number): Kline => ({

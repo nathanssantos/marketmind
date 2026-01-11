@@ -253,6 +253,7 @@
       "fibonacciProjection": "Fibonacci Projection",
       "measurementRuler": "Measurement Ruler",
       "measurementArea": "Measurement Area",
+      "tooltip": "Tooltip",
       "setupDetection": "Algorithmic Setup Detection",
       "indicators": "Indicators",
       "quickSettings": "Quick Settings"

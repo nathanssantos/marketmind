@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { calculateConfluenceScore, CONFLUENCE_WEIGHTS, CONFLUENCE_CONFIG } from '../utils/confluence-scoring';
-import type { MtfFilterResult } from '../utils/mtf-filter';
-import type { BtcCorrelationResult } from '../utils/btc-correlation-filter';
-import type { MarketRegimeResult } from '../utils/market-regime-filter';
-import type { VolumeFilterResult } from '../utils/volume-filter';
-import type { FundingFilterResult } from '../utils/funding-filter';
+import type {
+  BtcCorrelationResult,
+  FundingFilterResult,
+  MarketRegimeResult,
+  MtfFilterResult,
+  VolumeFilterResult,
+} from '../utils/filters';
 
 const createPassingMtfResult = (): MtfFilterResult => ({
   isAllowed: true,
@@ -34,13 +36,17 @@ const createFailingMtfResult = (): MtfFilterResult => ({
   reason: 'LONG blocked',
 });
 
-const createPassingBtcResult = (): BtcCorrelationResult => ({
+const createPassingBtcResult = (correlationScore = 80): BtcCorrelationResult => ({
   isAllowed: true,
   btcTrend: 'BULLISH',
+  btcStrength: 'STRONG',
   btcEma21: 45000,
   btcPrice: 46000,
   btcMacdHistogram: 100,
+  btcRsi: 60,
+  btcRsiMomentum: 'RISING',
   isAltcoin: true,
+  correlationScore,
   reason: 'Trade allowed',
 });
 
@@ -207,6 +213,49 @@ describe('Confluence Scoring', () => {
         const adxContribution = result.contributions.find(c => c.filterName === 'ADX Strength');
         expect(adxContribution?.passed).toBe(false);
         expect(adxContribution?.score).toBeLessThan(CONFLUENCE_WEIGHTS.adxStrength);
+      });
+    });
+
+    describe('proportional BTC correlation scoring', () => {
+      it('should give higher score for higher correlationScore', () => {
+        const highScore = calculateConfluenceScore({
+          btcCorrelation: createPassingBtcResult(90),
+        });
+        const lowScore = calculateConfluenceScore({
+          btcCorrelation: createPassingBtcResult(50),
+        });
+
+        const highBtcContrib = highScore.contributions.find(c => c.filterName === 'BTC Correlation');
+        const lowBtcContrib = lowScore.contributions.find(c => c.filterName === 'BTC Correlation');
+
+        expect(highBtcContrib?.score).toBeGreaterThan(lowBtcContrib?.score ?? 0);
+      });
+
+      it('should calculate proportional score based on correlationScore', () => {
+        const result = calculateConfluenceScore({
+          btcCorrelation: createPassingBtcResult(100),
+        });
+
+        const btcContrib = result.contributions.find(c => c.filterName === 'BTC Correlation');
+        expect(btcContrib?.score).toBe(CONFLUENCE_WEIGHTS.btcCorrelation);
+      });
+
+      it('should give half score for 50% correlationScore', () => {
+        const result = calculateConfluenceScore({
+          btcCorrelation: createPassingBtcResult(50),
+        });
+
+        const btcContrib = result.contributions.find(c => c.filterName === 'BTC Correlation');
+        expect(btcContrib?.score).toBe(Math.round(CONFLUENCE_WEIGHTS.btcCorrelation * 0.5));
+      });
+
+      it('should include correlationScore in reason message', () => {
+        const result = calculateConfluenceScore({
+          btcCorrelation: createPassingBtcResult(75),
+        });
+
+        const btcContrib = result.contributions.find(c => c.filterName === 'BTC Correlation');
+        expect(btcContrib?.reason).toContain('score: 75');
       });
     });
   });
