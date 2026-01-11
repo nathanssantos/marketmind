@@ -47,6 +47,9 @@ vi.mock('../../db', () => ({
       setupDetections: {
         findFirst: vi.fn().mockResolvedValue(null),
       },
+      autoTradingConfig: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
     },
     insert: vi.fn(() => ({
       values: vi.fn(() => ({

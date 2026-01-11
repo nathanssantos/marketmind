@@ -1,4 +1,4 @@
-import type { TrailingStopOptimizationConfig } from '@marketmind/types';
+import type { FibonacciProjectionData, TrailingStopOptimizationConfig } from '@marketmind/types';
 import { describe, expect, it } from 'vitest';
 import {
     calculateATRTrailingStop,
@@ -14,6 +14,10 @@ import {
     TrailingStopService,
     type TrailingStopInput,
 } from '../services/trailing-stop';
+import {
+    getFibonacciLevelPrice,
+    hasReachedFibonacciLevel,
+} from '../services/trailing-stop-core';
 
 describe('Trailing Stop Pure Functions', () => {
   describe('calculateProfitPercent', () => {
@@ -941,6 +945,161 @@ describe('TrailingStopService', () => {
 
         expect(result).not.toBeNull();
         expect(result!.newStopLoss).toBeCloseTo(100.3, 1);
+      });
+    });
+  });
+
+  describe('Fibonacci-Based Trailing Stop', () => {
+    const createFibonacciProjection = (swingLow: number, swingHigh: number): FibonacciProjectionData => {
+      const range = swingHigh - swingLow;
+      return {
+        swingLow: { price: swingLow, index: 0, timestamp: Date.now() - 10000 },
+        swingHigh: { price: swingHigh, index: 10, timestamp: Date.now() },
+        range,
+        primaryLevel: 1.618,
+        levels: [
+          { level: 0, price: swingLow, label: '0%' },
+          { level: 0.5, price: swingLow + range * 0.5, label: '50%' },
+          { level: 1.0, price: swingHigh, label: '100%' },
+          { level: 1.272, price: swingLow + range * 1.272, label: '127.2%' },
+          { level: 1.618, price: swingLow + range * 1.618, label: '161.8%' },
+          { level: 2.0, price: swingLow + range * 2.0, label: '200%' },
+        ],
+      };
+    };
+
+    describe('getFibonacciLevelPrice', () => {
+      it('should return price for existing Fibonacci level', () => {
+        const fib = createFibonacciProjection(90, 100);
+        expect(getFibonacciLevelPrice(fib, 1.0)).toBe(100);
+        expect(getFibonacciLevelPrice(fib, 1.272)).toBeCloseTo(102.72, 2);
+      });
+
+      it('should return null for non-existent level', () => {
+        const fib = createFibonacciProjection(90, 100);
+        expect(getFibonacciLevelPrice(fib, 0.786)).toBeNull();
+      });
+
+      it('should return null for null/undefined projection', () => {
+        expect(getFibonacciLevelPrice(null, 1.0)).toBeNull();
+        expect(getFibonacciLevelPrice(undefined, 1.0)).toBeNull();
+      });
+    });
+
+    describe('hasReachedFibonacciLevel', () => {
+      it('should return true for LONG when price reaches level', () => {
+        const fib = createFibonacciProjection(90, 100);
+        expect(hasReachedFibonacciLevel(100, fib, 1.0, true)).toBe(true);
+        expect(hasReachedFibonacciLevel(105, fib, 1.0, true)).toBe(true);
+      });
+
+      it('should return false for LONG when price below level', () => {
+        const fib = createFibonacciProjection(90, 100);
+        expect(hasReachedFibonacciLevel(99, fib, 1.0, true)).toBe(false);
+      });
+
+      it('should return true for SHORT when price reaches level', () => {
+        const fib = createFibonacciProjection(90, 100);
+        expect(hasReachedFibonacciLevel(100, fib, 1.0, false)).toBe(true);
+        expect(hasReachedFibonacciLevel(95, fib, 1.0, false)).toBe(true);
+      });
+
+      it('should return false for SHORT when price above level', () => {
+        const fib = createFibonacciProjection(90, 100);
+        expect(hasReachedFibonacciLevel(101, fib, 1.0, false)).toBe(false);
+      });
+    });
+
+    describe('computeTrailingStop with Fibonacci thresholds', () => {
+      it('should not trigger trailing if price below 100% Fibo level', () => {
+        const fib = createFibonacciProjection(90, 100);
+        const config: TrailingStopOptimizationConfig = {
+          ...DEFAULT_TRAILING_STOP_CONFIG,
+          useFibonacciThresholds: true,
+        };
+
+        const input: TrailingStopInput = {
+          entryPrice: 92,
+          currentPrice: 99,
+          currentStopLoss: 89,
+          side: 'LONG',
+          swingPoints: [],
+          highestPrice: 99,
+          fibonacciProjection: fib,
+        };
+
+        const result = computeTrailingStop(input, config);
+        expect(result).toBeNull();
+      });
+
+      it('should set fees_covered when price reaches 100% Fibo but not 127.2%', () => {
+        const fib = createFibonacciProjection(90, 100);
+        const config: TrailingStopOptimizationConfig = {
+          ...DEFAULT_TRAILING_STOP_CONFIG,
+          useFibonacciThresholds: true,
+          feePercent: 0.002,
+        };
+
+        const input: TrailingStopInput = {
+          entryPrice: 92,
+          currentPrice: 101,
+          currentStopLoss: 89,
+          side: 'LONG',
+          swingPoints: [],
+          highestPrice: 101,
+          fibonacciProjection: fib,
+        };
+
+        const result = computeTrailingStop(input, config);
+        expect(result).not.toBeNull();
+        expect(result!.reason).toBe('fees_covered');
+        expect(result!.newStopLoss).toBeCloseTo(92.184, 2);
+      });
+
+      it('should enter progressive mode when price reaches 127.2% Fibo', () => {
+        const fib = createFibonacciProjection(90, 100);
+        const config: TrailingStopOptimizationConfig = {
+          ...DEFAULT_TRAILING_STOP_CONFIG,
+          useFibonacciThresholds: true,
+          feePercent: 0.002,
+          trailingDistancePercent: 0.4,
+        };
+
+        const input: TrailingStopInput = {
+          entryPrice: 92,
+          currentPrice: 103,
+          currentStopLoss: 92.184,
+          side: 'LONG',
+          swingPoints: [],
+          highestPrice: 103,
+          fibonacciProjection: fib,
+        };
+
+        const result = computeTrailingStop(input, config);
+        expect(result).not.toBeNull();
+        expect(['fees_covered', 'progressive_trail']).toContain(result!.reason);
+        expect(result!.newStopLoss).toBeGreaterThan(92.184);
+      });
+
+      it('should fall back to percentage thresholds when Fibonacci data missing', () => {
+        const config: TrailingStopOptimizationConfig = {
+          ...DEFAULT_TRAILING_STOP_CONFIG,
+          useFibonacciThresholds: true,
+        };
+
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 101,
+          currentStopLoss: 98,
+          side: 'LONG',
+          swingPoints: [],
+          highestPrice: 101,
+          fibonacciProjection: null,
+        };
+
+        const result = computeTrailingStop(input, config);
+        expect(result).not.toBeNull();
+        expect(result!.reason).toBe('fees_covered');
       });
     });
   });

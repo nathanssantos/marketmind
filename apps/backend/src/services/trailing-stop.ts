@@ -1,11 +1,11 @@
 import { calculateATR, calculateSwingPoints } from '@marketmind/indicators';
-import type { Interval, Kline as KlineType, MarketType, TrailingStopOptimizationConfig } from '@marketmind/types';
+import type { FibonacciProjectionData, Interval, Kline as KlineType, MarketType, TrailingStopOptimizationConfig } from '@marketmind/types';
 import { getRoundTripFee } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import { TRAILING_STOP } from '../constants';
 import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
-import { klines, priceCache, setupDetections, tradeExecutions } from '../db/schema';
+import { autoTradingConfig, klines, priceCache, setupDetections, tradeExecutions } from '../db/schema';
 import { formatPrice } from '../utils/formatters';
 import { logger } from './logger';
 import {
@@ -57,6 +57,7 @@ export interface TrailingStopInput {
   atr?: number;
   highestPrice?: number;
   lowestPrice?: number;
+  fibonacciProjection?: FibonacciProjectionData | null;
 }
 
 export interface TrailingStopResult {
@@ -100,10 +101,11 @@ export const computeTrailingStop = (
   input: TrailingStopInput,
   config: TrailingStopOptimizationConfig
 ): TrailingStopResult | null => {
-  const { entryPrice, currentPrice, currentStopLoss, side, takeProfit, swingPoints, highestPrice, lowestPrice, atr } = input;
+  const { entryPrice, currentPrice, currentStopLoss, side, takeProfit, swingPoints, highestPrice, lowestPrice, atr, fibonacciProjection } = input;
   const isLong = side === 'LONG';
   const marketType = config.marketType ?? 'SPOT';
   const useBnbDiscount = config.useBnbDiscount ?? false;
+  const useFibonacciThresholds = config.useFibonacciThresholds ?? false;
 
   const result = computeTrailingStopCore(
     {
@@ -116,6 +118,7 @@ export const computeTrailingStop = (
       atr,
       highestPrice: isLong ? highestPrice : undefined,
       lowestPrice: isLong ? undefined : lowestPrice,
+      fibonacciProjection,
     },
     {
       feePercent: config.feePercent,
@@ -124,6 +127,7 @@ export const computeTrailingStop = (
       minTrailingDistancePercent: config.minTrailingDistancePercent,
       atrMultiplier: config.atrMultiplier,
       trailingDistancePercent: config.trailingDistancePercent,
+      useFibonacciThresholds,
     }
   );
 
@@ -336,13 +340,33 @@ export class TrailingStopService {
       }
 
       for (const execution of groupExecutions) {
+        const walletConfig = await db.query.autoTradingConfig.findFirst({
+          where: eq(autoTradingConfig.walletId, execution.walletId),
+        });
+        const useFibonacciThresholds = walletConfig?.tpCalculationMode === 'fibonacci';
+
+        let fibonacciProjection: FibonacciProjectionData | null = null;
+        if (useFibonacciThresholds && execution.fibonacciProjection) {
+          try {
+            fibonacciProjection = JSON.parse(execution.fibonacciProjection) as FibonacciProjectionData;
+          } catch {
+            logger.warn({ executionId: execution.id }, 'Failed to parse Fibonacci projection data');
+          }
+        }
+
+        const executionConfig: TrailingStopOptimizationConfig = {
+          ...effectiveConfig,
+          useFibonacciThresholds,
+        };
+
         const update = this.calculateTrailingStopWithConfig(
           execution,
           currentPrice,
           swingPoints,
           mappedKlines,
           currentATR,
-          effectiveConfig
+          executionConfig,
+          fibonacciProjection
         );
 
         if (update) {
@@ -361,7 +385,8 @@ export class TrailingStopService {
     swingPoints: Array<{ index: number; type: 'high' | 'low'; price: number; timestamp: number }>,
     klines: KlineType[],
     atr: number | undefined,
-    config: TrailingStopOptimizationConfig
+    config: TrailingStopOptimizationConfig,
+    fibonacciProjection: FibonacciProjectionData | null = null
   ): TrailingStopUpdate | null {
     const entryPrice = parseFloat(execution.entryPrice);
     const currentStopLoss = execution.stopLoss ? parseFloat(execution.stopLoss) : null;
@@ -418,6 +443,7 @@ export class TrailingStopService {
       atr,
       highestPrice: isLong ? highestPrice : undefined,
       lowestPrice: isLong ? undefined : lowestPrice,
+      fibonacciProjection,
     };
 
     const result = computeTrailingStop(input, config);

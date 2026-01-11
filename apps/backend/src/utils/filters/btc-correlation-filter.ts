@@ -78,7 +78,7 @@ const getStrength = (score: number): BtcStrength => {
 };
 
 const getRsiMomentum = (
-  rsiValues: number[],
+  rsiValues: (number | null)[],
   lastIndex: number
 ): { momentum: RsiMomentum; currentRsi: number | null } => {
   const currentRsi = rsiValues[lastIndex];

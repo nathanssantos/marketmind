@@ -1,4 +1,4 @@
-import type { MarketType } from '@marketmind/types';
+import type { FibonacciProjectionData, MarketType } from '@marketmind/types';
 import { getRoundTripFee } from '@marketmind/types';
 import { TRAILING_STOP } from '../constants';
 
@@ -10,6 +10,7 @@ export interface TrailingStopCoreConfig {
   atrMultiplier?: number;
   trailingDistancePercent?: number;
   vipLevel?: number;
+  useFibonacciThresholds?: boolean;
 }
 
 export interface TrailingStopCoreInput {
@@ -22,6 +23,7 @@ export interface TrailingStopCoreInput {
   atr?: number;
   highestPrice?: number;
   lowestPrice?: number;
+  fibonacciProjection?: FibonacciProjectionData | null;
 }
 
 export type TrailingStopReason = 'fees_covered' | 'swing_trail' | 'atr_trail' | 'progressive_trail';
@@ -145,6 +147,30 @@ export const findBestSwingStop = (
 };
 
 const MIN_STOP_CHANGE_ABSOLUTE = TRAILING_STOP.MIN_STOP_CHANGE_ABSOLUTE;
+const FIBO_BREAKEVEN_LEVEL = TRAILING_STOP.FIBO_BREAKEVEN_LEVEL;
+const FIBO_PROGRESSIVE_LEVEL = TRAILING_STOP.FIBO_PROGRESSIVE_LEVEL;
+
+export const getFibonacciLevelPrice = (
+  fibonacciProjection: FibonacciProjectionData | null | undefined,
+  level: number
+): number | null => {
+  if (!fibonacciProjection?.levels) return null;
+  const levelData = fibonacciProjection.levels.find(
+    (l) => Math.abs(l.level - level) < 0.001
+  );
+  return levelData?.price ?? null;
+};
+
+export const hasReachedFibonacciLevel = (
+  currentPrice: number,
+  fibonacciProjection: FibonacciProjectionData | null | undefined,
+  level: number,
+  isLong: boolean
+): boolean => {
+  const levelPrice = getFibonacciLevelPrice(fibonacciProjection, level);
+  if (levelPrice === null) return false;
+  return isLong ? currentPrice >= levelPrice : currentPrice <= levelPrice;
+};
 
 export const shouldUpdateStopLoss = (
   newStopLoss: number,
@@ -182,6 +208,7 @@ export const computeTrailingStopCore = (
     atr,
     highestPrice,
     lowestPrice,
+    fibonacciProjection,
   } = input;
 
   const isLong = side === 'LONG';
@@ -192,8 +219,59 @@ export const computeTrailingStopCore = (
   const minTrailingDistancePercent = config.minTrailingDistancePercent ?? 0.002;
   const atrMultiplier = config.atrMultiplier ?? 2.0;
   const trailingDistancePercent = config.trailingDistancePercent ?? DEFAULT_TRAILING_DISTANCE_PERCENT;
+  const useFibonacciThresholds = config.useFibonacciThresholds ?? false;
 
   const profitPercent = calculateProfitPercent(entryPrice, currentPrice, isLong);
+  const feesCoveredPrice = calculateStopAtProfitPercent(entryPrice, feePercent, isLong);
+
+  const canUseFibonacciThresholds = useFibonacciThresholds && fibonacciProjection?.levels?.length;
+
+  if (canUseFibonacciThresholds) {
+    const reachedBreakevenLevel = hasReachedFibonacciLevel(
+      currentPrice,
+      fibonacciProjection,
+      FIBO_BREAKEVEN_LEVEL,
+      isLong
+    );
+
+    if (!reachedBreakevenLevel) return null;
+
+    const reachedProgressiveLevel = hasReachedFibonacciLevel(
+      currentPrice,
+      fibonacciProjection,
+      FIBO_PROGRESSIVE_LEVEL,
+      isLong
+    );
+
+    if (!reachedProgressiveLevel) {
+      if (!shouldUpdateStopLoss(feesCoveredPrice, currentStopLoss, isLong)) return null;
+      return { newStopLoss: feesCoveredPrice, reason: 'fees_covered' };
+    }
+
+    const candidates: Array<{ price: number; reason: TrailingStopReason }> = [
+      { price: feesCoveredPrice, reason: 'fees_covered' },
+    ];
+
+    const swingStop = findBestSwingStop(swingPoints, currentPrice, entryPrice, isLong, minTrailingDistancePercent);
+    if (swingStop !== null) candidates.push({ price: swingStop, reason: 'swing_trail' });
+
+    if (atr && atr > 0) {
+      const extremePrice = isLong ? highestPrice : lowestPrice;
+      if (extremePrice !== undefined) {
+        const atrStop = calculateATRTrailingStop(extremePrice, atr, isLong, atrMultiplier);
+        if (shouldUpdateStopLoss(atrStop, currentStopLoss, isLong)) {
+          candidates.push({ price: atrStop, reason: 'atr_trail' });
+        }
+      }
+    }
+
+    const progressiveFloor = calculateProgressiveFloor(entryPrice, highestPrice, lowestPrice, isLong, trailingDistancePercent);
+    if (progressiveFloor !== null) candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
+
+    const bestCandidate = selectBestCandidate(candidates, isLong);
+    if (!shouldUpdateStopLoss(bestCandidate.price, currentStopLoss, isLong)) return null;
+    return { newStopLoss: bestCandidate.price, reason: bestCandidate.reason };
+  }
 
   const tpProfitPercent = takeProfit
     ? calculateTPProfitPercent(entryPrice, takeProfit, isLong)
@@ -207,18 +285,12 @@ export const computeTrailingStopCore = (
     ? tpProfitPercent * TP_THRESHOLD_FOR_ADVANCED
     : null;
 
-  if (profitPercent < breakevenThreshold) {
-    return null;
-  }
-
-  const feesCoveredPrice = calculateStopAtProfitPercent(entryPrice, feePercent, isLong);
+  if (profitPercent < breakevenThreshold) return null;
 
   const shouldUseAdvancedLogic = advancedThreshold !== null && profitPercent >= advancedThreshold;
 
   if (!shouldUseAdvancedLogic) {
-    if (!shouldUpdateStopLoss(feesCoveredPrice, currentStopLoss, isLong)) {
-      return null;
-    }
+    if (!shouldUpdateStopLoss(feesCoveredPrice, currentStopLoss, isLong)) return null;
     return { newStopLoss: feesCoveredPrice, reason: 'fees_covered' };
   }
 
@@ -226,16 +298,8 @@ export const computeTrailingStopCore = (
     { price: feesCoveredPrice, reason: 'fees_covered' },
   ];
 
-  const swingStop = findBestSwingStop(
-    swingPoints,
-    currentPrice,
-    entryPrice,
-    isLong,
-    minTrailingDistancePercent
-  );
-  if (swingStop !== null) {
-    candidates.push({ price: swingStop, reason: 'swing_trail' });
-  }
+  const swingStop = findBestSwingStop(swingPoints, currentPrice, entryPrice, isLong, minTrailingDistancePercent);
+  if (swingStop !== null) candidates.push({ price: swingStop, reason: 'swing_trail' });
 
   if (atr && atr > 0) {
     const extremePrice = isLong ? highestPrice : lowestPrice;
@@ -247,22 +311,10 @@ export const computeTrailingStopCore = (
     }
   }
 
-  const progressiveFloor = calculateProgressiveFloor(
-    entryPrice,
-    highestPrice,
-    lowestPrice,
-    isLong,
-    trailingDistancePercent
-  );
-  if (progressiveFloor !== null) {
-    candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
-  }
+  const progressiveFloor = calculateProgressiveFloor(entryPrice, highestPrice, lowestPrice, isLong, trailingDistancePercent);
+  if (progressiveFloor !== null) candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
 
   const bestCandidate = selectBestCandidate(candidates, isLong);
-
-  if (!shouldUpdateStopLoss(bestCandidate.price, currentStopLoss, isLong)) {
-    return null;
-  }
-
+  if (!shouldUpdateStopLoss(bestCandidate.price, currentStopLoss, isLong)) return null;
   return { newStopLoss: bestCandidate.price, reason: bestCandidate.reason };
 };

@@ -731,29 +731,36 @@ export const ChartCanvas = ({
       exec => (exec.status === 'open' || exec.status === 'pending')
     );
 
-    if (activePosition && manager) {
-      const klines = manager.getKlines();
-      if (klines.length > 0) {
-        const triggerTime = activePosition.triggerKlineOpenTime;
-        let entryIndex = klines.length - 1;
+    if (activePosition) {
+      if (activePosition.fibonacciProjection) {
+        return activePosition.fibonacciProjection;
+      }
 
-        if (triggerTime) {
-          const triggerTimestamp = new Date(triggerTime).getTime();
-          const foundIndex = klines.findIndex(k => k.openTime === triggerTimestamp);
-          if (foundIndex !== -1) entryIndex = foundIndex;
-        }
+      if (manager) {
+        const klines = manager.getKlines();
+        if (klines.length > 0) {
+          const triggerTime = activePosition.triggerKlineOpenTime;
+          let entryIndex = -1;
 
-        const direction = activePosition.side as 'LONG' | 'SHORT';
-        const projection = calculateFibonacciProjection(klines, entryIndex, 100, direction);
+          if (triggerTime) {
+            const triggerTimestamp = typeof triggerTime === 'number' ? triggerTime : new Date(triggerTime).getTime();
+            entryIndex = klines.findIndex(k => k.openTime === triggerTimestamp);
+          }
 
-        if (projection) {
-          return {
-            swingLow: projection.swingLow,
-            swingHigh: projection.swingHigh,
-            levels: projection.levels,
-            primaryLevel: 2,
-            range: projection.range,
-          };
+          if (entryIndex !== -1) {
+            const direction = activePosition.side as 'LONG' | 'SHORT';
+            const projection = calculateFibonacciProjection(klines, entryIndex, 100, direction);
+
+            if (projection) {
+              return {
+                swingLow: projection.swingLow,
+                swingHigh: projection.swingHigh,
+                levels: projection.levels,
+                primaryLevel: 2,
+                range: projection.range,
+              };
+            }
+          }
         }
       }
     }
