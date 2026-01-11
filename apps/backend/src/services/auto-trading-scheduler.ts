@@ -732,11 +732,12 @@ export class AutoTradingScheduler {
       .limit(1);
 
     const tpCalculationMode = config?.tpCalculationMode ?? 'default';
+    const fibonacciTargetLevel = config?.fibonacciTargetLevel ?? 'auto';
 
     let effectiveTakeProfit = setup.takeProfit;
 
     if (tpCalculationMode === 'fibonacci' && setup.fibonacciProjection) {
-      const fibTarget = this.getFibonacciTargetPrice(setup);
+      const fibTarget = this.getFibonacciTargetPrice(setup, fibonacciTargetLevel);
       if (fibTarget !== null) {
         const isValidTarget = setup.direction === 'LONG'
           ? fibTarget > setup.entryPrice
@@ -746,6 +747,7 @@ export class AutoTradingScheduler {
           log('📐 Using Fibonacci projection for take profit', {
             originalTP: setup.takeProfit?.toFixed(6),
             fibonacciTP: fibTarget.toFixed(6),
+            configLevel: fibonacciTargetLevel,
             primaryLevel: setup.fibonacciProjection.primaryLevel,
             direction: setup.direction,
           });
@@ -2235,21 +2237,40 @@ export class AutoTradingScheduler {
     }
   }
 
-  private getFibonacciTargetPrice(setup: TradingSetup): number | null {
+  private getFibonacciTargetPrice(
+    setup: TradingSetup,
+    fibonacciTargetLevel: 'auto' | '1.272' | '1.618' | '2' = 'auto'
+  ): number | null {
     const fib = setup.fibonacciProjection;
     if (!fib || !fib.levels || fib.levels.length === 0) return null;
 
-    const primaryLevelData = fib.levels.find(
-      (l) => Math.abs(l.level - fib.primaryLevel) < 0.001
+    const targetLevel = fibonacciTargetLevel === 'auto'
+      ? fib.primaryLevel
+      : parseFloat(fibonacciTargetLevel);
+
+    const targetLevelData = fib.levels.find(
+      (l) => Math.abs(l.level - targetLevel) < 0.001
     );
 
-    if (primaryLevelData) {
-      return primaryLevelData.price;
+    if (targetLevelData) {
+      log('📊 Fibonacci target level resolved', {
+        configLevel: fibonacciTargetLevel,
+        primaryLevel: fib.primaryLevel,
+        resolvedLevel: targetLevel,
+        price: targetLevelData.price.toFixed(6),
+      });
+      return targetLevelData.price;
     }
 
-    const level200 = fib.levels.find((l) => Math.abs(l.level - 2) < 0.001);
+    log('⚠️ Fibonacci target level not found in levels, falling back to 161.8%', {
+      configLevel: fibonacciTargetLevel,
+      primaryLevel: fib.primaryLevel,
+      targetLevel,
+      availableLevels: fib.levels.map(l => l.level),
+    });
 
-    return level200?.price ?? null;
+    const level1618 = fib.levels.find((l) => Math.abs(l.level - 1.618) < 0.001);
+    return level1618?.price ?? null;
   }
 }
 
