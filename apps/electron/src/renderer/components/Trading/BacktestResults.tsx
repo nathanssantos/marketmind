@@ -1,13 +1,13 @@
-import { Box, Flex, Grid, Stack, Text, Tabs } from '@chakra-ui/react';
+import { Box, Flex, Grid, Stack, Tabs, Text } from '@chakra-ui/react';
+import type { BacktestResult, Interval, Kline, MarketType } from '@marketmind/types';
 import { Button } from '@renderer/components/ui/button';
+import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { useBacktesting } from '@renderer/hooks/useBacktesting';
-import type { Interval, Kline, MarketType } from '@marketmind/types';
-import type { BacktestResult } from '@marketmind/types';
-import { useEffect, useState } from 'react';
 import { trpc } from '@renderer/utils/trpc';
+import { useEffect, useState } from 'react';
+import { TradeListTable } from '../Backtest/TradeListTable';
 import { BacktestChart } from './BacktestChart';
 import { EquityCurveChart } from './EquityCurveChart';
-import { TradeListTable } from '../Backtest/TradeListTable';
 
 interface BacktestResultsProps {
   backtestId: string;
@@ -119,7 +119,10 @@ export const BacktestResults = ({ backtestId, onClose }: BacktestResultsProps) =
         <Text fontSize="xs" fontWeight="medium" mb={2}>Configuration</Text>
         <Grid templateColumns="1fr 1fr" gap={1} fontSize="2xs">
           <Text color="fg.muted">Symbol:</Text>
-          <Text>{config.symbol}</Text>
+          <Flex align="center" gap={1}>
+            <CryptoIcon symbol={config.symbol} size={14} />
+            <Text>{config.symbol}</Text>
+          </Flex>
           <Text color="fg.muted">Interval:</Text>
           <Text>{config.interval}</Text>
           <Text color="fg.muted">Period:</Text>

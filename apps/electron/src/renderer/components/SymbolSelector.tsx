@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuCoins } from 'react-icons/lu';
 import { useBackendKlines } from '../hooks/useBackendKlines';
+import { CryptoIcon } from './ui/CryptoIcon';
 import { Popover } from './ui/popover';
 import { TooltipWrapper } from './ui/Tooltip';
 
@@ -114,12 +115,13 @@ export function SymbolSelector({
               <LuCoins />
             </IconButton>
           </TooltipWrapper>
+          <CryptoIcon symbol={value} size={16} />
           <Text fontSize="xs" fontWeight="semibold" color="fg">
             {currentSymbol}
           </Text>
           {isFutures && (
             <Badge size="xs" colorPalette="orange" variant="subtle" px={1}>
-              FUTURES
+              FUT
             </Badge>
           )}
         </Flex>
@@ -192,13 +194,16 @@ export function SymbolSelector({
                   borderColor="border"
                 >
                   <Flex align="center" justify="space-between">
-                    <Flex direction="column">
-                      <Text fontWeight={value === symbol.symbol ? 'semibold' : 'medium'} fontSize="xs" color="fg">
-                        {symbol.baseAsset}/{symbol.quoteAsset}
-                      </Text>
-                      <Text fontSize="2xs" color="fg.muted">
-                        {symbol.displayName}
-                      </Text>
+                    <Flex align="center" gap={2}>
+                      <CryptoIcon symbol={symbol.symbol} size={20} />
+                      <Flex direction="column">
+                        <Text fontWeight={value === symbol.symbol ? 'semibold' : 'medium'} fontSize="xs" color="fg">
+                          {symbol.baseAsset}/{symbol.quoteAsset}
+                        </Text>
+                        <Text fontSize="2xs" color="fg.muted">
+                          {symbol.displayName}
+                        </Text>
+                      </Flex>
                     </Flex>
                     <Badge
                       size="xs"
@@ -206,7 +211,7 @@ export function SymbolSelector({
                       variant="subtle"
                       px={2}
                     >
-                      {isFutures ? 'FUTURES' : 'SPOT'}
+                      {isFutures ? 'FUT' : 'SPOT'}
                     </Badge>
                   </Flex>
                 </Box>

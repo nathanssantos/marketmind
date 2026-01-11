@@ -117,15 +117,19 @@ interface OrderCloseButton {
 
 interface OrderHitbox {
   orderId: string;
+  x: number;
   y: number;
-  tolerance: number;
+  width: number;
+  height: number;
   order: Order;
 }
 
 interface SLTPHitbox {
   orderId: string;
+  x: number;
   y: number;
-  tolerance: number;
+  width: number;
+  height: number;
   type: 'stopLoss' | 'takeProfit';
   price: number;
 }
@@ -508,13 +512,6 @@ export const useOrderLinesRenderer = (
 
       const isLong = isOrderLong(order);
 
-      orderHitboxesRef.current.push({
-        orderId: getOrderId(order),
-        y,
-        tolerance: 8,
-        order,
-      });
-
       ctx.save();
       ctx.font = '11px monospace';
       ctx.textAlign = 'left';
@@ -538,7 +535,16 @@ export const useOrderLinesRenderer = (
       const infoText = `${typeLabel} (${getOrderQuantity(order)})`;
 
       const closeButtonRef = { x: 0, y: 0, size: 14 };
-      drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade);
+      const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade);
+
+      orderHitboxesRef.current.push({
+        orderId: getOrderId(order),
+        x: 0,
+        y: y - infoTagSize.height / 2,
+        width: infoTagSize.width,
+        height: infoTagSize.height,
+        order,
+      });
 
       closeButtonsRef.current.push({
         orderId: getOrderId(order),
@@ -574,14 +580,6 @@ export const useOrderLinesRenderer = (
         const slLineColor = slIsProfit ? AREA_COLORS.SL_PROFIT_LINE : AREA_COLORS.SL_LOSS_LINE;
         const slTagColor = slIsProfit ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)';
 
-        sltpHitboxesRef.current.push({
-          orderId: getOrderId(order),
-          y: stopY,
-          tolerance: 8,
-          type: 'stopLoss',
-          price: order.stopLoss,
-        });
-
         ctx.save();
         ctx.globalAlpha = pendingAlpha;
         ctx.setLineDash([3, 3]);
@@ -607,7 +605,17 @@ export const useOrderLinesRenderer = (
         priceTags.push({ priceText: formatChartPrice(order.stopLoss), y: stopY, fillColor: slTagColor });
 
         const slCloseButtonRef = { x: 0, y: 0, size: 14 };
-        drawInfoTag(ctx, slInfoText, stopY, slTagColor, true, slCloseButtonRef);
+        const slTagSize = drawInfoTag(ctx, slInfoText, stopY, slTagColor, true, slCloseButtonRef);
+
+        sltpHitboxesRef.current.push({
+          orderId: getOrderId(order),
+          x: 0,
+          y: stopY - slTagSize.height / 2,
+          width: slTagSize.width,
+          height: slTagSize.height,
+          type: 'stopLoss',
+          price: order.stopLoss,
+        });
 
         sltpCloseButtonsRef.current.push({
           orderIds: [getOrderId(order)],
@@ -623,14 +631,6 @@ export const useOrderLinesRenderer = (
 
       if (order.takeProfit) {
         const tpY = manager.priceToY(order.takeProfit);
-
-        sltpHitboxesRef.current.push({
-          orderId: getOrderId(order),
-          y: tpY,
-          tolerance: 8,
-          type: 'takeProfit',
-          price: order.takeProfit,
-        });
 
         ctx.save();
         ctx.globalAlpha = pendingAlpha;
@@ -656,7 +656,17 @@ export const useOrderLinesRenderer = (
         priceTags.push({ priceText: formatChartPrice(order.takeProfit), y: tpY, fillColor: 'rgba(34, 197, 94, 0.9)' });
 
         const tpCloseButtonRef = { x: 0, y: 0, size: 14 };
-        drawInfoTag(ctx, tpInfoText, tpY, 'rgba(34, 197, 94, 0.9)', true, tpCloseButtonRef);
+        const tpTagSize = drawInfoTag(ctx, tpInfoText, tpY, 'rgba(34, 197, 94, 0.9)', true, tpCloseButtonRef);
+
+        sltpHitboxesRef.current.push({
+          orderId: getOrderId(order),
+          x: 0,
+          y: tpY - tpTagSize.height / 2,
+          width: tpTagSize.width,
+          height: tpTagSize.height,
+          type: 'takeProfit',
+          price: order.takeProfit,
+        });
 
         sltpCloseButtonsRef.current.push({
           orderIds: [getOrderId(order)],
@@ -704,20 +714,6 @@ export const useOrderLinesRenderer = (
       };
 
       const positionId = `position-${position.symbol}-${isLong ? 'LONG' : 'SHORT'}`;
-
-      orderHitboxesRef.current.push({
-        orderId: positionId,
-        y,
-        tolerance: 8,
-        order: {
-          ...position.orders[0],
-          id: positionId,
-          entryPrice: position.avgPrice,
-          quantity: absQuantity,
-          type: isLong ? 'long' : 'short',
-          metadata: { isPosition: true, positionData },
-        } as unknown as Order,
-      });
       
       ctx.save();
       ctx.font = '11px monospace';
@@ -755,6 +751,22 @@ export const useOrderLinesRenderer = (
 
       const closeButtonRef = { x: 0, y: 0, size: 14 };
       const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, hasAutoTrade);
+
+      orderHitboxesRef.current.push({
+        orderId: positionId,
+        x: 0,
+        y: y - infoTagSize.height / 2,
+        width: infoTagSize.width,
+        height: infoTagSize.height,
+        order: {
+          ...position.orders[0],
+          id: positionId,
+          entryPrice: position.avgPrice,
+          quantity: absQuantity,
+          type: isLong ? 'long' : 'short',
+          metadata: { isPosition: true, positionData },
+        } as unknown as Order,
+      });
 
       position.orderIds.forEach((orderId) => {
         closeButtonsRef.current.push({
@@ -894,19 +906,6 @@ export const useOrderLinesRenderer = (
           setupTypes,
         };
 
-        orderHitboxesRef.current.push({
-          orderId: positionId,
-          y,
-          tolerance: 8,
-          order: {
-            ...hPos.orders[0],
-            id: positionId,
-            entryPrice: hPos.avgPrice,
-            quantity: absQuantity,
-            metadata: { isPosition: true, positionData },
-          } as Order,
-        });
-
         ctx.save();
         ctx.font = '11px monospace';
         ctx.textAlign = 'left';
@@ -943,6 +942,21 @@ export const useOrderLinesRenderer = (
 
         const closeButtonRef = { x: 0, y: 0, size: 14 };
         const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, hasAutoTrade);
+
+        orderHitboxesRef.current.push({
+          orderId: positionId,
+          x: 0,
+          y: y - infoTagSize.height / 2,
+          width: infoTagSize.width,
+          height: infoTagSize.height,
+          order: {
+            ...hPos.orders[0],
+            id: positionId,
+            entryPrice: hPos.avgPrice,
+            quantity: absQuantity,
+            metadata: { isPosition: true, positionData },
+          } as Order,
+        });
 
         hPos.orderIds.forEach((orderId: string) => {
           closeButtonsRef.current.push({
@@ -1005,28 +1019,6 @@ export const useOrderLinesRenderer = (
 
         const firstOrderId = position.orderIds[0] || '';
 
-        orderHitboxesRef.current.push({
-          orderId: firstOrderId,
-          y: stopY,
-          tolerance: 8,
-          order: {
-            ...position.orders[0],
-            entryPrice: consolidatedStopLoss,
-            stopLoss: consolidatedStopLoss,
-            metadata: { isSLTP: true, type: 'stopLoss' },
-          } as Order,
-        });
-
-        position.orders.forEach((order) => {
-          sltpHitboxesRef.current.push({
-            orderId: getOrderId(order),
-            y: stopY,
-            tolerance: 8,
-            type: 'stopLoss',
-            price: consolidatedStopLoss,
-          });
-        });
-
         ctx.save();
         ctx.globalAlpha = pendingAlpha;
         ctx.setLineDash([3, 3]);
@@ -1064,7 +1056,33 @@ export const useOrderLinesRenderer = (
         ctx.setLineDash([]);
 
         const closeButtonRef = { x: 0, y: 0, size: 14 };
-        drawInfoTag(ctx, infoText, stopY, slTagColor, true, closeButtonRef);
+        const slTagSize = drawInfoTag(ctx, infoText, stopY, slTagColor, true, closeButtonRef);
+
+        orderHitboxesRef.current.push({
+          orderId: firstOrderId,
+          x: 0,
+          y: stopY - slTagSize.height / 2,
+          width: slTagSize.width,
+          height: slTagSize.height,
+          order: {
+            ...position.orders[0],
+            entryPrice: consolidatedStopLoss,
+            stopLoss: consolidatedStopLoss,
+            metadata: { isSLTP: true, type: 'stopLoss' },
+          } as Order,
+        });
+
+        position.orders.forEach((order) => {
+          sltpHitboxesRef.current.push({
+            orderId: getOrderId(order),
+            x: 0,
+            y: stopY - slTagSize.height / 2,
+            width: slTagSize.width,
+            height: slTagSize.height,
+            type: 'stopLoss',
+            price: consolidatedStopLoss,
+          });
+        });
 
         sltpCloseButtonsRef.current.push({
           orderIds: position.orderIds,
@@ -1083,28 +1101,6 @@ export const useOrderLinesRenderer = (
         const tpY = manager.priceToY(consolidatedTakeProfit);
 
         const firstOrderId = position.orderIds[0] || '';
-
-        orderHitboxesRef.current.push({
-          orderId: firstOrderId,
-          y: tpY,
-          tolerance: 8,
-          order: {
-            ...position.orders[0],
-            entryPrice: consolidatedTakeProfit,
-            takeProfit: consolidatedTakeProfit,
-            metadata: { isSLTP: true, type: 'takeProfit' },
-          } as Order,
-        });
-
-        position.orders.forEach((order) => {
-          sltpHitboxesRef.current.push({
-            orderId: getOrderId(order),
-            y: tpY,
-            tolerance: 8,
-            type: 'takeProfit',
-            price: consolidatedTakeProfit,
-          });
-        });
 
         ctx.save();
         ctx.globalAlpha = pendingAlpha;
@@ -1143,7 +1139,33 @@ export const useOrderLinesRenderer = (
         ctx.setLineDash([]);
 
         const closeButtonRef = { x: 0, y: 0, size: 14 };
-        drawInfoTag(ctx, infoText, tpY, fillColor, true, closeButtonRef);
+        const tpTagSize = drawInfoTag(ctx, infoText, tpY, fillColor, true, closeButtonRef);
+
+        orderHitboxesRef.current.push({
+          orderId: firstOrderId,
+          x: 0,
+          y: tpY - tpTagSize.height / 2,
+          width: tpTagSize.width,
+          height: tpTagSize.height,
+          order: {
+            ...position.orders[0],
+            entryPrice: consolidatedTakeProfit,
+            takeProfit: consolidatedTakeProfit,
+            metadata: { isSLTP: true, type: 'takeProfit' },
+          } as Order,
+        });
+
+        position.orders.forEach((order) => {
+          sltpHitboxesRef.current.push({
+            orderId: getOrderId(order),
+            x: 0,
+            y: tpY - tpTagSize.height / 2,
+            width: tpTagSize.width,
+            height: tpTagSize.height,
+            type: 'takeProfit',
+            price: consolidatedTakeProfit,
+          });
+        });
 
         sltpCloseButtonsRef.current.push({
           orderIds: position.orderIds,
@@ -1309,39 +1331,46 @@ export const useOrderLinesRenderer = (
     return null;
   };
 
-  const getOrderAtPosition = (_x: number, y: number): import('@marketmind/types').Order | null => {
+  const getOrderAtPosition = (x: number, y: number): import('@marketmind/types').Order | null => {
     if (!manager || !hasTradingEnabled) return null;
 
-    const tolerance = 8;
-
-    for (const order of activeOrders) {
-      const orderY = manager.priceToY(getOrderPrice(order));
-      if (Math.abs(y - orderY) <= tolerance) {
-        return order;
+    for (const hitbox of orderHitboxesRef.current) {
+      if (
+        x >= hitbox.x &&
+        x <= hitbox.x + hitbox.width &&
+        y >= hitbox.y &&
+        y <= hitbox.y + hitbox.height
+      ) {
+        return hitbox.order;
       }
     }
 
     return null;
   };
 
-  const getHoveredOrder = (_x: number, y: number): Order | null => {
-    let closestHitbox: OrderHitbox | null = null;
-    let minDistance = Infinity;
-
+  const getHoveredOrder = (x: number, y: number): Order | null => {
     for (const hitbox of orderHitboxesRef.current) {
-      const distance = Math.abs(y - hitbox.y);
-      if (distance <= hitbox.tolerance && distance < minDistance) {
-        minDistance = distance;
-        closestHitbox = hitbox;
+      if (
+        x >= hitbox.x &&
+        x <= hitbox.x + hitbox.width &&
+        y >= hitbox.y &&
+        y <= hitbox.y + hitbox.height
+      ) {
+        return hitbox.order;
       }
     }
 
-    return closestHitbox ? closestHitbox.order : null;
+    return null;
   };
 
-  const getSLTPAtPosition = (_x: number, y: number): { orderId: string; type: 'stopLoss' | 'takeProfit'; price: number } | null => {
+  const getSLTPAtPosition = (x: number, y: number): { orderId: string; type: 'stopLoss' | 'takeProfit'; price: number } | null => {
     for (const hitbox of sltpHitboxesRef.current) {
-      if (Math.abs(y - hitbox.y) <= hitbox.tolerance) {
+      if (
+        x >= hitbox.x &&
+        x <= hitbox.x + hitbox.width &&
+        y >= hitbox.y &&
+        y <= hitbox.y + hitbox.height
+      ) {
         return {
           orderId: hitbox.orderId,
           type: hitbox.type,

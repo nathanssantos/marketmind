@@ -1,4 +1,8 @@
 import { Box, Flex, Group, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
+import type { MarketType, TradingProfile } from '@marketmind/types';
+import { Button } from '@renderer/components/ui/button';
+import { Checkbox } from '@renderer/components/ui/checkbox';
+import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import {
   DialogBackdrop,
   DialogBody,
@@ -9,9 +13,6 @@ import {
   DialogRoot,
   DialogTitle,
 } from '@renderer/components/ui/dialog';
-import type { MarketType, TradingProfile } from '@marketmind/types';
-import { Button } from '@renderer/components/ui/button';
-import { Checkbox } from '@renderer/components/ui/checkbox';
 import { Field } from '@renderer/components/ui/field';
 import { Select } from '@renderer/components/ui/select';
 import { useBackendAutoTrading, useTopSymbols } from '@renderer/hooks/useBackendAutoTrading';
@@ -235,6 +236,7 @@ export const AddWatcherDialog = ({
                                 checked={selectedSymbols.includes(sym)}
                                 onCheckedChange={() => handleSymbolToggle(sym)}
                               />
+                              <CryptoIcon symbol={sym} size={16} />
                               <Text fontSize="sm" fontFamily="mono">{sym}</Text>
                             </HStack>
                           ))}

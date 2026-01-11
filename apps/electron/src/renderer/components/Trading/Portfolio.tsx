@@ -1,25 +1,26 @@
 import { Badge, Box, Flex, Group, IconButton, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
-import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
+import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { Select } from '@renderer/components/ui/select';
+import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
 import { usePortfolioFilters } from '@renderer/hooks/usePortfolioFilters';
 import { usePositionUpdates } from '@renderer/hooks/usePositionUpdates';
-import { type PortfolioFilterOption, type PortfolioSortOption, useUIStore } from '@renderer/store/uiStore';
 import { usePricesForSymbols } from '@renderer/store/priceStore';
-import { StrategyInfoPopover } from './StrategyInfoPopover';
-import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from './TradingTable';
+import { useUIStore, type PortfolioFilterOption, type PortfolioSortOption } from '@renderer/store/uiStore';
 import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsGrid, BsTable } from 'react-icons/bs';
 import { LuBot } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
-import { FuturesPositionsPanel } from './FuturesPositionsPanel';
-import { TradingProfilesModal } from './TradingProfilesModal';
 import { TooltipWrapper } from '../ui/Tooltip';
+import { FuturesPositionsPanel } from './FuturesPositionsPanel';
+import { StrategyInfoPopover } from './StrategyInfoPopover';
+import { TradingProfilesModal } from './TradingProfilesModal';
+import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from './TradingTable';
 
 interface PortfolioPosition {
   symbol: string;
@@ -370,14 +371,22 @@ const WatchersTable = memo(({ watchers, onNavigateToSymbol }: WatchersTableProps
       {sortedWatchers.map((watcher) => (
         <TradingTableRow key={watcher.watcherId}>
           <TradingTableCell sticky>
-            <Text
-              fontWeight="medium"
-              cursor={onNavigateToSymbol ? 'pointer' : 'default'}
-              _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
-              onClick={() => onNavigateToSymbol?.(watcher.symbol, watcher.marketType)}
-            >
-              {watcher.symbol}
-            </Text>
+            <Flex align="center" gap={1}>
+              <CryptoIcon
+                symbol={watcher.symbol}
+                size={14}
+                onClick={() => onNavigateToSymbol?.(watcher.symbol, watcher.marketType)}
+                cursor={onNavigateToSymbol ? 'pointer' : 'default'}
+              />
+              <Text
+                fontWeight="medium"
+                cursor={onNavigateToSymbol ? 'pointer' : 'default'}
+                _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
+                onClick={() => onNavigateToSymbol?.(watcher.symbol, watcher.marketType)}
+              >
+                {watcher.symbol}
+              </Text>
+            </Flex>
           </TradingTableCell>
           <TradingTableCell>
             <Badge colorPalette="blue" size="xs" px={1}>
@@ -475,6 +484,7 @@ const PortfolioTable = memo(({ positions, currency, onNavigateToSymbol }: Portfo
     { key: 'currentPrice', header: t('trading.portfolio.currentPrice'), textAlign: 'right', minW: '110px' },
     { key: 'stopLoss', header: t('trading.orders.stopLoss'), textAlign: 'right', minW: '100px' },
     { key: 'takeProfit', header: t('trading.orders.takeProfit'), textAlign: 'right', minW: '100px' },
+    { key: 'auto', header: '', minW: '40px', sortable: false },
   ];
 
   return (
@@ -487,7 +497,12 @@ const PortfolioTable = memo(({ positions, currency, onNavigateToSymbol }: Portfo
           <TradingTableRow key={position.id}>
             <TradingTableCell sticky>
               <Flex align="center" gap={1}>
-                {position.isAutoTrade && <LuBot size={12} />}
+                <CryptoIcon
+                  symbol={position.symbol}
+                  size={14}
+                  onClick={() => onNavigateToSymbol?.(position.symbol, position.marketType)}
+                  cursor={onNavigateToSymbol ? 'pointer' : 'default'}
+                />
                 <Text
                   fontWeight="medium"
                   cursor={onNavigateToSymbol ? 'pointer' : 'default'}
@@ -552,6 +567,13 @@ const PortfolioTable = memo(({ positions, currency, onNavigateToSymbol }: Portfo
             <TradingTableCell textAlign="right">
               <Text color="green.500">{formatPrice(position.takeProfit)}</Text>
             </TradingTableCell>
+            <TradingTableCell>
+              {position.isAutoTrade && (
+                <TooltipWrapper label={t('trading.orders.autoTrade')} showArrow>
+                  <Box color="blue.500"><LuBot size={14} /></Box>
+                </TooltipWrapper>
+              )}
+            </TradingTableCell>
           </TradingTableRow>
         );
       })}
@@ -583,11 +605,12 @@ const PositionCard = memo(({ position, currency, onNavigateToSymbol }: PositionC
       <Stack gap={1.5} mb={2}>
         <Flex justify="space-between" align="center">
           <Flex align="center" gap={1.5}>
-            {position.isAutoTrade && (
-              <Box title={t('trading.orders.autoTrade')}>
-                <LuBot size={14} />
-              </Box>
-            )}
+            <CryptoIcon
+              symbol={position.symbol}
+              size={16}
+              onClick={() => onNavigateToSymbol?.(position.symbol, position.marketType)}
+              cursor={onNavigateToSymbol ? 'pointer' : 'default'}
+            />
             <Text
               fontWeight="bold"
               fontSize="sm"
@@ -611,6 +634,14 @@ const PositionCard = memo(({ position, currency, onNavigateToSymbol }: PositionC
           <Badge colorPalette={isLong ? 'green' : 'red'} size="xs" px={1}>
             {t(`trading.ticket.${isLong ? 'long' : 'short'}`)}
           </Badge>
+          {position.isAutoTrade && (
+            <Badge colorPalette="blue" size="xs" px={1}>
+              <Flex align="center" gap={1}>
+                <LuBot size={10} />
+                AUTO
+              </Flex>
+            </Badge>
+          )}
           {position.marketType === 'FUTURES' && (
             <Badge colorPalette="orange" size="xs" px={1}>
               FUTURES

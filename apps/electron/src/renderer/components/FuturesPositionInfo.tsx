@@ -3,6 +3,7 @@ import type { FuturesPosition } from '@marketmind/types';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuTrendingDown, LuTrendingUp, LuTriangleAlert } from 'react-icons/lu';
+import { CryptoIcon } from './ui/CryptoIcon';
 
 interface FuturesPositionInfoProps {
   position: FuturesPosition;
@@ -60,6 +61,7 @@ export function FuturesPositionInfo({ position, currentPrice }: FuturesPositionI
       <VStack gap={3} align="stretch">
         <Flex justify="space-between" align="center">
           <Flex align="center" gap={2}>
+            <CryptoIcon symbol={position.symbol} size={18} />
             <Text fontWeight="bold" color="fg">
               {position.symbol}
             </Text>

@@ -2,6 +2,7 @@ import { Radio, RadioGroup } from '@/renderer/components/ui/radio';
 import { Box, Collapsible, Flex, Grid, HStack, IconButton, Portal, Separator, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import { Button } from '@renderer/components/ui/button';
+import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { Switch } from '@renderer/components/ui/switch';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
@@ -494,6 +495,7 @@ const WatcherCard = ({
           />
           <Box>
             <Flex align="center" gap={2}>
+              <CryptoIcon symbol={symbol} size={18} />
               <Text fontWeight="bold" fontSize="md">
                 {symbol}
               </Text>

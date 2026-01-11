@@ -1,11 +1,12 @@
 import { Badge, Box, Button, Flex, Progress, Stack, Text, VStack } from '@chakra-ui/react';
 import { wouldLiquidate } from '@marketmind/types';
+import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuBot, LuTriangleAlert, LuTrendingDown, LuTrendingUp, LuX } from 'react-icons/lu';
+import { LuBot, LuTrendingDown, LuTrendingUp, LuTriangleAlert, LuX } from 'react-icons/lu';
 
 interface FuturesPosition {
   id: string;
@@ -98,9 +99,12 @@ const FuturesPositionCard = memo(({
       <VStack gap={2} align="stretch">
         <Flex justify="space-between" align="center">
           <Flex align="center" gap={2}>
-            <Box title={t('trading.orders.autoTrade')}>
-              <LuBot size={14} />
-            </Box>
+            <CryptoIcon
+              symbol={position.symbol}
+              size={16}
+              onClick={() => onNavigateToSymbol?.(position.symbol, 'FUTURES')}
+              cursor={onNavigateToSymbol ? 'pointer' : 'default'}
+            />
             <Text
               fontWeight="bold"
               fontSize="sm"
@@ -117,7 +121,13 @@ const FuturesPositionCard = memo(({
               </Flex>
             </Badge>
             <Badge colorPalette="purple" size="sm">{leverage}x</Badge>
-            <Badge colorPalette="orange" size="sm" variant="outline">FUTURES</Badge>
+            <Badge colorPalette="orange" size="sm" variant="outline">FUT</Badge>
+            <Badge colorPalette="blue" size="sm">
+              <Flex align="center" gap={1}>
+                <LuBot size={10} />
+                AUTO
+              </Flex>
+            </Badge>
           </Flex>
           <Button
             size="2xs"

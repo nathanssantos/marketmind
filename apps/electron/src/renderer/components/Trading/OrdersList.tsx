@@ -2,14 +2,15 @@ import { Badge, Box, Flex, Group, IconButton, Portal, Stack, Text } from '@chakr
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Order, OrderStatus, WalletCurrency } from '@marketmind/types';
-import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
+import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { Select } from '@renderer/components/ui/select';
+import { TooltipWrapper } from '@renderer/components/ui/Tooltip';
+import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
-import { type OrdersFilterOption, type OrdersSortOption, useUIStore } from '@renderer/store/uiStore';
-import { StrategyInfoPopover } from './StrategyInfoPopover';
-import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from './TradingTable';
+import { usePricesForSymbols } from '@renderer/store/priceStore';
+import { useUIStore, type OrdersFilterOption, type OrdersSortOption } from '@renderer/store/uiStore';
 import {
   getOrderId,
   getOrderPrice,
@@ -20,10 +21,11 @@ import {
 } from '@shared/utils';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { usePricesForSymbols } from '@renderer/store/priceStore';
 import { BsGrid, BsTable, BsThreeDotsVertical } from 'react-icons/bs';
 import { LuBot, LuX } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
+import { StrategyInfoPopover } from './StrategyInfoPopover';
+import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from './TradingTable';
 
 const OrdersListComponent = () => {
   const { t } = useTranslation();
@@ -412,11 +414,12 @@ const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateToSymbol
       <Flex justify="space-between" align="flex-start" mb={2}>
         <Stack gap={1.5}>
           <Flex align="center" gap={1.5}>
-            {order.isAutoTrade && (
-              <Box title={t('trading.orders.autoTrade')}>
-                <LuBot size={14} />
-              </Box>
-            )}
+            <CryptoIcon
+              symbol={order.symbol}
+              size={16}
+              onClick={() => onNavigateToSymbol?.(order.symbol, order.marketType)}
+              cursor={onNavigateToSymbol ? 'pointer' : 'default'}
+            />
             <Text
               fontWeight="bold"
               fontSize="sm"
@@ -434,6 +437,14 @@ const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateToSymbol
             <Badge colorPalette={getStatusColor(order.status)} size="xs" px={1}>
               {t(`trading.orders.${getStatusTranslationKey(order.status)}`)}
             </Badge>
+            {order.isAutoTrade && (
+              <Badge colorPalette="blue" size="xs" px={1}>
+                <Flex align="center" gap={1}>
+                  <LuBot size={10} />
+                  AUTO
+                </Flex>
+              </Badge>
+            )}
             {order.marketType === 'FUTURES' && (
               <Badge colorPalette="orange" size="xs" px={1}>
                 FUTURES
@@ -717,6 +728,7 @@ const OrdersTable = memo(({ orders, currency, onCancel, onClose, onNavigateToSym
     { key: 'currentPrice', header: t('trading.orders.currentPrice'), textAlign: 'right' },
     { key: 'stopLoss', header: t('trading.orders.stopLoss'), textAlign: 'right' },
     { key: 'takeProfit', header: t('trading.orders.takeProfit'), textAlign: 'right' },
+    { key: 'auto', header: '', minW: '40px', sortable: false },
     { key: 'actions', header: t('trading.orders.actions'), textAlign: 'center', sortable: false },
   ];
 
@@ -734,7 +746,12 @@ const OrdersTable = memo(({ orders, currency, onCancel, onClose, onNavigateToSym
           <TradingTableRow key={getOrderId(order)}>
             <TradingTableCell sticky>
               <Flex align="center" gap={1}>
-                {order.isAutoTrade && <LuBot size={12} />}
+                <CryptoIcon
+                  symbol={order.symbol}
+                  size={14}
+                  onClick={() => onNavigateToSymbol?.(order.symbol, order.marketType)}
+                  cursor={onNavigateToSymbol ? 'pointer' : 'default'}
+                />
                 <Text
                   fontWeight="medium"
                   cursor={onNavigateToSymbol ? 'pointer' : 'default'}
@@ -800,6 +817,13 @@ const OrdersTable = memo(({ orders, currency, onCancel, onClose, onNavigateToSym
             </TradingTableCell>
             <TradingTableCell textAlign="right">
               <Text color="green.500">{formatPrice(order.takeProfit)}</Text>
+            </TradingTableCell>
+            <TradingTableCell>
+              {order.isAutoTrade && (
+                <TooltipWrapper label={t('trading.orders.autoTrade')} showArrow>
+                  <Box color="blue.500"><LuBot size={14} /></Box>
+                </TooltipWrapper>
+              )}
             </TradingTableCell>
             <TradingTableCell textAlign="center">
               {(canClose || canCancel) && (

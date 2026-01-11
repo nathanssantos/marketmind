@@ -1,0 +1,82 @@
+import { Box, Image } from '@chakra-ui/react';
+import { memo, useState } from 'react';
+
+interface CryptoIconProps {
+    symbol: string;
+    size?: number;
+    onClick?: () => void;
+    cursor?: string;
+}
+
+const extractBaseAsset = (symbol: string): string => {
+    const quoteAssets = ['USDT', 'USDC', 'BUSD', 'BTC', 'ETH', 'BNB', 'EUR', 'GBP', 'TRY', 'BRL', 'FDUSD', 'TUSD'];
+
+    for (const quote of quoteAssets) {
+        if (symbol.endsWith(quote)) {
+            return symbol.slice(0, -quote.length).toLowerCase();
+        }
+    }
+
+    return symbol.toLowerCase();
+};
+
+const ICON_SOURCES = [
+    (asset: string) => `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/icon/${asset}.png`,
+    (asset: string) => `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${asset}.png`,
+    (asset: string) => `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1a63530be6e374711a8554f31b17e4cb92c25fa5/128/icon/${asset}.png`,
+    (asset: string) => `https://assets.coincap.io/assets/icons/${asset}@2x.png`,
+];
+
+const CryptoIconComponent = ({ symbol, size = 16, onClick, cursor }: CryptoIconProps) => {
+    const [sourceIndex, setSourceIndex] = useState(0);
+    const [hasError, setHasError] = useState(false);
+
+    const baseAsset = extractBaseAsset(symbol);
+
+    const handleError = () => {
+        if (sourceIndex < ICON_SOURCES.length - 1) {
+            setSourceIndex(prev => prev + 1);
+        } else {
+            setHasError(true);
+        }
+    };
+
+    if (hasError) {
+        return (
+            <Box
+                w={`${size}px`}
+                h={`${size}px`}
+                borderRadius="full"
+                bg="gray.500"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                fontSize={`${Math.max(size * 0.5, 8)}px`}
+                fontWeight="bold"
+                color="white"
+                flexShrink={0}
+                onClick={onClick}
+                cursor={cursor}
+            >
+                {baseAsset.charAt(0).toUpperCase()}
+            </Box>
+        );
+    }
+
+    return (
+        <Image
+            src={ICON_SOURCES[sourceIndex]?.(baseAsset) ?? ''}
+            alt={`${symbol} icon`}
+            w={`${size}px`}
+            h={`${size}px`}
+            borderRadius="full"
+            objectFit="contain"
+            onError={handleError}
+            flexShrink={0}
+            onClick={onClick}
+            cursor={cursor}
+        />
+    );
+};
+
+export const CryptoIcon = memo(CryptoIconComponent);
