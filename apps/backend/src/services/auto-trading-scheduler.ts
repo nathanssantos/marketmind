@@ -2239,7 +2239,7 @@ export class AutoTradingScheduler {
 
   private getFibonacciTargetPrice(
     setup: TradingSetup,
-    fibonacciTargetLevel: 'auto' | '1.272' | '1.618' | '2' = 'auto'
+    fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.618' | '2' = 'auto'
   ): number | null {
     const fib = setup.fibonacciProjection;
     if (!fib || !fib.levels || fib.levels.length === 0) return null;

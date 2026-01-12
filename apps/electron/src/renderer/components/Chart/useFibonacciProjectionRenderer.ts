@@ -12,9 +12,12 @@ interface UseFibonacciProjectionRendererProps {
 }
 
 const EXTENSION_COLORS: Record<string, string> = {
-  '1.272': 'rgba(255, 193, 7, 0.8)',
-  '1.618': 'rgba(76, 175, 80, 0.9)',
-  '2': 'rgba(33, 150, 243, 0.9)',
+  '0': 'rgba(180, 180, 180, 0.7)',
+  '0.5': 'rgba(180, 180, 180, 0.7)',
+  '1': 'rgba(180, 180, 180, 0.7)',
+  '1.272': 'rgba(33, 150, 243, 0.8)',
+  '1.618': 'rgba(255, 193, 7, 0.9)',
+  '2': 'rgba(76, 175, 80, 0.8)',
 };
 
 const SWING_LINE_WIDTH = 2;
@@ -24,7 +27,7 @@ const SWING_LINE_DASH = [SWING_LINE_DASH_ON, SWING_LINE_DASH_OFF] as const;
 const SWING_POINT_RADIUS = 4;
 const FULL_CIRCLE_MULTIPLIER = 2;
 const FULL_CIRCLE = Math.PI * FULL_CIRCLE_MULTIPLIER;
-const PRIMARY_LEVEL = 2;
+const PRIMARY_LEVEL = -1;
 const PRIMARY_LINE_WIDTH = 2;
 const SECONDARY_LINE_WIDTH = 1;
 const LEVEL_DASH = [SWING_LINE_DASH_OFF, SWING_LINE_DASH_OFF] as const;

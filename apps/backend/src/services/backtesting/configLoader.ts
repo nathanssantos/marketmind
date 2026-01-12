@@ -12,7 +12,7 @@ interface DateRangeOptions {
 
 interface ConfigOverrides {
   tpCalculationMode?: 'default' | 'fibonacci';
-  fibonacciTargetLevel?: 'auto' | '1.272' | '1.618' | '2';
+  fibonacciTargetLevel?: 'auto' | '1' | '1.272' | '1.618' | '2';
   useTrailingStop?: boolean;
   useMtfFilter?: boolean;
   useBtcCorrelationFilter?: boolean;
@@ -137,7 +137,7 @@ export const buildMultiWatcherConfigFromWatchers = (
     useTrendFilter?: boolean;
     trendFilterPeriod?: number;
     useTrailingStop?: boolean;
-    fibonacciTargetLevel?: 'auto' | '1.272' | '1.618' | '2';
+    fibonacciTargetLevel?: 'auto' | '1' | '1.272' | '1.618' | '2';
   }
 ): MultiWatcherBacktestConfig => {
   const allSetupTypes = new Set<string>();

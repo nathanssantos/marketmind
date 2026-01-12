@@ -27,7 +27,7 @@ interface MultiWatcherBacktestInput {
   marketType?: 'SPOT' | 'FUTURES';
   leverage?: number;
   tpCalculationMode?: 'default' | 'fibonacci';
-  fibonacciTargetLevel?: 'auto' | '1.272' | '1.618' | '2';
+  fibonacciTargetLevel?: 'auto' | '1' | '1.272' | '1.618' | '2';
   useMtfFilter?: boolean;
   useBtcCorrelationFilter?: boolean;
   useMarketRegimeFilter?: boolean;

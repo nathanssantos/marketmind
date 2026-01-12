@@ -98,7 +98,7 @@ export const autoTradingRouter = router({
         useTrendFilter: z.boolean().optional(),
         exposureMultiplier: z.string().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
-        fibonacciTargetLevel: z.enum(['auto', '1.272', '1.618', '2']).optional(),
+        fibonacciTargetLevel: z.enum(['auto', '1', '1.272', '1.618', '2']).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {

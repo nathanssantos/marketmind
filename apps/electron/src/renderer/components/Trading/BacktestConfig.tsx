@@ -81,7 +81,7 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
   const [useConfluenceScoring, setUseConfluenceScoring] = useState(true);
   const [confluenceMinScore, setConfluenceMinScore] = useState('60');
   const [tpCalculationMode, setTpCalculationMode] = useState<'default' | 'fibonacci'>('default');
-  const [fibonacciTargetLevel, setFibonacciTargetLevel] = useState<'auto' | '1.272' | '1.618' | '2'>('auto');
+  const [fibonacciTargetLevel, setFibonacciTargetLevel] = useState<'auto' | '1' | '1.272' | '1.618' | '2'>('auto');
 
   const loadFromAutoTrading = useCallback(() => {
     if (!autoTradingConfig) return;

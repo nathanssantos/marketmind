@@ -245,7 +245,7 @@ export const backtestRouter = router({
         marketType: z.enum(['SPOT', 'FUTURES']).optional(),
         leverage: z.number().min(1).max(125).optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
-        fibonacciTargetLevel: z.enum(['auto', '1.272', '1.618', '2']).optional(),
+        fibonacciTargetLevel: z.enum(['auto', '1', '1.272', '1.618', '2']).optional(),
         useMtfFilter: z.boolean().optional(),
         useBtcCorrelationFilter: z.boolean().optional(),
         useMarketRegimeFilter: z.boolean().optional(),

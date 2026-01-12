@@ -290,7 +290,7 @@ export const WatcherManager = () => {
                         </Text>
                       </Box>
                     </Radio>
-                    <Radio value="1.272">
+                    <Radio value="1">
                       <Box>
                         <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.conservative')}</Text>
                         <Text fontSize="xs" color="fg.muted">
@@ -298,7 +298,7 @@ export const WatcherManager = () => {
                         </Text>
                       </Box>
                     </Radio>
-                    <Radio value="1.618">
+                    <Radio value="1.272">
                       <Box>
                         <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.moderate')}</Text>
                         <Text fontSize="xs" color="fg.muted">
@@ -306,11 +306,19 @@ export const WatcherManager = () => {
                         </Text>
                       </Box>
                     </Radio>
-                    <Radio value="2">
+                    <Radio value="1.618">
                       <Box>
                         <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.aggressive')}</Text>
                         <Text fontSize="xs" color="fg.muted">
                           {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.aggressiveDescription')}
+                        </Text>
+                      </Box>
+                    </Radio>
+                    <Radio value="2">
+                      <Box>
+                        <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.extended')}</Text>
+                        <Text fontSize="xs" color="fg.muted">
+                          {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.extendedDescription')}
                         </Text>
                       </Box>
                     </Radio>

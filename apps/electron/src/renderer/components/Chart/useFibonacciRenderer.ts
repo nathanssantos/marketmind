@@ -30,12 +30,12 @@ export const useFibonacciRenderer = ({
     ctx.save();
 
     const fibColors = [
-      'rgba(128, 128, 128, 0.5)',
-      'rgba(128, 128, 128, 0.5)',
-      'rgba(128, 128, 128, 0.5)',
-      colors.fibonacci?.level127 ?? 'rgba(244, 67, 54, 0.3)',
-      colors.fibonacci?.level161 ?? 'rgba(244, 67, 54, 0.3)',
-      colors.fibonacci?.level200 ?? 'rgba(244, 67, 54, 0.3)',
+      'rgba(180, 180, 180, 0.7)',
+      'rgba(180, 180, 180, 0.7)',
+      'rgba(180, 180, 180, 0.7)',
+      'rgba(33, 150, 243, 0.6)',
+      'rgba(255, 193, 7, 0.6)',
+      'rgba(76, 175, 80, 0.6)',
     ];
 
     for (let i = 0; i < fibonacciData.levels.length; i++) {
