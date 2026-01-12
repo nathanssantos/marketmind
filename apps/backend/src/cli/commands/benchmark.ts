@@ -112,8 +112,6 @@ export async function benchmarkCommand(options: BenchmarkOptions) {
         endDate: options.end,
         initialCapital: capital,
         setupTypes: [spec.strategy],
-        maxConcurrentPositions: 10,
-        maxTotalExposure: 1.0,
         useAlgorithmicLevels: true,
       };
 

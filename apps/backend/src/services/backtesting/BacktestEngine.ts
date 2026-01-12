@@ -93,9 +93,6 @@ export class BacktestEngine {
         useAdxFilter: effectiveConfig.useAdxFilter,
         useCooldown: effectiveConfig.useCooldown,
         cooldownMinutes: effectiveConfig.cooldownMinutes,
-        dailyLossLimit: effectiveConfig.dailyLossLimit,
-        maxConcurrentPositions: effectiveConfig.maxConcurrentPositions,
-        maxTotalExposure: effectiveConfig.maxTotalExposure,
       });
 
       await filterManager.initialize(
@@ -106,10 +103,6 @@ export class BacktestEngine {
       );
 
       const tradeExecutor = new TradeExecutor({
-        positionSizingMethod: effectiveConfig.positionSizingMethod,
-        maxPositionSize: effectiveConfig.maxPositionSize,
-        riskPerTrade: effectiveConfig.riskPerTrade,
-        kellyFraction: effectiveConfig.kellyFraction,
         commission: effectiveConfig.commission,
         marketType: config.marketType,
         minProfitPercent: effectiveConfig.minProfitPercent,
@@ -261,17 +254,8 @@ export class BacktestEngine {
     if (loadedStrategies.length > 0) {
       const mergedParams = this.mergeOptimizedParams(loadedStrategies);
       if (mergedParams) {
-        const useOptimized = config.useOptimizedSettings ?? false;
-
         effectiveConfig = {
           ...effectiveConfig,
-          maxPositionSize: effectiveConfig.maxPositionSize ?? (
-            useOptimized
-              ? mergedParams.maxPositionSize
-              : (effectiveConfig.positionSizingMethod === 'fixed-fractional' ? 10 : mergedParams.maxPositionSize)
-          ),
-          maxConcurrentPositions: effectiveConfig.maxConcurrentPositions ?? mergedParams.maxConcurrentPositions,
-          maxTotalExposure: effectiveConfig.maxTotalExposure ?? mergedParams.maxTotalExposure,
           useAlgorithmicLevels: effectiveConfig.useAlgorithmicLevels ?? true,
           useTrailingStop: effectiveConfig.useTrailingStop ?? mergedParams.useTrailingStop ?? false,
           trailingATRMultiplier: effectiveConfig.trailingATRMultiplier ?? mergedParams.trailingATRMultiplier,
@@ -414,7 +398,7 @@ export class BacktestEngine {
       const strategyTrendFilterEnabled = setupStrategy?.filters?.trendFilter?.enabled === true;
       const useTrendFilter = globalTrendFilterEnabled || strategyTrendFilterEnabled;
 
-      if (!filterManager.checkTrendFilter(setupIndex, entryPrice, setup.direction, useTrendFilter, trades.length)) continue;
+      if (!filterManager.checkTrendFilter(historicalKlines as Kline[], setupIndex, setup.direction, useTrendFilter, trades.length)) continue;
 
       const { stopLoss, takeProfit } = tradeExecutor.resolveStopLossAndTakeProfit(setup, entryPrice, trades.length);
 

@@ -5,7 +5,6 @@ export const DECIMAL_PLACES = 2;
 export const MINUTES_PER_HOUR = 60;
 export const PERCENT_MULTIPLIER = 100;
 export const DEFAULT_COMMISSION = 0.001;
-export const DEFAULT_MAX_POSITION = 10;
 
 export const PROFIT_FACTOR_EXCELLENT = 2;
 export const PROFIT_FACTOR_GOOD = 1.5;
@@ -45,9 +44,6 @@ export const getSharpeRatioLabel = (sharpeRatio: number | null | undefined): 'ex
 export const getCommissionPercent = (commission: number | undefined): string =>
     formatPercent((commission ?? DEFAULT_COMMISSION) * PERCENT_MULTIPLIER);
 
-export const getMaxPositionSize = (maxPositionSize: number | undefined): number =>
-    maxPositionSize ?? DEFAULT_MAX_POSITION;
-
 export const getCommissionImpact = (totalCommission: number, initialCapital: number): string =>
     formatPercent((totalCommission / initialCapital) * PERCENT_MULTIPLIER);
 
@@ -79,7 +75,6 @@ export const useBacktestMetrics = (result: BacktestResult) => {
         profitFactorLabel: getProfitFactorLabel(metrics.profitFactor),
         sharpeRatioLabel: getSharpeRatioLabel(metrics.sharpeRatio),
         commissionPercent: getCommissionPercent(config.commission),
-        maxPositionSize: getMaxPositionSize(config.maxPositionSize),
         commissionImpact: getCommissionImpact(metrics.totalCommission, config.initialCapital),
     };
 };

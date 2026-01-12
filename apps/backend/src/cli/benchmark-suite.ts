@@ -66,7 +66,6 @@ async function runBenchmark(
       endDate: endDate.toISOString().split('T')[0] as string,
       initialCapital: 1000,
       setupTypes: [strategy],
-      riskPerTrade: 0.02,
     });
 
     return {

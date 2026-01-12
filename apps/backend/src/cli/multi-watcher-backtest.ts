@@ -78,12 +78,25 @@ async function runMultiWatcherBacktest() {
 
   console.log();
 
-  const startDate = '2025-01-01';
-  const endDate = '2025-12-31';
+  const defaultStartDate = '2024-01-11';
+  const defaultEndDate = '2025-01-11';
   const initialCapital = 10000;
 
   const fibLevelArg = process.argv.find(arg => arg.startsWith('--fib-level='));
   const fibonacciTpLevel = fibLevelArg ? parseFloat(fibLevelArg.split('=')[1] ?? '0') : undefined;
+
+  const fibTargetArg = process.argv.find(arg => arg.startsWith('--fib-target='));
+  const fibonacciTargetLevelStr = fibTargetArg
+    ? (fibTargetArg.split('=')[1] as 'auto' | '1.272' | '1.618' | '2')
+    : config.fibonacciTargetLevel ?? 'auto';
+
+  const fibLevelMap: Record<string, number | undefined> = {
+    'auto': undefined,
+    '1.272': 1.272,
+    '1.618': 1.618,
+    '2': 2.0,
+  };
+  const fibonacciTargetLevelNum = fibLevelMap[fibonacciTargetLevelStr];
 
   const useTrailingStop = process.argv.includes('--trailing-stop');
   const tsIntervalArg = process.argv.find(arg => arg.startsWith('--ts-interval='));
@@ -94,10 +107,18 @@ async function runMultiWatcherBacktest() {
   const tpModeArg = process.argv.find(arg => arg.startsWith('--tp-mode='));
   const tpMode = tpModeArg ? (tpModeArg.split('=')[1] as 'default' | 'fibonacci') : config.tpCalculationMode ?? 'default';
 
+  const startDateArg = process.argv.find(arg => arg.startsWith('--start='));
+  const startDate = startDateArg ? startDateArg.split('=')[1]! : defaultStartDate;
+
+  const endDateArg = process.argv.find(arg => arg.startsWith('--end='));
+  const endDate = endDateArg ? endDateArg.split('=')[1]! : defaultEndDate;
+
   console.log(`📅 Backtest Period: ${startDate} to ${endDate}`);
   console.log(`💰 Initial Capital: $${formatCurrency(initialCapital)}`);
-  if (fibonacciTpLevel) {
-    console.log(`🎯 Fibonacci TP Level: ${(fibonacciTpLevel * 100).toFixed(1)}%`);
+  console.log(`🎯 TP Mode: ${tpMode}${tpMode === 'fibonacci' ? ` (target: ${fibonacciTargetLevelStr})` : ''}`);
+  if (fibonacciTpLevel || fibonacciTargetLevelNum) {
+    const level = fibonacciTpLevel ?? fibonacciTargetLevelNum;
+    if (level) console.log(`   Fibonacci TP Level: ${(level * 100).toFixed(1)}%`);
   }
   if (useTrailingStop) {
     console.log(`📈 Trailing Stop: ENABLED (simulation interval: ${trailingStopSimulationInterval})`);
@@ -111,9 +132,6 @@ async function runMultiWatcherBacktest() {
     initialCapital,
 
     exposureMultiplier: parseFloat(config.exposureMultiplier),
-    maxPositionSize: parseFloat(config.maxPositionSize),
-    maxConcurrentPositions: config.maxConcurrentPositions,
-    dailyLossLimit: parseFloat(config.dailyLossLimit),
 
     useStochasticFilter: config.useStochasticFilter,
     useAdxFilter: config.useAdxFilter,
@@ -122,13 +140,23 @@ async function runMultiWatcherBacktest() {
     useCooldown: true,
     cooldownMinutes: 15,
 
+    useMtfFilter: config.useMtfFilter,
+    useBtcCorrelationFilter: config.useBtcCorrelationFilter,
+    useMarketRegimeFilter: config.useMarketRegimeFilter,
+    useVolumeFilter: config.useVolumeFilter,
+    useFundingFilter: config.useFundingFilter,
+    useConfluenceScoring: config.useConfluenceScoring,
+    confluenceMinScore: config.confluenceMinScore,
+    useMomentumTimingFilter: config.useMomentumTimingFilter,
+    trendFilterPeriod: 21,
+
     setupTypes: JSON.parse(config.enabledSetupTypes),
     useSharedExposure: true,
     marketType: watchers[0]?.marketType ?? 'FUTURES',
     leverage: config.leverage ?? 1,
     tpCalculationMode: tpMode,
-    fibonacciTpLevel,
-    useTrailingStop,
+    fibonacciTpLevel: fibonacciTpLevel ?? fibonacciTargetLevelNum,
+    useTrailingStop: useTrailingStop ?? false,
     trailingStopSimulationInterval,
   };
 

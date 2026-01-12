@@ -306,18 +306,5 @@ describe('BacktestOptimizer', () => {
       expect(calledConfig.strategyParams).toEqual({ customStrategyParam: 10 });
     });
 
-    it('should convert maxTotalExposure to decimal', async () => {
-      const config: OptimizationConfig = {
-        baseConfig: createBaseConfig(),
-        parameterGrid: {
-          maxTotalExposure: [50],
-        },
-      };
-
-      await optimizer.optimize(config);
-
-      const calledConfig = mockRun.mock.calls[0]?.[0] as BacktestConfig;
-      expect(calledConfig.maxTotalExposure).toBe(0.5);
-    });
   });
 });

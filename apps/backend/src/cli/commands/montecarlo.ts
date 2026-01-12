@@ -43,7 +43,6 @@ export async function montecarloCommand(options: MonteCarloOptions) {
     validateDateRange(options.start, options.end);
 
     const capital = validateCapital(options.capital);
-    const maxPosition = validatePercentage(options.maxPosition, 'Max position', 1, 100);
     const commission = validatePercentage(options.commission, 'Commission', 0, 10);
     const numSimulations = parseInt(options.simulations);
     const confidenceLevel = parseFloat(options.confidenceLevel);
@@ -76,7 +75,6 @@ export async function montecarloCommand(options: MonteCarloOptions) {
       endDate: options.end,
       initialCapital: capital,
       setupTypes: [options.strategy],
-      maxPositionSize: maxPosition,
       commission: commission / 100,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
       onlyWithTrend: options.withTrend,

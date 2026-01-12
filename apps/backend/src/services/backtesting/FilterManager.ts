@@ -9,6 +9,7 @@ import {
   checkMomentumTiming,
   checkMtfCondition,
   checkStochasticCondition,
+  checkTrendCondition,
   checkVolumeCondition,
   getHigherTimeframe,
   MOMENTUM_TIMING_FILTER,
@@ -25,6 +26,7 @@ import { calculateConfluenceScore, type FilterResults } from '../../utils/conflu
 export interface FilterConfig {
   onlyLong?: boolean;
   onlyWithTrend?: boolean;
+  useTrendFilter?: boolean;
   trendFilterPeriod?: number;
   useStochasticFilter?: boolean;
   useMomentumTimingFilter?: boolean;
@@ -41,6 +43,7 @@ export interface FilterConfig {
   useFundingFilter?: boolean;
   useConfluenceScoring?: boolean;
   confluenceMinScore?: number;
+  maxPositionsPerStrategy?: number;
 }
 
 export interface FilterStats {
@@ -64,6 +67,9 @@ export interface FilterStats {
   skippedVolume: number;
   skippedFunding: number;
   skippedConfluence: number;
+  skippedPositionConflict: number;
+  skippedPyramid: number;
+  pyramidEntries: number;
 }
 
 export interface FilterContext {
@@ -85,6 +91,8 @@ export class FilterManager {
   private currentDay = '';
   private dailyLossLimitReached = false;
   private emaTrend: number[] = [];
+  private openPositionsBySymbol: Map<string, 'LONG' | 'SHORT'> = new Map();
+  private positionsPerStrategy: Map<string, number> = new Map();
 
   public stats: FilterStats = {
     skippedKlineNotFound: 0,
@@ -107,6 +115,9 @@ export class FilterManager {
     skippedVolume: 0,
     skippedFunding: 0,
     skippedConfluence: 0,
+    skippedPositionConflict: 0,
+    skippedPyramid: 0,
+    pyramidEntries: 0,
   };
 
   constructor(config: FilterConfig) {
@@ -114,7 +125,7 @@ export class FilterManager {
   }
 
   async initialize(klines: Kline[], _startDate: string, _endDate: string, _symbol: string): Promise<void> {
-    const trendPeriod = this.config.trendFilterPeriod ?? 200;
+    const trendPeriod = this.config.trendFilterPeriod ?? 21;
     const emaResult = calculateEMA(klines, trendPeriod);
     this.emaTrend = emaResult.map(v => v ?? 0);
   }
@@ -263,7 +274,13 @@ export class FilterManager {
     if (!this.config.useAdxFilter) return true;
 
     const { MIN_KLINES_REQUIRED } = ADX_FILTER;
-    if (setupIndex < MIN_KLINES_REQUIRED) return true;
+    if (setupIndex < MIN_KLINES_REQUIRED) {
+      this.stats.skippedAdx++;
+      if (tradesCount < 3) {
+        console.warn(`[FilterManager] ADX filter HARD BLOCK - insufficient klines (${setupIndex} < ${MIN_KLINES_REQUIRED})`);
+      }
+      return false;
+    }
 
     const adxKlines = klines.slice(setupIndex - MIN_KLINES_REQUIRED, setupIndex + 1);
     const result = checkAdxCondition(adxKlines, direction);
@@ -284,29 +301,24 @@ export class FilterManager {
   }
 
   checkTrendFilter(
+    klines: Kline[],
     setupIndex: number,
-    entryPrice: number,
     direction: 'LONG' | 'SHORT',
     useTrendFilter: boolean,
     tradesCount: number
   ): boolean {
-    if (!useTrendFilter || this.emaTrend.length === 0) return true;
+    if (!useTrendFilter) return true;
 
-    const emaTrendValue = this.emaTrend[setupIndex];
-    if (emaTrendValue === null || emaTrendValue === undefined) return true;
+    const trendKlines = klines.slice(0, setupIndex + 1);
+    if (trendKlines.length < 2) return true;
 
-    const trendPeriod = this.config.trendFilterPeriod ?? 200;
-    const isBullishTrend = entryPrice > emaTrendValue;
-    const isBearishTrend = entryPrice < emaTrendValue;
+    const result = checkTrendCondition(trendKlines, direction);
 
-    if (direction === 'LONG' && !isBullishTrend) {
-      if (tradesCount < 3) console.warn(`[FilterManager] Skipping LONG setup - price below EMA${trendPeriod} (counter-trend)`);
+    if (!result.isAllowed) {
       this.stats.skippedTrend++;
-      return false;
-    }
-    if (direction === 'SHORT' && !isBearishTrend) {
-      if (tradesCount < 3) console.warn(`[FilterManager] Skipping SHORT setup - price above EMA${trendPeriod} (counter-trend)`);
-      this.stats.skippedTrend++;
+      if (tradesCount < 3) {
+        console.warn(`[FilterManager] Trend filter blocked ${direction} - ${result.reason}`);
+      }
       return false;
     }
 
@@ -514,5 +526,61 @@ export class FilterManager {
 
   getTotalSkipped(): number {
     return Object.values(this.stats).reduce((sum, val) => sum + val, 0);
+  }
+
+  checkPositionConflict(
+    symbol: string,
+    direction: 'LONG' | 'SHORT',
+    tradesCount: number
+  ): boolean {
+    const existingDirection = this.openPositionsBySymbol.get(symbol);
+
+    if (existingDirection && existingDirection !== direction) {
+      this.stats.skippedPositionConflict++;
+      if (tradesCount < 3) {
+        console.warn(`[FilterManager] Position conflict - ${symbol} has ${existingDirection} position, cannot open ${direction}`);
+      }
+      return false;
+    }
+    return true;
+  }
+
+  updatePositionTracking(symbol: string, direction: 'LONG' | 'SHORT', isOpen: boolean): void {
+    if (isOpen) {
+      this.openPositionsBySymbol.set(symbol, direction);
+    } else {
+      this.openPositionsBySymbol.delete(symbol);
+    }
+  }
+
+  checkStrategyPositionLimit(
+    setupType: string,
+    maxPerStrategy: number | undefined,
+    tradesCount: number
+  ): boolean {
+    if (!maxPerStrategy) return true;
+
+    const current = this.positionsPerStrategy.get(setupType) ?? 0;
+    if (current >= maxPerStrategy) {
+      this.stats.skippedMaxPositions++;
+      if (tradesCount < 3) {
+        console.warn(`[FilterManager] Strategy ${setupType} at max positions (${current}/${maxPerStrategy})`);
+      }
+      return false;
+    }
+    return true;
+  }
+
+  updateStrategyPositionCount(setupType: string, delta: number): void {
+    const current = this.positionsPerStrategy.get(setupType) ?? 0;
+    this.positionsPerStrategy.set(setupType, Math.max(0, current + delta));
+  }
+
+  incrementPyramidSkipped(): void {
+    this.stats.skippedPyramid++;
+  }
+
+  incrementPyramidEntries(): void {
+    this.stats.pyramidEntries++;
   }
 }

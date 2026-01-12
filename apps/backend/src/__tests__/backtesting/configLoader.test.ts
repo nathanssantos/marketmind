@@ -52,8 +52,6 @@ describe('configLoader', () => {
       });
 
       expect(config.exposureMultiplier).toBe(1.5);
-      expect(config.maxPositionSize).toBe(15);
-      expect(config.dailyLossLimit).toBe(5);
       expect(config.useStochasticFilter).toBe(false);
       expect(config.useAdxFilter).toBe(false);
       expect(config.onlyWithTrend).toBe(false);
@@ -75,8 +73,6 @@ describe('configLoader', () => {
         endDate: '2024-06-01',
         initialCapital: 10000,
         exposureMultiplier: 2.0,
-        maxPositionSize: 20,
-        dailyLossLimit: 10,
         useStochasticFilter: false,
         useAdxFilter: false,
         onlyWithTrend: false,
@@ -88,8 +84,6 @@ describe('configLoader', () => {
       });
 
       expect(config.exposureMultiplier).toBe(2.0);
-      expect(config.maxPositionSize).toBe(20);
-      expect(config.dailyLossLimit).toBe(10);
       expect(config.useStochasticFilter).toBe(false);
       expect(config.useAdxFilter).toBe(false);
       expect(config.onlyWithTrend).toBe(false);

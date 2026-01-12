@@ -64,25 +64,9 @@ export async function validateCommand(options: ValidateOptions) {
     const minConfidence = options.minConfidence
       ? validatePercentage(options.minConfidence, 'Min confidence', 0, 100)
       : undefined;
-    const maxPosition = options.maxPosition
-      ? validatePercentage(options.maxPosition, 'Max position', 1, 100)
-      : undefined;
-    const riskPerTrade = options.riskPerTrade
-      ? validatePercentage(options.riskPerTrade, 'Risk per trade', 0.1, 10)
-      : undefined;
-    const kellyFraction = parseFloat(options.kellyFraction);
     const commission = options.commission
       ? validatePercentage(options.commission, 'Commission', 0, 10)
       : undefined;
-
-    const validMethods = ['fixed-fractional', 'risk-based', 'kelly', 'volatility-based'];
-    if (!validMethods.includes(options.positionMethod)) {
-      throw new ValidationError(`Position sizing method: "${options.positionMethod}" is not valid. Use: ${validMethods.join(', ')}`);
-    }
-
-    if (isNaN(kellyFraction) || kellyFraction <= 0 || kellyFraction > 1) {
-      throw new ValidationError(`Kelly fraction: "${options.kellyFraction}" is not valid. Expected: 0 < fraction <= 1`);
-    }
 
     if (!options.useAlgorithmicLevels) {
       validateRiskReward(stopLoss, takeProfit);
@@ -97,9 +81,6 @@ export async function validateCommand(options: ValidateOptions) {
       ...(options.optimized ? { 'Mode': 'Using strategy optimizedParams' } : {}),
     });
 
-    const maxConcurrent = options.maxConcurrent ? parseInt(options.maxConcurrent, 10) : undefined;
-    const maxExposure = options.maxExposure ? parseFloat(options.maxExposure) / 100 : undefined;
-
     const config: BacktestConfig = {
       symbol: options.symbol,
       interval: options.interval,
@@ -110,21 +91,13 @@ export async function validateCommand(options: ValidateOptions) {
       minConfidence: minConfidence,
       stopLossPercent: stopLoss,
       takeProfitPercent: takeProfit,
-      maxPositionSize: maxPosition,
-      maxConcurrentPositions: maxConcurrent,
-      maxTotalExposure: maxExposure,
-      positionSizingMethod: options.positionMethod === 'volatility-based' ? 'volatility' : options.positionMethod as 'fixed-fractional' | 'risk-based' | 'kelly',
-      riskPerTrade: riskPerTrade,
-      kellyFraction: kellyFraction,
       commission: commission !== undefined ? commission / 100 : undefined,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
       onlyWithTrend: options.withTrend ?? false,
       useTrailingStop: options.trailingStop ?? false,
       useAdxFilter: options.useAdxFilter ?? true,
-      useOptimizedSettings: options.optimized,
       useCooldown: options.useCooldown ?? false,
       cooldownMinutes: options.cooldownMinutes ? parseInt(options.cooldownMinutes, 10) : undefined,
-      dailyLossLimit: options.dailyLossLimit ? parseFloat(options.dailyLossLimit) : undefined,
       onlyLong: options.onlyLong ?? false,
       trendFilterPeriod: options.trendPeriod ? parseInt(options.trendPeriod, 10) : undefined,
     };

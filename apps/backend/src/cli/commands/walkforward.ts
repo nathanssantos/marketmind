@@ -48,7 +48,6 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
     validateParameterGrid(options.param);
 
     const capital = validateCapital(options.capital);
-    const maxPosition = validatePercentage(options.maxPosition, 'Max position', 1, 100);
     const commission = validatePercentage(options.commission, 'Commission', 0, 10);
     const trainingMonths = parseInt(options.trainingMonths);
     const testingMonths = parseInt(options.testingMonths);
@@ -112,7 +111,6 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
       endDate: options.end,
       initialCapital: capital,
       setupTypes: [options.strategy],
-      maxPositionSize: maxPosition,
       commission: commission / 100,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
       onlyWithTrend: options.withTrend,

@@ -13,13 +13,11 @@ export interface BacktestConfig {
   useAlgorithmicLevels?: boolean; // Use setup's calculated SL/TP instead of fixed percentages
   stopLossPercent?: number; // SL as % of entry (ignored if useAlgorithmicLevels = true)
   takeProfitPercent?: number; // TP as % of entry (ignored if useAlgorithmicLevels = true)
-  maxPositionSize?: number; // Max % of capital per trade
   commission?: number; // Trading fee % (default 0.1% spot, 0.04% futures)
   slippagePercent?: number; // Slippage % for market orders - SL (default 0.05%)
   useStochasticFilter?: boolean; // Slow Stochastic: LONG only when oversold (K < 20), SHORT only when overbought (K > 80)
   useMomentumTimingFilter?: boolean; // RSI + MFI: LONG when RSI > 40 and rising with MFI > 30, SHORT when RSI < 60 and falling with MFI < 70
   useAdxFilter?: boolean; // Only allow LONG when +DI > -DI, SHORT when -DI > +DI (ADX >= 20)
-  useOptimizedSettings?: boolean; // Use strategy's optimizedParams instead of config values
 
   useMtfFilter?: boolean; // Use Multi-Timeframe filter (HTF EMA50/EMA200)
   useBtcCorrelationFilter?: boolean; // Block altcoin trades against BTC trend
@@ -36,14 +34,7 @@ export interface BacktestConfig {
   simulateFundingRates?: boolean; // Simulate funding rate payments every 8h
   simulateLiquidation?: boolean; // Simulate position liquidation
 
-  positionSizingMethod?: 'fixed-fractional' | 'risk-based' | 'kelly' | 'volatility'; // Default: 'fixed-fractional'
-  riskPerTrade?: number; // % of equity to risk per trade (for risk-based sizing, default: 2%)
-  kellyFraction?: number; // Fraction of Kelly to use (for kelly sizing, default: 0.25 = quarter Kelly)
-  
   strategyParams?: Record<string, number>;
-
-  useKellyCriterion?: boolean; // Use Kelly Criterion for position sizing
-  riskProfile?: 'conservative' | 'moderate' | 'aggressive'; // Preset risk profiles
 
   useTrailingStop?: boolean; // Enable ATR-based trailing stop
   trailingStopATRMultiplier?: number; // ATR multiplier for initial stop (default 2.0)
@@ -54,9 +45,6 @@ export interface BacktestConfig {
   usePartialExits?: boolean; // Enable scaled exits at profit targets
   partialExitLevels?: Array<{ percentage: number; rMultiple: number }>; // Exit levels
   lockProfitsAfterFirstExit?: boolean; // Move stop to break-even after first partial exit
-
-  maxConcurrentPositions?: number; // Max simultaneous positions (default: 5)
-  maxTotalExposure?: number; // Max % of capital in all positions (default: 0.5 = 50%)
 
   useMarketContextFilter?: boolean; // Use historical market context (Fear/Greed, Funding Rate) same as auto-trading
   marketContextConfig?: {
@@ -78,13 +66,13 @@ export interface BacktestConfig {
   useCooldown?: boolean; // Simulate cooldown between trades (same as auto-trading)
   cooldownMinutes?: number; // Minutes of cooldown per strategy-symbol-interval (default: 15)
 
-  dailyLossLimit?: number; // Max daily loss as % of capital before stopping (default: 5%)
-
   onlyLong?: boolean; // Only allow LONG positions (buy only, no shorts)
-  trendFilterPeriod?: number; // EMA period for trend filter (default: 200)
+  trendFilterPeriod?: number; // EMA period for trend filter (default: 21 to match auto-trading)
+  useTrendFilter?: boolean; // Enable trend filter (EMA21 alignment)
 
   tpCalculationMode?: 'default' | 'fibonacci'; // TP calculation mode (default: 'default')
   fibonacciTpLevel?: number; // Fibonacci level to use for TP (default: uses primaryLevel from projection, e.g., 0.618, 1.0, 1.618)
+  fibonacciTargetLevel?: 'auto' | '1.272' | '1.618' | '2'; // Named Fibonacci target level
 }
 
 export interface BacktestTrade {

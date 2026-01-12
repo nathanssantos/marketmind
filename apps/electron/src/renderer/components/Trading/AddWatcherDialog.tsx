@@ -1,8 +1,7 @@
-import { Box, Flex, Group, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
+import { Box, Group, HStack, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TradingProfile } from '@marketmind/types';
 import { Button } from '@renderer/components/ui/button';
 import { Checkbox } from '@renderer/components/ui/checkbox';
-import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import {
   DialogBackdrop,
   DialogBody,
@@ -15,11 +14,12 @@ import {
 } from '@renderer/components/ui/dialog';
 import { Field } from '@renderer/components/ui/field';
 import { Select } from '@renderer/components/ui/select';
-import { useBackendAutoTrading, useTopSymbols } from '@renderer/hooks/useBackendAutoTrading';
+import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Timeframe, TimeframeSelector } from '../Chart/TimeframeSelector';
 import { SymbolSelector } from '../SymbolSelector';
+import { BulkSymbolSelector } from './BulkSymbolSelector';
 
 interface AddWatcherDialogProps {
   isOpen: boolean;
@@ -45,8 +45,6 @@ export const AddWatcherDialog = ({
   const [useDefault, setUseDefault] = useState(true);
   const [marketType, setMarketType] = useState<MarketType>('SPOT');
 
-  const { topSymbols, isLoadingTopSymbols } = useTopSymbols(marketType, 50);
-
   const handleSymbolChange = (newSymbol: string, newMarketType?: MarketType) => {
     setSymbol(newSymbol);
     if (newMarketType) setMarketType(newMarketType);
@@ -54,22 +52,6 @@ export const AddWatcherDialog = ({
 
   const handleMarketTypeChange = (newMarketType: MarketType) => {
     setMarketType(newMarketType);
-    setSelectedSymbols([]);
-  };
-
-  const handleSymbolToggle = (symbolToToggle: string) => {
-    setSelectedSymbols((prev) =>
-      prev.includes(symbolToToggle)
-        ? prev.filter((s) => s !== symbolToToggle)
-        : [...prev, symbolToToggle]
-    );
-  };
-
-  const handleSelectAll = () => {
-    setSelectedSymbols([...topSymbols]);
-  };
-
-  const handleDeselectAll = () => {
     setSelectedSymbols([]);
   };
 
@@ -174,80 +156,22 @@ export const AddWatcherDialog = ({
                 </HStack>
               ) : (
                 <Stack gap={4}>
-                  <HStack gap={4} align="flex-end">
-                    <Field label={t('tradingProfiles.watchers.marketType', 'Market Type')}>
-                      <Group attached>
-                        <Button
-                          size="sm"
-                          variant={marketType === 'SPOT' ? 'solid' : 'outline'}
-                          onClick={() => handleMarketTypeChange('SPOT')}
-                        >
-                          Spot
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={marketType === 'FUTURES' ? 'solid' : 'outline'}
-                          onClick={() => handleMarketTypeChange('FUTURES')}
-                        >
-                          Futures
-                        </Button>
-                      </Group>
-                    </Field>
+                  <Field label={t('tradingProfiles.watchers.interval')}>
+                    <TimeframeSelector
+                      selectedTimeframe={interval}
+                      onTimeframeChange={setInterval}
+                    />
+                  </Field>
 
-                    <Field label={t('tradingProfiles.watchers.interval')}>
-                      <TimeframeSelector
-                        selectedTimeframe={interval}
-                        onTimeframeChange={setInterval}
-                      />
-                    </Field>
-                  </HStack>
-
-                  <Box>
-                    <Flex justify="space-between" align="center" mb={2}>
-                      <Text fontSize="sm" fontWeight="medium">
-                        {t('tradingProfiles.watchers.topSymbols', 'Top 12 Symbols by Volume')}
-                      </Text>
-                      <HStack gap={2}>
-                        <Button size="xs" variant="ghost" onClick={handleSelectAll} disabled={isLoadingTopSymbols}>
-                          {t('tradingProfiles.watchers.selectAll', 'Select All')}
-                        </Button>
-                        <Button size="xs" variant="ghost" onClick={handleDeselectAll} disabled={isLoadingTopSymbols}>
-                          {t('tradingProfiles.watchers.deselectAll', 'Deselect All')}
-                        </Button>
-                      </HStack>
-                    </Flex>
-
-                    {isLoadingTopSymbols ? (
-                      <Flex justify="center" py={4}>
-                        <Spinner size="sm" />
-                      </Flex>
-                    ) : (
-                      <Box
-                        borderWidth="1px"
-                        borderRadius="md"
-                        p={3}
-                        maxH="200px"
-                        overflowY="auto"
-                      >
-                        <Stack gap={2}>
-                          {topSymbols.map((sym) => (
-                            <HStack key={sym}>
-                              <Checkbox
-                                checked={selectedSymbols.includes(sym)}
-                                onCheckedChange={() => handleSymbolToggle(sym)}
-                              />
-                              <CryptoIcon symbol={sym} size={16} />
-                              <Text fontSize="sm" fontFamily="mono">{sym}</Text>
-                            </HStack>
-                          ))}
-                        </Stack>
-                      </Box>
-                    )}
-
-                    <Text fontSize="xs" color="gray.500" mt={2}>
-                      {t('tradingProfiles.watchers.selectedCount', '{{count}} symbols selected', { count: selectedSymbols.length })}
-                    </Text>
-                  </Box>
+                  <BulkSymbolSelector
+                    selectedSymbols={selectedSymbols}
+                    onSymbolsChange={setSelectedSymbols}
+                    marketType={marketType}
+                    onMarketTypeChange={handleMarketTypeChange}
+                    limit={50}
+                    showMarketTypeToggle
+                    maxHeight="200px"
+                  />
                 </Stack>
               )}
 

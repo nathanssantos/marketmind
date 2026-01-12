@@ -7,14 +7,12 @@ import {
   getProfitFactorLabel,
   getSharpeRatioLabel,
   getCommissionPercent,
-  getMaxPositionSize,
   getCommissionImpact,
   getThemeColors,
   DECIMAL_PLACES,
   MINUTES_PER_HOUR,
   PERCENT_MULTIPLIER,
   DEFAULT_COMMISSION,
-  DEFAULT_MAX_POSITION,
   PROFIT_FACTOR_EXCELLENT,
   PROFIT_FACTOR_GOOD,
   SHARPE_EXCELLENT,
@@ -28,7 +26,6 @@ describe('useBacktestMetrics pure functions', () => {
       expect(MINUTES_PER_HOUR).toBe(60);
       expect(PERCENT_MULTIPLIER).toBe(100);
       expect(DEFAULT_COMMISSION).toBe(0.001);
-      expect(DEFAULT_MAX_POSITION).toBe(10);
     });
 
     it('should have correct threshold values', () => {
@@ -204,22 +201,6 @@ describe('useBacktestMetrics pure functions', () => {
 
     it('should handle zero commission', () => {
       expect(getCommissionPercent(0)).toBe('0.00%');
-    });
-  });
-
-  describe('getMaxPositionSize', () => {
-    it('should use default when undefined', () => {
-      expect(getMaxPositionSize(undefined)).toBe(10);
-    });
-
-    it('should return provided value', () => {
-      expect(getMaxPositionSize(5)).toBe(5);
-      expect(getMaxPositionSize(20)).toBe(20);
-      expect(getMaxPositionSize(100)).toBe(100);
-    });
-
-    it('should handle zero', () => {
-      expect(getMaxPositionSize(0)).toBe(0);
     });
   });
 

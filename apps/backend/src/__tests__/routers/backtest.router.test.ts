@@ -146,7 +146,6 @@ describe('Backtest Router', () => {
         useAlgorithmicLevels: true,
         stopLossPercent: 2,
         takeProfitPercent: 6,
-        maxPositionSize: 15,
         commission: 0.001,
         marketType: 'FUTURES',
         useBnbDiscount: true,
@@ -383,20 +382,5 @@ describe('Backtest Router', () => {
       ).rejects.toThrow();
     });
 
-    it('should reject maxPositionSize over 100', async () => {
-      const { user, session } = await createAuthenticatedUser();
-      const caller = createAuthenticatedCaller(user, session);
-
-      await expect(
-        caller.backtest.run({
-          symbol: 'BTCUSDT',
-          interval: '1h',
-          startDate: '2024-01-01',
-          endDate: '2024-01-31',
-          initialCapital: 10000,
-          maxPositionSize: 150,
-        })
-      ).rejects.toThrow();
-    });
   });
 });

@@ -199,6 +199,7 @@ export class TrailingStopService {
           set: {
             price: price.toString(),
             timestamp: new Date(),
+            updatedAt: new Date(),
           },
         });
 

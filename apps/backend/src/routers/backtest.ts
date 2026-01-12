@@ -57,7 +57,6 @@ export const backtestRouter = router({
         useAlgorithmicLevels: z.boolean().optional().default(false),
         stopLossPercent: z.number().positive().optional(),
         takeProfitPercent: z.number().positive().optional(),
-        maxPositionSize: z.number().min(0).max(100).optional().default(10),
         commission: z.number().min(0).max(1).optional(),
         marketType: z.enum(['SPOT', 'FUTURES']).optional().default('SPOT'),
         useBnbDiscount: z.boolean().optional().default(false),
@@ -100,7 +99,6 @@ export const backtestRouter = router({
           useAlgorithmicLevels: input.useAlgorithmicLevels,
           stopLossPercent: input.stopLossPercent,
           takeProfitPercent: input.takeProfitPercent,
-          maxPositionSize: input.maxPositionSize,
           commission: input.commission,
           marketType: input.marketType,
           useBnbDiscount: input.useBnbDiscount,
@@ -239,8 +237,6 @@ export const backtestRouter = router({
         endDate: z.string(),
         initialCapital: z.number().positive().default(10000),
         exposureMultiplier: z.number().min(0.1).max(10).optional(),
-        maxPositionSize: z.number().min(0).max(100).optional(),
-        dailyLossLimit: z.number().min(0).max(100).optional(),
         useStochasticFilter: z.boolean().optional(),
         useAdxFilter: z.boolean().optional(),
         onlyWithTrend: z.boolean().optional(),
@@ -249,6 +245,18 @@ export const backtestRouter = router({
         marketType: z.enum(['SPOT', 'FUTURES']).optional(),
         leverage: z.number().min(1).max(125).optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
+        fibonacciTargetLevel: z.enum(['auto', '1.272', '1.618', '2']).optional(),
+        useMtfFilter: z.boolean().optional(),
+        useBtcCorrelationFilter: z.boolean().optional(),
+        useMarketRegimeFilter: z.boolean().optional(),
+        useVolumeFilter: z.boolean().optional(),
+        useFundingFilter: z.boolean().optional(),
+        useConfluenceScoring: z.boolean().optional(),
+        confluenceMinScore: z.number().min(0).max(100).optional(),
+        useMomentumTimingFilter: z.boolean().optional(),
+        useTrendFilter: z.boolean().optional(),
+        trendFilterPeriod: z.number().min(1).optional(),
+        useTrailingStop: z.boolean().optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -258,19 +266,36 @@ export const backtestRouter = router({
         let config;
 
         if (input.walletId) {
-          config = await loadMultiWatcherConfigFromAutoTrading(input.walletId, {
-            startDate: input.startDate,
-            endDate: input.endDate,
-            initialCapital: input.initialCapital,
-          });
+          config = await loadMultiWatcherConfigFromAutoTrading(
+            input.walletId,
+            {
+              startDate: input.startDate,
+              endDate: input.endDate,
+              initialCapital: input.initialCapital,
+            },
+            {
+              tpCalculationMode: input.tpCalculationMode,
+              fibonacciTargetLevel: input.fibonacciTargetLevel,
+              useTrailingStop: input.useTrailingStop,
+              useMtfFilter: input.useMtfFilter,
+              useBtcCorrelationFilter: input.useBtcCorrelationFilter,
+              useMarketRegimeFilter: input.useMarketRegimeFilter,
+              useVolumeFilter: input.useVolumeFilter,
+              useFundingFilter: input.useFundingFilter,
+              useConfluenceScoring: input.useConfluenceScoring,
+              confluenceMinScore: input.confluenceMinScore,
+              useMomentumTimingFilter: input.useMomentumTimingFilter,
+              useTrendFilter: input.useTrendFilter,
+              useStochasticFilter: input.useStochasticFilter,
+              useAdxFilter: input.useAdxFilter,
+            }
+          );
         } else if (input.watchers && input.watchers.length > 0) {
           config = buildMultiWatcherConfigFromWatchers(input.watchers, {
             startDate: input.startDate,
             endDate: input.endDate,
             initialCapital: input.initialCapital,
             exposureMultiplier: input.exposureMultiplier,
-            maxPositionSize: input.maxPositionSize,
-            dailyLossLimit: input.dailyLossLimit,
             useStochasticFilter: input.useStochasticFilter,
             useAdxFilter: input.useAdxFilter,
             onlyWithTrend: input.onlyWithTrend,
@@ -279,6 +304,18 @@ export const backtestRouter = router({
             marketType: input.marketType,
             leverage: input.leverage,
             tpCalculationMode: input.tpCalculationMode,
+            fibonacciTargetLevel: input.fibonacciTargetLevel,
+            useMtfFilter: input.useMtfFilter,
+            useBtcCorrelationFilter: input.useBtcCorrelationFilter,
+            useMarketRegimeFilter: input.useMarketRegimeFilter,
+            useVolumeFilter: input.useVolumeFilter,
+            useFundingFilter: input.useFundingFilter,
+            useConfluenceScoring: input.useConfluenceScoring,
+            confluenceMinScore: input.confluenceMinScore,
+            useMomentumTimingFilter: input.useMomentumTimingFilter,
+            useTrendFilter: input.useTrendFilter,
+            trendFilterPeriod: input.trendFilterPeriod,
+            useTrailingStop: input.useTrailingStop,
           });
         } else {
           throw new TRPCError({

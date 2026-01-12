@@ -13,12 +13,13 @@ vi.mock('../../../utils/filters', async (importOriginal) => {
     checkAdxCondition: vi.fn(() => ({ isAllowed: true, reason: 'ADX passed' })),
     STOCHASTIC_FILTER: { PERIOD: 14, LOOKBACK_BUFFER: 3 },
     checkStochasticCondition: vi.fn(() => ({ isAllowed: true, reason: 'Stochastic passed' })),
+    checkTrendCondition: vi.fn(() => ({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'Trend passed' })),
   };
 });
 
 import { FilterManager, type FilterConfig } from '../FilterManager';
 import { calculateEMA } from '@marketmind/indicators';
-import { checkAdxCondition, checkStochasticCondition } from '../../../utils/filters';
+import { checkAdxCondition, checkStochasticCondition, checkTrendCondition } from '../../../utils/filters';
 
 const createMockKlines = (count: number): Kline[] => {
   return Array(count).fill(null).map((_, i) => ({
@@ -44,6 +45,7 @@ describe('FilterManager', () => {
     vi.mocked(calculateEMA).mockReturnValue([50000, 50100, 50200, 50300, 50400]);
     vi.mocked(checkAdxCondition).mockReturnValue({ isAllowed: true, adx: 25, plusDI: 30, minusDI: 15, isBullish: true, isBearish: false, isStrongTrend: true, reason: 'ADX passed' });
     vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: true, currentK: 50, currentD: 48, isOversold: false, isOverbought: false, reason: 'Stochastic passed' });
+    vi.mocked(checkTrendCondition).mockReturnValue({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'Trend passed' });
     manager = new FilterManager({});
   });
 
@@ -315,55 +317,60 @@ describe('FilterManager', () => {
   });
 
   describe('checkTrendFilter', () => {
-    it('should allow when trend filter disabled', async () => {
+    it('should allow when trend filter disabled', () => {
       const klines = createMockKlines(250);
-      await manager.initialize(klines, '', '', '');
 
-      const result = manager.checkTrendFilter(2, 51000, 'LONG', false, 0);
+      const result = manager.checkTrendFilter(klines, 2, 'LONG', false, 0);
 
       expect(result).toBe(true);
+      expect(checkTrendCondition).not.toHaveBeenCalled();
     });
 
-    it('should allow LONG when price above EMA', async () => {
-      vi.mocked(calculateEMA).mockReturnValue([50000, 50100, 50200]);
+    it('should allow LONG when price above EMA', () => {
+      vi.mocked(checkTrendCondition).mockReturnValue({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'LONG allowed: price above EMA21' });
       const klines = createMockKlines(250);
-      await manager.initialize(klines, '', '', '');
 
-      const result = manager.checkTrendFilter(2, 51000, 'LONG', true, 0);
+      const result = manager.checkTrendFilter(klines, 2, 'LONG', true, 0);
 
       expect(result).toBe(true);
+      expect(checkTrendCondition).toHaveBeenCalledWith(expect.any(Array), 'LONG');
     });
 
-    it('should block LONG when price below EMA', async () => {
-      vi.mocked(calculateEMA).mockReturnValue([50000, 50100, 50200]);
+    it('should block LONG when price below EMA', () => {
+      vi.mocked(checkTrendCondition).mockReturnValue({ isAllowed: false, ema21: 50000, price: 49000, isBullish: false, isBearish: true, reason: 'LONG blocked: price below EMA21' });
       const klines = createMockKlines(250);
-      await manager.initialize(klines, '', '', '');
 
-      const result = manager.checkTrendFilter(2, 49000, 'LONG', true, 0);
+      const result = manager.checkTrendFilter(klines, 2, 'LONG', true, 0);
 
       expect(result).toBe(false);
       expect(manager.stats.skippedTrend).toBe(1);
     });
 
-    it('should allow SHORT when price below EMA', async () => {
-      vi.mocked(calculateEMA).mockReturnValue([50000, 50100, 50200]);
+    it('should allow SHORT when price below EMA', () => {
+      vi.mocked(checkTrendCondition).mockReturnValue({ isAllowed: true, ema21: 50000, price: 49000, isBullish: false, isBearish: true, reason: 'SHORT allowed: price below EMA21' });
       const klines = createMockKlines(250);
-      await manager.initialize(klines, '', '', '');
 
-      const result = manager.checkTrendFilter(2, 49000, 'SHORT', true, 0);
+      const result = manager.checkTrendFilter(klines, 2, 'SHORT', true, 0);
 
       expect(result).toBe(true);
     });
 
-    it('should block SHORT when price above EMA', async () => {
-      vi.mocked(calculateEMA).mockReturnValue([50000, 50100, 50200]);
+    it('should block SHORT when price above EMA', () => {
+      vi.mocked(checkTrendCondition).mockReturnValue({ isAllowed: false, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'SHORT blocked: price above EMA21' });
       const klines = createMockKlines(250);
-      await manager.initialize(klines, '', '', '');
 
-      const result = manager.checkTrendFilter(2, 51000, 'SHORT', true, 0);
+      const result = manager.checkTrendFilter(klines, 2, 'SHORT', true, 0);
 
       expect(result).toBe(false);
       expect(manager.stats.skippedTrend).toBe(1);
+    });
+
+    it('should pass when klines too short', () => {
+      const klines = createMockKlines(1);
+
+      const result = manager.checkTrendFilter(klines, 0, 'LONG', true, 0);
+
+      expect(result).toBe(true);
     });
   });
 

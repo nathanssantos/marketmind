@@ -10,9 +10,27 @@ interface DateRangeOptions {
   initialCapital?: number;
 }
 
+interface ConfigOverrides {
+  tpCalculationMode?: 'default' | 'fibonacci';
+  fibonacciTargetLevel?: 'auto' | '1.272' | '1.618' | '2';
+  useTrailingStop?: boolean;
+  useMtfFilter?: boolean;
+  useBtcCorrelationFilter?: boolean;
+  useMarketRegimeFilter?: boolean;
+  useVolumeFilter?: boolean;
+  useFundingFilter?: boolean;
+  useConfluenceScoring?: boolean;
+  confluenceMinScore?: number;
+  useMomentumTimingFilter?: boolean;
+  useTrendFilter?: boolean;
+  useStochasticFilter?: boolean;
+  useAdxFilter?: boolean;
+}
+
 export const loadMultiWatcherConfigFromAutoTrading = async (
   walletId: string,
-  options: DateRangeOptions
+  options: DateRangeOptions,
+  overrides?: ConfigOverrides
 ): Promise<MultiWatcherBacktestConfig> => {
   const [config] = await db
     .select()
@@ -66,19 +84,30 @@ export const loadMultiWatcherConfigFromAutoTrading = async (
     initialCapital: options.initialCapital ?? 10000,
 
     exposureMultiplier: parseFloat(config.exposureMultiplier),
-    maxPositionSize: parseFloat(config.maxPositionSize),
-    maxConcurrentPositions: config.maxConcurrentPositions,
-    dailyLossLimit: parseFloat(config.dailyLossLimit),
 
-    useStochasticFilter: config.useStochasticFilter,
-    useAdxFilter: config.useAdxFilter,
-    onlyWithTrend: config.useTrendFilter,
+    useStochasticFilter: overrides?.useStochasticFilter ?? config.useStochasticFilter,
+    useAdxFilter: overrides?.useAdxFilter ?? config.useAdxFilter,
+    onlyWithTrend: overrides?.useTrendFilter ?? config.useTrendFilter,
+
+    useMtfFilter: overrides?.useMtfFilter ?? config.useMtfFilter,
+    useBtcCorrelationFilter: overrides?.useBtcCorrelationFilter ?? config.useBtcCorrelationFilter,
+    useMarketRegimeFilter: overrides?.useMarketRegimeFilter ?? config.useMarketRegimeFilter,
+    useVolumeFilter: overrides?.useVolumeFilter ?? config.useVolumeFilter,
+    useFundingFilter: overrides?.useFundingFilter ?? config.useFundingFilter,
+    useConfluenceScoring: overrides?.useConfluenceScoring ?? config.useConfluenceScoring,
+    confluenceMinScore: overrides?.confluenceMinScore ?? config.confluenceMinScore,
+    useMomentumTimingFilter: overrides?.useMomentumTimingFilter ?? config.useMomentumTimingFilter,
+    useTrendFilter: overrides?.useTrendFilter ?? config.useTrendFilter,
+    trendFilterPeriod: 21,
+
+    useTrailingStop: overrides?.useTrailingStop ?? false,
 
     setupTypes: JSON.parse(config.enabledSetupTypes),
     useSharedExposure: true,
     marketType: watchers[0]?.marketType ?? 'SPOT',
     leverage: config.leverage ?? 1,
-    tpCalculationMode: config.tpCalculationMode,
+    tpCalculationMode: overrides?.tpCalculationMode ?? config.tpCalculationMode,
+    fibonacciTargetLevel: overrides?.fibonacciTargetLevel ?? config.fibonacciTargetLevel,
   };
 };
 
@@ -89,8 +118,6 @@ export const buildMultiWatcherConfigFromWatchers = (
     endDate: string;
     initialCapital: number;
     exposureMultiplier?: number;
-    maxPositionSize?: number;
-    dailyLossLimit?: number;
     useStochasticFilter?: boolean;
     useAdxFilter?: boolean;
     onlyWithTrend?: boolean;
@@ -99,6 +126,18 @@ export const buildMultiWatcherConfigFromWatchers = (
     marketType?: 'SPOT' | 'FUTURES';
     leverage?: number;
     tpCalculationMode?: 'default' | 'fibonacci';
+    useMtfFilter?: boolean;
+    useBtcCorrelationFilter?: boolean;
+    useMarketRegimeFilter?: boolean;
+    useVolumeFilter?: boolean;
+    useFundingFilter?: boolean;
+    useConfluenceScoring?: boolean;
+    confluenceMinScore?: number;
+    useMomentumTimingFilter?: boolean;
+    useTrendFilter?: boolean;
+    trendFilterPeriod?: number;
+    useTrailingStop?: boolean;
+    fibonacciTargetLevel?: 'auto' | '1.272' | '1.618' | '2';
   }
 ): MultiWatcherBacktestConfig => {
   const allSetupTypes = new Set<string>();
@@ -117,8 +156,6 @@ export const buildMultiWatcherConfigFromWatchers = (
     initialCapital: options.initialCapital,
 
     exposureMultiplier: options.exposureMultiplier ?? BACKTEST_DEFAULTS.EXPOSURE_MULTIPLIER,
-    maxPositionSize: options.maxPositionSize ?? 15,
-    dailyLossLimit: options.dailyLossLimit ?? 5,
 
     useStochasticFilter: options.useStochasticFilter ?? false,
     useAdxFilter: options.useAdxFilter ?? false,
@@ -127,10 +164,23 @@ export const buildMultiWatcherConfigFromWatchers = (
     useCooldown: true,
     cooldownMinutes: options.cooldownMinutes ?? 15,
 
+    useMtfFilter: options.useMtfFilter ?? true,
+    useBtcCorrelationFilter: options.useBtcCorrelationFilter ?? true,
+    useMarketRegimeFilter: options.useMarketRegimeFilter ?? true,
+    useVolumeFilter: options.useVolumeFilter ?? false,
+    useFundingFilter: options.useFundingFilter ?? true,
+    useConfluenceScoring: options.useConfluenceScoring ?? true,
+    confluenceMinScore: options.confluenceMinScore ?? 60,
+    useMomentumTimingFilter: options.useMomentumTimingFilter ?? true,
+    useTrendFilter: options.useTrendFilter ?? false,
+    trendFilterPeriod: options.trendFilterPeriod ?? 21,
+    useTrailingStop: options.useTrailingStop ?? false,
+
     setupTypes: Array.from(allSetupTypes),
     useSharedExposure: true,
     marketType: options.marketType ?? 'SPOT',
     leverage: options.leverage ?? 1,
     tpCalculationMode: options.tpCalculationMode ?? 'default',
+    fibonacciTargetLevel: options.fibonacciTargetLevel ?? 'auto',
   };
 };

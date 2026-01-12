@@ -58,7 +58,6 @@ const runSingleBacktest = async (
       endDate,
       initialCapital: capital,
       setupTypes: [strategy],
-      useOptimizedSettings: true,
       useAlgorithmicLevels: true,
       useTrailingStop: true,
       onlyWithTrend: false,
