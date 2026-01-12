@@ -15,7 +15,10 @@ import { logger } from '../services/logger';
 import { getTopSymbolsByVolume } from '../services/binance-exchange-info';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
-import { transformAutoTradingConfig, parseEnabledSetupTypes, stringifyEnabledSetupTypes } from '../utils/profile-transformers';
+import { transformAutoTradingConfig, parseEnabledSetupTypes, stringifyEnabledSetupTypes, stringifyDynamicSymbolExcluded } from '../utils/profile-transformers';
+import { getOpportunityScoringService } from '../services/opportunity-scoring';
+import { getDynamicSymbolRotationService } from '../services/dynamic-symbol-rotation';
+import { getMarketCapDataService } from '../services/market-cap-data';
 import { walletQueries } from '../services/database/walletQueries';
 
 const log = (message: string, data?: Record<string, unknown>): void => {
@@ -99,6 +102,10 @@ export const autoTradingRouter = router({
         exposureMultiplier: z.string().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
         fibonacciTargetLevel: z.enum(['auto', '1', '1.272', '1.618', '2']).optional(),
+        useDynamicSymbolSelection: z.boolean().optional(),
+        dynamicSymbolLimit: z.number().min(1).max(50).optional(),
+        dynamicSymbolRotationInterval: z.enum(['1h', '4h', '1d']).optional(),
+        dynamicSymbolExcluded: z.array(z.string()).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -152,6 +159,14 @@ export const autoTradingRouter = router({
         {updateData.tpCalculationMode = input.tpCalculationMode;}
       if (input.fibonacciTargetLevel !== undefined)
         {updateData.fibonacciTargetLevel = input.fibonacciTargetLevel;}
+      if (input.useDynamicSymbolSelection !== undefined)
+        {updateData.useDynamicSymbolSelection = input.useDynamicSymbolSelection;}
+      if (input.dynamicSymbolLimit !== undefined)
+        {updateData.dynamicSymbolLimit = input.dynamicSymbolLimit;}
+      if (input.dynamicSymbolRotationInterval !== undefined)
+        {updateData.dynamicSymbolRotationInterval = input.dynamicSymbolRotationInterval;}
+      if (input.dynamicSymbolExcluded !== undefined)
+        {updateData.dynamicSymbolExcluded = stringifyDynamicSymbolExcluded(input.dynamicSymbolExcluded);}
 
       await ctx.db
         .update(autoTradingConfig)
@@ -750,7 +765,7 @@ export const autoTradingRouter = router({
     .input(
       z.object({
         walletId: z.string(),
-        symbols: z.array(z.string()).min(1).max(20),
+        symbols: z.array(z.string()).min(1).max(50),
         interval: z.string(),
         profileId: z.string().optional(),
         marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
@@ -817,6 +832,136 @@ export const autoTradingRouter = router({
         results,
         successCount,
         failedCount: input.symbols.length - successCount,
+      };
+    }),
+
+  getTopCoinsByMarketCap: protectedProcedure
+    .input(
+      z.object({
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
+        limit: z.number().min(1).max(100).default(100),
+      })
+    )
+    .query(async ({ input }) => {
+      log('📊 getTopCoinsByMarketCap called', { marketType: input.marketType, limit: input.limit });
+      const marketCapService = getMarketCapDataService();
+      const coins = await marketCapService.getTopCoinsByMarketCap(input.limit, input.marketType);
+      log('✅ Top coins fetched', { count: coins.length });
+      return coins;
+    }),
+
+  getDynamicSymbolScores: protectedProcedure
+    .input(
+      z.object({
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
+        limit: z.number().min(1).max(100).default(50),
+      })
+    )
+    .query(async ({ input }) => {
+      log('📊 getDynamicSymbolScores called', { marketType: input.marketType, limit: input.limit });
+      const scoringService = getOpportunityScoringService();
+      const scores = await scoringService.getSymbolScores(input.marketType, input.limit);
+      log('✅ Symbol scores fetched', { count: scores.length });
+      return scores;
+    }),
+
+  triggerSymbolRotation: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      log('🔄 triggerSymbolRotation called', { walletId: input.walletId });
+
+      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      const [config] = await ctx.db
+        .select()
+        .from(autoTradingConfig)
+        .where(
+          and(
+            eq(autoTradingConfig.walletId, input.walletId),
+            eq(autoTradingConfig.userId, ctx.user.id)
+          )
+        )
+        .limit(1);
+
+      if (!config) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Auto-trading config not found',
+        });
+      }
+
+      const transformedConfig = transformAutoTradingConfig(config);
+
+      if (!transformedConfig.useDynamicSymbolSelection) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Dynamic symbol selection is not enabled',
+        });
+      }
+
+      const result = await autoTradingScheduler.triggerManualRotation(
+        input.walletId,
+        ctx.user.id,
+        {
+          dynamicSymbolLimit: transformedConfig.dynamicSymbolLimit,
+          dynamicSymbolExcluded: config.dynamicSymbolExcluded,
+          marketType: 'FUTURES',
+          interval: '4h',
+          profileId: undefined,
+        }
+      );
+
+      log('✅ Symbol rotation completed', {
+        walletId: input.walletId,
+        added: result.added.length,
+        removed: result.removed.length,
+      });
+
+      return result;
+    }),
+
+  getRotationHistory: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        limit: z.number().min(1).max(50).default(10),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      const rotationService = getDynamicSymbolRotationService();
+      const history = rotationService.getRotationHistory(input.walletId, input.limit);
+      const nextRotation = rotationService.getNextRotationTime(input.walletId);
+      const isActive = rotationService.isRotationActive(input.walletId);
+
+      return {
+        history,
+        nextRotation,
+        isActive,
+      };
+    }),
+
+  getRotationStatus: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      const rotationService = getDynamicSymbolRotationService();
+      const nextRotation = rotationService.getNextRotationTime(input.walletId);
+      const isActive = rotationService.isRotationActive(input.walletId);
+
+      return {
+        isActive,
+        nextRotation,
       };
     }),
 });

@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS active_watchers (
   symbol VARCHAR(20) NOT NULL,
   interval VARCHAR(5) NOT NULL,
   market_type VARCHAR(10) DEFAULT 'SPOT' NOT NULL,
+  is_manual BOOLEAN DEFAULT true NOT NULL,
   started_at TIMESTAMP DEFAULT NOW() NOT NULL,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
@@ -158,6 +159,10 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   exposure_multiplier NUMERIC(3, 1) DEFAULT '2' NOT NULL,
   tp_calculation_mode VARCHAR(20) DEFAULT 'default' NOT NULL,
   fibonacci_target_level VARCHAR(10) DEFAULT 'auto' NOT NULL,
+  use_dynamic_symbol_selection BOOLEAN DEFAULT false NOT NULL,
+  dynamic_symbol_limit INTEGER DEFAULT 20 NOT NULL,
+  dynamic_symbol_rotation_interval VARCHAR(10) DEFAULT '4h' NOT NULL,
+  dynamic_symbol_excluded TEXT,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );

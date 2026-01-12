@@ -204,3 +204,76 @@ export const useTopSymbols = (marketType: 'SPOT' | 'FUTURES' = 'SPOT', limit: nu
     topSymbolsError,
   };
 };
+
+export const useDynamicSymbolScores = (marketType: 'SPOT' | 'FUTURES' = 'FUTURES', limit: number = 50) => {
+  const { data, isLoading, error, refetch } = trpc.autoTrading.getDynamicSymbolScores.useQuery(
+    { marketType, limit },
+    { staleTime: 5 * 60 * 1000 }
+  );
+
+  return {
+    symbolScores: data ?? [],
+    isLoadingScores: isLoading,
+    scoresError: error,
+    refetchScores: refetch,
+  };
+};
+
+export const useTopCoinsByMarketCap = (marketType: 'SPOT' | 'FUTURES' = 'FUTURES', limit: number = 100) => {
+  const { data, isLoading, error, refetch } = trpc.autoTrading.getTopCoinsByMarketCap.useQuery(
+    { marketType, limit },
+    { staleTime: 5 * 60 * 1000 }
+  );
+
+  return {
+    topCoins: data ?? [],
+    isLoadingTopCoins: isLoading,
+    topCoinsError: error,
+    refetchTopCoins: refetch,
+  };
+};
+
+export const useRotationStatus = (walletId: string) => {
+  const { data, isLoading, error, refetch } = trpc.autoTrading.getRotationStatus.useQuery(
+    { walletId },
+    { enabled: !!walletId, refetchInterval: QUERY_CONFIG.REFETCH_INTERVAL.REALTIME }
+  );
+
+  return {
+    rotationStatus: data,
+    isLoadingRotationStatus: isLoading,
+    rotationStatusError: error,
+    refetchRotationStatus: refetch,
+  };
+};
+
+export const useRotationHistory = (walletId: string, limit: number = 10) => {
+  const { data, isLoading, error } = trpc.autoTrading.getRotationHistory.useQuery(
+    { walletId, limit },
+    { enabled: !!walletId }
+  );
+
+  return {
+    rotationHistory: data?.history ?? [],
+    isLoadingRotationHistory: isLoading,
+    rotationHistoryError: error,
+  };
+};
+
+export const useTriggerRotation = (walletId: string) => {
+  const utils = trpc.useUtils();
+
+  const mutation = trpc.autoTrading.triggerSymbolRotation.useMutation({
+    onSuccess: () => {
+      utils.autoTrading.getWatcherStatus.invalidate();
+      utils.autoTrading.getRotationStatus.invalidate();
+      utils.autoTrading.getRotationHistory.invalidate();
+    },
+  });
+
+  return {
+    triggerRotation: () => mutation.mutateAsync({ walletId }),
+    isTriggeringRotation: mutation.isPending,
+    triggerRotationError: mutation.error,
+  };
+};

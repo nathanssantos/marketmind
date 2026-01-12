@@ -36,7 +36,8 @@
     "duplicate": "Dupliquer",
     "default": "Par défaut",
     "selectAll": "Tout Sélectionner",
-    "deselectAll": "Tout Désélectionner"
+    "deselectAll": "Tout Désélectionner",
+    "active": "Actif"
   },
   "app": {
     "title": "MarketMind",
@@ -995,6 +996,43 @@
       "deselectAll": "Tout Désélectionner",
       "selectedCount": "{{count}} symboles sélectionnés",
       "startBulk": "Démarrer {{count}} Watchers"
+    },
+    "dynamicSelection": {
+      "title": "Sélection Dynamique de Symboles",
+      "description": "Sélectionnez et faites pivoter automatiquement les symboles en fonction des scores d'opportunité",
+      "enable": "Activer la Sélection Dynamique",
+      "enableDescription": "Sélectionnez automatiquement les meilleurs symboles en fonction du market cap et des scores d'opportunité",
+      "symbolLimit": "Limite de Symboles",
+      "symbolLimitDescription": "Nombre maximum de symboles à surveiller (1-50)",
+      "rotationInterval": "Intervalle de Rotation",
+      "rotationIntervalDescription": "Fréquence de réévaluation et rotation des symboles",
+      "interval1h": "Toutes les heures",
+      "interval4h": "Toutes les 4 heures",
+      "interval1d": "Quotidiennement",
+      "rotationStatus": "Statut de Rotation",
+      "nextRotation": "Prochaine rotation à {{time}}",
+      "rotationInactive": "Rotation non active",
+      "triggerNow": "Pivoter Maintenant",
+      "infoText": "La sélection dynamique utilise le market cap, le volume, la volatilité et les performances historiques pour identifier les meilleures opportunités de trading. Les symboles avec des positions ouvertes sont protégés de la suppression.",
+      "viewRankings": "Voir les Rankings",
+      "rankingsTitle": "Classements des Symboles",
+      "tabRankings": "Classements",
+      "tabHistory": "Historique",
+      "noScores": "Aucun score de symbole disponible",
+      "noHistory": "Pas encore d'historique de rotation",
+      "symbol": "Symbole",
+      "score": "Score",
+      "marketCap": "Market Cap",
+      "volume": "Volume",
+      "change": "Variation 24h",
+      "status": "Statut",
+      "added": "Ajoutés",
+      "removed": "Supprimés",
+      "skipped": "Ignorés (positions ouvertes)",
+      "keptCount": "{{count}} symboles conservés",
+      "quickStartTitle": "Démarrage Rapide depuis le Classement",
+      "quickStartDescription": "Démarrer les watchers pour les meilleurs symboles par score",
+      "quickStartButton": "Démarrer Top {{count}}"
     }
   },
   "strategyInfo": {

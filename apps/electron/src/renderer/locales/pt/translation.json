@@ -36,7 +36,8 @@
     "duplicate": "Duplicar",
     "default": "Padrão",
     "selectAll": "Selecionar Todos",
-    "deselectAll": "Desmarcar Todos"
+    "deselectAll": "Desmarcar Todos",
+    "active": "Ativo"
   },
   "app": {
     "title": "MarketMind",
@@ -984,6 +985,43 @@
       "deselectAll": "Desmarcar Todos",
       "selectedCount": "{{count}} símbolos selecionados",
       "startBulk": "Iniciar {{count}} Watchers"
+    },
+    "dynamicSelection": {
+      "title": "Seleção Dinâmica de Símbolos",
+      "description": "Selecione e rotacione automaticamente símbolos com base em scores de oportunidade",
+      "enable": "Ativar Seleção Dinâmica",
+      "enableDescription": "Selecione automaticamente os melhores símbolos com base em market cap e scores de oportunidade",
+      "symbolLimit": "Limite de Símbolos",
+      "symbolLimitDescription": "Número máximo de símbolos para monitorar (1-50)",
+      "rotationInterval": "Intervalo de Rotação",
+      "rotationIntervalDescription": "Frequência de reavaliação e rotação dos símbolos",
+      "interval1h": "A cada hora",
+      "interval4h": "A cada 4 horas",
+      "interval1d": "Diariamente",
+      "rotationStatus": "Status da Rotação",
+      "nextRotation": "Próxima rotação às {{time}}",
+      "rotationInactive": "Rotação não ativa",
+      "triggerNow": "Rotacionar Agora",
+      "infoText": "A seleção dinâmica usa market cap, volume, volatilidade e performance histórica para identificar as melhores oportunidades de trading. Símbolos com posições abertas são protegidos de remoção.",
+      "viewRankings": "Ver Rankings",
+      "rankingsTitle": "Rankings de Símbolos",
+      "tabRankings": "Rankings",
+      "tabHistory": "Histórico",
+      "noScores": "Nenhum score de símbolo disponível",
+      "noHistory": "Sem histórico de rotação ainda",
+      "symbol": "Símbolo",
+      "score": "Score",
+      "marketCap": "Market Cap",
+      "volume": "Volume",
+      "change": "Variação 24h",
+      "status": "Status",
+      "added": "Adicionados",
+      "removed": "Removidos",
+      "skipped": "Ignorados (posições abertas)",
+      "keptCount": "{{count}} símbolos mantidos",
+      "quickStartTitle": "Início Rápido a partir do Ranking",
+      "quickStartDescription": "Iniciar watchers para os melhores símbolos por score",
+      "quickStartButton": "Iniciar Top {{count}}"
     }
   },
   "strategyInfo": {

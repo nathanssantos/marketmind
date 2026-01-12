@@ -18,6 +18,13 @@ import {
 } from '../db/schema';
 import { env } from '../env';
 import {
+  getDynamicSymbolRotationService,
+  getOptimalRotationInterval,
+  type RotationConfig,
+  type RotationResult,
+} from './dynamic-symbol-rotation';
+import { parseDynamicSymbolExcluded } from '../utils/profile-transformers';
+import {
   ADX_FILTER,
   checkAdxCondition,
   checkBtcCorrelation,
@@ -85,6 +92,7 @@ interface ActiveWatcher {
   intervalId: ReturnType<typeof setInterval>;
   lastProcessedTime: number;
   lastProcessedCandleOpenTime?: number;
+  isManual: boolean;
 }
 
 const CANDLE_CLOSE_SAFETY_BUFFER_MS = 2000;
@@ -244,7 +252,8 @@ export class AutoTradingScheduler {
     interval: string,
     profileId?: string,
     skipDbPersist: boolean = false,
-    marketType: MarketType = 'SPOT'
+    marketType: MarketType = 'SPOT',
+    isManual: boolean = true
   ): Promise<void> {
     const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
 
@@ -324,8 +333,9 @@ export class AutoTradingScheduler {
           marketType,
           profileId: profileId ?? null,
           startedAt: new Date(),
+          isManual,
         });
-        log('💾 Persisted watcher to database', { watcherId, profileId, marketType });
+        log('💾 Persisted watcher to database', { watcherId, profileId, marketType, isManual });
       } else if (existingWatcher[0] && existingWatcher[0].profileId !== profileId) {
         await db
           .update(activeWatchersTable)
@@ -383,6 +393,7 @@ export class AutoTradingScheduler {
       profileName,
       intervalId: syncTimeoutId as unknown as ReturnType<typeof setInterval>,
       lastProcessedTime: Date.now(),
+      isManual,
     };
 
     this.activeWatchers.set(watcherId, watcher);
@@ -2131,7 +2142,7 @@ export class AutoTradingScheduler {
     }
   }
 
-  getActiveWatchers(): { watcherId: string; symbol: string; interval: string; marketType: MarketType; profileId?: string; profileName?: string }[] {
+  getActiveWatchers(): { watcherId: string; symbol: string; interval: string; marketType: MarketType; profileId?: string; profileName?: string; isManual: boolean }[] {
     return Array.from(this.activeWatchers.entries()).map(([watcherId, watcher]) => ({
       watcherId,
       symbol: watcher.symbol,
@@ -2139,6 +2150,7 @@ export class AutoTradingScheduler {
       marketType: watcher.marketType,
       profileId: watcher.profileId,
       profileName: watcher.profileName,
+      isManual: watcher.isManual,
     }));
   }
 
@@ -2152,13 +2164,13 @@ export class AutoTradingScheduler {
     return { active: count > 0, watchers: count };
   }
 
-  async getWatcherStatusFromDb(walletId: string): Promise<{ active: boolean; watchers: number; watcherDetails: { symbol: string; interval: string; marketType: MarketType; profileId?: string; profileName?: string }[] }> {
+  async getWatcherStatusFromDb(walletId: string): Promise<{ active: boolean; watchers: number; watcherDetails: { symbol: string; interval: string; marketType: MarketType; profileId?: string; profileName?: string; isManual: boolean }[] }> {
     const persistedWatchers = await db
       .select()
       .from(activeWatchersTable)
       .where(eq(activeWatchersTable.walletId, walletId));
 
-    const watcherDetails: { symbol: string; interval: string; marketType: MarketType; profileId?: string; profileName?: string }[] = [];
+    const watcherDetails: { symbol: string; interval: string; marketType: MarketType; profileId?: string; profileName?: string; isManual: boolean }[] = [];
 
     for (const w of persistedWatchers) {
       let profileName: string | undefined;
@@ -2176,6 +2188,7 @@ export class AutoTradingScheduler {
         marketType: (w.marketType as MarketType) ?? 'SPOT',
         profileId: w.profileId ?? undefined,
         profileName,
+        isManual: w.isManual,
       });
     }
 
@@ -2225,9 +2238,10 @@ export class AutoTradingScheduler {
           pw.interval,
           pw.profileId ?? undefined,
           true,
-          marketType
+          marketType,
+          pw.isManual
         );
-        log('✅ Restored watcher', { watcherId: pw.id, symbol: pw.symbol, interval: pw.interval, profileId: pw.profileId, marketType: pw.marketType });
+        log('✅ Restored watcher', { watcherId: pw.id, symbol: pw.symbol, interval: pw.interval, profileId: pw.profileId, marketType: pw.marketType, isManual: pw.isManual });
       } catch (error) {
         log('❌ Failed to restore watcher', {
           watcherId: pw.id,
@@ -2271,6 +2285,213 @@ export class AutoTradingScheduler {
 
     const level1618 = fib.levels.find((l) => Math.abs(l.level - 1.618) < 0.001);
     return level1618?.price ?? null;
+  }
+
+  async startDynamicRotation(
+    walletId: string,
+    userId: string,
+    config: {
+      useDynamicSymbolSelection: boolean;
+      dynamicSymbolLimit: number;
+      dynamicSymbolExcluded: string | null;
+      marketType: MarketType;
+      interval: string;
+      profileId?: string;
+    }
+  ): Promise<void> {
+    if (!config.useDynamicSymbolSelection) {
+      log('ℹ️ Dynamic symbol selection is disabled', { walletId });
+      return;
+    }
+
+    const rotationService = getDynamicSymbolRotationService();
+    const excludedSymbols = parseDynamicSymbolExcluded(config.dynamicSymbolExcluded);
+    const optimalInterval = getOptimalRotationInterval(config.interval);
+
+    const rotationConfig: RotationConfig = {
+      enabled: true,
+      limit: config.dynamicSymbolLimit,
+      interval: optimalInterval,
+      excludedSymbols,
+      marketType: config.marketType,
+    };
+
+    log('🔄 Starting dynamic symbol rotation', {
+      walletId,
+      limit: rotationConfig.limit,
+      interval: rotationConfig.interval,
+      excludedSymbols: excludedSymbols.length,
+      marketType: config.marketType,
+    });
+
+    const initialResult = await rotationService.executeRotation(walletId, userId, rotationConfig);
+    await this.applyRotation(walletId, userId, initialResult, config.interval, config.profileId, config.marketType);
+
+    await rotationService.startRotation(walletId, userId, rotationConfig);
+
+    log('✅ Dynamic symbol rotation started', {
+      walletId,
+      nextRotation: rotationService.getNextRotationTime(walletId)?.toISOString(),
+    });
+  }
+
+  async stopDynamicRotation(walletId: string, stopDynamicWatchers: boolean = true): Promise<void> {
+    const rotationService = getDynamicSymbolRotationService();
+
+    if (!rotationService.isRotationActive(walletId)) {
+      log('ℹ️ No active rotation for wallet', { walletId });
+      return;
+    }
+
+    rotationService.stopRotation(walletId);
+
+    if (stopDynamicWatchers) {
+      const dynamicWatchers = await db
+        .select()
+        .from(activeWatchersTable)
+        .where(
+          and(
+            eq(activeWatchersTable.walletId, walletId),
+            eq(activeWatchersTable.isManual, false)
+          )
+        );
+
+      for (const watcher of dynamicWatchers) {
+        await this.stopWatcher(watcher.walletId, watcher.symbol, watcher.interval, watcher.marketType as MarketType);
+      }
+
+      log('🛑 Stopped dynamic rotation and removed dynamic watchers', {
+        walletId,
+        watchersRemoved: dynamicWatchers.length,
+      });
+    } else {
+      log('🛑 Stopped dynamic rotation (kept existing watchers)', { walletId });
+    }
+  }
+
+  async applyRotation(
+    walletId: string,
+    userId: string,
+    result: RotationResult,
+    interval: string,
+    profileId?: string,
+    marketType: MarketType = 'SPOT'
+  ): Promise<void> {
+    log('📊 Applying rotation result', {
+      walletId,
+      toAdd: result.added.length,
+      toRemove: result.removed.length,
+      kept: result.kept.length,
+      skippedWithPositions: result.skippedWithPositions.length,
+    });
+
+    for (const symbol of result.removed) {
+      const existingWatcher = await db
+        .select()
+        .from(activeWatchersTable)
+        .where(
+          and(
+            eq(activeWatchersTable.walletId, walletId),
+            eq(activeWatchersTable.symbol, symbol),
+            eq(activeWatchersTable.isManual, false)
+          )
+        )
+        .limit(1);
+
+      if (existingWatcher.length > 0) {
+        await this.stopWatcher(walletId, symbol, interval, marketType);
+        log('🔻 Removed dynamic watcher', { walletId, symbol });
+      }
+    }
+
+    for (const symbol of result.added) {
+      const existingWatcher = await db
+        .select()
+        .from(activeWatchersTable)
+        .where(
+          and(
+            eq(activeWatchersTable.walletId, walletId),
+            eq(activeWatchersTable.symbol, symbol)
+          )
+        )
+        .limit(1);
+
+      if (existingWatcher.length === 0) {
+        await this.startWatcher(
+          walletId,
+          userId,
+          symbol,
+          interval,
+          profileId,
+          false,
+          marketType,
+          false
+        );
+        log('🔺 Added dynamic watcher', { walletId, symbol });
+      } else {
+        log('ℹ️ Symbol already has watcher (possibly manual)', { walletId, symbol });
+      }
+    }
+
+    log('✅ Rotation applied successfully', {
+      walletId,
+      added: result.added.length,
+      removed: result.removed.length,
+    });
+  }
+
+  async triggerManualRotation(
+    walletId: string,
+    userId: string,
+    config: {
+      dynamicSymbolLimit: number;
+      dynamicSymbolExcluded: string | null;
+      marketType: MarketType;
+      interval: string;
+      profileId?: string;
+    }
+  ): Promise<RotationResult> {
+    const rotationService = getDynamicSymbolRotationService();
+    const excludedSymbols = parseDynamicSymbolExcluded(config.dynamicSymbolExcluded);
+
+    const rotationConfig: RotationConfig = {
+      enabled: true,
+      limit: config.dynamicSymbolLimit,
+      interval: '4h',
+      excludedSymbols,
+      marketType: config.marketType,
+    };
+
+    log('🔄 Triggering manual rotation', {
+      walletId,
+      limit: rotationConfig.limit,
+      excludedSymbols: excludedSymbols.length,
+    });
+
+    const result = await rotationService.executeRotation(walletId, userId, rotationConfig);
+    await this.applyRotation(walletId, userId, result, config.interval, config.profileId, config.marketType);
+
+    return result;
+  }
+
+  getDynamicWatcherCount(walletId: string): number {
+    let count = 0;
+    for (const watcher of this.activeWatchers.values()) {
+      if (watcher.walletId === walletId && !watcher.isManual) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  getManualWatcherCount(walletId: string): number {
+    let count = 0;
+    for (const watcher of this.activeWatchers.values()) {
+      if (watcher.walletId === walletId && watcher.isManual) {
+        count++;
+      }
+    }
+    return count;
   }
 }
 

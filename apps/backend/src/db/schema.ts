@@ -229,6 +229,10 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   exposureMultiplier: numeric('exposure_multiplier', { precision: 4, scale: 2 }).default('1.50').notNull(),
   tpCalculationMode: varchar('tp_calculation_mode', { length: 20 }).$type<'default' | 'fibonacci'>().default('default').notNull(),
   fibonacciTargetLevel: varchar('fibonacci_target_level', { length: 10 }).$type<'auto' | '1' | '1.272' | '1.618' | '2'>().default('auto').notNull(),
+  useDynamicSymbolSelection: boolean('use_dynamic_symbol_selection').default(false).notNull(),
+  dynamicSymbolLimit: integer('dynamic_symbol_limit').default(20).notNull(),
+  dynamicSymbolRotationInterval: varchar('dynamic_symbol_rotation_interval', { length: 10 }).$type<'1h' | '4h' | '1d'>().default('4h').notNull(),
+  dynamicSymbolExcluded: text('dynamic_symbol_excluded'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
@@ -345,6 +349,7 @@ export const activeWatchers = pgTable('active_watchers', {
   symbol: varchar({ length: 20 }).notNull(),
   interval: varchar({ length: 5 }).notNull(),
   marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('SPOT').notNull(),
+  isManual: boolean('is_manual').default(true).notNull(),
   startedAt: timestamp('started_at', { mode: 'date' }).defaultNow().notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
@@ -352,6 +357,7 @@ export const activeWatchers = pgTable('active_watchers', {
   userIdIdx: index('active_watchers_user_id_idx').on(table.userId),
   profileIdIdx: index('active_watchers_profile_id_idx').on(table.profileId),
   marketTypeIdx: index('active_watchers_market_type_idx').on(table.marketType),
+  isManualIdx: index('active_watchers_is_manual_idx').on(table.isManual),
 }));
 
 export type ActiveWatcherRow = typeof activeWatchers.$inferSelect;

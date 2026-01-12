@@ -8,8 +8,9 @@ export interface TransformedTradingProfile extends Omit<TradingProfileRow, 'enab
   maxPositionSize: number | null;
 }
 
-export interface TransformedAutoTradingConfig extends Omit<AutoTradingConfigRow, 'enabledSetupTypes'> {
+export interface TransformedAutoTradingConfig extends Omit<AutoTradingConfigRow, 'enabledSetupTypes' | 'dynamicSymbolExcluded'> {
   enabledSetupTypes: string[];
+  dynamicSymbolExcluded: string[];
 }
 
 export const parseEnabledSetupTypes = (json: string): string[] => {
@@ -26,7 +27,21 @@ export const transformTradingProfile = (profile: TradingProfileRow): Transformed
   maxPositionSize: profile.maxPositionSize ? parseFloat(profile.maxPositionSize) : null,
 });
 
+export const parseDynamicSymbolExcluded = (json: string | null): string[] => {
+  if (!json) return [];
+  try {
+    return JSON.parse(json) as string[];
+  } catch {
+    return [];
+  }
+};
+
+export const stringifyDynamicSymbolExcluded = (symbols: string[]): string => {
+  return JSON.stringify(symbols);
+};
+
 export const transformAutoTradingConfig = (config: AutoTradingConfigRow): TransformedAutoTradingConfig => ({
   ...config,
   enabledSetupTypes: parseEnabledSetupTypes(config.enabledSetupTypes),
+  dynamicSymbolExcluded: parseDynamicSymbolExcluded(config.dynamicSymbolExcluded),
 });

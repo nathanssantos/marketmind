@@ -32,7 +32,8 @@
     "selectAll": "Select All",
     "deselectAll": "Deselect All",
     "to": "to",
-    "hours": "h"
+    "hours": "h",
+    "active": "Active"
   },
   "app": {
     "title": "MarketMind",
@@ -933,6 +934,43 @@
       "deselectAll": "Deselect All",
       "selectedCount": "{{count}} symbols selected",
       "startBulk": "Start {{count}} Watchers"
+    },
+    "dynamicSelection": {
+      "title": "Dynamic Symbol Selection",
+      "description": "Automatically select and rotate symbols based on opportunity scores",
+      "enable": "Enable Dynamic Selection",
+      "enableDescription": "Automatically select top-performing symbols based on market cap and opportunity scores",
+      "symbolLimit": "Symbol Limit",
+      "symbolLimitDescription": "Maximum number of symbols to monitor (1-50)",
+      "rotationInterval": "Rotation Interval",
+      "rotationIntervalDescription": "How often to re-evaluate and rotate symbols",
+      "interval1h": "Every hour",
+      "interval4h": "Every 4 hours",
+      "interval1d": "Daily",
+      "rotationStatus": "Rotation Status",
+      "nextRotation": "Next rotation at {{time}}",
+      "rotationInactive": "Rotation not active",
+      "triggerNow": "Rotate Now",
+      "infoText": "Dynamic selection uses market cap, volume, volatility, and historical performance to identify the best trading opportunities. Symbols with open positions are protected from removal.",
+      "viewRankings": "View Rankings",
+      "rankingsTitle": "Symbol Rankings",
+      "tabRankings": "Rankings",
+      "tabHistory": "History",
+      "noScores": "No symbol scores available",
+      "noHistory": "No rotation history yet",
+      "symbol": "Symbol",
+      "score": "Score",
+      "marketCap": "Market Cap",
+      "volume": "Volume",
+      "change": "24h Change",
+      "status": "Status",
+      "added": "Added",
+      "removed": "Removed",
+      "skipped": "Skipped (open positions)",
+      "keptCount": "{{count}} symbols kept",
+      "quickStartTitle": "Quick Start from Rankings",
+      "quickStartDescription": "Start watchers for the top symbols by score",
+      "quickStartButton": "Start Top {{count}}"
     }
   },
   "strategyInfo": {

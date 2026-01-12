@@ -1,18 +1,22 @@
 import { Radio, RadioGroup } from '@/renderer/components/ui/radio';
-import { Box, Collapsible, Flex, Grid, HStack, IconButton, Portal, Separator, Stack, Text } from '@chakra-ui/react';
+import { Box, Collapsible, Flex, Grid, Group, HStack, IconButton, Portal, Separator, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import { Button } from '@renderer/components/ui/button';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
+import { NumberInput } from '@renderer/components/ui/number-input';
 import { Switch } from '@renderer/components/ui/switch';
-import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
+import { useBackendAutoTrading, useDynamicSymbolScores, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { trpc } from '@renderer/utils/trpc';
+import type { MarketType, TimeInterval } from '@marketmind/types';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { LuChevronDown, LuChevronUp, LuPause, LuPlay, LuPlus, LuTrash2 } from 'react-icons/lu';
+import { LuChartBar, LuChevronDown, LuChevronUp, LuPause, LuPlay, LuPlus, LuRefreshCw, LuTrash2, LuZap } from 'react-icons/lu';
+import { TimeframeSelector } from '../Chart/TimeframeSelector';
 import { AddWatcherDialog } from './AddWatcherDialog';
+import { DynamicSymbolRankings } from './DynamicSymbolRankings';
 import { TradingProfilesManager } from './TradingProfilesManager';
 
 export const WatcherManager = () => {
@@ -25,8 +29,10 @@ export const WatcherManager = () => {
     isLoadingWatcherStatus,
     stopWatcher,
     stopAllWatchers,
+    startWatchersBulk,
     isStoppingWatcher,
     isStoppingAllWatchers,
+    isStartingWatchersBulk,
   } = useBackendAutoTrading(walletId);
 
   const { profiles, getProfileById } = useTradingProfiles();
@@ -41,9 +47,18 @@ export const WatcherManager = () => {
   });
 
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showRankingsDialog, setShowRankingsDialog] = useState(false);
   const [tpModeExpanded, setTpModeExpanded] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [watchersExpanded, setWatchersExpanded] = useState(true);
+  const [dynamicSelectionExpanded, setDynamicSelectionExpanded] = useState(false);
+  const [quickStartCount, setQuickStartCount] = useState(10);
+  const [quickStartTimeframe, setQuickStartTimeframe] = useState<TimeInterval>('4h');
+  const [quickStartMarketType, setQuickStartMarketType] = useState<MarketType>('FUTURES');
+
+  const { rotationStatus, isLoadingRotationStatus } = useRotationStatus(walletId);
+  const { triggerRotation, isTriggeringRotation } = useTriggerRotation(walletId);
+  const { symbolScores, isLoadingScores } = useDynamicSymbolScores(quickStartMarketType, 50);
 
   const tpCalculationMode = config?.tpCalculationMode ?? 'default';
   const fibonacciTargetLevel = config?.fibonacciTargetLevel ?? 'auto';
@@ -70,6 +85,35 @@ export const WatcherManager = () => {
       walletId,
       [filterKey]: value,
     });
+  };
+
+  const handleDynamicSelectionToggle = (value: boolean): void => {
+    if (!walletId) return;
+    updateConfig.mutate({
+      walletId,
+      useDynamicSymbolSelection: value,
+    });
+  };
+
+  const handleDynamicLimitChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    if (!walletId) return;
+    const limit = parseInt(e.target.value, 10);
+    if (isNaN(limit) || limit < 1 || limit > 50) return;
+    updateConfig.mutate({
+      walletId,
+      dynamicSymbolLimit: limit,
+    });
+  };
+
+  const handleTriggerRotation = async (): Promise<void> => {
+    if (!walletId) return;
+    await triggerRotation();
+  };
+
+  const handleQuickStartFromRankings = async (): Promise<void> => {
+    if (!walletId || symbolScores.length === 0) return;
+    const topSymbols = symbolScores.slice(0, quickStartCount).map((s) => s.symbol);
+    await startWatchersBulk(topSymbols, quickStartTimeframe, undefined, quickStartMarketType);
   };
 
   const activeWatchers = watcherStatus?.activeWatchers ?? [];
@@ -206,6 +250,208 @@ export const WatcherManager = () => {
                     );
                   })}
                 </Stack>
+              )}
+            </Stack>
+          </Collapsible.Content>
+        </Collapsible.Root>
+      </Box>
+
+      <Separator />
+
+      <Box>
+        <Flex
+          justify="space-between"
+          align="center"
+          cursor="pointer"
+          onClick={() => setDynamicSelectionExpanded(!dynamicSelectionExpanded)}
+          _hover={{ bg: 'bg.muted' }}
+          p={2}
+          mx={-2}
+          borderRadius="md"
+        >
+          <Box>
+            <Flex align="center" gap={2}>
+              <Text fontSize="lg" fontWeight="bold">
+                {t('tradingProfiles.dynamicSelection.title')}
+              </Text>
+              {config?.useDynamicSymbolSelection && (
+                <Box
+                  px={2}
+                  py={0.5}
+                  bg="blue.100"
+                  color="blue.800"
+                  borderRadius="full"
+                  fontSize="xs"
+                  fontWeight="medium"
+                  _dark={{ bg: 'blue.900', color: 'blue.200' }}
+                >
+                  <Flex align="center" gap={1}>
+                    <LuZap size={10} />
+                    {t('common.active')}
+                  </Flex>
+                </Box>
+              )}
+            </Flex>
+            <Text fontSize="sm" color="fg.muted">
+              {t('tradingProfiles.dynamicSelection.description')}
+            </Text>
+          </Box>
+          {dynamicSelectionExpanded ? <LuChevronUp size={20} /> : <LuChevronDown size={20} />}
+        </Flex>
+
+        <Collapsible.Root open={dynamicSelectionExpanded}>
+          <Collapsible.Content>
+            <Stack gap={4} mt={4}>
+              <Flex justify="space-between" align="center" p={3} bg="bg.muted" borderRadius="md">
+                <Box>
+                  <Text fontSize="sm" fontWeight="medium">
+                    {t('tradingProfiles.dynamicSelection.enable')}
+                  </Text>
+                  <Text fontSize="xs" color="fg.muted">
+                    {t('tradingProfiles.dynamicSelection.enableDescription')}
+                  </Text>
+                </Box>
+                <Switch
+                  checked={config?.useDynamicSymbolSelection ?? false}
+                  onCheckedChange={handleDynamicSelectionToggle}
+                  disabled={updateConfig.isPending}
+                />
+              </Flex>
+
+              {config?.useDynamicSymbolSelection && (
+                <>
+                  <Box p={3} bg="bg.muted" borderRadius="md">
+                    <Text fontSize="sm" fontWeight="medium" mb={2}>
+                      {t('tradingProfiles.dynamicSelection.symbolLimit')}
+                    </Text>
+                    <NumberInput
+                      min={1}
+                      max={50}
+                      defaultValue={config?.dynamicSymbolLimit ?? 20}
+                      onChange={handleDynamicLimitChange}
+                      disabled={updateConfig.isPending}
+                      size="sm"
+                      px={3}
+                    />
+                    <Text fontSize="xs" color="fg.muted" mt={1}>
+                      {t('tradingProfiles.dynamicSelection.symbolLimitDescription')}
+                    </Text>
+                  </Box>
+
+                  <Box p={4} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+                    <Flex justify="space-between" align="center">
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium">
+                          {t('tradingProfiles.dynamicSelection.rotationStatus')}
+                        </Text>
+                        {isLoadingRotationStatus ? (
+                          <Text fontSize="xs" color="fg.muted">
+                            {t('common.loading')}
+                          </Text>
+                        ) : rotationStatus?.isActive ? (
+                          <Text fontSize="xs" color="green.500">
+                            {t('tradingProfiles.dynamicSelection.nextRotation', {
+                              time: rotationStatus.nextRotation
+                                ? new Date(rotationStatus.nextRotation).toLocaleTimeString()
+                                : '-',
+                            })}
+                          </Text>
+                        ) : (
+                          <Text fontSize="xs" color="fg.muted">
+                            {t('tradingProfiles.dynamicSelection.rotationInactive')}
+                          </Text>
+                        )}
+                      </Box>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleTriggerRotation}
+                        loading={isTriggeringRotation}
+                        disabled={updateConfig.isPending}
+                      >
+                        <LuRefreshCw />
+                        {t('tradingProfiles.dynamicSelection.triggerNow')}
+                      </Button>
+                    </Flex>
+                  </Box>
+
+                  <Box p={4} bg="green.50" borderRadius="md" borderWidth="1px" borderColor="green.200" _dark={{ bg: 'green.900/20', borderColor: 'green.800' }}>
+                    <Text fontSize="sm" fontWeight="medium" mb={3}>
+                      {t('tradingProfiles.dynamicSelection.quickStartTitle')}
+                    </Text>
+                    <Stack gap={3}>
+                      <Flex gap={3} align="center">
+                        <Group attached flex="0 0 180px">
+                          <Button
+                            size="sm"
+                            variant={quickStartMarketType === 'SPOT' ? 'solid' : 'outline'}
+                            onClick={() => setQuickStartMarketType('SPOT')}
+                            flex={1}
+                          >
+                            Spot
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={quickStartMarketType === 'FUTURES' ? 'solid' : 'outline'}
+                            onClick={() => setQuickStartMarketType('FUTURES')}
+                            flex={1}
+                          >
+                            Futures
+                          </Button>
+                        </Group>
+                        <Box>
+                          <TimeframeSelector
+                            selectedTimeframe={quickStartTimeframe}
+                            onTimeframeChange={setQuickStartTimeframe}
+                          />
+                        </Box>
+                        <Box flex="0 0 80px">
+                          <NumberInput
+                            min={1}
+                            max={50}
+                            value={quickStartCount}
+                            onChange={(e) => setQuickStartCount(parseInt(e.target.value, 10) || 10)}
+                            size="sm"
+                            px={3}
+                          />
+                        </Box>
+                        <Text fontSize="sm" color="fg.muted" flex={1}>
+                          {t('tradingProfiles.dynamicSelection.quickStartDescription')}
+                        </Text>
+                        <Button
+                          size="sm"
+                          colorPalette="green"
+                          onClick={handleQuickStartFromRankings}
+                          loading={isStartingWatchersBulk}
+                          disabled={isLoadingScores || symbolScores.length === 0}
+                        >
+                          <LuPlay />
+                          {t('tradingProfiles.dynamicSelection.quickStartButton', { count: quickStartCount })}
+                        </Button>
+                      </Flex>
+                    </Stack>
+                  </Box>
+
+                  <Flex justify="space-between" align="center">
+                    <Box p={3} bg="blue.50" borderRadius="md" _dark={{ bg: 'blue.900/20' }} flex={1}>
+                      <Flex gap={2} align="flex-start">
+                        <LuZap size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+                        <Text fontSize="xs" color="fg.muted">
+                          {t('tradingProfiles.dynamicSelection.infoText')}
+                        </Text>
+                      </Flex>
+                    </Box>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowRankingsDialog(true)}
+                      ml={2}
+                    >
+                      <LuChartBar />
+                      {t('tradingProfiles.dynamicSelection.viewRankings')}
+                    </Button>
+                  </Flex>
+                </>
               )}
             </Stack>
           </Collapsible.Content>
@@ -458,6 +704,11 @@ export const WatcherManager = () => {
         onClose={() => setShowAddDialog(false)}
         walletId={walletId}
         profiles={profiles}
+      />
+
+      <DynamicSymbolRankings
+        isOpen={showRankingsDialog}
+        onClose={() => setShowRankingsDialog(false)}
       />
     </Stack>
   );

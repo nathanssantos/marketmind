@@ -186,6 +186,10 @@ describe('Auto-Trading Flow Integration Tests', () => {
         exposureMultiplier: '1.50',
         tpCalculationMode: 'default' as const,
         fibonacciTargetLevel: 'auto' as const,
+        useDynamicSymbolSelection: false,
+        dynamicSymbolLimit: 20,
+        dynamicSymbolRotationInterval: '4h' as const,
+        dynamicSymbolExcluded: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -242,6 +246,10 @@ describe('Auto-Trading Flow Integration Tests', () => {
         exposureMultiplier: '1.50',
         tpCalculationMode: 'default' as const,
         fibonacciTargetLevel: 'auto' as const,
+        useDynamicSymbolSelection: false,
+        dynamicSymbolLimit: 20,
+        dynamicSymbolRotationInterval: '4h' as const,
+        dynamicSymbolExcluded: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

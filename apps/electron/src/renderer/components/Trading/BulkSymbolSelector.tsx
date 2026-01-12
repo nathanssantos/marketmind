@@ -3,7 +3,7 @@ import type { MarketType } from '@marketmind/types';
 import { Button } from '@renderer/components/ui/button';
 import { Checkbox } from '@renderer/components/ui/checkbox';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
-import { useTopSymbols } from '@renderer/hooks/useBackendAutoTrading';
+import { useTopCoinsByMarketCap } from '@renderer/hooks/useBackendAutoTrading';
 import { useTranslation } from 'react-i18next';
 
 interface BulkSymbolSelectorProps {
@@ -21,12 +21,12 @@ export const BulkSymbolSelector = ({
   onSymbolsChange,
   marketType,
   onMarketTypeChange,
-  limit = 50,
+  limit = 100,
   showMarketTypeToggle = true,
-  maxHeight = '200px',
+  maxHeight = '300px',
 }: BulkSymbolSelectorProps) => {
   const { t } = useTranslation();
-  const { topSymbols, isLoadingTopSymbols } = useTopSymbols(marketType, limit);
+  const { topCoins, isLoadingTopCoins } = useTopCoinsByMarketCap(marketType, limit);
 
   const handleSymbolToggle = (symbol: string) => {
     onSymbolsChange(
@@ -37,7 +37,7 @@ export const BulkSymbolSelector = ({
   };
 
   const handleSelectAll = () => {
-    onSymbolsChange([...topSymbols]);
+    onSymbolsChange(topCoins.map((coin) => coin.binanceSymbol));
   };
 
   const handleDeselectAll = () => {
@@ -78,16 +78,16 @@ export const BulkSymbolSelector = ({
             {t('tradingProfiles.watchers.topSymbols', 'Top {{count}} Symbols by Market Cap', { count: limit })}
           </Text>
           <HStack gap={2}>
-            <Button size="xs" variant="ghost" onClick={handleSelectAll} disabled={isLoadingTopSymbols}>
+            <Button size="xs" variant="ghost" onClick={handleSelectAll} disabled={isLoadingTopCoins}>
               {t('tradingProfiles.watchers.selectAll', 'Select All')}
             </Button>
-            <Button size="xs" variant="ghost" onClick={handleDeselectAll} disabled={isLoadingTopSymbols}>
+            <Button size="xs" variant="ghost" onClick={handleDeselectAll} disabled={isLoadingTopCoins}>
               {t('tradingProfiles.watchers.deselectAll', 'Deselect All')}
             </Button>
           </HStack>
         </Flex>
 
-        {isLoadingTopSymbols ? (
+        {isLoadingTopCoins ? (
           <Flex justify="center" py={4}>
             <Spinner size="sm" />
           </Flex>
@@ -100,14 +100,29 @@ export const BulkSymbolSelector = ({
             overflowY="auto"
           >
             <Stack gap={2}>
-              {topSymbols.map((sym) => (
-                <HStack key={sym}>
-                  <Checkbox
-                    checked={selectedSymbols.includes(sym)}
-                    onCheckedChange={() => handleSymbolToggle(sym)}
-                  />
-                  <CryptoIcon symbol={sym} size={16} />
-                  <Text fontSize="sm" fontFamily="mono">{sym}</Text>
+              {topCoins.map((coin) => (
+                <HStack key={coin.binanceSymbol} justify="space-between">
+                  <HStack>
+                    <Checkbox
+                      checked={selectedSymbols.includes(coin.binanceSymbol)}
+                      onCheckedChange={() => handleSymbolToggle(coin.binanceSymbol)}
+                    />
+                    <Box
+                      bg="gray.100"
+                      _dark={{ bg: 'gray.700' }}
+                      px={1.5}
+                      py={0.5}
+                      borderRadius="sm"
+                      minW="32px"
+                      textAlign="center"
+                    >
+                      <Text fontSize="xs" fontWeight="bold" color="gray.600" _dark={{ color: 'gray.300' }}>
+                        #{coin.marketCapRank}
+                      </Text>
+                    </Box>
+                    <CryptoIcon symbol={coin.binanceSymbol} size={16} />
+                    <Text fontSize="sm" fontFamily="mono">{coin.binanceSymbol}</Text>
+                  </HStack>
                 </HStack>
               ))}
             </Stack>
