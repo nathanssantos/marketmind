@@ -31,7 +31,9 @@ export const useFibonacciProjectionRenderer = ({
     if (!ctx || !dimensions) return;
 
     const { chartWidth, chartHeight } = dimensions;
-    const effectiveWidth = chartWidth - 72;
+    const priceAxisWidth = 72;
+    const fiboOffset = 120;
+    const effectiveWidth = chartWidth - priceAxisWidth - fiboOffset;
 
     const { swingLow, swingHigh, levels } = projectionData;
 
