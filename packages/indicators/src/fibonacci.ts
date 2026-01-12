@@ -145,24 +145,6 @@ export const calculateFibonacciProjection = (
   let swingHighResult: { price: number; index: number; timestamp: number } | null = null;
 
   if (direction === 'LONG') {
-    let highResult = findSignificantSwingHigh(klines, endIndex, lookback, atrMultiplier, percentThreshold, useATR);
-
-    if (highResult) {
-      const validation = validateSwingWithStructure(klines, highResult, lookback);
-      if (!validation.valid) {
-        highResult = findAdaptiveFractalHigh(klines, endIndex, lookback);
-      }
-    } else {
-      highResult = findAdaptiveFractalHigh(klines, endIndex, lookback);
-    }
-
-    if (!highResult) return null;
-    swingHighResult = { price: highResult.price, index: highResult.index, timestamp: highResult.timestamp };
-
-    const lowResult = findSwingLowAfter(klines, swingHighResult.index, endIndex, fractalBars);
-    if (!lowResult) return null;
-    swingLowResult = { price: lowResult.price, index: lowResult.index, timestamp: lowResult.timestamp };
-  } else {
     let lowResult = findSignificantSwingLow(klines, endIndex, lookback, atrMultiplier, percentThreshold, useATR);
 
     if (lowResult) {
@@ -180,6 +162,24 @@ export const calculateFibonacciProjection = (
     const highResult = findSwingHighAfter(klines, swingLowResult.index, endIndex, fractalBars);
     if (!highResult) return null;
     swingHighResult = { price: highResult.price, index: highResult.index, timestamp: highResult.timestamp };
+  } else {
+    let highResult = findSignificantSwingHigh(klines, endIndex, lookback, atrMultiplier, percentThreshold, useATR);
+
+    if (highResult) {
+      const validation = validateSwingWithStructure(klines, highResult, lookback);
+      if (!validation.valid) {
+        highResult = findAdaptiveFractalHigh(klines, endIndex, lookback);
+      }
+    } else {
+      highResult = findAdaptiveFractalHigh(klines, endIndex, lookback);
+    }
+
+    if (!highResult) return null;
+    swingHighResult = { price: highResult.price, index: highResult.index, timestamp: highResult.timestamp };
+
+    const lowResult = findSwingLowAfter(klines, swingHighResult.index, endIndex, fractalBars);
+    if (!lowResult) return null;
+    swingLowResult = { price: lowResult.price, index: lowResult.index, timestamp: lowResult.timestamp };
   }
 
   const swingLow: SwingPointWithIndex = {

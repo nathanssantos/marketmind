@@ -265,7 +265,7 @@ describe('calculateFibonacciProjection', () => {
     const result = calculateFibonacciProjection(klines, 59, 50, 'LONG');
 
     expect(result).not.toBeNull();
-    expect(result!.direction).toBe('down');
+    expect(result!.direction).toBe('up');
   });
 
   it('should include correct labels for all levels', () => {
