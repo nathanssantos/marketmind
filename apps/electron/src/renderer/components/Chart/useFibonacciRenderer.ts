@@ -33,9 +33,9 @@ export const useFibonacciRenderer = ({
       'rgba(180, 180, 180, 0.7)',
       'rgba(180, 180, 180, 0.7)',
       'rgba(180, 180, 180, 0.7)',
-      'rgba(33, 150, 243, 0.6)',
-      'rgba(255, 193, 7, 0.6)',
-      'rgba(76, 175, 80, 0.6)',
+      'rgba(180, 180, 180, 0.7)',
+      'rgba(76, 175, 80, 0.8)',
+      'rgba(180, 180, 180, 0.7)',
     ];
 
     for (let i = 0; i < fibonacciData.levels.length; i++) {
