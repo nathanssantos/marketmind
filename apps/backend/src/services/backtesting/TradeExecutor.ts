@@ -150,11 +150,11 @@ export class TradeExecutor {
 
     if (primaryLevelData) return primaryLevelData.price;
 
-    const level200 = fib.levels.find(
-      (l: { level: number; price: number }) => Math.abs(l.level - 2) < 0.001
+    const level1618 = fib.levels.find(
+      (l: { level: number; price: number }) => Math.abs(l.level - 1.618) < 0.001
     );
 
-    return level200?.price ?? null;
+    return level1618?.price ?? null;
   }
 
   calculatePositionSize(
