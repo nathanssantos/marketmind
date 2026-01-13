@@ -1,5 +1,5 @@
 import type { MarketType } from '@marketmind/types';
-import { and, count, gte, sql } from 'drizzle-orm';
+import { and, count, gte, inArray } from 'drizzle-orm';
 import { TIME_MS } from '../constants';
 import { db } from '../db';
 import { setupDetections, strategyPerformance } from '../db/schema';
@@ -230,7 +230,7 @@ export class OpportunityScoringService {
         .from(setupDetections)
         .where(
           and(
-            sql`${setupDetections.symbol} = ANY(${symbols})`,
+            inArray(setupDetections.symbol, symbols),
             gte(setupDetections.detectedAt, sevenDaysAgo)
           )
         )
@@ -255,7 +255,7 @@ export class OpportunityScoringService {
           avgLoss: strategyPerformance.avgLoss,
         })
         .from(strategyPerformance)
-        .where(sql`${strategyPerformance.symbol} = ANY(${symbols})`);
+        .where(inArray(strategyPerformance.symbol, symbols));
 
       const aggregated = new Map<string, { totalWinRate: number; count: number; totalProfitFactor: number }>();
 

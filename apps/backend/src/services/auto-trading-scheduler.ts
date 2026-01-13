@@ -903,9 +903,6 @@ export class AutoTradingScheduler {
       const strategy = strategies.find(s => s.id === setup.type);
       const strategyParams = strategy?.optimizedParams;
 
-      const walletMaxConcurrent = config.maxConcurrentPositions;
-      const strategyMaxConcurrent = strategyParams?.maxConcurrentPositions;
-
       const effectiveMaxPositionSize = strategyParams?.maxPositionSize
         ?? parseFloat(config.maxPositionSize);
 
@@ -915,8 +912,6 @@ export class AutoTradingScheduler {
           walletMaxPositionSize: parseFloat(config.maxPositionSize),
           strategyMaxPositionSize: strategyParams.maxPositionSize,
           effectiveMaxPositionSize,
-          walletMaxConcurrent,
-          strategyMaxConcurrent,
         });
       }
 
@@ -955,24 +950,11 @@ export class AutoTradingScheduler {
       const openPositions = activePositions.filter(p => p.status === 'open');
       const pendingPositions = activePositions.filter(p => p.status === 'pending');
 
-      const strategyPositions = activePositions.filter(p => p.setupType === setup.type);
-
       log('📊 Current positions', {
         open: openPositions.length,
         pending: pendingPositions.length,
         total: activePositions.length,
-        strategyPositions: strategyPositions.length,
-        strategyMax: strategyMaxConcurrent ?? 'unlimited',
       });
-
-      if (strategyMaxConcurrent && strategyPositions.length >= strategyMaxConcurrent) {
-        log('⚠️ Strategy max concurrent positions reached', {
-          strategy: setup.type,
-          strategyPositions: strategyPositions.length,
-          strategyMax: strategyMaxConcurrent,
-        });
-        return;
-      }
 
       log('🔍 Checking cooldown', {
         setupType: setup.type,
@@ -1530,7 +1512,7 @@ export class AutoTradingScheduler {
       const effectiveConfig = {
         ...config,
         maxPositionSize: effectiveMaxPositionSize.toString(),
-        maxConcurrentPositions: activeWatchersForWallet || walletMaxConcurrent,
+        maxConcurrentPositions: activeWatchersForWallet || config.maxConcurrentPositions,
       };
 
       const exposureMultiplier = parseFloat(config.exposureMultiplier);
@@ -1542,7 +1524,7 @@ export class AutoTradingScheduler {
         activeWatchers: activeWatchersForWallet,
         exposureMultiplier: `${exposureMultiplier}x`,
         exposurePerWatcher: `${exposurePerWatcher.toFixed(1)}%`,
-        effectiveMaxConcurrent: activeWatchersForWallet || walletMaxConcurrent,
+        effectiveMaxConcurrent: activeWatchersForWallet || config.maxConcurrentPositions,
       });
 
       const riskValidation = await riskManagerService.validateNewPositionLocked(
