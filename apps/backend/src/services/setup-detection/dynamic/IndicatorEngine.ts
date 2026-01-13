@@ -131,6 +131,26 @@ export class IndicatorEngine {
       },
     };
 
+    if (!result['adx']) {
+      const adxResult = calculateADX(klines, 14);
+      result['adx'] = {
+        type: 'adx' as IndicatorType,
+        values: {
+          adx: adxResult.adx,
+          plusDI: adxResult.plusDI,
+          minusDI: adxResult.minusDI,
+        },
+      };
+    }
+
+    if (!result['atr']) {
+      const atrResult = calculateATR(klines, 14);
+      result['atr'] = {
+        type: 'atr' as IndicatorType,
+        values: atrResult,
+      };
+    }
+
     if (this.cache.size >= MAX_CACHE_SIZE) {
       const firstKey = this.cache.keys().next().value;
       if (firstKey) this.cache.delete(firstKey);
