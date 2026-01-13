@@ -373,10 +373,6 @@ describe('AutoTradingScheduler Cache Optimizations', () => {
   describe('Performance Metrics', () => {
     it('should demonstrate cache hit benefits', () => {
       let fetchCount = 0;
-      const slowFetch = vi.fn().mockImplementation(() => {
-        fetchCount++;
-        return Promise.resolve(0.0001);
-      });
 
       interface CacheEntry<T> {
         data: T;
