@@ -44,7 +44,7 @@ import { calculateConfluenceScore, type FilterResults } from '../utils/confluenc
 import { calculateRequiredKlines } from '../utils/kline-calculator';
 import { autoTradingService } from './auto-trading';
 import { cooldownService } from './cooldown';
-import { hasSufficientKlines, prefetchKlines } from './kline-prefetch';
+import { meetsKlineRequirementWithTolerance, prefetchKlines } from './kline-prefetch';
 import { ocoOrderService } from './oco-orders';
 import { positionMonitorService } from './position-monitor';
 import { pyramidingService } from './pyramiding';
@@ -436,16 +436,18 @@ export class AutoTradingScheduler {
               log('⚠️ Immediate prefetch failed, skipping detection', { watcherId, symbol, error: result.error });
               return;
             }
-            if (!hasSufficientKlines(result.totalInDb, ABSOLUTE_MINIMUM_KLINES)) {
+            const apiExhausted = result.alreadyComplete || result.gaps === 0;
+            if (!meetsKlineRequirementWithTolerance(result.totalInDb, ABSOLUTE_MINIMUM_KLINES, apiExhausted)) {
               log('⚠️ Insufficient klines after prefetch, skipping detection', {
                 watcherId,
                 symbol,
                 totalInDb: result.totalInDb,
                 required: ABSOLUTE_MINIMUM_KLINES,
+                apiExhausted,
               });
               return;
             }
-            log('✅ Immediate prefetch completed, queuing detection', { watcherId, symbol, totalInDb: result.totalInDb });
+            log('✅ Immediate prefetch completed, queuing detection', { watcherId, symbol, totalInDb: result.totalInDb, apiExhausted });
             this.queueWatcherProcessing(watcherId);
           } catch (error) {
             log('❌ Immediate check failed', {
@@ -598,30 +600,28 @@ export class AutoTradingScheduler {
 
         const hasReachedApiLimit = result.alreadyComplete || result.gaps === 0;
 
-        if (!hasSufficientKlines(result.totalInDb, minRequired)) {
-          if (hasReachedApiLimit && result.totalInDb >= ABSOLUTE_MINIMUM_KLINES) {
-            log('⚠️ Proceeding with available klines (API limit reached)', {
-              available: result.totalInDb,
-              required: minRequired,
-              absoluteMinimum: ABSOLUTE_MINIMUM_KLINES,
-              alreadyComplete: result.alreadyComplete,
-              gaps: result.gaps,
-            });
-          } else if (!hasReachedApiLimit) {
+        if (!meetsKlineRequirementWithTolerance(result.totalInDb, minRequired, hasReachedApiLimit)) {
+          if (!hasReachedApiLimit) {
             log('⚠️ Insufficient klines, more data may be available', {
               totalInDb: result.totalInDb,
               minRequired,
               gaps: result.gaps,
             });
-            return;
           } else {
             log('❌ Critical: insufficient klines even after exhausting API', {
               available: result.totalInDb,
-              absoluteMinimum: ABSOLUTE_MINIMUM_KLINES,
               required: minRequired,
+              apiExhausted: hasReachedApiLimit,
             });
-            return;
           }
+          return;
+        }
+
+        if (hasReachedApiLimit && result.totalInDb < minRequired) {
+          log('ℹ️ Proceeding with available klines (API exhausted, within tolerance)', {
+            available: result.totalInDb,
+            required: minRequired,
+          });
         }
 
         const refreshedKlines = await db.query.klines.findMany({
@@ -634,20 +634,13 @@ export class AutoTradingScheduler {
           limit: requiredKlines,
         });
 
-        if (refreshedKlines.length < minRequired) {
-          if (hasReachedApiLimit && refreshedKlines.length >= ABSOLUTE_MINIMUM_KLINES) {
-            log('⚠️ Proceeding with refreshed klines (API limit)', {
-              available: refreshedKlines.length,
-              required: minRequired,
-            });
-          } else {
-            log('⚠️ Insufficient klines after refresh', {
-              count: refreshedKlines.length,
-              required: minRequired,
-              hasReachedApiLimit,
-            });
-            return;
-          }
+        if (!meetsKlineRequirementWithTolerance(refreshedKlines.length, minRequired, hasReachedApiLimit)) {
+          log('⚠️ Insufficient klines after refresh', {
+            count: refreshedKlines.length,
+            required: minRequired,
+            hasReachedApiLimit,
+          });
+          return;
         }
 
         klinesData.length = 0;
@@ -2241,6 +2234,7 @@ export class AutoTradingScheduler {
       interval: optimalInterval,
       excludedSymbols,
       marketType: config.marketType,
+      tradingInterval: config.interval,
     };
 
     log('🔄 Starting dynamic symbol rotation', {
@@ -2388,6 +2382,7 @@ export class AutoTradingScheduler {
       interval: '4h',
       excludedSymbols,
       marketType: config.marketType,
+      tradingInterval: config.interval,
     };
 
     log('🔄 Triggering manual rotation', {

@@ -304,6 +304,8 @@ export class BinanceKlineStreamService {
         ),
       });
 
+      const restData = await fetchKlineFromREST(update.symbol, update.interval, update.openTime, update.marketType);
+
       let finalData = {
         open: update.open,
         high: update.high,
@@ -317,20 +319,20 @@ export class BinanceKlineStreamService {
         takerBuyQuoteVolume: update.takerBuyQuoteVolume,
       };
 
-      const suspiciousCheck = KlineValidator.isKlineDataSuspicious(update, existing ?? undefined);
-      if (!suspiciousCheck.isValid && suspiciousCheck.shouldFetchFromAPI) {
-        logger.warn({
-          symbol: update.symbol,
-          interval: update.interval,
-          openTime: openTime.toISOString(),
-          wsVolume: update.volume,
-          wsRange: parseFloat(update.high) - parseFloat(update.low),
-          existingVolume: existing?.volume,
-          reason: suspiciousCheck.reason,
-        }, 'Suspicious kline data from WebSocket, fetching from REST API');
+      if (restData) {
+        const wsVolume = parseFloat(update.volume);
+        const restVolume = parseFloat(restData.volume);
 
-        const restData = await fetchKlineFromREST(update.symbol, update.interval, update.openTime, update.marketType);
-        if (restData) {
+        if (wsVolume < restVolume * 0.9) {
+          logger.warn({
+            symbol: update.symbol,
+            interval: update.interval,
+            openTime: openTime.toISOString(),
+            wsVolume: update.volume,
+            restVolume: restData.volume,
+            volumeRatio: ((wsVolume / restVolume) * 100).toFixed(2) + '%',
+          }, 'WebSocket volume lower than REST API, using REST data');
+
           finalData = {
             open: restData.open,
             high: restData.high,
@@ -343,11 +345,17 @@ export class BinanceKlineStreamService {
             takerBuyBaseVolume: restData.takerBuyBaseVolume,
             takerBuyQuoteVolume: restData.takerBuyQuoteVolume,
           };
-          logger.info({
+        }
+      } else {
+        const suspiciousCheck = KlineValidator.isKlineDataSuspicious(update, existing ?? undefined);
+        if (!suspiciousCheck.isValid) {
+          logger.warn({
             symbol: update.symbol,
             interval: update.interval,
-            restVolume: restData.volume,
-          }, 'Used REST API data instead of suspicious WebSocket data');
+            openTime: openTime.toISOString(),
+            wsVolume: update.volume,
+            reason: suspiciousCheck.reason,
+          }, 'Suspicious kline data and REST API unavailable');
         }
       }
 
@@ -602,6 +610,8 @@ export class BinanceFuturesKlineStreamService {
         ),
       });
 
+      const restData = await fetchKlineFromREST(update.symbol, update.interval, update.openTime, 'FUTURES');
+
       let finalData = {
         open: update.open,
         high: update.high,
@@ -615,24 +625,24 @@ export class BinanceFuturesKlineStreamService {
         takerBuyQuoteVolume: update.takerBuyQuoteVolume,
       };
 
-      const suspiciousCheck = KlineValidator.isKlineDataSuspicious(update, existing ?? undefined);
-      if (!suspiciousCheck.isValid && suspiciousCheck.shouldFetchFromAPI) {
-        logger.warn({
-          symbol: update.symbol,
-          interval: update.interval,
-          openTime: openTime.toISOString(),
-          wsVolume: update.volume,
-          wsRange: parseFloat(update.high) - parseFloat(update.low),
-          existingVolume: existing?.volume,
-          reason: suspiciousCheck.reason,
-        }, 'Suspicious futures kline data from WebSocket, fetching from REST API');
+      if (restData) {
+        const wsVolume = parseFloat(update.volume);
+        const restVolume = parseFloat(restData.volume);
 
-        const restData = await fetchKlineFromREST(update.symbol, update.interval, update.openTime, 'FUTURES');
-        if (restData) {
+        if (wsVolume < restVolume * 0.9) {
+          logger.warn({
+            symbol: update.symbol,
+            interval: update.interval,
+            openTime: openTime.toISOString(),
+            wsVolume: update.volume,
+            restVolume: restData.volume,
+            volumeRatio: ((wsVolume / restVolume) * 100).toFixed(2) + '%',
+          }, 'WebSocket volume lower than REST API, using REST data');
+
           finalData = {
             open: restData.open,
             high: restData.high,
-            low: restData.high,
+            low: restData.low,
             close: restData.close,
             volume: restData.volume,
             closeTime: new Date(restData.closeTime),
@@ -641,11 +651,17 @@ export class BinanceFuturesKlineStreamService {
             takerBuyBaseVolume: restData.takerBuyBaseVolume,
             takerBuyQuoteVolume: restData.takerBuyQuoteVolume,
           };
-          logger.info({
+        }
+      } else {
+        const suspiciousCheck = KlineValidator.isKlineDataSuspicious(update, existing ?? undefined);
+        if (!suspiciousCheck.isValid) {
+          logger.warn({
             symbol: update.symbol,
             interval: update.interval,
-            restVolume: restData.volume,
-          }, 'Used REST API data instead of suspicious futures WebSocket data');
+            openTime: openTime.toISOString(),
+            wsVolume: update.volume,
+            reason: suspiciousCheck.reason,
+          }, 'Suspicious futures kline data and REST API unavailable');
         }
       }
 

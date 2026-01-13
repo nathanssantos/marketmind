@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { INTERVAL_MS, TIME_MS } from '../constants';
 import { db } from '../db';
 import { activeWatchers, tradeExecutions } from '../db/schema';
+import { checkKlineAvailability } from './kline-prefetch';
 import { logger } from './logger';
 import { getOpportunityScoringService, type SymbolScore } from './opportunity-scoring';
 
@@ -30,6 +31,7 @@ export interface RotationConfig {
   interval: RotationInterval;
   excludedSymbols: string[];
   marketType: MarketType;
+  tradingInterval: string;
 }
 
 export interface RotationResult {
@@ -37,6 +39,7 @@ export interface RotationResult {
   removed: string[];
   kept: string[];
   skippedWithPositions: string[];
+  skippedInsufficientKlines: string[];
   timestamp: Date;
 }
 
@@ -149,6 +152,7 @@ export class DynamicSymbolRotationService {
       const toAdd: string[] = [];
       const kept: string[] = [];
       const skippedWithPositions: string[] = [];
+      const skippedInsufficientKlines: string[] = [];
 
       for (const symbol of currentSymbols) {
         const currentRank = currentRankings.get(symbol);
@@ -181,6 +185,25 @@ export class DynamicSymbolRotationService {
       for (const symbol of optimalSymbols) {
         if (toAdd.length >= slotsAvailable) break;
         if (!currentSymbols.has(symbol) && !kept.includes(symbol)) {
+          const klineCheck = await checkKlineAvailability(
+            symbol,
+            config.tradingInterval,
+            config.marketType
+          );
+
+          if (!klineCheck.hasSufficient) {
+            logger.warn({
+              symbol,
+              interval: config.tradingInterval,
+              marketType: config.marketType,
+              totalAvailable: klineCheck.totalAvailable,
+              required: klineCheck.required,
+              apiExhausted: klineCheck.apiExhausted,
+            }, '[DynamicRotation] Skipping symbol due to insufficient klines');
+            skippedInsufficientKlines.push(symbol);
+            continue;
+          }
+
           toAdd.push(symbol);
         }
       }
@@ -192,6 +215,7 @@ export class DynamicSymbolRotationService {
         removed: toRemove,
         kept,
         skippedWithPositions,
+        skippedInsufficientKlines,
         timestamp: new Date(),
       };
 
@@ -203,6 +227,7 @@ export class DynamicSymbolRotationService {
         removed: toRemove.length,
         kept: kept.length,
         skippedWithPositions: skippedWithPositions.length,
+        skippedInsufficientKlines: skippedInsufficientKlines.length,
       }, '[DynamicRotation] Rotation calculated');
 
       return result;
@@ -213,6 +238,7 @@ export class DynamicSymbolRotationService {
         removed: [],
         kept: [],
         skippedWithPositions: [],
+        skippedInsufficientKlines: [],
         timestamp: new Date(),
       };
     }

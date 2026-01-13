@@ -13,6 +13,7 @@ import { getBtcTrendInfo } from '../utils/filters/btc-correlation-filter';
 import { getBinanceFuturesDataService } from '../services/binance-futures-data';
 import { riskManagerService } from '../services/risk-manager';
 import { autoTradingScheduler } from '../services/auto-trading-scheduler';
+import { checkKlineAvailability } from '../services/kline-prefetch';
 import { logger } from '../services/logger';
 import { getTopSymbolsByVolume } from '../services/binance-exchange-info';
 import { protectedProcedure, router } from '../trpc';
@@ -653,6 +654,23 @@ export const autoTradingRouter = router({
 
       await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
+      const klineCheck = await checkKlineAvailability(input.symbol, input.interval, input.marketType);
+
+      if (!klineCheck.hasSufficient) {
+        log('⚠️ Symbol has insufficient klines', {
+          symbol: input.symbol,
+          interval: input.interval,
+          marketType: input.marketType,
+          totalAvailable: klineCheck.totalAvailable,
+          required: klineCheck.required,
+          apiExhausted: klineCheck.apiExhausted,
+        });
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Symbol ${input.symbol} has insufficient historical data: ${klineCheck.totalAvailable}/${klineCheck.required} klines available`,
+        });
+      }
+
       await ctx.db
         .update(autoTradingConfig)
         .set({ isEnabled: true, updatedAt: new Date() })
@@ -767,15 +785,19 @@ export const autoTradingRouter = router({
         interval: z.string(),
         profileId: z.string().optional(),
         marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        targetCount: z.number().min(1).max(50).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const targetCount = input.targetCount ?? input.symbols.length;
+
       log('🚀 startWatchersBulk called', {
         walletId: input.walletId,
         symbols: input.symbols,
         interval: input.interval,
         profileId: input.profileId,
         marketType: input.marketType,
+        targetCount,
       });
 
       await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
@@ -790,10 +812,37 @@ export const autoTradingRouter = router({
           )
         );
 
-      const results: Array<{ symbol: string; success: boolean; error?: string }> = [];
+      const results: Array<{ symbol: string; success: boolean; error?: string; skippedReason?: string; fromRanking?: boolean }> = [];
+      const startedSymbols = new Set<string>();
+      const attemptedSymbols = new Set<string>();
 
-      for (const symbol of input.symbols) {
+      const tryStartWatcher = async (symbol: string, fromRanking: boolean = false): Promise<boolean> => {
+        if (attemptedSymbols.has(symbol) || startedSymbols.has(symbol)) return false;
+        attemptedSymbols.add(symbol);
+
         try {
+          const klineCheck = await checkKlineAvailability(symbol, input.interval, input.marketType);
+
+          if (!klineCheck.hasSufficient) {
+            log('⚠️ Skipping symbol due to insufficient klines', {
+              symbol,
+              interval: input.interval,
+              marketType: input.marketType,
+              totalAvailable: klineCheck.totalAvailable,
+              required: klineCheck.required,
+              apiExhausted: klineCheck.apiExhausted,
+              fromRanking,
+            });
+            results.push({
+              symbol,
+              success: false,
+              error: `Insufficient klines: ${klineCheck.totalAvailable}/${klineCheck.required}`,
+              skippedReason: 'insufficient_klines',
+              fromRanking,
+            });
+            return false;
+          }
+
           await autoTradingScheduler.startWatcher(
             input.walletId,
             ctx.user.id,
@@ -805,26 +854,62 @@ export const autoTradingRouter = router({
             true
           );
 
-          results.push({ symbol, success: true });
-          log('✅ Watcher started', { symbol });
+          startedSymbols.add(symbol);
+          results.push({ symbol, success: true, fromRanking });
+          log('✅ Watcher started', { symbol, fromRanking });
+          return true;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          results.push({ symbol, success: false, error: errorMessage });
-          log('❌ Failed to start watcher', { symbol, error: errorMessage });
+          results.push({ symbol, success: false, error: errorMessage, fromRanking });
+          log('❌ Failed to start watcher', { symbol, error: errorMessage, fromRanking });
+          return false;
+        }
+      };
+
+      for (const symbol of input.symbols) {
+        await tryStartWatcher(symbol, false);
+      }
+
+      if (startedSymbols.size < targetCount) {
+        log('🔄 Fetching additional symbols from ranking', {
+          current: startedSymbols.size,
+          target: targetCount,
+          needed: targetCount - startedSymbols.size,
+        });
+
+        const scoringService = getOpportunityScoringService();
+        const scores = await scoringService.getSymbolScores(input.marketType, targetCount * 3);
+
+        for (const score of scores) {
+          if (startedSymbols.size >= targetCount) break;
+          if (!attemptedSymbols.has(score.symbol)) {
+            await tryStartWatcher(score.symbol, true);
+          }
         }
       }
 
       const successCount = results.filter(r => r.success).length;
+      const skippedKlinesCount = results.filter(r => r.skippedReason === 'insufficient_klines').length;
+      const fromRankingCount = results.filter(r => r.success && r.fromRanking).length;
+      const targetMet = successCount >= targetCount;
+
       log('✅ Bulk watcher creation complete', {
-        total: input.symbols.length,
+        total: results.length,
         success: successCount,
-        failed: input.symbols.length - successCount,
+        targetCount,
+        targetMet,
+        fromRanking: fromRankingCount,
+        skippedInsufficientKlines: skippedKlinesCount,
       });
 
       return {
         results,
         successCount,
-        failedCount: input.symbols.length - successCount,
+        failedCount: results.length - successCount,
+        skippedKlinesCount,
+        fromRankingCount,
+        targetCount,
+        targetMet,
       };
     }),
 
