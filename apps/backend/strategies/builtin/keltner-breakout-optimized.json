@@ -14,17 +14,6 @@
   "status": "active",
   "enabled": true,
   "group": "breakout",
-  "optimizedParams": {
-    "maxPositionSize": 80,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": true,
-    "minConfidence": 65,
-    "commission": 0.001,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 90,
-    "trailingATRMultiplier": 3,
-    "breakEvenAfterR": 2
-  },
   "backtestSummary": {
     "profitFactor": 3.79,
     "winRate": 69.23,
@@ -198,7 +187,7 @@
   },
   "filters": {
     "minConfidence": 65,
-    "minRiskReward": 1.0,
+    "minRiskReward": 1,
     "trendFilter": {
       "enabled": true,
       "indicator": "ema",
@@ -212,10 +201,22 @@
     "candlePattern": {
       "lookback": 2,
       "candles": [
-        { "offset": -1, "role": "reference", "descriptionKey": "strategies.keltner.candleMinus1" },
-        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.keltner.candleTrigger" }
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.keltner.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.keltner.candleTrigger"
+        }
       ],
-      "indicatorsToShow": ["keltner", "atr", "rsi"]
+      "indicatorsToShow": [
+        "keltner",
+        "atr",
+        "rsi"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.keltner.summary",

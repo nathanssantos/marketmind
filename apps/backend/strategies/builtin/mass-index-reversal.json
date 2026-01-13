@@ -2,7 +2,7 @@
   "id": "mass-index-reversal",
   "name": "Mass Index Reversal",
   "version": "1.0.0",
-  "description": "Mass Index para prever revers\u00f5es. Mede range expansion/contraction. Entry quando Mass Index > 27 e depois cai abaixo de 26.5 (reversal bulge).",
+  "description": "Mass Index para prever reversões. Mede range expansion/contraction. Entry quando Mass Index > 27 e depois cai abaixo de 26.5 (reversal bulge).",
   "author": "MarketMind",
   "tags": [
     "reversal",
@@ -12,16 +12,6 @@
   ],
   "source": "Donald Dorsey - Mass Index Creator",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 70,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 80,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": false,
-    "onlyWithTrend": false,
-    "minConfidence": 70,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -40,14 +30,14 @@
       "min": 7,
       "max": 12,
       "step": 1,
-      "description": "Per\u00edodo EMA para Mass Index"
+      "description": "Período EMA para Mass Index"
     },
     "sumPeriod": {
       "default": 25,
       "min": 20,
       "max": 30,
       "step": 5,
-      "description": "Per\u00edodo de soma"
+      "description": "Período de soma"
     },
     "bulgeThreshold": {
       "default": 27,
@@ -162,6 +152,6 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

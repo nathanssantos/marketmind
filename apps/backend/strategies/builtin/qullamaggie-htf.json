@@ -14,17 +14,6 @@
   "status": "active",
   "enabled": true,
   "group": "qullamaggie",
-  "optimizedParams": {
-    "maxPositionSize": 100,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": true,
-    "minConfidence": 70,
-    "commission": 0.001,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 50,
-    "trailingATRMultiplier": 2,
-    "breakEvenAfterR": 1
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -324,13 +313,37 @@
     "candlePattern": {
       "lookback": 5,
       "candles": [
-        { "offset": -4, "role": "flagpole_end", "descriptionKey": "strategies.qullamHtf.candleMinus4" },
-        { "offset": -3, "role": "consolidation", "descriptionKey": "strategies.qullamHtf.candleMinus3" },
-        { "offset": -2, "role": "consolidation", "descriptionKey": "strategies.qullamHtf.candleMinus2" },
-        { "offset": -1, "role": "consolidation", "descriptionKey": "strategies.qullamHtf.candleMinus1" },
-        { "offset": 0, "role": "breakout", "descriptionKey": "strategies.qullamHtf.candleTrigger" }
+        {
+          "offset": -4,
+          "role": "flagpole_end",
+          "descriptionKey": "strategies.qullamHtf.candleMinus4"
+        },
+        {
+          "offset": -3,
+          "role": "consolidation",
+          "descriptionKey": "strategies.qullamHtf.candleMinus3"
+        },
+        {
+          "offset": -2,
+          "role": "consolidation",
+          "descriptionKey": "strategies.qullamHtf.candleMinus2"
+        },
+        {
+          "offset": -1,
+          "role": "consolidation",
+          "descriptionKey": "strategies.qullamHtf.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "breakout",
+          "descriptionKey": "strategies.qullamHtf.candleTrigger"
+        }
       ],
-      "indicatorsToShow": ["ema10", "ema20", "volume"]
+      "indicatorsToShow": [
+        "ema10",
+        "ema20",
+        "volume"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.qullamHtf.summary",

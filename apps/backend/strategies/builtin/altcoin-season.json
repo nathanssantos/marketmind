@@ -12,18 +12,6 @@
   ],
   "source": "Crypto Market Analysis",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 80,
-    "maxConcurrentPositions": 3,
-    "maxTotalExposure": 100,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": true,
-    "trailingATRMultiplier": 2.5,
-    "breakEvenAfterR": 1.5,
-    "onlyWithTrend": false,
-    "minConfidence": 70,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [

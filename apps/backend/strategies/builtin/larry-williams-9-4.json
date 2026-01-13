@@ -13,14 +13,6 @@
   "status": "active",
   "enabled": true,
   "group": "larry-williams",
-  "optimizedParams": {
-    "maxPositionSize": 40,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": true,
-    "minConfidence": 60,
-    "maxConcurrentPositions": 2,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -50,22 +42,22 @@
     },
     "atrStopMultiplier": {
       "default": 1.5,
-      "min": 1.0,
-      "max": 3.0,
+      "min": 1,
+      "max": 3,
       "step": 0.25,
       "description": "ATR multiplier for stop loss"
     },
     "atrTargetMultiplier": {
       "default": 2.5,
       "min": 1.5,
-      "max": 4.0,
+      "max": 4,
       "step": 0.5,
       "description": "ATR multiplier for take profit"
     },
     "volumeMultiplier": {
-      "default": 1.0,
+      "default": 1,
       "min": 0.5,
-      "max": 2.0,
+      "max": 2,
       "step": 0.25,
       "description": "Minimum volume as multiplier of average"
     }
@@ -205,7 +197,7 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 1.0,
+    "minRiskReward": 1,
     "trendFilter": {
       "enabled": true,
       "indicator": "ema",
@@ -219,12 +211,33 @@
     "candlePattern": {
       "lookback": 4,
       "candles": [
-        { "offset": -3, "role": "reference", "descriptionKey": "strategies.lw94.candleMinus3" },
-        { "offset": -2, "role": "confirmation", "descriptionKey": "strategies.lw94.candleMinus2" },
-        { "offset": -1, "role": "confirmation", "descriptionKey": "strategies.lw94.candleMinus1" },
-        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.lw94.candleTrigger" }
+        {
+          "offset": -3,
+          "role": "reference",
+          "descriptionKey": "strategies.lw94.candleMinus3"
+        },
+        {
+          "offset": -2,
+          "role": "confirmation",
+          "descriptionKey": "strategies.lw94.candleMinus2"
+        },
+        {
+          "offset": -1,
+          "role": "confirmation",
+          "descriptionKey": "strategies.lw94.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.lw94.candleTrigger"
+        }
       ],
-      "indicatorsToShow": ["ema9", "atr", "ema200", "volume"]
+      "indicatorsToShow": [
+        "ema9",
+        "atr",
+        "ema200",
+        "volume"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.lw94.summary",

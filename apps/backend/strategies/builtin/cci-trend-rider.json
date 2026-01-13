@@ -11,13 +11,6 @@
     "trend-rider"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 50,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": true,
-    "minConfidence": 60,
-    "commission": 0.001
-  },
   "backtestSummary": {
     "profitFactor": 0.66,
     "winRate": 31.71,
@@ -198,6 +191,6 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

@@ -13,17 +13,6 @@
   "status": "active",
   "enabled": true,
   "group": "larry-williams",
-  "optimizedParams": {
-    "maxPositionSize": 100,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": false,
-    "minConfidence": 60,
-    "commission": 0.001,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 70,
-    "trailingATRMultiplier": 3,
-    "breakEvenAfterR": 2
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -198,7 +187,7 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 1.0,
+    "minRiskReward": 1,
     "trendFilter": {
       "enabled": true,
       "indicator": "ema",
@@ -212,11 +201,28 @@
     "candlePattern": {
       "lookback": 3,
       "candles": [
-        { "offset": -2, "role": "reference", "descriptionKey": "strategies.lw91.candleMinus2" },
-        { "offset": -1, "role": "confirmation", "descriptionKey": "strategies.lw91.candleMinus1" },
-        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.lw91.candleTrigger" }
+        {
+          "offset": -2,
+          "role": "reference",
+          "descriptionKey": "strategies.lw91.candleMinus2"
+        },
+        {
+          "offset": -1,
+          "role": "confirmation",
+          "descriptionKey": "strategies.lw91.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.lw91.candleTrigger"
+        }
       ],
-      "indicatorsToShow": ["ema9", "atr", "ema200", "volume"]
+      "indicatorsToShow": [
+        "ema9",
+        "atr",
+        "ema200",
+        "volume"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.lw91.summary",

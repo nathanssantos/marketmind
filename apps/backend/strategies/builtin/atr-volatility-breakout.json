@@ -2,7 +2,7 @@
   "id": "atr-volatility-breakout",
   "name": "ATR Volatility Breakout",
   "version": "1.0.0",
-  "description": "Estrat\u00e9gia de breakout baseada em ATR: entry quando pre\u00e7o move mais de 2x ATR da abertura. Stop loss em 1.5x ATR. Captura movimentos explosivos.",
+  "description": "Estratégia de breakout baseada em ATR: entry quando preço move mais de 2x ATR da abertura. Stop loss em 1.5x ATR. Captura movimentos explosivos.",
   "author": "MarketMind",
   "tags": [
     "breakout",
@@ -12,18 +12,6 @@
   ],
   "source": "TastyCrypto - Best Technical Indicators",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 70,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 80,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": true,
-    "trailingATRMultiplier": 2,
-    "breakEvenAfterR": 1,
-    "onlyWithTrend": false,
-    "minConfidence": 65,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "4h",
     "secondary": [
@@ -42,7 +30,7 @@
       "min": 10,
       "max": 21,
       "step": 1,
-      "description": "Per\u00edodo do ATR"
+      "description": "Período do ATR"
     },
     "breakoutMultiplier": {
       "default": 2,
@@ -139,6 +127,6 @@
   },
   "filters": {
     "minConfidence": 65,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

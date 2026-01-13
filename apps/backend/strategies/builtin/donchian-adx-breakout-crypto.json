@@ -2,7 +2,7 @@
   "id": "donchian-adx-breakout-crypto",
   "name": "Donchian ADX Low Volatility Breakout",
   "version": "1.0.0",
-  "description": "Estrat\u00e9gia trend-following para Bitcoin: entry no breakout do Donchian 15 dias APENAS quando ADX < 25 (baixa volatilidade). Backtestada com 90% CAGR, 63% win rate em BTC. Explora breakouts explosivos ap\u00f3s consolida\u00e7\u00e3o.",
+  "description": "Estratégia trend-following para Bitcoin: entry no breakout do Donchian 15 dias APENAS quando ADX < 25 (baixa volatilidade). Backtestada com 90% CAGR, 63% win rate em BTC. Explora breakouts explosivos após consolidação.",
   "author": "MarketMind",
   "tags": [
     "trend-following",
@@ -14,18 +14,6 @@
   ],
   "source": "QuantifiedStrategies.com - Bitcoin Trend-Following Strategy Using ChatGPT",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 90,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 90,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": true,
-    "trailingATRMultiplier": 3,
-    "breakEvenAfterR": 1.5,
-    "onlyWithTrend": false,
-    "minConfidence": 65,
-    "commission": 0.001
-  },
   "backtestSummary": {
     "referenceCAGR": 90,
     "referenceWinRate": 63,
@@ -53,21 +41,21 @@
       "min": 10,
       "max": 25,
       "step": 5,
-      "description": "Per\u00edodo do Donchian Channel (15 otimizado)"
+      "description": "Período do Donchian Channel (15 otimizado)"
     },
     "adxPeriod": {
       "default": 14,
       "min": 10,
       "max": 20,
       "step": 2,
-      "description": "Per\u00edodo do ADX"
+      "description": "Período do ADX"
     },
     "adxThreshold": {
       "default": 25,
       "min": 20,
       "max": 30,
       "step": 5,
-      "description": "ADX m\u00e1ximo para entry (low volatility)"
+      "description": "ADX máximo para entry (low volatility)"
     },
     "atrMultiplier": {
       "default": 2,

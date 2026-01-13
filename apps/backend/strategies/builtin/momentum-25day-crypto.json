@@ -2,7 +2,7 @@
   "id": "momentum-25day-crypto",
   "name": "25-Day Price Momentum",
   "version": "1.0.0",
-  "description": "Estrat\u00e9gia simples de momentum para Bitcoin: compra quando close > close de 25 dias atr\u00e1s, vende quando close < close de 25 dias atr\u00e1s. Backtestada com 108% CAGR, 40% win rate, PF 3.84. Alta taxa de ganho por trade (8.7% avg).",
+  "description": "Estratégia simples de momentum para Bitcoin: compra quando close > close de 25 dias atrás, vende quando close < close de 25 dias atrás. Backtestada com 108% CAGR, 40% win rate, PF 3.84. Alta taxa de ganho por trade (8.7% avg).",
   "author": "MarketMind",
   "tags": [
     "momentum",
@@ -12,18 +12,6 @@
   ],
   "source": "QuantifiedStrategies.com - Trend Following and Momentum on Bitcoin",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 90,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 90,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": true,
-    "trailingATRMultiplier": 4,
-    "breakEvenAfterR": 2,
-    "onlyWithTrend": false,
-    "minConfidence": 60,
-    "commission": 0.001
-  },
   "backtestSummary": {
     "referenceCAGR": 108,
     "referenceMaxDrawdown": 66,
@@ -52,7 +40,7 @@
       "min": 15,
       "max": 50,
       "step": 5,
-      "description": "Per\u00edodo de lookback para compara\u00e7\u00e3o de pre\u00e7o"
+      "description": "Período de lookback para comparação de preço"
     },
     "atrMultiplier": {
       "default": 3,

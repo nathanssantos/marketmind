@@ -11,13 +11,6 @@
     "momentum"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 50,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": true,
-    "minConfidence": 65,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1h",
     "secondary": [
@@ -54,15 +47,15 @@
     },
     "stopLossATR": {
       "default": 1.5,
-      "min": 1.0,
-      "max": 3.0,
+      "min": 1,
+      "max": 3,
       "step": 0.25,
       "description": "Stop loss as ATR multiplier"
     },
     "takeProfitRatio": {
-      "default": 3.0,
-      "min": 2.0,
-      "max": 5.0,
+      "default": 3,
+      "min": 2,
+      "max": 5,
       "step": 0.5,
       "description": "Risk:Reward ratio"
     }
@@ -178,7 +171,7 @@
   },
   "filters": {
     "minConfidence": 65,
-    "minRiskReward": 2.0,
+    "minRiskReward": 2,
     "trendFilter": {
       "enabled": true,
       "indicator": "ema",

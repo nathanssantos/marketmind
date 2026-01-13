@@ -14,18 +14,6 @@
   "status": "active",
   "enabled": true,
   "group": "pattern",
-  "optimizedParams": {
-    "maxPositionSize": 80,
-    "maxConcurrentPositions": 3,
-    "maxTotalExposure": 100,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": true,
-    "trailingATRMultiplier": 2.5,
-    "breakEvenAfterR": 1.5,
-    "onlyWithTrend": false,
-    "minConfidence": 65,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -169,9 +157,17 @@
     "candlePattern": {
       "lookback": 1,
       "candles": [
-        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.momentumRotation.candleTrigger" }
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.momentumRotation.candleTrigger"
+        }
       ],
-      "indicatorsToShow": ["roc", "ema50", "atr"]
+      "indicatorsToShow": [
+        "roc",
+        "ema50",
+        "atr"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.momentumRotation.summary",

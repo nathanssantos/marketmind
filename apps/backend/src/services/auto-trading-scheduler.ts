@@ -900,20 +900,7 @@ export class AutoTradingScheduler {
         return;
       }
 
-      const strategy = strategies.find(s => s.id === setup.type);
-      const strategyParams = strategy?.optimizedParams;
-
-      const effectiveMaxPositionSize = strategyParams?.maxPositionSize
-        ?? parseFloat(config.maxPositionSize);
-
-      if (strategyParams) {
-        log('📈 Using strategy optimizedParams (profit-maximized)', {
-          strategyId: setup.type,
-          walletMaxPositionSize: parseFloat(config.maxPositionSize),
-          strategyMaxPositionSize: strategyParams.maxPositionSize,
-          effectiveMaxPositionSize,
-        });
-      }
+      const effectiveMaxPositionSize = parseFloat(config.maxPositionSize);
 
       const [wallet] = await db
         .select()

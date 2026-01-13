@@ -12,16 +12,6 @@
   ],
   "source": "William Blau - TSI Creator",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 70,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 80,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": false,
-    "onlyWithTrend": false,
-    "minConfidence": 65,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -168,6 +158,6 @@
   },
   "filters": {
     "minConfidence": 65,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

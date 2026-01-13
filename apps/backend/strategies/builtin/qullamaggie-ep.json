@@ -14,17 +14,6 @@
   "status": "active",
   "enabled": true,
   "group": "qullamaggie",
-  "optimizedParams": {
-    "maxPositionSize": 100,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": false,
-    "minConfidence": 65,
-    "commission": 0.001,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 60,
-    "trailingATRMultiplier": 2,
-    "breakEvenAfterR": 1
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -286,11 +275,27 @@
     "candlePattern": {
       "lookback": 3,
       "candles": [
-        { "offset": -2, "role": "prior_close", "descriptionKey": "strategies.qullamEp.candleMinus2" },
-        { "offset": -1, "role": "gap_reference", "descriptionKey": "strategies.qullamEp.candleMinus1" },
-        { "offset": 0, "role": "gap_day", "descriptionKey": "strategies.qullamEp.candleTrigger" }
+        {
+          "offset": -2,
+          "role": "prior_close",
+          "descriptionKey": "strategies.qullamEp.candleMinus2"
+        },
+        {
+          "offset": -1,
+          "role": "gap_reference",
+          "descriptionKey": "strategies.qullamEp.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "gap_day",
+          "descriptionKey": "strategies.qullamEp.candleTrigger"
+        }
       ],
-      "indicatorsToShow": ["ema10", "ema20", "volume"]
+      "indicatorsToShow": [
+        "ema10",
+        "ema20",
+        "volume"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.qullamEp.summary",

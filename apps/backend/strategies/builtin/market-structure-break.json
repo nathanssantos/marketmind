@@ -12,18 +12,6 @@
   ],
   "source": "Smart Money Concepts",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 70,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 80,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": true,
-    "trailingATRMultiplier": 2,
-    "breakEvenAfterR": 1,
-    "onlyWithTrend": false,
-    "minConfidence": 70,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "4h",
     "secondary": [
@@ -123,6 +111,6 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

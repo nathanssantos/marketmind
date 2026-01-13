@@ -11,13 +11,6 @@
     "daily"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 50,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": true,
-    "minConfidence": 60,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -171,6 +164,6 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

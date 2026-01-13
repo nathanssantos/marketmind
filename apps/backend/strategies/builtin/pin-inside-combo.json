@@ -11,13 +11,6 @@
     "reversal"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 45,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": false,
-    "minConfidence": 75,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -33,23 +26,23 @@
   },
   "parameters": {
     "pinBarRatio": {
-      "default": 2.0,
+      "default": 2,
       "min": 1.5,
-      "max": 3.0,
+      "max": 3,
       "step": 0.5,
       "description": "Wick to body ratio for valid pin bar"
     },
     "srTolerance": {
-      "default": 1.0,
+      "default": 1,
       "min": 0.5,
-      "max": 2.0,
+      "max": 2,
       "step": 0.25,
       "description": "Support/Resistance tolerance %"
     },
     "targetMultiplier": {
-      "default": 2.0,
+      "default": 2,
       "min": 1.5,
-      "max": 3.0,
+      "max": 3,
       "step": 0.5,
       "description": "Risk:Reward target"
     },
@@ -177,6 +170,6 @@
   },
   "filters": {
     "minConfidence": 75,
-    "minRiskReward": 2.0
+    "minRiskReward": 2
   }
 }

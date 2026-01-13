@@ -11,13 +11,6 @@
     "classic"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 50,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": false,
-    "minConfidence": 70,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -46,9 +39,9 @@
       "description": "Minimum breakout % above Point 2"
     },
     "targetMultiplier": {
-      "default": 2.0,
+      "default": 2,
       "min": 1.5,
-      "max": 3.0,
+      "max": 3,
       "step": 0.5,
       "description": "Risk:Reward target multiplier"
     },
@@ -159,6 +152,6 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 2.0
+    "minRiskReward": 2
   }
 }

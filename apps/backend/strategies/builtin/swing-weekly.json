@@ -2,7 +2,7 @@
   "id": "swing-weekly",
   "name": "Swing Weekly",
   "version": "1.0.0",
-  "description": "Estrat\u00e9gia swing trading semanal. EMA 20 + RSI para posi\u00e7\u00f5es de m\u00e9dio prazo. Menos trades, maiores movimentos.",
+  "description": "Estratégia swing trading semanal. EMA 20 + RSI para posições de médio prazo. Menos trades, maiores movimentos.",
   "author": "MarketMind",
   "tags": [
     "swing",
@@ -12,18 +12,6 @@
   ],
   "source": "Swing Trading Methods",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 90,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 90,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": true,
-    "trailingATRMultiplier": 3,
-    "breakEvenAfterR": 2,
-    "onlyWithTrend": true,
-    "minConfidence": 70,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1w",
     "secondary": [
@@ -43,14 +31,14 @@
       "min": 15,
       "max": 30,
       "step": 5,
-      "description": "EMA per\u00edodo"
+      "description": "EMA período"
     },
     "rsiPeriod": {
       "default": 14,
       "min": 10,
       "max": 21,
       "step": 1,
-      "description": "RSI per\u00edodo"
+      "description": "RSI período"
     },
     "oversold": {
       "default": 40,

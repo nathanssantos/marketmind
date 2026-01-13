@@ -2,7 +2,7 @@
   "id": "pivot-points-crypto",
   "name": "Pivot Points Crypto",
   "version": "1.0.0",
-  "description": "Classic Pivot Points strategy para crypto. Entry em bounces de n\u00edveis de suporte/resist\u00eancia calculados (S1, R1, etc).",
+  "description": "Classic Pivot Points strategy para crypto. Entry em bounces de níveis de suporte/resistência calculados (S1, R1, etc).",
   "author": "MarketMind",
   "tags": [
     "support-resistance",
@@ -12,16 +12,6 @@
   ],
   "source": "Floor Traders Classic",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 70,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 80,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": false,
-    "onlyWithTrend": false,
-    "minConfidence": 70,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1h",
     "secondary": [
@@ -154,6 +144,6 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

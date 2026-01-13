@@ -11,13 +11,6 @@
     "spread"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 25,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": false,
-    "minConfidence": 60,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1h",
     "secondary": [
@@ -47,7 +40,7 @@
     "spreadMultiplier": {
       "default": 0.5,
       "min": 0.25,
-      "max": 1.0,
+      "max": 1,
       "step": 0.25,
       "description": "ATR multiplier for spread width"
     },
@@ -59,9 +52,9 @@
       "description": "Minimum spread as % of price"
     },
     "maxSpreadPercent": {
-      "default": 1.0,
+      "default": 1,
       "min": 0.5,
-      "max": 2.0,
+      "max": 2,
       "step": 0.25,
       "description": "Maximum spread as % of price"
     }
@@ -137,6 +130,6 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

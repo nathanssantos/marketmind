@@ -11,13 +11,6 @@
     "reversal"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 40,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": false,
-    "minConfidence": 75,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1h",
     "secondary": [
@@ -45,9 +38,9 @@
       "description": "Min sweep distance % below/above level"
     },
     "maxSweepDistance": {
-      "default": 1.0,
+      "default": 1,
       "min": 0.5,
-      "max": 2.0,
+      "max": 2,
       "step": 0.25,
       "description": "Max sweep distance %"
     },
@@ -66,9 +59,9 @@
       "description": "ATR period for stop/target"
     },
     "targetMultiplier": {
-      "default": 2.0,
+      "default": 2,
       "min": 1.5,
-      "max": 3.0,
+      "max": 3,
       "step": 0.5,
       "description": "Risk:Reward target"
     }
@@ -174,6 +167,6 @@
   },
   "filters": {
     "minConfidence": 65,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

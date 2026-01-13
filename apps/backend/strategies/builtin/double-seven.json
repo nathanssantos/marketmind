@@ -12,13 +12,6 @@
     "swing"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 75,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": false,
-    "minConfidence": 65,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -158,6 +151,6 @@
   },
   "filters": {
     "minConfidence": 65,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

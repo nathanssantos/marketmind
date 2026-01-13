@@ -2,7 +2,7 @@
   "id": "dema-crossover-crypto",
   "name": "DEMA Crossover Crypto",
   "version": "1.0.0",
-  "description": "Double EMA (DEMA) crossover strategy. DEMA reage mais r\u00e1pido que EMA tradicional. Entry quando DEMA r\u00e1pida cruza DEMA lenta.",
+  "description": "Double EMA (DEMA) crossover strategy. DEMA reage mais rápido que EMA tradicional. Entry quando DEMA rápida cruza DEMA lenta.",
   "author": "MarketMind",
   "tags": [
     "trend-following",
@@ -12,18 +12,6 @@
   ],
   "source": "TradingView - DEMA Studies",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 80,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 80,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": true,
-    "trailingATRMultiplier": 2.5,
-    "breakEvenAfterR": 1.5,
-    "onlyWithTrend": false,
-    "minConfidence": 65,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "4h",
     "secondary": [
@@ -42,14 +30,14 @@
       "min": 8,
       "max": 15,
       "step": 1,
-      "description": "Per\u00edodo DEMA r\u00e1pida"
+      "description": "Período DEMA rápida"
     },
     "slowPeriod": {
       "default": 26,
       "min": 20,
       "max": 35,
       "step": 5,
-      "description": "Per\u00edodo DEMA lenta"
+      "description": "Período DEMA lenta"
     },
     "atrMultiplier": {
       "default": 2,

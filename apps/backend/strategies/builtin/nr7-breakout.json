@@ -12,18 +12,6 @@
     "classic"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 90,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 90,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": true,
-    "trailingATRMultiplier": 5,
-    "breakEvenAfterR": 2,
-    "onlyWithTrend": true,
-    "minConfidence": 60,
-    "commission": 0.001
-  },
   "backtestSummary": {
     "profitFactor": 1.7,
     "winRate": 53.7,
@@ -174,6 +162,6 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 2.0
+    "minRiskReward": 2
   }
 }

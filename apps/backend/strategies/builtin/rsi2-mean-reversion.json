@@ -12,13 +12,6 @@
     "proven"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 75,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": false,
-    "minConfidence": 70,
-    "commission": 0.001
-  },
   "backtestSummary": {
     "profitFactor": 1.21,
     "winRate": 29.27,
@@ -172,6 +165,6 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

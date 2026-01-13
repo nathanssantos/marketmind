@@ -12,16 +12,9 @@
     "2025"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 60,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": false,
-    "minConfidence": 60,
-    "commission": 0.001
-  },
   "backtestSummary": {
     "profitFactor": 0.92,
-    "winRate": 36.0,
+    "winRate": 36,
     "totalTrades": 25,
     "netPnlPercent": -1.89,
     "testedAt": "2025-12-07",
@@ -176,6 +169,6 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

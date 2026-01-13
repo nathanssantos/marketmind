@@ -12,13 +12,6 @@
     "volatility"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 50,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": true,
-    "minConfidence": 65,
-    "commission": 0.001
-  },
   "backtestSummary": {
     "profitFactor": 0.41,
     "winRate": 30.77,

@@ -2,7 +2,7 @@
   "id": "rsi-oversold-bounce",
   "name": "RSI Oversold Bounce",
   "version": "1.0.0",
-  "description": "Long quando RSI sai da zona de oversold (cruza acima de 30). Ideal para capturar revers\u00f5es ap\u00f3s quedas fortes.",
+  "description": "Long quando RSI sai da zona de oversold (cruza acima de 30). Ideal para capturar reversões após quedas fortes.",
   "author": "MarketMind",
   "tags": [
     "reversal",
@@ -11,13 +11,6 @@
     "momentum"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 60,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": false,
-    "minConfidence": 60,
-    "commission": 0.001
-  },
   "backtestSummary": {
     "profitFactor": 2.16,
     "winRate": 53.85,
@@ -45,21 +38,21 @@
       "min": 7,
       "max": 21,
       "step": 1,
-      "description": "Per\u00edodo do RSI"
+      "description": "Período do RSI"
     },
     "oversoldLevel": {
       "default": 30,
       "min": 20,
       "max": 35,
       "step": 5,
-      "description": "N\u00edvel de oversold"
+      "description": "Nível de oversold"
     },
     "exitLevel": {
       "default": 50,
       "min": 40,
       "max": 60,
       "step": 5,
-      "description": "N\u00edvel de sa\u00edda (RSI neutro)"
+      "description": "Nível de saída (RSI neutro)"
     },
     "atrMultiplier": {
       "default": 2,
@@ -160,7 +153,7 @@
           "right": "volume.sma20"
         },
         "bonus": 10,
-        "description": "Volume acima da m\u00e9dia"
+        "description": "Volume acima da média"
       },
       {
         "condition": {
@@ -169,7 +162,7 @@
           "right": "ema20"
         },
         "bonus": 5,
-        "description": "Pre\u00e7o acima da EMA 20"
+        "description": "Preço acima da EMA 20"
       }
     ],
     "max": 95

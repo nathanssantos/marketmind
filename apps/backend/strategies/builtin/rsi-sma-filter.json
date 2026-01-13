@@ -2,7 +2,7 @@
   "id": "rsi-sma-filter",
   "name": "RSI SMA Filter",
   "version": "1.0.0",
-  "description": "RSI com filtro de SMA200 para confirmar tend\u00eancia. Entry RSI < 30 quando pre\u00e7o acima da SMA200. Combina mean-reversion com trend filter.",
+  "description": "RSI com filtro de SMA200 para confirmar tendência. Entry RSI < 30 quando preço acima da SMA200. Combina mean-reversion com trend filter.",
   "author": "MarketMind",
   "tags": [
     "mean-reversion",
@@ -12,16 +12,6 @@
   ],
   "source": "TradingView Community",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 70,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 80,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": false,
-    "onlyWithTrend": true,
-    "minConfidence": 70,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -39,28 +29,28 @@
       "min": 10,
       "max": 21,
       "step": 1,
-      "description": "Per\u00edodo do RSI"
+      "description": "Período do RSI"
     },
     "smaPeriod": {
       "default": 200,
       "min": 100,
       "max": 250,
       "step": 50,
-      "description": "Per\u00edodo da SMA para filtro"
+      "description": "Período da SMA para filtro"
     },
     "oversold": {
       "default": 30,
       "min": 20,
       "max": 35,
       "step": 5,
-      "description": "N\u00edvel oversold"
+      "description": "Nível oversold"
     },
     "overbought": {
       "default": 70,
       "min": 65,
       "max": 80,
       "step": 5,
-      "description": "N\u00edvel overbought"
+      "description": "Nível overbought"
     },
     "atrMultiplier": {
       "default": 2,
@@ -188,6 +178,6 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

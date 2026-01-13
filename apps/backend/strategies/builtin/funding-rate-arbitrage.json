@@ -2,7 +2,7 @@
   "id": "funding-rate-arbitrage",
   "name": "Funding Rate Arbitrage",
   "version": "1.0.0",
-  "description": "Estrat\u00e9gia baseada em funding rates de futuros. Entry contra posi\u00e7\u00f5es extremas de funding. Mean reversion de sentiment.",
+  "description": "Estratégia baseada em funding rates de futuros. Entry contra posições extremas de funding. Mean reversion de sentiment.",
   "author": "MarketMind",
   "tags": [
     "funding-rate",
@@ -12,16 +12,6 @@
   ],
   "source": "Crypto Derivatives Trading",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 60,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 70,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": false,
-    "onlyWithTrend": false,
-    "minConfidence": 70,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "8h",
     "secondary": [
@@ -151,6 +141,6 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

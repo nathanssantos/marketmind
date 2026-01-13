@@ -2,7 +2,7 @@
   "id": "macd-divergence",
   "name": "MACD Signal Line Crossover",
   "version": "1.0.0",
-  "description": "Long quando linha MACD cruza acima da linha de sinal. Short no cruzamento inverso. Estrat\u00e9gia cl\u00e1ssica de momentum.",
+  "description": "Long quando linha MACD cruza acima da linha de sinal. Short no cruzamento inverso. Estratégia clássica de momentum.",
   "author": "MarketMind",
   "tags": [
     "momentum",
@@ -11,13 +11,6 @@
     "trend"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 50,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": true,
-    "minConfidence": 60,
-    "commission": 0.001
-  },
   "backtestSummary": {
     "profitFactor": 0.84,
     "winRate": 32.73,
@@ -45,21 +38,21 @@
       "min": 8,
       "max": 16,
       "step": 1,
-      "description": "Per\u00edodo da EMA r\u00e1pida do MACD"
+      "description": "Período da EMA rápida do MACD"
     },
     "slowPeriod": {
       "default": 26,
       "min": 20,
       "max": 32,
       "step": 1,
-      "description": "Per\u00edodo da EMA lenta do MACD"
+      "description": "Período da EMA lenta do MACD"
     },
     "signalPeriod": {
       "default": 9,
       "min": 5,
       "max": 12,
       "step": 1,
-      "description": "Per\u00edodo da linha de sinal"
+      "description": "Período da linha de sinal"
     },
     "atrMultiplier": {
       "default": 1.5,
@@ -151,7 +144,7 @@
           "right": "volume.sma20"
         },
         "bonus": 10,
-        "description": "Volume acima da m\u00e9dia"
+        "description": "Volume acima da média"
       },
       {
         "condition": {
@@ -160,7 +153,7 @@
           "right": "ema50"
         },
         "bonus": 10,
-        "description": "Tend\u00eancia de alta (LONG)"
+        "description": "Tendência de alta (LONG)"
       },
       {
         "condition": {
@@ -169,13 +162,13 @@
           "right": "ema50"
         },
         "bonus": 10,
-        "description": "Tend\u00eancia de baixa (SHORT)"
+        "description": "Tendência de baixa (SHORT)"
       }
     ],
     "max": 90
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

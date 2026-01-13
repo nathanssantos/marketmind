@@ -2,7 +2,7 @@
   "id": "klinger-oscillator",
   "name": "Klinger Oscillator",
   "version": "1.0.0",
-  "description": "Klinger Volume Oscillator para detectar fluxo de dinheiro long-term. Combina price movement com volume para confirmar tend\u00eancias.",
+  "description": "Klinger Volume Oscillator para detectar fluxo de dinheiro long-term. Combina price movement com volume para confirmar tendências.",
   "author": "MarketMind",
   "tags": [
     "volume",
@@ -12,16 +12,6 @@
   ],
   "source": "Stephen Klinger - KVO Creator",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 70,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 80,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": false,
-    "onlyWithTrend": false,
-    "minConfidence": 70,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -39,21 +29,21 @@
       "min": 30,
       "max": 40,
       "step": 2,
-      "description": "Per\u00edodo EMA r\u00e1pida"
+      "description": "Período EMA rápida"
     },
     "slowPeriod": {
       "default": 55,
       "min": 50,
       "max": 60,
       "step": 5,
-      "description": "Per\u00edodo EMA lenta"
+      "description": "Período EMA lenta"
     },
     "signalPeriod": {
       "default": 13,
       "min": 10,
       "max": 18,
       "step": 1,
-      "description": "Per\u00edodo signal line"
+      "description": "Período signal line"
     },
     "atrMultiplier": {
       "default": 2,
@@ -167,6 +157,6 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

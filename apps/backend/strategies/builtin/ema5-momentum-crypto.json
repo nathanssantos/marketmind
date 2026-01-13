@@ -2,7 +2,7 @@
   "id": "ema5-momentum-crypto",
   "name": "EMA5 Momentum Crypto",
   "version": "1.0.0",
-  "description": "Estrat\u00e9gia de momentum otimizada para crypto baseada em EMA de 5 dias. Backtestada com 145% CAGR em BTC. Entry quando pre\u00e7o cruza acima da EMA5, exit quando cruza abaixo.",
+  "description": "Estratégia de momentum otimizada para crypto baseada em EMA de 5 dias. Backtestada com 145% CAGR em BTC. Entry quando preço cruza acima da EMA5, exit quando cruza abaixo.",
   "author": "MarketMind",
   "tags": [
     "trend-following",
@@ -12,18 +12,6 @@
   ],
   "source": "QuantifiedStrategies.com - Trend Following on Bitcoin",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 90,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 90,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": true,
-    "trailingATRMultiplier": 3,
-    "breakEvenAfterR": 1.5,
-    "onlyWithTrend": false,
-    "minConfidence": 60,
-    "commission": 0.001
-  },
   "backtestSummary": {
     "referenceCAGR": 145,
     "referenceMaxDrawdown": 39,
@@ -49,14 +37,14 @@
       "min": 3,
       "max": 10,
       "step": 1,
-      "description": "Per\u00edodo da EMA (otimizado: 5)"
+      "description": "Período da EMA (otimizado: 5)"
     },
     "atrPeriod": {
       "default": 14,
       "min": 10,
       "max": 20,
       "step": 1,
-      "description": "Per\u00edodo do ATR para stops"
+      "description": "Período do ATR para stops"
     },
     "atrMultiplier": {
       "default": 2,
@@ -159,7 +147,7 @@
           "right": "volume.sma20"
         },
         "bonus": 10,
-        "description": "Volume acima da m\u00e9dia"
+        "description": "Volume acima da média"
       },
       {
         "condition": {

@@ -12,16 +12,6 @@
   ],
   "source": "Crypto Scalping Methods",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 50,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 50,
-    "useAlgorithmicLevels": false,
-    "useTrailingStop": false,
-    "onlyWithTrend": false,
-    "minConfidence": 70,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "5m",
     "secondary": [
@@ -152,6 +142,6 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

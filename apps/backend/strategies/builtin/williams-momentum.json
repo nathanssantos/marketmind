@@ -13,17 +13,6 @@
   "status": "active",
   "enabled": true,
   "group": "momentum",
-  "optimizedParams": {
-    "maxPositionSize": 60,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": false,
-    "minConfidence": 55,
-    "commission": 0.001,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 90,
-    "trailingATRMultiplier": 3,
-    "breakEvenAfterR": 2
-  },
   "backtestSummary": {
     "profitFactor": 1.2,
     "winRate": 47.14,
@@ -228,10 +217,22 @@
     "candlePattern": {
       "lookback": 2,
       "candles": [
-        { "offset": -1, "role": "reference", "descriptionKey": "strategies.williamsR.candleMinus1" },
-        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.williamsR.candleTrigger" }
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.williamsR.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.williamsR.candleTrigger"
+        }
       ],
-      "indicatorsToShow": ["williamsR", "atr", "ema20"]
+      "indicatorsToShow": [
+        "williamsR",
+        "atr",
+        "ema20"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.williamsR.summary",

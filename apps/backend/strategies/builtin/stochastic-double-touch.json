@@ -15,18 +15,6 @@
   "status": "active",
   "enabled": true,
   "group": "pattern",
-  "optimizedParams": {
-    "maxPositionSize": 25,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 50,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": true,
-    "trailingATRMultiplier": 3,
-    "breakEvenAfterR": 1.5,
-    "onlyWithTrend": false,
-    "minConfidence": 70,
-    "commission": 0.001
-  },
   "backtestSummary": {
     "referenceCAGR": 0,
     "referenceMaxDrawdown": 0,
@@ -77,8 +65,8 @@
     },
     "volumeMultiplier": {
       "default": 1.2,
-      "min": 1.0,
-      "max": 2.0,
+      "min": 1,
+      "max": 2,
       "step": 0.1,
       "description": "Multiplicador de volume mínimo"
     },
@@ -200,7 +188,7 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 2.0,
+    "minRiskReward": 2,
     "trendFilter": {
       "enabled": false,
       "indicator": "ema",
@@ -214,10 +202,22 @@
     "candlePattern": {
       "lookback": 2,
       "candles": [
-        { "offset": -1, "role": "reference", "descriptionKey": "strategies.stochDoubleTouch.candleMinus1" },
-        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.stochDoubleTouch.candleTrigger" }
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.stochDoubleTouch.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.stochDoubleTouch.candleTrigger"
+        }
       ],
-      "indicatorsToShow": ["stoch", "atr", "volumeSMA"]
+      "indicatorsToShow": [
+        "stoch",
+        "atr",
+        "volumeSMA"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.stochDoubleTouch.summary",

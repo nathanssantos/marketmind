@@ -211,22 +211,6 @@ export interface StrategyBacktestSummary {
 }
 
 
-export interface OptimizedBacktestParams {
-  maxPositionSize: number;
-  maxConcurrentPositions?: number;
-  maxTotalExposure?: number;
-  stopLossPercent?: number;
-  takeProfitPercent?: number;
-  useAlgorithmicLevels: boolean;
-  useTrailingStop?: boolean;
-  trailingATRMultiplier?: number;
-  breakEvenAfterR?: number;
-  onlyWithTrend: boolean;
-  minConfidence?: number;
-  commission?: number;
-}
-
-
 export type EntryPriceType =
   | 'market'        // Execute at current market price (immediate)
   | 'close'         // Use close price of triggering candle
@@ -270,8 +254,6 @@ export interface StrategyDefinition {
   group?: string;
   backtestSummary?: StrategyBacktestSummary;
   recommendedTimeframes?: RecommendedTimeframes;
-
-  optimizedParams?: OptimizedBacktestParams;
 
   parameters: Record<string, StrategyParameter>;
   indicators: Record<string, IndicatorDefinition>;

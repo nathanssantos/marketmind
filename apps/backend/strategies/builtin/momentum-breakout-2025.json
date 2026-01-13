@@ -14,18 +14,6 @@
   "status": "active",
   "enabled": true,
   "group": "pattern",
-  "optimizedParams": {
-    "maxPositionSize": 80,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 90,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": true,
-    "trailingATRMultiplier": 5,
-    "breakEvenAfterR": 3,
-    "onlyWithTrend": false,
-    "minConfidence": 60,
-    "commission": 0.001
-  },
   "backtestSummary": {
     "profitFactor": 4.86,
     "winRate": 57.9,
@@ -206,7 +194,7 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 2.0,
+    "minRiskReward": 2,
     "trendFilter": {
       "enabled": true,
       "indicator": "ema",
@@ -220,9 +208,19 @@
     "candlePattern": {
       "lookback": 1,
       "candles": [
-        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.momentumBreakout.candleTrigger" }
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.momentumBreakout.candleTrigger"
+        }
       ],
-      "indicatorsToShow": ["emaFast", "emaSlow", "emaTrend", "rsi", "atr"]
+      "indicatorsToShow": [
+        "emaFast",
+        "emaSlow",
+        "emaTrend",
+        "rsi",
+        "atr"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.momentumBreakout.summary",

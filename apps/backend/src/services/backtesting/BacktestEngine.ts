@@ -4,7 +4,6 @@ import type {
   ComputedIndicators,
   Interval,
   Kline,
-  OptimizedBacktestParams,
   StrategyDefinition,
 } from '@marketmind/types';
 import { getDefaultFee } from '@marketmind/types';
@@ -31,37 +30,6 @@ export class BacktestEngine {
     const unitMs = UNIT_MS[match[2]];
     if (!unitMs) return 4 * TIME_MS.HOUR;
     return parseInt(match[1]) * unitMs;
-  }
-
-  private mergeOptimizedParams(strategies: StrategyDefinition[]): OptimizedBacktestParams | null {
-    const strategiesWithParams = strategies.filter(s => s.optimizedParams);
-    if (strategiesWithParams.length === 0) return null;
-
-    const allParams = strategiesWithParams.map(s => s.optimizedParams!);
-
-    const trailingMultipliers = allParams.filter(p => p.trailingATRMultiplier).map(p => p.trailingATRMultiplier!);
-    const breakEvenValues = allParams.filter(p => p.breakEvenAfterR).map(p => p.breakEvenAfterR!);
-    const maxConcurrentValues = allParams.filter(p => p.maxConcurrentPositions).map(p => p.maxConcurrentPositions!);
-    const maxExposureValues = allParams.filter(p => p.maxTotalExposure).map(p => p.maxTotalExposure!);
-
-    return {
-      maxPositionSize: Math.min(...allParams.map(p => p.maxPositionSize)),
-      maxConcurrentPositions: maxConcurrentValues.length > 0 ? Math.min(...maxConcurrentValues) : undefined,
-      maxTotalExposure: maxExposureValues.length > 0 ? Math.min(...maxExposureValues) : undefined,
-      useAlgorithmicLevels: allParams.some(p => p.useAlgorithmicLevels),
-      useTrailingStop: allParams.some(p => p.useTrailingStop),
-      trailingATRMultiplier: trailingMultipliers.length > 0
-        ? trailingMultipliers.reduce((a, b) => a + b, 0) / trailingMultipliers.length
-        : undefined,
-      breakEvenAfterR: breakEvenValues.length > 0 ? Math.min(...breakEvenValues) : undefined,
-      onlyWithTrend: false,
-      minConfidence: Math.max(...allParams.map(p => p.minConfidence ?? 0)) || undefined,
-      commission: allParams.some(p => p.commission !== undefined)
-        ? Math.max(...allParams.filter(p => p.commission !== undefined).map(p => p.commission!))
-        : undefined,
-      stopLossPercent: allParams[0]?.stopLossPercent,
-      takeProfitPercent: allParams[0]?.takeProfitPercent,
-    };
   }
 
   async run(config: BacktestConfig, klines?: any[]): Promise<BacktestResult> {
@@ -248,28 +216,14 @@ export class BacktestEngine {
     return { setupDetectionService, loadedStrategies, strategyMap };
   }
 
-  private buildEffectiveConfig(config: BacktestConfig, loadedStrategies: StrategyDefinition[]): BacktestConfig {
-    let effectiveConfig = { ...config };
-
-    if (loadedStrategies.length > 0) {
-      const mergedParams = this.mergeOptimizedParams(loadedStrategies);
-      if (mergedParams) {
-        effectiveConfig = {
-          ...effectiveConfig,
-          useAlgorithmicLevels: effectiveConfig.useAlgorithmicLevels ?? true,
-          useTrailingStop: effectiveConfig.useTrailingStop ?? mergedParams.useTrailingStop ?? false,
-          trailingATRMultiplier: effectiveConfig.trailingATRMultiplier ?? mergedParams.trailingATRMultiplier,
-          breakEvenAfterR: effectiveConfig.breakEvenAfterR ?? mergedParams.breakEvenAfterR,
-          onlyWithTrend: effectiveConfig.onlyWithTrend ?? false,
-          minConfidence: effectiveConfig.minConfidence ?? mergedParams.minConfidence,
-          commission: effectiveConfig.commission ?? (mergedParams.commission !== undefined ? mergedParams.commission / 100 : getDefaultFee(config.marketType ?? 'SPOT')),
-          stopLossPercent: effectiveConfig.stopLossPercent,
-          takeProfitPercent: effectiveConfig.takeProfitPercent,
-        };
-      }
-    }
-
-    return effectiveConfig;
+  private buildEffectiveConfig(config: BacktestConfig, _loadedStrategies: StrategyDefinition[]): BacktestConfig {
+    return {
+      ...config,
+      useAlgorithmicLevels: config.useAlgorithmicLevels ?? true,
+      useTrailingStop: config.useTrailingStop ?? false,
+      onlyWithTrend: config.onlyWithTrend ?? false,
+      commission: config.commission ?? getDefaultFee(config.marketType ?? 'SPOT'),
+    };
   }
 
   private detectSetups(
@@ -699,9 +653,6 @@ export class BacktestEngine {
         }
       }
 
-      if (strategy.optimizedParams?.onlyWithTrend && !trendFilterPeriod) {
-        maxPeriod = Math.max(maxPeriod, 200);
-      }
     }
 
     const warmupWithBuffer = Math.ceil(maxPeriod * 1.5);

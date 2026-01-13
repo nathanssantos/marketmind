@@ -12,16 +12,6 @@
   ],
   "source": "Crypto Trading Methods",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 100,
-    "maxConcurrentPositions": 20,
-    "maxTotalExposure": 100,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": false,
-    "onlyWithTrend": false,
-    "minConfidence": 60,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "4h",
     "secondary": [

@@ -2,7 +2,7 @@
   "id": "ema-crossover",
   "name": "EMA Crossover",
   "version": "1.0.0",
-  "description": "Estrat\u00e9gia cl\u00e1ssica de cruzamento de EMAs. Long quando EMA r\u00e1pida cruza acima da EMA lenta. Short no cruzamento inverso.",
+  "description": "Estratégia clássica de cruzamento de EMAs. Long quando EMA rápida cruza acima da EMA lenta. Short no cruzamento inverso.",
   "author": "MarketMind",
   "tags": [
     "trend-following",
@@ -11,18 +11,6 @@
     "momentum"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 90,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 90,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": true,
-    "trailingATRMultiplier": 6,
-    "breakEvenAfterR": 2,
-    "onlyWithTrend": true,
-    "minConfidence": 60,
-    "commission": 0.001
-  },
   "backtestSummary": {
     "profitFactor": 2.54,
     "winRate": 57.69,
@@ -53,14 +41,14 @@
       "min": 5,
       "max": 21,
       "step": 1,
-      "description": "Per\u00edodo da EMA r\u00e1pida"
+      "description": "Período da EMA rápida"
     },
     "slowPeriod": {
       "default": 21,
       "min": 15,
       "max": 50,
       "step": 1,
-      "description": "Per\u00edodo da EMA lenta"
+      "description": "Período da EMA lenta"
     },
     "atrMultiplier": {
       "default": 1.5,
@@ -147,7 +135,7 @@
           "right": "volume.sma20"
         },
         "bonus": 10,
-        "description": "Volume acima da m\u00e9dia"
+        "description": "Volume acima da média"
       },
       {
         "condition": {
@@ -163,6 +151,6 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

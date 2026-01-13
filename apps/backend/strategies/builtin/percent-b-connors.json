@@ -14,17 +14,6 @@
   "status": "active",
   "enabled": true,
   "group": "reversal",
-  "optimizedParams": {
-    "maxPositionSize": 60,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": false,
-    "minConfidence": 70,
-    "commission": 0.001,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 90,
-    "trailingATRMultiplier": 3,
-    "breakEvenAfterR": 2
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -180,7 +169,7 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1.0,
+    "minRiskReward": 1,
     "trendFilter": {
       "enabled": false,
       "indicator": "ema",
@@ -194,9 +183,17 @@
     "candlePattern": {
       "lookback": 1,
       "candles": [
-        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.percentB.candleTrigger" }
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.percentB.candleTrigger"
+        }
       ],
-      "indicatorsToShow": ["percentB", "sma200", "atr"]
+      "indicatorsToShow": [
+        "percentB",
+        "sma200",
+        "atr"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.percentB.summary",

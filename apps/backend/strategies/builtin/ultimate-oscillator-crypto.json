@@ -2,7 +2,7 @@
   "id": "ultimate-oscillator-crypto",
   "name": "Ultimate Oscillator Crypto",
   "version": "1.0.0",
-  "description": "Ultimate Oscillator com 3 timeframes (7,14,28). Reduz falsos sinais combinando m\u00faltiplos per\u00edodos. Entry em diverg\u00eancias ou n\u00edveis extremos.",
+  "description": "Ultimate Oscillator com 3 timeframes (7,14,28). Reduz falsos sinais combinando múltiplos períodos. Entry em divergências ou níveis extremos.",
   "author": "MarketMind",
   "tags": [
     "momentum",
@@ -11,16 +11,6 @@
   ],
   "source": "Larry Williams - Ultimate Oscillator Creator",
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 70,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 80,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": false,
-    "onlyWithTrend": false,
-    "minConfidence": 70,
-    "commission": 0.001
-  },
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -38,35 +28,35 @@
       "min": 5,
       "max": 10,
       "step": 1,
-      "description": "Per\u00edodo curto"
+      "description": "Período curto"
     },
     "mediumPeriod": {
       "default": 14,
       "min": 12,
       "max": 18,
       "step": 2,
-      "description": "Per\u00edodo m\u00e9dio"
+      "description": "Período médio"
     },
     "longPeriod": {
       "default": 28,
       "min": 24,
       "max": 35,
       "step": 1,
-      "description": "Per\u00edodo longo"
+      "description": "Período longo"
     },
     "oversold": {
       "default": 30,
       "min": 20,
       "max": 35,
       "step": 5,
-      "description": "N\u00edvel oversold"
+      "description": "Nível oversold"
     },
     "overbought": {
       "default": 70,
       "min": 65,
       "max": 80,
       "step": 5,
-      "description": "N\u00edvel overbought"
+      "description": "Nível overbought"
     },
     "atrMultiplier": {
       "default": 2,
@@ -180,6 +170,6 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

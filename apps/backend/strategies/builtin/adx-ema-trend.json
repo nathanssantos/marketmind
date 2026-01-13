@@ -24,13 +24,6 @@
     ],
     "notes": "ADX trend filter works best on 4H for trend confirmation"
   },
-  "optimizedParams": {
-    "maxPositionSize": 50,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": true,
-    "minConfidence": 65,
-    "commission": 0.001
-  },
   "parameters": {
     "fastEma": {
       "default": 9,
@@ -196,6 +189,6 @@
   },
   "filters": {
     "minConfidence": 65,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

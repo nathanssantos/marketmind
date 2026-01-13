@@ -11,18 +11,6 @@
     "adx"
   ],
   "status": "active",
-  "optimizedParams": {
-    "maxPositionSize": 80,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 80,
-    "useAlgorithmicLevels": true,
-    "useTrailingStop": true,
-    "trailingATRMultiplier": 5,
-    "breakEvenAfterR": 2,
-    "onlyWithTrend": true,
-    "minConfidence": 60,
-    "commission": 0.001
-  },
   "backtestSummary": {
     "profitFactor": 1.8,
     "winRate": 41.4,
@@ -199,6 +187,6 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 1.0
+    "minRiskReward": 1
   }
 }

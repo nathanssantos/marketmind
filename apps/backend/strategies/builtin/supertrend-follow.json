@@ -13,17 +13,6 @@
   "status": "active",
   "enabled": true,
   "group": "trend",
-  "optimizedParams": {
-    "maxPositionSize": 100,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": true,
-    "minConfidence": 60,
-    "commission": 0.001,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 70,
-    "trailingATRMultiplier": 3,
-    "breakEvenAfterR": 2
-  },
   "recommendedTimeframes": {
     "primary": "4h",
     "secondary": [
@@ -167,7 +156,7 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 1.0,
+    "minRiskReward": 1,
     "trendFilter": {
       "enabled": true,
       "indicator": "ema",
@@ -181,10 +170,22 @@
     "candlePattern": {
       "lookback": 2,
       "candles": [
-        { "offset": -1, "role": "reference", "descriptionKey": "strategies.supertrend.candleMinus1" },
-        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.supertrend.candleTrigger" }
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.supertrend.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.supertrend.candleTrigger"
+        }
       ],
-      "indicatorsToShow": ["supertrend", "ema20", "atr"]
+      "indicatorsToShow": [
+        "supertrend",
+        "ema20",
+        "atr"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.supertrend.summary",

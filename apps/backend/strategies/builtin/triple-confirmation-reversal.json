@@ -14,17 +14,6 @@
   "status": "active",
   "enabled": true,
   "group": "reversal",
-  "optimizedParams": {
-    "maxPositionSize": 60,
-    "useAlgorithmicLevels": true,
-    "onlyWithTrend": false,
-    "minConfidence": 70,
-    "commission": 0.001,
-    "maxConcurrentPositions": 2,
-    "maxTotalExposure": 90,
-    "trailingATRMultiplier": 3,
-    "breakEvenAfterR": 2
-  },
   "backtestSummary": {
     "profitFactor": 0.92,
     "winRate": 35.71,
@@ -199,7 +188,7 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1.0,
+    "minRiskReward": 1,
     "trendFilter": {
       "enabled": false,
       "indicator": "ema",
@@ -213,9 +202,18 @@
     "candlePattern": {
       "lookback": 1,
       "candles": [
-        { "offset": 0, "role": "trigger", "descriptionKey": "strategies.tripleConf.candleTrigger" }
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.tripleConf.candleTrigger"
+        }
       ],
-      "indicatorsToShow": ["rsi", "mfi", "bb", "atr"]
+      "indicatorsToShow": [
+        "rsi",
+        "mfi",
+        "bb",
+        "atr"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.tripleConf.summary",
