@@ -10,6 +10,11 @@ vi.mock('../../../logger', () => ({
   },
 }));
 
+vi.mock('@marketmind/indicators', () => ({
+  calculateFibonacciProjection: vi.fn().mockReturnValue(null),
+  selectDynamicFibonacciLevel: vi.fn().mockReturnValue({ level: 1.618, reason: 'mock' }),
+}));
+
 vi.mock('../../../volatility-profile', () => ({
   calculateATRPercent: vi.fn().mockReturnValue(2.0),
   getVolatilityAdjustedMultiplier: vi.fn((_base) => _base),
@@ -630,6 +635,92 @@ describe('StrategyInterpreter', () => {
         'volume.sma20',
         49
       );
+    });
+  });
+
+  describe('Fibonacci entry progress validation', () => {
+    it('should reject setup when entry is past 50% of Fibonacci target', async () => {
+      const { calculateFibonacciProjection } = await import('@marketmind/indicators');
+      const config: StrategyInterpreterConfig = {
+        strategy: createMockStrategy(),
+        enabled: true,
+        minConfidence: 50,
+        minRiskReward: 1.5,
+      };
+
+      vi.mocked(calculateFibonacciProjection).mockReturnValueOnce({
+        swingLow: { price: 48000, index: 30, timestamp: Date.now() - 20 * 3600000 },
+        swingHigh: { price: 50000, index: 45, timestamp: Date.now() - 5 * 3600000 },
+        levels: [
+          { level: 0, price: 48000, label: '0%' },
+          { level: 1, price: 50000, label: '100%' },
+          { level: 1.618, price: 51236, label: '161.8%' },
+        ],
+        range: 2000,
+      });
+
+      mockMethods.conditionEvaluator.evaluate.mockReturnValueOnce(true);
+
+      interpreter = new StrategyInterpreter(config);
+      const klines = createMockKlines(50);
+      klines[49] = { ...klines[49]!, close: '50800' };
+
+      const result = interpreter.detect(klines, 49);
+
+      expect(result.setup).toBeNull();
+    });
+
+    it('should accept setup when entry is within 50% of Fibonacci target', async () => {
+      const { calculateFibonacciProjection } = await import('@marketmind/indicators');
+      const config: StrategyInterpreterConfig = {
+        strategy: createMockStrategy(),
+        enabled: true,
+        minConfidence: 50,
+        minRiskReward: 1.5,
+      };
+
+      vi.mocked(calculateFibonacciProjection).mockReturnValueOnce({
+        swingLow: { price: 48000, index: 30, timestamp: Date.now() - 20 * 3600000 },
+        swingHigh: { price: 50000, index: 45, timestamp: Date.now() - 5 * 3600000 },
+        levels: [
+          { level: 0, price: 48000, label: '0%' },
+          { level: 1, price: 50000, label: '100%' },
+          { level: 1.618, price: 51236, label: '161.8%' },
+        ],
+        range: 2000,
+      });
+
+      mockMethods.conditionEvaluator.evaluate.mockReturnValueOnce(true);
+      mockMethods.exitCalculator.calculateStopLoss.mockReturnValueOnce(48500);
+
+      interpreter = new StrategyInterpreter(config);
+      const klines = createMockKlines(50);
+      klines[49] = { ...klines[49]!, close: '49000' };
+
+      const result = interpreter.detect(klines, 49);
+
+      expect(result.setup).not.toBeNull();
+      expect(result.setup?.direction).toBe('LONG');
+    });
+
+    it('should pass validation when no Fibonacci projection available', async () => {
+      const { calculateFibonacciProjection } = await import('@marketmind/indicators');
+      const config: StrategyInterpreterConfig = {
+        strategy: createMockStrategy(),
+        enabled: true,
+        minConfidence: 50,
+        minRiskReward: 1.5,
+      };
+
+      vi.mocked(calculateFibonacciProjection).mockReturnValueOnce(null);
+      mockMethods.conditionEvaluator.evaluate.mockReturnValueOnce(true);
+
+      interpreter = new StrategyInterpreter(config);
+      const klines = createMockKlines(50);
+
+      const result = interpreter.detect(klines, 49);
+
+      expect(result.setup).not.toBeNull();
     });
   });
 });

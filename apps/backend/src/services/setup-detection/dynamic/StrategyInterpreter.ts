@@ -26,7 +26,7 @@ import { IndicatorEngine } from './IndicatorEngine';
 const FIBONACCI_LOOKBACK = 100;
 const DEFAULT_FIBONACCI_LEVEL = 1.618;
 
-const { MIN_ENTRY_STOP_SEPARATION_PERCENT } = EXIT_CALCULATOR;
+const { MIN_ENTRY_STOP_SEPARATION_PERCENT, MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT } = EXIT_CALCULATOR;
 
 export interface StrategyInterpreterConfig extends SetupDetectorConfig {
   strategy: StrategyDefinition;
@@ -82,6 +82,11 @@ export class StrategyInterpreter extends BaseSetupDetector {
     const entryPrice = closePrice;
 
     const fibonacciProjection = this.calculateFibonacciProjectionData(klines, currentIndex, direction, indicators);
+
+    const fibEntryValidation = this.validateFibonacciEntryProgress(entryPrice, fibonacciProjection, direction);
+    if (!fibEntryValidation.valid) {
+      return { setup: null, confidence: 0 };
+    }
 
     const exitContext: ExitContext = {
       direction,
@@ -498,5 +503,58 @@ export class StrategyInterpreter extends BaseSetupDetector {
     }
 
     return ranges;
+  }
+
+  private validateFibonacciEntryProgress(
+    entryPrice: number,
+    fibonacciProjection: FibonacciProjectionData | undefined,
+    direction: SetupDirection
+  ): { valid: boolean; progress: number; reason?: string } {
+    if (!fibonacciProjection) {
+      return { valid: true, progress: 0 };
+    }
+
+    const { swingLow, swingHigh, primaryLevel } = fibonacciProjection;
+    const swingRange = swingHigh.price - swingLow.price;
+
+    if (swingRange <= 0) {
+      return { valid: true, progress: 0, reason: 'invalid_swing_range' };
+    }
+
+    const targetLevel = fibonacciProjection.levels.find(l => l.level === primaryLevel);
+    if (!targetLevel) {
+      return { valid: true, progress: 0, reason: 'target_level_not_found' };
+    }
+
+    const targetPrice = targetLevel.price;
+    const basePrice = direction === 'LONG' ? swingLow.price : swingHigh.price;
+    const totalDistance = Math.abs(targetPrice - basePrice);
+
+    if (totalDistance <= 0) {
+      return { valid: true, progress: 0, reason: 'zero_distance' };
+    }
+
+    const currentDistance = Math.abs(entryPrice - basePrice);
+    const progress = (currentDistance / totalDistance) * 100;
+
+    const isValid = progress <= MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT;
+
+    if (!isValid) {
+      logger.warn({
+        direction,
+        entryPrice: entryPrice.toFixed(4),
+        basePrice: basePrice.toFixed(4),
+        targetPrice: targetPrice.toFixed(4),
+        targetLevel: primaryLevel,
+        progress: `${progress.toFixed(1)}%`,
+        maxAllowed: `${MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT}%`,
+      }, '⚠️ Entry price too close to Fibonacci target - setup rejected');
+    }
+
+    return {
+      valid: isValid,
+      progress,
+      reason: isValid ? undefined : 'entry_too_close_to_target',
+    };
   }
 }
