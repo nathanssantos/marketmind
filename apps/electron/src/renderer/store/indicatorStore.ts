@@ -1,3 +1,4 @@
+import { FIBONACCI_LEVELS } from '@marketmind/indicators';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -104,7 +105,7 @@ export const DEFAULT_INDICATOR_PARAMS: IndicatorParams = {
   klinger: { shortPeriod: 34, longPeriod: 55, signalPeriod: 13 },
   elderRay: { period: 13 },
   pivotPoints: { type: 'standard' },
-  fibonacci: { levels: [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1] },
+  fibonacci: { levels: [...FIBONACCI_LEVELS] },
   hma: { period: 20 },
 };
 

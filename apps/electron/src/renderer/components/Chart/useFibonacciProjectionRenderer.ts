@@ -11,26 +11,27 @@ interface UseFibonacciProjectionRendererProps {
   enabled: boolean;
 }
 
-const EXTENSION_COLORS: Record<string, string> = {
-  '0': 'rgba(180, 180, 180, 0.7)',
-  '0.5': 'rgba(180, 180, 180, 0.7)',
-  '1': 'rgba(180, 180, 180, 0.7)',
-  '1.272': 'rgba(180, 180, 180, 0.7)',
-  '1.618': 'rgba(76, 175, 80, 0.9)',
-  '2': 'rgba(180, 180, 180, 0.7)',
+const SECONDARY_LEVELS = [0.236, 0.382, 0.618, 0.786];
+const DEFAULT_LEVEL_COLOR = 'rgba(180, 180, 180, 0.7)';
+const SECONDARY_LEVEL_COLOR = 'rgba(120, 120, 120, 0.4)';
+const LEVEL_127_COLOR = 'rgba(66, 165, 245, 0.9)';
+const LEVEL_161_COLOR = 'rgba(255, 167, 38, 0.9)';
+const LEVEL_200_COLOR = 'rgba(76, 175, 80, 0.9)';
+
+const getLevelColor = (level: number): string => {
+  if (level === 1.272) return LEVEL_127_COLOR;
+  if (level === 1.618) return LEVEL_161_COLOR;
+  if (level === 2) return LEVEL_200_COLOR;
+  if (SECONDARY_LEVELS.includes(level)) return SECONDARY_LEVEL_COLOR;
+  return DEFAULT_LEVEL_COLOR;
 };
 
 const SWING_LINE_WIDTH = 2;
-const SWING_LINE_DASH_ON = 2;
-const SWING_LINE_DASH_OFF = 4;
-const SWING_LINE_DASH = [SWING_LINE_DASH_ON, SWING_LINE_DASH_OFF] as const;
+const SWING_LINE_DASH = [2, 4] as const;
 const SWING_POINT_RADIUS = 4;
-const FULL_CIRCLE_MULTIPLIER = 2;
-const FULL_CIRCLE = Math.PI * FULL_CIRCLE_MULTIPLIER;
-const PRIMARY_LEVEL = -1;
-const PRIMARY_LINE_WIDTH = 2;
-const SECONDARY_LINE_WIDTH = 1;
-const LEVEL_DASH = [SWING_LINE_DASH_OFF, SWING_LINE_DASH_OFF] as const;
+const FULL_CIRCLE = Math.PI * 2;
+const LINE_WIDTH = 1;
+const LEVEL_DASH = [4, 4] as const;
 const LABEL_OFFSET_X = 4;
 const LABEL_OFFSET_Y = 10;
 const PRICE_DECIMAL_PLACES = 2;
@@ -82,13 +83,11 @@ interface LevelDrawParams {
 }
 
 const drawExtensionLevel = ({ ctx, level, y, fibStartX, priceScaleX }: LevelDrawParams): void => {
-  const levelKey = String(level.level);
-  const color = EXTENSION_COLORS[levelKey] ?? 'rgba(128, 128, 128, 0.5)';
-  const isPrimary = level.level === PRIMARY_LEVEL;
+  const color = getLevelColor(level.level);
 
   ctx.strokeStyle = color;
-  ctx.lineWidth = isPrimary ? PRIMARY_LINE_WIDTH : SECONDARY_LINE_WIDTH;
-  ctx.setLineDash(isPrimary ? [] : [...LEVEL_DASH]);
+  ctx.lineWidth = LINE_WIDTH;
+  ctx.setLineDash([...LEVEL_DASH]);
   ctx.beginPath();
   ctx.moveTo(fibStartX, y);
   ctx.lineTo(priceScaleX, y);
@@ -96,7 +95,7 @@ const drawExtensionLevel = ({ ctx, level, y, fibStartX, priceScaleX }: LevelDraw
   ctx.setLineDash([]);
 
   ctx.fillStyle = color;
-  ctx.font = isPrimary ? 'bold 11px monospace' : '10px monospace';
+  ctx.font = '10px monospace';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
