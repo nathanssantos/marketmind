@@ -124,6 +124,8 @@ export class AutoTradingScheduler {
 
   private btcKlinesCache: Map<string, CacheEntry<Kline[]>> = new Map();
   private htfKlinesCache: Map<string, CacheEntry<Kline[]>> = new Map();
+  private fundingRateCache: Map<string, CacheEntry<number>> = new Map();
+  private readonly FUNDING_CACHE_TTL_MS = 5 * TIME_MS.MINUTE;
 
   constructor() {
     this.strategyLoader = new StrategyLoader([STRATEGIES_DIR]);
@@ -212,6 +214,23 @@ export class AutoTradingScheduler {
   private clearCaches(): void {
     this.btcKlinesCache.clear();
     this.htfKlinesCache.clear();
+    this.fundingRateCache.clear();
+  }
+
+  private async getCachedFundingRate(symbol: string): Promise<number | null> {
+    const cached = this.fundingRateCache.get(symbol);
+    if (cached && Date.now() - cached.timestamp < this.FUNDING_CACHE_TTL_MS) {
+      return cached.data;
+    }
+
+    const { getBinanceFuturesDataService } = await import('./binance-futures-data');
+    const markPrice = await getBinanceFuturesDataService().getMarkPrice(symbol);
+    const rate = markPrice?.lastFundingRate ?? null;
+
+    if (rate !== null) {
+      this.fundingRateCache.set(symbol, { data: rate, timestamp: Date.now() });
+    }
+    return rate;
   }
 
   private queueWatcherProcessing(watcherId: string): void {
@@ -745,7 +764,7 @@ export class AutoTradingScheduler {
       }
 
       for (const setup of detectedSetups) {
-        await this.executeSetup(watcher, setup, filteredStrategies);
+        await this.executeSetup(watcher, setup, filteredStrategies, mappedKlines);
       }
 
       watcher.lastProcessedTime = Date.now();
@@ -761,7 +780,8 @@ export class AutoTradingScheduler {
   private async executeSetup(
     watcher: ActiveWatcher,
     setup: TradingSetup,
-    strategies: StrategyDefinition[]
+    strategies: StrategyDefinition[],
+    cycleKlines: Kline[]
   ): Promise<void> {
     log('🚀 Attempting to execute setup', {
       type: setup.type,
@@ -1040,17 +1060,16 @@ export class AutoTradingScheduler {
       }
 
       if (config.useFundingFilter && watcher.marketType === 'FUTURES') {
-        const { getBinanceFuturesDataService } = await import('./binance-futures-data');
         try {
-          const fundingInfo = await getBinanceFuturesDataService().getMarkPrice(watcher.symbol);
+          const cachedFundingRate = await this.getCachedFundingRate(watcher.symbol);
           const fundingResult = checkFundingRate(
-            fundingInfo?.lastFundingRate ? fundingInfo.lastFundingRate / 100 : null,
+            cachedFundingRate !== null ? cachedFundingRate / 100 : null,
             setup.direction,
-            fundingInfo?.nextFundingTime ? new Date(fundingInfo.nextFundingTime) : undefined
+            undefined
           );
           filterResults.fundingRate = fundingResult;
 
-          log('📊 Funding Rate Filter Check', {
+          log('📊 Funding Rate Filter Check (cached)', {
             symbol: watcher.symbol,
             direction: setup.direction,
             fundingRate: fundingResult.currentRate?.toFixed(6) ?? 'null',
@@ -1125,34 +1144,8 @@ export class AutoTradingScheduler {
       }
 
       if (config.useMarketRegimeFilter) {
-        const regimeKlines = await db.query.klines.findMany({
-          where: and(
-            eq(klines.symbol, watcher.symbol),
-            eq(klines.interval, watcher.interval),
-            eq(klines.marketType, watcher.marketType)
-          ),
-          orderBy: [desc(klines.openTime)],
-          limit: 50,
-        });
-
-        if (regimeKlines.length >= 30) {
-          const mappedRegimeKlines: Kline[] = regimeKlines.reverse().map((k) => ({
-            symbol: k.symbol,
-            interval: k.interval,
-            openTime: k.openTime.getTime(),
-            closeTime: k.closeTime.getTime(),
-            open: k.open,
-            high: k.high,
-            low: k.low,
-            close: k.close,
-            volume: k.volume,
-            quoteVolume: k.quoteVolume ?? '0',
-            trades: k.trades ?? 0,
-            takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
-            takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
-          }));
-
-          const regimeResult = checkMarketRegime(mappedRegimeKlines, setup.type);
+        if (cycleKlines.length >= 30) {
+          const regimeResult = checkMarketRegime(cycleKlines, setup.type);
           filterResults.marketRegime = regimeResult;
           filterResults.adxValue = regimeResult.adx ?? undefined;
 
@@ -1180,41 +1173,15 @@ export class AutoTradingScheduler {
           }
         } else {
           log('⚠️ Insufficient klines for Market Regime filter - soft pass', {
-            available: regimeKlines.length,
+            available: cycleKlines.length,
             required: 30,
           });
         }
       }
 
       if (config.useVolumeFilter) {
-        const volumeKlines = await db.query.klines.findMany({
-          where: and(
-            eq(klines.symbol, watcher.symbol),
-            eq(klines.interval, watcher.interval),
-            eq(klines.marketType, watcher.marketType)
-          ),
-          orderBy: [desc(klines.openTime)],
-          limit: 30,
-        });
-
-        if (volumeKlines.length >= 21) {
-          const mappedVolumeKlines: Kline[] = volumeKlines.reverse().map((k) => ({
-            symbol: k.symbol,
-            interval: k.interval,
-            openTime: k.openTime.getTime(),
-            closeTime: k.closeTime.getTime(),
-            open: k.open,
-            high: k.high,
-            low: k.low,
-            close: k.close,
-            volume: k.volume,
-            quoteVolume: k.quoteVolume ?? '0',
-            trades: k.trades ?? 0,
-            takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
-            takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
-          }));
-
-          const volumeResult = checkVolumeCondition(mappedVolumeKlines, setup.direction, setup.type);
+        if (cycleKlines.length >= 21) {
+          const volumeResult = checkVolumeCondition(cycleKlines, setup.direction, setup.type);
           filterResults.volume = volumeResult;
 
           log('📊 Volume Filter Check', {
@@ -1241,7 +1208,7 @@ export class AutoTradingScheduler {
           }
         } else {
           log('⚠️ Insufficient klines for Volume filter - soft pass', {
-            available: volumeKlines.length,
+            available: cycleKlines.length,
             required: 21,
           });
         }
@@ -1288,31 +1255,14 @@ export class AutoTradingScheduler {
       if (config.useStochasticFilter) {
         const { K_PERIOD, K_SMOOTHING, D_PERIOD } = STOCHASTIC_FILTER;
         const minRequired = K_PERIOD + K_SMOOTHING + D_PERIOD;
-        const stochasticKlines = await db
-          .select()
-          .from(klines)
-          .where(
-            and(
-              eq(klines.symbol, watcher.symbol),
-              eq(klines.interval, watcher.interval),
-              eq(klines.marketType, watcher.marketType)
-            )
-          )
-          .orderBy(desc(klines.openTime));
 
-        if (stochasticKlines.length < minRequired) {
+        if (cycleKlines.length < minRequired) {
           log('⚠️ Insufficient klines for Slow Stochastic calculation - soft pass', {
             required: minRequired,
-            available: stochasticKlines.length,
+            available: cycleKlines.length,
           });
         } else {
-          const klinesForStochastic = stochasticKlines.reverse().map(k => ({
-            ...k,
-            openTime: k.openTime.getTime(),
-            closeTime: k.closeTime.getTime(),
-          })) as Kline[];
-
-          const stochResult = checkStochasticCondition(klinesForStochastic, setup.direction);
+          const stochResult = checkStochasticCondition(cycleKlines, setup.direction);
 
           log('📊 Slow Stochastic Filter Check', {
             symbol: watcher.symbol,
@@ -1349,32 +1299,14 @@ export class AutoTradingScheduler {
 
       if (config.useMomentumTimingFilter) {
         const { MIN_KLINES_REQUIRED } = MOMENTUM_TIMING_FILTER;
-        const momentumKlines = await db
-          .select()
-          .from(klines)
-          .where(
-            and(
-              eq(klines.symbol, watcher.symbol),
-              eq(klines.interval, watcher.interval),
-              eq(klines.marketType, watcher.marketType)
-            )
-          )
-          .orderBy(desc(klines.openTime))
-          .limit(MIN_KLINES_REQUIRED + 10);
 
-        if (momentumKlines.length < MIN_KLINES_REQUIRED) {
+        if (cycleKlines.length < MIN_KLINES_REQUIRED) {
           log('⚠️ Insufficient klines for Momentum Timing calculation - soft pass', {
             required: MIN_KLINES_REQUIRED,
-            available: momentumKlines.length,
+            available: cycleKlines.length,
           });
         } else {
-          const klinesForMomentum = momentumKlines.reverse().map(k => ({
-            ...k,
-            openTime: k.openTime.getTime(),
-            closeTime: k.closeTime.getTime(),
-          })) as Kline[];
-
-          const momentumResult = checkMomentumTiming(klinesForMomentum, setup.direction);
+          const momentumResult = checkMomentumTiming(cycleKlines, setup.direction);
 
           log('📊 Momentum Timing Filter Check', {
             symbol: watcher.symbol,
@@ -1409,34 +1341,16 @@ export class AutoTradingScheduler {
 
       if (config.useAdxFilter) {
         const { MIN_KLINES_REQUIRED } = ADX_FILTER;
-        const adxKlines = await db
-          .select()
-          .from(klines)
-          .where(
-            and(
-              eq(klines.symbol, watcher.symbol),
-              eq(klines.interval, watcher.interval),
-              eq(klines.marketType, watcher.marketType)
-            )
-          )
-          .orderBy(desc(klines.openTime))
-          .limit(MIN_KLINES_REQUIRED);
 
-        if (adxKlines.length < MIN_KLINES_REQUIRED) {
+        if (cycleKlines.length < MIN_KLINES_REQUIRED) {
           log('⚠️ Insufficient klines for ADX calculation', {
             required: MIN_KLINES_REQUIRED,
-            available: adxKlines.length,
+            available: cycleKlines.length,
           });
           return;
         }
 
-        const klinesForAdx = adxKlines.reverse().map(k => ({
-          ...k,
-          openTime: k.openTime.getTime(),
-          closeTime: k.closeTime.getTime(),
-        })) as Kline[];
-
-        const adxResult = checkAdxCondition(klinesForAdx, setup.direction);
+        const adxResult = checkAdxCondition(cycleKlines, setup.direction);
 
         log('📊 ADX Filter Check', {
           symbol: watcher.symbol,
@@ -1493,41 +1407,21 @@ export class AutoTradingScheduler {
       });
 
       if (shouldApplyTrendFilter) {
-        const trendKlines = await db
-          .select()
-          .from(klines)
-          .where(
-            and(
-              eq(klines.symbol, watcher.symbol),
-              eq(klines.interval, watcher.interval),
-              eq(klines.marketType, watcher.marketType)
-            )
-          )
-          .orderBy(desc(klines.openTime));
-
-        log('🔍 Trend Filter Debug - Klines fetched', {
+        log('🔍 Trend Filter Debug - Using cycle klines', {
           symbol: watcher.symbol,
           interval: watcher.interval,
-          received: trendKlines.length,
-          newestClose: trendKlines[0]?.close ?? 'null',
-          newestTime: trendKlines[0]?.openTime?.toISOString() ?? 'null',
+          available: cycleKlines.length,
         });
 
-        if (trendKlines.length < 2) {
+        if (cycleKlines.length < 2) {
           log('⚠️ Insufficient klines for Trend (EMA21) calculation', {
             required: 2,
-            available: trendKlines.length,
+            available: cycleKlines.length,
           });
           return;
         }
 
-        const klinesForTrend = trendKlines.reverse().map(k => ({
-          ...k,
-          openTime: k.openTime.getTime(),
-          closeTime: k.closeTime.getTime(),
-        })) as Kline[];
-
-        const trendResult = checkTrendCondition(klinesForTrend, setup.direction);
+        const trendResult = checkTrendCondition(cycleKlines, setup.direction);
 
         log('📊 Trend Filter Check (Price vs EMA21)', {
           symbol: watcher.symbol,
