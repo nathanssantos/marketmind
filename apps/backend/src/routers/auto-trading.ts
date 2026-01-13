@@ -1014,8 +1014,8 @@ export const autoTradingRouter = router({
 
       const rotationService = getDynamicSymbolRotationService();
       const history = rotationService.getRotationHistory(input.walletId, input.limit);
-      const nextRotation = rotationService.getNextRotationTime(input.walletId);
-      const isActive = rotationService.isRotationActive(input.walletId);
+      const nextRotation = autoTradingScheduler.getNextRotationTime(input.walletId);
+      const isActive = autoTradingScheduler.isRotationActive(input.walletId);
 
       return {
         history,
@@ -1033,9 +1033,8 @@ export const autoTradingRouter = router({
     .query(async ({ input, ctx }) => {
       await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
-      const rotationService = getDynamicSymbolRotationService();
-      const nextRotation = rotationService.getNextRotationTime(input.walletId);
-      const isActive = rotationService.isRotationActive(input.walletId);
+      const nextRotation = autoTradingScheduler.getNextRotationTime(input.walletId);
+      const isActive = autoTradingScheduler.isRotationActive(input.walletId);
 
       return {
         isActive,

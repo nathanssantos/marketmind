@@ -9,7 +9,7 @@ import { getOpportunityScoringService, type SymbolScore } from './opportunity-sc
 
 export type RotationInterval = '1h' | '4h' | '1d';
 
-const ROTATION_INTERVAL_MS: Record<RotationInterval, number> = {
+export const ROTATION_INTERVAL_MS: Record<RotationInterval, number> = {
   '1h': TIME_MS.HOUR,
   '4h': 4 * TIME_MS.HOUR,
   '1d': TIME_MS.DAY,
