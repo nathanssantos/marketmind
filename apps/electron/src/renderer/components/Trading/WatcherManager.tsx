@@ -10,7 +10,7 @@ import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { trpc } from '@renderer/utils/trpc';
 import type { MarketType, TimeInterval } from '@marketmind/types';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import { LuChartBar, LuChevronDown, LuChevronUp, LuPause, LuPlay, LuPlus, LuRefreshCw, LuTrash2, LuZap } from 'react-icons/lu';
@@ -59,6 +59,50 @@ export const WatcherManager = () => {
   const { rotationStatus, isLoadingRotationStatus } = useRotationStatus(walletId);
   const { triggerRotation, isTriggeringRotation } = useTriggerRotation(walletId);
   const { symbolScores, isLoadingScores } = useDynamicSymbolScores(quickStartMarketType, 50);
+
+  const { data: btcTrendStatus } = trpc.autoTrading.getBtcTrendStatus.useQuery(undefined, {
+    enabled: config?.useBtcCorrelationFilter === true,
+    staleTime: 60000,
+  });
+
+  const symbolsToCheck = useMemo(
+    () => symbolScores.slice(0, Math.min(quickStartCount * 2, 100)).map((s) => s.symbol),
+    [symbolScores, quickStartCount]
+  );
+
+  const { data: fundingRates } = trpc.autoTrading.getBatchFundingRates.useQuery(
+    { symbols: symbolsToCheck },
+    {
+      enabled: quickStartMarketType === 'FUTURES' && config?.useFundingFilter === true && symbolsToCheck.length > 0,
+      staleTime: 60000,
+    }
+  );
+
+  const { filteredSymbols, fundingFilteredCount } = useMemo(() => {
+    const extremeSymbols = new Set(
+      quickStartMarketType === 'FUTURES' && config?.useFundingFilter && fundingRates
+        ? fundingRates.filter((f) => f.isExtreme).map((f) => f.symbol)
+        : []
+    );
+
+    const result: string[] = [];
+    let filtered = 0;
+
+    for (const score of symbolScores) {
+      if (result.length >= quickStartCount) break;
+
+      if (extremeSymbols.has(score.symbol)) {
+        filtered++;
+        continue;
+      }
+      result.push(score.symbol);
+    }
+
+    return {
+      filteredSymbols: result,
+      fundingFilteredCount: filtered,
+    };
+  }, [symbolScores, quickStartCount, fundingRates, config?.useFundingFilter, quickStartMarketType]);
 
   const tpCalculationMode = config?.tpCalculationMode ?? 'default';
   const fibonacciTargetLevel = config?.fibonacciTargetLevel ?? 'auto';
@@ -111,9 +155,8 @@ export const WatcherManager = () => {
   };
 
   const handleQuickStartFromRankings = async (): Promise<void> => {
-    if (!walletId || symbolScores.length === 0) return;
-    const topSymbols = symbolScores.slice(0, quickStartCount).map((s) => s.symbol);
-    await startWatchersBulk(topSymbols, quickStartTimeframe, undefined, quickStartMarketType);
+    if (!walletId || filteredSymbols.length === 0) return;
+    await startWatchersBulk(filteredSymbols, quickStartTimeframe, undefined, quickStartMarketType);
   };
 
   const activeWatchers = watcherStatus?.activeWatchers ?? [];
@@ -376,9 +419,57 @@ export const WatcherManager = () => {
                   </Box>
 
                   <Box p={4} bg="green.50" borderRadius="md" borderWidth="1px" borderColor="green.200" _dark={{ bg: 'green.900/20', borderColor: 'green.800' }}>
-                    <Text fontSize="sm" fontWeight="medium" mb={3}>
-                      {t('tradingProfiles.dynamicSelection.quickStartTitle')}
-                    </Text>
+                    <Flex justify="space-between" align="center" mb={3}>
+                      <Text fontSize="sm" fontWeight="medium">
+                        {t('tradingProfiles.dynamicSelection.quickStartTitle')}
+                      </Text>
+                      {config?.useBtcCorrelationFilter && btcTrendStatus && (
+                        <Box
+                          px={2}
+                          py={0.5}
+                          bg={
+                            btcTrendStatus.trend === 'BULLISH'
+                              ? 'green.100'
+                              : btcTrendStatus.trend === 'BEARISH'
+                                ? 'red.100'
+                                : 'gray.100'
+                          }
+                          borderRadius="md"
+                          fontSize="xs"
+                          _dark={{
+                            bg:
+                              btcTrendStatus.trend === 'BULLISH'
+                                ? 'green.900'
+                                : btcTrendStatus.trend === 'BEARISH'
+                                  ? 'red.900'
+                                  : 'gray.700',
+                          }}
+                        >
+                          <Text
+                            fontWeight="medium"
+                            color={
+                              btcTrendStatus.trend === 'BULLISH'
+                                ? 'green.700'
+                                : btcTrendStatus.trend === 'BEARISH'
+                                  ? 'red.700'
+                                  : 'gray.600'
+                            }
+                            _dark={{
+                              color:
+                                btcTrendStatus.trend === 'BULLISH'
+                                  ? 'green.200'
+                                  : btcTrendStatus.trend === 'BEARISH'
+                                    ? 'red.200'
+                                    : 'gray.300',
+                            }}
+                          >
+                            BTC: {btcTrendStatus.trend}
+                            {!btcTrendStatus.canLong && ' (LONG blocked)'}
+                            {!btcTrendStatus.canShort && ' (SHORT blocked)'}
+                          </Text>
+                        </Box>
+                      )}
+                    </Flex>
                     <Stack gap={3}>
                       <Flex gap={3} align="center">
                         <Group attached flex="0 0 180px">
@@ -423,12 +514,20 @@ export const WatcherManager = () => {
                           colorPalette="green"
                           onClick={handleQuickStartFromRankings}
                           loading={isStartingWatchersBulk}
-                          disabled={isLoadingScores || symbolScores.length === 0}
+                          disabled={isLoadingScores || filteredSymbols.length === 0}
                         >
                           <LuPlay />
-                          {t('tradingProfiles.dynamicSelection.quickStartButton', { count: quickStartCount })}
+                          {t('tradingProfiles.dynamicSelection.quickStartButton', { count: filteredSymbols.length })}
                         </Button>
                       </Flex>
+                      {fundingFilteredCount > 0 && (
+                        <Text fontSize="xs" color="orange.600" _dark={{ color: 'orange.300' }}>
+                          {t('tradingProfiles.dynamicSelection.fundingFiltered', {
+                            count: fundingFilteredCount,
+                            defaultValue: '{{count}} symbols excluded (extreme funding)',
+                          })}
+                        </Text>
+                      )}
                     </Stack>
                   </Box>
 

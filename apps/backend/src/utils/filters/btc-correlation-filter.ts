@@ -117,6 +117,76 @@ const createNeutralResult = (
   ...partialData,
 });
 
+export interface BtcTrendInfo {
+  trend: BtcTrend;
+  strength: BtcStrength;
+  score: number;
+  canLong: boolean;
+  canShort: boolean;
+  btcPrice: number | null;
+  btcEma21: number | null;
+}
+
+export const getBtcTrendInfo = (btcKlines: Kline[]): BtcTrendInfo => {
+  const { ASYMMETRIC_THRESHOLDS } = BTC_CORRELATION_FILTER;
+
+  if (btcKlines.length < MIN_KLINES_REQUIRED) {
+    return {
+      trend: 'NEUTRAL',
+      strength: 'WEAK',
+      score: 50,
+      canLong: true,
+      canShort: true,
+      btcPrice: null,
+      btcEma21: null,
+    };
+  }
+
+  const ema21Values = calculateEMA(btcKlines, EMA_PERIOD);
+  const macdResult = calculateMACD(btcKlines);
+  const rsiResult = calculateRSI(btcKlines, RSI_PERIOD);
+
+  const lastIndex = btcKlines.length - 1;
+  const btcEma21 = ema21Values[lastIndex];
+  const btcMacdHistogram = macdResult.histogram[lastIndex];
+  const lastKline = btcKlines[lastIndex];
+  const { momentum: btcRsiMomentum, currentRsi: btcRsi } = getRsiMomentum(rsiResult.values, lastIndex);
+
+  if (!lastKline || btcEma21 === null || btcEma21 === undefined) {
+    return {
+      trend: 'NEUTRAL',
+      strength: 'WEAK',
+      score: 50,
+      canLong: true,
+      canShort: true,
+      btcPrice: lastKline ? parseFloat(String(lastKline.close)) : null,
+      btcEma21: btcEma21 ?? null,
+    };
+  }
+
+  const btcPrice = parseFloat(String(lastKline.close));
+  const priceAboveEma = btcPrice > btcEma21;
+  const macdBullish = !isNaN(btcMacdHistogram ?? NaN) && (btcMacdHistogram ?? 0) > 0;
+  const macdBearish = !isNaN(btcMacdHistogram ?? NaN) && (btcMacdHistogram ?? 0) < 0;
+
+  const score = calculateCorrelationScore(priceAboveEma, macdBullish, macdBearish, btcRsiMomentum, btcRsi);
+  const strength = getStrength(score);
+
+  let trend: BtcTrend = 'NEUTRAL';
+  if (score >= 60) trend = 'BULLISH';
+  else if (score <= 40) trend = 'BEARISH';
+
+  return {
+    trend,
+    strength,
+    score,
+    canLong: score >= ASYMMETRIC_THRESHOLDS.LONG_BLOCK_SCORE,
+    canShort: score <= ASYMMETRIC_THRESHOLDS.SHORT_BLOCK_SCORE,
+    btcPrice,
+    btcEma21,
+  };
+};
+
 export const checkBtcCorrelation = (
   btcKlines: Kline[],
   direction: 'LONG' | 'SHORT',

@@ -970,7 +970,8 @@
       "keptCount": "{{count}} symbols kept",
       "quickStartTitle": "Quick Start from Rankings",
       "quickStartDescription": "Start watchers for the top symbols by score",
-      "quickStartButton": "Start Top {{count}}"
+      "quickStartButton": "Start Top {{count}}",
+      "fundingFiltered": "{{count}} symbols excluded (extreme funding)"
     }
   },
   "strategyInfo": {

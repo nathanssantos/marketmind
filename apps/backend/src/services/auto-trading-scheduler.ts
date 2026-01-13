@@ -253,7 +253,8 @@ export class AutoTradingScheduler {
     profileId?: string,
     skipDbPersist: boolean = false,
     marketType: MarketType = 'SPOT',
-    isManual: boolean = true
+    isManual: boolean = true,
+    runImmediateCheck: boolean = false
   ): Promise<void> {
     const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
 
@@ -405,6 +406,38 @@ export class AutoTradingScheduler {
       binanceKlineStreamService.subscribe(symbol, interval);
     }
     log('📊 Subscribed to kline stream', { symbol, interval, marketType });
+
+    if (runImmediateCheck) {
+      log('⚡ Running immediate check for rotated symbol', { watcherId, symbol, interval });
+      setImmediate(() => {
+        void (async () => {
+          try {
+            const result = await prefetchKlines({ symbol, interval, marketType });
+            if (!result.success) {
+              log('⚠️ Immediate prefetch failed, skipping detection', { watcherId, symbol, error: result.error });
+              return;
+            }
+            if (!hasSufficientKlines(result.totalInDb, ABSOLUTE_MINIMUM_KLINES)) {
+              log('⚠️ Insufficient klines after prefetch, skipping detection', {
+                watcherId,
+                symbol,
+                totalInDb: result.totalInDb,
+                required: ABSOLUTE_MINIMUM_KLINES,
+              });
+              return;
+            }
+            log('✅ Immediate prefetch completed, queuing detection', { watcherId, symbol, totalInDb: result.totalInDb });
+            this.queueWatcherProcessing(watcherId);
+          } catch (error) {
+            log('❌ Immediate check failed', {
+              watcherId,
+              symbol,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        })();
+      });
+    }
   }
 
   async stopWatcher(walletId: string, symbol: string, interval: string, marketType: MarketType = 'SPOT'): Promise<void> {
@@ -2425,9 +2458,10 @@ export class AutoTradingScheduler {
           profileId,
           false,
           marketType,
-          false
+          false,
+          true
         );
-        log('🔺 Added dynamic watcher', { walletId, symbol });
+        log('🔺 Added dynamic watcher with immediate check', { walletId, symbol });
       } else {
         log('ℹ️ Symbol already has watcher (possibly manual)', { walletId, symbol });
       }

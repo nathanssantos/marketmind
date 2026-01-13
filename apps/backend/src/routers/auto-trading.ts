@@ -7,14 +7,17 @@ import {
   autoTradingConfig,
   tradeExecutions,
   setupDetections,
+  klines,
 } from '../db/schema';
+import { getBtcTrendInfo } from '../utils/filters/btc-correlation-filter';
+import { getBinanceFuturesDataService } from '../services/binance-futures-data';
 import { riskManagerService } from '../services/risk-manager';
 import { autoTradingScheduler } from '../services/auto-trading-scheduler';
-import { prefetchKlinesAsync } from '../services/kline-prefetch';
 import { logger } from '../services/logger';
 import { getTopSymbolsByVolume } from '../services/binance-exchange-info';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
+import { mapDbKlinesReversed } from '../utils/kline-mapper';
 import { transformAutoTradingConfig, parseEnabledSetupTypes, stringifyEnabledSetupTypes, stringifyDynamicSymbolExcluded } from '../utils/profile-transformers';
 import { getOpportunityScoringService } from '../services/opportunity-scoring';
 import { getDynamicSymbolRotationService } from '../services/dynamic-symbol-rotation';
@@ -667,14 +670,9 @@ export const autoTradingRouter = router({
         input.interval,
         input.profileId,
         false,
-        input.marketType
+        input.marketType,
+        true
       );
-
-      prefetchKlinesAsync({
-        symbol: input.symbol,
-        interval: input.interval,
-        marketType: input.marketType,
-      });
 
       log('✅ Watcher started', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId, marketType: input.marketType });
 
@@ -803,14 +801,9 @@ export const autoTradingRouter = router({
             input.interval,
             input.profileId,
             false,
-            input.marketType
+            input.marketType,
+            true
           );
-
-          prefetchKlinesAsync({
-            symbol,
-            interval: input.interval,
-            marketType: input.marketType,
-          });
 
           results.push({ symbol, success: true });
           log('✅ Watcher started', { symbol });
@@ -963,5 +956,55 @@ export const autoTradingRouter = router({
         isActive,
         nextRotation,
       };
+    }),
+
+  getBtcTrendStatus: protectedProcedure.query(async ({ ctx }) => {
+    log('📊 getBtcTrendStatus called');
+
+    const btcKlinesData = await ctx.db.query.klines.findMany({
+      where: and(eq(klines.symbol, 'BTCUSDT'), eq(klines.interval, '4h')),
+      orderBy: [desc(klines.openTime)],
+      limit: 50,
+    });
+
+    const mappedKlines = mapDbKlinesReversed(btcKlinesData);
+    const trendInfo = getBtcTrendInfo(mappedKlines);
+    log('✅ BTC trend status fetched', { trend: trendInfo.trend, score: trendInfo.score });
+
+    return trendInfo;
+  }),
+
+  getBatchFundingRates: protectedProcedure
+    .input(
+      z.object({
+        symbols: z.array(z.string()).max(100),
+      })
+    )
+    .query(async ({ input }) => {
+      log('📊 getBatchFundingRates called', { symbolCount: input.symbols.length });
+
+      const futuresService = getBinanceFuturesDataService();
+      const allMarkPrices = await futuresService.getAllMarkPrices();
+
+      const EXTREME_FUNDING_THRESHOLD = 0.001;
+
+      const results = input.symbols.map((symbol) => {
+        const info = allMarkPrices.find((p) => p.symbol === symbol);
+        const rate = info?.lastFundingRate !== undefined ? info.lastFundingRate / 100 : null;
+        const isExtreme = rate !== null && Math.abs(rate) >= EXTREME_FUNDING_THRESHOLD;
+
+        return {
+          symbol,
+          rate,
+          isExtreme,
+          blocksLong: isExtreme && rate !== null && rate > 0,
+          blocksShort: isExtreme && rate !== null && rate < 0,
+        };
+      });
+
+      const extremeCount = results.filter((r) => r.isExtreme).length;
+      log('✅ Batch funding rates fetched', { total: results.length, extreme: extremeCount });
+
+      return results;
     }),
 });
