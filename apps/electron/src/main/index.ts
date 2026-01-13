@@ -8,12 +8,52 @@ import { windowStateManager } from './services/WindowStateManager';
 
 const { app, BrowserWindow, ipcMain, net, Notification, crashReporter } = electron;
 
+app.commandLine.appendSwitch('enable-features', 'CanvasOopRasterization');
+app.commandLine.appendSwitch('disable-gpu-driver-bug-workarounds');
+app.commandLine.appendSwitch('force-gpu-mem-available-mb', '1024');
+app.commandLine.appendSwitch('gpu-rasterization-msaa-sample-count', '0');
+
 crashReporter.start({
   productName: 'MarketMind',
   submitURL: '',
   uploadToServer: false,
   ignoreSystemCrashHandler: false,
 });
+
+const MEMORY_MONITOR = {
+  BYTES_PER_KB: 1024,
+  HIGH_MEMORY_THRESHOLD_MB: 500,
+  CHECK_INTERVAL_MS: 60_000,
+  DECIMAL_PLACES: 2,
+} as const;
+
+let memoryMonitorInterval: ReturnType<typeof setInterval> | null = null;
+
+const bytesToMB = (bytes: number): string =>
+  (bytes / MEMORY_MONITOR.BYTES_PER_KB / MEMORY_MONITOR.BYTES_PER_KB).toFixed(MEMORY_MONITOR.DECIMAL_PLACES);
+
+const startMemoryMonitor = (): void => {
+  if (memoryMonitorInterval) return;
+
+  memoryMonitorInterval = setInterval(() => {
+    const memUsage = process.memoryUsage();
+    const heapUsedMB = bytesToMB(memUsage.heapUsed);
+    const heapTotalMB = bytesToMB(memUsage.heapTotal);
+    const rssMB = bytesToMB(memUsage.rss);
+    const highThresholdBytes = MEMORY_MONITOR.HIGH_MEMORY_THRESHOLD_MB * MEMORY_MONITOR.BYTES_PER_KB * MEMORY_MONITOR.BYTES_PER_KB;
+
+    if (memUsage.heapUsed > highThresholdBytes) {
+      console.warn(`[Main] High memory usage detected: Heap ${heapUsedMB}MB / ${heapTotalMB}MB, RSS ${rssMB}MB`);
+    }
+  }, MEMORY_MONITOR.CHECK_INTERVAL_MS);
+};
+
+const stopMemoryMonitor = (): void => {
+  if (memoryMonitorInterval) {
+    clearInterval(memoryMonitorInterval);
+    memoryMonitorInterval = null;
+  }
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -605,6 +645,7 @@ const initializeApp = async (): Promise<void> => {
     await app.whenReady();
     console.log('App ready, setting up IPC handlers...');
     logGpuInfo();
+    startMemoryMonitor();
     setupIpcHandlers();
     setupWindowHandlers();
     setupNotificationHandlers();
@@ -651,6 +692,11 @@ process.on('unhandledRejection', (reason, promise) => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
+    stopMemoryMonitor();
     app.quit();
   }
+});
+
+app.on('before-quit', () => {
+  stopMemoryMonitor();
 });

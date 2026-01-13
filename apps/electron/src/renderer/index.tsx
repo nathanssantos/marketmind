@@ -10,6 +10,31 @@ import './global.d.ts';
 import './i18n';
 import { ChartWindow } from './pages/ChartWindow';
 
+const PERFORMANCE_CLEANUP = {
+  INTERVAL_MS: 30_000,
+  MAX_ENTRIES: 1000,
+} as const;
+
+const setupPerformanceCleanup = (): (() => void) => {
+  const cleanup = () => {
+    try {
+      const entries = performance.getEntries();
+      if (entries.length > PERFORMANCE_CLEANUP.MAX_ENTRIES) {
+        performance.clearMarks();
+        performance.clearMeasures();
+        performance.clearResourceTimings();
+      }
+    } catch {
+      // Ignore errors during cleanup
+    }
+  };
+
+  const intervalId = setInterval(cleanup, PERFORMANCE_CLEANUP.INTERVAL_MS);
+  return () => clearInterval(intervalId);
+};
+
+const cleanupPerformance = setupPerformanceCleanup();
+
 const RouterComponent = ({ platform, children }: { platform: 'electron' | 'web'; children: React.ReactNode }) => {
   if (platform === 'web') {
     return <BrowserRouter>{children}</BrowserRouter>;
@@ -125,6 +150,10 @@ const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Root element not found');
 }
+
+window.addEventListener('beforeunload', () => {
+  cleanupPerformance();
+});
 
 try {
   const root = createRoot(rootElement);
