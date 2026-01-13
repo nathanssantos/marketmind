@@ -6,7 +6,14 @@ import { storageService } from './services/StorageService';
 import { UpdateManager } from './services/UpdateManager';
 import { windowStateManager } from './services/WindowStateManager';
 
-const { app, BrowserWindow, ipcMain, net, Notification } = electron;
+const { app, BrowserWindow, ipcMain, net, Notification, crashReporter } = electron;
+
+crashReporter.start({
+  productName: 'MarketMind',
+  submitURL: '',
+  uploadToServer: false,
+  ignoreSystemCrashHandler: false,
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -188,7 +195,44 @@ const createWindow = (): void => {
   });
 
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
-    console.error('[Main] Renderer process gone:', details.reason, details.exitCode);
+    const crashInfo = {
+      reason: details.reason,
+      exitCode: details.exitCode,
+      timestamp: new Date().toISOString(),
+      platform: process.platform,
+      electronVersion: process.versions.electron,
+      chromeVersion: process.versions.chrome,
+      nodeVersion: process.versions.node,
+      v8Version: process.versions.v8,
+      crashDumpsDir: app.getPath('crashDumps'),
+      memoryUsage: process.memoryUsage(),
+      uptime: process.uptime(),
+    };
+
+    console.error('[Main] ═══════════════════════════════════════════════════════════');
+    console.error('[Main] RENDERER PROCESS CRASH DETECTED');
+    console.error('[Main] ═══════════════════════════════════════════════════════════');
+    console.error('[Main] Reason:', details.reason);
+    console.error('[Main] Exit Code:', details.exitCode);
+    console.error('[Main] Timestamp:', crashInfo.timestamp);
+    console.error('[Main] Platform:', crashInfo.platform);
+    console.error('[Main] Electron:', crashInfo.electronVersion);
+    console.error('[Main] Chrome:', crashInfo.chromeVersion);
+    console.error('[Main] Node:', crashInfo.nodeVersion);
+    console.error('[Main] V8:', crashInfo.v8Version);
+    console.error('[Main] Crash Dumps Dir:', crashInfo.crashDumpsDir);
+    console.error('[Main] Memory Usage:', JSON.stringify(crashInfo.memoryUsage, null, 2));
+    console.error('[Main] Process Uptime:', crashInfo.uptime.toFixed(2), 'seconds');
+    console.error('[Main] ═══════════════════════════════════════════════════════════');
+
+    if (details.exitCode === 5) {
+      console.error('[Main] Exit code 5 typically indicates:');
+      console.error('[Main]   - SIGTRAP on macOS (debugger/GPU issues)');
+      console.error('[Main]   - Access violation or GPU driver crash');
+      console.error('[Main]   - WebGL context lost or corrupted');
+      console.error('[Main] Check crash dumps at:', crashInfo.crashDumpsDir);
+    }
+
     if (mainWindow && !mainWindow.isDestroyed()) {
       if (details.reason === 'crashed' || details.reason === 'oom' || details.reason === 'killed') {
         console.log('[Main] Attempting to reload window after crash...');
@@ -207,6 +251,21 @@ const createWindow = (): void => {
 
   mainWindow.webContents.on('responsive', () => {
     console.log('[Main] Renderer process is responsive again');
+  });
+
+  mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    if (level >= 2) {
+      const levelName = ['verbose', 'info', 'warning', 'error'][level] || 'unknown';
+      console.log(`[Renderer ${levelName}] ${message} (${sourceId}:${line})`);
+    }
+  });
+
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error('[Main] Page failed to load:', { errorCode, errorDescription, validatedURL });
+  });
+
+  mainWindow.webContents.on('preload-error', (_event, preloadPath, error) => {
+    console.error('[Main] Preload script error:', { preloadPath, error });
   });
 
   mainWindow.on('closed', () => {
@@ -530,10 +589,22 @@ const setupNotificationHandlers = (): void => {
   });
 };
 
+const logGpuInfo = (): void => {
+  const gpuInfo = app.getGPUFeatureStatus();
+  console.log('[Main] ═══════════════════════════════════════════════════════════');
+  console.log('[Main] GPU FEATURE STATUS');
+  console.log('[Main] ═══════════════════════════════════════════════════════════');
+  Object.entries(gpuInfo).forEach(([feature, status]) => {
+    console.log(`[Main] ${feature}: ${status}`);
+  });
+  console.log('[Main] ═══════════════════════════════════════════════════════════');
+};
+
 const initializeApp = async (): Promise<void> => {
   try {
     await app.whenReady();
     console.log('App ready, setting up IPC handlers...');
+    logGpuInfo();
     setupIpcHandlers();
     setupWindowHandlers();
     setupNotificationHandlers();
@@ -552,6 +623,31 @@ const initializeApp = async (): Promise<void> => {
 };
 
 void initializeApp();
+
+app.on('child-process-gone', (_event, details) => {
+  console.error('[Main] ═══════════════════════════════════════════════════════════');
+  console.error('[Main] CHILD PROCESS GONE');
+  console.error('[Main] ═══════════════════════════════════════════════════════════');
+  console.error('[Main] Type:', details.type);
+  console.error('[Main] Reason:', details.reason);
+  console.error('[Main] Exit Code:', details.exitCode);
+  if (details.serviceName) console.error('[Main] Service Name:', details.serviceName);
+  if (details.name) console.error('[Main] Name:', details.name);
+  console.error('[Main] ═══════════════════════════════════════════════════════════');
+});
+
+app.on('gpu-info-update', () => {
+  console.log('[Main] GPU info updated');
+  logGpuInfo();
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[Main] Uncaught exception in main process:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Main] Unhandled rejection at:', promise, 'reason:', reason);
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
