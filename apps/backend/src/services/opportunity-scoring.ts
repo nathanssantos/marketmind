@@ -56,7 +56,7 @@ interface CacheEntry<T> {
 }
 
 export class OpportunityScoringService {
-  private scoreCache: CacheEntry<SymbolScore[]> | null = null;
+  private scoreCache: Map<MarketType, CacheEntry<SymbolScore[]>> = new Map();
   private cacheTTL = 10 * TIME_MS.MINUTE;
   private weights: ScoringWeights = DEFAULT_WEIGHTS;
 
@@ -72,13 +72,13 @@ export class OpportunityScoringService {
     marketType: MarketType = 'FUTURES',
     limit: number = 100
   ): Promise<SymbolScore[]> {
-    const cached = this.getFromCache();
+    const cached = this.getFromCache(marketType);
     if (cached) {
       return cached.slice(0, limit);
     }
 
     const scores = await this.calculateScores(marketType, limit);
-    this.setCache(scores);
+    this.setCache(marketType, scores);
     return scores;
   }
 
@@ -288,19 +288,24 @@ export class OpportunityScoringService {
     }
   }
 
-  private getFromCache(): SymbolScore[] | null {
-    if (this.scoreCache && Date.now() - this.scoreCache.timestamp < this.cacheTTL) {
-      return this.scoreCache.data;
+  private getFromCache(marketType: MarketType): SymbolScore[] | null {
+    const cached = this.scoreCache.get(marketType);
+    if (cached && Date.now() - cached.timestamp < this.cacheTTL) {
+      return cached.data;
     }
     return null;
   }
 
-  private setCache(data: SymbolScore[]): void {
-    this.scoreCache = { data, timestamp: Date.now() };
+  private setCache(marketType: MarketType, data: SymbolScore[]): void {
+    this.scoreCache.set(marketType, { data, timestamp: Date.now() });
   }
 
-  clearCache(): void {
-    this.scoreCache = null;
+  clearCache(marketType?: MarketType): void {
+    if (marketType) {
+      this.scoreCache.delete(marketType);
+    } else {
+      this.scoreCache.clear();
+    }
   }
 }
 

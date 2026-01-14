@@ -124,6 +124,9 @@ interface WalletRotationState {
   lastCheckTime: number;
 }
 
+const getRotationStateKey = (walletId: string, interval: string): string =>
+  `${walletId}:${interval}`;
+
 export class AutoTradingScheduler {
   private activeWatchers: Map<string, ActiveWatcher> = new Map();
   private strategyLoader: StrategyLoader;
@@ -228,11 +231,12 @@ export class AutoTradingScheduler {
     this.fundingRateCache.clear();
   }
 
-  private async maybeCheckRotation(walletId: string): Promise<void> {
-    const state = this.rotationStates.get(walletId);
+  private async maybeCheckRotation(walletId: string, tradingInterval: string): Promise<void> {
+    const stateKey = getRotationStateKey(walletId, tradingInterval);
+    const state = this.rotationStates.get(stateKey);
     if (!state) return;
 
-    if (this.isCheckingRotation.has(walletId)) return;
+    if (this.isCheckingRotation.has(stateKey)) return;
 
     const now = Date.now();
     const intervalMs = ROTATION_INTERVAL_MS[state.config.interval];
@@ -240,12 +244,13 @@ export class AutoTradingScheduler {
 
     if (timeSinceLastCheck < intervalMs) return;
 
-    this.isCheckingRotation.add(walletId);
+    this.isCheckingRotation.add(stateKey);
 
     try {
       log('🔄 [DynamicRotation] Checking rotation (synced with watcher tick)', {
         walletId,
-        interval: state.config.interval,
+        tradingInterval,
+        rotationInterval: state.config.interval,
         timeSinceLastCheck: `${Math.round(timeSinceLastCheck / 1000)}s`,
         intervalMs: `${intervalMs / 1000}s`,
       });
@@ -256,6 +261,7 @@ export class AutoTradingScheduler {
       if (result.added.length > 0 || result.removed.length > 0) {
         log('🔄 [DynamicRotation] Rotation result', {
           walletId,
+          tradingInterval,
           added: result.added.length,
           removed: result.removed.length,
           kept: result.kept.length,
@@ -274,6 +280,7 @@ export class AutoTradingScheduler {
       } else {
         log('✅ [DynamicRotation] No rotation needed', {
           walletId,
+          tradingInterval,
           kept: result.kept.length,
         });
       }
@@ -282,10 +289,11 @@ export class AutoTradingScheduler {
     } catch (error) {
       log('❌ [DynamicRotation] Rotation check failed', {
         walletId,
+        tradingInterval,
         error: error instanceof Error ? error.message : String(error),
       });
     } finally {
-      this.isCheckingRotation.delete(walletId);
+      this.isCheckingRotation.delete(stateKey);
     }
   }
 
@@ -609,7 +617,7 @@ export class AutoTradingScheduler {
     });
 
     if (!watcher.isManual) {
-      await this.maybeCheckRotation(watcher.walletId);
+      await this.maybeCheckRotation(watcher.walletId, watcher.interval);
     }
 
     const [walletData] = await db
@@ -2293,7 +2301,8 @@ export class AutoTradingScheduler {
     const initialResult = await rotationService.executeRotation(walletId, userId, rotationConfig);
     await this.applyRotation(walletId, userId, initialResult, config.interval, config.profileId, config.marketType);
 
-    this.rotationStates.set(walletId, {
+    const stateKey = getRotationStateKey(walletId, config.interval);
+    this.rotationStates.set(stateKey, {
       config: rotationConfig,
       userId,
       profileId: config.profileId,
@@ -2303,19 +2312,29 @@ export class AutoTradingScheduler {
     const nextCheckMs = ROTATION_INTERVAL_MS[rotationConfig.interval];
     log('✅ Dynamic symbol rotation started (synced with watcher ticks)', {
       walletId,
-      checkInterval: rotationConfig.interval,
+      tradingInterval: config.interval,
+      rotationInterval: rotationConfig.interval,
       nextCheckIn: `${nextCheckMs / 1000}s`,
     });
   }
 
   async stopDynamicRotation(walletId: string, stopDynamicWatchers: boolean = true): Promise<void> {
-    if (!this.rotationStates.has(walletId)) {
+    const keysToDelete: string[] = [];
+    for (const key of this.rotationStates.keys()) {
+      if (key.startsWith(`${walletId}:`)) {
+        keysToDelete.push(key);
+      }
+    }
+
+    if (keysToDelete.length === 0) {
       log('ℹ️ No active rotation for wallet', { walletId });
       return;
     }
 
-    this.rotationStates.delete(walletId);
-    this.isCheckingRotation.delete(walletId);
+    for (const key of keysToDelete) {
+      this.rotationStates.delete(key);
+      this.isCheckingRotation.delete(key);
+    }
 
     if (stopDynamicWatchers) {
       const dynamicWatchers = await db
@@ -2430,7 +2449,7 @@ export class AutoTradingScheduler {
     const rotationConfig: RotationConfig = {
       enabled: true,
       limit: config.dynamicSymbolLimit,
-      interval: '4h',
+      interval: getOptimalRotationInterval(config.interval),
       excludedSymbols,
       marketType: config.marketType,
       tradingInterval: config.interval,
@@ -2469,19 +2488,55 @@ export class AutoTradingScheduler {
   }
 
   isRotationActive(walletId: string): boolean {
-    return this.rotationStates.has(walletId);
+    for (const key of this.rotationStates.keys()) {
+      if (key.startsWith(`${walletId}:`)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   getNextRotationTime(walletId: string): Date | null {
-    const state = this.rotationStates.get(walletId);
-    if (!state) return null;
+    let earliestTime: Date | null = null;
 
-    const intervalMs = ROTATION_INTERVAL_MS[state.config.interval];
-    return new Date(state.lastCheckTime + intervalMs);
+    for (const [key, state] of this.rotationStates.entries()) {
+      if (key.startsWith(`${walletId}:`)) {
+        const intervalMs = ROTATION_INTERVAL_MS[state.config.interval];
+        const nextTime = new Date(state.lastCheckTime + intervalMs);
+        if (!earliestTime || nextTime < earliestTime) {
+          earliestTime = nextTime;
+        }
+      }
+    }
+
+    return earliestTime;
   }
 
   getRotationConfig(walletId: string): RotationConfig | null {
-    return this.rotationStates.get(walletId)?.config ?? null;
+    for (const [key, state] of this.rotationStates.entries()) {
+      if (key.startsWith(`${walletId}:`)) {
+        return state.config;
+      }
+    }
+    return null;
+  }
+
+  getRotationCycles(walletId: string): Array<{ interval: string; nextRotation: Date; config: RotationConfig }> {
+    const cycles: Array<{ interval: string; nextRotation: Date; config: RotationConfig }> = [];
+
+    for (const [key, state] of this.rotationStates.entries()) {
+      if (key.startsWith(`${walletId}:`)) {
+        const interval = key.split(':')[1] ?? state.config.tradingInterval;
+        const intervalMs = ROTATION_INTERVAL_MS[state.config.interval];
+        cycles.push({
+          interval,
+          nextRotation: new Date(state.lastCheckTime + intervalMs),
+          config: state.config,
+        });
+      }
+    }
+
+    return cycles.sort((a, b) => a.nextRotation.getTime() - b.nextRotation.getTime());
   }
 }
 

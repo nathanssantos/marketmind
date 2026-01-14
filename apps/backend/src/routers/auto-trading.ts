@@ -988,7 +988,7 @@ export const autoTradingRouter = router({
           dynamicSymbolLimit: transformedConfig.dynamicSymbolLimit,
           dynamicSymbolExcluded: config.dynamicSymbolExcluded,
           marketType: 'FUTURES',
-          interval: '4h',
+          interval: config.dynamicSymbolRotationInterval,
           profileId: undefined,
         }
       );
