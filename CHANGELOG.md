@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.45.0] - 2026-01-14
+
+### Added
+- **Parallel batch processing** for auto-trading watchers
+  - Configurable batch size via `WATCHER_BATCH_SIZE` env var (default: 6)
+  - Processes multiple watchers concurrently for improved performance
+  - `VERBOSE_BATCH_LOGS=true` for detailed per-watcher logs
+- **Professional CLI table logging** using cli-table3
+  - Unicode box-drawing characters for aligned tables
+  - ANSI colors for status indicators (green=success, yellow=skip, red=error)
+  - Separate tables for watchers, detected setups, and errors
+  - Colors automatically stripped when writing to log files
+- **Per-timeframe rotation cycles** for dynamic symbol rotation
+  - Separate rotation state per `${walletId}:${interval}` key
+  - Independent cycles for different timeframes (e.g., 1h vs 4h watchers)
+  - `getRotationCycles()` method to list all active cycles for a wallet
+
+### Changed
+- **Ranking cache** now keyed by `marketType` (SPOT/FUTURES)
+  - Prevents incorrect cache hits between different market types
+  - 10-minute TTL preserved per market type
+- **Rotation interval** now derived from watcher interval via `getOptimalRotationInterval()`
+  - Removed hardcoded '4h' interval in rotation triggers
+
+### Improved
+- **Performance** - 6x faster watcher processing through parallelization
+- **Log readability** - Organized batch summaries with setup detection details
+- **Memory efficiency** - Buffered logs per watcher, output after batch completes
+
+---
+
 ## [0.44.0] - 2025-01-10
 
 ### Added
