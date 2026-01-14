@@ -52,6 +52,13 @@ import { pyramidingService } from './pyramiding';
 import { riskManagerService } from './risk-manager';
 import { StrategyInterpreter, StrategyLoader } from './setup-detection/dynamic';
 import { getWebSocketService } from './websocket';
+import {
+  createBatchResult,
+  outputBatchResults,
+  WatcherLogBuffer,
+  type SetupLogEntry,
+  type WatcherResult,
+} from './watcher-batch-logger';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -97,6 +104,8 @@ interface ActiveWatcher {
 }
 
 const CANDLE_CLOSE_SAFETY_BUFFER_MS = 2000;
+const BATCH_SIZE = parseInt(process.env['WATCHER_BATCH_SIZE'] ?? '6', 10);
+const VERBOSE_BATCH_LOGS = process.env['VERBOSE_BATCH_LOGS'] === 'true';
 
 const yieldToEventLoop = (): Promise<void> =>
   new Promise((resolve) => setImmediate(resolve));
@@ -320,19 +329,292 @@ export class AutoTradingScheduler {
     }
   }
 
+  private batchCounter = 0;
+
   private async processWatcherQueue(): Promise<void> {
     if (this.isProcessingQueue) return;
     this.isProcessingQueue = true;
 
     while (this.processingQueue.length > 0) {
-      const watcherId = this.processingQueue.shift();
-      if (watcherId) {
-        await this.processWatcher(watcherId);
-        await yieldToEventLoop();
+      const batchStartTime = new Date();
+      this.batchCounter++;
+      const batchId = this.batchCounter;
+
+      const batch: string[] = [];
+      while (batch.length < BATCH_SIZE && this.processingQueue.length > 0) {
+        const watcherId = this.processingQueue.shift();
+        if (watcherId) batch.push(watcherId);
       }
+
+      if (batch.length === 0) break;
+
+      const results = await Promise.all(
+        batch.map((watcherId) => this.processWatcherWithBuffer(watcherId))
+      );
+
+      const batchResult = createBatchResult(batchId, batchStartTime, results);
+      outputBatchResults(batchResult, VERBOSE_BATCH_LOGS);
+
+      await yieldToEventLoop();
     }
 
     this.isProcessingQueue = false;
+  }
+
+  private async processWatcherWithBuffer(watcherId: string): Promise<WatcherResult> {
+    const watcher = this.activeWatchers.get(watcherId);
+    if (!watcher) {
+      return {
+        watcherId,
+        symbol: 'unknown',
+        interval: 'unknown',
+        marketType: 'unknown',
+        status: 'error',
+        reason: 'Watcher not found',
+        setupsDetected: [],
+        tradesExecuted: 0,
+        durationMs: 0,
+        logs: [],
+      };
+    }
+
+    const logBuffer = new WatcherLogBuffer(
+      watcherId,
+      watcher.symbol,
+      watcher.interval,
+      watcher.marketType,
+      watcher.profileName
+    );
+
+    try {
+      const result = await this.processWatcherCore(watcher, logBuffer);
+      return result;
+    } catch (error) {
+      logBuffer.error('❌', 'Error processing watcher', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return logBuffer.toResult('error', error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  // eslint-disable-next-line complexity
+  private async processWatcherCore(
+    watcher: ActiveWatcher,
+    logBuffer: WatcherLogBuffer
+  ): Promise<WatcherResult> {
+    const watcherId = `${watcher.walletId}-${watcher.symbol}-${watcher.interval}-${watcher.marketType}`;
+
+    logBuffer.log('🔍', 'Processing watcher');
+
+    if (!watcher.isManual) {
+      await this.maybeCheckRotation(watcher.walletId, watcher.interval);
+    }
+
+    const [walletData] = await db
+      .select({ currentBalance: wallets.currentBalance })
+      .from(wallets)
+      .where(eq(wallets.id, watcher.walletId))
+      .limit(1);
+
+    const [configData] = await db
+      .select({ leverage: autoTradingConfig.leverage })
+      .from(autoTradingConfig)
+      .where(eq(autoTradingConfig.walletId, watcher.walletId))
+      .limit(1);
+
+    const walletBalance = parseFloat(walletData?.currentBalance ?? '0');
+    const leverage = configData?.leverage ?? 1;
+    const availableCapital = walletBalance * leverage;
+
+    if (availableCapital <= TRADING_DEFAULTS.MIN_TRADE_VALUE_USD) {
+      logBuffer.log('💤', 'Insufficient capital', {
+        balance: walletBalance.toFixed(2),
+        leverage,
+        available: availableCapital.toFixed(2),
+      });
+      return logBuffer.toResult('skipped', 'Insufficient capital');
+    }
+
+    const strategies = await this.strategyLoader.loadAll({ includeUnprofitable: false });
+    const filteredStrategies = strategies.filter((s) =>
+      watcher.enabledStrategies.includes(s.id)
+    );
+
+    const requiredKlines = calculateRequiredKlines();
+    const minRequired = ABSOLUTE_MINIMUM_KLINES;
+
+    let klinesData = await db.query.klines.findMany({
+      where: and(
+        eq(klines.symbol, watcher.symbol),
+        eq(klines.interval, watcher.interval),
+        eq(klines.marketType, watcher.marketType)
+      ),
+      orderBy: [desc(klines.openTime)],
+      limit: requiredKlines,
+    });
+
+    if (klinesData.length < minRequired) {
+      logBuffer.log('📥', 'Backfilling klines', { count: klinesData.length, required: minRequired });
+
+      const result = await prefetchKlines({
+        symbol: watcher.symbol,
+        interval: watcher.interval,
+        marketType: watcher.marketType,
+        targetCount: requiredKlines,
+      });
+
+      if (!result.success) {
+        logBuffer.error('❌', 'Failed to fetch klines', { error: result.error });
+        return logBuffer.toResult('error', 'Failed to fetch klines');
+      }
+
+      const hasReachedApiLimit = result.alreadyComplete || result.gaps === 0;
+
+      if (!meetsKlineRequirementWithTolerance(result.totalInDb, minRequired, hasReachedApiLimit)) {
+        logBuffer.warn('⚠️', 'Insufficient klines', {
+          totalInDb: result.totalInDb,
+          minRequired,
+          apiExhausted: hasReachedApiLimit,
+        });
+        return logBuffer.toResult('skipped', 'Insufficient klines', result.totalInDb);
+      }
+
+      klinesData = await db.query.klines.findMany({
+        where: and(
+          eq(klines.symbol, watcher.symbol),
+          eq(klines.interval, watcher.interval),
+          eq(klines.marketType, watcher.marketType)
+        ),
+        orderBy: [desc(klines.openTime)],
+        limit: requiredKlines,
+      });
+    }
+
+    klinesData.reverse();
+
+    const mappedKlines: Kline[] = klinesData.map((k) => ({
+      symbol: k.symbol,
+      interval: k.interval,
+      openTime: k.openTime.getTime(),
+      closeTime: k.closeTime.getTime(),
+      open: k.open,
+      high: k.high,
+      low: k.low,
+      close: k.close,
+      volume: k.volume,
+      quoteVolume: k.quoteVolume ?? '0',
+      trades: k.trades ?? 0,
+      takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
+      takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
+    }));
+
+    const lastCandle = mappedKlines[mappedKlines.length - 1];
+    if (!lastCandle) {
+      logBuffer.warn('⚠️', 'No candles available');
+      return logBuffer.toResult('skipped', 'No candles');
+    }
+
+    const now = Date.now();
+    const candleCloseTime = lastCandle.closeTime;
+    const safeCloseTime = candleCloseTime + CANDLE_CLOSE_SAFETY_BUFFER_MS;
+    const isCandleClosed = now >= safeCloseTime;
+
+    if (!isCandleClosed) {
+      const remainingMs = safeCloseTime - now;
+      logBuffer.log('⏳', 'Waiting for candle close', { remainingMs });
+
+      if (remainingMs > 0 && remainingMs < 10000) {
+        setTimeout(() => {
+          this.queueWatcherProcessing(watcherId);
+        }, remainingMs + 100);
+      }
+
+      return logBuffer.toResult('skipped', 'Candle not closed');
+    }
+
+    if (watcher.lastProcessedCandleOpenTime === lastCandle.openTime) {
+      logBuffer.log('⏭️', 'Candle already processed');
+      return logBuffer.toResult('skipped', 'Already processed');
+    }
+
+    logBuffer.log('📊', 'Scanning for setups', {
+      strategies: filteredStrategies.length,
+      klines: mappedKlines.length,
+    });
+
+    const detectedSetups: TradingSetup[] = [];
+    const currentIndex = mappedKlines.length - 1;
+
+    for (const strategy of filteredStrategies) {
+      await yieldToEventLoop();
+
+      const interpreter = new StrategyInterpreter({
+        enabled: true,
+        minConfidence: 50,
+        minRiskReward: 1.0,
+        strategy,
+      });
+
+      const result = interpreter.detect(mappedKlines, currentIndex);
+
+      if (result.setup && result.confidence >= 50) {
+        const setupWithTriggerData = {
+          ...result.setup,
+          triggerKlineIndex: result.triggerKlineIndex,
+          triggerCandleData: result.triggerCandleData,
+          triggerIndicatorValues: result.triggerIndicatorValues,
+        };
+        detectedSetups.push(setupWithTriggerData);
+
+        const setupEntry: SetupLogEntry = {
+          type: result.setup.type,
+          direction: result.setup.direction,
+          confidence: result.confidence,
+          entryPrice: result.setup.entryPrice?.toFixed(6) ?? '-',
+          stopLoss: result.setup.stopLoss?.toFixed(6) ?? '-',
+          takeProfit: result.setup.takeProfit?.toFixed(6) ?? '-',
+          riskReward: result.setup.riskRewardRatio?.toFixed(2) ?? '-',
+        };
+        logBuffer.addSetup(setupEntry);
+        logBuffer.log('📍', 'Setup detected', {
+          type: result.setup.type,
+          direction: result.setup.direction,
+          confidence: result.confidence,
+        });
+      }
+    }
+
+    watcher.lastProcessedCandleOpenTime = lastCandle.openTime;
+
+    if (detectedSetups.length === 0) {
+      logBuffer.log('📭', 'No setups found');
+      watcher.lastProcessedTime = Date.now();
+      return logBuffer.toResult('success', undefined, mappedKlines.length);
+    }
+
+    for (const setup of detectedSetups) {
+      const executed = await this.executeSetupSafe(watcher, setup, filteredStrategies, mappedKlines);
+      if (executed) {
+        logBuffer.incrementTrades();
+      }
+    }
+
+    watcher.lastProcessedTime = Date.now();
+    return logBuffer.toResult('success', undefined, mappedKlines.length);
+  }
+
+  private async executeSetupSafe(
+    watcher: ActiveWatcher,
+    setup: TradingSetup,
+    strategies: StrategyDefinition[],
+    cycleKlines: Kline[]
+  ): Promise<boolean> {
+    try {
+      await this.executeSetup(watcher, setup, strategies, cycleKlines);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private getIntervalMs(interval: string): number {
@@ -602,254 +884,6 @@ export class AutoTradingScheduler {
     if (this.activeWatchers.size === 0) {
       this.clearCaches();
       log('🧹 Caches cleared - no active watchers');
-    }
-  }
-
-  // eslint-disable-next-line complexity
-  private async processWatcher(watcherId: string): Promise<void> {
-    const watcher = this.activeWatchers.get(watcherId);
-    if (!watcher) return;
-
-    log('🔍 Processing watcher', {
-      watcherId,
-      symbol: watcher.symbol,
-      interval: watcher.interval,
-    });
-
-    if (!watcher.isManual) {
-      await this.maybeCheckRotation(watcher.walletId, watcher.interval);
-    }
-
-    const [walletData] = await db
-      .select({ currentBalance: wallets.currentBalance })
-      .from(wallets)
-      .where(eq(wallets.id, watcher.walletId))
-      .limit(1);
-
-    const [configData] = await db
-      .select({ leverage: autoTradingConfig.leverage })
-      .from(autoTradingConfig)
-      .where(eq(autoTradingConfig.walletId, watcher.walletId))
-      .limit(1);
-
-    const walletBalance = parseFloat(walletData?.currentBalance ?? '0');
-    const leverage = configData?.leverage ?? 1;
-    const availableCapital = walletBalance * leverage;
-
-    if (availableCapital <= TRADING_DEFAULTS.MIN_TRADE_VALUE_USD) {
-      log('💤 Skipping setup scan - insufficient capital', {
-        walletId: watcher.walletId,
-        symbol: watcher.symbol,
-        walletBalance: walletBalance.toFixed(2),
-        leverage,
-        availableCapital: availableCapital.toFixed(2),
-        minRequired: TRADING_DEFAULTS.MIN_TRADE_VALUE_USD,
-      });
-      return;
-    }
-
-    try {
-      const strategies = await this.strategyLoader.loadAll({ includeUnprofitable: false });
-      const filteredStrategies = strategies.filter((s) =>
-        watcher.enabledStrategies.includes(s.id)
-      );
-
-      const requiredKlines = calculateRequiredKlines();
-      const minRequired = ABSOLUTE_MINIMUM_KLINES;
-
-      const klinesData = await db.query.klines.findMany({
-        where: and(
-          eq(klines.symbol, watcher.symbol),
-          eq(klines.interval, watcher.interval),
-          eq(klines.marketType, watcher.marketType)
-        ),
-        orderBy: [desc(klines.openTime)],
-        limit: requiredKlines,
-      });
-
-      if (klinesData.length < minRequired) {
-        log('📥 Insufficient klines data, using smart backfill...', { count: klinesData.length, required: minRequired, target: requiredKlines });
-
-        const result = await prefetchKlines({
-          symbol: watcher.symbol,
-          interval: watcher.interval,
-          marketType: watcher.marketType,
-          targetCount: requiredKlines,
-        });
-
-        if (!result.success) {
-          log('❌ Failed to fetch historical klines', { error: result.error });
-          return;
-        }
-
-        const hasReachedApiLimit = result.alreadyComplete || result.gaps === 0;
-
-        if (!meetsKlineRequirementWithTolerance(result.totalInDb, minRequired, hasReachedApiLimit)) {
-          if (!hasReachedApiLimit) {
-            log('⚠️ Insufficient klines, more data may be available', {
-              totalInDb: result.totalInDb,
-              minRequired,
-              gaps: result.gaps,
-            });
-          } else {
-            log('❌ Critical: insufficient klines even after exhausting API', {
-              available: result.totalInDb,
-              required: minRequired,
-              apiExhausted: hasReachedApiLimit,
-            });
-          }
-          return;
-        }
-
-        if (hasReachedApiLimit && result.totalInDb < minRequired) {
-          log('ℹ️ Proceeding with available klines (API exhausted, within tolerance)', {
-            available: result.totalInDb,
-            required: minRequired,
-          });
-        }
-
-        const refreshedKlines = await db.query.klines.findMany({
-          where: and(
-            eq(klines.symbol, watcher.symbol),
-            eq(klines.interval, watcher.interval),
-            eq(klines.marketType, watcher.marketType)
-          ),
-          orderBy: [desc(klines.openTime)],
-          limit: requiredKlines,
-        });
-
-        if (!meetsKlineRequirementWithTolerance(refreshedKlines.length, minRequired, hasReachedApiLimit)) {
-          log('⚠️ Insufficient klines after refresh', {
-            count: refreshedKlines.length,
-            required: minRequired,
-            hasReachedApiLimit,
-          });
-          return;
-        }
-
-        klinesData.length = 0;
-        klinesData.push(...refreshedKlines);
-      }
-
-      klinesData.reverse();
-
-      const mappedKlines: Kline[] = klinesData.map((k) => ({
-        symbol: k.symbol,
-        interval: k.interval,
-        openTime: k.openTime.getTime(),
-        closeTime: k.closeTime.getTime(),
-        open: k.open,
-        high: k.high,
-        low: k.low,
-        close: k.close,
-        volume: k.volume,
-        quoteVolume: k.quoteVolume ?? '0',
-        trades: k.trades ?? 0,
-        takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
-        takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
-      }));
-
-      const lastCandle = mappedKlines[mappedKlines.length - 1];
-      if (!lastCandle) {
-        log('⚠️ No candles available', { symbol: watcher.symbol });
-        return;
-      }
-
-      const now = Date.now();
-      const candleCloseTime = lastCandle.closeTime;
-      const safeCloseTime = candleCloseTime + CANDLE_CLOSE_SAFETY_BUFFER_MS;
-      const isCandleClosed = now >= safeCloseTime;
-
-      if (!isCandleClosed) {
-        const remainingMs = safeCloseTime - now;
-        log('⏳ Waiting for candle to close (with safety buffer)', {
-          symbol: watcher.symbol,
-          interval: watcher.interval,
-          candleOpenTime: new Date(lastCandle.openTime).toISOString(),
-          candleCloseTime: new Date(candleCloseTime).toISOString(),
-          safeCloseTime: new Date(safeCloseTime).toISOString(),
-          remainingMs,
-        });
-
-        if (remainingMs > 0 && remainingMs < 10000) {
-          setTimeout(() => {
-            log('🔄 Retrying after candle close buffer', { watcherId, symbol: watcher.symbol });
-            this.queueWatcherProcessing(watcherId);
-          }, remainingMs + 100);
-        }
-
-        return;
-      }
-
-      if (watcher.lastProcessedCandleOpenTime === lastCandle.openTime) {
-        log('⏭️ Candle already processed, skipping', {
-          symbol: watcher.symbol,
-          candleOpenTime: new Date(lastCandle.openTime).toISOString(),
-        });
-        return;
-      }
-
-      log('📊 Scanning for setups', {
-        symbol: watcher.symbol,
-        strategies: filteredStrategies.length,
-        klines: mappedKlines.length,
-        lastCandleTime: new Date(lastCandle.openTime).toISOString(),
-      });
-
-      const detectedSetups: TradingSetup[] = [];
-      const currentIndex = mappedKlines.length - 1;
-
-      for (const strategy of filteredStrategies) {
-        await yieldToEventLoop();
-
-        const interpreter = new StrategyInterpreter({
-          enabled: true,
-          minConfidence: 50,
-          minRiskReward: 1.0,
-          strategy,
-        });
-
-        const result = interpreter.detect(mappedKlines, currentIndex);
-
-        if (result.setup && result.confidence >= 50) {
-          const setupWithTriggerData = {
-            ...result.setup,
-            triggerKlineIndex: result.triggerKlineIndex,
-            triggerCandleData: result.triggerCandleData,
-            triggerIndicatorValues: result.triggerIndicatorValues,
-          };
-          detectedSetups.push(setupWithTriggerData);
-          log('📍 Setup detected', {
-            type: result.setup.type,
-            direction: result.setup.direction,
-            confidence: result.confidence,
-            entryPrice: result.setup.entryPrice?.toFixed(6),
-            stopLoss: result.setup.stopLoss?.toFixed(6),
-            takeProfit: result.setup.takeProfit?.toFixed(6),
-            riskRewardRatio: result.setup.riskRewardRatio?.toFixed(2),
-            candleCloseTime: new Date(candleCloseTime).toISOString(),
-          });
-        }
-      }
-
-      watcher.lastProcessedCandleOpenTime = lastCandle.openTime;
-
-      if (detectedSetups.length === 0) {
-        log('📭 No setups found');
-        watcher.lastProcessedTime = Date.now();
-        return;
-      }
-
-      for (const setup of detectedSetups) {
-        await this.executeSetup(watcher, setup, filteredStrategies, mappedKlines);
-      }
-
-      watcher.lastProcessedTime = Date.now();
-    } catch (error) {
-      log('❌ Error processing watcher', {
-        watcherId,
-        error: error instanceof Error ? error.message : String(error),
-      });
     }
   }
 
