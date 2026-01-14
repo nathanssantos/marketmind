@@ -11,7 +11,7 @@
   ],
   "source": "Dr. Alexander Elder - Trading for a Living",
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "group": "momentum",
   "recommendedTimeframes": {
     "primary": "1d",
@@ -149,7 +149,7 @@
     "minConfidence": 70,
     "minRiskReward": 1,
     "trendFilter": {
-      "enabled": true,
+      "enabled": false,
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false

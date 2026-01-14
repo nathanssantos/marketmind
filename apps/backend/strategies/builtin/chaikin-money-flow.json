@@ -1,4 +1,5 @@
 {
+  "enabled": true,
   "id": "chaikin-money-flow",
   "name": "Chaikin Money Flow",
   "version": "1.0.0",

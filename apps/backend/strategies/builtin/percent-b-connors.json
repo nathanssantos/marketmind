@@ -12,7 +12,7 @@
     "proven"
   ],
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "group": "reversal",
   "recommendedTimeframes": {
     "primary": "1d",
@@ -127,7 +127,7 @@
       "multiplier": 2
     },
     "trailingStop": {
-      "enabled": true,
+      "enabled": false,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 1.5,

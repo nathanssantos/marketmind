@@ -1,4 +1,5 @@
 {
+  "enabled": true,
   "id": "golden-cross-sma",
   "name": "Golden Cross SMA 50/200",
   "version": "1.0.0",

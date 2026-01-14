@@ -91,7 +91,7 @@
       "multiplier": 4
     },
     "trailingStop": {
-      "enabled": true,
+      "enabled": false,
       "type": "atr",
       "initialMultiplier": 3,
       "trailMultiplier": 4,

@@ -1,4 +1,5 @@
 {
+  "enabled": true,
   "id": "fibonacci-retracement",
   "name": "Fibonacci Retracement",
   "version": "1.0.0",

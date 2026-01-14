@@ -1,4 +1,5 @@
 {
+  "enabled": true,
   "id": "chande-momentum-crypto",
   "name": "Chande Momentum Crypto",
   "version": "1.0.0",

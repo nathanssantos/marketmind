@@ -170,7 +170,7 @@
       "multiplier": "$tpMultiplier"
     },
     "trailingStop": {
-      "enabled": true,
+      "enabled": false,
       "type": "atr",
       "initialMultiplier": 1.5,
       "trailMultiplier": 6,

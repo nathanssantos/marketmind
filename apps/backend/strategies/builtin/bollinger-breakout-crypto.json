@@ -12,7 +12,7 @@
   ],
   "source": "CoinBureau - Backtest Guide",
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "group": "breakout",
   "recommendedTimeframes": {
     "primary": "4h",

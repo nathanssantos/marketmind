@@ -1,4 +1,5 @@
 {
+  "enabled": true,
   "id": "mfi-divergence",
   "name": "MFI Divergence",
   "version": "1.0.0",

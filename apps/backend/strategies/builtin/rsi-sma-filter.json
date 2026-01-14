@@ -1,4 +1,5 @@
 {
+  "enabled": true,
   "id": "rsi-sma-filter",
   "name": "RSI SMA Filter",
   "version": "1.0.0",

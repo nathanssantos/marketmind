@@ -11,7 +11,7 @@
     "swing-trading"
   ],
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "group": "qullamaggie",
   "recommendedTimeframes": {
     "primary": "1d",
@@ -220,7 +220,7 @@
       "multiplier": 3
     },
     "trailingStop": {
-      "enabled": true,
+      "enabled": false,
       "type": "indicator",
       "indicator": "ema10",
       "initialMultiplier": 1.5,
@@ -287,7 +287,7 @@
     "minConfidence": 60,
     "minRiskReward": 1.5,
     "trendFilter": {
-      "enabled": true,
+      "enabled": false,
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false

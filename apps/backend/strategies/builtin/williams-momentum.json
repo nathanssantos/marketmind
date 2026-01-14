@@ -11,7 +11,7 @@
     "quick-trades"
   ],
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "group": "momentum",
   "backtestSummary": {
     "profitFactor": 1.2,
@@ -161,7 +161,7 @@
     },
     "maxBarsInTrade": 10,
     "trailingStop": {
-      "enabled": true,
+      "enabled": false,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 1.5,

@@ -1,4 +1,5 @@
 {
+  "enabled": true,
   "id": "keltner-squeeze",
   "name": "Keltner Squeeze Breakout",
   "version": "1.0.0",
