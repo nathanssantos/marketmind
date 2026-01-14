@@ -656,6 +656,7 @@ describe('StrategyInterpreter', () => {
           { level: 1, price: 50000, label: '100%' },
           { level: 1.618, price: 51236, label: '161.8%' },
         ],
+        direction: 'up',
         range: 2000,
       });
 
@@ -687,6 +688,7 @@ describe('StrategyInterpreter', () => {
           { level: 1, price: 50000, label: '100%' },
           { level: 1.618, price: 51236, label: '161.8%' },
         ],
+        direction: 'up',
         range: 2000,
       });
 

@@ -8,11 +8,15 @@ import type {
 } from '@marketmind/types';
 import { getDefaultFee } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
+import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { BACKTEST_ENGINE, TIME_MS, UNIT_MS } from '../../constants';
+import { ABSOLUTE_MINIMUM_KLINES, BACKTEST_ENGINE, TIME_MS, UNIT_MS } from '../../constants';
+import { db } from '../../db';
+import { klines as klinesTable } from '../../db/schema';
 import { generateEntityId } from '../../utils/id';
-import { fetchHistoricalKlinesFromAPI, fetchFuturesKlinesFromAPI } from '../binance-historical';
+import { mapDbKlinesReversed } from '../../utils/kline-mapper';
+import { smartBackfillKlines } from '../binance-historical';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
 import { ConditionEvaluator, IndicatorEngine, StrategyLoader } from '../setup-detection/dynamic';
 import { ExitManager } from './ExitManager';
@@ -154,27 +158,26 @@ export class BacktestEngine {
       return klines;
     }
 
-    const isFutures = config.marketType === 'FUTURES';
-    console.log(`[Backtest] Fetching historical klines from Binance ${isFutures ? 'FUTURES' : 'SPOT'} API...`);
-
+    const marketType = config.marketType ?? 'SPOT';
     const intervalMs = this.getIntervalMs(config.interval);
     const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
-    const warmupStartDate = new Date(new Date(config.startDate).getTime() - warmupMs);
+    const startTime = new Date(new Date(config.startDate).getTime() - warmupMs);
+    const endTime = new Date(config.endDate);
 
-    console.log('[Backtest] Including warmup period for EMA200:', warmupStartDate.toISOString(), 'to', config.startDate);
+    console.log('[Backtest] Including warmup period for EMA200:', startTime.toISOString(), 'to', config.startDate);
 
-    const fetchFn = isFutures ? fetchFuturesKlinesFromAPI : fetchHistoricalKlinesFromAPI;
-    const historicalKlines = await fetchFn(
+    const historicalKlines = await this.fetchKlinesFromDbWithBackfill(
       config.symbol,
       config.interval as Interval,
-      warmupStartDate,
-      new Date(config.endDate)
+      marketType,
+      startTime,
+      endTime
     );
 
     const startTimestamp = new Date(config.startDate).getTime();
     const warmupBarsFetched = historicalKlines.filter(k => k.openTime < startTimestamp).length;
 
-    console.log('[Backtest] Fetched', historicalKlines.length, 'klines from API (', warmupBarsFetched, 'warmup bars for EMA200)');
+    console.log('[Backtest] Fetched', historicalKlines.length, 'klines (', warmupBarsFetched, 'warmup bars for EMA200)');
 
     if (historicalKlines.length === 0) {
       throw new TRPCError({
@@ -185,6 +188,50 @@ export class BacktestEngine {
 
     console.log('[Backtest] Sample kline:', historicalKlines[0]);
     return historicalKlines;
+  }
+
+  private async fetchKlinesFromDbWithBackfill(
+    symbol: string,
+    interval: Interval,
+    marketType: 'SPOT' | 'FUTURES',
+    startTime: Date,
+    endTime: Date
+  ): Promise<Kline[]> {
+    const intervalMs = this.getIntervalMs(interval);
+    const expectedKlines = Math.ceil((endTime.getTime() - startTime.getTime()) / intervalMs);
+    const minRequired = ABSOLUTE_MINIMUM_KLINES;
+
+    let dbKlines = await db.query.klines.findMany({
+      where: and(
+        eq(klinesTable.symbol, symbol),
+        eq(klinesTable.interval, interval),
+        eq(klinesTable.marketType, marketType),
+        gte(klinesTable.openTime, startTime),
+        lte(klinesTable.openTime, endTime)
+      ),
+      orderBy: [desc(klinesTable.openTime)],
+    });
+
+    if (dbKlines.length < minRequired) {
+      console.log(`[Backtest] Insufficient klines in DB (${dbKlines.length}/${minRequired}), running smart backfill...`);
+
+      const backfillResult = await smartBackfillKlines(symbol, interval, expectedKlines, marketType);
+      console.log(`[Backtest] Backfill complete: downloaded ${backfillResult.downloaded}, total in DB: ${backfillResult.totalInDb}`);
+
+      dbKlines = await db.query.klines.findMany({
+        where: and(
+          eq(klinesTable.symbol, symbol),
+          eq(klinesTable.interval, interval),
+          eq(klinesTable.marketType, marketType),
+          gte(klinesTable.openTime, startTime),
+          lte(klinesTable.openTime, endTime)
+        ),
+        orderBy: [desc(klinesTable.openTime)],
+      });
+    }
+
+    console.log(`[Backtest] Retrieved ${dbKlines.length} klines from database for ${symbol} ${interval} ${marketType}`);
+    return mapDbKlinesReversed(dbKlines);
   }
 
   private async initializeStrategies(config: BacktestConfig, _historicalKlines: any[]) {
@@ -217,12 +264,31 @@ export class BacktestEngine {
   }
 
   private buildEffectiveConfig(config: BacktestConfig, _loadedStrategies: StrategyDefinition[]): BacktestConfig {
+    const isFutures = config.marketType === 'FUTURES';
     return {
       ...config,
       useAlgorithmicLevels: config.useAlgorithmicLevels ?? true,
       useTrailingStop: config.useTrailingStop ?? false,
       onlyWithTrend: config.onlyWithTrend ?? false,
       commission: config.commission ?? getDefaultFee(config.marketType ?? 'SPOT'),
+      useMtfFilter: config.useMtfFilter ?? true,
+      useMomentumTimingFilter: config.useMomentumTimingFilter ?? true,
+      useBtcCorrelationFilter: config.useBtcCorrelationFilter ?? true,
+      useMarketRegimeFilter: config.useMarketRegimeFilter ?? true,
+      useFundingFilter: config.useFundingFilter ?? isFutures,
+      useConfluenceScoring: config.useConfluenceScoring ?? true,
+      confluenceMinScore: config.confluenceMinScore ?? 60,
+      minRiskRewardRatio: config.minRiskRewardRatio ?? 1.2,
+      exposureMultiplier: config.exposureMultiplier ?? 1.5,
+      useStochasticFilter: config.useStochasticFilter ?? false,
+      useAdxFilter: config.useAdxFilter ?? false,
+      useVolumeFilter: config.useVolumeFilter ?? false,
+      useTrendFilter: config.useTrendFilter ?? false,
+      useCooldown: config.useCooldown ?? false,
+      cooldownMinutes: config.cooldownMinutes ?? 15,
+      leverage: config.leverage ?? 1,
+      tpCalculationMode: config.tpCalculationMode ?? 'default',
+      fibonacciTargetLevel: config.fibonacciTargetLevel ?? 'auto',
     };
   }
 

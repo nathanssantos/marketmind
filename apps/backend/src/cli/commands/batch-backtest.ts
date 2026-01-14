@@ -36,6 +36,15 @@ interface BatchOptions {
   strategies?: string;
   symbols?: string;
   intervals?: string;
+  marketType: 'SPOT' | 'FUTURES';
+  leverage: string;
+  useMtfFilter: boolean;
+  useBtcCorrelationFilter: boolean;
+  useMarketRegimeFilter: boolean;
+  useFundingFilter: boolean;
+  useConfluenceScoring: boolean;
+  useMomentumTimingFilter: boolean;
+  includeDisabled: boolean;
   verbose: boolean;
 }
 
@@ -48,9 +57,11 @@ const runSingleBacktest = async (
   interval: string,
   startDate: string,
   endDate: string,
-  capital: number
+  capital: number,
+  options: BatchOptions
 ): Promise<BatchResult> => {
   try {
+    const isFutures = options.marketType === 'FUTURES';
     const result = await engine.run({
       symbol,
       interval,
@@ -63,6 +74,14 @@ const runSingleBacktest = async (
       onlyWithTrend: false,
       slippagePercent: 0.1,
       minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
+      marketType: options.marketType,
+      leverage: parseInt(options.leverage, 10),
+      useMtfFilter: options.useMtfFilter,
+      useBtcCorrelationFilter: options.useBtcCorrelationFilter,
+      useMarketRegimeFilter: options.useMarketRegimeFilter,
+      useFundingFilter: isFutures && options.useFundingFilter,
+      useConfluenceScoring: options.useConfluenceScoring,
+      useMomentumTimingFilter: options.useMomentumTimingFilter,
     });
 
     if (result.trades.length === 0) {
@@ -247,11 +266,13 @@ export const batchBacktestCommand = async (options: BatchOptions): Promise<void>
   const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
   const strategyLoader = new StrategyLoader([strategiesDir]);
   const allStrategies = await strategyLoader.loadAll({ includeUnprofitable: true });
-  const enabledStrategyIds = allStrategies.filter((s) => s.enabled).map((s) => s.id);
+  const strategyIds = options.includeDisabled
+    ? allStrategies.map((s) => s.id)
+    : allStrategies.filter((s) => s.enabled).map((s) => s.id);
 
   const strategies = options.strategies
     ? options.strategies.split(',').map((s) => s.trim())
-    : enabledStrategyIds;
+    : strategyIds;
 
   const symbols = options.symbols
     ? options.symbols.split(',').map((s) => s.trim())
@@ -266,11 +287,20 @@ export const batchBacktestCommand = async (options: BatchOptions): Promise<void>
   console.log(chalk.bold('Configuration:'));
   console.log(`  Period: ${options.start} to ${options.end}`);
   console.log(`  Capital: $${capital.toLocaleString()}`);
+  console.log(`  Market Type: ${chalk.cyan(options.marketType)}`);
+  console.log(`  Leverage: ${options.leverage}x`);
   console.log(`  Parallel workers: ${parallelWorkers}`);
-  console.log(`  Strategies: ${strategies.length}`);
+  console.log(`  Strategies: ${strategies.length}${options.includeDisabled ? ' (including disabled)' : ''}`);
   console.log(`  Symbols: ${symbols.join(', ')}`);
   console.log(`  Intervals: ${intervals.join(', ')}`);
   console.log(`  Total combinations: ${chalk.bold(totalCombinations.toString())}`);
+  console.log(chalk.bold('Filters:'));
+  console.log(`  MTF Filter: ${options.useMtfFilter ? chalk.green('ON') : chalk.gray('OFF')}`);
+  console.log(`  BTC Correlation: ${options.useBtcCorrelationFilter ? chalk.green('ON') : chalk.gray('OFF')}`);
+  console.log(`  Market Regime: ${options.useMarketRegimeFilter ? chalk.green('ON') : chalk.gray('OFF')}`);
+  console.log(`  Funding Filter: ${options.useFundingFilter ? chalk.green('ON') : chalk.gray('OFF')}`);
+  console.log(`  Confluence: ${options.useConfluenceScoring ? chalk.green('ON') : chalk.gray('OFF')}`);
+  console.log(`  Momentum Timing: ${options.useMomentumTimingFilter ? chalk.green('ON') : chalk.gray('OFF')}`);
   console.log('');
   const availableStrategies = new Set(allStrategies.map((s) => s.id));
 
@@ -310,7 +340,8 @@ export const batchBacktestCommand = async (options: BatchOptions): Promise<void>
           interval,
           options.start,
           options.end,
-          capital
+          capital,
+          options
         );
 
         completed++;
