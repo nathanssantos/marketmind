@@ -910,11 +910,10 @@ export const ChartCanvas = ({
 
     const priceScaleLeft = dimensions.width - (advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
     const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
-    const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
 
     const isOnPriceScale = mouseX >= priceScaleLeft && mouseY < timeScaleTop;
     const isOnTimeScale = mouseY >= timeScaleTop;
-    const isInChartArea = mouseX < chartAreaRight && mouseY < timeScaleTop;
+    const isInChartArea = mouseX < dimensions.chartWidth && mouseY < timeScaleTop;
 
     const hoveredTagIndex = getHoveredMATag(mouseX, mouseY);
 
@@ -1051,25 +1050,21 @@ export const ChartCanvas = ({
       return;
     }
 
-    const effectiveChartWidth = chartAreaRight;
-    const hoveredIndex = Math.floor(viewport.start + (mouseX / effectiveChartWidth) * (viewport.end - viewport.start));
+    const visibleRange = viewport.end - viewport.start;
+    const widthPerKline = dimensions.chartWidth / visibleRange;
+    const hoveredIndex = Math.floor(viewport.start + (mouseX / dimensions.chartWidth) * visibleRange);
 
     if (hoveredIndex >= 0 && hoveredIndex < klines.length) {
       const kline = klines[hoveredIndex];
       if (kline) {
-        const x = manager.indexToX(hoveredIndex);
-        const klineWidth = viewport.klineWidth;
-        const visibleRange = viewport.end - viewport.start;
-        const widthPerKline = chartAreaRight / visibleRange;
-        const klineX = x + (widthPerKline - klineWidth) / 2;
+        const relativeIndex = hoveredIndex - viewport.start;
+        const hitAreaLeft = relativeIndex * widthPerKline;
+        const hitAreaRight = hitAreaLeft + widthPerKline;
 
         const openY = manager.priceToY(getKlineOpen(kline));
         const closeY = manager.priceToY(getKlineClose(kline));
         const highY = manager.priceToY(getKlineHigh(kline));
         const lowY = manager.priceToY(getKlineLow(kline));
-
-        const bodyLeft = klineX;
-        const bodyRight = klineX + klineWidth;
         const bodyTop = Math.min(openY, closeY);
         const bodyBottom = Math.max(openY, closeY);
 
@@ -1080,9 +1075,9 @@ export const ChartCanvas = ({
         const barHeight = volumeRatio * volumeOverlayHeight;
         const volumeTop = volumeBaseY - barHeight;
 
-        const isOnKlineBody = mouseX >= bodyLeft && mouseX <= bodyRight && mouseY >= bodyTop && mouseY <= bodyBottom;
-        const isOnKlineWick = mouseX >= bodyLeft && mouseX <= bodyRight && mouseY >= highY && mouseY <= lowY;
-        const isOnVolumeBar = showVolume && mouseX >= bodyLeft && mouseX <= bodyRight && mouseY >= volumeTop && mouseY <= volumeBaseY;
+        const isOnKlineBody = mouseX >= hitAreaLeft && mouseX <= hitAreaRight && mouseY >= bodyTop && mouseY <= bodyBottom;
+        const isOnKlineWick = mouseX >= hitAreaLeft && mouseX <= hitAreaRight && mouseY >= highY && mouseY <= lowY;
+        const isOnVolumeBar = showVolume && mouseX >= hitAreaLeft && mouseX <= hitAreaRight && mouseY >= volumeTop && mouseY <= volumeBaseY;
 
         if (isOnKlineBody || isOnKlineWick || isOnVolumeBar) {
           setTooltipData({
@@ -1114,8 +1109,7 @@ export const ChartCanvas = ({
       const dimensions = manager.getDimensions();
       if (!dimensions) return;
 
-      const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? 72);
-      const hoveredIndex = Math.floor(viewport.start + (mouseX / chartAreaRight) * (viewport.end - viewport.start));
+      const hoveredIndex = Math.floor(viewport.start + (mouseX / dimensions.chartWidth) * (viewport.end - viewport.start));
 
       setMeasurementArea({
         ...measurementArea,
@@ -1316,8 +1310,7 @@ export const ChartCanvas = ({
 
       if (mouseX < priceScaleLeft && mouseY < timeScaleTop) {
         const viewport = manager.getViewport();
-        const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? 72);
-        const hoveredIndex = Math.floor(viewport.start + (mouseX / chartAreaRight) * (viewport.end - viewport.start));
+        const hoveredIndex = Math.floor(viewport.start + (mouseX / dimensions.chartWidth) * (viewport.end - viewport.start));
 
         setIsMeasuring(true);
         setMeasurementArea({

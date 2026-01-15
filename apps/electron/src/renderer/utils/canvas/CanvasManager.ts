@@ -161,8 +161,8 @@ export class CanvasManager {
   public setKlines(klines: Kline[]): void {
     const oldLastKline = this.klines[this.klines.length - 1];
     const newLastKline = klines[klines.length - 1];
-    
-    const klinesChanged = 
+
+    const klinesChanged =
       this.klines.length !== klines.length ||
       !oldLastKline ||
       !newLastKline ||
@@ -172,10 +172,14 @@ export class CanvasManager {
       oldLastKline.low !== newLastKline.low ||
       oldLastKline.close !== newLastKline.close ||
       oldLastKline.volume !== newLastKline.volume;
-    
+
+    if (klinesChanged) {
+      this.boundsCache = { bounds: null, viewportStart: 0, viewportEnd: 0, klinesLength: 0 };
+    }
+
     this.klines = klines;
     this.updateBounds();
-    
+
     if (klinesChanged) {
       this.markDirty('klines');
     }
