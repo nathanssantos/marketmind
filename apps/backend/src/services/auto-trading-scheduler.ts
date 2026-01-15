@@ -17,14 +17,7 @@ import {
   type Wallet,
 } from '../db/schema';
 import { env } from '../env';
-import {
-  getDynamicSymbolRotationService,
-  getOptimalRotationInterval,
-  ROTATION_INTERVAL_MS,
-  type RotationConfig,
-  type RotationResult,
-} from './dynamic-symbol-rotation';
-import { parseDynamicSymbolExcluded } from '../utils/profile-transformers';
+import { calculateConfluenceScore, type FilterResults } from '../utils/confluence-scoring';
 import {
   ADX_FILTER,
   checkAdxCondition,
@@ -41,17 +34,23 @@ import {
   MTF_FILTER,
   STOCHASTIC_FILTER,
 } from '../utils/filters';
-import { calculateConfluenceScore, type FilterResults } from '../utils/confluence-scoring';
 import { calculateRequiredKlines } from '../utils/kline-calculator';
+import { parseDynamicSymbolExcluded } from '../utils/profile-transformers';
 import { autoTradingService } from './auto-trading';
 import { cooldownService } from './cooldown';
+import {
+  getDynamicSymbolRotationService,
+  getOptimalRotationInterval,
+  ROTATION_INTERVAL_MS,
+  type RotationConfig,
+  type RotationResult,
+} from './dynamic-symbol-rotation';
 import { meetsKlineRequirementWithTolerance, prefetchKlines } from './kline-prefetch';
 import { ocoOrderService } from './oco-orders';
 import { positionMonitorService } from './position-monitor';
 import { pyramidingService } from './pyramiding';
 import { riskManagerService } from './risk-manager';
 import { StrategyInterpreter, StrategyLoader } from './setup-detection/dynamic';
-import { getWebSocketService } from './websocket';
 import {
   createBatchResult,
   outputBatchResults,
@@ -61,6 +60,7 @@ import {
   type SetupLogEntry,
   type WatcherResult,
 } from './watcher-batch-logger';
+import { getWebSocketService } from './websocket';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -308,16 +308,20 @@ export class AutoTradingScheduler {
 
   private batchCounter = 0;
   private cycleCounter = 0;
+  private pendingResults: WatcherResult[] = [];
+  private pendingCycleId: number | null = null;
+  private pendingCycleStartTime: Date | null = null;
 
   private async processWatcherQueue(): Promise<void> {
     if (this.isProcessingQueue) return;
     this.isProcessingQueue = true;
 
-    const cycleStartTime = new Date();
-    this.cycleCounter++;
-    const cycleId = this.cycleCounter;
-    const allResults: WatcherResult[] = [];
-    let batchesProcessed = 0;
+    if (this.pendingCycleId === null) {
+      this.cycleCounter++;
+      this.pendingCycleId = this.cycleCounter;
+      this.pendingCycleStartTime = new Date();
+      this.pendingResults = [];
+    }
 
     while (this.processingQueue.length > 0) {
       this.batchCounter++;
@@ -334,15 +338,31 @@ export class AutoTradingScheduler {
         batch.map((watcherId) => this.processWatcherWithBuffer(watcherId))
       );
 
-      allResults.push(...results);
-      batchesProcessed++;
+      for (const result of results) {
+        const existingIndex = this.pendingResults.findIndex(r => r.watcherId === result.watcherId);
+        if (existingIndex >= 0) {
+          this.pendingResults[existingIndex] = result;
+        } else {
+          this.pendingResults.push(result);
+        }
+      }
 
       await yieldToEventLoop();
     }
 
-    if (allResults.length > 0) {
-      const unifiedResult = createBatchResult(cycleId, cycleStartTime, allResults);
+    const hasPendingWatchers = this.pendingResults.some(r => r.status === 'pending');
+
+    if (!hasPendingWatchers && this.pendingResults.length > 0) {
+      const unifiedResult = createBatchResult(
+        this.pendingCycleId!,
+        this.pendingCycleStartTime!,
+        this.pendingResults
+      );
       outputBatchResults(unifiedResult, VERBOSE_BATCH_LOGS);
+
+      this.pendingCycleId = null;
+      this.pendingCycleStartTime = null;
+      this.pendingResults = [];
     }
 
     this.isProcessingQueue = false;
@@ -511,15 +531,16 @@ export class AutoTradingScheduler {
 
     if (!isCandleClosed) {
       const remainingMs = safeCloseTime - now;
-      logBuffer.log('⏳', 'Waiting for candle close', { remainingMs });
+      const maxWaitMs = 5 * 60 * 1000;
+      const waitMs = Math.min(remainingMs, maxWaitMs);
 
-      if (remainingMs > 0 && remainingMs < 10000) {
+      if (waitMs > 0) {
         setTimeout(() => {
           this.queueWatcherProcessing(watcherId);
-        }, remainingMs + 100);
+        }, waitMs + 100);
       }
 
-      return logBuffer.toResult('skipped', 'Candle not closed');
+      return logBuffer.toResult('pending', `Candle closes in ${Math.ceil(remainingMs / 1000)}s`);
     }
 
     if (watcher.lastProcessedCandleOpenTime === lastCandle.openTime) {

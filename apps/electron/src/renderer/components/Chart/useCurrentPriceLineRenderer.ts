@@ -50,7 +50,7 @@ export const useCurrentPriceLineRenderer = ({
     ctx.save();
     ctx.strokeStyle = colors.currentPriceLine;
     ctx.lineWidth = lineWidth;
-    ctx.globalAlpha = 0.8;
+    ctx.globalAlpha = 0.5;
     
     if (lineStyle === 'dashed') {
       ctx.setLineDash([8, 4]);

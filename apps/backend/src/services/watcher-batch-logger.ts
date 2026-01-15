@@ -1,25 +1,25 @@
 import {
-  colorize,
-  stripAnsi,
-  Table,
-  TABLE_CHARS,
-  WatcherLogBuffer,
-  StartupLogBuffer,
-  MaintenanceLogBuffer,
-  RotationLogBuffer,
-  type ColorName,
-  type BatchResult,
-  type WatcherResult,
-  type RestoredWatcherInfo,
-  type GapFillEntry,
-  type CorruptionFixEntry,
-  type MaintenanceResult,
-  type LogEntry,
-  type SetupLogEntry,
-  type FilterCheckEntry,
-  type RejectionEntry,
-  type TradeExecutionEntry,
-  type RotationResult,
+    colorize,
+    MaintenanceLogBuffer,
+    RotationLogBuffer,
+    StartupLogBuffer,
+    stripAnsi,
+    Table,
+    TABLE_CHARS,
+    WatcherLogBuffer,
+    type BatchResult,
+    type ColorName,
+    type CorruptionFixEntry,
+    type FilterCheckEntry,
+    type GapFillEntry,
+    type LogEntry,
+    type MaintenanceResult,
+    type RejectionEntry,
+    type RestoredWatcherInfo,
+    type RotationResult,
+    type SetupLogEntry,
+    type TradeExecutionEntry,
+    type WatcherResult,
 } from '@marketmind/logger';
 import fs from 'fs';
 import path from 'path';
@@ -30,22 +30,8 @@ const __dirname = path.dirname(__filename);
 const LOG_FILE = path.join(__dirname, '../../logs/auto-trading.log');
 
 export {
-  WatcherLogBuffer,
-  StartupLogBuffer,
-  MaintenanceLogBuffer,
-  RotationLogBuffer,
-  type BatchResult,
-  type WatcherResult,
-  type RestoredWatcherInfo,
-  type GapFillEntry,
-  type CorruptionFixEntry,
-  type MaintenanceResult,
-  type LogEntry,
-  type SetupLogEntry,
-  type FilterCheckEntry,
-  type RejectionEntry,
-  type TradeExecutionEntry,
-  type RotationResult,
+    MaintenanceLogBuffer,
+    RotationLogBuffer, StartupLogBuffer, WatcherLogBuffer, type BatchResult, type CorruptionFixEntry, type FilterCheckEntry, type GapFillEntry, type LogEntry, type MaintenanceResult, type RejectionEntry, type RestoredWatcherInfo, type RotationResult, type SetupLogEntry, type TradeExecutionEntry, type WatcherResult
 };
 
 const ensureLogDir = (): void => {
@@ -68,6 +54,7 @@ const getStatusDisplay = (status: string): string => {
   switch (status) {
     case 'success': return colorize('✅ OK', 'green');
     case 'skipped': return colorize('⏭️ SKIP', 'yellow');
+    case 'pending': return colorize('⏳ WAIT', 'cyan');
     case 'error': return colorize('❌ ERR', 'red');
     default: return status;
   }
@@ -85,6 +72,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
   const summaryParts = [
     `${batch.totalWatchers} watchers`,
     colorize(`✅ ${batch.successCount}`, 'green'),
+    colorize(`⏳ ${batch.pendingCount}`, 'cyan'),
     colorize(`⏭️ ${batch.skippedCount}`, 'yellow'),
     colorize(`❌ ${batch.errorCount}`, 'red'),
   ];
@@ -355,6 +343,7 @@ export const createBatchResult = (
     totalWatchers: results.length,
     successCount: results.filter(r => r.status === 'success').length,
     skippedCount: results.filter(r => r.status === 'skipped').length,
+    pendingCount: results.filter(r => r.status === 'pending').length,
     errorCount: results.filter(r => r.status === 'error').length,
     totalSetupsDetected: results.reduce((sum, r) => sum + r.setupsDetected.length, 0),
     totalRejections: results.reduce((sum, r) => sum + r.rejections.length, 0),

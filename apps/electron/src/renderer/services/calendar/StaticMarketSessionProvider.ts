@@ -26,8 +26,11 @@ const createTimestamp = (
 ): number => {
   const localDate = new Date(date);
   localDate.setHours(time.hour, time.minute, 0, 0);
-  const offset = getTimezoneOffset(timezone, localDate);
-  return localDate.getTime() + offset;
+
+  const localOffsetMs = localDate.getTimezoneOffset() * 60 * 1000;
+  const tzOffsetMs = getTimezoneOffset(timezone, localDate);
+
+  return localDate.getTime() + tzOffsetMs - localOffsetMs;
 };
 
 const formatDateKey = (date: Date): string => {

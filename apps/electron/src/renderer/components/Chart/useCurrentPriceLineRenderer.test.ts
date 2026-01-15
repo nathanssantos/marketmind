@@ -344,7 +344,7 @@ describe('useCurrentPriceLineRenderer', () => {
 
       result.current.renderLine();
 
-      expect(mockCtx.globalAlpha).toBe(0.8);
+      expect(mockCtx.globalAlpha).toBe(0.5);
     });
 
     it('should use currentPriceLine color for current price line', () => {

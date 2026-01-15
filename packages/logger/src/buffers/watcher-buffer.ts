@@ -1,10 +1,10 @@
 import type {
-  FilterCheckEntry,
-  LogEntry,
-  RejectionEntry,
-  SetupLogEntry,
-  TradeExecutionEntry,
-  WatcherResult,
+    FilterCheckEntry,
+    LogEntry,
+    RejectionEntry,
+    SetupLogEntry,
+    TradeExecutionEntry,
+    WatcherResult,
 } from './types';
 
 export class WatcherLogBuffer {
@@ -76,7 +76,7 @@ export class WatcherLogBuffer {
     this.tradesExecuted++;
   }
 
-  toResult(status: 'success' | 'skipped' | 'error', reason?: string, klinesCount?: number): WatcherResult {
+  toResult(status: 'success' | 'skipped' | 'pending' | 'error', reason?: string, klinesCount?: number): WatcherResult {
     return {
       watcherId: this.watcherId,
       symbol: this.symbol,

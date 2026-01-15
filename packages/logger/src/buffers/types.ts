@@ -47,7 +47,7 @@ export interface WatcherResult {
   interval: string;
   marketType: string;
   profileName?: string;
-  status: 'success' | 'skipped' | 'error';
+  status: 'success' | 'skipped' | 'pending' | 'error';
   reason?: string;
   klinesCount?: number;
   setupsDetected: SetupLogEntry[];
@@ -66,6 +66,7 @@ export interface BatchResult {
   totalWatchers: number;
   successCount: number;
   skippedCount: number;
+  pendingCount: number;
   errorCount: number;
   totalSetupsDetected: number;
   totalRejections: number;
