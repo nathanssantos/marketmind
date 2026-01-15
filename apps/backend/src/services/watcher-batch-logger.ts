@@ -633,8 +633,40 @@ export const formatRotationResults = (result: RotationResult): string => {
   return lines.join('\n');
 };
 
+export const formatRotationNoChanges = (result: RotationResult): string => {
+  const lines: string[] = [];
+  const durationMs = result.endTime.getTime() - result.startTime.getTime();
+
+  lines.push('');
+  lines.push(colorize('───────────────────────────────────────────────────────────────────────────────────────────────', 'dim'));
+  lines.push(colorize(`  🔄 SYMBOL ROTATION`, 'dim') + colorize(` │ ${result.startTime.toLocaleTimeString()} │ Duration: ${durationMs}ms │ Interval: ${result.interval}`, 'dim'));
+  lines.push(colorize('───────────────────────────────────────────────────────────────────────────────────────────────', 'dim'));
+
+  const summaryParts = [
+    colorize(`✅ No changes`, 'green'),
+    colorize(`📊 ${result.kept} kept`, 'cyan'),
+  ];
+
+  if (result.skippedWithPositions.length > 0) {
+    summaryParts.push(colorize(`🔒 ${result.skippedWithPositions.length} with positions`, 'yellow'));
+  }
+
+  if (result.skippedInsufficientKlines.length > 0) {
+    summaryParts.push(colorize(`⏳ ${result.skippedInsufficientKlines.length} insufficient data`, 'dim'));
+  }
+
+  lines.push(`  ${summaryParts.join(' │ ')}`);
+  lines.push('');
+  return lines.join('\n');
+};
+
 export const outputRotationResults = (result: RotationResult): void => {
-  if (!result.hasChanges) return;
+  if (!result.hasChanges) {
+    const summary = formatRotationNoChanges(result);
+    console.log(summary);
+    writeToFile(`${summary}\n`);
+    return;
+  }
 
   const summary = formatRotationResults(result);
   console.log(summary);

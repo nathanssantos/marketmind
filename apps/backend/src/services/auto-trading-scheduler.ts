@@ -252,15 +252,37 @@ export class AutoTradingScheduler {
     const intervalMs = ROTATION_INTERVAL_MS[state.config.interval];
     const timeSinceLastCheck = now - state.lastCheckTime;
 
-    if (timeSinceLastCheck < intervalMs) return;
+    if (timeSinceLastCheck < intervalMs) {
+      const remainingMs = intervalMs - timeSinceLastCheck;
+      const remainingMinutes = Math.ceil(remainingMs / 60000);
+      log('⏳ [DynamicRotation] Rotation not due yet', {
+        walletId: walletId.slice(0, 8),
+        rotationInterval: state.config.interval,
+        nextCheckIn: `${remainingMinutes}m`,
+      });
+      return;
+    }
 
     this.isCheckingRotation.add(stateKey);
+
+    log('🔄 [DynamicRotation] Starting rotation check', {
+      walletId: walletId.slice(0, 8),
+      rotationInterval: state.config.interval,
+      limit: state.config.limit,
+      marketType: state.config.marketType,
+    });
 
     try {
       const rotationService = getDynamicSymbolRotationService();
       const result = await rotationService.executeRotation(walletId, state.userId, state.config);
 
       if (result.added.length > 0 || result.removed.length > 0) {
+        log('📊 [DynamicRotation] Applying changes', {
+          added: result.added.length,
+          removed: result.removed.length,
+          addedSymbols: result.added.join(', ') || '-',
+          removedSymbols: result.removed.join(', ') || '-',
+        });
         await this.applyRotation(
           walletId,
           state.userId,
@@ -269,6 +291,13 @@ export class AutoTradingScheduler {
           state.profileId,
           state.config.marketType
         );
+      } else {
+        log('✅ [DynamicRotation] No changes needed', {
+          walletId: walletId.slice(0, 8),
+          kept: result.kept.length,
+          skippedPositions: result.skippedWithPositions.length,
+          skippedKlines: result.skippedInsufficientKlines.length,
+        });
       }
 
       state.lastCheckTime = now;
@@ -906,12 +935,27 @@ export class AutoTradingScheduler {
           });
           effectiveTakeProfit = fibTarget;
         } else {
-          logBuffer.warn('⚠️', 'Fibonacci target invalid for direction, using default TP', {
-            fibTarget: fibTarget.toFixed(6),
-            entryPrice: setup.entryPrice.toFixed(6),
+          logBuffer.addRejection({
+            setupType: setup.type,
             direction: setup.direction,
+            reason: 'Fibonacci target below entry price',
+            details: {
+              fibTarget: fibTarget.toFixed(4),
+              entryPrice: setup.entryPrice.toFixed(4),
+              configLevel: fibonacciTargetLevel,
+              issue: setup.direction === 'LONG'
+                ? `Price ${setup.entryPrice.toFixed(4)} > Fib target ${fibTarget.toFixed(4)}`
+                : `Price ${setup.entryPrice.toFixed(4)} < Fib target ${fibTarget.toFixed(4)}`,
+            },
           });
+          return;
         }
+      } else {
+        logBuffer.warn('⚠️', 'Fibonacci target not available, using default TP', {
+          configLevel: fibonacciTargetLevel,
+          hasFibProjection: !!setup.fibonacciProjection,
+          fibLevels: setup.fibonacciProjection?.levels?.length ?? 0,
+        });
       }
     }
 
@@ -944,13 +988,17 @@ export class AutoTradingScheduler {
       const riskRewardRatio = reward / risk;
 
       if (riskRewardRatio < TRADING_CONFIG.MIN_RISK_REWARD_RATIO) {
+        const usingFibonacci = tpCalculationMode === 'fibonacci' && effectiveTakeProfit !== setup.takeProfit;
         logBuffer.addRejection({
           setupType: setup.type,
           direction: setup.direction,
-          reason: 'Insufficient R:R ratio',
+          reason: usingFibonacci ? 'Insufficient R:R (Fibonacci TP)' : 'Insufficient R:R ratio',
           details: {
             riskReward: riskRewardRatio.toFixed(2),
             minRequired: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
+            tpMode: tpCalculationMode,
+            takeProfit: takeProfit.toFixed(4),
+            entryPrice: entryPrice.toFixed(4),
           },
         });
         return;

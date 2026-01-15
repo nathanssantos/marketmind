@@ -121,14 +121,23 @@ export class DynamicSymbolRotationService {
     const logBuffer = new RotationLogBuffer(walletId, config.interval);
 
     try {
+      logger.info({ walletId: walletId.slice(0, 8), marketType: config.marketType, limit: config.limit },
+        '[DynamicRotation] Fetching symbol scores');
+
       const scoringService = getOpportunityScoringService();
       const scores = await scoringService.getSymbolScores(config.marketType, config.limit * 2);
+
+      logger.info({ totalScores: scores.length, topSymbols: scores.slice(0, 5).map(s => `${s.symbol}:${s.compositeScore.toFixed(1)}`).join(', ') },
+        '[DynamicRotation] Symbol scores retrieved');
 
       const filteredScores = scores.filter(
         (s) => !config.excludedSymbols.includes(s.symbol)
       );
 
       const optimalSymbols = filteredScores.slice(0, config.limit).map((s) => s.symbol);
+
+      logger.info({ optimalSymbols: optimalSymbols.join(', '), excludedCount: config.excludedSymbols.length },
+        '[DynamicRotation] Optimal symbols calculated');
 
       const currentWatchers = await db
         .select()
@@ -141,6 +150,9 @@ export class DynamicSymbolRotationService {
         );
 
       const currentSymbols = new Set(currentWatchers.map((w) => w.symbol));
+
+      logger.info({ currentSymbols: Array.from(currentSymbols).join(', '), count: currentSymbols.size },
+        '[DynamicRotation] Current dynamic watchers');
 
       const symbolsWithOpenPositions = await this.getSymbolsWithOpenPositions(walletId);
 
@@ -214,6 +226,16 @@ export class DynamicSymbolRotationService {
       };
 
       this.addToHistory(walletId, result);
+
+      logger.info({
+        walletId: walletId.slice(0, 8),
+        added: toAdd.length > 0 ? toAdd.join(', ') : '-',
+        removed: toRemove.length > 0 ? toRemove.join(', ') : '-',
+        kept: kept.length,
+        skippedPositions: skippedWithPositions.length > 0 ? skippedWithPositions.join(', ') : '-',
+        skippedKlines: skippedInsufficientKlines.length > 0 ? skippedInsufficientKlines.join(', ') : '-',
+        hasChanges: toAdd.length > 0 || toRemove.length > 0,
+      }, '[DynamicRotation] Rotation result');
 
       logBuffer.setResult({
         added: toAdd,
