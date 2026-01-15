@@ -152,5 +152,34 @@
   "filters": {
     "minConfidence": 70,
     "minRiskReward": 1
+  },
+  "education": {
+    "origin": "Marc Chaikin - Accumulation/Distribution concept (1980s)",
+    "createdYear": 1980,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.chaikinMoneyFlow.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.chaikinMoneyFlow.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": [
+        "cmf",
+        "volume",
+        "atr"
+      ]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.chaikinMoneyFlow.summary",
+      "entryKey": "strategies.chaikinMoneyFlow.entry",
+      "exitKey": "strategies.chaikinMoneyFlow.exit"
+    }
   }
 }

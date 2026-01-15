@@ -183,5 +183,39 @@
   "filters": {
     "minConfidence": 70,
     "minRiskReward": 1
+  },
+  "education": {
+    "origin": "Larry Connors & Cesar Alvarez - Short-Term Trading Strategies That Work (2008)",
+    "createdYear": 2008,
+    "candlePattern": {
+      "lookback": 3,
+      "candles": [
+        {
+          "offset": -2,
+          "role": "context",
+          "descriptionKey": "strategies.connorsRsi2.candleMinus2"
+        },
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.connorsRsi2.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.connorsRsi2.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": [
+        "rsi",
+        "sma200",
+        "atr"
+      ]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.connorsRsi2.summary",
+      "entryKey": "strategies.connorsRsi2.entry",
+      "exitKey": "strategies.connorsRsi2.exit"
+    }
   }
 }

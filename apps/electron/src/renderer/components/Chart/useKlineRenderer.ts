@@ -11,7 +11,6 @@ export interface UseKlineRendererProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
   enabled?: boolean;
-  rightMargin?: number;
   klineWickWidth?: number;
   hoveredKlineIndex?: number;
   highlightedCandlesRef?: MutableRefObject<HighlightedCandle[]>;
@@ -32,7 +31,6 @@ export const useKlineRenderer = ({
   manager,
   colors,
   enabled = true,
-  rightMargin,
   klineWickWidth,
   hoveredKlineIndex,
   highlightedCandlesRef,
@@ -49,10 +47,9 @@ export const useKlineRenderer = ({
     const visibleKlines = manager.getVisibleKlines();
     const { klineWidth } = viewport;
     const { chartWidth, chartHeight } = dimensions;
-    const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
 
     const visibleRange = viewport.end - viewport.start;
-    const widthPerKline = effectiveWidth / visibleRange;
+    const widthPerKline = chartWidth / visibleRange;
 
     const allKlines = manager.getKlines();
     const avgTrades = allKlines && allKlines.length > 0
@@ -64,7 +61,7 @@ export const useKlineRenderer = ({
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, effectiveWidth, chartHeight);
+    ctx.rect(0, 0, chartWidth, chartHeight);
     ctx.clip();
 
     const highlightedCandles = highlightedCandlesRef?.current ?? [];
@@ -76,7 +73,7 @@ export const useKlineRenderer = ({
       const actualIndex = Math.floor(viewport.start) + index;
       const x = manager.indexToX(actualIndex);
 
-      if (x + klineWidth < 0 || x > effectiveWidth) return;
+      if (x + klineWidth < 0 || x > chartWidth) return;
 
       const klineX = x + (widthPerKline - klineWidth) / 2;
 
@@ -137,7 +134,7 @@ export const useKlineRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, colors, enabled, rightMargin, klineWickWidth, hoveredKlineIndex]);
+  }, [manager, colors, enabled, klineWickWidth, hoveredKlineIndex]);
 
   return { render };
 };

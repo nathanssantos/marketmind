@@ -62,7 +62,7 @@ export const useMovingAverageRenderer = ({
 
     if (!ctx || !dimensions || !bounds || !klines) return;
 
-    const { width, chartWidth } = dimensions;
+    const { chartWidth } = dimensions;
     const startIndex = Math.max(0, Math.floor(viewport.start));
     const endIndex = Math.min(klines.length, Math.ceil(viewport.end));
     const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
@@ -161,9 +161,9 @@ export const useMovingAverageRenderer = ({
 
     priceTags.forEach(({ priceText, y, fillColor, index }) => {
       if (y < 0 || y > dimensions.chartHeight) return;
-      
-      const tagStartX = width - CHART_CONFIG.CHART_RIGHT_MARGIN;
-      const tagSize = drawPriceTag(ctx, priceText, y, tagStartX, fillColor, CHART_CONFIG.CHART_RIGHT_MARGIN);
+
+      const tagStartX = chartWidth;
+      const tagSize = drawPriceTag(ctx, priceText, y, tagStartX, fillColor, CHART_CONFIG.CANVAS_PADDING_RIGHT);
       
       tagHitboxesRef.current.push({
         index,

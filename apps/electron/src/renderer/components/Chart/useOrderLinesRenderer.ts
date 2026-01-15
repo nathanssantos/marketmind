@@ -1,7 +1,8 @@
 import type { Order, TradingSetup } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
-import { CHART_CONFIG } from '@shared/constants';
+
 import {
     getKlineClose,
     getOrderId,
@@ -143,54 +144,7 @@ interface SLTPCloseButton {
   type: 'stopLoss' | 'takeProfit';
 }
 
-const drawPriceTag = (
-  ctx: CanvasRenderingContext2D,
-  priceText: string,
-  y: number,
-  chartWidth: number,
-  fillColor: string,
-  arrowDirection: 'left' | 'right' = 'left',
-  customX?: number
-): { width: number; height: number } => {
-  const labelPadding = 8;
-  const labelHeight = 18;
-  const arrowWidth = 6;
-  const fixedTagWidth = CHART_CONFIG.CHART_RIGHT_MARGIN;
-  
-  ctx.save();
-  ctx.fillStyle = fillColor;
-  
-  if (arrowDirection === 'left') {
-    const x = customX !== undefined ? customX : chartWidth - fixedTagWidth;
-    const endX = customX !== undefined ? customX + CHART_CONFIG.CHART_RIGHT_MARGIN : chartWidth;
-    ctx.beginPath();
-    ctx.moveTo(x - arrowWidth, y);
-    ctx.lineTo(x, y - labelHeight / 2);
-    ctx.lineTo(endX, y - labelHeight / 2);
-    ctx.lineTo(endX, y + labelHeight / 2);
-    ctx.lineTo(x, y + labelHeight / 2);
-    ctx.closePath();
-    ctx.fill();
-    
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(priceText, x + labelPadding, y);
-  } else {
-    ctx.beginPath();
-    ctx.moveTo(fixedTagWidth + arrowWidth, y);
-    ctx.lineTo(fixedTagWidth, y - labelHeight / 2);
-    ctx.lineTo(0, y - labelHeight / 2);
-    ctx.lineTo(0, y + labelHeight / 2);
-    ctx.lineTo(fixedTagWidth, y + labelHeight / 2);
-    ctx.closePath();
-    ctx.fill();
-    
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(priceText, labelPadding, y);
-  }
-  
-  ctx.restore();
-  return { width: fixedTagWidth + arrowWidth, height: labelHeight };
-};
+const PRICE_TAG_WIDTH = 72;
 
 const drawBotIcon = (
   ctx: CanvasRenderingContext2D,
@@ -795,8 +749,8 @@ export const useOrderLinesRenderer = (
         const fillColor = isLong ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)';
 
         const priceText = formatChartPrice(getOrderPrice(order));
-        const tagStartX = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
-        drawPriceTag(ctx, priceText, y, tagStartX, fillColor, 'left', tagStartX);
+        const tagStartX = chartWidth - PRICE_TAG_WIDTH;
+        drawPriceTag(ctx, priceText, y, tagStartX, fillColor, PRICE_TAG_WIDTH);
 
         ctx.strokeStyle = lineColor;
         ctx.lineWidth = 1;
@@ -907,8 +861,8 @@ export const useOrderLinesRenderer = (
         const fillColor = isLong ? 'rgba(59, 130, 246, 0.9)' : 'rgba(251, 146, 60, 0.9)';
 
         const priceText = formatChartPrice(hPos.avgPrice);
-        const tagStartX = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
-        drawPriceTag(ctx, priceText, y, tagStartX, fillColor, 'left', tagStartX);
+        const tagStartX = chartWidth - PRICE_TAG_WIDTH;
+        drawPriceTag(ctx, priceText, y, tagStartX, fillColor, PRICE_TAG_WIDTH);
 
         ctx.strokeStyle = lineColor;
         ctx.lineWidth = 1;
@@ -1274,8 +1228,8 @@ export const useOrderLinesRenderer = (
 
     priceTags.forEach(({ priceText, y, fillColor }) => {
       if (y >= 0 && y <= chartHeight) {
-        const tagStartX = width - CHART_CONFIG.CHART_RIGHT_MARGIN;
-        drawPriceTag(ctx, priceText, y, width, fillColor, 'left', tagStartX);
+        const tagStartX = width - PRICE_TAG_WIDTH;
+        drawPriceTag(ctx, priceText, y, tagStartX, fillColor, PRICE_TAG_WIDTH);
       }
     });
     

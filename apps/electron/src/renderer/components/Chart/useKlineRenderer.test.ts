@@ -349,19 +349,17 @@ describe('useKlineRenderer', () => {
       expect(secondCalls[0][10]).toBe(true);
     });
 
-    it('should use custom rightMargin when provided', () => {
-      const customRightMargin = 100;
+    it('should use full chartWidth (rightMargin is deprecated)', () => {
       const { result } = renderHook(() =>
         useKlineRenderer({
           manager: mockManager,
           colors: mockColors,
-          rightMargin: customRightMargin,
         })
       );
 
       result.current.render();
 
-      expect(mockCtx.rect).toHaveBeenCalledWith(0, 0, 628, 575);
+      expect(mockCtx.rect).toHaveBeenCalledWith(0, 0, 728, 575);
     });
 
     it('should use custom klineWickWidth when provided', () => {
@@ -444,18 +442,5 @@ describe('useKlineRenderer', () => {
       expect(mockCtx.clip).toHaveBeenCalled();
     });
 
-    it('should calculate effective width based on rightMargin', () => {
-      const { result } = renderHook(() =>
-        useKlineRenderer({
-          manager: mockManager,
-          colors: mockColors,
-          rightMargin: 80,
-        })
-      );
-
-      result.current.render();
-
-      expect(mockCtx.rect).toHaveBeenCalledWith(0, 0, 648, 575);
-    });
   });
 });

@@ -31,6 +31,8 @@ describe('useVolumeRenderer', () => {
       stroke: vi.fn(),
       setLineDash: vi.fn(),
       strokeRect: vi.fn(),
+      rect: vi.fn(),
+      clip: vi.fn(),
     } as unknown as CanvasRenderingContext2D;
 
     const klines = [

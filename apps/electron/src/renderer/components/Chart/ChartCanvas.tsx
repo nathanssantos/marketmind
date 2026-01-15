@@ -13,7 +13,7 @@ import {
 } from '@/renderer/components/ui/dialog';
 import { Box, Portal } from '@chakra-ui/react';
 import { calculateFibonacciProjection, calculateMovingAverage, type StochasticResult } from '@marketmind/indicators';
-import type { Kline, MarketType, Order, Viewport } from '@marketmind/types';
+import type { Kline, MarketEvent, MarketType, Order, TimeInterval, Viewport } from '@marketmind/types';
 import { useADXWorker } from '@renderer/hooks/useADXWorker';
 import { useAOWorker } from '@renderer/hooks/useAOWorker';
 import { useAroonWorker } from '@renderer/hooks/useAroonWorker';
@@ -35,6 +35,8 @@ import { useKeltnerWorker } from '@renderer/hooks/useKeltnerWorker';
 import { useKlingerWorker } from '@renderer/hooks/useKlingerWorker';
 import { useLiquidityLevelsWorker } from '@renderer/hooks/useLiquidityLevelsWorker';
 import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
+import { useEventRefreshScheduler } from '@renderer/hooks/useEventRefreshScheduler';
+import { useMarketEvents } from '@renderer/hooks/useMarketEvents';
 import { useMACDWorker } from '@renderer/hooks/useMACDWorker';
 import { useMFIWorker } from '@renderer/hooks/useMFIWorker';
 import { useOBVWorker } from '@renderer/hooks/useOBVWorker';
@@ -83,6 +85,7 @@ import { useCurrentPriceLineRenderer } from './useCurrentPriceLineRenderer';
 import { useDEMARenderer } from './useDEMARenderer';
 import { useDonchianRenderer } from './useDonchianRenderer';
 import { useElderRayRenderer } from './useElderRayRenderer';
+import { useEventScaleRenderer } from './useEventScaleRenderer';
 import { useFibonacciProjectionRenderer } from './useFibonacciProjectionRenderer';
 import { useFibonacciRenderer } from './useFibonacciRenderer';
 import { useFVGRenderer } from './useFVGRenderer';
@@ -142,6 +145,7 @@ export interface ChartCanvasProps {
   showMeasurementRuler?: boolean;
   showMeasurementArea?: boolean;
   showTooltip?: boolean;
+  showEventRow?: boolean;
   movingAverages?: MovingAverageConfig[];
   chartType?: 'kline' | 'line';
   advancedConfig?: AdvancedControlsConfig;
@@ -172,6 +176,7 @@ export const ChartCanvas = ({
   showMeasurementRuler = false,
   showMeasurementArea = false,
   showTooltip = true,
+  showEventRow = false,
   movingAverages = [],
   chartType = 'kline',
   advancedConfig,
@@ -304,6 +309,7 @@ export const ChartCanvas = ({
     order?: Order;
     currentPrice?: number;
     setup?: typeof hoveredSetup;
+    marketEvent?: MarketEvent;
   }>({
     kline: null,
     x: 0,
@@ -372,6 +378,15 @@ export const ChartCanvas = ({
   const fvgData = useFVGWorker(klines, isIndicatorActive('fvg'));
   const liquidityLevelsData = useLiquidityLevelsWorker(klines, isIndicatorActive('liquidityLevels'));
 
+  const { events: marketEvents, refetch: refetchMarketEvents } = useMarketEvents({ klines, enabled: showEventRow });
+
+  useEventRefreshScheduler({
+    activeWatchers: watcherStatus?.activeWatchers ?? [],
+    chartInterval: timeframe as TimeInterval,
+    enabled: showEventRow,
+    onRefresh: refetchMarketEvents,
+  });
+
   const {
     canvasRef,
     manager,
@@ -426,10 +441,7 @@ export const ChartCanvas = ({
     manager,
     colors,
     enabled: showGrid,
-    timeframe,
     ...(advancedConfig?.gridLineWidth !== undefined && { gridLineWidth: advancedConfig.gridLineWidth }),
-    ...(advancedConfig?.paddingRight !== undefined && { paddingRight: advancedConfig.paddingRight }),
-    ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
   });
 
   const { render: renderKlines } = useKlineRenderer({
@@ -726,6 +738,13 @@ export const ChartCanvas = ({
     enabled: isIndicatorActive('liquidityLevels'),
   });
 
+  const { render: renderEventScale, getEventAtPosition } = useEventScaleRenderer({
+    manager,
+    events: marketEvents,
+    colors,
+    enabled: showEventRow,
+  });
+
   const fibonacciProjectionData = useMemo(() => {
     const activePosition = filteredBackendExecutions.find(
       exec => (exec.status === 'open' || exec.status === 'pending')
@@ -911,6 +930,22 @@ export const ChartCanvas = ({
       return;
     }
 
+    if (showEventRow && manager) {
+      const eventRowY = manager.getEventRowY();
+      const eventRowHeight = manager.getEventRowHeight();
+      if (mouseY >= eventRowY && mouseY <= eventRowY + eventRowHeight) {
+        const event = getEventAtPosition(mouseX, mouseY);
+        if (event) {
+          setTooltipData({
+            kline: null, x: mouseX, y: mouseY, visible: true,
+            containerWidth: rect.width, containerHeight: rect.height,
+            marketEvent: event,
+          });
+          return;
+        }
+      }
+    }
+
     const hoveredOrderForTooltip = getHoveredOrder(mouseX, mouseY);
     const hoveredOrderIdForTooltip = hoveredOrderForTooltip?.id || null;
 
@@ -1060,7 +1095,7 @@ export const ChartCanvas = ({
     }
 
     setTooltipData({ kline: null, x: 0, y: 0, visible: false });
-  }, [manager, klines, movingAverages, maValuesCache, advancedConfig, showVolume, getHoveredMATag, getHoveredOrder]);
+  }, [manager, klines, movingAverages, maValuesCache, advancedConfig, showVolume, getHoveredMATag, getHoveredOrder, showEventRow, getEventAtPosition]);
 
   const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>): void => {
     if (!canvasRef.current) return;
@@ -1404,6 +1439,12 @@ export const ChartCanvas = ({
   }, [manager, activeIndicators]);
 
   useEffect(() => {
+    if (!manager) return;
+    const height = showEventRow ? CHART_CONFIG.EVENT_ROW_HEIGHT : 0;
+    manager.setEventRowHeight(height);
+  }, [manager, showEventRow]);
+
+  useEffect(() => {
     if (!shiftPressed && !altPressed) {
       orderPreviewRef.current = null;
       if (manager) manager.markDirty('overlays');
@@ -1467,6 +1508,7 @@ export const ChartCanvas = ({
       renderFibonacciProjection();
       renderFVG();
       renderLiquidityLevels();
+      renderEventScale();
       renderOBV();
       renderCMF();
       renderStochRSI();
@@ -1714,6 +1756,7 @@ export const ChartCanvas = ({
     renderFibonacci,
     renderFVG,
     renderLiquidityLevels,
+    renderEventScale,
     renderCurrentPriceLine_Line,
     renderCurrentPriceLine_Label,
     renderCrosshairPriceLine,
@@ -1857,6 +1900,7 @@ export const ChartCanvas = ({
             {...(tooltipData.order && { order: tooltipData.order })}
             {...(tooltipData.currentPrice && { currentPrice: tooltipData.currentPrice })}
             {...(tooltipData.setup && { setup: tooltipData.setup })}
+            {...(tooltipData.marketEvent && { marketEvent: tooltipData.marketEvent })}
           />
         )}
       </Box>

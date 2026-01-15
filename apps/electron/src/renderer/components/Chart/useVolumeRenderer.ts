@@ -11,7 +11,6 @@ export interface UseVolumeRendererProps {
   colors: ChartThemeColors;
   enabled?: boolean;
   opacity?: number;
-  rightMargin?: number;
   volumeHeightRatio?: number;
   hoveredKlineIndex?: number;
   timeframe?: string;
@@ -27,7 +26,6 @@ export const useVolumeRenderer = ({
   colors,
   enabled = true,
   opacity = 0.3,
-  rightMargin,
   volumeHeightRatio,
   hoveredKlineIndex,
   timeframe = '1h',
@@ -47,12 +45,14 @@ export const useVolumeRenderer = ({
     const visibleKlines = manager.getVisibleKlines();
     const { chartHeight, chartWidth } = dimensions;
     const { klineWidth } = viewport;
-    const effectiveWidth = chartWidth - (rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
-    
+
     const visibleRange = viewport.end - viewport.start;
-    const widthPerKline = effectiveWidth / visibleRange;
+    const widthPerKline = chartWidth / visibleRange;
 
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
 
     const volumeOverlayHeight = chartHeight * (volumeHeightRatio ?? CHART_CONFIG.VOLUME_HEIGHT_RATIO);
     const volumeBaseY = chartHeight;
@@ -62,7 +62,7 @@ export const useVolumeRenderer = ({
       const actualIndex = Math.floor(viewport.start) + index;
       const x = manager.indexToX(actualIndex);
 
-      if (x + klineWidth < 0 || x > effectiveWidth) return;
+      if (x + klineWidth < 0 || x > chartWidth) return;
 
       const barX = x + (widthPerKline - klineWidth) / 2;
 
@@ -117,14 +117,14 @@ export const useVolumeRenderer = ({
         const klineCloseTime = kline.closeTime;
         const totalDuration = klineCloseTime - klineOpenTime;
         const elapsedTime = now - klineOpenTime;
-        
+
         if (totalDuration > 0 && elapsedTime > 0 && elapsedTime < totalDuration) {
           const timeProgress = elapsedTime / totalDuration;
           const currentVolume = getKlineVolume(kline);
           const projectedVolume = currentVolume / timeProgress;
           const projectedRatio = projectedVolume / bounds.maxVolume;
           const projectedHeight = Math.min(projectedRatio * volumeOverlayHeight, volumeOverlayHeight);
-          
+
           if (projectedHeight > barHeight) {
             let projectionColor: string;
             const projectionFallback = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
@@ -144,17 +144,17 @@ export const useVolumeRenderer = ({
             } else {
               projectionColor = projectionFallback;
             }
-            
+
             ctx.save();
             ctx.setLineDash([4, 2]);
             ctx.strokeStyle = projectionColor;
             ctx.lineWidth = 2;
-            
+
             const lineOffset = 1;
             const topY = volumeBaseY - projectedHeight;
             const leftX = barX + lineOffset;
             const rightX = barX + klineWidth - lineOffset;
-            
+
             ctx.beginPath();
             ctx.moveTo(leftX, topY);
             ctx.lineTo(rightX, topY);
@@ -163,7 +163,7 @@ export const useVolumeRenderer = ({
             ctx.moveTo(leftX, topY);
             ctx.lineTo(leftX, volumeBaseY - barHeight);
             ctx.stroke();
-            
+
             ctx.restore();
           }
         }
@@ -173,7 +173,7 @@ export const useVolumeRenderer = ({
     if (showVolumeMA && klines.length > 0) {
       const period = getVolumeMAPeriod(timeframe);
       const volumeMA = calculateVolumeMA(klines, period);
-      
+
       ctx.strokeStyle = colors.volume;
       ctx.globalAlpha = 0.5;
       ctx.lineWidth = 2;
@@ -184,11 +184,11 @@ export const useVolumeRenderer = ({
       visibleKlines.forEach((_, index) => {
         const actualIndex = Math.floor(viewport.start) + index;
         const maValue = volumeMA.values[actualIndex];
-        
+
         if (maValue === null || maValue === undefined) return;
 
         const x = manager.indexToX(actualIndex);
-        if (x + klineWidth < 0 || x > effectiveWidth) return;
+        if (x + klineWidth < 0 || x > chartWidth) return;
 
         const barX = x + (widthPerKline - klineWidth) / 2 + klineWidth / 2;
         const volumeRatio = maValue / bounds.maxVolume;
@@ -207,7 +207,7 @@ export const useVolumeRenderer = ({
     }
 
     ctx.restore();
-  }, [manager, colors, enabled, opacity, rightMargin, volumeHeightRatio, hoveredKlineIndex, timeframe, showVolumeMA]);
+  }, [manager, colors, enabled, opacity, volumeHeightRatio, hoveredKlineIndex, timeframe, showVolumeMA]);
 
   return { render };
 };

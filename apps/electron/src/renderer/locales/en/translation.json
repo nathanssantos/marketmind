@@ -33,7 +33,15 @@
     "deselectAll": "Deselect All",
     "to": "to",
     "hours": "h",
-    "active": "Active"
+    "active": "Active",
+    "type": "Type",
+    "priority": "Priority",
+    "source": "Source",
+    "marketOpen": "Market Open",
+    "marketClose": "Market Close",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
   },
   "app": {
     "title": "MarketMind",
@@ -260,6 +268,7 @@
       "measurementRuler": "Measurement Ruler",
       "measurementArea": "Measurement Area",
       "tooltip": "Tooltip",
+      "marketEvents": "Market Events",
       "setupDetection": "Algorithmic Setup Detection",
       "indicators": "Indicators",
       "quickSettings": "Quick Settings"
@@ -1098,6 +1107,73 @@
       "candleMinus2": "Pre-catalyst price action",
       "candleMinus1": "Close before gap (reference price)",
       "candleTrigger": "Gap day with extreme volume and strong close"
+    },
+    "chaikinMoneyFlow": {
+      "summary": "Chaikin Money Flow measures buying/selling pressure via volume-weighted price action",
+      "entry": "Enter when CMF crosses above threshold, indicating money flowing into the asset",
+      "exit": "Stop based on ATR, exit when CMF crosses below zero or reverses",
+      "candleMinus1": "Reference candle showing prior money flow direction",
+      "candleTrigger": "CMF crosses threshold with volume confirmation"
+    },
+    "chandeMomentum": {
+      "summary": "Chande Momentum Oscillator measures pure momentum between -100 and +100",
+      "entry": "Enter when CMO crosses above oversold level (-50) or below overbought (+50)",
+      "exit": "Stop based on ATR, exit on opposite extreme or zero-line cross",
+      "candleMinus1": "Reference candle showing momentum buildup",
+      "candleTrigger": "CMO crosses extreme level with momentum shift"
+    },
+    "connorsRsi2": {
+      "summary": "Larry Connors' proven RSI(2) mean-reversion strategy with 75% historical win rate",
+      "entry": "Enter long when RSI(2) < 5 with price above 200 SMA (uptrend filter)",
+      "exit": "Exit when price closes above 5-day SMA or RSI(2) > 70",
+      "candleMinus2": "Downward pressure building, RSI declining",
+      "candleMinus1": "RSI approaching extreme oversold levels",
+      "candleTrigger": "RSI(2) drops below 5 with price above 200 SMA"
+    },
+    "fibonacciRetracement": {
+      "summary": "Classic Fibonacci retracement to key levels (38.2%, 50%, 61.8%) in trending markets",
+      "entry": "Enter at Fibonacci support/resistance levels with price action confirmation",
+      "exit": "Stop below next Fibonacci level, target at previous swing high/low",
+      "candleMinus2": "Trend establishing swing high/low reference",
+      "candleMinus1": "Price retracing toward Fibonacci level",
+      "candleTrigger": "Price reaches and bounces from Fibonacci level"
+    },
+    "goldenCross": {
+      "summary": "Classic SMA 50/200 crossover signaling long-term trend changes",
+      "entry": "Enter when SMA 50 crosses above SMA 200 (Golden Cross) with volume",
+      "exit": "Exit on Death Cross (SMA 50 below SMA 200) or trailing stop",
+      "candleMinus1": "SMAs converging before crossover",
+      "candleTrigger": "SMA 50 crosses above SMA 200 confirming bullish trend"
+    },
+    "keltnerSqueeze": {
+      "summary": "Volatility squeeze when Bollinger Bands contract inside Keltner Channels",
+      "entry": "Enter on breakout after squeeze releases with momentum confirmation",
+      "exit": "Stop at middle band, target based on volatility expansion",
+      "candleMinus2": "Low volatility consolidation (squeeze forming)",
+      "candleMinus1": "Squeeze tightening, bands contracting",
+      "candleTrigger": "Breakout from squeeze with volume expansion"
+    },
+    "mfiDivergence": {
+      "summary": "Money Flow Index combines RSI logic with volume for stronger signals",
+      "entry": "Enter when MFI crosses above 20 (oversold) or below 80 (overbought)",
+      "exit": "Stop based on ATR, exit on opposite extreme or divergence",
+      "candleMinus1": "MFI approaching extreme level",
+      "candleTrigger": "MFI crosses extreme with volume confirmation"
+    },
+    "rsiOversoldBounce": {
+      "summary": "RSI mean-reversion capturing bounces from oversold conditions",
+      "entry": "Enter when RSI(14) crosses above 30 after being oversold",
+      "exit": "Stop at recent swing low, target at RSI 50-70 zone",
+      "candleMinus2": "Strong selling pushing RSI into oversold",
+      "candleMinus1": "RSI bottoming in oversold territory",
+      "candleTrigger": "RSI crosses above 30 signaling reversal"
+    },
+    "rsiSmaFilter": {
+      "summary": "RSI mean-reversion with SMA 200 trend filter for higher probability trades",
+      "entry": "Enter RSI oversold when price is above SMA 200 (bullish bias)",
+      "exit": "Stop below recent swing, exit when RSI reaches 50-70",
+      "candleMinus1": "RSI declining while above SMA 200",
+      "candleTrigger": "RSI oversold with price above SMA 200 trend filter"
     }
   }
 }

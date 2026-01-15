@@ -59,11 +59,15 @@ export const useChartCanvas = ({
 
     const klineCount = klines.length;
     const visibleCount = Math.min(calculateVisibleKlines(), klineCount);
+    const futureSpace = Math.max(
+      CHART_CONFIG.MIN_FUTURE_KLINES,
+      Math.floor(visibleCount * CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION),
+    );
 
     return {
       ...DEFAULT_VIEWPORT,
       start: Math.max(0, klineCount - visibleCount),
-      end: klineCount,
+      end: klineCount + futureSpace,
     };
   });
   
@@ -147,10 +151,14 @@ export const useChartCanvas = ({
       if (isInitialLoadRef.current && currentCount > 0) {
         const chartWidth = managerRef.current.getDimensions()?.chartWidth;
         const visibleCount = Math.min(calculateVisibleKlines(chartWidth), currentCount);
+        const futureSpace = Math.max(
+          CHART_CONFIG.MIN_FUTURE_KLINES,
+          Math.floor(visibleCount * CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION),
+        );
         const newViewport = {
           ...DEFAULT_VIEWPORT,
           start: Math.max(0, currentCount - visibleCount),
-          end: currentCount,
+          end: currentCount + futureSpace,
         };
 
         setViewport(newViewport);
@@ -162,10 +170,14 @@ export const useChartCanvas = ({
       } else if (isCompleteDataChange || isSignificantChange) {
         const chartWidth = managerRef.current.getDimensions()?.chartWidth;
         const visibleCount = Math.min(calculateVisibleKlines(chartWidth), currentCount);
+        const futureSpace = Math.max(
+          CHART_CONFIG.MIN_FUTURE_KLINES,
+          Math.floor(visibleCount * CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION),
+        );
         const newViewport = {
           ...DEFAULT_VIEWPORT,
           start: Math.max(0, currentCount - visibleCount),
-          end: currentCount,
+          end: currentCount + futureSpace,
         };
 
         setViewport(newViewport);

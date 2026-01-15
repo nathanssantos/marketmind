@@ -157,5 +157,34 @@
   "filters": {
     "minConfidence": 70,
     "minRiskReward": 1
+  },
+  "education": {
+    "origin": "Gene Quong & Avrum Soudack - Money Flow Index (1989)",
+    "createdYear": 1989,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.mfiDivergence.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.mfiDivergence.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": [
+        "mfi",
+        "volume",
+        "atr"
+      ]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.mfiDivergence.summary",
+      "entryKey": "strategies.mfiDivergence.entry",
+      "exitKey": "strategies.mfiDivergence.exit"
+    }
   }
 }

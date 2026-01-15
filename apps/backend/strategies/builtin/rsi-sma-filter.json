@@ -180,5 +180,34 @@
   "filters": {
     "minConfidence": 70,
     "minRiskReward": 1
+  },
+  "education": {
+    "origin": "TradingView Community - RSI with trend filter adaptation (2010s)",
+    "createdYear": 2010,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.rsiSmaFilter.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.rsiSmaFilter.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": [
+        "rsi",
+        "sma200",
+        "volume"
+      ]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.rsiSmaFilter.summary",
+      "entryKey": "strategies.rsiSmaFilter.entry",
+      "exitKey": "strategies.rsiSmaFilter.exit"
+    }
   }
 }

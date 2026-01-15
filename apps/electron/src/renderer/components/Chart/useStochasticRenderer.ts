@@ -28,20 +28,21 @@ export const useStochasticRenderer = ({
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
     const viewport = manager.getViewport();
+    const panelInfo = manager.getPanelInfo('stochastic');
 
-    if (!ctx || !dimensions) return;
+    if (!ctx || !dimensions || !panelInfo) return;
 
-    const { chartWidth, chartHeight } = dimensions;
-    const rsiHeight = manager.getRSIPanelHeight();
-    const panelHeight = CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT;
-    const panelTop = chartHeight + rsiHeight;
-    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
+    const { y: panelTop, height: panelHeight } = panelInfo;
+    const { chartWidth } = dimensions;
 
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, panelTop, chartWidth, panelHeight);
+    ctx.clip();
 
-    const padding = 4;
+    const padding = CHART_CONFIG.PANEL_PADDING;
     const innerHeight = panelHeight - padding * 2;
-    const klineWidth = effectiveWidth / (viewport.end - viewport.start);
+    const klineWidth = chartWidth / (viewport.end - viewport.start);
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);

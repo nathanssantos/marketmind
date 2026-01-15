@@ -1,6 +1,7 @@
 import { Radio, RadioGroup } from '@/renderer/components/ui/radio';
 import { Box, Collapsible, Flex, Grid, Group, HStack, IconButton, Portal, Separator, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
+import type { MarketType, TimeInterval } from '@marketmind/types';
 import { Button } from '@renderer/components/ui/button';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { NumberInput } from '@renderer/components/ui/number-input';
@@ -9,11 +10,10 @@ import { useBackendAutoTrading, useDynamicSymbolScores, useRotationStatus, useTr
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { trpc } from '@renderer/utils/trpc';
-import type { MarketType, TimeInterval } from '@marketmind/types';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { LuChartBar, LuChevronDown, LuChevronUp, LuPause, LuPlay, LuPlus, LuRefreshCw, LuTrash2, LuZap } from 'react-icons/lu';
+import { LuChartBar, LuChevronDown, LuChevronUp, LuPause, LuPlay, LuPlus, LuRefreshCw, LuZap } from 'react-icons/lu';
 import { TimeframeSelector } from '../Chart/TimeframeSelector';
 import { AddWatcherDialog } from './AddWatcherDialog';
 import { DynamicSymbolRankings } from './DynamicSymbolRankings';
@@ -274,25 +274,26 @@ export const WatcherManager = () => {
                   </Button>
                 </Box>
               ) : (
-                <Stack gap={2}>
+                <Grid
+                  templateColumns="repeat(auto-fill, minmax(160px, 1fr))"
+                  gap={2}
+                >
                   {activeWatchers.map((watcher) => {
                     const profile = watcher.profileId ? getProfileById(watcher.profileId) : null;
 
                     return (
-                      <WatcherCard
+                      <WatcherCardCompact
                         key={watcher.watcherId}
                         symbol={watcher.symbol}
                         interval={watcher.interval}
                         profileName={profile?.name ?? watcher.profileName}
-                        profileId={watcher.profileId}
                         marketType={watcher.marketType}
-                        isActive={true}
                         onStop={() => handleStopWatcher(watcher.symbol, watcher.interval, watcher.marketType)}
                         isStopping={isStoppingWatcher}
                       />
                     );
                   })}
-                </Stack>
+                </Grid>
               )}
             </Stack>
           </Collapsible.Content>
@@ -813,91 +814,46 @@ export const WatcherManager = () => {
   );
 };
 
-interface WatcherCardProps {
+interface WatcherCardCompactProps {
   symbol: string;
   interval: string;
   profileName?: string;
-  profileId?: string;
   marketType?: 'SPOT' | 'FUTURES';
-  isActive: boolean;
   onStop: () => void;
   isStopping?: boolean;
 }
 
-const WatcherCard = ({
+const WatcherCardCompact = ({
   symbol,
   interval,
   profileName,
   marketType = 'SPOT',
-  isActive,
   onStop,
   isStopping = false,
-}: WatcherCardProps) => {
+}: WatcherCardCompactProps) => {
   const { t } = useTranslation();
 
   return (
     <Box
-      p={3}
+      p={2}
       bg="bg.muted"
       borderRadius="md"
-      borderLeft="4px solid"
-      borderColor={isActive ? 'green.500' : 'gray.400'}
+      borderLeft="3px solid"
+      borderColor="green.500"
+      position="relative"
     >
-      <Flex justify="space-between" align="center">
-        <Flex align="center" gap={3}>
-          <Box
-            w={2}
-            h={2}
-            borderRadius="full"
-            bg={isActive ? 'green.500' : 'gray.400'}
-          />
-          <Box>
-            <Flex align="center" gap={2}>
-              <CryptoIcon symbol={symbol} size={18} />
-              <Text fontWeight="bold" fontSize="md">
-                {symbol}
-              </Text>
-              <Box
-                px={2}
-                py={0.5}
-                bg="blue.100"
-                color="blue.800"
-                borderRadius="sm"
-                fontSize="xs"
-                _dark={{ bg: 'blue.900', color: 'blue.200' }}
-              >
-                {interval}
-              </Box>
-              <Box
-                px={2}
-                py={0.5}
-                bg={marketType === 'FUTURES' ? 'orange.100' : 'green.100'}
-                color={marketType === 'FUTURES' ? 'orange.800' : 'green.800'}
-                borderRadius="sm"
-                fontSize="xs"
-                fontWeight="medium"
-                _dark={{
-                  bg: marketType === 'FUTURES' ? 'orange.900' : 'green.900',
-                  color: marketType === 'FUTURES' ? 'orange.200' : 'green.200',
-                }}
-              >
-                {marketType}
-              </Box>
-            </Flex>
-            <Text fontSize="xs" color="fg.muted">
-              {profileName
-                ? `${t('tradingProfiles.watchers.profile')}: ${profileName}`
-                : t('tradingProfiles.watchers.usingDefault')}
-            </Text>
-          </Box>
-        </Flex>
-
-        <MenuRoot id={`watcher-menu-${symbol}-${interval}`} positioning={{ placement: 'bottom-end' }}>
+      <Flex align="center" gap={1.5} mb={1}>
+        <Box w={1.5} h={1.5} borderRadius="full" bg="green.500" />
+        <CryptoIcon symbol={symbol} size={16} />
+        <Text fontWeight="semibold" fontSize="sm" truncate flex={1}>
+          {symbol.replace('USDT', '')}
+        </Text>
+        <MenuRoot id={`watcher-compact-${symbol}-${interval}`} positioning={{ placement: 'bottom-end' }}>
           <MenuTrigger asChild>
             <IconButton
               size="2xs"
               variant="ghost"
-              aria-label="Watcher options"
+              aria-label={t('tradingProfiles.watchers.options')}
               onClick={(e) => e.stopPropagation()}
               disabled={isStopping}
             >
@@ -906,55 +862,57 @@ const WatcherCard = ({
           </MenuTrigger>
           <Portal>
             <MenuPositioner>
-              <MenuContent
-                bg="bg.panel"
-                borderColor="border"
-                shadow="lg"
-                minW="180px"
-                zIndex={99999}
-                p={0}
-              >
-                {isActive ? (
-                  <MenuItem
-                    value="stop"
-                    onClick={onStop}
-                    color="red.500"
-                    px={4}
-                    py={2.5}
-                    _hover={{ bg: 'bg.muted' }}
-                    disabled={isStopping}
-                  >
-                    <LuPause />
-                    <Text>{t('tradingProfiles.watchers.stop')}</Text>
-                  </MenuItem>
-                ) : (
-                  <>
-                    <MenuItem
-                      value="start"
-                      px={4}
-                      py={2.5}
-                      _hover={{ bg: 'bg.muted' }}
-                    >
-                      <LuPlay />
-                      <Text>{t('tradingProfiles.watchers.start')}</Text>
-                    </MenuItem>
-                    <MenuItem
-                      value="delete"
-                      color="red.500"
-                      px={4}
-                      py={2.5}
-                      _hover={{ bg: 'bg.muted' }}
-                    >
-                      <LuTrash2 />
-                      <Text>{t('common.delete')}</Text>
-                    </MenuItem>
-                  </>
-                )}
+              <MenuContent bg="bg.panel" borderColor="border" shadow="lg" minW="150px" zIndex={99999} p={0}>
+                <MenuItem
+                  value="stop"
+                  onClick={onStop}
+                  color="red.500"
+                  px={3}
+                  py={2}
+                  _hover={{ bg: 'bg.muted' }}
+                  disabled={isStopping}
+                >
+                  <LuPause />
+                  <Text>{t('tradingProfiles.watchers.stop')}</Text>
+                </MenuItem>
               </MenuContent>
             </MenuPositioner>
           </Portal>
         </MenuRoot>
       </Flex>
+      <Flex gap={1} flexWrap="wrap">
+        <Box
+          px={1.5}
+          py={0.5}
+          bg="blue.100"
+          color="blue.800"
+          borderRadius="sm"
+          fontSize="2xs"
+          _dark={{ bg: 'blue.900', color: 'blue.200' }}
+        >
+          {interval}
+        </Box>
+        <Box
+          px={1.5}
+          py={0.5}
+          bg={marketType === 'FUTURES' ? 'orange.100' : 'green.100'}
+          color={marketType === 'FUTURES' ? 'orange.800' : 'green.800'}
+          borderRadius="sm"
+          fontSize="2xs"
+          fontWeight="medium"
+          _dark={{
+            bg: marketType === 'FUTURES' ? 'orange.900' : 'green.900',
+            color: marketType === 'FUTURES' ? 'orange.200' : 'green.200',
+          }}
+        >
+          {marketType}
+        </Box>
+      </Flex>
+      {profileName && (
+        <Text fontSize="2xs" color="fg.muted" mt={1} truncate>
+          {profileName}
+        </Text>
+      )}
     </Box>
   );
 };

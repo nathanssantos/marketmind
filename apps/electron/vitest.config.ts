@@ -4,6 +4,13 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
+  poolOptions: {
+    threads: {
+      singleThread: false,
+      maxThreads: 4,
+      minThreads: 1,
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',
@@ -11,13 +18,6 @@ export default defineConfig({
     exclude: ['**/*.browser.test.{ts,tsx}', '**/node_modules/**'],
     css: true,
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: false,
-        maxThreads: 4,
-        minThreads: 1,
-      },
-    },
     isolate: true,
     coverage: {
       provider: 'v8',

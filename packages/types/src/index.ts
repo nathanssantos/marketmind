@@ -1,5 +1,6 @@
 export * from './backtesting';
 export * from './binance';
+export * from './events';
 export * from './filters';
 export * from './chart';
 export * from './fees';

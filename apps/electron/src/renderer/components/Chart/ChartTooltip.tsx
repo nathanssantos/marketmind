@@ -1,6 +1,6 @@
 import { formatDateTimeTooltip, formatPriceDisplay } from '@/renderer/utils/formatters';
 import { Badge, Box, HStack, Stack, Text } from '@chakra-ui/react';
-import type { Kline, Order, TradingSetup } from '@marketmind/types';
+import type { Kline, MarketEvent, Order, TradingSetup } from '@marketmind/types';
 import {
   getKlineAverageTradeValue,
   getKlineBuyPressure,
@@ -46,6 +46,7 @@ export interface ChartTooltipProps {
   order?: Order | null | undefined;
   currentPrice?: number | undefined;
   setup?: TradingSetup | null | undefined;
+  marketEvent?: MarketEvent | null | undefined;
 }
 
 export const ChartTooltip = memo(({
@@ -60,10 +61,11 @@ export const ChartTooltip = memo(({
   order,
   currentPrice,
   setup,
+  marketEvent,
 }: ChartTooltipProps): ReactElement | null => {
   const { t } = useTranslation();
 
-  if (!visible || (!kline && !movingAverage && !measurement && !order && !setup)) return null;
+  if (!visible || (!kline && !movingAverage && !measurement && !order && !setup && !marketEvent)) return null;
 
   const isBullish = kline ? getKlineClose(kline) >= getKlineOpen(kline) : false;
   const change = kline ? getKlineClose(kline) - getKlineOpen(kline) : 0;
@@ -478,6 +480,91 @@ export const ChartTooltip = memo(({
             <HStack justify="space-between">
               <Text color="fg.muted">{t('common.takeProfit')}:</Text>
               <Text fontWeight="medium" color="green.500">{formatPriceDisplay(setup.takeProfit)}</Text>
+            </HStack>
+          )}
+        </Stack>
+      </Box>
+    );
+  }
+
+  if (marketEvent) {
+    const getPriorityColor = (priority: string) => {
+      if (priority === 'critical') return 'red';
+      if (priority === 'high') return 'orange';
+      if (priority === 'medium') return 'yellow';
+      return 'gray';
+    };
+
+    const getEventTypeIcon = (type: string) => {
+      switch (type) {
+        case 'market_open': return '🔔';
+        case 'market_close': return '🔕';
+        case 'economic_event': return '📊';
+        case 'earnings': return '💰';
+        case 'dividend': return '💵';
+        default: return '📅';
+      }
+    };
+
+    return (
+      <Box
+        position="absolute"
+        left={`${leftPos}px`}
+        top={`${topPos}px`}
+        bg="bg.muted"
+        color="fg"
+        p={3}
+        borderRadius="md"
+        boxShadow="lg"
+        fontSize="xs"
+        zIndex={1000}
+        pointerEvents="none"
+        opacity={0.95}
+        minW={`${tooltipWidth}px`}
+        borderWidth={1}
+        borderColor="border"
+      >
+        <Stack gap={1.5}>
+          <Text fontSize="2xs" color="fg.muted" mb={1}>
+            {formatDateTimeTooltip(marketEvent.timestamp)}
+          </Text>
+
+          <HStack gap={1.5}>
+            <Text>{getEventTypeIcon(marketEvent.type)}</Text>
+            <Text fontWeight="semibold">
+              {marketEvent.title}
+            </Text>
+          </HStack>
+
+          {marketEvent.description && (
+            <Text color="fg.muted" fontSize="2xs">
+              {marketEvent.description}
+            </Text>
+          )}
+
+          <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
+            <Text color="fg.muted" fontSize="2xs">{t('common.type')}</Text>
+            <Badge colorScheme="blue" fontSize="2xs" px={2}>
+              {marketEvent.type === 'market_open' ? t('common.marketOpen') : t('common.marketClose')}
+            </Badge>
+          </HStack>
+
+          <HStack justify="space-between">
+            <Text color="fg.muted" fontSize="2xs">{t('common.priority')}</Text>
+            <Badge colorScheme={getPriorityColor(marketEvent.priority)} fontSize="2xs" px={2}>
+              {t(`common.${marketEvent.priority}`)}
+            </Badge>
+          </HStack>
+
+          <HStack justify="space-between">
+            <Text color="fg.muted" fontSize="2xs">{t('common.source')}</Text>
+            <Text fontWeight="medium" fontSize="2xs">{marketEvent.source}</Text>
+          </HStack>
+
+          {marketEvent.endTimestamp && (
+            <HStack justify="space-between">
+              <Text color="fg.muted">{t('common.endTime')}:</Text>
+              <Text fontWeight="medium">{formatDateTimeTooltip(marketEvent.endTimestamp)}</Text>
             </HStack>
           )}
         </Stack>

@@ -5,18 +5,18 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
+  poolOptions: {
+    threads: {
+      singleThread: false,
+      maxThreads: 2,
+      minThreads: 1,
+    },
+  },
   test: {
     globals: true,
     include: ['**/*.browser.test.{ts,tsx}'],
     setupFiles: './src/tests/setup.browser.ts',
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: false,
-        maxThreads: 2,
-        minThreads: 1,
-      },
-    },
     isolate: true,
     browser: {
       enabled: true,

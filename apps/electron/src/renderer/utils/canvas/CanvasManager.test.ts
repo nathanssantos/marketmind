@@ -118,15 +118,15 @@ describe('CanvasManager', () => {
       expect(updated.end).toBeLessThanOrEqual(mockKlines.length);
     });
 
-    it('should clamp viewport to kline range', () => {
+    it('should clamp viewport start to 0 and allow end to extend into future', () => {
       manager.setKlines(mockKlines);
-      
+
       const invalidViewport = { ...viewport, start: -10, end: 250 };
       manager.setViewport(invalidViewport);
-      
+
       const clamped = manager.getViewport();
       expect(clamped.start).toBeGreaterThanOrEqual(0);
-      expect(clamped.end).toBeLessThanOrEqual(mockKlines.length);
+      expect(clamped.end).toBeGreaterThanOrEqual(mockKlines.length);
     });
   });
 
@@ -397,12 +397,12 @@ describe('CanvasManager', () => {
       expect(newStart).toBe(initialStart + 1);
     });
 
-    it('should not pan beyond kline length', () => {
+    it('should allow panning into future space', () => {
       manager.setViewport({ ...viewport, start: mockKlines.length - 50, end: mockKlines.length });
       manager.panToNextKline();
 
       const currentViewport = manager.getViewport();
-      expect(currentViewport.end).toBe(mockKlines.length);
+      expect(currentViewport.end).toBeGreaterThanOrEqual(mockKlines.length);
     });
 
     it('should do nothing with empty klines', () => {
@@ -571,13 +571,13 @@ describe('CanvasManager', () => {
       manager.setKlines(mockKlines);
     });
 
-    it('should reset viewport to initial view', () => {
+    it('should reset viewport to initial view with future space', () => {
       manager.zoom(5);
       manager.panVertical(100);
       manager.resetToInitialView();
 
       const vp = manager.getViewport();
-      expect(vp.end).toBe(mockKlines.length);
+      expect(vp.end).toBeGreaterThanOrEqual(mockKlines.length);
     });
 
     it('should reset vertical zoom', () => {

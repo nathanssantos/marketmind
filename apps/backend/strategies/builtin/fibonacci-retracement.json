@@ -146,5 +146,40 @@
   "filters": {
     "minConfidence": 70,
     "minRiskReward": 2
+  },
+  "education": {
+    "origin": "Leonardo of Pisa (Fibonacci) - Liber Abaci (1202), modern trading adaptation",
+    "createdYear": 1202,
+    "candlePattern": {
+      "lookback": 3,
+      "candles": [
+        {
+          "offset": -2,
+          "role": "context",
+          "descriptionKey": "strategies.fibonacciRetracement.candleMinus2"
+        },
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.fibonacciRetracement.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.fibonacciRetracement.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": [
+        "fib38",
+        "fib50",
+        "fib61",
+        "atr"
+      ]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.fibonacciRetracement.summary",
+      "entryKey": "strategies.fibonacciRetracement.entry",
+      "exitKey": "strategies.fibonacciRetracement.exit"
+    }
   }
 }

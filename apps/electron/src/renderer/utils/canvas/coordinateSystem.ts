@@ -114,15 +114,20 @@ export const volumeToHeight = (
   return (volume / maxVolume) * volumeHeight;
 };
 
+export interface ClampViewportOptions {
+  minKlinesVisible?: number;
+  futureExtension?: number;
+}
+
 export const indexToX = (
   index: number,
   viewport: Viewport,
   chartWidth: number,
 ): number => {
-  const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
   const visibleRange = viewport.end - viewport.start;
+  if (visibleRange === 0) return 0;
   const ratio = (index - viewport.start) / visibleRange;
-  return ratio * effectiveWidth;
+  return ratio * chartWidth;
 };
 
 export const xToIndex = (
@@ -130,17 +135,22 @@ export const xToIndex = (
   viewport: Viewport,
   chartWidth: number,
 ): number => {
-  const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
   const visibleRange = viewport.end - viewport.start;
-  const ratio = x / effectiveWidth;
+  if (visibleRange === 0) return viewport.start;
+  const ratio = x / chartWidth;
   return viewport.start + ratio * visibleRange;
 };
 
 export const clampViewport = (
   viewport: Viewport,
   klineCount: number,
-  minKlinesVisible: number = 10,
+  options: ClampViewportOptions = {},
 ): Viewport => {
+  const {
+    minKlinesVisible = 10,
+    futureExtension = CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION,
+  } = options;
+
   let { start, end } = viewport;
   const visibleCount = end - start;
 
@@ -150,14 +160,19 @@ export const clampViewport = (
     end = center + minKlinesVisible / 2;
   }
 
+  const maxFuture = futureExtension === 0
+    ? 0
+    : Math.max(CHART_CONFIG.MIN_FUTURE_KLINES, Math.floor(visibleCount * futureExtension));
+  const maxEnd = klineCount + maxFuture;
+
   if (start < 0) {
     end -= start;
     start = 0;
   }
 
-  if (end > klineCount) {
-    start -= end - klineCount;
-    end = klineCount;
+  if (end > maxEnd) {
+    start -= end - maxEnd;
+    end = maxEnd;
   }
 
   if (start < 0) {
@@ -167,6 +182,6 @@ export const clampViewport = (
   return {
     ...viewport,
     start: Math.max(0, start),
-    end: Math.min(klineCount, end),
+    end: Math.min(maxEnd, end),
   };
 };

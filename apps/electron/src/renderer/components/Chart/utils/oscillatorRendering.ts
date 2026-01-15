@@ -9,6 +9,17 @@ interface ZoneLevelConfig {
   y: number;
 }
 
+export const applyPanelClip = ({
+  ctx,
+  panelY,
+  panelHeight,
+  chartWidth,
+}: OscillatorPanelConfig): void => {
+  ctx.beginPath();
+  ctx.rect(0, panelY, chartWidth, panelHeight);
+  ctx.clip();
+};
+
 export const drawPanelBackground = ({
   ctx,
   panelY,

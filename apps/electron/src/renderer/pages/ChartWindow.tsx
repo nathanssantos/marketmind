@@ -16,13 +16,13 @@ import { Toolbar } from '../components/Layout/Toolbar';
 import { TrpcProvider } from '../components/TrpcProvider';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { ChartProvider } from '../context/ChartContext';
 import { REQUIRED_KLINES } from '../constants/defaults';
+import { ChartProvider } from '../context/ChartContext';
 import { useBackendKlines, useKlineStream } from '../hooks/useBackendKlines';
 import { useDebounce } from '../hooks/useDebounce';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { system } from '../theme';
 import { useSetupStore } from '../store/setupStore';
+import { system } from '../theme';
 import { toaster } from '../utils/toaster';
 
 const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
@@ -95,6 +95,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   const [showBollingerBands, setShowBollingerBands] = useLocalStorage('marketmind:showBollingerBands', false);
   const [showATR, setShowATR] = useLocalStorage('marketmind:showATR', false);
   const [showVWAP, setShowVWAP] = useLocalStorage('marketmind:showVWAP', false);
+  const [showEventRow, setShowEventRow] = useLocalStorage('marketmind:showEventRow', true);
   const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', (routeTimeframe as Timeframe) || '1d');
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
@@ -378,6 +379,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
           showBollingerBands={showBollingerBands}
           showATR={showATR}
           showVWAP={showVWAP}
+          showEventRow={showEventRow}
           movingAverages={movingAverages}
           onChartTypeChange={setChartType}
           onShowGridChange={setShowGrid}
@@ -394,6 +396,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
           onShowBollingerBandsChange={setShowBollingerBands}
           onShowATRChange={setShowATR}
           onShowVWAPChange={setShowVWAP}
+          onShowEventRowChange={setShowEventRow}
           onMovingAveragesChange={setMovingAverages}
         />
         {loading && (

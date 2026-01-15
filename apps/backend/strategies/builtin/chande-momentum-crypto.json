@@ -157,5 +157,34 @@
   "filters": {
     "minConfidence": 65,
     "minRiskReward": 1
+  },
+  "education": {
+    "origin": "Tushar Chande - Beyond Technical Analysis (1994)",
+    "createdYear": 1994,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.chandeMomentum.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.chandeMomentum.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": [
+        "cmo",
+        "volume",
+        "atr"
+      ]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.chandeMomentum.summary",
+      "entryKey": "strategies.chandeMomentum.entry",
+      "exitKey": "strategies.chandeMomentum.exit"
+    }
   }
 }

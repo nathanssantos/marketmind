@@ -195,5 +195,41 @@
   "filters": {
     "minConfidence": 65,
     "minRiskReward": 2
+  },
+  "education": {
+    "origin": "John Carter - TTM Squeeze (Keltner + Bollinger combination, 2000s)",
+    "createdYear": 2005,
+    "candlePattern": {
+      "lookback": 3,
+      "candles": [
+        {
+          "offset": -2,
+          "role": "context",
+          "descriptionKey": "strategies.keltnerSqueeze.candleMinus2"
+        },
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.keltnerSqueeze.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.keltnerSqueeze.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": [
+        "keltnerUpper",
+        "keltnerLower",
+        "bbUpper",
+        "bbLower",
+        "momentum"
+      ]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.keltnerSqueeze.summary",
+      "entryKey": "strategies.keltnerSqueeze.entry",
+      "exitKey": "strategies.keltnerSqueeze.exit"
+    }
   }
 }

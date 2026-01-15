@@ -170,3 +170,52 @@ export const formatChartDataContext = (chartData: ChartContextData): string => {
   
   return contextText;
 };
+
+export type TimeLabelPriority = 'year' | 'month' | 'day' | 'hour' | 'minute';
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export const getTimeLabelPriority = (
+  timestamp: number,
+  prevTimestamp: number | null,
+): TimeLabelPriority => {
+  const date = new Date(timestamp);
+  const prev = prevTimestamp ? new Date(prevTimestamp) : null;
+
+  if (!prev || date.getFullYear() !== prev.getFullYear()) return 'year';
+  if (date.getMonth() !== prev.getMonth()) return 'month';
+  if (date.getDate() !== prev.getDate()) return 'day';
+  if (date.getHours() !== prev.getHours()) return 'hour';
+  return 'minute';
+};
+
+export const formatTimeLabel = (
+  timestamp: number,
+  priority: TimeLabelPriority,
+): string => {
+  const date = new Date(timestamp);
+
+  switch (priority) {
+    case 'year':
+      return date.getFullYear().toString();
+    case 'month':
+      return MONTH_NAMES[date.getMonth()] ?? '';
+    case 'day':
+      return date.getDate().toString();
+    case 'hour':
+      return `${date.getHours().toString().padStart(2, '0')}:00`;
+    case 'minute':
+      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  }
+};
+
+export const getPriorityWeight = (priority: TimeLabelPriority): number => {
+  const weights: Record<TimeLabelPriority, number> = {
+    year: 5,
+    month: 4,
+    day: 3,
+    hour: 2,
+    minute: 1,
+  };
+  return weights[priority];
+};

@@ -2,6 +2,7 @@ import { Box, Separator, HStack, IconButton } from '@chakra-ui/react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  LuCalendarDays,
   LuChartCandlestick,
   LuChartLine,
   LuCrosshair,
@@ -33,6 +34,7 @@ export interface ChartToolsToolbarProps {
   showBollingerBands: boolean;
   showATR: boolean;
   showVWAP: boolean;
+  showEventRow: boolean;
   movingAverages: MovingAverageConfig[];
   onChartTypeChange: (type: 'kline' | 'line') => void;
   onShowGridChange: (show: boolean) => void;
@@ -49,6 +51,7 @@ export interface ChartToolsToolbarProps {
   onShowBollingerBandsChange: (show: boolean) => void;
   onShowATRChange: (show: boolean) => void;
   onShowVWAPChange: (show: boolean) => void;
+  onShowEventRowChange: (show: boolean) => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
 }
 
@@ -68,6 +71,7 @@ export const ChartToolsToolbar = memo(({
   showBollingerBands,
   showATR,
   showVWAP,
+  showEventRow,
   movingAverages,
   onChartTypeChange,
   onShowGridChange,
@@ -84,6 +88,7 @@ export const ChartToolsToolbar = memo(({
   onShowBollingerBandsChange,
   onShowATRChange,
   onShowVWAPChange,
+  onShowEventRowChange,
   onMovingAveragesChange,
 }: ChartToolsToolbarProps) => {
   const { t } = useTranslation();
@@ -234,6 +239,17 @@ export const ChartToolsToolbar = memo(({
             variant={showTooltip ? 'solid' : 'ghost'}
           >
             <LuMessageSquare />
+          </IconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label={t('chart.controls.marketEvents')} showArrow placement="right">
+          <IconButton
+            size="2xs"
+            aria-label={t('chart.controls.marketEvents')}
+            onClick={() => onShowEventRowChange(!showEventRow)}
+            colorPalette={showEventRow ? 'blue' : 'gray'}
+            variant={showEventRow ? 'solid' : 'ghost'}
+          >
+            <LuCalendarDays />
           </IconButton>
         </TooltipWrapper>
       </HStack>

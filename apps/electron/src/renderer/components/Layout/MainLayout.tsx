@@ -37,6 +37,7 @@ interface MainLayoutProps {
   showBollingerBands: boolean;
   showATR: boolean;
   showVWAP: boolean;
+  showEventRow: boolean;
   movingAverages: MovingAverageConfig[];
   isBacktestOpen: boolean;
   onSymbolChange: (symbol: string) => void;
@@ -56,6 +57,7 @@ interface MainLayoutProps {
   onShowBollingerBandsChange: (show: boolean) => void;
   onShowATRChange: (show: boolean) => void;
   onShowVWAPChange: (show: boolean) => void;
+  onShowEventRowChange: (show: boolean) => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onToggleBacktest: () => void;
   onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
@@ -91,6 +93,7 @@ export const MainLayout = ({
   showBollingerBands,
   showATR,
   showVWAP,
+  showEventRow,
   movingAverages,
   isBacktestOpen,
   onSymbolChange,
@@ -110,6 +113,7 @@ export const MainLayout = ({
   onShowBollingerBandsChange,
   onShowATRChange,
   onShowVWAPChange,
+  onShowEventRowChange,
   onMovingAveragesChange,
   onToggleBacktest,
   onNavigateToSymbol,
@@ -207,6 +211,7 @@ export const MainLayout = ({
               showBollingerBands={showBollingerBands}
               showATR={showATR}
               showVWAP={showVWAP}
+              showEventRow={showEventRow}
               movingAverages={movingAverages}
               onChartTypeChange={onChartTypeChange}
               onShowGridChange={onShowGridChange}
@@ -223,6 +228,7 @@ export const MainLayout = ({
               onShowBollingerBandsChange={onShowBollingerBandsChange}
               onShowATRChange={onShowATRChange}
               onShowVWAPChange={onShowVWAPChange}
+              onShowEventRowChange={onShowEventRowChange}
               onMovingAveragesChange={onMovingAveragesChange}
             />
             {children}

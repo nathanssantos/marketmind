@@ -171,5 +171,39 @@
   "filters": {
     "minConfidence": 60,
     "minRiskReward": 0
+  },
+  "education": {
+    "origin": "J. Welles Wilder Jr. - New Concepts in Technical Trading Systems (1978)",
+    "createdYear": 1978,
+    "candlePattern": {
+      "lookback": 3,
+      "candles": [
+        {
+          "offset": -2,
+          "role": "context",
+          "descriptionKey": "strategies.rsiOversoldBounce.candleMinus2"
+        },
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.rsiOversoldBounce.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.rsiOversoldBounce.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": [
+        "rsi",
+        "ema20",
+        "atr"
+      ]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.rsiOversoldBounce.summary",
+      "entryKey": "strategies.rsiOversoldBounce.entry",
+      "exitKey": "strategies.rsiOversoldBounce.exit"
+    }
   }
 }

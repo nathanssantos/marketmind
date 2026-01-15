@@ -16,6 +16,9 @@ vi.mock('../../utils/formatters', () => ({
   formatPriceDisplay: vi.fn((price: number) => price.toFixed(2)),
   formatChartPrice: vi.fn((price: number) => price.toFixed(2)),
   formatTimestamp: vi.fn((openTime: number) => new Date(openTime).toLocaleTimeString()),
+  getTimeLabelPriority: vi.fn(() => 'hour' as const),
+  formatTimeLabel: vi.fn((timestamp: number) => new Date(timestamp).toLocaleTimeString()),
+  getPriorityWeight: vi.fn(() => 2),
 }));
 
 describe('useGridRenderer', () => {
@@ -31,6 +34,8 @@ describe('useGridRenderer', () => {
       restore: vi.fn(),
       fillStyle: '',
       fillRect: vi.fn(),
+      measureText: vi.fn(() => ({ width: 50 })),
+      font: '',
     } as unknown as CanvasRenderingContext2D;
 
     const klines = [
@@ -62,8 +67,10 @@ describe('useGridRenderer', () => {
         klineWidth: 10,
         klineSpacing: 2,
       })),
+      getKlines: vi.fn(() => klines),
       getVisibleKlines: vi.fn(() => klines),
       indexToX: vi.fn((index: number) => index * 145.6),
+      indexToCenterX: vi.fn((index: number) => index * 145.6 + 72.8),
       priceToY: vi.fn((price: number) => 575 - (price - 90) * 19),
       getStochasticPanelHeight: vi.fn(() => 0),
       getRSIPanelHeight: vi.fn(() => 0),
@@ -287,7 +294,7 @@ describe('useGridRenderer', () => {
 
       result.current.render();
 
-      expect(formatters.formatTimestamp).toHaveBeenCalled();
+      expect(formatters.formatTimeLabel).toHaveBeenCalled();
     });
 
     it('should draw axis lines', () => {
@@ -361,7 +368,7 @@ describe('useGridRenderer', () => {
       expect(drawingUtils.drawGrid).toHaveBeenCalled();
     });
 
-    it('should skip time labels outside visible area', () => {
+    it('should render time labels with formatTimeLabel', () => {
       const { result } = renderHook(() =>
         useGridRenderer({
           manager: mockManager,
@@ -371,7 +378,7 @@ describe('useGridRenderer', () => {
 
       result.current.render();
 
-      expect(formatters.formatTimestamp).toHaveBeenCalled();
+      expect(formatters.formatTimeLabel).toHaveBeenCalled();
     });
 
     it('should skip price labels outside chart height', () => {
@@ -407,7 +414,7 @@ describe('useGridRenderer', () => {
       expect(mockManager.priceToY).toHaveBeenCalled();
     });
 
-    it('should calculate time label step correctly', () => {
+    it('should render time labels using indexToCenterX', () => {
       const { result } = renderHook(() =>
         useGridRenderer({
           manager: mockManager,
@@ -418,7 +425,7 @@ describe('useGridRenderer', () => {
 
       result.current.render();
 
-      expect(mockManager.indexToX).toHaveBeenCalled();
+      expect(mockManager.indexToCenterX).toHaveBeenCalled();
     });
   });
 });

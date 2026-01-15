@@ -162,36 +162,49 @@ describe('coordinateSystem', () => {
   });
 
   describe('clampViewport', () => {
-    it('should clamp viewport within kline bounds', () => {
-      const clamped = clampViewport(createViewport(-10, 100), 50, 10);
+    it('should clamp viewport start to 0 and allow end to extend into future', () => {
+      const clamped = clampViewport(createViewport(-10, 100), 50, { minKlinesVisible: 10 });
+      const visibleRange = 100 - (-10);
+      const maxFuture = Math.max(5, Math.floor(visibleRange * 0.15));
+      const maxEnd = 50 + maxFuture;
 
       expect(clamped.start).toBeGreaterThanOrEqual(0);
-      expect(clamped.end).toBeLessThanOrEqual(50);
+      expect(clamped.end).toBeLessThanOrEqual(maxEnd);
     });
 
     it('should enforce minimum visible klines', () => {
-      const clamped = clampViewport(createViewport(10, 12), 50, 10);
+      const clamped = clampViewport(createViewport(10, 12), 50, { minKlinesVisible: 10 });
 
       expect(clamped.end - clamped.start).toBeGreaterThanOrEqual(10);
     });
 
     it('should handle viewport starting before 0', () => {
-      const clamped = clampViewport(createViewport(-5, 10), 50, 10);
+      const clamped = clampViewport(createViewport(-5, 10), 50, { minKlinesVisible: 10 });
 
       expect(clamped.start).toBe(0);
     });
 
-    it('should handle viewport ending beyond klines', () => {
-      const clamped = clampViewport(createViewport(40, 60), 50, 10);
+    it('should allow viewport to extend past klines into future', () => {
+      const clamped = clampViewport(createViewport(40, 60), 50, { minKlinesVisible: 10 });
+      const visibleRange = 60 - 40;
+      const maxFuture = Math.max(5, Math.floor(visibleRange * 0.15));
+      const maxEnd = 50 + maxFuture;
 
-      expect(clamped.end).toBe(50);
+      expect(clamped.end).toBeLessThanOrEqual(maxEnd);
+      expect(clamped.end).toBeGreaterThanOrEqual(50);
     });
 
-    it('should preserve valid viewport', () => {
-      const clamped = clampViewport(createViewport(10, 30), 50, 10);
+    it('should preserve valid viewport within bounds', () => {
+      const clamped = clampViewport(createViewport(10, 30), 50, { minKlinesVisible: 10 });
 
       expect(clamped.start).toBe(10);
       expect(clamped.end).toBe(30);
+    });
+
+    it('should respect futureExtension option when set to 0', () => {
+      const clamped = clampViewport(createViewport(40, 60), 50, { minKlinesVisible: 10, futureExtension: 0 });
+
+      expect(clamped.end).toBe(50);
     });
   });
 });

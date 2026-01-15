@@ -101,13 +101,13 @@ export const useCrosshairPriceLineRenderer = ({
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
 
-    const tagStartX = width - CHART_CONFIG.CHART_RIGHT_MARGIN;
+    const tagStartX = chartWidth;
 
     ctx.fillStyle = colors.crosshair;
     const labelPadding = 8;
     const labelHeight = 18;
     const arrowWidth = 6;
-    const tagWidth = CHART_CONFIG.CHART_RIGHT_MARGIN;
+    const tagWidth = CHART_CONFIG.CANVAS_PADDING_RIGHT;
 
     const endX = tagStartX + tagWidth;
     ctx.beginPath();

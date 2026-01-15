@@ -29,6 +29,7 @@ import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useOrderNotifications } from './hooks/useOrderNotifications';
 import { useSetupStore } from './store/setupStore';
+import { useUIStore } from './store/uiStore';
 import { system } from './theme';
 import { toaster } from './utils/toaster';
 
@@ -134,6 +135,7 @@ function AppContent(): ReactElement {
   const [showBollingerBands, setShowBollingerBands] = useLocalStorage('marketmind:showBollingerBands', false);
   const [showATR, setShowATR] = useLocalStorage('marketmind:showATR', false);
   const [showVWAP, setShowVWAP] = useLocalStorage('marketmind:showVWAP', false);
+  const { showEventRow, setShowEventRow } = useUIStore();
   const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
   const [isTradingOpen, setIsTradingOpen] = useLocalStorage('trading-sidebar-open', false);
@@ -441,6 +443,7 @@ function AppContent(): ReactElement {
         showBollingerBands={showBollingerBands}
         showATR={showATR}
         showVWAP={showVWAP}
+        showEventRow={showEventRow}
         movingAverages={movingAverages}
         isBacktestOpen={isBacktestOpen}
         onSymbolChange={handleSymbolChange}
@@ -460,6 +463,7 @@ function AppContent(): ReactElement {
         onShowBollingerBandsChange={setShowBollingerBands}
         onShowATRChange={setShowATR}
         onShowVWAPChange={setShowVWAP}
+        onShowEventRowChange={setShowEventRow}
         onMovingAveragesChange={setMovingAverages}
         onToggleBacktest={toggleBacktest}
         onNavigateToSymbol={handleSymbolChange}
@@ -510,6 +514,7 @@ function AppContent(): ReactElement {
             showBollingerBands={showBollingerBands}
             showATR={showATR}
             showVWAP={showVWAP}
+            showEventRow={showEventRow}
             chartType={chartType}
             movingAverages={movingAverages}
             advancedConfig={debouncedAdvancedConfig}

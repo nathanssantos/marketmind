@@ -36,8 +36,8 @@ export class CanvasManager {
   private renderCallback: (() => void) | null = null;
   private priceOffset: number = 0;
   private priceScale: number = 1;
-  private rightMargin: number = CHART_CONFIG.CHART_RIGHT_MARGIN;
   private panels: Map<string, PanelConfig> = new Map();
+  private eventRowHeight: number = 0;
   private animationFrameId: number | null = null;
   private isAnimating: boolean = false;
   private dirtyFlags: DirtyFlags = {
@@ -135,7 +135,7 @@ export class CanvasManager {
   private updateDimensions(): void {
     const rect = this.canvas.getBoundingClientRect();
     const totalPanelHeight = this.getTotalPanelHeight();
-    const chartHeight = rect.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM - totalPanelHeight;
+    const chartHeight = rect.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM - totalPanelHeight - this.eventRowHeight;
     const chartWidth = rect.width - CHART_CONFIG.CANVAS_PADDING_RIGHT;
 
     this.dimensions = {
@@ -224,9 +224,9 @@ export class CanvasManager {
     return this.ctx;
   }
 
-  public setRightMargin(margin: number): void {
-    this.rightMargin = margin;
-    this.markDirty('dimensions');
+  public setRightMargin(_margin: number): void {
+    // No-op: rightMargin is no longer used in coordinate calculations
+    // The chart now uses the full chartWidth and allows scrolling into future
   }
 
   public setPanelHeight(panelId: string, height: number): void {
@@ -302,6 +302,21 @@ export class CanvasManager {
     return { y: panelTop, height };
   }
 
+  public setEventRowHeight(height: number): void {
+    if (this.eventRowHeight === height) return;
+    this.eventRowHeight = height;
+    this.updateDimensions();
+  }
+
+  public getEventRowHeight(): number {
+    return this.eventRowHeight;
+  }
+
+  public getEventRowY(): number {
+    if (!this.dimensions) return 0;
+    return this.dimensions.chartHeight + this.getTotalPanelHeight();
+  }
+
   public clear(): void {
     if (!this.ctx || !this.dimensions) return;
     clearCanvas(this.ctx, this.dimensions.width, this.dimensions.height);
@@ -342,27 +357,27 @@ export class CanvasManager {
 
   public indexToX(index: number): number {
     if (!this.dimensions) return 0;
-    const effectiveWidth = this.dimensions.chartWidth - this.rightMargin;
     const visibleRange = this.viewport.end - this.viewport.start;
-    const widthPerKline = effectiveWidth / visibleRange;
+    if (visibleRange === 0) return 0;
+    const widthPerKline = this.dimensions.chartWidth / visibleRange;
     const relativeIndex = index - this.viewport.start;
     return relativeIndex * widthPerKline;
   }
 
   public indexToCenterX(index: number): number {
     if (!this.dimensions) return 0;
-    const effectiveWidth = this.dimensions.chartWidth - this.rightMargin;
     const visibleRange = this.viewport.end - this.viewport.start;
-    const widthPerKline = effectiveWidth / visibleRange;
+    if (visibleRange === 0) return 0;
+    const widthPerKline = this.dimensions.chartWidth / visibleRange;
     const relativeIndex = index - this.viewport.start;
     return relativeIndex * widthPerKline + widthPerKline / 2;
   }
 
   public xToIndex(x: number): number {
     if (!this.dimensions) return 0;
-    const effectiveWidth = this.dimensions.chartWidth - this.rightMargin;
     const visibleRange = this.viewport.end - this.viewport.start;
-    const widthPerKline = effectiveWidth / visibleRange;
+    if (visibleRange === 0) return this.viewport.start;
+    const widthPerKline = this.dimensions.chartWidth / visibleRange;
     const relativeIndex = x / widthPerKline;
     return this.viewport.start + relativeIndex;
   }
@@ -376,6 +391,40 @@ export class CanvasManager {
       if (klineTime >= timestamp) return i;
     }
     return this.klines.length - 1;
+  }
+
+  public timestampToIndex(timestamp: number, intervalMs: number): number {
+    if (this.klines.length === 0) return 0;
+
+    const lastKline = this.klines[this.klines.length - 1]!;
+    const lastOpenTime = typeof lastKline.openTime === 'number'
+      ? lastKline.openTime
+      : new Date(lastKline.openTime).getTime();
+
+    if (timestamp <= lastOpenTime) {
+      return this.timeToIndex(timestamp);
+    }
+
+    const klinesAhead = Math.ceil((timestamp - lastOpenTime) / intervalMs);
+    return this.klines.length - 1 + klinesAhead;
+  }
+
+  public timestampToX(timestamp: number, intervalMs: number): number {
+    const index = this.timestampToIndex(timestamp, intervalMs);
+    return this.indexToCenterX(index);
+  }
+
+  public getKlineCount(): number {
+    return this.klines.length;
+  }
+
+  public getMaxViewportEnd(): number {
+    const visibleRange = this.viewport.end - this.viewport.start;
+    const maxFuture = Math.max(
+      CHART_CONFIG.MIN_FUTURE_KLINES,
+      Math.floor(visibleRange * CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION),
+    );
+    return this.klines.length + maxFuture;
   }
 
   public getVisibleKlines(): Kline[] {
@@ -463,13 +512,17 @@ export class CanvasManager {
 
   public resetToInitialView(): void {
     const initialKlineCount = Math.min(CHART_CONFIG.INITIAL_KLINES_VISIBLE, this.klines.length);
-    
+    const futureSpace = Math.max(
+      CHART_CONFIG.MIN_FUTURE_KLINES,
+      Math.floor(initialKlineCount * CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION),
+    );
+
     this.viewport = {
       ...this.viewport,
       start: Math.max(0, this.klines.length - initialKlineCount),
-      end: this.klines.length,
+      end: this.klines.length + futureSpace,
     };
-    
+
     this.resetVerticalZoom();
     this.updateKlineWidth();
     this.markDirty('all');
@@ -477,17 +530,18 @@ export class CanvasManager {
 
   public panToNextKline(): void {
     if (this.klines.length === 0) return;
-    
+
     const newStart = this.viewport.start + 1;
     const newEnd = this.viewport.end + 1;
-    
-    if (newEnd <= this.klines.length) {
+    const maxEnd = this.getMaxViewportEnd();
+
+    if (newEnd <= maxEnd) {
       this.viewport = {
         ...this.viewport,
         start: newStart,
         end: newEnd,
       };
-      
+
       this.updateKlineWidth();
       this.updateBounds();
       this.markDirty('viewport');

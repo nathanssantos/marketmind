@@ -14,6 +14,7 @@ const MIGRATION_VERSION_3 = 3;
 const MIGRATION_VERSION_4 = 4;
 const MIGRATION_VERSION_5 = 5;
 const MIGRATION_VERSION_6 = 6;
+const MIGRATION_VERSION_7 = 7;
 
 interface UIState {
   tradingSidebarTab: TradingSidebarTab;
@@ -54,6 +55,9 @@ interface UIState {
   watchersTableSortKey: string;
   watchersTableSortDirection: TableSortDirection;
   setWatchersTableSort: (key: string, direction: TableSortDirection) => void;
+
+  showEventRow: boolean;
+  setShowEventRow: (show: boolean) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -97,10 +101,13 @@ export const useUIStore = create<UIState>()(
       watchersTableSortKey: 'symbol',
       watchersTableSortDirection: 'asc',
       setWatchersTableSort: (key, direction) => set({ watchersTableSortKey: key, watchersTableSortDirection: direction }),
+
+      showEventRow: false,
+      setShowEventRow: (show) => set({ showEventRow: show }),
     }),
     {
       name: 'ui-storage',
-      version: 6,
+      version: 7,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as UIState;
 
@@ -124,6 +131,10 @@ export const useUIStore = create<UIState>()(
         if (version < MIGRATION_VERSION_6) {
           state.watchersTableSortKey = 'symbol';
           state.watchersTableSortDirection = 'asc';
+        }
+
+        if (version < MIGRATION_VERSION_7) {
+          state.showEventRow = false;
         }
 
         return state;
