@@ -71,15 +71,15 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
   try {
     const result = await backfillPromise;
 
-    if (!silent) {
+    const hasGapsToFill = result.gaps > 0;
+    if (!silent && hasGapsToFill) {
       log.info('✅ Prefetch complete', {
         symbol,
         interval,
         marketType,
         downloaded: result.downloaded,
         totalInDb: result.totalInDb,
-        gaps: result.gaps,
-        alreadyComplete: result.alreadyComplete,
+        gapsFilled: result.gaps,
       });
     }
 

@@ -1941,12 +1941,6 @@ export class AutoTradingScheduler {
     );
 
     if (targetLevelData) {
-      log('📊 Fibonacci target level resolved', {
-        configLevel: fibonacciTargetLevel,
-        primaryLevel: fib.primaryLevel,
-        resolvedLevel: targetLevel,
-        price: targetLevelData.price.toFixed(6),
-      });
       return targetLevelData.price;
     }
 

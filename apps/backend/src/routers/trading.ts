@@ -1298,7 +1298,7 @@ export const tradingRouter = router({
         .set(updateData)
         .where(eq(tradeExecutions.id, input.id));
 
-      logger.info({
+      logger.debug({
         executionId: execution.id,
         symbol: execution.symbol,
         stopLoss: input.stopLoss,
