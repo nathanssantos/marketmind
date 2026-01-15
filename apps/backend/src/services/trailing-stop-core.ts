@@ -180,7 +180,9 @@ export const shouldUpdateStopLoss = (
   if (currentStopLoss === null) return true;
 
   const priceDiff = Math.abs(newStopLoss - currentStopLoss);
-  if (priceDiff < MIN_STOP_CHANGE_ABSOLUTE) return false;
+  const percentDiff = priceDiff / currentStopLoss;
+  const MIN_STOP_CHANGE_PERCENT = 0.001;
+  if (percentDiff < MIN_STOP_CHANGE_PERCENT) return false;
 
   return isLong ? newStopLoss > currentStopLoss : newStopLoss < currentStopLoss;
 };

@@ -9,12 +9,12 @@ import { autoTradingConfig, klines, priceCache, setupDetections, tradeExecutions
 import { formatPrice } from '../utils/formatters';
 import { logger } from './logger';
 import {
-  calculateProfitPercent,
-  computeTrailingStopCore,
-  type TrailingStopReason,
+    calculateProfitPercent,
+    computeTrailingStopCore,
+    type TrailingStopReason,
 } from './trailing-stop-core';
-import { getWebSocketService } from './websocket';
 import { calculateATRPercent, getVolatilityProfile } from './volatility-profile';
+import { getWebSocketService } from './websocket';
 
 export { getRoundTripFee } from '@marketmind/types';
 
@@ -65,7 +65,7 @@ export interface TrailingStopResult {
   reason: TrailingStopReason;
 }
 
-export { calculateProfitPercent, shouldUpdateStopLoss, calculateATRTrailingStop, calculateProgressiveFloor, findBestSwingStop } from './trailing-stop-core';
+export { calculateATRTrailingStop, calculateProfitPercent, calculateProgressiveFloor, findBestSwingStop, shouldUpdateStopLoss } from './trailing-stop-core';
 
 export const calculateBreakevenPrice = (
   entryPrice: number,
