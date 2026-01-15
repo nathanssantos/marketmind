@@ -487,6 +487,7 @@
       "losing": "Losing",
       "totalExposure": "Total Exposure",
       "unrealizedPnL": "Unrealized P&L",
+      "pnlVsBalance": "P&L vs Balance",
       "orders": "orders",
       "orderCount": "Orders",
       "quantity": "Quantity",

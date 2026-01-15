@@ -564,6 +564,7 @@
       "losing": "Perdiendo",
       "totalExposure": "Exposición Total",
       "unrealizedPnL": "PyG No Realizado",
+      "pnlVsBalance": "PyG vs Saldo",
       "orders": "órdenes",
       "orderCount": "Órdenes",
       "quantity": "Cantidad",

@@ -553,6 +553,7 @@
       "losing": "Perdantes",
       "totalExposure": "Exposition Totale",
       "unrealizedPnL": "P&P Non Réalisé",
+      "pnlVsBalance": "P&P vs Solde",
       "orders": "ordres",
       "orderCount": "Ordres",
       "quantity": "Quantité",
