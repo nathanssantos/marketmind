@@ -135,33 +135,33 @@ describe('useCurrentPriceLineRenderer', () => {
       expect(mockCtx.moveTo).toHaveBeenCalledWith(0, expect.any(Number));
     });
 
-    it('should use dashed line style by default', () => {
+    it('should use solid line style by default', () => {
       const { result } = renderHook(() =>
         useCurrentPriceLineRenderer({
           manager: mockManager,
           colors: mockColors,
           enabled: true,
-        })
-      );
-
-      result.current.renderLine();
-
-      expect(mockCtx.setLineDash).toHaveBeenCalledWith([8, 4]);
-    });
-
-    it('should use solid line style when specified', () => {
-      const { result } = renderHook(() =>
-        useCurrentPriceLineRenderer({
-          manager: mockManager,
-          colors: mockColors,
-          enabled: true,
-          lineStyle: 'solid',
         })
       );
 
       result.current.renderLine();
 
       expect(mockCtx.setLineDash).toHaveBeenCalledWith([]);
+    });
+
+    it('should use dashed line style when specified', () => {
+      const { result } = renderHook(() =>
+        useCurrentPriceLineRenderer({
+          manager: mockManager,
+          colors: mockColors,
+          enabled: true,
+          lineStyle: 'dashed',
+        })
+      );
+
+      result.current.renderLine();
+
+      expect(mockCtx.setLineDash).toHaveBeenCalledWith([8, 4]);
     });
 
     it('should use dotted line style when specified', () => {

@@ -25,7 +25,7 @@ export const useCurrentPriceLineRenderer = ({
   colors,
   enabled = true,
   lineWidth = 2,
-  lineStyle = 'dashed',
+  lineStyle = 'solid',
   rightMargin = 72,
 }: UseCurrentPriceLineRendererProps): UseCurrentPriceLineRendererReturn => {
   const renderLine = useCallback((): void => {

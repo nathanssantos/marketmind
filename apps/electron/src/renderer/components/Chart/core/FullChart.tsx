@@ -1,6 +1,6 @@
 import { Box } from '@chakra-ui/react';
-import { useChartColors } from '@renderer/hooks/useChartColors';
 import type { Kline, Order } from '@marketmind/types';
+import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useEffect, useRef, useState } from 'react';
 import type { AdvancedControlsConfig } from '../AdvancedControls';
 import { ChartControls } from '../ChartControls';
@@ -65,7 +65,7 @@ export const FullChart = ({
         klineWickWidth: 1,
         gridLineWidth: 1,
         currentPriceLineWidth: 2,
-        currentPriceLineStyle: 'dashed' as const,
+        currentPriceLineStyle: 'solid' as const,
         paddingTop: 40,
         paddingBottom: 40,
         paddingLeft: 10,

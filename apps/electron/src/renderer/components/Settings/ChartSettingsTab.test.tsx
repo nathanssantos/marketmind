@@ -30,7 +30,7 @@ describe('ChartSettingsTab', () => {
         klineWickWidth: 1,
         gridLineWidth: 1,
         currentPriceLineWidth: 2,
-        currentPriceLineStyle: 'dashed' as const,
+        currentPriceLineStyle: 'solid' as const,
         paddingTop: 10,
         paddingBottom: 10,
         paddingLeft: 0,
@@ -249,15 +249,15 @@ describe('ChartSettingsTab', () => {
             <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
         );
 
-        const selectTrigger = screen.getByText('settings.chart.dashed');
+        const selectTrigger = screen.getByText('settings.chart.solid');
         fireEvent.click(selectTrigger);
 
-        const solidOption = screen.getByText('settings.chart.solid');
-        fireEvent.click(solidOption);
+        const dashedOption = screen.getByText('settings.chart.dashed');
+        fireEvent.click(dashedOption);
 
         expect(mockOnConfigChange).toHaveBeenCalledWith({
             ...mockConfig,
-            currentPriceLineStyle: 'solid',
+            currentPriceLineStyle: 'dashed',
         });
     });
 

@@ -43,7 +43,7 @@ describe('SettingsDialog', () => {
         klineWickWidth: 1,
         gridLineWidth: 1,
         currentPriceLineWidth: 2,
-        currentPriceLineStyle: 'dashed' as const,
+        currentPriceLineStyle: 'solid' as const,
         paddingTop: 10,
         paddingBottom: 10,
         paddingLeft: 0,

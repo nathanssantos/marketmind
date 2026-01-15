@@ -6,33 +6,33 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { AutoAuth } from './components/Auth/AutoAuth';
-import { ErrorBoundary } from './components/ErrorBoundary';
 import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
 import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { MainLayout } from './components/Layout/MainLayout';
 import { TrpcProvider } from './components/TrpcProvider';
-import { DEFAULT_MOVING_AVERAGES, INTERVAL_MS_MAP, MIN_UPDATE_INTERVAL_MS, REQUIRED_KLINES } from './constants/defaults';
-
-const BacktestDialog = lazy(() => import('./components/Trading/BacktestDialog').then(m => ({ default: m.BacktestDialog })));
 import { ErrorMessage } from './components/ui/ErrorMessage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
+import { DEFAULT_MOVING_AVERAGES, INTERVAL_MS_MAP, MIN_UPDATE_INTERVAL_MS, REQUIRED_KLINES } from './constants/defaults';
 import { ChartProvider } from './context/ChartContext';
 import { useGlobalActions } from './context/GlobalActionsContext';
 import { RealtimeTradingSyncProvider } from './context/RealtimeTradingSyncContext';
-import { useBackendWallet } from './hooks/useBackendWallet';
 import { useBackendKlines, useKlineStream } from './hooks/useBackendKlines';
+import { useBackendWallet } from './hooks/useBackendWallet';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
 import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
-import { useSetupStore } from './store/setupStore';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useOrderNotifications } from './hooks/useOrderNotifications';
+import { useSetupStore } from './store/setupStore';
 import { system } from './theme';
 import { toaster } from './utils/toaster';
+
+const BacktestDialog = lazy(() => import('./components/Trading/BacktestDialog').then(m => ({ default: m.BacktestDialog })));
 
 function RealtimeSyncWrapper({ children }: { children: React.ReactNode }) {
   const { wallets } = useBackendWallet();
@@ -51,58 +51,58 @@ function App(): ReactElement {
       <TrpcProvider>
         <ChakraProvider value={system}>
           <AutoAuth>
-          <Toaster toaster={toaster}>
-            {(toast) => {
-              const { t } = useTranslation();
-              return (
-                <Box
-                  key={toast.id}
-                  p={4}
-                  bg={
-                    toast.type === 'error'
-                      ? 'red.500'
-                      : toast.type === 'success'
-                        ? 'green.500'
-                        : toast.type === 'warning'
-                          ? 'orange.500'
-                          : 'blue.500'
-                  }
-                  color="white"
-                  borderRadius="md"
-                  boxShadow="lg"
-                  maxW="400px"
-                  position="relative"
-                >
-                  <IconButton
-                    aria-label={t('common.close')}
-                    size="xs"
-                    position="absolute"
-                    top={2}
-                    right={2}
-                    onClick={() => toaster.dismiss(toast.id)}
-                    variant="ghost"
+            <Toaster toaster={toaster}>
+              {(toast) => {
+                const { t } = useTranslation();
+                return (
+                  <Box
+                    key={toast.id}
+                    p={4}
+                    bg={
+                      toast.type === 'error'
+                        ? 'red.500'
+                        : toast.type === 'success'
+                          ? 'green.500'
+                          : toast.type === 'warning'
+                            ? 'orange.500'
+                            : 'blue.500'
+                    }
                     color="white"
-                    _hover={{ bg: 'whiteAlpha.200' }}
+                    borderRadius="md"
+                    boxShadow="lg"
+                    maxW="400px"
+                    position="relative"
                   >
-                    <LuX />
-                  </IconButton>
-                  <ChakraText fontWeight="bold" mb={1} pr={6}>
-                    {toast.title}
-                  </ChakraText>
-                  {toast.description && (
-                    <ChakraText fontSize="sm">{toast.description}</ChakraText>
-                  )}
-                </Box>
-              );
-            }}
-          </Toaster>
-          <ChartProvider>
-            <PinnedControlsProvider>
-              <RealtimeSyncWrapper>
-                <AppContent />
-              </RealtimeSyncWrapper>
-            </PinnedControlsProvider>
-          </ChartProvider>
+                    <IconButton
+                      aria-label={t('common.close')}
+                      size="xs"
+                      position="absolute"
+                      top={2}
+                      right={2}
+                      onClick={() => toaster.dismiss(toast.id)}
+                      variant="ghost"
+                      color="white"
+                      _hover={{ bg: 'whiteAlpha.200' }}
+                    >
+                      <LuX />
+                    </IconButton>
+                    <ChakraText fontWeight="bold" mb={1} pr={6}>
+                      {toast.title}
+                    </ChakraText>
+                    {toast.description && (
+                      <ChakraText fontSize="sm">{toast.description}</ChakraText>
+                    )}
+                  </Box>
+                );
+              }}
+            </Toaster>
+            <ChartProvider>
+              <PinnedControlsProvider>
+                <RealtimeSyncWrapper>
+                  <AppContent />
+                </RealtimeSyncWrapper>
+              </PinnedControlsProvider>
+            </ChartProvider>
           </AutoAuth>
         </ChakraProvider>
       </TrpcProvider>
@@ -170,6 +170,13 @@ function AppContent(): ReactElement {
     };
 
     migrateMovingAverages();
+  }, []);
+
+  useEffect(() => {
+    const updates: Partial<typeof advancedConfig> = {};
+    if (advancedConfig.currentPriceLineStyle === 'dashed') updates.currentPriceLineStyle = 'solid';
+    if (advancedConfig.currentPriceLineWidth !== 1) updates.currentPriceLineWidth = 1;
+    if (Object.keys(updates).length > 0) setAdvancedConfig({ ...advancedConfig, ...updates });
   }, []);
 
   const toggleTrading = useCallback(() => {

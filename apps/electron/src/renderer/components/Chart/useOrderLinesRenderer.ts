@@ -582,7 +582,6 @@ export const useOrderLinesRenderer = (
 
         ctx.save();
         ctx.globalAlpha = pendingAlpha;
-        ctx.setLineDash([3, 3]);
         ctx.lineWidth = 1;
         ctx.strokeStyle = slLineColor;
 
@@ -591,7 +590,6 @@ export const useOrderLinesRenderer = (
         ctx.lineTo(chartWidth, stopY);
         ctx.stroke();
 
-        ctx.setLineDash([]);
         ctx.font = '11px monospace';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
@@ -634,7 +632,6 @@ export const useOrderLinesRenderer = (
 
         ctx.save();
         ctx.globalAlpha = pendingAlpha;
-        ctx.setLineDash([3, 3]);
         ctx.lineWidth = 1;
         ctx.strokeStyle = AREA_COLORS.TP_LINE;
 
@@ -643,7 +640,6 @@ export const useOrderLinesRenderer = (
         ctx.lineTo(chartWidth, tpY);
         ctx.stroke();
 
-        ctx.setLineDash([]);
         ctx.font = '11px monospace';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
@@ -1017,7 +1013,6 @@ export const useOrderLinesRenderer = (
 
         ctx.save();
         ctx.globalAlpha = pendingAlpha;
-        ctx.setLineDash([3, 3]);
         ctx.lineWidth = 1;
         ctx.strokeStyle = slLineColor;
 
@@ -1026,7 +1021,6 @@ export const useOrderLinesRenderer = (
         ctx.lineTo(chartWidth, stopY);
         ctx.stroke();
 
-        ctx.setLineDash([]);
         ctx.font = '11px monospace';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
@@ -1042,14 +1036,12 @@ export const useOrderLinesRenderer = (
         priceTags.push({ priceText, y: stopY, fillColor: slTagColor });
 
         const tagStartX = chartWidth;
-        ctx.setLineDash([3, 3]);
         ctx.strokeStyle = slLineColor;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, stopY);
         ctx.lineTo(tagStartX, stopY);
         ctx.stroke();
-        ctx.setLineDash([]);
 
         const closeButtonRef = { x: 0, y: 0, size: 14 };
         const slTagSize = drawInfoTag(ctx, infoText, stopY, slTagColor, true, closeButtonRef);
@@ -1100,7 +1092,6 @@ export const useOrderLinesRenderer = (
 
         ctx.save();
         ctx.globalAlpha = pendingAlpha;
-        ctx.setLineDash([3, 3]);
         ctx.lineWidth = 1;
         ctx.strokeStyle = AREA_COLORS.TP_LINE;
 
@@ -1109,7 +1100,6 @@ export const useOrderLinesRenderer = (
         ctx.lineTo(chartWidth, tpY);
         ctx.stroke();
 
-        ctx.setLineDash([]);
         ctx.font = '11px monospace';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
@@ -1125,14 +1115,12 @@ export const useOrderLinesRenderer = (
         priceTags.push({ priceText, y: tpY, fillColor });
 
         const tagStartX = chartWidth;
-        ctx.setLineDash([3, 3]);
         ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, tpY);
         ctx.lineTo(tagStartX, tpY);
         ctx.stroke();
-        ctx.setLineDash([]);
 
         const closeButtonRef = { x: 0, y: 0, size: 14 };
         const tpTagSize = drawInfoTag(ctx, infoText, tpY, fillColor, true, closeButtonRef);
@@ -1218,14 +1206,10 @@ export const useOrderLinesRenderer = (
 
       ctx.strokeStyle = lineColor;
       ctx.lineWidth = 1;
-      if (isLimitOrder) {
-        ctx.setLineDash([6, 3]);
-      }
       ctx.beginPath();
       ctx.moveTo(0, entryY);
       ctx.lineTo(chartWidth, entryY);
       ctx.stroke();
-      ctx.setLineDash([]);
 
       const setupLabel = setup.label ?? setup.type;
       const directionSymbol = isLong ? '↑' : '↓';
@@ -1243,12 +1227,10 @@ export const useOrderLinesRenderer = (
         ctx.globalAlpha = pendingAlpha * 0.7;
 
         ctx.strokeStyle = slLineColor;
-        ctx.setLineDash([3, 3]);
         ctx.beginPath();
         ctx.moveTo(0, slY);
         ctx.lineTo(chartWidth, slY);
         ctx.stroke();
-        ctx.setLineDash([]);
 
         const slPriceText = formatChartPrice(setup.stopLoss);
         const slPercent = isLong
@@ -1265,12 +1247,10 @@ export const useOrderLinesRenderer = (
         ctx.globalAlpha = pendingAlpha * 0.7;
 
         ctx.strokeStyle = 'rgba(34, 197, 94, 0.4)';
-        ctx.setLineDash([3, 3]);
         ctx.beginPath();
         ctx.moveTo(0, tpY);
         ctx.lineTo(chartWidth, tpY);
         ctx.stroke();
-        ctx.setLineDash([]);
 
         const tpPriceText = formatChartPrice(setup.takeProfit);
         const tpPercent = isLong
