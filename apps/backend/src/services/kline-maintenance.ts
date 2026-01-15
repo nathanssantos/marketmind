@@ -7,6 +7,7 @@ import {
   COOLDOWN_GAP_CHECK,
   COOLDOWN_CORRUPTION_CHECK,
   CORRUPTION_CHECK_KLINES,
+  API_VALIDATION_RECENT_COUNT,
 } from '../constants';
 import { db } from '../db';
 import { klines, pairMaintenanceLog } from '../db/schema';
@@ -584,6 +585,7 @@ class KlineMaintenance {
     const intervalMs = getIntervalMilliseconds(pair.interval);
     const lookbackMs = CORRUPTION_CHECK_KLINES * intervalMs;
     const startTime = new Date(Date.now() - lookbackMs);
+    const now = Date.now();
 
     const recentKlines = await db.query.klines.findMany({
       where: and(
@@ -610,6 +612,31 @@ class KlineMaintenance {
 
       if (corruption) {
         corruptedKlines.push({ kline, reason: corruption.reason });
+      }
+    }
+
+    const closedKlines = recentKlines.filter((k) => {
+      const closeTime = k.closeTime.getTime();
+      return now >= closeTime + 2000;
+    });
+
+    const recentClosedKlines = closedKlines.slice(-API_VALIDATION_RECENT_COUNT);
+
+    for (const kline of recentClosedKlines) {
+      const alreadyMarked = corruptedKlines.some(
+        (c) => c.kline.openTime.getTime() === kline.openTime.getTime()
+      );
+      if (alreadyMarked) continue;
+
+      const isValid = await KlineValidator.validateAgainstAPI(
+        kline,
+        pair.symbol,
+        pair.interval,
+        pair.marketType
+      );
+
+      if (!isValid) {
+        corruptedKlines.push({ kline, reason: 'API validation mismatch' });
       }
     }
 
