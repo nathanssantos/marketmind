@@ -780,7 +780,7 @@ export class AutoTradingScheduler {
       setImmediate(() => {
         void (async () => {
           try {
-            const result = await prefetchKlines({ symbol, interval, marketType });
+            const result = await prefetchKlines({ symbol, interval, marketType, silent: true });
             if (!result.success) return;
             const apiExhausted = result.alreadyComplete || result.gaps === 0;
             if (!meetsKlineRequirementWithTolerance(result.totalInDb, ABSOLUTE_MINIMUM_KLINES, apiExhausted)) return;

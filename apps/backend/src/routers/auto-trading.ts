@@ -837,18 +837,9 @@ export const autoTradingRouter = router({
         attemptedSymbols.add(symbol);
 
         try {
-          const klineCheck = await checkKlineAvailability(symbol, input.interval, input.marketType);
+          const klineCheck = await checkKlineAvailability(symbol, input.interval, input.marketType, true);
 
           if (!klineCheck.hasSufficient) {
-            log('⚠️ Skipping symbol due to insufficient klines', {
-              symbol,
-              interval: input.interval,
-              marketType: input.marketType,
-              totalAvailable: klineCheck.totalAvailable,
-              required: klineCheck.required,
-              apiExhausted: klineCheck.apiExhausted,
-              fromRanking,
-            });
             results.push({
               symbol,
               success: false,
@@ -874,7 +865,6 @@ export const autoTradingRouter = router({
 
           startedSymbols.add(symbol);
           results.push({ symbol, success: true, fromRanking });
-          log('✅ Watcher started', { symbol, fromRanking, isManual: isManualWatcher, useDynamicSelection });
           return true;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';

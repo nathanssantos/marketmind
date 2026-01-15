@@ -145,7 +145,8 @@ export interface KlineAvailabilityResult {
 export const checkKlineAvailability = async (
   symbol: string,
   interval: string,
-  marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
+  marketType: 'SPOT' | 'FUTURES' = 'FUTURES',
+  silent: boolean = false
 ): Promise<KlineAvailabilityResult> => {
   const required = ABSOLUTE_MINIMUM_KLINES;
 
@@ -155,10 +156,11 @@ export const checkKlineAvailability = async (
       interval,
       marketType,
       targetCount: required,
+      silent,
     });
 
     if (!result.success) {
-      log('⚠️ Kline availability check failed', { symbol, interval, marketType, error: result.error });
+      if (!silent) log('⚠️ Kline availability check failed', { symbol, interval, marketType, error: result.error });
       return { hasSufficient: false, totalAvailable: 0, required, apiExhausted: false };
     }
 
@@ -170,31 +172,33 @@ export const checkKlineAvailability = async (
     const meetsHardMinimum = result.totalInDb >= HARD_MINIMUM_KLINES;
 
     if (!hasSufficient) {
-      if (!meetsHardMinimum) {
-        log('❌ Symbol has critically insufficient klines', {
-          symbol,
-          interval,
-          marketType,
-          totalAvailable: result.totalInDb,
-          required,
-          hardMinimum: HARD_MINIMUM_KLINES,
-          apiExhausted,
-        });
-      } else {
-        log('⚠️ Symbol has insufficient klines', {
-          symbol,
-          interval,
-          marketType,
-          totalAvailable: result.totalInDb,
-          required,
-          toleranceThreshold,
-          apiExhausted,
-        });
+      if (!silent) {
+        if (!meetsHardMinimum) {
+          log('❌ Symbol has critically insufficient klines', {
+            symbol,
+            interval,
+            marketType,
+            totalAvailable: result.totalInDb,
+            required,
+            hardMinimum: HARD_MINIMUM_KLINES,
+            apiExhausted,
+          });
+        } else {
+          log('⚠️ Symbol has insufficient klines', {
+            symbol,
+            interval,
+            marketType,
+            totalAvailable: result.totalInDb,
+            required,
+            toleranceThreshold,
+            apiExhausted,
+          });
+        }
       }
       return { hasSufficient: false, totalAvailable: result.totalInDb, required, apiExhausted };
     }
 
-    if (meetsToleranceWithApiExhausted && !meetsExactRequirement) {
+    if (!silent && meetsToleranceWithApiExhausted && !meetsExactRequirement) {
       log('ℹ️ Symbol accepted with tolerance (API exhausted)', {
         symbol,
         interval,
@@ -208,7 +212,7 @@ export const checkKlineAvailability = async (
     return { hasSufficient: true, totalAvailable: result.totalInDb, required, apiExhausted };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    log('❌ Kline availability check error', { symbol, interval, marketType, error: errorMessage });
+    if (!silent) log('❌ Kline availability check error', { symbol, interval, marketType, error: errorMessage });
     return { hasSufficient: false, totalAvailable: 0, required, apiExhausted: false };
   }
 };

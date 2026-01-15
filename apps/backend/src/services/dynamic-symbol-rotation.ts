@@ -188,18 +188,11 @@ export class DynamicSymbolRotationService {
           const klineCheck = await checkKlineAvailability(
             symbol,
             config.tradingInterval,
-            config.marketType
+            config.marketType,
+            true
           );
 
           if (!klineCheck.hasSufficient) {
-            logger.warn({
-              symbol,
-              interval: config.tradingInterval,
-              marketType: config.marketType,
-              totalAvailable: klineCheck.totalAvailable,
-              required: klineCheck.required,
-              apiExhausted: klineCheck.apiExhausted,
-            }, '[DynamicRotation] Skipping symbol due to insufficient klines');
             skippedInsufficientKlines.push(symbol);
             continue;
           }
