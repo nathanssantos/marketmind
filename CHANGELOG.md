@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.46.0] - 2025-01-15
+
+### Added
+- **P&L vs Balance display** in portfolio panel with multi-language support (EN, PT, ES, FR)
+- **Market events calendar** with EventIconManager and StaticMarketSessionProvider
+  - Market open/close events for major exchanges (NYSE, NASDAQ, LSE, etc.)
+  - Visual icons on time scale showing session boundaries
+- **Unified logging infrastructure** with RotationLogBuffer
+  - Structured rotation logging for dynamic symbol rotation
+  - Configurable log levels per component
+
+### Fixed
+- **Chart viewport margin** - Candles no longer stick to price scale on load/realtime updates
+  - Future space now preserved when new klines are added
+- **Market event timezone calculation** - Events now display at correct times regardless of user timezone
+  - Properly converts exchange timezone to local time
+
+### Changed
+- **Current price line** style from dashed to solid for better visibility
+- **Trailing stop logic** - `shouldUpdateStopLoss` now uses percentage difference for more accurate calculations
+- **Auto-trading scheduler** - Enhanced pending results handling and watcher status updates
+- **Oscillator rendering** - Refactored to use centralized color constants
+
+### Improved
+- **Canvas rendering** - Added clipping to volume and indicator panels to prevent overflow into price scale
+- **Logging verbosity** - Updated default log levels for cleaner output
+
+---
+
 ## [0.45.0] - 2026-01-14
 
 ### Added

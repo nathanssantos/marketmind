@@ -1,6 +1,6 @@
 {
   "name": "@marketmind/electron",
-  "version": "0.45.0",
+  "version": "0.46.0",
   "description": "MarketMind Electron Desktop App",
   "main": "dist-electron/main/index.js",
   "author": "Nathan Santos",
