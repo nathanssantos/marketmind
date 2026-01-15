@@ -187,10 +187,16 @@ export const useChartCanvas = ({
         wasAtEndRef.current = true;
       } else if (wasAtEnd && currentCount > prevCount) {
         const klinesAdded = currentCount - prevCount;
+        const chartWidth = managerRef.current.getDimensions()?.chartWidth;
+        const visibleCount = Math.min(calculateVisibleKlines(chartWidth), currentCount);
+        const futureSpace = Math.max(
+          CHART_CONFIG.MIN_FUTURE_KLINES,
+          Math.floor(visibleCount * CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION),
+        );
         const newViewport = {
           ...currentViewport,
           start: currentViewport.start + klinesAdded,
-          end: currentCount,
+          end: currentCount + futureSpace,
         };
 
         setViewport(newViewport);
