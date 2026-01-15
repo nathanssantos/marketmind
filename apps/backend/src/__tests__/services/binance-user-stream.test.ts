@@ -52,6 +52,7 @@ vi.mock('../../services/binance-client', () => ({
     cancelOrder: mockCancelOrder,
   })),
   isPaperWallet: vi.fn((wallet: { walletType: string }) => wallet.walletType === 'paper'),
+  silentWsLogger: {},
 }));
 
 const mockEmitPositionUpdate = vi.fn();

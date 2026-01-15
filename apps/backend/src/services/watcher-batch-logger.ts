@@ -20,6 +20,13 @@ const COLORS = {
   gray: '\x1b[90m',
 };
 
+const TABLE_CHARS = {
+  top: '─', 'top-mid': '┬', 'top-left': '┌', 'top-right': '┐',
+  bottom: '─', 'bottom-mid': '┴', 'bottom-left': '└', 'bottom-right': '┘',
+  left: '│', 'left-mid': '├', mid: '─', 'mid-mid': '┼',
+  right: '│', 'right-mid': '┤', middle: '│',
+};
+
 const colorize = (text: string, color: keyof typeof COLORS): string =>
   `${COLORS[color]}${text}${COLORS.reset}`;
 
@@ -41,6 +48,31 @@ export interface SetupLogEntry {
   riskReward: string;
 }
 
+export interface FilterCheckEntry {
+  filterName: string;
+  passed: boolean;
+  reason: string;
+  details?: Record<string, string | number | boolean | null>;
+}
+
+export interface RejectionEntry {
+  setupType: string;
+  direction: string;
+  reason: string;
+  details?: Record<string, string | number | boolean | null>;
+}
+
+export interface TradeExecutionEntry {
+  setupType: string;
+  direction: string;
+  entryPrice: string;
+  quantity: string;
+  stopLoss?: string;
+  takeProfit?: string;
+  orderType: string;
+  status: 'executed' | 'pending' | 'failed';
+}
+
 export interface WatcherResult {
   watcherId: string;
   symbol: string;
@@ -51,6 +83,9 @@ export interface WatcherResult {
   reason?: string;
   klinesCount?: number;
   setupsDetected: SetupLogEntry[];
+  filterChecks: FilterCheckEntry[];
+  rejections: RejectionEntry[];
+  tradeExecutions: TradeExecutionEntry[];
   tradesExecuted: number;
   durationMs: number;
   logs: LogEntry[];
@@ -65,6 +100,8 @@ export interface BatchResult {
   skippedCount: number;
   errorCount: number;
   totalSetupsDetected: number;
+  totalRejections: number;
+  totalFilterBlocks: number;
   totalTradesExecuted: number;
   watcherResults: WatcherResult[];
 }
@@ -72,6 +109,9 @@ export interface BatchResult {
 export class WatcherLogBuffer {
   private logs: LogEntry[] = [];
   private setups: SetupLogEntry[] = [];
+  private filters: FilterCheckEntry[] = [];
+  private rejectionList: RejectionEntry[] = [];
+  private executions: TradeExecutionEntry[] = [];
   private tradesExecuted = 0;
   private startTime: number;
 
@@ -119,6 +159,18 @@ export class WatcherLogBuffer {
     this.setups.push(setup);
   }
 
+  addFilterCheck(filter: FilterCheckEntry): void {
+    this.filters.push(filter);
+  }
+
+  addRejection(rejection: RejectionEntry): void {
+    this.rejectionList.push(rejection);
+  }
+
+  addTradeExecution(execution: TradeExecutionEntry): void {
+    this.executions.push(execution);
+  }
+
   incrementTrades(): void {
     this.tradesExecuted++;
   }
@@ -134,6 +186,9 @@ export class WatcherLogBuffer {
       reason,
       klinesCount,
       setupsDetected: this.setups,
+      filterChecks: this.filters,
+      rejections: this.rejectionList,
+      tradeExecutions: this.executions,
       tradesExecuted: this.tradesExecuted,
       durationMs: Date.now() - this.startTime,
       logs: this.logs,
@@ -183,10 +238,15 @@ export const formatBatchResults = (batch: BatchResult): string => {
     colorize(`✅ ${batch.successCount}`, 'green'),
     colorize(`⏭️ ${batch.skippedCount}`, 'yellow'),
     colorize(`❌ ${batch.errorCount}`, 'red'),
+  ];
+  const detailParts = [
     colorize(`📍 ${batch.totalSetupsDetected} setups`, 'magenta'),
+    colorize(`🚫 ${batch.totalRejections} rejected`, 'yellow'),
+    colorize(`🔒 ${batch.totalFilterBlocks} blocked`, 'red'),
     colorize(`💹 ${batch.totalTradesExecuted} trades`, 'blue'),
   ];
   lines.push(`  📊 ${summaryParts.join(' │ ')}`);
+  lines.push(`  📈 ${detailParts.join(' │ ')}`);
 
   if (batch.watcherResults.length > 0) {
     const watcherTable = new Table({
@@ -292,6 +352,108 @@ export const formatBatchResults = (batch: BatchResult): string => {
     lines.push(errorTable.toString());
   }
 
+  const rejectionResults = batch.watcherResults.filter(r => r.rejections.length > 0);
+  if (rejectionResults.length > 0) {
+    lines.push('');
+    lines.push(colorize('  🚫 SETUP REJECTIONS', 'yellow'));
+
+    const rejectionTable = new Table({
+      head: ['Symbol', 'Setup', 'Dir', 'Reason', 'Details'],
+      colWidths: [14, 24, 7, 28, 35],
+      style: {
+        head: ['yellow'],
+        border: ['gray'],
+      },
+      chars: TABLE_CHARS,
+    });
+
+    for (const result of rejectionResults) {
+      for (const rejection of result.rejections) {
+        const dirColor = rejection.direction === 'LONG' ? 'green' : 'red';
+        const detailStr = rejection.details
+          ? Object.entries(rejection.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 33)
+          : '-';
+        rejectionTable.push([
+          colorize(result.symbol, 'bright'),
+          rejection.setupType.slice(0, 22),
+          colorize(rejection.direction, dirColor),
+          colorize(rejection.reason.slice(0, 26), 'yellow'),
+          detailStr,
+        ]);
+      }
+    }
+
+    lines.push(rejectionTable.toString());
+  }
+
+  const filterBlockResults = batch.watcherResults.filter(r => r.filterChecks.some(f => !f.passed));
+  if (filterBlockResults.length > 0) {
+    lines.push('');
+    lines.push(colorize('  🔒 FILTER BLOCKS', 'red'));
+
+    const filterTable = new Table({
+      head: ['Symbol', 'Filter', 'Reason', 'Details'],
+      colWidths: [14, 20, 35, 40],
+      style: {
+        head: ['red'],
+        border: ['gray'],
+      },
+      chars: TABLE_CHARS,
+    });
+
+    for (const result of filterBlockResults) {
+      for (const filter of result.filterChecks.filter(f => !f.passed)) {
+        const detailStr = filter.details
+          ? Object.entries(filter.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 38)
+          : '-';
+        filterTable.push([
+          colorize(result.symbol, 'bright'),
+          colorize(filter.filterName, 'red'),
+          filter.reason.slice(0, 33),
+          detailStr,
+        ]);
+      }
+    }
+
+    lines.push(filterTable.toString());
+  }
+
+  const tradeResults = batch.watcherResults.filter(r => r.tradeExecutions.length > 0);
+  if (tradeResults.length > 0) {
+    lines.push('');
+    lines.push(colorize('  💹 TRADE EXECUTIONS', 'blue'));
+
+    const tradeTable = new Table({
+      head: ['Symbol', 'Setup', 'Dir', 'Entry', 'Qty', 'SL', 'TP', 'Type', 'Status'],
+      colWidths: [14, 20, 7, 14, 14, 14, 14, 10, 10],
+      style: {
+        head: ['blue'],
+        border: ['gray'],
+      },
+      chars: TABLE_CHARS,
+    });
+
+    for (const result of tradeResults) {
+      for (const trade of result.tradeExecutions) {
+        const dirColor = trade.direction === 'LONG' ? 'green' : 'red';
+        const statusColor = trade.status === 'executed' ? 'green' : trade.status === 'pending' ? 'yellow' : 'red';
+        tradeTable.push([
+          colorize(result.symbol, 'bright'),
+          trade.setupType.slice(0, 18),
+          colorize(trade.direction, dirColor),
+          trade.entryPrice,
+          trade.quantity,
+          trade.stopLoss ?? '-',
+          trade.takeProfit ?? '-',
+          trade.orderType,
+          colorize(trade.status, statusColor),
+        ]);
+      }
+    }
+
+    lines.push(tradeTable.toString());
+  }
+
   lines.push('');
   return lines.join('\n');
 };
@@ -336,6 +498,7 @@ export const createBatchResult = (
   results: WatcherResult[]
 ): BatchResult => {
   const endTime = new Date();
+  const filterBlocks = results.reduce((sum, r) => sum + r.filterChecks.filter(f => !f.passed).length, 0);
   return {
     batchId,
     startTime,
@@ -345,7 +508,355 @@ export const createBatchResult = (
     skippedCount: results.filter(r => r.status === 'skipped').length,
     errorCount: results.filter(r => r.status === 'error').length,
     totalSetupsDetected: results.reduce((sum, r) => sum + r.setupsDetected.length, 0),
+    totalRejections: results.reduce((sum, r) => sum + r.rejections.length, 0),
+    totalFilterBlocks: filterBlocks,
     totalTradesExecuted: results.reduce((sum, r) => sum + r.tradesExecuted, 0),
     watcherResults: results,
   };
+};
+
+export interface RestoredWatcherInfo {
+  symbol: string;
+  interval: string;
+  marketType: string;
+  profileId?: string;
+  isManual: boolean;
+  status: 'success' | 'failed';
+  error?: string;
+  klinesPrefetched?: number;
+  totalKlinesInDb?: number;
+  nextCandleClose?: Date;
+}
+
+export class StartupLogBuffer {
+  private restoredWatchers: RestoredWatcherInfo[] = [];
+  private startTime: number;
+  private persistedCount = 0;
+
+  constructor() {
+    this.startTime = Date.now();
+  }
+
+  setPersistedCount(count: number): void {
+    this.persistedCount = count;
+  }
+
+  addRestoredWatcher(info: RestoredWatcherInfo): void {
+    this.restoredWatchers.push(info);
+  }
+
+  getResults(): { watchers: RestoredWatcherInfo[]; persistedCount: number; durationMs: number } {
+    return {
+      watchers: this.restoredWatchers,
+      persistedCount: this.persistedCount,
+      durationMs: Date.now() - this.startTime,
+    };
+  }
+}
+
+export const formatStartupResults = (
+  watchers: RestoredWatcherInfo[],
+  persistedCount: number,
+  durationMs: number
+): string => {
+  const lines: string[] = [];
+
+  lines.push('');
+  lines.push(colorize('═══════════════════════════════════════════════════════════════════════════════════════════════', 'cyan'));
+  lines.push(colorize(`  🚀 AUTO-TRADING STARTUP`, 'bright') + colorize(` │ ${new Date().toLocaleTimeString()} │ Duration: ${durationMs}ms`, 'dim'));
+  lines.push(colorize('═══════════════════════════════════════════════════════════════════════════════════════════════', 'cyan'));
+
+  const successCount = watchers.filter(w => w.status === 'success').length;
+  const failedCount = watchers.filter(w => w.status === 'failed').length;
+  const manualCount = watchers.filter(w => w.isManual).length;
+  const dynamicCount = watchers.filter(w => !w.isManual).length;
+
+  const summaryParts = [
+    `${persistedCount} persisted`,
+    colorize(`✅ ${successCount} restored`, 'green'),
+    colorize(`❌ ${failedCount} failed`, failedCount > 0 ? 'red' : 'dim'),
+  ];
+  const typeParts = [
+    colorize(`📌 ${manualCount} manual`, 'cyan'),
+    colorize(`🔄 ${dynamicCount} dynamic`, 'magenta'),
+  ];
+  lines.push(`  📋 ${summaryParts.join(' │ ')}`);
+  lines.push(`  📊 ${typeParts.join(' │ ')}`);
+
+  if (watchers.length > 0) {
+    const watcherTable = new Table({
+      head: ['Symbol', 'Interval', 'Market', 'Type', 'Status', 'Klines', 'Next Candle'],
+      colWidths: [14, 10, 10, 10, 10, 10, 22],
+      style: {
+        head: ['cyan'],
+        border: ['gray'],
+      },
+      chars: TABLE_CHARS,
+    });
+
+    for (const w of watchers) {
+      const typeStr = w.isManual ? 'Manual' : 'Dynamic';
+      const typeColor = w.isManual ? 'cyan' : 'magenta';
+      const statusStr = w.status === 'success' ? '✅' : '❌';
+      const statusColor = w.status === 'success' ? 'green' : 'red';
+      const klinesStr = w.totalKlinesInDb ? `${(w.totalKlinesInDb / 1000).toFixed(1)}k` : '-';
+      const nextCandle = w.nextCandleClose
+        ? w.nextCandleClose.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : '-';
+
+      watcherTable.push([
+        colorize(w.symbol, 'bright'),
+        w.interval,
+        w.marketType,
+        colorize(typeStr, typeColor),
+        colorize(statusStr, statusColor),
+        klinesStr,
+        nextCandle,
+      ]);
+    }
+
+    lines.push('');
+    lines.push(colorize('  📡 RESTORED WATCHERS', 'cyan'));
+    lines.push(watcherTable.toString());
+  }
+
+  const failedWatchers = watchers.filter(w => w.status === 'failed');
+  if (failedWatchers.length > 0) {
+    lines.push('');
+    lines.push(colorize('  ❌ FAILED RESTORATIONS', 'red'));
+
+    const errorTable = new Table({
+      head: ['Symbol', 'Interval', 'Market', 'Error'],
+      colWidths: [14, 10, 10, 60],
+      style: {
+        head: ['red'],
+        border: ['gray'],
+      },
+      chars: TABLE_CHARS,
+    });
+
+    for (const w of failedWatchers) {
+      errorTable.push([
+        colorize(w.symbol, 'bright'),
+        w.interval,
+        w.marketType,
+        colorize(w.error?.slice(0, 58) ?? 'Unknown error', 'red'),
+      ]);
+    }
+
+    lines.push(errorTable.toString());
+  }
+
+  lines.push('');
+  return lines.join('\n');
+};
+
+export const outputStartupResults = (
+  watchers: RestoredWatcherInfo[],
+  persistedCount: number,
+  durationMs: number
+): void => {
+  const summary = formatStartupResults(watchers, persistedCount, durationMs);
+  console.log(summary);
+  writeToFile(`${summary}\n`);
+};
+
+export interface GapFillEntry {
+  symbol: string;
+  interval: string;
+  marketType: string;
+  gapsFound: number;
+  candlesFilled: number;
+  status: 'success' | 'partial' | 'skipped' | 'error';
+  reason?: string;
+}
+
+export interface CorruptionFixEntry {
+  symbol: string;
+  interval: string;
+  marketType: string;
+  corruptedFound: number;
+  fixed: number;
+  status: 'success' | 'partial' | 'error';
+}
+
+export interface MaintenanceResult {
+  type: 'startup' | 'periodic';
+  startTime: Date;
+  endTime: Date;
+  pairsChecked: number;
+  totalGapsFound: number;
+  totalCandlesFilled: number;
+  totalCorruptedFixed: number;
+  gapFills: GapFillEntry[];
+  corruptionFixes: CorruptionFixEntry[];
+}
+
+export class MaintenanceLogBuffer {
+  private gapFills: GapFillEntry[] = [];
+  private corruptionFixes: CorruptionFixEntry[] = [];
+  private startTime: number;
+  private type: 'startup' | 'periodic';
+  private pairsChecked = 0;
+
+  constructor(type: 'startup' | 'periodic' = 'startup') {
+    this.startTime = Date.now();
+    this.type = type;
+  }
+
+  setPairsChecked(count: number): void {
+    this.pairsChecked = count;
+  }
+
+  addGapFill(entry: GapFillEntry): void {
+    this.gapFills.push(entry);
+  }
+
+  addCorruptionFix(entry: CorruptionFixEntry): void {
+    this.corruptionFixes.push(entry);
+  }
+
+  toResult(): MaintenanceResult {
+    return {
+      type: this.type,
+      startTime: new Date(this.startTime),
+      endTime: new Date(),
+      pairsChecked: this.pairsChecked,
+      totalGapsFound: this.gapFills.reduce((sum, g) => sum + g.gapsFound, 0),
+      totalCandlesFilled: this.gapFills.reduce((sum, g) => sum + g.candlesFilled, 0),
+      totalCorruptedFixed: this.corruptionFixes.reduce((sum, c) => sum + c.fixed, 0),
+      gapFills: this.gapFills,
+      corruptionFixes: this.corruptionFixes,
+    };
+  }
+}
+
+const getMaintenanceStatusDisplay = (status: 'success' | 'partial' | 'skipped' | 'error'): { color: keyof typeof COLORS; icon: string } => {
+  if (status === 'success') return { color: 'green', icon: '✅' };
+  if (status === 'partial') return { color: 'yellow', icon: '⚠️' };
+  return { color: 'red', icon: '❌' };
+};
+
+const formatGapFillsTable = (gapFills: GapFillEntry[]): string[] => {
+  const lines: string[] = [];
+  const gapsWithActivity = gapFills.filter(g => g.gapsFound > 0 || g.candlesFilled > 0);
+  if (gapsWithActivity.length === 0) return lines;
+
+  lines.push('');
+  lines.push(colorize('  📉 GAP FILLS', 'yellow'));
+
+  const gapTable = new Table({
+    head: ['Symbol', 'Interval', 'Market', 'Gaps', 'Candles', 'Status'],
+    colWidths: [14, 10, 10, 8, 10, 12],
+    style: { head: ['yellow'], border: ['gray'] },
+    chars: TABLE_CHARS,
+  });
+
+  for (const g of gapsWithActivity) {
+    const { color, icon } = getMaintenanceStatusDisplay(g.status);
+    gapTable.push([
+      colorize(g.symbol, 'bright'),
+      g.interval,
+      g.marketType,
+      g.gapsFound.toString(),
+      g.candlesFilled.toString(),
+      colorize(icon, color),
+    ]);
+  }
+
+  lines.push(gapTable.toString());
+  return lines;
+};
+
+const formatCorruptionFixesTable = (corruptionFixes: CorruptionFixEntry[]): string[] => {
+  const lines: string[] = [];
+  const corruptionsWithActivity = corruptionFixes.filter(c => c.corruptedFound > 0);
+  if (corruptionsWithActivity.length === 0) return lines;
+
+  lines.push('');
+  lines.push(colorize('  🛠️ CORRUPTION FIXES', 'blue'));
+
+  const corruptionTable = new Table({
+    head: ['Symbol', 'Interval', 'Market', 'Found', 'Fixed', 'Status'],
+    colWidths: [14, 10, 10, 8, 8, 12],
+    style: { head: ['blue'], border: ['gray'] },
+    chars: TABLE_CHARS,
+  });
+
+  for (const c of corruptionsWithActivity) {
+    const { color, icon } = getMaintenanceStatusDisplay(c.status);
+    corruptionTable.push([
+      colorize(c.symbol, 'bright'),
+      c.interval,
+      c.marketType,
+      c.corruptedFound.toString(),
+      c.fixed.toString(),
+      colorize(icon, color),
+    ]);
+  }
+
+  lines.push(corruptionTable.toString());
+  return lines;
+};
+
+const formatMaintenanceErrorsTable = (gapFills: GapFillEntry[]): string[] => {
+  const lines: string[] = [];
+  const errors = gapFills.filter(g => g.status === 'error');
+  if (errors.length === 0) return lines;
+
+  lines.push('');
+  lines.push(colorize('  ❌ ERRORS', 'red'));
+
+  const errorTable = new Table({
+    head: ['Symbol', 'Interval', 'Market', 'Error'],
+    colWidths: [14, 10, 10, 60],
+    style: { head: ['red'], border: ['gray'] },
+    chars: TABLE_CHARS,
+  });
+
+  for (const e of errors) {
+    errorTable.push([
+      colorize(e.symbol, 'bright'),
+      e.interval,
+      e.marketType,
+      colorize(e.reason?.slice(0, 58) ?? 'Unknown error', 'red'),
+    ]);
+  }
+
+  lines.push(errorTable.toString());
+  return lines;
+};
+
+export const formatMaintenanceResults = (result: MaintenanceResult): string => {
+  const lines: string[] = [];
+  const durationMs = result.endTime.getTime() - result.startTime.getTime();
+  const title = result.type === 'startup' ? '🔧 KLINE MAINTENANCE (STARTUP)' : '🔧 KLINE MAINTENANCE (PERIODIC)';
+
+  lines.push('');
+  lines.push(colorize('═══════════════════════════════════════════════════════════════════════════════════════════════', 'cyan'));
+  lines.push(colorize(`  ${title}`, 'bright') + colorize(` │ ${result.startTime.toLocaleTimeString()} │ Duration: ${durationMs}ms`, 'dim'));
+  lines.push(colorize('═══════════════════════════════════════════════════════════════════════════════════════════════', 'cyan'));
+
+  const summaryParts = [
+    `${result.pairsChecked} pairs`,
+    colorize(`🔍 ${result.totalGapsFound} gaps`, result.totalGapsFound > 0 ? 'yellow' : 'dim'),
+    colorize(`📥 ${result.totalCandlesFilled} filled`, result.totalCandlesFilled > 0 ? 'green' : 'dim'),
+    colorize(`🛠️ ${result.totalCorruptedFixed} fixed`, result.totalCorruptedFixed > 0 ? 'blue' : 'dim'),
+  ];
+  lines.push(`  📊 ${summaryParts.join(' │ ')}`);
+
+  lines.push(...formatGapFillsTable(result.gapFills));
+  lines.push(...formatCorruptionFixesTable(result.corruptionFixes));
+  lines.push(...formatMaintenanceErrorsTable(result.gapFills));
+
+  lines.push('');
+  return lines.join('\n');
+};
+
+export const outputMaintenanceResults = (result: MaintenanceResult): void => {
+  if (result.totalGapsFound === 0 && result.totalCorruptedFixed === 0 && result.type === 'periodic') return;
+
+  const summary = formatMaintenanceResults(result);
+  console.log(summary);
+  writeToFile(`${summary}\n`);
 };

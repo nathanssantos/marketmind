@@ -55,6 +55,8 @@ import { getWebSocketService } from './websocket';
 import {
   createBatchResult,
   outputBatchResults,
+  outputStartupResults,
+  StartupLogBuffer,
   WatcherLogBuffer,
   type SetupLogEntry,
   type WatcherResult,
@@ -152,7 +154,6 @@ export class AutoTradingScheduler {
 
   constructor() {
     this.strategyLoader = new StrategyLoader([STRATEGIES_DIR]);
-    log('🚀 AutoTradingScheduler initialized');
   }
 
   private isCacheValid<T>(cache: CacheEntry<T> | undefined): cache is CacheEntry<T> {
@@ -372,6 +373,9 @@ export class AutoTradingScheduler {
         status: 'error',
         reason: 'Watcher not found',
         setupsDetected: [],
+        filterChecks: [],
+        rejections: [],
+        tradeExecutions: [],
         tradesExecuted: 0,
         durationMs: 0,
         logs: [],
@@ -553,6 +557,7 @@ export class AutoTradingScheduler {
         minConfidence: 50,
         minRiskReward: 1.0,
         strategy,
+        silent: true,
       });
 
       const result = interpreter.detect(mappedKlines, currentIndex);
@@ -593,7 +598,7 @@ export class AutoTradingScheduler {
     }
 
     for (const setup of detectedSetups) {
-      const executed = await this.executeSetupSafe(watcher, setup, filteredStrategies, mappedKlines);
+      const executed = await this.executeSetupSafe(watcher, setup, filteredStrategies, mappedKlines, logBuffer);
       if (executed) {
         logBuffer.incrementTrades();
       }
@@ -607,12 +612,17 @@ export class AutoTradingScheduler {
     watcher: ActiveWatcher,
     setup: TradingSetup,
     strategies: StrategyDefinition[],
-    cycleKlines: Kline[]
+    cycleKlines: Kline[],
+    logBuffer: WatcherLogBuffer
   ): Promise<boolean> {
     try {
-      await this.executeSetup(watcher, setup, strategies, cycleKlines);
+      await this.executeSetup(watcher, setup, strategies, cycleKlines, logBuffer);
       return true;
-    } catch {
+    } catch (error) {
+      logBuffer.error('❌', 'Setup execution failed', {
+        setup: setup.type,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }
@@ -635,12 +645,13 @@ export class AutoTradingScheduler {
     skipDbPersist: boolean = false,
     marketType: MarketType = 'SPOT',
     isManual: boolean = true,
-    runImmediateCheck: boolean = false
+    runImmediateCheck: boolean = false,
+    silent: boolean = false
   ): Promise<void> {
     const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
 
     if (this.activeWatchers.has(watcherId)) {
-      log('⚠️ Watcher already exists', { watcherId });
+      if (!silent) log('⚠️ Watcher already exists', { watcherId });
       return;
     }
 
@@ -656,11 +667,11 @@ export class AutoTradingScheduler {
       .limit(1);
 
     if (!config?.isEnabled) {
-      log('⚠️ Auto-trading not enabled for wallet', { walletId });
+      if (!silent) log('⚠️ Auto-trading not enabled for wallet', { walletId });
       await db
         .delete(activeWatchersTable)
         .where(eq(activeWatchersTable.walletId, walletId));
-      log('🗑️ Removed stale watcher from database', { walletId });
+      if (!silent) log('🗑️ Removed stale watcher from database', { walletId });
       return;
     }
 
@@ -677,9 +688,8 @@ export class AutoTradingScheduler {
       if (profile) {
         enabledStrategies = JSON.parse(profile.enabledSetupTypes) as string[];
         profileName = profile.name;
-        log('📋 Using trading profile', { profileId, profileName, strategies: enabledStrategies.length });
       } else {
-        log('⚠️ Profile not found, falling back to global config', { profileId });
+        if (!silent) log('⚠️ Profile not found, falling back to global config', { profileId });
         enabledStrategies = JSON.parse(config.enabledSetupTypes) as string[];
       }
     } else {
@@ -687,7 +697,7 @@ export class AutoTradingScheduler {
     }
 
     if (enabledStrategies.length === 0) {
-      log('⚠️ No strategies enabled', { walletId, enabledStrategies, profileId });
+      if (!silent) log('⚠️ No strategies enabled', { walletId, enabledStrategies, profileId });
       return;
     }
 
@@ -717,13 +727,11 @@ export class AutoTradingScheduler {
           startedAt: new Date(),
           isManual,
         });
-        log('💾 Persisted watcher to database', { watcherId, profileId, marketType, isManual });
       } else if (existingWatcher[0] && existingWatcher[0].profileId !== profileId) {
         await db
           .update(activeWatchersTable)
           .set({ profileId: profileId ?? null })
           .where(eq(activeWatchersTable.id, watcherId));
-        log('💾 Updated watcher profile in database', { watcherId, profileId });
       }
     }
 
@@ -732,26 +740,7 @@ export class AutoTradingScheduler {
     const nextCandleClose = Math.ceil(now / pollIntervalMs) * pollIntervalMs;
     const delayUntilNextCandle = nextCandleClose - now;
 
-    log('🟢 Starting watcher', {
-      watcherId,
-      symbol,
-      interval,
-      enabledStrategies,
-      profileId,
-      profileName,
-      pollIntervalMs: `${pollIntervalMs / 1000}s`,
-      nextCandleClose: new Date(nextCandleClose).toISOString(),
-      delayUntilSync: `${Math.round(delayUntilNextCandle / 1000)}s`,
-    });
-
     const syncTimeoutId = setTimeout(() => {
-      log('🔄 Watcher synchronized with candle close', {
-        watcherId,
-        symbol,
-        interval,
-        syncedAt: new Date().toISOString(),
-      });
-
       this.queueWatcherProcessing(watcherId);
 
       const intervalId = setInterval(() => {
@@ -786,37 +775,18 @@ export class AutoTradingScheduler {
     } else {
       binanceKlineStreamService.subscribe(symbol, interval);
     }
-    log('📊 Subscribed to kline stream', { symbol, interval, marketType });
 
     if (runImmediateCheck) {
-      log('⚡ Running immediate check for rotated symbol', { watcherId, symbol, interval });
       setImmediate(() => {
         void (async () => {
           try {
             const result = await prefetchKlines({ symbol, interval, marketType });
-            if (!result.success) {
-              log('⚠️ Immediate prefetch failed, skipping detection', { watcherId, symbol, error: result.error });
-              return;
-            }
+            if (!result.success) return;
             const apiExhausted = result.alreadyComplete || result.gaps === 0;
-            if (!meetsKlineRequirementWithTolerance(result.totalInDb, ABSOLUTE_MINIMUM_KLINES, apiExhausted)) {
-              log('⚠️ Insufficient klines after prefetch, skipping detection', {
-                watcherId,
-                symbol,
-                totalInDb: result.totalInDb,
-                required: ABSOLUTE_MINIMUM_KLINES,
-                apiExhausted,
-              });
-              return;
-            }
-            log('✅ Immediate prefetch completed, queuing detection', { watcherId, symbol, totalInDb: result.totalInDb, apiExhausted });
+            if (!meetsKlineRequirementWithTolerance(result.totalInDb, ABSOLUTE_MINIMUM_KLINES, apiExhausted)) return;
             this.queueWatcherProcessing(watcherId);
-          } catch (error) {
-            log('❌ Immediate check failed', {
-              watcherId,
-              symbol,
-              error: error instanceof Error ? error.message : String(error),
-            });
+          } catch {
+            // Non-fatal immediate check error
           }
         })();
       });
@@ -892,9 +862,10 @@ export class AutoTradingScheduler {
     watcher: ActiveWatcher,
     setup: TradingSetup,
     strategies: StrategyDefinition[],
-    cycleKlines: Kline[]
+    cycleKlines: Kline[],
+    logBuffer: WatcherLogBuffer
   ): Promise<void> {
-    log('🚀 Attempting to execute setup', {
+    logBuffer.log('🚀', 'Attempting to execute setup', {
       type: setup.type,
       direction: setup.direction,
       entryPrice: setup.entryPrice,
@@ -919,7 +890,7 @@ export class AutoTradingScheduler {
           : fibTarget < setup.entryPrice;
 
         if (isValidTarget) {
-          log('📐 Using Fibonacci projection for take profit', {
+          logBuffer.log('📐', 'Using Fibonacci projection for take profit', {
             originalTP: setup.takeProfit?.toFixed(6),
             fibonacciTP: fibTarget.toFixed(6),
             configLevel: fibonacciTargetLevel,
@@ -928,7 +899,7 @@ export class AutoTradingScheduler {
           });
           effectiveTakeProfit = fibTarget;
         } else {
-          log('⚠️ Fibonacci target invalid for direction, using default TP', {
+          logBuffer.warn('⚠️', 'Fibonacci target invalid for direction, using default TP', {
             fibTarget: fibTarget.toFixed(6),
             entryPrice: setup.entryPrice.toFixed(6),
             direction: setup.direction,
@@ -954,11 +925,11 @@ export class AutoTradingScheduler {
       }
 
       if (risk <= 0) {
-        log('❌ Invalid stop loss - no risk', {
-          type: setup.type,
+        logBuffer.addRejection({
+          setupType: setup.type,
           direction: setup.direction,
-          entryPrice,
-          stopLoss,
+          reason: 'Invalid stop loss - no risk',
+          details: { entryPrice, stopLoss },
         });
         return;
       }
@@ -966,39 +937,30 @@ export class AutoTradingScheduler {
       const riskRewardRatio = reward / risk;
 
       if (riskRewardRatio < TRADING_CONFIG.MIN_RISK_REWARD_RATIO) {
-        log('❌ Setup rejected - insufficient risk/reward ratio', {
-          type: setup.type,
+        logBuffer.addRejection({
+          setupType: setup.type,
           direction: setup.direction,
-          entryPrice,
-          stopLoss,
-          takeProfit,
-          risk: risk.toFixed(2),
-          reward: reward.toFixed(2),
-          riskRewardRatio: riskRewardRatio.toFixed(2),
-          minRequired: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
+          reason: 'Insufficient R:R ratio',
+          details: {
+            riskReward: riskRewardRatio.toFixed(2),
+            minRequired: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
+          },
         });
         return;
       }
 
-      log('✅ Risk/Reward ratio validated', {
-        type: setup.type,
-        direction: setup.direction,
-        entryPrice: entryPrice.toFixed(6),
-        stopLoss: stopLoss.toFixed(6),
-        takeProfit: takeProfit.toFixed(6),
-        risk: risk.toFixed(6),
-        reward: reward.toFixed(6),
+      logBuffer.log('✅', 'Risk/Reward ratio validated', {
         riskRewardRatio: riskRewardRatio.toFixed(2),
       });
     } else if (!setup.stopLoss) {
-      log('⚠️ Missing stop loss - cannot execute', {
-        type: setup.type,
+      logBuffer.addRejection({
+        setupType: setup.type,
+        direction: setup.direction,
+        reason: 'Missing stop loss',
       });
       return;
     } else {
-      log('ℹ️ Setup without take profit - skipping R:R validation', {
-        type: setup.type,
-      });
+      logBuffer.log('ℹ️', 'Setup without take profit - skipping R:R validation');
     }
 
     try {
@@ -1014,7 +976,7 @@ export class AutoTradingScheduler {
         .limit(1);
 
       if (!config?.isEnabled) {
-        log('⚠️ Auto-trading disabled during execution');
+        logBuffer.warn('⚠️', 'Auto-trading disabled during execution');
         return;
       }
 
@@ -1027,20 +989,12 @@ export class AutoTradingScheduler {
         .limit(1);
 
       if (!wallet) {
-        log('❌ Wallet not found', { walletId: watcher.walletId });
+        logBuffer.error('❌', 'Wallet not found', { walletId: watcher.walletId });
         return;
       }
 
       const walletSupportsLive = wallet.walletType === 'live' || wallet.walletType === 'testnet';
       const isLiveExecution = walletSupportsLive && env.ENABLE_LIVE_TRADING;
-
-      if (walletSupportsLive && !env.ENABLE_LIVE_TRADING) {
-        log('⚠️ Live trading disabled via ENABLE_LIVE_TRADING=false, using paper mode', {
-          walletType: wallet.walletType,
-        });
-      }
-
-      log('📋 Wallet type', { walletType: wallet.walletType, isLiveExecution, enableLiveTrading: env.ENABLE_LIVE_TRADING });
 
       const activePositions = await db
         .select()
@@ -1053,20 +1007,6 @@ export class AutoTradingScheduler {
         );
 
       const openPositions = activePositions.filter(p => p.status === 'open');
-      const pendingPositions = activePositions.filter(p => p.status === 'pending');
-
-      log('📊 Current positions', {
-        open: openPositions.length,
-        pending: pendingPositions.length,
-        total: activePositions.length,
-      });
-
-      log('🔍 Checking cooldown', {
-        setupType: setup.type,
-        symbol: watcher.symbol,
-        interval: watcher.interval,
-        walletId: watcher.walletId,
-      });
 
       const cooldownCheck = await cooldownService.checkCooldown(
         setup.type,
@@ -1075,30 +1015,19 @@ export class AutoTradingScheduler {
         watcher.walletId
       );
 
-      log('🔎 Cooldown check result', {
-        setupType: setup.type,
-        inCooldown: cooldownCheck.inCooldown,
-        cooldownUntil: cooldownCheck.cooldownUntil,
-        reason: cooldownCheck.reason,
-      });
-
       if (cooldownCheck.inCooldown) {
         const remainingMs = cooldownCheck.cooldownUntil
           ? cooldownCheck.cooldownUntil.getTime() - Date.now()
           : 0;
         const remainingMinutes = Math.ceil(remainingMs / 60000);
-        log('⏳ Trade cooldown active', {
+        logBuffer.addRejection({
           setupType: setup.type,
           direction: setup.direction,
-          reason: cooldownCheck.reason,
-          remainingMinutes,
+          reason: 'Cooldown active',
+          details: { remainingMinutes, cooldownReason: cooldownCheck.reason ?? 'N/A' },
         });
         return;
       }
-
-      log('✅ No cooldown active - proceeding with execution', {
-        setupType: setup.type,
-      });
 
       const filterResults: FilterResults = {};
 
@@ -1112,29 +1041,14 @@ export class AutoTradingScheduler {
             const btcResult = checkBtcCorrelation(mappedBtcKlines, setup.direction, watcher.symbol);
             filterResults.btcCorrelation = btcResult;
 
-            log('📊 BTC Correlation Filter Check', {
-              symbol: watcher.symbol,
-              direction: setup.direction,
-              btcTrend: btcResult.btcTrend,
-              btcPrice: btcResult.btcPrice?.toFixed(2) ?? 'null',
-              btcEma21: btcResult.btcEma21?.toFixed(2) ?? 'null',
-              isAllowed: btcResult.isAllowed,
-              reason: btcResult.reason,
+            logBuffer.addFilterCheck({
+              filterName: 'BTC Correlation',
+              passed: btcResult.isAllowed,
+              reason: btcResult.reason ?? 'N/A',
+              details: { btcTrend: btcResult.btcTrend ?? 'unknown', direction: setup.direction },
             });
 
-            if (!btcResult.isAllowed) {
-              log('🚫 BTC Correlation filter blocked trade (hard block)', {
-                direction: setup.direction,
-                btcTrend: btcResult.btcTrend,
-                reason: btcResult.reason,
-              });
-              return;
-            }
-          } else {
-            log('⚠️ Insufficient BTCUSDT klines for BTC Correlation filter - soft pass', {
-              available: mappedBtcKlines.length,
-              required: 26,
-            });
+            if (!btcResult.isAllowed) return;
           }
         }
       }
@@ -1149,29 +1063,19 @@ export class AutoTradingScheduler {
           );
           filterResults.fundingRate = fundingResult;
 
-          log('📊 Funding Rate Filter Check (cached)', {
-            symbol: watcher.symbol,
-            direction: setup.direction,
-            fundingRate: fundingResult.currentRate?.toFixed(6) ?? 'null',
-            fundingLevel: fundingResult.fundingLevel,
-            signal: fundingResult.signal,
-            isAllowed: fundingResult.isAllowed,
-            reason: fundingResult.reason,
+          logBuffer.addFilterCheck({
+            filterName: 'Funding Rate',
+            passed: fundingResult.isAllowed,
+            reason: fundingResult.reason ?? 'N/A',
+            details: {
+              rate: fundingResult.currentRate?.toFixed(6) ?? 'N/A',
+              level: fundingResult.fundingLevel ?? 'unknown',
+            },
           });
 
-          if (!fundingResult.isAllowed) {
-            log('🚫 Funding Rate filter blocked trade', {
-              direction: setup.direction,
-              fundingRate: fundingResult.currentRate?.toFixed(6) ?? 'null',
-              fundingLevel: fundingResult.fundingLevel,
-              reason: fundingResult.reason,
-            });
-            return;
-          }
-        } catch (fundingError) {
-          log('⚠️ Failed to fetch funding rate - soft pass', {
-            error: fundingError instanceof Error ? fundingError.message : String(fundingError),
-          });
+          if (!fundingResult.isAllowed) return;
+        } catch {
+          // Soft pass on funding rate fetch error
         }
       }
 
@@ -1185,41 +1089,15 @@ export class AutoTradingScheduler {
             const mtfResult = checkMtfCondition(mappedHtfKlines, setup.direction, htfInterval);
             filterResults.mtf = mtfResult;
 
-            log('📊 MTF Filter Check', {
-              symbol: watcher.symbol,
-              tradingInterval: watcher.interval,
-              htfInterval,
-              direction: setup.direction,
-              htfTrend: mtfResult.htfTrend,
-              ema50: mtfResult.ema50?.toFixed(2) ?? 'null',
-              ema200: mtfResult.ema200?.toFixed(2) ?? 'null',
-              price: mtfResult.price?.toFixed(2) ?? 'null',
-              goldenCross: mtfResult.goldenCross,
-              deathCross: mtfResult.deathCross,
-              isAllowed: mtfResult.isAllowed,
-              reason: mtfResult.reason,
+            logBuffer.addFilterCheck({
+              filterName: 'MTF',
+              passed: mtfResult.isAllowed,
+              reason: mtfResult.reason ?? 'N/A',
+              details: { htfTrend: mtfResult.htfTrend ?? 'unknown', htfInterval },
             });
 
-            if (!mtfResult.isAllowed) {
-              log('🚫 MTF filter blocked trade', {
-                direction: setup.direction,
-                htfTrend: mtfResult.htfTrend,
-                htfInterval,
-                reason: mtfResult.reason,
-              });
-              return;
-            }
-          } else {
-            log('⚠️ Insufficient HTF klines for MTF filter - soft pass', {
-              htfInterval,
-              available: mappedHtfKlines.length,
-              required: MTF_FILTER.MIN_KLINES_FOR_EMA200,
-            });
+            if (!mtfResult.isAllowed) return;
           }
-        } else {
-          log('ℹ️ No higher timeframe available for MTF filter - soft pass', {
-            tradingInterval: watcher.interval,
-          });
         }
       }
 
@@ -1229,33 +1107,14 @@ export class AutoTradingScheduler {
           filterResults.marketRegime = regimeResult;
           filterResults.adxValue = regimeResult.adx ?? undefined;
 
-          log('📊 Market Regime Filter Check', {
-            symbol: watcher.symbol,
-            interval: watcher.interval,
-            setupType: setup.type,
-            regime: regimeResult.regime,
-            adx: regimeResult.adx?.toFixed(2) ?? 'null',
-            volatilityLevel: regimeResult.volatilityLevel,
-            recommendedStrategy: regimeResult.recommendedStrategy,
-            isAllowed: regimeResult.isAllowed,
-            reason: regimeResult.reason,
+          logBuffer.addFilterCheck({
+            filterName: 'Market Regime',
+            passed: regimeResult.isAllowed,
+            reason: regimeResult.reason ?? 'N/A',
+            details: { regime: regimeResult.regime ?? 'unknown', adx: regimeResult.adx?.toFixed(1) ?? 'N/A' },
           });
 
-          if (!regimeResult.isAllowed) {
-            log('🚫 Market Regime filter blocked trade', {
-              direction: setup.direction,
-              setupType: setup.type,
-              regime: regimeResult.regime,
-              recommendedStrategy: regimeResult.recommendedStrategy,
-              reason: regimeResult.reason,
-            });
-            return;
-          }
-        } else {
-          log('⚠️ Insufficient klines for Market Regime filter - soft pass', {
-            available: cycleKlines.length,
-            required: 30,
-          });
+          if (!regimeResult.isAllowed) return;
         }
       }
 
@@ -1264,158 +1123,65 @@ export class AutoTradingScheduler {
           const volumeResult = checkVolumeCondition(cycleKlines, setup.direction, setup.type);
           filterResults.volume = volumeResult;
 
-          log('📊 Volume Filter Check', {
-            symbol: watcher.symbol,
-            interval: watcher.interval,
-            direction: setup.direction,
-            currentVolume: volumeResult.currentVolume?.toFixed(2) ?? 'null',
-            averageVolume: volumeResult.averageVolume?.toFixed(2) ?? 'null',
-            volumeRatio: volumeResult.volumeRatio?.toFixed(2) ?? 'null',
-            isVolumeSpike: volumeResult.isVolumeSpike,
-            obvTrend: volumeResult.obvTrend,
-            isAllowed: volumeResult.isAllowed,
-            reason: volumeResult.reason,
+          logBuffer.addFilterCheck({
+            filterName: 'Volume',
+            passed: volumeResult.isAllowed,
+            reason: volumeResult.reason ?? 'N/A',
+            details: { volumeRatio: volumeResult.volumeRatio?.toFixed(2) ?? 'N/A' },
           });
 
-          if (!volumeResult.isAllowed) {
-            log('🚫 Volume filter blocked trade', {
-              direction: setup.direction,
-              setupType: setup.type,
-              volumeRatio: volumeResult.volumeRatio?.toFixed(2) ?? 'null',
-              reason: volumeResult.reason,
-            });
-            return;
-          }
-        } else {
-          log('⚠️ Insufficient klines for Volume filter - soft pass', {
-            available: cycleKlines.length,
-            required: 21,
-          });
+          if (!volumeResult.isAllowed) return;
         }
       }
 
       if (config.useConfluenceScoring) {
         const confluenceResult = calculateConfluenceScore(filterResults, config.confluenceMinScore);
 
-        log('📊 Confluence Scoring Result', {
-          symbol: watcher.symbol,
-          direction: setup.direction,
-          totalScore: confluenceResult.totalScore,
-          maxScore: confluenceResult.maxPossibleScore,
-          scorePercent: `${confluenceResult.scorePercent.toFixed(1)}%`,
-          alignmentBonus: confluenceResult.alignmentBonus,
-          recommendation: confluenceResult.recommendation,
-          isAllowed: confluenceResult.isAllowed,
-          minRequired: config.confluenceMinScore,
-          contributions: confluenceResult.contributions.map((c) => ({
-            filter: c.filterName,
-            score: c.score,
-            max: c.maxScore,
-            passed: c.passed,
-          })),
-        });
-
-        if (!confluenceResult.isAllowed) {
-          log('🚫 Confluence Scoring blocked trade', {
-            direction: setup.direction,
-            scorePercent: `${confluenceResult.scorePercent.toFixed(1)}%`,
+        logBuffer.addFilterCheck({
+          filterName: 'Confluence',
+          passed: confluenceResult.isAllowed,
+          reason: confluenceResult.reason ?? 'N/A',
+          details: {
+            score: `${confluenceResult.scorePercent.toFixed(1)}%`,
             minRequired: config.confluenceMinScore,
-            recommendation: confluenceResult.recommendation,
-            reason: confluenceResult.reason,
-          });
-          return;
-        }
-
-        log('✅ Confluence Scoring passed', {
-          scorePercent: `${confluenceResult.scorePercent.toFixed(1)}%`,
-          recommendation: confluenceResult.recommendation,
+          },
         });
+
+        if (!confluenceResult.isAllowed) return;
       }
 
       if (config.useStochasticFilter) {
         const { K_PERIOD, K_SMOOTHING, D_PERIOD } = STOCHASTIC_FILTER;
         const minRequired = K_PERIOD + K_SMOOTHING + D_PERIOD;
 
-        if (cycleKlines.length < minRequired) {
-          log('⚠️ Insufficient klines for Slow Stochastic calculation - soft pass', {
-            required: minRequired,
-            available: cycleKlines.length,
-          });
-        } else {
+        if (cycleKlines.length >= minRequired) {
           const stochResult = checkStochasticCondition(cycleKlines, setup.direction);
 
-          log('📊 Slow Stochastic Filter Check', {
-            symbol: watcher.symbol,
-            interval: watcher.interval,
-            direction: setup.direction,
-            currentK: stochResult.currentK?.toFixed(2) ?? 'null',
-            currentD: stochResult.currentD?.toFixed(2) ?? 'null',
-            isOversold: stochResult.isOversold,
-            isOverbought: stochResult.isOverbought,
-            isAllowed: stochResult.isAllowed,
-            reason: stochResult.reason,
+          logBuffer.addFilterCheck({
+            filterName: 'Stochastic',
+            passed: stochResult.isAllowed,
+            reason: stochResult.reason ?? 'N/A',
+            details: { k: stochResult.currentK?.toFixed(1) ?? 'N/A' },
           });
 
-          if (!stochResult.isAllowed) {
-            log('🚫 Slow Stochastic filter blocked trade', {
-              direction: setup.direction,
-              currentK: stochResult.currentK?.toFixed(2) ?? 'null',
-              isOversold: stochResult.isOversold,
-              isOverbought: stochResult.isOverbought,
-              reason: stochResult.reason,
-            });
-            return;
-          }
-
-          log('✅ Slow Stochastic filter passed', {
-            direction: setup.direction,
-            currentK: stochResult.currentK?.toFixed(2) ?? 'null',
-            isOversold: stochResult.isOversold,
-            isOverbought: stochResult.isOverbought,
-            condition: stochResult.reason,
-          });
+          if (!stochResult.isAllowed) return;
         }
       }
 
       if (config.useMomentumTimingFilter) {
         const { MIN_KLINES_REQUIRED } = MOMENTUM_TIMING_FILTER;
 
-        if (cycleKlines.length < MIN_KLINES_REQUIRED) {
-          log('⚠️ Insufficient klines for Momentum Timing calculation - soft pass', {
-            required: MIN_KLINES_REQUIRED,
-            available: cycleKlines.length,
-          });
-        } else {
+        if (cycleKlines.length >= MIN_KLINES_REQUIRED) {
           const momentumResult = checkMomentumTiming(cycleKlines, setup.direction);
 
-          log('📊 Momentum Timing Filter Check', {
-            symbol: watcher.symbol,
-            interval: watcher.interval,
-            direction: setup.direction,
-            rsiValue: momentumResult.rsiValue?.toFixed(2) ?? 'null',
-            rsiMomentum: momentumResult.rsiMomentum,
-            mfiValue: momentumResult.mfiValue?.toFixed(2) ?? 'null',
-            mfiConfirmation: momentumResult.mfiConfirmation,
-            isAllowed: momentumResult.isAllowed,
-            reason: momentumResult.reason,
+          logBuffer.addFilterCheck({
+            filterName: 'Momentum',
+            passed: momentumResult.isAllowed,
+            reason: momentumResult.reason ?? 'N/A',
+            details: { rsi: momentumResult.rsiValue?.toFixed(1) ?? 'N/A' },
           });
 
-          if (!momentumResult.isAllowed) {
-            log('🚫 Momentum Timing filter blocked trade', {
-              direction: setup.direction,
-              rsiValue: momentumResult.rsiValue?.toFixed(2) ?? 'null',
-              rsiMomentum: momentumResult.rsiMomentum,
-              reason: momentumResult.reason,
-            });
-            return;
-          }
-
-          log('✅ Momentum Timing filter passed', {
-            direction: setup.direction,
-            rsiValue: momentumResult.rsiValue?.toFixed(2) ?? 'null',
-            rsiMomentum: momentumResult.rsiMomentum,
-            mfiConfirmation: momentumResult.mfiConfirmation,
-          });
+          if (!momentumResult.isAllowed) return;
         }
       }
 
@@ -1423,117 +1189,51 @@ export class AutoTradingScheduler {
         const { MIN_KLINES_REQUIRED } = ADX_FILTER;
 
         if (cycleKlines.length < MIN_KLINES_REQUIRED) {
-          log('⚠️ Insufficient klines for ADX calculation', {
-            required: MIN_KLINES_REQUIRED,
-            available: cycleKlines.length,
+          logBuffer.addRejection({
+            setupType: setup.type,
+            direction: setup.direction,
+            reason: 'Insufficient klines for ADX',
           });
           return;
         }
 
         const adxResult = checkAdxCondition(cycleKlines, setup.direction);
 
-        log('📊 ADX Filter Check', {
-          symbol: watcher.symbol,
-          interval: watcher.interval,
-          direction: setup.direction,
-          adx: adxResult.adx?.toFixed(2) ?? 'null',
-          plusDI: adxResult.plusDI?.toFixed(2) ?? 'null',
-          minusDI: adxResult.minusDI?.toFixed(2) ?? 'null',
-          trendThreshold: ADX_FILTER.TREND_THRESHOLD,
-          isBullish: adxResult.isBullish,
-          isBearish: adxResult.isBearish,
-          isStrongTrend: adxResult.isStrongTrend,
-          isAllowed: adxResult.isAllowed,
+        logBuffer.addFilterCheck({
+          filterName: 'ADX',
+          passed: adxResult.isAllowed,
+          reason: adxResult.reason ?? 'N/A',
+          details: { adx: adxResult.adx?.toFixed(1) ?? 'N/A' },
         });
 
-        if (!adxResult.isAllowed) {
-          log('🚫 ADX filter blocked trade', {
-            direction: setup.direction,
-            adx: adxResult.adx?.toFixed(2) ?? 'null',
-            plusDI: adxResult.plusDI?.toFixed(2) ?? 'null',
-            minusDI: adxResult.minusDI?.toFixed(2) ?? 'null',
-            reason: adxResult.reason,
-          });
-          return;
-        }
-
-        log('✅ ADX filter passed', {
-          direction: setup.direction,
-          adx: adxResult.adx?.toFixed(2) ?? 'null',
-          plusDI: adxResult.plusDI?.toFixed(2) ?? 'null',
-          minusDI: adxResult.minusDI?.toFixed(2) ?? 'null',
-          condition: adxResult.reason,
-        });
+        if (!adxResult.isAllowed) return;
       }
 
       const setupStrategy = strategies.find(s => s.id === setup.type);
       const globalTrendFilterEnabled = config.useTrendFilter === true;
       const strategyTrendFilterEnabled = setupStrategy?.filters?.trendFilter?.enabled === true;
       const shouldApplyTrendFilter = globalTrendFilterEnabled || strategyTrendFilterEnabled;
-      const trendFilterSource = globalTrendFilterEnabled && strategyTrendFilterEnabled
-        ? 'global+strategy'
-        : globalTrendFilterEnabled
-          ? 'global'
-          : strategyTrendFilterEnabled
-            ? 'strategy'
-            : 'none';
-
-      log('🔍 Trend Filter Config', {
-        globalEnabled: globalTrendFilterEnabled,
-        strategyEnabled: strategyTrendFilterEnabled,
-        shouldApply: shouldApplyTrendFilter,
-        source: trendFilterSource,
-        strategyId: setup.type,
-      });
 
       if (shouldApplyTrendFilter) {
-        log('🔍 Trend Filter Debug - Using cycle klines', {
-          symbol: watcher.symbol,
-          interval: watcher.interval,
-          available: cycleKlines.length,
-        });
-
         if (cycleKlines.length < 2) {
-          log('⚠️ Insufficient klines for Trend (EMA21) calculation', {
-            required: 2,
-            available: cycleKlines.length,
+          logBuffer.addRejection({
+            setupType: setup.type,
+            direction: setup.direction,
+            reason: 'Insufficient klines for Trend',
           });
           return;
         }
 
         const trendResult = checkTrendCondition(cycleKlines, setup.direction);
 
-        log('📊 Trend Filter Check (Price vs EMA21)', {
-          symbol: watcher.symbol,
-          interval: watcher.interval,
-          direction: setup.direction,
-          price: trendResult.price?.toFixed(2) ?? 'null',
-          ema21: trendResult.ema21?.toFixed(2) ?? 'null',
-          isBullish: trendResult.isBullish,
-          isBearish: trendResult.isBearish,
-          isAllowed: trendResult.isAllowed,
-          source: trendFilterSource,
-          strategyId: setup.type,
+        logBuffer.addFilterCheck({
+          filterName: 'Trend (EMA21)',
+          passed: trendResult.isAllowed,
+          reason: trendResult.reason ?? 'N/A',
+          details: { price: trendResult.price?.toFixed(2) ?? 'N/A', ema21: trendResult.ema21?.toFixed(2) ?? 'N/A' },
         });
 
-        if (!trendResult.isAllowed) {
-          log(`🚫 Trend filter blocked trade (source: ${trendFilterSource})`, {
-            direction: setup.direction,
-            price: trendResult.price?.toFixed(2) ?? 'null',
-            ema21: trendResult.ema21?.toFixed(2) ?? 'null',
-            reason: trendResult.reason,
-            filterSource: trendFilterSource,
-          });
-          return;
-        }
-
-        log('✅ Trend filter passed', {
-          direction: setup.direction,
-          price: trendResult.price?.toFixed(2) ?? 'null',
-          ema21: trendResult.ema21?.toFixed(2) ?? 'null',
-          condition: trendResult.reason,
-          source: trendFilterSource,
-        });
+        if (!trendResult.isAllowed) return;
       }
 
       const oppositeDirectionPosition = openPositions.find(
@@ -1541,11 +1241,11 @@ export class AutoTradingScheduler {
       );
 
       if (oppositeDirectionPosition) {
-        log('⚠️ Opposite direction position exists - cannot open both LONG and SHORT (One-Way Mode)', {
-          symbol: watcher.symbol,
-          existingDirection: oppositeDirectionPosition.side,
-          newDirection: setup.direction,
-          existingExecutionId: oppositeDirectionPosition.id,
+        logBuffer.addRejection({
+          setupType: setup.type,
+          direction: setup.direction,
+          reason: 'Opposite position exists',
+          details: { existingDirection: oppositeDirectionPosition.side },
         });
         return;
       }
@@ -1565,28 +1265,25 @@ export class AutoTradingScheduler {
         );
 
         if (!pyramidEval.canPyramid) {
-          log('⚠️ Position exists but cannot pyramid', {
-            symbol: watcher.symbol,
+          logBuffer.addRejection({
+            setupType: setup.type,
             direction: setup.direction,
-            reason: pyramidEval.reason,
-            currentEntries: pyramidEval.currentEntries,
-            maxEntries: pyramidEval.maxEntries,
-            profitPercent: `${(pyramidEval.profitPercent * 100).toFixed(2)  }%`,
+            reason: pyramidEval.reason ?? 'Cannot pyramid',
+            details: {
+              currentEntries: pyramidEval.currentEntries,
+              maxEntries: pyramidEval.maxEntries,
+            },
           });
           return;
         }
 
-        log('📈 Pyramiding opportunity detected', {
-          symbol: watcher.symbol,
-          direction: setup.direction,
+        logBuffer.log('📈', 'Pyramiding opportunity', {
           currentEntries: pyramidEval.currentEntries,
-          profitPercent: `${(pyramidEval.profitPercent * 100).toFixed(2)  }%`,
           suggestedSize: pyramidEval.suggestedSize,
         });
       }
 
       const walletBalance = parseFloat(wallet.currentBalance ?? '0');
-
       const activeWatchersForWallet = this.getWatcherStatus(watcher.walletId).watchers;
 
       const dynamicSize = await pyramidingService.calculateDynamicPositionSize(
@@ -1601,36 +1298,22 @@ export class AutoTradingScheduler {
       );
 
       if (dynamicSize.quantity <= 0) {
-        log('⚠️ Dynamic sizing returned zero quantity', { reason: dynamicSize.reason });
+        logBuffer.addRejection({
+          setupType: setup.type,
+          direction: setup.direction,
+          reason: 'Zero quantity from sizing',
+          details: { reason: dynamicSize.reason },
+        });
         return;
       }
 
       const positionValue = dynamicSize.quantity * setup.entryPrice;
-
-      log('💰 Dynamic position sizing', {
-        walletBalance: walletBalance.toFixed(2),
-        sizePercent: dynamicSize.sizePercent.toFixed(2),
-        positionValue: positionValue.toFixed(2),
-        reason: dynamicSize.reason,
-      });
 
       const effectiveConfig = {
         ...config,
         maxPositionSize: effectiveMaxPositionSize.toString(),
         maxConcurrentPositions: activeWatchersForWallet || config.maxConcurrentPositions,
       };
-
-      const exposureMultiplier = parseFloat(config.exposureMultiplier);
-      const exposurePerWatcher = activeWatchersForWallet > 0
-        ? Math.min((100 * exposureMultiplier) / activeWatchersForWallet, 100)
-        : parseFloat(config.maxPositionSize);
-
-      log('📊 Dynamic exposure calculation', {
-        activeWatchers: activeWatchersForWallet,
-        exposureMultiplier: `${exposureMultiplier}x`,
-        exposurePerWatcher: `${exposurePerWatcher.toFixed(1)}%`,
-        effectiveMaxConcurrent: activeWatchersForWallet || config.maxConcurrentPositions,
-      });
 
       const riskValidation = await riskManagerService.validateNewPositionLocked(
         watcher.walletId,
@@ -1640,7 +1323,12 @@ export class AutoTradingScheduler {
       );
 
       if (!riskValidation.isValid) {
-        log('⚠️ Risk validation failed', { reason: riskValidation.reason });
+        logBuffer.addRejection({
+          setupType: setup.type,
+          direction: setup.direction,
+          reason: 'Risk validation failed',
+          details: { reason: riskValidation.reason ?? 'Unknown' },
+        });
         return;
       }
 
@@ -1986,11 +1674,11 @@ export class AutoTradingScheduler {
         }
 
         if (risk <= 0) {
-          log('❌ Invalid stop loss after price adjustment - no risk', {
-            type: setup.type,
+          logBuffer.addRejection({
+            setupType: setup.type,
             direction: setup.direction,
-            actualEntryPrice,
-            stopLoss: setup.stopLoss,
+            reason: 'Invalid SL after slippage',
+            details: { actualEntry: actualEntryPrice.toFixed(4), stopLoss: setup.stopLoss },
           });
           return;
         }
@@ -1998,45 +1686,18 @@ export class AutoTradingScheduler {
         const finalRiskRewardRatio = reward / risk;
 
         if (finalRiskRewardRatio < TRADING_CONFIG.MIN_RISK_REWARD_RATIO) {
-          log('❌ Setup rejected after price adjustment - insufficient final R:R ratio', {
-            type: setup.type,
+          logBuffer.addRejection({
+            setupType: setup.type,
             direction: setup.direction,
-            setupEntryPrice: setup.entryPrice,
-            actualEntryPrice,
-            stopLoss: setup.stopLoss,
-            takeProfit: effectiveTakeProfit,
-            risk: risk.toFixed(2),
-            reward: reward.toFixed(2),
-            originalRR: setup.riskRewardRatio.toFixed(2),
-            finalRR: finalRiskRewardRatio.toFixed(2),
-            minRequired: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
-            priceDeviation: `${((actualEntryPrice - setup.entryPrice) / setup.entryPrice * 100).toFixed(2)}%`,
-            orderType,
+            reason: 'R:R too low after slippage',
+            details: {
+              finalRR: finalRiskRewardRatio.toFixed(2),
+              minRequired: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
+            },
           });
           return;
         }
-
-        log('✅ Final Risk/Reward ratio validated after price adjustment', {
-          type: setup.type,
-          direction: setup.direction,
-          setupEntryPrice: setup.entryPrice.toFixed(6),
-          actualEntryPrice: actualEntryPrice.toFixed(6),
-          stopLoss: setup.stopLoss.toFixed(6),
-          takeProfit: effectiveTakeProfit.toFixed(6),
-          risk: risk.toFixed(6),
-          reward: reward.toFixed(6),
-          originalRR: setup.riskRewardRatio.toFixed(2),
-          finalRR: finalRiskRewardRatio.toFixed(2),
-        });
       }
-
-      log('💾 Inserting trade execution into database', {
-        executionId,
-        setupType: setup.type,
-        symbol: watcher.symbol,
-        direction: setup.direction,
-        finalEntryPrice: actualEntryPrice,
-      });
 
       try {
         const triggerCandle = setup.triggerCandleData?.find(c => c.offset === 0);
@@ -2067,7 +1728,16 @@ export class AutoTradingScheduler {
           fibonacciProjection: setup.fibonacciProjection ? JSON.stringify(setup.fibonacciProjection) : null,
         });
 
-        log('✅ Trade execution inserted into database', { executionId });
+        logBuffer.addTradeExecution({
+          setupType: setup.type,
+          direction: setup.direction,
+          entryPrice: actualEntryPrice.toFixed(6),
+          quantity: actualQuantity.toFixed(8),
+          stopLoss: setup.stopLoss?.toFixed(6),
+          takeProfit: effectiveTakeProfit?.toFixed(6),
+          orderType: useLimit ? 'LIMIT' : 'MARKET',
+          status: 'executed',
+        });
 
         const wsServiceOpen = getWebSocketService();
         if (wsServiceOpen) {
@@ -2085,21 +1755,12 @@ export class AutoTradingScheduler {
           });
         }
       } catch (dbError) {
-        log('❌ Failed to insert trade execution into database', {
+        logBuffer.error('❌', 'Failed to insert trade execution', {
           executionId,
           error: dbError instanceof Error ? dbError.message : String(dbError),
-          stack: dbError instanceof Error ? dbError.stack : undefined,
         });
         throw dbError;
       }
-
-      log('⏱️ Setting cooldown', {
-        setupType: setup.type,
-        symbol: watcher.symbol,
-        interval: watcher.interval,
-        walletId: watcher.walletId,
-        cooldownMinutes: 15,
-      });
 
       try {
         await cooldownService.setCooldown(
@@ -2111,38 +1772,13 @@ export class AutoTradingScheduler {
           15,
           'Trade executed'
         );
-
-        log('✅ Cooldown set successfully', {
-          setupType: setup.type,
-          cooldownMinutes: 15,
-        });
-      } catch (cooldownError) {
-        log('❌ Failed to set cooldown', {
-          setupType: setup.type,
-          error: cooldownError instanceof Error ? cooldownError.message : String(cooldownError),
-        });
+      } catch {
+        // Cooldown errors are non-fatal
       }
-
-      log('✅ Trade execution created', {
-        executionId,
-        setupType: setup.type,
-        symbol: watcher.symbol,
-        direction: setup.direction,
-        entryPrice: actualEntryPrice,
-        quantity: actualQuantity.toFixed(8),
-        positionValue: (actualQuantity * actualEntryPrice).toFixed(2),
-        stopLoss: setup.stopLoss,
-        takeProfit: effectiveTakeProfit,
-        confidence: setup.confidence,
-        isLiveExecution,
-        entryOrderId,
-        cooldownMinutes: 15,
-        tpMode: tpCalculationMode,
-      });
 
       await positionMonitorService.invalidatePriceCache(watcher.symbol);
     } catch (error) {
-      log('❌ Error executing setup', {
+      logBuffer.error('❌', 'Error executing setup', {
         type: setup.type,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -2207,20 +1843,22 @@ export class AutoTradingScheduler {
   }
 
   async restoreWatchersFromDb(): Promise<void> {
-    log('🔄 Restoring watchers from database...');
+    const startupBuffer = new StartupLogBuffer();
 
     const persistedWatchers = await db
       .select()
       .from(activeWatchersTable);
 
     if (persistedWatchers.length === 0) {
-      log('📭 No persisted watchers found');
       return;
     }
 
-    log(`📋 Found ${persistedWatchers.length} persisted watcher(s)`);
+    startupBuffer.setPersistedCount(persistedWatchers.length);
 
     const requiredKlines = calculateRequiredKlines();
+    const pollIntervalMs = getPollingIntervalForTimeframe(persistedWatchers[0]?.interval ?? '4h');
+    const now = Date.now();
+    const nextCandleClose = new Date(Math.ceil(now / pollIntervalMs) * pollIntervalMs);
 
     for (const pw of persistedWatchers) {
       const marketType = (pw.marketType as MarketType) ?? 'SPOT';
@@ -2230,10 +1868,19 @@ export class AutoTradingScheduler {
         interval: pw.interval,
         marketType,
         targetCount: requiredKlines,
+        silent: true,
       });
 
       if (!result.success) {
-        log('❌ Failed to prefetch klines for watcher', { watcherId: pw.id, symbol: pw.symbol, error: result.error });
+        startupBuffer.addRestoredWatcher({
+          symbol: pw.symbol,
+          interval: pw.interval,
+          marketType,
+          profileId: pw.profileId ?? undefined,
+          isManual: pw.isManual,
+          status: 'failed',
+          error: result.error ?? 'Prefetch failed',
+        });
         continue;
       }
 
@@ -2246,16 +1893,36 @@ export class AutoTradingScheduler {
           pw.profileId ?? undefined,
           true,
           marketType,
-          pw.isManual
+          pw.isManual,
+          false,
+          true
         );
-        log('✅ Restored watcher', { watcherId: pw.id, symbol: pw.symbol, interval: pw.interval, profileId: pw.profileId, marketType: pw.marketType, isManual: pw.isManual });
+
+        startupBuffer.addRestoredWatcher({
+          symbol: pw.symbol,
+          interval: pw.interval,
+          marketType,
+          profileId: pw.profileId ?? undefined,
+          isManual: pw.isManual,
+          status: 'success',
+          totalKlinesInDb: result.totalInDb,
+          nextCandleClose,
+        });
       } catch (error) {
-        log('❌ Failed to restore watcher', {
-          watcherId: pw.id,
+        startupBuffer.addRestoredWatcher({
+          symbol: pw.symbol,
+          interval: pw.interval,
+          marketType,
+          profileId: pw.profileId ?? undefined,
+          isManual: pw.isManual,
+          status: 'failed',
           error: error instanceof Error ? error.message : String(error),
         });
       }
     }
+
+    const results = startupBuffer.getResults();
+    outputStartupResults(results.watchers, results.persistedCount, results.durationMs);
   }
 
   private getFibonacciTargetPrice(

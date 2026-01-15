@@ -1,8 +1,21 @@
+import type { LogParams } from 'binance';
 import { MainClient, USDMClient } from 'binance';
 import { decryptApiKey } from './encryption';
 import type { Wallet } from '../db/schema';
 
 export type WalletType = 'live' | 'testnet' | 'paper';
+
+const noop = (): void => {};
+
+export const silentWsLogger = {
+  silly: noop,
+  debug: noop,
+  notice: noop,
+  info: noop,
+  warning: noop,
+  error: noop,
+  trace: noop,
+} satisfies LogParams & { trace: () => void };
 
 export function isPaperWallet(wallet: Wallet): boolean {
   return wallet.walletType === 'paper' || wallet.apiKeyEncrypted === 'paper-trading';

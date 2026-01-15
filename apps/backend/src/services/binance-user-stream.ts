@@ -3,7 +3,7 @@ import { WebsocketClient } from 'binance';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
-import { createBinanceClient, isPaperWallet } from './binance-client';
+import { createBinanceClient, isPaperWallet, silentWsLogger } from './binance-client';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
 import { TIME_MS } from '../constants';
@@ -103,10 +103,10 @@ export class BinanceUserStreamService {
       const response = await client.getSpotUserDataListenKey();
       const listenKey = response.listenKey;
 
-      const wsClient = new WebsocketClient({
-        beautify: true,
-        reconnectTimeout: 5000,
-      });
+      const wsClient = new WebsocketClient(
+        { beautify: true, reconnectTimeout: 5000 },
+        silentWsLogger
+      );
 
       wsClient.on('message', (data) => {
         this.handleUserDataMessage(wallet.id, data);

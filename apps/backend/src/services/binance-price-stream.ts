@@ -3,6 +3,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { WEBSOCKET_CONFIG } from '../constants';
 import { db } from '../db';
 import { tradeExecutions } from '../db/schema';
+import { silentWsLogger } from './binance-client';
 import { logger } from './logger';
 import { positionMonitorService } from './position-monitor';
 import { getWebSocketService } from './websocket';
@@ -28,10 +29,10 @@ export class BinancePriceStreamService {
 
     logger.debug('Starting Binance price stream service');
 
-    this.client = new WebsocketClient({
-      beautify: true,
-      reconnectTimeout: WEBSOCKET_CONFIG.RECONNECT_DELAY_MS,
-    });
+    this.client = new WebsocketClient(
+      { beautify: true, reconnectTimeout: WEBSOCKET_CONFIG.RECONNECT_DELAY_MS },
+      silentWsLogger
+    );
 
     this.client.on('message', (data) => {
       this.handleMessage(data);

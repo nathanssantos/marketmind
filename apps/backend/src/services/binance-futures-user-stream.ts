@@ -4,6 +4,7 @@ import type { WsKey } from 'binance/lib/util/websockets/websocket-util';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, positions, type Wallet } from '../db/schema';
+import { silentWsLogger } from './binance-client';
 import { createBinanceFuturesClient, isPaperWallet, getWalletType } from './binance-futures-client';
 import { decryptApiKey } from './encryption';
 import { logger, serializeError } from './logger';
@@ -157,12 +158,10 @@ export class BinanceFuturesUserStreamService {
       const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
       const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
 
-      const wsClient = new WebsocketClient({
-        api_key: apiKey,
-        api_secret: apiSecret,
-        beautify: true,
-        testnet: walletType === 'testnet',
-      });
+      const wsClient = new WebsocketClient(
+        { api_key: apiKey, api_secret: apiSecret, beautify: true, testnet: walletType === 'testnet' },
+        silentWsLogger
+      );
 
       wsClient.on('formattedMessage', (data) => {
         this.handleUserDataMessage(wallet.id, data);

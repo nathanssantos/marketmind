@@ -12,6 +12,7 @@ vi.mock('../../services/binance-client', () => ({
     get24hrChangeStatistics: vi.fn().mockResolvedValue({ lastPrice: '50000' }),
   })),
   isPaperWallet: vi.fn((wallet) => wallet.walletType === 'paper'),
+  silentWsLogger: {},
 }));
 
 vi.mock('../../services/binance-futures-data', () => ({

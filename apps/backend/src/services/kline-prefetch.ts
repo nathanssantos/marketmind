@@ -24,6 +24,7 @@ export interface PrefetchOptions {
   interval: string;
   marketType?: 'SPOT' | 'FUTURES';
   targetCount?: number;
+  silent?: boolean;
 }
 
 export interface PrefetchResult {
@@ -41,13 +42,14 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
     interval,
     marketType = 'FUTURES',
     targetCount = REQUIRED_KLINES,
+    silent = false,
   } = options;
 
   const key = getBackfillKey(symbol, interval, marketType);
 
   const existingBackfill = activeBackfills.get(key);
   if (existingBackfill) {
-    log('⏳ Backfill already in progress, waiting...', { symbol, interval, marketType });
+    if (!silent) log('⏳ Backfill already in progress, waiting...', { symbol, interval, marketType });
     try {
       const result = await existingBackfill;
       return {
@@ -75,15 +77,17 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
   try {
     const result = await backfillPromise;
 
-    log('✅ Prefetch complete', {
-      symbol,
-      interval,
-      marketType,
-      downloaded: result.downloaded,
-      totalInDb: result.totalInDb,
-      gaps: result.gaps,
-      alreadyComplete: result.alreadyComplete,
-    });
+    if (!silent) {
+      log('✅ Prefetch complete', {
+        symbol,
+        interval,
+        marketType,
+        downloaded: result.downloaded,
+        totalInDb: result.totalInDb,
+        gaps: result.gaps,
+        alreadyComplete: result.alreadyComplete,
+      });
+    }
 
     return {
       success: true,
@@ -94,7 +98,9 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
     };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
-    logger.error({ symbol, interval, marketType, error: errorMessage }, '[Kline-Prefetch] ❌ Failed to prefetch klines');
+    if (!silent) {
+      logger.error({ symbol, interval, marketType, error: errorMessage }, '[Kline-Prefetch] ❌ Failed to prefetch klines');
+    }
 
     return {
       success: false,

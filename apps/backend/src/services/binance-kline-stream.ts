@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import { WEBSOCKET_CONFIG } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
+import { silentWsLogger } from './binance-client';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
 import { KlineValidator } from './kline-validator';
@@ -121,10 +122,10 @@ export class BinanceKlineStreamService {
     }
 
 
-    this.client = new WebsocketClient({
-      beautify: true,
-      reconnectTimeout: WEBSOCKET_CONFIG.RECONNECT_DELAY_MS,
-    });
+    this.client = new WebsocketClient(
+      { beautify: true, reconnectTimeout: WEBSOCKET_CONFIG.RECONNECT_DELAY_MS },
+      silentWsLogger
+    );
 
     this.client.on('message', (data) => {
       this.handleMessage(data);
@@ -430,10 +431,10 @@ export class BinanceFuturesKlineStreamService {
     }
 
 
-    this.client = new WebsocketClient({
-      beautify: true,
-      reconnectTimeout: WEBSOCKET_CONFIG.RECONNECT_DELAY_MS,
-    });
+    this.client = new WebsocketClient(
+      { beautify: true, reconnectTimeout: WEBSOCKET_CONFIG.RECONNECT_DELAY_MS },
+      silentWsLogger
+    );
 
     this.client.on('message', (data) => {
       this.handleMessage(data);

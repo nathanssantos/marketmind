@@ -13,6 +13,11 @@ import { klines, pairMaintenanceLog } from '../db/schema';
 import { fetchFuturesKlinesFromAPI, fetchHistoricalKlinesFromAPI, getIntervalMilliseconds } from './binance-historical';
 import { KlineValidator } from './kline-validator';
 import { logger } from './logger';
+import {
+  MaintenanceLogBuffer,
+  outputMaintenanceResults,
+  type CorruptionFixEntry,
+} from './watcher-batch-logger';
 
 const GAP_CHECK_INTERVAL = 5 * TIME_MS.MINUTE;
 const MIN_GAP_SIZE_TO_FILL = 1;
@@ -53,13 +58,19 @@ class KlineMaintenance {
   private isRunning = false;
 
   async start(): Promise<void> {
-    if (this.checkInterval) {
-      return;
-    }
+    if (this.checkInterval) return;
 
-    logger.info('Starting kline maintenance service...');
-    await this.checkAllStoredPairs();
-    await this.checkCorruptionOnStartup();
+    const logBuffer = new MaintenanceLogBuffer('startup');
+
+    const [gapResults] = await Promise.all([
+      this.checkAllStoredPairs(logBuffer),
+      this.checkCorruptionOnStartup(logBuffer),
+    ]);
+
+    logBuffer.setPairsChecked(gapResults.pairsChecked);
+
+    outputMaintenanceResults(logBuffer.toResult());
+
     await this.checkAndFillGaps();
 
     this.checkInterval = setInterval(async () => {
@@ -67,34 +78,38 @@ class KlineMaintenance {
     }, GAP_CHECK_INTERVAL);
   }
 
-  private async checkCorruptionOnStartup(): Promise<void> {
+  private async checkCorruptionOnStartup(logBuffer?: MaintenanceLogBuffer): Promise<{ pairsChecked: number }> {
     try {
       const activePairs = await this.getActivePairs();
 
-      if (activePairs.length === 0) {
-        logger.info('No active pairs for corruption check on startup');
-        return;
-      }
-
-      logger.info({ pairsCount: activePairs.length }, 'Running corruption check on startup');
+      if (activePairs.length === 0) return { pairsChecked: 0 };
 
       for (const pair of activePairs) {
         try {
-          const fixedCorrupted = await this.detectAndFixCorruptedKlines(pair);
+          const { corruptedFound, fixed } = await this.detectAndFixCorruptedKlines(pair);
 
-          if (fixedCorrupted > 0) {
-            logger.info({ symbol: pair.symbol, interval: pair.interval, fixed: fixedCorrupted }, 'Fixed corrupted klines on startup');
+          await this.updateMaintenanceLog(pair, { corruptedFixed: fixed, checkType: 'corruption' });
+
+          if (logBuffer && corruptedFound > 0) {
+            const entry: CorruptionFixEntry = {
+              symbol: pair.symbol,
+              interval: pair.interval,
+              marketType: pair.marketType,
+              corruptedFound,
+              fixed,
+              status: fixed === corruptedFound ? 'success' : fixed > 0 ? 'partial' : 'error',
+            };
+            logBuffer.addCorruptionFix(entry);
           }
-
-          await this.updateMaintenanceLog(pair, { corruptedFixed: fixedCorrupted, checkType: 'corruption' });
         } catch (error) {
           logger.error({ pair, error }, 'Error checking corruption for pair on startup');
         }
       }
 
-      logger.info('Startup corruption check complete');
+      return { pairsChecked: activePairs.length };
     } catch (error) {
       logger.error({ error }, 'Error in startup corruption check');
+      return { pairsChecked: 0 };
     }
   }
 
@@ -172,7 +187,7 @@ class KlineMaintenance {
       });
   }
 
-  private async checkAllStoredPairs(): Promise<void> {
+  private async checkAllStoredPairs(logBuffer?: MaintenanceLogBuffer): Promise<{ pairsChecked: number }> {
     try {
       const distinctPairs = await db
         .selectDistinct({
@@ -181,8 +196,6 @@ class KlineMaintenance {
           marketType: klines.marketType,
         })
         .from(klines);
-
-      logger.info({ pairsCount: distinctPairs.length }, 'Found stored pairs to check');
 
       for (const pair of distinctPairs) {
         try {
@@ -193,75 +206,122 @@ class KlineMaintenance {
           };
 
           if (!(await this.shouldCheckGaps(activePair))) {
-            logger.debug({ symbol: pair.symbol, interval: pair.interval, marketType: pair.marketType }, 'Skipping gap check (cooldown)');
+            if (logBuffer) {
+              logBuffer.addGapFill({
+                symbol: pair.symbol,
+                interval: pair.interval,
+                marketType: pair.marketType,
+                gapsFound: 0,
+                candlesFilled: 0,
+                status: 'skipped',
+                reason: 'Cooldown active',
+              });
+            }
             continue;
           }
 
           const gaps = await this.detectGaps(activePair);
+          let totalFilled = 0;
 
-          if (gaps.length > 0) {
-            logger.info({ symbol: pair.symbol, interval: pair.interval, marketType: pair.marketType, gaps: gaps.length }, 'Found gaps in stored pair');
-
-            for (const gap of gaps) {
-              await this.fillGap(gap);
-            }
+          for (const gap of gaps) {
+            const filled = await this.fillGap(gap, true);
+            totalFilled += filled;
           }
 
           await this.updateMaintenanceLog(activePair, { gapsFound: gaps.length, checkType: 'gap' });
+
+          if (logBuffer && (gaps.length > 0 || totalFilled > 0)) {
+            logBuffer.addGapFill({
+              symbol: pair.symbol,
+              interval: pair.interval,
+              marketType: pair.marketType,
+              gapsFound: gaps.length,
+              candlesFilled: totalFilled,
+              status: totalFilled > 0 ? 'success' : gaps.length > 0 ? 'partial' : 'success',
+            });
+          }
         } catch (error) {
           logger.error({ pair, error }, 'Error checking gaps for stored pair');
+          if (logBuffer) {
+            logBuffer.addGapFill({
+              symbol: pair.symbol,
+              interval: pair.interval,
+              marketType: pair.marketType,
+              gapsFound: 0,
+              candlesFilled: 0,
+              status: 'error',
+              reason: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
         }
       }
 
-      logger.info('Initial gap check complete');
+      return { pairsChecked: distinctPairs.length };
     } catch (error) {
       logger.error({ error }, 'Error in initial gap check');
+      return { pairsChecked: 0 };
     }
   }
 
   async checkAndFillGaps(): Promise<void> {
-    if (this.isRunning) {
-      return;
-    }
+    if (this.isRunning) return;
 
     this.isRunning = true;
 
     try {
       const activePairs = await this.getActivePairs();
+      if (activePairs.length === 0) return;
 
-      if (activePairs.length === 0) {
-        return;
-      }
+      const logBuffer = new MaintenanceLogBuffer('periodic');
+      logBuffer.setPairsChecked(activePairs.length);
 
       for (const pair of activePairs) {
         try {
           if (await this.shouldCheckGaps(pair)) {
             const gaps = await this.detectGaps(pair);
+            let totalFilled = 0;
 
-            if (gaps.length > 0) {
-              logger.debug({ symbol: pair.symbol, interval: pair.interval, gaps: gaps.length }, 'Found gaps');
-
-              for (const gap of gaps) {
-                await this.fillGap(gap);
-              }
+            for (const gap of gaps) {
+              const filled = await this.fillGap(gap, true);
+              totalFilled += filled;
             }
 
             await this.updateMaintenanceLog(pair, { gapsFound: gaps.length, checkType: 'gap' });
+
+            if (gaps.length > 0 || totalFilled > 0) {
+              logBuffer.addGapFill({
+                symbol: pair.symbol,
+                interval: pair.interval,
+                marketType: pair.marketType,
+                gapsFound: gaps.length,
+                candlesFilled: totalFilled,
+                status: totalFilled > 0 ? 'success' : gaps.length > 0 ? 'partial' : 'success',
+              });
+            }
           }
 
           if (await this.shouldCheckCorruption(pair)) {
-            const fixedCorrupted = await this.detectAndFixCorruptedKlines(pair);
+            const { corruptedFound, fixed } = await this.detectAndFixCorruptedKlines(pair, true);
 
-            if (fixedCorrupted > 0) {
-              logger.debug({ symbol: pair.symbol, interval: pair.interval, fixed: fixedCorrupted }, 'Fixed corrupted klines');
+            await this.updateMaintenanceLog(pair, { corruptedFixed: fixed, checkType: 'corruption' });
+
+            if (corruptedFound > 0) {
+              logBuffer.addCorruptionFix({
+                symbol: pair.symbol,
+                interval: pair.interval,
+                marketType: pair.marketType,
+                corruptedFound,
+                fixed,
+                status: fixed === corruptedFound ? 'success' : fixed > 0 ? 'partial' : 'error',
+              });
             }
-
-            await this.updateMaintenanceLog(pair, { corruptedFixed: fixedCorrupted, checkType: 'corruption' });
           }
         } catch (error) {
           logger.error({ pair, error }, 'Error checking gaps for pair');
         }
       }
+
+      outputMaintenanceResults(logBuffer.toResult());
     } catch (error) {
       logger.error({ error }, 'Error in gap check cycle');
     } finally {
@@ -398,22 +458,23 @@ class KlineMaintenance {
     return gaps;
   }
 
-  private async fillGap(gap: GapInfo): Promise<void> {
-    logger.info(
-      {
-        symbol: gap.symbol,
-        interval: gap.interval,
-        marketType: gap.marketType,
-        gapStart: gap.gapStart.toISOString(),
-        gapEnd: gap.gapEnd.toISOString(),
-        missingCandles: gap.missingCandles,
-      },
-      'Filling gap'
-    );
+  private async fillGap(gap: GapInfo, silent = false): Promise<number> {
+    if (!silent) {
+      logger.info(
+        {
+          symbol: gap.symbol,
+          interval: gap.interval,
+          marketType: gap.marketType,
+          gapStart: gap.gapStart.toISOString(),
+          gapEnd: gap.gapEnd.toISOString(),
+          missingCandles: gap.missingCandles,
+        },
+        'Filling gap'
+      );
+    }
 
     try {
       const fetchFn = gap.marketType === 'FUTURES' ? fetchFuturesKlinesFromAPI : fetchHistoricalKlinesFromAPI;
-
       const fetchedKlines = await fetchFn(gap.symbol, gap.interval, gap.gapStart, gap.gapEnd);
 
       if (fetchedKlines.length === 0) {
@@ -427,11 +488,6 @@ class KlineMaintenance {
         });
 
         if (firstExistingKline) {
-          logger.info(
-            { symbol: gap.symbol, interval: gap.interval, marketType: gap.marketType, earliestDate: firstExistingKline.openTime.toISOString() },
-            'No older data available, storing earliest kline date'
-          );
-
           await db
             .insert(pairMaintenanceLog)
             .values({
@@ -445,10 +501,8 @@ class KlineMaintenance {
               target: [pairMaintenanceLog.symbol, pairMaintenanceLog.interval, pairMaintenanceLog.marketType],
               set: { earliestKlineDate: firstExistingKline.openTime, updatedAt: new Date() },
             });
-        } else {
-          logger.warn({ gap }, 'No klines fetched for gap');
         }
-        return;
+        return 0;
       }
 
       let inserted = 0;
@@ -480,9 +534,14 @@ class KlineMaintenance {
         }
       }
 
-      logger.info({ symbol: gap.symbol, interval: gap.interval, marketType: gap.marketType, inserted }, 'Gap filled successfully');
+      if (!silent && inserted > 0) {
+        logger.info({ symbol: gap.symbol, interval: gap.interval, marketType: gap.marketType, inserted }, 'Gap filled successfully');
+      }
+
+      return inserted;
     } catch (error) {
       logger.error({ gap, error }, 'Error filling gap');
+      return 0;
     }
   }
 
@@ -521,7 +580,7 @@ class KlineMaintenance {
     }
   }
 
-  private async detectAndFixCorruptedKlines(pair: ActivePair): Promise<number> {
+  private async detectAndFixCorruptedKlines(pair: ActivePair, silent = false): Promise<{ corruptedFound: number; fixed: number }> {
     const intervalMs = getIntervalMilliseconds(pair.interval);
     const lookbackMs = CORRUPTION_CHECK_KLINES * intervalMs;
     const startTime = new Date(Date.now() - lookbackMs);
@@ -554,23 +613,7 @@ class KlineMaintenance {
       }
     }
 
-    if (corruptedKlines.length === 0) return 0;
-
-    const reasonCounts = corruptedKlines.reduce((acc, { reason }) => {
-      acc[reason] = (acc[reason] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    logger.warn(
-      {
-        symbol: pair.symbol,
-        interval: pair.interval,
-        marketType: pair.marketType,
-        totalCorrupted: corruptedKlines.length,
-        reasons: reasonCounts,
-      },
-      'Corrupted klines detected (batch)'
-    );
+    if (corruptedKlines.length === 0) return { corruptedFound: 0, fixed: 0 };
 
     let fixed = 0;
 
@@ -610,14 +653,14 @@ class KlineMaintenance {
       }
     }
 
-    if (fixed > 0) {
+    if (!silent && fixed > 0) {
       logger.info(
         { symbol: pair.symbol, interval: pair.interval, marketType: pair.marketType, fixed, total: corruptedKlines.length },
         'Fixed corrupted klines (batch)'
       );
     }
 
-    return fixed;
+    return { corruptedFound: corruptedKlines.length, fixed };
   }
 
   async forceCheckSymbol(symbol: string, interval: Interval, marketType: 'SPOT' | 'FUTURES' = 'SPOT'): Promise<{ gapsFilled: number; corruptedFixed: number }> {
@@ -627,11 +670,11 @@ class KlineMaintenance {
     let gapsFilled = 0;
 
     for (const gap of gaps) {
-      await this.fillGap(gap);
-      gapsFilled += gap.missingCandles;
+      const filled = await this.fillGap(gap);
+      gapsFilled += filled;
     }
 
-    const corruptedFixed = await this.detectAndFixCorruptedKlines(pair);
+    const { fixed: corruptedFixed } = await this.detectAndFixCorruptedKlines(pair);
 
     if (gapsFilled > 0 || corruptedFixed > 0) {
       logger.debug({ symbol, interval, marketType, gapsFilled, corruptedFixed }, 'Force check completed');

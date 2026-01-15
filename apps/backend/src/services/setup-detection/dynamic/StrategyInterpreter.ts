@@ -31,6 +31,7 @@ const { MIN_ENTRY_STOP_SEPARATION_PERCENT, MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT 
 export interface StrategyInterpreterConfig extends SetupDetectorConfig {
   strategy: StrategyDefinition;
   parameterOverrides?: Record<string, number>;
+  silent?: boolean;
 }
 
 export class StrategyInterpreter extends BaseSetupDetector {
@@ -39,6 +40,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
   private indicatorEngine: IndicatorEngine;
   private conditionEvaluator: ConditionEvaluator;
   private exitCalculator: ExitCalculator;
+  private silent: boolean;
 
   constructor(config: StrategyInterpreterConfig) {
     super({
@@ -52,6 +54,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
     this.indicatorEngine = new IndicatorEngine();
     this.conditionEvaluator = new ConditionEvaluator(this.indicatorEngine);
     this.exitCalculator = new ExitCalculator(this.indicatorEngine);
+    this.silent = config.silent ?? false;
   }
 
   detect(klines: Kline[], currentIndex: number): SetupDetectorResult {
@@ -110,14 +113,16 @@ export class StrategyInterpreter extends BaseSetupDetector {
     if (stopLoss !== null) {
       const entryStopSeparation = (Math.abs(entryPrice - stopLoss) / entryPrice) * 100;
       if (entryStopSeparation < MIN_ENTRY_STOP_SEPARATION_PERCENT) {
-        logger.warn({
-          strategy: this.strategy.id,
-          direction,
-          entryPrice: entryPrice.toFixed(4),
-          stopLoss: stopLoss.toFixed(4),
-          separationPercent: entryStopSeparation.toFixed(3),
-          minRequired: MIN_ENTRY_STOP_SEPARATION_PERCENT,
-        }, '⚠️ Entry and stop are too close - setup rejected');
+        if (!this.silent) {
+          logger.warn({
+            strategy: this.strategy.id,
+            direction,
+            entryPrice: entryPrice.toFixed(4),
+            stopLoss: stopLoss.toFixed(4),
+            separationPercent: entryStopSeparation.toFixed(3),
+            minRequired: MIN_ENTRY_STOP_SEPARATION_PERCENT,
+          }, '⚠️ Entry and stop are too close - setup rejected');
+        }
         return { setup: null, confidence: 0 };
       }
     }
@@ -184,22 +189,24 @@ export class StrategyInterpreter extends BaseSetupDetector {
     };
 
     const currentKline = klines[currentIndex];
-    logger.info({
-      setupId: setup.id,
-      strategy: this.strategy.id,
-      direction,
-      symbol: currentKline ? `Candle at ${new Date(currentKline.openTime).toISOString()}` : 'Unknown',
-      entryPrice: entryPrice.toFixed(4),
-      entryOrderType: setup.entryOrderType,
-      stopLoss: stopLoss?.toFixed(4) ?? 'None',
-      takeProfit: takeProfit?.toFixed(4) ?? 'None',
-      riskReward: riskReward.toFixed(2),
-      confidence,
-      volumeConfirmation,
-      indicatorConfluence: indicatorConfluence.toFixed(2),
-      hasFibonacciProjection: !!fibonacciProjection,
-      resolvedParams: this.resolvedParams,
-    }, '✅ Setup detected');
+    if (!this.silent) {
+      logger.info({
+        setupId: setup.id,
+        strategy: this.strategy.id,
+        direction,
+        symbol: currentKline ? `Candle at ${new Date(currentKline.openTime).toISOString()}` : 'Unknown',
+        entryPrice: entryPrice.toFixed(4),
+        entryOrderType: setup.entryOrderType,
+        stopLoss: stopLoss?.toFixed(4) ?? 'None',
+        takeProfit: takeProfit?.toFixed(4) ?? 'None',
+        riskReward: riskReward.toFixed(2),
+        confidence,
+        volumeConfirmation,
+        indicatorConfluence: indicatorConfluence.toFixed(2),
+        hasFibonacciProjection: !!fibonacciProjection,
+        resolvedParams: this.resolvedParams,
+      }, '✅ Setup detected');
+    }
 
     const triggerCandleData = this.extractTriggerCandles(klines, currentIndex);
     const triggerIndicatorValues = this.extractIndicatorValues(indicators, currentIndex);
@@ -254,7 +261,9 @@ export class StrategyInterpreter extends BaseSetupDetector {
     const atrValue = this.indicatorEngine.resolveIndicatorValue(indicators, 'atr', currentIndex);
 
     if (adxValue === null || atrValue === null) {
-      logger.debug({ adxValue, atrValue }, 'Missing ADX or ATR for dynamic Fibonacci level selection, using default');
+      if (!this.silent) {
+        logger.debug({ adxValue, atrValue }, 'Missing ADX or ATR for dynamic Fibonacci level selection, using default');
+      }
       return DEFAULT_FIBONACCI_LEVEL;
     }
 
@@ -276,13 +285,15 @@ export class StrategyInterpreter extends BaseSetupDetector {
 
     const result = selectDynamicFibonacciLevel({ adx: adxValue, atrPercent, volumeRatio });
 
-    logger.debug({
-      adx: adxValue.toFixed(2),
-      atrPercent: atrPercent.toFixed(2),
-      volumeRatio: volumeRatio?.toFixed(2) ?? 'N/A',
-      selectedLevel: result.level,
-      reason: result.reason,
-    }, 'Dynamic Fibonacci level selected');
+    if (!this.silent) {
+      logger.debug({
+        adx: adxValue.toFixed(2),
+        atrPercent: atrPercent.toFixed(2),
+        volumeRatio: volumeRatio?.toFixed(2) ?? 'N/A',
+        selectedLevel: result.level,
+        reason: result.reason,
+      }, 'Dynamic Fibonacci level selected');
+    }
 
     return result.level;
   }
@@ -527,7 +538,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
 
     const isValid = progress <= MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT;
 
-    if (!isValid) {
+    if (!isValid && !this.silent) {
       logger.warn({
         direction,
         entryPrice: entryPrice.toFixed(4),
