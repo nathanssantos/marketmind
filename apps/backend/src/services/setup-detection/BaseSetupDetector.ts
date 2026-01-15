@@ -13,12 +13,18 @@ export interface SetupDetectorConfig {
   minRiskReward: number;
 }
 
+export interface SetupRejection {
+  reason: string;
+  details?: Record<string, string | number | boolean | null>;
+}
+
 export interface SetupDetectorResult {
   setup: TradingSetup | null;
   confidence: number;
   triggerKlineIndex?: number;
   triggerCandleData?: TriggerCandleSnapshot[];
   triggerIndicatorValues?: TriggerIndicatorValues;
+  rejection?: SetupRejection;
 }
 
 export abstract class BaseSetupDetector {

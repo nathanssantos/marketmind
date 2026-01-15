@@ -88,7 +88,18 @@ export class StrategyInterpreter extends BaseSetupDetector {
 
     const fibEntryValidation = this.validateFibonacciEntryProgress(entryPrice, fibonacciProjection, direction);
     if (!fibEntryValidation.valid) {
-      return { setup: null, confidence: 0 };
+      return {
+        setup: null,
+        confidence: 0,
+        rejection: {
+          reason: 'Entry above max Fibonacci level (61.8%)',
+          details: {
+            entryProgress: `${fibEntryValidation.progress.toFixed(1)}%`,
+            maxAllowed: `${MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT}%`,
+            direction,
+          },
+        },
+      };
     }
 
     const exitContext: ExitContext = {

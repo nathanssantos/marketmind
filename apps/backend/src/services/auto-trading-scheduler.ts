@@ -598,6 +598,15 @@ export class AutoTradingScheduler {
 
       const result = interpreter.detect(mappedKlines, currentIndex);
 
+      if (result.rejection) {
+        logBuffer.addRejection({
+          setupType: strategy.name,
+          direction: '-',
+          reason: result.rejection.reason,
+          details: result.rejection.details,
+        });
+      }
+
       if (result.setup && result.confidence >= 50) {
         const setupWithTriggerData = {
           ...result.setup,
@@ -935,20 +944,11 @@ export class AutoTradingScheduler {
           });
           effectiveTakeProfit = fibTarget;
         } else {
-          logBuffer.addRejection({
-            setupType: setup.type,
+          logBuffer.warn('⚠️', 'Fibonacci target invalid for direction, using default TP', {
+            fibTarget: fibTarget.toFixed(6),
+            entryPrice: setup.entryPrice.toFixed(6),
             direction: setup.direction,
-            reason: 'Fibonacci target below entry price',
-            details: {
-              fibTarget: fibTarget.toFixed(4),
-              entryPrice: setup.entryPrice.toFixed(4),
-              configLevel: fibonacciTargetLevel,
-              issue: setup.direction === 'LONG'
-                ? `Price ${setup.entryPrice.toFixed(4)} > Fib target ${fibTarget.toFixed(4)}`
-                : `Price ${setup.entryPrice.toFixed(4)} < Fib target ${fibTarget.toFixed(4)}`,
-            },
           });
-          return;
         }
       } else {
         logBuffer.warn('⚠️', 'Fibonacci target not available, using default TP', {
