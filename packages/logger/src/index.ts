@@ -18,6 +18,7 @@ export {
   WatcherLogBuffer,
   StartupLogBuffer,
   MaintenanceLogBuffer,
+  RotationLogBuffer,
   type LogEntry,
   type SetupLogEntry,
   type FilterCheckEntry,
@@ -29,4 +30,6 @@ export {
   type GapFillEntry,
   type CorruptionFixEntry,
   type MaintenanceResult,
+  type RotationLogEntry,
+  type RotationResult,
 } from './buffers';

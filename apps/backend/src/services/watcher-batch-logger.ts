@@ -6,6 +6,7 @@ import {
   WatcherLogBuffer,
   StartupLogBuffer,
   MaintenanceLogBuffer,
+  RotationLogBuffer,
   type ColorName,
   type BatchResult,
   type WatcherResult,
@@ -18,6 +19,7 @@ import {
   type FilterCheckEntry,
   type RejectionEntry,
   type TradeExecutionEntry,
+  type RotationResult,
 } from '@marketmind/logger';
 import fs from 'fs';
 import path from 'path';
@@ -31,6 +33,7 @@ export {
   WatcherLogBuffer,
   StartupLogBuffer,
   MaintenanceLogBuffer,
+  RotationLogBuffer,
   type BatchResult,
   type WatcherResult,
   type RestoredWatcherInfo,
@@ -42,6 +45,7 @@ export {
   type FilterCheckEntry,
   type RejectionEntry,
   type TradeExecutionEntry,
+  type RotationResult,
 };
 
 const ensureLogDir = (): void => {
@@ -75,7 +79,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
   lines.push('');
   lines.push(colorize(`═══════════════════════════════════════════════════════════════════════════════════════════════`, 'cyan'));
-  lines.push(colorize(`  🔄 BATCH #${batch.batchId}`, 'bright') + colorize(` │ ${batch.startTime.toLocaleTimeString()} │ Duration: ${durationMs}ms`, 'dim'));
+  lines.push(colorize(`  🔄 CYCLE #${batch.batchId}`, 'bright') + colorize(` │ ${batch.startTime.toLocaleTimeString()} │ Duration: ${durationMs}ms`, 'dim'));
   lines.push(colorize(`═══════════════════════════════════════════════════════════════════════════════════════════════`, 'cyan'));
 
   const summaryParts = [
@@ -593,6 +597,57 @@ export const outputMaintenanceResults = (result: MaintenanceResult): void => {
   if (result.totalGapsFound === 0 && result.totalCorruptedFixed === 0 && result.type === 'periodic') return;
 
   const summary = formatMaintenanceResults(result);
+  console.log(summary);
+  writeToFile(`${summary}\n`);
+};
+
+export const formatRotationResults = (result: RotationResult): string => {
+  const lines: string[] = [];
+  const durationMs = result.endTime.getTime() - result.startTime.getTime();
+
+  lines.push('');
+  lines.push(colorize('───────────────────────────────────────────────────────────────────────────────────────────────', 'magenta'));
+  lines.push(colorize(`  🔄 SYMBOL ROTATION`, 'bright') + colorize(` │ ${result.startTime.toLocaleTimeString()} │ Duration: ${durationMs}ms │ Interval: ${result.interval}`, 'dim'));
+  lines.push(colorize('───────────────────────────────────────────────────────────────────────────────────────────────', 'magenta'));
+
+  if (result.added.length > 0) {
+    lines.push(`  ${colorize('➕ Added:', 'green')} ${result.added.join(', ')}`);
+  }
+
+  if (result.removed.length > 0) {
+    lines.push(`  ${colorize('➖ Removed:', 'red')} ${result.removed.join(', ')}`);
+  }
+
+  const summaryParts = [
+    colorize(`📊 ${result.kept} kept`, 'cyan'),
+  ];
+
+  if (result.skippedWithPositions.length > 0) {
+    summaryParts.push(colorize(`🔒 ${result.skippedWithPositions.length} with positions`, 'yellow'));
+  }
+
+  if (result.skippedInsufficientKlines.length > 0) {
+    summaryParts.push(colorize(`⏳ ${result.skippedInsufficientKlines.length} insufficient data`, 'dim'));
+  }
+
+  lines.push(`  ${summaryParts.join(' │ ')}`);
+
+  if (result.logs.length > 0) {
+    for (const log of result.logs) {
+      const time = log.timestamp.toISOString().slice(11, 23);
+      const dataStr = log.data ? colorize(` ${JSON.stringify(log.data)}`, 'dim') : '';
+      lines.push(`    ${colorize(time, 'gray')} ${log.emoji} ${log.message}${dataStr}`);
+    }
+  }
+
+  lines.push('');
+  return lines.join('\n');
+};
+
+export const outputRotationResults = (result: RotationResult): void => {
+  if (!result.hasChanges) return;
+
+  const summary = formatRotationResults(result);
   console.log(summary);
   writeToFile(`${summary}\n`);
 };

@@ -257,28 +257,10 @@ export class AutoTradingScheduler {
     this.isCheckingRotation.add(stateKey);
 
     try {
-      log('🔄 [DynamicRotation] Checking rotation (synced with watcher tick)', {
-        walletId,
-        tradingInterval,
-        rotationInterval: state.config.interval,
-        timeSinceLastCheck: `${Math.round(timeSinceLastCheck / 1000)}s`,
-        intervalMs: `${intervalMs / 1000}s`,
-      });
-
       const rotationService = getDynamicSymbolRotationService();
       const result = await rotationService.executeRotation(walletId, state.userId, state.config);
 
       if (result.added.length > 0 || result.removed.length > 0) {
-        log('🔄 [DynamicRotation] Rotation result', {
-          walletId,
-          tradingInterval,
-          added: result.added.length,
-          removed: result.removed.length,
-          kept: result.kept.length,
-          skippedWithPositions: result.skippedWithPositions.length,
-          skippedInsufficientKlines: result.skippedInsufficientKlines.length,
-        });
-
         await this.applyRotation(
           walletId,
           state.userId,
@@ -287,12 +269,6 @@ export class AutoTradingScheduler {
           state.profileId,
           state.config.marketType
         );
-      } else {
-        log('✅ [DynamicRotation] No rotation needed', {
-          walletId,
-          tradingInterval,
-          kept: result.kept.length,
-        });
       }
 
       state.lastCheckTime = now;
@@ -331,15 +307,20 @@ export class AutoTradingScheduler {
   }
 
   private batchCounter = 0;
+  private cycleCounter = 0;
 
   private async processWatcherQueue(): Promise<void> {
     if (this.isProcessingQueue) return;
     this.isProcessingQueue = true;
 
+    const cycleStartTime = new Date();
+    this.cycleCounter++;
+    const cycleId = this.cycleCounter;
+    const allResults: WatcherResult[] = [];
+    let batchesProcessed = 0;
+
     while (this.processingQueue.length > 0) {
-      const batchStartTime = new Date();
       this.batchCounter++;
-      const batchId = this.batchCounter;
 
       const batch: string[] = [];
       while (batch.length < BATCH_SIZE && this.processingQueue.length > 0) {
@@ -353,10 +334,15 @@ export class AutoTradingScheduler {
         batch.map((watcherId) => this.processWatcherWithBuffer(watcherId))
       );
 
-      const batchResult = createBatchResult(batchId, batchStartTime, results);
-      outputBatchResults(batchResult, VERBOSE_BATCH_LOGS);
+      allResults.push(...results);
+      batchesProcessed++;
 
       await yieldToEventLoop();
+    }
+
+    if (allResults.length > 0) {
+      const unifiedResult = createBatchResult(cycleId, cycleStartTime, allResults);
+      outputBatchResults(unifiedResult, VERBOSE_BATCH_LOGS);
     }
 
     this.isProcessingQueue = false;
@@ -2063,14 +2049,6 @@ export class AutoTradingScheduler {
     profileId?: string,
     marketType: MarketType = 'SPOT'
   ): Promise<void> {
-    log('📊 Applying rotation result', {
-      walletId,
-      toAdd: result.added.length,
-      toRemove: result.removed.length,
-      kept: result.kept.length,
-      skippedWithPositions: result.skippedWithPositions.length,
-    });
-
     for (const symbol of result.removed) {
       const existingWatcher = await db
         .select()
@@ -2086,7 +2064,6 @@ export class AutoTradingScheduler {
 
       if (existingWatcher.length > 0) {
         await this.stopWatcher(walletId, symbol, interval, marketType);
-        log('🔻 Removed dynamic watcher', { walletId, symbol });
       }
     }
 
@@ -2114,17 +2091,8 @@ export class AutoTradingScheduler {
           false,
           true
         );
-        log('🔺 Added dynamic watcher with immediate check', { walletId, symbol });
-      } else {
-        log('ℹ️ Symbol already has watcher (possibly manual)', { walletId, symbol });
       }
     }
-
-    log('✅ Rotation applied successfully', {
-      walletId,
-      added: result.added.length,
-      removed: result.removed.length,
-    });
   }
 
   async triggerManualRotation(
@@ -2149,12 +2117,6 @@ export class AutoTradingScheduler {
       marketType: config.marketType,
       tradingInterval: config.interval,
     };
-
-    log('🔄 Triggering manual rotation', {
-      walletId,
-      limit: rotationConfig.limit,
-      excludedSymbols: excludedSymbols.length,
-    });
 
     const result = await rotationService.executeRotation(walletId, userId, rotationConfig);
     await this.applyRotation(walletId, userId, result, config.interval, config.profileId, config.marketType);

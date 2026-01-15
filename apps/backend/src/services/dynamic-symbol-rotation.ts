@@ -6,6 +6,7 @@ import { activeWatchers, tradeExecutions } from '../db/schema';
 import { checkKlineAvailability } from './kline-prefetch';
 import { logger } from './logger';
 import { getOpportunityScoringService, type SymbolScore } from './opportunity-scoring';
+import { outputRotationResults, RotationLogBuffer } from './watcher-batch-logger';
 
 export type RotationInterval = '1h' | '4h' | '1d';
 
@@ -117,7 +118,7 @@ export class DynamicSymbolRotationService {
     _userId: string,
     config: RotationConfig
   ): Promise<RotationResult> {
-    logger.info({ walletId, limit: config.limit }, '[DynamicRotation] Executing rotation');
+    const logBuffer = new RotationLogBuffer(walletId, config.interval);
 
     try {
       const scoringService = getOpportunityScoringService();
@@ -214,14 +215,15 @@ export class DynamicSymbolRotationService {
 
       this.addToHistory(walletId, result);
 
-      logger.info({
-        walletId,
-        added: toAdd.length,
-        removed: toRemove.length,
+      logBuffer.setResult({
+        added: toAdd,
+        removed: toRemove,
         kept: kept.length,
-        skippedWithPositions: skippedWithPositions.length,
-        skippedInsufficientKlines: skippedInsufficientKlines.length,
-      }, '[DynamicRotation] Rotation calculated');
+        skippedWithPositions,
+        skippedInsufficientKlines,
+      });
+
+      outputRotationResults(logBuffer.toResult());
 
       return result;
     } catch (error) {

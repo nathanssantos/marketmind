@@ -117,3 +117,24 @@ export interface MaintenanceResult {
   gapFills: GapFillEntry[];
   corruptionFixes: CorruptionFixEntry[];
 }
+
+export interface RotationLogEntry {
+  timestamp: Date;
+  emoji: string;
+  message: string;
+  data?: Record<string, unknown>;
+}
+
+export interface RotationResult {
+  walletId: string;
+  startTime: Date;
+  endTime: Date;
+  interval: string;
+  added: string[];
+  removed: string[];
+  kept: number;
+  skippedWithPositions: string[];
+  skippedInsufficientKlines: string[];
+  hasChanges: boolean;
+  logs: RotationLogEntry[];
+}
