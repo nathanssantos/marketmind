@@ -25,6 +25,13 @@ export interface PanelConfig {
   order: number;
 }
 
+interface BoundsCache {
+  bounds: Bounds | null;
+  viewportStart: number;
+  viewportEnd: number;
+  klinesLength: number;
+}
+
 export class CanvasManager {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D | null = null;
@@ -49,6 +56,8 @@ export class CanvasManager {
   };
   private lastRenderTime: number = 0;
   private minFrameTime: number = 16;
+  private boundsCache: BoundsCache = { bounds: null, viewportStart: 0, viewportEnd: 0, klinesLength: 0 };
+  private cachedTotalPanelHeight: number = 0;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -197,14 +206,34 @@ export class CanvasManager {
   private updateBounds(): void {
     if (this.klines.length === 0) {
       this.bounds = null;
+      this.boundsCache = { bounds: null, viewportStart: 0, viewportEnd: 0, klinesLength: 0 };
       return;
     }
 
-    const baseBounds = calculateBounds(this.klines, this.viewport);
-    
+    const start = Math.floor(this.viewport.start);
+    const end = Math.ceil(this.viewport.end);
+
+    const canUseCached = this.boundsCache.bounds &&
+      start >= this.boundsCache.viewportStart &&
+      end <= this.boundsCache.viewportEnd &&
+      this.klines.length === this.boundsCache.klinesLength;
+
+    const baseBounds = canUseCached
+      ? this.boundsCache.bounds!
+      : calculateBounds(this.klines, this.viewport);
+
+    if (!canUseCached) {
+      this.boundsCache = {
+        bounds: baseBounds,
+        viewportStart: start,
+        viewportEnd: end,
+        klinesLength: this.klines.length,
+      };
+    }
+
     const center = (baseBounds.minPrice + baseBounds.maxPrice) / 2;
     const range = (baseBounds.maxPrice - baseBounds.minPrice) * this.priceScale;
-    
+
     this.bounds = {
       ...baseBounds,
       minPrice: center - range / 2 + this.priceOffset,
@@ -233,9 +262,11 @@ export class CanvasManager {
     const existingPanel = this.panels.get(panelId);
     const order = PANEL_RENDER_ORDER.indexOf(panelId as PanelId);
     const panelOrder = order >= 0 ? order : this.panels.size;
+    const oldHeight = existingPanel?.height ?? 0;
 
     if (height === 0) {
       if (existingPanel) {
+        this.cachedTotalPanelHeight -= oldHeight;
         this.panels.delete(panelId);
         this.updateDimensions();
         this.markDirty('dimensions');
@@ -244,6 +275,7 @@ export class CanvasManager {
     }
 
     if (!existingPanel || existingPanel.height !== height) {
+      this.cachedTotalPanelHeight += height - oldHeight;
       this.panels.set(panelId, { id: panelId, height, order: panelOrder });
       this.updateDimensions();
       this.markDirty('dimensions');
@@ -255,11 +287,7 @@ export class CanvasManager {
   }
 
   public getTotalPanelHeight(): number {
-    let total = 0;
-    for (const panel of this.panels.values()) {
-      total += panel.height;
-    }
-    return total;
+    return this.cachedTotalPanelHeight;
   }
 
   public getPanelTop(panelId: string): number {
@@ -384,13 +412,24 @@ export class CanvasManager {
 
   public timeToIndex(timestamp: number): number {
     if (this.klines.length === 0) return -1;
-    for (let i = 0; i < this.klines.length; i++) {
-      const klineTime = typeof this.klines[i]!.openTime === 'number'
-        ? this.klines[i]!.openTime
-        : new Date(this.klines[i]!.openTime).getTime();
-      if (klineTime >= timestamp) return i;
+
+    let left = 0;
+    let right = this.klines.length - 1;
+
+    while (left < right) {
+      const mid = Math.floor((left + right) / 2);
+      const klineTime = typeof this.klines[mid]!.openTime === 'number'
+        ? this.klines[mid]!.openTime
+        : new Date(this.klines[mid]!.openTime).getTime();
+
+      if (klineTime < timestamp) {
+        left = mid + 1;
+      } else {
+        right = mid;
+      }
     }
-    return this.klines.length - 1;
+
+    return left;
   }
 
   public timestampToIndex(timestamp: number, intervalMs: number): number {

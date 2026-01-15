@@ -1,0 +1,83 @@
+export const INDICATOR_COLORS = {
+  MACD_LINE: '#2962ff',
+  MACD_SIGNAL: '#ff6d00',
+  MACD_HISTOGRAM_POSITIVE: '#26a69a',
+  MACD_HISTOGRAM_NEGATIVE: '#ef5350',
+
+  ADX_LINE: '#7c4dff',
+  ADX_PLUS_DI: '#26a69a',
+  ADX_MINUS_DI: '#ef5350',
+
+  FIBONACCI_DEFAULT: 'rgba(180, 180, 180, 0.7)',
+  FIBONACCI_SECONDARY: 'rgba(120, 120, 120, 0.4)',
+  FIBONACCI_127: 'rgba(66, 165, 245, 0.9)',
+  FIBONACCI_161: 'rgba(255, 167, 38, 0.9)',
+  FIBONACCI_200: 'rgba(76, 175, 80, 0.9)',
+
+  HIGHLIGHT_TRIGGER: '#9333ea',
+  HIGHLIGHT_CONFIRMATION: '#3b82f6',
+  HIGHLIGHT_REFERENCE: '#6b7280',
+  HIGHLIGHT_CONTEXT: '#94a3b8',
+
+  VOLUME_NEUTRAL: 'rgba(120, 120, 120, 0.3)',
+  VOLUME_BUY_BASE_RGB: [34, 84] as const,
+  VOLUME_SELL_BASE_RGB: [34, 34] as const,
+
+  OBV_LINE: '#2196f3',
+  OBV_SMA: '#ff9800',
+  VWAP_LINE: '#FFD700',
+  DONCHIAN_LINE: '#009688',
+  DONCHIAN_FILL: 'rgba(0, 150, 136, 0.1)',
+  SUPERTREND_UP: '#26a69a',
+  SUPERTREND_DOWN: '#ef5350',
+  CMF_POSITIVE: '#4caf50',
+  CMF_NEGATIVE: '#f44336',
+  CCI_LINE: '#ff9800',
+  ROC_LINE: '#00bcd4',
+  CMO_LINE: '#2196f3',
+  WILLIAMS_R_LINE: '#9c27b0',
+  ULTIMATE_OSC_LINE: '#673ab7',
+  TSI_LINE: '#2196f3',
+  TSI_SIGNAL: '#ff9800',
+  VORTEX_PLUS: '#26a69a',
+  VORTEX_MINUS: '#ef5350',
+  AROON_UP: '#26a69a',
+  AROON_DOWN: '#ef5350',
+  ELDER_BULL: '#26a69a',
+  ELDER_BEAR: '#ef5350',
+  PPO_LINE: '#2196f3',
+  PPO_SIGNAL: '#ff9800',
+  MFI_LINE: '#9c27b0',
+  STOCH_RSI_K: '#2196f3',
+  STOCH_RSI_D: '#ff9800',
+  AO_POSITIVE: '#26a69a',
+  AO_NEGATIVE: '#ef5350',
+  KLINGER_LINE: '#2196f3',
+  KLINGER_SIGNAL: '#ff9800',
+} as const;
+
+export const PANEL_COLORS = {
+  BACKGROUND: 'rgba(128, 128, 128, 0.02)',
+  ZONE_FILL: 'rgba(128, 128, 128, 0.08)',
+  ZONE_LINE: 'rgba(128, 128, 128, 0.3)',
+  LABEL_TEXT: 'rgba(128, 128, 128, 0.5)',
+} as const;
+
+export const ACTIVITY_COLORS = {
+  HIGH_ACTIVITY: '#00FF00',
+  HIGH_ACTIVITY_STROKE: '#00CC00',
+  LOW_ACTIVITY: '#FF1493',
+  LOW_ACTIVITY_STROKE: '#CC0066',
+} as const;
+
+export const KLINE_COLORS = {
+  BULLISH: '#26a69a',
+  BEARISH: '#ef5350',
+  WICK_BULLISH: '#26a69a',
+  WICK_BEARISH: '#ef5350',
+} as const;
+
+export const GRID_COLORS = {
+  LINE: 'rgba(128, 128, 128, 0.2)',
+  TEXT: 'rgba(128, 128, 128, 0.7)',
+} as const;

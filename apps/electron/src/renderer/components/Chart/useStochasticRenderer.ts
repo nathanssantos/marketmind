@@ -1,9 +1,17 @@
 import type { StochasticResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, OSCILLATOR_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
+import { getOscillatorSetup } from './hooks/useOscillatorSetup';
+import {
+  applyPanelClip,
+  createNormalizedValueToY,
+  drawLineOnPanel,
+  drawPanelBackground,
+  drawZoneFill,
+  drawZoneLines,
+} from './utils/oscillatorRendering';
 
 interface UseStochasticRendererProps {
   manager: CanvasManager | null;
@@ -23,37 +31,14 @@ export const useStochasticRenderer = ({
   oversoldLevel = 20,
 }: UseStochasticRendererProps) => {
   const render = useCallback((): void => {
-    if (!manager || !enabled || !stochasticData) return;
+    const setup = getOscillatorSetup(manager, enabled && !!stochasticData, 'stochastic');
+    if (!setup) return;
 
-    const ctx = manager.getContext();
-    const dimensions = manager.getDimensions();
-    const viewport = manager.getViewport();
-    const panelInfo = manager.getPanelInfo('stochastic');
-
-    if (!ctx || !dimensions || !panelInfo) return;
-
-    const { y: panelTop, height: panelHeight } = panelInfo;
-    const { chartWidth } = dimensions;
+    const { ctx, chartWidth, panelTop, panelHeight, visibleStart, visibleEnd, indexToX } = setup;
+    const valueToY = createNormalizedValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING);
 
     ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, panelTop, chartWidth, panelHeight);
-    ctx.clip();
-
-    const padding = CHART_CONFIG.PANEL_PADDING;
-    const innerHeight = panelHeight - padding * 2;
-    const klineWidth = chartWidth / (viewport.end - viewport.start);
-
-    const visibleStartIndex = Math.floor(viewport.start);
-    const visibleEndIndex = Math.ceil(viewport.end);
-
-    const visibleK = stochasticData.k.slice(visibleStartIndex, visibleEndIndex);
-    const visibleD = stochasticData.d.slice(visibleStartIndex, visibleEndIndex);
-
-    const valueToY = (value: number): number => {
-      return panelTop + padding + innerHeight - ((value / 100) * innerHeight);
-    };
-
+    applyPanelClip({ ctx, panelY: panelTop, panelHeight, chartWidth });
     drawPanelBackground({ ctx, panelY: panelTop, panelHeight, chartWidth });
 
     const overboughtY = valueToY(overboughtLevel);
@@ -63,34 +48,26 @@ export const useStochasticRenderer = ({
     drawZoneFill({ ctx, chartWidth, panelY: panelTop, panelHeight, topY: overboughtY, bottomY: oversoldY });
     drawZoneLines({ ctx, chartWidth, levels: [{ y: overboughtY }, { y: oversoldY }, { y: midY }] });
 
-    const drawLine = (values: (number | null)[], color: string, lineWidth: number): void => {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = lineWidth;
-      ctx.beginPath();
-
-      let isFirstPoint = true;
-
-      for (let i = 0; i < values.length; i++) {
-        const value = values[i];
-        if (value === null || value === undefined) continue;
-
-        const globalIndex = visibleStartIndex + i;
-        const x = (globalIndex - viewport.start) * klineWidth + klineWidth / 2;
-        const y = valueToY(value);
-
-        if (isFirstPoint) {
-          ctx.moveTo(x, y);
-          isFirstPoint = false;
-        } else {
-          ctx.lineTo(x, y);
-        }
-      }
-
-      ctx.stroke();
-    };
-
-    drawLine(visibleK, colors.stochastic.k, 1);
-    drawLine(visibleD, colors.stochastic.d, 1);
+    drawLineOnPanel(
+      ctx,
+      stochasticData!.k,
+      visibleStart,
+      visibleEnd,
+      indexToX,
+      valueToY,
+      colors.stochastic.k,
+      OSCILLATOR_CONFIG.LINE_WIDTH,
+    );
+    drawLineOnPanel(
+      ctx,
+      stochasticData!.d,
+      visibleStart,
+      visibleEnd,
+      indexToX,
+      valueToY,
+      colors.stochastic.d,
+      OSCILLATOR_CONFIG.LINE_WIDTH,
+    );
 
     ctx.restore();
   }, [manager, stochasticData, enabled, overboughtLevel, oversoldLevel, colors]);

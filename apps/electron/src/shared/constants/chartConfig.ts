@@ -66,3 +66,23 @@ export const PANEL_RENDER_ORDER = [
 export type PanelId = (typeof PANEL_RENDER_ORDER)[number];
 
 export const DEFAULT_MA_PERIODS = [20, 50, 200] as const;
+
+export const LINE_WIDTHS = {
+  THIN: 1,
+  NORMAL: 1.5,
+  THICK: 2,
+  HAIRLINE: 0.5,
+} as const;
+
+export const FONTS = {
+  AXIS_LABEL: '11px monospace',
+  PANEL_LABEL: '10px monospace',
+} as const;
+
+export const OSCILLATOR_CONFIG = {
+  LINE_WIDTH: 1,
+  BAR_WIDTH_RATIO: 0.6,
+  ZONE_LINE_DASH: [2, 2] as readonly number[],
+} as const;
+
+export const PROJECTION_LINE_DASH = [4, 2] as readonly number[];

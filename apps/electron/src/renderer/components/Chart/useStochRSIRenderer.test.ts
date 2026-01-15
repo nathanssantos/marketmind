@@ -32,6 +32,7 @@ describe('useStochRSIRenderer', () => {
       getDimensions: vi.fn(() => ({ width: 800, height: 600, chartWidth: 728, chartHeight: 575, volumeHeight: 0 })),
       getViewport: vi.fn(() => ({ start: 0, end: 5, klineWidth: 100 })),
       getPanelTop: vi.fn(() => 400),
+      getPanelInfo: vi.fn(() => ({ y: 400, height: 80 })),
       indexToX: vi.fn((index: number) => index * 140),
     } as unknown as CanvasManager;
   });

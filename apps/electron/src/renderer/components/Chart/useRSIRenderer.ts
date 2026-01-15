@@ -1,9 +1,17 @@
 import type { RSIResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, OSCILLATOR_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
+import { getOscillatorSetup } from './hooks/useOscillatorSetup';
+import {
+  applyPanelClip,
+  createNormalizedValueToY,
+  drawLineOnPanel,
+  drawPanelBackground,
+  drawZoneFill,
+  drawZoneLines,
+} from './utils/oscillatorRendering';
 
 interface UseRSIRendererProps {
   manager: CanvasManager | null;
@@ -23,36 +31,14 @@ export const useRSIRenderer = ({
   oversoldLevel = 5,
 }: UseRSIRendererProps) => {
   const render = useCallback((): void => {
-    if (!manager || !enabled || !rsiData) return;
+    const setup = getOscillatorSetup(manager, enabled && !!rsiData, 'rsi');
+    if (!setup) return;
 
-    const ctx = manager.getContext();
-    const dimensions = manager.getDimensions();
-    const viewport = manager.getViewport();
-    const panelInfo = manager.getPanelInfo('rsi');
-
-    if (!ctx || !dimensions || !panelInfo) return;
-
-    const { y: panelTop, height: panelHeight } = panelInfo;
-    const { chartWidth } = dimensions;
+    const { ctx, chartWidth, panelTop, panelHeight, visibleStart, visibleEnd, indexToX } = setup;
+    const valueToY = createNormalizedValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING);
 
     ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, panelTop, chartWidth, panelHeight);
-    ctx.clip();
-
-    const padding = CHART_CONFIG.PANEL_PADDING;
-    const innerHeight = panelHeight - padding * 2;
-    const klineWidth = chartWidth / (viewport.end - viewport.start);
-
-    const visibleStartIndex = Math.floor(viewport.start);
-    const visibleEndIndex = Math.ceil(viewport.end);
-
-    const visibleRSI = rsiData.values.slice(visibleStartIndex, visibleEndIndex);
-
-    const valueToY = (value: number): number => {
-      return panelTop + padding + innerHeight - ((value / 100) * innerHeight);
-    };
-
+    applyPanelClip({ ctx, panelY: panelTop, panelHeight, chartWidth });
     drawPanelBackground({ ctx, panelY: panelTop, panelHeight, chartWidth });
 
     const overboughtY = valueToY(overboughtLevel);
@@ -62,29 +48,17 @@ export const useRSIRenderer = ({
     drawZoneFill({ ctx, chartWidth, panelY: panelTop, panelHeight, topY: overboughtY, bottomY: oversoldY });
     drawZoneLines({ ctx, chartWidth, levels: [{ y: overboughtY }, { y: oversoldY }, { y: midY }] });
 
-    ctx.strokeStyle = colors.rsi.line;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
+    drawLineOnPanel(
+      ctx,
+      rsiData!.values,
+      visibleStart,
+      visibleEnd,
+      indexToX,
+      valueToY,
+      colors.rsi.line,
+      OSCILLATOR_CONFIG.LINE_WIDTH,
+    );
 
-    let isFirstPoint = true;
-
-    for (let i = 0; i < visibleRSI.length; i++) {
-      const value = visibleRSI[i];
-      if (value === null || value === undefined) continue;
-
-      const globalIndex = visibleStartIndex + i;
-      const x = (globalIndex - viewport.start) * klineWidth + klineWidth / 2;
-      const y = valueToY(value);
-
-      if (isFirstPoint) {
-        ctx.moveTo(x, y);
-        isFirstPoint = false;
-      } else {
-        ctx.lineTo(x, y);
-      }
-    }
-
-    ctx.stroke();
     ctx.restore();
   }, [manager, rsiData, enabled, overboughtLevel, oversoldLevel, colors]);
 
