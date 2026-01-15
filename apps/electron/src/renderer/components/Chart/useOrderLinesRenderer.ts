@@ -833,7 +833,6 @@ export const useOrderLinesRenderer = (
 
           ctx.save();
           ctx.globalAlpha = pendingAlpha;
-          ctx.setLineDash([3, 3]);
           ctx.lineWidth = 1;
           ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
 
@@ -842,7 +841,6 @@ export const useOrderLinesRenderer = (
           ctx.lineTo(chartWidth, stopY);
           ctx.stroke();
 
-          ctx.setLineDash([]);
           ctx.font = '11px monospace';
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
@@ -862,7 +860,6 @@ export const useOrderLinesRenderer = (
 
           ctx.save();
           ctx.globalAlpha = pendingAlpha;
-          ctx.setLineDash([3, 3]);
           ctx.lineWidth = 1;
           ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
 
@@ -871,7 +868,6 @@ export const useOrderLinesRenderer = (
           ctx.lineTo(chartWidth, tpY);
           ctx.stroke();
 
-          ctx.setLineDash([]);
           ctx.font = '11px monospace';
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';

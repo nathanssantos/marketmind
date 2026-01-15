@@ -1,15 +1,9 @@
+import { createLogger } from '@marketmind/logger';
 import type { Interval } from '@marketmind/types';
 import { ABSOLUTE_MINIMUM_KLINES, REQUIRED_KLINES } from '../constants';
 import { smartBackfillKlines, type SmartBackfillResult } from './binance-historical';
-import { logger } from './logger';
 
-const log = (message: string, data?: Record<string, unknown>): void => {
-  if (data) {
-    logger.info(data, `[Kline-Prefetch] ${message}`);
-  } else {
-    logger.info(`[Kline-Prefetch] ${message}`);
-  }
-};
+const log = createLogger('Kline-Prefetch');
 
 const KLINE_TOLERANCE_PERCENT = 0.99;
 const HARD_MINIMUM_KLINES = 2000;
@@ -49,7 +43,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
 
   const existingBackfill = activeBackfills.get(key);
   if (existingBackfill) {
-    if (!silent) log('⏳ Backfill already in progress, waiting...', { symbol, interval, marketType });
+    if (!silent) log.info('⏳ Backfill already in progress, waiting...', { symbol, interval, marketType });
     try {
       const result = await existingBackfill;
       return {
@@ -78,7 +72,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
     const result = await backfillPromise;
 
     if (!silent) {
-      log('✅ Prefetch complete', {
+      log.info('✅ Prefetch complete', {
         symbol,
         interval,
         marketType,
@@ -99,7 +93,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     if (!silent) {
-      logger.error({ symbol, interval, marketType, error: errorMessage }, '[Kline-Prefetch] ❌ Failed to prefetch klines');
+      log.error('❌ Failed to prefetch klines', { symbol, interval, marketType, error: errorMessage });
     }
 
     return {
@@ -160,7 +154,7 @@ export const checkKlineAvailability = async (
     });
 
     if (!result.success) {
-      if (!silent) log('⚠️ Kline availability check failed', { symbol, interval, marketType, error: result.error });
+      if (!silent) log.warn('⚠️ Kline availability check failed', { symbol, interval, marketType, error: result.error });
       return { hasSufficient: false, totalAvailable: 0, required, apiExhausted: false };
     }
 
@@ -174,7 +168,7 @@ export const checkKlineAvailability = async (
     if (!hasSufficient) {
       if (!silent) {
         if (!meetsHardMinimum) {
-          log('❌ Symbol has critically insufficient klines', {
+          log.error('❌ Symbol has critically insufficient klines', {
             symbol,
             interval,
             marketType,
@@ -184,7 +178,7 @@ export const checkKlineAvailability = async (
             apiExhausted,
           });
         } else {
-          log('⚠️ Symbol has insufficient klines', {
+          log.warn('⚠️ Symbol has insufficient klines', {
             symbol,
             interval,
             marketType,
@@ -199,7 +193,7 @@ export const checkKlineAvailability = async (
     }
 
     if (!silent && meetsToleranceWithApiExhausted && !meetsExactRequirement) {
-      log('ℹ️ Symbol accepted with tolerance (API exhausted)', {
+      log.info('ℹ️ Symbol accepted with tolerance (API exhausted)', {
         symbol,
         interval,
         marketType,
@@ -212,7 +206,7 @@ export const checkKlineAvailability = async (
     return { hasSufficient: true, totalAvailable: result.totalInDb, required, apiExhausted };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (!silent) log('❌ Kline availability check error', { symbol, interval, marketType, error: errorMessage });
+    if (!silent) log.error('❌ Kline availability check error', { symbol, interval, marketType, error: errorMessage });
     return { hasSufficient: false, totalAvailable: 0, required, apiExhausted: false };
   }
 };

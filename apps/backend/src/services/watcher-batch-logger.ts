@@ -1,4 +1,24 @@
-import Table from 'cli-table3';
+import {
+  colorize,
+  stripAnsi,
+  Table,
+  TABLE_CHARS,
+  WatcherLogBuffer,
+  StartupLogBuffer,
+  MaintenanceLogBuffer,
+  type ColorName,
+  type BatchResult,
+  type WatcherResult,
+  type RestoredWatcherInfo,
+  type GapFillEntry,
+  type CorruptionFixEntry,
+  type MaintenanceResult,
+  type LogEntry,
+  type SetupLogEntry,
+  type FilterCheckEntry,
+  type RejectionEntry,
+  type TradeExecutionEntry,
+} from '@marketmind/logger';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -7,194 +27,22 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const LOG_FILE = path.join(__dirname, '../../logs/auto-trading.log');
 
-const COLORS = {
-  reset: '\x1b[0m',
-  bright: '\x1b[1m',
-  dim: '\x1b[2m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  red: '\x1b[31m',
-  cyan: '\x1b[36m',
-  magenta: '\x1b[35m',
-  blue: '\x1b[34m',
-  gray: '\x1b[90m',
+export {
+  WatcherLogBuffer,
+  StartupLogBuffer,
+  MaintenanceLogBuffer,
+  type BatchResult,
+  type WatcherResult,
+  type RestoredWatcherInfo,
+  type GapFillEntry,
+  type CorruptionFixEntry,
+  type MaintenanceResult,
+  type LogEntry,
+  type SetupLogEntry,
+  type FilterCheckEntry,
+  type RejectionEntry,
+  type TradeExecutionEntry,
 };
-
-const TABLE_CHARS = {
-  top: '─', 'top-mid': '┬', 'top-left': '┌', 'top-right': '┐',
-  bottom: '─', 'bottom-mid': '┴', 'bottom-left': '└', 'bottom-right': '┘',
-  left: '│', 'left-mid': '├', mid: '─', 'mid-mid': '┼',
-  right: '│', 'right-mid': '┤', middle: '│',
-};
-
-const colorize = (text: string, color: keyof typeof COLORS): string =>
-  `${COLORS[color]}${text}${COLORS.reset}`;
-
-export interface LogEntry {
-  timestamp: Date;
-  level: 'info' | 'warn' | 'error' | 'debug';
-  emoji: string;
-  message: string;
-  data?: Record<string, unknown>;
-}
-
-export interface SetupLogEntry {
-  type: string;
-  direction: string;
-  confidence: number;
-  entryPrice: string;
-  stopLoss: string;
-  takeProfit: string;
-  riskReward: string;
-}
-
-export interface FilterCheckEntry {
-  filterName: string;
-  passed: boolean;
-  reason: string;
-  details?: Record<string, string | number | boolean | null>;
-}
-
-export interface RejectionEntry {
-  setupType: string;
-  direction: string;
-  reason: string;
-  details?: Record<string, string | number | boolean | null>;
-}
-
-export interface TradeExecutionEntry {
-  setupType: string;
-  direction: string;
-  entryPrice: string;
-  quantity: string;
-  stopLoss?: string;
-  takeProfit?: string;
-  orderType: string;
-  status: 'executed' | 'pending' | 'failed';
-}
-
-export interface WatcherResult {
-  watcherId: string;
-  symbol: string;
-  interval: string;
-  marketType: string;
-  profileName?: string;
-  status: 'success' | 'skipped' | 'error';
-  reason?: string;
-  klinesCount?: number;
-  setupsDetected: SetupLogEntry[];
-  filterChecks: FilterCheckEntry[];
-  rejections: RejectionEntry[];
-  tradeExecutions: TradeExecutionEntry[];
-  tradesExecuted: number;
-  durationMs: number;
-  logs: LogEntry[];
-}
-
-export interface BatchResult {
-  batchId: number;
-  startTime: Date;
-  endTime: Date;
-  totalWatchers: number;
-  successCount: number;
-  skippedCount: number;
-  errorCount: number;
-  totalSetupsDetected: number;
-  totalRejections: number;
-  totalFilterBlocks: number;
-  totalTradesExecuted: number;
-  watcherResults: WatcherResult[];
-}
-
-export class WatcherLogBuffer {
-  private logs: LogEntry[] = [];
-  private setups: SetupLogEntry[] = [];
-  private filters: FilterCheckEntry[] = [];
-  private rejectionList: RejectionEntry[] = [];
-  private executions: TradeExecutionEntry[] = [];
-  private tradesExecuted = 0;
-  private startTime: number;
-
-  constructor(
-    public readonly watcherId: string,
-    public readonly symbol: string,
-    public readonly interval: string,
-    public readonly marketType: string,
-    public readonly profileName?: string
-  ) {
-    this.startTime = Date.now();
-  }
-
-  log(emoji: string, message: string, data?: Record<string, unknown>): void {
-    this.logs.push({
-      timestamp: new Date(),
-      level: 'info',
-      emoji,
-      message,
-      data,
-    });
-  }
-
-  warn(emoji: string, message: string, data?: Record<string, unknown>): void {
-    this.logs.push({
-      timestamp: new Date(),
-      level: 'warn',
-      emoji,
-      message,
-      data,
-    });
-  }
-
-  error(emoji: string, message: string, data?: Record<string, unknown>): void {
-    this.logs.push({
-      timestamp: new Date(),
-      level: 'error',
-      emoji,
-      message,
-      data,
-    });
-  }
-
-  addSetup(setup: SetupLogEntry): void {
-    this.setups.push(setup);
-  }
-
-  addFilterCheck(filter: FilterCheckEntry): void {
-    this.filters.push(filter);
-  }
-
-  addRejection(rejection: RejectionEntry): void {
-    this.rejectionList.push(rejection);
-  }
-
-  addTradeExecution(execution: TradeExecutionEntry): void {
-    this.executions.push(execution);
-  }
-
-  incrementTrades(): void {
-    this.tradesExecuted++;
-  }
-
-  toResult(status: 'success' | 'skipped' | 'error', reason?: string, klinesCount?: number): WatcherResult {
-    return {
-      watcherId: this.watcherId,
-      symbol: this.symbol,
-      interval: this.interval,
-      marketType: this.marketType,
-      profileName: this.profileName,
-      status,
-      reason,
-      klinesCount,
-      setupsDetected: this.setups,
-      filterChecks: this.filters,
-      rejections: this.rejectionList,
-      tradeExecutions: this.executions,
-      tradesExecuted: this.tradesExecuted,
-      durationMs: Date.now() - this.startTime,
-      logs: this.logs,
-    };
-  }
-}
 
 const ensureLogDir = (): void => {
   const logDir = path.dirname(LOG_FILE);
@@ -202,9 +50,6 @@ const ensureLogDir = (): void => {
     fs.mkdirSync(logDir, { recursive: true });
   }
 };
-
-const stripAnsi = (str: string): string =>
-  str.replace(new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g'), '');
 
 const writeToFile = (content: string): void => {
   try {
@@ -515,45 +360,6 @@ export const createBatchResult = (
   };
 };
 
-export interface RestoredWatcherInfo {
-  symbol: string;
-  interval: string;
-  marketType: string;
-  profileId?: string;
-  isManual: boolean;
-  status: 'success' | 'failed';
-  error?: string;
-  klinesPrefetched?: number;
-  totalKlinesInDb?: number;
-  nextCandleClose?: Date;
-}
-
-export class StartupLogBuffer {
-  private restoredWatchers: RestoredWatcherInfo[] = [];
-  private startTime: number;
-  private persistedCount = 0;
-
-  constructor() {
-    this.startTime = Date.now();
-  }
-
-  setPersistedCount(count: number): void {
-    this.persistedCount = count;
-  }
-
-  addRestoredWatcher(info: RestoredWatcherInfo): void {
-    this.restoredWatchers.push(info);
-  }
-
-  getResults(): { watchers: RestoredWatcherInfo[]; persistedCount: number; durationMs: number } {
-    return {
-      watchers: this.restoredWatchers,
-      persistedCount: this.persistedCount,
-      durationMs: Date.now() - this.startTime,
-    };
-  }
-}
-
 export const formatStartupResults = (
   watchers: RestoredWatcherInfo[],
   persistedCount: number,
@@ -661,77 +467,7 @@ export const outputStartupResults = (
   writeToFile(`${summary}\n`);
 };
 
-export interface GapFillEntry {
-  symbol: string;
-  interval: string;
-  marketType: string;
-  gapsFound: number;
-  candlesFilled: number;
-  status: 'success' | 'partial' | 'skipped' | 'error';
-  reason?: string;
-}
-
-export interface CorruptionFixEntry {
-  symbol: string;
-  interval: string;
-  marketType: string;
-  corruptedFound: number;
-  fixed: number;
-  status: 'success' | 'partial' | 'error';
-}
-
-export interface MaintenanceResult {
-  type: 'startup' | 'periodic';
-  startTime: Date;
-  endTime: Date;
-  pairsChecked: number;
-  totalGapsFound: number;
-  totalCandlesFilled: number;
-  totalCorruptedFixed: number;
-  gapFills: GapFillEntry[];
-  corruptionFixes: CorruptionFixEntry[];
-}
-
-export class MaintenanceLogBuffer {
-  private gapFills: GapFillEntry[] = [];
-  private corruptionFixes: CorruptionFixEntry[] = [];
-  private startTime: number;
-  private type: 'startup' | 'periodic';
-  private pairsChecked = 0;
-
-  constructor(type: 'startup' | 'periodic' = 'startup') {
-    this.startTime = Date.now();
-    this.type = type;
-  }
-
-  setPairsChecked(count: number): void {
-    this.pairsChecked = count;
-  }
-
-  addGapFill(entry: GapFillEntry): void {
-    this.gapFills.push(entry);
-  }
-
-  addCorruptionFix(entry: CorruptionFixEntry): void {
-    this.corruptionFixes.push(entry);
-  }
-
-  toResult(): MaintenanceResult {
-    return {
-      type: this.type,
-      startTime: new Date(this.startTime),
-      endTime: new Date(),
-      pairsChecked: this.pairsChecked,
-      totalGapsFound: this.gapFills.reduce((sum, g) => sum + g.gapsFound, 0),
-      totalCandlesFilled: this.gapFills.reduce((sum, g) => sum + g.candlesFilled, 0),
-      totalCorruptedFixed: this.corruptionFixes.reduce((sum, c) => sum + c.fixed, 0),
-      gapFills: this.gapFills,
-      corruptionFixes: this.corruptionFixes,
-    };
-  }
-}
-
-const getMaintenanceStatusDisplay = (status: 'success' | 'partial' | 'skipped' | 'error'): { color: keyof typeof COLORS; icon: string } => {
+const getMaintenanceStatusDisplay = (status: 'success' | 'partial' | 'skipped' | 'error'): { color: ColorName; icon: string } => {
   if (status === 'success') return { color: 'green', icon: '✅' };
   if (status === 'partial') return { color: 'yellow', icon: '⚠️' };
   return { color: 'red', icon: '❌' };

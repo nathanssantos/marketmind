@@ -1,0 +1,21 @@
+{
+  "name": "@marketmind/logger",
+  "version": "0.45.0",
+  "description": "Unified logging infrastructure for MarketMind",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cli-table3": "^0.6.5",
+    "pino": "^9.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
