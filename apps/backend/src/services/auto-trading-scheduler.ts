@@ -241,75 +241,113 @@ export class AutoTradingScheduler {
     this.fundingRateCache.clear();
   }
 
-  private async maybeCheckRotation(walletId: string, tradingInterval: string): Promise<void> {
-    const stateKey = getRotationStateKey(walletId, tradingInterval);
-    const state = this.rotationStates.get(stateKey);
-    if (!state) return;
-
-    if (this.isCheckingRotation.has(stateKey)) return;
+  private async checkAllRotationsOnce(): Promise<void> {
+    if (this.rotationStates.size === 0) return;
 
     const now = Date.now();
-    const intervalMs = ROTATION_INTERVAL_MS[state.config.interval];
-    const timeSinceLastCheck = now - state.lastCheckTime;
+    const rotationsToExecute: Array<{ stateKey: string; state: WalletRotationState }> = [];
 
-    if (timeSinceLastCheck < intervalMs) {
-      const remainingMs = intervalMs - timeSinceLastCheck;
-      const remainingMinutes = Math.ceil(remainingMs / 60000);
-      log('⏳ [DynamicRotation] Rotation not due yet', {
-        walletId: walletId.slice(0, 8),
-        rotationInterval: state.config.interval,
-        nextCheckIn: `${remainingMinutes}m`,
-      });
-      return;
+    for (const [stateKey, state] of this.rotationStates.entries()) {
+      if (this.isCheckingRotation.has(stateKey)) continue;
+
+      const intervalMs = ROTATION_INTERVAL_MS[state.config.interval];
+      const timeSinceLastCheck = now - state.lastCheckTime;
+
+      if (timeSinceLastCheck >= intervalMs) {
+        rotationsToExecute.push({ stateKey, state });
+      }
     }
 
-    this.isCheckingRotation.add(stateKey);
+    if (rotationsToExecute.length === 0) return;
 
-    log('🔄 [DynamicRotation] Starting rotation check', {
-      walletId: walletId.slice(0, 8),
-      rotationInterval: state.config.interval,
-      limit: state.config.limit,
-      marketType: state.config.marketType,
+    log('🔄 [DynamicRotation] Checking rotations', {
+      count: rotationsToExecute.length,
+      wallets: rotationsToExecute.map(r => r.state.config.marketType).join(', '),
     });
 
-    try {
-      const rotationService = getDynamicSymbolRotationService();
-      const result = await rotationService.executeRotation(walletId, state.userId, state.config);
+    for (const { stateKey, state } of rotationsToExecute) {
+      this.isCheckingRotation.add(stateKey);
 
-      if (result.added.length > 0 || result.removed.length > 0) {
-        log('📊 [DynamicRotation] Applying changes', {
-          added: result.added.length,
-          removed: result.removed.length,
-          addedSymbols: result.added.join(', ') || '-',
-          removedSymbols: result.removed.join(', ') || '-',
-        });
-        await this.applyRotation(
-          walletId,
+      try {
+        const rotationService = getDynamicSymbolRotationService();
+        const result = await rotationService.executeRotation(
+          stateKey.split(':')[0]!,
           state.userId,
-          result,
-          state.config.tradingInterval,
-          state.profileId,
-          state.config.marketType
+          state.config
         );
-      } else {
-        log('✅ [DynamicRotation] No changes needed', {
-          walletId: walletId.slice(0, 8),
-          kept: result.kept.length,
-          skippedPositions: result.skippedWithPositions.length,
-          skippedKlines: result.skippedInsufficientKlines.length,
-        });
-      }
 
-      state.lastCheckTime = now;
-    } catch (error) {
-      log('❌ [DynamicRotation] Rotation check failed', {
-        walletId,
-        tradingInterval,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    } finally {
-      this.isCheckingRotation.delete(stateKey);
+        if (result.added.length > 0 || result.removed.length > 0) {
+          const walletId = stateKey.split(':')[0]!;
+          await this.applyRotationWithQueue(
+            walletId,
+            state.userId,
+            result,
+            state.config.tradingInterval,
+            state.profileId,
+            state.config.marketType
+          );
+        }
+
+        state.lastCheckTime = now;
+      } catch (error) {
+        log('❌ [DynamicRotation] Rotation check failed', {
+          stateKey,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      } finally {
+        this.isCheckingRotation.delete(stateKey);
+      }
     }
+  }
+
+  private async applyRotationWithQueue(
+    walletId: string,
+    userId: string,
+    result: RotationResult,
+    interval: string,
+    profileId?: string,
+    marketType: MarketType = 'SPOT'
+  ): Promise<void> {
+    for (const symbol of result.removed) {
+      const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
+      const idx = this.processingQueue.indexOf(watcherId);
+      if (idx !== -1) this.processingQueue.splice(idx, 1);
+      await this.stopWatcher(walletId, symbol, interval, marketType);
+    }
+
+    const symbolsToBackfill = result.added.filter(symbol => {
+      const existingWatcher = this.activeWatchers.get(`${walletId}-${symbol}-${interval}-${marketType}`);
+      return !existingWatcher;
+    });
+
+    if (symbolsToBackfill.length > 0) {
+      log('📥 [DynamicRotation] Backfilling new symbols', {
+        count: symbolsToBackfill.length,
+        symbols: symbolsToBackfill.join(', '),
+      });
+
+      await Promise.all(
+        symbolsToBackfill.map(symbol =>
+          prefetchKlines({ symbol, interval, marketType, silent: true })
+        )
+      );
+    }
+
+    for (const symbol of result.added) {
+      const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
+      if (!this.activeWatchers.has(watcherId)) {
+        await this.startWatcher(walletId, userId, symbol, interval, profileId, false, marketType, false, false);
+        if (!this.processingQueue.includes(watcherId)) {
+          this.processingQueue.push(watcherId);
+        }
+      }
+    }
+
+    log('📊 [DynamicRotation] Applied changes', {
+      added: result.added.length,
+      removed: result.removed.length,
+      queueSize: this.processingQueue.length,
+    });
   }
 
   private async getCachedFundingRate(symbol: string): Promise<number | null> {
@@ -350,6 +388,8 @@ export class AutoTradingScheduler {
       this.pendingCycleId = this.cycleCounter;
       this.pendingCycleStartTime = new Date();
       this.pendingResults = [];
+
+      await this.checkAllRotationsOnce();
     }
 
     while (this.processingQueue.length > 0) {
@@ -444,10 +484,6 @@ export class AutoTradingScheduler {
     const watcherId = `${watcher.walletId}-${watcher.symbol}-${watcher.interval}-${watcher.marketType}`;
 
     logBuffer.log('🔍', 'Processing watcher');
-
-    if (!watcher.isManual) {
-      await this.maybeCheckRotation(watcher.walletId, watcher.interval);
-    }
 
     const [walletData] = await db
       .select({ currentBalance: wallets.currentBalance })

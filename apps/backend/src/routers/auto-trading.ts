@@ -804,7 +804,12 @@ export const autoTradingRouter = router({
       await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       const [config] = await ctx.db
-        .select({ useDynamicSymbolSelection: autoTradingConfig.useDynamicSymbolSelection })
+        .select({
+          useDynamicSymbolSelection: autoTradingConfig.useDynamicSymbolSelection,
+          dynamicSymbolLimit: autoTradingConfig.dynamicSymbolLimit,
+          dynamicSymbolExcluded: autoTradingConfig.dynamicSymbolExcluded,
+          dynamicSymbolRotationInterval: autoTradingConfig.dynamicSymbolRotationInterval,
+        })
         .from(autoTradingConfig)
         .where(
           and(
@@ -909,6 +914,21 @@ export const autoTradingRouter = router({
         fromRanking: fromRankingCount,
         skippedInsufficientKlines: skippedKlinesCount,
       });
+
+      if (useDynamicSelection && successCount > 0) {
+        await autoTradingScheduler.startDynamicRotation(
+          input.walletId,
+          ctx.user.id,
+          {
+            useDynamicSymbolSelection: true,
+            dynamicSymbolLimit: config?.dynamicSymbolLimit ?? targetCount,
+            dynamicSymbolExcluded: config?.dynamicSymbolExcluded ?? null,
+            marketType: input.marketType,
+            interval: input.interval,
+            profileId: input.profileId,
+          }
+        );
+      }
 
       return {
         results,
