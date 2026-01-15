@@ -20,6 +20,12 @@ crashReporter.start({
   ignoreSystemCrashHandler: false,
 });
 
+const DEBUG_STARTUP = process.env['DEBUG_STARTUP'] === 'true';
+
+const debugLog = (...args: unknown[]): void => {
+  if (DEBUG_STARTUP) console.log(...args);
+};
+
 const MEMORY_MONITOR = {
   BYTES_PER_KB: 1024,
   HIGH_MEMORY_THRESHOLD_MB: 500,
@@ -78,7 +84,7 @@ const chartWindows: Map<number, BrowserWindowType> = new Map();
 let chartWindowCounter = 0;
 
 const createChartWindow = (symbol?: string, timeframe?: string): number => {
-  console.log('Creating chart window for symbol:', symbol || 'default', 'timeframe:', timeframe || 'default');
+  debugLog('Creating chart window for symbol:', symbol || 'default', 'timeframe:', timeframe || 'default');
   
   const windowId = ++chartWindowCounter;
   const windowOptions: electron.BrowserWindowConstructorOptions = {
@@ -125,7 +131,7 @@ const createChartWindow = (symbol?: string, timeframe?: string): number => {
   }
 
   chartWindow.once('ready-to-show', () => {
-    console.log('Chart window ready to show');
+    debugLog('Chart window ready to show');
     chartWindow?.show();
   });
 
@@ -155,15 +161,15 @@ const createChartWindow = (symbol?: string, timeframe?: string): number => {
 
   chartWindow.on('closed', () => {
     chartWindows.delete(windowId);
-    console.log(`Chart window ${windowId} closed`);
+    debugLog(`Chart window ${windowId} closed`);
   });
 
   return windowId;
 };
 
 const createWindow = (): void => {
-  console.log('Creating main window...');
-  
+  debugLog('Creating main window...');
+
   const windowState = windowStateManager.getState();
   
   const windowOptions: electron.BrowserWindowConstructorOptions = {
@@ -191,7 +197,7 @@ const createWindow = (): void => {
   if (windowState.y !== undefined) windowOptions.y = windowState.y;
   
   mainWindow = new BrowserWindow(windowOptions);
-  console.log('BrowserWindow created');
+  debugLog('BrowserWindow created');
 
   const devServerUrl = process.env['VITE_DEV_SERVER_URL'];
   if (!devServerUrl) {
@@ -215,14 +221,14 @@ const createWindow = (): void => {
   windowStateManager.manage(mainWindow);
 
   mainWindow.once('ready-to-show', () => {
-    console.log('Window ready to show');
+    debugLog('Window ready to show');
     mainWindow?.show();
   });
 
-  console.log('Dev server URL:', devServerUrl);
-  
+  debugLog('Dev server URL:', devServerUrl);
+
   if (devServerUrl) {
-    console.log('Loading dev server URL...');
+    debugLog('Loading dev server URL...');
     void mainWindow.loadURL(devServerUrl);
   } else {
     void mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
@@ -314,13 +320,13 @@ const createWindow = (): void => {
     updateManager = null;
   });
   
-  console.log('Initializing UpdateManager...');
+  debugLog('Initializing UpdateManager...');
   try {
     updateManager = new UpdateManager(mainWindow);
-    console.log('UpdateManager initialized successfully');
-    console.log('Setting up update IPC handlers...');
+    debugLog('UpdateManager initialized successfully');
+    debugLog('Setting up update IPC handlers...');
     setupUpdateIpcHandlers();
-    console.log('Update setup complete');
+    debugLog('Update setup complete');
   } catch (error) {
     console.error('Error initializing UpdateManager:', error);
   }
@@ -467,7 +473,7 @@ const setupIpcHandlers = (): void => {
 
   ipcMain.handle('http:fetch', async (_event, url, options = {}) => {
     try {
-      console.log('[Main] HTTP fetch request:', url);
+      debugLog('[Main] HTTP fetch request:', url);
       const { method = 'GET', headers = {}, body } = options;
 
       const defaultHeaders = {
@@ -501,7 +507,7 @@ const setupIpcHandlers = (): void => {
         let responseData = '';
 
         request.on('response', (response) => {
-          console.log('[Main] Response status:', response.statusCode, response.statusMessage);
+          debugLog('[Main] Response status:', response.statusCode, response.statusMessage);
 
           response.on('data', (chunk) => {
             responseData += chunk.toString();
@@ -509,9 +515,9 @@ const setupIpcHandlers = (): void => {
 
           response.on('end', () => {
             try {
-              console.log('[Main] Raw response data (first 500 chars):', responseData.substring(0, 500));
+              debugLog('[Main] Raw response data (first 500 chars):', responseData.substring(0, 500));
               const data = JSON.parse(responseData);
-              console.log('[Main] Response data parsed successfully');
+              debugLog('[Main] Response data parsed successfully');
               
               resolve({
                 success: response.statusCode >= 200 && response.statusCode < 300,
@@ -579,10 +585,10 @@ const setupWindowHandlers = (): void => {
 
 const setupNotificationHandlers = (): void => {
   ipcMain.handle('notification:show', async (_event, options: { title: string; body: string; silent?: boolean; urgency?: 'normal' | 'critical' | 'low' }) => {
-    console.log('[Notification] show called with:', options);
+    debugLog('[Notification] show called with:', options);
     try {
       const supported = Notification.isSupported();
-      console.log('[Notification] isSupported:', supported);
+      debugLog('[Notification] isSupported:', supported);
       if (!supported) {
         return {
           success: false,
@@ -598,19 +604,19 @@ const setupNotificationHandlers = (): void => {
       });
 
       notification.on('show', () => {
-        console.log('[Notification] Notification shown successfully');
+        debugLog('[Notification] Notification shown successfully');
       });
 
       notification.on('click', () => {
-        console.log('[Notification] Notification clicked');
+        debugLog('[Notification] Notification clicked');
       });
 
       notification.on('close', () => {
-        console.log('[Notification] Notification closed');
+        debugLog('[Notification] Notification closed');
       });
 
       notification.show();
-      console.log('[Notification] notification.show() called');
+      debugLog('[Notification] notification.show() called');
 
       return { success: true };
     } catch (error) {
@@ -624,12 +630,13 @@ const setupNotificationHandlers = (): void => {
 
   ipcMain.handle('notification:isSupported', async () => {
     const supported = Notification.isSupported();
-    console.log('[Notification] isSupported check:', supported);
+    debugLog('[Notification] isSupported check:', supported);
     return supported;
   });
 };
 
 const logGpuInfo = (): void => {
+  if (!DEBUG_STARTUP) return;
   const gpuInfo = app.getGPUFeatureStatus();
   console.log('[Main] ═══════════════════════════════════════════════════════════');
   console.log('[Main] GPU FEATURE STATUS');
@@ -643,15 +650,15 @@ const logGpuInfo = (): void => {
 const initializeApp = async (): Promise<void> => {
   try {
     await app.whenReady();
-    console.log('App ready, setting up IPC handlers...');
+    debugLog('App ready, setting up IPC handlers...');
     logGpuInfo();
     startMemoryMonitor();
     setupIpcHandlers();
     setupWindowHandlers();
     setupNotificationHandlers();
-    console.log('IPC handlers set up, creating window...');
+    debugLog('IPC handlers set up, creating window...');
     createWindow();
-    console.log('Window created');
+    debugLog('Window created');
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -678,7 +685,7 @@ app.on('child-process-gone', (_event, details) => {
 });
 
 app.on('gpu-info-update', () => {
-  console.log('[Main] GPU info updated');
+  debugLog('[Main] GPU info updated');
   logGpuInfo();
 });
 

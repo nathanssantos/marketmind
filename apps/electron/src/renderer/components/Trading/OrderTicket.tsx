@@ -151,10 +151,7 @@ const OrderTicketComponent = () => {
 
   return (
     <Stack gap={3} p={4}>
-      <Flex justify="space-between" align="center" mb={1}>
-        <Text fontSize="sm" fontWeight="bold">
-          {t('trading.ticket.title')}
-        </Text>
+      <Flex justify="flex-end" align="center" mb={1}>
         <HStack gap={1}>
           <Badge
             size="sm"

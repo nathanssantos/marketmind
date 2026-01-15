@@ -112,10 +112,7 @@ export const WalletManager = () => {
 
   return (
     <Stack gap={2} p={4}>
-      <Flex justify="space-between" align="center" mb={2}>
-        <Text fontSize="sm" fontWeight="bold">
-          {t('trading.wallets.title')}
-        </Text>
+      <Flex justify="flex-end" align="center" mb={2}>
         <Button
           size="2xs"
           colorPalette="blue"

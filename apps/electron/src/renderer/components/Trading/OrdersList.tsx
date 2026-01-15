@@ -225,11 +225,6 @@ const OrdersListComponent = () => {
 
   return (
     <Stack gap={3} p={4}>
-      <Flex justify="space-between" align="center" mb={1}>
-        <Text fontSize="sm" fontWeight="bold">
-          {t('trading.orders.title')}
-        </Text>
-      </Flex>
 
       {!activeWallet ? (
         <Box p={4} textAlign="center" bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900' }}>

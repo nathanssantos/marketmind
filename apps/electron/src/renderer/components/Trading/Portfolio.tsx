@@ -136,12 +136,6 @@ const PortfolioComponent = () => {
     <Stack gap={3} p={4}>
       <FuturesPositionsPanel />
 
-      <Flex justify="space-between" align="center" mb={1}>
-        <Text fontSize="sm" fontWeight="bold">
-          {t('trading.portfolio.title')}
-        </Text>
-      </Flex>
-
       {!activeWallet ? (
         <Box p={4} textAlign="center" bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900' }}>
           <Text fontSize="sm" color="orange.600" _dark={{ color: 'orange.300' }}>

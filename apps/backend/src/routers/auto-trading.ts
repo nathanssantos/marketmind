@@ -786,6 +786,7 @@ export const autoTradingRouter = router({
         profileId: z.string().optional(),
         marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
         targetCount: z.number().min(1).max(50).optional(),
+        isManual: z.boolean().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -801,6 +802,21 @@ export const autoTradingRouter = router({
       });
 
       await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      const [config] = await ctx.db
+        .select({ useDynamicSymbolSelection: autoTradingConfig.useDynamicSymbolSelection })
+        .from(autoTradingConfig)
+        .where(
+          and(
+            eq(autoTradingConfig.walletId, input.walletId),
+            eq(autoTradingConfig.userId, ctx.user.id)
+          )
+        )
+        .limit(1);
+
+      const useDynamicSelection = config?.useDynamicSymbolSelection ?? false;
+
+      log('📊 Config loaded', { useDynamicSelection });
 
       await ctx.db
         .update(autoTradingConfig)
@@ -843,6 +859,8 @@ export const autoTradingRouter = router({
             return false;
           }
 
+          const isManualWatcher = input.isManual ?? (useDynamicSelection ? false : !fromRanking);
+
           await autoTradingScheduler.startWatcher(
             input.walletId,
             ctx.user.id,
@@ -851,12 +869,12 @@ export const autoTradingRouter = router({
             input.profileId,
             false,
             input.marketType,
-            true
+            isManualWatcher
           );
 
           startedSymbols.add(symbol);
           results.push({ symbol, success: true, fromRanking });
-          log('✅ Watcher started', { symbol, fromRanking });
+          log('✅ Watcher started', { symbol, fromRanking, isManual: isManualWatcher, useDynamicSelection });
           return true;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
