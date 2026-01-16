@@ -535,8 +535,35 @@ class KlineMaintenance {
         }
       }
 
-      if (!silent && inserted > 0) {
-        logger.info({ symbol: gap.symbol, interval: gap.interval, marketType: gap.marketType, inserted }, 'Gap filled successfully');
+      if (inserted > 0) {
+        if (!silent) {
+          logger.info({ symbol: gap.symbol, interval: gap.interval, marketType: gap.marketType, inserted }, 'Gap filled successfully');
+        }
+
+        const firstKline = await db.query.klines.findFirst({
+          where: and(
+            eq(klines.symbol, gap.symbol),
+            eq(klines.interval, gap.interval),
+            eq(klines.marketType, gap.marketType)
+          ),
+          orderBy: [asc(klines.openTime)],
+        });
+
+        if (firstKline) {
+          await db
+            .insert(pairMaintenanceLog)
+            .values({
+              symbol: gap.symbol,
+              interval: gap.interval,
+              marketType: gap.marketType,
+              earliestKlineDate: firstKline.openTime,
+              updatedAt: new Date(),
+            })
+            .onConflictDoUpdate({
+              target: [pairMaintenanceLog.symbol, pairMaintenanceLog.interval, pairMaintenanceLog.marketType],
+              set: { earliestKlineDate: firstKline.openTime, updatedAt: new Date() },
+            });
+        }
       }
 
       return inserted;
