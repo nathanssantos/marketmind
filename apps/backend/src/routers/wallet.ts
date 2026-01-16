@@ -1,8 +1,9 @@
 import { TRPCError } from '@trpc/server';
+import { MainClient, USDMClient } from 'binance';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { STABLECOINS } from '../constants';
-import { wallets, type Wallet } from '../db/schema';
+import { orders, positions, wallets } from '../db/schema';
 import { createBinanceClient, isPaperWallet } from '../services/binance-client';
 import { encryptApiKey } from '../services/encryption';
 import { getWebSocketService } from '../services/websocket';
@@ -104,33 +105,51 @@ export const walletRouter = router({
         apiKey: z.string().min(1),
         apiSecret: z.string().min(1),
         walletType: z.enum(['live', 'testnet']).default('testnet'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
       })
     )
     .mutation(async ({ input, ctx }) => {
       try {
-        const tempWallet = {
-          apiKeyEncrypted: input.apiKey,
-          apiSecretEncrypted: input.apiSecret,
-          walletType: input.walletType,
-        } as Wallet;
+        let initialBalance = 0;
 
-        const client = createBinanceClient(tempWallet);
-        const accountInfo = await client.getAccountInformation();
-
-        if (!accountInfo) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Invalid Binance API credentials',
+        if (input.marketType === 'FUTURES') {
+          const client = new USDMClient({
+            api_key: input.apiKey,
+            api_secret: input.apiSecret,
+            testnet: input.walletType === 'testnet',
           });
+          const accountInfo = await client.getAccountInformation();
+
+          if (!accountInfo) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Invalid Binance Futures API credentials',
+            });
+          }
+
+          const usdtAsset = accountInfo.assets?.find((a) => a.asset === 'USDT');
+          initialBalance = usdtAsset?.availableBalance ? parseFloat(String(usdtAsset.availableBalance)) : 0;
+        } else {
+          const client = new MainClient({
+            api_key: input.apiKey,
+            api_secret: input.apiSecret,
+            testnet: input.walletType === 'testnet',
+          });
+          const accountInfo = await client.getAccountInformation();
+
+          if (!accountInfo) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Invalid Binance API credentials',
+            });
+          }
+
+          const usdtBalance = accountInfo.balances?.find((b) => b.asset === 'USDT');
+          initialBalance = usdtBalance?.free ? parseFloat(usdtBalance.free.toString()) : 0;
         }
 
         const apiKeyEncrypted = encryptApiKey(input.apiKey);
         const apiSecretEncrypted = encryptApiKey(input.apiSecret);
-
-        const usdtBalance = accountInfo.balances?.find((b) => b.asset === 'USDT');
-        const initialBalance = usdtBalance?.free
-          ? parseFloat(usdtBalance.free.toString())
-          : 0;
 
         const walletId = generateEntityId();
 
@@ -151,6 +170,7 @@ export const walletRouter = router({
           id: walletId,
           name: input.name,
           walletType: input.walletType,
+          marketType: input.marketType,
           initialBalance: initialBalance.toString(),
           currentBalance: initialBalance.toString(),
           currency: 'USDT',
@@ -161,7 +181,7 @@ export const walletRouter = router({
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: `Failed to connect to Binance ${input.walletType}: ${errorMessage}`,
+          message: `Failed to connect to Binance ${input.marketType} ${input.walletType}: ${errorMessage}`,
           cause: error,
         });
       }
@@ -235,6 +255,8 @@ export const walletRouter = router({
         });
       }
 
+      await ctx.db.delete(orders).where(eq(orders.walletId, input.id));
+      await ctx.db.delete(positions).where(eq(positions.walletId, input.id));
       await ctx.db.delete(wallets).where(eq(wallets.id, input.id));
 
       return { success: true };
