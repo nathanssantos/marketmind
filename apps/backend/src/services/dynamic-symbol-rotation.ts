@@ -10,8 +10,13 @@ import { outputRotationResults, RotationLogBuffer } from './watcher-batch-logger
 
 const HYSTERESIS_THRESHOLD = 10;
 
-export const getIntervalMs = (interval: string): number =>
-  INTERVAL_MS[interval as keyof typeof INTERVAL_MS] ?? TIME_MS.HOUR;
+export const getIntervalMs = (interval: string): number => {
+  const ms = INTERVAL_MS[interval as keyof typeof INTERVAL_MS];
+  if (!ms) {
+    logger.warn({ interval }, '[DynamicRotation] Invalid interval, using 1h fallback');
+  }
+  return ms ?? TIME_MS.HOUR;
+};
 
 export interface RotationConfig {
   enabled: boolean;
@@ -191,9 +196,10 @@ export class DynamicSymbolRotationService {
         }
       }
 
+      const unrankedRank = filteredScores.length + 1;
       for (const symbol of currentSymbols) {
         if (!currentRankings.has(symbol)) {
-          currentRankings.set(symbol, config.limit * 2 + 1);
+          currentRankings.set(symbol, unrankedRank);
         }
       }
       this.previousRankings.set(walletId, currentRankings);
@@ -293,6 +299,12 @@ export class DynamicSymbolRotationService {
   }
 
   clearHistory(walletId: string): void {
+    this.rotationHistory.delete(walletId);
+    this.previousRankings.delete(walletId);
+  }
+
+  cleanupWallet(walletId: string): void {
+    this.stopRotation(walletId);
     this.rotationHistory.delete(walletId);
     this.previousRankings.delete(walletId);
   }

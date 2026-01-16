@@ -27,6 +27,7 @@ export function createBinanceFuturesClient(wallet: Wallet): USDMClient {
     api_key: apiKey,
     api_secret: apiSecret,
     testnet: walletType === 'testnet',
+    disableTimeSync: false,
   });
 }
 
