@@ -14,9 +14,11 @@ import { klines, pairMaintenanceLog } from '../db/schema';
 import { fetchFuturesKlinesFromAPI, fetchHistoricalKlinesFromAPI, getIntervalMilliseconds } from './binance-historical';
 import { KlineValidator } from './kline-validator';
 import { logger } from './logger';
+import type { OHLCMismatchEntry, ReconnectionValidationResult } from '@marketmind/logger';
 import {
   MaintenanceLogBuffer,
   outputMaintenanceResults,
+  outputReconnectionValidationResults,
   type CorruptionFixEntry,
 } from './watcher-batch-logger';
 
@@ -741,23 +743,23 @@ class KlineMaintenance {
   }
 
   async checkAfterReconnection(): Promise<{ checked: number; fixed: number }> {
-    logger.info('Running post-reconnection validation');
-
+    const startTime = new Date();
     const activePairs = await this.getActivePairs();
     let totalChecked = 0;
     let totalFixed = 0;
+    const mismatches: OHLCMismatchEntry[] = [];
 
     for (const pair of activePairs) {
       const intervalMs = getIntervalMilliseconds(pair.interval);
       const lookbackMs = 50 * intervalMs;
-      const startTime = new Date(Date.now() - lookbackMs);
+      const lookbackStart = new Date(Date.now() - lookbackMs);
 
       const recentKlines = await db.query.klines.findMany({
         where: and(
           eq(klines.symbol, pair.symbol),
           eq(klines.interval, pair.interval),
           eq(klines.marketType, pair.marketType),
-          gte(klines.openTime, startTime)
+          gte(klines.openTime, lookbackStart)
         ),
         orderBy: [asc(klines.openTime)],
       });
@@ -765,14 +767,14 @@ class KlineMaintenance {
       totalChecked += recentKlines.length;
 
       for (const kline of recentKlines) {
-        const isValid = await KlineValidator.validateAgainstAPI(
+        const validationResult = await KlineValidator.validateAgainstAPI(
           kline,
           pair.symbol,
           pair.interval,
           pair.marketType
         );
 
-        if (!isValid) {
+        if (!validationResult.isValid) {
           const apiKline = await this.fetchBinanceKline(
             pair.symbol,
             pair.interval,
@@ -780,6 +782,7 @@ class KlineMaintenance {
             pair.marketType
           );
 
+          let fixed = false;
           if (apiKline) {
             await db
               .update(klines)
@@ -805,17 +808,38 @@ class KlineMaintenance {
               );
 
             totalFixed++;
-            logger.info({
+            fixed = true;
+          }
+
+          for (const mismatch of validationResult.mismatches) {
+            mismatches.push({
               symbol: pair.symbol,
               interval: pair.interval,
+              marketType: pair.marketType,
               openTime: kline.openTime,
-            }, 'Fixed corrupted kline after reconnection');
+              field: mismatch.field,
+              dbValue: mismatch.dbValue,
+              apiValue: mismatch.apiValue,
+              diffPercent: mismatch.diffPercent,
+              fixed,
+            });
           }
         }
       }
     }
 
-    logger.info({ totalChecked, totalFixed }, 'Post-reconnection check complete');
+    const result: ReconnectionValidationResult = {
+      startTime,
+      endTime: new Date(),
+      pairsChecked: activePairs.length,
+      klinesChecked: totalChecked,
+      totalMismatches: mismatches.length,
+      totalFixed,
+      mismatches,
+    };
+
+    outputReconnectionValidationResults(result);
+
     return { checked: totalChecked, fixed: totalFixed };
   }
 }

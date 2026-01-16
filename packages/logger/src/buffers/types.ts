@@ -151,3 +151,102 @@ export interface RotationResult {
   hasChanges: boolean;
   logs: RotationLogEntry[];
 }
+
+export interface OHLCMismatchEntry {
+  symbol: string;
+  interval: string;
+  marketType: string;
+  openTime: Date;
+  field: 'open' | 'high' | 'low' | 'close';
+  dbValue: number;
+  apiValue: number;
+  diffPercent: number;
+  fixed: boolean;
+}
+
+export interface ReconnectionValidationResult {
+  startTime: Date;
+  endTime: Date;
+  pairsChecked: number;
+  klinesChecked: number;
+  totalMismatches: number;
+  totalFixed: number;
+  mismatches: OHLCMismatchEntry[];
+}
+
+export interface OrphanedPositionEntry {
+  walletId: string;
+  executionId: string;
+  symbol: string;
+  side: string;
+  entryPrice: number;
+  exitPrice: number;
+  quantity: number;
+  pnl: number;
+  pnlPercent: number;
+}
+
+export interface UnknownPositionEntry {
+  walletId: string;
+  symbol: string;
+  positionAmt: number;
+  entryPrice: number;
+  unrealizedPnl: number;
+  leverage: number;
+  marginType: string;
+}
+
+export interface UpdatedPositionEntry {
+  walletId: string;
+  executionId: string;
+  symbol: string;
+  field: string;
+  oldValue: number;
+  newValue: number;
+}
+
+export interface WalletSyncEntry {
+  walletId: string;
+  walletName: string;
+  synced: boolean;
+  orphanedCount: number;
+  unknownCount: number;
+  updatedCount: number;
+  error?: string;
+}
+
+export interface PositionSyncResult {
+  startTime: Date;
+  endTime: Date;
+  walletsChecked: number;
+  totalOrphaned: number;
+  totalUnknown: number;
+  totalUpdated: number;
+  walletSummaries: WalletSyncEntry[];
+  orphanedPositions: OrphanedPositionEntry[];
+  unknownPositions: UnknownPositionEntry[];
+  updatedPositions: UpdatedPositionEntry[];
+}
+
+export interface PendingOrderAction {
+  executionId: string;
+  symbol: string;
+  side: string;
+  action: 'EXPIRED' | 'INVALID' | 'FILLED' | 'PENDING' | 'ERROR';
+  limitPrice: number | null;
+  currentPrice?: number;
+  expiresAt?: Date;
+  error?: string;
+}
+
+export interface PendingOrdersCheckResult {
+  startTime: Date;
+  endTime: Date;
+  totalChecked: number;
+  expiredCount: number;
+  invalidCount: number;
+  filledCount: number;
+  pendingCount: number;
+  errorCount: number;
+  actions: PendingOrderAction[];
+}

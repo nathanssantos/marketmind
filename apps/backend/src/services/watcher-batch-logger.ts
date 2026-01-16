@@ -14,6 +14,8 @@ import {
     type GapFillEntry,
     type LogEntry,
     type MaintenanceResult,
+    type PositionSyncResult,
+    type ReconnectionValidationResult,
     type RejectionEntry,
     type RestoredWatcherInfo,
     type RotationResult,
@@ -696,6 +698,271 @@ export const outputRotationResults = (result: RotationResult): void => {
   }
 
   const summary = formatRotationResults(result);
+  console.log(summary);
+  writeToFile(`${summary}\n`);
+};
+
+const formatReconnectionValidationResults = (result: ReconnectionValidationResult): string => {
+  const lines: string[] = [];
+  const durationMs = result.endTime.getTime() - result.startTime.getTime();
+
+  lines.push('');
+  lines.push(colorize('═══════════════════════════════════════════════════════════════════════════════════════════════', 'cyan'));
+  lines.push(`  ${colorize('🔌 POST-RECONNECTION VALIDATION', 'cyan')} │ ${result.startTime.toLocaleTimeString()} │ Duration: ${durationMs}ms`);
+  lines.push(colorize('═══════════════════════════════════════════════════════════════════════════════════════════════', 'cyan'));
+
+  const summaryParts = [
+    `📊 ${result.pairsChecked} pairs`,
+    `🔍 ${result.klinesChecked} klines`,
+    `⚠️ ${result.totalMismatches} mismatches`,
+    `🛠️ ${result.totalFixed} fixed`,
+  ];
+  lines.push(`  ${summaryParts.join(' │ ')}`);
+
+  if (result.mismatches.length > 0) {
+    lines.push('');
+    lines.push(colorize('  🔧 OHLC CORRECTIONS', 'yellow'));
+
+    const mismatchTable = new Table({
+      head: ['Symbol', 'Interval', 'OpenTime', 'Field', 'DB Value', 'API Value', 'Diff %', 'Status'],
+      colWidths: [12, 10, 22, 8, 12, 12, 10, 10],
+      style: { head: ['yellow'], border: ['gray'] },
+      chars: TABLE_CHARS,
+    });
+
+    for (const m of result.mismatches) {
+      const timeStr = m.openTime.toISOString().replace('T', ' ').slice(0, 19);
+      const status = m.fixed ? colorize('✅', 'green') : colorize('❌', 'red');
+      const diffStr = m.diffPercent.toFixed(2) + '%';
+
+      mismatchTable.push([
+        m.symbol,
+        m.interval,
+        timeStr,
+        m.field.toUpperCase(),
+        m.dbValue.toPrecision(6),
+        m.apiValue.toPrecision(6),
+        diffStr,
+        status,
+      ]);
+    }
+
+    lines.push(mismatchTable.toString());
+  }
+
+  lines.push('');
+  return lines.join('\n');
+};
+
+export const outputReconnectionValidationResults = (result: ReconnectionValidationResult): void => {
+  if (result.totalMismatches === 0) return;
+
+  const summary = formatReconnectionValidationResults(result);
+  console.log(summary);
+  writeToFile(`${summary}\n`);
+};
+
+const formatPositionSyncResults = (result: PositionSyncResult): string => {
+  const lines: string[] = [];
+  const durationMs = result.endTime.getTime() - result.startTime.getTime();
+
+  const hasIssues = result.totalOrphaned > 0 || result.totalUnknown > 0;
+  const headerColor = hasIssues ? 'yellow' : 'dim';
+
+  lines.push('');
+  lines.push(colorize('───────────────────────────────────────────────────────────────────────────────────────────────', headerColor));
+  lines.push(`  ${colorize('🔄 POSITION SYNC', headerColor)} │ ${result.startTime.toLocaleTimeString()} │ Duration: ${durationMs}ms`);
+  lines.push(colorize('───────────────────────────────────────────────────────────────────────────────────────────────', headerColor));
+
+  const summaryParts = [
+    `📊 ${result.walletsChecked} wallets`,
+    result.totalOrphaned > 0 ? colorize(`⚠️ ${result.totalOrphaned} orphaned`, 'yellow') : `✅ 0 orphaned`,
+    result.totalUnknown > 0 ? colorize(`🚨 ${result.totalUnknown} unknown`, 'red') : `✅ 0 unknown`,
+    result.totalUpdated > 0 ? colorize(`🔄 ${result.totalUpdated} updated`, 'cyan') : `✅ 0 updated`,
+  ];
+  lines.push(`  ${summaryParts.join(' │ ')}`);
+
+  if (result.orphanedPositions.length > 0) {
+    lines.push('');
+    lines.push(colorize('  ⚠️ ORPHANED POSITIONS (closed on exchange but open in DB)', 'yellow'));
+
+    const orphanedTable = new Table({
+      head: ['Wallet', 'Symbol', 'Side', 'Entry', 'Exit', 'Qty', 'PnL', 'PnL %'],
+      colWidths: [12, 12, 8, 12, 12, 10, 12, 10],
+      style: { head: ['yellow'], border: ['gray'] },
+      chars: TABLE_CHARS,
+    });
+
+    for (const p of result.orphanedPositions) {
+      const pnlColor = p.pnl >= 0 ? 'green' : 'red';
+      orphanedTable.push([
+        p.walletId.slice(0, 10),
+        p.symbol,
+        p.side,
+        p.entryPrice.toPrecision(6),
+        p.exitPrice.toPrecision(6),
+        p.quantity.toPrecision(4),
+        colorize(p.pnl.toFixed(2), pnlColor),
+        colorize(`${p.pnlPercent.toFixed(2)}%`, pnlColor),
+      ]);
+    }
+
+    lines.push(orphanedTable.toString());
+  }
+
+  if (result.unknownPositions.length > 0) {
+    lines.push('');
+    lines.push(colorize('  🚨 UNKNOWN POSITIONS (on exchange but NOT in DB - MANUAL CHECK REQUIRED)', 'red'));
+
+    const unknownTable = new Table({
+      head: ['Wallet', 'Symbol', 'Position', 'Entry', 'Unrealized PnL', 'Leverage', 'Margin'],
+      colWidths: [12, 12, 12, 12, 14, 10, 10],
+      style: { head: ['red'], border: ['gray'] },
+      chars: TABLE_CHARS,
+    });
+
+    for (const p of result.unknownPositions) {
+      const pnlColor = p.unrealizedPnl >= 0 ? 'green' : 'red';
+      unknownTable.push([
+        p.walletId.slice(0, 10),
+        p.symbol,
+        p.positionAmt.toPrecision(4),
+        p.entryPrice.toPrecision(6),
+        colorize(p.unrealizedPnl.toFixed(2), pnlColor),
+        `${p.leverage}x`,
+        p.marginType,
+      ]);
+    }
+
+    lines.push(unknownTable.toString());
+  }
+
+  if (result.updatedPositions.length > 0) {
+    lines.push('');
+    lines.push(colorize('  🔄 POSITION UPDATES (synced from exchange)', 'cyan'));
+
+    const updatedTable = new Table({
+      head: ['Wallet', 'Symbol', 'Field', 'Old Value', 'New Value'],
+      colWidths: [12, 12, 14, 14, 14],
+      style: { head: ['cyan'], border: ['gray'] },
+      chars: TABLE_CHARS,
+    });
+
+    for (const p of result.updatedPositions) {
+      updatedTable.push([
+        p.walletId.slice(0, 10),
+        p.symbol,
+        p.field,
+        p.oldValue.toPrecision(6),
+        p.newValue.toPrecision(6),
+      ]);
+    }
+
+    lines.push(updatedTable.toString());
+  }
+
+  lines.push('');
+  return lines.join('\n');
+};
+
+export const outputPositionSyncResults = (result: PositionSyncResult): void => {
+  const hasIssues = result.totalOrphaned > 0 || result.totalUnknown > 0 || result.totalUpdated > 0;
+  if (!hasIssues) return;
+
+  const summary = formatPositionSyncResults(result);
+  console.log(summary);
+  writeToFile(`${summary}\n`);
+};
+
+import type { PendingOrdersCheckResult } from '@marketmind/logger';
+
+const formatPendingOrdersCheckResults = (result: PendingOrdersCheckResult): string => {
+  const lines: string[] = [];
+  const durationMs = result.endTime.getTime() - result.startTime.getTime();
+
+  const hasActivity = result.expiredCount > 0 || result.invalidCount > 0 || result.filledCount > 0 || result.errorCount > 0;
+  const headerColor = hasActivity ? 'yellow' : 'dim';
+
+  lines.push('');
+  lines.push(colorize('───────────────────────────────────────────────────────────────────────────────────────────────', headerColor));
+  lines.push(`  ${colorize('📋 PENDING ORDERS CHECK', headerColor)} │ ${result.startTime.toLocaleTimeString()} │ Duration: ${durationMs}ms`);
+  lines.push(colorize('───────────────────────────────────────────────────────────────────────────────────────────────', headerColor));
+
+  const summaryParts = [
+    `📊 ${result.totalChecked} orders`,
+    result.filledCount > 0 ? colorize(`🎯 ${result.filledCount} filled`, 'green') : `✅ 0 filled`,
+    result.expiredCount > 0 ? colorize(`⏰ ${result.expiredCount} expired`, 'yellow') : `✅ 0 expired`,
+    result.invalidCount > 0 ? colorize(`❌ ${result.invalidCount} invalid`, 'red') : `✅ 0 invalid`,
+    result.pendingCount > 0 ? colorize(`⏳ ${result.pendingCount} pending`, 'cyan') : '',
+    result.errorCount > 0 ? colorize(`⚠️ ${result.errorCount} errors`, 'red') : '',
+  ].filter(Boolean);
+  lines.push(`  ${summaryParts.join(' │ ')}`);
+
+  const actionsToShow = result.actions.filter(a => a.action !== 'PENDING');
+  if (actionsToShow.length > 0) {
+    lines.push('');
+
+    const orderTable = new Table({
+      head: ['Symbol', 'Side', 'Action', 'Limit Price', 'Current Price', 'Details'],
+      colWidths: [12, 8, 10, 14, 14, 35],
+      style: { head: ['yellow'], border: ['gray'] },
+      chars: TABLE_CHARS,
+    });
+
+    for (const action of actionsToShow) {
+      const sideColor = action.side === 'LONG' ? 'green' : 'red';
+      let actionColor: ColorName = 'dim';
+      let actionIcon = '';
+
+      switch (action.action) {
+        case 'FILLED':
+          actionColor = 'green';
+          actionIcon = '🎯';
+          break;
+        case 'EXPIRED':
+          actionColor = 'yellow';
+          actionIcon = '⏰';
+          break;
+        case 'INVALID':
+          actionColor = 'red';
+          actionIcon = '❌';
+          break;
+        case 'ERROR':
+          actionColor = 'red';
+          actionIcon = '⚠️';
+          break;
+      }
+
+      const details = action.error
+        ? action.error.slice(0, 33)
+        : action.action === 'EXPIRED' && action.expiresAt
+          ? `Expired at ${action.expiresAt.toLocaleTimeString()}`
+          : action.action === 'FILLED' && action.currentPrice
+            ? `Filled at ${action.currentPrice.toPrecision(6)}`
+            : '-';
+
+      orderTable.push([
+        action.symbol,
+        colorize(action.side, sideColor),
+        colorize(`${actionIcon} ${action.action}`, actionColor),
+        action.limitPrice?.toPrecision(6) ?? '-',
+        action.currentPrice?.toPrecision(6) ?? '-',
+        details,
+      ]);
+    }
+
+    lines.push(orderTable.toString());
+  }
+
+  lines.push('');
+  return lines.join('\n');
+};
+
+export const outputPendingOrdersCheckResults = (result: PendingOrdersCheckResult): void => {
+  const hasActivity = result.expiredCount > 0 || result.invalidCount > 0 || result.filledCount > 0 || result.errorCount > 0;
+  if (!hasActivity) return;
+
+  const summary = formatPendingOrdersCheckResults(result);
   console.log(summary);
   writeToFile(`${summary}\n`);
 };

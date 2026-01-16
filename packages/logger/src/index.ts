@@ -32,4 +32,13 @@ export {
   type MaintenanceResult,
   type RotationLogEntry,
   type RotationResult,
+  type OHLCMismatchEntry,
+  type ReconnectionValidationResult,
+  type OrphanedPositionEntry,
+  type UnknownPositionEntry,
+  type UpdatedPositionEntry,
+  type WalletSyncEntry,
+  type PositionSyncResult,
+  type PendingOrderAction,
+  type PendingOrdersCheckResult,
 } from './buffers';

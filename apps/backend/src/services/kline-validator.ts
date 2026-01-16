@@ -1,6 +1,5 @@
 import type { Interval } from '@marketmind/types';
 import type { klines } from '../db/schema';
-import { logger } from './logger';
 
 const MIN_VOLUME_FOR_VALIDITY = 0.01;
 const MIN_RANGE_RATIO = 0.05;
@@ -20,6 +19,18 @@ export interface ValidationResult {
 export interface CorruptedKline {
   openTime: Date;
   reason: string;
+}
+
+export interface OHLCMismatch {
+  field: 'open' | 'high' | 'low' | 'close';
+  dbValue: number;
+  apiValue: number;
+  diffPercent: number;
+}
+
+export interface ValidationAgainstAPIResult {
+  isValid: boolean;
+  mismatches: OHLCMismatch[];
 }
 
 type DbKline = typeof klines.$inferSelect;
@@ -227,7 +238,7 @@ export class KlineValidator {
     symbol: string,
     interval: Interval,
     marketType: 'SPOT' | 'FUTURES'
-  ): Promise<boolean> {
+  ): Promise<ValidationAgainstAPIResult> {
     const apiKline = await this.fetchBinanceKline(
       symbol,
       interval,
@@ -235,35 +246,33 @@ export class KlineValidator {
       marketType
     );
 
-    if (!apiKline) return true;
+    if (!apiKline) return { isValid: true, mismatches: [] };
 
     const tolerance = 0.001;
-    const fields = [
+    const fields: Array<{ name: 'open' | 'high' | 'low' | 'close'; db: number; api: number }> = [
       { name: 'open', db: parseFloat(kline.open), api: parseFloat(apiKline.open) },
       { name: 'high', db: parseFloat(kline.high), api: parseFloat(apiKline.high) },
       { name: 'low', db: parseFloat(kline.low), api: parseFloat(apiKline.low) },
       { name: 'close', db: parseFloat(kline.close), api: parseFloat(apiKline.close) },
     ];
 
+    const mismatches: OHLCMismatch[] = [];
+
     for (const field of fields) {
       const diff = Math.abs(field.db - field.api);
       const relativeDiff = diff / field.api;
 
       if (relativeDiff > tolerance) {
-        logger.error({
-          symbol,
-          interval,
-          openTime: kline.openTime,
+        mismatches.push({
           field: field.name,
-          db: field.db,
-          api: field.api,
-          diff: relativeDiff * 100,
-        }, `OHLC mismatch detected: ${field.name}`);
-        return false;
+          dbValue: field.db,
+          apiValue: field.api,
+          diffPercent: relativeDiff * 100,
+        });
       }
     }
 
-    return true;
+    return { isValid: mismatches.length === 0, mismatches };
   }
 
   private static async fetchBinanceKline(

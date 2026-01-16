@@ -1,3 +1,4 @@
+import type { OrphanedPositionEntry, PositionSyncResult, UnknownPositionEntry, UpdatedPositionEntry, WalletSyncEntry } from '@marketmind/logger';
 import type { FuturesPosition } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
@@ -5,6 +6,7 @@ import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { createBinanceFuturesClient, isPaperWallet, getPositions } from './binance-futures-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
+import { outputPositionSyncResults } from './watcher-batch-logger';
 import { getWebSocketService } from './websocket';
 
 interface SyncResult {
@@ -17,6 +19,9 @@ interface SyncResult {
     balanceUpdated: boolean;
   };
   errors: string[];
+  detailedOrphaned?: OrphanedPositionEntry[];
+  detailedUnknown?: UnknownPositionEntry[];
+  detailedUpdated?: UpdatedPositionEntry[];
 }
 
 export class PositionSyncService {
@@ -46,7 +51,12 @@ export class PositionSyncService {
   }
 
   async syncAllWallets(): Promise<SyncResult[]> {
+    const startTime = new Date();
     const results: SyncResult[] = [];
+    const walletSummaries: WalletSyncEntry[] = [];
+    const allOrphaned: OrphanedPositionEntry[] = [];
+    const allUnknown: UnknownPositionEntry[] = [];
+    const allUpdated: UpdatedPositionEntry[] = [];
 
     try {
       const allWallets = await db.select().from(wallets);
@@ -62,7 +72,22 @@ export class PositionSyncService {
         try {
           const result = await this.syncWallet(wallet);
           results.push(result);
+
+          walletSummaries.push({
+            walletId: wallet.id,
+            walletName: wallet.name,
+            synced: result.synced,
+            orphanedCount: result.changes.orphanedPositions.length,
+            unknownCount: result.changes.unknownPositions.length,
+            updatedCount: result.changes.updatedPositions.length,
+            error: result.errors[0],
+          });
+
+          if (result.detailedOrphaned) allOrphaned.push(...result.detailedOrphaned);
+          if (result.detailedUnknown) allUnknown.push(...result.detailedUnknown);
+          if (result.detailedUpdated) allUpdated.push(...result.detailedUpdated);
         } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
           results.push({
             walletId: wallet.id,
             synced: false,
@@ -72,10 +97,35 @@ export class PositionSyncService {
               updatedPositions: [],
               balanceUpdated: false,
             },
-            errors: [error instanceof Error ? error.message : String(error)],
+            errors: [errorMsg],
+          });
+
+          walletSummaries.push({
+            walletId: wallet.id,
+            walletName: wallet.name,
+            synced: false,
+            orphanedCount: 0,
+            unknownCount: 0,
+            updatedCount: 0,
+            error: errorMsg,
           });
         }
       }
+
+      const syncResult: PositionSyncResult = {
+        startTime,
+        endTime: new Date(),
+        walletsChecked: liveWallets.length,
+        totalOrphaned: allOrphaned.length,
+        totalUnknown: allUnknown.length,
+        totalUpdated: allUpdated.length,
+        walletSummaries,
+        orphanedPositions: allOrphaned,
+        unknownPositions: allUnknown,
+        updatedPositions: allUpdated,
+      };
+
+      outputPositionSyncResults(syncResult);
     } catch (error) {
       logger.error(
         { error: error instanceof Error ? error.message : String(error) },
@@ -97,6 +147,9 @@ export class PositionSyncService {
         balanceUpdated: false,
       },
       errors: [],
+      detailedOrphaned: [],
+      detailedUnknown: [],
+      detailedUpdated: [],
     };
 
     try {
@@ -124,26 +177,18 @@ export class PositionSyncService {
         const exchangePosition = exchangePositionsBySymbol.get(dbPosition.symbol);
 
         if (!exchangePosition) {
-          logger.warn(
-            {
-              walletId: wallet.id,
-              executionId: dbPosition.id,
-              symbol: dbPosition.symbol,
-            },
-            '[PositionSync] ⚠️ Orphaned position detected - in DB but not on exchange'
-          );
           result.changes.orphanedPositions.push(dbPosition.id);
 
           let pnl = 0;
           let pnlPercent = 0;
           let exitPrice = 0;
+          const entryPrice = parseFloat(dbPosition.entryPrice);
+          const quantity = parseFloat(dbPosition.quantity);
 
           try {
             const markPriceData = await getBinanceFuturesDataService().getMarkPrice(dbPosition.symbol);
             if (markPriceData) {
               exitPrice = markPriceData.markPrice;
-              const entryPrice = parseFloat(dbPosition.entryPrice);
-              const quantity = parseFloat(dbPosition.quantity);
               const leverage = dbPosition.leverage || 1;
 
               if (dbPosition.side === 'LONG') {
@@ -168,29 +213,22 @@ export class PositionSyncService {
                 .where(eq(wallets.id, wallet.id));
 
               result.changes.balanceUpdated = true;
-
-              logger.info(
-                {
-                  executionId: dbPosition.id,
-                  symbol: dbPosition.symbol,
-                  entryPrice,
-                  exitPrice,
-                  pnl: pnl.toFixed(2),
-                  pnlPercent: pnlPercent.toFixed(2),
-                  newBalance: newBalance.toFixed(2),
-                },
-                '[PositionSync] 💰 Orphaned position P&L calculated and balance updated'
-              );
             }
-          } catch (priceError) {
-            logger.warn(
-              {
-                symbol: dbPosition.symbol,
-                error: priceError instanceof Error ? priceError.message : String(priceError),
-              },
-              '[PositionSync] Could not get price for orphaned position P&L calculation'
-            );
+          } catch {
+            // Price fetch failed - continue without PnL calculation
           }
+
+          result.detailedOrphaned?.push({
+            walletId: wallet.id,
+            executionId: dbPosition.id,
+            symbol: dbPosition.symbol,
+            side: dbPosition.side,
+            entryPrice,
+            exitPrice,
+            quantity,
+            pnl,
+            pnlPercent,
+          });
 
           await db
             .update(tradeExecutions)
@@ -222,20 +260,10 @@ export class PositionSyncService {
           const dbEntryPrice = parseFloat(dbPosition.entryPrice);
           const exchangeEntryPrice = parseFloat(String(exchangePosition.entryPrice));
 
-          if (Math.abs(dbQty - exchangeQty) > 0.00001 || Math.abs(dbEntryPrice - exchangeEntryPrice) > 0.01) {
-            logger.info(
-              {
-                walletId: wallet.id,
-                executionId: dbPosition.id,
-                symbol: dbPosition.symbol,
-                dbQty,
-                exchangeQty,
-                dbEntryPrice,
-                exchangeEntryPrice,
-              },
-              '[PositionSync] Position data updated from exchange'
-            );
+          const qtyChanged = Math.abs(dbQty - exchangeQty) > 0.00001;
+          const priceChanged = Math.abs(dbEntryPrice - exchangeEntryPrice) > 0.01;
 
+          if (qtyChanged || priceChanged) {
             await db
               .update(tradeExecutions)
               .set({
@@ -247,6 +275,27 @@ export class PositionSyncService {
               .where(eq(tradeExecutions.id, dbPosition.id));
 
             result.changes.updatedPositions.push(dbPosition.id);
+
+            if (qtyChanged) {
+              result.detailedUpdated?.push({
+                walletId: wallet.id,
+                executionId: dbPosition.id,
+                symbol: dbPosition.symbol,
+                field: 'Quantity',
+                oldValue: dbQty,
+                newValue: exchangeQty,
+              });
+            }
+            if (priceChanged) {
+              result.detailedUpdated?.push({
+                walletId: wallet.id,
+                executionId: dbPosition.id,
+                symbol: dbPosition.symbol,
+                field: 'Entry Price',
+                oldValue: dbEntryPrice,
+                newValue: exchangeEntryPrice,
+              });
+            }
           }
 
           exchangePositionsBySymbol.delete(dbPosition.symbol);
@@ -254,19 +303,17 @@ export class PositionSyncService {
       }
 
       for (const [symbol, position] of exchangePositionsBySymbol) {
-        logger.error(
-          {
-            walletId: wallet.id,
-            symbol,
-            positionAmt: position.positionAmt,
-            entryPrice: position.entryPrice,
-            unrealizedPnl: position.unrealizedPnl,
-            leverage: position.leverage,
-            marginType: position.marginType,
-          },
-          '[PositionSync] 🚨 CRITICAL: Unknown position detected - on exchange but not in DB - MANUAL CHECK REQUIRED'
-        );
         result.changes.unknownPositions.push(symbol);
+
+        result.detailedUnknown?.push({
+          walletId: wallet.id,
+          symbol,
+          positionAmt: parseFloat(String(position.positionAmt)),
+          entryPrice: parseFloat(String(position.entryPrice)),
+          unrealizedPnl: parseFloat(String(position.unrealizedPnl || 0)),
+          leverage: position.leverage || 1,
+          marginType: position.marginType || 'ISOLATED',
+        });
 
         const wsService = getWebSocketService();
         if (wsService) {
@@ -286,27 +333,9 @@ export class PositionSyncService {
           });
         }
       }
-
-      if (result.changes.orphanedPositions.length > 0 || result.changes.unknownPositions.length > 0) {
-        logger.warn(
-          {
-            walletId: wallet.id,
-            orphanedCount: result.changes.orphanedPositions.length,
-            unknownCount: result.changes.unknownPositions.length,
-          },
-          '[PositionSync] ⚠️ Position discrepancies found'
-        );
-      }
     } catch (error) {
       result.synced = false;
       result.errors.push(error instanceof Error ? error.message : String(error));
-      logger.error(
-        {
-          walletId: wallet.id,
-          error: error instanceof Error ? error.message : String(error),
-        },
-        '[PositionSync] Failed to sync wallet'
-      );
     }
 
     return result;

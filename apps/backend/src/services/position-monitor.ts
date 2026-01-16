@@ -1,3 +1,4 @@
+import type { PendingOrderAction, PendingOrdersCheckResult } from '@marketmind/logger';
 import { calculateTotalFees } from '@marketmind/types';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
@@ -10,6 +11,7 @@ import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
 import { strategyPerformanceService } from './strategy-performance';
 import { trailingStopService } from './trailing-stop';
+import { outputPendingOrdersCheckResults } from './watcher-batch-logger';
 import { getWebSocketService } from './websocket';
 
 const LIQUIDATION_THRESHOLDS = {
@@ -144,22 +146,21 @@ export class PositionMonitorService {
       return;
     }
 
-    logger.debug({
-      pendingCount: pendingExecutions.length,
-      symbols: [...new Set(pendingExecutions.map(e => e.symbol))],
-    }, '📋 Checking pending LIMIT orders');
-
+    const startTime = new Date();
+    const actions: PendingOrderAction[] = [];
     const now = new Date();
 
     for (const execution of pendingExecutions) {
       try {
         if (execution.expiresAt && execution.expiresAt < now) {
-          logger.info({
+          actions.push({
             executionId: execution.id,
             symbol: execution.symbol,
-            limitPrice: execution.limitEntryPrice,
+            side: execution.side,
+            action: 'EXPIRED',
+            limitPrice: execution.limitEntryPrice ? parseFloat(execution.limitEntryPrice) : null,
             expiresAt: execution.expiresAt,
-          }, '📋 Pending LIMIT order expired - cancelling');
+          });
 
           await db
             .update(tradeExecutions)
@@ -184,9 +185,14 @@ export class PositionMonitorService {
         }
 
         if (!execution.limitEntryPrice) {
-          logger.warn({
+          actions.push({
             executionId: execution.id,
-          }, 'Pending order missing limit price - cancelling');
+            symbol: execution.symbol,
+            side: execution.side,
+            action: 'INVALID',
+            limitPrice: null,
+            error: 'Missing limit price',
+          });
 
           await db
             .update(tradeExecutions)
@@ -219,31 +225,15 @@ export class PositionMonitorService {
           ? currentPrice <= limitPrice
           : currentPrice >= limitPrice;
 
-        const priceDiff = isLong
-          ? ((limitPrice - currentPrice) / limitPrice) * 100
-          : ((currentPrice - limitPrice) / limitPrice) * 100;
-
-        logger.debug({
-          executionId: execution.id,
-          symbol: execution.symbol,
-          side: execution.side,
-          limitPrice,
-          currentPrice,
-          priceDiff: `${priceDiff.toFixed(3)}%`,
-          shouldFill,
-          condition: isLong ? `current (${currentPrice}) <= limit (${limitPrice})` : `current (${currentPrice}) >= limit (${limitPrice})`,
-        }, '📊 Pending order price check');
-
         if (shouldFill) {
-          logger.info({
+          actions.push({
             executionId: execution.id,
             symbol: execution.symbol,
             side: execution.side,
+            action: 'FILLED',
             limitPrice,
             currentPrice,
-            fillPrice: currentPrice,
-            improvement: `${Math.abs(((currentPrice - limitPrice) / limitPrice) * 100).toFixed(3)}%`,
-          }, '🎯 LIMIT ORDER FILLED - Position now OPEN');
+          });
 
           await db
             .update(tradeExecutions)
@@ -279,14 +269,41 @@ export class PositionMonitorService {
               entryPrice: currentPrice.toString(),
             });
           }
+        } else {
+          actions.push({
+            executionId: execution.id,
+            symbol: execution.symbol,
+            side: execution.side,
+            action: 'PENDING',
+            limitPrice,
+            currentPrice,
+          });
         }
       } catch (error) {
-        logger.error({
+        actions.push({
           executionId: execution.id,
+          symbol: execution.symbol,
+          side: execution.side,
+          action: 'ERROR',
+          limitPrice: execution.limitEntryPrice ? parseFloat(execution.limitEntryPrice) : null,
           error: error instanceof Error ? error.message : String(error),
-        }, 'Error checking pending order');
+        });
       }
     }
+
+    const result: PendingOrdersCheckResult = {
+      startTime,
+      endTime: new Date(),
+      totalChecked: pendingExecutions.length,
+      expiredCount: actions.filter(a => a.action === 'EXPIRED').length,
+      invalidCount: actions.filter(a => a.action === 'INVALID').length,
+      filledCount: actions.filter(a => a.action === 'FILLED').length,
+      pendingCount: actions.filter(a => a.action === 'PENDING').length,
+      errorCount: actions.filter(a => a.action === 'ERROR').length,
+      actions,
+    };
+
+    outputPendingOrdersCheckResults(result);
   }
 
   private groupExecutionsBySymbolAndSide(executions: TradeExecution[]): Map<string, TradeExecution[]> {
