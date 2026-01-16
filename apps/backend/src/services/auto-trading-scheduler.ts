@@ -143,6 +143,7 @@ export class AutoTradingScheduler {
   private strategyLoader: StrategyLoader;
   private processingQueue: string[] = [];
   private isProcessingQueue = false;
+  private processedThisCycle: Set<string> = new Set();
 
   private btcKlinesCache: Map<string, CacheEntry<Kline[]>> = new Map();
   private htfKlinesCache: Map<string, CacheEntry<Kline[]>> = new Map();
@@ -387,6 +388,9 @@ export class AutoTradingScheduler {
   }
 
   private queueWatcherProcessing(watcherId: string): void {
+    if (this.processedThisCycle.has(watcherId)) {
+      return;
+    }
     if (!this.processingQueue.includes(watcherId)) {
       this.processingQueue.push(watcherId);
       void this.processWatcherQueue();
@@ -428,6 +432,9 @@ export class AutoTradingScheduler {
       );
 
       for (const result of results) {
+        if (result.status !== 'pending') {
+          this.processedThisCycle.add(result.watcherId);
+        }
         const existingIndex = this.pendingResults.findIndex(r => r.watcherId === result.watcherId);
         if (existingIndex >= 0) {
           this.pendingResults[existingIndex] = result;
@@ -452,6 +459,7 @@ export class AutoTradingScheduler {
       this.pendingCycleId = null;
       this.pendingCycleStartTime = null;
       this.pendingResults = [];
+      this.processedThisCycle.clear();
     }
 
     this.isProcessingQueue = false;
