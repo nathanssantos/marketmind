@@ -97,10 +97,9 @@ describe('DynamicSymbolRotationService', () => {
   const baseConfig: RotationConfig = {
     enabled: true,
     limit: 10,
-    interval: '4h',
+    interval: '2h',
     excludedSymbols: [],
     marketType: 'FUTURES',
-    tradingInterval: '2h',
   };
 
   beforeEach(() => {
@@ -128,6 +127,14 @@ describe('DynamicSymbolRotationService', () => {
     });
 
     it('should only add symbols to replace removed ones (count should stay the same)', async () => {
+      mockSelectQuery(['BTCUSDT', 'ETHUSDT', 'RANDOMUSDT']);
+
+      await rotationService.executeRotation(
+        'test-wallet',
+        'test-user',
+        { ...baseConfig, limit: 10 }
+      );
+
       mockSelectQuery(['BTCUSDT', 'ETHUSDT', 'RANDOMUSDT']);
 
       const result = await rotationService.executeRotation(
@@ -194,6 +201,14 @@ describe('DynamicSymbolRotationService', () => {
     });
 
     it('should replace removed symbols with new ones maintaining count', async () => {
+      mockSelectQuery(['BTCUSDT', 'ETHUSDT', 'OLDCOIN1USDT', 'OLDCOIN2USDT', 'SOLUSDT']);
+
+      await rotationService.executeRotation(
+        'test-wallet',
+        'test-user',
+        { ...baseConfig, limit: 20 }
+      );
+
       mockSelectQuery(['BTCUSDT', 'ETHUSDT', 'OLDCOIN1USDT', 'OLDCOIN2USDT', 'SOLUSDT']);
 
       const result = await rotationService.executeRotation(

@@ -40,8 +40,7 @@ import { autoTradingService } from './auto-trading';
 import { cooldownService } from './cooldown';
 import {
   getDynamicSymbolRotationService,
-  getOptimalRotationInterval,
-  ROTATION_INTERVAL_MS,
+  getIntervalMs,
   type RotationConfig,
   type RotationResult,
 } from './dynamic-symbol-rotation';
@@ -256,7 +255,7 @@ export class AutoTradingScheduler {
     for (const [stateKey, state] of this.rotationStates.entries()) {
       if (this.isCheckingRotation.has(stateKey)) continue;
 
-      const intervalMs = ROTATION_INTERVAL_MS[state.config.interval];
+      const intervalMs = getIntervalMs(state.config.interval);
       const timeSinceLastCheck = now - state.lastCheckTime;
 
       if (timeSinceLastCheck >= intervalMs) {
@@ -304,7 +303,7 @@ export class AutoTradingScheduler {
             walletId,
             state.userId,
             result,
-            state.config.tradingInterval,
+            state.config.interval,
             state.profileId,
             state.config.marketType
           );
@@ -2263,15 +2262,13 @@ export class AutoTradingScheduler {
 
     const rotationService = getDynamicSymbolRotationService();
     const excludedSymbols = parseDynamicSymbolExcluded(config.dynamicSymbolExcluded);
-    const optimalInterval = getOptimalRotationInterval(config.interval);
 
     const rotationConfig: RotationConfig = {
       enabled: true,
       limit: config.dynamicSymbolLimit,
-      interval: optimalInterval,
+      interval: config.interval,
       excludedSymbols,
       marketType: config.marketType,
-      tradingInterval: config.interval,
     };
 
     log('🔄 Starting dynamic symbol rotation', {
@@ -2295,11 +2292,10 @@ export class AutoTradingScheduler {
         lastCheckTime: Date.now(),
       });
 
-      const nextCheckMs = ROTATION_INTERVAL_MS[rotationConfig.interval];
+      const nextCheckMs = getIntervalMs(config.interval);
       log('✅ Dynamic symbol rotation started (synced with watcher ticks)', {
         walletId,
-        tradingInterval: config.interval,
-        rotationInterval: rotationConfig.interval,
+        interval: config.interval,
         nextCheckIn: `${nextCheckMs / 1000}s`,
       });
     } else {
@@ -2446,10 +2442,9 @@ export class AutoTradingScheduler {
     const rotationConfig: RotationConfig = {
       enabled: true,
       limit: config.dynamicSymbolLimit,
-      interval: getOptimalRotationInterval(config.interval),
+      interval: config.interval,
       excludedSymbols,
       marketType: config.marketType,
-      tradingInterval: config.interval,
     };
 
     const result = await rotationService.executeRotation(walletId, userId, rotationConfig);
@@ -2492,7 +2487,7 @@ export class AutoTradingScheduler {
 
     for (const [key, state] of this.rotationStates.entries()) {
       if (key.startsWith(`${walletId}:`)) {
-        const intervalMs = ROTATION_INTERVAL_MS[state.config.interval];
+        const intervalMs = getIntervalMs(state.config.interval);
         const nextTime = new Date(state.lastCheckTime + intervalMs);
         if (!earliestTime || nextTime < earliestTime) {
           earliestTime = nextTime;
@@ -2517,8 +2512,8 @@ export class AutoTradingScheduler {
 
     for (const [key, state] of this.rotationStates.entries()) {
       if (key.startsWith(`${walletId}:`)) {
-        const interval = key.split(':')[1] ?? state.config.tradingInterval;
-        const intervalMs = ROTATION_INTERVAL_MS[state.config.interval];
+        const interval = key.split(':')[1] ?? state.config.interval;
+        const intervalMs = getIntervalMs(state.config.interval);
         cycles.push({
           interval,
           nextRotation: new Date(state.lastCheckTime + intervalMs),

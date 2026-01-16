@@ -8,31 +8,17 @@ import { logger } from './logger';
 import { getOpportunityScoringService, type SymbolScore } from './opportunity-scoring';
 import { outputRotationResults, RotationLogBuffer } from './watcher-batch-logger';
 
-export type RotationInterval = '1h' | '4h' | '1d';
-
-export const ROTATION_INTERVAL_MS: Record<RotationInterval, number> = {
-  '1h': TIME_MS.HOUR,
-  '4h': 4 * TIME_MS.HOUR,
-  '1d': TIME_MS.DAY,
-};
-
 const HYSTERESIS_THRESHOLD = 10;
 
-export const getOptimalRotationInterval = (watcherInterval: string): RotationInterval => {
-  const intervalMs = INTERVAL_MS[watcherInterval as keyof typeof INTERVAL_MS] ?? TIME_MS.HOUR;
-
-  if (intervalMs <= TIME_MS.HOUR) return '1h';
-  if (intervalMs <= 4 * TIME_MS.HOUR) return '4h';
-  return '1d';
-};
+export const getIntervalMs = (interval: string): number =>
+  INTERVAL_MS[interval as keyof typeof INTERVAL_MS] ?? TIME_MS.HOUR;
 
 export interface RotationConfig {
   enabled: boolean;
   limit: number;
-  interval: RotationInterval;
+  interval: string;
   excludedSymbols: string[];
   marketType: MarketType;
-  tradingInterval: string;
 }
 
 export interface RotationResult {
@@ -63,7 +49,7 @@ export class DynamicSymbolRotationService {
   ): Promise<void> {
     this.stopRotation(walletId);
 
-    const intervalMs = ROTATION_INTERVAL_MS[config.interval];
+    const intervalMs = getIntervalMs(config.interval);
     const now = Date.now();
     const nextRun = Math.ceil(now / intervalMs) * intervalMs;
     const delay = nextRun - now;
@@ -98,7 +84,7 @@ export class DynamicSymbolRotationService {
     userId: string,
     config: RotationConfig
   ): void {
-    const intervalMs = ROTATION_INTERVAL_MS[config.interval];
+    const intervalMs = getIntervalMs(config.interval);
 
     const timeoutId = setTimeout(() => {
       this.executeRotation(walletId, userId, config);
@@ -173,8 +159,10 @@ export class DynamicSymbolRotationService {
             } else {
               kept.push(symbol);
             }
-          } else {
+          } else if (previousRank && !currentRank) {
             toRemove.push(symbol);
+          } else {
+            kept.push(symbol);
           }
         } else {
           kept.push(symbol);
@@ -189,7 +177,7 @@ export class DynamicSymbolRotationService {
         if (!currentSymbols.has(symbol) && !kept.includes(symbol)) {
           const klineCheck = await checkKlineAvailability(
             symbol,
-            config.tradingInterval,
+            config.interval,
             config.marketType,
             true
           );
@@ -203,6 +191,11 @@ export class DynamicSymbolRotationService {
         }
       }
 
+      for (const symbol of currentSymbols) {
+        if (!currentRankings.has(symbol)) {
+          currentRankings.set(symbol, config.limit * 2 + 1);
+        }
+      }
       this.previousRankings.set(walletId, currentRankings);
 
       const result: RotationResult = {
