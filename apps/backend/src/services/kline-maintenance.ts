@@ -12,6 +12,7 @@ import {
 import { db } from '../db';
 import { klines, pairMaintenanceLog } from '../db/schema';
 import { fetchFuturesKlinesFromAPI, fetchHistoricalKlinesFromAPI, getIntervalMilliseconds } from './binance-historical';
+import { binanceKlineStreamService, binanceFuturesKlineStreamService } from './binance-kline-stream';
 import { KlineValidator } from './kline-validator';
 import { logger } from './logger';
 import type { OHLCMismatchEntry, ReconnectionValidationResult } from '@marketmind/logger';
@@ -192,28 +193,16 @@ class KlineMaintenance {
 
   private async checkAllStoredPairs(logBuffer?: MaintenanceLogBuffer): Promise<{ pairsChecked: number }> {
     try {
-      const distinctPairs = await db
-        .selectDistinct({
-          symbol: klines.symbol,
-          interval: klines.interval,
-          marketType: klines.marketType,
-        })
-        .from(klines);
+      const activePairs = await this.getActivePairsWithSubscriptions();
 
-      for (const pair of distinctPairs) {
+      for (const activePair of activePairs) {
         try {
-          const activePair: ActivePair = {
-            symbol: pair.symbol,
-            interval: pair.interval as Interval,
-            marketType: pair.marketType,
-          };
-
           if (!(await this.shouldCheckGaps(activePair))) {
             if (logBuffer) {
               logBuffer.addGapFill({
-                symbol: pair.symbol,
-                interval: pair.interval,
-                marketType: pair.marketType,
+                symbol: activePair.symbol,
+                interval: activePair.interval,
+                marketType: activePair.marketType,
                 gapsFound: 0,
                 candlesFilled: 0,
                 status: 'skipped',
@@ -235,21 +224,21 @@ class KlineMaintenance {
 
           if (logBuffer && (gaps.length > 0 || totalFilled > 0)) {
             logBuffer.addGapFill({
-              symbol: pair.symbol,
-              interval: pair.interval,
-              marketType: pair.marketType,
+              symbol: activePair.symbol,
+              interval: activePair.interval,
+              marketType: activePair.marketType,
               gapsFound: gaps.length,
               candlesFilled: totalFilled,
               status: totalFilled > 0 ? 'success' : gaps.length > 0 ? 'partial' : 'success',
             });
           }
         } catch (error) {
-          logger.error({ pair, error }, 'Error checking gaps for stored pair');
+          logger.error({ activePair, error }, 'Error checking gaps for active pair');
           if (logBuffer) {
             logBuffer.addGapFill({
-              symbol: pair.symbol,
-              interval: pair.interval,
-              marketType: pair.marketType,
+              symbol: activePair.symbol,
+              interval: activePair.interval,
+              marketType: activePair.marketType,
               gapsFound: 0,
               candlesFilled: 0,
               status: 'error',
@@ -259,7 +248,7 @@ class KlineMaintenance {
         }
       }
 
-      return { pairsChecked: distinctPairs.length };
+      return { pairsChecked: activePairs.length };
     } catch (error) {
       logger.error({ error }, 'Error in initial gap check');
       return { pairsChecked: 0 };
@@ -333,11 +322,14 @@ class KlineMaintenance {
   }
 
   private async getActivePairs(): Promise<ActivePair[]> {
-    const watchers = await db.query.activeWatchers.findMany();
+    return this.getActivePairsWithSubscriptions();
+  }
 
+  private async getActivePairsWithSubscriptions(): Promise<ActivePair[]> {
     const pairs: ActivePair[] = [];
     const seen = new Set<string>();
 
+    const watchers = await db.query.activeWatchers.findMany();
     for (const watcher of watchers) {
       const key = `${watcher.symbol}@${watcher.interval}@${watcher.marketType}`;
       if (!seen.has(key)) {
@@ -348,6 +340,28 @@ class KlineMaintenance {
           marketType: watcher.marketType,
         });
       }
+    }
+
+    try {
+      const spotSubs = binanceKlineStreamService.getActiveSubscriptions();
+      for (const sub of spotSubs) {
+        const key = `${sub.symbol}@${sub.interval}@SPOT`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          pairs.push({ symbol: sub.symbol, interval: sub.interval as Interval, marketType: 'SPOT' });
+        }
+      }
+
+      const futuresSubs = binanceFuturesKlineStreamService.getActiveSubscriptions();
+      for (const sub of futuresSubs) {
+        const key = `${sub.symbol}@${sub.interval}@FUTURES`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          pairs.push({ symbol: sub.symbol, interval: sub.interval as Interval, marketType: 'FUTURES' });
+        }
+      }
+    } catch {
+      // Services may not be initialized yet at startup
     }
 
     return pairs;
