@@ -91,7 +91,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
   if (batch.watcherResults.length > 0) {
     const watcherTable = new Table({
       head: ['Symbol', 'Interval', 'Market', 'Status', 'Klines', 'Setups', 'Trades', 'Time', 'Details'],
-      colWidths: [14, 10, 10, 12, 8, 8, 8, 10, 40],
+      colWidths: [14, 12, 12, 12, 10, 10, 10, 12, 58],
       style: {
         head: ['cyan'],
         border: ['gray'],
@@ -119,7 +119,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
         result.setupsDetected.length.toString(),
         result.tradesExecuted.toString(),
         `${result.durationMs}ms`,
-        details.slice(0, 38),
+        details.slice(0, 56),
       ]);
     }
 
@@ -133,7 +133,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const setupTable = new Table({
       head: ['Symbol', 'Strategy', 'Dir', 'Conf', 'Entry', 'Stop Loss', 'Take Profit', 'R:R'],
-      colWidths: [14, 28, 7, 7, 16, 16, 16, 8],
+      colWidths: [14, 34, 8, 8, 20, 20, 20, 26],
       style: {
         head: ['magenta'],
         border: ['gray'],
@@ -151,7 +151,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
         const dirColor = setup.direction === 'LONG' ? 'green' : 'red';
         setupTable.push([
           colorize(result.symbol, 'bright'),
-          setup.type.slice(0, 26),
+          setup.type.slice(0, 32),
           colorize(setup.direction, dirColor),
           `${setup.confidence}%`,
           setup.entryPrice,
@@ -172,7 +172,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const errorTable = new Table({
       head: ['Symbol', 'Interval', 'Error'],
-      colWidths: [14, 10, 80],
+      colWidths: [14, 10, 126],
       style: {
         head: ['red'],
         border: ['gray'],
@@ -185,7 +185,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
       errorTable.push([
         result.symbol,
         result.interval,
-        colorize(errorMsg.slice(0, 78), 'red'),
+        colorize(errorMsg.slice(0, 124), 'red'),
       ]);
     }
 
@@ -199,7 +199,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const rejectionTable = new Table({
       head: ['Symbol', 'Setup', 'Dir', 'Reason', 'Details'],
-      colWidths: [14, 24, 7, 28, 42],
+      colWidths: [14, 28, 8, 34, 66],
       style: {
         head: ['yellow'],
         border: ['gray'],
@@ -211,13 +211,13 @@ export const formatBatchResults = (batch: BatchResult): string => {
       for (const rejection of result.rejections) {
         const dirColor = rejection.direction === 'LONG' ? 'green' : 'red';
         const detailStr = rejection.details
-          ? Object.entries(rejection.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 40)
+          ? Object.entries(rejection.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 64)
           : '-';
         rejectionTable.push([
           colorize(result.symbol, 'bright'),
-          rejection.setupType.slice(0, 22),
+          rejection.setupType.slice(0, 26),
           colorize(rejection.direction, dirColor),
-          colorize(rejection.reason.slice(0, 26), 'yellow'),
+          colorize(rejection.reason.slice(0, 32), 'yellow'),
           detailStr,
         ]);
       }
@@ -233,7 +233,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const filterTable = new Table({
       head: ['Symbol', 'Filter', 'Reason', 'Details'],
-      colWidths: [14, 20, 35, 40],
+      colWidths: [14, 24, 50, 62],
       style: {
         head: ['red'],
         border: ['gray'],
@@ -244,12 +244,12 @@ export const formatBatchResults = (batch: BatchResult): string => {
     for (const result of filterBlockResults) {
       for (const filter of result.filterChecks.filter(f => !f.passed)) {
         const detailStr = filter.details
-          ? Object.entries(filter.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 38)
+          ? Object.entries(filter.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 60)
           : '-';
         filterTable.push([
           colorize(result.symbol, 'bright'),
           colorize(filter.filterName, 'red'),
-          filter.reason.slice(0, 33),
+          filter.reason.slice(0, 48),
           detailStr,
         ]);
       }
@@ -265,7 +265,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const tradeTable = new Table({
       head: ['Symbol', 'Setup', 'Dir', 'Entry', 'Qty', 'SL', 'TP', 'Type', 'Status'],
-      colWidths: [14, 20, 7, 14, 14, 14, 14, 10, 10],
+      colWidths: [14, 26, 8, 16, 16, 16, 16, 12, 26],
       style: {
         head: ['blue'],
         border: ['gray'],
@@ -279,7 +279,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
         const statusColor = trade.status === 'executed' ? 'green' : trade.status === 'pending' ? 'yellow' : 'red';
         tradeTable.push([
           colorize(result.symbol, 'bright'),
-          trade.setupType.slice(0, 18),
+          trade.setupType.slice(0, 24),
           colorize(trade.direction, dirColor),
           trade.entryPrice,
           trade.quantity,
