@@ -122,15 +122,15 @@ export const formatBatchResults = (batch: BatchResult): string => {
     `${batch.totalWatchers} watchers`,
     colorize(`✅ ${batch.successCount}`, 'green'),
     colorize(`⏳ ${batch.pendingCount}`, 'cyan'),
-    colorize(`⏭️ ${batch.skippedCount}`, 'yellow'),
+    colorize(`⏭ ${batch.skippedCount}`, 'yellow'),
     colorize(`❌ ${batch.errorCount}`, 'red'),
   ];
   const detailParts = [
     colorize(`📍 ${batch.totalSetupsDetected} setups`, 'magenta'),
-    colorize(`🚫 ${batch.totalRejections} rejected`, 'yellow'),
-    colorize(`🔒 ${batch.totalFilterBlocks} blocked`, 'red'),
-    colorize(`💹 ${batch.totalTradesExecuted} trades`, 'blue'),
-  ];
+    batch.totalRejections > 0 ? colorize(`🚫 ${batch.totalRejections} rejected`, 'yellow') : '',
+    batch.totalFilterBlocks > 0 ? colorize(`🔒 ${batch.totalFilterBlocks} blocked`, 'red') : '',
+    batch.totalTradesExecuted > 0 ? colorize(`💹 ${batch.totalTradesExecuted} trades`, 'green') : '',
+  ].filter(Boolean);
   lines.push(createSummaryLine('📊', summaryParts));
   lines.push(createSummaryLine('📈', detailParts));
 
@@ -169,7 +169,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const setupTable = createLogTable(
       ['Symbol', 'Strategy', 'Dir', 'Conf', 'Entry', 'Stop Loss', 'Take Profit', 'R:R'],
-      [14, 34, 8, 8, 20, 20, 20, 26],
+      [14, 34, 8, 8, 20, 20, 20, 27],
       'magenta'
     );
 
@@ -196,7 +196,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
   if (errorResults.length > 0) {
     lines.push(...createSectionHeader('❌', 'ERRORS', 'red'));
 
-    const errorTable = createLogTable(['Symbol', 'Interval', 'Error'], [14, 10, 126], 'red');
+    const errorTable = createLogTable(['Symbol', 'Interval', 'Error'], [14, 10, 132], 'red');
 
     for (const result of errorResults) {
       const errorLogs = result.logs.filter(l => l.level === 'error');
@@ -217,7 +217,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const rejectionTable = createLogTable(
       ['Symbol', 'Setup', 'Dir', 'Reason', 'Details'],
-      [14, 28, 8, 34, 66],
+      [14, 28, 8, 34, 70],
       'yellow'
     );
 
@@ -246,7 +246,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const filterTable = createLogTable(
       ['Symbol', 'Filter', 'Reason', 'Details'],
-      [14, 24, 50, 62],
+      [14, 24, 50, 67],
       'red'
     );
 
@@ -424,7 +424,7 @@ export const formatStartupResults = (
   if (watchers.length > 0) {
     const watcherTable = createLogTable(
       ['Symbol', 'Interval', 'Market', 'Type', 'Status', 'Klines', 'Next Candle'],
-      [14, 10, 10, 10, 10, 10, 22],
+      [14, 14, 14, 14, 14, 14, 68],
       'cyan'
     );
 
@@ -459,7 +459,7 @@ export const formatStartupResults = (
 
     const errorTable = createLogTable(
       ['Symbol', 'Interval', 'Market', 'Error'],
-      [14, 10, 10, 60],
+      [14, 14, 14, 113],
       'red'
     );
 
@@ -468,7 +468,7 @@ export const formatStartupResults = (
         colorize(w.symbol, 'bright'),
         w.interval,
         w.marketType,
-        colorize(w.error?.slice(0, 58) ?? 'Unknown error', 'red'),
+        colorize(w.error?.slice(0, 111) ?? 'Unknown error', 'red'),
       ]);
     }
 
@@ -504,7 +504,7 @@ const formatGapFillsTable = (gapFills: GapFillEntry[]): string[] => {
 
   const gapTable = createLogTable(
     ['Symbol', 'Interval', 'Market', 'Gaps', 'Candles', 'Status'],
-    [14, 10, 10, 8, 10, 12],
+    [14, 14, 14, 14, 14, 83],
     'yellow'
   );
 
@@ -533,7 +533,7 @@ const formatCorruptionFixesTable = (corruptionFixes: CorruptionFixEntry[]): stri
 
   const corruptionTable = createLogTable(
     ['Symbol', 'Interval', 'Market', 'Found', 'Fixed', 'Status'],
-    [14, 10, 10, 8, 8, 12],
+    [14, 14, 14, 14, 14, 83],
     'blue'
   );
 
@@ -562,7 +562,7 @@ const formatMaintenanceErrorsTable = (gapFills: GapFillEntry[]): string[] => {
 
   const errorTable = createLogTable(
     ['Symbol', 'Interval', 'Market', 'Error'],
-    [14, 10, 10, 60],
+    [14, 14, 14, 113],
     'red'
   );
 
@@ -571,7 +571,7 @@ const formatMaintenanceErrorsTable = (gapFills: GapFillEntry[]): string[] => {
       colorize(e.symbol, 'bright'),
       e.interval,
       e.marketType,
-      colorize(e.reason?.slice(0, 58) ?? 'Unknown error', 'red'),
+      colorize(e.reason?.slice(0, 111) ?? 'Unknown error', 'red'),
     ]);
   }
 
@@ -625,7 +625,7 @@ export const formatRotationResults = (result: RotationResult): string => {
   lines.push(`  ${contextParts.join(' │ ')}`);
 
   if (result.added.length > 0 || result.removed.length > 0) {
-    const changeTable = createLogTable(['Action', 'Symbol', 'Status'], [10, 14, 30], 'magenta');
+    const changeTable = createLogTable(['Action', 'Symbol', 'Status'], [14, 20, 122], 'magenta');
 
     for (const symbol of result.added) {
       const validation = result.klineValidations?.find(v => v.symbol === symbol);
@@ -728,7 +728,7 @@ const formatReconnectionValidationResults = (result: ReconnectionValidationResul
 
     const mismatchTable = createLogTable(
       ['Symbol', 'Interval', 'OpenTime', 'Field', 'DB Value', 'API Value', 'Diff %', 'Status'],
-      [12, 10, 22, 8, 12, 12, 10, 10],
+      [14, 12, 24, 10, 16, 16, 12, 47],
       'yellow'
     );
 
@@ -786,7 +786,7 @@ const formatPositionSyncResults = (result: PositionSyncResult): string => {
 
     const orphanedTable = createLogTable(
       ['Wallet', 'Symbol', 'Side', 'Entry', 'Exit', 'Qty', 'PnL', 'PnL %'],
-      [12, 12, 8, 12, 12, 10, 12, 10],
+      [14, 14, 10, 16, 16, 14, 16, 51],
       'yellow'
     );
 
