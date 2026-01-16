@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { TRADING_CONFIG } from '../constants';
 import { calculatePnl } from '../utils/pnl-calculator';
 import {
+  activeWatchers,
   autoTradingConfig,
   tradeExecutions,
   setupDetections,
@@ -823,8 +824,48 @@ export const autoTradingRouter = router({
         .limit(1);
 
       const useDynamicSelection = config?.useDynamicSymbolSelection ?? false;
+      const dynamicLimit = config?.dynamicSymbolLimit ?? 20;
 
-      log('📊 Config loaded', { useDynamicSelection });
+      log('📊 Config loaded', { useDynamicSelection, dynamicLimit });
+
+      const existingWatchers = await ctx.db
+        .select({ symbol: activeWatchers.symbol })
+        .from(activeWatchers)
+        .where(
+          and(
+            eq(activeWatchers.walletId, input.walletId),
+            eq(activeWatchers.marketType, input.marketType)
+          )
+        );
+
+      const existingSymbols = new Set(existingWatchers.map(w => w.symbol));
+      const existingCount = existingSymbols.size;
+      const availableSlots = Math.max(0, dynamicLimit - existingCount);
+      const effectiveTargetCount = Math.min(targetCount, availableSlots);
+
+      log('📊 Watcher limits', {
+        existingCount,
+        dynamicLimit,
+        availableSlots,
+        requestedTarget: targetCount,
+        effectiveTargetCount,
+      });
+
+      if (availableSlots === 0) {
+        log('⚠️ No available slots for new watchers', { existingCount, dynamicLimit });
+        return {
+          results: [],
+          successCount: 0,
+          failedCount: 0,
+          skippedKlinesCount: 0,
+          fromRankingCount: 0,
+          targetCount,
+          targetMet: false,
+          existingCount,
+          dynamicLimit,
+          message: `Limit reached: ${existingCount}/${dynamicLimit} watchers already active`,
+        };
+      }
 
       await ctx.db
         .update(autoTradingConfig)
@@ -838,7 +879,7 @@ export const autoTradingRouter = router({
 
       const results: Array<{ symbol: string; success: boolean; error?: string; skippedReason?: string; fromRanking?: boolean }> = [];
       const startedSymbols = new Set<string>();
-      const attemptedSymbols = new Set<string>();
+      const attemptedSymbols = new Set<string>(existingSymbols);
 
       const tryStartWatcher = async (symbol: string, fromRanking: boolean = false): Promise<boolean> => {
         if (attemptedSymbols.has(symbol) || startedSymbols.has(symbol)) return false;
@@ -883,21 +924,22 @@ export const autoTradingRouter = router({
       };
 
       for (const symbol of input.symbols) {
+        if (startedSymbols.size >= effectiveTargetCount) break;
         await tryStartWatcher(symbol, false);
       }
 
-      if (startedSymbols.size < targetCount) {
+      if (startedSymbols.size < effectiveTargetCount) {
         log('🔄 Fetching additional symbols from ranking', {
           current: startedSymbols.size,
-          target: targetCount,
-          needed: targetCount - startedSymbols.size,
+          target: effectiveTargetCount,
+          needed: effectiveTargetCount - startedSymbols.size,
         });
 
         const scoringService = getOpportunityScoringService();
-        const scores = await scoringService.getSymbolScores(input.marketType, targetCount * 3);
+        const scores = await scoringService.getSymbolScores(input.marketType, effectiveTargetCount * 3);
 
         for (const score of scores) {
-          if (startedSymbols.size >= targetCount) break;
+          if (startedSymbols.size >= effectiveTargetCount) break;
           if (!attemptedSymbols.has(score.symbol)) {
             await tryStartWatcher(score.symbol, true);
           }
@@ -907,12 +949,14 @@ export const autoTradingRouter = router({
       const successCount = results.filter(r => r.success).length;
       const skippedKlinesCount = results.filter(r => r.skippedReason === 'insufficient_klines').length;
       const fromRankingCount = results.filter(r => r.success && r.fromRanking).length;
-      const targetMet = successCount >= targetCount;
+      const targetMet = successCount >= effectiveTargetCount;
 
       log('✅ Bulk watcher creation complete', {
         total: results.length,
         success: successCount,
-        targetCount,
+        effectiveTargetCount,
+        existingCount,
+        dynamicLimit,
         targetMet,
         fromRanking: fromRankingCount,
         skippedInsufficientKlines: skippedKlinesCount,
@@ -940,6 +984,9 @@ export const autoTradingRouter = router({
         skippedKlinesCount,
         fromRankingCount,
         targetCount,
+        effectiveTargetCount,
+        existingCount,
+        dynamicLimit,
         targetMet,
       };
     }),

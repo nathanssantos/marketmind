@@ -246,6 +246,13 @@
       "when": 1768523580222,
       "tag": "0034_brainy_vulcan",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1768529230701,
+      "tag": "0035_quick_starhawk",
+      "breakpoints": true
     }
   ]
 }

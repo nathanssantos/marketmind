@@ -49,6 +49,7 @@ describe('FeeService', () => {
     apiKeyEncrypted: 'encrypted-key',
     apiSecretEncrypted: 'encrypted-secret',
     walletType: 'live',
+    marketType: 'SPOT',
     initialBalance: null,
     currentBalance: null,
     currency: 'USDT',

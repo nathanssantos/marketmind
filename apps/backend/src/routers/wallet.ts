@@ -4,7 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { STABLECOINS } from '../constants';
 import { orders, positions, wallets } from '../db/schema';
-import { createBinanceClient, isPaperWallet } from '../services/binance-client';
+import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from '../services/binance-client';
 import { encryptApiKey } from '../services/encryption';
 import { getWebSocketService } from '../services/websocket';
 import { protectedProcedure, router } from '../trpc';
@@ -17,6 +17,7 @@ export const walletRouter = router({
         id: wallets.id,
         name: wallets.name,
         walletType: wallets.walletType,
+        marketType: wallets.marketType,
         currency: wallets.currency,
         initialBalance: wallets.initialBalance,
         currentBalance: wallets.currentBalance,
@@ -38,6 +39,7 @@ export const walletRouter = router({
           id: wallets.id,
           name: wallets.name,
           walletType: wallets.walletType,
+          marketType: wallets.marketType,
           currency: wallets.currency,
           initialBalance: wallets.initialBalance,
           currentBalance: wallets.currentBalance,
@@ -158,6 +160,7 @@ export const walletRouter = router({
           userId: ctx.user.id,
           name: input.name,
           walletType: input.walletType,
+          marketType: input.marketType,
           apiKeyEncrypted,
           apiSecretEncrypted,
           initialBalance: initialBalance.toString(),
@@ -287,12 +290,23 @@ export const walletRouter = router({
       }
 
       try {
-        const client = createBinanceClient(wallet);
-        const accountInfo = await client.getAccountInformation();
-        const usdtBalance = accountInfo.balances?.find((b) => b.asset === 'USDT');
-        const currentBalance = usdtBalance?.free
-          ? parseFloat(usdtBalance.free.toString())
-          : 0;
+        let currentBalance = 0;
+
+        if (wallet.marketType === 'FUTURES') {
+          const client = createBinanceFuturesClient(wallet);
+          const accountInfo = await client.getAccountInformation();
+          const usdtAsset = accountInfo.assets?.find((a) => a.asset === 'USDT');
+          currentBalance = usdtAsset?.availableBalance
+            ? parseFloat(String(usdtAsset.availableBalance))
+            : 0;
+        } else {
+          const client = createBinanceClient(wallet);
+          const accountInfo = await client.getAccountInformation();
+          const usdtBalance = accountInfo.balances?.find((b) => b.asset === 'USDT');
+          currentBalance = usdtBalance?.free
+            ? parseFloat(usdtBalance.free.toString())
+            : 0;
+        }
 
         await ctx.db
           .update(wallets)

@@ -74,6 +74,7 @@ describe('BinanceFuturesClient Service', () => {
     apiKeyEncrypted: 'encrypted-key',
     apiSecretEncrypted: 'encrypted-secret',
     walletType: 'live',
+    marketType: 'FUTURES',
     initialBalance: null,
     currentBalance: null,
     currency: null,
