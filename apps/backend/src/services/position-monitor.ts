@@ -5,7 +5,7 @@ import type { TradeExecution, Wallet } from '../db/schema';
 import { priceCache, tradeExecutions, wallets } from '../db/schema';
 import { env } from '../env';
 import { formatPrice } from '../utils/formatters';
-import { createBinanceClient, createBinanceClientForPrices, createBinanceFuturesClientForPrices, isPaperWallet } from './binance-client';
+import { createBinanceClient, createBinanceClientForPrices, createBinanceFuturesClient, createBinanceFuturesClientForPrices, isPaperWallet } from './binance-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
 import { strategyPerformanceService } from './strategy-performance';
@@ -501,12 +501,14 @@ export class PositionMonitorService {
           liveEnabled: env.ENABLE_LIVE_TRADING,
         }, 'Paper/disabled mode: simulating exit order');
       } else {
+        const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
         exitOrderId = await this.createExitOrder(
           wallet,
           execution.symbol,
           quantity,
           exitPrice,
-          execution.side
+          execution.side,
+          marketType
         );
       }
 
@@ -623,11 +625,33 @@ export class PositionMonitorService {
     symbol: string,
     quantity: number,
     _price: number,
-    side: 'LONG' | 'SHORT'
+    side: 'LONG' | 'SHORT',
+    marketType: 'SPOT' | 'FUTURES' = 'SPOT'
   ): Promise<number> {
-    const client = createBinanceClient(wallet);
     const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
 
+    if (marketType === 'FUTURES') {
+      const client = createBinanceFuturesClient(wallet);
+      const order = await client.submitNewOrder({
+        symbol,
+        side: orderSide,
+        type: 'MARKET',
+        quantity,
+        reduceOnly: 'true',
+      });
+
+      logger.info({
+        orderId: order.orderId,
+        symbol,
+        side: orderSide,
+        quantity,
+        marketType: 'FUTURES',
+      }, 'Exit order created on Binance Futures');
+
+      return order.orderId;
+    }
+
+    const client = createBinanceClient(wallet);
     const order = await client.submitNewOrder({
       symbol,
       side: orderSide,
@@ -640,7 +664,8 @@ export class PositionMonitorService {
       symbol,
       side: orderSide,
       quantity,
-    }, 'Exit order created on Binance');
+      marketType: 'SPOT',
+    }, 'Exit order created on Binance Spot');
 
     return order.orderId;
   }

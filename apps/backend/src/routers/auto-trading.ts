@@ -304,6 +304,13 @@ export const autoTradingRouter = router({
 
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
+      if (wallet.marketType && wallet.marketType !== input.marketType) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot execute ${input.marketType} setup on ${wallet.marketType} wallet`,
+        });
+      }
+
       const walletBalance = parseFloat(wallet.currentBalance || '0');
       const maxPositionSizePercent = parseFloat(config.maxPositionSize);
 
@@ -656,7 +663,14 @@ export const autoTradingRouter = router({
     .mutation(async ({ input, ctx }) => {
       log('🚀 startWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId, marketType: input.marketType });
 
-      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      if (wallet.marketType && wallet.marketType !== input.marketType) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot start ${input.marketType} watcher on ${wallet.marketType} wallet`,
+        });
+      }
 
       const klineCheck = await checkKlineAvailability(input.symbol, input.interval, input.marketType);
 
@@ -805,7 +819,14 @@ export const autoTradingRouter = router({
         targetCount,
       });
 
-      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      if (wallet.marketType && wallet.marketType !== input.marketType) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot start ${input.marketType} watchers on ${wallet.marketType} wallet`,
+        });
+      }
 
       const [config] = await ctx.db
         .select({
@@ -1030,7 +1051,7 @@ export const autoTradingRouter = router({
     .mutation(async ({ input, ctx }) => {
       log('🔄 triggerSymbolRotation called', { walletId: input.walletId });
 
-      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       const [config] = await ctx.db
         .select()
@@ -1065,7 +1086,7 @@ export const autoTradingRouter = router({
         {
           dynamicSymbolLimit: transformedConfig.dynamicSymbolLimit,
           dynamicSymbolExcluded: config.dynamicSymbolExcluded,
-          marketType: 'FUTURES',
+          marketType: (wallet.marketType as 'SPOT' | 'FUTURES') || 'FUTURES',
           interval: config.dynamicSymbolRotationInterval,
           profileId: undefined,
         }
@@ -1198,6 +1219,8 @@ export const autoTradingRouter = router({
         logger.error({ error: errorMsg }, '[EmergencyStop] Failed to stop watchers');
       }
 
+      const walletMarketType = wallet.marketType || 'SPOT';
+
       const openExecutions = await ctx.db
         .select()
         .from(tradeExecutions)
@@ -1205,11 +1228,11 @@ export const autoTradingRouter = router({
           and(
             eq(tradeExecutions.walletId, input.walletId),
             eq(tradeExecutions.status, 'open'),
-            eq(tradeExecutions.marketType, 'FUTURES')
+            eq(tradeExecutions.marketType, walletMarketType)
           )
         );
 
-      if (!isPaperWallet(wallet)) {
+      if (!isPaperWallet(wallet) && walletMarketType === 'FUTURES') {
         try {
           const client = createBinanceFuturesClient(wallet);
 
@@ -1319,6 +1342,14 @@ export const autoTradingRouter = router({
           logger.error({ error: errorMsg }, '[EmergencyStop] Exchange operation failed');
         }
       } else {
+        if (!isPaperWallet(wallet) && walletMarketType === 'SPOT') {
+          log('⚠️ SPOT wallet emergency stop - positions NOT closed on exchange, manual close required', {
+            walletId: input.walletId,
+            openExecutions: openExecutions.length,
+          });
+          result.errors.push('SPOT positions must be manually closed on exchange');
+        }
+
         for (const execution of openExecutions) {
           await ctx.db
             .update(tradeExecutions)

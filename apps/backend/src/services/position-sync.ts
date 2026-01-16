@@ -51,7 +51,11 @@ export class PositionSyncService {
     try {
       const allWallets = await db.select().from(wallets);
       const liveWallets = allWallets.filter(
-        (w) => !isPaperWallet(w) && w.apiKeyEncrypted && w.apiSecretEncrypted
+        (w) =>
+          !isPaperWallet(w) &&
+          w.apiKeyEncrypted &&
+          w.apiSecretEncrypted &&
+          w.marketType === 'FUTURES'
       );
 
       for (const wallet of liveWallets) {

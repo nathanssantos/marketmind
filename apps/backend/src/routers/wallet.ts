@@ -67,6 +67,7 @@ export const walletRouter = router({
         name: z.string().min(1).max(255),
         initialBalance: z.string().default('10000'),
         currency: z.string().default('USDT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -76,6 +77,8 @@ export const walletRouter = router({
         id: walletId,
         userId: ctx.user.id,
         name: input.name,
+        walletType: 'paper',
+        marketType: input.marketType,
         apiKeyEncrypted: 'paper-trading',
         apiSecretEncrypted: 'paper-trading',
         initialBalance: input.initialBalance,
@@ -87,6 +90,8 @@ export const walletRouter = router({
       const walletData = {
         id: walletId,
         name: input.name,
+        walletType: 'paper' as const,
+        marketType: input.marketType,
         initialBalance: input.initialBalance,
         currentBalance: input.initialBalance,
         currency: input.currency,
@@ -365,19 +370,28 @@ export const walletRouter = router({
       }
 
       try {
-        const client = createBinanceClient(wallet);
-        await client.testConnectivity();
-        const serverTime = await client.getServerTime();
+        let serverTime: number;
+
+        if (wallet.marketType === 'FUTURES') {
+          const client = createBinanceFuturesClient(wallet);
+          serverTime = await client.getServerTime();
+        } else {
+          const client = createBinanceClient(wallet);
+          await client.testConnectivity();
+          serverTime = Number(await client.getServerTime());
+        }
 
         return {
           connected: true,
           walletType: wallet.walletType,
-          serverTime: Number(serverTime),
+          marketType: wallet.marketType,
+          serverTime,
         };
       } catch (error) {
         return {
           connected: false,
           walletType: wallet.walletType,
+          marketType: wallet.marketType,
           error: error instanceof Error ? error.message : 'Unknown error',
         };
       }
@@ -415,63 +429,93 @@ export const walletRouter = router({
       }
 
       try {
-        const client = createBinanceClient(wallet);
-        const accountInfo = await client.getAccountInformation();
-
-        const nonZeroBalances = accountInfo.balances?.filter((b) => {
-          const free = parseFloat(b.free?.toString() || '0');
-          const locked = parseFloat(b.locked?.toString() || '0');
-          return free > 0 || locked > 0;
-        }) || [];
-
         let totalValueUSDT = 0;
+        let assets: Array<{ asset: string; free: string; locked: string; valueUSDT: string }> = [];
 
-        const assetsWithValue = await Promise.all(
-          nonZeroBalances.map(async (balance) => {
-            const free = parseFloat(balance.free?.toString() || '0');
-            const locked = parseFloat(balance.locked?.toString() || '0');
-            const total = free + locked;
+        if (wallet.marketType === 'FUTURES') {
+          const client = createBinanceFuturesClient(wallet);
+          const accountInfo = await client.getAccountInformation();
 
-            let valueUSDT = 0;
+          const nonZeroAssets = accountInfo.assets?.filter((a) => {
+            const balance = parseFloat(String(a.walletBalance || '0'));
+            return balance > 0;
+          }) || [];
 
-            if (STABLECOINS.includes(balance.asset as typeof STABLECOINS[number])) {
-              valueUSDT = total;
-            } else {
-              try {
-                const ticker = await client.get24hrChangeStatistics({
-                  symbol: `${balance.asset}USDT`,
-                });
-                const price = parseFloat(ticker.lastPrice || '0');
-                valueUSDT = total * price;
-              } catch {
-                try {
-                  const btcTicker = await client.get24hrChangeStatistics({
-                    symbol: `${balance.asset}BTC`,
-                  });
-                  const btcUsdtTicker = await client.get24hrChangeStatistics({
-                    symbol: 'BTCUSDT',
-                  });
-                  const btcPrice = parseFloat(btcTicker.lastPrice || '0');
-                  const btcUsdtPrice = parseFloat(btcUsdtTicker.lastPrice || '0');
-                  valueUSDT = total * btcPrice * btcUsdtPrice;
-                } catch {
-                  valueUSDT = 0;
-                }
-              }
+          for (const asset of nonZeroAssets) {
+            const walletBalance = parseFloat(String(asset.walletBalance || '0'));
+            const availableBalance = parseFloat(String(asset.availableBalance || '0'));
+            const marginBalance = parseFloat(String(asset.marginBalance || '0'));
+
+            if (asset.asset === 'USDT') {
+              totalValueUSDT += marginBalance;
             }
 
-            totalValueUSDT += valueUSDT;
+            assets.push({
+              asset: asset.asset,
+              free: availableBalance.toString(),
+              locked: (walletBalance - availableBalance).toFixed(2),
+              valueUSDT: marginBalance.toFixed(2),
+            });
+          }
+        } else {
+          const client = createBinanceClient(wallet);
+          const accountInfo = await client.getAccountInformation();
 
-            return {
-              asset: balance.asset,
-              free: free.toString(),
-              locked: locked.toString(),
-              valueUSDT: valueUSDT.toFixed(2),
-            };
-          })
-        );
+          const nonZeroBalances = accountInfo.balances?.filter((b) => {
+            const free = parseFloat(b.free?.toString() || '0');
+            const locked = parseFloat(b.locked?.toString() || '0');
+            return free > 0 || locked > 0;
+          }) || [];
 
-        const sortedAssets = assetsWithValue.sort(
+          const assetsWithValue = await Promise.all(
+            nonZeroBalances.map(async (balance) => {
+              const free = parseFloat(balance.free?.toString() || '0');
+              const locked = parseFloat(balance.locked?.toString() || '0');
+              const total = free + locked;
+
+              let valueUSDT = 0;
+
+              if (STABLECOINS.includes(balance.asset as typeof STABLECOINS[number])) {
+                valueUSDT = total;
+              } else {
+                try {
+                  const ticker = await client.get24hrChangeStatistics({
+                    symbol: `${balance.asset}USDT`,
+                  });
+                  const price = parseFloat(ticker.lastPrice || '0');
+                  valueUSDT = total * price;
+                } catch {
+                  try {
+                    const btcTicker = await client.get24hrChangeStatistics({
+                      symbol: `${balance.asset}BTC`,
+                    });
+                    const btcUsdtTicker = await client.get24hrChangeStatistics({
+                      symbol: 'BTCUSDT',
+                    });
+                    const btcPrice = parseFloat(btcTicker.lastPrice || '0');
+                    const btcUsdtPrice = parseFloat(btcUsdtTicker.lastPrice || '0');
+                    valueUSDT = total * btcPrice * btcUsdtPrice;
+                  } catch {
+                    valueUSDT = 0;
+                  }
+                }
+              }
+
+              totalValueUSDT += valueUSDT;
+
+              return {
+                asset: balance.asset,
+                free: free.toString(),
+                locked: locked.toString(),
+                valueUSDT: valueUSDT.toFixed(2),
+              };
+            })
+          );
+
+          assets = assetsWithValue;
+        }
+
+        const sortedAssets = assets.sort(
           (a, b) => parseFloat(b.valueUSDT) - parseFloat(a.valueUSDT)
         );
 
@@ -486,13 +530,14 @@ export const walletRouter = router({
         return {
           totalValueUSDT: totalValueUSDT.toFixed(2),
           walletType: wallet.walletType,
+          marketType: wallet.marketType,
           assets: sortedAssets,
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to fetch portfolio from Binance ${wallet.walletType}: ${errorMessage}`,
+          message: `Failed to fetch portfolio from Binance ${wallet.walletType} ${wallet.marketType}: ${errorMessage}`,
           cause: error,
         });
       }

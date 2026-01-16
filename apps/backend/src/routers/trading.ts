@@ -51,6 +51,13 @@ export const tradingRouter = router({
         });
       }
 
+      if (wallet.marketType && wallet.marketType !== input.marketType) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot create ${input.marketType} order on ${wallet.marketType} wallet`,
+        });
+      }
+
       try {
         if (isPaperWallet(wallet)) {
           const simulatedOrderId = Date.now();
@@ -202,6 +209,13 @@ export const tradingRouter = router({
     .mutation(async ({ input, ctx }) => {
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
+      if (wallet.marketType && wallet.marketType !== input.marketType) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot cancel ${input.marketType} order on ${wallet.marketType} wallet`,
+        });
+      }
+
       try {
         if (isPaperWallet(wallet)) {
           await ctx.db
@@ -339,6 +353,13 @@ export const tradingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      if (wallet.marketType && wallet.marketType !== input.marketType) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot sync ${input.marketType} orders on ${wallet.marketType} wallet`,
+        });
+      }
 
       try {
         if (isPaperWallet(wallet)) {
