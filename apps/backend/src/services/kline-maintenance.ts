@@ -215,9 +215,11 @@ class KlineMaintenance {
           const gaps = await this.detectGaps(activePair);
           let totalFilled = 0;
 
-          for (const gap of gaps) {
-            const filled = await this.fillGap(gap, true);
-            totalFilled += filled;
+          const GAP_BATCH_SIZE = 3;
+          for (let i = 0; i < gaps.length; i += GAP_BATCH_SIZE) {
+            const batch = gaps.slice(i, i + GAP_BATCH_SIZE);
+            const results = await Promise.all(batch.map(gap => this.fillGap(gap, true).catch(() => 0)));
+            totalFilled += results.reduce((sum, n) => sum + n, 0);
           }
 
           await this.updateMaintenanceLog(activePair, { gapsFound: gaps.length, checkType: 'gap' });
@@ -273,9 +275,11 @@ class KlineMaintenance {
             const gaps = await this.detectGaps(pair);
             let totalFilled = 0;
 
-            for (const gap of gaps) {
-              const filled = await this.fillGap(gap, true);
-              totalFilled += filled;
+            const GAP_BATCH_SIZE = 3;
+            for (let i = 0; i < gaps.length; i += GAP_BATCH_SIZE) {
+              const batch = gaps.slice(i, i + GAP_BATCH_SIZE);
+              const results = await Promise.all(batch.map(gap => this.fillGap(gap, true).catch(() => 0)));
+              totalFilled += results.reduce((sum, n) => sum + n, 0);
             }
 
             await this.updateMaintenanceLog(pair, { gapsFound: gaps.length, checkType: 'gap' });
@@ -685,9 +689,10 @@ class KlineMaintenance {
 
     if (corruptedKlines.length === 0) return { corruptedFound: 0, fixed: 0 };
 
+    const BATCH_SIZE = 5;
     let fixed = 0;
 
-    for (const { kline } of corruptedKlines) {
+    const fixKline = async (kline: typeof corruptedKlines[0]['kline']): Promise<boolean> => {
       const binanceKline = await this.fetchBinanceKline(
         pair.symbol,
         pair.interval,
@@ -718,9 +723,15 @@ class KlineMaintenance {
               eq(klines.openTime, kline.openTime)
             )
           );
-
-        fixed++;
+        return true;
       }
+      return false;
+    };
+
+    for (let i = 0; i < corruptedKlines.length; i += BATCH_SIZE) {
+      const batch = corruptedKlines.slice(i, i + BATCH_SIZE);
+      const results = await Promise.all(batch.map(({ kline }) => fixKline(kline).catch(() => false)));
+      fixed += results.filter(Boolean).length;
     }
 
     if (!silent && fixed > 0) {
@@ -739,9 +750,11 @@ class KlineMaintenance {
     const gaps = await this.detectGaps(pair);
     let gapsFilled = 0;
 
-    for (const gap of gaps) {
-      const filled = await this.fillGap(gap);
-      gapsFilled += filled;
+    const GAP_BATCH_SIZE = 3;
+    for (let i = 0; i < gaps.length; i += GAP_BATCH_SIZE) {
+      const batch = gaps.slice(i, i + GAP_BATCH_SIZE);
+      const results = await Promise.all(batch.map(gap => this.fillGap(gap).catch(() => 0)));
+      gapsFilled += results.reduce((sum, n) => sum + n, 0);
     }
 
     const { fixed: corruptedFixed } = await this.detectAndFixCorruptedKlines(pair);

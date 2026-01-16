@@ -150,6 +150,7 @@ export class AutoTradingScheduler {
   private fundingRateCache: Map<string, CacheEntry<number>> = new Map();
   private configCache: Map<string, CacheEntry<typeof autoTradingConfig.$inferSelect>> = new Map();
   private readonly CONFIG_CACHE_TTL_MS = 30_000;
+  private configCacheMetrics = { hits: 0, misses: 0, preloads: 0 };
   private readonly FUNDING_CACHE_TTL_MS = 5 * TIME_MS.MINUTE;
 
   private rotationStates: Map<string, WalletRotationState> = new Map();
@@ -250,8 +251,11 @@ export class AutoTradingScheduler {
     const cached = this.configCache.get(cacheKey);
 
     if (cached && Date.now() - cached.timestamp < this.CONFIG_CACHE_TTL_MS) {
+      this.configCacheMetrics.hits++;
       return cached.data;
     }
+
+    this.configCacheMetrics.misses++;
 
     const whereClause = userId
       ? and(eq(autoTradingConfig.walletId, walletId), eq(autoTradingConfig.userId, userId))
@@ -267,6 +271,21 @@ export class AutoTradingScheduler {
       this.configCache.set(cacheKey, { data: config, timestamp: Date.now() });
     }
     return config ?? null;
+  }
+
+  getConfigCacheStats(): { size: number; hits: number; misses: number; preloads: number; hitRate: number } {
+    const total = this.configCacheMetrics.hits + this.configCacheMetrics.misses;
+    return {
+      size: this.configCache.size,
+      hits: this.configCacheMetrics.hits,
+      misses: this.configCacheMetrics.misses,
+      preloads: this.configCacheMetrics.preloads,
+      hitRate: total > 0 ? this.configCacheMetrics.hits / total : 0,
+    };
+  }
+
+  resetCacheMetrics(): void {
+    this.configCacheMetrics = { hits: 0, misses: 0, preloads: 0 };
   }
 
   invalidateConfigCache(walletId: string): void {
@@ -470,7 +489,7 @@ export class AutoTradingScheduler {
         this.pendingCycleStartTime!,
         this.pendingResults
       );
-      outputBatchResults(unifiedResult, VERBOSE_BATCH_LOGS);
+      outputBatchResults(unifiedResult, VERBOSE_BATCH_LOGS, this.getConfigCacheStats());
 
       this.pendingCycleId = null;
       this.pendingCycleStartTime = null;
@@ -2062,6 +2081,7 @@ export class AutoTradingScheduler {
 
       for (const config of configs) {
         this.configCache.set(config.walletId, { data: config, timestamp: Date.now() });
+        this.configCacheMetrics.preloads++;
       }
       log(`📦 Pre-loaded ${configs.length} configs for ${walletIds.length} wallets`);
     }

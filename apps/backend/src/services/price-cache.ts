@@ -13,9 +13,17 @@ interface SymbolKey {
 
 const DEFAULT_MAX_AGE_MS = 3000;
 
+interface PriceCacheMetrics {
+  hits: number;
+  misses: number;
+  apiFetches: number;
+  websocketUpdates: number;
+}
+
 class InMemoryPriceCache {
   private prices: Map<string, PriceCacheEntry> = new Map();
   private readonly maxAgeMs: number;
+  private metrics: PriceCacheMetrics = { hits: 0, misses: 0, apiFetches: 0, websocketUpdates: 0 };
 
   constructor(maxAgeMs: number = DEFAULT_MAX_AGE_MS) {
     this.maxAgeMs = maxAgeMs;
@@ -28,20 +36,25 @@ class InMemoryPriceCache {
   updateFromWebSocket(symbol: string, marketType: MarketType, price: number): void {
     const key = this.getCacheKey(symbol, marketType);
     this.prices.set(key, { price, timestamp: Date.now() });
+    this.metrics.websocketUpdates++;
   }
 
   getPrice(symbol: string, marketType: MarketType): number | null {
     const key = this.getCacheKey(symbol, marketType);
     const entry = this.prices.get(key);
     if (!entry || Date.now() - entry.timestamp > this.maxAgeMs) {
+      this.metrics.misses++;
       return null;
     }
+    this.metrics.hits++;
     return entry.price;
   }
 
   async fetchPrice(symbol: string, marketType: MarketType): Promise<number | null> {
     const cached = this.getPrice(symbol, marketType);
     if (cached !== null) return cached;
+
+    this.metrics.apiFetches++;
 
     try {
       let price: number;
@@ -88,6 +101,7 @@ class InMemoryPriceCache {
     if (spotSymbols.length > 0) {
       fetchPromises.push(
         (async () => {
+          this.metrics.apiFetches++;
           try {
             const client = createBinanceClientForPrices();
             const tickers = await client.getSymbolPriceTicker();
@@ -116,6 +130,7 @@ class InMemoryPriceCache {
     if (futuresSymbols.length > 0) {
       fetchPromises.push(
         (async () => {
+          this.metrics.apiFetches++;
           try {
             const client = createBinanceFuturesClientForPrices();
             const markPrices = await client.getMarkPrice();
@@ -153,14 +168,30 @@ class InMemoryPriceCache {
     this.prices.clear();
   }
 
-  getStats(): { size: number; oldestEntry: number | null } {
+  resetMetrics(): void {
+    this.metrics = { hits: 0, misses: 0, apiFetches: 0, websocketUpdates: 0 };
+  }
+
+  getStats(): {
+    size: number;
+    oldestEntry: number | null;
+    metrics: PriceCacheMetrics & { hitRate: number };
+  } {
     let oldest: number | null = null;
     for (const entry of this.prices.values()) {
       if (oldest === null || entry.timestamp < oldest) {
         oldest = entry.timestamp;
       }
     }
-    return { size: this.prices.size, oldestEntry: oldest };
+    const total = this.metrics.hits + this.metrics.misses;
+    return {
+      size: this.prices.size,
+      oldestEntry: oldest,
+      metrics: {
+        ...this.metrics,
+        hitRate: total > 0 ? this.metrics.hits / total : 0,
+      },
+    };
   }
 }
 

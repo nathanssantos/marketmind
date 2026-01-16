@@ -26,6 +26,7 @@ import {
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { priceCache } from './price-cache';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -317,10 +318,45 @@ export const formatDetailedLogs = (results: WatcherResult[]): string => {
   return lines.join('\n');
 };
 
-export const outputBatchResults = (batch: BatchResult, verbose = false): void => {
+export interface ConfigCacheStats {
+  size: number;
+  hits: number;
+  misses: number;
+  preloads: number;
+  hitRate: number;
+}
+
+export const outputBatchResults = (batch: BatchResult, verbose = false, configCacheStats?: ConfigCacheStats): void => {
   const summary = formatBatchResults(batch);
   console.log(summary);
   writeToFile(`${summary}\n`);
+
+  const priceCacheStats = priceCache.getStats();
+  if (priceCacheStats.metrics.hits + priceCacheStats.metrics.misses > 0 || (configCacheStats && (configCacheStats.hits + configCacheStats.misses > 0))) {
+    const lines: string[] = [];
+
+    if (priceCacheStats.metrics.hits + priceCacheStats.metrics.misses > 0) {
+      lines.push(
+        `  💾 PriceCache: ${priceCacheStats.size} entries │ ` +
+        `${priceCacheStats.metrics.hits} hits │ ${priceCacheStats.metrics.misses} misses │ ` +
+        `${(priceCacheStats.metrics.hitRate * 100).toFixed(1)}% rate │ ` +
+        `${priceCacheStats.metrics.apiFetches} API │ ${priceCacheStats.metrics.websocketUpdates} WS`
+      );
+    }
+
+    if (configCacheStats && (configCacheStats.hits + configCacheStats.misses > 0)) {
+      lines.push(
+        `  📦 ConfigCache: ${configCacheStats.size} entries │ ` +
+        `${configCacheStats.hits} hits │ ${configCacheStats.misses} misses │ ` +
+        `${(configCacheStats.hitRate * 100).toFixed(1)}% rate │ ` +
+        `${configCacheStats.preloads} preloaded`
+      );
+    }
+
+    const cacheInfo = colorize(lines.join('\n'), 'dim');
+    console.log(cacheInfo);
+    writeToFile(`${stripAnsi(cacheInfo)}\n`);
+  }
 
   if (verbose) {
     const detailed = formatDetailedLogs(batch.watcherResults);

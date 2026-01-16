@@ -68,9 +68,16 @@ export class PositionSyncService {
           w.marketType === 'FUTURES'
       );
 
-      for (const wallet of liveWallets) {
-        try {
+      const syncResults = await Promise.allSettled(
+        liveWallets.map(async (wallet) => {
           const result = await this.syncWallet(wallet);
+          return { wallet, result };
+        })
+      );
+
+      for (const settledResult of syncResults) {
+        if (settledResult.status === 'fulfilled') {
+          const { wallet, result } = settledResult.value;
           results.push(result);
 
           walletSummaries.push({
@@ -86,8 +93,10 @@ export class PositionSyncService {
           if (result.detailedOrphaned) allOrphaned.push(...result.detailedOrphaned);
           if (result.detailedUnknown) allUnknown.push(...result.detailedUnknown);
           if (result.detailedUpdated) allUpdated.push(...result.detailedUpdated);
-        } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
+        } else {
+          const wallet = liveWallets[syncResults.indexOf(settledResult)];
+          if (!wallet) continue;
+          const errorMsg = settledResult.reason instanceof Error ? settledResult.reason.message : String(settledResult.reason);
           results.push({
             walletId: wallet.id,
             synced: false,
