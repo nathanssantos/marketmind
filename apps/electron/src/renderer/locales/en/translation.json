@@ -945,6 +945,12 @@
       "selectedCount": "{{count}} symbols selected",
       "startBulk": "Start {{count}} Watchers"
     },
+    "emergencyStop": {
+      "button": "Emergency Stop",
+      "confirmTitle": "Confirm Emergency Stop",
+      "confirmDescription": "This will stop all watchers, cancel all open orders, and close all open positions at market price. This action cannot be undone.",
+      "confirm": "Yes, Stop Everything"
+    },
     "dynamicSelection": {
       "title": "Dynamic Symbol Selection",
       "description": "Automatically select and rotate symbols based on opportunity scores",

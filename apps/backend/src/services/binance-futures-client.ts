@@ -385,3 +385,228 @@ export async function getSymbolLeverageBrackets(
     throw error;
   }
 }
+
+export interface FuturesAlgoOrderParams {
+  symbol: string;
+  side: 'BUY' | 'SELL';
+  type: 'STOP_MARKET' | 'TAKE_PROFIT_MARKET' | 'STOP' | 'TAKE_PROFIT' | 'TRAILING_STOP_MARKET';
+  quantity?: string;
+  triggerPrice?: string;
+  price?: string;
+  timeInForce?: 'GTC' | 'IOC' | 'FOK';
+  reduceOnly?: boolean;
+  closePosition?: boolean;
+  activationPrice?: string;
+  callbackRate?: string;
+  clientAlgoId?: string;
+  workingType?: 'MARK_PRICE' | 'CONTRACT_PRICE';
+  positionSide?: 'LONG' | 'SHORT' | 'BOTH';
+}
+
+export interface FuturesAlgoOrder {
+  algoId: number;
+  clientAlgoId: string;
+  symbol: string;
+  side: 'BUY' | 'SELL';
+  positionSide: 'LONG' | 'SHORT' | 'BOTH';
+  type: string;
+  quantity: string;
+  triggerPrice?: string;
+  price?: string;
+  activationPrice?: string;
+  callbackRate?: string;
+  algoStatus: string;
+  reduceOnly: boolean;
+  closePosition: boolean;
+  createTime: number;
+  updateTime: number;
+}
+
+export async function submitFuturesAlgoOrder(
+  client: USDMClient,
+  params: FuturesAlgoOrderParams
+): Promise<FuturesAlgoOrder> {
+  try {
+    const algoParams: Parameters<typeof client.submitNewAlgoOrder>[0] = {
+      algoType: 'CONDITIONAL',
+      symbol: params.symbol,
+      side: params.side,
+      type: params.type,
+    };
+
+    if (params.quantity) algoParams.quantity = params.quantity;
+    if (params.triggerPrice) algoParams.triggerPrice = params.triggerPrice;
+    if (params.price) algoParams.price = params.price;
+    if (params.timeInForce) algoParams.timeInForce = params.timeInForce;
+    if (params.reduceOnly !== undefined) algoParams.reduceOnly = params.reduceOnly ? 'true' : 'false';
+    if (params.closePosition !== undefined) algoParams.closePosition = params.closePosition ? 'true' : 'false';
+    if (params.activationPrice) algoParams.activationPrice = params.activationPrice;
+    if (params.callbackRate) algoParams.callbackRate = params.callbackRate;
+    if (params.clientAlgoId) algoParams.clientAlgoId = params.clientAlgoId;
+    if (params.workingType) algoParams.workingType = params.workingType;
+    if (params.positionSide) algoParams.positionSide = params.positionSide;
+
+    const result = await client.submitNewAlgoOrder(algoParams);
+
+    logger.info({
+      algoId: result.algoId,
+      symbol: result.symbol,
+      side: result.side,
+      type: result.orderType,
+      triggerPrice: result.triggerPrice,
+      quantity: result.quantity,
+    }, '[Futures] Algo order submitted successfully');
+
+    return {
+      algoId: result.algoId,
+      clientAlgoId: result.clientAlgoId,
+      symbol: result.symbol,
+      side: result.side as 'BUY' | 'SELL',
+      positionSide: (result.positionSide || 'BOTH') as 'LONG' | 'SHORT' | 'BOTH',
+      type: result.orderType,
+      quantity: String(result.quantity),
+      triggerPrice: result.triggerPrice ? String(result.triggerPrice) : undefined,
+      price: result.price ? String(result.price) : undefined,
+      activationPrice: result.activatePrice ? String(result.activatePrice) : undefined,
+      callbackRate: result.callbackRate ? String(result.callbackRate) : undefined,
+      algoStatus: result.algoStatus,
+      reduceOnly: result.reduceOnly,
+      closePosition: result.closePosition,
+      createTime: result.createTime,
+      updateTime: result.updateTime,
+    };
+  } catch (error) {
+    logger.error({ error: serializeError(error), params }, '[Futures] Failed to submit algo order');
+    throw error;
+  }
+}
+
+export async function cancelFuturesAlgoOrder(
+  client: USDMClient,
+  algoId: number
+): Promise<void> {
+  try {
+    await client.cancelAlgoOrder({ algoId });
+    logger.info({ algoId }, '[Futures] Algo order cancelled successfully');
+  } catch (error) {
+    logger.error({ error: serializeError(error), algoId }, '[Futures] Failed to cancel algo order');
+    throw error;
+  }
+}
+
+export async function cancelAllFuturesAlgoOrders(
+  client: USDMClient,
+  symbol: string
+): Promise<void> {
+  try {
+    await client.cancelAllAlgoOpenOrders({ symbol });
+    logger.info({ symbol }, '[Futures] All algo orders cancelled successfully');
+  } catch (error) {
+    logger.error({ error: serializeError(error), symbol }, '[Futures] Failed to cancel all algo orders');
+    throw error;
+  }
+}
+
+export async function getOpenAlgoOrders(
+  client: USDMClient,
+  symbol?: string
+): Promise<FuturesAlgoOrder[]> {
+  try {
+    const orders = await client.getOpenAlgoOrders(symbol ? { symbol } : undefined);
+
+    return orders.map((o) => ({
+      algoId: o.algoId,
+      clientAlgoId: o.clientAlgoId,
+      symbol: o.symbol,
+      side: o.side as 'BUY' | 'SELL',
+      positionSide: (o.positionSide || 'BOTH') as 'LONG' | 'SHORT' | 'BOTH',
+      type: o.orderType,
+      quantity: String(o.quantity),
+      triggerPrice: o.triggerPrice ? String(o.triggerPrice) : undefined,
+      price: o.price ? String(o.price) : undefined,
+      activationPrice: o.activatePrice ? String(o.activatePrice) : undefined,
+      callbackRate: o.callbackRate ? String(o.callbackRate) : undefined,
+      algoStatus: o.algoStatus,
+      reduceOnly: o.reduceOnly,
+      closePosition: o.closePosition,
+      createTime: o.createTime,
+      updateTime: o.updateTime,
+    }));
+  } catch (error) {
+    logger.error({ error: serializeError(error), symbol }, '[Futures] Failed to get open algo orders');
+    throw error;
+  }
+}
+
+export async function getAlgoOrder(
+  client: USDMClient,
+  algoId: number
+): Promise<FuturesAlgoOrder | null> {
+  try {
+    const result = await client.getAlgoOrder({ algoId });
+
+    if (!result) return null;
+
+    return {
+      algoId: result.algoId,
+      clientAlgoId: result.clientAlgoId,
+      symbol: result.symbol,
+      side: result.side as 'BUY' | 'SELL',
+      positionSide: (result.positionSide || 'BOTH') as 'LONG' | 'SHORT' | 'BOTH',
+      type: result.orderType,
+      quantity: String(result.quantity),
+      triggerPrice: result.triggerPrice ? String(result.triggerPrice) : undefined,
+      price: result.price ? String(result.price) : undefined,
+      activationPrice: result.activatePrice ? String(result.activatePrice) : undefined,
+      callbackRate: result.callbackRate ? String(result.callbackRate) : undefined,
+      algoStatus: result.algoStatus,
+      reduceOnly: result.reduceOnly,
+      closePosition: result.closePosition,
+      createTime: result.createTime,
+      updateTime: result.updateTime,
+    };
+  } catch (error) {
+    logger.error({ error: serializeError(error), algoId }, '[Futures] Failed to get algo order');
+    throw error;
+  }
+}
+
+export interface IncomeHistoryRecord {
+  symbol?: string;
+  incomeType: string;
+  income: string;
+  asset: string;
+  time: number;
+  info: string;
+  tranId: number;
+  tradeId: string;
+}
+
+export async function getIncomeHistory(
+  client: USDMClient,
+  params?: {
+    symbol?: string;
+    incomeType?: string;
+    startTime?: number;
+    endTime?: number;
+    limit?: number;
+  }
+): Promise<IncomeHistoryRecord[]> {
+  try {
+    const result = await client.getIncomeHistory(params as Parameters<typeof client.getIncomeHistory>[0]);
+
+    return result.map((r) => ({
+      symbol: r.symbol,
+      incomeType: r.incomeType,
+      income: r.income,
+      asset: r.asset,
+      time: r.time,
+      info: r.info,
+      tranId: r.tranId,
+      tradeId: r.tradeId,
+    }));
+  } catch (error) {
+    logger.error({ error: serializeError(error), params }, '[Futures] Failed to get income history');
+    throw error;
+  }
+}

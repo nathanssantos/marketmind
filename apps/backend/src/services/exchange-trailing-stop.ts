@@ -1,5 +1,6 @@
 import type { Wallet } from '../db/schema';
 import { createBinanceClient } from './binance-client';
+import { createBinanceFuturesClient, submitFuturesAlgoOrder, cancelFuturesAlgoOrder } from './binance-futures-client';
 import { logger } from './logger';
 
 export interface TrailingStopParams {
@@ -10,11 +11,21 @@ export interface TrailingStopParams {
   callbackRate: number;
 }
 
+export interface FuturesTrailingStopParams extends TrailingStopParams {
+  positionSide?: 'LONG' | 'SHORT';
+}
+
 export interface TrailingStopResult {
   orderId: number;
   symbol: string;
   status: string;
   clientOrderId: string;
+}
+
+export interface FuturesTrailingStopResult {
+  algoId: number;
+  symbol: string;
+  status: string;
 }
 
 export class ExchangeTrailingStopService {
@@ -117,6 +128,74 @@ export class ExchangeTrailingStopService {
     if (atrPercent < 3.0) return 1.5;
     if (atrPercent < 4.0) return 2.0;
     return 2.5;
+  }
+
+  async placeTrailingStopFutures(
+    wallet: Wallet,
+    params: FuturesTrailingStopParams
+  ): Promise<FuturesTrailingStopResult | null> {
+    try {
+      const client = createBinanceFuturesClient(wallet);
+
+      const result = await submitFuturesAlgoOrder(client, {
+        symbol: params.symbol,
+        side: params.side,
+        type: 'TRAILING_STOP_MARKET',
+        quantity: params.quantity.toString(),
+        callbackRate: params.callbackRate.toString(),
+        ...(params.activationPrice && { activationPrice: params.activationPrice.toString() }),
+        ...(params.positionSide && { positionSide: params.positionSide }),
+      });
+
+      logger.info({
+        symbol: params.symbol,
+        algoId: result.algoId,
+        callbackRate: params.callbackRate,
+        activationPrice: params.activationPrice,
+      }, 'Futures exchange trailing stop placed via Algo API');
+
+      return {
+        algoId: result.algoId,
+        symbol: result.symbol,
+        status: result.algoStatus,
+      };
+    } catch (error) {
+      logger.error({
+        error: error instanceof Error ? error.message : String(error),
+        symbol: params.symbol,
+      }, 'Failed to place futures exchange trailing stop');
+      return null;
+    }
+  }
+
+  async cancelTrailingStopFutures(
+    wallet: Wallet,
+    algoId: number
+  ): Promise<boolean> {
+    try {
+      const client = createBinanceFuturesClient(wallet);
+      await cancelFuturesAlgoOrder(client, algoId);
+
+      logger.info({
+        algoId,
+      }, 'Futures exchange trailing stop cancelled via Algo API');
+
+      return true;
+    } catch (error) {
+      logger.error({
+        error: error instanceof Error ? error.message : String(error),
+        algoId,
+      }, 'Failed to cancel futures exchange trailing stop');
+      return false;
+    }
+  }
+
+  calculateActivationPrice(entryPrice: number, side: 'LONG' | 'SHORT', breakevenThreshold: number = 0.0015): number {
+    if (side === 'LONG') {
+      return entryPrice * (1 + breakevenThreshold);
+    } else {
+      return entryPrice * (1 - breakevenThreshold);
+    }
   }
 }
 

@@ -13,7 +13,7 @@ import { trpc } from '@renderer/utils/trpc';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { LuChartBar, LuChevronDown, LuChevronUp, LuPause, LuPlay, LuPlus, LuRefreshCw, LuZap } from 'react-icons/lu';
+import { LuChartBar, LuChevronDown, LuChevronUp, LuPause, LuPlay, LuPlus, LuRefreshCw, LuTriangleAlert, LuZap } from 'react-icons/lu';
 import { TimeframeSelector } from '../Chart/TimeframeSelector';
 import { AddWatcherDialog } from './AddWatcherDialog';
 import { DynamicSymbolRankings } from './DynamicSymbolRankings';
@@ -33,6 +33,8 @@ export const WatcherManager = () => {
     isStoppingWatcher,
     isStoppingAllWatchers,
     isStartingWatchersBulk,
+    emergencyStop,
+    isEmergencyStopping,
   } = useBackendAutoTrading(walletId);
 
   const { profiles, getProfileById } = useTradingProfiles();
@@ -48,6 +50,7 @@ export const WatcherManager = () => {
 
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showRankingsDialog, setShowRankingsDialog] = useState(false);
+  const [showEmergencyConfirm, setShowEmergencyConfirm] = useState(false);
   const [tpModeExpanded, setTpModeExpanded] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [watchersExpanded, setWatchersExpanded] = useState(true);
@@ -170,6 +173,11 @@ export const WatcherManager = () => {
     await stopAllWatchers();
   };
 
+  const handleEmergencyStop = async () => {
+    await emergencyStop();
+    setShowEmergencyConfirm(false);
+  };
+
   if (!walletId) {
     return (
       <Box p={4} textAlign="center">
@@ -182,6 +190,63 @@ export const WatcherManager = () => {
 
   return (
     <Stack gap={4}>
+      {showEmergencyConfirm && (
+        <Box
+          p={4}
+          bg="red.50"
+          borderRadius="lg"
+          borderWidth="2px"
+          borderColor="red.500"
+          _dark={{ bg: 'red.900/30' }}
+        >
+          <Flex align="center" gap={3} mb={3}>
+            <Box color="red.500">
+              <LuTriangleAlert size={24} />
+            </Box>
+            <Box>
+              <Text fontWeight="bold" color="red.600" _dark={{ color: 'red.300' }}>
+                {t('tradingProfiles.emergencyStop.confirmTitle')}
+              </Text>
+              <Text fontSize="sm" color="fg.muted">
+                {t('tradingProfiles.emergencyStop.confirmDescription')}
+              </Text>
+            </Box>
+          </Flex>
+          <Flex gap={2} justify="flex-end">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowEmergencyConfirm(false)}
+              disabled={isEmergencyStopping}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              size="sm"
+              colorPalette="red"
+              onClick={handleEmergencyStop}
+              loading={isEmergencyStopping}
+            >
+              <LuTriangleAlert />
+              {t('tradingProfiles.emergencyStop.confirm')}
+            </Button>
+          </Flex>
+        </Box>
+      )}
+
+      {(activeWatchers.length > 0 || persistedWatchers > 0) && !showEmergencyConfirm && (
+        <Button
+          size="sm"
+          variant="outline"
+          colorPalette="red"
+          onClick={() => setShowEmergencyConfirm(true)}
+          w="full"
+        >
+          <LuTriangleAlert />
+          {t('tradingProfiles.emergencyStop.button')}
+        </Button>
+      )}
+
       <Box>
         <Flex
           justify="space-between"

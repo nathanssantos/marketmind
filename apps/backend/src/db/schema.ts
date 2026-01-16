@@ -233,6 +233,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   dynamicSymbolLimit: integer('dynamic_symbol_limit').default(20).notNull(),
   dynamicSymbolRotationInterval: varchar('dynamic_symbol_rotation_interval', { length: 10 }).$type<'1h' | '4h' | '1d'>().default('4h').notNull(),
   dynamicSymbolExcluded: text('dynamic_symbol_excluded'),
+  trailingStopMode: varchar('trailing_stop_mode', { length: 10 }).$type<'local' | 'binance'>().default('local'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
@@ -284,6 +285,11 @@ export const tradeExecutions = pgTable('trade_executions', {
   triggerCandleData: text('trigger_candle_data'),
   triggerIndicatorValues: text('trigger_indicator_values'),
   fibonacciProjection: text('fibonacci_projection'),
+  entryFee: numeric('entry_fee', { precision: 20, scale: 8 }),
+  exitFee: numeric('exit_fee', { precision: 20, scale: 8 }),
+  commissionAsset: varchar('commission_asset', { length: 20 }),
+  trailingStopAlgoId: bigint('trailing_stop_algo_id', { mode: 'number' }),
+  trailingStopMode: varchar('trailing_stop_mode', { length: 10 }).$type<'local' | 'binance'>(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({

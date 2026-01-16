@@ -73,6 +73,14 @@ export const useBackendAutoTrading = (walletId: string) => {
     },
   });
 
+  const emergencyStopMutation = trpc.autoTrading.emergencyStop.useMutation({
+    onSuccess: () => {
+      utils.autoTrading.getWatcherStatus.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
+      utils.autoTrading.getConfig.invalidate();
+    },
+  });
+
   const { data: watcherStatus, isLoading: isLoadingWatcherStatus } =
     trpc.autoTrading.getWatcherStatus.useQuery(
       { walletId },
@@ -154,6 +162,13 @@ export const useBackendAutoTrading = (walletId: string) => {
     [walletId, startWatchersBulkMutation]
   );
 
+  const emergencyStop = useCallback(
+    async () => {
+      return emergencyStopMutation.mutateAsync({ walletId });
+    },
+    [walletId, emergencyStopMutation]
+  );
+
   return {
     config,
     activeExecutions: activeExecutions ?? [],
@@ -188,6 +203,9 @@ export const useBackendAutoTrading = (walletId: string) => {
     stopWatcherError: stopWatcherMutation.error,
     stopAllWatchersError: stopAllWatchersMutation.error,
     startWatchersBulkError: startWatchersBulkMutation.error,
+    emergencyStop,
+    isEmergencyStopping: emergencyStopMutation.isPending,
+    emergencyStopError: emergencyStopMutation.error,
   };
 };
 

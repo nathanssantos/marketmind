@@ -1,8 +1,8 @@
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { calculateTotalFees } from '@marketmind/types';
 import { TRADING_CONFIG } from '../constants';
+import { calculatePnl } from '../utils/pnl-calculator';
 import {
   autoTradingConfig,
   tradeExecutions,
@@ -24,6 +24,7 @@ import { getOpportunityScoringService } from '../services/opportunity-scoring';
 import { getDynamicSymbolRotationService } from '../services/dynamic-symbol-rotation';
 import { getMarketCapDataService } from '../services/market-cap-data';
 import { walletQueries } from '../services/database/walletQueries';
+import { createBinanceFuturesClient, isPaperWallet, getPositions, cancelAllFuturesAlgoOrders, closePosition } from '../services/binance-futures-client';
 
 const log = (message: string, data?: Record<string, unknown>): void => {
   if (data) {
@@ -110,6 +111,7 @@ export const autoTradingRouter = router({
         dynamicSymbolLimit: z.number().min(1).max(50).optional(),
         dynamicSymbolRotationInterval: z.enum(['1h', '4h', '1d']).optional(),
         dynamicSymbolExcluded: z.array(z.string()).optional(),
+        trailingStopMode: z.enum(['local', 'binance']).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -171,6 +173,8 @@ export const autoTradingRouter = router({
         {updateData.dynamicSymbolRotationInterval = input.dynamicSymbolRotationInterval;}
       if (input.dynamicSymbolExcluded !== undefined)
         {updateData.dynamicSymbolExcluded = stringifyDynamicSymbolExcluded(input.dynamicSymbolExcluded);}
+      if (input.trailingStopMode !== undefined)
+        {updateData.trailingStopMode = input.trailingStopMode;}
 
       await ctx.db
         .update(autoTradingConfig)
@@ -588,22 +592,15 @@ export const autoTradingRouter = router({
       const entryPrice = parseFloat(execution.entryPrice);
       const exitPrice = parseFloat(input.exitPrice);
       const qty = parseFloat(execution.quantity);
-
-      let grossPnl = 0;
-      if (execution.side === 'LONG') {
-        grossPnl = (exitPrice - entryPrice) * qty;
-      } else {
-        grossPnl = (entryPrice - exitPrice) * qty;
-      }
-
-      const entryValue = entryPrice * qty;
-      const exitValue = exitPrice * qty;
       const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
-      const { totalFees } = calculateTotalFees(entryValue, exitValue, { marketType });
-      const netPnl = grossPnl - totalFees;
 
-      const pnlPercent = ((exitPrice - entryPrice) / entryPrice) * 100;
-      const adjustedPnlPercent = execution.side === 'LONG' ? pnlPercent : -pnlPercent;
+      const { grossPnl, totalFees, netPnl, pnlPercent } = calculatePnl({
+        entryPrice,
+        exitPrice,
+        quantity: qty,
+        side: execution.side as 'LONG' | 'SHORT',
+        marketType,
+      });
 
       await ctx.db
         .update(tradeExecutions)
@@ -611,7 +608,7 @@ export const autoTradingRouter = router({
           exitPrice: input.exitPrice,
           exitOrderId: input.exitOrderId,
           pnl: netPnl.toString(),
-          pnlPercent: adjustedPnlPercent.toString(),
+          pnlPercent: pnlPercent.toString(),
           fees: totalFees.toString(),
           status: 'closed',
           closedAt: new Date(),
@@ -630,12 +627,12 @@ export const autoTradingRouter = router({
         grossPnl: grossPnl.toFixed(2),
         fees: totalFees.toFixed(4),
         netPnl: netPnl.toFixed(2),
-        pnlPercent: `${adjustedPnlPercent >= 0 ? '+' : ''}${adjustedPnlPercent.toFixed(2)}%`,
+        pnlPercent: `${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%`,
       });
 
       return {
         pnl: netPnl.toString(),
-        pnlPercent: adjustedPnlPercent.toFixed(2),
+        pnlPercent: pnlPercent.toFixed(2),
       };
     }),
 
@@ -1118,5 +1115,195 @@ export const autoTradingRouter = router({
       log('✅ Batch funding rates fetched', { total: results.length, extreme: extremeCount });
 
       return results;
+    }),
+
+  emergencyStop: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      log('🚨 EMERGENCY STOP initiated', { walletId: input.walletId });
+
+      const result = {
+        watchersStopped: 0,
+        algoOrdersCancelled: 0,
+        positionsClosed: 0,
+        errors: [] as string[],
+      };
+
+      try {
+        await autoTradingScheduler.stopAllWatchersForWallet(input.walletId);
+        result.watchersStopped = 1;
+        log(`⏹️ Stopped all watchers for wallet`, { walletId: input.walletId });
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        result.errors.push(`Failed to stop watchers: ${errorMsg}`);
+        logger.error({ error: errorMsg }, '[EmergencyStop] Failed to stop watchers');
+      }
+
+      const openExecutions = await ctx.db
+        .select()
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.walletId, input.walletId),
+            eq(tradeExecutions.status, 'open'),
+            eq(tradeExecutions.marketType, 'FUTURES')
+          )
+        );
+
+      if (!isPaperWallet(wallet)) {
+        try {
+          const client = createBinanceFuturesClient(wallet);
+
+          const uniqueSymbols = [...new Set(openExecutions.map((e) => e.symbol))];
+
+          for (const symbol of uniqueSymbols) {
+            try {
+              await cancelAllFuturesAlgoOrders(client, symbol);
+              result.algoOrdersCancelled++;
+              log(`❌ Cancelled algo orders for ${symbol}`, { walletId: input.walletId, symbol });
+            } catch (error) {
+              const errorMsg = error instanceof Error ? error.message : String(error);
+              if (!errorMsg.includes('No algo orders')) {
+                result.errors.push(`Failed to cancel algo orders for ${symbol}: ${errorMsg}`);
+              }
+            }
+          }
+
+          const exitPricesBySymbol = new Map<string, string>();
+
+          const exchangePositions = await getPositions(client);
+          for (const position of exchangePositions) {
+            if (parseFloat(position.positionAmt) === 0) continue;
+
+            try {
+              const closeResult = await closePosition(
+                client,
+                position.symbol,
+                position.positionAmt
+              );
+              exitPricesBySymbol.set(position.symbol, closeResult.avgPrice);
+              result.positionsClosed++;
+              log(`📉 Closed position ${position.symbol}`, {
+                walletId: input.walletId,
+                symbol: position.symbol,
+                amount: position.positionAmt,
+                exitPrice: closeResult.avgPrice,
+              });
+            } catch (error) {
+              const errorMsg = error instanceof Error ? error.message : String(error);
+              result.errors.push(`Failed to close position ${position.symbol}: ${errorMsg}`);
+              logger.error(
+                { error: errorMsg, symbol: position.symbol },
+                '[EmergencyStop] Failed to close position'
+              );
+            }
+          }
+
+          for (const execution of openExecutions) {
+            const exitPrice = exitPricesBySymbol.get(execution.symbol);
+            if (exitPrice) {
+              const entryPrice = parseFloat(execution.entryPrice);
+              const exitPriceNum = parseFloat(exitPrice);
+              const qty = parseFloat(execution.quantity || '0');
+              const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
+
+              const { grossPnl, totalFees, netPnl, pnlPercent } = calculatePnl({
+                entryPrice,
+                exitPrice: exitPriceNum,
+                quantity: qty,
+                side: execution.side as 'LONG' | 'SHORT',
+                marketType,
+              });
+
+              await ctx.db
+                .update(tradeExecutions)
+                .set({
+                  status: 'closed',
+                  exitSource: 'MANUAL',
+                  exitReason: 'EMERGENCY_STOP',
+                  exitPrice: exitPrice,
+                  pnl: netPnl.toString(),
+                  pnlPercent: pnlPercent.toString(),
+                  fees: totalFees.toString(),
+                  closedAt: new Date(),
+                  updatedAt: new Date(),
+                })
+                .where(eq(tradeExecutions.id, execution.id));
+
+              log(`📊 Emergency closed execution`, {
+                executionId: execution.id,
+                symbol: execution.symbol,
+                side: execution.side,
+                entryPrice,
+                exitPrice: exitPriceNum,
+                grossPnl: grossPnl.toFixed(2),
+                fees: totalFees.toFixed(2),
+                netPnl: netPnl.toFixed(2),
+                pnlPercent: pnlPercent.toFixed(2),
+              });
+            } else {
+              await ctx.db
+                .update(tradeExecutions)
+                .set({
+                  status: 'closed',
+                  exitSource: 'MANUAL',
+                  exitReason: 'EMERGENCY_STOP',
+                  closedAt: new Date(),
+                  updatedAt: new Date(),
+                })
+                .where(eq(tradeExecutions.id, execution.id));
+            }
+          }
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          result.errors.push(`Exchange operation failed: ${errorMsg}`);
+          logger.error({ error: errorMsg }, '[EmergencyStop] Exchange operation failed');
+        }
+      } else {
+        for (const execution of openExecutions) {
+          await ctx.db
+            .update(tradeExecutions)
+            .set({
+              status: 'closed',
+              exitSource: 'MANUAL',
+              exitReason: 'EMERGENCY_STOP',
+              closedAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(tradeExecutions.id, execution.id));
+        }
+      }
+
+      const [config] = await ctx.db
+        .select()
+        .from(autoTradingConfig)
+        .where(eq(autoTradingConfig.walletId, input.walletId))
+        .limit(1);
+
+      if (config) {
+        await ctx.db
+          .update(autoTradingConfig)
+          .set({
+            isEnabled: false,
+            updatedAt: new Date(),
+          })
+          .where(eq(autoTradingConfig.id, config.id));
+      }
+
+      log('🚨 EMERGENCY STOP completed', {
+        walletId: input.walletId,
+        ...result,
+      });
+
+      return {
+        success: result.errors.length === 0,
+        ...result,
+      };
     }),
 });

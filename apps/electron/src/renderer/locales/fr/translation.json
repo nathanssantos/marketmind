@@ -1007,6 +1007,12 @@
       "selectedCount": "{{count}} symboles sélectionnés",
       "startBulk": "Démarrer {{count}} Watchers"
     },
+    "emergencyStop": {
+      "button": "Arrêt d'Urgence",
+      "confirmTitle": "Confirmer l'Arrêt d'Urgence",
+      "confirmDescription": "Cela arrêtera tous les watchers, annulera toutes les ordres ouverts et fermera toutes les positions ouvertes au prix du marché. Cette action ne peut pas être annulée.",
+      "confirm": "Oui, Tout Arrêter"
+    },
     "dynamicSelection": {
       "title": "Sélection Dynamique de Symboles",
       "description": "Sélectionnez et faites pivoter automatiquement les symboles en fonction des scores d'opportunité",

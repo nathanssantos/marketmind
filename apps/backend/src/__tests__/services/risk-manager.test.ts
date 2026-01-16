@@ -180,6 +180,7 @@ describe('RiskManagerService', () => {
         dynamicSymbolLimit: 20,
         dynamicSymbolRotationInterval: '4h' as const,
         dynamicSymbolExcluded: null,
+        trailingStopMode: 'local' as const,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -272,6 +273,7 @@ describe('RiskManagerService', () => {
         dynamicSymbolLimit: 20,
         dynamicSymbolRotationInterval: '4h' as const,
         dynamicSymbolExcluded: null,
+        trailingStopMode: 'local' as const,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -327,6 +329,7 @@ describe('RiskManagerService', () => {
         dynamicSymbolLimit: 20,
         dynamicSymbolRotationInterval: '4h' as const,
         dynamicSymbolExcluded: null,
+        trailingStopMode: 'local' as const,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -382,6 +385,7 @@ describe('RiskManagerService', () => {
         dynamicSymbolLimit: 20,
         dynamicSymbolRotationInterval: '4h' as const,
         dynamicSymbolExcluded: null,
+        trailingStopMode: 'local' as const,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -462,6 +466,7 @@ describe('RiskManagerService', () => {
         dynamicSymbolLimit: 20,
         dynamicSymbolRotationInterval: '4h' as const,
         dynamicSymbolExcluded: null,
+        trailingStopMode: 'local' as const,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

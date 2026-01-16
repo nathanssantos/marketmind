@@ -5,11 +5,10 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, positions, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
-import { createBinanceFuturesClient, isPaperWallet, getWalletType } from './binance-futures-client';
+import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder } from './binance-futures-client';
 import { decryptApiKey } from './encryption';
 import { logger, serializeError } from './logger';
 import { getWebSocketService } from './websocket';
-import { FUTURES_DEFAULTS } from '@marketmind/types';
 
 interface FuturesAccountUpdate {
   e: 'ACCOUNT_UPDATE';
@@ -89,10 +88,27 @@ interface FuturesAccountConfigUpdate {
   };
 }
 
+interface FuturesAlgoOrderUpdate {
+  e: 'ALGO_ORDER_UPDATE';
+  E: number;
+  T: number;
+  s: string;
+  i: number;
+  S: 'BUY' | 'SELL';
+  o: string;
+  q: string;
+  p: string;
+  sp: string;
+  X: 'NEW' | 'TRIGGERED' | 'WORKING' | 'CANCELLED' | 'EXPIRED' | 'REJECTED' | 'FILLED';
+  ps: 'LONG' | 'SHORT' | 'BOTH';
+  R: boolean;
+}
+
 export class BinanceFuturesUserStreamService {
   private connections: Map<string, { wsClient: WebsocketClient; apiClient: USDMClient }> = new Map();
   private isRunning = false;
   private walletSubscriptionInterval: ReturnType<typeof setInterval> | null = null;
+  private balanceSyncInterval: ReturnType<typeof setInterval> | null = null;
 
   async start(): Promise<void> {
     if (this.isRunning) return;
@@ -104,6 +120,10 @@ export class BinanceFuturesUserStreamService {
     this.walletSubscriptionInterval = setInterval(() => {
       void this.subscribeAllActiveWallets();
     }, 60000);
+
+    this.balanceSyncInterval = setInterval(() => {
+      void this.syncAllWalletBalances();
+    }, 30000);
   }
 
   stop(): void {
@@ -114,11 +134,74 @@ export class BinanceFuturesUserStreamService {
       this.walletSubscriptionInterval = null;
     }
 
+    if (this.balanceSyncInterval) {
+      clearInterval(this.balanceSyncInterval);
+      this.balanceSyncInterval = null;
+    }
+
     for (const [walletId, connection] of this.connections) {
       connection.wsClient.closeAll(true);
       this.connections.delete(walletId);
     }
     logger.info('[FuturesUserStream] Service stopped');
+  }
+
+  private async syncAllWalletBalances(): Promise<void> {
+    for (const [walletId, connection] of this.connections) {
+      try {
+        const accountInfo = await connection.apiClient.getAccountInformation();
+        const usdtBalance = accountInfo.assets?.find((a) => a.asset === 'USDT');
+
+        if (!usdtBalance) continue;
+
+        const apiBalance = parseFloat(String(usdtBalance.walletBalance));
+
+        const [wallet] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+
+        if (!wallet) continue;
+
+        const dbBalance = parseFloat(wallet.currentBalance || '0');
+        const discrepancy = Math.abs(apiBalance - dbBalance);
+        const discrepancyPercent = dbBalance > 0 ? (discrepancy / dbBalance) * 100 : 0;
+
+        if (discrepancyPercent > 0.01 && discrepancy > 0.01) {
+          logger.warn(
+            {
+              walletId,
+              apiBalance: apiBalance.toFixed(4),
+              dbBalance: dbBalance.toFixed(4),
+              discrepancy: discrepancy.toFixed(4),
+              discrepancyPercent: discrepancyPercent.toFixed(4),
+            },
+            '[FuturesUserStream] ⚠️ Balance discrepancy detected - syncing from API'
+          );
+
+          await db
+            .update(wallets)
+            .set({
+              currentBalance: apiBalance.toString(),
+              updatedAt: new Date(),
+            })
+            .where(eq(wallets.id, walletId));
+
+          logger.info(
+            {
+              walletId,
+              newBalance: apiBalance.toFixed(4),
+            },
+            '[FuturesUserStream] Balance synced from API'
+          );
+        }
+      } catch (error) {
+        logger.error(
+          {
+            walletId,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          '[FuturesUserStream] Failed to sync wallet balance'
+        );
+      }
+    }
   }
 
   private async subscribeAllActiveWallets(): Promise<void> {
@@ -220,6 +303,9 @@ export class BinanceFuturesUserStreamService {
         case 'ACCOUNT_CONFIG_UPDATE':
           this.handleConfigUpdate(walletId, message as unknown as FuturesAccountConfigUpdate);
           break;
+        case 'ALGO_ORDER_UPDATE':
+          void this.handleAlgoOrderUpdate(walletId, message as unknown as FuturesAlgoOrderUpdate);
+          break;
         default:
           logger.debug({ walletId, eventType }, '[FuturesUserStream] Unhandled event type');
       }
@@ -247,6 +333,8 @@ export class BinanceFuturesUserStreamService {
           ap: avgPrice,
           rp: _realizedProfit,
           ps: positionSide,
+          n: commission,
+          N: commissionAsset,
         },
       } = event;
 
@@ -278,12 +366,15 @@ export class BinanceFuturesUserStreamService {
 
         if (pendingExecution?.entryOrderId === orderId) {
           const fillPrice = parseFloat(avgPrice || lastFilledPrice);
+          const entryFee = parseFloat(commission || '0');
           logger.info(
             {
               executionId: pendingExecution.id,
               symbol,
               orderId,
               fillPrice,
+              entryFee,
+              commissionAsset,
             },
             '[FuturesUserStream] ✅ Pending LIMIT order FILLED - activating position'
           );
@@ -293,6 +384,8 @@ export class BinanceFuturesUserStreamService {
             .set({
               status: 'open',
               entryPrice: fillPrice.toString(),
+              entryFee: entryFee.toString(),
+              commissionAsset: commissionAsset || 'USDT',
               openedAt: new Date(),
               updatedAt: new Date(),
             })
@@ -330,13 +423,25 @@ export class BinanceFuturesUserStreamService {
 
         const isSLOrder = execution.stopLossOrderId && execution.stopLossOrderId === orderId;
         const isTPOrder = execution.takeProfitOrderId && execution.takeProfitOrderId === orderId;
+        const isAlgoTriggerFill = !isSLOrder && !isTPOrder && execution.exitReason;
 
-        if (!isSLOrder && !isTPOrder) {
+        if (!isSLOrder && !isTPOrder && !isAlgoTriggerFill) {
           logger.warn(
             { walletId, symbol, orderId, executionId: execution.id },
             '[FuturesUserStream] Order not recognized as SL or TP'
           );
           return;
+        }
+
+        if (isAlgoTriggerFill) {
+          logger.info(
+            {
+              executionId: execution.id,
+              orderId,
+              exitReason: execution.exitReason,
+            },
+            '[FuturesUserStream] Processing fill from algo order trigger'
+          );
         }
 
         const [wallet] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
@@ -348,7 +453,7 @@ export class BinanceFuturesUserStreamService {
         const apiClient = this.connections.get(walletId)?.apiClient;
         const orderToCancel = isSLOrder ? execution.takeProfitOrderId : execution.stopLossOrderId;
 
-        if (orderToCancel && apiClient) {
+        if (orderToCancel && apiClient && !isAlgoTriggerFill) {
           try {
             await apiClient.cancelOrder({ symbol, orderId: orderToCancel });
             logger.info(
@@ -382,16 +487,14 @@ export class BinanceFuturesUserStreamService {
           grossPnl = (entryPrice - exitPrice) * quantity;
         }
 
-        const entryValue = entryPrice * quantity;
-        const exitValue = exitPrice * quantity;
-        const takerFee = FUTURES_DEFAULTS.TAKER_FEE;
-        const entryFee = entryValue * takerFee;
-        const exitFee = exitValue * takerFee;
-        const totalFees = entryFee + exitFee;
+        const actualExitFee = parseFloat(commission || '0');
+        const actualEntryFee = parseFloat(execution.entryFee || '0');
+        const totalFees = actualEntryFee + actualExitFee;
 
         const accumulatedFunding = parseFloat(execution.accumulatedFunding || '0');
         const pnl = grossPnl - totalFees + accumulatedFunding;
 
+        const entryValue = entryPrice * quantity;
         const marginValue = entryValue / leverage;
         const pnlPercent = (pnl / marginValue) * 100;
 
@@ -416,6 +519,12 @@ export class BinanceFuturesUserStreamService {
           '[FuturesUserStream] 💰 Wallet balance updated'
         );
 
+        const determinedExitReason = isAlgoTriggerFill
+          ? execution.exitReason
+          : isSLOrder
+            ? 'STOP_LOSS'
+            : 'TAKE_PROFIT';
+
         await db
           .update(tradeExecutions)
           .set({
@@ -425,8 +534,9 @@ export class BinanceFuturesUserStreamService {
             pnl: pnl.toString(),
             pnlPercent: pnlPercent.toString(),
             fees: totalFees.toString(),
+            exitFee: actualExitFee.toString(),
             exitSource: 'ALGORITHM',
-            exitReason: isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT',
+            exitReason: determinedExitReason,
             updatedAt: new Date(),
           })
           .where(eq(tradeExecutions.id, execution.id));
@@ -618,6 +728,114 @@ export class BinanceFuturesUserStreamService {
           multiAssetMode: event.ai.j,
         },
         '[FuturesUserStream] Multi-asset mode updated'
+      );
+    }
+  }
+
+  private async handleAlgoOrderUpdate(walletId: string, event: FuturesAlgoOrderUpdate): Promise<void> {
+    const { s: symbol, i: algoId, X: status, o: orderType, ps: positionSide } = event;
+
+    logger.info(
+      {
+        walletId,
+        symbol,
+        algoId,
+        status,
+        orderType,
+        positionSide,
+      },
+      '[FuturesUserStream] Algo order update received'
+    );
+
+    if (status !== 'TRIGGERED' && status !== 'FILLED') {
+      return;
+    }
+
+    try {
+      const [execution] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.walletId, walletId),
+            eq(tradeExecutions.symbol, symbol),
+            eq(tradeExecutions.status, 'open'),
+            eq(tradeExecutions.marketType, 'FUTURES')
+          )
+        )
+        .limit(1);
+
+      if (!execution) {
+        logger.warn({ walletId, symbol, algoId }, '[FuturesUserStream] No open execution found for algo order');
+        return;
+      }
+
+      const isSLOrder = execution.stopLossOrderId === algoId;
+      const isTPOrder = execution.takeProfitOrderId === algoId;
+
+      if (!isSLOrder && !isTPOrder) {
+        logger.debug(
+          { walletId, symbol, algoId, stopLossOrderId: execution.stopLossOrderId, takeProfitOrderId: execution.takeProfitOrderId },
+          '[FuturesUserStream] Algo order not recognized as SL or TP for this execution'
+        );
+        return;
+      }
+
+      const orderToCancel = isSLOrder ? execution.takeProfitOrderId : execution.stopLossOrderId;
+      const exitReason = isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT';
+
+      logger.info(
+        {
+          executionId: execution.id,
+          algoId,
+          isSLOrder,
+          isTPOrder,
+          exitReason,
+          orderToCancel,
+        },
+        `[FuturesUserStream] ⚡ Algo ${exitReason} order TRIGGERED`
+      );
+
+      if (orderToCancel) {
+        const apiClient = this.connections.get(walletId)?.apiClient;
+        if (apiClient) {
+          try {
+            await cancelFuturesAlgoOrder(apiClient, orderToCancel);
+            logger.info(
+              {
+                executionId: execution.id,
+                cancelledAlgoId: orderToCancel,
+                reason: isSLOrder ? 'SL triggered, cancelling TP algo' : 'TP triggered, cancelling SL algo',
+              },
+              '[FuturesUserStream] Opposite algo order cancelled'
+            );
+          } catch (cancelError) {
+            logger.error(
+              {
+                error: cancelError instanceof Error ? cancelError.message : String(cancelError),
+                orderToCancel,
+              },
+              '[FuturesUserStream] Failed to cancel opposite algo order'
+            );
+          }
+        }
+      }
+
+      await db
+        .update(tradeExecutions)
+        .set({
+          exitReason,
+          updatedAt: new Date(),
+        })
+        .where(eq(tradeExecutions.id, execution.id));
+    } catch (error) {
+      logger.error(
+        {
+          walletId,
+          algoId,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        '[FuturesUserStream] Error handling algo order update'
       );
     }
   }

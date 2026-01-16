@@ -7,7 +7,20 @@ import { db } from '../db';
 import type { AutoTradingConfig, SetupDetection, Wallet } from '../db/schema';
 import { klines, tradeExecutions } from '../db/schema';
 import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from './binance-client';
+import { submitFuturesAlgoOrder } from './binance-futures-client';
 import { logger } from './logger';
+
+export interface AlgoOrderResult {
+  algoId: number;
+  isAlgoOrder: true;
+}
+
+export interface RegularOrderResult {
+  orderId: number;
+  isAlgoOrder: false;
+}
+
+export type OrderResult = AlgoOrderResult | RegularOrderResult;
 
 export interface OrderParams {
   symbol: string;
@@ -443,21 +456,32 @@ export class AutoTradingService {
     stopLoss: number,
     side: 'LONG' | 'SHORT',
     marketType: MarketType = 'SPOT'
-  ): Promise<number> {
+  ): Promise<OrderResult> {
     const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
 
     if (marketType === 'FUTURES') {
-      const orderParams: OrderParams = {
+      const client = createBinanceFuturesClient(wallet);
+      const algoOrder = await submitFuturesAlgoOrder(client, {
         symbol,
         side: orderSide,
         type: 'STOP_MARKET',
-        quantity,
-        stopPrice: stopLoss,
+        quantity: quantity.toString(),
+        triggerPrice: stopLoss.toString(),
         reduceOnly: true,
-      };
+        workingType: 'CONTRACT_PRICE',
+      });
 
-      const result = await this.executeBinanceOrder(wallet, orderParams, 'FUTURES');
-      return result.orderId;
+      logger.info({
+        algoId: algoOrder.algoId,
+        symbol,
+        side: orderSide,
+        type: 'STOP_MARKET',
+        triggerPrice: stopLoss,
+        quantity,
+        walletType: wallet.walletType,
+      }, '[Futures] Stop-loss algo order created via Algo API');
+
+      return { algoId: algoOrder.algoId, isAlgoOrder: true };
     }
 
     const orderParams: OrderParams = {
@@ -471,7 +495,7 @@ export class AutoTradingService {
     };
 
     const result = await this.executeBinanceOrder(wallet, orderParams, 'SPOT');
-    return result.orderId;
+    return { orderId: result.orderId, isAlgoOrder: false };
   }
 
   async createTakeProfitOrder(
@@ -481,21 +505,32 @@ export class AutoTradingService {
     takeProfit: number,
     side: 'LONG' | 'SHORT',
     marketType: MarketType = 'SPOT'
-  ): Promise<number> {
+  ): Promise<OrderResult> {
     const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
 
     if (marketType === 'FUTURES') {
-      const orderParams: OrderParams = {
+      const client = createBinanceFuturesClient(wallet);
+      const algoOrder = await submitFuturesAlgoOrder(client, {
         symbol,
         side: orderSide,
         type: 'TAKE_PROFIT_MARKET',
-        quantity,
-        stopPrice: takeProfit,
+        quantity: quantity.toString(),
+        triggerPrice: takeProfit.toString(),
         reduceOnly: true,
-      };
+        workingType: 'CONTRACT_PRICE',
+      });
 
-      const result = await this.executeBinanceOrder(wallet, orderParams, 'FUTURES');
-      return result.orderId;
+      logger.info({
+        algoId: algoOrder.algoId,
+        symbol,
+        side: orderSide,
+        type: 'TAKE_PROFIT_MARKET',
+        triggerPrice: takeProfit,
+        quantity,
+        walletType: wallet.walletType,
+      }, '[Futures] Take-profit algo order created via Algo API');
+
+      return { algoId: algoOrder.algoId, isAlgoOrder: true };
     }
 
     const orderParams: OrderParams = {
@@ -508,7 +543,7 @@ export class AutoTradingService {
     };
 
     const result = await this.executeBinanceOrder(wallet, orderParams, 'SPOT');
-    return result.orderId;
+    return { orderId: result.orderId, isAlgoOrder: false };
   }
 
   async setFuturesLeverage(

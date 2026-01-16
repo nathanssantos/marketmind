@@ -1550,48 +1550,56 @@ export class AutoTradingScheduler {
                 });
               } else {
                 log('⚠️ OCO placement returned null, falling back to separate orders');
-                stopLossOrderId = await autoTradingService.createStopLossOrder(
+                const slResult = await autoTradingService.createStopLossOrder(
                   wallet as Wallet,
                   watcher.symbol,
                   actualQuantity,
                   setup.stopLoss,
-                  setup.direction
+                  setup.direction,
+                  watcher.marketType
                 );
-                takeProfitOrderId = await autoTradingService.createTakeProfitOrder(
+                stopLossOrderId = slResult.isAlgoOrder ? slResult.algoId : slResult.orderId;
+                const tpResult = await autoTradingService.createTakeProfitOrder(
                   wallet as Wallet,
                   watcher.symbol,
                   actualQuantity,
                   effectiveTakeProfit,
-                  setup.direction
+                  setup.direction,
+                  watcher.marketType
                 );
+                takeProfitOrderId = tpResult.isAlgoOrder ? tpResult.algoId : tpResult.orderId;
               }
             } catch (ocoError) {
               log('⚠️ Failed to place OCO exit orders, falling back to separate orders', {
                 error: ocoError instanceof Error ? ocoError.message : String(ocoError),
               });
               try {
-                stopLossOrderId = await autoTradingService.createStopLossOrder(
+                const slResult = await autoTradingService.createStopLossOrder(
                   wallet as Wallet,
                   watcher.symbol,
                   actualQuantity,
                   setup.stopLoss,
-                  setup.direction
+                  setup.direction,
+                  watcher.marketType
                 );
-                log('🛡️ Stop loss order placed (fallback)', { stopLossOrderId });
+                stopLossOrderId = slResult.isAlgoOrder ? slResult.algoId : slResult.orderId;
+                log('🛡️ Stop loss order placed (fallback)', { stopLossOrderId, isAlgoOrder: slResult.isAlgoOrder });
               } catch (slError) {
                 log('⚠️ Failed to place stop loss order', {
                   error: slError instanceof Error ? slError.message : String(slError),
                 });
               }
               try {
-                takeProfitOrderId = await autoTradingService.createTakeProfitOrder(
+                const tpResult = await autoTradingService.createTakeProfitOrder(
                   wallet as Wallet,
                   watcher.symbol,
                   actualQuantity,
                   effectiveTakeProfit,
-                  setup.direction
+                  setup.direction,
+                  watcher.marketType
                 );
-                log('🎯 Take profit order placed (fallback)', { takeProfitOrderId });
+                takeProfitOrderId = tpResult.isAlgoOrder ? tpResult.algoId : tpResult.orderId;
+                log('🎯 Take profit order placed (fallback)', { takeProfitOrderId, isAlgoOrder: tpResult.isAlgoOrder });
               } catch (tpError) {
                 log('⚠️ Failed to place take profit order', {
                   error: tpError instanceof Error ? tpError.message : String(tpError),
@@ -1600,14 +1608,16 @@ export class AutoTradingScheduler {
             }
           } else if (orderFilled && setup.stopLoss) {
             try {
-              stopLossOrderId = await autoTradingService.createStopLossOrder(
+              const slResult = await autoTradingService.createStopLossOrder(
                 wallet as Wallet,
                 watcher.symbol,
                 actualQuantity,
                 setup.stopLoss,
-                setup.direction
+                setup.direction,
+                watcher.marketType
               );
-              log('🛡️ Stop loss order placed (no TP)', { stopLossOrderId, stopLoss: setup.stopLoss });
+              stopLossOrderId = slResult.isAlgoOrder ? slResult.algoId : slResult.orderId;
+              log('🛡️ Stop loss order placed (no TP)', { stopLossOrderId, stopLoss: setup.stopLoss, isAlgoOrder: slResult.isAlgoOrder });
             } catch (slError) {
               log('⚠️ Failed to place stop loss order', {
                 error: slError instanceof Error ? slError.message : String(slError),

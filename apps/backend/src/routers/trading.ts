@@ -10,6 +10,7 @@ import { env } from '../env';
 import { autoTradingService } from '../services/auto-trading';
 import { walletQueries } from '../services/database/walletQueries';
 import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from '../services/binance-client';
+import { cancelFuturesAlgoOrder, submitFuturesAlgoOrder } from '../services/binance-futures-client';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
@@ -866,18 +867,18 @@ export const tradingRouter = router({
 
             if (execution.stopLossOrderId) {
               try {
-                await client.cancelOrder({ symbol: execution.symbol, orderId: execution.stopLossOrderId });
-                logger.info({ orderId: execution.stopLossOrderId }, 'Cancelled SL order');
+                await cancelFuturesAlgoOrder(client, execution.stopLossOrderId);
+                logger.info({ algoId: execution.stopLossOrderId }, 'Cancelled SL algo order');
               } catch (e) {
-                logger.warn({ orderId: execution.stopLossOrderId, error: e }, 'Failed to cancel SL order');
+                logger.warn({ algoId: execution.stopLossOrderId, error: e }, 'Failed to cancel SL algo order');
               }
             }
             if (execution.takeProfitOrderId) {
               try {
-                await client.cancelOrder({ symbol: execution.symbol, orderId: execution.takeProfitOrderId });
-                logger.info({ orderId: execution.takeProfitOrderId }, 'Cancelled TP order');
+                await cancelFuturesAlgoOrder(client, execution.takeProfitOrderId);
+                logger.info({ algoId: execution.takeProfitOrderId }, 'Cancelled TP algo order');
               } catch (e) {
-                logger.warn({ orderId: execution.takeProfitOrderId, error: e }, 'Failed to cancel TP order');
+                logger.warn({ algoId: execution.takeProfitOrderId, error: e }, 'Failed to cancel TP algo order');
               }
             }
 
@@ -1157,55 +1158,49 @@ export const tradingRouter = router({
             if (input.stopLoss !== undefined) {
               if (execution.stopLossOrderId) {
                 try {
-                  await client.cancelOrder({ symbol: execution.symbol, orderId: execution.stopLossOrderId });
-                  logger.info({ orderId: execution.stopLossOrderId }, 'Cancelled old SL order');
+                  await cancelFuturesAlgoOrder(client, execution.stopLossOrderId);
+                  logger.info({ algoId: execution.stopLossOrderId }, 'Cancelled old SL algo order');
                 } catch (e) {
-                  logger.warn({ orderId: execution.stopLossOrderId, error: e }, 'Failed to cancel old SL order');
+                  logger.warn({ algoId: execution.stopLossOrderId, error: e }, 'Failed to cancel old SL algo order');
                 }
               }
 
               const closeSide = execution.side === 'LONG' ? 'SELL' : 'BUY';
-              const newSLOrder = await client.submitNewOrder({
+              const newSLOrder = await submitFuturesAlgoOrder(client, {
                 symbol: execution.symbol,
                 side: closeSide,
                 type: 'STOP_MARKET',
-                stopPrice: input.stopLoss,
-                closePosition: 'false',
-                quantity: qty,
-                reduceOnly: 'true',
-                timeInForce: 'GTE_GTC',
-                workingType: 'MARK_PRICE',
-                priceProtect: 'TRUE',
+                triggerPrice: input.stopLoss.toString(),
+                quantity: qty.toString(),
+                reduceOnly: true,
+                workingType: 'CONTRACT_PRICE',
               });
-              newStopLossOrderId = newSLOrder.orderId;
-              logger.info({ orderId: newStopLossOrderId, stopPrice: input.stopLoss }, 'Created new SL order');
+              newStopLossOrderId = newSLOrder.algoId;
+              logger.info({ algoId: newStopLossOrderId, triggerPrice: input.stopLoss }, 'Created new SL algo order');
             }
 
             if (input.takeProfit !== undefined) {
               if (execution.takeProfitOrderId) {
                 try {
-                  await client.cancelOrder({ symbol: execution.symbol, orderId: execution.takeProfitOrderId });
-                  logger.info({ orderId: execution.takeProfitOrderId }, 'Cancelled old TP order');
+                  await cancelFuturesAlgoOrder(client, execution.takeProfitOrderId);
+                  logger.info({ algoId: execution.takeProfitOrderId }, 'Cancelled old TP algo order');
                 } catch (e) {
-                  logger.warn({ orderId: execution.takeProfitOrderId, error: e }, 'Failed to cancel old TP order');
+                  logger.warn({ algoId: execution.takeProfitOrderId, error: e }, 'Failed to cancel old TP algo order');
                 }
               }
 
               const closeSide = execution.side === 'LONG' ? 'SELL' : 'BUY';
-              const newTPOrder = await client.submitNewOrder({
+              const newTPOrder = await submitFuturesAlgoOrder(client, {
                 symbol: execution.symbol,
                 side: closeSide,
                 type: 'TAKE_PROFIT_MARKET',
-                stopPrice: input.takeProfit,
-                closePosition: 'false',
-                quantity: qty,
-                reduceOnly: 'true',
-                timeInForce: 'GTE_GTC',
-                workingType: 'MARK_PRICE',
-                priceProtect: 'TRUE',
+                triggerPrice: input.takeProfit.toString(),
+                quantity: qty.toString(),
+                reduceOnly: true,
+                workingType: 'CONTRACT_PRICE',
               });
-              newTakeProfitOrderId = newTPOrder.orderId;
-              logger.info({ orderId: newTakeProfitOrderId, stopPrice: input.takeProfit }, 'Created new TP order');
+              newTakeProfitOrderId = newTPOrder.algoId;
+              logger.info({ algoId: newTakeProfitOrderId, triggerPrice: input.takeProfit }, 'Created new TP algo order');
             }
           } else {
             const client = createBinanceClient(wallet);

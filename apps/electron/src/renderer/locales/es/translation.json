@@ -1018,6 +1018,12 @@
       "selectedCount": "{{count}} símbolos seleccionados",
       "startBulk": "Iniciar {{count}} Watchers"
     },
+    "emergencyStop": {
+      "button": "Parada de Emergencia",
+      "confirmTitle": "Confirmar Parada de Emergencia",
+      "confirmDescription": "Esto detendrá todos los watchers, cancelará todas las órdenes abiertas y cerrará todas las posiciones abiertas a precio de mercado. Esta acción no se puede deshacer.",
+      "confirm": "Sí, Detener Todo"
+    },
     "dynamicSelection": {
       "title": "Selección Dinámica de Símbolos",
       "description": "Seleccione y rote automáticamente símbolos basándose en puntuaciones de oportunidad",
