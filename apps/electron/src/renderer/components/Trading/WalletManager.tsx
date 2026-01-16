@@ -226,7 +226,7 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
           <Text fontWeight="bold" fontSize="sm">
             {wallet.name}
           </Text>
-          <Badge size="xs" colorPalette={badgeInfo.colorPalette} variant="subtle">
+          <Badge size="xs" colorPalette={badgeInfo.colorPalette} variant="subtle" px={2}>
             {badgeInfo.label}
           </Badge>
         </Flex>
