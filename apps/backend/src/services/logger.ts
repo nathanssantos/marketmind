@@ -8,6 +8,17 @@ export const serializeError = (error: unknown): string => {
     const cause = (error as Error & { cause?: unknown }).cause;
     return cause ? `${error.message} (cause: ${String(cause)})` : error.message;
   }
+  if (error && typeof error === 'object') {
+    const obj = error as Record<string, unknown>;
+    if ('message' in obj && typeof obj.message === 'string') {
+      return obj.message;
+    }
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return '[Circular or unserializable object]';
+    }
+  }
   return String(error);
 };
 

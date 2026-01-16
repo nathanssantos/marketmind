@@ -7,6 +7,8 @@ vi.mock('../../services/logger', () => ({
     error: vi.fn(),
     debug: vi.fn(),
   },
+  serializeError: (error: unknown) =>
+    error instanceof Error ? error.message : String(error),
 }));
 
 const mockOn = vi.fn();
@@ -111,6 +113,7 @@ describe('BinanceUserStreamService', () => {
       const liveWallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };
@@ -122,6 +125,24 @@ describe('BinanceUserStreamService', () => {
       await service.start();
 
       expect(mockGetSpotUserDataListenKey).toHaveBeenCalled();
+    });
+
+    it('should skip FUTURES wallets', async () => {
+      const futuresWallet = {
+        id: 'wallet-1',
+        walletType: 'live',
+        marketType: 'FUTURES',
+        apiKeyEncrypted: 'encrypted-key',
+        apiSecretEncrypted: 'encrypted-secret',
+      };
+
+      mockDbSelect.mockReturnValue({
+        from: vi.fn().mockResolvedValue([futuresWallet]),
+      });
+
+      await service.start();
+
+      expect(mockGetSpotUserDataListenKey).not.toHaveBeenCalled();
     });
 
     it('should skip paper wallets', async () => {
@@ -147,6 +168,7 @@ describe('BinanceUserStreamService', () => {
       const liveWallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };
@@ -171,6 +193,7 @@ describe('BinanceUserStreamService', () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };
@@ -199,6 +222,7 @@ describe('BinanceUserStreamService', () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };
@@ -215,6 +239,7 @@ describe('BinanceUserStreamService', () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };
@@ -246,6 +271,7 @@ describe('BinanceUserStreamService', () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };
@@ -266,6 +292,7 @@ describe('BinanceUserStreamService', () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };
@@ -302,6 +329,7 @@ describe('BinanceUserStreamService', () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };
@@ -318,6 +346,7 @@ describe('BinanceUserStreamService', () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };
@@ -338,6 +367,7 @@ describe('BinanceUserStreamService', () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };
@@ -386,6 +416,7 @@ describe('BinanceUserStreamService', () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
         currentBalance: '10000',
@@ -450,6 +481,7 @@ describe('BinanceUserStreamService', () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };
@@ -486,6 +518,7 @@ describe('BinanceUserStreamService', () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };
@@ -502,6 +535,7 @@ describe('BinanceUserStreamService', () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };
@@ -520,6 +554,7 @@ describe('BinanceUserStreamService', () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };
@@ -535,6 +570,7 @@ describe('BinanceUserStreamService', () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
+        marketType: 'SPOT',
         apiKeyEncrypted: 'encrypted-key',
         apiSecretEncrypted: 'encrypted-secret',
       };

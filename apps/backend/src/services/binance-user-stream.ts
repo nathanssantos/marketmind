@@ -4,7 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { createBinanceClient, isPaperWallet, silentWsLogger } from './binance-client';
-import { logger } from './logger';
+import { logger, serializeError } from './logger';
 import { getWebSocketService } from './websocket';
 import { TIME_MS } from '../constants';
 
@@ -75,16 +75,22 @@ export class BinanceUserStreamService {
     try {
       const allWallets = await db.select().from(wallets);
 
-      const liveWallets = allWallets.filter(w => !isPaperWallet(w) && w.apiKeyEncrypted && w.apiSecretEncrypted);
+      const spotWallets = allWallets.filter(
+        (w) =>
+          !isPaperWallet(w) &&
+          w.apiKeyEncrypted &&
+          w.apiSecretEncrypted &&
+          w.marketType === 'SPOT'
+      );
 
-      for (const wallet of liveWallets) {
+      for (const wallet of spotWallets) {
         if (!this.connections.has(wallet.id)) {
           await this.subscribeWallet(wallet);
         }
       }
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error subscribing active wallets');
     }
   }
@@ -115,7 +121,7 @@ export class BinanceUserStreamService {
       wsClient.on('exception', (error) => {
         logger.error({
           walletId: wallet.id,
-          error: error instanceof Error ? error.message : String(error),
+          error: serializeError(error),
         }, 'Binance User Stream exception');
       });
 
@@ -138,7 +144,7 @@ export class BinanceUserStreamService {
     } catch (error) {
       logger.error({
         walletId: wallet.id,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Failed to subscribe to Binance User Stream');
     }
   }
@@ -151,7 +157,7 @@ export class BinanceUserStreamService {
     } catch (error) {
       logger.error({
         walletId: wallet.id,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Failed to refresh listen key');
     }
   }
@@ -170,7 +176,7 @@ export class BinanceUserStreamService {
     } catch (error) {
       logger.error({
         walletId,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error handling user data message');
     }
   }
@@ -356,7 +362,7 @@ export class BinanceUserStreamService {
     } catch (error) {
       logger.error({
         walletId,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error handling order update');
     }
   }

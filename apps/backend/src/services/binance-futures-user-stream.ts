@@ -209,11 +209,15 @@ export class BinanceFuturesUserStreamService {
     try {
       const allWallets = await db.select().from(wallets);
 
-      const liveWallets = allWallets.filter(
-        (w) => !isPaperWallet(w) && w.apiKeyEncrypted && w.apiSecretEncrypted
+      const futuresWallets = allWallets.filter(
+        (w) =>
+          !isPaperWallet(w) &&
+          w.apiKeyEncrypted &&
+          w.apiSecretEncrypted &&
+          w.marketType === 'FUTURES'
       );
 
-      for (const wallet of liveWallets) {
+      for (const wallet of futuresWallets) {
         if (!this.connections.has(wallet.id)) {
           await this.subscribeWallet(wallet);
         }
