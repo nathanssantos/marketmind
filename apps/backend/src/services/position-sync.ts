@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { createBinanceFuturesClient, isPaperWallet, getPositions } from './binance-futures-client';
+import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
 
@@ -129,12 +130,73 @@ export class PositionSyncService {
           );
           result.changes.orphanedPositions.push(dbPosition.id);
 
+          let pnl = 0;
+          let pnlPercent = 0;
+          let exitPrice = 0;
+
+          try {
+            const markPriceData = await getBinanceFuturesDataService().getMarkPrice(dbPosition.symbol);
+            if (markPriceData) {
+              exitPrice = markPriceData.markPrice;
+              const entryPrice = parseFloat(dbPosition.entryPrice);
+              const quantity = parseFloat(dbPosition.quantity);
+              const leverage = dbPosition.leverage || 1;
+
+              if (dbPosition.side === 'LONG') {
+                pnl = (exitPrice - entryPrice) * quantity;
+              } else {
+                pnl = (entryPrice - exitPrice) * quantity;
+              }
+
+              const entryValue = entryPrice * quantity;
+              const marginValue = entryValue / leverage;
+              pnlPercent = marginValue > 0 ? (pnl / marginValue) * 100 : 0;
+
+              const currentBalance = parseFloat(wallet.currentBalance || '0');
+              const newBalance = currentBalance + pnl;
+
+              await db
+                .update(wallets)
+                .set({
+                  currentBalance: newBalance.toString(),
+                  updatedAt: new Date(),
+                })
+                .where(eq(wallets.id, wallet.id));
+
+              result.changes.balanceUpdated = true;
+
+              logger.info(
+                {
+                  executionId: dbPosition.id,
+                  symbol: dbPosition.symbol,
+                  entryPrice,
+                  exitPrice,
+                  pnl: pnl.toFixed(2),
+                  pnlPercent: pnlPercent.toFixed(2),
+                  newBalance: newBalance.toFixed(2),
+                },
+                '[PositionSync] 💰 Orphaned position P&L calculated and balance updated'
+              );
+            }
+          } catch (priceError) {
+            logger.warn(
+              {
+                symbol: dbPosition.symbol,
+                error: priceError instanceof Error ? priceError.message : String(priceError),
+              },
+              '[PositionSync] Could not get price for orphaned position P&L calculation'
+            );
+          }
+
           await db
             .update(tradeExecutions)
             .set({
               status: 'closed',
               exitSource: 'SYNC',
               exitReason: 'ORPHANED_POSITION',
+              exitPrice: exitPrice > 0 ? exitPrice.toString() : null,
+              pnl: pnl !== 0 ? pnl.toString() : null,
+              pnlPercent: pnlPercent !== 0 ? pnlPercent.toString() : null,
               closedAt: new Date(),
               updatedAt: new Date(),
             })
@@ -146,6 +208,8 @@ export class PositionSyncService {
               ...dbPosition,
               status: 'closed',
               exitReason: 'ORPHANED_POSITION',
+              pnl: pnl.toString(),
+              pnlPercent: pnlPercent.toString(),
             });
           }
         } else {
@@ -186,16 +250,37 @@ export class PositionSyncService {
       }
 
       for (const [symbol, position] of exchangePositionsBySymbol) {
-        logger.warn(
+        logger.error(
           {
             walletId: wallet.id,
             symbol,
             positionAmt: position.positionAmt,
             entryPrice: position.entryPrice,
+            unrealizedPnl: position.unrealizedPnl,
+            leverage: position.leverage,
+            marginType: position.marginType,
           },
-          '[PositionSync] ⚠️ Unknown position detected - on exchange but not in DB'
+          '[PositionSync] 🚨 CRITICAL: Unknown position detected - on exchange but not in DB - MANUAL CHECK REQUIRED'
         );
         result.changes.unknownPositions.push(symbol);
+
+        const wsService = getWebSocketService();
+        if (wsService) {
+          wsService.emitRiskAlert(wallet.id, {
+            type: 'UNKNOWN_POSITION',
+            level: 'critical',
+            symbol,
+            message: `Unknown position detected on exchange: ${symbol} with ${position.positionAmt} qty. This position is NOT tracked in the system - MANUAL CHECK REQUIRED.`,
+            data: {
+              positionAmt: position.positionAmt,
+              entryPrice: position.entryPrice,
+              unrealizedPnl: position.unrealizedPnl,
+              leverage: position.leverage,
+              marginType: position.marginType,
+            },
+            timestamp: Date.now(),
+          });
+        }
       }
 
       if (result.changes.orphanedPositions.length > 0 || result.changes.unknownPositions.length > 0) {

@@ -857,24 +857,42 @@ export class BinanceFuturesUserStreamService {
       if (orderToCancel) {
         const apiClient = this.connections.get(walletId)?.apiClient;
         if (apiClient) {
-          try {
-            await cancelFuturesAlgoOrder(apiClient, orderToCancel);
-            logger.info(
-              {
-                executionId: execution.id,
-                cancelledAlgoId: orderToCancel,
-                reason: isSLOrder ? 'SL triggered, cancelling TP algo' : 'TP triggered, cancelling SL algo',
-              },
-              '[FuturesUserStream] Opposite algo order cancelled'
-            );
-          } catch (cancelError) {
-            logger.error(
-              {
-                error: cancelError instanceof Error ? cancelError.message : String(cancelError),
-                orderToCancel,
-              },
-              '[FuturesUserStream] Failed to cancel opposite algo order'
-            );
+          const maxRetries = 3;
+          let cancelSuccess = false;
+
+          for (let attempt = 1; attempt <= maxRetries && !cancelSuccess; attempt++) {
+            try {
+              await cancelFuturesAlgoOrder(apiClient, orderToCancel);
+              cancelSuccess = true;
+              logger.info(
+                {
+                  executionId: execution.id,
+                  cancelledAlgoId: orderToCancel,
+                  reason: isSLOrder ? 'SL triggered, cancelling TP algo' : 'TP triggered, cancelling SL algo',
+                },
+                '[FuturesUserStream] Opposite algo order cancelled'
+              );
+            } catch (cancelError) {
+              const errorMessage = cancelError instanceof Error ? cancelError.message : String(cancelError);
+              if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist') || errorMessage.includes('not found')) {
+                cancelSuccess = true;
+                logger.info(
+                  { orderToCancel },
+                  '[FuturesUserStream] Algo order already cancelled or executed'
+                );
+              } else if (attempt < maxRetries) {
+                logger.warn(
+                  { error: errorMessage, orderToCancel, attempt, maxRetries },
+                  '[FuturesUserStream] Retry cancelling opposite algo order'
+                );
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+              } else {
+                logger.error(
+                  { error: errorMessage, orderToCancel },
+                  '[FuturesUserStream] ⚠️ CRITICAL: Failed to cancel opposite algo order after retries - MANUAL CHECK REQUIRED'
+                );
+              }
+            }
           }
         }
       }
