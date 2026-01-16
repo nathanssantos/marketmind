@@ -143,6 +143,14 @@ export const WatcherManager = () => {
     });
   };
 
+  const handleAutoRotationToggle = (value: boolean): void => {
+    if (!walletId) return;
+    updateConfig.mutate({
+      walletId,
+      enableAutoRotation: value,
+    });
+  };
+
   const handleLeverageChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     if (!walletId) return;
     const leverage = parseInt(e.target.value, 10);
@@ -472,6 +480,21 @@ export const WatcherManager = () => {
                         <LuRefreshCw />
                         {t('tradingProfiles.dynamicSelection.triggerNow')}
                       </Button>
+                    </Flex>
+                    <Flex justify="space-between" align="center" mt={3} pt={3} borderTopWidth="1px" borderColor="border">
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium">
+                          {t('tradingProfiles.dynamicSelection.autoRotation')}
+                        </Text>
+                        <Text fontSize="xs" color="fg.muted">
+                          {t('tradingProfiles.dynamicSelection.autoRotationDescription')}
+                        </Text>
+                      </Box>
+                      <Switch
+                        checked={config?.enableAutoRotation ?? true}
+                        onCheckedChange={handleAutoRotationToggle}
+                        disabled={updateConfig.isPending}
+                      />
                     </Flex>
                   </Box>
 

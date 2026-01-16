@@ -967,6 +967,8 @@
       "nextRotation": "Next rotation at {{time}}",
       "rotationInactive": "Rotation not active",
       "triggerNow": "Rotate Now",
+      "autoRotation": "Auto Rotation",
+      "autoRotationDescription": "Automatically rotate symbols on schedule",
       "infoText": "Dynamic selection uses market cap, volume, volatility, and historical performance to identify the best trading opportunities. Symbols with open positions are protected from removal.",
       "viewRankings": "View Rankings",
       "rankingsTitle": "Symbol Rankings",

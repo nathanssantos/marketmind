@@ -45,6 +45,7 @@ import {
   type RotationConfig,
   type RotationResult,
 } from './dynamic-symbol-rotation';
+import { getKlineMaintenance } from './kline-maintenance';
 import { meetsKlineRequirementWithTolerance, prefetchKlines } from './kline-prefetch';
 import { ocoOrderService } from './oco-orders';
 import { positionMonitorService } from './position-monitor';
@@ -2129,6 +2130,85 @@ export class AutoTradingScheduler {
 
     const results = startupBuffer.getResults();
     outputStartupResults(results.watchers, results.persistedCount, results.durationMs);
+
+    await this.restoreRotationStates(persistedWatchers);
+  }
+
+  private async restoreRotationStates(
+    persistedWatchers: Array<{
+      walletId: string;
+      userId: string;
+      interval: string;
+      marketType: string | null;
+      isManual: boolean;
+      profileId: string | null;
+    }>
+  ): Promise<void> {
+    const dynamicWatchersByWallet = new Map<string, {
+      userId: string;
+      interval: string;
+      marketType: MarketType;
+      profileId?: string;
+    }>();
+
+    for (const pw of persistedWatchers) {
+      if (pw.isManual) continue;
+
+      const key = `${pw.walletId}:${pw.interval}`;
+      if (!dynamicWatchersByWallet.has(key)) {
+        dynamicWatchersByWallet.set(key, {
+          userId: pw.userId,
+          interval: pw.interval,
+          marketType: (pw.marketType as MarketType) ?? 'SPOT',
+          profileId: pw.profileId ?? undefined,
+        });
+      }
+    }
+
+    if (dynamicWatchersByWallet.size === 0) {
+      log('📊 [Startup] No dynamic watchers to restore rotation for');
+      return;
+    }
+
+    const walletIds = [...new Set([...dynamicWatchersByWallet.keys()].map(k => k.split(':')[0]!))].filter(Boolean);
+
+    const configs = await db
+      .select()
+      .from(autoTradingConfig)
+      .where(inArray(autoTradingConfig.walletId, walletIds));
+
+    const configByWallet = new Map(configs.map(c => [c.walletId, c]));
+
+    let restoredCount = 0;
+    for (const [key, watcherInfo] of dynamicWatchersByWallet.entries()) {
+      const walletId = key.split(':')[0]!;
+      const config = configByWallet.get(walletId);
+
+      if (!config?.useDynamicSymbolSelection) continue;
+
+      try {
+        await this.startDynamicRotation(walletId, watcherInfo.userId, {
+          useDynamicSymbolSelection: true,
+          dynamicSymbolLimit: config.dynamicSymbolLimit,
+          dynamicSymbolExcluded: config.dynamicSymbolExcluded,
+          marketType: watcherInfo.marketType,
+          interval: watcherInfo.interval,
+          profileId: watcherInfo.profileId,
+          enableAutoRotation: config.enableAutoRotation,
+        });
+        restoredCount++;
+      } catch (error) {
+        log('⚠️ [Startup] Failed to restore rotation', {
+          walletId,
+          interval: watcherInfo.interval,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    if (restoredCount > 0) {
+      log('✅ [Startup] Restored rotation states', { count: restoredCount });
+    }
   }
 
   private getFibonacciTargetPrice(
@@ -2171,12 +2251,15 @@ export class AutoTradingScheduler {
       marketType: MarketType;
       interval: string;
       profileId?: string;
+      enableAutoRotation?: boolean;
     }
   ): Promise<void> {
     if (!config.useDynamicSymbolSelection) {
       log('ℹ️ Dynamic symbol selection is disabled', { walletId });
       return;
     }
+
+    const enableAutoRotation = config.enableAutoRotation ?? true;
 
     const rotationService = getDynamicSymbolRotationService();
     const excludedSymbols = parseDynamicSymbolExcluded(config.dynamicSymbolExcluded);
@@ -2197,26 +2280,31 @@ export class AutoTradingScheduler {
       interval: rotationConfig.interval,
       excludedSymbols: excludedSymbols.length,
       marketType: config.marketType,
+      autoRotation: enableAutoRotation,
     });
 
     const initialResult = await rotationService.executeRotation(walletId, userId, rotationConfig);
     await this.applyRotation(walletId, userId, initialResult, config.interval, config.profileId, config.marketType);
 
-    const stateKey = getRotationStateKey(walletId, config.interval);
-    this.rotationStates.set(stateKey, {
-      config: rotationConfig,
-      userId,
-      profileId: config.profileId,
-      lastCheckTime: Date.now(),
-    });
+    if (enableAutoRotation) {
+      const stateKey = getRotationStateKey(walletId, config.interval);
+      this.rotationStates.set(stateKey, {
+        config: rotationConfig,
+        userId,
+        profileId: config.profileId,
+        lastCheckTime: Date.now(),
+      });
 
-    const nextCheckMs = ROTATION_INTERVAL_MS[rotationConfig.interval];
-    log('✅ Dynamic symbol rotation started (synced with watcher ticks)', {
-      walletId,
-      tradingInterval: config.interval,
-      rotationInterval: rotationConfig.interval,
-      nextCheckIn: `${nextCheckMs / 1000}s`,
-    });
+      const nextCheckMs = ROTATION_INTERVAL_MS[rotationConfig.interval];
+      log('✅ Dynamic symbol rotation started (synced with watcher ticks)', {
+        walletId,
+        tradingInterval: config.interval,
+        rotationInterval: rotationConfig.interval,
+        nextCheckIn: `${nextCheckMs / 1000}s`,
+      });
+    } else {
+      log('ℹ️ Auto rotation disabled - manual rotation only', { walletId });
+    }
   }
 
   async stopDynamicRotation(walletId: string, stopDynamicWatchers: boolean = true): Promise<void> {
@@ -2287,6 +2375,8 @@ export class AutoTradingScheduler {
       }
     }
 
+    const klineMaintenance = getKlineMaintenance();
+
     for (const symbol of result.added) {
       const existingWatcher = await db
         .select()
@@ -2300,6 +2390,22 @@ export class AutoTradingScheduler {
         .limit(1);
 
       if (existingWatcher.length === 0) {
+        const validationResult = await klineMaintenance.forceCheckSymbol(
+          symbol,
+          interval as Interval,
+          marketType
+        );
+
+        if (validationResult.gapsFilled > 0 || validationResult.corruptedFixed > 0) {
+          log('🔧 [Rotation] Kline validation completed for new symbol', {
+            symbol,
+            interval,
+            marketType,
+            gapsFilled: validationResult.gapsFilled,
+            corruptedFixed: validationResult.corruptedFixed,
+          });
+        }
+
         await this.startWatcher(
           walletId,
           userId,

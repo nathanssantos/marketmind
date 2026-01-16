@@ -253,6 +253,13 @@
       "when": 1768529230701,
       "tag": "0035_quick_starhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1768566409179,
+      "tag": "0036_yielding_maximus",
+      "breakpoints": true
     }
   ]
 }

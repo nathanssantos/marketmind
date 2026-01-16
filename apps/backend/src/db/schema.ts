@@ -234,6 +234,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   dynamicSymbolLimit: integer('dynamic_symbol_limit').default(20).notNull(),
   dynamicSymbolRotationInterval: varchar('dynamic_symbol_rotation_interval', { length: 10 }).$type<'1h' | '4h' | '1d'>().default('4h').notNull(),
   dynamicSymbolExcluded: text('dynamic_symbol_excluded'),
+  enableAutoRotation: boolean('enable_auto_rotation').default(true).notNull(),
   trailingStopMode: varchar('trailing_stop_mode', { length: 10 }).$type<'local' | 'binance'>().default('local'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),

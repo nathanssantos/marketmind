@@ -1018,6 +1018,8 @@
       "nextRotation": "Próxima rotação às {{time}}",
       "rotationInactive": "Rotação não ativa",
       "triggerNow": "Rotacionar Agora",
+      "autoRotation": "Rotação Automática",
+      "autoRotationDescription": "Rotacionar símbolos automaticamente no intervalo definido",
       "infoText": "A seleção dinâmica usa market cap, volume, volatilidade e performance histórica para identificar as melhores oportunidades de trading. Símbolos com posições abertas são protegidos de remoção.",
       "viewRankings": "Ver Rankings",
       "rankingsTitle": "Rankings de Símbolos",

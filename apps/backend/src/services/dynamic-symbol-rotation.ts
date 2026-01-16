@@ -193,7 +193,8 @@ export class DynamicSymbolRotationService {
         }
       }
 
-      const slotsAvailable = config.limit - kept.length;
+      const targetCount = currentSymbols.size === 0 ? config.limit : currentSymbols.size;
+      const slotsAvailable = Math.max(0, targetCount - kept.length);
 
       for (const symbol of optimalSymbols) {
         if (toAdd.length >= slotsAvailable) break;
@@ -229,6 +230,8 @@ export class DynamicSymbolRotationService {
 
       logger.info({
         walletId: walletId.slice(0, 8),
+        targetCount,
+        slotsAvailable,
         added: toAdd.length > 0 ? toAdd.join(', ') : '-',
         removed: toRemove.length > 0 ? toRemove.join(', ') : '-',
         kept: kept.length,

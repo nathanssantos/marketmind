@@ -112,6 +112,7 @@ export const autoTradingRouter = router({
         dynamicSymbolLimit: z.number().min(1).max(50).optional(),
         dynamicSymbolRotationInterval: z.enum(['1h', '4h', '1d']).optional(),
         dynamicSymbolExcluded: z.array(z.string()).optional(),
+        enableAutoRotation: z.boolean().optional(),
         trailingStopMode: z.enum(['local', 'binance']).optional(),
         leverage: z.number().min(1).max(125).optional(),
         marginType: z.enum(['ISOLATED', 'CROSSED']).optional(),
@@ -176,6 +177,8 @@ export const autoTradingRouter = router({
         {updateData.dynamicSymbolRotationInterval = input.dynamicSymbolRotationInterval;}
       if (input.dynamicSymbolExcluded !== undefined)
         {updateData.dynamicSymbolExcluded = stringifyDynamicSymbolExcluded(input.dynamicSymbolExcluded);}
+      if (input.enableAutoRotation !== undefined)
+        {updateData.enableAutoRotation = input.enableAutoRotation;}
       if (input.trailingStopMode !== undefined)
         {updateData.trailingStopMode = input.trailingStopMode;}
       if (input.leverage !== undefined)
@@ -834,6 +837,7 @@ export const autoTradingRouter = router({
           dynamicSymbolLimit: autoTradingConfig.dynamicSymbolLimit,
           dynamicSymbolExcluded: autoTradingConfig.dynamicSymbolExcluded,
           dynamicSymbolRotationInterval: autoTradingConfig.dynamicSymbolRotationInterval,
+          enableAutoRotation: autoTradingConfig.enableAutoRotation,
         })
         .from(autoTradingConfig)
         .where(
@@ -994,6 +998,7 @@ export const autoTradingRouter = router({
             marketType: input.marketType,
             interval: input.interval,
             profileId: input.profileId,
+            enableAutoRotation: config?.enableAutoRotation ?? true,
           }
         );
       }

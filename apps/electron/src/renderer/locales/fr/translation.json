@@ -1029,6 +1029,8 @@
       "nextRotation": "Prochaine rotation à {{time}}",
       "rotationInactive": "Rotation non active",
       "triggerNow": "Pivoter Maintenant",
+      "autoRotation": "Rotation Automatique",
+      "autoRotationDescription": "Faire pivoter les symboles automatiquement selon l'intervalle",
       "infoText": "La sélection dynamique utilise le market cap, le volume, la volatilité et les performances historiques pour identifier les meilleures opportunités de trading. Les symboles avec des positions ouvertes sont protégés de la suppression.",
       "viewRankings": "Voir les Rankings",
       "rankingsTitle": "Classements des Symboles",
