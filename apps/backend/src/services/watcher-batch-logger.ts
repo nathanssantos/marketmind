@@ -199,7 +199,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const rejectionTable = new Table({
       head: ['Symbol', 'Setup', 'Dir', 'Reason', 'Details'],
-      colWidths: [14, 24, 7, 28, 35],
+      colWidths: [14, 24, 7, 28, 42],
       style: {
         head: ['yellow'],
         border: ['gray'],
@@ -211,7 +211,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
       for (const rejection of result.rejections) {
         const dirColor = rejection.direction === 'LONG' ? 'green' : 'red';
         const detailStr = rejection.details
-          ? Object.entries(rejection.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 33)
+          ? Object.entries(rejection.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 40)
           : '-';
         rejectionTable.push([
           colorize(result.symbol, 'bright'),
