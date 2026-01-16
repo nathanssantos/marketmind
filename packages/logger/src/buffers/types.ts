@@ -126,16 +126,28 @@ export interface RotationLogEntry {
   data?: Record<string, unknown>;
 }
 
+export interface KlineValidationEntry {
+  symbol: string;
+  gapsFilled: number;
+  corruptedFixed: number;
+}
+
 export interface RotationResult {
   walletId: string;
   startTime: Date;
   endTime: Date;
   interval: string;
+  marketType: string;
+  targetCount: number;
+  slotsAvailable: number;
+  currentSymbols: string[];
+  optimalSymbols: string[];
   added: string[];
   removed: string[];
   kept: number;
   skippedWithPositions: string[];
   skippedInsufficientKlines: string[];
+  klineValidations: KlineValidationEntry[];
   hasChanges: boolean;
   logs: RotationLogEntry[];
 }

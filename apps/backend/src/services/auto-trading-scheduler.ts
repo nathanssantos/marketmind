@@ -2376,6 +2376,7 @@ export class AutoTradingScheduler {
     }
 
     const klineMaintenance = getKlineMaintenance();
+    const validations: Array<{ symbol: string; gapsFilled: number; corruptedFixed: number }> = [];
 
     for (const symbol of result.added) {
       const existingWatcher = await db
@@ -2397,10 +2398,8 @@ export class AutoTradingScheduler {
         );
 
         if (validationResult.gapsFilled > 0 || validationResult.corruptedFixed > 0) {
-          log('🔧 [Rotation] Kline validation completed for new symbol', {
+          validations.push({
             symbol,
-            interval,
-            marketType,
             gapsFilled: validationResult.gapsFilled,
             corruptedFixed: validationResult.corruptedFixed,
           });
@@ -2418,6 +2417,15 @@ export class AutoTradingScheduler {
           true
         );
       }
+    }
+
+    if (validations.length > 0) {
+      log('🔧 [Rotation] Kline validations completed', {
+        symbols: validations.map(v => v.symbol).join(', '),
+        totalGapsFilled: validations.reduce((sum, v) => sum + v.gapsFilled, 0),
+        totalCorruptedFixed: validations.reduce((sum, v) => sum + v.corruptedFixed, 0),
+        details: validations,
+      });
     }
   }
 

@@ -55,6 +55,7 @@ vi.mock('../../services/watcher-batch-logger', () => {
   return {
     outputRotationResults: vi.fn(),
     RotationLogBuffer: class {
+      setContext = vi.fn();
       setResult = vi.fn();
       toResult = vi.fn().mockReturnValue({});
     },

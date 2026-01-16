@@ -595,20 +595,46 @@ export const formatRotationResults = (result: RotationResult): string => {
   const durationMs = result.endTime.getTime() - result.startTime.getTime();
 
   lines.push('');
-  lines.push(colorize('───────────────────────────────────────────────────────────────────────────────────────────────', 'magenta'));
-  lines.push(colorize(`  🔄 SYMBOL ROTATION`, 'bright') + colorize(` │ ${result.startTime.toLocaleTimeString()} │ Duration: ${durationMs}ms │ Interval: ${result.interval}`, 'dim'));
-  lines.push(colorize('───────────────────────────────────────────────────────────────────────────────────────────────', 'magenta'));
+  lines.push(colorize('═══════════════════════════════════════════════════════════════════════════════════════════════', 'magenta'));
+  lines.push(colorize(`  🔄 SYMBOL ROTATION`, 'bright') + colorize(` │ ${result.startTime.toLocaleTimeString()} │ Duration: ${durationMs}ms`, 'dim'));
+  lines.push(colorize('═══════════════════════════════════════════════════════════════════════════════════════════════', 'magenta'));
 
-  if (result.added.length > 0) {
-    lines.push(`  ${colorize('➕ Added:', 'green')} ${result.added.join(', ')}`);
-  }
+  const contextParts = [
+    colorize(`📊 ${result.marketType || 'FUTURES'}`, 'cyan'),
+    colorize(`⏱️ ${result.interval}`, 'dim'),
+    colorize(`🎯 Target: ${result.targetCount}`, 'bright'),
+    colorize(`📦 Slots: ${result.slotsAvailable}`, result.slotsAvailable > 0 ? 'green' : 'dim'),
+  ];
+  lines.push(`  ${contextParts.join(' │ ')}`);
 
-  if (result.removed.length > 0) {
-    lines.push(`  ${colorize('➖ Removed:', 'red')} ${result.removed.join(', ')}`);
+  if (result.added.length > 0 || result.removed.length > 0) {
+    const changeTable = new Table({
+      head: ['Action', 'Symbol', 'Status'],
+      colWidths: [10, 14, 30],
+      style: { head: ['magenta'], border: ['gray'] },
+      chars: TABLE_CHARS,
+    });
+
+    for (const symbol of result.added) {
+      const validation = result.klineValidations?.find(v => v.symbol === symbol);
+      let status = colorize('Ready', 'green');
+      if (validation && (validation.gapsFilled > 0 || validation.corruptedFixed > 0)) {
+        status = colorize(`Validated (gaps: ${validation.gapsFilled}, fixed: ${validation.corruptedFixed})`, 'cyan');
+      }
+      changeTable.push([colorize('➕ ADD', 'green'), colorize(symbol, 'bright'), status]);
+    }
+
+    for (const symbol of result.removed) {
+      changeTable.push([colorize('➖ REM', 'red'), colorize(symbol, 'bright'), colorize('Removed', 'dim')]);
+    }
+
+    lines.push(changeTable.toString());
   }
 
   const summaryParts = [
     colorize(`📊 ${result.kept} kept`, 'cyan'),
+    colorize(`➕ ${result.added.length} added`, 'green'),
+    colorize(`➖ ${result.removed.length} removed`, 'red'),
   ];
 
   if (result.skippedWithPositions.length > 0) {
@@ -621,12 +647,12 @@ export const formatRotationResults = (result: RotationResult): string => {
 
   lines.push(`  ${summaryParts.join(' │ ')}`);
 
-  if (result.logs.length > 0) {
-    for (const log of result.logs) {
-      const time = log.timestamp.toISOString().slice(11, 23);
-      const dataStr = log.data ? colorize(` ${JSON.stringify(log.data)}`, 'dim') : '';
-      lines.push(`    ${colorize(time, 'gray')} ${log.emoji} ${log.message}${dataStr}`);
-    }
+  if (result.skippedInsufficientKlines.length > 0) {
+    lines.push(`  ${colorize('⏳ Skipped (no data):', 'dim')} ${result.skippedInsufficientKlines.join(', ')}`);
+  }
+
+  if (result.skippedWithPositions.length > 0) {
+    lines.push(`  ${colorize('🔒 Protected (open positions):', 'yellow')} ${result.skippedWithPositions.join(', ')}`);
   }
 
   lines.push('');
@@ -639,20 +665,21 @@ export const formatRotationNoChanges = (result: RotationResult): string => {
 
   lines.push('');
   lines.push(colorize('───────────────────────────────────────────────────────────────────────────────────────────────', 'dim'));
-  lines.push(colorize(`  🔄 SYMBOL ROTATION`, 'dim') + colorize(` │ ${result.startTime.toLocaleTimeString()} │ Duration: ${durationMs}ms │ Interval: ${result.interval}`, 'dim'));
+  lines.push(colorize(`  🔄 SYMBOL ROTATION`, 'dim') + colorize(` │ ${result.startTime.toLocaleTimeString()} │ Duration: ${durationMs}ms │ ${result.marketType || 'FUTURES'} │ ${result.interval}`, 'dim'));
   lines.push(colorize('───────────────────────────────────────────────────────────────────────────────────────────────', 'dim'));
 
   const summaryParts = [
     colorize(`✅ No changes`, 'green'),
-    colorize(`📊 ${result.kept} kept`, 'cyan'),
+    colorize(`📊 ${result.kept} symbols`, 'cyan'),
+    colorize(`🎯 Target: ${result.targetCount}`, 'dim'),
   ];
 
   if (result.skippedWithPositions.length > 0) {
-    summaryParts.push(colorize(`🔒 ${result.skippedWithPositions.length} with positions`, 'yellow'));
+    summaryParts.push(colorize(`🔒 ${result.skippedWithPositions.length} protected`, 'yellow'));
   }
 
   if (result.skippedInsufficientKlines.length > 0) {
-    summaryParts.push(colorize(`⏳ ${result.skippedInsufficientKlines.length} insufficient data`, 'dim'));
+    summaryParts.push(colorize(`⏳ ${result.skippedInsufficientKlines.length} no data`, 'dim'));
   }
 
   lines.push(`  ${summaryParts.join(' │ ')}`);
