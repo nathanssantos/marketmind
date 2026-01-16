@@ -239,6 +239,13 @@
       "when": 1768521686864,
       "tag": "0033_tough_elektra",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1768523580222,
+      "tag": "0034_brainy_vulcan",
+      "breakpoints": true
     }
   ]
 }

@@ -112,6 +112,8 @@ export const autoTradingRouter = router({
         dynamicSymbolRotationInterval: z.enum(['1h', '4h', '1d']).optional(),
         dynamicSymbolExcluded: z.array(z.string()).optional(),
         trailingStopMode: z.enum(['local', 'binance']).optional(),
+        leverage: z.number().min(1).max(125).optional(),
+        marginType: z.enum(['ISOLATED', 'CROSSED']).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -175,6 +177,10 @@ export const autoTradingRouter = router({
         {updateData.dynamicSymbolExcluded = stringifyDynamicSymbolExcluded(input.dynamicSymbolExcluded);}
       if (input.trailingStopMode !== undefined)
         {updateData.trailingStopMode = input.trailingStopMode;}
+      if (input.leverage !== undefined)
+        {updateData.leverage = input.leverage;}
+      if (input.marginType !== undefined)
+        {updateData.marginType = input.marginType;}
 
       await ctx.db
         .update(autoTradingConfig)

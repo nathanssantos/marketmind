@@ -8,6 +8,7 @@ import { silentWsLogger } from './binance-client';
 import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder } from './binance-futures-client';
 import { decryptApiKey } from './encryption';
 import { logger, serializeError } from './logger';
+import { positionSyncService } from './position-sync';
 import { getWebSocketService } from './websocket';
 
 interface FuturesAccountUpdate {
@@ -261,7 +262,34 @@ export class BinanceFuturesUserStreamService {
       });
 
       wsClient.on('reconnected', () => {
-        logger.info({ walletId: wallet.id }, '[FuturesUserStream] Reconnected');
+        logger.info({ walletId: wallet.id }, '[FuturesUserStream] Reconnected - triggering full sync');
+
+        void (async () => {
+          try {
+            const [currentWallet] = await db.select().from(wallets).where(eq(wallets.id, wallet.id)).limit(1);
+            if (currentWallet) {
+              const syncResult = await positionSyncService.syncWallet(currentWallet);
+              logger.info(
+                {
+                  walletId: wallet.id,
+                  orphanedPositions: syncResult.changes.orphanedPositions.length,
+                  unknownPositions: syncResult.changes.unknownPositions.length,
+                  updatedPositions: syncResult.changes.updatedPositions.length,
+                  balanceUpdated: syncResult.changes.balanceUpdated,
+                },
+                '[FuturesUserStream] Post-reconnect sync completed'
+              );
+            }
+          } catch (syncError) {
+            logger.error(
+              {
+                walletId: wallet.id,
+                error: syncError instanceof Error ? syncError.message : String(syncError),
+              },
+              '[FuturesUserStream] Post-reconnect sync failed'
+            );
+          }
+        })();
       });
 
       const wsKey: WsKey = walletType === 'testnet' ? 'usdmTestnet' : 'usdm';
@@ -421,8 +449,10 @@ export class BinanceFuturesUserStreamService {
           return;
         }
 
-        const isSLOrder = execution.stopLossOrderId && execution.stopLossOrderId === orderId;
-        const isTPOrder = execution.takeProfitOrderId && execution.takeProfitOrderId === orderId;
+        const isSLOrder = (execution.stopLossOrderId && execution.stopLossOrderId === orderId) ||
+          (execution.stopLossAlgoId && execution.stopLossAlgoId === orderId);
+        const isTPOrder = (execution.takeProfitOrderId && execution.takeProfitOrderId === orderId) ||
+          (execution.takeProfitAlgoId && execution.takeProfitAlgoId === orderId);
         const isAlgoTriggerFill = !isSLOrder && !isTPOrder && execution.exitReason;
 
         if (!isSLOrder && !isTPOrder && !isAlgoTriggerFill) {
@@ -451,27 +481,55 @@ export class BinanceFuturesUserStreamService {
         }
 
         const apiClient = this.connections.get(walletId)?.apiClient;
-        const orderToCancel = isSLOrder ? execution.takeProfitOrderId : execution.stopLossOrderId;
+
+        const shouldCancelTP = isSLOrder;
+        const oppositeIsAlgo = shouldCancelTP ? execution.takeProfitIsAlgo : execution.stopLossIsAlgo;
+        const orderToCancel = shouldCancelTP
+          ? (execution.takeProfitIsAlgo ? execution.takeProfitAlgoId : execution.takeProfitOrderId)
+          : (execution.stopLossIsAlgo ? execution.stopLossAlgoId : execution.stopLossOrderId);
 
         if (orderToCancel && apiClient && !isAlgoTriggerFill) {
-          try {
-            await apiClient.cancelOrder({ symbol, orderId: orderToCancel });
-            logger.info(
-              {
-                executionId: execution.id,
-                cancelledOrderId: orderToCancel,
-                reason: isSLOrder ? 'SL filled, cancelling TP' : 'TP filled, cancelling SL',
-              },
-              '[FuturesUserStream] Opposite order cancelled'
-            );
-          } catch (cancelError) {
-            logger.error(
-              {
-                error: cancelError instanceof Error ? cancelError.message : String(cancelError),
-                orderToCancel,
-              },
-              '[FuturesUserStream] Failed to cancel opposite order'
-            );
+          const maxRetries = 3;
+          let cancelSuccess = false;
+
+          for (let attempt = 1; attempt <= maxRetries && !cancelSuccess; attempt++) {
+            try {
+              if (oppositeIsAlgo) {
+                await cancelFuturesAlgoOrder(apiClient, orderToCancel);
+              } else {
+                await apiClient.cancelOrder({ symbol, orderId: orderToCancel });
+              }
+              cancelSuccess = true;
+              logger.info(
+                {
+                  executionId: execution.id,
+                  cancelledOrderId: orderToCancel,
+                  isAlgoOrder: oppositeIsAlgo,
+                  reason: isSLOrder ? 'SL filled, cancelling TP' : 'TP filled, cancelling SL',
+                },
+                '[FuturesUserStream] Opposite order cancelled'
+              );
+            } catch (cancelError) {
+              const errorMessage = cancelError instanceof Error ? cancelError.message : String(cancelError);
+              if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist')) {
+                cancelSuccess = true;
+                logger.info(
+                  { orderToCancel, isAlgoOrder: oppositeIsAlgo },
+                  '[FuturesUserStream] Order already cancelled or executed'
+                );
+              } else if (attempt < maxRetries) {
+                logger.warn(
+                  { error: errorMessage, orderToCancel, attempt, maxRetries },
+                  '[FuturesUserStream] Retry cancelling opposite order'
+                );
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+              } else {
+                logger.error(
+                  { error: errorMessage, orderToCancel, isAlgoOrder: oppositeIsAlgo },
+                  '[FuturesUserStream] ⚠️ CRITICAL: Failed to cancel opposite order after retries - MANUAL CHECK REQUIRED'
+                );
+              }
+            }
           }
         }
 

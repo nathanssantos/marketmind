@@ -58,6 +58,7 @@ export const WatcherManager = () => {
   const [quickStartCount, setQuickStartCount] = useState(10);
   const [quickStartTimeframe, setQuickStartTimeframe] = useState<TimeInterval>('4h');
   const [quickStartMarketType, setQuickStartMarketType] = useState<MarketType>('FUTURES');
+  const [leverageSettingsExpanded, setLeverageSettingsExpanded] = useState(false);
 
   const { rotationStatus, isLoadingRotationStatus } = useRotationStatus(walletId);
   const { triggerRotation, isTriggeringRotation } = useTriggerRotation(walletId);
@@ -142,13 +143,21 @@ export const WatcherManager = () => {
     });
   };
 
-  const handleDynamicLimitChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleLeverageChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     if (!walletId) return;
-    const limit = parseInt(e.target.value, 10);
-    if (isNaN(limit) || limit < 1 || limit > 50) return;
+    const leverage = parseInt(e.target.value, 10);
+    if (isNaN(leverage) || leverage < 1 || leverage > 125) return;
     updateConfig.mutate({
       walletId,
-      dynamicSymbolLimit: limit,
+      leverage,
+    });
+  };
+
+  const handleMarginTypeChange = (value: 'ISOLATED' | 'CROSSED'): void => {
+    if (!walletId) return;
+    updateConfig.mutate({
+      walletId,
+      marginType: value,
     });
   };
 
@@ -429,24 +438,6 @@ export const WatcherManager = () => {
 
               {config?.useDynamicSymbolSelection && (
                 <>
-                  <Box p={3} bg="bg.muted" borderRadius="md">
-                    <Text fontSize="sm" fontWeight="medium" mb={2}>
-                      {t('tradingProfiles.dynamicSelection.symbolLimit')}
-                    </Text>
-                    <NumberInput
-                      min={1}
-                      max={50}
-                      defaultValue={config?.dynamicSymbolLimit ?? 20}
-                      onChange={handleDynamicLimitChange}
-                      disabled={updateConfig.isPending}
-                      size="sm"
-                      px={3}
-                    />
-                    <Text fontSize="xs" color="fg.muted" mt={1}>
-                      {t('tradingProfiles.dynamicSelection.symbolLimitDescription')}
-                    </Text>
-                  </Box>
-
                   <Box p={4} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
                     <Flex justify="space-between" align="center">
                       <Box>
@@ -626,6 +617,81 @@ export const WatcherManager = () => {
       <Separator />
 
       <TradingProfilesManager />
+
+      <Separator />
+
+      <Box>
+        <Flex
+          justify="space-between"
+          align="center"
+          cursor="pointer"
+          onClick={() => setLeverageSettingsExpanded(!leverageSettingsExpanded)}
+          _hover={{ bg: 'bg.muted' }}
+          p={2}
+          mx={-2}
+          borderRadius="md"
+        >
+          <Box>
+            <Text fontSize="lg" fontWeight="bold">
+              {t('settings.algorithmicAutoTrading.leverage.title', 'Futures Settings')}
+            </Text>
+            <Text fontSize="sm" color="fg.muted">
+              {t('settings.algorithmicAutoTrading.leverage.description', 'Configure leverage and margin type for futures trading')}
+            </Text>
+          </Box>
+          {leverageSettingsExpanded ? <LuChevronUp size={20} /> : <LuChevronDown size={20} />}
+        </Flex>
+
+        <Collapsible.Root open={leverageSettingsExpanded}>
+          <Collapsible.Content>
+            <Stack gap={4} mt={4}>
+              <Flex gap={4} align="flex-end" wrap="wrap">
+                <Box flex="0 0 120px">
+                  <Text fontSize="sm" fontWeight="medium" mb={1}>
+                    {t('settings.algorithmicAutoTrading.leverage.label', 'Leverage')}
+                  </Text>
+                  <NumberInput
+                    min={1}
+                    max={125}
+                    value={config?.leverage ?? 1}
+                    onChange={handleLeverageChange}
+                    size="sm"
+                    disabled={updateConfig.isPending}
+                  />
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="medium" mb={1}>
+                    {t('settings.algorithmicAutoTrading.marginType.label', 'Margin Type')}
+                  </Text>
+                  <Group attached>
+                    <Button
+                      size="sm"
+                      variant={config?.marginType === 'ISOLATED' ? 'solid' : 'outline'}
+                      onClick={() => handleMarginTypeChange('ISOLATED')}
+                      disabled={updateConfig.isPending}
+                    >
+                      Isolated
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={config?.marginType === 'CROSSED' ? 'solid' : 'outline'}
+                      onClick={() => handleMarginTypeChange('CROSSED')}
+                      disabled={updateConfig.isPending}
+                    >
+                      Cross
+                    </Button>
+                  </Group>
+                </Box>
+              </Flex>
+              <Box p={3} bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900/20' }}>
+                <Text fontSize="xs" color="fg.muted">
+                  {t('settings.algorithmicAutoTrading.leverage.warning', 'Higher leverage increases both potential gains and losses. Use with caution.')}
+                </Text>
+              </Box>
+            </Stack>
+          </Collapsible.Content>
+        </Collapsible.Root>
+      </Box>
 
       <Separator />
 

@@ -215,9 +215,9 @@ const OrderTicketComponent = () => {
             {marketType === 'FUTURES' && (
               <>
                 <ChakraField.Root>
-                  <Flex justify="space-between" align="center" mb={1}>
+                  <Flex justify="space-between" align="center" mb={1} gap={2}>
                     <ChakraField.Label fontSize="xs" mb={0}>Leverage</ChakraField.Label>
-                    <Badge size="sm" colorPalette={getLeverageColor()}>{leverage}x</Badge>
+                    <Badge size="sm" px={2} colorPalette={getLeverageColor()}>{leverage}x</Badge>
                   </Flex>
                   <Select
                     size="xs"

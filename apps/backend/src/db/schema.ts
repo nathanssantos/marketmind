@@ -290,6 +290,10 @@ export const tradeExecutions = pgTable('trade_executions', {
   commissionAsset: varchar('commission_asset', { length: 20 }),
   trailingStopAlgoId: bigint('trailing_stop_algo_id', { mode: 'number' }),
   trailingStopMode: varchar('trailing_stop_mode', { length: 10 }).$type<'local' | 'binance'>(),
+  stopLossAlgoId: bigint('stop_loss_algo_id', { mode: 'number' }),
+  takeProfitAlgoId: bigint('take_profit_algo_id', { mode: 'number' }),
+  stopLossIsAlgo: boolean('stop_loss_is_algo').default(false),
+  takeProfitIsAlgo: boolean('take_profit_is_algo').default(false),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({

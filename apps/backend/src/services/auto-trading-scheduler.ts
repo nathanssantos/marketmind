@@ -1469,6 +1469,10 @@ export class AutoTradingScheduler {
       let actualQuantity = dynamicSize.quantity;
       let stopLossOrderId: number | null = null;
       let takeProfitOrderId: number | null = null;
+      let stopLossAlgoId: number | null = null;
+      let takeProfitAlgoId: number | null = null;
+      let stopLossIsAlgo = false;
+      let takeProfitIsAlgo = false;
       let orderListId: number | null = null;
 
       log('💸 Entry price adjusted for slippage', {
@@ -1483,6 +1487,36 @@ export class AutoTradingScheduler {
       const orderType = 'MARKET' as const;
 
       if (isLiveExecution) {
+        if (watcher.marketType === 'FUTURES') {
+          try {
+            const configLeverage = config.leverage ?? 1;
+            const configMarginType = config.marginType ?? 'ISOLATED';
+
+            await autoTradingService.setFuturesLeverage(
+              wallet as Wallet,
+              watcher.symbol,
+              configLeverage
+            );
+
+            await autoTradingService.setFuturesMarginType(
+              wallet as Wallet,
+              watcher.symbol,
+              configMarginType
+            );
+
+            log('⚙️ Futures leverage/margin configured', {
+              symbol: watcher.symbol,
+              leverage: configLeverage,
+              marginType: configMarginType,
+            });
+          } catch (leverageError) {
+            log('❌ Failed to configure leverage/margin, aborting entry', {
+              error: leverageError instanceof Error ? leverageError.message : String(leverageError),
+            });
+            return;
+          }
+        }
+
         log(`🔴 LIVE EXECUTION - Placing ${orderType} order on Binance`, {
           walletType: wallet.walletType,
           symbol: watcher.symbol,
@@ -1493,13 +1527,26 @@ export class AutoTradingScheduler {
         });
 
         try {
+          const configLeverageForQty = config.leverage ?? 1;
+          const adjustedQuantity = watcher.marketType === 'FUTURES'
+            ? dynamicSize.quantity / configLeverageForQty
+            : dynamicSize.quantity;
+
+          if (watcher.marketType === 'FUTURES') {
+            log('📊 Quantity adjusted for leverage', {
+              originalQuantity: dynamicSize.quantity,
+              adjustedQuantity,
+              leverage: configLeverageForQty,
+            });
+          }
+
           const orderResult = await autoTradingService.executeBinanceOrder(
             wallet as Wallet,
             {
               symbol: watcher.symbol,
               side: setup.direction === 'LONG' ? 'BUY' : 'SELL',
               type: orderType,
-              quantity: dynamicSize.quantity,
+              quantity: adjustedQuantity,
               price: useLimit ? setup.limitEntryPrice : undefined,
               timeInForce: useLimit ? 'GTC' : undefined,
             }
@@ -1507,7 +1554,7 @@ export class AutoTradingScheduler {
 
           entryOrderId = orderResult.orderId;
           actualEntryPrice = parseFloat(orderResult.price) || setup.entryPrice;
-          actualQuantity = parseFloat(orderResult.executedQty) || dynamicSize.quantity;
+          actualQuantity = parseFloat(orderResult.executedQty) || adjustedQuantity;
 
           const orderFilled = parseFloat(orderResult.executedQty) > 0;
 
@@ -1558,7 +1605,12 @@ export class AutoTradingScheduler {
                   setup.direction,
                   watcher.marketType
                 );
-                stopLossOrderId = slResult.isAlgoOrder ? slResult.algoId : slResult.orderId;
+                stopLossIsAlgo = slResult.isAlgoOrder;
+                if (slResult.isAlgoOrder) {
+                  stopLossAlgoId = slResult.algoId;
+                } else {
+                  stopLossOrderId = slResult.orderId;
+                }
                 const tpResult = await autoTradingService.createTakeProfitOrder(
                   wallet as Wallet,
                   watcher.symbol,
@@ -1567,7 +1619,12 @@ export class AutoTradingScheduler {
                   setup.direction,
                   watcher.marketType
                 );
-                takeProfitOrderId = tpResult.isAlgoOrder ? tpResult.algoId : tpResult.orderId;
+                takeProfitIsAlgo = tpResult.isAlgoOrder;
+                if (tpResult.isAlgoOrder) {
+                  takeProfitAlgoId = tpResult.algoId;
+                } else {
+                  takeProfitOrderId = tpResult.orderId;
+                }
               }
             } catch (ocoError) {
               log('⚠️ Failed to place OCO exit orders, falling back to separate orders', {
@@ -1582,8 +1639,13 @@ export class AutoTradingScheduler {
                   setup.direction,
                   watcher.marketType
                 );
-                stopLossOrderId = slResult.isAlgoOrder ? slResult.algoId : slResult.orderId;
-                log('🛡️ Stop loss order placed (fallback)', { stopLossOrderId, isAlgoOrder: slResult.isAlgoOrder });
+                stopLossIsAlgo = slResult.isAlgoOrder;
+                if (slResult.isAlgoOrder) {
+                  stopLossAlgoId = slResult.algoId;
+                } else {
+                  stopLossOrderId = slResult.orderId;
+                }
+                log('🛡️ Stop loss order placed (fallback)', { stopLossOrderId, stopLossAlgoId, isAlgoOrder: slResult.isAlgoOrder });
               } catch (slError) {
                 log('⚠️ Failed to place stop loss order', {
                   error: slError instanceof Error ? slError.message : String(slError),
@@ -1598,8 +1660,13 @@ export class AutoTradingScheduler {
                   setup.direction,
                   watcher.marketType
                 );
-                takeProfitOrderId = tpResult.isAlgoOrder ? tpResult.algoId : tpResult.orderId;
-                log('🎯 Take profit order placed (fallback)', { takeProfitOrderId, isAlgoOrder: tpResult.isAlgoOrder });
+                takeProfitIsAlgo = tpResult.isAlgoOrder;
+                if (tpResult.isAlgoOrder) {
+                  takeProfitAlgoId = tpResult.algoId;
+                } else {
+                  takeProfitOrderId = tpResult.orderId;
+                }
+                log('🎯 Take profit order placed (fallback)', { takeProfitOrderId, takeProfitAlgoId, isAlgoOrder: tpResult.isAlgoOrder });
               } catch (tpError) {
                 log('⚠️ Failed to place take profit order', {
                   error: tpError instanceof Error ? tpError.message : String(tpError),
@@ -1616,8 +1683,13 @@ export class AutoTradingScheduler {
                 setup.direction,
                 watcher.marketType
               );
-              stopLossOrderId = slResult.isAlgoOrder ? slResult.algoId : slResult.orderId;
-              log('🛡️ Stop loss order placed (no TP)', { stopLossOrderId, stopLoss: setup.stopLoss, isAlgoOrder: slResult.isAlgoOrder });
+              stopLossIsAlgo = slResult.isAlgoOrder;
+              if (slResult.isAlgoOrder) {
+                stopLossAlgoId = slResult.algoId;
+              } else {
+                stopLossOrderId = slResult.orderId;
+              }
+              log('🛡️ Stop loss order placed (no TP)', { stopLossOrderId, stopLossAlgoId, stopLoss: setup.stopLoss, isAlgoOrder: slResult.isAlgoOrder });
             } catch (slError) {
               log('⚠️ Failed to place stop loss order', {
                 error: slError instanceof Error ? slError.message : String(slError),
@@ -1814,6 +1886,10 @@ export class AutoTradingScheduler {
           entryOrderId,
           stopLossOrderId,
           takeProfitOrderId,
+          stopLossAlgoId,
+          takeProfitAlgoId,
+          stopLossIsAlgo,
+          takeProfitIsAlgo,
           orderListId,
           quantity: actualQuantity.toFixed(8),
           stopLoss: setup.stopLoss?.toString(),
@@ -1822,6 +1898,7 @@ export class AutoTradingScheduler {
           status: 'open',
           entryOrderType: useLimit ? 'LIMIT' : 'MARKET',
           marketType: watcher.marketType,
+          leverage: config.leverage ?? 1,
           triggerKlineIndex: setup.triggerKlineIndex,
           triggerKlineOpenTime: triggerCandle?.openTime,
           triggerCandleData: setup.triggerCandleData ? JSON.stringify(setup.triggerCandleData) : null,
