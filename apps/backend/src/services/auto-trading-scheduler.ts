@@ -242,10 +242,14 @@ export class AutoTradingScheduler {
   }
 
   private async checkAllRotationsOnce(): Promise<void> {
-    if (this.rotationStates.size === 0) return;
+    if (this.rotationStates.size === 0) {
+      log('📊 [DynamicRotation] No rotation states configured');
+      return;
+    }
 
     const now = Date.now();
     const rotationsToExecute: Array<{ stateKey: string; state: WalletRotationState }> = [];
+    const rotationStatuses: Array<{ stateKey: string; interval: string; timeUntilNextCheck: string }> = [];
 
     for (const [stateKey, state] of this.rotationStates.entries()) {
       if (this.isCheckingRotation.has(stateKey)) continue;
@@ -255,10 +259,26 @@ export class AutoTradingScheduler {
 
       if (timeSinceLastCheck >= intervalMs) {
         rotationsToExecute.push({ stateKey, state });
+      } else {
+        const remainingMs = intervalMs - timeSinceLastCheck;
+        const remainingMinutes = Math.ceil(remainingMs / 60000);
+        rotationStatuses.push({
+          stateKey,
+          interval: state.config.interval,
+          timeUntilNextCheck: `${remainingMinutes}m`,
+        });
       }
     }
 
-    if (rotationsToExecute.length === 0) return;
+    if (rotationsToExecute.length === 0) {
+      if (rotationStatuses.length > 0) {
+        log('⏳ [DynamicRotation] Rotation check skipped - not due yet', {
+          activeStates: rotationStatuses.length,
+          nextChecks: rotationStatuses.map(s => `${s.stateKey}:${s.timeUntilNextCheck}`).join(', '),
+        });
+      }
+      return;
+    }
 
     log('🔄 [DynamicRotation] Checking rotations', {
       count: rotationsToExecute.length,
