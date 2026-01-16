@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type MockedFunction } from 'vitest';
 import {
   DynamicSymbolRotationService,
+  getIntervalMs,
   type RotationConfig,
 } from '../../services/dynamic-symbol-rotation';
 import { db } from '../../db';
+import { logger } from '../../services/logger';
 
 vi.mock('../../db', () => ({
   db: {
@@ -238,6 +240,46 @@ describe('DynamicSymbolRotationService', () => {
       expect(result.removed).not.toContain('OLDCOIN1USDT');
       expect(result.skippedWithPositions).toContain('OLDCOIN1USDT');
       expect(result.kept).toContain('OLDCOIN1USDT');
+    });
+  });
+
+  describe('cleanupWallet', () => {
+    it('should clear rotation history and previous rankings for wallet', async () => {
+      mockSelectQuery(['BTCUSDT', 'ETHUSDT']);
+
+      await rotationService.executeRotation('test-wallet', 'test-user', baseConfig);
+      expect(rotationService.getRotationHistory('test-wallet')).toHaveLength(1);
+
+      rotationService.cleanupWallet('test-wallet');
+
+      expect(rotationService.getRotationHistory('test-wallet')).toHaveLength(0);
+    });
+
+    it('should stop scheduled rotation when cleaning up wallet', () => {
+      rotationService.startRotation('test-wallet', 'test-user', baseConfig);
+      expect(rotationService.isRotationActive('test-wallet')).toBe(true);
+
+      rotationService.cleanupWallet('test-wallet');
+
+      expect(rotationService.isRotationActive('test-wallet')).toBe(false);
+    });
+  });
+
+  describe('getIntervalMs', () => {
+    it('should return correct milliseconds for valid intervals', () => {
+      expect(getIntervalMs('1h')).toBe(60 * 60 * 1000);
+      expect(getIntervalMs('4h')).toBe(4 * 60 * 60 * 1000);
+      expect(getIntervalMs('1d')).toBe(24 * 60 * 60 * 1000);
+    });
+
+    it('should return 1h fallback and warn for invalid intervals', () => {
+      const result = getIntervalMs('invalid');
+
+      expect(result).toBe(60 * 60 * 1000);
+      expect(logger.warn).toHaveBeenCalledWith(
+        { interval: 'invalid' },
+        '[DynamicRotation] Invalid interval, using 1h fallback'
+      );
     });
   });
 });
