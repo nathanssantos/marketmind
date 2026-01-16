@@ -7,6 +7,7 @@ import { db } from '../db';
 import { klines } from '../db/schema';
 import { silentWsLogger } from './binance-client';
 import { logger } from './logger';
+import { priceCache } from './price-cache';
 import { getWebSocketService } from './websocket';
 import { KlineValidator } from './kline-validator';
 
@@ -257,6 +258,8 @@ export class BinanceKlineStreamService {
 
   private async processKlineUpdate(update: KlineUpdate): Promise<void> {
     try {
+      priceCache.updateFromWebSocket(update.symbol, update.marketType, parseFloat(update.close));
+
       const wsService = getWebSocketService();
       if (wsService) {
         wsService.emitKlineUpdate(update);
@@ -563,6 +566,8 @@ export class BinanceFuturesKlineStreamService {
 
   private async processKlineUpdate(update: KlineUpdate): Promise<void> {
     try {
+      priceCache.updateFromWebSocket(update.symbol, update.marketType, parseFloat(update.close));
+
       const wsService = getWebSocketService();
       if (wsService) {
         wsService.emitKlineUpdate(update);

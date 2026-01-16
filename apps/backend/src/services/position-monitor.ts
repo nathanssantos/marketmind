@@ -3,12 +3,13 @@ import { calculateTotalFees } from '@marketmind/types';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import type { TradeExecution, Wallet } from '../db/schema';
-import { priceCache, tradeExecutions, wallets } from '../db/schema';
+import { priceCache as priceCacheTable, tradeExecutions, wallets } from '../db/schema';
 import { env } from '../env';
 import { formatPrice } from '../utils/formatters';
 import { createBinanceClient, createBinanceClientForPrices, createBinanceFuturesClient, createBinanceFuturesClientForPrices, isPaperWallet } from './binance-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
+import { priceCache } from './price-cache';
 import { strategyPerformanceService } from './strategy-performance';
 import { trailingStopService } from './trailing-stop';
 import { outputPendingOrdersCheckResults } from './watcher-batch-logger';
@@ -113,16 +114,16 @@ export class PositionMonitorService {
 
     const positionGroups = this.groupExecutionsBySymbolAndSide(openExecutions);
 
-    for (const [groupKey, executions] of positionGroups) {
-      try {
-        await this.checkPositionGroup(groupKey, executions);
-      } catch (error) {
-        logger.error({
-          groupKey,
-          error: error instanceof Error ? error.message : String(error),
-        }, 'Error checking position group');
-      }
-    }
+    await Promise.all(
+      Array.from(positionGroups).map(([groupKey, executions]) =>
+        this.checkPositionGroup(groupKey, executions).catch(error => {
+          logger.error({
+            groupKey,
+            error: error instanceof Error ? error.message : String(error),
+          }, 'Error checking position group');
+        })
+      )
+    );
 
     const futuresExecutions = openExecutions.filter(e => e.marketType === 'FUTURES');
     if (futuresExecutions.length > 0) {
@@ -149,6 +150,21 @@ export class PositionMonitorService {
     const startTime = new Date();
     const actions: PendingOrderAction[] = [];
     const now = new Date();
+
+    const symbolsToFetch = pendingExecutions
+      .filter(e => e.limitEntryPrice && (!e.expiresAt || e.expiresAt >= now))
+      .map(e => ({
+        symbol: e.symbol,
+        marketType: (e.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT') as 'SPOT' | 'FUTURES',
+      }));
+
+    const uniqueSymbols = Array.from(
+      new Map(symbolsToFetch.map(s => [`${s.symbol}-${s.marketType}`, s])).values()
+    );
+
+    const priceMap = uniqueSymbols.length > 0
+      ? await priceCache.batchFetch(uniqueSymbols)
+      : new Map<string, number>();
 
     for (const execution of pendingExecutions) {
       try {
@@ -216,8 +232,9 @@ export class PositionMonitorService {
           continue;
         }
 
-        const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
-        const currentPrice = await this.getCurrentPrice(execution.symbol, marketType);
+        const marketType = (execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT') as 'SPOT' | 'FUTURES';
+        const priceKey = `${execution.symbol}-${marketType}`;
+        const currentPrice = priceMap.get(priceKey) ?? await this.getCurrentPrice(execution.symbol, marketType);
         const limitPrice = parseFloat(execution.limitEntryPrice);
         const isLong = execution.side === 'LONG';
 
@@ -689,12 +706,17 @@ export class PositionMonitorService {
 
   async getCurrentPrice(symbol: string, marketType: 'SPOT' | 'FUTURES' = 'SPOT'): Promise<number> {
     try {
+      const inMemoryCached = priceCache.getPrice(symbol, marketType);
+      if (inMemoryCached !== null) {
+        return inMemoryCached;
+      }
+
       const cacheKey = marketType === 'FUTURES' ? `${symbol}_FUTURES` : symbol;
 
       const [cached] = await db
         .select()
-        .from(priceCache)
-        .where(eq(priceCache.symbol, cacheKey))
+        .from(priceCacheTable)
+        .where(eq(priceCacheTable.symbol, cacheKey))
         .limit(1);
 
       const cacheAge = cached
@@ -702,7 +724,9 @@ export class PositionMonitorService {
         : Infinity;
 
       if (cached && cacheAge < 3000) {
-        return parseFloat(cached.price);
+        const price = parseFloat(cached.price);
+        priceCache.updateFromWebSocket(symbol, marketType, price);
+        return price;
       }
 
       let price: number;
@@ -722,15 +746,17 @@ export class PositionMonitorService {
         price = parseFloat(String(ticker.lastPrice));
       }
 
+      priceCache.updateFromWebSocket(symbol, marketType, price);
+
       await db
-        .insert(priceCache)
+        .insert(priceCacheTable)
         .values({
           symbol: cacheKey,
           price: price.toString(),
           timestamp: new Date(),
         })
         .onConflictDoUpdate({
-          target: priceCache.symbol,
+          target: priceCacheTable.symbol,
           set: {
             price: price.toString(),
             timestamp: new Date(),
@@ -752,14 +778,14 @@ export class PositionMonitorService {
   async updatePrice(symbol: string, price: number): Promise<void> {
     try {
       await db
-        .insert(priceCache)
+        .insert(priceCacheTable)
         .values({
           symbol,
           price: price.toString(),
           timestamp: new Date(),
         })
         .onConflictDoUpdate({
-          target: priceCache.symbol,
+          target: priceCacheTable.symbol,
           set: {
             price: price.toString(),
             timestamp: new Date(),
@@ -779,11 +805,11 @@ export class PositionMonitorService {
     try {
       if (symbol) {
         await db
-          .update(priceCache)
+          .update(priceCacheTable)
           .set({ timestamp: new Date(0) })
-          .where(eq(priceCache.symbol, symbol));
+          .where(eq(priceCacheTable.symbol, symbol));
       } else {
-        await db.update(priceCache).set({ timestamp: new Date(0) });
+        await db.update(priceCacheTable).set({ timestamp: new Date(0) });
       }
     } catch (error) {
       logger.error({

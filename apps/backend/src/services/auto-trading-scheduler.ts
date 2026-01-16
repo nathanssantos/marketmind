@@ -148,6 +148,8 @@ export class AutoTradingScheduler {
   private btcKlinesCache: Map<string, CacheEntry<Kline[]>> = new Map();
   private htfKlinesCache: Map<string, CacheEntry<Kline[]>> = new Map();
   private fundingRateCache: Map<string, CacheEntry<number>> = new Map();
+  private configCache: Map<string, CacheEntry<typeof autoTradingConfig.$inferSelect>> = new Map();
+  private readonly CONFIG_CACHE_TTL_MS = 30_000;
   private readonly FUNDING_CACHE_TTL_MS = 5 * TIME_MS.MINUTE;
 
   private rotationStates: Map<string, WalletRotationState> = new Map();
@@ -240,6 +242,35 @@ export class AutoTradingScheduler {
     this.btcKlinesCache.clear();
     this.htfKlinesCache.clear();
     this.fundingRateCache.clear();
+    this.configCache.clear();
+  }
+
+  private async getCachedConfig(walletId: string, userId?: string): Promise<typeof autoTradingConfig.$inferSelect | null> {
+    const cacheKey = walletId;
+    const cached = this.configCache.get(cacheKey);
+
+    if (cached && Date.now() - cached.timestamp < this.CONFIG_CACHE_TTL_MS) {
+      return cached.data;
+    }
+
+    const whereClause = userId
+      ? and(eq(autoTradingConfig.walletId, walletId), eq(autoTradingConfig.userId, userId))
+      : eq(autoTradingConfig.walletId, walletId);
+
+    const [config] = await db
+      .select()
+      .from(autoTradingConfig)
+      .where(whereClause)
+      .limit(1);
+
+    if (config) {
+      this.configCache.set(cacheKey, { data: config, timestamp: Date.now() });
+    }
+    return config ?? null;
+  }
+
+  invalidateConfigCache(walletId: string): void {
+    this.configCache.delete(walletId);
   }
 
   private async checkAllRotationsOnce(): Promise<void> {
@@ -498,20 +529,18 @@ export class AutoTradingScheduler {
 
     logBuffer.log('🔍', 'Processing watcher');
 
-    const [walletData] = await db
-      .select({ currentBalance: wallets.currentBalance })
+    const [walletWithConfig] = await db
+      .select({
+        currentBalance: wallets.currentBalance,
+        leverage: autoTradingConfig.leverage,
+      })
       .from(wallets)
+      .leftJoin(autoTradingConfig, eq(wallets.id, autoTradingConfig.walletId))
       .where(eq(wallets.id, watcher.walletId))
       .limit(1);
 
-    const [configData] = await db
-      .select({ leverage: autoTradingConfig.leverage })
-      .from(autoTradingConfig)
-      .where(eq(autoTradingConfig.walletId, watcher.walletId))
-      .limit(1);
-
-    const walletBalance = parseFloat(walletData?.currentBalance ?? '0');
-    const leverage = configData?.leverage ?? 1;
+    const walletBalance = parseFloat(walletWithConfig?.currentBalance ?? '0');
+    const leverage = walletWithConfig?.leverage ?? 1;
     const availableCapital = walletBalance * leverage;
 
     if (availableCapital <= TRADING_DEFAULTS.MIN_TRADE_VALUE_USD) {
@@ -567,15 +596,17 @@ export class AutoTradingScheduler {
         return logBuffer.toResult('skipped', 'Insufficient klines', result.totalInDb);
       }
 
-      klinesData = await db.query.klines.findMany({
-        where: and(
-          eq(klines.symbol, watcher.symbol),
-          eq(klines.interval, watcher.interval),
-          eq(klines.marketType, watcher.marketType)
-        ),
-        orderBy: [desc(klines.openTime)],
-        limit: requiredKlines,
-      });
+      if (result.downloaded > 0) {
+        klinesData = await db.query.klines.findMany({
+          where: and(
+            eq(klines.symbol, watcher.symbol),
+            eq(klines.interval, watcher.interval),
+            eq(klines.marketType, watcher.marketType)
+          ),
+          orderBy: [desc(klines.openTime)],
+          limit: requiredKlines,
+        });
+      }
     }
 
     klinesData.reverse();
@@ -749,16 +780,7 @@ export class AutoTradingScheduler {
       return;
     }
 
-    const [config] = await db
-      .select()
-      .from(autoTradingConfig)
-      .where(
-        and(
-          eq(autoTradingConfig.walletId, walletId),
-          eq(autoTradingConfig.userId, userId)
-        )
-      )
-      .limit(1);
+    const config = await this.getCachedConfig(walletId, userId);
 
     if (!config?.isEnabled) {
       if (!silent) log('⚠️ Auto-trading not enabled for wallet', { walletId });
@@ -965,11 +987,7 @@ export class AutoTradingScheduler {
       entryPrice: setup.entryPrice,
     });
 
-    const [config] = await db
-      .select()
-      .from(autoTradingConfig)
-      .where(eq(autoTradingConfig.walletId, watcher.walletId))
-      .limit(1);
+    const config = await this.getCachedConfig(watcher.walletId, watcher.userId);
 
     const tpCalculationMode = config?.tpCalculationMode ?? 'default';
     const fibonacciTargetLevel = config?.fibonacciTargetLevel ?? 'auto';
@@ -1068,17 +1086,6 @@ export class AutoTradingScheduler {
     }
 
     try {
-      const [config] = await db
-        .select()
-        .from(autoTradingConfig)
-        .where(
-          and(
-            eq(autoTradingConfig.walletId, watcher.walletId),
-            eq(autoTradingConfig.userId, watcher.userId)
-          )
-        )
-        .limit(1);
-
       if (!config?.isEnabled) {
         logBuffer.warn('⚠️', 'Auto-trading disabled during execution');
         return;
@@ -2045,6 +2052,19 @@ export class AutoTradingScheduler {
     }
 
     startupBuffer.setPersistedCount(persistedWatchers.length);
+
+    const walletIds = [...new Set(persistedWatchers.map(w => w.walletId))];
+    if (walletIds.length > 0) {
+      const configs = await db
+        .select()
+        .from(autoTradingConfig)
+        .where(inArray(autoTradingConfig.walletId, walletIds));
+
+      for (const config of configs) {
+        this.configCache.set(config.walletId, { data: config, timestamp: Date.now() });
+      }
+      log(`📦 Pre-loaded ${configs.length} configs for ${walletIds.length} wallets`);
+    }
 
     const requiredKlines = calculateRequiredKlines();
     const pollIntervalMs = getPollingIntervalForTimeframe(persistedWatchers[0]?.interval ?? '4h');
