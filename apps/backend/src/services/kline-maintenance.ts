@@ -655,10 +655,24 @@ class KlineMaintenance {
       const kline = recentKlines[i];
       if (!kline) continue;
 
-      const corruption = KlineValidator.isKlineCorrupted(kline);
+      const prevKline = i > 0 ? recentKlines[i - 1] ?? null : null;
+      const nextKline = i < recentKlines.length - 1 ? recentKlines[i + 1] ?? null : null;
 
+      const corruption = KlineValidator.isKlineCorrupted(kline);
       if (corruption) {
         corruptedKlines.push({ kline, reason: corruption.reason });
+        continue;
+      }
+
+      const staleCorruption = KlineValidator.isKlineStaleCorrupted(kline, prevKline, nextKline);
+      if (staleCorruption) {
+        corruptedKlines.push({ kline, reason: staleCorruption.reason });
+        continue;
+      }
+
+      const spikeCorruption = KlineValidator.isKlineSpikeCorrupted(kline, prevKline, nextKline);
+      if (spikeCorruption) {
+        corruptedKlines.push({ kline, reason: spikeCorruption.reason });
       }
     }
 

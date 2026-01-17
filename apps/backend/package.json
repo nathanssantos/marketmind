@@ -17,9 +17,11 @@
     }
   },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "caffeinate -dims tsx watch src/index.ts",
+    "dev:allow-sleep": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "caffeinate -dims node dist/index.js",
+    "start:allow-sleep": "node dist/index.js",
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
